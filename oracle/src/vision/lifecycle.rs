@@ -1164,50 +1164,55 @@ impl BatchLifecycleManager {
                             reference_nonce: ref_nonce,
                         };
 
-                        if let Err(e) = broadcast_tx.send(proposal).await {
-                            warn!(source = %source_name, error = %e, "Failed to broadcast VisionCreateBatchProposal");
-                        }
-
-                        // Collect co-signs from this source's dedicated channel
-                        let deadline = tokio::time::Instant::now()
-                            + std::time::Duration::from_secs(cosign_timeout_secs());
-
-                        loop {
+                        // Auto-recovery: retry the broadcast up to 3 times within the heartbeat
+                        // if followers were too busy to co-sign in time. Each round uses a short
+                        // per-attempt window so total heartbeat budget stays bounded (≤ 3×window).
+                        // Without this, a single follower-stall during cycle work meant the batch
+                        // was dropped until the NEXT heartbeat — one full tick of refunds per
+                        // overlapping load spike.
+                        let per_attempt_secs = cosign_timeout_secs().max(5).min(30);
+                        for attempt in 0..3u32 {
                             if collected_sigs.len() >= threshold {
-                                info!(source = %source_name, sigs = collected_sigs.len(), threshold, "BLS threshold met");
+                                break;
+                            }
+                            if attempt > 0 {
+                                debug!(source = %source_name, attempt, "Re-broadcasting createBatch — followers were busy");
+                            }
+                            if let Err(e) = broadcast_tx.send(proposal.clone()).await {
+                                warn!(source = %source_name, attempt, error = %e, "Failed to broadcast VisionCreateBatchProposal");
                                 break;
                             }
 
-                            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-                            if remaining.is_zero() {
-                                warn!(
-                                    source = %source_name,
-                                    sigs = collected_sigs.len(),
-                                    threshold,
-                                    "createBatch co-sign timeout"
-                                );
-                                break;
-                            }
+                            let deadline = tokio::time::Instant::now()
+                                + std::time::Duration::from_secs(per_attempt_secs);
 
-                            match tokio::time::timeout(remaining, sign_rx.recv()).await {
-                                Ok(Some(cosign)) => {
-                                    if cosign.message_hash != message_hash {
-                                        debug!(source = %source_name, "Ignoring co-sign for different message hash");
-                                        continue;
-                                    }
-                                    if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
-                                        debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
-                                        continue;
-                                    }
-                                    debug!(source = %source_name, signer_index = cosign.signer_index, "Co-sign received");
-                                    signer_bits |= 1u64 << cosign.signer_index;
-                                    collected_sigs.push((cosign.signer_index, cosign.signature));
-                                }
-                                Ok(None) => {
-                                    warn!(source = %source_name, "createBatch sign channel closed");
+                            loop {
+                                if collected_sigs.len() >= threshold {
+                                    info!(source = %source_name, sigs = collected_sigs.len(), threshold, attempt, "BLS threshold met");
                                     break;
                                 }
-                                Err(_) => break, // timeout
+                                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                                if remaining.is_zero() { break; }
+
+                                match tokio::time::timeout(remaining, sign_rx.recv()).await {
+                                    Ok(Some(cosign)) => {
+                                        if cosign.message_hash != message_hash {
+                                            debug!(source = %source_name, "Ignoring co-sign for different message hash");
+                                            continue;
+                                        }
+                                        if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
+                                            debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
+                                            continue;
+                                        }
+                                        signer_bits |= 1u64 << cosign.signer_index;
+                                        collected_sigs.push((cosign.signer_index, cosign.signature));
+                                    }
+                                    Ok(None) => {
+                                        warn!(source = %source_name, "createBatch sign channel closed");
+                                        break;
+                                    }
+                                    Err(_) => break, // attempt deadline elapsed
+                                }
                             }
                         }
 
