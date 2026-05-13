@@ -19,14 +19,16 @@
     "SETTLEMENT_USDC_DECIMALS": "6",
     "MOCK_USDT": "0x1fcda75431dad318b3b6336458ec7e9235fce103",
     "USDC": "0xaddB799BC1499b224DC4368e92b9042a54908553",
-    "Vision": "0x36a28967544c301a3c66dcfb6c6c90e548412693",
+    "Vision": "0x8d3cb936504d25772fb62bd537e67eb48e2d4d62",
     "VisionVault": "0x7437F064E416C93aC4EaB882e9A488443FaE03c0",
     "VisionVaultFactory": "0x73dbd15d872b80e7a9e90be3cacedf4ad00407ca",
     "SettlementBridgeProxy": "0x19d9F7A778A30f8a73158Be5028C19571D9102d5",
     "SettlementOracleRegistry": "0x4AD1A55078075ae4551eb2105b1f3dB9729c2f6a",
     "SettlementBridgedItpFactory": "0xC7f7A091201e613d24A185166846fB2f3cfbC410",
     "L3BridgeProxy": "0x9395cDfbb0ff99d2400471c4515B1893e6699CFB",
-    "VisionReconciler": "0xfee75222Bb00337135341ce543D5612B31FE20c6"
+    "VisionReconciler": "0xfee75222Bb00337135341ce543D5612B31FE20c6",
+    "Vision_v3": "0x8d3cb936504d25772fb62bd537e67eb48e2d4d62",
+    "Vision_legacy": "0x36a28967544c301a3c66dcfb6c6c90e548412693"
   },
   "accounts": {
     "admin": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
