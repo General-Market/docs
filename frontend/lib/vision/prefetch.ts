@@ -4,6 +4,7 @@
  * Results are hydrated into React Query cache via HydrationBoundary.
  */
 import { getAaDataNodeUrl, getDataNodeServer, getIssuerVisionUrl } from '@/lib/config'
+import { toInternalId } from '@/lib/vision/source-ids'
 
 // ── Snapshot Meta ───────────────────────────────────────
 interface BulkSourceEntry {
@@ -67,8 +68,9 @@ function parseNum(v: unknown): number {
   return 0
 }
 
-export async function prefetchLeaderboard() {
-  const res = await fetch(`${getIssuerVisionUrl()}/vision/leaderboard`, {
+export async function prefetchLeaderboard(sourceId?: string) {
+  const qs = sourceId ? `?source_id=${encodeURIComponent(toInternalId(sourceId))}` : ''
+  const res = await fetch(`${getIssuerVisionUrl()}/vision/leaderboard${qs}`, {
     next: { revalidate: 15 },
     signal: AbortSignal.timeout(5_000),
   })

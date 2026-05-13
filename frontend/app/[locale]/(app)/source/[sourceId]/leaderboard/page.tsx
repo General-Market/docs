@@ -2,17 +2,12 @@ import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
-import { TopPlayers } from '@/components/domain/vision/detail/TopPlayers'
+import { LeaderboardApple } from '@/components/domain/vision/LeaderboardApple'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceTabNav } from '@/components/domain/vision/detail/SourceTabNav'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { prefetchLeaderboard } from '@/lib/vision/prefetch'
-
-// NOTE: TopPlayers does not accept a `fullList` prop — it renders top-5 by
-// design (global leaderboard; per-source tracking is a future feature).
-// Documented limitation: the wiring pass or a follow-up can extend TopPlayers
-// to accept a `limit` prop and pass `Infinity` / a large number here.
 
 export const revalidate = 60
 
@@ -65,8 +60,8 @@ export default async function LeaderboardPage({ params }: Props) {
 
   const queryClient = new QueryClient()
   await queryClient.prefetchQuery({
-    queryKey: ['vision-leaderboard'],
-    queryFn: prefetchLeaderboard,
+    queryKey: ['vision-leaderboard', undefined, sourceId],
+    queryFn: () => prefetchLeaderboard(sourceId),
   })
 
   const jsonLd = source
@@ -110,8 +105,22 @@ export default async function LeaderboardPage({ params }: Props) {
               >
                 Leaderboard
               </h1>
+              {source && (
+                <p
+                  className="mt-3"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 15,
+                    lineHeight: 1.47,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'var(--apple-text-secondary)',
+                  }}
+                >
+                  Bots and vaults trading {source.name}. Nothing else.
+                </p>
+              )}
             </header>
-            <TopPlayers sourceId={sourceId} />
+            <LeaderboardApple sourceId={sourceId} />
           </div>
         </div>
       </AppShell>
