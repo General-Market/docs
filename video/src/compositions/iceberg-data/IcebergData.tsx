@@ -116,6 +116,62 @@ const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
   </div>
 );
 
+// ── Dot stipple on top of the iceberg ──────────────────────────────────────
+// A uniform Base-blue dot pattern, image-anchored, masked by the iceberg's
+// own luminance — dots only land on the bright parts (the iceberg body and
+// the sky). The watercolour breathes through where the mask is dark.
+const DOT_SPACING = 14;
+const DOT_RADIUS = 2.6;
+
+const IcebergStipple: React.FC<{ geom: Geom }> = ({ geom }) => {
+  const maskUrl = `url(${staticFile("iceberg-data.webp")})`;
+  const maskStyle: React.CSSProperties = {
+    position: "absolute",
+    left: geom.imgLeft,
+    top: geom.imgTop,
+    width: geom.imgW,
+    height: geom.imgH,
+    pointerEvents: "none",
+    maskImage: maskUrl,
+    maskMode: "luminance",
+    maskSize: "100% 100%",
+    maskRepeat: "no-repeat",
+    WebkitMaskImage: maskUrl,
+    WebkitMaskSize: "100% 100%",
+    WebkitMaskRepeat: "no-repeat",
+  };
+  // mask-mode prefix isn't in React's CSS types — set via plain object below.
+  (maskStyle as Record<string, string>)["WebkitMaskMode"] = "luminance";
+  return (
+    <div style={maskStyle}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <pattern
+            id="iceberg-dots"
+            width={DOT_SPACING}
+            height={DOT_SPACING}
+            patternUnits="userSpaceOnUse"
+          >
+            <circle
+              cx={DOT_SPACING / 2}
+              cy={DOT_SPACING / 2}
+              r={DOT_RADIUS}
+              fill={colors.accent}
+              opacity={0.72}
+            />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#iceberg-dots)" />
+      </svg>
+    </div>
+  );
+};
+
 // ── Tiers + anchors ────────────────────────────────────────────────────────
 type Tier = {
   label: string;
@@ -324,6 +380,10 @@ export const IcebergData: React.FC = () => {
           through, so the iceberg feels native to the pattern instead of
           pasted on top. */}
       <IcebergImage geom={geom} />
+
+      {/* Dot stipple on the iceberg — luminance-masked by the image itself,
+          so the dot field clings to the bright parts. */}
+      <IcebergStipple geom={geom} />
 
       {TIERS.map((tier, i) => (
         <TierCard
