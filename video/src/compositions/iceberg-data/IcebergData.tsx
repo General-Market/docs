@@ -91,8 +91,8 @@ const resolveGeom = (frame: number): Geom => {
   return { imgLeft, imgTop, imgW, imgH };
 };
 
-// ── Iceberg image — sits on top of the dot grid, mix-blends with it so the
-// dots breathe through the blue ocean and sky.
+// ── Iceberg image — dominant, on top of the dot grid background. The dots
+// are texture behind it, not painted on top.
 const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
   <div
     style={{
@@ -101,7 +101,6 @@ const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
       top: geom.imgTop,
       width: geom.imgW,
       height: geom.imgH,
-      mixBlendMode: "multiply",
     }}
   >
     <Img
@@ -110,67 +109,10 @@ const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
         width: "100%",
         height: "100%",
         display: "block",
-        filter: "saturate(0.85) contrast(1.05)",
       }}
     />
   </div>
 );
-
-// ── Dot stipple on top of the iceberg ──────────────────────────────────────
-// A uniform Base-blue dot pattern, image-anchored, masked by the iceberg's
-// own luminance — dots only land on the bright parts (the iceberg body and
-// the sky). The watercolour breathes through where the mask is dark.
-const DOT_SPACING = 14;
-const DOT_RADIUS = 2.6;
-
-const IcebergStipple: React.FC<{ geom: Geom }> = ({ geom }) => {
-  const maskUrl = `url(${staticFile("iceberg-data.webp")})`;
-  const maskStyle: React.CSSProperties = {
-    position: "absolute",
-    left: geom.imgLeft,
-    top: geom.imgTop,
-    width: geom.imgW,
-    height: geom.imgH,
-    pointerEvents: "none",
-    maskImage: maskUrl,
-    maskMode: "luminance",
-    maskSize: "100% 100%",
-    maskRepeat: "no-repeat",
-    WebkitMaskImage: maskUrl,
-    WebkitMaskSize: "100% 100%",
-    WebkitMaskRepeat: "no-repeat",
-  };
-  // mask-mode prefix isn't in React's CSS types — set via plain object below.
-  (maskStyle as Record<string, string>)["WebkitMaskMode"] = "luminance";
-  return (
-    <div style={maskStyle}>
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <pattern
-            id="iceberg-dots"
-            width={DOT_SPACING}
-            height={DOT_SPACING}
-            patternUnits="userSpaceOnUse"
-          >
-            <circle
-              cx={DOT_SPACING / 2}
-              cy={DOT_SPACING / 2}
-              r={DOT_RADIUS}
-              fill={colors.accent}
-              opacity={0.72}
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#iceberg-dots)" />
-      </svg>
-    </div>
-  );
-};
 
 // ── Tiers + anchors ────────────────────────────────────────────────────────
 type Tier = {
@@ -376,14 +318,8 @@ export const IcebergData: React.FC = () => {
       {/* AntiCheat DotGrid backdrop — Base-blue dots on light field. */}
       <DotGrid intensity={1} speed={0.6} />
 
-      {/* The cartoon iceberg. Mix-blend-multiply lets the dot grid show
-          through, so the iceberg feels native to the pattern instead of
-          pasted on top. */}
+      {/* The cartoon iceberg, on top of the dot grid. */}
       <IcebergImage geom={geom} />
-
-      {/* Dot stipple on the iceberg — luminance-masked by the image itself,
-          so the dot field clings to the bright parts. */}
-      <IcebergStipple geom={geom} />
 
       {TIERS.map((tier, i) => (
         <TierCard
