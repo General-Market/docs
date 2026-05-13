@@ -10,22 +10,23 @@ import {
   useVideoConfig,
 } from "remotion";
 import { font } from "../../common/fonts";
-import { colors } from "../anticheat/theme";
-import { DotGrid } from "../anticheat/DotGrid";
 
-// IcebergData — cartoon iceberg on top of the AntiCheat DotGrid backdrop.
-// Card aesthetic, camera plan, and beat rhythm all borrowed from the rest
-// of AntiCheatFull.
+// IcebergData — photoreal iceberg on the left, glass pills stacked on the
+// right. Two clusters: surface excuses above the waterline, the real
+// killers beneath. Camera drifts down so the reveal mirrors the sentence.
 
 const W = 1920;
 const H = 1080;
 const FPS = 30;
 
-const IMG_NATIVE_W = 1280;
-const IMG_NATIVE_H = 720;
-const IMG_AR = IMG_NATIVE_W / IMG_NATIVE_H;
+// Source image is portrait — we fit it to 1080 tall on the left side.
+const IMG_NATIVE_W = 1265;
+const IMG_NATIVE_H = 1670;
+const ICEBERG_FIT_H = 1080;
+const ICEBERG_FIT_W = Math.round(IMG_NATIVE_W * (ICEBERG_FIT_H / IMG_NATIVE_H)); // 818
+const ICEBERG_X = 40;
 
-// ── Beat rhythm — verbatim from AntiCheatIceberg ───────────────────────────
+// ── Beat rhythm — borrowed verbatim from AntiCheatIceberg ──────────────────
 const TIERS_COUNT = 6;
 const LAST = TIERS_COUNT - 1;
 const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
@@ -43,11 +44,12 @@ const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ── Camera ─────────────────────────────────────────────────────────────────
-type Cam = { fy: number; scale: number };
-const CAM_INTRO_START: Cam = { fy: 0.42, scale: 1.18 };
-const CAM_FULL: Cam = { fy: 0.50, scale: 1.05 };
-const CAM_LOWER: Cam = { fy: 0.68, scale: 1.24 };
+// ── Camera — vertical drift only. Starts looking high on the iceberg,
+// settles on the full reveal, then sinks toward the underwater section.
+type Cam = { scale: number; pan: number };
+const CAM_TOP: Cam = { scale: 1.18, pan: -0.18 };
+const CAM_FULL: Cam = { scale: 1.00, pan: 0.00 };
+const CAM_DEEP: Cam = { scale: 1.16, pan: 0.20 };
 
 const PHASE_2_END = 113;
 const PHASE_3_END = 164;
@@ -56,243 +58,254 @@ const resolveCam = (frame: number): Cam => {
   if (frame < ZOOM_OUT) {
     const t = easeInOut(frame / ZOOM_OUT);
     return {
-      fy: lerp(CAM_INTRO_START.fy, CAM_FULL.fy, t),
-      scale: lerp(CAM_INTRO_START.scale, CAM_FULL.scale, t),
+      scale: lerp(CAM_TOP.scale, CAM_FULL.scale, t),
+      pan: lerp(CAM_TOP.pan, CAM_FULL.pan, t),
     };
   }
   if (frame < PHASE_2_END) return CAM_FULL;
   if (frame < PHASE_3_END) {
     const t = easeInOut((frame - PHASE_2_END) / (PHASE_3_END - PHASE_2_END));
     return {
-      fy: lerp(CAM_FULL.fy, CAM_LOWER.fy, t),
-      scale: lerp(CAM_FULL.scale, CAM_LOWER.scale, t),
+      scale: lerp(CAM_FULL.scale, CAM_DEEP.scale, t),
+      pan: lerp(CAM_FULL.pan, CAM_DEEP.pan, t),
     };
   }
-  return CAM_LOWER;
+  return CAM_DEEP;
 };
 
-type Geom = {
-  imgLeft: number;
-  imgTop: number;
-  imgW: number;
-  imgH: number;
-};
-
-const resolveGeom = (frame: number): Geom => {
-  const cam = resolveCam(frame);
-  const swayX = Math.sin(frame * 0.05) * 2.5;
-  const swayY = Math.sin(frame * 0.038 + 1.1) * 1.5;
-  const imgH = H * cam.scale;
-  const imgW = imgH * IMG_AR;
-  let imgLeft = W / 2 - 0.5 * imgW + swayX;
-  let imgTop = H / 2 - cam.fy * imgH + swayY;
-  imgLeft = Math.min(0, Math.max(W - imgW, imgLeft));
-  imgTop = Math.min(0, Math.max(H - imgH, imgTop));
-  return { imgLeft, imgTop, imgW, imgH };
-};
-
-// ── Iceberg image — dominant, on top of the dot grid background. The dots
-// are texture behind it, not painted on top.
-const IcebergImage: React.FC<{ geom: Geom }> = ({ geom }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: geom.imgLeft,
-      top: geom.imgTop,
-      width: geom.imgW,
-      height: geom.imgH,
-    }}
-  >
-    <Img
-      src={staticFile("iceberg-data.webp")}
+// ── Sky → waterline → ocean ────────────────────────────────────────────────
+const SkyOceanBackdrop: React.FC<{ frame: number }> = ({ frame }) => {
+  const drift = Math.sin(frame * 0.012) * 8;
+  // The waterline gradient stop matches the image's waterline at 32 % of
+  // the 1080 canvas — about y = 346.
+  return (
+    <div
       style={{
-        width: "100%",
-        height: "100%",
-        display: "block",
+        position: "absolute",
+        inset: 0,
+        background: `linear-gradient(
+          to bottom,
+          #8AB6DA 0%,
+          #6394BB 18%,
+          #3F6E96 30%,
+          #2A547B 31.5%,
+          #1B416B 33%,
+          #14365B 48%,
+          #0A2444 75%,
+          #051630 100%
+        )`,
+        transform: `translateY(${drift}px)`,
       }}
     />
-  </div>
-);
-
-// ── Tiers + anchors ────────────────────────────────────────────────────────
-type Tier = {
-  label: string;
-  pctX: number;
-  pctY: number;
-  emphasis?: boolean;
+  );
 };
 
-const TIERS: ReadonlyArray<Tier> = [
-  { label: "Strategies", pctX: 0.22, pctY: 0.18 },
-  { label: "Fees", pctX: 0.78, pctY: 0.18 },
-  { label: "Liquidation hunters", pctX: 0.20, pctY: 0.58 },
-  { label: "Front runners", pctX: 0.80, pctY: 0.58 },
-  { label: "Orderbook spoofers", pctX: 0.20, pctY: 0.85 },
-  { label: "Insider traders", pctX: 0.80, pctY: 0.85, emphasis: true },
-];
-
-const CARD_WIDTH = 360;
-const CARD_HEIGHT = 116;
-
-const TierCard: React.FC<{
-  tier: Tier;
-  index: number;
-  geom: Geom;
-  frame: number;
-  fps: number;
-}> = ({ tier, index, geom, frame, fps }) => {
-  const animStart = tierAnimStart(index);
-  const cx = geom.imgLeft + tier.pctX * geom.imgW;
-  const cy = geom.imgTop + tier.pctY * geom.imgH;
-  const left = cx - CARD_WIDTH / 2;
-  const top = cy - CARD_HEIGHT / 2;
-
-  const enter = spring({
-    frame: frame - animStart,
-    fps,
-    config: { damping: 18, stiffness: 160, mass: 0.85 },
-  });
-
-  const isRed = !!tier.emphasis;
-  const breath =
-    frame >= animStart + TIER_ANIM
-      ? 1 + Math.sin(frame * 0.16) * (isRed ? 0.016 : 0.005)
-      : 1;
-
-  const accent = isRed ? "#FF566E" : colors.accent;
-  const textColor = isRed ? "#B2243A" : colors.fg;
-  const borderColor = isRed ? "rgba(255,86,110,0.55)" : colors.rule;
-
+// ── Iceberg image — anchored left, scaled by camera ───────────────────────
+const IcebergImage: React.FC<{ cam: Cam }> = ({ cam }) => {
+  const swayX = 0; // image is anchored, no horizontal sway
+  const baseH = ICEBERG_FIT_H * cam.scale;
+  const baseW = ICEBERG_FIT_W * cam.scale;
+  const top = Math.round((H - baseH) / 2 + cam.pan * baseH);
+  const left = ICEBERG_X + Math.round((ICEBERG_FIT_W - baseW) / 2) + swayX;
   return (
     <div
       style={{
         position: "absolute",
         left,
         top,
-        width: CARD_WIDTH,
-        height: CARD_HEIGHT,
-        opacity: enter,
-        transform: `translateY(${(1 - enter) * 16}px) scale(${breath.toFixed(4)})`,
-        background: colors.surface,
-        borderRadius: 20,
-        border: `1px solid ${borderColor}`,
-        boxShadow:
-          "0 1px 0 rgba(255,255,255,0.6) inset, 0 22px 50px rgba(8,16,28,0.32), 0 2px 8px rgba(8,16,28,0.12)",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 24px",
-        fontFamily: font,
-        willChange: "transform, opacity",
+        width: baseW,
+        height: baseH,
+        filter: "drop-shadow(0 30px 60px rgba(0, 20, 60, 0.35))",
+      }}
+    >
+      <Img
+        src={staticFile("iceberg-tiers-clean.webp")}
+        style={{ width: "100%", height: "100%", display: "block" }}
+      />
+    </div>
+  );
+};
+
+// ── Pill styling ──────────────────────────────────────────────────────────
+type PillKind = "header" | "leaf" | "leafRed";
+
+const pillStyle = (kind: PillKind): React.CSSProperties => {
+  const isHeader = kind === "header";
+  const isRed = kind === "leafRed";
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 12,
+    padding: isHeader ? "14px 26px" : "11px 22px",
+    borderRadius: 999,
+    background: isRed
+      ? "rgba(120, 24, 40, 0.42)"
+      : isHeader
+        ? "rgba(18, 34, 58, 0.42)"
+        : "rgba(24, 44, 72, 0.36)",
+    backdropFilter: "saturate(180%) blur(22px)",
+    WebkitBackdropFilter: "saturate(180%) blur(22px)",
+    border: isRed
+      ? "1px solid rgba(255, 120, 140, 0.42)"
+      : "1px solid rgba(255, 255, 255, 0.22)",
+    boxShadow: [
+      "0 1px 0 rgba(255, 255, 255, 0.22) inset",
+      isHeader
+        ? "0 24px 60px rgba(0, 20, 60, 0.35)"
+        : "0 14px 32px rgba(0, 20, 60, 0.28)",
+      "0 2px 8px rgba(0, 12, 36, 0.22)",
+    ].join(", "),
+    color: isRed ? "#FFD6DD" : "#FFFFFF",
+    fontFamily: font,
+    fontWeight: isHeader ? 700 : 600,
+    fontSize: isHeader ? 24 : 22,
+    letterSpacing: isHeader ? "-0.015em" : "-0.012em",
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+  };
+};
+
+// ── Reveal helper ──────────────────────────────────────────────────────────
+type Revealed = {
+  opacity: number;
+  translateY: number;
+  scale: number;
+};
+
+const computeReveal = (frame: number, animStart: number, fps: number): Revealed => {
+  const t = spring({
+    frame: frame - animStart,
+    fps,
+    config: { damping: 18, stiffness: 160, mass: 0.85 },
+  });
+  return {
+    opacity: t,
+    translateY: (1 - t) * 14,
+    scale: 0.96 + 0.04 * t,
+  };
+};
+
+// ── Right column — two clusters of pills ──────────────────────────────────
+const COL_X = 980;
+const COL_W = W - COL_X - 60;
+
+type Tier = { label: string; red?: boolean };
+
+const ABOVE_HEADER = "Why they think they lost";
+const BELOW_HEADER = "Why they actually lost";
+
+const ABOVE: ReadonlyArray<Tier> = [
+  { label: "Strategies" },
+  { label: "Fees" },
+];
+
+const BELOW: ReadonlyArray<Tier> = [
+  { label: "Liquidation hunters" },
+  { label: "Front runners" },
+  { label: "Orderbook spoofers" },
+  { label: "Insider traders", red: true },
+];
+
+const Cluster: React.FC<{
+  headerText: string;
+  headerStart: number;
+  tiers: ReadonlyArray<Tier>;
+  leafStartIndex: number;
+  top: number;
+  frame: number;
+  fps: number;
+  accent: "blue" | "red";
+}> = ({ headerText, headerStart, tiers, leafStartIndex, top, frame, fps, accent }) => {
+  const headerR = computeReveal(frame, headerStart, fps);
+  const dotColor = accent === "red" ? "#FF6B82" : "#7AB8FF";
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top,
+        left: COL_X,
+        width: COL_W,
       }}
     >
       <div
         style={{
-          position: "absolute",
-          left: 10,
-          top: 12,
-          bottom: 12,
-          width: 4,
-          borderRadius: 3,
-          background: accent,
+          opacity: headerR.opacity,
+          transform: `translateY(${headerR.translateY}px) scale(${headerR.scale.toFixed(4)})`,
+          willChange: "transform, opacity",
         }}
-      />
-      <div style={{ marginLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: isRed ? "rgba(255,86,110,0.85)" : colors.dim,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontFeatureSettings: '"tnum" 1',
-          }}
-        >
-          {String(index + 1).padStart(2, "0")} {index < 2 ? "· Above" : "· Below"}
+      >
+        <div style={pillStyle("header")}>
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 999,
+              background: dotColor,
+              boxShadow: `0 0 14px ${dotColor}`,
+            }}
+          />
+          {headerText}
         </div>
-        <div
-          style={{
-            fontSize: tier.label.length > 16 ? 26 : 32,
-            fontWeight: 800,
-            color: textColor,
-            letterSpacing: "-0.018em",
-            lineHeight: 1.05,
-          }}
-        >
-          {tier.label}
-        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 22,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 14,
+        }}
+      >
+        {tiers.map((tier, i) => {
+          const animStart = tierAnimStart(leafStartIndex + i);
+          const r = computeReveal(frame, animStart, fps);
+          const kind: PillKind = tier.red ? "leafRed" : "leaf";
+          return (
+            <div
+              key={tier.label}
+              style={{
+                opacity: r.opacity,
+                transform: `translateY(${r.translateY}px) scale(${r.scale.toFixed(4)})`,
+                willChange: "transform, opacity",
+              }}
+            >
+              <div style={pillStyle(kind)}>{tier.label}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-const Headline: React.FC<{ frame: number }> = ({ frame }) => {
-  const swapFrame = tierAnimStart(2);
-  const firstO = interpolate(frame, [swapFrame - 6, swapFrame], [1, 0], {
+// ── Waterline tick — quiet horizontal rule in the pill column ─────────────
+const WaterlineRule: React.FC<{ frame: number }> = ({ frame }) => {
+  const opacity = interpolate(frame, [ZOOM_OUT - 4, ZOOM_OUT + 8], [0, 0.7], {
+    easing: EASE_OUT,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const secondO = interpolate(frame, [swapFrame, swapFrame + 12], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const pill = (text: string, red: boolean) => (
+  return (
     <div
       style={{
-        display: "inline-block",
-        padding: "12px 28px",
-        borderRadius: 999,
-        background: colors.surface,
-        color: red ? "#B2243A" : colors.accent,
-        fontSize: 22,
-        fontWeight: 700,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
-        border: `1px solid ${red ? "rgba(255,86,110,0.35)" : colors.rule}`,
-        boxShadow:
-          "0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 28px rgba(8,16,28,0.22), 0 2px 6px rgba(8,16,28,0.10)",
+        position: "absolute",
+        left: COL_X,
+        top: 410,
+        width: COL_W,
+        height: 1,
+        background:
+          "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.45), rgba(255,255,255,0))",
+        opacity,
       }}
-    >
-      {text}
-    </div>
-  );
-  return (
-    <>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 56,
-          textAlign: "center",
-          opacity: firstO,
-          fontFamily: font,
-          pointerEvents: "none",
-        }}
-      >
-        {pill("Why traders think they lost", false)}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 56,
-          textAlign: "center",
-          opacity: secondO,
-          fontFamily: font,
-          pointerEvents: "none",
-        }}
-      >
-        {pill("Why traders really lost", true)}
-      </div>
-    </>
+    />
   );
 };
 
 export const IcebergData: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const geom = resolveGeom(frame);
+  const cam = resolveCam(frame);
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -307,32 +320,45 @@ export const IcebergData: React.FC = () => {
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
+  // The "below" header lands a few frames before the first below-leaf, so
+  // the eye has somewhere to settle before the leaves stamp in.
+  const belowHeaderStart = tierAnimStart(2) - 8;
+  const aboveHeaderStart = 6;
+
   return (
     <AbsoluteFill
       style={{
-        background: colors.bg,
+        background: "#051630",
         opacity: sceneOpacity,
         fontFamily: font,
       }}
     >
-      {/* AntiCheat DotGrid backdrop — Base-blue dots on light field. */}
-      <DotGrid intensity={1} speed={0.6} />
+      <SkyOceanBackdrop frame={frame} />
+      <IcebergImage cam={cam} />
 
-      {/* The cartoon iceberg, on top of the dot grid. */}
-      <IcebergImage geom={geom} />
+      <Cluster
+        headerText={ABOVE_HEADER}
+        headerStart={aboveHeaderStart}
+        tiers={ABOVE}
+        leafStartIndex={0}
+        top={170}
+        frame={frame}
+        fps={fps}
+        accent="blue"
+      />
 
-      {TIERS.map((tier, i) => (
-        <TierCard
-          key={tier.label}
-          tier={tier}
-          index={i}
-          geom={geom}
-          frame={frame}
-          fps={fps}
-        />
-      ))}
+      <WaterlineRule frame={frame} />
 
-      <Headline frame={frame} />
+      <Cluster
+        headerText={BELOW_HEADER}
+        headerStart={belowHeaderStart}
+        tiers={BELOW}
+        leafStartIndex={2}
+        top={470}
+        frame={frame}
+        fps={fps}
+        accent="red"
+      />
     </AbsoluteFill>
   );
 };
