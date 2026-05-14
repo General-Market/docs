@@ -29,6 +29,30 @@ import { VIDEO_BEATS } from "./beats";
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
+const FILL_SCALE = W / IMG_NATIVE_W;        // ~1.518
+
+const ZOOM_START_SCALE = 2.6;
+
+const TIER_Y_NATIVE = [
+  Math.round((0 + 269) / 2),       // 134  — sky / above line 1
+  Math.round((269 + 539) / 2),     // 404  — tip
+  Math.round((539 + 857) / 2),     // 698  — upper underwater
+  Math.round((857 + 1141) / 2),    // 999  — mid underwater
+  Math.round((1141 + 1430) / 2),   // 1285 — lower iceberg
+  Math.round((1430 + 1670) / 2),   // 1550 — depths
+];
+const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
+
+// Iceberg image scaled to fill the viewport width. Anything beyond the
+// iceberg shouldn't appear — we never zoom further out than FILL_SCALE.
+const ICEBERG_LAYER_H = IMG_NATIVE_H * FILL_SCALE; // 2535 at FILL_SCALE
+const MAX_SCROLL = H - ICEBERG_LAYER_H;            // -1455 (negative)
+
+// Linear scroll across the tier ladder. Tier 0 sits flush at top of
+// iceberg (scrollY = 0); tier 5 sits flush at the bottom of the
+// iceberg (scrollY = MAX_SCROLL). No empty space top or bottom.
+const scrollAtTier = (i: number) => (i / (TIER_Y_NATIVE.length - 1)) * MAX_SCROLL;
+
 type Tier = {
   word: string[];
   icon?: string;
@@ -107,23 +131,26 @@ const stateAt = (frame: number): State => {
   return { phase: "tier", tier: LAST, sub: "hold", t: 1 };
 };
 
-// Continuous slow camera: a single linear scale + scroll across the
-// entire scene. No tier-locked jumps. The cards live in viewport
-// space, so this only moves the backdrop.
-const CAMERA_SCALE_START = 1.55;
-const CAMERA_SCALE_END = 1.05;
-const CAMERA_SCROLL_END = -1100;
-
-const computeScale = (frame: number): number => {
-  const t = Math.min(1, Math.max(0, frame / SCENE_FRAMES));
-  return interpolate(t, [0, 1], [CAMERA_SCALE_START, CAMERA_SCALE_END], {
-    easing: EASE_OUT,
-  });
+const computeScale = (state: State): number => {
+  if (state.phase === "zoom")
+    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FILL_SCALE], {
+      easing: EASE_OUT,
+    });
+  if (state.sub === "hold") {
+    const pulse = Math.sin(state.t * Math.PI) * 0.008;
+    const climaxPush = state.tier === LAST ? state.t * 0.05 : 0;
+    return FILL_SCALE * (1 + pulse + climaxPush);
+  }
+  return FILL_SCALE;
 };
 
-const computeScrollY = (frame: number): number => {
-  const t = Math.min(1, Math.max(0, frame / SCENE_FRAMES));
-  return interpolate(t, [0, 1], [0, CAMERA_SCROLL_END], { easing: EASE_OUT });
+const computeScrollY = (state: State): number => {
+  if (state.phase === "zoom") return 0;
+  if (state.sub === "hold") return scrollAtTier(state.tier);
+  if (state.tier === 0) return 0;
+  const a = scrollAtTier(state.tier - 1);
+  const b = scrollAtTier(state.tier);
+  return a + (b - a) * EASE_OUT(state.t);
 };
 
 // Per-tier PnL stamp. Escalates roughly with the dollars-extracted scale
@@ -169,8 +196,8 @@ const DOT_FRAGMENT = /* glsl */ `
 
     // Only emit dots where the photograph reads as ice. Below the
     // threshold (sky, water) the field stays solid blue — no halftone
-    // artefacts ringing the photo's background when we zoom out.
-    float mask = smoothstep(0.50, 0.66, luma);
+    // fringe surviving the zoom.
+    float mask = smoothstep(0.55, 0.72, luma);
     float weight = pow(luma, 0.85) * mask;
     float radius = weight * uDotSize * 0.60;
 
@@ -178,6 +205,8 @@ const DOT_FRAGMENT = /* glsl */ `
     float aa = 0.6;
     float coverage = 1.0 - smoothstep(radius - aa, radius + aa, dist);
 
+    // Solid blue background — exactly the next scene's field. White ice
+    // sits on top wherever the photo is bright.
     vec3 ice = mix(vec3(0.92, 0.96, 1.0), vec3(1.0), luma);
     vec3 color = mix(uBackground, ice, coverage);
     gl_FragColor = vec4(color, 1.0);
@@ -251,8 +280,8 @@ const IcebergPoints: React.FC = () => {
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
   const state = stateAt(frame);
-  const scale = computeScale(frame);
-  const scrollY = computeScrollY(frame);
+  const scale = computeScale(state);
+  const scrollY = computeScrollY(state);
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -279,206 +308,127 @@ export const AntiCheatIceberg: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          left: "50%",
+          left: 0,
           top: scrollY,
-          width: IMG_NATIVE_W,
-          height: IMG_NATIVE_H,
-          transform: `translate(-50%, 0) scale(${scale.toFixed(4)})`,
-          transformOrigin: "top center",
-          willChange: "transform, top",
+          width: W,
+          height: ICEBERG_LAYER_H,
+          willChange: "top",
         }}
       >
-        <IcebergPoints />
-      </div>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: 0,
+            width: IMG_NATIVE_W,
+            height: IMG_NATIVE_H,
+            transform: `translate(-50%, 0) scale(${scale.toFixed(4)})`,
+            transformOrigin: "top center",
+          }}
+        >
+          <IcebergPoints />
+        </div>
 
-      <CardStack state={state} />
+        {TIERS.map((tier, i) => {
+          if (state.phase !== "tier") return null;
+          if (state.tier < i) return null;
+          const isJustEntering =
+            state.tier === i && state.sub === "anim";
+          return (
+            <TierCard
+              key={i}
+              tier={tier}
+              index={i}
+              isJustEntering={isJustEntering}
+              entryT={isJustEntering ? state.t : 1}
+              isCurrent={state.tier === i}
+            />
+          );
+        })}
+      </div>
     </AbsoluteFill>
   );
 };
 
-// ─── Tier card stack ─────────────────────────────────────────────────────────
+// ─── Tier card — Bars-style white card, trader image bolted on top ──────────
 //
-// Cards live in viewport space, not on the iceberg layer. Six fixed
-// slots stacked down the left side. Each card drops from above the
-// frame when its tier activates; once landed, it stays. By the end of
-// the scene all six cards are visible — the iceberg drifts behind them.
+// One card per tier, anchored to the iceberg layer at that tier's Y. As
+// the iceberg scrolls, cards scroll with it. Cards drop from above the
+// frame when their tier activates, then settle and stay — past cards
+// scroll out of view naturally, never disappearing on cut.
 
-const CARD_W = 560;
-const CARD_H = 156;
-const CARD_LEFT = 72;
-const CARD_GAP = 16;
-const CARD_TOP_OFFSET = (H - (CARD_H * N + CARD_GAP * (N - 1))) / 2;
-const CARD_IMG_W = 156;
-
-const CardStack: React.FC<{ state: State }> = ({ state }) => (
-  <>
-    {TIERS.map((tier, i) => {
-      const isAnim =
-        state.phase === "tier" && state.tier === i && state.sub === "anim";
-      const isActiveOrPast =
-        state.phase === "tier" &&
-        (state.tier > i ||
-          (state.tier === i && (state.sub === "hold" || state.sub === "anim")));
-      if (!isActiveOrPast) return null;
-
-      let slide = 0;
-      let opacity = 1;
-      let cardScale = 1;
-      if (isAnim) {
-        const at = state.t;
-        slide = interpolate(at, [0, 1], [-520, 0], { easing: EASE_OUT });
-        opacity = interpolate(at, [0.10, 0.60], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
-        cardScale = interpolate(at, [0.55, 0.85, 1], [0.92, 1.04, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: EASE_DEFAULT,
-        });
-      }
-
-      const isCurrent =
-        state.phase === "tier" && state.tier === i;
-      const dim = isCurrent ? 1 : 0.78;
-
-      return (
-        <TierCard
-          key={i}
-          tier={tier}
-          index={i}
-          slide={slide}
-          opacity={opacity * dim}
-          scale={cardScale}
-        />
-      );
-    })}
-  </>
-);
+const CARD_W = 440;
+const CARD_H = 620;
+const CARD_IMG_H = 280;
 
 const TierCard: React.FC<{
   tier: Tier;
   index: number;
-  slide: number;
-  opacity: number;
-  scale: number;
-}> = ({ tier, index, slide, opacity, scale }) => {
+  isJustEntering: boolean;
+  entryT: number;
+  isCurrent: boolean;
+}> = ({ tier, index, isJustEntering, entryT, isCurrent }) => {
   const trader = TRADING_TIERS[index];
   const tierLabel = tier.word.join(" ");
-  const top = CARD_TOP_OFFSET + index * (CARD_H + CARD_GAP) + slide;
+
+  let slide = 0;
+  let opacity = 1;
+  let scale = 1;
+  if (isJustEntering) {
+    slide = interpolate(entryT, [0, 1], [-560, 0], { easing: EASE_OUT });
+    opacity = interpolate(entryT, [0.10, 0.60], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    scale = interpolate(entryT, [0.55, 0.85, 1], [0.92, 1.05, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: EASE_DEFAULT,
+    });
+  } else if (!isCurrent) {
+    // Past card — keep visible but slightly recede.
+    opacity = 0.82;
+  }
+
+  const anchorY = TIER_Y_FILL[index];
 
   return (
     <div
       style={{
         position: "absolute",
-        left: CARD_LEFT,
-        top,
-        width: CARD_W,
-        height: CARD_H,
+        left: 0,
+        right: 0,
+        top: anchorY + slide,
+        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
+        transformOrigin: "center center",
         opacity,
-        transform: `scale(${scale.toFixed(3)})`,
-        transformOrigin: "left center",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
         pointerEvents: "none",
         willChange: "transform, top, opacity",
       }}
     >
       <div
         style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          borderRadius: 20,
+          width: CARD_W,
+          height: CARD_H,
+          borderRadius: 28,
           background: colors.surface,
           boxShadow:
-            "0 1px 0 rgba(255,255,255,0.6) inset, 0 24px 56px rgba(0, 16, 60, 0.42), 0 8px 18px rgba(0, 16, 60, 0.22)",
+            "0 1px 0 rgba(255,255,255,0.6) inset, 0 40px 80px rgba(0, 16, 60, 0.45), 0 12px 24px rgba(0, 16, 60, 0.28)",
           border: `1px solid ${colors.rule}`,
           overflow: "hidden",
-          display: "flex",
+          position: "relative",
         }}
       >
         <div
           style={{
-            flex: 1,
-            padding: "18px 24px 16px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            minWidth: 0,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: monoFont,
-              fontSize: 13,
-              fontWeight: 500,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              color: colors.dim,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            tier {index + 1} · {trader.label}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              gap: 16,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: font,
-                fontSize: 34,
-                fontWeight: 800,
-                letterSpacing: "-0.022em",
-                color: colors.fg,
-                lineHeight: 1.0,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              {tierLabel}
-            </div>
-            <div
-              style={{
-                fontFamily: font,
-                fontSize: 56,
-                fontWeight: 800,
-                letterSpacing: "-0.04em",
-                color: colors.accent,
-                lineHeight: 0.92,
-                fontVariantNumeric: "tabular-nums",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {TIER_PNL[index]}
-            </div>
-          </div>
-
-          <div
-            style={{
-              fontFamily: monoFont,
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.dim,
-            }}
-          >
-            extracted by unfair trading
-          </div>
-        </div>
-
-        <div
-          style={{
-            width: CARD_IMG_W,
-            height: "100%",
-            flexShrink: 0,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_IMG_H,
             overflow: "hidden",
           }}
         >
@@ -491,6 +441,75 @@ const TierCard: React.FC<{
               display: "block",
             }}
           />
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: CARD_IMG_H + 24,
+            left: 30,
+            fontFamily: monoFont,
+            fontSize: 16,
+            fontWeight: 500,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: colors.dim,
+          }}
+        >
+          tier {index + 1} of {N} · {trader.label}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: CARD_IMG_H + 56,
+            left: 30,
+            right: 30,
+            fontFamily: font,
+            fontSize: 46,
+            fontWeight: 800,
+            letterSpacing: "-0.022em",
+            color: colors.fg,
+            lineHeight: 1.0,
+          }}
+        >
+          {tierLabel}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            bottom: 70,
+            fontFamily: font,
+            fontSize: 116,
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
+            color: colors.accent,
+            lineHeight: 0.92,
+            fontVariantNumeric: "tabular-nums",
+            textAlign: "left",
+          }}
+        >
+          {TIER_PNL[index]}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            bottom: 28,
+            fontFamily: monoFont,
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: colors.dim,
+          }}
+        >
+          extracted by unfair trading
         </div>
       </div>
     </div>
