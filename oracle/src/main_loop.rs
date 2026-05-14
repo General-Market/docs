@@ -44,16 +44,58 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
         transport.set_metrics(p2p_metrics.clone());
     }
 
-    // Spawn P2P message router when ConsensusProtocol exists
+    // Spawn P2P message router when ConsensusProtocol exists.
+    //
+    // Two parallel workers, one per topic. The receive task classifies each
+    // inbound message via `topic_for` and fans it into the right channel.
+    // The Vision worker keeps polling even when the Consensus worker is
+    // mid-handler — so vision co-signs land inside the leader's 15s window
+    // instead of queueing behind an ITP batch confirm.
+    //
+    // The protocol's internal state (cosign_router DashMap, BLS keypair,
+    // p2p Arc, message_handler RwLock) is shared via Arc. Both workers
+    // call the same `protocol.handle_message`; the dispatch inside that
+    // function is brief, and the slow per-arm work is what we want running
+    // in parallel.
     let router_handle: Option<tokio::task::JoinHandle<()>> = if let (Some(protocol), Some(p2p)) =
         (&components.consensus.protocol, &components.p2p.transport)
     {
-        let router_protocol = Arc::clone(protocol);
         let router_p2p = Arc::clone(p2p);
         let router_heartbeat_monitor = components.p2p.heartbeat_monitor.clone();
         let router_p2p_metrics = p2p_metrics.clone();
+
+        // One channel per topic. Bounded — backpressure on the receive
+        // loop is better than unbounded growth if a worker hangs.
+        let (consensus_tx, mut consensus_rx) =
+            tokio::sync::mpsc::channel::<(common::types::PeerId, P2PMessage)>(512);
+        let (vision_tx, mut vision_rx) =
+            tokio::sync::mpsc::channel::<(common::types::PeerId, P2PMessage)>(512);
+
+        // Consensus worker
+        let consensus_protocol = Arc::clone(protocol);
+        tokio::spawn(async move {
+            while let Some((from, message)) = consensus_rx.recv().await {
+                if let Err(e) = consensus_protocol.handle_message(from, message).await {
+                    warn!(topic = "gm-consensus", error = %e, "Error handling P2P consensus message");
+                }
+            }
+        });
+
+        // Vision worker — dedicated so co-signs don't queue behind ITP/mirror work
+        let vision_protocol = Arc::clone(protocol);
+        tokio::spawn(async move {
+            while let Some((from, message)) = vision_rx.recv().await {
+                if let Err(e) = vision_protocol.handle_message(from, message).await {
+                    warn!(topic = "gm-vision", error = %e, "Error handling P2P vision message");
+                }
+            }
+        });
+
+        info!("P2P topics: consensus + vision dedicated worker");
+
         Some(tokio::spawn(async move {
             use common::traits::P2PTransport;
+            use oracle::p2p::{topic_for, Topic};
             match router_p2p.receive().await {
                 Ok(stream) => {
                     use futures::StreamExt;
@@ -66,8 +108,15 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             }
                             continue;
                         }
-                        if let Err(e) = router_protocol.handle_message(from, message).await {
-                            warn!(error = %e, "Error handling P2P consensus message");
+                        let target = match topic_for(&message) {
+                            Topic::Vision => &vision_tx,
+                            Topic::Consensus => &consensus_tx,
+                        };
+                        // `send` awaits if the queue is full — preserves
+                        // ordering per-topic and applies backpressure
+                        // instead of dropping messages.
+                        if let Err(e) = target.send((from, message)).await {
+                            warn!(error = %e, "P2P topic worker channel closed; dropping message");
                         }
                     }
                 }

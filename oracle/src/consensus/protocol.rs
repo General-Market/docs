@@ -3234,19 +3234,6 @@ where
                 }
             }
             // Vision deposit/withdraw consensus — deleted (round-only purge)
-            MessageHandleResult::ProcessVisionCreditBalanceProposal { .. } => {}
-            MessageHandleResult::ProcessVisionCreditBalanceSign { .. } => {}
-            MessageHandleResult::ProcessVisionCompleteDepositProposal { .. } => {}
-            MessageHandleResult::ProcessVisionCompleteDepositSign { .. } => {}
-            MessageHandleResult::ProcessVisionRefundDepositProposal { .. } => {}
-            MessageHandleResult::ProcessVisionRefundDepositSign { .. } => {}
-            MessageHandleResult::ProcessVisionCompleteWithdrawProposal { .. } => {}
-            MessageHandleResult::ProcessVisionCompleteWithdrawSign { .. } => {}
-            MessageHandleResult::ProcessVisionBalanceProofsBatch {
-                from: _, batch_id, tick_id, proofs: _, signer_index,
-            } => {
-                debug!(batch_id, tick_id, signer_index, "VisionBalanceProofsBatch — ignored (round-only)");
-            }
             // Vision createBatch co-signing — SPAWNED so a slow handle does not
             // block subsequent consensus messages. Followers under cycle load
             // (vault_reconcile, batch confirm, mirror sync) were starving the
@@ -3333,22 +3320,6 @@ where
                 } else {
                     debug!(?source_id, "No active co-sign listener for source — discarding");
                 }
-            }
-            // Vision bitmap gossip — forward to bitmap gossip task
-            MessageHandleResult::ProcessBitmapGossip {
-                from: _, batch_id, player, bitmap_hash: _, config_hash: _, target_tick_id: _,
-            } => {
-                debug!(batch_id, ?player, "BitmapGossip — ignored (round-only)");
-            }
-            MessageHandleResult::ProcessBitmapRequest {
-                from: _, batch_id, player, bitmap_hash: _,
-            } => {
-                debug!(batch_id, ?player, "BitmapRequest — ignored (round-only)");
-            }
-            MessageHandleResult::ProcessBitmapResponse {
-                from: _, batch_id, player, bitmap: _, bitmap_hash: _, config_hash: _, target_tick_id: _,
-            } => {
-                debug!(batch_id, ?player, "BitmapResponse — ignored (round-only)");
             }
             // AA keeper arbitration — forward to arbitration subsystem
             MessageHandleResult::ForwardToArbitration(msg) => {

@@ -25,6 +25,7 @@ pub mod metrics;
 pub mod peer_scoring;
 pub mod rate_limit;
 mod tls;
+pub mod topic;
 mod transport;
 pub mod wal;
 
@@ -34,4 +35,5 @@ pub use discovery::{OnChainPeerDiscovery, PeerDiscovery, PeerDiscoveryRunner, St
 pub use metrics::{P2PMetrics, P2PMetricsSnapshot};
 pub use peer_scoring::PeerScorer;
 pub use tls::{P2PStream, TlsConfig};
+pub use topic::{topic_for, Topic};
 pub use transport::TcpP2PTransport;

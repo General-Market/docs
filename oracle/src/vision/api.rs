@@ -40,8 +40,6 @@ use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use common::types::P2PMessage;
-
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
 use super::tick_scheduler::TickScheduler;
@@ -77,10 +75,6 @@ pub struct VisionState {
     pub bitmap_store: Arc<BitmapStore>,
     /// Vision subsystem configuration.
     pub config: VisionConfig,
-    /// Optional P2P broadcast channel for bitmap gossip.
-    /// When Some, a BitmapGossip message is broadcast to peers on every
-    /// accepted bitmap so all oracles converge on the same bitmap set.
-    pub broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
     /// Broadcast channel for settlement SSE events.
     pub settlement_tx: tokio::sync::broadcast::Sender<SettlementEvent>,
     // TODO: Add TickResolver when Task 3.6 is complete
@@ -1211,25 +1205,6 @@ async fn submit_bitmap(
             // were 22 % of total Postgres time — coalescing collapses that.
             if let Some(bm) = state.bitmap_store.get_pending(req.batch_id, player).await {
                 state.bitmap_store.queue_persist_pending(req.batch_id, player, &bm).await;
-            }
-
-            // Gossip to peers so all oracles converge on the same bitmap set.
-            if let Some(ref tx) = state.broadcast_tx {
-                let gossip_msg = P2PMessage::BitmapGossip {
-                    batch_id: req.batch_id,
-                    player,
-                    bitmap_hash: expected_hash,
-                    config_hash: batch_config_hash,
-                    target_tick_id,
-                };
-                if let Err(e) = tx.try_send(gossip_msg) {
-                    warn!(
-                        player = ?player,
-                        batch_id = req.batch_id,
-                        error = %e,
-                        "Failed to enqueue BitmapGossip for broadcast"
-                    );
-                }
             }
 
             // Sample 1 in 100: 9.5 M lines/day collapses to ~100 k.

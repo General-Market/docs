@@ -587,12 +587,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // broadcast_tx: engine sends P2PMessage here; relay task calls transport.broadcast()
             let (vision_broadcast_tx, mut vision_broadcast_rx) =
                 tokio::sync::mpsc::channel::<common::types::P2PMessage>(256);
-            // incoming_proofs_rx: consensus protocol forwards VisionBalanceProofsBatch messages here
-            let (vision_balance_proofs_tx, vision_balance_proofs_rx) =
-                tokio::sync::mpsc::channel::<()>(1); // deleted (round-only purge)
-            // incoming_gossip_rx: consensus protocol forwards BitmapGossip messages here
-            let (vision_gossip_tx, vision_gossip_rx) =
-                tokio::sync::mpsc::channel::<()>(1); // deleted (round-only purge)
 
             // Relay task: drain broadcast_rx and call transport.broadcast() for each message
             if let Some(ref transport) = components.p2p.transport {
@@ -826,16 +820,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .clone()
                         .spawn_writer(pool.clone(), components.shutdown.clone());
 
+                    // vision_broadcast_tx is consumed by the lifecycle manager via clones
+                    // taken above; the original handle is dropped when this scope ends so
+                    // the relay task exits cleanly on shutdown.
+                    let _ = vision_broadcast_tx;
+
                     let vision_state = Arc::new(oracle::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),
                         bitmap_store: bitmap_store.clone(),
                         config: vision_cfg.clone(),
-                        broadcast_tx: if components.p2p.transport.is_some() {
-                            Some(vision_broadcast_tx)
-                        } else {
-                            None
-                        },
                         settlement_tx: settlement_tx.clone(),
                     });
 

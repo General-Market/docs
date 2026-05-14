@@ -3,12 +3,13 @@
 //! Implements stateless oracle node pattern (NFR19) by reconstructing all state
 //! from on-chain data on startup.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
 use ethers::prelude::*;
+use sqlx::PgPool;
 use tracing::{debug, info, warn};
 
 use common::error::Error;
@@ -36,6 +37,11 @@ pub struct ReconstructorConfig {
     pub checkpoint_path: Option<String>,
     /// Starting block (if not using checkpoint)
     pub from_block: Option<u64>,
+    /// Optional set of "active" ITP IDs to load. If `Some`, the reconstructor
+    /// skips any on-chain ITP whose id isn't in the set. `None` = load all
+    /// (legacy behaviour). The set is derived at bootstrap from the data-node
+    /// Postgres (trades / user_shares / recent itp_snapshots).
+    pub active_itp_filter: Option<HashSet<H256>>,
 }
 
 impl Default for ReconstructorConfig {
@@ -50,8 +56,47 @@ impl Default for ReconstructorConfig {
             checkpoint_interval: 100,
             checkpoint_path: Some("./checkpoint.json".to_string()),
             from_block: None,
+            active_itp_filter: None,
         }
     }
+}
+
+/// Query the data-node Postgres for the set of ITP IDs that are worth loading.
+///
+/// An ITP is considered active if any of:
+///   1. it has at least one row in `trades`, or
+///   2. it has any holder with positive shares in `user_shares`, or
+///   3. it appears in `itp_snapshots` within the last 24 hours (covers fresh
+///      ITPs nobody has traded yet).
+///
+/// Returns a set of `H256` IDs. On any error (table missing, connection drop)
+/// the caller decides whether to fail or fall back to "load everything".
+pub async fn fetch_active_itp_set(pool: &PgPool) -> Result<HashSet<H256>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT DISTINCT itp_id FROM trades
+        UNION
+        SELECT DISTINCT itp_id FROM user_shares WHERE shares::numeric > 0
+        UNION
+        SELECT DISTINCT itp_id FROM itp_snapshots WHERE valid_from > NOW() - INTERVAL '24 hours'
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let mut set = HashSet::with_capacity(rows.len());
+    for (raw,) in rows {
+        let trimmed = raw.trim_start_matches("0x");
+        // Pad short ids defensively — the DB stores zero-padded bytes32 hex,
+        // but be permissive in case anything ever writes a short form.
+        let padded = format!("{:0>64}", trimmed);
+        if let Ok(bytes) = hex::decode(&padded) {
+            if bytes.len() == 32 {
+                set.insert(H256::from_slice(&bytes));
+            }
+        }
+    }
+    Ok(set)
 }
 
 // Generate contract bindings for Investment.sol (state reconstruction)
@@ -264,7 +309,11 @@ where
             "Orders loaded"
         );
 
-        // Step 4: Read all ITPs (IDs start at 1)
+        // Step 4: Read all ITPs (IDs start at 1).
+        // If `active_itp_filter` is set, skip any ITP whose id isn't in the
+        // active set. Ghost ITPs (no trades, no shares, no recent snapshot)
+        // cost CPU on every consensus cycle for no value — and there are
+        // ~25 000 of them today vs ~84 worth loading.
         info!("Step 4: Reading ITP states...");
         let itp_count = contract
             .get_itp_count()
@@ -272,11 +321,26 @@ where
             .await
             .map_err(|e| Error::ChainRead(format!("Failed to read getItpCount: {}", e)))?;
 
+        let active_filter = self.config.active_itp_filter.as_ref();
+        if let Some(set) = active_filter {
+            info!(
+                on_chain = itp_count.as_u64(),
+                active = set.len(),
+                "Filtering ITP state load to active set only"
+            );
+        }
+
         for i in 1..=itp_count.as_u64() {
             // Convert index to bytes32 ITP ID
             let mut itp_id_bytes = [0u8; 32];
             itp_id_bytes[24..32].copy_from_slice(&i.to_be_bytes());
             let itp_id = H256::from(itp_id_bytes);
+
+            if let Some(set) = active_filter {
+                if !set.contains(&itp_id) {
+                    continue;
+                }
+            }
 
             match self.reconstruct_itp(&contract, itp_id).await {
                 Ok(itp_state) => {

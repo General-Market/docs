@@ -378,16 +378,7 @@ impl PeerConnection {
                     while let Some(result) = codec.decode_next() {
                         match result {
                             Ok(message) => {
-                                // Bitmap gossip/request/response are high-volume vision
-                                // messages that must not starve consensus of rate-limit
-                                // budget.  Exempt them from the per-peer token bucket.
-                                let is_bitmap = matches!(
-                                    message,
-                                    P2PMessage::BitmapGossip { .. }
-                                    | P2PMessage::BitmapRequest { .. }
-                                    | P2PMessage::BitmapResponse { .. }
-                                );
-                                if !is_bitmap && !rate_bucket.try_consume() {
+                                if !rate_bucket.try_consume() {
                                     warn!(
                                         code = "INFRA-020",
                                         ?actual_peer_id,
@@ -682,26 +673,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Batch config orchestrator (independent from settlement cycle)
         P2PMessage::BatchConfigProposal { .. } => None, // No explicit sender field
         P2PMessage::BatchConfigSign { .. } => None,     // No explicit sender field
-        // Vision tick consensus (T-32)
-        P2PMessage::VisionTickProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::VisionTickSign { signer_id, .. } => Some(*signer_id),
-        // Vision deposit/withdraw consensus
-        P2PMessage::VisionCreditBalanceProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::VisionCreditBalanceSign { signer_id, .. } => Some(*signer_id),
-        P2PMessage::VisionCompleteDepositProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::VisionCompleteDepositSign { signer_id, .. } => Some(*signer_id),
-        P2PMessage::VisionRefundDepositProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::VisionRefundDepositSign { signer_id, .. } => Some(*signer_id),
-        P2PMessage::VisionCompleteWithdrawProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::VisionCompleteWithdrawSign { signer_id, .. } => Some(*signer_id),
+        // Vision createBatch consensus
         P2PMessage::VisionCreateBatchProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::VisionCreateBatchSign { signer_id, .. } => Some(*signer_id),
-        // VisionBalanceProofsBatch has no explicit sender field
-        P2PMessage::VisionBalanceProofsBatch { .. } => None,
-        // Bitmap gossip messages have no explicit sender field (sender is inferred from connection)
-        P2PMessage::BitmapGossip { .. } => None,
-        P2PMessage::BitmapRequest { .. } => None,
-        P2PMessage::BitmapResponse { .. } => None,
         // NAV oracle consensus
         P2PMessage::NavOracleProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::NavOracleSign { signer_id, .. } => Some(*signer_id),

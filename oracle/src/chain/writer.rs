@@ -76,6 +76,46 @@ impl Default for ChainWriterConfig {
 /// Type alias for the signer middleware
 pub type SignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 
+/// What kind of write the fleet is dispatching. Vision-critical writes get
+/// `signers[0]` exclusively — they never queue behind ITP / mirror traffic.
+/// Everything else round-robins across `signers[1..]`. If the fleet has only
+/// one key, every variant collapses to `signers[0]` — no crash, just no
+/// isolation.
+///
+/// The contract accepts any submitter for Vision writes; the BLS signature
+/// is what makes them valid. This is purely a queue-discipline knob.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteOpKind {
+    /// `Vision.settleBatch` — the call that cliffs to refund if it misses
+    /// the grace window. The whole reason this enum exists.
+    VisionSettle,
+    /// `Vision.createBatch` — gating the next round's open window. Late
+    /// creation starves the source of new bets.
+    VisionCreateBatch,
+    /// Per-vault or bundled `reconcile` calls after settle. Same EOA as
+    /// settle so they share a clean nonce queue.
+    VisionReconcile,
+    /// `Vision.settleBatches` / `settleBatchesSingle` bundles.
+    VisionSettleBundle,
+    /// Everything else: ITP cycle, mirror sync, bridge, faucet, generic
+    /// `send_transaction`. Round-robin across the non-reserved signers.
+    Other,
+}
+
+impl WriteOpKind {
+    /// True for the family of Vision writes that must land on the reserved
+    /// signer regardless of fleet size.
+    fn is_vision(self) -> bool {
+        matches!(
+            self,
+            WriteOpKind::VisionSettle
+                | WriteOpKind::VisionCreateBatch
+                | WriteOpKind::VisionReconcile
+                | WriteOpKind::VisionSettleBundle,
+        )
+    }
+}
+
 /// Parse a hex private key (with or without `0x`) into a `LocalWallet` bound to
 /// `chain_id`. Shared between the single-key and fleet constructors, and also
 /// used by `main.rs` when parsing `ORACLE_FLEET_KEYS`.
@@ -264,18 +304,34 @@ impl EthersChainWriter {
 
     /// Pick a signer index for the next tx.
     ///
-    /// * `Some(hint)` — deterministic dispatch by `hint % fleet_size`. Callers
-    ///   thread a natural cycle / batch / order id so the same logical operation
-    ///   always lands on the same key, and parallel operations spread evenly.
-    /// * `None` — round-robin. Used when no natural shard key exists (faucet
-    ///   drips, mirror sync, generic `send_transaction`).
-    pub fn pick_signer(&self, hint: Option<u64>) -> usize {
+    /// * Vision writes (`kind.is_vision()`) always land on `signers[0]` —
+    ///   the dedicated lane. They never queue behind ITP / mirror traffic.
+    /// * `WriteOpKind::Other` round-robins across `signers[1..]`, with
+    ///   `hint` (if any) deterministically choosing one of them so retries
+    ///   for the same logical op share a key.
+    /// * Singleton fleet — every variant lands on the one key we have.
+    ///   No isolation, no crash. Production runs ≥ 2 keys.
+    pub fn pick_signer(&self, kind: WriteOpKind, hint: Option<u64>) -> usize {
         let n = self.clients.len();
         debug_assert!(n > 0, "fleet must be non-empty");
-        match hint {
-            Some(h) => (h as usize) % n,
-            None => (self.round_robin.fetch_add(1, Ordering::Relaxed) as usize) % n,
+
+        // Single-key fleet: nothing to isolate.
+        if n == 1 {
+            return 0;
         }
+
+        if kind.is_vision() {
+            return 0;
+        }
+
+        // Round-robin across signers[1..]. Map hint into that range too,
+        // so retries are still deterministic.
+        let pool = n - 1;
+        let raw = match hint {
+            Some(h) => h as usize,
+            None => self.round_robin.fetch_add(1, Ordering::Relaxed) as usize,
+        };
+        1 + (raw % pool)
     }
 
     /// Get the configuration
@@ -673,7 +729,7 @@ impl EthersChainWriter {
         // same key, so per-source createBatch streams never collide on a queue.
         let hint = u64_from_h256(&source_id);
         let (tx_hash, receipt) = self
-            .submit_tx_with_receipt(tx, "create_batch", Some(hint))
+            .submit_tx_with_receipt(tx, "create_batch", WriteOpKind::VisionCreateBatch, Some(hint))
             .await?;
 
         // Parse on-chain batchId from BatchCreated event in receipt logs.
@@ -802,7 +858,8 @@ impl EthersChainWriter {
         );
 
         let tx = self.build_settle_batch_tx(batch_id, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask);
-        self.submit_tx(tx, "settle_batch", Some(batch_id)).await
+        self.submit_tx(tx, "settle_batch", WriteOpKind::VisionSettle, Some(batch_id))
+            .await
     }
 
     /// Build a settleBatches transaction.
@@ -1030,7 +1087,8 @@ impl EthersChainWriter {
         // Shard by the first batch id — bundles with the same lead batch
         // always route to the same key.
         let hint = batch_ids[0];
-        self.submit_tx(tx, "settle_batches_single", Some(hint)).await
+        self.submit_tx(tx, "settle_batches_single", WriteOpKind::VisionSettleBundle, Some(hint))
+            .await
     }
 
     /// Submit a settleBatches transaction to Vision.sol on L3.
@@ -1049,7 +1107,8 @@ impl EthersChainWriter {
         );
         let tx = self.build_settle_batches_tx(&items);
         let hint = items[0].batch_id;
-        self.submit_tx(tx, "settle_batches", Some(hint)).await
+        self.submit_tx(tx, "settle_batches", WriteOpKind::VisionSettleBundle, Some(hint))
+            .await
     }
 
     /// Call `VisionVault.reconcile(batchId, settlementPayout)` on each player address.
@@ -1089,7 +1148,10 @@ impl EthersChainWriter {
             // Spread per-player reconciles across the fleet, but pin each (batch, player)
             // pair to a single key so retries land deterministically.
             let hint = batch_id ^ u64_from_address(player) ^ (i as u64);
-            match self.submit_tx(tx, "vault_reconcile", Some(hint)).await {
+            match self
+                .submit_tx(tx, "vault_reconcile", WriteOpKind::VisionReconcile, Some(hint))
+                .await
+            {
                 Ok(tx_hash) => {
                     info!(
                         batch_id,
@@ -1172,7 +1234,12 @@ impl EthersChainWriter {
             .into();
 
         let tx_hash = self
-            .submit_tx(tx, "vault_reconcile_bundled", Some(batch_id))
+            .submit_tx(
+                tx,
+                "vault_reconcile_bundled",
+                WriteOpKind::VisionReconcile,
+                Some(batch_id),
+            )
             .await?;
         info!(
             batch_id,
@@ -1186,10 +1253,10 @@ impl EthersChainWriter {
 
     /// Submit a transaction with nonce management, gas estimation, and retry logic.
     ///
-    /// `hint` selects a signer via [`Self::pick_signer`]. Callers with a
-    /// natural shard key (cycle / batch / order id) should pass it so the same
-    /// operation always routes to the same EOA — both for debuggability and so
-    /// parallel writes spread evenly across the fleet.
+    /// `kind` decides which signer pool to draw from (Vision → reserved
+    /// signer[0]; everything else → signers[1..]). `hint` only matters for
+    /// `WriteOpKind::Other` — it picks a deterministic index inside the
+    /// non-vision pool so retries land on the same EOA.
     ///
     /// Includes nonce-level retry: when concurrent L3 operations cause "nonce too low",
     /// resyncs the picked signer's nonce manager and retries with a fresh nonce
@@ -1199,9 +1266,10 @@ impl EthersChainWriter {
         &self,
         tx: TypedTransaction,
         operation: &str,
+        kind: WriteOpKind,
         hint: Option<u64>,
     ) -> Result<TxHash, Error> {
-        let (tx_hash, _receipt) = self.submit_tx_with_receipt(tx, operation, hint).await?;
+        let (tx_hash, _receipt) = self.submit_tx_with_receipt(tx, operation, kind, hint).await?;
         Ok(tx_hash)
     }
 
@@ -1211,11 +1279,12 @@ impl EthersChainWriter {
         &self,
         tx: TypedTransaction,
         operation: &str,
+        kind: WriteOpKind,
         hint: Option<u64>,
     ) -> Result<(TxHash, TransactionReceipt), Error> {
         const MAX_NONCE_RETRIES: u32 = 3;
 
-        let signer_idx = self.pick_signer(hint);
+        let signer_idx = self.pick_signer(kind, hint);
         let client = self.clients[signer_idx].clone();
         let nonce_manager = self.nonce_managers[signer_idx].clone();
         let signer_address = self.signer_addresses[signer_idx];
@@ -1403,7 +1472,8 @@ impl ChainWriter for EthersChainWriter {
         );
 
         let tx = self.build_confirm_batch_tx(cycle_number, order_ids.clone(), bls_signature, reference_nonce, signers_bitmask);
-        self.submit_tx(tx, "submit_batch", Some(cycle_number)).await
+        self.submit_tx(tx, "submit_batch", WriteOpKind::Other, Some(cycle_number))
+            .await
     }
 
     async fn confirm_fills(
@@ -1424,7 +1494,8 @@ impl ChainWriter for EthersChainWriter {
         );
 
         let tx = self.build_confirm_fills_tx(cycle_number, fills, bls_signature, reference_nonce, signers_bitmask);
-        self.submit_tx(tx, "confirm_fills", Some(cycle_number)).await
+        self.submit_tx(tx, "confirm_fills", WriteOpKind::Other, Some(cycle_number))
+            .await
     }
 
     async fn submit_bridge(
@@ -1446,7 +1517,8 @@ impl ChainWriter for EthersChainWriter {
 
         let tx = self.build_initiate_bridge_tx(dest_chain_id, amount, bls_signature, reference_nonce, signers_bitmask);
         // reference_nonce is unique per bridge attempt — good shard key.
-        self.submit_tx(tx, "submit_bridge", Some(reference_nonce)).await
+        self.submit_tx(tx, "submit_bridge", WriteOpKind::Other, Some(reference_nonce))
+            .await
     }
 
     async fn create_itp(
@@ -1472,8 +1544,9 @@ impl ChainWriter for EthersChainWriter {
             .data(Bytes::from(calldata))
             .value(value)
             .into();
-        // No natural shard key — round-robin keeps the fleet balanced.
-        self.submit_tx(tx, "send_transaction", None).await
+        // No natural shard key — round-robin across the non-Vision pool.
+        self.submit_tx(tx, "send_transaction", WriteOpKind::Other, None)
+            .await
     }
 
     async fn static_call(
@@ -1632,7 +1705,9 @@ impl EthersChainWriter {
         // bridge_nonce uniquely identifies the cross-chain creation — same
         // shard key on retries, even distribution across new creations.
         let hint = bridge_nonce.low_u64();
-        let tx_hash = self.submit_tx(tx, "create_itp", Some(hint)).await?;
+        let tx_hash = self
+            .submit_tx(tx, "create_itp", WriteOpKind::Other, Some(hint))
+            .await?;
 
         // Wait for receipt with 30 second timeout
         let receipt = self.wait_for_receipt(tx_hash, 30).await?;
@@ -1738,7 +1813,8 @@ impl EthersChainWriter {
             signer_bitmap,
         );
         let hint = bet_id.low_u64();
-        self.submit_tx(tx, "settle_bet", Some(hint)).await
+        self.submit_tx(tx, "settle_bet", WriteOpKind::Other, Some(hint))
+            .await
     }
 
     /// Build a settleBet transaction
@@ -2126,50 +2202,118 @@ mod tests {
     }
 
     #[test]
-    fn test_pick_signer_with_hint_is_deterministic() {
+    fn test_pick_signer_vision_always_reserved_slot() {
         let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
         let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let wallet_c = parse_wallet(
+            "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+            111222333,
+        )
+        .unwrap();
         let writer = EthersChainWriter::new_with_fleet(
             ChainWriterConfig::default(),
-            vec![wallet_a, wallet_b],
+            vec![wallet_a, wallet_b, wallet_c],
         )
         .unwrap();
 
-        // Same hint → same index, every time. That's the whole point of the
-        // hint: retries on the same logical op land on the same EOA.
-        for _ in 0..16 {
-            assert_eq!(writer.pick_signer(Some(7)), 7 % 2);
-            assert_eq!(writer.pick_signer(Some(42)), 42 % 2);
-            assert_eq!(writer.pick_signer(Some(0)), 0);
+        // Every Vision variant routes to signer 0 — no matter the hint,
+        // no matter how many times we ask.
+        for hint in [None, Some(0), Some(1), Some(42), Some(u64::MAX)] {
+            assert_eq!(writer.pick_signer(WriteOpKind::VisionSettle, hint), 0);
+            assert_eq!(writer.pick_signer(WriteOpKind::VisionCreateBatch, hint), 0);
+            assert_eq!(writer.pick_signer(WriteOpKind::VisionReconcile, hint), 0);
+            assert_eq!(writer.pick_signer(WriteOpKind::VisionSettleBundle, hint), 0);
         }
     }
 
     #[test]
-    fn test_pick_signer_round_robin_spreads() {
+    fn test_pick_signer_other_avoids_reserved_slot() {
         let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
         let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let wallet_c = parse_wallet(
+            "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+            111222333,
+        )
+        .unwrap();
         let writer = EthersChainWriter::new_with_fleet(
             ChainWriterConfig::default(),
-            vec![wallet_a, wallet_b],
+            vec![wallet_a, wallet_b, wallet_c],
         )
         .unwrap();
 
-        // Hint-less calls march through the fleet in order. Over 100 picks,
-        // each signer should land roughly half — exact 50/50 since 100 is even.
-        let mut counts = [0usize; 2];
-        for _ in 0..100 {
-            counts[writer.pick_signer(None)] += 1;
+        // Non-Vision writes round-robin across signers[1..]. They MUST NOT
+        // touch signer 0 — that's the whole point of the reservation.
+        let mut counts = [0usize; 3];
+        for _ in 0..600 {
+            let idx = writer.pick_signer(WriteOpKind::Other, None);
+            assert_ne!(idx, 0, "Other ops must never pick the reserved signer");
+            counts[idx] += 1;
         }
-        assert_eq!(counts[0], 50);
-        assert_eq!(counts[1], 50);
+        // Spread should be roughly even across slots 1 and 2.
+        assert_eq!(counts[0], 0);
+        assert_eq!(counts[1], 300);
+        assert_eq!(counts[2], 300);
+    }
+
+    #[test]
+    fn test_pick_signer_other_hint_is_deterministic_in_non_vision_pool() {
+        let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
+        let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let wallet_c = parse_wallet(
+            "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+            111222333,
+        )
+        .unwrap();
+        let writer = EthersChainWriter::new_with_fleet(
+            ChainWriterConfig::default(),
+            vec![wallet_a, wallet_b, wallet_c],
+        )
+        .unwrap();
+
+        // hint % (fleet_size - 1) + 1. Slot 0 is reserved.
+        for _ in 0..16 {
+            assert_eq!(writer.pick_signer(WriteOpKind::Other, Some(0)), 1);
+            assert_eq!(writer.pick_signer(WriteOpKind::Other, Some(1)), 2);
+            assert_eq!(writer.pick_signer(WriteOpKind::Other, Some(2)), 1);
+            assert_eq!(writer.pick_signer(WriteOpKind::Other, Some(7)), 2);
+        }
     }
 
     #[test]
     fn test_pick_signer_singleton_always_zero() {
         let writer = EthersChainWriter::new(ChainWriterConfig::default(), FLEET_KEY_A).unwrap();
-        assert_eq!(writer.pick_signer(None), 0);
-        assert_eq!(writer.pick_signer(Some(123456)), 0);
-        assert_eq!(writer.pick_signer(Some(u64::MAX)), 0);
+        // Singleton fleet: every variant collapses to slot 0 — Vision and
+        // Other alike. No isolation, no crash.
+        for kind in [
+            WriteOpKind::VisionSettle,
+            WriteOpKind::VisionCreateBatch,
+            WriteOpKind::VisionReconcile,
+            WriteOpKind::VisionSettleBundle,
+            WriteOpKind::Other,
+        ] {
+            assert_eq!(writer.pick_signer(kind, None), 0);
+            assert_eq!(writer.pick_signer(kind, Some(123456)), 0);
+            assert_eq!(writer.pick_signer(kind, Some(u64::MAX)), 0);
+        }
+    }
+
+    #[test]
+    fn test_pick_signer_two_key_fleet_other_uses_slot_one() {
+        // The realistic production case today: 2 keys total. Reserve slot 0
+        // for Vision; Other has nowhere to go but slot 1.
+        let wallet_a = parse_wallet(FLEET_KEY_A, 111222333).unwrap();
+        let wallet_b = parse_wallet(FLEET_KEY_B, 111222333).unwrap();
+        let writer = EthersChainWriter::new_with_fleet(
+            ChainWriterConfig::default(),
+            vec![wallet_a, wallet_b],
+        )
+        .unwrap();
+
+        assert_eq!(writer.pick_signer(WriteOpKind::VisionSettle, None), 0);
+        assert_eq!(writer.pick_signer(WriteOpKind::VisionSettle, Some(42)), 0);
+        for hint in [None, Some(0), Some(1), Some(42)] {
+            assert_eq!(writer.pick_signer(WriteOpKind::Other, hint), 1);
+        }
     }
 
     #[test]

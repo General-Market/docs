@@ -121,6 +121,40 @@ impl<'a> StateBuilder<'a> {
             }
         }
 
+        // Optional: load the active-ITP set from the data-node Postgres so the
+        // reconstructor skips ~99% of on-chain ghosts. Failure here is
+        // non-fatal — fall back to loading everything.
+        let vision_db_url = self.config.vision.as_ref().map(|v| v.database_url.clone());
+        let active_itp_filter = if let Some(db_url) = vision_db_url.as_deref() {
+            match sqlx::PgPool::connect(db_url).await {
+                Ok(pool) => {
+                    match crate::state::reconstruction::fetch_active_itp_set(&pool).await {
+                        Ok(set) if !set.is_empty() => {
+                            info!(node_id, active = set.len(), "Loaded active-ITP filter from Postgres");
+                            pool.close().await;
+                            Some(set)
+                        }
+                        Ok(_) => {
+                            info!(node_id, "Active-ITP filter query returned empty — loading all");
+                            pool.close().await;
+                            None
+                        }
+                        Err(e) => {
+                            warn!(node_id, error = %e, "Active-ITP filter query failed — loading all");
+                            pool.close().await;
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!(node_id, error = %e, "Could not open vision DB for active-ITP filter — loading all");
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         let reconstructor_config = ReconstructorConfig {
             rpc_url: rpc_url.to_string(),
             index_contract: self.contract_addresses.index,
@@ -129,6 +163,7 @@ impl<'a> StateBuilder<'a> {
             usdc_address: usdc_addr,
             checkpoint_path: Some(self.params.checkpoint_path.clone()),
             from_block: self.params.from_block,
+            active_itp_filter,
             ..Default::default()
         };
 

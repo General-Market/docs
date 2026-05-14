@@ -48,5 +48,6 @@ pub use nonce::NonceManager;
 pub use reader::{ChainReaderConfig, ContractAddresses, EthersChainReader};
 pub use retry::{is_retryable_error, with_retry, RetryConfig, RetryError};
 pub use writer::{
-    parse_wallet, ChainWriterConfig, EthersChainWriter, SettleBatchItem, WriterContractAddresses,
+    parse_wallet, ChainWriterConfig, EthersChainWriter, SettleBatchItem, WriteOpKind,
+    WriterContractAddresses,
 };

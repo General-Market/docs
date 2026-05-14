@@ -1013,142 +1013,6 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update([*signer_index]);
             h.update(nonce.to_le_bytes());
         }
-        // ── Vision tick consensus (T-32) ──────────────────────────
-        P2PMessage::VisionTickProposal {
-            leader_id,
-            batch_id,
-            tick_id,
-            result_hash,
-            player_balances,
-            reference_nonce: _, // exclude from equivocation hash
-            leader_signature: _, // exclude BLS sig
-        } => {
-            h.update(b"VisionTickProposal");
-            h.update(leader_id);
-            h.update(batch_id.to_le_bytes());
-            h.update(tick_id.to_le_bytes());
-            h.update(result_hash.as_bytes());
-            for (addr, bal) in player_balances {
-                h.update(addr.as_bytes());
-                let mut buf = [0u8; 32];
-                bal.to_little_endian(&mut buf);
-                h.update(buf);
-            }
-        }
-        P2PMessage::VisionTickSign {
-            signer_id,
-            signer_index,
-            batch_id,
-            tick_id,
-            signature: _, // exclude BLS sig
-        } => {
-            h.update(b"VisionTickSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(batch_id.to_le_bytes());
-            h.update(tick_id.to_le_bytes());
-        }
-        // ── Vision deposit/withdraw consensus ──────────────────────
-        P2PMessage::VisionCreditBalanceProposal {
-            leader_id,
-            order_id,
-            user,
-            amount,
-            message_hash,
-            leader_signature: _,
-        } => {
-            h.update(b"VisionCreditBalanceProposal");
-            h.update(leader_id);
-            h.update(order_id.to_le_bytes());
-            h.update(user.as_bytes());
-            let mut buf = [0u8; 32];
-            amount.to_little_endian(&mut buf);
-            h.update(buf);
-            h.update(message_hash.as_bytes());
-        }
-        P2PMessage::VisionCreditBalanceSign {
-            signer_id,
-            signer_index,
-            order_id,
-            signature: _,
-        } => {
-            h.update(b"VisionCreditBalanceSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(order_id.to_le_bytes());
-        }
-        P2PMessage::VisionCompleteDepositProposal {
-            leader_id,
-            order_id,
-            message_hash,
-            leader_signature: _,
-        } => {
-            h.update(b"VisionCompleteDepositProposal");
-            h.update(leader_id);
-            h.update(order_id.to_le_bytes());
-            h.update(message_hash.as_bytes());
-        }
-        P2PMessage::VisionCompleteDepositSign {
-            signer_id,
-            signer_index,
-            order_id,
-            signature: _,
-        } => {
-            h.update(b"VisionCompleteDepositSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(order_id.to_le_bytes());
-        }
-        P2PMessage::VisionRefundDepositProposal {
-            leader_id,
-            order_id,
-            message_hash,
-            leader_signature: _,
-        } => {
-            h.update(b"VisionRefundDepositProposal");
-            h.update(leader_id);
-            h.update(order_id.to_le_bytes());
-            h.update(message_hash.as_bytes());
-        }
-        P2PMessage::VisionRefundDepositSign {
-            signer_id,
-            signer_index,
-            order_id,
-            signature: _,
-        } => {
-            h.update(b"VisionRefundDepositSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(order_id.to_le_bytes());
-        }
-        P2PMessage::VisionCompleteWithdrawProposal {
-            leader_id,
-            withdraw_id,
-            user,
-            amount,
-            message_hash,
-            leader_signature: _,
-        } => {
-            h.update(b"VisionCompleteWithdrawProposal");
-            h.update(leader_id);
-            h.update(withdraw_id.to_le_bytes());
-            h.update(user.as_bytes());
-            let mut buf = [0u8; 32];
-            amount.to_little_endian(&mut buf);
-            h.update(buf);
-            h.update(message_hash.as_bytes());
-        }
-        P2PMessage::VisionCompleteWithdrawSign {
-            signer_id,
-            signer_index,
-            withdraw_id,
-            signature: _,
-        } => {
-            h.update(b"VisionCompleteWithdrawSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(withdraw_id.to_le_bytes());
-        }
         P2PMessage::VisionCreateBatchProposal {
             leader_id,
             source_id,
@@ -1182,65 +1046,6 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update([*signer_index]);
             h.update(source_id.as_bytes());
             h.update(message_hash.as_bytes());
-        }
-        P2PMessage::VisionBalanceProofsBatch {
-            batch_id,
-            tick_id,
-            proofs,
-            signer_index,
-        } => {
-            h.update(b"VisionBalanceProofsBatch");
-            h.update(batch_id.to_le_bytes());
-            h.update(tick_id.to_le_bytes());
-            h.update([*signer_index]);
-            for (addr, bal, _sig) in proofs {
-                h.update(addr.as_bytes());
-                let mut buf = [0u8; 32];
-                bal.to_little_endian(&mut buf);
-                h.update(buf);
-            }
-        }
-        // Bitmap gossip — not consensus messages; equivocation not relevant.
-        // Hash by batch_id + player + bitmap_hash to ensure unique identity.
-        P2PMessage::BitmapGossip {
-            batch_id,
-            player,
-            bitmap_hash,
-            config_hash,
-            target_tick_id,
-        } => {
-            h.update(b"BitmapGossip");
-            h.update(batch_id.to_le_bytes());
-            h.update(player.as_bytes());
-            h.update(bitmap_hash.as_bytes());
-            h.update(config_hash.as_bytes());
-            h.update(target_tick_id.to_le_bytes());
-        }
-        P2PMessage::BitmapRequest {
-            batch_id,
-            player,
-            bitmap_hash,
-        } => {
-            h.update(b"BitmapRequest");
-            h.update(batch_id.to_le_bytes());
-            h.update(player.as_bytes());
-            h.update(bitmap_hash.as_bytes());
-        }
-        P2PMessage::BitmapResponse {
-            batch_id,
-            player,
-            bitmap,
-            bitmap_hash,
-            config_hash,
-            target_tick_id,
-        } => {
-            h.update(b"BitmapResponse");
-            h.update(batch_id.to_le_bytes());
-            h.update(player.as_bytes());
-            h.update(bitmap_hash.as_bytes());
-            h.update(config_hash.as_bytes());
-            h.update(target_tick_id.to_le_bytes());
-            h.update(bitmap.as_slice());
         }
         P2PMessage::NavOracleProposal {
             leader_id,
@@ -1341,23 +1146,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
         P2PMessage::MirrorSyncProposal { .. } => "MirrorSyncProposal",
         P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
-        P2PMessage::VisionTickProposal { .. } => "VisionTickProposal",
-        P2PMessage::VisionTickSign { .. } => "VisionTickSign",
-        P2PMessage::VisionCreditBalanceProposal { .. } => "VisionCreditBalanceProposal",
-        P2PMessage::VisionCreditBalanceSign { .. } => "VisionCreditBalanceSign",
-        P2PMessage::VisionCompleteDepositProposal { .. } => "VisionCompleteDepositProposal",
-        P2PMessage::VisionCompleteDepositSign { .. } => "VisionCompleteDepositSign",
-        P2PMessage::VisionRefundDepositProposal { .. } => "VisionRefundDepositProposal",
-        P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
-        P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
-        P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
         P2PMessage::VisionCreateBatchProposal { .. } => "VisionCreateBatchProposal",
         P2PMessage::VisionCreateBatchSign { .. } => "VisionCreateBatchSign",
-        P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
-        // Bitmap gossip messages — not consensus-relevant for equivocation detection
-        P2PMessage::BitmapGossip { .. } => "BitmapGossip",
-        P2PMessage::BitmapRequest { .. } => "BitmapRequest",
-        P2PMessage::BitmapResponse { .. } => "BitmapResponse",
         P2PMessage::NavOracleProposal { .. } => "NavOracleProposal",
         P2PMessage::NavOracleSign { .. } => "NavOracleSign",
     }
@@ -1393,11 +1183,6 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::ArbitrationResolutionSign { .. }
             | P2PMessage::BatchConfigSign { .. }
             | P2PMessage::MirrorSyncSign { .. }
-            | P2PMessage::VisionTickSign { .. }
-            | P2PMessage::VisionCreditBalanceSign { .. }
-            | P2PMessage::VisionCompleteDepositSign { .. }
-            | P2PMessage::VisionRefundDepositSign { .. }
-            | P2PMessage::VisionCompleteWithdrawSign { .. }
             // VisionCreateBatchSign excluded: multiple sources send co-signs
             // per cycle, each with different content (source_id, config_hash).
             // The detector key lacks source_id, so the first co-sign passes

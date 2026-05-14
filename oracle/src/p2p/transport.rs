@@ -83,22 +83,8 @@ fn msg_variant_name(msg: &P2PMessage) -> &'static str {
         P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
         P2PMessage::MirrorSyncProposal { .. } => "MirrorSyncProposal",
         P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
-        P2PMessage::VisionTickProposal { .. } => "VisionTickProposal",
-        P2PMessage::VisionTickSign { .. } => "VisionTickSign",
-        P2PMessage::VisionCreditBalanceProposal { .. } => "VisionCreditBalanceProposal",
-        P2PMessage::VisionCreditBalanceSign { .. } => "VisionCreditBalanceSign",
-        P2PMessage::VisionCompleteDepositProposal { .. } => "VisionCompleteDepositProposal",
-        P2PMessage::VisionCompleteDepositSign { .. } => "VisionCompleteDepositSign",
-        P2PMessage::VisionRefundDepositProposal { .. } => "VisionRefundDepositProposal",
-        P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
-        P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
-        P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
         P2PMessage::VisionCreateBatchProposal { .. } => "VisionCreateBatchProposal",
         P2PMessage::VisionCreateBatchSign { .. } => "VisionCreateBatchSign",
-        P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
-        P2PMessage::BitmapGossip { .. } => "BitmapGossip",
-        P2PMessage::BitmapRequest { .. } => "BitmapRequest",
-        P2PMessage::BitmapResponse { .. } => "BitmapResponse",
     }
 }
 
