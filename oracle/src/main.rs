@@ -730,11 +730,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Settlement SSE broadcast channel — shared between lifecycle manager and API.
                     let (settlement_tx, _) = tokio::sync::broadcast::channel::<oracle::vision::api::SettlementEvent>(64);
 
+                    // Build the cosign aggregator. Lives for the process lifetime,
+                    // shared by the lifecycle manager (writer side), the consensus
+                    // protocol (receive side), and the submitter loop (drain side).
+                    // Max age is 30 min — long enough that even a stalled batch
+                    // gets aggregated before being garbage-collected.
+                    let cosign_aggregator: oracle::vision::cosign_aggregator::SharedCosignAggregator =
+                        std::sync::Arc::new(
+                            oracle::vision::cosign_aggregator::CosignAggregator::new(
+                                std::time::Duration::from_secs(1800),
+                            ),
+                        );
+                    info!(node_id, "Cosign aggregator initialized (30-minute max age)");
+
                     // Share the protocol's DashMap-based co-sign router with the lifecycle manager.
                     // No Option wrapper, no mutex dance — both sides reference the same DashMap.
                     if let Some(ref protocol) = components.consensus.protocol {
                                 let cosign_router = protocol.cosign_router.clone();
                                 info!(node_id, "cosign_router shared with lifecycle manager (DashMap)");
+
+                                // Attach the aggregator to the protocol so the receive-side
+                                // dispatch arm fans out cosigns into it. The legacy router
+                                // is preserved for settle paths and the pending-creates sweeper.
+                                protocol.set_vision_cosign_aggregator(cosign_aggregator.clone()).await;
+                                info!(node_id, "Cosign aggregator attached to consensus protocol");
 
                                 // Spawn BatchLifecycleManager for round-based sources
                                 let lm_chain_writer = components.chain.writer.clone();
@@ -756,21 +775,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     lm_bls_keypair,
                                     lm_broadcast_tx,
                                     cosign_router,
+                                    cosign_aggregator.clone(),
                                     lm_peer_id,
                                     settlement_tx.clone(),
                                 );
                                 let lm = std::sync::Arc::new(lm);
                                 let lm_recovery = lm.clone();
                                 let lm_pending = lm.clone();
-                                // Spawn on the vision runtime so the heartbeat's
-                                // `await sign_rx.recv()` is woken even while the
-                                // shared runtime is buried under ITP cycle work.
+                                let lm_submitter = lm.clone();
+                                // Spawn on the vision runtime so the submitter loop is
+                                // woken on its 1 s cadence even while the shared
+                                // runtime is buried under ITP cycle work.
                                 vision_handle.spawn(async move { lm.run().await });
                                 vision_handle.spawn(async move { lm_recovery.run_settlement_recovery().await });
                                 vision_handle.spawn(async move { lm_pending.run_pending_creates_sweep().await });
+                                vision_handle.spawn(async move { lm_submitter.run_submitter_loop().await });
                                 info!(
                                     sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                                    "BatchLifecycleManager spawned on vision runtime (P2P co-sign + settlement recovery + pending-creates sweep)"
+                                    "BatchLifecycleManager spawned on vision runtime (P2P co-sign + settlement recovery + pending-creates sweep + submitter)"
                                 );
                     }
 
@@ -810,6 +832,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let lm_chain_writer = components.chain.writer.clone();
                         let lm_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
                         let lm_peer_id: [u8; 32] = components.consensus.keys.peer_id;
+                        let fallback_aggregator: oracle::vision::cosign_aggregator::SharedCosignAggregator =
+                            std::sync::Arc::new(
+                                oracle::vision::cosign_aggregator::CosignAggregator::new(
+                                    std::time::Duration::from_secs(1800),
+                                ),
+                            );
                         let lm = oracle::vision::lifecycle::BatchLifecycleManager::new(
                             vision_cfg.clone(),
                             scheduler.clone(),
@@ -821,20 +849,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             lm_bls_keypair,
                             None, // no broadcast_tx
                             std::sync::Arc::new(dashmap::DashMap::new()), // empty router (no P2P)
+                            fallback_aggregator,
                             lm_peer_id,
                             settlement_tx.clone(),
                         );
                         let lm = std::sync::Arc::new(lm);
                         let lm_recovery = lm.clone();
                         let lm_pending = lm.clone();
+                        let lm_submitter = lm.clone();
                         // No-P2P fallback — still gets its own runtime so the
                         // heartbeat keeps its scheduling budget.
                         vision_handle.spawn(async move { lm.run().await });
                         vision_handle.spawn(async move { lm_recovery.run_settlement_recovery().await });
                         vision_handle.spawn(async move { lm_pending.run_pending_creates_sweep().await });
+                        vision_handle.spawn(async move { lm_submitter.run_submitter_loop().await });
                         info!(
                             sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                            "BatchLifecycleManager spawned on vision runtime (no-P2P mode + settlement recovery + pending-creates sweep)"
+                            "BatchLifecycleManager spawned on vision runtime (no-P2P mode + settlement recovery + pending-creates sweep + submitter)"
                         );
                     }
 

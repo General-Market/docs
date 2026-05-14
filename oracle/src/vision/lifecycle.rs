@@ -31,6 +31,7 @@ use crate::consensus::aggregator::compute_threshold;
 use super::batch_config_orchestrator;
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
+use super::cosign_aggregator::{ProposalState, SharedCosignAggregator};
 use super::resolver::{MarketPrices, TickResolver};
 use super::settlement::compute_settlement;
 use super::tick_scheduler::TickScheduler;
@@ -111,6 +112,10 @@ pub struct BatchLifecycleManager {
     /// Per-source co-sign router — protocol.rs routes VisionCreateBatchSign messages
     /// to the correct source's channel. Each source registers/deregisters on demand.
     cosign_router: CosignRouter,
+    /// Continuous co-sign aggregator. Replaces the per-heartbeat await loop:
+    /// leader broadcasts once, registers the proposal here, and returns.
+    /// The submitter task picks up entries at quorum and submits on-chain.
+    cosign_aggregator: SharedCosignAggregator,
     /// This oracle's P2P peer id (32-byte public key hash). Used as leader_id in proposals.
     peer_id: [u8; 32],
     /// Broadcast sender for settlement SSE events (per-market parimutuel ratios).
@@ -129,6 +134,7 @@ impl BatchLifecycleManager {
         bls_keypair: Option<Arc<BLSKeyPair>>,
         broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
         cosign_router: CosignRouter,
+        cosign_aggregator: SharedCosignAggregator,
         peer_id: [u8; 32],
         settlement_tx: tokio::sync::broadcast::Sender<super::api::SettlementEvent>,
     ) -> Self {
@@ -143,6 +149,7 @@ impl BatchLifecycleManager {
             bls_keypair,
             broadcast_tx,
             cosign_router,
+            cosign_aggregator,
             peer_id,
             settlement_tx,
         }
@@ -1167,144 +1174,80 @@ impl BatchLifecycleManager {
                     node_index,
                     num_oracles,
                     threshold,
-                    "Leader proposing createBatch — broadcasting for co-signs"
+                    "Leader proposing createBatch — registering with cosign aggregator"
                 );
 
-                // Collect all signatures: leader starts, followers co-sign via P2P.
-                // Each entry: (signer_index, BLSSignature)
-                let mut collected_sigs: Vec<(u8, BLSSignature)> = vec![(node_index, BLSSignature(leader_sig.0.clone()))];
-                let mut signer_bits = 1u64 << node_index;
-
-                if num_oracles > 1 {
-                    if let Some(ref broadcast_tx) = self.broadcast_tx {
-                        // Register a per-source channel BEFORE broadcasting the proposal
-                        let (sign_tx, mut sign_rx) = mpsc::channel::<IncomingCreateBatchSign>(8);
-                        self.cosign_router.insert(source_id, sign_tx);
-
-                        let proposal = P2PMessage::VisionCreateBatchProposal {
-                            leader_id: self.peer_id,
-                            source_name: source_name.to_string(),
-                            source_id,
-                            config_hash,
-                            tick_duration,
-                            lock_offset,
-                            settlement_grace,
-                            message_hash,
-                            leader_signature: common::types::BLSSignature(leader_sig.0.clone()),
-                            reference_nonce: ref_nonce,
-                        };
-
-                        // Auto-recovery: retry the broadcast up to 3 times within the heartbeat
-                        // if followers were too busy to co-sign in time. Each round uses a short
-                        // per-attempt window so total heartbeat budget stays bounded (≤ 3×window).
-                        // Without this, a single follower-stall during cycle work meant the batch
-                        // was dropped until the NEXT heartbeat — one full tick of refunds per
-                        // overlapping load spike.
-                        let per_attempt_secs = cosign_timeout_secs().max(5).min(30);
-                        for attempt in 0..3u32 {
-                            if collected_sigs.len() >= threshold {
-                                break;
-                            }
-                            if attempt > 0 {
-                                debug!(source = %source_name, attempt, "Re-broadcasting createBatch — followers were busy");
-                            }
-                            if let Err(e) = broadcast_tx.send(proposal.clone()).await {
-                                warn!(source = %source_name, attempt, error = %e, "Failed to broadcast VisionCreateBatchProposal");
-                                break;
-                            }
-
-                            let deadline = tokio::time::Instant::now()
-                                + std::time::Duration::from_secs(per_attempt_secs);
-
-                            loop {
-                                if collected_sigs.len() >= threshold {
-                                    info!(source = %source_name, sigs = collected_sigs.len(), threshold, attempt, "BLS threshold met");
-                                    break;
-                                }
-                                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-                                if remaining.is_zero() { break; }
-
-                                match tokio::time::timeout(remaining, sign_rx.recv()).await {
-                                    Ok(Some(cosign)) => {
-                                        if cosign.message_hash != message_hash {
-                                            debug!(source = %source_name, "Ignoring co-sign for different message hash");
-                                            continue;
-                                        }
-                                        if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
-                                            debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
-                                            continue;
-                                        }
-                                        signer_bits |= 1u64 << cosign.signer_index;
-                                        collected_sigs.push((cosign.signer_index, cosign.signature));
-                                    }
-                                    Ok(None) => {
-                                        warn!(source = %source_name, "createBatch sign channel closed");
-                                        break;
-                                    }
-                                    Err(_) => break, // attempt deadline elapsed
-                                }
-                            }
-                        }
-
-                        // Deregister — channel is done
-                        self.cosign_router.remove(&source_id);
-                    } else {
-                        warn!(source = %source_name, "No P2P broadcast channel — submitting with single-oracle sig (will fail 2-of-3 threshold)");
-                    }
-                }
-
-                if collected_sigs.len() < threshold {
-                    error!(
-                        source = %source_name,
-                        collected = collected_sigs.len(),
-                        threshold,
-                        "Insufficient co-signs for createBatch — enqueuing for sweeper retry"
-                    );
-                    // Persist the proposal so the sweeper can replay it later.
-                    // The lifecycle row keeps on_chain_batch_id = NULL; nothing else
-                    // points at it until the sweep succeeds or the row is reaped.
-                    if let Err(e) = sqlx::query(
-                        "INSERT INTO vision_pending_creates \
-                           (lifecycle_id, source_name, source_id, config_hash, \
-                            tick_duration, lock_offset, settlement_grace, ref_nonce) \
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
-                         ON CONFLICT (lifecycle_id) DO NOTHING"
-                    )
-                    .bind(lifecycle_id as i64)
-                    .bind(source_name)
-                    .bind(source_id.as_bytes())
-                    .bind(config_hash.as_bytes())
-                    .bind(tick_duration as i64)
-                    .bind(lock_offset as i64)
-                    .bind(settlement_grace as i64)
-                    .bind(ref_nonce as i64)
-                    .execute(&self.pool)
-                    .await {
-                        warn!(source = %source_name, lifecycle_id, error = %e, "Failed to enqueue pending create");
+                // Single oracle: submit immediately, no co-signs needed.
+                if num_oracles <= 1 {
+                    let signers_bitmask = U256::from(1u64 << node_index);
+                    if let Some(on_chain_id) = self.submit_create_batch(
+                        source_name, writer, source_id, config_hash,
+                        tick_duration, lock_offset, settlement_grace, leader_sig.0.clone(),
+                        ref_nonce, signers_bitmask, lifecycle_id,
+                    ).await {
+                        return Ok((lifecycle_id, Some(on_chain_id)));
                     }
                     return Ok((lifecycle_id, None));
                 }
 
-                // Aggregate all collected BLS signatures
-                let bls_signer = Bn254BLSSigner::new();
-                let sigs_only: Vec<BLSSignature> = collected_sigs.iter().map(|(_, s)| s.clone()).collect();
-                let aggregated = match bls_signer.aggregate_signatures(sigs_only) {
-                    Ok(agg) => agg,
-                    Err(e) => {
-                        error!(source = %source_name, error = %e, "BLS aggregation failed for createBatch");
+                let broadcast_tx = match &self.broadcast_tx {
+                    Some(tx) => tx,
+                    None => {
+                        warn!(source = %source_name, "No P2P broadcast channel — cannot reach quorum");
                         return Ok((lifecycle_id, None));
                     }
                 };
 
-                let signers_bitmask = U256::from(signer_bits);
-                if let Some(on_chain_id) = self.submit_create_batch(
-                    source_name, writer, source_id, config_hash,
-                    tick_duration, lock_offset, settlement_grace, aggregated.0,
-                    ref_nonce, signers_bitmask, lifecycle_id,
-                ).await {
-                    return Ok((lifecycle_id, Some(on_chain_id)));
+                // Eth2-style: broadcast ONCE, register with the aggregator,
+                // return. The submitter loop owns the on-chain leg from here.
+                // No per-heartbeat await, no per-call deadline, no retry storm.
+                let proposal_msg = P2PMessage::VisionCreateBatchProposal {
+                    leader_id: self.peer_id,
+                    source_name: source_name.to_string(),
+                    source_id,
+                    config_hash,
+                    tick_duration,
+                    lock_offset,
+                    settlement_grace,
+                    message_hash,
+                    leader_signature: common::types::BLSSignature(leader_sig.0.clone()),
+                    reference_nonce: ref_nonce,
+                };
+
+                if let Err(e) = broadcast_tx.send(proposal_msg).await {
+                    warn!(source = %source_name, error = %e, "Failed to broadcast VisionCreateBatchProposal");
+                    return Ok((lifecycle_id, None));
                 }
-                // Submission failed — fall through to return lifecycle_id as fallback
+
+                let state = ProposalState {
+                    message_hash,
+                    leader_signature: BLSSignature(leader_sig.0.clone()),
+                    cosigns: vec![(node_index, BLSSignature(leader_sig.0.clone()))],
+                    signer_bits: 1u64 << node_index,
+                    threshold,
+                    created_at: std::time::Instant::now(),
+                    submitted: false,
+                    source_name: source_name.to_string(),
+                    source_id,
+                    config_hash,
+                    tick_duration,
+                    lock_offset,
+                    settlement_grace,
+                    ref_nonce,
+                    lifecycle_id,
+                };
+                self.cosign_aggregator.register_proposal(state);
+
+                debug!(
+                    source = %source_name,
+                    lifecycle_id,
+                    ?message_hash,
+                    "Proposal broadcast + registered — submitter loop owns it from here"
+                );
+
+                // The on-chain batch_id arrives asynchronously through the
+                // submitter task, which updates vision_source_state directly.
+                return Ok((lifecycle_id, None));
             } else {
                 warn!(
                     source = %source_name,
@@ -1323,6 +1266,114 @@ impl BatchLifecycleManager {
         }
 
         Ok((lifecycle_id, None))
+    }
+
+    /// Drain the cosign aggregator on a 1 s tick and submit ready proposals.
+    ///
+    /// Replaces the in-heartbeat await-loop. The leader-side heartbeat just
+    /// broadcasts and registers; this task aggregates, submits on-chain, and
+    /// writes `vision_source_state.current_batch_id` so the next heartbeat
+    /// sees the new batch immediately.
+    ///
+    /// Errors are absorbed locally — the lifecycle row remains pinned with
+    /// `on_chain_batch_id = NULL` and the next heartbeat will register a
+    /// fresh proposal that supersedes the dead one.
+    pub async fn run_submitter_loop(self: Arc<Self>) {
+        let mut tick = tokio::time::interval(std::time::Duration::from_secs(1));
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        info!("Vision createBatch submitter loop started");
+
+        loop {
+            if self.shutdown.load(Ordering::Relaxed) {
+                info!("Vision createBatch submitter loop shutting down");
+                return;
+            }
+            tick.tick().await;
+
+            let ready = self.cosign_aggregator.drain_ready();
+            for proposal in ready {
+                let writer = match &self.chain_writer {
+                    Some(w) => w.clone(),
+                    None => continue,
+                };
+
+                // Aggregate signatures collected in the aggregator.
+                let bls_signer = Bn254BLSSigner::new();
+                let sigs_only: Vec<BLSSignature> =
+                    proposal.cosigns.iter().map(|(_, s)| s.clone()).collect();
+                let aggregated = match bls_signer.aggregate_signatures(sigs_only) {
+                    Ok(agg) => agg,
+                    Err(e) => {
+                        error!(
+                            source = %proposal.source_name,
+                            lifecycle_id = proposal.lifecycle_id,
+                            error = %e,
+                            "Submitter: BLS aggregation failed — abandoning proposal"
+                        );
+                        self.cosign_aggregator.forget(&proposal.source_id);
+                        continue;
+                    }
+                };
+
+                let signers_bitmask = U256::from(proposal.signer_bits);
+                let submit_result = self.submit_create_batch(
+                    &proposal.source_name,
+                    &writer,
+                    proposal.source_id,
+                    proposal.config_hash,
+                    proposal.tick_duration,
+                    proposal.lock_offset,
+                    proposal.settlement_grace,
+                    aggregated.0,
+                    proposal.ref_nonce,
+                    signers_bitmask,
+                    proposal.lifecycle_id,
+                ).await;
+
+                match submit_result {
+                    Some(on_chain_id) => {
+                        if let Err(e) = sqlx::query(
+                            "UPDATE vision_source_state \
+                             SET current_batch_id = $2, updated_at = NOW() \
+                             WHERE source_name = $1",
+                        )
+                        .bind(&proposal.source_name)
+                        .bind(on_chain_id as i64)
+                        .execute(&self.pool)
+                        .await
+                        {
+                            error!(
+                                source = %proposal.source_name,
+                                on_chain_batch_id = on_chain_id,
+                                error = %e,
+                                "Submitter: failed to persist current_batch_id"
+                            );
+                        } else {
+                            info!(
+                                source = %proposal.source_name,
+                                lifecycle_id = proposal.lifecycle_id,
+                                on_chain_batch_id = on_chain_id,
+                                "Submitter: createBatch submitted and source state updated"
+                            );
+                        }
+                        self.cosign_aggregator.forget(&proposal.source_id);
+                    }
+                    None => {
+                        // Terminal failure (BatchAlreadyExists, revert, gas) —
+                        // drop the entry. Next heartbeat re-registers fresh.
+                        debug!(
+                            source = %proposal.source_name,
+                            lifecycle_id = proposal.lifecycle_id,
+                            "Submitter: createBatch submission failed — dropping proposal"
+                        );
+                        self.cosign_aggregator.forget(&proposal.source_id);
+                    }
+                }
+            }
+
+            self.cosign_aggregator.prune_stale();
+        }
     }
 
     /// Submit createBatch on-chain (extracted for reuse from two code paths above).

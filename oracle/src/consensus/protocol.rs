@@ -411,6 +411,11 @@ where
     /// Each source registers its own channel; protocol routes by source_id.
     /// DashMap — lock-free concurrent access, no Option wrapper needed.
     pub cosign_router: crate::vision::lifecycle::CosignRouter,
+    /// Continuous cosign aggregator for `createBatch` proposals (Eth2-style).
+    /// Set by the engine bootstrap; the dispatch arm forwards every incoming
+    /// `VisionCreateBatchSign` here in addition to the router. Whichever sink
+    /// reaches quorum first wins; the other becomes a no-op.
+    pub cosign_aggregator: RwLock<Option<crate::vision::cosign_aggregator::SharedCosignAggregator>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -503,6 +508,7 @@ where
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
             // vision channels deleted (round-only purge)
             cosign_router: std::sync::Arc::new(dashmap::DashMap::new()),
+            cosign_aggregator: RwLock::new(None),
         }
     }
 
@@ -623,6 +629,18 @@ where
     pub async fn set_itp_creation_config(&self, config: ItpCreationConfig) {
         let mut itp_config = self.itp_creation_config.write().await;
         *itp_config = Some(config);
+    }
+
+    /// Attach a Vision cosign aggregator. Every incoming
+    /// `VisionCreateBatchSign` is forwarded here in addition to the legacy
+    /// per-source router, so the new continuous-aggregation pipeline and the
+    /// older await-loop coexist without colliding.
+    pub async fn set_vision_cosign_aggregator(
+        &self,
+        aggregator: crate::vision::cosign_aggregator::SharedCosignAggregator,
+    ) {
+        let mut slot = self.cosign_aggregator.write().await;
+        *slot = Some(aggregator);
     }
 
     /// Set the arbitration message sender for forwarding P2P messages to the ArbitrationSubsystem.
@@ -3308,17 +3326,32 @@ where
             MessageHandleResult::ProcessVisionCreateBatchSign {
                 from: _, signer_id: _, signer_index, source_id, message_hash, signature,
             } => {
+                let sig_bls = common::types::BLSSignature(signature.0);
+
+                // Continuous aggregator (new pipeline). Append the cosign; if a
+                // proposal is registered for this source it accumulates toward
+                // quorum and the submitter loop picks it up. No-op if the
+                // aggregator isn't wired or no proposal exists.
+                {
+                    let agg_guard = self.cosign_aggregator.read().await;
+                    if let Some(agg) = agg_guard.as_ref() {
+                        let _ = agg.add_cosign(source_id, message_hash, signer_index, sig_bls.clone());
+                    }
+                }
+
+                // Legacy per-source router (settlement co-signing and the
+                // pending-creates sweeper still use this channel). Kept as an
+                // ADDITIONAL sink — whichever pipeline submits first wins.
                 let incoming = crate::vision::lifecycle::IncomingCreateBatchSign {
                     signer_index,
                     source_id,
                     message_hash,
-                    signature: common::types::BLSSignature(signature.0),
+                    signature: sig_bls,
                 };
-                // Route to the per-source channel via DashMap (lock-free lookup)
                 if let Some(tx) = self.cosign_router.get(&source_id) {
                     let _ = tx.try_send(incoming);
                 } else {
-                    debug!(?source_id, "No active co-sign listener for source — discarding");
+                    debug!(?source_id, "No active co-sign listener for source — aggregator-only path");
                 }
             }
             // AA keeper arbitration — forward to arbitration subsystem

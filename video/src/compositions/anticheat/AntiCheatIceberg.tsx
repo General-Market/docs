@@ -9,6 +9,8 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import * as THREE from "three";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W } from "./theme";
@@ -177,117 +179,106 @@ const computeIcebergFilter = (state: State): string => {
 // insider traders is a fatal wound.
 const TIER_PNL = ["−1.0%", "−2.8%", "−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
 
-// ─── Halftone iceberg ─────────────────────────────────────────────────────────
+// ─── Halftone shader iceberg ──────────────────────────────────────────────────
 //
-// The webp is sampled, not displayed. A jittered grid of dots reads pixel
-// brightness from the source and emits a halftone — radius scales with
-// luminance, fill takes the local colour. The shape is the photograph's;
-// only the medium changes.
+// GLSL fragment shader. The webp is uploaded as a texture; the shader splits
+// the frame into uDotSize × uDotSize cells, samples the texture at each cell
+// centre, and draws a circle whose radius scales with that sample's luminance.
+// Background bleeds through where the dot doesn't cover. This is the
+// classic dot-grid halftone — one draw call, one fragment program.
 
-const pseudo = (i: number): number => {
-  let h = (i * 2654435761) >>> 0;
-  h = (h ^ (h >>> 16)) >>> 0;
-  h = Math.imul(h, 0x85ebca6b) >>> 0;
-  h = (h ^ (h >>> 13)) >>> 0;
-  h = Math.imul(h, 0xc2b2ae35) >>> 0;
-  h = (h ^ (h >>> 16)) >>> 0;
-  return h / 0xffffffff;
-};
+const DOT_VERTEX = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+  }
+`;
 
-const HALFTONE_COLS = 96;
-const HALFTONE_ROWS = 128;
-const HALFTONE_RES = 2; // canvas backing resolution multiplier
+const DOT_FRAGMENT = /* glsl */ `
+  precision highp float;
 
-const IcebergPoints: React.FC = React.memo(() => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [handle] = React.useState(() => delayRender("iceberg-halftone"));
+  uniform sampler2D uTexture;
+  uniform vec2 uResolution;
+  uniform float uDotSize;
+  uniform vec3 uBackground;
 
-  React.useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      continueRender(handle);
-      return;
-    }
+  varying vec2 vUv;
 
-    canvas.width = IMG_NATIVE_W * HALFTONE_RES;
-    canvas.height = IMG_NATIVE_H * HALFTONE_RES;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      continueRender(handle);
-      return;
-    }
-    ctx.scale(HALFTONE_RES, HALFTONE_RES);
+  void main() {
+    vec2 fragCoord = vUv * uResolution;
 
-    const img = new window.Image();
-    img.onload = () => {
-      const off = document.createElement("canvas");
-      off.width = IMG_NATIVE_W;
-      off.height = IMG_NATIVE_H;
-      const offCtx = off.getContext("2d");
-      if (!offCtx) {
-        continueRender(handle);
-        return;
-      }
-      offCtx.drawImage(img, 0, 0, IMG_NATIVE_W, IMG_NATIVE_H);
-      const data = offCtx.getImageData(0, 0, IMG_NATIVE_W, IMG_NATIVE_H).data;
+    vec2 cellId = floor(fragCoord / uDotSize);
+    vec2 cellCenter = (cellId + 0.5) * uDotSize;
+    vec2 cellUv = cellCenter / uResolution;
 
-      ctx.fillStyle = "#040a1e";
-      ctx.fillRect(0, 0, IMG_NATIVE_W, IMG_NATIVE_H);
+    vec4 src = texture2D(uTexture, cellUv);
+    float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
-      for (let row = 0; row < HALFTONE_ROWS; row++) {
-        const stagger = row % 2 === 0 ? 0 : 0.5;
-        for (let col = 0; col < HALFTONE_COLS; col++) {
-          const seed = row * 1009 + col * 7 + 19;
-          const jx = (pseudo(seed) - 0.5) * 0.45;
-          const jy = (pseudo(seed + 1013) - 0.5) * 0.45;
+    // Lift midtones so the underwater body keeps its mass.
+    float weight = pow(luma, 0.85);
+    float radius = weight * uDotSize * 0.62;
 
-          const xNorm = (col + stagger + jx) / HALFTONE_COLS;
-          const yNorm = (row + jy) / HALFTONE_ROWS;
-          if (xNorm < 0 || xNorm >= 1 || yNorm < 0 || yNorm >= 1) continue;
+    float dist = length(fragCoord - cellCenter);
+    float aa = 1.0;
+    float coverage = 1.0 - smoothstep(radius - aa, radius + aa, dist);
 
-          // 3×3 sample average — silences single-pixel noise.
-          const px = Math.floor(xNorm * IMG_NATIVE_W);
-          const py = Math.floor(yNorm * IMG_NATIVE_H);
-          let sr = 0, sg = 0, sb = 0, count = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const nx = px + dx;
-              const ny = py + dy;
-              if (nx < 0 || nx >= IMG_NATIVE_W || ny < 0 || ny >= IMG_NATIVE_H) continue;
-              const idx = (ny * IMG_NATIVE_W + nx) * 4;
-              sr += data[idx];
-              sg += data[idx + 1];
-              sb += data[idx + 2];
-              count++;
-            }
-          }
-          if (count === 0) continue;
-          const r = sr / count;
-          const g = sg / count;
-          const b = sb / count;
-          const luma = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+    vec3 color = mix(uBackground, src.rgb, coverage);
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
 
-          // Halftone: radius scales with luminance. Bright iceberg gets fat
-          // dots, dark abyss gets pinpricks. Power < 1 lifts the midtones so
-          // the silhouette stays legible against the deep background.
-          const radius = 0.6 + Math.pow(luma, 0.85) * 8.6;
-
-          ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
-          ctx.beginPath();
-          ctx.arc(xNorm * IMG_NATIVE_W, yNorm * IMG_NATIVE_H, radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      continueRender(handle);
-    };
-    img.onerror = () => continueRender(handle);
-    img.src = staticFile("iceberg-tiers-clean.webp");
-  }, [handle]);
+const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
+  const uniforms = React.useMemo(
+    () => ({
+      uTexture: { value: texture },
+      uResolution: { value: new THREE.Vector2(IMG_NATIVE_W, IMG_NATIVE_H) },
+      uDotSize: { value: 14.0 },
+      uBackground: { value: new THREE.Color("#040a1e") },
+    }),
+    [texture],
+  );
 
   return (
-    <canvas
-      ref={canvasRef}
+    <mesh>
+      <planeGeometry args={[2, 2]} />
+      <shaderMaterial
+        vertexShader={DOT_VERTEX}
+        fragmentShader={DOT_FRAGMENT}
+        uniforms={uniforms}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+};
+
+const IcebergPoints: React.FC = React.memo(() => {
+  const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
+  const [handle] = React.useState(() => delayRender("iceberg-shader"));
+
+  React.useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      staticFile("iceberg-tiers-clean.webp"),
+      (tex) => {
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        setTexture(tex);
+        continueRender(handle);
+      },
+      undefined,
+      () => continueRender(handle),
+    );
+  }, [handle]);
+
+  if (!texture) return null;
+
+  return (
+    <ThreeCanvas
+      width={IMG_NATIVE_W}
+      height={IMG_NATIVE_H}
       style={{
         position: "absolute",
         left: 0,
@@ -296,7 +287,10 @@ const IcebergPoints: React.FC = React.memo(() => {
         height: IMG_NATIVE_H,
         display: "block",
       }}
-    />
+      gl={{ antialias: true, alpha: false }}
+    >
+      <DotShaderPlane texture={texture} />
+    </ThreeCanvas>
   );
 });
 IcebergPoints.displayName = "IcebergPoints";
