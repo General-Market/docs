@@ -13,9 +13,39 @@
 use ethers::types::{Address, H256};
 use sqlx::PgPool;
 use std::collections::HashMap;
-use tokio::sync::RwLock;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{Mutex, RwLock};
 
 use super::types::SlottedBitmap;
+
+// ---------------------------------------------------------------------------
+// Write batcher
+// ---------------------------------------------------------------------------
+//
+// Player bitmap submissions arrive at ~10k/s during a busy tick. One INSERT
+// per request crushes Postgres (vision_bitmaps was 22 % of total db time at
+// 48 ms × 9.5 M calls). The batcher coalesces submissions: API handlers push
+// onto an in-memory buffer; a background task drains it every 100 ms or when
+// the buffer reaches BATCH_FLUSH_THRESHOLD rows, whichever fires first.
+//
+// Crash window: rows queued but not yet flushed live in memory only. Players
+// can resubmit — bitmap submission is idempotent.
+
+const BATCH_FLUSH_THRESHOLD: usize = 200;
+const BATCH_FLUSH_INTERVAL_MS: u64 = 100;
+const BATCH_HARD_CAP: usize = 10_000;
+
+#[derive(Clone)]
+struct PendingRow {
+    batch_id: i64,
+    player: String,
+    bitmap: Vec<u8>,
+    bitmap_hash: String,
+    target_tick_id: i64,
+    config_hash: String,
+}
 
 // ---------------------------------------------------------------------------
 // Internal state
@@ -44,13 +74,118 @@ impl BitmapSlots {
 /// Thread-safe via a single `RwLock` that guards both pending and active maps.
 pub struct BitmapStore {
     slots: RwLock<BitmapSlots>,
+    persist_buffer: Mutex<Vec<PendingRow>>,
 }
 
 impl BitmapStore {
     pub fn new() -> Self {
         Self {
             slots: RwLock::new(BitmapSlots::new()),
+            persist_buffer: Mutex::new(Vec::with_capacity(BATCH_FLUSH_THRESHOLD * 2)),
         }
+    }
+
+    /// Push a pending-bitmap row onto the persist buffer. Returns immediately;
+    /// the background writer flushes in batches.
+    pub async fn queue_persist_pending(
+        &self,
+        batch_id: u64,
+        player: Address,
+        bitmap: &SlottedBitmap,
+    ) {
+        let row = PendingRow {
+            batch_id: batch_id as i64,
+            player: format!("{:?}", player),
+            bitmap: bitmap.bitmap.clone(),
+            bitmap_hash: format!("{:?}", bitmap.hash),
+            target_tick_id: bitmap.target_tick_id as i64,
+            config_hash: format!("{:?}", bitmap.config_hash),
+        };
+        let mut buf = self.persist_buffer.lock().await;
+        buf.push(row);
+        if buf.len() >= BATCH_HARD_CAP {
+            let overflow = buf.len();
+            drop(buf);
+            tracing::warn!(
+                overflow,
+                "vision_bitmaps persist buffer hit hard cap; writer is falling behind"
+            );
+        }
+    }
+
+    /// Drain up to `BATCH_HARD_CAP` rows from the buffer and write them in a
+    /// single multi-row INSERT via UNNEST. Returns the number flushed.
+    async fn flush_persist_buffer(&self, pool: &PgPool) -> Result<usize, BitmapStoreError> {
+        let drained: Vec<PendingRow> = {
+            let mut buf = self.persist_buffer.lock().await;
+            if buf.is_empty() {
+                return Ok(0);
+            }
+            let take = buf.len().min(BATCH_HARD_CAP);
+            buf.drain(..take).collect()
+        };
+
+        let n = drained.len();
+        let batch_ids: Vec<i64> = drained.iter().map(|r| r.batch_id).collect();
+        let players: Vec<String> = drained.iter().map(|r| r.player.clone()).collect();
+        let bitmaps: Vec<Vec<u8>> = drained.iter().map(|r| r.bitmap.clone()).collect();
+        let hashes: Vec<String> = drained.iter().map(|r| r.bitmap_hash.clone()).collect();
+        let tick_ids: Vec<i64> = drained.iter().map(|r| r.target_tick_id).collect();
+        let config_hashes: Vec<String> = drained.iter().map(|r| r.config_hash.clone()).collect();
+
+        sqlx::query(
+            "INSERT INTO vision_bitmaps (batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash)
+             SELECT b, p, bm, bh, 'pending', t, c
+             FROM UNNEST($1::bigint[], $2::text[], $3::bytea[], $4::text[], $5::bigint[], $6::text[])
+                  AS u(b, p, bm, bh, t, c)
+             ON CONFLICT (batch_id, player, slot) DO UPDATE SET
+                 bitmap         = EXCLUDED.bitmap,
+                 bitmap_hash    = EXCLUDED.bitmap_hash,
+                 target_tick_id = EXCLUDED.target_tick_id,
+                 config_hash    = EXCLUDED.config_hash",
+        )
+        .bind(&batch_ids)
+        .bind(&players)
+        .bind(&bitmaps)
+        .bind(&hashes)
+        .bind(&tick_ids)
+        .bind(&config_hashes)
+        .execute(pool)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        Ok(n)
+    }
+
+    /// Spawn the background writer. Drains the buffer every
+    /// `BATCH_FLUSH_INTERVAL_MS` or when it exceeds `BATCH_FLUSH_THRESHOLD`.
+    /// One final drain runs on shutdown.
+    pub fn spawn_writer(self: Arc<Self>, pool: PgPool, shutdown: Arc<AtomicBool>) {
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(Duration::from_millis(BATCH_FLUSH_INTERVAL_MS));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            loop {
+                if shutdown.load(Ordering::Relaxed) {
+                    break;
+                }
+                let pending = self.persist_buffer.lock().await.len();
+                if pending >= BATCH_FLUSH_THRESHOLD {
+                    // size-triggered drain
+                } else {
+                    tick.tick().await;
+                }
+                match self.flush_persist_buffer(&pool).await {
+                    Ok(0) => {}
+                    Ok(n) => tracing::trace!(rows = n, "flushed vision_bitmaps batch"),
+                    Err(e) => tracing::warn!(error = %e, "vision_bitmaps batch flush failed"),
+                }
+            }
+            // final drain
+            if let Err(e) = self.flush_persist_buffer(&pool).await {
+                tracing::warn!(error = %e, "vision_bitmaps final drain failed");
+            }
+            tracing::debug!("vision_bitmaps writer task exited");
+        });
     }
 
     /// Store a bitmap in the **pending** slot after verifying its keccak256 hash.

@@ -819,6 +819,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         info!("EpochPoints worker spawned");
                     }
 
+                    // Spawn the batched vision_bitmaps writer. Single-row
+                    // INSERTs were 22 % of total Postgres time; the writer
+                    // coalesces them at 100 ms / 200-row intervals.
+                    bitmap_store
+                        .clone()
+                        .spawn_writer(pool.clone(), components.shutdown.clone());
+
                     let vision_state = Arc::new(oracle::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),
