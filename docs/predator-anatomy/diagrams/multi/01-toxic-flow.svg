@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1068 1100" width="1068" height="1100">
+<defs>
+<style>
+/* All sizes precomputed from apple.com letter-spacing em values */
+.eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; text-transform: uppercase; }
+.title   { font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.88px; }
+.titleEm { font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: #0071E3; letter-spacing: -0.64px; font-style: italic; }
+.tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
+.stepNum { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; letter-spacing: 0; }
+.stepH   { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.374px; }
+.stepC   { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
+.illL    { font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 0.44px; }
+.illP    { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
+.illP-r  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF3B30; }
+.illP-g  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
+.illP-b  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; }
+.ecoL    { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; text-transform: uppercase; }
+.ecoF    { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.616px; }
+</style>
+</defs>
+<rect width="1068" height="1100" fill="#FFFFFF"/>
+
+  <defs>
+    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/>
+    </marker>
+    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/>
+    </marker>
+    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/>
+    </marker>
+    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/>
+    </marker>
+  </defs>
+<text x="534.0" y="70" text-anchor="middle" class="eyebrow">EXTRACTION 01 · THE WIDEN</text>
+  <text x="534.0" y="130" text-anchor="middle"><tspan class="title">Quote tight. </tspan><tspan class="titleEm">Pay the cleanup.</tspan></text>
+  <text x="534.0" y="186" text-anchor="middle" class="tagline">The spread you saw was a probe. The spread that mattered was the one after you filled.</text>
+<rect x="0" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="38" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="38" y="347" text-anchor="middle" class="stepNum">01</text>
+  <text x="64" y="347" class="stepH">Tight quote posted</text>
+  <g transform="translate(0, 372)"><text x="40" y="24" class="illL">PRICE</text>
+  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
+  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
+  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER $100.05</text>
+  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
+  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID $99.95</text>
+  <text x="150" y="156" text-anchor="middle" class="illL">spread $0.10</text></g>
+  <text x="24" y="596" class="stepC">MM posts a two-sided market that looks</text>
+  <text x="24" y="614" class="stepC">attractive: $99.95 / $100.05.</text>
+<rect x="364" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="402" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="402" y="347" text-anchor="middle" class="stepNum">02</text>
+  <text x="428" y="347" class="stepH">Retail order arrives</text>
+  <g transform="translate(364, 372)"><text x="40" y="24" class="illL">PRICE</text>
+  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
+  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
+  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER $100.05</text>
+  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
+  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID $99.95</text>
+  <text x="150" y="156" text-anchor="middle" class="illL">incoming buy</text>
+  <path d="M 320 50 L 280 50" stroke="#FF3B30" stroke-width="2" fill="none" marker-end="url(#aHeadRed)"/>
+  <text x="332" y="54" class="illP-r">RETAIL</text></g>
+  <text x="388" y="596" class="stepC">A market buy enters the book. Spread looks</text>
+  <text x="388" y="614" class="stepC">generous; the trader takes it.</text>
+<rect x="728" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="766" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="766" y="347" text-anchor="middle" class="stepNum">03</text>
+  <text x="792" y="347" class="stepH">Direction revealed</text>
+  <g transform="translate(728, 372)"><text x="40" y="24" class="illL">PRICE</text>
+  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
+  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
+  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER $100.05</text>
+  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
+  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID $99.95</text>
+  <text x="150" y="156" text-anchor="middle" class="illL">filled $100.05</text>
+  <circle cx="270" cy="50" r="14" fill="#34C759" opacity="0.18"/>
+  <text x="270" y="55" text-anchor="middle" style="font: 800 14px 'SF Pro Text'; fill: #34C759">✓</text></g>
+  <text x="752" y="596" class="stepC">Fill at the offer means the trader is long.</text>
+  <text x="752" y="614" class="stepC">The MM now knows the direction.</text>
+<rect x="0" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="38" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="38" y="711" text-anchor="middle" class="stepNum">04</text>
+  <text x="64" y="711" class="stepH">Quotes pulled</text>
+  <g transform="translate(0, 736)"><text x="40" y="24" class="illL">PRICE</text>
+  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
+  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
+  <line x1="52" y1="60" x2="248" y2="60" stroke="#FFFFFF" stroke-width="1.5"/>
+  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER $100.05</text>
+  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
+  <line x1="52" y1="104" x2="248" y2="104" stroke="#FFFFFF" stroke-width="1.5"/>
+  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID $99.95</text>
+  <text x="150" y="156" text-anchor="middle" class="illL">both quotes pulled <50 ms</text></g>
+  <text x="24" y="960" class="stepC">Within fifty milliseconds, the MM cancels both</text>
+  <text x="24" y="978" class="stepC">sides of the original quote.</text>
+<rect x="364" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="402" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="402" y="711" text-anchor="middle" class="stepNum">05</text>
+  <text x="428" y="711" class="stepH">Spread widens</text>
+  <g transform="translate(364, 736)"><text x="40" y="24" class="illL">PRICE</text>
+  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
+  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
+  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER $100.10</text>
+  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
+  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID $99.85</text>
+  <text x="150" y="156" text-anchor="middle" class="illL">new spread $0.25</text></g>
+  <text x="388" y="960" class="stepC">New quote: bid drops $0.10, offer climbs</text>
+  <text x="388" y="978" class="stepC">$0.05. The MM has pre-priced the exit.</text>
+<rect x="728" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="766" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="766" y="711" text-anchor="middle" class="stepNum">06</text>
+  <text x="792" y="711" class="stepH">The cleanup</text>
+  <g transform="translate(728, 736)"><text x="170" y="30" text-anchor="middle" class="illL">PER SHARE</text>
+  <text x="170" y="86" text-anchor="middle" style="font: 800 48px 'SF Pro Display', sans-serif; fill: #34C759; letter-spacing: -1.056px">+$0.20</text>
+  <text x="170" y="120" text-anchor="middle" class="illL">no inventory risk</text></g>
+  <text x="752" y="960" class="stepC">Retail exits into the new bid at $99.85.</text>
+  <text x="752" y="978" class="stepC">Round-trip cost $0.20 a share.</text>
+<rect x="0" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <text x="20" y="1074" class="ecoL">OPERATOR SPEND</text>
+  <text x="20" y="1108" class="ecoF" style="fill: #1D1D1F">~$710K / yr</text>
+  <rect x="364" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <text x="384" y="1074" class="ecoL">ANNUAL TAKE</text>
+  <text x="384" y="1108" class="ecoF" style="fill: #1D1D1F">$2–5M / yr</text>
+  <rect x="728" y="1048" width="340" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+  <text x="748" y="1074" class="ecoL">ON GENERAL</text>
+  <text x="748" y="1108" class="ecoF" style="fill: #0071E3">$0</text>
+</svg>

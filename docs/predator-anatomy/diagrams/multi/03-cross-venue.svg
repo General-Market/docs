@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1068 1100" width="1068" height="1100">
+<defs>
+<style>
+/* All sizes precomputed from apple.com letter-spacing em values */
+.eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; text-transform: uppercase; }
+.title   { font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.88px; }
+.titleEm { font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: #0071E3; letter-spacing: -0.64px; font-style: italic; }
+.tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
+.stepNum { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; letter-spacing: 0; }
+.stepH   { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.374px; }
+.stepC   { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
+.illL    { font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 0.44px; }
+.illP    { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
+.illP-r  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF3B30; }
+.illP-g  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
+.illP-b  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; }
+.ecoL    { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; text-transform: uppercase; }
+.ecoF    { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.616px; }
+</style>
+</defs>
+<rect width="1068" height="1100" fill="#FFFFFF"/>
+
+  <defs>
+    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/>
+    </marker>
+    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/>
+    </marker>
+    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/>
+    </marker>
+    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/>
+    </marker>
+  </defs>
+<text x="534.0" y="70" text-anchor="middle" class="eyebrow">EXTRACTION 03 · THE LAG</text>
+  <text x="534.0" y="130" text-anchor="middle"><tspan class="title">Eighty milliseconds </tspan><tspan class="titleEm">of light.</tspan></text>
+  <text x="534.0" y="186" text-anchor="middle" class="tagline">Same asset. Two venues. The arbitrageur reads both mailboxes.</text>
+<rect x="0" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="38" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="38" y="347" text-anchor="middle" class="stepNum">01</text>
+  <text x="64" y="347" class="stepH">Equilibrium</text>
+  <g transform="translate(0, 372)"><text x="20" y="30" class="illL">BINANCE</text>
+  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="56" class="illP">t=0</text>
+  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text>
+  <text x="20" y="150" class="illL">COINBASE</text>
+  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="176" class="illP">t=0</text>
+  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text></g>
+  <text x="24" y="596" class="stepC">Both venues quote ETH at $4,000. Spread</text>
+  <text x="24" y="614" class="stepC">between venues is zero.</text>
+<rect x="364" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="402" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="402" y="347" text-anchor="middle" class="stepNum">02</text>
+  <text x="428" y="347" class="stepH">Binance prints first</text>
+  <g transform="translate(364, 372)"><text x="20" y="30" class="illL">BINANCE</text>
+  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="56" class="illP">t=0</text>
+  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005 ↑</text>
+  <text x="20" y="150" class="illL">COINBASE</text>
+  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="176" class="illP">t=0</text>
+  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text></g>
+  <text x="388" y="596" class="stepC">A large market buy hits Binance. New print:</text>
+  <text x="388" y="614" class="stepC">$4,005. Coinbase still has not seen it.</text>
+<rect x="728" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="766" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="766" y="347" text-anchor="middle" class="stepNum">03</text>
+  <text x="792" y="347" class="stepH">Light-speed lag</text>
+  <g transform="translate(728, 372)"><text x="20" y="30" class="illL">BINANCE</text>
+  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="56" class="illP">t=0</text>
+  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005</text>
+  <text x="20" y="150" class="illL">COINBASE</text>
+  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="176" class="illP">t+40ms</text>
+  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #6E6E73">still $4,000…</text>
+  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
+  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">LAG 80ms</text></g>
+  <text x="752" y="596" class="stepC">The new price has not crossed the network.</text>
+  <text x="752" y="614" class="stepC">Coinbase quote is stale for 80 ms.</text>
+<rect x="0" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="38" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="38" y="711" text-anchor="middle" class="stepNum">04</text>
+  <text x="64" y="711" class="stepH">Buy the stale side</text>
+  <g transform="translate(0, 736)"><text x="20" y="30" class="illL">BINANCE</text>
+  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="56" class="illP">t+1ms</text>
+  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005</text>
+  <text x="20" y="150" class="illL">COINBASE</text>
+  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="176" class="illP">t+1ms</text>
+  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #34C759">$4,000 BUY</text>
+  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
+  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">80 ms</text></g>
+  <text x="24" y="960" class="stepC">Co-located MM buys $200K of ETH on Coinbase at</text>
+  <text x="24" y="978" class="stepC">the stale $4,000 price.</text>
+<rect x="364" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="402" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="402" y="711" text-anchor="middle" class="stepNum">05</text>
+  <text x="428" y="711" class="stepH">Hedge on the fast side</text>
+  <g transform="translate(364, 736)"><text x="20" y="30" class="illL">BINANCE</text>
+  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="56" class="illP">t+1ms</text>
+  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005 SELL</text>
+  <text x="20" y="150" class="illL">COINBASE</text>
+  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
+  <text x="20" y="176" class="illP">t+1ms</text>
+  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #34C759">$4,000</text>
+  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
+  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">80 ms</text></g>
+  <text x="388" y="960" class="stepC">Simultaneously sells $200K on Binance at</text>
+  <text x="388" y="978" class="stepC">$4,005. Net inventory zero.</text>
+<rect x="728" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <circle cx="766" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+  <text x="766" y="711" text-anchor="middle" class="stepNum">06</text>
+  <text x="792" y="711" class="stepH">Receipt</text>
+  <g transform="translate(728, 736)"><text x="170" y="30" text-anchor="middle" class="illL">PER ETH ARBITRAGED</text>
+  <text x="170" y="86" text-anchor="middle" style="font: 800 48px 'SF Pro Display', sans-serif; fill: #34C759; letter-spacing: -1.056px">+$5</text>
+  <text x="170" y="120" text-anchor="middle" class="illL">cycle repeats hundreds × day</text></g>
+  <text x="752" y="960" class="stepC">Coinbase catches up at t+80 ms. Five dollars</text>
+  <text x="752" y="978" class="stepC">per unit, risk-free, banked.</text>
+<rect x="0" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <text x="20" y="1074" class="ecoL">OPERATOR SPEND</text>
+  <text x="20" y="1108" class="ecoF" style="fill: #1D1D1F">~$400K / yr</text>
+  <rect x="364" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <text x="384" y="1074" class="ecoL">ANNUAL TAKE</text>
+  <text x="384" y="1108" class="ecoF" style="fill: #1D1D1F">$500K–2M</text>
+  <rect x="728" y="1048" width="340" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+  <text x="748" y="1074" class="ecoL">ON GENERAL</text>
+  <text x="748" y="1108" class="ecoF" style="fill: #0071E3">$0</text>
+</svg>
