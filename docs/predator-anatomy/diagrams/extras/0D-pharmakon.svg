@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
+<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 04</text>
+<text x="946" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">Every gift is</text>
+<text x="970" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">the wound.</text>
+<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">Pharmakon — the same substance heals and poisons. The free trade is the harvest. The</text>
+<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">price improvement is the cut. The smart-money alert is the leash.</text>
+<rect x="-180" y="460" width="520" height="360" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="80" y="510" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">THE GIFT</text>
+<text x="80" y="590" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">FREE TRADING</text>
+<text x="80" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#0071E3;letter-spacing:-1.584px">$0.00</text>
+<text x="80" y="740" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">ROBINHOOD APP</text>
+<rect x="-180" y="820" width="520" height="360" rx="18" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="80" y="870" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FF3B30;letter-spacing:2.34px">THE WOUND</text>
+<text x="80" y="950" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">you paid</text>
+<text x="80" y="1050" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#FF3B30;letter-spacing:-0.968px">$15 / 500 shares</text>
+<text x="80" y="1110" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#424245;font-style:italic;letter-spacing:-0.14px">Schwarz et al., Journal of Finance</text>
+<rect x="380" y="460" width="520" height="360" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="640" y="510" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">THE GIFT</text>
+<text x="640" y="590" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">PRICE IMPROVEMENT</text>
+<text x="640" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#0071E3;letter-spacing:-1.584px">+$0.20</text>
+<text x="640" y="740" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">CITADEL EXECUTION</text>
+<rect x="380" y="820" width="520" height="360" rx="18" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="640" y="870" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FF3B30;letter-spacing:2.34px">THE WOUND</text>
+<text x="640" y="950" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">you missed</text>
+<text x="640" y="1050" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#FF3B30;letter-spacing:-0.968px">$3.50 of spread</text>
+<text x="640" y="1110" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#424245;font-style:italic;letter-spacing:-0.14px">internalised at NBBO midpoint</text>
+<rect x="940" y="460" width="520" height="360" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="1200" y="510" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">THE GIFT</text>
+<text x="1200" y="590" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">SMART-MONEY ALERT</text>
+<text x="1200" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#0071E3;letter-spacing:-1.584px">FREE</text>
+<text x="1200" y="740" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">TWITTER / DISCORD</text>
+<rect x="940" y="820" width="520" height="360" rx="18" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="1200" y="870" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FF3B30;letter-spacing:2.34px">THE WOUND</text>
+<text x="1200" y="950" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:20px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.22px">you became</text>
+<text x="1200" y="1050" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#FF3B30;letter-spacing:-0.968px">exit liquidity</text>
+<text x="1200" y="1110" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#424245;font-style:italic;letter-spacing:-0.14px">the alert was the trap</text>
+<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">“What heals is what kills, in the same hand.”</text>
+<text x="900" y="1270" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">DERRIDA AFTER PLATO · LA PHARMACIE · 1972</text>
+</svg>

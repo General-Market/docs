@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 2050" width="600" height="2050">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="600" height="2050" rx="0" fill="#FFFFFF"/>
+<text x="300" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#0071E3;letter-spacing:2.7px">VOICES</text>
+<text x="300" y="156" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">From below the tape</text>
+<line x1="80" y1="200" x2="520" y2="200" stroke="#0071E3" stroke-width="2"/>
+<rect x="50" y="240" width="500" height="558" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="78" y="284" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">r/wallstreetbets</text>
+<text x="78" y="310" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">thread imy0zl</text>
+<text x="78" y="370" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Citadel is your daddy. Not</text>
+<text x="78" y="408" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Elon.</text>
+<rect x="50" y="830" width="500" height="558" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="78" y="874" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">r/wallstreetbets</text>
+<text x="78" y="900" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">thread 1lm9b9z</text>
+<text x="78" y="960" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Thanks Robinhood, still</text>
+<text x="78" y="998" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">won't use your fucking app</text>
+<text x="78" y="1036" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">though.</text>
+<rect x="50" y="1420" width="500" height="558" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="78" y="1464" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">Schwarz et al.</text>
+<text x="78" y="1490" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">Journal of Finance</text>
+<text x="78" y="1550" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Robinhood users losing on</text>
+<text x="78" y="1588" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">average $15 on each</text>
+<text x="78" y="1626" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">500-share order, even after</text>
+<text x="78" y="1664" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">paying zero commissions.</text>
+</svg>

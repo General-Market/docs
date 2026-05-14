@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
+<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 01</text>
+<text x="958" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">You don't want the trade.</text>
+<text x="982" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">You want to beat them.</text>
+<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">Mimetic desire — Girard 1961. The object of desire is never the object itself; it is</text>
+<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">mediated by a third party. The retail trader does not want $TSLA. The retail trader</text>
+<path d="M 520 1010 L 900 440 L 1280 1010 Z" fill="none" stroke="#D2D2D7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<circle cx="900" cy="440" r="16" fill="#1D1D1F"/>
+<text x="900" y="404" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">OBJECT</text>
+<text x="900" y="368" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:28px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.448px">“beating the institutions”</text>
+<text x="900" y="496" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#6E6E73">status, not yield</text>
+<circle cx="520" cy="1010" r="16" fill="#1D1D1F"/>
+<text x="520" y="1054" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">YOU</text>
+<text x="520" y="1086" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#6E6E73">the subject</text>
+<circle cx="1280" cy="1010" r="16" fill="#0071E3"/>
+<text x="1280" y="1054" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3;letter-spacing:2.52px">MODEL</text>
+<text x="1280" y="1086" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#0071E3">the mediator</text>
+<text x="1280" y="1110" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73">“smart money flow” · DD thread · the influencer</text>
+<path d="M 550 1010 L 1250 1010" fill="none" stroke="#0071E3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrBlue)"/>
+<text x="900" y="992" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3;letter-spacing:1.12px">looks to</text>
+<path d="M 1260 980 L 920 470" fill="none" stroke="#0071E3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrBlue)"/>
+<text x="1330" y="725" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3;letter-spacing:1.12px">wants</text>
+<path d="M 550 980 L 870 470" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/>
+<text x="460" y="725" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73">(thinks)</text>
+<circle cx="1390" cy="982" r="26" fill="#FF3B30"/>
+<text x="1390" y="988" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:10px;font-weight:800;fill:#FFFFFF;letter-spacing:0.8px">PRED</text>
+<text x="1390" y="1002" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:10px;font-weight:800;fill:#FFFFFF;letter-spacing:0.8px">ATOR</text>
+<path d="M 1372 972 L 1306 1002" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3"/>
+<text x="1410" y="940" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FF3B30;letter-spacing:0.52px">pays the mediator</text>
+<text x="1410" y="958" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FF3B30;letter-spacing:0.52px">collects the rent</text>
+<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">“We don't want what we want.</text>
+<text x="900" y="1242" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">We want what the other wants.”</text>
+<text x="900" y="1290" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">RENÉ GIRARD · DECEIT, DESIRE, AND THE NOVEL · 1961</text>
+</svg>

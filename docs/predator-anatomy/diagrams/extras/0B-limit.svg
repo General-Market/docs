@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
+<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 02</text>
+<text x="797" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">Start winning.</text>
+<text x="821" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">Watch the door close.</text>
+<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">Internal mediation — the closer your model, the more violent the imitation. The path</text>
+<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">from retail to pro looks open. The moment you start using it, the system removes the</text>
+<rect x="160" y="460" width="700" height="700" rx="18" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
+<text x="510" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">THE OPEN ROAD</text>
+<text x="510" y="590" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#424245;font-style:italic;letter-spacing:-0.384px">what they sold you</text>
+<line x1="240" y1="680" x2="780" y2="680" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
+<text x="260" y="668" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">RETAIL</text>
+<line x1="240" y1="758" x2="780" y2="758" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
+<text x="260" y="746" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">SMALL-FUNDED</text>
+<line x1="240" y1="836" x2="780" y2="836" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
+<text x="260" y="824" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">PROP FIRM</text>
+<line x1="240" y1="914" x2="780" y2="914" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
+<text x="260" y="902" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">FUND LP</text>
+<line x1="240" y1="992" x2="780" y2="992" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
+<text x="260" y="980" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">PRINCIPAL TRADER</text>
+<text x="510" y="1110" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73">the deck of cards they showed you</text>
+<rect x="940" y="460" width="700" height="700" rx="18" fill="#1D1D1F"/>
+<text x="1290" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#E8F2FE;letter-spacing:2.52px">DRAFTKINGS · YOUR ACCOUNT</text>
+<text x="1290" y="660" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#FFFFFF;letter-spacing:2.7px;opacity:0.85">MAX BET</text>
+<text x="1290" y="780" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:180px;font-weight:800;fill:#FFFFFF;letter-spacing:-3.96px">$1.37</text>
+<text x="1290" y="860" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:500;fill:#FFFFFF;letter-spacing:-0.18px;opacity:0.85">limit applied · 14 hours after VIP invite</text>
+<text x="1290" y="970" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.352px">“I got up 40k and my host politely told me</text>
+<text x="1290" y="1002" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.352px">to fuck off lol.”</text>
+<text x="1290" y="1056" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#E8F2FE;letter-spacing:0.52px">u/Live-Horror · r/sportsbook</text>
+<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:28px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.448px">“Scumbag piece of fucking shit sportsbooks fucking bums.”</text>
+<text x="900" y="1240" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">u/MomCallsMeLowlife · r/sportsbook · on five years of getting limited</text>
+<text x="900" y="1290" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.352px">The ladder is real. The rungs above you are not.</text>
+</svg>

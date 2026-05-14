@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
+<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 03 · REVELATION</text>
+<text x="822" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">You knew.</text>
+<text x="846" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">You came back.</text>
+<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">The skandalon is the obstacle that fascinates. Once named, the spell breaks. Tenev</text>
+<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">said it on camera. Reddit screenshotted it. Then everyone opened the app anyway.</text>
+<rect x="120" y="460" width="820" height="700" rx="18" fill="#1D1D1F"/>
+<text x="530" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#E8F2FE;letter-spacing:2.52px">CNBC · DECEMBER 2023</text>
+<text x="530" y="660" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">“I make more money</text>
+<text x="530" y="756" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">by getting you</text>
+<text x="530" y="852" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">to transact more.”</text>
+<text x="530" y="1060" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#E8F2FE;letter-spacing:2.7px">VLADIMIR TENEV · CEO, ROBINHOOD</text>
+<text x="530" y="1092" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.17px;opacity:0.85">live, on camera, no retraction</text>
+<rect x="980" y="460" width="700" height="700" rx="18" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1330" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">THE USER · ONE DAY LATER</text>
+<text x="1040" y="600" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:1.12px">u/anonymous · r/wallstreetbets</text>
+<text x="1040" y="680" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">Thanks Robinhood,</text>
+<text x="1040" y="728" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">still won't use</text>
+<text x="1040" y="776" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">your fucking app</text>
+<text x="1040" y="824" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">though.</text>
+<line x1="1040" y1="948" x2="1620" y2="948" stroke="#D2D2D7" stroke-width="1"/>
+<text x="1040" y="988" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">ROBINHOOD — APP STORE</text>
+<text x="1040" y="1056" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:800;fill:#1D1D1F;letter-spacing:-1.056px">4.2 ★ · 4.1M ratings</text>
+<text x="1040" y="1100" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#424245;letter-spacing:-0.16px">26M monthly active users · still climbing</text>
+<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:36px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.576px">Knowing was not the cure. Knowing was the trap.</text>
+<text x="900" y="1270" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">GIRARD · BATTLING TO THE END · 2007</text>
+</svg>
