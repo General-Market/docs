@@ -11,7 +11,7 @@ import {
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
-import { font, monoFont } from "../../common/fonts";
+import { font } from "../../common/fonts";
 import { colors, FPS, H, W } from "./theme";
 import { VIDEO_BEATS } from "./beats";
 
@@ -190,13 +190,13 @@ const DOT_FRAGMENT = /* glsl */ `
     vec4 src = texture2D(uTexture, cellUv);
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
-    // Only emit dots where the photograph reads as ice. Below the
-    // threshold (sky, deep water) the field stays solid blue — no
-    // halftone fringe surviving the zoom. The window is wide enough
-    // to keep the underwater iceberg body legible.
-    float mask = smoothstep(0.38, 0.70, luma);
-    float weight = pow(luma, 0.75) * mask;
-    float radius = weight * uDotSize * 0.62;
+    // Threshold cuts the photo's sky and the pure-black abyss into
+    // solid blue; everything in between — including the underwater
+    // iceberg's darker mass and the rounded bottom — keeps emitting
+    // dots so the iceberg reads all the way down.
+    float mask = smoothstep(0.28, 0.62, luma);
+    float weight = pow(luma, 0.70) * mask;
+    float radius = weight * uDotSize * 0.66;
 
     float dist = length(fragCoord - cellCenter);
     float aa = 0.6;
@@ -215,7 +215,7 @@ const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
     () => ({
       uTexture: { value: texture },
       uResolution: { value: new THREE.Vector2(IMG_NATIVE_W, IMG_NATIVE_H) },
-      uDotSize: { value: 5.0 },
+      uDotSize: { value: 6.0 },
       uBackground: { value: new THREE.Color(colors.accent) },
     }),
     [texture],
@@ -430,27 +430,11 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              top: 20,
-              left: 24,
-              fontFamily: monoFont,
-              fontSize: 13,
-              fontWeight: 500,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              color: colors.dim,
-            }}
-          >
-            tier {index + 1} of {N} · {trader.label}
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              top: 46,
-              left: 24,
-              right: 24,
+              top: 28,
+              left: 28,
+              right: 28,
               fontFamily: font,
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: 800,
               letterSpacing: "-0.022em",
               color: colors.fg,
@@ -463,11 +447,11 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              left: 24,
-              right: 24,
-              bottom: 44,
+              left: 28,
+              right: 28,
+              bottom: 28,
               fontFamily: font,
-              fontSize: 72,
+              fontSize: 92,
               fontWeight: 800,
               letterSpacing: "-0.04em",
               color: colors.accent,
@@ -477,23 +461,6 @@ const TierCard: React.FC<{
             }}
           >
             {TIER_PNL[index]}
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              left: 24,
-              right: 24,
-              bottom: 20,
-              fontFamily: monoFont,
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.dim,
-            }}
-          >
-            extracted by unfair trading
           </div>
         </div>
 
