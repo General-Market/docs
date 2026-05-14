@@ -1357,6 +1357,34 @@ impl BatchLifecycleManager {
                                 "Submitter: createBatch submitted and source state updated"
                             );
                         }
+
+                        // chain_listener is chronically behind on a busy chain.
+                        // The next heartbeat's resolve_and_settle would call
+                        // scheduler.get_batch_state(on_chain_id) and find nothing,
+                        // missing the settle window entirely. The leader knows
+                        // everything the listener would have decoded — feed it
+                        // to the scheduler immediately. The listener will later
+                        // re-call on_batch_created with the chain-derived row;
+                        // the inner write is an idempotent HashMap insert.
+                        let created_at_tick = if proposal.tick_duration > 0 {
+                            (chrono::Utc::now().timestamp() as u64) / proposal.tick_duration
+                        } else {
+                            0
+                        };
+                        let batch = super::types::Batch {
+                            id: on_chain_id,
+                            creator: Address::zero(),
+                            source_id: proposal.source_id,
+                            config_hash: proposal.config_hash,
+                            tick_duration: proposal.tick_duration,
+                            lock_offset: proposal.lock_offset,
+                            settlement_grace: proposal.settlement_grace,
+                            created_at_tick,
+                            paused: false,
+                            settled: false,
+                        };
+                        self.scheduler.on_batch_created(batch).await;
+
                         self.cosign_aggregator.forget(&proposal.source_id);
                     }
                     None => {
