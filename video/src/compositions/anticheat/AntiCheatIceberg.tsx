@@ -29,9 +29,11 @@ import { VIDEO_BEATS } from "./beats";
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
-const FILL_SCALE = W / IMG_NATIVE_W;        // ~1.518
-
-const ZOOM_START_SCALE = 2.6;
+// The iceberg silhouette occupies roughly the central 850px of a
+// 1265-wide photo. Scaling to 1920/850 ≈ 2.26 makes the silhouette
+// fill the viewport width; the bleed off the sides is sky/water and
+// gets painted solid blue by the shader threshold.
+const ICEBERG_SCALE = 2.26;
 
 const TIER_Y_NATIVE = [
   Math.round((0 + 269) / 2),       // 134  — sky / above line 1
@@ -41,16 +43,13 @@ const TIER_Y_NATIVE = [
   Math.round((1141 + 1430) / 2),   // 1285 — lower iceberg
   Math.round((1430 + 1670) / 2),   // 1550 — depths
 ];
-const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
+const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * ICEBERG_SCALE);
 
-// Iceberg image scaled to fill the viewport width. Anything beyond the
-// iceberg shouldn't appear — we never zoom further out than FILL_SCALE.
-const ICEBERG_LAYER_H = IMG_NATIVE_H * FILL_SCALE; // 2535 at FILL_SCALE
-const MAX_SCROLL = H - ICEBERG_LAYER_H;            // -1455 (negative)
+const ICEBERG_LAYER_H = IMG_NATIVE_H * ICEBERG_SCALE;
+const MAX_SCROLL = H - ICEBERG_LAYER_H;
 
-// Linear scroll across the tier ladder. Tier 0 sits flush at top of
-// iceberg (scrollY = 0); tier 5 sits flush at the bottom of the
-// iceberg (scrollY = MAX_SCROLL). No empty space top or bottom.
+// Linear scroll across the tier ladder. Tier 0 flush at the iceberg top,
+// tier 5 flush at the iceberg bottom — no empty space ever.
 const scrollAtTier = (i: number) => (i / (TIER_Y_NATIVE.length - 1)) * MAX_SCROLL;
 
 type Tier = {
@@ -133,15 +132,14 @@ const stateAt = (frame: number): State => {
 
 const computeScale = (state: State): number => {
   if (state.phase === "zoom")
-    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FILL_SCALE], {
+    return interpolate(state.t, [0, 1], [ICEBERG_SCALE * 1.15, ICEBERG_SCALE], {
       easing: EASE_OUT,
     });
   if (state.sub === "hold") {
-    const pulse = Math.sin(state.t * Math.PI) * 0.008;
-    const climaxPush = state.tier === LAST ? state.t * 0.05 : 0;
-    return FILL_SCALE * (1 + pulse + climaxPush);
+    const pulse = Math.sin(state.t * Math.PI) * 0.006;
+    return ICEBERG_SCALE * (1 + pulse);
   }
-  return FILL_SCALE;
+  return ICEBERG_SCALE;
 };
 
 const computeScrollY = (state: State): number => {
@@ -350,16 +348,16 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Tier card — Bars-style white card, trader image bolted on top ──────────
+// ─── Tier card — image on the right, text on the left ──────────────────────
 //
-// One card per tier, anchored to the iceberg layer at that tier's Y. As
-// the iceberg scrolls, cards scroll with it. Cards drop from above the
-// frame when their tier activates, then settle and stay — past cards
-// scroll out of view naturally, never disappearing on cut.
+// Anchored to the iceberg layer at that tier's Y. As the iceberg scrolls,
+// cards scroll with it. Cards drop from above the frame when their tier
+// activates, then settle and stay — past cards scroll out of view
+// naturally, never disappearing on cut.
 
-const CARD_W = 440;
-const CARD_H = 620;
-const CARD_IMG_H = 280;
+const CARD_W = 760;
+const CARD_H = 440;
+const CARD_IMG_W = 320;
 
 const TierCard: React.FC<{
   tier: Tier;
@@ -422,13 +420,94 @@ const TierCard: React.FC<{
           position: "relative",
         }}
       >
+        {/* Text area — left side, full height. */}
         <div
           style={{
             position: "absolute",
             top: 0,
+            bottom: 0,
             left: 0,
+            width: CARD_W - CARD_IMG_W,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 28,
+              left: 30,
+              fontFamily: monoFont,
+              fontSize: 16,
+              fontWeight: 500,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: colors.dim,
+            }}
+          >
+            tier {index + 1} of {N} · {trader.label}
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              top: 60,
+              left: 30,
+              right: 30,
+              fontFamily: font,
+              fontSize: 46,
+              fontWeight: 800,
+              letterSpacing: "-0.022em",
+              color: colors.fg,
+              lineHeight: 1.0,
+            }}
+          >
+            {tierLabel}
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              left: 30,
+              right: 30,
+              bottom: 70,
+              fontFamily: font,
+              fontSize: 116,
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
+              color: colors.accent,
+              lineHeight: 0.92,
+              fontVariantNumeric: "tabular-nums",
+              textAlign: "left",
+            }}
+          >
+            {TIER_PNL[index]}
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              left: 30,
+              right: 30,
+              bottom: 28,
+              fontFamily: monoFont,
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: colors.dim,
+            }}
+          >
+            extracted by unfair trading
+          </div>
+        </div>
+
+        {/* Image area — right side, full height. */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
             right: 0,
-            height: CARD_IMG_H,
+            width: CARD_IMG_W,
             overflow: "hidden",
           }}
         >
@@ -441,75 +520,6 @@ const TierCard: React.FC<{
               display: "block",
             }}
           />
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: CARD_IMG_H + 24,
-            left: 30,
-            fontFamily: monoFont,
-            fontSize: 16,
-            fontWeight: 500,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          tier {index + 1} of {N} · {trader.label}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: CARD_IMG_H + 56,
-            left: 30,
-            right: 30,
-            fontFamily: font,
-            fontSize: 46,
-            fontWeight: 800,
-            letterSpacing: "-0.022em",
-            color: colors.fg,
-            lineHeight: 1.0,
-          }}
-        >
-          {tierLabel}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 30,
-            right: 30,
-            bottom: 70,
-            fontFamily: font,
-            fontSize: 116,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: colors.accent,
-            lineHeight: 0.92,
-            fontVariantNumeric: "tabular-nums",
-            textAlign: "left",
-          }}
-        >
-          {TIER_PNL[index]}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 30,
-            right: 30,
-            bottom: 28,
-            fontFamily: monoFont,
-            fontSize: 14,
-            fontWeight: 500,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          extracted by unfair trading
         </div>
       </div>
     </div>
