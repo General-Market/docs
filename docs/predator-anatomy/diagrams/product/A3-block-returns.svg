@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
 <defs>
 <marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
 <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
@@ -7,219 +7,221 @@
 <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
 <marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
 <text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">PRIMITIVE A3 · THE ARITHMETIC</text>
 <text x="764" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">Forty wrong.</text>
 <text x="792" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">Profit anyway.</text>
-<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">Sixty wins, forty losses, on a $1 block — net +$0.10.</text>
-<rect x="80" y="340" width="690" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="168" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="378" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="409" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="430" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="461" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="482" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="513" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="534" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="565" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="586" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="617" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="191" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="220" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="243" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="272" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="295" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="324" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="347" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="376" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="399" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="428" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="451" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="480" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="503" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="532" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="555" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="584" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="607" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="636" y="638" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="659" y="669" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
-<rect x="168" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="191" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="220" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="243" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="272" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="295" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="324" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="347" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="376" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="399" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="428" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="451" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="480" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="503" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="532" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="555" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="584" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="607" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="636" y="690" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="659" y="721" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="168" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="191" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="220" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="243" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="272" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="295" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="324" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="347" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="376" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="399" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="428" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="451" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="480" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="503" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="532" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="555" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="584" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="607" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="636" y="742" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="659" y="773" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="168" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="191" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="220" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="243" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="272" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="295" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="324" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="347" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="376" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="399" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="428" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="451" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="480" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="503" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="532" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="555" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="584" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="607" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="636" y="794" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="659" y="825" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="168" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="191" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="220" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="243" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="272" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="295" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="324" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="347" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="376" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="399" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="428" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="451" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="480" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="503" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="532" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="555" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="584" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="607" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="636" y="846" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="659" y="877" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
-<rect x="830" y="340" width="690" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<text x="880" y="460" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.97px">60 wins</text>
-<text x="1470" y="466" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#34C759;letter-spacing:-1.58px">+$0.18</text>
-<text x="880" y="590" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.97px">40 losses</text>
-<text x="1470" y="596" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#FF3B30;letter-spacing:-1.58px">−$0.08</text>
-<line x1="880" y1="680" x2="1470" y2="680" stroke="#1D1D1F" stroke-width="2"/>
-<text x="880" y="790" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:56px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.23px">Net</text>
-<text x="1470" y="820" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:130px;font-weight:800;fill:#0071E3;letter-spacing:-2.86px">+$0.10</text>
-<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">The math forgives imperfect conviction.</text>
+<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">On a block, you can be wrong on most markets and still finish in profit,</text>
+<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">because each winning market pays more than each losing market costs.</text>
+<rect x="80" y="440" width="690" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="168" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="478" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="509" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="530" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="561" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="582" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="613" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="634" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="665" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="686" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="717" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="191" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="220" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="243" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="272" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="295" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="324" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="347" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="376" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="399" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="428" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="451" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="480" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="503" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="532" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="555" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="584" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="607" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="636" y="738" width="46" height="46" rx="6" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="659" y="769" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#34C759">✓</text>
+<rect x="168" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="191" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="220" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="243" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="272" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="295" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="324" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="347" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="376" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="399" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="428" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="451" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="480" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="503" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="532" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="555" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="584" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="607" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="636" y="790" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="659" y="821" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="168" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="191" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="220" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="243" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="272" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="295" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="324" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="347" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="376" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="399" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="428" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="451" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="480" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="503" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="532" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="555" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="584" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="607" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="636" y="842" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="659" y="873" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="168" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="191" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="220" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="243" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="272" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="295" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="324" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="347" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="376" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="399" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="428" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="451" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="480" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="503" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="532" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="555" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="584" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="607" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="636" y="894" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="659" y="925" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="168" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="191" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="220" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="243" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="272" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="295" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="324" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="347" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="376" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="399" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="428" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="451" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="480" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="503" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="532" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="555" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="584" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="607" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="636" y="946" width="46" height="46" rx="6" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="659" y="977" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30">✗</text>
+<rect x="830" y="440" width="690" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="880" y="560" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.97px">60 wins</text>
+<text x="1470" y="566" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#34C759;letter-spacing:-1.58px">+$0.18</text>
+<text x="880" y="690" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.97px">40 losses</text>
+<text x="1470" y="696" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#FF3B30;letter-spacing:-1.58px">−$0.08</text>
+<line x1="880" y1="780" x2="1470" y2="780" stroke="#1D1D1F" stroke-width="2"/>
+<text x="880" y="890" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:56px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.23px">Net</text>
+<text x="1470" y="920" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:130px;font-weight:800;fill:#0071E3;letter-spacing:-2.86px">+$0.10</text>
+<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">THE ASYMMETRY OPTIONS TRADERS PAY A PREMIUM FOR — BUILT IN BY DEFAULT.</text>
+<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">Be right on enough. Not on everything.</text>
 </svg>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
 <defs>
 <marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
 <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
@@ -7,44 +7,46 @@
 <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
 <marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
 <text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">EXTRACTION C2 · FRONT-RUNNING</text>
 <text x="693" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">No mempool.</text>
 <text x="721" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">Nothing to read.</text>
-<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">Front-running needs a visible queue. There is none.</text>
-<rect x="80" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="216" y="375" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="280" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
-<circle cx="716" cy="396" r="28" fill="#34C759"/>
-<text x="716" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
-<rect x="820" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="943" y="375" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="1000" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
-<circle cx="1456" cy="396" r="28" fill="#FF3B30"/>
-<text x="1456" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
-<rect x="120" y="540" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
-<text x="218" y="604" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">SUBMIT</text>
-<text x="218" y="710" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">ENCRYPTED</text>
-<rect x="332" y="540" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
-<text x="430" y="604" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">REVEAL</text>
-<text x="430" y="710" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">LOCKED</text>
-<rect x="544" y="540" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
-<text x="642" y="604" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">CLAIM</text>
-<text x="642" y="710" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">SETTLED</text>
-<text x="430" y="870" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:28px;font-weight:800;fill:#34C759;letter-spacing:5.04px">MEMPOOL = NULL</text>
-<rect x="860" y="580" width="186" height="170" rx="12" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
-<text x="953" y="644" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#1D1D1F;letter-spacing:3.96px">VICTIM</text>
-<text x="953" y="700" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.79px">BUY</text>
-<rect x="1076" y="580" width="186" height="170" rx="12" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1169" y="644" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#FF3B30;letter-spacing:3.96px">SEARCHER</text>
-<text x="1169" y="700" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.79px">FRONT</text>
-<rect x="1292" y="580" width="186" height="170" rx="12" fill="#FBFBFD" stroke="#6E6E73" stroke-width="2"/>
-<text x="1385" y="644" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#6E6E73;letter-spacing:3.96px">VICTIM</text>
-<text x="1385" y="700" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.79px">FILLS</text>
-<path d="M 1050 665 L 1072 665" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
-<path d="M 1266 665 L 1288 665" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
-<text x="1170" y="840" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:800;fill:#FF3B30;letter-spacing:-2.42px">$700M+</text>
-<text x="1170" y="890" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">MEV EXTRACTED</text>
-<line x1="800" y1="400" x2="800" y2="870" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
-<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">Latency stops mattering when there is nothing to be early to.</text>
+<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">On normal blockchains your trade waits in a public queue (the 'mempool') — a bot reads it</text>
+<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">and trades ahead of you. Here, your trade is encrypted until reveal.</text>
+<rect x="80" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="216" y="475" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="280" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
+<circle cx="716" cy="496" r="28" fill="#34C759"/>
+<text x="716" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
+<rect x="820" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="943" y="475" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="1000" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
+<circle cx="1456" cy="496" r="28" fill="#FF3B30"/>
+<text x="1456" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
+<rect x="120" y="640" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
+<text x="218" y="704" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">SUBMIT</text>
+<text x="218" y="810" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">ENCRYPTED</text>
+<rect x="332" y="640" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
+<text x="430" y="704" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">REVEAL</text>
+<text x="430" y="810" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">LOCKED</text>
+<rect x="544" y="640" width="196" height="280" rx="12" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
+<text x="642" y="704" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#34C759;letter-spacing:4.32px">CLAIM</text>
+<text x="642" y="810" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:42px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.92px">SETTLED</text>
+<text x="430" y="970" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#34C759;letter-spacing:4.32px">NO PUBLIC QUEUE TO READ</text>
+<rect x="860" y="680" width="186" height="170" rx="12" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
+<text x="953" y="744" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#1D1D1F;letter-spacing:3.96px">YOU</text>
+<text x="953" y="800" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:30px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.66px">PLACE BUY</text>
+<rect x="1076" y="680" width="186" height="170" rx="12" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1169" y="744" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#FF3B30;letter-spacing:3.96px">BOT</text>
+<text x="1169" y="800" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:30px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.66px">JUMPS AHEAD</text>
+<rect x="1292" y="680" width="186" height="170" rx="12" fill="#FBFBFD" stroke="#6E6E73" stroke-width="2"/>
+<text x="1385" y="744" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#6E6E73;letter-spacing:3.96px">YOU</text>
+<text x="1385" y="800" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:30px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.66px">PAY MORE</text>
+<path d="M 1050 765 L 1072 765" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<path d="M 1266 765 L 1288 765" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<text x="1170" y="940" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:800;fill:#FF3B30;letter-spacing:-2.42px">$700M+</text>
+<text x="1170" y="990" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">STOLEN PER YEAR ON ETHEREUM</text>
+<line x1="800" y1="500" x2="800" y2="970" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
+<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">THE $700M/YR MEV ECONOMY ON ETHEREUM — REFUSED AT THE PROTOCOL LEVEL.</text>
+<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">Sealed bets cannot be front-run.</text>
 </svg>

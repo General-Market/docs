@@ -113,7 +113,7 @@ def main():
     print(f"· 4 THEORY cards (2x2 grid)")
 
     # Divider — MECHANISMS
-    upload_image(EXTRAS_DIR / "99-divider.svg", 0, Y_DIVIDER_MECH, DIVIDER_W)
+    upload_image(EXTRAS_DIR / "99-divider-MECHANISMS.svg", 0, Y_DIVIDER_MECH, DIVIDER_W)
     print(f"· Divider · MECHANISMS @ y={Y_DIVIDER_MECH}")
 
     # MECHANISMS + VOICES (spine + right column)
@@ -127,44 +127,44 @@ def main():
         time.sleep(0.15)
 
     # === PRODUCT SECTION ===
+    # Product cards are now 1600x1300 (grew from 1100 for the bigger explanations)
+    PRODUCT_ROW_PITCH = 1600  # height + 300 breathing
     y_protocol_div = Y_MECH_START + len(mech_names) * MECH_PITCH + 200
-    upload_image(EXTRAS_DIR / "99-divider-THE-PROTOCOL.svg", 0, y_protocol_div, DIVIDER_W)
+    upload_image(EXTRAS_DIR / "99-divider-PROTOCOL.svg", 0, y_protocol_div, DIVIDER_W)
     print(f"\n· Divider · PROTOCOL @ y={y_protocol_div}")
 
     # A1, A2, A3 in a row + B1 in a second row
-    y_a_row = y_protocol_div + 900   # account for product card height/2 ≈ 700/2 + breathing
-    a_offset = 1750  # ±x
+    y_a_row = y_protocol_div + 1000   # divider 280/2=140 + product 1300/2=650 + gap 200 ≈ 990
+    a_offset = 1750
     upload_image(PRODUCT_DIR / "A1-what-is-a-block.svg",  -a_offset, y_a_row, PRODUCT_W)
     upload_image(PRODUCT_DIR / "A2-how-block-resolves.svg", 0,        y_a_row, PRODUCT_W)
     upload_image(PRODUCT_DIR / "A3-block-returns.svg",      a_offset, y_a_row, PRODUCT_W)
     print(f"· Product A1/A2/A3 @ y={y_a_row}")
 
-    y_b = y_a_row + 1400
+    y_b = y_a_row + PRODUCT_ROW_PITCH
     upload_image(PRODUCT_DIR / "B1-timeline.svg", 0, y_b, PRODUCT_W)
     print(f"· Timeline B1 @ y={y_b}")
 
     # === C SECTION (how each extraction is refused) ===
     y_c_div = y_b + 1100
-    upload_image(EXTRAS_DIR / "99-divider-HOW-IT-REFUSES.svg", 0, y_c_div, DIVIDER_W)
-    print(f"\n· Divider · HOW IT REFUSES @ y={y_c_div}")
+    upload_image(EXTRAS_DIR / "99-divider-REFUSAL.svg", 0, y_c_div, DIVIDER_W)
+    print(f"\n· Divider · REFUSAL @ y={y_c_div}")
 
     # 4 + 3 grid of C cards
     c_names = ["C1-insider-trading", "C2-front-running", "C3-market-manipulation",
                "C4-pfof", "C5-spoofing", "C6-toxic-flow", "C7-latency"]
-    y_c_row1 = y_c_div + 900
-    y_c_row2 = y_c_row1 + 1400
-    # Row 1 — 4 cards
+    y_c_row1 = y_c_div + 1000
+    y_c_row2 = y_c_row1 + PRODUCT_ROW_PITCH
     for i in range(4):
         upload_image(PRODUCT_DIR / f"{c_names[i]}.svg", X_C_OFFSETS[i], y_c_row1, PRODUCT_W)
         print(f"· {c_names[i]} @ y={y_c_row1}")
-    # Row 2 — 3 cards, centred
     row2_offsets = [-1750, 0, 1750]
     for i in range(3):
         upload_image(PRODUCT_DIR / f"{c_names[4 + i]}.svg", row2_offsets[i], y_c_row2, PRODUCT_W)
         print(f"· {c_names[4 + i]} @ y={y_c_row2}")
 
     # === FIX ===
-    y_fix = y_c_row2 + 1300
+    y_fix = y_c_row2 + 1500
     upload_image(EXTRAS_DIR / "99-fix.svg", 0, y_fix, FIX_W)
     print(f"\n· FIX @ y={y_fix}")
 

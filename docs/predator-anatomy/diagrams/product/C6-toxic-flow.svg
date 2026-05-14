@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
 <defs>
 <marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
 <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
@@ -7,60 +7,62 @@
 <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
 <marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
 <text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">EXTRACTION C6 · TOXIC-FLOW</text>
 <text x="806" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">No makers.</text>
 <text x="834" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">No spread.</text>
-<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">Blocks clear at one price. No bid, no ask, no widening.</text>
-<rect x="80" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="216" y="375" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="280" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
-<circle cx="716" cy="396" r="28" fill="#34C759"/>
-<text x="716" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
-<rect x="820" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="943" y="375" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="1000" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
-<circle cx="1456" cy="396" r="28" fill="#FF3B30"/>
-<text x="1456" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
-<circle cx="430" cy="585" r="168" fill="#E5F8EC" stroke="none" stroke-width="1"/>
-<circle cx="430" cy="585" r="150" fill="#FFFFFF" stroke="#34C759" stroke-width="3"/>
-<text x="430" y="599" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#34C759;letter-spacing:-1.58px">POOL</text>
-<text x="430" y="840" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:130px;font-weight:800;fill:#34C759;letter-spacing:-2.86px">$0</text>
-<text x="430" y="890" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">SPREAD</text>
-<circle cx="1170" cy="585" r="70" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="3"/>
-<text x="1170" y="595" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:26px;font-weight:800;fill:#1D1D1F;letter-spacing:4.68px">YOU</text>
-<circle cx="1170.0" cy="385.0" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1170.0" y="393.0" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1170.0" y1="417.0" x2="1170.0" y2="505.0" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1287.5570504584946" cy="423.1966011250105" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1287.5570504584946" y="431.1966011250105" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1268.7479223851356" y1="449.08514494500884" x2="1217.022820183398" y2="520.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1360.2113032590307" cy="523.1966011250105" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1360.2113032590307" y="531.1966011250105" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1329.7774947375858" y1="533.0851449450088" x2="1246.0845213036123" y2="560.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1360.2113032590307" cy="646.8033988749895" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1360.2113032590307" y="654.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1329.7774947375858" y1="636.9148550549912" x2="1246.0845213036123" y2="609.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1287.5570504584946" cy="746.8033988749895" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1287.5570504584946" y="754.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1268.7479223851356" y1="720.9148550549912" x2="1217.022820183398" y2="649.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1170.0" cy="785.0" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1170.0" y="793.0" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1170.0" y1="753.0" x2="1170.0" y2="665.0" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1052.4429495415054" cy="746.8033988749895" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1052.4429495415054" y="754.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1071.2520776148644" y1="720.9148550549912" x2="1122.977179816602" y2="649.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="979.7886967409693" cy="646.8033988749895" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="979.7886967409693" y="654.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1010.2225052624142" y1="636.9148550549912" x2="1093.9154786963877" y2="609.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="979.7886967409693" cy="523.1966011250106" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="979.7886967409693" y="531.1966011250106" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1010.2225052624142" y1="533.0851449450089" x2="1093.9154786963877" y2="560.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<circle cx="1052.4429495415054" cy="423.19660112501055" r="32" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
-<text x="1052.4429495415054" y="431.19660112501055" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MM</text>
-<line x1="1071.2520776148644" y1="449.08514494500884" x2="1122.977179816602" y2="520.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
-<text x="1170" y="840" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:800;fill:#FF3B30;letter-spacing:-2.42px">$2–5M</text>
-<text x="1170" y="890" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">PER MM · TOXIC-FLOW</text>
-<line x1="800" y1="400" x2="800" y2="870" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
-<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">Losers pay winners. The cleanup never happens.</text>
+<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">There is no market maker setting a bid-ask spread. Everyone trades into the</text>
+<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">same pool at the same clearing price. The spread you pay is zero.</text>
+<rect x="80" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="216" y="475" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="280" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
+<circle cx="716" cy="496" r="28" fill="#34C759"/>
+<text x="716" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
+<rect x="820" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="943" y="475" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="1000" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
+<circle cx="1456" cy="496" r="28" fill="#FF3B30"/>
+<text x="1456" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
+<circle cx="430" cy="685" r="168" fill="#E5F8EC" stroke="none" stroke-width="1"/>
+<circle cx="430" cy="685" r="150" fill="#FFFFFF" stroke="#34C759" stroke-width="3"/>
+<text x="430" y="699" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#34C759;letter-spacing:-1.58px">POOL</text>
+<text x="430" y="940" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:130px;font-weight:800;fill:#34C759;letter-spacing:-2.86px">$0</text>
+<text x="430" y="990" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">SPREAD YOU PAY</text>
+<circle cx="1170" cy="685" r="70" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="3"/>
+<text x="1170" y="695" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:26px;font-weight:800;fill:#1D1D1F;letter-spacing:4.68px">YOU</text>
+<circle cx="1170.0" cy="485.0" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1170.0" y="492.0" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1170.0" y1="521.0" x2="1170.0" y2="605.0" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1287.5570504584946" cy="523.1966011250105" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1287.5570504584946" y="530.1966011250105" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1266.3967813759655" y1="552.3212129225086" x2="1217.022820183398" y2="620.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1360.2113032590307" cy="623.1966011250105" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1360.2113032590307" y="630.1966011250105" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1325.973268672405" y1="634.3212129225086" x2="1246.0845213036123" y2="660.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1360.2113032590307" cy="746.8033988749895" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1360.2113032590307" y="753.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1325.973268672405" y1="735.6787870774914" x2="1246.0845213036123" y2="709.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1287.5570504584946" cy="846.8033988749895" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1287.5570504584946" y="853.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1266.3967813759655" y1="817.6787870774914" x2="1217.022820183398" y2="749.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1170.0" cy="885.0" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1170.0" y="892.0" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1170.0" y1="849.0" x2="1170.0" y2="765.0" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1052.4429495415054" cy="846.8033988749895" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1052.4429495415054" y="853.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1073.6032186240345" y1="817.6787870774914" x2="1122.977179816602" y2="749.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="979.7886967409693" cy="746.8033988749895" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="979.7886967409693" y="753.8033988749895" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1014.0267313275948" y1="735.6787870774914" x2="1093.9154786963877" y2="709.7213595499958" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="979.7886967409693" cy="623.1966011250106" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="979.7886967409693" y="630.1966011250106" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1014.0267313275948" y1="634.3212129225086" x2="1093.9154786963877" y2="660.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<circle cx="1052.4429495415054" cy="523.1966011250106" r="36" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1052.4429495415054" y="530.1966011250106" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:16px;font-weight:800;fill:#FF3B30;letter-spacing:0.8px">MAKER</text>
+<line x1="1073.6032186240343" y1="552.3212129225086" x2="1122.977179816602" y2="620.2786404500042" stroke="#FF3B30" stroke-width="2" opacity="0.5"/>
+<text x="1170" y="940" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:800;fill:#FF3B30;letter-spacing:-2.42px">$2–5M</text>
+<text x="1170" y="990" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:3.6px">PER MAKER · SPREAD WIDENS ON YOU</text>
+<line x1="800" y1="500" x2="800" y2="970" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
+<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">MAKERS TIGHTEN SPREADS TO ATTRACT YOU, THEN WIDEN ONCE THEY READ YOUR DIRECTION.</text>
+<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">No quote to fade. No spread to widen.</text>
 </svg>

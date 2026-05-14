@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
 <defs>
 <marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
 <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
@@ -7,58 +7,60 @@
 <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
 <marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
 <text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">PRIMITIVE A2 · THE POOL</text>
 <text x="764" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">Pool clears.</text>
 <text x="792" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">Winners split.</text>
-<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">Each market is a parimutuel pool. No counterparty — refund.</text>
-<rect x="80" y="340" width="1440" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="120" y="390" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="281" y="446" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">BTC</text>
-<text x="281" y="500" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="160" y="514" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="160" y="514" width="145" height="22" rx="4" fill="#34C759" opacity="0.9"/>
-<text x="281" y="578" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$60</text>
-<text x="281" y="630" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="160" y="644" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="160" y="644" width="96" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="281" y="708" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$40</text>
-<line x1="144" y1="778" x2="418" y2="778" stroke="#E8E8ED" stroke-width="1"/>
-<text x="281" y="822" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">1.67×</text>
-<rect x="466" y="390" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="627" y="446" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ETH</text>
-<text x="627" y="500" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="506" y="514" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="506" y="514" width="72" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
-<text x="627" y="578" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$30</text>
-<text x="627" y="630" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="506" y="644" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="506" y="644" width="169" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="627" y="708" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#FF3B30;letter-spacing:-0.88px">$70</text>
-<line x1="490" y1="778" x2="764" y2="778" stroke="#E8E8ED" stroke-width="1"/>
-<text x="627" y="822" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FF3B30;letter-spacing:-0.7px">1.43×</text>
-<rect x="812" y="390" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="973" y="446" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">SOL</text>
-<text x="973" y="500" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="852" y="514" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="852" y="514" width="121" height="22" rx="4" fill="#34C759" opacity="0.9"/>
-<text x="973" y="578" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$50</text>
-<text x="973" y="630" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="852" y="644" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="852" y="644" width="121" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="973" y="708" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$50</text>
-<line x1="836" y1="778" x2="1110" y2="778" stroke="#E8E8ED" stroke-width="1"/>
-<text x="973" y="822" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">2.00×</text>
-<rect x="1158" y="390" width="322" height="490" rx="12" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="446" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ARB</text>
-<text x="1319" y="500" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="1198" y="514" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="1198" y="514" width="242" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
-<text x="1319" y="578" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$100</text>
-<text x="1319" y="630" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="1198" y="644" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="708" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$0</text>
-<line x1="1182" y1="778" x2="1456" y2="778" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="822" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#6E6E73;letter-spacing:-0.7px">REFUND</text>
-<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">Losers pay winners. No counterparty? Money goes home.</text>
+<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">Each market in a block is parimutuel: everyone bets into a pool, winners split</text>
+<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">losers' money, no market maker.</text>
+<rect x="80" y="440" width="1440" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="120" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="281" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">BTC</text>
+<text x="281" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
+<rect x="160" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="160" y="614" width="145" height="22" rx="4" fill="#34C759" opacity="0.9"/>
+<text x="281" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$60</text>
+<text x="281" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
+<rect x="160" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="160" y="744" width="96" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
+<text x="281" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$40</text>
+<line x1="144" y1="878" x2="418" y2="878" stroke="#E8E8ED" stroke-width="1"/>
+<text x="281" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">WIN ×1.67</text>
+<rect x="466" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="627" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ETH</text>
+<text x="627" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
+<rect x="506" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="506" y="614" width="72" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
+<text x="627" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$30</text>
+<text x="627" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
+<rect x="506" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="506" y="744" width="169" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
+<text x="627" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#FF3B30;letter-spacing:-0.88px">$70</text>
+<line x1="490" y1="878" x2="764" y2="878" stroke="#E8E8ED" stroke-width="1"/>
+<text x="627" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FF3B30;letter-spacing:-0.7px">WIN ×1.43</text>
+<rect x="812" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="973" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">SOL</text>
+<text x="973" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
+<rect x="852" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="852" y="614" width="121" height="22" rx="4" fill="#34C759" opacity="0.9"/>
+<text x="973" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$50</text>
+<text x="973" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
+<rect x="852" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="852" y="744" width="121" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
+<text x="973" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$50</text>
+<line x1="836" y1="878" x2="1110" y2="878" stroke="#E8E8ED" stroke-width="1"/>
+<text x="973" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">WIN ×2.00</text>
+<rect x="1158" y="490" width="322" height="490" rx="12" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1319" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ARB</text>
+<text x="1319" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
+<rect x="1198" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="1198" y="614" width="242" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
+<text x="1319" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$100</text>
+<text x="1319" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
+<rect x="1198" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1319" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$0</text>
+<line x1="1182" y1="878" x2="1456" y2="878" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1319" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#6E6E73;letter-spacing:-0.7px">REFUND</text>
+<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">SAME MODEL AS A HORSE-RACING POOL. SAME MODEL AS THE LOTTERY.</text>
+<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">No spread. No middleman. The pool is the price.</text>
 </svg>

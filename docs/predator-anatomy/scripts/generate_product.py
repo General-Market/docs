@@ -23,6 +23,7 @@ Nothing below 20px.
 """
 import math
 import pathlib
+import textwrap
 
 from generate_diagrams import (
     T, R, L, CIRC, PATH, arrow_defs, wrap_text,
@@ -36,7 +37,7 @@ OUT = ROOT / "diagrams" / "product"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ===== CANVAS =====
-W, H = 1600, 1100
+W, H = 1600, 1300
 
 # ===== MARGINS =====
 MARGIN_TOP = 100
@@ -46,27 +47,39 @@ MARGIN_SIDE = 80
 # ===== HEADER ZONE =====
 EYEBROW_Y = MARGIN_TOP                       # 100
 TITLE_Y = MARGIN_TOP + 130                   # 230  (baseline of 110px title)
-TAGLINE_Y = MARGIN_TOP + 190                 # 290
+
+# ===== SUMMARY (plain-English explainer line(s)) =====
+SUMMARY_Y = MARGIN_TOP + 250                 # 350  (first baseline)
+SUMMARY_LINE_H = 38
 
 # ===== DIAGRAM ZONE =====
-DIAG_TOP = MARGIN_TOP + 240                  # 340
-DIAG_BOTTOM = H - MARGIN_BOTTOM - 90         # 930  (leaves room for one prose line)
+DIAG_TOP = MARGIN_TOP + 340                  # 440
+DIAG_BOTTOM = H - MARGIN_BOTTOM - 190        # 1030 (preserves 590px diagram height)
 DIAG_LEFT = MARGIN_SIDE                      # 80
 DIAG_RIGHT = W - MARGIN_SIDE                 # 1520
 DIAG_W = DIAG_RIGHT - DIAG_LEFT              # 1440
 
-# ===== PROSE FOOTER =====
-PROSE_Y = H - MARGIN_BOTTOM - 20             # 1000
+# ===== BRIDGE CAPTION (mono "you've seen this before as …") =====
+BRIDGE_Y = H - MARGIN_BOTTOM - 120           # 1100
+
+# ===== PROSE FOOTER (Cioran closer) =====
+PROSE_Y = H - MARGIN_BOTTOM                  # 1220
 
 # ===== SIZES =====
 TITLE_PX = 110
-TAGLINE_PX = 36
+SUMMARY_PX = 26
 EYEBROW_PX = 24
-PROSE_PX = 24
+BRIDGE_PX = 20
+PROSE_PX = 28
 
 
-def header(eyebrow, hook_left, hook_right, tagline):
-    """Eyebrow + two-line title + tagline. Title uses display sans + NY serif italic blue."""
+def header(eyebrow, hook_left, hook_right, summary):
+    """Eyebrow + two-line title + plain-English summary (wrapped).
+
+    Title uses display sans + NY serif italic blue. The fourth argument
+    used to be the marketing tagline; it is now the novice-friendly
+    summary, which can wrap to two lines.
+    """
     s = []
     s.append(T(W // 2, EYEBROW_Y, eyebrow,
                font=SF_MONO, size=EYEBROW_PX, weight=700,
@@ -89,17 +102,32 @@ def header(eyebrow, hook_left, hook_right, tagline):
                font=NY_SERIF, size=TITLE_PX, weight=500,
                fill=BLUE, anchor="start", tracking=-1.76,  # 110 * -0.016
                italic=True))
-    s.append(T(W // 2, TAGLINE_Y, tagline,
-               font=SF_TEXT, size=TAGLINE_PX, weight=500,
-               fill=INK_3, anchor="middle", tracking=-0.79))  # 36 * -0.022
+
+    # Summary: 26px SF Pro Text, wraps at ~78 chars (~1100px wide).
+    # Two lines max. Centred. Sits at SUMMARY_Y, second line +SUMMARY_LINE_H.
+    lines = textwrap.wrap(summary, width=78, break_long_words=False)
+    if len(lines) > 2:
+        # Force at most two lines by re-wrapping wider.
+        lines = textwrap.wrap(summary, width=92, break_long_words=False)
+    for i, line in enumerate(lines[:2]):
+        s.append(T(W // 2, SUMMARY_Y + i * SUMMARY_LINE_H, line,
+                   font=SF_TEXT, size=SUMMARY_PX, weight=500,
+                   fill=INK_2, anchor="middle", tracking=-0.57))  # 26 * -0.022
     return "\n".join(s)
+
+
+def bridge(text):
+    """Mono caption directly under the diagram. 'You've seen this before as …'."""
+    return T(W // 2, BRIDGE_Y, text,
+             font=SF_MONO, size=BRIDGE_PX, weight=500,
+             fill=INK_3, anchor="middle", tracking=0.4)
 
 
 def prose(text):
     """One short Cioran line at the bottom. ≤12 words."""
     return T(W // 2, PROSE_Y, text,
-             font=SF_TEXT, size=PROSE_PX, weight=400,
-             fill=INK_2, anchor="middle", tracking=-0.53)  # 24 * -0.022
+             font=SF_TEXT, size=PROSE_PX, weight=500,
+             fill=INK, anchor="middle", tracking=-0.62)  # 28 * -0.022
 
 
 def wrap_svg(body):
@@ -167,7 +195,9 @@ def build_A1_what_is_a_block():
     body = [
         header("PRIMITIVE A1 · THE BUNDLE",
                "One hundred bets.", "One ticket.",
-               "A basket of 100 binary markets — UP or DOWN on each."),
+               "A block is one ticket that bundles a hundred up-or-down "
+               "bets on a hundred different markets — BTC, ETH, SOL, and "
+               "ninety-seven more."),
     ]
     s = []
     # 10×6 grid of mini cards.
@@ -206,7 +236,8 @@ def build_A1_what_is_a_block():
                        anchor="middle"))
 
     body.append("\n".join(s))
-    body.append(prose("One block. One hundred bets."))
+    body.append(bridge("THINK OF IT LIKE AN INDEX ETF — EVERY POSITION A DIRECTIONAL CALL."))
+    body.append(prose("One ticket. One hundred opinions."))
     return wrap_svg("\n".join(body))
 
 
@@ -217,7 +248,8 @@ def build_A2_how_block_resolves():
     body = [
         header("PRIMITIVE A2 · THE POOL",
                "Pool clears.", "Winners split.",
-               "Each market is a parimutuel pool. No counterparty — refund."),
+               "Each market in a block is parimutuel: everyone bets into "
+               "a pool, winners split losers' money, no market maker."),
     ]
     s = []
     fx, fy = DIAG_LEFT, DIAG_TOP
@@ -231,10 +263,10 @@ def build_A2_how_block_resolves():
     col_y = fy + 50
 
     markets = [
-        ("BTC", "$60", "$40", "UP",   "1.67×"),
-        ("ETH", "$30", "$70", "DOWN", "1.43×"),
-        ("SOL", "$50", "$50", "UP",   "2.00×"),
-        ("ARB", "$100", "$0",  None,  "CANCELLED"),
+        ("BTC", "$60", "$40", "UP",   "WIN ×1.67"),
+        ("ETH", "$30", "$70", "DOWN", "WIN ×1.43"),
+        ("SOL", "$50", "$50", "UP",   "WIN ×2.00"),
+        ("ARB", "$100", "$0",  None,  "REFUND"),
     ]
 
     for i, (ticker, up_p, down_p, winner, status) in enumerate(markets):
@@ -305,7 +337,8 @@ def build_A2_how_block_resolves():
                        anchor="middle", tracking=-0.70))
 
     body.append("\n".join(s))
-    body.append(prose("Losers pay winners. No counterparty? Money goes home."))
+    body.append(bridge("SAME MODEL AS A HORSE-RACING POOL. SAME MODEL AS THE LOTTERY."))
+    body.append(prose("No spread. No middleman. The pool is the price."))
     return wrap_svg("\n".join(body))
 
 
@@ -316,7 +349,9 @@ def build_A3_block_returns():
     body = [
         header("PRIMITIVE A3 · THE ARITHMETIC",
                "Forty wrong.", "Profit anyway.",
-               "Sixty wins, forty losses, on a $1 block — net +$0.10."),
+               "On a block, you can be wrong on most markets and still "
+               "finish in profit, because each winning market pays more "
+               "than each losing market costs."),
     ]
     s = []
     panel_gap = 60
@@ -379,7 +414,8 @@ def build_A3_block_returns():
                anchor="end", tracking=-2.86))
 
     body.append("\n".join(s))
-    body.append(prose("The math forgives imperfect conviction."))
+    body.append(bridge("THE ASYMMETRY OPTIONS TRADERS PAY A PREMIUM FOR — BUILT IN BY DEFAULT."))
+    body.append(prose("Be right on enough. Not on everything."))
     return wrap_svg("\n".join(body))
 
 
@@ -390,7 +426,9 @@ def build_B1_timeline():
     body = [
         header("TIMELINE B1 · THE THREE PHASES",
                "Submit. Reveal.", "Claim.",
-               "Three ten-minute windows. Sealed, then unlocked, then settled."),
+               "Every block trades in three ten-minute phases. While you "
+               "submit, your bets are encrypted. No one can see them, copy "
+               "them, or trade ahead of them."),
     ]
     s = []
     frame_x = DIAG_LEFT
@@ -401,17 +439,20 @@ def build_B1_timeline():
 
     phase_gap = 32
     phase_w = (frame_w - 80 - phase_gap * 2) // 3
-    phase_h = 360
+    phase_h = 420
     px0 = frame_x + 40
-    py = frame_y + 60
+    py = frame_y + 50
 
     phases = [
-        ("01", "SUBMIT", "10 min", BLUE),
-        ("02", "REVEAL", "10 min", INK),
-        ("03", "CLAIM",  "10 min", GREEN),
+        ("01", "SUBMIT", "10 min", BLUE,
+         ("You place your bets.", "Encrypted.")),
+        ("02", "REVEAL", "10 min", INK,
+         ("Everyone reveals at once.", "Bets are locked.")),
+        ("03", "CLAIM",  "10 min", GREEN,
+         ("Winners take", "the pool.")),
     ]
 
-    for i, (num, name, duration, color) in enumerate(phases):
+    for i, (num, name, duration, color, sublines) in enumerate(phases):
         x = px0 + i * (phase_w + phase_gap)
         s.append(R(x, py, phase_w, phase_h, fill=PAPER_3, stroke=color, rx=14, stroke_w=2))
 
@@ -433,6 +474,14 @@ def build_B1_timeline():
         s.append(T(x + phase_w // 2, py + 200, name,
                    font=SF_DISPLAY, size=84, weight=800, fill=INK,
                    anchor="middle", tracking=-1.85))
+
+        # Plain-English explainer (two lines)
+        s.append(T(x + phase_w // 2, py + 280, sublines[0],
+                   font=SF_TEXT, size=24, weight=500, fill=INK_2,
+                   anchor="middle", tracking=-0.53))
+        s.append(T(x + phase_w // 2, py + 316, sublines[1],
+                   font=SF_TEXT, size=24, weight=500, fill=INK_2,
+                   anchor="middle", tracking=-0.53))
 
     # Bottom timeline bar
     bar_y = py + phase_h + 70
@@ -457,7 +506,8 @@ def build_B1_timeline():
                anchor="end", tracking=0.88))
 
     body.append("\n".join(s))
-    body.append(prose("Visible only after it is already settled."))
+    body.append(bridge("ON A NORMAL EXCHANGE, EVERY ORDER IS VISIBLE THE SECOND YOU PLACE IT."))
+    body.append(prose("Three phases. Zero visibility for ten minutes."))
     return wrap_svg("\n".join(body))
 
 
@@ -492,7 +542,9 @@ def build_C1_insider():
     body = [
         header("EXTRACTION C1 · INSIDER TRADING",
                "Know one market.", "Win nothing.",
-               "Knowing one ticker out of a hundred is barely an edge."),
+               "Even if you have inside information on one market, you "
+               "still need to be right on the other ninety-nine. Insider "
+               "edge collapses to almost zero."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -519,7 +571,8 @@ def build_C1_insider():
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("Certainty about one ticker, diluted across ninety-nine."))
+    body.append(bridge("KNOWING ONE STOCK'S EARNINGS BEATS = NEAR-100% TRADE. HERE: COIN-FLIP × 99."))
+    body.append(prose("Insider edge: from 100% to 0.1%."))
     return wrap_svg("\n".join(body))
 
 
@@ -530,7 +583,9 @@ def build_C2_front_running():
     body = [
         header("EXTRACTION C2 · FRONT-RUNNING",
                "No mempool.", "Nothing to read.",
-               "Front-running needs a visible queue. There is none."),
+               "On normal blockchains your trade waits in a public queue "
+               "(the 'mempool') — a bot reads it and trades ahead of you. "
+               "Here, your trade is encrypted until reveal."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -556,9 +611,9 @@ def build_C2_front_running():
                    font=SF_DISPLAY, size=42, weight=800, fill=INK,
                    anchor="middle", tracking=-0.92))
 
-    s.append(T(lx + col_w // 2, cy_top + col_h - 60, "MEMPOOL = NULL",
-               font=SF_MONO, size=28, weight=800, fill=GREEN,
-               anchor="middle", tracking=5.04))
+    s.append(T(lx + col_w // 2, cy_top + col_h - 60, "NO PUBLIC QUEUE TO READ",
+               font=SF_MONO, size=24, weight=800, fill=GREEN,
+               anchor="middle", tracking=4.32))
 
     # RIGHT — actor chain
     actor_y = cy_top + 240
@@ -567,9 +622,9 @@ def build_C2_front_running():
     actor_w = (col_w - 80 - actor_gap * 2) // 3
     actor_x0 = rx + 40
     actors = [
-        ("VICTIM", "BUY", INK, PAPER_3),
-        ("SEARCHER", "FRONT", RED, RED_T),
-        ("VICTIM", "FILLS", INK_3, PAPER_3),
+        ("YOU", "PLACE BUY", INK, PAPER_3),
+        ("BOT", "JUMPS AHEAD", RED, RED_T),
+        ("YOU", "PAY MORE", INK_3, PAPER_3),
     ]
     for i, (name, action, color, fill) in enumerate(actors):
         x = actor_x0 + i * (actor_w + actor_gap)
@@ -578,8 +633,8 @@ def build_C2_front_running():
                    font=SF_MONO, size=22, weight=800, fill=color,
                    anchor="middle", tracking=3.96))
         s.append(T(x + actor_w // 2, actor_y + 120, action,
-                   font=SF_DISPLAY, size=36, weight=800, fill=INK,
-                   anchor="middle", tracking=-0.79))
+                   font=SF_DISPLAY, size=30, weight=800, fill=INK,
+                   anchor="middle", tracking=-0.66))
 
     for i in range(2):
         x1 = actor_x0 + i * (actor_w + actor_gap) + actor_w
@@ -590,7 +645,7 @@ def build_C2_front_running():
     s.append(T(rx + col_w // 2, cy_top + col_h - 90, "$700M+",
                font=SF_DISPLAY, size=110, weight=800, fill=RED,
                anchor="middle", tracking=-2.42))
-    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "MEV EXTRACTED",
+    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "STOLEN PER YEAR ON ETHEREUM",
                font=SF_MONO, size=22, weight=700, fill=INK_3,
                anchor="middle", tracking=3.96))
 
@@ -599,7 +654,8 @@ def build_C2_front_running():
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("Latency stops mattering when there is nothing to be early to."))
+    body.append(bridge("THE $700M/YR MEV ECONOMY ON ETHEREUM — REFUSED AT THE PROTOCOL LEVEL."))
+    body.append(prose("Sealed bets cannot be front-run."))
     return wrap_svg("\n".join(body))
 
 
@@ -610,7 +666,9 @@ def build_C3_manipulation():
     body = [
         header("EXTRACTION C3 · MANIPULATION",
                "Move one.", "Move all hundred.",
-               "Manipulating one perp is profitable. A hundred is not."),
+               "To manipulate a single perpetual market and profit, you "
+               "push one price. To manipulate a block, you would have to "
+               "push a hundred — at a hundred times the cost."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -636,7 +694,7 @@ def build_C3_manipulation():
     s.append(T(lx + col_w // 2, eco_y, "100×",
                font=SF_DISPLAY, size=130, weight=800, fill=INK,
                anchor="middle", tracking=-2.86))
-    s.append(T(lx + col_w // 2, eco_y + 50, "THE CAPITAL",
+    s.append(T(lx + col_w // 2, eco_y + 50, "ATTACKS NEEDED",
                font=SF_MONO, size=22, weight=700, fill=INK_3,
                anchor="middle", tracking=3.96))
 
@@ -654,7 +712,7 @@ def build_C3_manipulation():
     s.append(T(rx + col_w // 2, eco_y, "1×",
                font=SF_DISPLAY, size=130, weight=800, fill=INK,
                anchor="middle", tracking=-2.86))
-    s.append(T(rx + col_w // 2, eco_y + 50, "THE CAPITAL",
+    s.append(T(rx + col_w // 2, eco_y + 50, "ATTACK NEEDED",
                font=SF_MONO, size=22, weight=700, fill=INK_3,
                anchor="middle", tracking=3.96))
 
@@ -663,7 +721,8 @@ def build_C3_manipulation():
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("Costs scale. Payout dilutes. The trade stops paying for itself."))
+    body.append(bridge("MANIPULATION WORKS WHEN ONE VENUE DECIDES THE OUTCOME. A BLOCK USES A HUNDRED."))
+    body.append(prose("Manipulation needs concentration. Blocks dilute it."))
     return wrap_svg("\n".join(body))
 
 
@@ -674,7 +733,9 @@ def build_C4_pfof():
     body = [
         header("EXTRACTION C4 · ORDERFLOW",
                "No broker.", "No back room.",
-               "PFOF needs a broker. Blocks have none."),
+               "You don't send your order to a broker who resells it to "
+               "a wholesaler. You send it straight to the pool. There is "
+               "no middleman to pay for your flow."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -742,19 +803,20 @@ def build_C4_pfof():
         s.append(PATH(f"M {x1 + 4} {flow_y + box_h // 2} L {x2 - 4} {flow_y + box_h // 2}",
                       stroke=RED, w=3, marker_end="arrRed"))
 
-    s.append(T(rx + col_w // 2, cy_top + col_h - 90, "$3–5B/yr",
+    s.append(T(rx + col_w // 2, cy_top + col_h - 90, "$943M",
                font=SF_DISPLAY, size=110, weight=800, fill=RED,
                anchor="middle", tracking=-2.42))
-    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "CITADEL PFOF",
-               font=SF_MONO, size=22, weight=700, fill=INK_3,
-               anchor="middle", tracking=3.96))
+    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "CITADEL → ROBINHOOD · 9 MONTHS, 2024",
+               font=SF_MONO, size=20, weight=700, fill=INK_3,
+               anchor="middle", tracking=3.6))
 
     mid_x = (lx + col_w + rx) // 2
     s.append(L(mid_x, cy_top + 60, mid_x, DIAG_BOTTOM - 60,
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("No middle. No data to sell. No 'free' trade."))
+    body.append(bridge("RETAIL ORDERFLOW IS THE BEST IN THE WORLD. HERE, THE BROKER DOESN'T EXIST."))
+    body.append(prose("No order to sell. No flow to buy."))
     return wrap_svg("\n".join(body))
 
 
@@ -765,7 +827,9 @@ def build_C5_spoofing():
     body = [
         header("EXTRACTION C5 · SPOOFING",
                "No book.", "No wall to fake.",
-               "Spoofing needs an orderbook. Parimutuel pools have none."),
+               "There is no order book — no list of bids and offers a "
+               "manipulator can post fake walls on. The pool clears at "
+               "one price. You cannot spoof a lottery."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -845,16 +909,17 @@ def build_C5_spoofing():
                    font=SF_MONO, size=22, weight=700, fill=INK_3,
                    anchor="end", tracking=0.88))
 
-    s.append(T(rx + col_w // 2, cy_top + col_h - 60, "JPMORGAN · $920M FINE",
-               font=SF_MONO, size=22, weight=700, fill=INK_3,
-               anchor="middle", tracking=3.96))
+    s.append(T(rx + col_w // 2, cy_top + col_h - 60, "FAKE WALL · JPMORGAN PAID $920M IN FINES",
+               font=SF_MONO, size=20, weight=700, fill=INK_3,
+               anchor="middle", tracking=3.6))
 
     mid_x = (lx + col_w + rx) // 2
     s.append(L(mid_x, cy_top + 60, mid_x, DIAG_BOTTOM - 60,
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("No stage. No theatre. No wall to fake."))
+    body.append(bridge("THE FAKE-WALL TRICK ON EVERY TRADINGVIEW CHART. IT NEEDS A BOOK. THERE ISN'T ONE."))
+    body.append(prose("The chart is not a stage if there is no audience."))
     return wrap_svg("\n".join(body))
 
 
@@ -865,7 +930,9 @@ def build_C6_toxic_flow():
     body = [
         header("EXTRACTION C6 · TOXIC-FLOW",
                "No makers.", "No spread.",
-               "Blocks clear at one price. No bid, no ask, no widening."),
+               "There is no market maker setting a bid-ask spread. "
+               "Everyone trades into the same pool at the same clearing "
+               "price. The spread you pay is zero."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
@@ -884,11 +951,11 @@ def build_C6_toxic_flow():
     s.append(T(lx + col_w // 2, cy_top + col_h - 90, "$0",
                font=SF_DISPLAY, size=130, weight=800, fill=GREEN,
                anchor="middle", tracking=-2.86))
-    s.append(T(lx + col_w // 2, cy_top + col_h - 40, "SPREAD",
+    s.append(T(lx + col_w // 2, cy_top + col_h - 40, "SPREAD YOU PAY",
                font=SF_MONO, size=22, weight=700, fill=INK_3,
                anchor="middle", tracking=3.96))
 
-    # RIGHT — ring of MM dots
+    # RIGHT — ring of MARKET MAKER dots
     centre_cx = rx + col_w // 2
     centre_cy = cy_top + col_h // 2 - 50
     s.append(CIRC(centre_cx, centre_cy, 70, fill=PAPER_3, stroke=INK, w=3))
@@ -902,12 +969,12 @@ def build_C6_toxic_flow():
         ang = (i / n_mms) * 2 * math.pi - math.pi / 2
         mx = centre_cx + math.cos(ang) * ring_r
         my = centre_cy + math.sin(ang) * ring_r
-        s.append(CIRC(mx, my, 32, fill=RED_T, stroke=RED, w=2))
-        s.append(T(mx, my + 8, "MM",
-                   font=SF_MONO, size=20, weight=800, fill=RED,
+        s.append(CIRC(mx, my, 36, fill=RED_T, stroke=RED, w=2))
+        s.append(T(mx, my + 7, "MAKER",
+                   font=SF_MONO, size=16, weight=800, fill=RED,
                    anchor="middle", tracking=0.8))
-        sx = centre_cx + math.cos(ang) * (ring_r - 32)
-        sy = centre_cy + math.sin(ang) * (ring_r - 32)
+        sx = centre_cx + math.cos(ang) * (ring_r - 36)
+        sy = centre_cy + math.sin(ang) * (ring_r - 36)
         ax = centre_cx + math.cos(ang) * 80
         ay = centre_cy + math.sin(ang) * 80
         s.append(L(sx, sy, ax, ay, stroke=RED, w=2, opacity=0.5))
@@ -915,16 +982,17 @@ def build_C6_toxic_flow():
     s.append(T(rx + col_w // 2, cy_top + col_h - 90, "$2–5M",
                font=SF_DISPLAY, size=110, weight=800, fill=RED,
                anchor="middle", tracking=-2.42))
-    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "PER MM · TOXIC-FLOW",
-               font=SF_MONO, size=22, weight=700, fill=INK_3,
-               anchor="middle", tracking=3.96))
+    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "PER MAKER · SPREAD WIDENS ON YOU",
+               font=SF_MONO, size=20, weight=700, fill=INK_3,
+               anchor="middle", tracking=3.6))
 
     mid_x = (lx + col_w + rx) // 2
     s.append(L(mid_x, cy_top + 60, mid_x, DIAG_BOTTOM - 60,
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("Losers pay winners. The cleanup never happens."))
+    body.append(bridge("MAKERS TIGHTEN SPREADS TO ATTRACT YOU, THEN WIDEN ONCE THEY READ YOUR DIRECTION."))
+    body.append(prose("No quote to fade. No spread to widen."))
     return wrap_svg("\n".join(body))
 
 
@@ -935,46 +1003,48 @@ def build_C7_latency():
     body = [
         header("EXTRACTION C7 · LATENCY",
                "One venue.", "One clearing.",
-               "Latency matters between venues. A round is one venue."),
+               "There is only one venue, and it settles every bet at one "
+               "price per round. A fast firm cannot exploit lag between "
+               "venues, because there are no other venues."),
     ]
     s = []
     lx, rx, col_w, col_h, cy_top = _vs_columns()
     s.extend(_vs_frames(lx, rx, col_w, col_h, cy_top))
 
-    # LEFT — one venue box with arrows converging
+    # LEFT — one venue box with arrows converging from traders
     venue_cx = lx + col_w // 2
     venue_cy = cy_top + col_h // 2 - 60
-    vw, vh = 320, 180
+    vw, vh = 360, 180
     s.append(R(venue_cx - vw // 2, venue_cy - vh // 2, vw, vh,
                fill=GREEN_T, stroke=GREEN, rx=14, stroke_w=3))
-    s.append(T(venue_cx, venue_cy - 10, "ONE ROUND",
+    s.append(T(venue_cx, venue_cy - 14, "ONE VENUE",
                font=SF_MONO, size=26, weight=800, fill=GREEN,
                anchor="middle", tracking=4.68))
-    s.append(T(venue_cx, venue_cy + 40, "t = R",
-               font=SF_DISPLAY, size=56, weight=800, fill=INK,
-               anchor="middle", tracking=-1.23))
+    s.append(T(venue_cx, venue_cy + 32, "ONE CLEARING PRICE",
+               font=SF_DISPLAY, size=34, weight=800, fill=INK,
+               anchor="middle", tracking=-0.75))
 
-    sources = [(-280, -120), (280, -120), (-280, 140), (280, 140),
-               (-320, 10), (320, 10)]
+    sources = [(-300, -120), (300, -120), (-300, 140), (300, 140),
+               (-340, 10), (340, 10)]
     for dx, dy in sources:
         tx = venue_cx + dx
         ty = venue_cy + dy
-        s.append(CIRC(tx, ty, 24, fill=PAPER, stroke=INK_3, w=2))
-        s.append(T(tx, ty + 8, "T",
-                   font=SF_MONO, size=22, weight=800, fill=INK_3,
-                   anchor="middle"))
+        s.append(CIRC(tx, ty, 28, fill=PAPER, stroke=INK_3, w=2))
+        s.append(T(tx, ty + 7, "YOU",
+                   font=SF_MONO, size=16, weight=800, fill=INK_3,
+                   anchor="middle", tracking=0.6))
         # Vector to venue edge
         end_x = venue_cx - (vw // 2 + 8) if dx < 0 else venue_cx + (vw // 2 + 8)
         end_y = venue_cy + dy * 0.45
-        start_x = tx + (24 if dx > 0 else -24)
+        start_x = tx + (28 if dx > 0 else -28)
         s.append(L(start_x, ty, end_x, end_y, stroke=GREEN, w=2, opacity=0.65))
 
     s.append(T(lx + col_w // 2, cy_top + col_h - 90, "0 µs",
                font=SF_DISPLAY, size=130, weight=800, fill=GREEN,
                anchor="middle", tracking=-2.86))
-    s.append(T(lx + col_w // 2, cy_top + col_h - 40, "LATENCY EDGE",
-               font=SF_MONO, size=22, weight=700, fill=INK_3,
-               anchor="middle", tracking=3.96))
+    s.append(T(lx + col_w // 2, cy_top + col_h - 40, "EDGE A FAST FIRM CAN BUY",
+               font=SF_MONO, size=20, weight=700, fill=INK_3,
+               anchor="middle", tracking=3.6))
 
     # RIGHT — two venues with ARB in middle
     venue_w = 220
@@ -1001,33 +1071,37 @@ def build_C7_latency():
 
     arb_cx = (v1_x + venue_w + v2_x) // 2
     arb_cy = v_y + venue_h // 2
-    s.append(CIRC(arb_cx, arb_cy, 56, fill=RED, w=0))
-    s.append(T(arb_cx, arb_cy + 8, "ARB",
-               font=SF_MONO, size=24, weight=800, fill=PAPER,
-               anchor="middle", tracking=2.08))
+    s.append(CIRC(arb_cx, arb_cy, 64, fill=RED, w=0))
+    s.append(T(arb_cx, arb_cy + 7, "FAST",
+               font=SF_MONO, size=18, weight=800, fill=PAPER,
+               anchor="middle", tracking=1.4))
+    s.append(T(arb_cx, arb_cy + 28, "FIRM",
+               font=SF_MONO, size=18, weight=800, fill=PAPER,
+               anchor="middle", tracking=1.4))
 
-    s.append(PATH(f"M {arb_cx - 60} {arb_cy - 18} L {v1_x + venue_w + 6} {arb_cy - 18}",
+    s.append(PATH(f"M {arb_cx - 68} {arb_cy - 18} L {v1_x + venue_w + 6} {arb_cy - 18}",
                   stroke=RED, w=3, marker_end="arrRed"))
-    s.append(PATH(f"M {arb_cx + 60} {arb_cy + 18} L {v2_x - 6} {arb_cy + 18}",
+    s.append(PATH(f"M {arb_cx + 68} {arb_cy + 18} L {v2_x - 6} {arb_cy + 18}",
                   stroke=RED, w=3, marker_end="arrRed"))
 
-    s.append(T(arb_cx, v_y + venue_h + 50, "80 ms",
-               font=SF_DISPLAY, size=40, weight=800, fill=RED,
-               anchor="middle", tracking=-0.88))
+    s.append(T(arb_cx, v_y + venue_h + 50, "80 ms gap",
+               font=SF_DISPLAY, size=34, weight=800, fill=RED,
+               anchor="middle", tracking=-0.75))
 
     s.append(T(rx + col_w // 2, cy_top + col_h - 90, "$5B/yr",
                font=SF_DISPLAY, size=110, weight=800, fill=RED,
                anchor="middle", tracking=-2.42))
-    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "GLOBAL LATENCY TAX",
-               font=SF_MONO, size=22, weight=700, fill=INK_3,
-               anchor="middle", tracking=3.96))
+    s.append(T(rx + col_w // 2, cy_top + col_h - 40, "EXTRACTED BETWEEN MIRROR VENUES",
+               font=SF_MONO, size=20, weight=700, fill=INK_3,
+               anchor="middle", tracking=3.6))
 
     mid_x = (lx + col_w + rx) // 2
     s.append(L(mid_x, cy_top + 60, mid_x, DIAG_BOTTOM - 60,
                stroke=RULE_2, w=1, dash="2 6"))
 
     body.append("\n".join(s))
-    body.append(prose("Collapse the venues. The interval becomes zero."))
+    body.append(bridge("$5B/YR EXTRACTED GLOBALLY FROM LAG BETWEEN MIRROR VENUES. A SINGLE VENUE: IMMUNE."))
+    body.append(prose("Faster than light buys nothing in a sealed batch."))
     return wrap_svg("\n".join(body))
 
 
