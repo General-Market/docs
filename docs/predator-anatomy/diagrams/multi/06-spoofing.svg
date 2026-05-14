@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1300" width="1500" height="1300">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2050" width="1600" height="2050">
 <defs>
 <marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
 <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
@@ -7,122 +7,132 @@
 <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
 <marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect x="0" y="0" width="1500" height="1300" rx="0" fill="#FFFFFF"/>
-<text x="750" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">EXTRACTION 06 · THE WALL THAT WASN'T</text>
-<text x="801" y="144" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.056px">Build a wall.</text>
-<text x="817" y="144" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:48px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-0.768px">Cancel it.</text>
-<text x="750" y="196" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:19px;font-weight:500;fill:#6E6E73;letter-spacing:-0.228px">The chart is not a record. The chart is a stage. Sarao did this for $40M.</text>
-<rect x="150" y="248" width="588" height="56" rx="14" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1" opacity="0.95"/>
-<text x="174" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:1.98px">SCAPEGOAT</text>
-<text x="174" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">Retail trader reading 'strong support' on the chart</text>
-<rect x="762" y="248" width="588" height="56" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1" opacity="0.95"/>
-<text x="786" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#0071E3;letter-spacing:1.98px">PREDATOR</text>
-<text x="786" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">Spoofer with millisecond cancel speed</text>
-<rect x="30" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="80" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="80" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">01</text>
-<text x="106" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Thin book, hidden intent</text>
-<g transform="translate(66, 392)">
-<rect x="20" y="20" width="30" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="44" width="40" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="68" width="50" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<line x1="20" y1="96" x2="368" y2="96" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
-<rect x="20" y="104" width="24" height="16" rx="3" fill="#0071E3" opacity="0.55"/>
-<rect x="20" y="126" width="32" height="16" rx="3" fill="#0071E3" opacity="0.55"/>
-<rect x="20" y="148" width="40" height="16" rx="3" fill="#0071E3" opacity="0.55"/>
-<text x="368" y="32" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#6E6E73;letter-spacing:0.66px">thin book</text>
-<text x="194" y="226" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">MM has private sell intent — invisible</text>
+<rect x="0" y="0" width="1600" height="2050" rx="0" fill="#FFFFFF"/>
+<text x="800" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">EXTRACTION 06 · THE WALL THAT WASN'T</text>
+<text x="846" y="164" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.584px">Build a wall.</text>
+<text x="870" y="164" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:72px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.152px">Cancel it.</text>
+<text x="800" y="236" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:22px;font-weight:500;fill:#6E6E73;letter-spacing:-0.264px">The chart is not a record. The chart is a stage. JPMorgan paid $920M for the run.</text>
+<rect x="80" y="340" width="580" height="580" rx="14" fill="#1D1D1F"/>
+<text x="370" y="400" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#E8F2FE;letter-spacing:2.7px">U.S. v. JPMORGAN</text>
+<text x="370" y="560" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:140px;font-weight:800;fill:#FFFFFF;letter-spacing:-3.08px">$920M</text>
+<text x="370" y="610" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:22px;font-weight:500;fill:#FFFFFF;letter-spacing:-0.264px;opacity:0.85">single spoofing fine</text>
+<text x="370" y="700" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#E8F2FE;letter-spacing:2.52px;opacity:0.85">2020 · DOJ + CFTC + SEC</text>
+<text x="370" y="860" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#FFFFFF;letter-spacing:-0.16px;opacity:0.7">eight years of spoofing, two markets, fifteen traders</text>
+<text x="740" y="380" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:120px;font-weight:400;fill:#0071E3">“</text>
+<text x="800" y="430" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:36px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.576px">We deeply regret the conduct of certain</text>
+<text x="800" y="480" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:36px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.576px">former employees who placed orders they did</text>
+<text x="800" y="530" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:36px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.576px">not intend to fill.</text>
+<text x="800" y="616" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">JPMorgan Chase</text>
+<text x="800" y="640" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:500;fill:#6E6E73;letter-spacing:-0.075px">official statement · DOJ press release · September 2020</text>
+<text x="800" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:400;fill:#424245;letter-spacing:-0.18px">The firm placed and cancelled thousands of orders in</text>
+<text x="800" y="714" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:400;fill:#424245;letter-spacing:-0.18px">precious metals and Treasuries to create false impressions</text>
+<text x="800" y="742" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:400;fill:#424245;letter-spacing:-0.18px">of supply and demand. Eight years of practice. One press</text>
+<text x="800" y="770" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:400;fill:#424245;letter-spacing:-0.18px">release of contrition.</text>
+<rect x="50" y="1040" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="100" cy="1090" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="100" y="1095" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">01</text>
+<text x="126" y="1095" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Thin book, hidden intent</text>
+<g transform="translate(86, 1112)">
+<rect x="20" y="20" width="36" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="46" width="48" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="72" width="60" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<line x1="20" y1="102" x2="388" y2="102" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
+<rect x="20" y="112" width="28" height="18" rx="3" fill="#0071E3" opacity="0.55"/>
+<rect x="20" y="136" width="36" height="18" rx="3" fill="#0071E3" opacity="0.55"/>
+<rect x="20" y="160" width="44" height="18" rx="3" fill="#0071E3" opacity="0.55"/>
+<text x="388" y="36" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:0.72px">thin book</text>
+<text x="204" y="216" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">MM has private sell intent — invisible</text>
 </g>
-<text x="66" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Order book is thin. The MM wants to sell at the</text>
-<text x="66" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">highest visible price.</text>
-<rect x="520" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="570" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="570" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">02</text>
-<text x="596" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The wall goes up</text>
-<g transform="translate(556, 392)">
-<rect x="20" y="20" width="30" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="44" width="40" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="68" width="50" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<line x1="20" y1="96" x2="368" y2="96" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
-<rect x="20" y="104" width="328" height="22" rx="3" fill="#0071E3"/>
-<text x="184" y="120" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FFFFFF;letter-spacing:0.66px">$5M @ $99.00</text>
-<rect x="20" y="132" width="24" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<rect x="20" y="154" width="32" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<text x="194" y="226" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#0071E3;letter-spacing:0.44px">the chart now reads 'strong support'</text>
+<text x="86" y="1372" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Order book is thin. MM wants to sell at the highest</text>
+<text x="86" y="1394" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">visible price.</text>
+<rect x="560" y="1040" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="610" cy="1090" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="610" y="1095" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">02</text>
+<text x="636" y="1095" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The wall goes up</text>
+<g transform="translate(596, 1112)">
+<rect x="20" y="20" width="36" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="46" width="48" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="72" width="60" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<line x1="20" y1="102" x2="388" y2="102" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
+<rect x="20" y="112" width="344" height="24" rx="3" fill="#0071E3"/>
+<text x="192" y="130" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#FFFFFF;letter-spacing:0.72px">$5M @ $99.00</text>
+<rect x="20" y="144" width="28" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<rect x="20" y="168" width="36" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<text x="204" y="216" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#0071E3;letter-spacing:0.48px">the chart now reads 'strong support'</text>
 </g>
-<text x="556" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">MM posts $5M bid at $99. To the chart it looks like</text>
-<text x="556" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">serious conviction.</text>
-<rect x="1010" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="1060" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="1060" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">03</text>
-<text x="1086" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Retail reads the wall as support</text>
-<g transform="translate(1046, 392)">
-<rect x="0" y="10" width="388" height="198" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<line x1="8" y1="142.56" x2="380" y2="142.56" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-<text x="378" y="136.56" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$99.00 'support'</text>
-<path d="M 0 99.0 L 77.60000000000001 102.96000000000001 L 155.20000000000002 114.83999999999999 L 232.79999999999998 122.76 L 310.40000000000003 130.68 L 388 122.76" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="194" y="170.28" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#0071E3;letter-spacing:0.44px">retail decides to buy the dip</text>
+<text x="596" y="1372" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">MM posts $5M at $99. The chart reads it as serious</text>
+<text x="596" y="1394" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">conviction.</text>
+<rect x="1070" y="1040" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1120" cy="1090" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1120" y="1095" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">03</text>
+<text x="1146" y="1095" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Retail reads support</text>
+<g transform="translate(1106, 1112)">
+<rect x="0" y="10" width="408" height="188" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="135.35999999999999" x2="400" y2="135.35999999999999" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="398" y="129.35999999999999" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">$99.00 'support'</text>
+<path d="M 0 94.0 L 81.60000000000001 97.76 L 163.20000000000002 109.03999999999999 L 244.79999999999998 116.56 L 326.40000000000003 124.08000000000001 L 408 116.56" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="204" y="161.68" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#0071E3;letter-spacing:0.48px">retail decides to buy the dip</text>
 </g>
-<text x="1046" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">The wall is flagged as buy-side conviction. Retail</text>
-<text x="1046" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">decides to buy the dip.</text>
-<rect x="30" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="80" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="80" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">04</text>
-<text x="106" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Retail fills the MM's offer</text>
-<g transform="translate(66, 822)">
-<rect x="20" y="20" width="30" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="44" width="40" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="68" width="50" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<line x1="20" y1="96" x2="368" y2="96" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
-<rect x="20" y="104" width="328" height="22" rx="3" fill="#0071E3"/>
-<text x="184" y="120" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FFFFFF;letter-spacing:0.66px">$5M @ $99.00</text>
-<rect x="20" y="132" width="24" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<rect x="20" y="154" width="32" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<circle cx="350" cy="28" r="12" fill="#34C759"/>
-<text x="350" y="33" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="194" y="226" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">retail buys at $99.05 from the MM's offer</text>
+<text x="1106" y="1372" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">The wall is flagged as buy-side conviction. Retail buys</text>
+<text x="1106" y="1394" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">the dip.</text>
+<rect x="50" y="1450" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="100" cy="1500" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="100" y="1505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">04</text>
+<text x="126" y="1505" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Retail fills the offer</text>
+<g transform="translate(86, 1522)">
+<rect x="20" y="20" width="36" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="46" width="48" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="72" width="60" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<line x1="20" y1="102" x2="388" y2="102" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
+<rect x="20" y="112" width="344" height="24" rx="3" fill="#0071E3"/>
+<text x="192" y="130" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#FFFFFF;letter-spacing:0.72px">$5M @ $99.00</text>
+<rect x="20" y="144" width="28" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<rect x="20" y="168" width="36" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<circle cx="368" cy="30" r="14" fill="#34C759"/>
+<text x="368" y="36" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:800;fill:#FFFFFF">✓</text>
+<text x="204" y="216" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">retail buys at $99.05 from the MM's offer</text>
 </g>
-<text x="66" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Convinced by the wall, retail crosses the spread and</text>
-<text x="66" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">buys at $99.05.</text>
-<rect x="520" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="570" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="570" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">05</text>
-<text x="596" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The wall disappears</text>
-<g transform="translate(556, 822)">
-<rect x="20" y="20" width="30" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="44" width="40" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<rect x="20" y="68" width="50" height="16" rx="3" fill="#FF3B30" opacity="0.55"/>
-<line x1="20" y1="96" x2="368" y2="96" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
-<rect x="20" y="104" width="328" height="22" rx="0" fill="none" stroke="#0071E3" stroke-width="1.5" opacity="0.6"/>
-<text x="184" y="120" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">CANCELLED</text>
-<rect x="20" y="132" width="24" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<rect x="20" y="154" width="32" height="16" rx="3" fill="#0071E3" opacity="0.4"/>
-<text x="194" y="226" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:0.44px">wall lifespan: 47 milliseconds total</text>
+<text x="86" y="1782" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Convinced by the wall, retail crosses the spread and buys</text>
+<text x="86" y="1804" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">at $99.05.</text>
+<rect x="560" y="1450" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="610" cy="1500" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="610" y="1505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">05</text>
+<text x="636" y="1505" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The wall disappears</text>
+<g transform="translate(596, 1522)">
+<rect x="20" y="20" width="36" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="46" width="48" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<rect x="20" y="72" width="60" height="18" rx="3" fill="#FF3B30" opacity="0.55"/>
+<line x1="20" y1="102" x2="388" y2="102" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 3"/>
+<rect x="20" y="112" width="344" height="24" rx="0" fill="none" stroke="#0071E3" stroke-width="1.5" opacity="0.6"/>
+<text x="192" y="130" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:0.96px">CANCELLED</text>
+<rect x="20" y="144" width="28" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<rect x="20" y="168" width="36" height="18" rx="3" fill="#0071E3" opacity="0.4"/>
+<text x="204" y="216" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#FF3B30;letter-spacing:0.48px">wall lifespan: 47 milliseconds total</text>
 </g>
-<text x="556" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Forty-seven milliseconds after appearing, the wall</text>
-<text x="556" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">is cancelled.</text>
-<rect x="1010" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="1060" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-<text x="1060" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">06</text>
-<text x="1086" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The drop</text>
-<g transform="translate(1046, 822)">
-<rect x="0" y="10" width="388" height="198" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<line x1="8" y1="49.5" x2="380" y2="49.5" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-<text x="378" y="43.5" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$99.05 fill</text>
-<line x1="8" y1="162.35999999999999" x2="380" y2="162.35999999999999" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-<text x="378" y="156.35999999999999" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$98.85</text>
-<path d="M 0 49.5 L 77.60000000000001 63.36 L 155.20000000000002 91.08 L 232.79999999999998 118.8 L 310.40000000000003 142.56 L 388 158.4" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="368" y="182.16" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#34C759;letter-spacing:0.44px">+$0.20 / share to MM</text>
+<text x="596" y="1782" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Forty-seven milliseconds after appearing, the wall is</text>
+<text x="596" y="1804" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">cancelled.</text>
+<rect x="1070" y="1450" width="480" height="380" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1120" cy="1500" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1120" y="1505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">06</text>
+<text x="1146" y="1505" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The drop</text>
+<g transform="translate(1106, 1522)">
+<rect x="0" y="10" width="408" height="188" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="47.0" x2="400" y2="47.0" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="398" y="41.0" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">$99.05 fill</text>
+<line x1="8" y1="154.16" x2="400" y2="154.16" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="398" y="148.16" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">$98.85</text>
+<path d="M 0 47.0 L 81.60000000000001 60.160000000000004 L 163.20000000000002 86.48 L 244.79999999999998 112.8 L 326.40000000000003 135.35999999999999 L 408 150.4" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="388" y="172.96" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#34C759;letter-spacing:0.48px">+$0.20 / share to MM</text>
 </g>
-<text x="1046" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">With no real support, price falls to $98.85. The MM</text>
-<text x="1046" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">kept the round trip.</text>
-<rect x="30" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="54" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">MARGINAL SPEND</text>
-<text x="54" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">~$0</text>
-<rect x="520" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="544" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ANNUAL TAKE</text>
-<text x="544" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">$200K–2M</text>
-<rect x="1010" y="1200" width="460" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<text x="1034" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ON GENERAL</text>
-<text x="1034" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#0071E3;letter-spacing:-0.616px">$0</text>
+<text x="1106" y="1782" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">With no real support, price falls to $98.85. The MM kept</text>
+<text x="1106" y="1804" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">the round trip.</text>
+<rect x="50" y="1890" width="480" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="78" y="1920" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">MARGINAL SPEND</text>
+<text x="78" y="1954" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.704px">~$0</text>
+<rect x="560" y="1890" width="480" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="588" y="1920" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">ANNUAL TAKE</text>
+<text x="588" y="1954" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.704px">$200K–2M</text>
+<rect x="1070" y="1890" width="480" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="1098" y="1920" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">ON GENERAL</text>
+<text x="1098" y="1954" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#0071E3;letter-spacing:-0.704px">$0</text>
 </svg>

@@ -34,12 +34,12 @@ print(f"  deleted {deleted}/{len(items)}")
 # 2) upload new
 WIDTH = 1500
 GAP = 200
-PITCH = 1300 + GAP  # canvas height + gap
+PITCH = 2050 + GAP  # canvas height + gap
 NAMES = ["01-toxic-flow","02-stop-hunting","03-cross-venue","04-latency","05-information","06-spoofing","07-pfof"]
 
 print("Uploading…")
 for i, name in enumerate(NAMES):
-    y_centre = 650 + i * PITCH
+    y_centre = 1050 + i * PITCH
     svg = SVG_DIR / f"{name}.svg"
     data = {
         "title": name,
