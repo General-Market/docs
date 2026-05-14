@@ -157,11 +157,20 @@ impl BitmapStore {
         Ok(n)
     }
 
-    /// Spawn the background writer. Drains the buffer every
-    /// `BATCH_FLUSH_INTERVAL_MS` or when it exceeds `BATCH_FLUSH_THRESHOLD`.
-    /// One final drain runs on shutdown.
-    pub fn spawn_writer(self: Arc<Self>, pool: PgPool, shutdown: Arc<AtomicBool>) {
-        tokio::spawn(async move {
+    /// Spawn the background writer on the given runtime handle. Drains the
+    /// buffer every `BATCH_FLUSH_INTERVAL_MS` or when it exceeds
+    /// `BATCH_FLUSH_THRESHOLD`. One final drain runs on shutdown.
+    ///
+    /// The handle parameter lets callers place the writer on the dedicated
+    /// vision runtime, so heartbeat-relevant work is not starved by ITP cycle
+    /// bursts on the shared runtime.
+    pub fn spawn_writer_on(
+        self: Arc<Self>,
+        pool: PgPool,
+        shutdown: Arc<AtomicBool>,
+        handle: &tokio::runtime::Handle,
+    ) {
+        handle.spawn(async move {
             let mut tick = tokio::time::interval(Duration::from_millis(BATCH_FLUSH_INTERVAL_MS));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
@@ -186,6 +195,13 @@ impl BitmapStore {
             }
             tracing::debug!("vision_bitmaps writer task exited");
         });
+    }
+
+    /// Convenience wrapper: spawn the writer on the current runtime. Kept for
+    /// callers that don't want to thread a runtime handle.
+    pub fn spawn_writer(self: Arc<Self>, pool: PgPool, shutdown: Arc<AtomicBool>) {
+        let handle = tokio::runtime::Handle::current();
+        self.spawn_writer_on(pool, shutdown, &handle);
     }
 
     /// Store a bitmap in the **pending** slot after verifying its keccak256 hash.

@@ -572,7 +572,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // --- Vision subsystem (optional) ---
+    //
+    // Dedicated tokio runtime for vision heartbeat / settlement-sweep /
+    // bitmap-writer / batch-config-orchestrator / broadcast-relay tasks.
+    // The shared #[tokio::main] runtime drives the ITP cycle, mirror sync,
+    // P2P transport, and HTTP. Under ITP-cycle load, the LEADER heartbeat's
+    // `await sign_rx.recv()` was being starved — cosigns arrived in millis,
+    // the future never woke. A dedicated runtime fixes the starvation by
+    // giving vision its own workers. `Arc`-wrapped state (cosign_router
+    // DashMap, BLS keypair, P2P transport, PgPool) crosses runtimes safely.
     let mut vision_api_router: Option<axum::Router> = None;
+    let mut _vision_runtime: Option<tokio::runtime::Runtime> = None;
     if let Some(ref vision_cfg) = vision_config {
         if vision_cfg.enabled {
             // Initialize Vision components
@@ -583,16 +593,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vision_cfg.clone(),
             ));
 
+            // Build the dedicated vision runtime. Four workers — enough for
+            // heartbeat per source + settlement-recovery sweep + bitmap-writer
+            // + orchestrator + broadcast-relay + headroom. The runtime lives
+            // for the lifetime of `main`; dropping it would kill its tasks.
+            let vision_workers: usize = 4;
+            let vision_runtime = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(vision_workers)
+                .thread_name("vision-rt")
+                .enable_all()
+                .build()
+                .expect("failed to build vision tokio runtime");
+            let vision_handle = vision_runtime.handle().clone();
+            _vision_runtime = Some(vision_runtime);
+            info!(
+                node_id,
+                workers = vision_workers,
+                "Vision runtime: {} dedicated workers started",
+                vision_workers
+            );
+
             // --- P2P channels for Vision engine ---
             // broadcast_tx: engine sends P2PMessage here; relay task calls transport.broadcast()
             let (vision_broadcast_tx, mut vision_broadcast_rx) =
                 tokio::sync::mpsc::channel::<common::types::P2PMessage>(256);
 
-            // Relay task: drain broadcast_rx and call transport.broadcast() for each message
+            // Relay task: drain broadcast_rx and call transport.broadcast() for each message.
+            // Spawned on the vision runtime so it isn't starved by ITP cycle bursts.
             if let Some(ref transport) = components.p2p.transport {
                 let relay_transport = transport.clone();
                 let relay_shutdown = components.shutdown.clone();
-                tokio::spawn(async move {
+                vision_handle.spawn(async move {
                     while !relay_shutdown.load(std::sync::atomic::Ordering::Relaxed) {
                         match tokio::time::timeout(
                             std::time::Duration::from_millis(100),
@@ -731,12 +762,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let lm = std::sync::Arc::new(lm);
                                 let lm_recovery = lm.clone();
                                 let lm_pending = lm.clone();
-                                tokio::spawn(async move { lm.run().await });
-                                tokio::spawn(async move { lm_recovery.run_settlement_recovery().await });
-                                tokio::spawn(async move { lm_pending.run_pending_creates_sweep().await });
+                                // Spawn on the vision runtime so the heartbeat's
+                                // `await sign_rx.recv()` is woken even while the
+                                // shared runtime is buried under ITP cycle work.
+                                vision_handle.spawn(async move { lm.run().await });
+                                vision_handle.spawn(async move { lm_recovery.run_settlement_recovery().await });
+                                vision_handle.spawn(async move { lm_pending.run_pending_creates_sweep().await });
                                 info!(
                                     sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                                    "BatchLifecycleManager spawned (with P2P co-sign + settlement recovery + pending-creates sweep)"
+                                    "BatchLifecycleManager spawned on vision runtime (P2P co-sign + settlement recovery + pending-creates sweep)"
                                 );
                     }
 
@@ -761,7 +795,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                         String::new()
                     });
-                    tokio::spawn(async move {
+                    vision_handle.spawn(async move {
                         let mut orchestrator = oracle::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
                             orch_data_node_url,
                             orch_admin_token,
@@ -793,12 +827,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let lm = std::sync::Arc::new(lm);
                         let lm_recovery = lm.clone();
                         let lm_pending = lm.clone();
-                        tokio::spawn(async move { lm.run().await });
-                        tokio::spawn(async move { lm_recovery.run_settlement_recovery().await });
-                        tokio::spawn(async move { lm_pending.run_pending_creates_sweep().await });
+                        // No-P2P fallback — still gets its own runtime so the
+                        // heartbeat keeps its scheduling budget.
+                        vision_handle.spawn(async move { lm.run().await });
+                        vision_handle.spawn(async move { lm_recovery.run_settlement_recovery().await });
+                        vision_handle.spawn(async move { lm_pending.run_pending_creates_sweep().await });
                         info!(
                             sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                            "BatchLifecycleManager spawned (no-P2P mode + settlement recovery + pending-creates sweep)"
+                            "BatchLifecycleManager spawned on vision runtime (no-P2P mode + settlement recovery + pending-creates sweep)"
                         );
                     }
 
@@ -815,10 +851,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Spawn the batched vision_bitmaps writer. Single-row
                     // INSERTs were 22 % of total Postgres time; the writer
-                    // coalesces them at 100 ms / 200-row intervals.
+                    // coalesces them at 100 ms / 200-row intervals. Runs on
+                    // the vision runtime — bitmap flushes shouldn't compete
+                    // with the ITP cycle for scheduling.
                     bitmap_store
                         .clone()
-                        .spawn_writer(pool.clone(), components.shutdown.clone());
+                        .spawn_writer_on(pool.clone(), components.shutdown.clone(), &vision_handle);
 
                     // vision_broadcast_tx is consumed by the lifecycle manager via clones
                     // taken above; the original handle is dropped when this scope ends so
