@@ -181,8 +181,6 @@ const DOT_FRAGMENT = /* glsl */ `
   uniform vec2 uResolution;
   uniform float uDotSize;
   uniform vec3 uBackground;
-  uniform vec3 uDeepBlue;
-  uniform float uDepth;
 
   varying vec2 vUv;
 
@@ -197,48 +195,35 @@ const DOT_FRAGMENT = /* glsl */ `
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
     float weight = pow(luma, 0.85);
-    float radius = weight * uDotSize * 0.62;
+    float radius = weight * uDotSize * 0.60;
 
     float dist = length(fragCoord - cellCenter);
-    float aa = 1.0;
+    float aa = 0.6;
     float coverage = 1.0 - smoothstep(radius - aa, radius + aa, dist);
 
-    // Background and dots both drift toward the next scene's deep blue
-    // as we descend.
-    vec3 bg = mix(uBackground, uDeepBlue * 0.18, uDepth);
-    vec3 dotRgb = mix(src.rgb, uDeepBlue, uDepth * 0.72);
-
-    vec3 color = mix(bg, dotRgb, coverage);
+    // Solid blue background — exactly the next scene's field. White ice
+    // sits on top wherever the photo is bright.
+    vec3 ice = mix(vec3(0.92, 0.96, 1.0), vec3(1.0), luma);
+    vec3 color = mix(uBackground, ice, coverage);
     gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-const DotShaderPlane: React.FC<{ texture: THREE.Texture; depth: number }> = ({
-  texture,
-  depth,
-}) => {
-  const matRef = React.useRef<THREE.ShaderMaterial>(null);
+const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
   const uniforms = React.useMemo(
     () => ({
       uTexture: { value: texture },
       uResolution: { value: new THREE.Vector2(IMG_NATIVE_W, IMG_NATIVE_H) },
-      uDotSize: { value: 14.0 },
-      uBackground: { value: new THREE.Color("#040a1e") },
-      uDeepBlue: { value: new THREE.Color(colors.accent) },
-      uDepth: { value: depth },
+      uDotSize: { value: 3.5 },
+      uBackground: { value: new THREE.Color(colors.accent) },
     }),
     [texture],
   );
-
-  if (matRef.current) {
-    matRef.current.uniforms.uDepth.value = depth;
-  }
 
   return (
     <mesh>
       <planeGeometry args={[2, 2]} />
       <shaderMaterial
-        ref={matRef}
         vertexShader={DOT_VERTEX}
         fragmentShader={DOT_FRAGMENT}
         uniforms={uniforms}
@@ -249,7 +234,7 @@ const DotShaderPlane: React.FC<{ texture: THREE.Texture; depth: number }> = ({
   );
 };
 
-const IcebergPoints: React.FC<{ depth: number }> = ({ depth }) => {
+const IcebergPoints: React.FC = () => {
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
   const [handle] = React.useState(() => delayRender("iceberg-shader"));
 
@@ -283,7 +268,7 @@ const IcebergPoints: React.FC<{ depth: number }> = ({ depth }) => {
       }}
       gl={{ antialias: true, alpha: false }}
     >
-      {texture ? <DotShaderPlane texture={texture} depth={depth} /> : null}
+      {texture ? <DotShaderPlane texture={texture} /> : null}
     </ThreeCanvas>
   );
 };
@@ -311,17 +296,10 @@ export const AntiCheatIceberg: React.FC = () => {
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
-  // Continuous depth in [0,1] — feeds the shader's blue-shift. Smooths
-  // through the tier transitions instead of stepping.
-  const descentProgress =
-    state.phase === "tier"
-      ? (state.tier + (state.sub === "anim" ? state.t : 1)) / N
-      : 0;
-
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#040a1e",
+        backgroundColor: colors.accent,
         fontFamily: font,
         opacity: sceneOpacity,
         overflow: "hidden",
@@ -339,7 +317,7 @@ export const AntiCheatIceberg: React.FC = () => {
           willChange: "transform, top",
         }}
       >
-        <IcebergPoints depth={descentProgress} />
+        <IcebergPoints />
       </div>
 
       {activeTier >= 0 && (
@@ -351,18 +329,6 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
-      {TRADING_TIERS.map((tt, i) => (
-        <TierImage
-          key={i}
-          tier={tt}
-          index={i}
-          scrollY={scrollY}
-          isActive={state.phase === "tier" && i === state.tier}
-          state={state}
-          frame={frame}
-        />
-      ))}
-
       {activeTier >= 0 && TIERS[activeTier].source && (
         <SourceCitation url={TIERS[activeTier].source!} state={state} />
       )}
@@ -370,158 +336,15 @@ export const AntiCheatIceberg: React.FC = () => {
   );
 };
 
-// ─── Per-tier image band ──────────────────────────────────────────────────────
-
-const BAND_BOUNDS_NATIVE: { top: number; bottom: number }[] = [
-  { top: 0,    bottom: 269 },
-  { top: 269,  bottom: 539 },
-  { top: 539,  bottom: 857 },
-  { top: 857,  bottom: 1141 },
-  { top: 1141, bottom: 1430 },
-  { top: 1430, bottom: 1670 },
-];
-
-const BAND_BOUNDS = BAND_BOUNDS_NATIVE.map((b) => ({
-  top: b.top * FILL_SCALE,
-  bottom: b.bottom * FILL_SCALE,
-  height: (b.bottom - b.top) * FILL_SCALE,
-}));
-
-const BAND_RIGHT_INSET = 0;
-const BAND_WIDTH = 360;
-
-const TierImage: React.FC<{
-  tier: TradingTier;
-  index: number;
-  scrollY: number;
-  isActive: boolean;
-  state: State;
-  frame: number;
-}> = ({ tier, index, scrollY, isActive, state, frame }) => {
-  const band = BAND_BOUNDS[index];
-  const top = band.top + scrollY;
-  const height = band.height;
-
-  if (top + height < -120 || top > H + 120) return null;
-
-  const solariseStart = tierAnimStart(LAST) + 5;
-  const isSolarising =
-    index === LAST &&
-    frame >= solariseStart &&
-    frame < solariseStart + 4;
-
-  const kenBurns =
-    isActive && state.phase === "tier" && state.sub === "hold"
-      ? 1 + state.t * 0.05
-      : 1;
-
-  const filter = isSolarising
-    ? "invert(1) saturate(0.4) hue-rotate(180deg)"
-    : isActive
-      ? "saturate(1.1) brightness(1)"
-      : "grayscale(1) brightness(0.45) blur(1.5px)";
-
-  const borderColor =
-    index === LAST
-      ? "rgba(255,86,110,0.95)"
-      : "rgba(255,255,255,0.92)";
-  const glowColor =
-    index === LAST
-      ? "rgba(255,86,110,0.55)"
-      : "rgba(255,255,255,0.25)";
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        right: BAND_RIGHT_INSET,
-        top,
-        width: BAND_WIDTH,
-        height,
-        overflow: "hidden",
-        boxShadow: isActive
-          ? `inset 0 0 0 3px ${borderColor}, inset 0 0 60px ${glowColor}`
-          : "none",
-        background: "#000000",
-        pointerEvents: "none",
-        willChange: "top",
-      }}
-    >
-      <Img
-        src={staticFile(tier.imageSrc)}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `scale(${kenBurns.toFixed(3)})`,
-          transformOrigin: "center center",
-          filter,
-          transition: "filter 220ms ease",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: "22px 16px 12px",
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.92) 100%)",
-          fontFamily: font,
-          fontSize: 18,
-          fontWeight: 600,
-          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.55)",
-          letterSpacing: "-0.012em",
-          textAlign: "left",
-          lineHeight: 1.2,
-          textShadow: "0 1px 6px rgba(0,0,0,0.95)",
-        }}
-      >
-        {tier.label}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 14,
-          left: 14,
-          right: 14,
-          padding: "10px 14px 11px",
-          background: "rgba(46, 6, 14, 0.86)",
-          border: "1.5px solid rgba(255, 86, 110, 0.85)",
-          borderRadius: 8,
-          fontFamily: monoFont,
-          fontSize: 32,
-          fontWeight: 700,
-          letterSpacing: "-0.015em",
-          color: isActive ? "rgba(255, 96, 110, 1)" : "rgba(255, 96, 110, 0.55)",
-          textAlign: "center",
-          lineHeight: 1,
-          textShadow: "0 2px 8px rgba(0,0,0,0.95)",
-          boxShadow: isActive
-            ? "0 6px 22px rgba(0,0,0,0.7), 0 0 26px rgba(255,56,80,0.5)"
-            : "0 2px 10px rgba(0,0,0,0.55)",
-          pointerEvents: "none",
-        }}
-      >
-        {TIER_PNL[index]}
-      </div>
-    </div>
-  );
-};
-
-// ─── Active row ───────────────────────────────────────────────────────────────
-
-// ─── Tier card — Bars-style white card replacing the giant text ─────────────
+// ─── Tier card — Bars-style white card, trader image bolted on top ──────────
 //
-// Same surface, eyebrow, big % language as AntiCheatStat's CARD_SURFACE.
-// One card per tier; the PnL on the card is the same value baked into the
-// trader-band stamp on the right.
+// One card per tier. Trader photograph in the upper half, tier name +
+// PnL in the lower half. Cards drop from above the frame on every tier
+// transition.
 
-const CARD_W = 380;
-const CARD_H = 500;
+const CARD_W = 440;
+const CARD_H = 620;
+const CARD_IMG_H = 280;
 
 const ActiveRow: React.FC<{
   state: State;
@@ -530,15 +353,17 @@ const ActiveRow: React.FC<{
   frame: number;
 }> = ({ state, tier, activeFrameY }) => {
   const t = TIERS[tier];
+  const trader = TRADING_TIERS[tier];
   const isAnim = state.phase === "tier" && state.sub === "anim";
 
+  // Cards from the sky — large negative slide that decays to zero.
   let slide = 0;
   let opacity = 1;
   let scale = 1;
   if (isAnim) {
     const at = state.t;
-    slide = interpolate(at, [0, 1], [70, 0], { easing: EASE_OUT });
-    opacity = interpolate(at, [0.30, 0.85], [0, 1], {
+    slide = interpolate(at, [0, 1], [-420, 0], { easing: EASE_OUT });
+    opacity = interpolate(at, [0.10, 0.60], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
@@ -556,7 +381,7 @@ const ActiveRow: React.FC<{
       style={{
         position: "absolute",
         left: 0,
-        right: 360,
+        right: 0,
         top: activeFrameY + slide,
         transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
         transformOrigin: "center center",
@@ -572,10 +397,10 @@ const ActiveRow: React.FC<{
         style={{
           width: CARD_W,
           height: CARD_H,
-          borderRadius: 24,
+          borderRadius: 28,
           background: colors.surface,
           boxShadow:
-            "0 1px 0 rgba(255,255,255,0.6) inset, 0 32px 64px rgba(8, 14, 28, 0.32), 0 10px 20px rgba(8, 14, 28, 0.18)",
+            "0 1px 0 rgba(255,255,255,0.6) inset, 0 40px 80px rgba(0, 16, 60, 0.45), 0 12px 24px rgba(0, 16, 60, 0.28)",
           border: `1px solid ${colors.rule}`,
           overflow: "hidden",
           position: "relative",
@@ -584,27 +409,48 @@ const ActiveRow: React.FC<{
         <div
           style={{
             position: "absolute",
-            top: 28,
+            top: 0,
+            left: 0,
+            right: 0,
+            height: CARD_IMG_H,
+            overflow: "hidden",
+          }}
+        >
+          <Img
+            src={staticFile(trader.imageSrc)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: CARD_IMG_H + 24,
             left: 30,
             fontFamily: monoFont,
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: 500,
             letterSpacing: "0.22em",
             textTransform: "uppercase",
             color: colors.dim,
           }}
         >
-          tier {tier + 1} of {N}
+          tier {tier + 1} of {N} · {trader.label}
         </div>
 
         <div
           style={{
             position: "absolute",
-            top: 78,
+            top: CARD_IMG_H + 56,
             left: 30,
             right: 30,
             fontFamily: font,
-            fontSize: 60,
+            fontSize: 46,
             fontWeight: 800,
             letterSpacing: "-0.022em",
             color: colors.fg,
@@ -619,9 +465,9 @@ const ActiveRow: React.FC<{
             position: "absolute",
             left: 30,
             right: 30,
-            bottom: 80,
+            bottom: 70,
             fontFamily: font,
-            fontSize: 132,
+            fontSize: 116,
             fontWeight: 800,
             letterSpacing: "-0.04em",
             color: colors.accent,
@@ -638,9 +484,9 @@ const ActiveRow: React.FC<{
             position: "absolute",
             left: 30,
             right: 30,
-            bottom: 30,
+            bottom: 28,
             fontFamily: monoFont,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
