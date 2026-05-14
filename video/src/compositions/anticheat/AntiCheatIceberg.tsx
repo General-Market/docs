@@ -29,11 +29,9 @@ import { VIDEO_BEATS } from "./beats";
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
-// The iceberg silhouette occupies roughly the central 850px of a
-// 1265-wide photo. Scaling to 1920/850 ≈ 2.26 makes the silhouette
-// fill the viewport width; the bleed off the sides is sky/water and
-// gets painted solid blue by the shader threshold.
-const ICEBERG_SCALE = 2.26;
+// Scale tuned so the silhouette reads as an iceberg — wide enough to
+// see tip + body in the same shot, not so wide that we lose the shape.
+const ICEBERG_SCALE = 1.8;
 
 const TIER_Y_NATIVE = [
   Math.round((0 + 269) / 2),       // 134  — sky / above line 1
@@ -193,11 +191,12 @@ const DOT_FRAGMENT = /* glsl */ `
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
     // Only emit dots where the photograph reads as ice. Below the
-    // threshold (sky, water) the field stays solid blue — no halftone
-    // fringe surviving the zoom.
-    float mask = smoothstep(0.55, 0.72, luma);
-    float weight = pow(luma, 0.85) * mask;
-    float radius = weight * uDotSize * 0.60;
+    // threshold (sky, deep water) the field stays solid blue — no
+    // halftone fringe surviving the zoom. The window is wide enough
+    // to keep the underwater iceberg body legible.
+    float mask = smoothstep(0.38, 0.70, luma);
+    float weight = pow(luma, 0.75) * mask;
+    float radius = weight * uDotSize * 0.62;
 
     float dist = length(fragCoord - cellCenter);
     float aa = 0.6;
@@ -216,7 +215,7 @@ const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
     () => ({
       uTexture: { value: texture },
       uResolution: { value: new THREE.Vector2(IMG_NATIVE_W, IMG_NATIVE_H) },
-      uDotSize: { value: 3.5 },
+      uDotSize: { value: 5.0 },
       uBackground: { value: new THREE.Color(colors.accent) },
     }),
     [texture],
@@ -355,9 +354,10 @@ export const AntiCheatIceberg: React.FC = () => {
 // activates, then settle and stay — past cards scroll out of view
 // naturally, never disappearing on cut.
 
-const CARD_W = 760;
-const CARD_H = 440;
-const CARD_IMG_W = 320;
+const CARD_W = 540;
+const CARD_H = 280;
+const CARD_IMG_W = 220;
+const CARD_LEFT = 60;
 
 const TierCard: React.FC<{
   tier: Tier;
@@ -394,15 +394,12 @@ const TierCard: React.FC<{
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
+        left: CARD_LEFT,
         top: anchorY + slide,
+        width: CARD_W,
         transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
-        transformOrigin: "center center",
+        transformOrigin: "left center",
         opacity,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
         pointerEvents: "none",
         willChange: "transform, top, opacity",
       }}
@@ -433,10 +430,10 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              top: 28,
-              left: 30,
+              top: 20,
+              left: 24,
               fontFamily: monoFont,
-              fontSize: 16,
+              fontSize: 13,
               fontWeight: 500,
               letterSpacing: "0.22em",
               textTransform: "uppercase",
@@ -449,11 +446,11 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              top: 60,
-              left: 30,
-              right: 30,
+              top: 46,
+              left: 24,
+              right: 24,
               fontFamily: font,
-              fontSize: 46,
+              fontSize: 32,
               fontWeight: 800,
               letterSpacing: "-0.022em",
               color: colors.fg,
@@ -466,11 +463,11 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              left: 30,
-              right: 30,
-              bottom: 70,
+              left: 24,
+              right: 24,
+              bottom: 44,
               fontFamily: font,
-              fontSize: 116,
+              fontSize: 72,
               fontWeight: 800,
               letterSpacing: "-0.04em",
               color: colors.accent,
@@ -485,11 +482,11 @@ const TierCard: React.FC<{
           <div
             style={{
               position: "absolute",
-              left: 30,
-              right: 30,
-              bottom: 28,
+              left: 24,
+              right: 24,
+              bottom: 20,
               fontFamily: monoFont,
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: 500,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
