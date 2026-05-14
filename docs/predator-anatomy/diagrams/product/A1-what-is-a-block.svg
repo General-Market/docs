@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">PRIMITIVE A1 · THE BUNDLE</text>
+<text x="958" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">One hundred bets.</text>
+<text x="986" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">One ticket.</text>
+<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">A basket of 100 binary markets — UP or DOWN on each.</text>
+<rect x="134" y="320" width="1332" height="636" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="174" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">BTC</text>
+<text x="233" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">ETH</text>
+<text x="359" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">SOL</text>
+<text x="485" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">BNB</text>
+<text x="611" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">XRP</text>
+<text x="737" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">ADA</text>
+<text x="863" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">AVAX</text>
+<text x="989" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">LINK</text>
+<text x="1115" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">DOT</text>
+<text x="1241" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="360" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="390" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">MATIC</text>
+<text x="1367" y="428" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="174" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">ATOM</text>
+<text x="233" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">ARB</text>
+<text x="359" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">OP</text>
+<text x="485" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">SUI</text>
+<text x="611" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">APT</text>
+<text x="737" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">SEI</text>
+<text x="863" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">TIA</text>
+<text x="989" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">INJ</text>
+<text x="1115" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">NEAR</text>
+<text x="1241" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="454" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="484" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">FTM</text>
+<text x="1367" y="522" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="174" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#021</text>
+<text x="233" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#022</text>
+<text x="359" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#023</text>
+<text x="485" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#024</text>
+<text x="611" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#025</text>
+<text x="737" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#026</text>
+<text x="863" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#027</text>
+<text x="989" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#028</text>
+<text x="1115" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#029</text>
+<text x="1241" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="548" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="578" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#030</text>
+<text x="1367" y="616" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="174" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#031</text>
+<text x="233" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#032</text>
+<text x="359" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#033</text>
+<text x="485" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#034</text>
+<text x="611" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#035</text>
+<text x="737" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#036</text>
+<text x="863" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#037</text>
+<text x="989" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#038</text>
+<text x="1115" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#039</text>
+<text x="1241" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="642" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="672" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#040</text>
+<text x="1367" y="710" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="174" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#041</text>
+<text x="233" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#042</text>
+<text x="359" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#043</text>
+<text x="485" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#044</text>
+<text x="611" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#045</text>
+<text x="737" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#046</text>
+<text x="863" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#047</text>
+<text x="989" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#048</text>
+<text x="1115" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#049</text>
+<text x="1241" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="736" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="766" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#050</text>
+<text x="1367" y="804" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="174" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="233" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#051</text>
+<text x="233" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="300" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="359" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#052</text>
+<text x="359" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="426" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="485" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#053</text>
+<text x="485" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="552" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="611" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#054</text>
+<text x="611" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="678" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="737" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#055</text>
+<text x="737" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="804" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="863" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#056</text>
+<text x="863" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="930" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="989" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#057</text>
+<text x="989" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1056" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1115" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#058</text>
+<text x="1115" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<rect x="1182" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1241" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#059</text>
+<text x="1241" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#FF3B30">▼</text>
+<rect x="1308" y="830" width="118" height="86" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="1367" y="860" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.4px">#060</text>
+<text x="1367" y="898" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:700;fill:#34C759">▲</text>
+<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">One block. One hundred bets.</text>
+</svg>

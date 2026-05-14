@@ -11,21 +11,33 @@
 <text x="300" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#0071E3;letter-spacing:2.7px">VOICES</text>
 <text x="300" y="156" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">From below the tape</text>
 <line x1="80" y1="200" x2="520" y2="200" stroke="#0071E3" stroke-width="2"/>
-<rect x="50" y="240" width="500" height="853" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="78" y="284" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">u/My_Rhythm875</text>
-<text x="78" y="310" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">r/CryptoCurrency</text>
-<text x="78" y="370" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">If u were holding long</text>
-<text x="78" y="408" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">positions, you probably got</text>
-<text x="78" y="446" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">wicked out before you could</text>
-<text x="78" y="484" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">even blink. We saw btc slice</text>
-<text x="78" y="522" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">through 85k like it wasn't</text>
-<text x="78" y="560" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">even there.</text>
-<rect x="50" y="1125" width="500" height="853" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="78" y="1169" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">u/Samurailaronkes</text>
-<text x="78" y="1195" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">r/CryptoCurrency</text>
-<text x="78" y="1255" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Three companies decide if</text>
-<text x="78" y="1293" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">you get liquidity. DWF.</text>
-<text x="78" y="1331" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">Wintermute. GSR. Say the</text>
-<text x="78" y="1369" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">names. Know them. Because</text>
-<text x="78" y="1407" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">they own you.</text>
+<text x="40" y="260" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">VENUE LAG</text>
+<line x1="40" y1="274" x2="560" y2="274" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="40" y="288" width="520" height="214" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="72" cy="320" r="16" fill="#FFB000"/>
+<text x="72" y="325" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">M</text>
+<text x="100" y="325" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/My_Rhythm875 · r/CryptoCurrency · 3mo</text>
+<text x="56" y="364" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">If u were holding long positions, you</text>
+<text x="56" y="388" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">probably got wicked out before you could</text>
+<text x="56" y="412" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">even blink. We saw btc slice through 85k</text>
+<text x="56" y="436" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">like it wasn't even there.</text>
+<path d="M 56 484 L 63 477 L 70 484" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="485" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">4.8k</text>
+<rect x="138" y="473" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
+<path d="M 141 485 L 143 488 L 145 485" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="162" y="485" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">318</text>
+<text x="40" y="542" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">MARKET MAKERS</text>
+<line x1="40" y1="556" x2="560" y2="556" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="40" y="570" width="520" height="190" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="72" cy="602" r="16" fill="#FFB000"/>
+<text x="72" y="607" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">S</text>
+<text x="100" y="607" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/Samurailaronkes · r/CryptoCurrency · 8mo</text>
+<text x="56" y="646" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">Three companies decide if you get</text>
+<text x="56" y="670" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">liquidity. DWF. Wintermute. GSR. Say the</text>
+<text x="56" y="694" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">names. Know them. Because they own you.</text>
+<path d="M 56 742 L 63 735 L 70 742" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="743" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">6.2k</text>
+<rect x="138" y="731" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
+<path d="M 141 743 L 143 746 L 145 743" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="162" y="743" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">412</text>
 </svg>

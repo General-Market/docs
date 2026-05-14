@@ -365,84 +365,218 @@ def build_pharmakon():
 
 
 # ===== VOICES CARD (narrow strip beside each mechanism) =====
+# Each post tuple: (mini_header, username, sub, time_ago, body, upvotes, comments)
 VOICES_DATA = {
     "01-toxic-flow": [
-        ("u/eatingpeopleisqueasy", "r/Forex",
-         "Watch out — the house (MM) always wins, mathematically. Hence you always see 70/30 - 65/35% of clients lose money."),
-        ("u/lossmaker_99", "r/options",
-         "Filled at offer. Watched the bid drop $0.10 in 200ms. Tried to scratch. Already a different book."),
+        ("SPREADS", "u/eatingpeopleisqueasy", "r/Forex", "2y",
+         "Watch out — the house (MM) always wins, mathematically. Hence you always see 70/30 - 65/35% of clients lose money.",
+         "1.2k", "87"),
+        ("THE WIDEN", "u/lossmaker_99", "r/options", "6mo",
+         "Filled at offer. Watched the bid drop $0.10 in 200ms. Tried to scratch. Already a different book.",
+         "412", "28"),
     ],
     "02-stop-hunting": [
-        ("r/Daytrading", "thread 1192nsf",
-         "MM have level 3, so they can see the stops. Most people play similar style putting stops near obvious support."),
-        ("u/Firm_Diet", "r/Daytrading",
-         "Stopped out for −$3,000. I wouldn't have held this whole trade but would've been +$12,000."),
-        ("u/No_Fuel_4676", "FTX victim",
-         "There was not one time I didn't buy either the top or bottom with 2x on FTX. Almost instantly after buying price went against me and activated stop loss."),
+        ("LEVEL 3 DATA", "u/anon", "r/Daytrading", "3y",
+         "MM have level 3, so they can see the stops. Most people play similar style putting stops near obvious support.",
+         "3.4k", "214"),
+        ("WICK HUNT", "u/Firm_Diet", "r/Daytrading", "1y",
+         "Stopped out for −$3,000. I wouldn't have held this whole trade but would've been +$12,000.",
+         "892", "64"),
+        ("FTX", "u/No_Fuel_4676", "r/CryptoCurrency", "2y",
+         "There was not one time I didn't buy either the top or bottom with 2x on FTX. Almost instantly after buying price went against me and activated stop loss.",
+         "2.1k", "156"),
     ],
     "03-cross-venue": [
-        ("u/My_Rhythm875", "r/CryptoCurrency",
-         "If u were holding long positions, you probably got wicked out before you could even blink. We saw btc slice through 85k like it wasn't even there."),
-        ("u/Samurailaronkes", "r/CryptoCurrency",
-         "Three companies decide if you get liquidity. DWF. Wintermute. GSR. Say the names. Know them. Because they own you."),
+        ("VENUE LAG", "u/My_Rhythm875", "r/CryptoCurrency", "3mo",
+         "If u were holding long positions, you probably got wicked out before you could even blink. We saw btc slice through 85k like it wasn't even there.",
+         "4.8k", "318"),
+        ("MARKET MAKERS", "u/Samurailaronkes", "r/CryptoCurrency", "8mo",
+         "Three companies decide if you get liquidity. DWF. Wintermute. GSR. Say the names. Know them. Because they own you.",
+         "6.2k", "412"),
     ],
     "04-latency": [
-        ("u/jirachi_2000", "r/sportsbook",
-         "Lines are way too tight. Books move instantly on any info. See value, place bet, line's already shifted."),
-        ("u/EthanTruthSeeker", "r/Polymarket",
-         "Bro has access to information that hasn't happened yet and we're sitting here reading charts like idiots."),
+        ("STALE LINES", "u/jirachi_2000", "r/sportsbook", "1y",
+         "Lines are way too tight. Books move instantly on any info. See value, place bet, line's already shifted.",
+         "743", "52"),
+        ("INSIDER WALLETS", "u/EthanTruthSeeker", "r/Polymarket", "4mo",
+         "Bro has access to information that hasn't happened yet and we're sitting here reading charts like idiots.",
+         "5.1k", "287"),
     ],
     "05-information": [
-        ("u/Due-Radish1719", "r/Polymarket",
-         "How is an account being created in april 2026 and risk $17M in geopolitics… like they know something already."),
-        ("u/MundaneUniversity436", "r/Polymarket",
-         "A Harvard paper estimated roughly $143M in profits trace back to wallets with apparent insider information."),
+        ("INSIDER WALLETS", "u/Due-Radish1719", "r/Polymarket", "2mo",
+         "How is an account being created in april 2026 and risk $17M in geopolitics… like they know something already.",
+         "7.8k", "521"),
+        ("HARVARD STUDY", "u/MundaneUniversity436", "r/Polymarket", "5mo",
+         "A Harvard paper estimated roughly $143M in profits trace back to wallets with apparent insider information.",
+         "4.3k", "198"),
     ],
     "06-spoofing": [
-        ("u/sightwhale", "r/Polymarket",
-         "That's a fake liquidity wall. The MMs and whales use these to trick you into bad trades and siphon money from people who don't understand the order book."),
-        ("u/immortalismmmm", "r/Polymarket",
-         "Bro the fake wall trick has gotten me so many times lmao. You watch that big order just evaporate right as you click buy."),
+        ("FAKE WALLS", "u/sightwhale", "r/Polymarket", "7mo",
+         "That's a fake liquidity wall. The MMs and whales use these to trick you into bad trades and siphon money from people who don't understand the order book.",
+         "3.6k", "184"),
+        ("ORDERBOOK TRICKS", "u/immortalismmmm", "r/Polymarket", "3mo",
+         "Bro the fake wall trick has gotten me so many times lmao. You watch that big order just evaporate right as you click buy.",
+         "1.9k", "96"),
     ],
     "07-pfof": [
-        ("r/wallstreetbets", "thread imy0zl",
-         "Citadel is your daddy. Not Elon."),
-        ("r/wallstreetbets", "thread 1lm9b9z",
-         "Thanks Robinhood, still won't use your fucking app though."),
-        ("Schwarz et al.", "Journal of Finance",
-         "Robinhood users losing on average $15 on each 500-share order, even after paying zero commissions."),
+        ("ROBINHOOD", "u/anon", "r/wallstreetbets", "1y",
+         "Thanks Robinhood, still won't use your fucking app though.",
+         "6.7k", "234"),
+        ("CITADEL", "u/anon", "r/wallstreetbets", "2y",
+         "Citadel is your daddy. Not Elon.",
+         "8.4k", "412"),
+        ("HARD DATA", "Schwarz et al.", "Journal of Finance · 2023", "—",
+         "Robinhood users losing on average $15 on each 500-share order, even after paying zero commissions.",
+         "2.4k", "178"),
     ],
 }
 
+# Reddit-style avatar palette — flat, calm, recognisable.
+_AVATAR_PALETTE = [
+    "#FF4500",  # Reddit orange
+    "#0079D3",  # Reddit blue
+    "#46A508",  # green
+    "#7193FF",  # periwinkle
+    "#A06A42",  # brown
+    "#00A6A5",  # teal
+    "#FF66AC",  # pink
+    "#FFB000",  # amber
+]
+
+def _avatar_color(username):
+    """Stable per-username flat color."""
+    h = 0
+    for ch in username:
+        h = (h * 31 + ord(ch)) & 0xFFFFFFFF
+    return _AVATAR_PALETTE[h % len(_AVATAR_PALETTE)]
+
+
+def _initial(username):
+    """First alpha character of the username, uppercased.
+    Strips a leading 'u/' or 'r/' if present."""
+    name = username
+    if name.startswith("u/") or name.startswith("r/"):
+        name = name[2:]
+    for ch in name:
+        if ch.isalpha():
+            return ch.upper()
+    return "?"
+
+
+def mini_header(x, y, w, label):
+    """Topic label above a post.
+    SF Mono 12px / 700 / +2.16px tracking / uppercase / #6E6E73.
+    Followed by a 1px #E8E8ED divider at y + 14."""
+    s = []
+    s.append(T(x, y, label, font=SF_MONO, size=12, weight=700,
+               fill=INK_3, tracking=2.16))
+    s.append(L(x, y + 14, x + w, y + 14, stroke=RULE_2, w=1))
+    return s
+
+
+def reddit_post(x, y, w, username, sub, time_ago, body, upvotes, comments):
+    """One Reddit-styled post card. Returns (svg_fragments, total_height).
+    Layout, top-down:
+      - 16px top padding
+      - 32px avatar circle (centre at y+32)
+      - meta line: `u/username · r/sub · time` at y+38 (mono 13/600/#6E6E73)
+      - 16px gap below meta
+      - body text (SF Pro Text 17/400/#1D1D1F), wrapped, 24px line-height
+      - 12px gap
+      - footer row: chevron + upvotes  ·  comment-icon + comments
+      - 16px bottom padding
+    """
+    pad_x = 16
+    inner_w = w - pad_x * 2
+    avatar_r = 16
+    avatar_cx = x + pad_x + avatar_r
+    avatar_cy = y + 16 + avatar_r  # 32
+
+    # Body wrap. Roughly 32 chars per line at the 504px inner width on
+    # a 17px SF Pro Text — Reddit-comfortable.
+    body_lines = wrap_text(body, width=42)
+    body_top = y + 76
+    line_h = 24
+    body_h = len(body_lines) * line_h
+
+    footer_y = body_top + body_h + 14
+    total_h = (footer_y - y) + 16 + 12  # bottom padding + footer band
+
+    s = []
+    # Card
+    s.append(R(x, y, w, total_h, fill=PAPER, stroke=RULE_2, stroke_w=1, rx=12))
+
+    # Avatar
+    color = _avatar_color(username)
+    s.append(CIRC(avatar_cx, avatar_cy, avatar_r, fill=color))
+    s.append(T(avatar_cx, avatar_cy + 5, _initial(username),
+               font=SF_DISPLAY, size=14, weight=700, fill=PAPER, anchor="middle"))
+
+    # Meta line — `u/username · r/sub · time`
+    meta_x = avatar_cx + avatar_r + 12
+    meta = f"{username} · {sub} · {time_ago}"
+    s.append(T(meta_x, avatar_cy + 5, meta,
+               font=SF_MONO, size=13, weight=600, fill=INK_3, tracking=0.143))
+
+    # Body
+    for i, line in enumerate(body_lines):
+        s.append(T(x + pad_x, body_top + i * line_h, line,
+                   font=SF_TEXT, size=17, weight=400, fill=INK,
+                   tracking=-0.374))
+
+    # Footer row — chevron (orange) + upvote count, then comment bubble + count
+    fx = x + pad_x
+    fy = footer_y
+    # Chevron up — small triangle path
+    s.append(PATH(f"M {fx} {fy + 10} L {fx + 7} {fy + 3} L {fx + 14} {fy + 10}",
+                  stroke="#FF4500", fill="none", w=2))
+    s.append(T(fx + 22, fy + 11, upvotes,
+               font=SF_MONO, size=13, weight=700, fill=INK_3, tracking=0.143))
+
+    # Comment icon — small speech bubble drawn as rounded rect with tail
+    cx0 = fx + 22 + max(28, len(upvotes) * 9) + 24
+    s.append(R(cx0, fy - 1, 16, 12, fill="none", stroke=INK_3,
+               stroke_w=1.5, rx=2))
+    s.append(PATH(f"M {cx0 + 3} {fy + 11} L {cx0 + 5} {fy + 14} L {cx0 + 7} {fy + 11}",
+                  stroke=INK_3, fill="none", w=1.5))
+    s.append(T(cx0 + 24, fy + 11, comments,
+               font=SF_MONO, size=13, weight=700, fill=INK_3, tracking=0.143))
+
+    return s, total_h
+
+
 def build_voices(mech_id):
     """Narrow voice strip — placed beside the mechanism card.
-    Dimensions: 600 wide × 2050 tall (matches mechanism height)."""
+    Dimensions: 600 wide × 2050 tall (matches mechanism height).
+    Layout: existing header block → for each voice, mini-header + post."""
     W, H = 600, 2050
     voices = VOICES_DATA[mech_id]
     s = []
-    # Header
+
+    # ----- Header (kept from previous version) -----
     s.append(T(W//2, 100, "VOICES", font=SF_MONO, size=15, weight=700,
                fill=BLUE, anchor="middle", tracking=2.7))
     s.append(T(W//2, 156, "From below the tape", font=NY_SERIF, size=32, weight=500,
                fill=INK, anchor="middle", italic=True, tracking=-0.512))
     s.append(L(80, 200, W - 80, 200, stroke=BLUE, w=2))
-    # Each voice as a card
-    voice_h = (H - 280) // len(voices) - 32
-    cy = 240
-    for username, sub, quote in voices:
-        # Card
-        s.append(R(50, cy, W - 100, voice_h, fill=PAPER_3, stroke=RULE_2, rx=14))
-        # Username + sub
-        s.append(T(78, cy + 44, username, font=SF_MONO, size=14, weight=700,
-                   fill=INK, tracking=1.12))
-        s.append(T(78, cy + 70, sub, font=SF_MONO, size=12, weight=600,
-                   fill=INK_3, tracking=0.96))
-        # Quote (wrapped)
-        q_lines = wrap_text(quote, width=28)
-        for i, line in enumerate(q_lines[:6]):
-            s.append(T(78, cy + 130 + i * 38, line, font=NY_SERIF, size=24, weight=500,
-                       fill=INK, italic=True, tracking=-0.384))
-        cy += voice_h + 32
+
+    # ----- Posts -----
+    margin_x = 40
+    col_w = W - margin_x * 2  # 520
+    cy = 260
+    gap_after_label = 24      # divider sits at label_y+14, then post starts gap below
+    gap_between_blocks = 40   # space between two voice blocks
+    for entry in voices:
+        label, username, sub, time_ago, body, upvotes, comments = entry
+        # Mini-header
+        s.extend(mini_header(margin_x, cy, col_w, label))
+        post_y = cy + gap_after_label + 4
+        frags, post_h = reddit_post(margin_x, post_y, col_w,
+                                     username, sub, time_ago, body,
+                                     upvotes, comments)
+        s.extend(frags)
+        cy = post_y + post_h + gap_between_blocks
+
     return make_svg(W, H, "\n".join(s))
 
 

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" width="1600" height="1100">
+<defs>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+</defs>
+<rect x="0" y="0" width="1600" height="1100" rx="0" fill="#FFFFFF"/>
+<text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">EXTRACTION C4 · ORDERFLOW</text>
+<text x="737" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">No broker.</text>
+<text x="765" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">No back room.</text>
+<text x="800" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:500;fill:#6E6E73;letter-spacing:-0.79px">PFOF needs a broker. Blocks have none.</text>
+<rect x="80" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="216" y="375" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
+<text x="280" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
+<circle cx="716" cy="396" r="28" fill="#34C759"/>
+<text x="716" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
+<rect x="820" y="340" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="943" y="375" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
+<text x="1000" y="405" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
+<circle cx="1456" cy="396" r="28" fill="#FF3B30"/>
+<text x="1456" y="406" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
+<rect x="140" y="580" width="240" height="160" rx="12" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
+<text x="260" y="660" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:5.04px">TRADER</text>
+<text x="260" y="700" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:36px;font-weight:800;fill:#6E6E73">→</text>
+<rect x="480" y="580" width="240" height="160" rx="12" fill="#E5F8EC" stroke="#34C759" stroke-width="2"/>
+<text x="600" y="660" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:28px;font-weight:800;fill:#34C759;letter-spacing:5.04px">POOL</text>
+<text x="600" y="700" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">one price</text>
+<path d="M 392 660 L 468 660" fill="none" stroke="#34C759" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrGreen)"/>
+<text x="430" y="840" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:130px;font-weight:800;fill:#34C759;letter-spacing:-2.86px">$0</text>
+<text x="430" y="890" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">PFOF PAID</text>
+<rect x="860" y="580" width="180" height="130" rx="12" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
+<text x="950" y="658" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#1D1D1F;letter-spacing:3.6px">TRADER</text>
+<rect x="1080" y="580" width="180" height="130" rx="12" fill="#FFEBE9" stroke="#FF3B30" stroke-width="2"/>
+<text x="1170" y="658" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#FF3B30;letter-spacing:3.6px">BROKER</text>
+<rect x="1300" y="580" width="180" height="130" rx="12" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
+<text x="1390" y="658" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#1D1D1F;letter-spacing:3.6px">WHOLESALER</text>
+<path d="M 1044 645 L 1076 645" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<path d="M 1264 645 L 1296 645" fill="none" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<text x="1170" y="840" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:800;fill:#FF3B30;letter-spacing:-2.42px">$3–5B/yr</text>
+<text x="1170" y="890" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:3.96px">CITADEL PFOF</text>
+<line x1="800" y1="400" x2="800" y2="870" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
+<text x="800" y="1000" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:400;fill:#424245;letter-spacing:-0.53px">No middle. No data to sell. No 'free' trade.</text>
+</svg>

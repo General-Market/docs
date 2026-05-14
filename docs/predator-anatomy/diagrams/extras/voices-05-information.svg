@@ -11,20 +11,32 @@
 <text x="300" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#0071E3;letter-spacing:2.7px">VOICES</text>
 <text x="300" y="156" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">From below the tape</text>
 <line x1="80" y1="200" x2="520" y2="200" stroke="#0071E3" stroke-width="2"/>
-<rect x="50" y="240" width="500" height="853" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="78" y="284" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">u/Due-Radish1719</text>
-<text x="78" y="310" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">r/Polymarket</text>
-<text x="78" y="370" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">How is an account being</text>
-<text x="78" y="408" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">created in april 2026 and</text>
-<text x="78" y="446" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">risk $17M in geopolitics…</text>
-<text x="78" y="484" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">like they know something</text>
-<text x="78" y="522" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">already.</text>
-<rect x="50" y="1125" width="500" height="853" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="78" y="1169" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">u/MundaneUniversity436</text>
-<text x="78" y="1195" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.96px">r/Polymarket</text>
-<text x="78" y="1255" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">A Harvard paper estimated</text>
-<text x="78" y="1293" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">roughly $143M in profits</text>
-<text x="78" y="1331" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">trace back to wallets with</text>
-<text x="78" y="1369" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">apparent insider</text>
-<text x="78" y="1407" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.384px">information.</text>
+<text x="40" y="260" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">INSIDER WALLETS</text>
+<line x1="40" y1="274" x2="560" y2="274" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="40" y="288" width="520" height="190" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="72" cy="320" r="16" fill="#46A508"/>
+<text x="72" y="325" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">D</text>
+<text x="100" y="325" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/Due-Radish1719 · r/Polymarket · 2mo</text>
+<text x="56" y="364" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">How is an account being created in april</text>
+<text x="56" y="388" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">2026 and risk $17M in geopolitics… like</text>
+<text x="56" y="412" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">they know something already.</text>
+<path d="M 56 460 L 63 453 L 70 460" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="461" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">7.8k</text>
+<rect x="138" y="449" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
+<path d="M 141 461 L 143 464 L 145 461" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="162" y="461" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">521</text>
+<text x="40" y="518" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">HARVARD STUDY</text>
+<line x1="40" y1="532" x2="560" y2="532" stroke="#E8E8ED" stroke-width="1"/>
+<rect x="40" y="546" width="520" height="190" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="72" cy="578" r="16" fill="#0079D3"/>
+<text x="72" y="583" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">M</text>
+<text x="100" y="583" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/MundaneUniversity436 · r/Polymarket · 5mo</text>
+<text x="56" y="622" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">A Harvard paper estimated roughly $143M in</text>
+<text x="56" y="646" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">profits trace back to wallets with</text>
+<text x="56" y="670" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">apparent insider information.</text>
+<path d="M 56 718 L 63 711 L 70 718" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="719" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">4.3k</text>
+<rect x="138" y="707" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
+<path d="M 141 719 L 143 722 L 145 719" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="162" y="719" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">198</text>
 </svg>

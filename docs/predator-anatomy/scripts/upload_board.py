@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Wipe the General board and upload the full ICEBERG composition.
 
-Layout — T-shape for video pan:
-- HERO          (centred top)
-- THEORY 1, 2   (side by side, second row)
-- THEORY 3, 4   (side by side, third row)
-- DIVIDER       (centred, narrow)
-- MECH 01–07    (centred spine, vertical), each with VOICES card to the right
-- FIX           (centred, bottom)
+Sections (top to bottom):
+- HERO (centred, wide)
+- 4 THEORY cards in a 2x2 grid
+- Divider · THE SEVEN MECHANISMS
+- 7 MECHANISM cards (left spine) + VOICES cards (right column)
+- Divider · THE PROTOCOL
+- A1, A2, A3 product primitives (row of 3)
+- B1 timeline (centred)
+- Divider · HOW BLOCK TRADING REFUSES EACH ONE
+- C1-C7 mechanism-fix cards (4+3 grid)
+- FIX closing card (centred bottom)
 """
 import os, json, pathlib, time, urllib.parse, requests
 
@@ -20,6 +24,7 @@ HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "diagrams"
 MECH_DIR = ROOT / "multi"
 EXTRAS_DIR = ROOT / "extras"
+PRODUCT_DIR = ROOT / "product"
 
 
 def upload_image(svg_path, x, y, width):
@@ -64,63 +69,104 @@ def wipe():
 
 
 # ===== LAYOUT =====
-# Miro coords: x positive=right, y positive=down. origin=center of element.
 
-# Vertical positions of each row
-Y_HERO     = 0       # centered
-Y_THEORY1  = 1700    # theory 1, 2 row
-Y_THEORY2  = 3300    # theory 3, 4 row
-Y_DIVIDER  = 4800
-Y_MECH_START = 5900  # first mechanism starts here
-MECH_PITCH = 2250    # vertical spacing between mechanisms
+# Section Y positions
+Y_HERO         = 0
+Y_THEORY_1     = 1700
+Y_THEORY_2     = 3300
+Y_DIVIDER_MECH = 4800
+Y_MECH_START   = 5900
+MECH_PITCH     = 2250
 
-# Horizontal positions
-X_HERO_W = 2400
-X_THEORY_W = 1800
-X_THEORY_OFFSET = 1000      # centre of each theory card from x=0 (theory 1 at -1000, theory 2 at +1000)
-X_DIVIDER_W = 2400
-X_MECH = -450               # mechanism spine slightly left of centre
-X_MECH_W = 1500             # display width
-X_VOICES = 1450             # voices column on the right
-X_VOICES_W = 600
-X_FIX_W = 2400
+# Card widths (display widths used in Miro upload)
+HERO_W = 2400
+THEORY_W = 1800
+DIVIDER_W = 2400
+MECH_W = 1500
+VOICES_W = 600
+PRODUCT_W = 1600   # bigger than mechanism so type stays readable
+FIX_W = 2400
+
+# Horizontal anchors
+X_THEORY_OFFSET = 1000   # ±x for the 2x2 theory grid
+X_MECH = -450            # mechanism spine slightly left of centre
+X_VOICES = 1450          # voices column on the right
+# Product primitives row spacing: 3 cards across, gap 100
+X_PRODUCT_OFFSET = 1750  # ±x for the outer two of three product cards
+# C-grid: 4 cards per row at x=-2625, -875, 875, 2625 (1600 wide + 150 gap)
+X_C_OFFSETS = [-2625, -875, 875, 2625]
 
 
 def main():
     wipe()
-    print("\nUploading…")
+    print("\nUploading…\n")
 
     # HERO
-    upload_image(EXTRAS_DIR / "00-hero.svg", 0, Y_HERO, X_HERO_W)
-    print(f"  · hero @ y={Y_HERO}")
+    upload_image(EXTRAS_DIR / "00-hero.svg", 0, Y_HERO, HERO_W)
+    print(f"· HERO @ y={Y_HERO}")
 
     # THEORY 2x2 grid
-    upload_image(EXTRAS_DIR / "0A-triangle.svg",  -X_THEORY_OFFSET, Y_THEORY1, X_THEORY_W)
-    upload_image(EXTRAS_DIR / "0B-limit.svg",      X_THEORY_OFFSET, Y_THEORY1, X_THEORY_W)
-    upload_image(EXTRAS_DIR / "0C-skandalon.svg", -X_THEORY_OFFSET, Y_THEORY2, X_THEORY_W)
-    upload_image(EXTRAS_DIR / "0D-pharmakon.svg",  X_THEORY_OFFSET, Y_THEORY2, X_THEORY_W)
-    print(f"  · 4 theory cards in 2x2 grid")
+    upload_image(EXTRAS_DIR / "0A-triangle.svg",  -X_THEORY_OFFSET, Y_THEORY_1, THEORY_W)
+    upload_image(EXTRAS_DIR / "0B-limit.svg",      X_THEORY_OFFSET, Y_THEORY_1, THEORY_W)
+    upload_image(EXTRAS_DIR / "0C-skandalon.svg", -X_THEORY_OFFSET, Y_THEORY_2, THEORY_W)
+    upload_image(EXTRAS_DIR / "0D-pharmakon.svg",  X_THEORY_OFFSET, Y_THEORY_2, THEORY_W)
+    print(f"· 4 THEORY cards (2x2 grid)")
 
-    # DIVIDER
-    upload_image(EXTRAS_DIR / "99-divider.svg", 0, Y_DIVIDER, X_DIVIDER_W)
-    print(f"  · divider @ y={Y_DIVIDER}")
+    # Divider — MECHANISMS
+    upload_image(EXTRAS_DIR / "99-divider.svg", 0, Y_DIVIDER_MECH, DIVIDER_W)
+    print(f"· Divider · MECHANISMS @ y={Y_DIVIDER_MECH}")
 
-    # MECHANISMS + VOICES
-    names = ["01-toxic-flow","02-stop-hunting","03-cross-venue","04-latency",
-             "05-information","06-spoofing","07-pfof"]
-    for i, name in enumerate(names):
+    # MECHANISMS + VOICES (spine + right column)
+    mech_names = ["01-toxic-flow","02-stop-hunting","03-cross-venue","04-latency",
+                  "05-information","06-spoofing","07-pfof"]
+    for i, name in enumerate(mech_names):
         y = Y_MECH_START + i * MECH_PITCH
-        # Mechanism (spine, slightly left)
-        upload_image(MECH_DIR / f"{name}.svg", X_MECH, y, X_MECH_W)
-        # Voices (right column)
-        upload_image(EXTRAS_DIR / f"voices-{name}.svg", X_VOICES, y, X_VOICES_W)
-        print(f"  · mech {name} + voices @ y={y}")
-        time.sleep(0.2)
+        upload_image(MECH_DIR / f"{name}.svg", X_MECH, y, MECH_W)
+        upload_image(EXTRAS_DIR / f"voices-{name}.svg", X_VOICES, y, VOICES_W)
+        print(f"· Mech {name} + voices @ y={y}")
+        time.sleep(0.15)
 
-    # FIX (centered bottom)
-    y_fix = Y_MECH_START + len(names) * MECH_PITCH
-    upload_image(EXTRAS_DIR / "99-fix.svg", 0, y_fix, X_FIX_W)
-    print(f"  · fix @ y={y_fix}")
+    # === PRODUCT SECTION ===
+    y_protocol_div = Y_MECH_START + len(mech_names) * MECH_PITCH + 200
+    upload_image(EXTRAS_DIR / "99-divider-THE-PROTOCOL.svg", 0, y_protocol_div, DIVIDER_W)
+    print(f"\n· Divider · PROTOCOL @ y={y_protocol_div}")
+
+    # A1, A2, A3 in a row + B1 in a second row
+    y_a_row = y_protocol_div + 900   # account for product card height/2 ≈ 700/2 + breathing
+    a_offset = 1750  # ±x
+    upload_image(PRODUCT_DIR / "A1-what-is-a-block.svg",  -a_offset, y_a_row, PRODUCT_W)
+    upload_image(PRODUCT_DIR / "A2-how-block-resolves.svg", 0,        y_a_row, PRODUCT_W)
+    upload_image(PRODUCT_DIR / "A3-block-returns.svg",      a_offset, y_a_row, PRODUCT_W)
+    print(f"· Product A1/A2/A3 @ y={y_a_row}")
+
+    y_b = y_a_row + 1400
+    upload_image(PRODUCT_DIR / "B1-timeline.svg", 0, y_b, PRODUCT_W)
+    print(f"· Timeline B1 @ y={y_b}")
+
+    # === C SECTION (how each extraction is refused) ===
+    y_c_div = y_b + 1100
+    upload_image(EXTRAS_DIR / "99-divider-HOW-IT-REFUSES.svg", 0, y_c_div, DIVIDER_W)
+    print(f"\n· Divider · HOW IT REFUSES @ y={y_c_div}")
+
+    # 4 + 3 grid of C cards
+    c_names = ["C1-insider-trading", "C2-front-running", "C3-market-manipulation",
+               "C4-pfof", "C5-spoofing", "C6-toxic-flow", "C7-latency"]
+    y_c_row1 = y_c_div + 900
+    y_c_row2 = y_c_row1 + 1400
+    # Row 1 — 4 cards
+    for i in range(4):
+        upload_image(PRODUCT_DIR / f"{c_names[i]}.svg", X_C_OFFSETS[i], y_c_row1, PRODUCT_W)
+        print(f"· {c_names[i]} @ y={y_c_row1}")
+    # Row 2 — 3 cards, centred
+    row2_offsets = [-1750, 0, 1750]
+    for i in range(3):
+        upload_image(PRODUCT_DIR / f"{c_names[4 + i]}.svg", row2_offsets[i], y_c_row2, PRODUCT_W)
+        print(f"· {c_names[4 + i]} @ y={y_c_row2}")
+
+    # === FIX ===
+    y_fix = y_c_row2 + 1300
+    upload_image(EXTRAS_DIR / "99-fix.svg", 0, y_fix, FIX_W)
+    print(f"\n· FIX @ y={y_fix}")
 
     print(f"\nView: https://miro.com/app/board/{BID}")
 
