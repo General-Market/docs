@@ -29,30 +29,6 @@ import { VIDEO_BEATS } from "./beats";
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
 
-const FILL_SCALE = W / IMG_NATIVE_W;        // ~1.518
-
-const ZOOM_START_SCALE = 2.6;
-
-const TIER_Y_NATIVE = [
-  Math.round((0 + 269) / 2),       // 134  — sky / above line 1
-  Math.round((269 + 539) / 2),     // 404  — tip
-  Math.round((539 + 857) / 2),     // 698  — upper underwater
-  Math.round((857 + 1141) / 2),    // 999  — mid underwater
-  Math.round((1141 + 1430) / 2),   // 1285 — lower iceberg
-  Math.round((1430 + 1670) / 2),   // 1550 — depths
-];
-const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
-
-const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];
-const FRAME_CENTRE_Y = H / 2;
-
-// Camera target screen-y per tier. T0 (sky / strategy) can't centre —
-// nothing exists above the asset's top edge to fill the empty space.
-// Every later tier lands dead-centre so the eye doesn't hunt.
-const SCREEN_TARGET_Y = (i: number) => (i === 0 ? PRIMARY_ACTIVE_Y : FRAME_CENTRE_Y);
-
-const scrollAtTier = (i: number) => SCREEN_TARGET_Y(i) - TIER_Y_FILL[i];
-
 type Tier = {
   word: string[];
   icon?: string;
@@ -131,26 +107,23 @@ const stateAt = (frame: number): State => {
   return { phase: "tier", tier: LAST, sub: "hold", t: 1 };
 };
 
-const computeScale = (state: State): number => {
-  if (state.phase === "zoom")
-    return interpolate(state.t, [0, 1], [ZOOM_START_SCALE, FILL_SCALE], {
-      easing: EASE_OUT,
-    });
-  if (state.sub === "hold") {
-    const pulse = Math.sin(state.t * Math.PI) * 0.008;
-    const climaxPush = state.tier === LAST ? state.t * 0.05 : 0;
-    return FILL_SCALE * (1 + pulse + climaxPush);
-  }
-  return FILL_SCALE;
+// Continuous slow camera: a single linear scale + scroll across the
+// entire scene. No tier-locked jumps. The cards live in viewport
+// space, so this only moves the backdrop.
+const CAMERA_SCALE_START = 1.55;
+const CAMERA_SCALE_END = 1.05;
+const CAMERA_SCROLL_END = -1100;
+
+const computeScale = (frame: number): number => {
+  const t = Math.min(1, Math.max(0, frame / SCENE_FRAMES));
+  return interpolate(t, [0, 1], [CAMERA_SCALE_START, CAMERA_SCALE_END], {
+    easing: EASE_OUT,
+  });
 };
 
-const computeScrollY = (state: State): number => {
-  if (state.phase === "zoom") return 0;
-  if (state.sub === "hold") return scrollAtTier(state.tier);
-  if (state.tier === 0) return 0;
-  const a = scrollAtTier(state.tier - 1);
-  const b = scrollAtTier(state.tier);
-  return a + (b - a) * EASE_OUT(state.t);
+const computeScrollY = (frame: number): number => {
+  const t = Math.min(1, Math.max(0, frame / SCENE_FRAMES));
+  return interpolate(t, [0, 1], [0, CAMERA_SCROLL_END], { easing: EASE_OUT });
 };
 
 // Per-tier PnL stamp. Escalates roughly with the dollars-extracted scale
@@ -194,15 +167,17 @@ const DOT_FRAGMENT = /* glsl */ `
     vec4 src = texture2D(uTexture, cellUv);
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
-    float weight = pow(luma, 0.85);
+    // Only emit dots where the photograph reads as ice. Below the
+    // threshold (sky, water) the field stays solid blue — no halftone
+    // artefacts ringing the photo's background when we zoom out.
+    float mask = smoothstep(0.50, 0.66, luma);
+    float weight = pow(luma, 0.85) * mask;
     float radius = weight * uDotSize * 0.60;
 
     float dist = length(fragCoord - cellCenter);
     float aa = 0.6;
     float coverage = 1.0 - smoothstep(radius - aa, radius + aa, dist);
 
-    // Solid blue background — exactly the next scene's field. White ice
-    // sits on top wherever the photo is bright.
     vec3 ice = mix(vec3(0.92, 0.96, 1.0), vec3(1.0), luma);
     vec3 color = mix(uBackground, ice, coverage);
     gl_FragColor = vec4(color, 1.0);
@@ -276,12 +251,8 @@ const IcebergPoints: React.FC = () => {
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
   const state = stateAt(frame);
-  const scale = computeScale(state);
-  const scrollY = computeScrollY(state);
-
-  const activeTier = state.phase === "tier" ? state.tier : -1;
-  const activeFrameY =
-    activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY * 1 : PRIMARY_ACTIVE_Y;
+  const scale = computeScale(frame);
+  const scrollY = computeScrollY(frame);
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -320,99 +291,194 @@ export const AntiCheatIceberg: React.FC = () => {
         <IcebergPoints />
       </div>
 
-      {activeTier >= 0 && (
-        <ActiveRow
-          state={state}
-          tier={activeTier}
-          activeFrameY={activeFrameY}
-          frame={frame}
-        />
-      )}
-
-      {activeTier >= 0 && TIERS[activeTier].source && (
-        <SourceCitation url={TIERS[activeTier].source!} state={state} />
-      )}
+      <CardStack state={state} />
     </AbsoluteFill>
   );
 };
 
-// ─── Tier card — Bars-style white card, trader image bolted on top ──────────
+// ─── Tier card stack ─────────────────────────────────────────────────────────
 //
-// One card per tier. Trader photograph in the upper half, tier name +
-// PnL in the lower half. Cards drop from above the frame on every tier
-// transition.
+// Cards live in viewport space, not on the iceberg layer. Six fixed
+// slots stacked down the left side. Each card drops from above the
+// frame when its tier activates; once landed, it stays. By the end of
+// the scene all six cards are visible — the iceberg drifts behind them.
 
-const CARD_W = 440;
-const CARD_H = 620;
-const CARD_IMG_H = 280;
+const CARD_W = 560;
+const CARD_H = 156;
+const CARD_LEFT = 72;
+const CARD_GAP = 16;
+const CARD_TOP_OFFSET = (H - (CARD_H * N + CARD_GAP * (N - 1))) / 2;
+const CARD_IMG_W = 156;
 
-const ActiveRow: React.FC<{
-  state: State;
-  tier: number;
-  activeFrameY: number;
-  frame: number;
-}> = ({ state, tier, activeFrameY }) => {
-  const t = TIERS[tier];
-  const trader = TRADING_TIERS[tier];
-  const isAnim = state.phase === "tier" && state.sub === "anim";
+const CardStack: React.FC<{ state: State }> = ({ state }) => (
+  <>
+    {TIERS.map((tier, i) => {
+      const isAnim =
+        state.phase === "tier" && state.tier === i && state.sub === "anim";
+      const isActiveOrPast =
+        state.phase === "tier" &&
+        (state.tier > i ||
+          (state.tier === i && (state.sub === "hold" || state.sub === "anim")));
+      if (!isActiveOrPast) return null;
 
-  // Cards from the sky — large negative slide that decays to zero.
-  let slide = 0;
-  let opacity = 1;
-  let scale = 1;
-  if (isAnim) {
-    const at = state.t;
-    slide = interpolate(at, [0, 1], [-420, 0], { easing: EASE_OUT });
-    opacity = interpolate(at, [0.10, 0.60], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    });
-    scale = interpolate(at, [0.55, 0.85, 1], [0.92, 1.05, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: EASE_DEFAULT,
-    });
-  }
+      let slide = 0;
+      let opacity = 1;
+      let cardScale = 1;
+      if (isAnim) {
+        const at = state.t;
+        slide = interpolate(at, [0, 1], [-520, 0], { easing: EASE_OUT });
+        opacity = interpolate(at, [0.10, 0.60], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        cardScale = interpolate(at, [0.55, 0.85, 1], [0.92, 1.04, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: EASE_DEFAULT,
+        });
+      }
 
-  const tierLabel = t.word.join(" ");
+      const isCurrent =
+        state.phase === "tier" && state.tier === i;
+      const dim = isCurrent ? 1 : 0.78;
+
+      return (
+        <TierCard
+          key={i}
+          tier={tier}
+          index={i}
+          slide={slide}
+          opacity={opacity * dim}
+          scale={cardScale}
+        />
+      );
+    })}
+  </>
+);
+
+const TierCard: React.FC<{
+  tier: Tier;
+  index: number;
+  slide: number;
+  opacity: number;
+  scale: number;
+}> = ({ tier, index, slide, opacity, scale }) => {
+  const trader = TRADING_TIERS[index];
+  const tierLabel = tier.word.join(" ");
+  const top = CARD_TOP_OFFSET + index * (CARD_H + CARD_GAP) + slide;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        top: activeFrameY + slide,
-        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
-        transformOrigin: "center center",
+        left: CARD_LEFT,
+        top,
+        width: CARD_W,
+        height: CARD_H,
         opacity,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        transform: `scale(${scale.toFixed(3)})`,
+        transformOrigin: "left center",
         pointerEvents: "none",
         willChange: "transform, top, opacity",
       }}
     >
       <div
         style={{
-          width: CARD_W,
-          height: CARD_H,
-          borderRadius: 28,
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          borderRadius: 20,
           background: colors.surface,
           boxShadow:
-            "0 1px 0 rgba(255,255,255,0.6) inset, 0 40px 80px rgba(0, 16, 60, 0.45), 0 12px 24px rgba(0, 16, 60, 0.28)",
+            "0 1px 0 rgba(255,255,255,0.6) inset, 0 24px 56px rgba(0, 16, 60, 0.42), 0 8px 18px rgba(0, 16, 60, 0.22)",
           border: `1px solid ${colors.rule}`,
           overflow: "hidden",
-          position: "relative",
+          display: "flex",
         }}
       >
         <div
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: CARD_IMG_H,
+            flex: 1,
+            padding: "18px 24px 16px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: monoFont,
+              fontSize: 13,
+              fontWeight: 500,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: colors.dim,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            tier {index + 1} · {trader.label}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: font,
+                fontSize: 34,
+                fontWeight: 800,
+                letterSpacing: "-0.022em",
+                color: colors.fg,
+                lineHeight: 1.0,
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {tierLabel}
+            </div>
+            <div
+              style={{
+                fontFamily: font,
+                fontSize: 56,
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                color: colors.accent,
+                lineHeight: 0.92,
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {TIER_PNL[index]}
+            </div>
+          </div>
+
+          <div
+            style={{
+              fontFamily: monoFont,
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: colors.dim,
+            }}
+          >
+            extracted by unfair trading
+          </div>
+        </div>
+
+        <div
+          style={{
+            width: CARD_IMG_W,
+            height: "100%",
+            flexShrink: 0,
             overflow: "hidden",
           }}
         >
@@ -426,117 +492,7 @@ const ActiveRow: React.FC<{
             }}
           />
         </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: CARD_IMG_H + 24,
-            left: 30,
-            fontFamily: monoFont,
-            fontSize: 16,
-            fontWeight: 500,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          tier {tier + 1} of {N} · {trader.label}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: CARD_IMG_H + 56,
-            left: 30,
-            right: 30,
-            fontFamily: font,
-            fontSize: 46,
-            fontWeight: 800,
-            letterSpacing: "-0.022em",
-            color: colors.fg,
-            lineHeight: 1.0,
-          }}
-        >
-          {tierLabel}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 30,
-            right: 30,
-            bottom: 70,
-            fontFamily: font,
-            fontSize: 116,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: colors.accent,
-            lineHeight: 0.92,
-            fontVariantNumeric: "tabular-nums",
-            textAlign: "left",
-          }}
-        >
-          {TIER_PNL[tier]}
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 30,
-            right: 30,
-            bottom: 28,
-            fontFamily: monoFont,
-            fontSize: 14,
-            fontWeight: 500,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: colors.dim,
-          }}
-        >
-          extracted by unfair trading
-        </div>
       </div>
-    </div>
-  );
-};
-
-// ─── Source citation ──────────────────────────────────────────────────────────
-
-const SourceCitation: React.FC<{ url: string; state: State }> = ({
-  url,
-  state,
-}) => {
-  const opacity =
-    state.phase === "tier" && state.sub === "anim"
-      ? interpolate(state.t, [0.35, 0.85], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: EASE_OUT,
-        })
-      : 1;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 56,
-        bottom: 48,
-        maxWidth: 960,
-        fontFamily: monoFont,
-        fontSize: 22,
-        lineHeight: 1.35,
-        color: "rgba(255,255,255,0.78)",
-        letterSpacing: "0.01em",
-        wordBreak: "break-all",
-        opacity,
-        textShadow: "0 1px 2px rgba(0,0,0,0.85)",
-        pointerEvents: "none",
-        zIndex: 10,
-      }}
-    >
-      <span style={{ color: "rgba(255,255,255,0.5)", marginRight: 8 }}>
-        source —
-      </span>
-      {url}
     </div>
   );
 };
