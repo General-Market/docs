@@ -1,124 +1,117 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1068 1100" width="1068" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1300" width="1500" height="1300">
 <defs>
-<style>
-/* All sizes precomputed from apple.com letter-spacing em values */
-.eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; text-transform: uppercase; }
-.title   { font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.88px; }
-.titleEm { font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: #0071E3; letter-spacing: -0.64px; font-style: italic; }
-.tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
-.stepNum { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; letter-spacing: 0; }
-.stepH   { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.374px; }
-.stepC   { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
-.illL    { font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 0.44px; }
-.illP    { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
-.illP-r  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF3B30; }
-.illP-g  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-.illP-b  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; }
-.ecoL    { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; text-transform: uppercase; }
-.ecoF    { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.616px; }
-</style>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect width="1068" height="1100" fill="#FFFFFF"/>
-
-  <defs>
-    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/>
-    </marker>
-    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/>
-    </marker>
-    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/>
-    </marker>
-    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/>
-    </marker>
-  </defs>
-<text x="534.0" y="70" text-anchor="middle" class="eyebrow">EXTRACTION 04 · THE TIME BAR</text>
-  <text x="534.0" y="130" text-anchor="middle"><tspan class="title">The trade was over </tspan><tspan class="titleEm">before the click.</tspan></text>
-  <text x="534.0" y="186" text-anchor="middle" class="tagline">You click in 200 milliseconds. They executed 250,000 trades in that window.</text>
-<rect x="0" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="347" text-anchor="middle" class="stepNum">01</text>
-  <text x="64" y="347" class="stepH">ES futures move first</text>
-  <g transform="translate(0, 372)"><text x="170" y="30" text-anchor="middle" class="illL">CME · ES FUTURES</text>
-  <line x1="20" y1="120" x2="320" y2="120" stroke="#E8E8ED"/>
-  <path d="M 20 120 L 140 120 L 160 80 L 320 80" fill="none" stroke="#1D1D1F" stroke-width="2"/>
-  <circle cx="160" cy="80" r="6" fill="#0071E3"/>
-  <text x="160" y="64" text-anchor="middle" class="illP-b">+0.3%</text>
-  <text x="160" y="160" text-anchor="middle" class="illL">t = 0</text></g>
-  <text x="24" y="596" class="stepC">A macro print pushes ES futures up 0.3%. The</text>
-  <text x="24" y="614" class="stepC">leader has spoken.</text>
-<rect x="364" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="347" text-anchor="middle" class="stepNum">02</text>
-  <text x="428" y="347" class="stepH">SPY quote goes stale</text>
-  <g transform="translate(364, 372)"><text x="170" y="30" text-anchor="middle" class="illL">ARCA · SPY ETF</text>
-  <line x1="20" y1="120" x2="320" y2="120" stroke="#E8E8ED"/>
-  <path d="M 20 120 L 320 120" fill="none" stroke="#6E6E73" stroke-width="2" stroke-dasharray="4 3"/>
-  <text x="170" y="100" text-anchor="middle" class="illP-r">QUOTE STALE</text>
-  <text x="170" y="160" text-anchor="middle" class="illL">window: 50–500 μs</text></g>
-  <text x="388" y="596" class="stepC">Correlated SPY hasn't updated yet. For</text>
-  <text x="388" y="614" class="stepC">microseconds, the price is wrong.</text>
-<rect x="728" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="347" text-anchor="middle" class="stepNum">03</text>
-  <text x="792" y="347" class="stepH">FPGA fires in 810 ns</text>
-  <g transform="translate(728, 372)"><line x1="10" y1="160" x2="310" y2="160" stroke="#E8E8ED"/>
-  <text x="10" y="178" class="illL">0</text>
-  <text x="310" y="178" text-anchor="end" class="illL">200 ms</text>
-  <rect x="10" y="36" width="4" height="20" rx="3" fill="#34C759"/>
-  <text x="22" y="50" style="font: 700 11px 'SF Mono', monospace; fill: #1D1D1F">FPGA: 810 ns</text>
-  <rect x="10" y="64" width="14" height="20" rx="3" fill="#0071E3"/>
-  <text x="32" y="78" style="font: 700 11px 'SF Mono', monospace; fill: #1D1D1F">BANK EXEC: 5 ms</text>
-  <rect x="10" y="92" width="140" height="20" rx="3" fill="#6E6E73"/>
-  <text x="20" y="106" style="font: 700 11px 'SF Mono', monospace; fill: #FFFFFF">BROWSER: 50 ms</text>
-  <rect x="10" y="120" width="300" height="20" rx="3" fill="#FF3B30"/>
-  <text x="20" y="134" style="font: 700 11px 'SF Mono', monospace; fill: #FFFFFF">RETAIL CLICK: 200 ms</text></g>
-  <text x="752" y="596" class="stepC">A field-programmable gate array converts the</text>
-  <text x="752" y="614" class="stepC">ES print into a SPY order, instantly.</text>
-<rect x="0" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="711" text-anchor="middle" class="stepNum">04</text>
-  <text x="64" y="711" class="stepH">Slow MM picked off</text>
-  <g transform="translate(0, 736)"><text x="40" y="24" class="illL">PRICE</text>
-  <text x="260" y="24" text-anchor="end" class="illL">SIZE</text>
-  <rect x="40" y="42" width="220" height="36" rx="6" fill="#FF3B30" opacity="0.9"/>
-  <text x="56" y="65" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">OFFER stale $500.20</text>
-  <rect x="40" y="86" width="220" height="36" rx="6" fill="#0071E3" opacity="0.9"/>
-  <text x="56" y="109" fill="#FFFFFF" style="font: 700 13px 'SF Mono', monospace">BID stale $500.10</text>
-  <text x="150" y="156" text-anchor="middle" class="illL">hit by fast MM</text></g>
-  <text x="24" y="960" class="stepC">A market maker who hasn't updated yet sees</text>
-  <text x="24" y="978" class="stepC">their stale quote taken before they can…</text>
-<rect x="364" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="711" text-anchor="middle" class="stepNum">05</text>
-  <text x="428" y="711" class="stepH">SPY catches up</text>
-  <g transform="translate(364, 736)"><text x="170" y="30" text-anchor="middle" class="illL">ARCA · SPY ETF</text>
-  <line x1="20" y1="120" x2="320" y2="120" stroke="#E8E8ED"/>
-  <path d="M 20 120 L 180 120 L 200 84 L 320 84" fill="none" stroke="#1D1D1F" stroke-width="2"/>
-  <circle cx="200" cy="84" r="5" fill="#6E6E73"/>
-  <text x="200" y="68" text-anchor="middle" class="illL">t + 500 μs</text>
-  <text x="170" y="160" text-anchor="middle" class="illL">too late on this print</text></g>
-  <text x="388" y="960" class="stepC">Five hundred microseconds later the quote</text>
-  <text x="388" y="978" class="stepC">updates. The arbitrage is closed.</text>
-<rect x="728" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="711" text-anchor="middle" class="stepNum">06</text>
-  <text x="792" y="711" class="stepH">The accumulator</text>
-  <g transform="translate(728, 736)"><text x="170" y="30" text-anchor="middle" class="illL">GLOBAL LATENCY TAX / yr</text>
-  <text x="170" y="86" text-anchor="middle" style="font: 800 48px 'SF Pro Display', sans-serif; fill: #0071E3; letter-spacing: -1.056px">$5B</text>
-  <text x="170" y="120" text-anchor="middle" class="illL">Aquilina–Budish QJE 2022</text></g>
-  <text x="752" y="960" class="stepC">Per trade: a penny. Across markets, five</text>
-  <text x="752" y="978" class="stepC">billion dollars a year. 17% of the cost of…</text>
-<rect x="0" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="20" y="1074" class="ecoL">OPERATOR SPEND</text>
-  <text x="20" y="1108" class="ecoF" style="fill: #1D1D1F">~$650K / yr</text>
-  <rect x="364" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="384" y="1074" class="ecoL">ANNUAL TAKE</text>
-  <text x="384" y="1108" class="ecoF" style="fill: #1D1D1F">$300K–1.5M</text>
-  <rect x="728" y="1048" width="340" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-  <text x="748" y="1074" class="ecoL">ON GENERAL</text>
-  <text x="748" y="1108" class="ecoF" style="fill: #0071E3">$0</text>
+<rect x="0" y="0" width="1500" height="1300" rx="0" fill="#FFFFFF"/>
+<text x="750" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">EXTRACTION 04 · THE TIME BAR</text>
+<text x="789" y="144" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.056px">The trade was over</text>
+<text x="805" y="144" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:48px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-0.768px">before the click.</text>
+<text x="750" y="196" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:19px;font-weight:500;fill:#6E6E73;letter-spacing:-0.228px">You click in 200 milliseconds. They executed 250,000 trades in that window.</text>
+<rect x="150" y="248" width="588" height="56" rx="14" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1" opacity="0.95"/>
+<text x="174" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:1.98px">SCAPEGOAT</text>
+<text x="174" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">Retail clicker; slow MM with stale quotes</text>
+<rect x="762" y="248" width="588" height="56" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1" opacity="0.95"/>
+<text x="786" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#0071E3;letter-spacing:1.98px">PREDATOR</text>
+<text x="786" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">HFT firm with FPGA + co-lo + microwave</text>
+<rect x="30" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">01</text>
+<text x="106" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">ES futures move first</text>
+<g transform="translate(66, 392)">
+<text x="194" y="18" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">CME · ES FUTURES</text>
+<line x1="0" y1="142.79999999999998" x2="388" y2="142.79999999999998" stroke="#E8E8ED" stroke-width="1"/>
+<path d="M 0 142.79999999999998 L 174.6 142.79999999999998 L 194.0 83.3 L 388 83.3" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="194.0" cy="83.3" r="6" fill="#0071E3"/>
+<text x="194.0" y="71.39999999999999" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#0071E3">+0.3%</text>
+<text x="194.0" y="185.64000000000001" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">t = 0</text>
+</g>
+<text x="66" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">A macro print pushes ES futures up 0.3%. The leader</text>
+<text x="66" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">has spoken.</text>
+<rect x="520" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">02</text>
+<text x="596" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">SPY quote goes stale</text>
+<g transform="translate(556, 392)">
+<text x="194" y="18" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ARCA · SPY ETF</text>
+<line x1="0" y1="119.0" x2="388" y2="119.0" stroke="#E8E8ED" stroke-width="1"/>
+<path d="M 0 119.0 L 388 119.0" fill="none" stroke="#6E6E73" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3"/>
+<text x="194" y="85.67999999999999" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:800;fill:#FF3B30;letter-spacing:2.52px">QUOTE STALE</text>
+<text x="194" y="185.64000000000001" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">stale window: 50–500 μs</text>
+</g>
+<text x="556" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">The correlated ETF hasn't updated yet. For</text>
+<text x="556" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">microseconds, the price is wrong.</text>
+<rect x="1010" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">03</text>
+<text x="1086" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">FPGA fires in 810 ns</text>
+<g transform="translate(1046, 392)">
+<line x1="10" y1="208" x2="378" y2="208" stroke="#E8E8ED" stroke-width="1"/>
+<text x="10" y="228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">0</text>
+<text x="378" y="228" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">200 ms</text>
+<rect x="10" y="14" width="6" height="26" rx="4" fill="#34C759"/>
+<text x="26" y="32" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#1D1D1F">FPGA: 810 ns</text>
+<rect x="10" y="54" width="14" height="26" rx="4" fill="#0071E3"/>
+<text x="34" y="72" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#1D1D1F">BANK EXEC: 5 ms</text>
+<rect x="10" y="94" width="160" height="26" rx="4" fill="#6E6E73"/>
+<text x="20" y="112" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FFFFFF">BROWSER RPC: 50 ms</text>
+<rect x="10" y="134" width="368" height="26" rx="4" fill="#FF3B30"/>
+<text x="20" y="152" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FFFFFF">RETAIL CLICK: 200 ms</text>
+</g>
+<text x="1046" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">An FPGA converts the ES print into a SPY order,</text>
+<text x="1046" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">instantly. Retail click: 200 ms.</text>
+<rect x="30" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">04</text>
+<text x="106" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Slow MM picked off</text>
+<g transform="translate(66, 822)">
+<rect x="54" y="71" width="280" height="44" rx="8" fill="#FF3B30" opacity="0.92"/>
+<text x="70" y="98" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FFFFFF;opacity:0.85">OFFER</text>
+<text x="318" y="98" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:800;fill:#FFFFFF">$500.20</text>
+<line x1="68" y1="93" x2="320" y2="93" stroke="#FFFFFF" stroke-width="2"/>
+<rect x="54" y="123" width="280" height="44" rx="8" fill="#0071E3" opacity="0.92"/>
+<text x="70" y="150" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#FFFFFF;opacity:0.85">BID</text>
+<text x="318" y="150" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:800;fill:#FFFFFF">$500.10</text>
+<text x="194" y="233" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">slow MM's stale offer taken at $500.20 before they could pull it</text>
+</g>
+<text x="66" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">A market maker who hasn't updated yet has their</text>
+<text x="66" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">stale quote taken.</text>
+<rect x="520" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">05</text>
+<text x="596" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">SPY catches up</text>
+<g transform="translate(556, 822)">
+<text x="194" y="18" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ARCA · SPY ETF</text>
+<line x1="0" y1="142.79999999999998" x2="388" y2="142.79999999999998" stroke="#E8E8ED" stroke-width="1"/>
+<path d="M 0 142.79999999999998 L 155.20000000000002 142.79999999999998 L 174.6 83.3 L 388 83.3" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="174.6" cy="83.3" r="5" fill="#6E6E73"/>
+<text x="174.6" y="66.64" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">t + 500 μs</text>
+<text x="194" y="202.29999999999998" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73;letter-spacing:0.48px">too late on this print</text>
+</g>
+<text x="556" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Five hundred microseconds later the quote updates.</text>
+<text x="556" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">The arbitrage is closed.</text>
+<rect x="1010" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">06</text>
+<text x="1086" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The accumulator</text>
+<g transform="translate(1046, 822)">
+<text x="194" y="79" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">GLOBAL LATENCY TAX / YEAR</text>
+<text x="194" y="137" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#0071E3;letter-spacing:-1.5839999999999999px">$5B</text>
+<text x="194" y="175" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;letter-spacing:-0.07px">Aquilina · Budish · O'Neill · QJE 2022</text>
+</g>
+<text x="1046" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Per trade: pennies. Across markets: $5B a year.</text>
+<text x="1046" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Seventeen percent of liquidity cost.</text>
+<rect x="30" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="54" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">OPERATOR SPEND</text>
+<text x="54" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">~$650K/yr</text>
+<rect x="520" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="544" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ANNUAL TAKE</text>
+<text x="544" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">$300K–1.5M</text>
+<rect x="1010" y="1200" width="460" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="1034" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ON GENERAL</text>
+<text x="1034" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#0071E3;letter-spacing:-0.616px">$0</text>
 </svg>

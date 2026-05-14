@@ -1,117 +1,121 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1068 1100" width="1068" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1300" width="1500" height="1300">
 <defs>
-<style>
-/* All sizes precomputed from apple.com letter-spacing em values */
-.eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; text-transform: uppercase; }
-.title   { font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.88px; }
-.titleEm { font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: #0071E3; letter-spacing: -0.64px; font-style: italic; }
-.tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
-.stepNum { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; letter-spacing: 0; }
-.stepH   { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.374px; }
-.stepC   { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
-.illL    { font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 0.44px; }
-.illP    { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
-.illP-r  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF3B30; }
-.illP-g  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-.illP-b  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; }
-.ecoL    { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; text-transform: uppercase; }
-.ecoF    { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.616px; }
-</style>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect width="1068" height="1100" fill="#FFFFFF"/>
-
-  <defs>
-    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/>
-    </marker>
-    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/>
-    </marker>
-    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/>
-    </marker>
-    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/>
-    </marker>
-  </defs>
-<text x="534.0" y="70" text-anchor="middle" class="eyebrow">EXTRACTION 02 · THE WICK</text>
-  <text x="534.0" y="130" text-anchor="middle"><tspan class="title">Your support </tspan><tspan class="titleEm">is their menu.</tspan></text>
-  <text x="534.0" y="186" text-anchor="middle" class="tagline">Stops cluster at obvious levels. Level 3 makes the menu legible.</text>
-<rect x="0" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="347" text-anchor="middle" class="stepNum">01</text>
-  <text x="64" y="347" class="stepH">Stops cluster at support</text>
-  <g transform="translate(0, 372)"><rect x="20" y="30" width="300" height="220" rx="8" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-  <text x="314" y="186" text-anchor="end" class="illL">$99.50 support</text>
-  <path d="M 0 80 L 60 70 L 120 84 L 180 78 L 240 90 L 300 86" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <g opacity="0.6"><line x1="40" y1="186" x2="54" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="62" y1="186" x2="76" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="84" y1="186" x2="98" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="106" y1="186" x2="120" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="128" y1="186" x2="142" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="150" y1="186" x2="164" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="172" y1="186" x2="186" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="194" y1="186" x2="208" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="216" y1="186" x2="230" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="238" y1="186" x2="252" y2="194" stroke="#FF3B30" stroke-width="1.5"/><line x1="260" y1="186" x2="274" y2="194" stroke="#FF3B30" stroke-width="1.5"/></g></g>
-  <text x="24" y="596" class="stepC">Retail traders place stop-losses at $99.50</text>
-  <text x="24" y="614" class="stepC">because it looks like obvious support.</text>
-<rect x="364" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="347" text-anchor="middle" class="stepNum">02</text>
-  <text x="428" y="347" class="stepH">The MM sees the menu</text>
-  <g transform="translate(364, 372)"><rect x="40" y="20" width="260" height="230" rx="10" fill="#1D1D1F" />
-  <text x="170" y="46" text-anchor="middle" style="font: 700 11px 'SF Mono'; fill: #E8F2FE; letter-spacing: 1.8px">LEVEL 3 FEED</text>
-  <text x="170" y="118" text-anchor="middle" style="font: 800 56px 'SF Pro Display'; fill: #FFFFFF; letter-spacing: -1.232px">14,028</text>
-  <text x="170" y="146" text-anchor="middle" style="font: 500 13px 'SF Pro Text'; fill: #FFFFFF; opacity: 0.7">working stop-orders at $99.50</text>
-  <text x="170" y="220" text-anchor="middle" class="illL" style="fill: #E8F2FE; opacity: 0.6">cost: ~$200K / yr / venue</text></g>
-  <text x="388" y="596" class="stepC">Level 3 market data shows every working order.</text>
-  <text x="388" y="614" class="stepC">Retail does not pay for it.</text>
-<rect x="728" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="347" text-anchor="middle" class="stepNum">03</text>
-  <text x="792" y="347" class="stepH">The push down</text>
-  <g transform="translate(728, 372)"><rect x="20" y="30" width="300" height="220" rx="8" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-  <text x="314" y="186" text-anchor="end" class="illL">$99.50</text>
-  <path d="M 0 60 L 60 64 L 120 80 L 180 110 L 240 150 L 300 180" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="160" y="100" class="illP-r">SELL $5M</text>
-  <path d="M 160 110 L 200 160" stroke="#FF3B30" stroke-width="2" marker-end="url(#aHeadRed)"/></g>
-  <text x="752" y="596" class="stepC">MM sells $5M into a thin order book. Price</text>
-  <text x="752" y="614" class="stepC">slides toward the cluster.</text>
-<rect x="0" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="711" text-anchor="middle" class="stepNum">04</text>
-  <text x="64" y="711" class="stepH">Wick triggers cascade</text>
-  <g transform="translate(0, 736)"><rect x="20" y="30" width="300" height="220" rx="8" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-  <text x="314" y="186" text-anchor="end" class="illL">$99.50</text>
-  <path d="M 0 60 L 60 70 L 120 100 L 180 150 L 200 200 L 220 145 L 280 100 L 300 90" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="200" cy="200" r="6" fill="#FF3B30"/>
-  <text x="200" y="222" text-anchor="middle" class="illP-r">$99.45</text></g>
-  <text x="24" y="960" class="stepC">Price touches $99.45. Fourteen thousand stops</text>
-  <text x="24" y="978" class="stepC">fire as market sells in sequence.</text>
-<rect x="364" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="711" text-anchor="middle" class="stepNum">05</text>
-  <text x="428" y="711" class="stepH">Forced selling adds pressure</text>
-  <g transform="translate(364, 736)"><text x="170" y="30" text-anchor="middle" class="illL">FORCED SELLS</text>
-  <text x="170" y="86" text-anchor="middle" style="font: 800 48px 'SF Pro Display', sans-serif; fill: #FF3B30; letter-spacing: -1.056px">$20M</text>
-  <text x="170" y="120" text-anchor="middle" class="illL">added to the book</text></g>
-  <text x="388" y="960" class="stepC">The cascade adds $20M of unwanted sells. Price</text>
-  <text x="388" y="978" class="stepC">overshoots to $98.20.</text>
-<rect x="728" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="711" text-anchor="middle" class="stepNum">06</text>
-  <text x="792" y="711" class="stepH">Cover and resell</text>
-  <g transform="translate(728, 736)"><rect x="20" y="30" width="300" height="220" rx="8" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-  <line x1="20" y1="60" x2="320" y2="60" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
-  <text x="314" y="56" text-anchor="end" class="illL">$101.00</text>
-  <path d="M 0 200 L 60 210 L 120 180 L 180 130 L 240 80 L 300 60" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="60" y="240" class="illP-g">COVER $98.20</text>
-  <text x="180" y="50" class="illP-g">SELL $101</text></g>
-  <text x="752" y="960" class="stepC">MM covers the short at $98.20 and resells into</text>
-  <text x="752" y="978" class="stepC">the recovery at $101.</text>
-<rect x="0" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="20" y="1074" class="ecoL">OPERATOR SPEND</text>
-  <text x="20" y="1108" class="ecoF" style="fill: #1D1D1F">~$350K / yr</text>
-  <rect x="364" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="384" y="1074" class="ecoL">PER CASCADE</text>
-  <text x="384" y="1108" class="ecoF" style="fill: #1D1D1F">$50K–500K</text>
-  <rect x="728" y="1048" width="340" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-  <text x="748" y="1074" class="ecoL">ON GENERAL</text>
-  <text x="748" y="1108" class="ecoF" style="fill: #0071E3">$0</text>
+<rect x="0" y="0" width="1500" height="1300" rx="0" fill="#FFFFFF"/>
+<text x="750" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">EXTRACTION 02 · THE WICK</text>
+<text x="744" y="144" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.056px">Your support</text>
+<text x="760" y="144" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:48px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-0.768px">is their menu.</text>
+<text x="750" y="196" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:19px;font-weight:500;fill:#6E6E73;letter-spacing:-0.228px">Retail stops cluster at obvious levels. Level 3 makes the menu legible.</text>
+<rect x="150" y="248" width="588" height="56" rx="14" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1" opacity="0.95"/>
+<text x="174" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:1.98px">SCAPEGOAT</text>
+<text x="174" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">14,000 retail stop-losses at $99.50</text>
+<rect x="762" y="248" width="588" height="56" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1" opacity="0.95"/>
+<text x="786" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#0071E3;letter-spacing:1.98px">PREDATOR</text>
+<text x="786" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">MM with depth-of-book access</text>
+<rect x="30" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">01</text>
+<text x="106" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Stops cluster at support</text>
+<g transform="translate(66, 392)">
+<rect x="0" y="0" width="388" height="218" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="170.04" x2="380" y2="170.04" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="378" y="164.04" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$99.50 support</text>
+<path d="M 0 76.3 L 77.60000000000001 65.39999999999999 L 155.20000000000002 78.48 L 232.79999999999998 69.76 L 310.40000000000003 82.84 L 388 74.12" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="20" y1="163.68" x2="30" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="42" y1="163.68" x2="52" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="64" y1="163.68" x2="74" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="86" y1="163.68" x2="96" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="108" y1="163.68" x2="118" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="130" y1="163.68" x2="140" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="152" y1="163.68" x2="162" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="174" y1="163.68" x2="184" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="196" y1="163.68" x2="206" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="218" y1="163.68" x2="228" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="240" y1="163.68" x2="250" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="262" y1="163.68" x2="272" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="284" y1="163.68" x2="294" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+<line x1="306" y1="163.68" x2="316" y2="183.12" stroke="#FF3B30" stroke-width="1.5"/>
+</g>
+<text x="66" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Retail places stop-losses at $99.50 because the</text>
+<text x="66" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">level looks like obvious support.</text>
+<rect x="520" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">02</text>
+<text x="596" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The MM sees the menu</text>
+<g transform="translate(556, 392)">
+<rect x="0" y="0" width="388" height="238" rx="12" fill="#1D1D1F"/>
+<text x="194" y="32" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#E8F2FE;letter-spacing:2.16px">LEVEL 3 DEPTH FEED</text>
+<text x="194" y="125" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#FFFFFF;letter-spacing:-1.584px">14,028</text>
+<text x="194" y="157" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#FFFFFF;letter-spacing:-0.07px;opacity:0.85">working stop-orders at $99.50</text>
+<text x="194" y="214" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#E8F2FE;letter-spacing:1.65px;opacity:0.7">RETAIL DOES NOT PAY FOR THIS VIEW</text>
+</g>
+<text x="556" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Level 3 market data shows every working order.</text>
+<text x="556" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Retail buys the chart, not the depth.</text>
+<rect x="1010" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">03</text>
+<text x="1086" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The push down</text>
+<g transform="translate(1046, 392)">
+<rect x="0" y="0" width="388" height="218" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="187.48" x2="380" y2="187.48" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="378" y="181.48" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$99.50</text>
+<path d="M 0 65.39999999999999 L 77.60000000000001 74.12 L 155.20000000000002 91.56 L 232.79999999999998 126.44 L 310.40000000000003 156.96 L 388 178.76" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="135.79999999999998" y="109.0" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:0.44px">MM SELLS $5M</text>
+</g>
+<text x="1046" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">MM sells five million into a thin book. Price slides</text>
+<text x="1046" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">toward the cluster.</text>
+<rect x="30" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">04</text>
+<text x="106" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Wick triggers cascade</text>
+<g transform="translate(66, 822)">
+<rect x="0" y="0" width="388" height="218" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="183.12" x2="380" y2="183.12" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="378" y="177.12" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$99.50</text>
+<path d="M 0 69.76 L 77.60000000000001 82.84 L 155.20000000000002 109.0 L 194.0 204.92 L 232.79999999999998 109.0 L 310.40000000000003 78.48 L 388 65.39999999999999" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="194.0" cy="204.92" r="5" fill="#FF3B30"/>
+<text x="194.0" y="190.92" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:0.44px">$99.45</text>
+</g>
+<text x="66" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Price touches $99.45. Fourteen thousand stops fire</text>
+<text x="66" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">as market sells in sequence.</text>
+<rect x="520" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">05</text>
+<text x="596" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Forced selling adds pressure</text>
+<g transform="translate(556, 822)">
+<text x="194" y="79" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">FORCED SELLS ADDED</text>
+<text x="194" y="137" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:68px;font-weight:800;fill:#FF3B30;letter-spacing:-1.496px">$20M</text>
+<text x="194" y="175" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;letter-spacing:-0.07px">cascade overshoots to $98.20</text>
+</g>
+<text x="556" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">The cascade adds twenty million of unwanted sells.</text>
+<text x="556" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Price overshoots to $98.20.</text>
+<rect x="1010" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">06</text>
+<text x="1086" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Cover and resell</text>
+<g transform="translate(1046, 822)">
+<rect x="0" y="0" width="388" height="218" rx="10" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<line x1="8" y1="39.24" x2="380" y2="39.24" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="378" y="33.24" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">$101</text>
+<path d="M 0 187.48 L 77.60000000000001 170.04 L 155.20000000000002 135.16 L 232.79999999999998 91.56 L 310.40000000000003 56.68 L 388 39.24" fill="none" stroke="#1D1D1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="69.84" y="178.76" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#34C759;letter-spacing:0.44px">COVER $98.20</text>
+<text x="318.15999999999997" y="30.520000000000003" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#34C759;letter-spacing:0.44px">SELL $101</text>
+</g>
+<text x="1046" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">MM covers the short low and resells into the</text>
+<text x="1046" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">recovery higher.</text>
+<rect x="30" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="54" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">OPERATOR SPEND</text>
+<text x="54" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">~$350K/yr</text>
+<rect x="520" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="544" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">PER CASCADE</text>
+<text x="544" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">$50K–500K</text>
+<rect x="1010" y="1200" width="460" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="1034" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ON GENERAL</text>
+<text x="1034" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#0071E3;letter-spacing:-0.616px">$0</text>
 </svg>

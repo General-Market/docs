@@ -1,36 +1,49 @@
 #!/usr/bin/env python3
-"""Generate 7 multi-step Apple-style SVG diagrams for the predator anatomy.
+"""Generate 7 multi-step Apple-style SVG diagrams — v2.
 
-Each SVG is 1068×1100, matching apple.com's wide-content max-width.
-Header (eyebrow + hooking title + tagline) → 3×2 step grid → economics footer.
+Fixes from v1:
+- Canvas 1500x1300 (was 1068x1100), larger frames, no overflow
+- Explicit SCAPEGOAT / PREDATOR role bar under each header
+- Per-mechanism custom layout (not uniform 3x2 boxes everywhere)
+- Cross-venue (03) rebuilt as a richer split-screen with the arbitrageur as the explicit
+  third party
+- PFOF (07) rebuilt as a full flow diagram with arrows and amounts contained
+- Stricter padding so all in-illustration labels stay inside frames
+- Caption wrapping fixed (real measurement, max 2 lines)
+- Standardised text attributes (no `font:` shorthand — better Miro renderer compat)
 
-Run:
-    python3 docs/predator-anatomy/scripts/generate_diagrams.py
-Output:
-    docs/predator-anatomy/diagrams/multi/NN-name.svg
+Run: python3 docs/predator-anatomy/scripts/generate_diagrams.py
+Out: docs/predator-anatomy/diagrams/multi/NN-name.svg
 """
 import pathlib, textwrap
 
 OUT = pathlib.Path(__file__).resolve().parents[1] / "diagrams" / "multi"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# ---------- APPLE STYLE — values sourced from docs/apple-style-table.md ----------
-W, H = 1068, 1100
-PADX = 0           # outer frame stretches to canvas edges; padding is internal
-HDR_TOP = 64
-HDR_H = 200        # eyebrow + title + tagline
-GAP_HDR = 40
-GRID_TOP = HDR_TOP + HDR_H + GAP_HDR
-STEP_W, STEP_H = 340, 340
-GAP_STEP = 24
-GRID_W = STEP_W * 3 + GAP_STEP * 2  # = 1068, fills the canvas
-GRID_LEFT = (W - GRID_W) // 2
-GAP_FOOTER = 40
-FOOTER_TOP = GRID_TOP + STEP_H * 2 + GAP_STEP + GAP_FOOTER
+# ===== CANVAS =====
+W, H = 1500, 1300
+
+# Header zone
+HDR_TOP = 80
+EYEBROW_Y = HDR_TOP                  # 80
+TITLE_Y = HDR_TOP + 64               # 144
+TAGLINE_Y = HDR_TOP + 116            # 196
+ROLE_BAR_Y = HDR_TOP + 168           # 248 — scapegoat / predator labels live here
+
+# Grid zone
+GRID_TOP = HDR_TOP + 240             # 320
+STEP_W, STEP_H = 460, 400
+GAP_STEP = 30
+GRID_W = STEP_W * 3 + GAP_STEP * 2   # = 1440
+GRID_LEFT = (W - GRID_W) // 2        # = 30
+FRAME_PAD = 36                       # padding INSIDE each step frame
+
+# Footer (economics) zone
+FOOTER_TOP = GRID_TOP + STEP_H * 2 + GAP_STEP + 50    # = 1200
 FOOTER_H = 80
 FOOTER_BOTTOM = FOOTER_TOP + FOOTER_H
 
-# Colors (apple.com production)
+# ===== APPLE COLORS =====
 INK    = "#1D1D1F"
 INK_2  = "#424245"
 INK_3  = "#6E6E73"
@@ -42,671 +55,940 @@ RULE   = "#D2D2D7"
 RULE_2 = "#E8E8ED"
 BLUE   = "#0071E3"
 BLUE_T = "#E8F2FE"
-RED    = "#FF3B30"   # iOS systemRed (light)
-GREEN  = "#34C759"   # iOS systemGreen (light)
+RED    = "#FF3B30"
+RED_T  = "#FFEBE9"
+GREEN  = "#34C759"
+GREEN_T = "#E5F8EC"
 
-# Common style block — pasted into each SVG <style>
-STYLE = textwrap.dedent(f"""
-  /* All sizes precomputed from apple.com letter-spacing em values */
-  .eyebrow {{ font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: {INK_3}; letter-spacing: 2.34px; text-transform: uppercase; }}
-  .title   {{ font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: {INK}; letter-spacing: -0.88px; }}
-  .titleEm {{ font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: {BLUE}; letter-spacing: -0.64px; font-style: italic; }}
-  .tagline {{ font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: {INK_3}; letter-spacing: -0.228px; }}
-  .stepNum {{ font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: {BLUE}; letter-spacing: 0; }}
-  .stepH   {{ font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: {INK}; letter-spacing: -0.374px; }}
-  .stepC   {{ font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: {INK_2}; letter-spacing: -0.07px; }}
-  .illL    {{ font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: {INK_3}; letter-spacing: 0.44px; }}
-  .illP    {{ font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: {INK}; }}
-  .illP-r  {{ font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: {RED}; }}
-  .illP-g  {{ font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: {GREEN}; }}
-  .illP-b  {{ font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: {BLUE}; }}
-  .ecoL    {{ font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: {INK_3}; letter-spacing: 1.98px; text-transform: uppercase; }}
-  .ecoF    {{ font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: {INK}; letter-spacing: -0.616px; }}
-""")
+# ===== TYPOGRAPHY HELPERS (one place, no shorthand) =====
+SF_DISPLAY = "'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+SF_TEXT = "'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+SF_MONO = "'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace"
+NY_SERIF = "'New York', 'Times New Roman', Georgia, serif"
 
-# ---------- helpers ----------
-def header(eyebrow: str, hook: str, hook_em: str, tagline: str) -> str:
-    """Top section: eyebrow (uppercase mono), hooking title (italic serif accent), tagline.
-    hook contains the regular part; hook_em is the italic emphasized fragment placed after.
-    """
-    # eyebrow
-    cy = HDR_TOP + 6
-    out = [f'<text x="{W/2}" y="{cy}" text-anchor="middle" class="eyebrow">{eyebrow}</text>']
-    # title line: hook then italic em
-    title_y = cy + 60
-    out.append(f'<text x="{W/2}" y="{title_y}" text-anchor="middle">'
-               f'<tspan class="title">{hook} </tspan>'
-               f'<tspan class="titleEm">{hook_em}</tspan></text>')
-    # tagline
-    tag_y = title_y + 56
-    out.append(f'<text x="{W/2}" y="{tag_y}" text-anchor="middle" class="tagline">{tagline}</text>')
-    return "\n  ".join(out)
+def T(x, y, txt, *, font=SF_TEXT, size=17, weight=400, fill=INK, anchor="start",
+      tracking=None, italic=False, opacity=None):
+    """Emit a single <text> element, no shorthand. tracking in absolute px (sourced em*size)."""
+    style_parts = [
+        f"font-family:{font}",
+        f"font-size:{size}px",
+        f"font-weight:{weight}",
+        f"fill:{fill}",
+    ]
+    if italic: style_parts.append("font-style:italic")
+    if tracking is not None: style_parts.append(f"letter-spacing:{tracking}px")
+    if opacity is not None: style_parts.append(f"opacity:{opacity}")
+    style = ";".join(style_parts)
+    return f'<text x="{x}" y="{y}" text-anchor="{anchor}" style="{style}">{txt}</text>'
 
+def R(x, y, w, h, *, fill=PAPER, stroke=None, stroke_w=1, rx=0, opacity=None):
+    s = [f'x="{x}"', f'y="{y}"', f'width="{w}"', f'height="{h}"', f'rx="{rx}"', f'fill="{fill}"']
+    if stroke:
+        s.append(f'stroke="{stroke}"')
+        s.append(f'stroke-width="{stroke_w}"')
+    if opacity is not None: s.append(f'opacity="{opacity}"')
+    return f'<rect {" ".join(s)}/>'
 
-def step_frame(col: int, row: int, num: str, step_title: str, body_svg: str, caption: str) -> str:
-    """Draw one step frame at column 0-2, row 0-1. body_svg is inline SVG content positioned
-    inside the frame already (relative to frame top-left)."""
+def L(x1, y1, x2, y2, *, stroke=INK, w=1, dash=None, opacity=None):
+    s = [f'x1="{x1}"', f'y1="{y1}"', f'x2="{x2}"', f'y2="{y2}"', f'stroke="{stroke}"', f'stroke-width="{w}"']
+    if dash: s.append(f'stroke-dasharray="{dash}"')
+    if opacity is not None: s.append(f'opacity="{opacity}"')
+    return f'<line {" ".join(s)}/>'
+
+def CIRC(cx, cy, r, *, fill=PAPER, stroke=None, w=1):
+    s = [f'cx="{cx}"', f'cy="{cy}"', f'r="{r}"', f'fill="{fill}"']
+    if stroke:
+        s.append(f'stroke="{stroke}"')
+        s.append(f'stroke-width="{w}"')
+    return f'<circle {" ".join(s)}/>'
+
+def PATH(d, *, stroke=INK, fill="none", w=2, marker_end=None, dash=None, linecap="round"):
+    s = [f'd="{d}"', f'fill="{fill}"', f'stroke="{stroke}"', f'stroke-width="{w}"', f'stroke-linecap="{linecap}"', f'stroke-linejoin="round"']
+    if marker_end: s.append(f'marker-end="url(#{marker_end})"')
+    if dash: s.append(f'stroke-dasharray="{dash}"')
+    return f'<path {" ".join(s)}/>'
+
+# ===== ARROW MARKERS =====
+def arrow_defs():
+    out = ['<defs>']
+    for name, color in [("arrInk", INK), ("arrBlue", BLUE), ("arrRed", RED), ("arrGreen", GREEN), ("arrInk3", INK_3)]:
+        out.append(f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">'
+                   f'<path d="M 0 0 L 10 5 L 0 10 z" fill="{color}"/></marker>')
+    out.append('</defs>')
+    return "\n".join(out)
+
+# ===== HEADER =====
+def header(eyebrow, hook_left, hook_right, tagline, scapegoat, predator):
+    """Apple-style header: eyebrow, hook with italic serif accent, tagline, role bar."""
+    s = []
+    # Eyebrow
+    s.append(T(W//2, EYEBROW_Y, eyebrow, font=SF_MONO, size=14, weight=700,
+               fill=INK_3, anchor="middle", tracking=2.52))
+    # Hook title: regular display + serif italic, centred together
+    # We approximate width by character count to centre nicely.
+    left_w = len(hook_left) * 26
+    right_w = len(hook_right) * 22
+    total = left_w + right_w + 16
+    left_x = (W - total) // 2 + left_w
+    right_x = left_x + 16
+    s.append(T(left_x, TITLE_Y, hook_left, font=SF_DISPLAY, size=48, weight=700,
+               fill=INK, anchor="end", tracking=-1.056))
+    s.append(T(right_x, TITLE_Y, hook_right, font=NY_SERIF, size=48, weight=500,
+               fill=BLUE, anchor="start", tracking=-0.768, italic=True))
+    # Tagline
+    s.append(T(W//2, TAGLINE_Y, tagline, font=SF_TEXT, size=19, weight=500,
+               fill=INK_3, anchor="middle", tracking=-0.228))
+    # Role bar — explicit Girardian framing
+    bar_w = 1200
+    bar_x = (W - bar_w) // 2
+    bar_y = ROLE_BAR_Y
+    cell_w = (bar_w - 24) // 2
+    # Scapegoat cell (red-tint)
+    s.append(R(bar_x, bar_y, cell_w, 56, fill=RED_T, stroke=RED, rx=14, opacity=0.95))
+    s.append(T(bar_x + 24, bar_y + 22, "SCAPEGOAT", font=SF_MONO, size=11, weight=700,
+               fill=RED, tracking=1.98))
+    s.append(T(bar_x + 24, bar_y + 44, scapegoat, font=SF_TEXT, size=15, weight=700,
+               fill=INK, tracking=-0.075))
+    # Predator cell (blue-tint)
+    px = bar_x + cell_w + 24
+    s.append(R(px, bar_y, cell_w, 56, fill=BLUE_T, stroke=BLUE, rx=14, opacity=0.95))
+    s.append(T(px + 24, bar_y + 22, "PREDATOR", font=SF_MONO, size=11, weight=700,
+               fill=BLUE, tracking=1.98))
+    s.append(T(px + 24, bar_y + 44, predator, font=SF_TEXT, size=15, weight=700,
+               fill=INK, tracking=-0.075))
+    return "\n".join(s)
+
+# ===== STEP FRAME =====
+def step_frame(col, row, num, title, body_inner, caption):
+    """Frame at (col, row). body_inner is a callable returning SVG content positioned
+    with (0,0) at the frame's inner top-left after pad. Caption auto-wrapped to 2 lines."""
     x = GRID_LEFT + col * (STEP_W + GAP_STEP)
     y = GRID_TOP + row * (STEP_H + GAP_STEP)
-    # Card background + 1px border
-    out = [f'<rect x="{x}" y="{y}" width="{STEP_W}" height="{STEP_H}" rx="14" fill="{PAPER_3}" stroke="{RULE_2}" stroke-width="1"/>']
-    # Step badge + number
-    bx, by = x + 24, y + 24
-    out.append(f'<circle cx="{bx + 14}" cy="{by + 14}" r="14" fill="{PAPER}" stroke="{BLUE}" stroke-width="1.5"/>')
-    out.append(f'<text x="{bx + 14}" y="{by + 19}" text-anchor="middle" class="stepNum">{num}</text>')
-    # Step title to right of badge
-    out.append(f'<text x="{bx + 40}" y="{by + 19}" class="stepH">{step_title}</text>')
-    # Illustration container — center area of frame, between badge and caption
-    # Body coords supplied relative to (0,0); translate by (x, y + 68)
-    out.append(f'<g transform="translate({x}, {y + 68})">{body_svg}</g>')
-    # Caption — last ~60px of frame
-    cap_y = y + STEP_H - 30
-    # Wrap caption manually into ~46-char lines for visual width
-    lines = textwrap.wrap(caption, width=46)
+    s = []
+    # Card surface
+    s.append(R(x, y, STEP_W, STEP_H, fill=PAPER_3, stroke=RULE_2, rx=14))
+    # Badge
+    s.append(CIRC(x + FRAME_PAD + 14, y + FRAME_PAD + 14, 14, fill=PAPER, stroke=BLUE, w=1.5))
+    s.append(T(x + FRAME_PAD + 14, y + FRAME_PAD + 19, num, font=SF_MONO, size=14,
+               weight=700, fill=BLUE, anchor="middle"))
+    # Step title
+    s.append(T(x + FRAME_PAD + 40, y + FRAME_PAD + 19, title, font=SF_TEXT, size=17,
+               weight=700, fill=INK, tracking=-0.374))
+    # Illustration area: x ∈ [x+FRAME_PAD, x+STEP_W-FRAME_PAD], y ∈ [y+72, y+STEP_H-90]
+    s.append(f'<g transform="translate({x + FRAME_PAD}, {y + 72})">')
+    s.append(body_inner(STEP_W - FRAME_PAD * 2, STEP_H - 72 - 90))
+    s.append('</g>')
+    # Caption: max 2 lines, ~52 chars per line within the frame
+    lines = textwrap.wrap(caption, width=52, break_long_words=False)
     if len(lines) > 2:
         lines = lines[:2]
-        lines[-1] = lines[-1][:43].rstrip() + "…"
-    if len(lines) == 1:
-        out.append(f'<text x="{x + 24}" y="{cap_y}" class="stepC">{lines[0]}</text>')
-    else:
-        out.append(f'<text x="{x + 24}" y="{cap_y - 18}" class="stepC">{lines[0]}</text>')
-        out.append(f'<text x="{x + 24}" y="{cap_y}" class="stepC">{lines[1]}</text>')
-    return "\n  ".join(out)
+        lines[-1] = lines[-1][:49].rstrip() + "…"
+    cap_y_base = y + STEP_H - 56
+    for i, line in enumerate(lines):
+        s.append(T(x + FRAME_PAD, cap_y_base + i * 22, line, font=SF_TEXT, size=15,
+                   weight=400, fill=INK_2, tracking=-0.075))
+    return "\n".join(s)
 
-
-def economics(spend_label: str, spend_fig: str, take_label: str, take_fig: str,
-              gen_label: str, gen_fig: str) -> str:
-    """Bottom economics row — three cells."""
+# ===== ECONOMICS FOOTER =====
+def economics(spend_label, spend_fig, take_label, take_fig, gen_label="ON GENERAL", gen_fig="$0"):
     cell_w = (GRID_W - GAP_STEP * 2) // 3
-    out = []
-    cells = [
+    s = []
+    triples = [
         (spend_label, spend_fig, PAPER_3, RULE_2, INK),
         (take_label, take_fig, PAPER_3, RULE_2, INK),
         (gen_label, gen_fig, BLUE_T, BLUE, BLUE),
     ]
-    for i, (label, fig, fill, stroke, color) in enumerate(cells):
+    for i, (lbl, fig, fill, stroke, color) in enumerate(triples):
         cx = GRID_LEFT + i * (cell_w + GAP_STEP)
-        out.append(f'<rect x="{cx}" y="{FOOTER_TOP}" width="{cell_w}" height="{FOOTER_H}" rx="14" fill="{fill}" stroke="{stroke}" stroke-width="1"/>')
-        out.append(f'<text x="{cx + 20}" y="{FOOTER_TOP + 26}" class="ecoL">{label}</text>')
-        out.append(f'<text x="{cx + 20}" y="{FOOTER_TOP + 60}" class="ecoF" style="fill: {color}">{fig}</text>')
-    return "\n  ".join(out)
+        s.append(R(cx, FOOTER_TOP, cell_w, FOOTER_H, fill=fill, stroke=stroke, rx=14))
+        s.append(T(cx + 24, FOOTER_TOP + 28, lbl, font=SF_MONO, size=12, weight=700,
+                   fill=INK_3, tracking=2.16))
+        s.append(T(cx + 24, FOOTER_TOP + 62, fig, font=SF_DISPLAY, size=28, weight=800,
+                   fill=color, tracking=-0.616))
+    return "\n".join(s)
 
-
-def wrap_svg(body: str) -> str:
+def wrap_svg(body):
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
-<defs>
-<style>{STYLE}</style>
-</defs>
-<rect width="{W}" height="{H}" fill="{PAPER}"/>
+{arrow_defs()}
+{R(0, 0, W, H, fill=PAPER)}
 {body}
 </svg>
 '''
 
+# ===== ILLUSTRATION PRIMITIVES =====
+# Reusable: orderbook row, price chart, money-flow box, time axis, stat card.
 
-# ---------- illustration primitives ----------
-def orderbook(x0, y0, bid_label, bid_val, offer_label, offer_val,
-              bid_color=BLUE, offer_color=RED, bid_strike=False, offer_strike=False,
-              note=""):
-    """Compact two-row orderbook. Anchored at (x0, y0) top-left, ~260×130."""
-    s = []
-    s.append(f'<text x="{x0}" y="{y0}" class="illL">PRICE</text>')
-    s.append(f'<text x="{x0 + 220}" y="{y0}" text-anchor="end" class="illL">SIZE</text>')
-    # Offer (top, red)
-    oy = y0 + 18
-    s.append(f'<rect x="{x0}" y="{oy}" width="220" height="36" rx="6" fill="{offer_color}" opacity="0.9"/>')
-    if offer_strike:
-        s.append(f'<line x1="{x0 + 12}" y1="{oy + 18}" x2="{x0 + 208}" y2="{oy + 18}" stroke="{PAPER}" stroke-width="1.5"/>')
-    s.append(f'<text x="{x0 + 16}" y="{oy + 23}" fill="{PAPER}" style="font: 700 13px \'SF Mono\', monospace">{offer_label} {offer_val}</text>')
-    # Bid (below, blue)
-    by = oy + 44
-    s.append(f'<rect x="{x0}" y="{by}" width="220" height="36" rx="6" fill="{bid_color}" opacity="0.9"/>')
-    if bid_strike:
-        s.append(f'<line x1="{x0 + 12}" y1="{by + 18}" x2="{x0 + 208}" y2="{by + 18}" stroke="{PAPER}" stroke-width="1.5"/>')
-    s.append(f'<text x="{x0 + 16}" y="{by + 23}" fill="{PAPER}" style="font: 700 13px \'SF Mono\', monospace">{bid_label} {bid_val}</text>')
+def ob_row(x, y, w, h, price_label, price_val, side="bid", strike=False, note=None):
+    """Single order-book row. side ∈ bid/offer/inactive."""
+    fill = BLUE if side == "bid" else (RED if side == "offer" else INK_3)
+    s = [R(x, y, w, h, fill=fill, rx=8, opacity=0.92)]
+    s.append(T(x + 16, y + h//2 + 5, price_label, font=SF_MONO, size=13, weight=700,
+               fill=PAPER, opacity=0.85))
+    s.append(T(x + w - 16, y + h//2 + 5, price_val, font=SF_MONO, size=14, weight=800,
+               fill=PAPER, anchor="end"))
+    if strike:
+        s.append(L(x + 14, y + h//2, x + w - 14, y + h//2, stroke=PAPER, w=2))
     if note:
-        s.append(f'<text x="{x0 + 110}" y="{by + 70}" text-anchor="middle" class="illL">{note}</text>')
-    return "\n  ".join(s)
+        s.append(T(x + w//2, y + h + 22, note, font=SF_MONO, size=12, weight=600,
+                   fill=INK_3, anchor="middle", tracking=0.48))
+    return "\n".join(s)
 
-
-def price_chart(x0, y0, w, h, path_d, dots=None, hlines=None, annotations=None):
-    """Generic price chart. (x0,y0) top-left of plot area."""
+def orderbook_v2(cx, cy, *, offer, bid, offer_strike=False, bid_strike=False, note=None,
+                 spread_label=None):
+    """Two-row orderbook centred at (cx, cy). Returns SVG."""
+    w, h = 280, 44
     s = []
-    # Background
-    s.append(f'<rect x="{x0}" y="{y0}" width="{w}" height="{h}" rx="8" fill="{PAPER}" stroke="{RULE_2}" stroke-width="1"/>')
-    # Horizontal grid lines
-    for hl in (hlines or []):
-        y_pos, label = hl
-        s.append(f'<line x1="{x0}" y1="{y_pos}" x2="{x0 + w}" y2="{y_pos}" stroke="{RULE_2}" stroke-width="1" stroke-dasharray="3 3"/>')
-        s.append(f'<text x="{x0 + w - 6}" y="{y_pos - 4}" text-anchor="end" class="illL">{label}</text>')
-    # Price line
-    s.append(f'<path d="{path_d}" fill="none" stroke="{INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>')
-    # Highlight dots
-    for d in (dots or []):
-        dx, dy, color, label = d
-        s.append(f'<circle cx="{dx}" cy="{dy}" r="5" fill="{color}"/>')
-        if label:
-            s.append(f'<text x="{dx}" y="{dy - 12}" text-anchor="middle" class="illP-b" style="fill: {color}">{label}</text>')
-    # Annotations
-    for ann in (annotations or []):
-        ax, ay, txt = ann
-        s.append(f'<text x="{ax}" y="{ay}" class="illL">{txt}</text>')
-    return "\n  ".join(s)
+    s.append(ob_row(cx - w//2, cy - h - 4, w, h, "OFFER", offer, side="offer",
+                    strike=offer_strike))
+    s.append(ob_row(cx - w//2, cy + 4, w, h, "BID", bid, side="bid", strike=bid_strike))
+    if spread_label:
+        s.append(T(cx, cy + h + 38, spread_label, font=SF_MONO, size=12, weight=600,
+                   fill=INK_3, anchor="middle", tracking=0.48))
+    if note:
+        s.append(T(cx, cy + h + 70, note, font=SF_MONO, size=12, weight=600,
+                   fill=INK_3, anchor="middle", tracking=0.48))
+    return "\n".join(s)
 
-
-def boxchain(x0, y0, boxes, arrows=None):
-    """Horizontal chain of boxes connected by arrows. boxes: [(label, sublabel, fill, text_color), ...]"""
-    n = len(boxes)
-    box_w = 80
-    gap = (300 - box_w * n) // (n - 1) if n > 1 else 0
-    s = []
-    for i, (lbl, sub, fill, txt) in enumerate(boxes):
-        bx = x0 + i * (box_w + gap)
-        s.append(f'<rect x="{bx}" y="{y0}" width="{box_w}" height="80" rx="12" fill="{fill}" stroke="{RULE_2 if fill != BLUE else BLUE}" stroke-width="1"/>')
-        s.append(f'<text x="{bx + box_w/2}" y="{y0 + 32}" text-anchor="middle" style="font: 700 11px \'SF Pro Text\', sans-serif; fill: {txt}">{lbl}</text>')
-        if sub:
-            s.append(f'<text x="{bx + box_w/2}" y="{y0 + 52}" text-anchor="middle" style="font: 500 9px \'SF Mono\', monospace; fill: {txt}; opacity: 0.75">{sub}</text>')
-    # Arrows
-    for ar in (arrows or []):
-        i_from, i_to, color, label, side = ar
-        x_from = x0 + i_from * (box_w + gap) + box_w
-        x_to = x0 + i_to * (box_w + gap)
-        if i_from < i_to:
-            arrow_y = y0 + 18 if side == "top" else y0 + 62
-            s.append(f'<path d="M {x_from + 2} {arrow_y} L {x_to - 4} {arrow_y}" stroke="{color}" stroke-width="1.8" fill="none" marker-end="url(#aHead)"/>')
-        else:
-            arrow_y = y0 + 62 if side == "bottom" else y0 + 18
-            s.append(f'<path d="M {x_from + 2 - box_w} {arrow_y} L {x_to + box_w + 2} {arrow_y}" stroke="{color}" stroke-width="1.8" fill="none" marker-start="url(#aHead{color[-3:]})"/>')
-        if label:
-            lbl_y = arrow_y - 6 if side == "top" else arrow_y + 14
-            s.append(f'<text x="{(x_from + x_to)/2}" y="{lbl_y}" text-anchor="middle" class="illP-b" style="fill: {color}">{label}</text>')
-    return "\n  ".join(s)
-
-
-def timebar(x0, y0, bars):
-    """Horizontal time bars at log scale. bars: [(label, width_px, color), ...]"""
-    s = [f'<line x1="{x0}" y1="{y0 + 130}" x2="{x0 + 300}" y2="{y0 + 130}" stroke="{RULE_2}"/>']
-    s.append(f'<text x="{x0}" y="{y0 + 148}" class="illL">0</text>')
-    s.append(f'<text x="{x0 + 300}" y="{y0 + 148}" text-anchor="end" class="illL">200 ms</text>')
-    for i, (label, w, color) in enumerate(bars):
-        ry = y0 + 6 + i * 28
-        s.append(f'<rect x="{x0}" y="{ry}" width="{max(w, 4)}" height="20" rx="3" fill="{color}"/>')
-        # label to the right of the bar if short, inside if long
-        if w < 90:
-            s.append(f'<text x="{x0 + max(w, 4) + 8}" y="{ry + 14}" style="font: 700 11px \'SF Mono\', monospace; fill: {INK}">{label}</text>')
-        else:
-            s.append(f'<text x="{x0 + 10}" y="{ry + 14}" style="font: 700 11px \'SF Mono\', monospace; fill: {PAPER}">{label}</text>')
-    return "\n  ".join(s)
-
-
-def calendar(x0, y0, months, fund_dots, retail_dots):
-    """5-month timeline, two lanes."""
-    s = []
-    step = 300 / (len(months) - 1)
-    for i, m in enumerate(months):
-        cx = x0 + i * step
-        s.append(f'<text x="{cx}" y="{y0}" text-anchor="middle" class="illL">{m}</text>')
-        s.append(f'<line x1="{cx}" y1="{y0 + 8}" x2="{cx}" y2="{y0 + 140}" stroke="{RULE_2}" stroke-dasharray="2 3"/>')
-    # Fund lane
-    s.append(f'<line x1="{x0}" y1="{y0 + 50}" x2="{x0 + 300}" y2="{y0 + 50}" stroke="{INK}" stroke-width="1.5"/>')
-    s.append(f'<text x="{x0 - 30}" y="{y0 + 54}" class="illL">FUND</text>')
-    for di in fund_dots:
-        s.append(f'<circle cx="{x0 + di * step}" cy="{y0 + 50}" r="5" fill="{BLUE}"/>')
-    # Retail lane
-    s.append(f'<line x1="{x0}" y1="{y0 + 110}" x2="{x0 + 300}" y2="{y0 + 110}" stroke="{INK}" stroke-width="1.5"/>')
-    s.append(f'<text x="{x0 - 30}" y="{y0 + 114}" class="illL">YOU</text>')
-    for di in retail_dots:
-        s.append(f'<circle cx="{x0 + di * step}" cy="{y0 + 110}" r="6" fill="{RED}"/>')
-    return "\n  ".join(s)
-
-
-def big_number(x0, y0, value, label_top=None, label_bot=None, color=INK):
+def big_stat(cx, cy, value, *, color=INK, label_top=None, label_bot=None, value_size=64):
     s = []
     if label_top:
-        s.append(f'<text x="{x0 + 130}" y="{y0}" text-anchor="middle" class="illL">{label_top}</text>')
-    s.append(f'<text x="{x0 + 130}" y="{y0 + 56}" text-anchor="middle" style="font: 800 48px \'SF Pro Display\', sans-serif; fill: {color}; letter-spacing: -1.056px">{value}</text>')
+        s.append(T(cx, cy - 40, label_top, font=SF_MONO, size=12, weight=700,
+                   fill=INK_3, anchor="middle", tracking=2.16))
+    s.append(T(cx, cy + 18, value, font=SF_DISPLAY, size=value_size, weight=800,
+               fill=color, anchor="middle", tracking=value_size * -0.022))
     if label_bot:
-        s.append(f'<text x="{x0 + 130}" y="{y0 + 90}" text-anchor="middle" class="illL">{label_bot}</text>')
-    return "\n  ".join(s)
+        s.append(T(cx, cy + 56, label_bot, font=SF_TEXT, size=14, weight=500,
+                   fill=INK_3, anchor="middle", tracking=-0.07))
+    return "\n".join(s)
 
+def price_chart(x, y, w, h, path_d, *, hlines=None, dots=None, labels=None):
+    """Price chart with optional horizontal levels, dots, and absolute-positioned labels."""
+    s = [R(x, y, w, h, fill=PAPER, stroke=RULE_2, rx=10)]
+    for hl in (hlines or []):
+        ly, label_txt = hl
+        s.append(L(x + 8, ly, x + w - 8, ly, stroke=RULE_2, w=1, dash="3 3"))
+        if label_txt:
+            s.append(T(x + w - 10, ly - 6, label_txt, font=SF_MONO, size=11, weight=600,
+                       fill=INK_3, anchor="end", tracking=0.44))
+    s.append(PATH(path_d, stroke=INK, w=2))
+    for d in (dots or []):
+        dx, dy, color = d
+        s.append(CIRC(dx, dy, 5, fill=color))
+    for lbl in (labels or []):
+        lx, ly, txt, color, anchor = lbl
+        s.append(T(lx, ly, txt, font=SF_MONO, size=11, weight=700,
+                   fill=color, anchor=anchor, tracking=0.44))
+    return "\n".join(s)
 
-# ---------- common defs (arrowhead) ----------
-ARROW_DEFS = f'''
-  <defs>
-    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="{INK}"/>
-    </marker>
-    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="{BLUE}"/>
-    </marker>
-    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="{GREEN}"/>
-    </marker>
-    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="{RED}"/>
-    </marker>
-  </defs>
-'''
-
-
-# ==================== MECHANISMS ====================
-
-def build_01_toxic_flow() -> str:
+# =====================================================
+# MECHANISM 01 — TOXIC-FLOW MARKET MAKING
+# =====================================================
+def build_01_toxic_flow():
     body = [header(
-        "EXTRACTION 01 · THE WIDEN",
-        "Quote tight.",
-        "Pay the cleanup.",
-        "The spread you saw was a probe. The spread that mattered was the one after you filled.",
+        eyebrow="EXTRACTION 01 · THE WIDEN",
+        hook_left="Quote tight.",
+        hook_right="Pay the cleanup.",
+        tagline="The spread you saw was a probe. The spread that mattered was the one after you filled.",
+        scapegoat="Retail trader who saw a tight spread",
+        predator="Market maker willing to widen on signal",
     )]
-    # Step 1: tight orderbook
-    s1 = orderbook(40, 24, "BID", "$99.95", "OFFER", "$100.05", note="spread $0.10")
-    body.append(step_frame(0, 0, "01", "Tight quote posted", s1,
-                           "MM posts a two-sided market that looks attractive: $99.95 / $100.05."))
-    # Step 2: retail order arriving
-    s2 = (orderbook(40, 24, "BID", "$99.95", "OFFER", "$100.05", note="incoming buy")
-          + f'\n  <path d="M 320 50 L 280 50" stroke="{RED}" stroke-width="2" fill="none" marker-end="url(#aHeadRed)"/>'
-          + f'\n  <text x="332" y="54" class="illP-r">RETAIL</text>')
-    body.append(step_frame(1, 0, "02", "Retail order arrives", s2,
-                           "A market buy enters the book. Spread looks generous; the trader takes it."))
-    # Step 3: fill
-    s3 = (orderbook(40, 24, "BID", "$99.95", "OFFER", "$100.05", note="filled $100.05")
-          + f'\n  <circle cx="270" cy="50" r="14" fill="{GREEN}" opacity="0.18"/>'
-          + f'\n  <text x="270" y="55" text-anchor="middle" style="font: 800 14px \'SF Pro Text\'; fill: {GREEN}">✓</text>')
-    body.append(step_frame(2, 0, "03", "Direction revealed", s3,
+    def f01(w, h):
+        return orderbook_v2(w//2, h//2, offer="$100.05", bid="$99.95",
+                            spread_label="spread $0.10")
+    body.append(step_frame(0, 0, "01", "Tight quote posted", f01,
+                           "MM posts a two-sided market that looks attractive."))
+    def f02(w, h):
+        # Orderbook + arrow from right approaching offer — kept inside frame
+        s = [orderbook_v2(w//2, h//2, offer="$100.05", bid="$99.95",
+                          spread_label="incoming market buy")]
+        # Arrow from inside the frame to the offer
+        s.append(PATH(f"M {w - 24} {h//2 - 22} L {w//2 + 150} {h//2 - 22}",
+                      stroke=RED, w=2.4, marker_end="arrRed"))
+        s.append(T(w - 24, h//2 - 36, "RETAIL", font=SF_MONO, size=11, weight=700,
+                   fill=RED, anchor="end", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 0, "02", "Retail order arrives", f02,
+                           "Market buy enters the book. The spread looks generous."))
+    def f03(w, h):
+        s = [orderbook_v2(w//2, h//2, offer="$100.05", bid="$99.95",
+                          spread_label="filled at the offer")]
+        # Green check on offer
+        s.append(CIRC(w//2 + 158, h//2 - 22, 14, fill=GREEN, w=0))
+        s.append(T(w//2 + 158, h//2 - 17, "✓", font=SF_TEXT, size=18, weight=800,
+                   fill=PAPER, anchor="middle"))
+        return "\n".join(s)
+    body.append(step_frame(2, 0, "03", "Direction revealed", f03,
                            "Fill at the offer means the trader is long. The MM now knows the direction."))
-    # Step 4: cancel
-    s4 = orderbook(40, 24, "BID", "$99.95", "OFFER", "$100.05",
-                   bid_strike=True, offer_strike=True, note="both quotes pulled <50 ms")
-    body.append(step_frame(0, 1, "04", "Quotes pulled", s4,
+    def f04(w, h):
+        return orderbook_v2(w//2, h//2, offer="$100.05", bid="$99.95",
+                            offer_strike=True, bid_strike=True,
+                            spread_label="both quotes pulled · <50 ms")
+    body.append(step_frame(0, 1, "04", "Quotes pulled", f04,
                            "Within fifty milliseconds, the MM cancels both sides of the original quote."))
-    # Step 5: new wider quote
-    s5 = orderbook(40, 24, "BID", "$99.85", "OFFER", "$100.10", note="new spread $0.25")
-    body.append(step_frame(1, 1, "05", "Spread widens", s5,
-                           "New quote: bid drops $0.10, offer climbs $0.05. The MM has pre-priced the exit."))
-    # Step 6: P&L
-    s6 = big_number(40, 30, "+$0.20", "PER SHARE", "no inventory risk", color=GREEN)
-    body.append(step_frame(2, 1, "06", "The cleanup", s6,
-                           "Retail exits into the new bid at $99.85. Round-trip cost $0.20 a share."))
-    body.append(economics("OPERATOR SPEND", "~$710K / yr",
-                          "ANNUAL TAKE", "$2–5M / yr",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+    def f05(w, h):
+        return orderbook_v2(w//2, h//2, offer="$100.10", bid="$99.85",
+                            spread_label="new spread $0.25")
+    body.append(step_frame(1, 1, "05", "Spread widens", f05,
+                           "Bid drops ten cents. Offer climbs five. The exit has been pre-priced."))
+    def f06(w, h):
+        return big_stat(w//2, h//2, "+$0.20", color=GREEN,
+                        label_top="MM CAPTURED, PER SHARE",
+                        label_bot="zero inventory risk")
+    body.append(step_frame(2, 1, "06", "The cleanup", f06,
+                           "Retail exits into the new bid at $99.85. Round-trip cost is twenty cents."))
+    body.append(economics("OPERATOR SPEND", "~$710K/yr",
+                          "ANNUAL TAKE", "$2–5M/yr"))
+    return wrap_svg("\n".join(body))
 
 
-def build_02_stop_hunting() -> str:
+# =====================================================
+# MECHANISM 02 — STOP HUNTING
+# =====================================================
+def build_02_stop_hunting():
     body = [header(
-        "EXTRACTION 02 · THE WICK",
-        "Your support",
-        "is their menu.",
-        "Stops cluster at obvious levels. Level 3 makes the menu legible.",
+        eyebrow="EXTRACTION 02 · THE WICK",
+        hook_left="Your support",
+        hook_right="is their menu.",
+        tagline="Retail stops cluster at obvious levels. Level 3 makes the menu legible.",
+        scapegoat="14,000 retail stop-losses at $99.50",
+        predator="MM with depth-of-book access",
     )]
-    # Step 1: stop cluster forming
-    chart1 = price_chart(20, 30, 300, 220, "M 0 80 L 60 70 L 120 84 L 180 78 L 240 90 L 300 86",
-                         hlines=[(190, "$99.50 support")])
-    chart1 += f'\n  <g opacity="0.6">' + ''.join(
-        f'<line x1="{40 + i*22}" y1="186" x2="{40 + i*22 + 14}" y2="194" stroke="{RED}" stroke-width="1.5"/>'
-        for i in range(11)
-    ) + '</g>'
-    body.append(step_frame(0, 0, "01", "Stops cluster at support", chart1,
-                           "Retail traders place stop-losses at $99.50 because it looks like obvious support."))
-    # Step 2: MM's view
-    s2 = (f'<rect x="40" y="20" width="260" height="230" rx="10" fill="{INK}" />'
-          f'\n  <text x="170" y="46" text-anchor="middle" style="font: 700 11px \'SF Mono\'; fill: {BLUE_T}; letter-spacing: 1.8px">LEVEL 3 FEED</text>'
-          f'\n  <text x="170" y="118" text-anchor="middle" style="font: 800 56px \'SF Pro Display\'; fill: {PAPER}; letter-spacing: -1.232px">14,028</text>'
-          f'\n  <text x="170" y="146" text-anchor="middle" style="font: 500 13px \'SF Pro Text\'; fill: {PAPER}; opacity: 0.7">working stop-orders at $99.50</text>'
-          f'\n  <text x="170" y="220" text-anchor="middle" class="illL" style="fill: {BLUE_T}; opacity: 0.6">cost: ~$200K / yr / venue</text>')
-    body.append(step_frame(1, 0, "02", "The MM sees the menu", s2,
-                           "Level 3 market data shows every working order. Retail does not pay for it."))
-    # Step 3: MM sells
-    chart3 = price_chart(20, 30, 300, 220,
-                         "M 0 60 L 60 64 L 120 80 L 180 110 L 240 150 L 300 180",
-                         hlines=[(190, "$99.50")])
-    chart3 += (f'\n  <text x="160" y="100" class="illP-r">SELL $5M</text>'
-               f'\n  <path d="M 160 110 L 200 160" stroke="{RED}" stroke-width="2" marker-end="url(#aHeadRed)"/>')
-    body.append(step_frame(2, 0, "03", "The push down", chart3,
-                           "MM sells $5M into a thin order book. Price slides toward the cluster."))
-    # Step 4: wick triggers
-    chart4 = price_chart(20, 30, 300, 220,
-                         "M 0 60 L 60 70 L 120 100 L 180 150 L 200 200 L 220 145 L 280 100 L 300 90",
-                         hlines=[(190, "$99.50")])
-    chart4 += (f'\n  <circle cx="200" cy="200" r="6" fill="{RED}"/>'
-               f'\n  <text x="200" y="222" text-anchor="middle" class="illP-r">$99.45</text>')
-    body.append(step_frame(0, 1, "04", "Wick triggers cascade", chart4,
+    def f01(w, h):
+        # Chart with stop ticks
+        chart = price_chart(0, 0, w, h - 20,
+                            f"M 0 {(h-20)*0.35} L {w*0.2} {(h-20)*0.30} L {w*0.4} {(h-20)*0.36} L {w*0.6} {(h-20)*0.32} L {w*0.8} {(h-20)*0.38} L {w} {(h-20)*0.34}",
+                            hlines=[((h-20)*0.78, "$99.50 support")])
+        ticks = "\n".join(
+            f'<line x1="{20 + i*22}" y1="{(h-20)*0.76 - 2}" x2="{30 + i*22}" y2="{(h-20)*0.84}" stroke="{RED}" stroke-width="1.5"/>'
+            for i in range(min(14, (w-40)//22))
+        )
+        return chart + "\n" + ticks
+    body.append(step_frame(0, 0, "01", "Stops cluster at support", f01,
+                           "Retail places stop-losses at $99.50 because the level looks like obvious support."))
+    def f02(w, h):
+        # Dark panel showing 14,028 stops
+        return (
+            R(0, 0, w, h, fill=INK, rx=12) + "\n" +
+            T(w//2, 32, "LEVEL 3 DEPTH FEED", font=SF_MONO, size=12, weight=700,
+              fill=BLUE_T, anchor="middle", tracking=2.16) + "\n" +
+            T(w//2, h//2 + 6, "14,028", font=SF_DISPLAY, size=72, weight=800,
+              fill=PAPER, anchor="middle", tracking=-1.584) + "\n" +
+            T(w//2, h//2 + 38, "working stop-orders at $99.50", font=SF_TEXT, size=14,
+              weight=500, fill=PAPER, anchor="middle", tracking=-0.07, opacity=0.85) + "\n" +
+            T(w//2, h - 24, "RETAIL DOES NOT PAY FOR THIS VIEW", font=SF_MONO, size=11,
+              weight=700, fill=BLUE_T, anchor="middle", tracking=1.65, opacity=0.7)
+        )
+    body.append(step_frame(1, 0, "02", "The MM sees the menu", f02,
+                           "Level 3 market data shows every working order. Retail buys the chart, not the depth."))
+    def f03(w, h):
+        return price_chart(0, 0, w, h - 20,
+            f"M 0 {(h-20)*0.30} L {w*0.2} {(h-20)*0.34} L {w*0.4} {(h-20)*0.42} L {w*0.6} {(h-20)*0.58} L {w*0.8} {(h-20)*0.72} L {w} {(h-20)*0.82}",
+            hlines=[((h-20)*0.86, "$99.50")],
+            labels=[(w*0.35, (h-20)*0.50, "MM SELLS $5M", RED, "middle")])
+    body.append(step_frame(2, 0, "03", "The push down", f03,
+                           "MM sells five million into a thin book. Price slides toward the cluster."))
+    def f04(w, h):
+        # Sharp wick
+        return price_chart(0, 0, w, h - 20,
+            f"M 0 {(h-20)*0.32} L {w*0.2} {(h-20)*0.38} L {w*0.4} {(h-20)*0.50} L {w*0.5} {(h-20)*0.94} L {w*0.6} {(h-20)*0.50} L {w*0.8} {(h-20)*0.36} L {w} {(h-20)*0.30}",
+            hlines=[((h-20)*0.84, "$99.50")],
+            dots=[(w*0.5, (h-20)*0.94, RED)],
+            labels=[(w*0.5, (h-20)*0.94 - 14, "$99.45", RED, "middle")])
+    body.append(step_frame(0, 1, "04", "Wick triggers cascade", f04,
                            "Price touches $99.45. Fourteen thousand stops fire as market sells in sequence."))
-    # Step 5: forced selling
-    s5 = big_number(40, 30, "$20M", "FORCED SELLS", "added to the book", color=RED)
-    body.append(step_frame(1, 1, "05", "Forced selling adds pressure", s5,
-                           "The cascade adds $20M of unwanted sells. Price overshoots to $98.20."))
-    # Step 6: recovery + cover
-    chart6 = price_chart(20, 30, 300, 220,
-                         "M 0 200 L 60 210 L 120 180 L 180 130 L 240 80 L 300 60",
-                         hlines=[(60, "$101.00")])
-    chart6 += (f'\n  <text x="60" y="240" class="illP-g">COVER $98.20</text>'
-               f'\n  <text x="180" y="50" class="illP-g">SELL $101</text>')
-    body.append(step_frame(2, 1, "06", "Cover and resell", chart6,
-                           "MM covers the short at $98.20 and resells into the recovery at $101."))
-    body.append(economics("OPERATOR SPEND", "~$350K / yr",
-                          "PER CASCADE", "$50K–500K",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+    def f05(w, h):
+        return big_stat(w//2, h//2, "$20M", color=RED,
+                        label_top="FORCED SELLS ADDED",
+                        label_bot="cascade overshoots to $98.20",
+                        value_size=68)
+    body.append(step_frame(1, 1, "05", "Forced selling adds pressure", f05,
+                           "The cascade adds twenty million of unwanted sells. Price overshoots to $98.20."))
+    def f06(w, h):
+        return price_chart(0, 0, w, h - 20,
+            f"M 0 {(h-20)*0.86} L {w*0.2} {(h-20)*0.78} L {w*0.4} {(h-20)*0.62} L {w*0.6} {(h-20)*0.42} L {w*0.8} {(h-20)*0.26} L {w} {(h-20)*0.18}",
+            hlines=[((h-20)*0.18, "$101")],
+            labels=[(w*0.18, (h-20)*0.82, "COVER $98.20", GREEN, "start"),
+                    (w*0.82, (h-20)*0.14, "SELL $101", GREEN, "end")])
+    body.append(step_frame(2, 1, "06", "Cover and resell", f06,
+                           "MM covers the short low and resells into the recovery higher."))
+    body.append(economics("OPERATOR SPEND", "~$350K/yr",
+                          "PER CASCADE", "$50K–500K"))
+    return wrap_svg("\n".join(body))
 
 
-def build_03_cross_venue() -> str:
+# =====================================================
+# MECHANISM 03 — CROSS-VENUE ARBITRAGE  (rebuilt richer)
+# =====================================================
+def build_03_cross_venue():
     body = [header(
-        "EXTRACTION 03 · THE LAG",
-        "Eighty milliseconds",
-        "of light.",
-        "Same asset. Two venues. The arbitrageur reads both mailboxes.",
+        eyebrow="EXTRACTION 03 · THE LAG",
+        hook_left="Eighty milliseconds",
+        hook_right="of light.",
+        tagline="Same asset. Two venues. The arbitrageur reads both mailboxes and writes one cheque.",
+        scapegoat="Retail trader on either venue at stale prices",
+        predator="Arbitrageur with microwave + cross-venue API",
     )]
-    def two_track(s_top, s_bot, lag_band=None, ann=None):
-        out = []
-        # Binance lane
-        out.append(f'<text x="20" y="30" class="illL">BINANCE</text>')
-        out.append(f'<line x1="20" y1="70" x2="320" y2="70" stroke="{INK}" stroke-width="2"/>')
-        out.append(f'<text x="20" y="56" class="illP">{s_top[0]}</text>')
-        out.append(f'<text x="320" y="56" text-anchor="end" class="illP" style="fill: {s_top[2]}">{s_top[1]}</text>')
-        # Coinbase lane
-        out.append(f'<text x="20" y="150" class="illL">COINBASE</text>')
-        out.append(f'<line x1="20" y1="190" x2="320" y2="190" stroke="{INK}" stroke-width="2"/>')
-        out.append(f'<text x="20" y="176" class="illP">{s_bot[0]}</text>')
-        out.append(f'<text x="320" y="176" text-anchor="end" class="illP" style="fill: {s_bot[2]}">{s_bot[1]}</text>')
-        if lag_band:
-            lx, lw = lag_band
-            out.append(f'<rect x="{lx}" y="60" width="{lw}" height="140" fill="{BLUE}" opacity="0.10"/>')
-            out.append(f'<text x="{lx + lw/2}" y="245" text-anchor="middle" class="illL" style="fill: {BLUE}">{ann or "80 ms"}</text>')
-        return "\n  ".join(out)
-    s1 = two_track(("t=0", "$4,000.00", INK), ("t=0", "$4,000.00", INK))
-    body.append(step_frame(0, 0, "01", "Equilibrium", s1,
-                           "Both venues quote ETH at $4,000. Spread between venues is zero."))
-    s2 = two_track(("t=0", "$4,005 ↑", RED), ("t=0", "$4,000.00", INK))
-    body.append(step_frame(1, 0, "02", "Binance prints first", s2,
-                           "A large market buy hits Binance. New print: $4,005. Coinbase still has not seen it."))
-    s3 = two_track(("t=0", "$4,005", RED), ("t+40ms", "still $4,000…", INK_3),
-                   lag_band=(160, 100), ann="LAG 80ms")
-    body.append(step_frame(2, 0, "03", "Light-speed lag", s3,
-                           "The new price has not crossed the network. Coinbase quote is stale for 80 ms."))
-    s4 = two_track(("t+1ms", "$4,005", RED), ("t+1ms", "$4,000 BUY", GREEN), lag_band=(160, 100))
-    body.append(step_frame(0, 1, "04", "Buy the stale side", s4,
-                           "Co-located MM buys $200K of ETH on Coinbase at the stale $4,000 price."))
-    s5 = two_track(("t+1ms", "$4,005 SELL", RED), ("t+1ms", "$4,000", GREEN), lag_band=(160, 100))
-    body.append(step_frame(1, 1, "05", "Hedge on the fast side", s5,
+
+    def venue_card(x, y, w, h, name, price, *, jumped=False, stale=False):
+        """One venue mini-card with price."""
+        s = [R(x, y, w, h, fill=PAPER, stroke=RULE_2, rx=12)]
+        s.append(T(x + 16, y + 24, name, font=SF_MONO, size=12, weight=700,
+                   fill=INK_3, tracking=1.92))
+        s.append(T(x + 16, y + h - 36, "PRICE", font=SF_MONO, size=11, weight=600,
+                   fill=INK_3, tracking=0.44))
+        color = RED if jumped else (INK_3 if stale else INK)
+        s.append(T(x + w - 16, y + h - 18, price, font=SF_DISPLAY, size=24, weight=800,
+                   fill=color, anchor="end", tracking=-0.528))
+        if jumped:
+            s.append(T(x + w - 16, y + 24, "↑ jumped", font=SF_MONO, size=11, weight=700,
+                       fill=RED, anchor="end"))
+        if stale:
+            s.append(T(x + w - 16, y + 24, "stale", font=SF_MONO, size=11, weight=700,
+                       fill=INK_3, anchor="end"))
+        return "\n".join(s)
+
+    def arb_actor(cx, cy, *, hot=False):
+        """The arbitrageur as an explicit visual entity, centered at (cx, cy)."""
+        r = 30
+        fill = BLUE if hot else PAPER
+        stroke_w = 2 if hot else 1.5
+        s = [CIRC(cx, cy, r, fill=fill, stroke=BLUE, w=stroke_w)]
+        s.append(T(cx, cy - 4, "ARB", font=SF_MONO, size=11, weight=800,
+                   fill=PAPER if hot else BLUE, anchor="middle", tracking=0.88))
+        s.append(T(cx, cy + 12, "co-lo", font=SF_MONO, size=9, weight=600,
+                   fill=PAPER if hot else BLUE, anchor="middle", opacity=0.85))
+        return "\n".join(s)
+
+    def f01(w, h):
+        s = [venue_card(0, 20, w//2 - 16, 100, "BINANCE", "$4,000")]
+        s.append(venue_card(w//2 + 16, 20, w//2 - 16, 100, "COINBASE", "$4,000"))
+        s.append(arb_actor(w//2, h//2 + 60, hot=False))
+        s.append(T(w//2, h//2 + 110, "watching · idle", font=SF_MONO, size=11,
+                   weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(0, 0, "01", "Equilibrium", f01,
+                           "Both venues quote ETH at $4,000. The arbitrageur watches, idle."))
+
+    def f02(w, h):
+        s = [venue_card(0, 20, w//2 - 16, 100, "BINANCE", "$4,005", jumped=True)]
+        s.append(venue_card(w//2 + 16, 20, w//2 - 16, 100, "COINBASE", "$4,000"))
+        # Whale arrow into Binance
+        s.append(T(w//4 - 30, 150, "WHALE BUY", font=SF_MONO, size=11, weight=700,
+                   fill=RED, tracking=0.66))
+        s.append(PATH(f"M {w//4 - 30} 160 L {w//4 - 30} 180 L {w//4} 180",
+                      stroke=RED, w=2, marker_end="arrRed"))
+        s.append(arb_actor(w//2, h//2 + 60, hot=False))
+        s.append(T(w//2, h//2 + 110, "saw the print at t=0", font=SF_MONO, size=11,
+                   weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 0, "02", "Binance prints first", f02,
+                           "A large whale buy hits Binance. Print: $4,005. Coinbase hasn't seen it."))
+
+    def f03(w, h):
+        s = [venue_card(0, 20, w//2 - 16, 100, "BINANCE", "$4,005", jumped=True)]
+        s.append(venue_card(w//2 + 16, 20, w//2 - 16, 100, "COINBASE", "$4,000", stale=True))
+        # Lag band annotation
+        s.append(R(0, 140, w, 28, fill=BLUE, opacity=0.10, rx=6))
+        s.append(T(w//2, 158, "LAG WINDOW · 80 ms · only the co-lo'd sees both", font=SF_MONO,
+                   size=12, weight=700, fill=BLUE, anchor="middle", tracking=0.48))
+        s.append(arb_actor(w//2, h//2 + 80, hot=True))
+        return "\n".join(s)
+    body.append(step_frame(2, 0, "03", "The lag window opens", f03,
+                           "For eighty milliseconds, Coinbase is stale. The co-located firm sees both."))
+
+    def f04(w, h):
+        s = [venue_card(0, 20, w//2 - 16, 100, "BINANCE", "$4,005", jumped=True)]
+        s.append(venue_card(w//2 + 16, 20, w//2 - 16, 100, "COINBASE", "$4,000", stale=True))
+        s.append(arb_actor(w//2, h//2 + 80, hot=True))
+        # Buy arrow from arb to coinbase
+        s.append(PATH(f"M {w//2 + 30} {h//2 + 65} L {w*0.78} 100",
+                      stroke=GREEN, w=2.4, marker_end="arrGreen"))
+        s.append(T(w*0.7, h*0.6, "BUY $200K", font=SF_MONO, size=12, weight=700,
+                   fill=GREEN, anchor="middle", tracking=0.48))
+        s.append(T(w*0.7, h*0.6 + 18, "@ $4,000", font=SF_MONO, size=11, weight=600,
+                   fill=GREEN, anchor="middle"))
+        return "\n".join(s)
+    body.append(step_frame(0, 1, "04", "Buy the stale side", f04,
+                           "Arbitrageur buys $200K of ETH on Coinbase at the stale $4,000 price."))
+
+    def f05(w, h):
+        s = [venue_card(0, 20, w//2 - 16, 100, "BINANCE", "$4,005", jumped=True)]
+        s.append(venue_card(w//2 + 16, 20, w//2 - 16, 100, "COINBASE", "$4,000", stale=True))
+        s.append(arb_actor(w//2, h//2 + 80, hot=True))
+        # Sell arrow from arb to Binance
+        s.append(PATH(f"M {w//2 - 30} {h//2 + 65} L {w*0.22} 100",
+                      stroke=RED, w=2.4, marker_end="arrRed"))
+        s.append(T(w*0.3, h*0.6, "SELL $200K", font=SF_MONO, size=12, weight=700,
+                   fill=RED, anchor="middle", tracking=0.48))
+        s.append(T(w*0.3, h*0.6 + 18, "@ $4,005", font=SF_MONO, size=11, weight=600,
+                   fill=RED, anchor="middle"))
+        return "\n".join(s)
+    body.append(step_frame(1, 1, "05", "Hedge on the fast side", f05,
                            "Simultaneously sells $200K on Binance at $4,005. Net inventory zero."))
-    s6 = big_number(40, 30, "+$5", "PER ETH ARBITRAGED", "cycle repeats hundreds × day", color=GREEN)
-    body.append(step_frame(2, 1, "06", "Receipt", s6,
-                           "Coinbase catches up at t+80 ms. Five dollars per unit, risk-free, banked."))
-    body.append(economics("OPERATOR SPEND", "~$400K / yr",
-                          "ANNUAL TAKE", "$500K–2M",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+
+    def f06(w, h):
+        return big_stat(w//2, h//2, "+$5", color=GREEN,
+                        label_top="PER ETH ARBITRAGED",
+                        label_bot="risk-free · repeats hundreds × day",
+                        value_size=72)
+    body.append(step_frame(2, 1, "06", "Receipt", f06,
+                           "Coinbase catches up at t+80 ms. The five dollars per unit is banked."))
+
+    body.append(economics("OPERATOR SPEND", "~$400K/yr",
+                          "ANNUAL TAKE", "$500K–2M"))
+    return wrap_svg("\n".join(body))
 
 
-def build_04_latency() -> str:
+# =====================================================
+# MECHANISM 04 — LATENCY ARBITRAGE
+# =====================================================
+def build_04_latency():
     body = [header(
-        "EXTRACTION 04 · THE TIME BAR",
-        "The trade was over",
-        "before the click.",
-        "You click in 200 milliseconds. They executed 250,000 trades in that window.",
+        eyebrow="EXTRACTION 04 · THE TIME BAR",
+        hook_left="The trade was over",
+        hook_right="before the click.",
+        tagline="You click in 200 milliseconds. They executed 250,000 trades in that window.",
+        scapegoat="Retail clicker; slow MM with stale quotes",
+        predator="HFT firm with FPGA + co-lo + microwave",
     )]
-    # Step 1: ES futures move
-    s1 = (f'<text x="170" y="30" text-anchor="middle" class="illL">CME · ES FUTURES</text>'
-          f'\n  <line x1="20" y1="120" x2="320" y2="120" stroke="{RULE_2}"/>'
-          f'\n  <path d="M 20 120 L 140 120 L 160 80 L 320 80" fill="none" stroke="{INK}" stroke-width="2"/>'
-          f'\n  <circle cx="160" cy="80" r="6" fill="{BLUE}"/>'
-          f'\n  <text x="160" y="64" text-anchor="middle" class="illP-b">+0.3%</text>'
-          f'\n  <text x="160" y="160" text-anchor="middle" class="illL">t = 0</text>')
-    body.append(step_frame(0, 0, "01", "ES futures move first", s1,
+    def f01(w, h):
+        # CME ES jump
+        s = [T(w//2, 18, "CME · ES FUTURES", font=SF_MONO, size=12, weight=700,
+               fill=INK_3, anchor="middle", tracking=2.16)]
+        s.append(L(0, h*0.6, w, h*0.6, stroke=RULE_2))
+        s.append(PATH(f"M 0 {h*0.6} L {w*0.45} {h*0.6} L {w*0.5} {h*0.35} L {w} {h*0.35}",
+                      stroke=INK, w=2))
+        s.append(CIRC(w*0.5, h*0.35, 6, fill=BLUE))
+        s.append(T(w*0.5, h*0.30, "+0.3%", font=SF_MONO, size=12, weight=700,
+                   fill=BLUE, anchor="middle"))
+        s.append(T(w*0.5, h*0.78, "t = 0", font=SF_MONO, size=11, weight=600,
+                   fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(0, 0, "01", "ES futures move first", f01,
                            "A macro print pushes ES futures up 0.3%. The leader has spoken."))
-    # Step 2: SPY stale
-    s2 = (f'<text x="170" y="30" text-anchor="middle" class="illL">ARCA · SPY ETF</text>'
-          f'\n  <line x1="20" y1="120" x2="320" y2="120" stroke="{RULE_2}"/>'
-          f'\n  <path d="M 20 120 L 320 120" fill="none" stroke="{INK_3}" stroke-width="2" stroke-dasharray="4 3"/>'
-          f'\n  <text x="170" y="100" text-anchor="middle" class="illP-r">QUOTE STALE</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL">window: 50–500 μs</text>')
-    body.append(step_frame(1, 0, "02", "SPY quote goes stale", s2,
-                           "Correlated SPY hasn't updated yet. For microseconds, the price is wrong."))
-    # Step 3: FPGA fires
-    s3 = timebar(10, 30, [
-        ("FPGA: 810 ns", 4, GREEN),
-        ("BANK EXEC: 5 ms", 14, BLUE),
-        ("BROWSER: 50 ms", 140, INK_3),
-        ("RETAIL CLICK: 200 ms", 300, RED),
-    ])
-    body.append(step_frame(2, 0, "03", "FPGA fires in 810 ns", s3,
-                           "A field-programmable gate array converts the ES print into a SPY order, instantly."))
-    # Step 4: slow MM picked off
-    s4 = (orderbook(40, 24, "BID", "stale $500.10", "OFFER", "stale $500.20",
-                    note="hit by fast MM"))
-    body.append(step_frame(0, 1, "04", "Slow MM picked off", s4,
-                           "A market maker who hasn't updated yet sees their stale quote taken before they can cancel."))
-    # Step 5: SPY catches up
-    s5 = (f'<text x="170" y="30" text-anchor="middle" class="illL">ARCA · SPY ETF</text>'
-          f'\n  <line x1="20" y1="120" x2="320" y2="120" stroke="{RULE_2}"/>'
-          f'\n  <path d="M 20 120 L 180 120 L 200 84 L 320 84" fill="none" stroke="{INK}" stroke-width="2"/>'
-          f'\n  <circle cx="200" cy="84" r="5" fill="{INK_3}"/>'
-          f'\n  <text x="200" y="68" text-anchor="middle" class="illL">t + 500 μs</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL">too late on this print</text>')
-    body.append(step_frame(1, 1, "05", "SPY catches up", s5,
+
+    def f02(w, h):
+        s = [T(w//2, 18, "ARCA · SPY ETF", font=SF_MONO, size=12, weight=700,
+               fill=INK_3, anchor="middle", tracking=2.16)]
+        s.append(L(0, h*0.5, w, h*0.5, stroke=RULE_2))
+        s.append(PATH(f"M 0 {h*0.5} L {w} {h*0.5}", stroke=INK_3, w=2, dash="4 3"))
+        s.append(T(w//2, h*0.36, "QUOTE STALE", font=SF_MONO, size=14, weight=800,
+                   fill=RED, anchor="middle", tracking=2.52))
+        s.append(T(w//2, h*0.78, "stale window: 50–500 μs", font=SF_MONO, size=12,
+                   weight=600, fill=INK_3, anchor="middle", tracking=0.48))
+        return "\n".join(s)
+    body.append(step_frame(1, 0, "02", "SPY quote goes stale", f02,
+                           "The correlated ETF hasn't updated yet. For microseconds, the price is wrong."))
+
+    def f03(w, h):
+        # Time bar chart at log scale
+        s = []
+        bars = [
+            ("FPGA: 810 ns", 6, GREEN),
+            ("BANK EXEC: 5 ms", 14, BLUE),
+            ("BROWSER RPC: 50 ms", 160, INK_3),
+            ("RETAIL CLICK: 200 ms", w - 20, RED),
+        ]
+        s.append(L(10, h - 30, w - 10, h - 30, stroke=RULE_2))
+        s.append(T(10, h - 10, "0", font=SF_MONO, size=11, weight=600,
+                   fill=INK_3, tracking=0.44))
+        s.append(T(w - 10, h - 10, "200 ms", font=SF_MONO, size=11, weight=600,
+                   fill=INK_3, anchor="end", tracking=0.44))
+        bar_h = 26
+        gap = 14
+        for i, (label, bw, color) in enumerate(bars):
+            by = 14 + i * (bar_h + gap)
+            s.append(R(10, by, max(bw, 6), bar_h, fill=color, rx=4))
+            # Label outside if bar is short, inside if long
+            if bw < 100:
+                s.append(T(10 + max(bw, 6) + 10, by + bar_h//2 + 5, label, font=SF_MONO,
+                           size=11, weight=700, fill=INK))
+            else:
+                s.append(T(20, by + bar_h//2 + 5, label, font=SF_MONO, size=11,
+                           weight=700, fill=PAPER))
+        return "\n".join(s)
+    body.append(step_frame(2, 0, "03", "FPGA fires in 810 ns", f03,
+                           "An FPGA converts the ES print into a SPY order, instantly. Retail click: 200 ms."))
+
+    def f04(w, h):
+        return orderbook_v2(w//2, h//2, offer="$500.20", bid="$500.10",
+                            offer_strike=True, bid_strike=False,
+                            note="slow MM's stale offer taken at $500.20 before they could pull it")
+    body.append(step_frame(0, 1, "04", "Slow MM picked off", f04,
+                           "A market maker who hasn't updated yet has their stale quote taken."))
+
+    def f05(w, h):
+        s = [T(w//2, 18, "ARCA · SPY ETF", font=SF_MONO, size=12, weight=700,
+               fill=INK_3, anchor="middle", tracking=2.16)]
+        s.append(L(0, h*0.6, w, h*0.6, stroke=RULE_2))
+        s.append(PATH(f"M 0 {h*0.6} L {w*0.4} {h*0.6} L {w*0.45} {h*0.35} L {w} {h*0.35}",
+                      stroke=INK, w=2))
+        s.append(CIRC(w*0.45, h*0.35, 5, fill=INK_3))
+        s.append(T(w*0.45, h*0.28, "t + 500 μs", font=SF_MONO, size=11, weight=600,
+                   fill=INK_3, anchor="middle", tracking=0.44))
+        s.append(T(w//2, h*0.85, "too late on this print", font=SF_MONO, size=12,
+                   weight=600, fill=INK_3, anchor="middle", tracking=0.48))
+        return "\n".join(s)
+    body.append(step_frame(1, 1, "05", "SPY catches up", f05,
                            "Five hundred microseconds later the quote updates. The arbitrage is closed."))
-    # Step 6: accumulator
-    s6 = big_number(40, 30, "$5B", "GLOBAL LATENCY TAX / yr", "Aquilina–Budish QJE 2022", color=BLUE)
-    body.append(step_frame(2, 1, "06", "The accumulator", s6,
-                           "Per trade: a penny. Across markets, five billion dollars a year. 17% of the cost of liquidity."))
-    body.append(economics("OPERATOR SPEND", "~$650K / yr",
-                          "ANNUAL TAKE", "$300K–1.5M",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+
+    def f06(w, h):
+        return big_stat(w//2, h//2, "$5B", color=BLUE,
+                        label_top="GLOBAL LATENCY TAX / YEAR",
+                        label_bot="Aquilina · Budish · O'Neill · QJE 2022",
+                        value_size=72)
+    body.append(step_frame(2, 1, "06", "The accumulator", f06,
+                           "Per trade: pennies. Across markets: $5B a year. Seventeen percent of liquidity cost."))
+
+    body.append(economics("OPERATOR SPEND", "~$650K/yr",
+                          "ANNUAL TAKE", "$300K–1.5M"))
+    return wrap_svg("\n".join(body))
 
 
-def build_05_information() -> str:
+# =====================================================
+# MECHANISM 05 — INFORMATION EDGE
+# =====================================================
+def build_05_information():
     body = [header(
-        "EXTRACTION 05 · THE CALENDAR",
-        "Earnings are old news",
-        "to ten people.",
-        "By the time the press release prints, the position has already paid for the satellite.",
+        eyebrow="EXTRACTION 05 · THE CALENDAR",
+        hook_left="Earnings are old news",
+        hook_right="to ten people.",
+        tagline="By the time the press release prints, the position has already paid for the satellite.",
+        scapegoat="Retail trader reading the headline at 4:01 pm",
+        predator="Hedge fund with credit-card panels + satellites + experts",
     )]
-    # Step 1: credit card panel
-    s1 = (f'<text x="170" y="30" text-anchor="middle" class="illL">JAN · CREDIT-CARD PANEL</text>'
-          f'\n  <rect x="60" y="60" width="220" height="120" rx="10" fill="{PAPER}" stroke="{RULE_2}"/>'
-          f'\n  <text x="170" y="100" text-anchor="middle" style="font: 800 36px \'SF Pro Display\'; fill: {GREEN}; letter-spacing: -0.79px">+22%</text>'
-          f'\n  <text x="170" y="130" text-anchor="middle" class="illL">YoY service-center receipts</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL" style="fill: {INK_3}">YipitData · $120K / yr</text>')
-    body.append(step_frame(0, 0, "01", "Receipts before the company", s1,
-                           "A credit-card data panel shows Tesla service revenue up 22% YoY in January."))
-    # Step 2: satellite
-    s2 = (f'<text x="170" y="30" text-anchor="middle" class="illL">FEB · SATELLITE IMAGERY</text>'
-          f'\n  <rect x="60" y="60" width="220" height="120" rx="10" fill="{INK}"/>'
-          f'\n  <text x="170" y="100" text-anchor="middle" style="font: 800 36px \'SF Pro Display\'; fill: {PAPER}; letter-spacing: -0.79px">+18%</text>'
-          f'\n  <text x="170" y="130" text-anchor="middle" class="illL" style="fill: {PAPER}; opacity: 0.7">Shanghai factory parking lot</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL" style="fill: {PAPER}; opacity: 0.5">RS Metrics · $80K / yr</text>')
-    body.append(step_frame(1, 0, "02", "Counted from orbit", s2,
-                           "Satellite imagery confirms the factory parking lot is 18% fuller than the prior quarter."))
-    # Step 3: expert call
-    s3 = (f'<text x="170" y="30" text-anchor="middle" class="illL">MAR · EXPERT NETWORK</text>'
-          f'\n  <rect x="60" y="60" width="220" height="120" rx="10" fill="{PAPER_2}" stroke="{RULE_2}"/>'
-          f'\n  <text x="170" y="100" text-anchor="middle" style="font: 700 17px \'SF Pro Display\'; fill: {INK}; letter-spacing: -0.374px">"Tooling capacity confirmed"</text>'
-          f'\n  <text x="170" y="130" text-anchor="middle" class="illL">— ex-Tesla supply-chain VP</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL" style="fill: {INK_3}">GLG · $150K / yr</text>')
-    body.append(step_frame(2, 0, "03", "Confirmed by the inside", s3,
-                           "A paid call with a former supply-chain VP confirms the capacity is real."))
-    # Step 4: fund positions
-    s4 = (f'<text x="170" y="30" text-anchor="middle" class="illL">LATE MAR · FUND ENTRY</text>'
-          f'\n  <text x="170" y="100" text-anchor="middle" style="font: 800 36px \'SF Pro Display\'; fill: {BLUE}; letter-spacing: -0.79px">LONG CALLS</text>'
-          f'\n  <text x="170" y="130" text-anchor="middle" class="illL">positioned before consensus</text>'
-          f'\n  <text x="170" y="160" text-anchor="middle" class="illL">three pieces of evidence aligned</text>')
-    body.append(step_frame(0, 1, "04", "Position opens", s4,
+    def panel(title, *, value, value_color=INK, sub=None, footnote=None, dark=False):
+        bg = INK if dark else PAPER_2
+        text_main = PAPER if dark else INK
+        text_sub = "rgba(255,255,255,0.7)" if dark else INK_3
+        text_foot = "rgba(255,255,255,0.5)" if dark else INK_3
+        def fn(w, h):
+            s = [R(0, 0, w, h, fill=bg, stroke=RULE_2 if not dark else INK, rx=10)]
+            s.append(T(w//2, 30, title, font=SF_MONO, size=12, weight=700,
+                       fill=text_sub, anchor="middle", tracking=2.16))
+            s.append(T(w//2, h//2 + 14, value, font=SF_DISPLAY, size=48, weight=800,
+                       fill=value_color, anchor="middle", tracking=-1.056))
+            if sub:
+                s.append(T(w//2, h//2 + 44, sub, font=SF_TEXT, size=14, weight=500,
+                           fill=text_main, anchor="middle", tracking=-0.07))
+            if footnote:
+                s.append(T(w//2, h - 20, footnote, font=SF_MONO, size=11, weight=600,
+                           fill=text_foot, anchor="middle", tracking=0.44))
+            return "\n".join(s)
+        return fn
+    body.append(step_frame(0, 0, "01", "Receipts before the company",
+                           panel("JAN · CREDIT-CARD PANEL", value="+22%", value_color=GREEN,
+                                 sub="YoY service receipts", footnote="YipitData · $120K/yr"),
+                           "Credit-card data shows Tesla service revenue up 22% YoY in January."))
+    body.append(step_frame(1, 0, "02", "Counted from orbit",
+                           panel("FEB · SATELLITE IMAGERY", value="+18%", value_color=PAPER,
+                                 sub="Shanghai factory parking", footnote="RS Metrics · $80K/yr",
+                                 dark=True),
+                           "Satellite imagery confirms the factory parking lot is 18% fuller than Q4."))
+    def f03(w, h):
+        return (
+            R(0, 0, w, h, fill=PAPER_2, stroke=RULE_2, rx=10) + "\n" +
+            T(w//2, 30, "MAR · EXPERT NETWORK", font=SF_MONO, size=12, weight=700,
+              fill=INK_3, anchor="middle", tracking=2.16) + "\n" +
+            T(w//2, h//2 + 4, "“Tooling capacity confirmed.”",
+              font=NY_SERIF, size=19, weight=500, fill=INK, anchor="middle",
+              italic=True, tracking=-0.30) + "\n" +
+            T(w//2, h//2 + 32, "— ex-Tesla supply-chain VP", font=SF_TEXT, size=14,
+              weight=500, fill=INK_2, anchor="middle", tracking=-0.07) + "\n" +
+            T(w//2, h - 20, "GLG · $150K/yr", font=SF_MONO, size=11, weight=600,
+              fill=INK_3, anchor="middle", tracking=0.44)
+        )
+    body.append(step_frame(2, 0, "03", "Confirmed by an insider", f03,
+                           "A paid expert-network call with a former supply-chain VP confirms it."))
+    def f04(w, h):
+        return (
+            R(0, 0, w, h, fill=BLUE_T, stroke=BLUE, rx=10) + "\n" +
+            T(w//2, 30, "LATE MAR · POSITION OPENS", font=SF_MONO, size=12, weight=700,
+              fill=BLUE, anchor="middle", tracking=2.16) + "\n" +
+            T(w//2, h//2 + 14, "LONG CALLS", font=SF_DISPLAY, size=40, weight=800,
+              fill=BLUE, anchor="middle", tracking=-0.88) + "\n" +
+            T(w//2, h//2 + 44, "positioned before consensus updates", font=SF_TEXT, size=14,
+              weight=500, fill=INK_2, anchor="middle", tracking=-0.07) + "\n" +
+            T(w//2, h - 20, "three independent signals aligned", font=SF_MONO, size=11,
+              weight=600, fill=INK_3, anchor="middle", tracking=0.44)
+        )
+    body.append(step_frame(0, 1, "04", "Position opens", f04,
                            "With three pieces of evidence aligned, the fund opens a directional position."))
-    # Step 5: earnings beat
-    s5 = (f'<text x="170" y="30" text-anchor="middle" class="illL">APR · EARNINGS DAY</text>'
-          f'\n  <line x1="20" y1="160" x2="320" y2="160" stroke="{RULE_2}"/>'
-          f'\n  <path d="M 20 140 L 80 138 L 130 142 L 160 140 L 170 90 L 320 80" fill="none" stroke="{INK}" stroke-width="2"/>'
-          f'\n  <circle cx="170" cy="90" r="6" fill="{GREEN}"/>'
-          f'\n  <text x="170" y="74" text-anchor="middle" class="illP-g">+8%</text>'
-          f'\n  <text x="170" y="185" text-anchor="middle" class="illL">earnings beat printed</text>')
-    body.append(step_frame(1, 1, "05", "The print", s5,
-                           "Tesla announces a beat. The stock jumps 8%. The fund's edge crystallises."))
-    # Step 6: retail reads
-    s6 = (f'<text x="170" y="30" text-anchor="middle" class="illL">APR · 4:01 PM</text>'
-          f'\n  <rect x="40" y="60" width="260" height="120" rx="10" fill="{PAPER_2}" stroke="{RULE_2}"/>'
-          f'\n  <text x="170" y="90" text-anchor="middle" style="font: 800 16px \'SF Pro Display\'; fill: {RED}; letter-spacing: -0.352px">TESLA BEATS EXPECTATIONS</text>'
-          f'\n  <text x="170" y="120" text-anchor="middle" class="illL">CNBC headline · retail reads it</text>'
-          f'\n  <text x="170" y="150" text-anchor="middle" class="illL" style="fill: {INK_3}">fund has already exited at the open</text>')
-    body.append(step_frame(2, 1, "06", "Retail reads the headline", s6,
+    def f05(w, h):
+        return (
+            R(0, 0, w, h, fill=PAPER, stroke=RULE_2, rx=10) + "\n" +
+            T(w//2, 30, "APR · EARNINGS DAY", font=SF_MONO, size=12, weight=700,
+              fill=INK_3, anchor="middle", tracking=2.16) + "\n" +
+            L(20, h*0.75, w-20, h*0.75, stroke=RULE_2) + "\n" +
+            PATH(f"M 20 {h*0.65} L {w*0.3} {h*0.62} L {w*0.45} {h*0.66} L {w*0.55} {h*0.62} L {w*0.6} {h*0.30} L {w-20} {h*0.26}",
+                 stroke=INK, w=2) + "\n" +
+            CIRC(w*0.6, h*0.30, 6, fill=GREEN) + "\n" +
+            T(w*0.6, h*0.22, "+8%", font=SF_MONO, size=14, weight=800,
+              fill=GREEN, anchor="middle") + "\n" +
+            T(w//2, h - 20, "earnings beat printed", font=SF_MONO, size=11, weight=600,
+              fill=INK_3, anchor="middle", tracking=0.44)
+        )
+    body.append(step_frame(1, 1, "05", "The print", f05,
+                           "Tesla announces a beat. The stock jumps eight percent. The edge crystallises."))
+    def f06(w, h):
+        return (
+            R(0, 0, w, h, fill=RED_T, stroke=RED, rx=10) + "\n" +
+            T(w//2, 30, "APR · 4:01 PM", font=SF_MONO, size=12, weight=700,
+              fill=RED, anchor="middle", tracking=2.16) + "\n" +
+            T(w//2, h//2, "TESLA BEATS Q1", font=SF_DISPLAY, size=28, weight=800,
+              fill=INK, anchor="middle", tracking=-0.616) + "\n" +
+            T(w//2, h//2 + 28, "— CNBC headline", font=SF_TEXT, size=14, weight=500,
+              fill=INK_2, anchor="middle", tracking=-0.07) + "\n" +
+            T(w//2, h - 20, "fund has already exited at the open",
+              font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44)
+        )
+    body.append(step_frame(2, 1, "06", "Retail reads the headline", f06,
                            "Four-oh-one p.m. The fund has already exited. The retail reader is buying the top."))
-    body.append(economics("OPERATOR SPEND", "~$714K / yr",
-                          "ANNUAL TAKE", "$500K–2M",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+    body.append(economics("OPERATOR SPEND", "~$714K/yr",
+                          "ANNUAL TAKE", "$500K–2M"))
+    return wrap_svg("\n".join(body))
 
 
-def build_06_spoofing() -> str:
+# =====================================================
+# MECHANISM 06 — SPOOFING & LAYERING
+# =====================================================
+def build_06_spoofing():
     body = [header(
-        "EXTRACTION 06 · THE WALL THAT WASN'T",
-        "Build a wall.",
-        "Cancel it.",
-        "The chart is not a record. The chart is a stage.",
+        eyebrow="EXTRACTION 06 · THE WALL THAT WASN'T",
+        hook_left="Build a wall.",
+        hook_right="Cancel it.",
+        tagline="The chart is not a record. The chart is a stage. Sarao did this for $40M.",
+        scapegoat="Retail trader reading 'strong support' on the chart",
+        predator="Spoofer with millisecond cancel speed",
     )]
-    # Step 1: thin orderbook
-    s1 = (f'<text x="170" y="30" text-anchor="middle" class="illL">ORDER BOOK · THIN</text>'
-          + ''.join(
-              f'<rect x="40" y="{55 + i*20}" width="{40 + i*12}" height="14" fill="{RED}" opacity="0.6" rx="3"/>'
-              for i in range(3))
-          + ''.join(
-              f'<rect x="40" y="{125 + i*20}" width="{60 + i*8}" height="14" fill="{BLUE}" opacity="0.6" rx="3"/>'
-              for i in range(3))
-          + f'\n  <text x="280" y="100" text-anchor="end" class="illL">MM has private sell intent</text>')
-    body.append(step_frame(0, 0, "01", "Thin book, hidden intent", s1,
-                           "Order book is thin. MM wants to sell at the highest visible price."))
-    # Step 2: wall posted
-    s2 = (f'<text x="170" y="30" text-anchor="middle" class="illL">SAME BOOK + WALL</text>'
-          + ''.join(
-              f'<rect x="40" y="{55 + i*20}" width="{40 + i*12}" height="14" fill="{RED}" opacity="0.6" rx="3"/>'
-              for i in range(3))
-          + f'\n  <rect x="40" y="125" width="240" height="20" fill="{BLUE}" rx="3"/>'
-          + f'\n  <text x="160" y="139" text-anchor="middle" style="font: 700 11px \'SF Mono\'; fill: {PAPER}">$5M BID @ $99.00</text>'
-          + ''.join(
-              f'<rect x="40" y="{155 + i*20}" width="{40 + i*8}" height="14" fill="{BLUE}" opacity="0.4" rx="3"/>'
-              for i in range(2)))
-    body.append(step_frame(1, 0, "02", "The wall goes up", s2,
-                           "MM posts a $5M bid at $99. To the chart it looks like serious support."))
-    # Step 3: retail reads support
-    s3 = (f'<text x="170" y="30" text-anchor="middle" class="illL">RETAIL CHART · MIN 13</text>'
-          f'\n  <line x1="20" y1="140" x2="320" y2="140" stroke="{RULE_2}" stroke-dasharray="3 3"/>'
-          f'\n  <text x="320" y="136" text-anchor="end" class="illL">$99.00 support</text>'
-          f'\n  <path d="M 20 110 L 80 112 L 130 120 L 180 130 L 240 138 L 300 134" fill="none" stroke="{INK}" stroke-width="2"/>'
-          f'\n  <text x="170" y="180" text-anchor="middle" class="illP-b">"strong bid at $99"</text>')
-    body.append(step_frame(2, 0, "03", "Retail reads the wall as support", s3,
-                           "Charting tools flag the wall as buy-side conviction. The thesis spreads."))
-    # Step 4: retail fills
-    s4 = (orderbook(40, 24, "BID", "$5M wall", "OFFER", "MM @ $99.05",
-                    note="retail buys $99.05")
-          + f'\n  <circle cx="270" cy="50" r="14" fill="{GREEN}" opacity="0.18"/>'
-          + f'\n  <text x="270" y="55" text-anchor="middle" style="font: 800 14px \'SF Pro Text\'; fill: {GREEN}">✓</text>')
-    body.append(step_frame(0, 1, "04", "Retail fills the MM's offer", s4,
+
+    def thin_book(x0, y0, w, h, with_wall=False, wall_cancelled=False, fill_retail=False,
+                  drop=False):
+        """Compact orderbook visualization. Returns SVG."""
+        s = []
+        # Asks
+        for i in range(3):
+            bw = 30 + i * 10
+            s.append(R(x0, y0 + i * 24, bw, 16, fill=RED, opacity=0.55, rx=3))
+        # Mid line
+        s.append(L(x0, y0 + 76, x0 + w, y0 + 76, stroke=RULE_2, dash="2 3"))
+        # Bids — either thin or with wall
+        if with_wall:
+            wall_w = w - 20
+            if wall_cancelled:
+                s.append(R(x0, y0 + 84, wall_w, 22, fill="none", stroke=BLUE, stroke_w=1.5,
+                           opacity=0.6))
+                s.append(T(x0 + wall_w//2, y0 + 100, "CANCELLED",
+                           font=SF_MONO, size=11, weight=700, fill=INK_3,
+                           anchor="middle", tracking=0.88))
+            else:
+                s.append(R(x0, y0 + 84, wall_w, 22, fill=BLUE, rx=3))
+                s.append(T(x0 + wall_w//2, y0 + 100, "$5M @ $99.00",
+                           font=SF_MONO, size=11, weight=700, fill=PAPER,
+                           anchor="middle", tracking=0.66))
+            # Smaller real bids below
+            for i in range(2):
+                bw = 24 + i * 8
+                s.append(R(x0, y0 + 112 + i * 22, bw, 16, fill=BLUE, opacity=0.4, rx=3))
+        else:
+            for i in range(3):
+                bw = 24 + i * 8
+                s.append(R(x0, y0 + 84 + i * 22, bw, 16, fill=BLUE, opacity=0.55, rx=3))
+        if fill_retail:
+            s.append(CIRC(x0 + w - 18, y0 + 8, 12, fill=GREEN))
+            s.append(T(x0 + w - 18, y0 + 13, "✓", font=SF_TEXT, size=14, weight=800,
+                       fill=PAPER, anchor="middle"))
+        return "\n".join(s)
+
+    def f01(w, h):
+        s = [thin_book(20, 20, w - 40, h - 40, with_wall=False)]
+        s.append(T(w - 20, 32, "thin book", font=SF_MONO, size=11, weight=700,
+                   fill=INK_3, anchor="end", tracking=0.66))
+        s.append(T(w//2, h - 12, "MM has private sell intent — invisible",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(0, 0, "01", "Thin book, hidden intent", f01,
+                           "Order book is thin. The MM wants to sell at the highest visible price."))
+
+    def f02(w, h):
+        s = [thin_book(20, 20, w - 40, h - 40, with_wall=True)]
+        s.append(T(w//2, h - 12, "the chart now reads 'strong support'",
+                   font=SF_MONO, size=11, weight=600, fill=BLUE, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 0, "02", "The wall goes up", f02,
+                           "MM posts $5M bid at $99. To the chart it looks like serious conviction."))
+
+    def f03(w, h):
+        # Retail chart with support line
+        return price_chart(0, 10, w, h - 40,
+            f"M 0 {(h-40)*0.5} L {w*0.2} {(h-40)*0.52} L {w*0.4} {(h-40)*0.58} L {w*0.6} {(h-40)*0.62} L {w*0.8} {(h-40)*0.66} L {w} {(h-40)*0.62}",
+            hlines=[((h-40)*0.72, "$99.00 'support'")],
+            labels=[(w//2, (h-40)*0.86, "retail decides to buy the dip", BLUE, "middle")])
+    body.append(step_frame(2, 0, "03", "Retail reads the wall as support", f03,
+                           "The wall is flagged as buy-side conviction. Retail decides to buy the dip."))
+
+    def f04(w, h):
+        s = [thin_book(20, 20, w - 40, h - 40, with_wall=True, fill_retail=True)]
+        s.append(T(w//2, h - 12, "retail buys at $99.05 from the MM's offer",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(0, 1, "04", "Retail fills the MM's offer", f04,
                            "Convinced by the wall, retail crosses the spread and buys at $99.05."))
-    # Step 5: wall cancelled
-    s5 = (f'<text x="170" y="30" text-anchor="middle" class="illL">+47 ms · WALL CANCELLED</text>'
-          + ''.join(
-              f'<rect x="40" y="{55 + i*20}" width="{40 + i*12}" height="14" fill="{RED}" opacity="0.6" rx="3"/>'
-              for i in range(3))
-          + f'\n  <rect x="40" y="125" width="240" height="20" fill="none" stroke="{BLUE}" stroke-width="1.5" stroke-dasharray="4 3" rx="3"/>'
-          + f'\n  <text x="160" y="139" text-anchor="middle" style="font: 700 11px \'SF Mono\'; fill: {INK_3}">$0 · CANCELLED</text>'
-          + ''.join(
-              f'<rect x="40" y="{155 + i*20}" width="{40 + i*8}" height="14" fill="{BLUE}" opacity="0.3" rx="3"/>'
-              for i in range(2))
-          + f'\n  <text x="170" y="225" text-anchor="middle" class="illP-r">lifespan: 47 ms total</text>')
-    body.append(step_frame(1, 1, "05", "The wall disappears", s5,
+
+    def f05(w, h):
+        s = [thin_book(20, 20, w - 40, h - 40, with_wall=True, wall_cancelled=True)]
+        s.append(T(w//2, h - 12, "wall lifespan: 47 milliseconds total",
+                   font=SF_MONO, size=11, weight=700, fill=RED, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 1, "05", "The wall disappears", f05,
                            "Forty-seven milliseconds after appearing, the wall is cancelled."))
-    # Step 6: price drops
-    s6 = (f'<text x="170" y="30" text-anchor="middle" class="illL">SECONDS LATER</text>'
-          f'\n  <line x1="20" y1="100" x2="320" y2="100" stroke="{RULE_2}" stroke-dasharray="3 3"/>'
-          f'\n  <text x="20" y="96" class="illL">$99.05 fill</text>'
-          f'\n  <line x1="20" y1="180" x2="320" y2="180" stroke="{RULE_2}" stroke-dasharray="3 3"/>'
-          f'\n  <text x="20" y="200" class="illL">$98.85</text>'
-          f'\n  <path d="M 20 100 L 80 110 L 130 125 L 180 145 L 240 165 L 300 178" fill="none" stroke="{INK}" stroke-width="2"/>'
-          f'\n  <text x="290" y="220" text-anchor="end" class="illP-g">+$0.20 / share</text>')
-    body.append(step_frame(2, 1, "06", "The drop", s6,
-                           "With no real support, price falls to $98.85. MM kept the round trip."))
+
+    def f06(w, h):
+        return price_chart(0, 10, w, h - 40,
+            f"M 0 {(h-40)*0.25} L {w*0.2} {(h-40)*0.32} L {w*0.4} {(h-40)*0.46} L {w*0.6} {(h-40)*0.60} L {w*0.8} {(h-40)*0.72} L {w} {(h-40)*0.80}",
+            hlines=[((h-40)*0.25, "$99.05 fill"), ((h-40)*0.82, "$98.85")],
+            labels=[(w - 20, (h-40)*0.92, "+$0.20 / share to MM", GREEN, "end")])
+    body.append(step_frame(2, 1, "06", "The drop", f06,
+                           "With no real support, price falls to $98.85. The MM kept the round trip."))
+
     body.append(economics("MARGINAL SPEND", "~$0",
-                          "ANNUAL TAKE", "$200K–2M",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+                          "ANNUAL TAKE", "$200K–2M"))
+    return wrap_svg("\n".join(body))
 
 
-def build_07_pfof() -> str:
+# =====================================================
+# MECHANISM 07 — PAYMENT FOR ORDER FLOW (rebuilt)
+# =====================================================
+def build_07_pfof():
     body = [header(
-        "EXTRACTION 07 · THE CASH ROUTE",
-        "Your broker",
-        "has three owners.",
-        "None of them is you. Citadel paid $943M for nine months of order flow in 2024.",
+        eyebrow="EXTRACTION 07 · THE CASH ROUTE",
+        hook_left="Your broker",
+        hook_right="has three owners.",
+        tagline="Citadel paid $943M for nine months of retail order flow in 2024. They paid because retail flow is the best in the world.",
+        scapegoat="Retail trader who thinks they got NBBO",
+        predator="Citadel Securities, the wholesaler",
     )]
-    # Step 1: retail clicks
-    s1 = (f'<rect x="80" y="40" width="180" height="200" rx="20" fill="{PAPER_2}" stroke="{RULE_2}"/>'
-          f'\n  <text x="170" y="80" text-anchor="middle" class="illL">ROBINHOOD APP</text>'
-          f'\n  <rect x="100" y="100" width="140" height="40" rx="10" fill="{GREEN}"/>'
-          f'\n  <text x="170" y="126" text-anchor="middle" style="font: 700 15px \'SF Pro Text\'; fill: {PAPER}">BUY 100 AAPL</text>'
-          f'\n  <text x="170" y="170" text-anchor="middle" class="illL">click</text>'
-          f'\n  <text x="170" y="200" text-anchor="middle" class="illP">$17,200 order</text>')
-    body.append(step_frame(0, 0, "01", "Retail clicks Buy", s1,
-                           "A retail trader places a market order through their broker app."))
-    # Step 2: routed to Citadel
-    s2 = boxchain(20, 60, [
-        ("RETAIL", "$17.2K", PAPER, INK),
-        ("BROKER", "Robinhood", PAPER, INK),
-        ("WHOLESALER", "Citadel", BLUE, PAPER),
-    ], arrows=[(0, 1, INK, "order", "top"), (1, 2, INK, "rerouted", "top")])
-    s2 += f'\n  <text x="170" y="200" text-anchor="middle" class="illL" style="fill: {INK_3}">order does not reach a public exchange</text>'
-    body.append(step_frame(1, 0, "02", "Rerouted to a wholesaler", s2,
+    def party_box(x0, y0, w, h, *, name, sub, fill, color):
+        s = [R(x0, y0, w, h, fill=fill, stroke=(BLUE if fill == BLUE else RULE_2), rx=12)]
+        s.append(T(x0 + w//2, y0 + 30, name, font=SF_TEXT, size=15, weight=700,
+                   fill=color, anchor="middle", tracking=-0.075))
+        s.append(T(x0 + w//2, y0 + 54, sub, font=SF_MONO, size=11, weight=600,
+                   fill=color, anchor="middle", opacity=0.75, tracking=0.44))
+        return "\n".join(s)
+
+    def f01(w, h):
+        # Phone with buy button
+        return (
+            R(w*0.3, 30, w*0.4, h - 60, fill=PAPER_2, stroke=RULE_2, rx=20) + "\n" +
+            T(w//2, 60, "ROBINHOOD", font=SF_MONO, size=11, weight=700,
+              fill=INK_3, anchor="middle", tracking=1.65) + "\n" +
+            R(w*0.34, 90, w*0.32, 44, fill=GREEN, rx=10) + "\n" +
+            T(w//2, 118, "BUY 100 AAPL", font=SF_TEXT, size=14, weight=700,
+              fill=PAPER, anchor="middle", tracking=-0.07) + "\n" +
+            T(w//2, h - 70, "$17,200 order", font=SF_MONO, size=13, weight=700,
+              fill=INK, anchor="middle") + "\n" +
+            T(w//2, h - 46, "click", font=SF_MONO, size=11, weight=600,
+              fill=INK_3, anchor="middle", tracking=0.44)
+        )
+    body.append(step_frame(0, 0, "01", "Retail clicks Buy", f01,
+                           "A retail trader places a market order through Robinhood."))
+
+    def f02(w, h):
+        bw = 100
+        gap_x = (w - bw * 3) // 2
+        s = [party_box(0, 30, bw, 80, name="RETAIL", sub="$17.2K", fill=PAPER, color=INK)]
+        s.append(party_box(bw + gap_x, 30, bw, 80, name="BROKER", sub="Robinhood", fill=PAPER, color=INK))
+        s.append(party_box(bw * 2 + gap_x * 2, 30, bw, 80, name="WHOLESALER", sub="Citadel", fill=BLUE, color=PAPER))
+        # Order flow arrows (top, ink)
+        s.append(PATH(f"M {bw + 4} 56 L {bw + gap_x - 4} 56", stroke=INK, w=1.8, marker_end="arrInk"))
+        s.append(T(bw + gap_x//2, 46, "order", font=SF_MONO, size=11, weight=700,
+                   fill=INK, anchor="middle", tracking=0.44))
+        s.append(PATH(f"M {bw*2 + gap_x + 4} 56 L {bw*2 + gap_x*2 - 4} 56", stroke=INK, w=1.8, marker_end="arrInk"))
+        s.append(T(bw*2 + gap_x + gap_x//2, 46, "rerouted", font=SF_MONO, size=11,
+                   weight=700, fill=INK, anchor="middle", tracking=0.44))
+        s.append(T(w//2, h - 14, "order does not reach a public exchange",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 0, "02", "Rerouted to a wholesaler", f02,
                            "Robinhood does not send the order to NYSE. It routes to Citadel Securities."))
-    # Step 3: cash to broker
-    s3 = boxchain(20, 60, [
-        ("RETAIL", "", PAPER, INK),
-        ("BROKER", "Robinhood", PAPER, INK),
-        ("WHOLESALER", "Citadel", BLUE, PAPER),
-    ], arrows=[(2, 1, GREEN, "$1.30 PFOF", "bottom")])
-    s3 += f'\n  <text x="170" y="200" text-anchor="middle" class="illP-g">cash paid for the order</text>'
-    body.append(step_frame(2, 0, "03", "Cash to the broker", s3,
+
+    def f03(w, h):
+        bw = 100
+        gap_x = (w - bw * 3) // 2
+        s = [party_box(0, 30, bw, 80, name="RETAIL", sub="", fill=PAPER, color=INK)]
+        s.append(party_box(bw + gap_x, 30, bw, 80, name="BROKER", sub="Robinhood", fill=PAPER, color=INK))
+        s.append(party_box(bw * 2 + gap_x * 2, 30, bw, 80, name="WHOLESALER", sub="Citadel", fill=BLUE, color=PAPER))
+        # PFOF arrow from Citadel to Broker (bottom, green)
+        s.append(PATH(f"M {bw*2 + gap_x*2 - 4} 140 L {bw + gap_x + bw + 4} 140",
+                      stroke=GREEN, w=2, marker_end="arrGreen"))
+        s.append(T(bw + gap_x + bw//2 + gap_x//2, 158, "$1.30 PFOF",
+                   font=SF_MONO, size=12, weight=800, fill=GREEN, anchor="middle", tracking=0.48))
+        s.append(T(w//2, h - 14, "cash paid for access to the flow",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(2, 0, "03", "Cash to the broker", f03,
                            "Citadel pays Robinhood ~$1.30 in cash — payment for order flow."))
-    # Step 4: fill + improvement
-    s4 = boxchain(20, 60, [
-        ("RETAIL", "", PAPER, INK),
-        ("BROKER", "", PAPER, INK),
-        ("WHOLESALER", "Citadel", BLUE, PAPER),
-    ], arrows=[(2, 0, RED, "$0.20 'improvement'", "bottom")])
-    s4 += f'\n  <text x="170" y="200" text-anchor="middle" class="illL">filled at NBBO midpoint</text>'
-    body.append(step_frame(0, 1, "04", "Token improvement returns", s4,
+
+    def f04(w, h):
+        bw = 100
+        gap_x = (w - bw * 3) // 2
+        s = [party_box(0, 30, bw, 80, name="RETAIL", sub="", fill=PAPER, color=INK)]
+        s.append(party_box(bw + gap_x, 30, bw, 80, name="BROKER", sub="", fill=PAPER, color=INK))
+        s.append(party_box(bw * 2 + gap_x * 2, 30, bw, 80, name="WHOLESALER", sub="Citadel", fill=BLUE, color=PAPER))
+        # 'Price improvement' arrow from Citadel back to Retail (long, bottom)
+        s.append(PATH(f"M {bw*2 + gap_x*2 - 4} 150 L {bw - 4} 150",
+                      stroke=RED, w=2, marker_end="arrRed"))
+        s.append(T(w//2, 170, "$0.20 'price improvement'",
+                   font=SF_MONO, size=12, weight=800, fill=RED, anchor="middle", tracking=0.48))
+        s.append(T(w//2, h - 14, "filled at NBBO midpoint",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(0, 1, "04", "Token improvement returns", f04,
                            "Citadel fills at NBBO midpoint and hands back $0.20 of 'price improvement.'"))
-    # Step 5: Citadel hedges
-    s5 = (f'<rect x="40" y="40" width="120" height="80" rx="10" fill="{BLUE}"/>'
-          f'\n  <text x="100" y="74" text-anchor="middle" style="font: 700 12px \'SF Pro Text\'; fill: {PAPER}">CITADEL</text>'
-          f'\n  <text x="100" y="94" text-anchor="middle" style="font: 500 10px \'SF Mono\'; fill: {BLUE_T}">long 100 AAPL</text>'
-          f'\n  <rect x="200" y="40" width="120" height="80" rx="10" fill="{INK}"/>'
-          f'\n  <text x="260" y="74" text-anchor="middle" style="font: 700 12px \'SF Pro Text\'; fill: {PAPER}">NYSE / ARCA</text>'
-          f'\n  <text x="260" y="94" text-anchor="middle" style="font: 500 10px \'SF Mono\'; fill: {PAPER}; opacity: 0.7">public venue</text>'
-          f'\n  <path d="M 162 80 L 198 80" stroke="{INK}" stroke-width="1.8" marker-end="url(#aHead)"/>'
-          f'\n  <text x="180" y="64" text-anchor="middle" class="illL">hedge</text>'
-          f'\n  <text x="170" y="180" text-anchor="middle" class="illL">offsetting trade at NBBO bid</text>')
-    body.append(step_frame(1, 1, "05", "Citadel hedges in public", s5,
-                           "On a real venue, Citadel takes the offsetting position at the NBBO bid."))
-    # Step 6: receipts
-    s6 = (f'<text x="170" y="30" text-anchor="middle" class="illL">FINAL RECEIPT</text>'
-          f'\n  <text x="40" y="78" class="stepH">Citadel kept</text>'
-          f'\n  <text x="320" y="78" text-anchor="end" class="illP-g" style="font-size: 20px">+$3.50</text>'
-          f'\n  <text x="40" y="118" class="stepH">Robinhood kept</text>'
-          f'\n  <text x="320" y="118" text-anchor="end" class="illP-b" style="font-size: 20px">+$1.10</text>'
-          f'\n  <text x="40" y="158" class="stepH">Retail "improvement"</text>'
-          f'\n  <text x="320" y="158" text-anchor="end" class="illP-r" style="font-size: 20px">+$0.20</text>'
-          f'\n  <line x1="40" y1="180" x2="320" y2="180" stroke="{RULE_2}"/>'
-          f'\n  <text x="40" y="208" class="stepH">Citadel · 9 mo of 2024</text>'
-          f'\n  <text x="320" y="208" text-anchor="end" class="illP" style="font-size: 16px">$943M paid</text>')
-    body.append(step_frame(2, 1, "06", "Who paid whom", s6,
+
+    def f05(w, h):
+        s = [party_box(20, 30, w*0.36, 80, name="CITADEL", sub="long 100 AAPL", fill=BLUE, color=PAPER)]
+        s.append(party_box(w - 20 - w*0.36, 30, w*0.36, 80, name="NYSE / ARCA", sub="public venue", fill=INK, color=PAPER))
+        s.append(PATH(f"M {20 + w*0.36 + 4} 70 L {w - 20 - w*0.36 - 4} 70",
+                      stroke=INK, w=2, marker_end="arrInk"))
+        s.append(T(w//2, 60, "hedge", font=SF_MONO, size=11, weight=700,
+                   fill=INK, anchor="middle", tracking=0.44))
+        s.append(T(w//2, h - 14, "offsetting trade at NBBO bid",
+                   font=SF_MONO, size=11, weight=600, fill=INK_3, anchor="middle", tracking=0.44))
+        return "\n".join(s)
+    body.append(step_frame(1, 1, "05", "Citadel hedges in public", f05,
+                           "On a real exchange, Citadel takes the offsetting position at the NBBO bid."))
+
+    def f06(w, h):
+        # Receipt-style ledger
+        rows = [
+            ("Citadel kept", "+$3.50", GREEN),
+            ("Robinhood kept", "+$1.10", BLUE),
+            ("Retail 'improvement'", "+$0.20", RED),
+        ]
+        s = [T(w//2, 22, "FINAL RECEIPT", font=SF_MONO, size=12, weight=700,
+               fill=INK_3, anchor="middle", tracking=2.16)]
+        for i, (label, val, color) in enumerate(rows):
+            ry = 56 + i * 38
+            s.append(T(8, ry, label, font=SF_TEXT, size=15, weight=600,
+                       fill=INK, tracking=-0.075))
+            s.append(T(w - 8, ry, val, font=SF_MONO, size=20, weight=800,
+                       fill=color, anchor="end"))
+        s.append(L(8, 180, w - 8, 180, stroke=RULE_2))
+        s.append(T(8, 208, "Citadel · 9 mo of 2024", font=SF_TEXT, size=14,
+                   weight=600, fill=INK, tracking=-0.07))
+        s.append(T(w - 8, 208, "$943M paid", font=SF_MONO, size=16, weight=800,
+                   fill=INK, anchor="end"))
+        return "\n".join(s)
+    body.append(step_frame(2, 1, "06", "Who paid whom", f06,
                            "Citadel kept $3.50 on the spread. Robinhood kept $1.10. Retail subsidised both."))
+
     body.append(economics("PFOF PAID (CITADEL 9MO)", "$943M",
-                          "ANNUAL TAKE (CITADEL)", "$3–5B",
-                          "ON GENERAL", "$0"))
-    return wrap_svg(ARROW_DEFS + "\n".join(body))
+                          "ANNUAL TAKE (CITADEL)", "$3–5B"))
+    return wrap_svg("\n".join(body))
 
 
-# ---------- run ----------
 BUILDERS = [
     ("01-toxic-flow", build_01_toxic_flow),
     ("02-stop-hunting", build_02_stop_hunting),
@@ -720,7 +1002,6 @@ BUILDERS = [
 if __name__ == "__main__":
     for name, fn in BUILDERS:
         svg = fn()
-        p = OUT / f"{name}.svg"
-        p.write_text(svg)
-        print(f"  wrote {p}  ({len(svg)} bytes)")
-    print(f"\nDone. Output: {OUT}")
+        (OUT / f"{name}.svg").write_text(svg)
+        print(f"  wrote {name}.svg  ({len(svg)} bytes)")
+    print(f"\nDone. Canvas: {W}x{H}. Output: {OUT}")

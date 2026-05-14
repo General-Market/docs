@@ -1,135 +1,155 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1068 1100" width="1068" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1300" width="1500" height="1300">
 <defs>
-<style>
-/* All sizes precomputed from apple.com letter-spacing em values */
-.eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; text-transform: uppercase; }
-.title   { font: 700 40px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.88px; }
-.titleEm { font: 500 40px "New York", "Times New Roman", Georgia, serif; fill: #0071E3; letter-spacing: -0.64px; font-style: italic; }
-.tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
-.stepNum { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; letter-spacing: 0; }
-.stepH   { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.374px; }
-.stepC   { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
-.illL    { font: 600 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 0.44px; }
-.illP    { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
-.illP-r  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF3B30; }
-.illP-g  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-.illP-b  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0071E3; }
-.ecoL    { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; text-transform: uppercase; }
-.ecoF    { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.616px; }
-</style>
+<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
+<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
+<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
+<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
 </defs>
-<rect width="1068" height="1100" fill="#FFFFFF"/>
-
-  <defs>
-    <marker id="aHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/>
-    </marker>
-    <marker id="aHeadBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/>
-    </marker>
-    <marker id="aHeadGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/>
-    </marker>
-    <marker id="aHeadRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/>
-    </marker>
-  </defs>
-<text x="534.0" y="70" text-anchor="middle" class="eyebrow">EXTRACTION 03 · THE LAG</text>
-  <text x="534.0" y="130" text-anchor="middle"><tspan class="title">Eighty milliseconds </tspan><tspan class="titleEm">of light.</tspan></text>
-  <text x="534.0" y="186" text-anchor="middle" class="tagline">Same asset. Two venues. The arbitrageur reads both mailboxes.</text>
-<rect x="0" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="347" text-anchor="middle" class="stepNum">01</text>
-  <text x="64" y="347" class="stepH">Equilibrium</text>
-  <g transform="translate(0, 372)"><text x="20" y="30" class="illL">BINANCE</text>
-  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="56" class="illP">t=0</text>
-  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text>
-  <text x="20" y="150" class="illL">COINBASE</text>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="176" class="illP">t=0</text>
-  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text></g>
-  <text x="24" y="596" class="stepC">Both venues quote ETH at $4,000. Spread</text>
-  <text x="24" y="614" class="stepC">between venues is zero.</text>
-<rect x="364" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="347" text-anchor="middle" class="stepNum">02</text>
-  <text x="428" y="347" class="stepH">Binance prints first</text>
-  <g transform="translate(364, 372)"><text x="20" y="30" class="illL">BINANCE</text>
-  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="56" class="illP">t=0</text>
-  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005 ↑</text>
-  <text x="20" y="150" class="illL">COINBASE</text>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="176" class="illP">t=0</text>
-  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #1D1D1F">$4,000.00</text></g>
-  <text x="388" y="596" class="stepC">A large market buy hits Binance. New print:</text>
-  <text x="388" y="614" class="stepC">$4,005. Coinbase still has not seen it.</text>
-<rect x="728" y="304" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="342" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="347" text-anchor="middle" class="stepNum">03</text>
-  <text x="792" y="347" class="stepH">Light-speed lag</text>
-  <g transform="translate(728, 372)"><text x="20" y="30" class="illL">BINANCE</text>
-  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="56" class="illP">t=0</text>
-  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005</text>
-  <text x="20" y="150" class="illL">COINBASE</text>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="176" class="illP">t+40ms</text>
-  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #6E6E73">still $4,000…</text>
-  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
-  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">LAG 80ms</text></g>
-  <text x="752" y="596" class="stepC">The new price has not crossed the network.</text>
-  <text x="752" y="614" class="stepC">Coinbase quote is stale for 80 ms.</text>
-<rect x="0" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="38" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="38" y="711" text-anchor="middle" class="stepNum">04</text>
-  <text x="64" y="711" class="stepH">Buy the stale side</text>
-  <g transform="translate(0, 736)"><text x="20" y="30" class="illL">BINANCE</text>
-  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="56" class="illP">t+1ms</text>
-  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005</text>
-  <text x="20" y="150" class="illL">COINBASE</text>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="176" class="illP">t+1ms</text>
-  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #34C759">$4,000 BUY</text>
-  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
-  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">80 ms</text></g>
-  <text x="24" y="960" class="stepC">Co-located MM buys $200K of ETH on Coinbase at</text>
-  <text x="24" y="978" class="stepC">the stale $4,000 price.</text>
-<rect x="364" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="402" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="402" y="711" text-anchor="middle" class="stepNum">05</text>
-  <text x="428" y="711" class="stepH">Hedge on the fast side</text>
-  <g transform="translate(364, 736)"><text x="20" y="30" class="illL">BINANCE</text>
-  <line x1="20" y1="70" x2="320" y2="70" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="56" class="illP">t+1ms</text>
-  <text x="320" y="56" text-anchor="end" class="illP" style="fill: #FF3B30">$4,005 SELL</text>
-  <text x="20" y="150" class="illL">COINBASE</text>
-  <line x1="20" y1="190" x2="320" y2="190" stroke="#1D1D1F" stroke-width="2"/>
-  <text x="20" y="176" class="illP">t+1ms</text>
-  <text x="320" y="176" text-anchor="end" class="illP" style="fill: #34C759">$4,000</text>
-  <rect x="160" y="60" width="100" height="140" fill="#0071E3" opacity="0.10"/>
-  <text x="210.0" y="245" text-anchor="middle" class="illL" style="fill: #0071E3">80 ms</text></g>
-  <text x="388" y="960" class="stepC">Simultaneously sells $200K on Binance at</text>
-  <text x="388" y="978" class="stepC">$4,005. Net inventory zero.</text>
-<rect x="728" y="668" width="340" height="340" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <circle cx="766" cy="706" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
-  <text x="766" y="711" text-anchor="middle" class="stepNum">06</text>
-  <text x="792" y="711" class="stepH">Receipt</text>
-  <g transform="translate(728, 736)"><text x="170" y="30" text-anchor="middle" class="illL">PER ETH ARBITRAGED</text>
-  <text x="170" y="86" text-anchor="middle" style="font: 800 48px 'SF Pro Display', sans-serif; fill: #34C759; letter-spacing: -1.056px">+$5</text>
-  <text x="170" y="120" text-anchor="middle" class="illL">cycle repeats hundreds × day</text></g>
-  <text x="752" y="960" class="stepC">Coinbase catches up at t+80 ms. Five dollars</text>
-  <text x="752" y="978" class="stepC">per unit, risk-free, banked.</text>
-<rect x="0" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="20" y="1074" class="ecoL">OPERATOR SPEND</text>
-  <text x="20" y="1108" class="ecoF" style="fill: #1D1D1F">~$400K / yr</text>
-  <rect x="364" y="1048" width="340" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-  <text x="384" y="1074" class="ecoL">ANNUAL TAKE</text>
-  <text x="384" y="1108" class="ecoF" style="fill: #1D1D1F">$500K–2M</text>
-  <rect x="728" y="1048" width="340" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-  <text x="748" y="1074" class="ecoL">ON GENERAL</text>
-  <text x="748" y="1108" class="ecoF" style="fill: #0071E3">$0</text>
+<rect x="0" y="0" width="1500" height="1300" rx="0" fill="#FFFFFF"/>
+<text x="750" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">EXTRACTION 03 · THE LAG</text>
+<text x="890" y="144" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.056px">Eighty milliseconds</text>
+<text x="906" y="144" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:48px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-0.768px">of light.</text>
+<text x="750" y="196" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:19px;font-weight:500;fill:#6E6E73;letter-spacing:-0.228px">Same asset. Two venues. The arbitrageur reads both mailboxes and writes one cheque.</text>
+<rect x="150" y="248" width="588" height="56" rx="14" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1" opacity="0.95"/>
+<text x="174" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:1.98px">SCAPEGOAT</text>
+<text x="174" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">Retail trader on either venue at stale prices</text>
+<rect x="762" y="248" width="588" height="56" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1" opacity="0.95"/>
+<text x="786" y="270" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#0071E3;letter-spacing:1.98px">PREDATOR</text>
+<text x="786" y="292" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.075px">Arbitrageur with microwave + cross-venue API</text>
+<rect x="30" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">01</text>
+<text x="106" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Equilibrium</text>
+<g transform="translate(66, 392)">
+<rect x="0" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="16" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">BINANCE</text>
+<text x="16" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="162" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.528px">$4,000</text>
+<rect x="210" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="226" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">COINBASE</text>
+<text x="226" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="372" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.528px">$4,000</text>
+<circle cx="194" cy="179" r="30" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="194" y="175" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:800;fill:#0071E3;letter-spacing:0.88px">ARB</text>
+<text x="194" y="191" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:9px;font-weight:600;fill:#0071E3;opacity:0.85">co-lo</text>
+<text x="194" y="229" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">watching · idle</text>
+</g>
+<text x="66" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Both venues quote ETH at $4,000. The arbitrageur</text>
+<text x="66" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">watches, idle.</text>
+<rect x="520" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">02</text>
+<text x="596" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Binance prints first</text>
+<g transform="translate(556, 392)">
+<rect x="0" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="16" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">BINANCE</text>
+<text x="16" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="162" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30;letter-spacing:-0.528px">$4,005</text>
+<text x="162" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30">↑ jumped</text>
+<rect x="210" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="226" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">COINBASE</text>
+<text x="226" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="372" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.528px">$4,000</text>
+<text x="67" y="150" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30;letter-spacing:0.66px">WHALE BUY</text>
+<path d="M 67 160 L 67 180 L 97 180" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<circle cx="194" cy="179" r="30" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="194" y="175" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:800;fill:#0071E3;letter-spacing:0.88px">ARB</text>
+<text x="194" y="191" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:9px;font-weight:600;fill:#0071E3;opacity:0.85">co-lo</text>
+<text x="194" y="229" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">saw the print at t=0</text>
+</g>
+<text x="556" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">A large whale buy hits Binance. Print: $4,005.</text>
+<text x="556" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Coinbase hasn't seen it.</text>
+<rect x="1010" y="320" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="370" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="375" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">03</text>
+<text x="1086" y="375" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">The lag window opens</text>
+<g transform="translate(1046, 392)">
+<rect x="0" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="16" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">BINANCE</text>
+<text x="16" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="162" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30;letter-spacing:-0.528px">$4,005</text>
+<text x="162" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30">↑ jumped</text>
+<rect x="210" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="226" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">COINBASE</text>
+<text x="226" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="372" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#6E6E73;letter-spacing:-0.528px">$4,000</text>
+<text x="372" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#6E6E73">stale</text>
+<rect x="0" y="140" width="388" height="28" rx="6" fill="#0071E3" opacity="0.1"/>
+<text x="194" y="158" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#0071E3;letter-spacing:0.48px">LAG WINDOW · 80 ms · only the co-lo'd sees both</text>
+<circle cx="194" cy="199" r="30" fill="#0071E3" stroke="#0071E3" stroke-width="2"/>
+<text x="194" y="195" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:800;fill:#FFFFFF;letter-spacing:0.88px">ARB</text>
+<text x="194" y="211" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:9px;font-weight:600;fill:#FFFFFF;opacity:0.85">co-lo</text>
+</g>
+<text x="1046" y="664" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">For eighty milliseconds, Coinbase is stale. The co-</text>
+<text x="1046" y="686" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">located firm sees both.</text>
+<rect x="30" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="80" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="80" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">04</text>
+<text x="106" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Buy the stale side</text>
+<g transform="translate(66, 822)">
+<rect x="0" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="16" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">BINANCE</text>
+<text x="16" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="162" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30;letter-spacing:-0.528px">$4,005</text>
+<text x="162" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30">↑ jumped</text>
+<rect x="210" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="226" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">COINBASE</text>
+<text x="226" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="372" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#6E6E73;letter-spacing:-0.528px">$4,000</text>
+<text x="372" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#6E6E73">stale</text>
+<circle cx="194" cy="199" r="30" fill="#0071E3" stroke="#0071E3" stroke-width="2"/>
+<text x="194" y="195" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:800;fill:#FFFFFF;letter-spacing:0.88px">ARB</text>
+<text x="194" y="211" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:9px;font-weight:600;fill:#FFFFFF;opacity:0.85">co-lo</text>
+<path d="M 224 184 L 302.64 100" fill="none" stroke="#34C759" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrGreen)"/>
+<text x="271.59999999999997" y="142.79999999999998" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#34C759;letter-spacing:0.48px">BUY $200K</text>
+<text x="271.59999999999997" y="160.79999999999998" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#34C759">@ $4,000</text>
+</g>
+<text x="66" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Arbitrageur buys $200K of ETH on Coinbase at the</text>
+<text x="66" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">stale $4,000 price.</text>
+<rect x="520" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="570" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="570" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">05</text>
+<text x="596" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Hedge on the fast side</text>
+<g transform="translate(556, 822)">
+<rect x="0" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="16" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">BINANCE</text>
+<text x="16" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="162" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#FF3B30;letter-spacing:-0.528px">$4,005</text>
+<text x="162" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#FF3B30">↑ jumped</text>
+<rect x="210" y="20" width="178" height="100" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
+<text x="226" y="44" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:1.92px">COINBASE</text>
+<text x="226" y="84" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#6E6E73;letter-spacing:0.44px">PRICE</text>
+<text x="372" y="102" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:800;fill:#6E6E73;letter-spacing:-0.528px">$4,000</text>
+<text x="372" y="44" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:700;fill:#6E6E73">stale</text>
+<circle cx="194" cy="199" r="30" fill="#0071E3" stroke="#0071E3" stroke-width="2"/>
+<text x="194" y="195" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:800;fill:#FFFFFF;letter-spacing:0.88px">ARB</text>
+<text x="194" y="211" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:9px;font-weight:600;fill:#FFFFFF;opacity:0.85">co-lo</text>
+<path d="M 164 184 L 85.36 100" fill="none" stroke="#FF3B30" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrRed)"/>
+<text x="116.39999999999999" y="142.79999999999998" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#FF3B30;letter-spacing:0.48px">SELL $200K</text>
+<text x="116.39999999999999" y="160.79999999999998" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:11px;font-weight:600;fill:#FF3B30">@ $4,005</text>
+</g>
+<text x="556" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Simultaneously sells $200K on Binance at $4,005. Net</text>
+<text x="556" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">inventory zero.</text>
+<rect x="1010" y="750" width="460" height="400" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<circle cx="1060" cy="800" r="14" fill="#FFFFFF" stroke="#0071E3" stroke-width="1.5"/>
+<text x="1060" y="805" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#0071E3">06</text>
+<text x="1086" y="805" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.374px">Receipt</text>
+<g transform="translate(1046, 822)">
+<text x="194" y="79" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">PER ETH ARBITRAGED</text>
+<text x="194" y="137" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:72px;font-weight:800;fill:#34C759;letter-spacing:-1.5839999999999999px">+$5</text>
+<text x="194" y="175" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;letter-spacing:-0.07px">risk-free · repeats hundreds × day</text>
+</g>
+<text x="1046" y="1094" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">Coinbase catches up at t+80 ms. The five dollars per</text>
+<text x="1046" y="1116" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:15px;font-weight:400;fill:#424245;letter-spacing:-0.075px">unit is banked.</text>
+<rect x="30" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="54" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">OPERATOR SPEND</text>
+<text x="54" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">~$400K/yr</text>
+<rect x="520" y="1200" width="460" height="80" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+<text x="544" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ANNUAL TAKE</text>
+<text x="544" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.616px">$500K–2M</text>
+<rect x="1010" y="1200" width="460" height="80" rx="14" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
+<text x="1034" y="1228" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">ON GENERAL</text>
+<text x="1034" y="1262" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:800;fill:#0071E3;letter-spacing:-0.616px">$0</text>
 </svg>
