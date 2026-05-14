@@ -175,6 +175,181 @@ const computeIcebergFilter = (state: State): string => {
 // insider traders is a fatal wound.
 const TIER_PNL = ["−1.0%", "−2.8%", "−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
 
+// ─── Pointcloud iceberg ───────────────────────────────────────────────────────
+//
+// The photo is retired. The iceberg is rendered as a halftone-style point
+// cloud — a jittered grid of dots whose radii track a procedural density
+// function. Two peaks above the waterline, the bulk underwater, sky and
+// abyss reduced to sparse particulate. Computed once at module load and
+// memoised inside React.
+
+type IcebergDot = { x: number; y: number; r: number; fill: string };
+
+const pseudo = (i: number): number => {
+  let h = (i * 2654435761) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
+  h = Math.imul(h, 0x85ebca6b) >>> 0;
+  h = (h ^ (h >>> 13)) >>> 0;
+  h = Math.imul(h, 0xc2b2ae35) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 0xffffffff;
+};
+
+const ICEBERG_WATERLINE_NORM = 539 / IMG_NATIVE_H;   // 0.323
+const ICEBERG_TOP_NORM = 0.085;
+const ICEBERG_BOTTOM_NORM = 0.945;
+
+const icebergDensity = (x: number, y: number): number => {
+  let d = 0;
+
+  // Above-water tip — two peaks rising out of the waterline.
+  if (y >= ICEBERG_TOP_NORM && y < ICEBERG_WATERLINE_NORM) {
+    const tipT =
+      (y - ICEBERG_TOP_NORM) / (ICEBERG_WATERLINE_NORM - ICEBERG_TOP_NORM);
+
+    // Tall left peak.
+    const lpCx = 0.435 - tipT * 0.055;
+    const lpHw = 0.022 + tipT * 0.140;
+    const lDist = Math.abs(x - lpCx) / lpHw;
+    if (lDist < 1) d = Math.max(d, 1 - lDist * lDist * 0.55);
+
+    // Shorter right peak, starts a bit lower.
+    if (y >= 0.155) {
+      const rpT = (y - 0.155) / (ICEBERG_WATERLINE_NORM - 0.155);
+      const rpCx = 0.560 + rpT * 0.045;
+      const rpHw = 0.026 + rpT * 0.108;
+      const rDist = Math.abs(x - rpCx) / rpHw;
+      if (rDist < 1) d = Math.max(d, 1 - rDist * rDist * 0.55);
+    }
+  }
+
+  // Below-water bulk — wide at the waterline, narrows to a rounded foot.
+  if (y >= ICEBERG_WATERLINE_NORM && y <= ICEBERG_BOTTOM_NORM) {
+    const bulkT =
+      (y - ICEBERG_WATERLINE_NORM) /
+      (ICEBERG_BOTTOM_NORM - ICEBERG_WATERLINE_NORM);
+
+    const widthCurve = 1 - Math.pow(bulkT, 1.45) * 0.88;
+    const halfW = 0.295 * widthCurve;
+    const wobble =
+      Math.sin(bulkT * 11) * 0.010 + Math.sin(bulkT * 23 + 1.4) * 0.006;
+    const cx = 0.505 + wobble;
+    const dist = Math.abs(x - cx) / halfW;
+
+    if (dist < 1) d = Math.max(d, 1 - dist * dist * 0.50);
+  }
+
+  return Math.min(1, d);
+};
+
+const generateIcebergDots = (): IcebergDot[] => {
+  const dots: IcebergDot[] = [];
+  const COLS = 88;
+  const ROWS = 116;
+
+  for (let row = 0; row < ROWS; row++) {
+    const stagger = row % 2 === 0 ? 0 : 0.5;
+    for (let col = 0; col < COLS; col++) {
+      const seed = row * 1003 + col * 7 + 17;
+      const n1 = pseudo(seed);
+      const n2 = pseudo(seed + 1009);
+      const n3 = pseudo(seed + 2017);
+
+      const jx = (n1 - 0.5) * 0.42;
+      const jy = (n2 - 0.5) * 0.42;
+      const xNorm = (col + stagger + jx) / COLS;
+      const yNorm = (row + jy) / ROWS;
+      if (xNorm < 0 || xNorm > 1 || yNorm < 0 || yNorm > 1) continue;
+
+      const density = icebergDensity(xNorm, yNorm);
+      let r: number;
+      let fill: string;
+
+      if (density > 0.04) {
+        const isAbove = yNorm < ICEBERG_WATERLINE_NORM;
+        const radiusJitter = (n3 - 0.5) * 2.4;
+        r = Math.max(0.7, 2.6 + density * 9.0 + radiusJitter);
+
+        if (isAbove) {
+          const bright = 210 + density * 45;
+          const rC = Math.min(255, Math.round(bright));
+          const gC = Math.min(255, Math.round(bright + 10));
+          fill = `rgba(${rC}, ${gC}, 255, ${(0.86 + density * 0.14).toFixed(3)})`;
+        } else {
+          const depth = (yNorm - ICEBERG_WATERLINE_NORM) / (1 - ICEBERG_WATERLINE_NORM);
+          const coolFade = 1 - depth * 0.55;
+          const rC = Math.round(120 * coolFade + density * 110 * coolFade);
+          const gC = Math.round(180 * coolFade + density * 60 * coolFade);
+          const bC = Math.round(240 - depth * 30);
+          fill = `rgba(${rC}, ${gC}, ${bC}, ${(0.78 + density * 0.18).toFixed(3)})`;
+        }
+      } else {
+        if (n1 < 0.58) continue; // sparser background
+        const isSky = yNorm < ICEBERG_WATERLINE_NORM;
+        if (isSky) {
+          r = 0.55 + n3 * 1.05;
+          fill = `rgba(205, 222, 245, ${(0.18 + n3 * 0.22).toFixed(3)})`;
+        } else {
+          const depthT =
+            (yNorm - ICEBERG_WATERLINE_NORM) / (1 - ICEBERG_WATERLINE_NORM);
+          r = 0.85 + n3 * 1.35;
+          const rC = Math.max(0, Math.round(30 - depthT * 24));
+          const gC = Math.max(0, Math.round(76 - depthT * 52));
+          const bC = Math.max(0, Math.round(140 - depthT * 86));
+          fill = `rgba(${rC}, ${gC}, ${bC}, ${(0.40 - depthT * 0.22).toFixed(3)})`;
+        }
+      }
+
+      dots.push({
+        x: xNorm * IMG_NATIVE_W,
+        y: yNorm * IMG_NATIVE_H,
+        r,
+        fill,
+      });
+    }
+  }
+
+  return dots;
+};
+
+const ICEBERG_DOTS = generateIcebergDots();
+
+const IcebergPoints: React.FC = React.memo(() => (
+  <svg
+    width={IMG_NATIVE_W}
+    height={IMG_NATIVE_H}
+    viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
+    style={{
+      position: "absolute",
+      left: 0,
+      top: 0,
+      display: "block",
+      shapeRendering: "geometricPrecision",
+    }}
+  >
+    <defs>
+      <linearGradient
+        id="iceberg-bg"
+        x1={0}
+        y1={0}
+        x2={0}
+        y2={IMG_NATIVE_H}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset="0%" stopColor="#1f3760" />
+        <stop offset={`${(ICEBERG_WATERLINE_NORM * 100).toFixed(2)}%`} stopColor="#0a1a36" />
+        <stop offset="68%" stopColor="#040a1e" />
+        <stop offset="100%" stopColor="#000308" />
+      </linearGradient>
+    </defs>
+    <rect width={IMG_NATIVE_W} height={IMG_NATIVE_H} fill="url(#iceberg-bg)" />
+    {ICEBERG_DOTS.map((d, i) => (
+      <circle key={i} cx={d.x} cy={d.y} r={d.r} fill={d.fill} />
+    ))}
+  </svg>
+));
+IcebergPoints.displayName = "IcebergPoints";
+
 type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
 
 const seeded = (i: number, m = 233280) => {
@@ -344,10 +519,7 @@ export const AntiCheatIceberg: React.FC = () => {
             filter: icebergFilter,
           }}
         >
-          <Img
-            src={staticFile("iceberg-tiers-clean.webp")}
-            style={{ width: IMG_NATIVE_W, height: IMG_NATIVE_H, display: "block" }}
-          />
+          <IcebergPoints />
 
           {/* Caustic light shimmer — two drifting radials. Only above the
               waterline (native y < 539, the upper iceberg). */}
