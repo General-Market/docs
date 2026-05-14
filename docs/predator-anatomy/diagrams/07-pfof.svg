@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Three boxes showing the PFOF flow: retail order goes from broker to wholesaler; wholesaler pays broker cash for the order; wholesaler captures spread minus a small price improvement"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .boxT { font: 700 14px var(--display, sans-serif); fill: #1D1D1F; letter-spacing: -0.012em; }
+            .boxsub { font: 600 11px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.04em; }
+            .flowL { font: 700 12px var(--mono, monospace); fill: #1D1D1F; letter-spacing: 0.04em; }
+            .flowR { font: 700 12px var(--mono, monospace); fill: #0A7C42; letter-spacing: 0.04em; }
+            .flowB { font: 700 12px var(--mono, monospace); fill: #DD0426; letter-spacing: 0.04em; }
+          </style>
+        </defs>
+        <!-- Boxes -->
+        <rect x="40" y="80" width="160" height="100" rx="10" fill="#F4F4F6" stroke="#1D1D1F" stroke-width="1.5"/>
+        <text x="120" y="120" text-anchor="middle" class="boxT">RETAIL</text>
+        <text x="120" y="140" text-anchor="middle" class="boxsub">CLICKS BUY</text>
+        <text x="120" y="158" text-anchor="middle" font-family="SF Mono, monospace" font-weight="700" font-size="13" fill="#1D1D1F">$10,000</text>
+
+        <rect x="250" y="80" width="160" height="100" rx="10" fill="#F4F4F6" stroke="#1D1D1F" stroke-width="1.5"/>
+        <text x="330" y="120" text-anchor="middle" class="boxT">BROKER</text>
+        <text x="330" y="140" text-anchor="middle" class="boxsub">ROBINHOOD</text>
+        <text x="330" y="158" text-anchor="middle" font-family="SF Mono, monospace" font-weight="700" font-size="11" fill="#6E6E73">routes order</text>
+
+        <rect x="460" y="80" width="160" height="100" rx="10" fill="#0071E3"/>
+        <text x="540" y="120" text-anchor="middle" class="boxT" fill="#FFF">WHOLESALER</text>
+        <text x="540" y="140" text-anchor="middle" class="boxsub" fill="#B5D4F5">CITADEL SECURITIES</text>
+        <text x="540" y="158" text-anchor="middle" font-family="SF Mono, monospace" font-weight="700" font-size="11" fill="#B5D4F5">fills internally</text>
+
+        <!-- Order flow arrows (top, left to right) -->
+        <path d="M 204 110 L 246 110" stroke="#1D1D1F" stroke-width="2" fill="none" marker-end="url(#arrO)"/>
+        <path d="M 414 110 L 456 110" stroke="#1D1D1F" stroke-width="2" fill="none" marker-end="url(#arrO)"/>
+        <text x="225" y="100" text-anchor="middle" class="flowL">order</text>
+        <text x="435" y="100" text-anchor="middle" class="flowL">order</text>
+        <!-- PFOF arrow (bottom, right to left, green) -->
+        <path d="M 456 200 L 414 200" stroke="#0A7C42" stroke-width="2" fill="none" marker-end="url(#arrG)"/>
+        <text x="435" y="220" text-anchor="middle" class="flowR">$1.30 PFOF</text>
+        <!-- Price improvement back to retail (small, red) -->
+        <path d="M 246 200 L 204 200" stroke="#DD0426" stroke-width="2" fill="none" marker-end="url(#arrR2)"/>
+        <text x="225" y="220" text-anchor="middle" class="flowB">$0.20 "improvement"</text>
+
+        <defs>
+          <marker id="arrO" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
+          <marker id="arrG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0A7C42"/></marker>
+          <marker id="arrR2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#DD0426"/></marker>
+        </defs>
+
+        <text x="540" y="240" text-anchor="middle" class="flowR" fill="#0A7C42">$3.50 spread kept</text>
+        <text x="330" y="266" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#6E6E73">Citadel Securities paid $943M to brokers in just nine months of 2024.</text>
+      </svg>

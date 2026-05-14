@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Two parallel price tracks: Binance jumps to $4,005 at t=0; Coinbase still shows $4,000 at t+80ms; MM buys Coinbase, sells Binance"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .vlbl { font: 700 12px var(--mono, monospace); fill: #1D1D1F; letter-spacing: 0.08em; }
+            .vlblsub { font: 600 11px var(--mono, monospace); fill: #6E6E73; }
+            .tklbl { font: 600 11px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.04em; }
+            .priceA { font: 700 16px var(--display, sans-serif); fill: #1D1D1F; }
+            .priceB { font: 700 16px var(--display, sans-serif); fill: #DD0426; }
+            .priceC { font: 700 16px var(--display, sans-serif); fill: #0A7C42; }
+          </style>
+        </defs>
+        <!-- Time axis -->
+        <line x1="120" y1="252" x2="600" y2="252" stroke="#D2D2D7" stroke-width="1"/>
+        <text x="140" y="270" class="tklbl">t = 0</text>
+        <text x="360" y="270" class="tklbl">t + 40ms</text>
+        <text x="580" y="270" text-anchor="end" class="tklbl">t + 80ms</text>
+
+        <!-- Binance row -->
+        <rect x="40" y="60" width="76" height="44" rx="6" fill="#F4F4F6" stroke="#D2D2D7"/>
+        <text x="78" y="80" text-anchor="middle" class="vlbl">BINANCE</text>
+        <text x="78" y="96" text-anchor="middle" class="vlblsub">spot</text>
+        <line x1="120" y1="82" x2="600" y2="82" stroke="#1D1D1F" stroke-width="2"/>
+        <text x="140" y="74" class="priceA">$4,000</text>
+        <circle cx="160" cy="82" r="4" fill="#1D1D1F"/>
+        <text x="180" y="74" class="priceB">→ $4,005</text>
+        <line x1="200" y1="82" x2="600" y2="82" stroke="#DD0426" stroke-width="2"/>
+        <text x="580" y="74" text-anchor="end" class="priceB">$4,005</text>
+
+        <!-- Coinbase row -->
+        <rect x="40" y="156" width="76" height="44" rx="6" fill="#F4F4F6" stroke="#D2D2D7"/>
+        <text x="78" y="176" text-anchor="middle" class="vlbl">COINBASE</text>
+        <text x="78" y="192" text-anchor="middle" class="vlblsub">spot</text>
+        <line x1="120" y1="178" x2="540" y2="178" stroke="#1D1D1F" stroke-width="2"/>
+        <text x="140" y="170" class="priceA">$4,000</text>
+        <text x="320" y="170" class="priceA">still $4,000…</text>
+        <line x1="540" y1="178" x2="600" y2="178" stroke="#DD0426" stroke-width="2"/>
+        <text x="580" y="170" text-anchor="end" class="priceB">$4,005</text>
+
+        <!-- Arb arrows -->
+        <path d="M 380 100 L 380 168" stroke="#0A7C42" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+        <text x="396" y="138" class="priceC">+$5 / unit</text>
+        <text x="396" y="156" font-family="SF Mono, monospace" font-size="11" fill="#6E6E73">risk-free</text>
+
+        <!-- Annotation -->
+        <text x="320" y="244" text-anchor="middle" class="tklbl">MM buys Coinbase at $4,000, sells Binance at $4,005, in the 80ms window before Coinbase catches up.</text>
+      </svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Quarterly timeline: hedge fund collects credit card data in January, satellite count in February, expert call in March, opens position; retail only sees earnings headline in April"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .month { font: 700 12px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.16em; }
+            .laneL { font: 700 12px var(--mono, monospace); fill: #1D1D1F; letter-spacing: 0.06em; }
+            .ev { font: 600 13px var(--display, sans-serif); fill: #1D1D1F; }
+            .evsub { font: 500 11px var(--mono, monospace); fill: #6E6E73; }
+            .dot-hf { fill: #0071E3; }
+            .dot-rt { fill: #DD0426; }
+          </style>
+        </defs>
+        <!-- Months -->
+        <text x="100" y="36" text-anchor="middle" class="month">JAN</text>
+        <text x="220" y="36" text-anchor="middle" class="month">FEB</text>
+        <text x="340" y="36" text-anchor="middle" class="month">MAR</text>
+        <text x="460" y="36" text-anchor="middle" class="month">APR</text>
+        <text x="580" y="36" text-anchor="middle" class="month">MAY</text>
+
+        <!-- Vertical month grid -->
+        <line x1="100" y1="50" x2="100" y2="230" stroke="#ECECEE" stroke-width="1"/>
+        <line x1="220" y1="50" x2="220" y2="230" stroke="#ECECEE" stroke-width="1"/>
+        <line x1="340" y1="50" x2="340" y2="230" stroke="#ECECEE" stroke-width="1"/>
+        <line x1="460" y1="50" x2="460" y2="230" stroke="#0071E3" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="580" y1="50" x2="580" y2="230" stroke="#ECECEE" stroke-width="1"/>
+
+        <!-- Hedge fund lane -->
+        <text x="40" y="92" class="laneL">FUND</text>
+        <line x1="80" y1="100" x2="600" y2="100" stroke="#1D1D1F" stroke-width="1.5"/>
+        <circle cx="100" cy="100" r="6" class="dot-hf"/>
+        <text x="100" y="80" text-anchor="middle" class="ev">credit cards</text>
+        <text x="100" y="120" text-anchor="middle" class="evsub">YipitData panel</text>
+        <circle cx="220" cy="100" r="6" class="dot-hf"/>
+        <text x="220" y="80" text-anchor="middle" class="ev">satellite</text>
+        <text x="220" y="120" text-anchor="middle" class="evsub">factory counts</text>
+        <circle cx="340" cy="100" r="6" class="dot-hf"/>
+        <text x="340" y="80" text-anchor="middle" class="ev">expert call</text>
+        <text x="340" y="120" text-anchor="middle" class="evsub">supply-chain VP</text>
+        <circle cx="420" cy="100" r="6" class="dot-hf"/>
+        <text x="420" y="80" text-anchor="middle" class="ev">position</text>
+        <text x="420" y="120" text-anchor="middle" class="evsub">opens calls</text>
+
+        <!-- Retail lane -->
+        <text x="40" y="192" class="laneL">YOU</text>
+        <line x1="80" y1="200" x2="600" y2="200" stroke="#1D1D1F" stroke-width="1.5"/>
+        <circle cx="100" cy="200" r="5" fill="#ECECEE" stroke="#D2D2D7"/>
+        <circle cx="220" cy="200" r="5" fill="#ECECEE" stroke="#D2D2D7"/>
+        <circle cx="340" cy="200" r="5" fill="#ECECEE" stroke="#D2D2D7"/>
+        <circle cx="460" cy="200" r="7" class="dot-rt"/>
+        <text x="460" y="184" text-anchor="middle" class="ev" fill="#DD0426">EARNINGS BEAT</text>
+        <text x="460" y="220" text-anchor="middle" class="evsub">you read the headline</text>
+
+        <text x="350" y="262" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#6E6E73">The information arrived in three pieces over twelve weeks. Only one of them was free.</text>
+      </svg>

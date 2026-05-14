@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Three frames: tight two-sided quote at 99.95 over 100.05, retail buys at 100.05, MM widens to 99.85 over 100.10"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .lbl { font: 600 12px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.04em; }
+            .lbl-h { font: 700 11px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.14em; text-transform: uppercase; }
+            .ax { stroke: #D2D2D7; stroke-width: 1; }
+            .bid { fill: #0071E3; }
+            .offer { fill: #DD0426; }
+            .retail-tag { font: 700 11px var(--mono, monospace); fill: #DD0426; }
+            .mid { font: 700 12px var(--display, sans-serif); fill: #1D1D1F; }
+          </style>
+        </defs>
+        <!-- Three columns, three time slices -->
+        <line x1="220" y1="36" x2="220" y2="244" class="ax" stroke-dasharray="3 4"/>
+        <line x1="440" y1="36" x2="440" y2="244" class="ax" stroke-dasharray="3 4"/>
+
+        <!-- Column 1: tight quote -->
+        <text x="110" y="30" text-anchor="middle" class="lbl-h">t = 0  ·  tight quote</text>
+        <rect x="64" y="110" width="92" height="22" rx="3" class="bid" opacity="0.85"/>
+        <text x="110" y="125" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">BID $99.95</text>
+        <rect x="64" y="148" width="92" height="22" rx="3" class="offer" opacity="0.85"/>
+        <text x="110" y="163" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">OFFER $100.05</text>
+        <text x="110" y="200" text-anchor="middle" class="mid">spread: $0.10</text>
+
+        <!-- Column 2: retail buys -->
+        <text x="330" y="30" text-anchor="middle" class="lbl-h">t + 50ms  ·  retail hits offer</text>
+        <rect x="284" y="110" width="92" height="22" rx="3" class="bid" opacity="0.85"/>
+        <text x="330" y="125" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">BID $99.95</text>
+        <rect x="284" y="148" width="92" height="22" rx="3" class="offer" opacity="0.85"/>
+        <text x="330" y="163" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">OFFER $100.05</text>
+        <text x="330" y="92" text-anchor="middle" class="retail-tag">RETAIL BUYS →</text>
+        <path d="M 388 158 L 376 158" stroke="#DD0426" stroke-width="2" fill="none" marker-end="url(#arrR)"/>
+        <text x="330" y="200" text-anchor="middle" class="mid">direction revealed</text>
+
+        <!-- Column 3: widen -->
+        <text x="550" y="30" text-anchor="middle" class="lbl-h">t + 51ms  ·  MM widens</text>
+        <rect x="504" y="100" width="92" height="22" rx="3" class="bid" opacity="0.85"/>
+        <text x="550" y="115" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">BID $99.85</text>
+        <rect x="504" y="158" width="92" height="22" rx="3" class="offer" opacity="0.85"/>
+        <text x="550" y="173" text-anchor="middle" fill="#FFF" font-family="SF Mono, monospace" font-weight="700" font-size="13">OFFER $100.10</text>
+        <text x="550" y="200" text-anchor="middle" class="mid" fill="#0A7C42">spread: $0.25</text>
+        <text x="550" y="220" text-anchor="middle" class="lbl">+$0.20 captured</text>
+
+        <defs>
+          <marker id="arrR" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#DD0426"/>
+          </marker>
+        </defs>
+
+        <text x="330" y="266" text-anchor="middle" class="lbl">Retail buys at the offer. The MM reads the direction. Bid drops, offer climbs. The exit costs the round-trip spread.</text>
+      </svg>

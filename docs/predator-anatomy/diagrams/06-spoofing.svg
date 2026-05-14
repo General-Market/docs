@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Order book frames: first shows a tall bid wall at $99 and retail buying at $99.05; second shows the wall cancelled and price dropping to $98.85"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .obT { font: 700 11px var(--mono, monospace); fill: #6E6E73; letter-spacing: 0.16em; text-transform: uppercase; }
+            .obP { font: 700 13px var(--mono, monospace); fill: #1D1D1F; }
+            .obL { font: 600 12px var(--mono, monospace); fill: #6E6E73; }
+            .annot2 { font: 700 11px var(--mono, monospace); fill: #DD0426; letter-spacing: 0.08em; }
+          </style>
+        </defs>
+        <line x1="330" y1="36" x2="330" y2="252" stroke="#D2D2D7" stroke-width="1" stroke-dasharray="3 4"/>
+
+        <!-- Frame 1 -->
+        <text x="160" y="32" text-anchor="middle" class="obT">t = 0 · wall up</text>
+        <!-- Price labels left -->
+        <text x="62" y="64" class="obL">$99.10</text>
+        <text x="62" y="86" class="obL">$99.05</text>
+        <text x="62" y="108" class="obL">$99.00</text>
+        <text x="62" y="130" class="obL">$98.95</text>
+        <text x="62" y="152" class="obL">$98.90</text>
+        <text x="62" y="174" class="obL">$98.85</text>
+        <text x="62" y="196" class="obL">$98.80</text>
+        <!-- Asks (red) -->
+        <rect x="120" y="52" width="40" height="14" fill="#DD0426" opacity="0.55"/>
+        <rect x="120" y="74" width="58" height="14" fill="#DD0426" opacity="0.75"/>
+        <!-- Bid wall (tall, blue) -->
+        <rect x="120" y="98" width="180" height="14" fill="#0071E3"/>
+        <rect x="120" y="118" width="80" height="14" fill="#0071E3" opacity="0.55"/>
+        <rect x="120" y="138" width="44" height="14" fill="#0071E3" opacity="0.55"/>
+        <!-- annotation -->
+        <text x="304" y="108" class="annot2">FAKE WALL</text>
+        <text x="120" y="220" class="obP" fill="#DD0426">→ RETAIL BUYS $99.05</text>
+
+        <!-- Frame 2 -->
+        <text x="500" y="32" text-anchor="middle" class="obT">t + 47ms · wall gone</text>
+        <text x="400" y="64" class="obL">$99.10</text>
+        <text x="400" y="86" class="obL">$99.05</text>
+        <text x="400" y="108" class="obL">$99.00</text>
+        <text x="400" y="130" class="obL">$98.95</text>
+        <text x="400" y="152" class="obL">$98.90</text>
+        <text x="400" y="174" class="obL">$98.85</text>
+        <text x="400" y="196" class="obL">$98.80</text>
+        <!-- Asks -->
+        <rect x="460" y="52" width="40" height="14" fill="#DD0426" opacity="0.55"/>
+        <rect x="460" y="74" width="58" height="14" fill="#DD0426" opacity="0.55"/>
+        <!-- Wall gone (dashed outline) -->
+        <rect x="460" y="98" width="180" height="14" fill="none" stroke="#0071E3" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+        <!-- Thin real bids -->
+        <rect x="460" y="118" width="20" height="14" fill="#0071E3" opacity="0.4"/>
+        <rect x="460" y="138" width="14" height="14" fill="#0071E3" opacity="0.4"/>
+        <rect x="460" y="158" width="32" height="14" fill="#0071E3" opacity="0.4"/>
+        <rect x="460" y="178" width="48" height="14" fill="#0071E3" opacity="0.55"/>
+        <!-- Price arrow -->
+        <text x="600" y="178" class="obP" fill="#0A7C42">$98.85</text>
+        <path d="M 540 88 L 540 174" stroke="#0A7C42" stroke-width="2" fill="none" marker-end="url(#arrD)"/>
+        <defs><marker id="arrD" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0A7C42"/></marker></defs>
+        <text x="500" y="220" class="annot2" text-anchor="middle">MM SOLD INTO BUY</text>
+
+        <text x="330" y="266" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#6E6E73">The wall existed for 47 milliseconds. You bought during the 47 milliseconds. The wall never wanted to fill.</text>
+      </svg>

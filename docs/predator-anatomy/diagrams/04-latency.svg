@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 280" role="img" aria-label="Logarithmic time bar showing four execution speeds: FPGA at 810 nanoseconds, bank execution at 5 milliseconds, retail browser at 50 milliseconds, mobile click round trip at 200 milliseconds"><rect width="660" height="280" fill="#FBFBFD"/>
+        <defs>
+          <style>
+            .barT { font: 700 13px var(--display, sans-serif); fill: #1D1D1F; letter-spacing: -0.012em; }
+            .barTsm { font: 600 11px var(--mono, monospace); fill: #6E6E73; }
+            .barB { rx: 4; ry: 4; }
+            .who { font: 700 12px var(--mono, monospace); fill: #1D1D1F; letter-spacing: 0.06em; }
+            .whor { font: 700 12px var(--mono, monospace); fill: #DD0426; letter-spacing: 0.06em; }
+          </style>
+        </defs>
+        <!-- Axis -->
+        <line x1="60" y1="244" x2="640" y2="244" stroke="#D2D2D7" stroke-width="1"/>
+        <text x="60" y="262" class="barTsm">0</text>
+        <text x="640" y="262" text-anchor="end" class="barTsm">200ms</text>
+        <text x="350" y="262" class="barTsm" text-anchor="middle">log scale</text>
+
+        <!-- FPGA bar (tiny) -->
+        <rect x="60" y="50" width="6" height="22" rx="3" fill="#0A7C42"/>
+        <text x="76" y="65" class="who">FPGA TICK-TO-TRADE</text>
+        <text x="220" y="65" class="barT">810 nanoseconds</text>
+        <text x="380" y="65" class="barTsm">— 0.000810ms</text>
+
+        <!-- Bank exec -->
+        <rect x="60" y="98" width="54" height="22" rx="3" fill="#0071E3"/>
+        <text x="124" y="113" class="who">BANK EXEC</text>
+        <text x="220" y="113" class="barT">~5 ms</text>
+
+        <!-- Retail browser -->
+        <rect x="60" y="146" width="180" height="22" rx="3" fill="#6E6E73"/>
+        <text x="250" y="161" class="who">WEB WALLET RPC</text>
+        <text x="396" y="161" class="barT">~50 ms</text>
+
+        <!-- Retail click -->
+        <rect x="60" y="194" width="580" height="22" rx="3" fill="#DD0426"/>
+        <text x="60" y="232" class="whor" text-anchor="start">RETAIL CLICK ROUND-TRIP</text>
+        <text x="240" y="232" class="barT">~200 ms</text>
+        <text x="640" y="232" class="barTsm" text-anchor="end">≈ 250,000× slower</text>
+
+        <text x="350" y="20" text-anchor="middle" font-family="SF Mono, monospace" font-size="11" fill="#6E6E73" letter-spacing="0.14em">EXECUTION SPEED, BY ACTOR</text>
+      </svg>
