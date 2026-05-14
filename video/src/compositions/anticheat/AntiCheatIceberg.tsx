@@ -1,6 +1,8 @@
 import React from "react";
 import {
   AbsoluteFill,
+  continueRender,
+  delayRender,
   Easing,
   Img,
   interpolate,
@@ -175,15 +177,12 @@ const computeIcebergFilter = (state: State): string => {
 // insider traders is a fatal wound.
 const TIER_PNL = ["−1.0%", "−2.8%", "−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
 
-// ─── Pointcloud iceberg ───────────────────────────────────────────────────────
+// ─── Halftone iceberg ─────────────────────────────────────────────────────────
 //
-// The photo is retired. The iceberg is rendered as a halftone-style point
-// cloud — a jittered grid of dots whose radii track a procedural density
-// function. Two peaks above the waterline, the bulk underwater, sky and
-// abyss reduced to sparse particulate. Computed once at module load and
-// memoised inside React.
-
-type IcebergDot = { x: number; y: number; r: number; fill: string };
+// The webp is sampled, not displayed. A jittered grid of dots reads pixel
+// brightness from the source and emits a halftone — radius scales with
+// luminance, fill takes the local colour. The shape is the photograph's;
+// only the medium changes.
 
 const pseudo = (i: number): number => {
   let h = (i * 2654435761) >>> 0;
@@ -195,159 +194,111 @@ const pseudo = (i: number): number => {
   return h / 0xffffffff;
 };
 
-const ICEBERG_WATERLINE_NORM = 539 / IMG_NATIVE_H;   // 0.323
-const ICEBERG_TOP_NORM = 0.085;
-const ICEBERG_BOTTOM_NORM = 0.945;
+const HALFTONE_COLS = 96;
+const HALFTONE_ROWS = 128;
+const HALFTONE_RES = 2; // canvas backing resolution multiplier
 
-const icebergDensity = (x: number, y: number): number => {
-  let d = 0;
+const IcebergPoints: React.FC = React.memo(() => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [handle] = React.useState(() => delayRender("iceberg-halftone"));
 
-  // Above-water tip — two peaks rising out of the waterline.
-  if (y >= ICEBERG_TOP_NORM && y < ICEBERG_WATERLINE_NORM) {
-    const tipT =
-      (y - ICEBERG_TOP_NORM) / (ICEBERG_WATERLINE_NORM - ICEBERG_TOP_NORM);
-
-    // Tall left peak.
-    const lpCx = 0.435 - tipT * 0.055;
-    const lpHw = 0.022 + tipT * 0.140;
-    const lDist = Math.abs(x - lpCx) / lpHw;
-    if (lDist < 1) d = Math.max(d, 1 - lDist * lDist * 0.55);
-
-    // Shorter right peak, starts a bit lower.
-    if (y >= 0.155) {
-      const rpT = (y - 0.155) / (ICEBERG_WATERLINE_NORM - 0.155);
-      const rpCx = 0.560 + rpT * 0.045;
-      const rpHw = 0.026 + rpT * 0.108;
-      const rDist = Math.abs(x - rpCx) / rpHw;
-      if (rDist < 1) d = Math.max(d, 1 - rDist * rDist * 0.55);
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      continueRender(handle);
+      return;
     }
-  }
 
-  // Below-water bulk — wide at the waterline, narrows to a rounded foot.
-  if (y >= ICEBERG_WATERLINE_NORM && y <= ICEBERG_BOTTOM_NORM) {
-    const bulkT =
-      (y - ICEBERG_WATERLINE_NORM) /
-      (ICEBERG_BOTTOM_NORM - ICEBERG_WATERLINE_NORM);
+    canvas.width = IMG_NATIVE_W * HALFTONE_RES;
+    canvas.height = IMG_NATIVE_H * HALFTONE_RES;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      continueRender(handle);
+      return;
+    }
+    ctx.scale(HALFTONE_RES, HALFTONE_RES);
 
-    const widthCurve = 1 - Math.pow(bulkT, 1.45) * 0.88;
-    const halfW = 0.295 * widthCurve;
-    const wobble =
-      Math.sin(bulkT * 11) * 0.010 + Math.sin(bulkT * 23 + 1.4) * 0.006;
-    const cx = 0.505 + wobble;
-    const dist = Math.abs(x - cx) / halfW;
+    const img = new window.Image();
+    img.onload = () => {
+      const off = document.createElement("canvas");
+      off.width = IMG_NATIVE_W;
+      off.height = IMG_NATIVE_H;
+      const offCtx = off.getContext("2d");
+      if (!offCtx) {
+        continueRender(handle);
+        return;
+      }
+      offCtx.drawImage(img, 0, 0, IMG_NATIVE_W, IMG_NATIVE_H);
+      const data = offCtx.getImageData(0, 0, IMG_NATIVE_W, IMG_NATIVE_H).data;
 
-    if (dist < 1) d = Math.max(d, 1 - dist * dist * 0.50);
-  }
+      ctx.fillStyle = "#040a1e";
+      ctx.fillRect(0, 0, IMG_NATIVE_W, IMG_NATIVE_H);
 
-  return Math.min(1, d);
-};
+      for (let row = 0; row < HALFTONE_ROWS; row++) {
+        const stagger = row % 2 === 0 ? 0 : 0.5;
+        for (let col = 0; col < HALFTONE_COLS; col++) {
+          const seed = row * 1009 + col * 7 + 19;
+          const jx = (pseudo(seed) - 0.5) * 0.45;
+          const jy = (pseudo(seed + 1013) - 0.5) * 0.45;
 
-const generateIcebergDots = (): IcebergDot[] => {
-  const dots: IcebergDot[] = [];
-  const COLS = 88;
-  const ROWS = 116;
+          const xNorm = (col + stagger + jx) / HALFTONE_COLS;
+          const yNorm = (row + jy) / HALFTONE_ROWS;
+          if (xNorm < 0 || xNorm >= 1 || yNorm < 0 || yNorm >= 1) continue;
 
-  for (let row = 0; row < ROWS; row++) {
-    const stagger = row % 2 === 0 ? 0 : 0.5;
-    for (let col = 0; col < COLS; col++) {
-      const seed = row * 1003 + col * 7 + 17;
-      const n1 = pseudo(seed);
-      const n2 = pseudo(seed + 1009);
-      const n3 = pseudo(seed + 2017);
+          // 3×3 sample average — silences single-pixel noise.
+          const px = Math.floor(xNorm * IMG_NATIVE_W);
+          const py = Math.floor(yNorm * IMG_NATIVE_H);
+          let sr = 0, sg = 0, sb = 0, count = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = px + dx;
+              const ny = py + dy;
+              if (nx < 0 || nx >= IMG_NATIVE_W || ny < 0 || ny >= IMG_NATIVE_H) continue;
+              const idx = (ny * IMG_NATIVE_W + nx) * 4;
+              sr += data[idx];
+              sg += data[idx + 1];
+              sb += data[idx + 2];
+              count++;
+            }
+          }
+          if (count === 0) continue;
+          const r = sr / count;
+          const g = sg / count;
+          const b = sb / count;
+          const luma = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-      const jx = (n1 - 0.5) * 0.42;
-      const jy = (n2 - 0.5) * 0.42;
-      const xNorm = (col + stagger + jx) / COLS;
-      const yNorm = (row + jy) / ROWS;
-      if (xNorm < 0 || xNorm > 1 || yNorm < 0 || yNorm > 1) continue;
+          // Halftone: radius scales with luminance. Bright iceberg gets fat
+          // dots, dark abyss gets pinpricks. Power < 1 lifts the midtones so
+          // the silhouette stays legible against the deep background.
+          const radius = 0.6 + Math.pow(luma, 0.85) * 8.6;
 
-      const density = icebergDensity(xNorm, yNorm);
-      let r: number;
-      let fill: string;
-
-      if (density > 0.04) {
-        const isAbove = yNorm < ICEBERG_WATERLINE_NORM;
-        const radiusJitter = (n3 - 0.5) * 2.4;
-        r = Math.max(0.7, 2.6 + density * 9.0 + radiusJitter);
-
-        if (isAbove) {
-          const bright = 210 + density * 45;
-          const rC = Math.min(255, Math.round(bright));
-          const gC = Math.min(255, Math.round(bright + 10));
-          fill = `rgba(${rC}, ${gC}, 255, ${(0.86 + density * 0.14).toFixed(3)})`;
-        } else {
-          const depth = (yNorm - ICEBERG_WATERLINE_NORM) / (1 - ICEBERG_WATERLINE_NORM);
-          const coolFade = 1 - depth * 0.55;
-          const rC = Math.round(120 * coolFade + density * 110 * coolFade);
-          const gC = Math.round(180 * coolFade + density * 60 * coolFade);
-          const bC = Math.round(240 - depth * 30);
-          fill = `rgba(${rC}, ${gC}, ${bC}, ${(0.78 + density * 0.18).toFixed(3)})`;
-        }
-      } else {
-        if (n1 < 0.58) continue; // sparser background
-        const isSky = yNorm < ICEBERG_WATERLINE_NORM;
-        if (isSky) {
-          r = 0.55 + n3 * 1.05;
-          fill = `rgba(205, 222, 245, ${(0.18 + n3 * 0.22).toFixed(3)})`;
-        } else {
-          const depthT =
-            (yNorm - ICEBERG_WATERLINE_NORM) / (1 - ICEBERG_WATERLINE_NORM);
-          r = 0.85 + n3 * 1.35;
-          const rC = Math.max(0, Math.round(30 - depthT * 24));
-          const gC = Math.max(0, Math.round(76 - depthT * 52));
-          const bC = Math.max(0, Math.round(140 - depthT * 86));
-          fill = `rgba(${rC}, ${gC}, ${bC}, ${(0.40 - depthT * 0.22).toFixed(3)})`;
+          ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
+          ctx.beginPath();
+          ctx.arc(xNorm * IMG_NATIVE_W, yNorm * IMG_NATIVE_H, radius, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
-      dots.push({
-        x: xNorm * IMG_NATIVE_W,
-        y: yNorm * IMG_NATIVE_H,
-        r,
-        fill,
-      });
-    }
-  }
+      continueRender(handle);
+    };
+    img.onerror = () => continueRender(handle);
+    img.src = staticFile("iceberg-tiers-clean.webp");
+  }, [handle]);
 
-  return dots;
-};
-
-const ICEBERG_DOTS = generateIcebergDots();
-
-const IcebergPoints: React.FC = React.memo(() => (
-  <svg
-    width={IMG_NATIVE_W}
-    height={IMG_NATIVE_H}
-    viewBox={`0 0 ${IMG_NATIVE_W} ${IMG_NATIVE_H}`}
-    style={{
-      position: "absolute",
-      left: 0,
-      top: 0,
-      display: "block",
-      shapeRendering: "geometricPrecision",
-    }}
-  >
-    <defs>
-      <linearGradient
-        id="iceberg-bg"
-        x1={0}
-        y1={0}
-        x2={0}
-        y2={IMG_NATIVE_H}
-        gradientUnits="userSpaceOnUse"
-      >
-        <stop offset="0%" stopColor="#1f3760" />
-        <stop offset={`${(ICEBERG_WATERLINE_NORM * 100).toFixed(2)}%`} stopColor="#0a1a36" />
-        <stop offset="68%" stopColor="#040a1e" />
-        <stop offset="100%" stopColor="#000308" />
-      </linearGradient>
-    </defs>
-    <rect width={IMG_NATIVE_W} height={IMG_NATIVE_H} fill="url(#iceberg-bg)" />
-    {ICEBERG_DOTS.map((d, i) => (
-      <circle key={i} cx={d.x} cy={d.y} r={d.r} fill={d.fill} />
-    ))}
-  </svg>
-));
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: IMG_NATIVE_W,
+        height: IMG_NATIVE_H,
+        display: "block",
+      }}
+    />
+  );
+});
 IcebergPoints.displayName = "IcebergPoints";
 
 type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
