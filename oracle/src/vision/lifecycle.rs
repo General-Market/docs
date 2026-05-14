@@ -561,11 +561,15 @@ impl BatchLifecycleManager {
                         debug!(source = %source_name, "Skipping batch creation — current batch still active");
                     } else {
                     match mgr.create_new_round(&source_name).await {
-                        Ok(lifecycle_id) => {
-                            let on_chain_id = mgr.poll_for_on_chain_batch(
-                                source_id,
-                                &source_name,
-                            ).await;
+                        Ok((lifecycle_id, on_chain_id_direct)) => {
+                            // Prefer the on_chain_id returned by createBatch (extracted
+                            // directly from the BatchCreated event in the tx receipt).
+                            // Fall back to polling the scheduler only if the direct path
+                            // wasn't taken (cosign timeout, follower path, no chain_writer).
+                            let on_chain_id = match on_chain_id_direct {
+                                Some(id) => Some(id),
+                                None => mgr.poll_for_on_chain_batch(source_id, &source_name).await,
+                            };
 
                             match on_chain_id {
                                 Some(id) => {
@@ -1030,10 +1034,14 @@ impl BatchLifecycleManager {
     ///
     /// Returns the lifecycle DB id on success. The on-chain batch_id arrives
     /// asynchronously through the chain listener.
+    /// Returns (lifecycle_id, Option<on_chain_batch_id>).
+    /// on_chain_batch_id is Some only when createBatch hit chain in this call —
+    /// the caller can then update vision_source_state immediately, skipping the
+    /// chain-listener poll that may lag under load.
     async fn create_new_round(
         &self,
         source_name: &str,
-    ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(u64, Option<u64>), Box<dyn std::error::Error + Send + Sync>> {
         // Fetch fresh config from data-node
         let recommended =
             batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await?;
@@ -1274,7 +1282,7 @@ impl BatchLifecycleManager {
                     .await {
                         warn!(source = %source_name, lifecycle_id, error = %e, "Failed to enqueue pending create");
                     }
-                    return Ok(lifecycle_id);
+                    return Ok((lifecycle_id, None));
                 }
 
                 // Aggregate all collected BLS signatures
@@ -1284,7 +1292,7 @@ impl BatchLifecycleManager {
                     Ok(agg) => agg,
                     Err(e) => {
                         error!(source = %source_name, error = %e, "BLS aggregation failed for createBatch");
-                        return Ok(lifecycle_id);
+                        return Ok((lifecycle_id, None));
                     }
                 };
 
@@ -1294,7 +1302,7 @@ impl BatchLifecycleManager {
                     tick_duration, lock_offset, settlement_grace, aggregated.0,
                     ref_nonce, signers_bitmask, lifecycle_id,
                 ).await {
-                    return Ok(on_chain_id);
+                    return Ok((lifecycle_id, Some(on_chain_id)));
                 }
                 // Submission failed — fall through to return lifecycle_id as fallback
             } else {
@@ -1314,7 +1322,7 @@ impl BatchLifecycleManager {
             );
         }
 
-        Ok(lifecycle_id)
+        Ok((lifecycle_id, None))
     }
 
     /// Submit createBatch on-chain (extracted for reuse from two code paths above).
