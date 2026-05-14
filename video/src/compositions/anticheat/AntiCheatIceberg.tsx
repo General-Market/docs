@@ -11,12 +11,8 @@ import {
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
-import { CameraMotionBlur } from "@remotion/motion-blur";
 import { font, monoFont } from "../../common/fonts";
-import { FPS, H, W } from "./theme";
-import { Specular } from "./fx/Specular";
-import { Volumetrics } from "./fx/Volumetrics";
-import { Wash } from "./fx/Wash";
+import { colors, FPS, H, W } from "./theme";
 import { VIDEO_BEATS } from "./beats";
 
 // The "I lost because of …" iceberg.
@@ -115,10 +111,6 @@ const tierHoldEnd = (i: number) =>
 const SCENE_FRAMES =
   tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 220
 
-const WATERLINE_START = tierAnimStart(1);
-const WATERLINE_DUR = 6;
-const WATERLINE_FADE = 18;
-
 type State =
   | { phase: "zoom"; t: number }
   | { phase: "tier"; tier: number; sub: "anim" | "hold"; t: number };
@@ -161,19 +153,6 @@ const computeScrollY = (state: State): number => {
   return a + (b - a) * EASE_OUT(state.t);
 };
 
-// Per-tier colour grade. Hue-rotate kept narrow so the iceberg's
-// blue stays believable. Brightness drops with depth.
-const computeIcebergFilter = (state: State): string => {
-  const d =
-    state.phase === "tier"
-      ? (state.tier + (state.sub === "anim" ? state.t : 1)) / N
-      : 0;
-  const sat = interpolate(d, [0, 0.5, 1], [1.05, 0.95, 1.15]);
-  const bright = interpolate(d, [0, 0.5, 1], [1.08, 0.92, 0.62]);
-  const contrast = interpolate(d, [0, 1], [1.0, 1.18]);
-  return `saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)}) contrast(${contrast.toFixed(3)})`;
-};
-
 // Per-tier PnL stamp. Escalates roughly with the dollars-extracted scale
 // established in the original LossCounter — strategy is a paper-cut,
 // insider traders is a fatal wound.
@@ -202,6 +181,8 @@ const DOT_FRAGMENT = /* glsl */ `
   uniform vec2 uResolution;
   uniform float uDotSize;
   uniform vec3 uBackground;
+  uniform vec3 uDeepBlue;
+  uniform float uDepth;
 
   varying vec2 vUv;
 
@@ -215,7 +196,6 @@ const DOT_FRAGMENT = /* glsl */ `
     vec4 src = texture2D(uTexture, cellUv);
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
-    // Lift midtones so the underwater body keeps its mass.
     float weight = pow(luma, 0.85);
     float radius = weight * uDotSize * 0.62;
 
@@ -223,26 +203,42 @@ const DOT_FRAGMENT = /* glsl */ `
     float aa = 1.0;
     float coverage = 1.0 - smoothstep(radius - aa, radius + aa, dist);
 
-    vec3 color = mix(uBackground, src.rgb, coverage);
+    // Background and dots both drift toward the next scene's deep blue
+    // as we descend.
+    vec3 bg = mix(uBackground, uDeepBlue * 0.18, uDepth);
+    vec3 dotRgb = mix(src.rgb, uDeepBlue, uDepth * 0.72);
+
+    vec3 color = mix(bg, dotRgb, coverage);
     gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
+const DotShaderPlane: React.FC<{ texture: THREE.Texture; depth: number }> = ({
+  texture,
+  depth,
+}) => {
+  const matRef = React.useRef<THREE.ShaderMaterial>(null);
   const uniforms = React.useMemo(
     () => ({
       uTexture: { value: texture },
       uResolution: { value: new THREE.Vector2(IMG_NATIVE_W, IMG_NATIVE_H) },
       uDotSize: { value: 14.0 },
       uBackground: { value: new THREE.Color("#040a1e") },
+      uDeepBlue: { value: new THREE.Color(colors.accent) },
+      uDepth: { value: depth },
     }),
     [texture],
   );
+
+  if (matRef.current) {
+    matRef.current.uniforms.uDepth.value = depth;
+  }
 
   return (
     <mesh>
       <planeGeometry args={[2, 2]} />
       <shaderMaterial
+        ref={matRef}
         vertexShader={DOT_VERTEX}
         fragmentShader={DOT_FRAGMENT}
         uniforms={uniforms}
@@ -253,7 +249,7 @@ const DotShaderPlane: React.FC<{ texture: THREE.Texture }> = ({ texture }) => {
   );
 };
 
-const IcebergPoints: React.FC = React.memo(() => {
+const IcebergPoints: React.FC<{ depth: number }> = ({ depth }) => {
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
   const [handle] = React.useState(() => delayRender("iceberg-shader"));
 
@@ -273,8 +269,6 @@ const IcebergPoints: React.FC = React.memo(() => {
     );
   }, [handle]);
 
-  if (!texture) return null;
-
   return (
     <ThreeCanvas
       width={IMG_NATIVE_W}
@@ -289,45 +283,16 @@ const IcebergPoints: React.FC = React.memo(() => {
       }}
       gl={{ antialias: true, alpha: false }}
     >
-      <DotShaderPlane texture={texture} />
+      {texture ? <DotShaderPlane texture={texture} depth={depth} /> : null}
     </ThreeCanvas>
   );
-});
-IcebergPoints.displayName = "IcebergPoints";
-
-type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
-
-const seeded = (i: number, m = 233280) => {
-  const s = (i * 9301 + 49297) % m;
-  return s / m;
 };
-
-const makeField = (count: number, seedBase: number, sizeBase: number, sizeRange: number, speedBase: number, speedRange: number): Bubble[] =>
-  Array.from({ length: count }, (_, i) => ({
-    x: seeded(i + seedBase) * W,
-    baseY: seeded(i + seedBase + 100) * H * 1.6,
-    size: sizeBase + Math.round(seeded(i + seedBase + 200) * sizeRange),
-    speed: speedBase + seeded(i + seedBase + 300) * speedRange,
-    phase: seeded(i + seedBase + 400) * Math.PI * 2,
-  }));
-
-// Three depth layers — far/blurred/slow, mid/sharp/medium, near/large/fast.
-const BUBBLES_FAR = makeField(28, 500, 2, 3, 0.15, 0.25);
-const BUBBLES_MID = makeField(22, 1000, 5, 6, 0.5, 0.8);
-const BUBBLES_NEAR = makeField(14, 2000, 12, 18, 1.0, 1.3);
-
-// Bioluminescent sparkle field in the abyss.
-const SPARKS = makeField(24, 3000, 1, 2, 0, 0);
-
-const HERO_SHADOW =
-  "0 4px 28px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.9), 0 0 56px rgba(0,0,0,0.55)";
 
 export const AntiCheatIceberg: React.FC = () => {
   const frame = useCurrentFrame();
   const state = stateAt(frame);
   const scale = computeScale(state);
   const scrollY = computeScrollY(state);
-  const icebergFilter = computeIcebergFilter(state);
 
   const activeTier = state.phase === "tier" ? state.tier : -1;
   const activeFrameY =
@@ -346,217 +311,37 @@ export const AntiCheatIceberg: React.FC = () => {
   );
   const sceneOpacity = Math.min(introOpacity, outroOpacity);
 
+  // Continuous depth in [0,1] — feeds the shader's blue-shift. Smooths
+  // through the tier transitions instead of stepping.
   const descentProgress =
-    state.phase === "tier" ? state.tier / LAST : 0;
-  const vignetteAlpha = 0.22 + 0.4 * descentProgress;
-
-  const underwaterT = interpolate(
-    frame,
-    [WATERLINE_START, WATERLINE_START + WATERLINE_DUR + WATERLINE_FADE],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_OUT },
-  );
-
-  // Camera-in-water sway. Subtle horizontal drift on the iceberg layer
-  // sells "we are submerged."
-  const swayX =
-    underwaterT > 0 ? Math.sin(frame / 32) * 6 * underwaterT : 0;
-  const swayY = underwaterT > 0 ? Math.cos(frame / 47) * 3 * underwaterT : 0;
-
-  // Caustic light position drift — two animated radial gradients overlap
-  // and translate independently. Reads as shimmering water light on top
-  // of the iceberg.
-  const causticT = frame;
-  const caustic1X = 30 + Math.sin(causticT / 36) * 22;
-  const caustic1Y = 20 + Math.cos(causticT / 48) * 14;
-  const caustic2X = 70 + Math.cos(causticT / 42) * 18;
-  const caustic2Y = 15 + Math.sin(causticT / 58) * 12;
-
-  // Background gradient — surface light fades, abyss takes over.
-  const bgScroll = scrollY * 0.3;
-
-  // Climax housekeeping.
-  const isClimax = state.phase === "tier" && state.tier === LAST;
-
-  // Past suffixes fade out during the climax — the field has earned the
-  // right to be empty by the time "insider traders" lands.
-  const pastFade = isClimax
-    ? interpolate(state.sub === "hold" ? state.t : 0, [0, 0.4], [0.62, 0], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      })
-    : 1;
-
-  // Whether the scroll between tiers is currently in motion. Motion blur
-  // kicks in for those frames only.
-  const scrollMoving =
-    state.phase === "tier" && state.sub === "anim" && state.tier > 0;
+    state.phase === "tier"
+      ? (state.tier + (state.sub === "anim" ? state.t : 1)) / N
+      : 0;
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#000000",
+        backgroundColor: "#040a1e",
         fontFamily: font,
         opacity: sceneOpacity,
         overflow: "hidden",
       }}
     >
-      {/* Far-back atmosphere — surface light up top, abyss below. The
-          deepest descent eats the gradient entirely. */}
-      <AbsoluteFill
+      <div
         style={{
-          background: `
-            radial-gradient(140% 90% at 50% ${-15 + descentProgress * 40}%,
-              rgba(140, 188, 240, ${0.32 * (1 - underwaterT * 0.5)}) 0%,
-              rgba(38, 78, 128, ${0.78 * underwaterT}) 28%,
-              rgba(12, 26, 52, ${0.94 * underwaterT}) 60%,
-              rgba(2, 6, 14, ${0.98 * underwaterT}) 100%
-            )
-          `,
-          transform: `translateY(${bgScroll.toFixed(2)}px)`,
-          pointerEvents: "none",
+          position: "absolute",
+          left: "50%",
+          top: scrollY,
+          width: IMG_NATIVE_W,
+          height: IMG_NATIVE_H,
+          transform: `translate(-50%, 0) scale(${scale.toFixed(4)})`,
+          transformOrigin: "top center",
+          willChange: "transform, top",
         }}
-      />
+      >
+        <IcebergPoints depth={descentProgress} />
+      </div>
 
-      {/* Far depth — slow, blurred particulate, parallaxes at 0.4×. */}
-      {underwaterT > 0.03 && (
-        <Particles
-          field={BUBBLES_FAR}
-          frame={frame}
-          parallax={0.4 * scrollY}
-          colour={`rgba(170, 200, 235, ${0.18 * underwaterT})`}
-          blur={2}
-        />
-      )}
-
-      {/* Surface god rays — peak at the waterline crossing, decay as we
-          descend. Light from above-frame. */}
-      <Volumetrics
-        peakFrame={WATERLINE_START - 4}
-        attack={14}
-        decay={70}
-        cx="50%"
-        cy="-8%"
-        color="rgba(140, 200, 255, 0.6)"
-        coreColor="rgba(220, 240, 255, 0.85)"
-        intensity={Math.max(0, 1 - descentProgress * 1.4)}
-        rays={26}
-        rayWidth={0.9}
-        blur={2.4}
-        reach="85%"
-        streak={false}
-      />
-
-      {/* Iceberg layer — wrapped in motion blur during scroll transitions.
-          Caustic shimmer + per-tier colour grade live inside this layer
-          so they ride the iceberg. */}
-      <ConditionalMotionBlur active={scrollMoving} shutter={140}>
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: scrollY + swayY,
-            width: IMG_NATIVE_W,
-            height: IMG_NATIVE_H,
-            transform: `translate(${(-50).toFixed(0)}%, 0) translateX(${swayX.toFixed(2)}px) scale(${scale.toFixed(4)})`,
-            transformOrigin: "top center",
-            willChange: "transform, top",
-            filter: icebergFilter,
-          }}
-        >
-          <IcebergPoints />
-
-          {/* Caustic light shimmer — two drifting radials. Only above the
-              waterline (native y < 539, the upper iceberg). */}
-          {underwaterT < 0.95 && (
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                width: IMG_NATIVE_W,
-                height: 539,
-                background: `
-                  radial-gradient(ellipse 30% 18% at ${caustic1X}% ${caustic1Y}%, rgba(220,240,255,${0.28 * (1 - underwaterT)}) 0%, transparent 60%),
-                  radial-gradient(ellipse 24% 14% at ${caustic2X}% ${caustic2Y}%, rgba(190,220,250,${0.22 * (1 - underwaterT)}) 0%, transparent 60%)
-                `,
-                mixBlendMode: "screen",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-
-          {/* Underwater caustic — broader, slower, on the submerged
-              portion. Fades in with descent. */}
-          {underwaterT > 0.1 && (
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 539,
-                width: IMG_NATIVE_W,
-                height: IMG_NATIVE_H - 539,
-                background: `
-                  radial-gradient(ellipse 40% 22% at ${100 - caustic1X}% ${20 + caustic1Y * 0.5}%, rgba(120,180,235,${0.22 * underwaterT}) 0%, transparent 65%),
-                  radial-gradient(ellipse 35% 18% at ${100 - caustic2X}% ${30 + caustic2Y * 0.4}%, rgba(90,150,210,${0.18 * underwaterT}) 0%, transparent 65%)
-                `,
-                mixBlendMode: "screen",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-        </div>
-      </ConditionalMotionBlur>
-
-      {/* Mid-depth bubbles between the iceberg and the foreground. */}
-      {underwaterT > 0.08 && (
-        <Particles
-          field={BUBBLES_MID}
-          frame={frame}
-          parallax={0.7 * scrollY}
-          colour={`rgba(195, 220, 245, ${0.34 * underwaterT})`}
-          ring
-        />
-      )}
-
-      {/* Specular sweep across the iceberg surface — climax marker on
-          tier 5 only. Starts 0.5s after the stamp so it carries the eye
-          into the Iceberg→Rigged transition rather than landing with
-          the suffix. The light passes, then we cut. */}
-      {isClimax && (
-        <Specular
-          startFrame={tierAnimStart(LAST) + 15}
-          duration={30}
-          angle={108}
-          intensity={1.25}
-          color="rgba(255, 92, 116, 0.95)"
-          bandWidth={0.26}
-          blendMode="screen"
-        />
-      )}
-
-      {/* Atmospheric vignette deepens as we descend. */}
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0) 30%, rgba(0,0,0,${vignetteAlpha.toFixed(3)}) 100%)`,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Past tier suffixes — fade out during the climax. */}
-      {TIERS.map((tier, i) =>
-        state.phase === "tier" && i < state.tier ? (
-          <PastSuffix
-            key={i}
-            tier={tier}
-            index={i}
-            scrollY={scrollY}
-            opacity={pastFade}
-          />
-        ) : null,
-      )}
-
-      {/* Active row. */}
       {activeTier >= 0 && (
         <ActiveRow
           state={state}
@@ -566,7 +351,6 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       )}
 
-      {/* Per-tier image bands. */}
       {TRADING_TIERS.map((tt, i) => (
         <TierImage
           key={i}
@@ -579,212 +363,10 @@ export const AntiCheatIceberg: React.FC = () => {
         />
       ))}
 
-      {/* Bioluminescent sparkle in the abyss — only when the iceberg has
-          retreated and the bottom of the frame is mostly dark. */}
-      {state.phase === "tier" && state.tier >= 4 && (
-        <SparkField
-          field={SPARKS}
-          frame={frame}
-          intensity={interpolate(state.tier - 4 + (state.sub === "anim" ? state.t : 1), [0, 2], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
-        />
-      )}
-
-      {/* Foreground bubble column — fastest, largest, most blurred. */}
-      {underwaterT > 0.05 && (
-        <Particles
-          field={BUBBLES_NEAR}
-          frame={frame}
-          parallax={1.4 * scrollY}
-          colour={`rgba(230, 240, 250, ${0.42 * underwaterT})`}
-          ring
-          blur={0.5}
-        />
-      )}
-
-      {/* The waterline crossing — single sweep, then a thin persistent
-          line that scrolls with the surface. */}
-      <Waterline frame={frame} scrollY={scrollY} />
-
-      {/* Climax wash — periphery darkens and a cool tint scrim wraps the
-          frame. Holds through T5 hold + outro. */}
-      {isClimax && (
-        <Wash
-          startFrame={tierAnimStart(LAST) - 4}
-          inFrames={14}
-          hold={FINAL_HOLD + 8}
-          outFrames={OUTRO}
-          cx="34%"
-          cy="50%"
-          holeSize="22%"
-          holeSoftness="68%"
-          vignette={0.55}
-          vignetteColor="rgba(4, 8, 18, 1)"
-          tint="rgba(80, 24, 48, 1)"
-          tintOpacity={0.18}
-          blendMode="multiply"
-        />
-      )}
-
-      {/* Source citation. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
         <SourceCitation url={TIERS[activeTier].source!} state={state} />
       )}
     </AbsoluteFill>
-  );
-};
-
-// ─── Conditional motion blur ──────────────────────────────────────────────────
-
-const ConditionalMotionBlur: React.FC<{
-  active: boolean;
-  shutter: number;
-  children: React.ReactNode;
-}> = ({ active, shutter, children }) => {
-  if (!active) return <>{children}</>;
-  return (
-    <CameraMotionBlur shutterAngle={Math.min(180, shutter)} samples={2}>
-      {children}
-    </CameraMotionBlur>
-  );
-};
-
-// ─── Particles ────────────────────────────────────────────────────────────────
-
-const Particles: React.FC<{
-  field: Bubble[];
-  frame: number;
-  parallax: number;
-  colour: string;
-  blur?: number;
-  ring?: boolean;
-}> = ({ field, frame, parallax, colour, blur = 0, ring = false }) => {
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {field.map((b, i) => {
-        const period = H + 200;
-        const raw = b.baseY - frame * b.speed + parallax;
-        const wrapped = ((raw % period) + period) % period - 100;
-        const wobble = Math.sin(frame / 26 + b.phase) * 7;
-        const x = b.x + wobble;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: x,
-              top: wrapped,
-              width: b.size,
-              height: b.size,
-              borderRadius: "50%",
-              background: ring ? "transparent" : colour,
-              border: ring ? `1px solid ${colour}` : "none",
-              boxShadow: ring
-                ? `inset 0 0 ${b.size}px ${colour}, 0 0 ${b.size * 1.5}px ${colour}`
-                : `0 0 ${b.size}px ${colour}`,
-              filter: blur ? `blur(${blur}px)` : undefined,
-            }}
-          />
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
-
-// ─── Sparkle field ────────────────────────────────────────────────────────────
-
-const SparkField: React.FC<{
-  field: Bubble[];
-  frame: number;
-  intensity: number;
-}> = ({ field, frame, intensity }) => {
-  if (intensity <= 0) return null;
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {field.map((s, i) => {
-        const phase = (frame / 18 + s.phase) % (Math.PI * 2);
-        const twinkle = Math.max(0, Math.sin(phase));
-        const opacity = twinkle * intensity * 0.95;
-        // Constrain to lower half of frame so sparkles read as deep-water.
-        const y = (H * 0.45) + s.baseY * 0.35;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: s.x,
-              top: y,
-              width: 3,
-              height: 3,
-              borderRadius: "50%",
-              background: "rgba(180, 220, 255, 1)",
-              boxShadow:
-                "0 0 8px rgba(180,220,255,0.95), 0 0 18px rgba(120,180,240,0.6)",
-              opacity,
-            }}
-          />
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
-
-// ─── Waterline ────────────────────────────────────────────────────────────────
-
-const Waterline: React.FC<{ frame: number; scrollY: number }> = ({
-  frame,
-  scrollY,
-}) => {
-  if (frame < WATERLINE_START) return null;
-
-  const sweepLocal = frame - WATERLINE_START;
-  const sweepT = Math.min(1, sweepLocal / WATERLINE_DUR);
-  const sweepWidth = EASE_OUT(sweepT) * W;
-  const sweepOpacity = sweepLocal < WATERLINE_DUR
-    ? 1
-    : Math.max(0, 1 - (sweepLocal - WATERLINE_DUR) / WATERLINE_FADE);
-
-  const surfaceY = 269 * FILL_SCALE + scrollY;
-  const lineOpacity =
-    Math.max(0, Math.min(1, (sweepLocal - WATERLINE_DUR) / WATERLINE_FADE)) * 0.62;
-
-  return (
-    <>
-      {sweepOpacity > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            top: PRIMARY_ACTIVE_Y - 4,
-            left: W / 2 - sweepWidth / 2,
-            width: sweepWidth,
-            height: 8,
-            background:
-              "linear-gradient(90deg, rgba(140,200,240,0) 0%, rgba(220,240,255,1) 50%, rgba(140,200,240,0) 100%)",
-            boxShadow:
-              "0 0 38px rgba(180,220,255,0.95), 0 0 90px rgba(120,180,240,0.55)",
-            opacity: sweepOpacity,
-            mixBlendMode: "screen",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-      {lineOpacity > 0 && surfaceY > -20 && surfaceY < H + 20 && (
-        <div
-          style={{
-            position: "absolute",
-            top: surfaceY,
-            left: 0,
-            width: W,
-            height: 2,
-            background:
-              "linear-gradient(90deg, rgba(140,200,240,0) 0%, rgba(180,220,255,0.85) 50%, rgba(140,200,240,0) 100%)",
-            boxShadow: "0 0 16px rgba(160,210,250,0.45)",
-            opacity: lineOpacity,
-            mixBlendMode: "screen",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-    </>
   );
 };
 
@@ -932,271 +514,42 @@ const TierImage: React.FC<{
 
 // ─── Active row ───────────────────────────────────────────────────────────────
 
+// ─── Tier card — Bars-style white card replacing the giant text ─────────────
+//
+// Same surface, eyebrow, big % language as AntiCheatStat's CARD_SURFACE.
+// One card per tier; the PnL on the card is the same value baked into the
+// trader-band stamp on the right.
+
+const CARD_W = 380;
+const CARD_H = 500;
+
 const ActiveRow: React.FC<{
   state: State;
   tier: number;
   activeFrameY: number;
   frame: number;
-}> = ({ state, tier, activeFrameY, frame }) => {
+}> = ({ state, tier, activeFrameY }) => {
   const t = TIERS[tier];
   const isAnim = state.phase === "tier" && state.sub === "anim";
 
-  let suffixSlide = 0;
-  let suffixOpacity = 1;
-  let suffixScale = 1;
+  let slide = 0;
+  let opacity = 1;
+  let scale = 1;
   if (isAnim) {
     const at = state.t;
-    suffixSlide = interpolate(at, [0, 1], [70, 0], { easing: EASE_OUT });
-    suffixOpacity = interpolate(at, [0.35, 0.85], [0, 1], {
+    slide = interpolate(at, [0, 1], [70, 0], { easing: EASE_OUT });
+    opacity = interpolate(at, [0.30, 0.85], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    suffixScale = interpolate(at, [0.55, 0.85, 1], [0.96, 1.08, 1], {
+    scale = interpolate(at, [0.55, 0.85, 1], [0.92, 1.05, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: EASE_DEFAULT,
     });
   }
 
-  // Climax suffix breathes — beat-pulses on local 164, 190, 216.
-  const isClimax = tier === LAST;
-  let climaxBreath = 0;
-  if (isClimax) {
-    const beats = [164, 190, 216];
-    for (const b of beats) {
-      const d = frame - b;
-      if (d >= -3 && d <= 18) {
-        const env = d <= 0 ? (d + 3) / 3 : 1 - d / 18;
-        if (env > climaxBreath) climaxBreath = env;
-      }
-    }
-  }
-
-  const sizes = suffixSizing(t.word, isClimax ? 1.12 : 1);
-  const suffixColor = t.accent ?? "#FFFFFF";
-
-  const HAS_ICON = !!t.icon;
-  const HAS_STAT = !!t.stat;
-  const HAS_QUOTE = !!t.pullQuote;
-  const HAS_CAPTION = !!t.caption;
-
-  let stackBelow = sizes.totalHeight / 2 + 14;
-  const statY = stackBelow;
-  if (HAS_STAT) stackBelow += 96;
-  const quoteY = stackBelow;
-  if (HAS_QUOTE) stackBelow += 56;
-  const captionY = stackBelow;
-
-  const stampFrame = tierAnimStart(LAST) + STAMP_OFFSET_FROM_ANIM;
-  const chromaticDelta = frame - stampFrame;
-  const chromaticOn = isClimax && chromaticDelta >= 0 && chromaticDelta < 3;
-  const chromaticIntensity = chromaticOn ? 1 - chromaticDelta / 3 : 0;
-
-  const suffixContent = (
-    <>
-      {t.word.map((line, idx) => (
-        <div
-          key={idx}
-          style={{
-            fontSize: sizes.perLine[idx],
-            fontWeight: 800,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {line}
-        </div>
-      ))}
-    </>
-  );
-
-  const climaxGlow = isClimax
-    ? `, 0 0 ${28 + climaxBreath * 80}px rgba(255,68,90,${0.55 + climaxBreath * 0.45}), 0 0 ${60 + climaxBreath * 120}px rgba(255,86,110,${0.35 + climaxBreath * 0.4})`
-    : "";
-
-  const suffixBase: React.CSSProperties = {
-    position: "absolute",
-    left: 0,
-    right: 360,
-    top: activeFrameY + suffixSlide,
-    transform: `translateY(-50%) scale(${(suffixScale * (1 + climaxBreath * 0.02)).toFixed(3)})`,
-    transformOrigin: "center center",
-    opacity: suffixOpacity,
-    textAlign: "center",
-    fontFamily: font,
-    color: suffixColor,
-    letterSpacing: "-0.04em",
-    lineHeight: 0.94,
-    textShadow: t.accent
-      ? `${HERO_SHADOW}, 0 0 48px ${t.accent}55${climaxGlow}`
-      : HERO_SHADOW,
-    pointerEvents: "none",
-    willChange: "transform, top, opacity",
-  };
-
-  return (
-    <>
-      {HAS_ICON && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(calc(-100% - ${sizes.totalHeight / 2 + 16}px))`,
-            opacity: suffixOpacity,
-            textAlign: "center",
-            fontSize: 72,
-            lineHeight: 1,
-            textShadow: HERO_SHADOW,
-            pointerEvents: "none",
-          }}
-        >
-          {t.icon}
-        </div>
-      )}
-
-      {chromaticIntensity > 0 && (
-        <>
-          <div
-            style={{
-              ...suffixBase,
-              transform: `translate(${(3 * chromaticIntensity).toFixed(2)}px, calc(-50%)) scale(${suffixScale.toFixed(3)})`,
-              color: "#FF2A2A",
-              mixBlendMode: "screen",
-              opacity: chromaticIntensity * 0.85,
-              textShadow: "none",
-            }}
-          >
-            {suffixContent}
-          </div>
-          <div
-            style={{
-              ...suffixBase,
-              transform: `translate(${(-3 * chromaticIntensity).toFixed(2)}px, calc(-50%)) scale(${suffixScale.toFixed(3)})`,
-              color: "#00E8FF",
-              mixBlendMode: "screen",
-              opacity: chromaticIntensity * 0.85,
-              textShadow: "none",
-            }}
-          >
-            {suffixContent}
-          </div>
-        </>
-      )}
-      <div style={suffixBase}>{suffixContent}</div>
-
-      {HAS_STAT && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${statY}px)`,
-            opacity: suffixOpacity,
-            textAlign: "center",
-            fontFamily: font,
-            lineHeight: 1,
-            pointerEvents: "none",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 68,
-              fontWeight: 700,
-              color: t.accent ?? "rgba(255,255,255,0.95)",
-              letterSpacing: "-0.03em",
-              textShadow: HERO_SHADOW,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {t.stat}
-          </div>
-          {t.statUnit && (
-            <div
-              style={{
-                marginTop: 6,
-                fontSize: 22,
-                fontWeight: 500,
-                color: "rgba(255,255,255,0.6)",
-                letterSpacing: "0.02em",
-                textTransform: "uppercase",
-                whiteSpace: "nowrap",
-                textShadow: HERO_SHADOW,
-              }}
-            >
-              {t.statUnit}
-            </div>
-          )}
-        </div>
-      )}
-
-      {HAS_QUOTE && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${quoteY}px)`,
-            opacity: suffixOpacity,
-            textAlign: "center",
-            fontFamily: font,
-            fontSize: 30,
-            fontStyle: "italic",
-            fontWeight: 400,
-            color: "rgba(255,255,255,0.78)",
-            letterSpacing: "-0.012em",
-            lineHeight: 1.25,
-            whiteSpace: "nowrap",
-            textShadow: HERO_SHADOW,
-            pointerEvents: "none",
-          }}
-        >
-          &ldquo;{t.pullQuote}&rdquo;
-        </div>
-      )}
-
-      {HAS_CAPTION && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: activeFrameY,
-            transform: `translateY(${captionY}px)`,
-            opacity: suffixOpacity,
-            textAlign: "center",
-            fontFamily: font,
-            fontSize: 26,
-            fontWeight: 500,
-            color: "rgba(255,255,255,0.7)",
-            letterSpacing: "-0.012em",
-            lineHeight: 1.25,
-            whiteSpace: "nowrap",
-            textShadow: HERO_SHADOW,
-            pointerEvents: "none",
-          }}
-        >
-          {t.caption}
-        </div>
-      )}
-    </>
-  );
-};
-
-// ─── Past suffix ──────────────────────────────────────────────────────────────
-
-const PastSuffix: React.FC<{
-  tier: Tier;
-  index: number;
-  scrollY: number;
-  opacity: number;
-}> = ({ tier, index, scrollY, opacity }) => {
-  const y = TIER_Y_FILL[index] + scrollY;
-  if (y < -260 || y > H + 200) return null;
-  if (opacity <= 0.02) return null;
-  const sizes = suffixSizing(tier.word, 0.7);
+  const tierLabel = t.word.join(" ");
 
   return (
     <div
@@ -1204,30 +557,99 @@ const PastSuffix: React.FC<{
         position: "absolute",
         left: 0,
         right: 360,
-        top: y,
-        transform: "translateY(-50%)",
-        textAlign: "center",
-        fontFamily: font,
-        color: `rgba(255,255,255,${0.58 * opacity})`,
-        letterSpacing: "-0.04em",
-        lineHeight: 0.94,
-        textShadow: HERO_SHADOW,
-        pointerEvents: "none",
+        top: activeFrameY + slide,
+        transform: `translateY(-50%) scale(${scale.toFixed(3)})`,
+        transformOrigin: "center center",
         opacity,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        pointerEvents: "none",
+        willChange: "transform, top, opacity",
       }}
     >
-      {tier.word.map((line, idx) => (
+      <div
+        style={{
+          width: CARD_W,
+          height: CARD_H,
+          borderRadius: 24,
+          background: colors.surface,
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,0.6) inset, 0 32px 64px rgba(8, 14, 28, 0.32), 0 10px 20px rgba(8, 14, 28, 0.18)",
+          border: `1px solid ${colors.rule}`,
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
         <div
-          key={idx}
           style={{
-            fontSize: sizes.perLine[idx],
-            fontWeight: 800,
-            whiteSpace: "nowrap",
+            position: "absolute",
+            top: 28,
+            left: 30,
+            fontFamily: monoFont,
+            fontSize: 17,
+            fontWeight: 500,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: colors.dim,
           }}
         >
-          {line}
+          tier {tier + 1} of {N}
         </div>
-      ))}
+
+        <div
+          style={{
+            position: "absolute",
+            top: 78,
+            left: 30,
+            right: 30,
+            fontFamily: font,
+            fontSize: 60,
+            fontWeight: 800,
+            letterSpacing: "-0.022em",
+            color: colors.fg,
+            lineHeight: 1.0,
+          }}
+        >
+          {tierLabel}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            bottom: 80,
+            fontFamily: font,
+            fontSize: 132,
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
+            color: colors.accent,
+            lineHeight: 0.92,
+            fontVariantNumeric: "tabular-nums",
+            textAlign: "left",
+          }}
+        >
+          {TIER_PNL[tier]}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            bottom: 30,
+            fontFamily: monoFont,
+            fontSize: 16,
+            fontWeight: 500,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: colors.dim,
+          }}
+        >
+          extracted by unfair trading
+        </div>
+      </div>
     </div>
   );
 };
@@ -1271,23 +693,6 @@ const SourceCitation: React.FC<{ url: string; state: State }> = ({
       {url}
     </div>
   );
-};
-
-// ─── Sizing helpers ───────────────────────────────────────────────────────────
-
-const lineSize = (line: string, mult: number): number => {
-  if (line.length <= 5) return Math.round(150 * mult);
-  if (line.length <= 8) return Math.round(130 * mult);
-  return Math.round(110 * mult);
-};
-
-const suffixSizing = (
-  lines: string[],
-  mult = 1,
-): { perLine: number[]; totalHeight: number } => {
-  const perLine = lines.map((l) => lineSize(l, mult));
-  const totalHeight = perLine.reduce((sum, s) => sum + s * 0.94, 0);
-  return { perLine, totalHeight };
 };
 
 void VIDEO_BEATS;
