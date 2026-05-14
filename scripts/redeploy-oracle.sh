@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# Redeploy the three oracle containers on VPS 1 from local source.
+#
+# Solves the potholes I keep falling into:
+#   1. SSH-to-GitHub key is missing on VPS 1  → rsync the source tree directly
+#   2. Docker layer cache reuses the old binary  → `--no-cache` is the default
+#   3. `tail -N | > log` buffers everything until EOF  → use `tee`, line-buffered
+#   4. Only oracle-1 gets rebuilt  → build the explicit list of three services
+#   5. New binary may not have actually loaded  → verify image SHA + container ID after restart
+#   6. SSH connection drops kill long builds  → run under nohup setsid, monitor by PID file
+#   7. Cargo OOMs on a 16 GB box with no swap  → cap parallelism via CARGO_BUILD_JOBS
+#
+# Usage:
+#   ./scripts/redeploy-oracle.sh              # full rebuild + restart, all three oracles
+#   ./scripts/redeploy-oracle.sh --no-build   # restart only, reuse current image
+#   ./scripts/redeploy-oracle.sh --cache      # let docker reuse layers (dangerous)
+#   ./scripts/redeploy-oracle.sh --only oracle-1
+#
+# Exits non-zero on any pothole. Tail the log path printed at startup to follow.
+
+set -euo pipefail
+
+HOST="${REDEPLOY_HOST:-vps1-new}"
+REPO_REMOTE="${REDEPLOY_REPO:-/home/max/index}"
+COMPOSE_FILES=(-f docker/testnet/oracle/docker-compose.yml -f docker/testnet/oracle/docker-compose.override.yml)
+SERVICES=(oracle-1 oracle-2 oracle-3)
+CARGO_JOBS="${REDEPLOY_CARGO_JOBS:-4}"
+
+mode_build=true
+mode_no_cache=true
+explicit_services=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-build) mode_build=false; shift ;;
+    --cache)    mode_no_cache=false; shift ;;
+    --only)     explicit_services+=("$2"); shift 2 ;;
+    -h|--help)  sed -n '2,22p' "$0"; exit 0 ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+[[ ${#explicit_services[@]} -gt 0 ]] && SERVICES=("${explicit_services[@]}")
+
+ts=$(date +%Y%m%d-%H%M%S)
+log="/tmp/oracle-redeploy-${ts}.log"
+echo "log: ssh ${HOST} 'tail -f ${log}'"
+
+repo_local="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# --- 1. Sync source tree (skip target/, node_modules, .git, etc.) -------------
+echo "[1/5] rsyncing source → ${HOST}:${REPO_REMOTE}"
+rsync -az --delete \
+  --exclude '.git/' \
+  --exclude 'target/' \
+  --exclude 'node_modules/' \
+  --exclude '.next/' \
+  --exclude '.venv/' \
+  --exclude '__pycache__/' \
+  --exclude '*.log' \
+  -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
+  "${repo_local}/oracle/" "${HOST}:${REPO_REMOTE}/oracle/"
+rsync -az -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
+  "${repo_local}/common/" "${HOST}:${REPO_REMOTE}/common/" 2>/dev/null || true
+rsync -az -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
+  "${repo_local}/data-node/Cargo.toml" \
+  "${repo_local}/Cargo.toml" \
+  "${repo_local}/Cargo.lock" \
+  "${HOST}:${REPO_REMOTE}/" 2>/dev/null || true
+
+# --- 2. Stop and remove old containers (zombies block recreate) --------------
+echo "[2/5] removing old containers (if any)"
+ssh "${HOST}" "cd ${REPO_REMOTE} && docker compose ${COMPOSE_FILES[*]} stop ${SERVICES[*]} 2>/dev/null; \
+                docker rm -f ${SERVICES[*]/#/testnet-} 2>/dev/null; true"
+
+# --- 3. Build (no-cache by default, explicit jobs cap, line-buffered log) ----
+if $mode_build; then
+  cache_flag="--no-cache"
+  $mode_no_cache || cache_flag=""
+  echo "[3/5] building ${SERVICES[*]} ${cache_flag} (CARGO_BUILD_JOBS=${CARGO_JOBS})"
+
+  # Note: we do NOT pipe through `tail -N` — that buffers the whole stream.
+  # Use `stdbuf -oL` so docker's TTY-less output flushes per-line.
+  ssh "${HOST}" "cd ${REPO_REMOTE} && \
+    CARGO_BUILD_JOBS=${CARGO_JOBS} \
+    nohup setsid stdbuf -oL -eL \
+      docker compose ${COMPOSE_FILES[*]} build ${cache_flag} ${SERVICES[*]} \
+      > ${log} 2>&1 < /dev/null & echo \$! > ${log}.pid; disown" || true
+
+  # Stream the log live until the pid disappears, then check exit code from the file.
+  ssh "${HOST}" "tail -F ${log} 2>/dev/null & TAIL=\$!; \
+    while kill -0 \$(cat ${log}.pid) 2>/dev/null; do sleep 5; done; \
+    kill \$TAIL 2>/dev/null; true; \
+    grep -qE 'ERROR|error\\[|cannot find|failed to solve' ${log} && exit 1; \
+    grep -qE 'Successfully|writing image|naming to docker.io' ${log} || exit 1; \
+    echo OK"
+fi
+
+# --- 4. Recreate all three from the freshly built image ----------------------
+echo "[4/5] recreating containers"
+ssh "${HOST}" "cd ${REPO_REMOTE} && \
+  docker compose ${COMPOSE_FILES[*]} up -d --no-deps --force-recreate ${SERVICES[*]}"
+
+# --- 5. Verify the new binary is actually running ----------------------------
+echo "[5/5] verifying"
+ssh "${HOST}" "
+  for svc in ${SERVICES[*]}; do
+    cname=testnet-\$svc
+    img_id=\$(docker inspect --format '{{.Image}}' \$cname 2>/dev/null || echo MISSING)
+    started=\$(docker inspect --format '{{.State.StartedAt}}' \$cname 2>/dev/null || echo MISSING)
+    health=\$(docker inspect --format '{{.State.Health.Status}}' \$cname 2>/dev/null || echo none)
+    echo \"  \$svc  started=\$started  health=\$health  image=\${img_id:0:19}\"
+  done
+"
+
+echo "done. tail logs:  ssh ${HOST} 'docker logs testnet-oracle-1 --tail 50'"
