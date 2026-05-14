@@ -45,7 +45,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${source.name} — Vision Data Source`,
       description,
-      // OG image generated dynamically by opengraph-image.tsx in this route segment
     },
     twitter: {
       card: 'summary_large_image',
