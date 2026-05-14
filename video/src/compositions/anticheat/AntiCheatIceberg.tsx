@@ -43,10 +43,6 @@ const TIER_Y_NATIVE = [
 ];
 const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * FILL_SCALE);
 
-// Pink guide lines baked into the source webp at these native y values.
-// Painted over at runtime so the colour grade doesn't bleed red.
-const GUIDE_LINES_NATIVE = [269, 539, 857, 1141, 1430];
-
 const PRIMARY_ACTIVE_Y = TIER_Y_FILL[0];
 const FRAME_CENTRE_Y = H / 2;
 
@@ -174,33 +170,10 @@ const computeIcebergFilter = (state: State): string => {
   return `saturate(${sat.toFixed(3)}) brightness(${bright.toFixed(3)}) contrast(${contrast.toFixed(3)})`;
 };
 
-// Loss tiers — dollars extracted from retail at each unit of time.
-// Anchor: HFT industry revenue $5B/year across 26 firms (Brogaard et al. 2014,
-// JFE; cross-checked against insider/ESTIMATES.md in this repo). The yearly
-// figure scales down by seconds/year to get each tier:
-//   T1 sec   = $5B / 31,536,000  ≈ $159
-//   T2 min   = T1 × 60           ≈ $9,513
-//   T3 hour  = T2 × 60           ≈ $570,776
-//   T4 day   = T3 × 24           ≈ $13,698,630
-//   T5 year  = $5,000,000,000
-const LOSS_MILESTONES = [0, 159, 9_513, 570_776, 13_698_630, 5_000_000_000] as const;
-const LOSS_UNIT_LABELS = ["", "per second", "per minute", "per hour", "per day", "per year"] as const;
-
-const interpLoss = (state: State): number => {
-  if (state.phase === "zoom") return LOSS_MILESTONES[0];
-  if (state.sub === "hold") return LOSS_MILESTONES[state.tier];
-  if (state.tier === 0) return LOSS_MILESTONES[0];
-  const a = LOSS_MILESTONES[state.tier - 1];
-  const b = LOSS_MILESTONES[state.tier];
-  return a + (b - a) * EASE_OUT(state.t);
-};
-
-const formatLoss = (n: number): string => {
-  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}B`;
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1_000) return `$${Math.round(n).toLocaleString("en-US")}`;
-  return `$${Math.round(n).toLocaleString("en-US")}`;
-};
+// Per-tier PnL stamp. Escalates roughly with the dollars-extracted scale
+// established in the original LossCounter — strategy is a paper-cut,
+// insider traders is a fatal wound.
+const TIER_PNL = ["−1.0%", "−2.8%", "−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
 
 type Bubble = { x: number; baseY: number; size: number; speed: number; phase: number };
 
@@ -239,24 +212,6 @@ export const AntiCheatIceberg: React.FC = () => {
   const activeTier = state.phase === "tier" ? state.tier : -1;
   const activeFrameY =
     activeTier >= 0 ? TIER_Y_FILL[activeTier] + scrollY * 1 : PRIMARY_ACTIVE_Y;
-
-  const prefixPulse =
-    state.phase === "tier" && state.sub === "anim"
-      ? Math.sin(state.t * Math.PI) * 0.04
-      : 0;
-
-  let prefixOpacity = 0;
-  if (state.phase === "tier") {
-    if (state.tier === 0 && state.sub === "anim") {
-      prefixOpacity = interpolate(state.t, [0.25, 0.85], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-        easing: EASE_OUT,
-      });
-    } else {
-      prefixOpacity = 1;
-    }
-  }
 
   const introOpacity = interpolate(frame, [0, ZOOM_OUT * 0.3], [0, 1], {
     easing: EASE_OUT,
@@ -302,8 +257,6 @@ export const AntiCheatIceberg: React.FC = () => {
 
   // Climax housekeeping.
   const isClimax = state.phase === "tier" && state.tier === LAST;
-  const t5HoldT =
-    isClimax && state.sub === "hold" ? state.t : isClimax ? 0 : 0;
 
   // Past suffixes fade out during the climax — the field has earned the
   // right to be empty by the time "insider traders" lands.
@@ -392,28 +345,9 @@ export const AntiCheatIceberg: React.FC = () => {
           }}
         >
           <Img
-            src={staticFile("iceberg-tiers.webp")}
+            src={staticFile("iceberg-tiers-clean.webp")}
             style={{ width: IMG_NATIVE_W, height: IMG_NATIVE_H, display: "block" }}
           />
-
-          {/* Mask the pink guide lines baked into the source. Opaque
-              dark blue strips with feathered edges — multiply blend let
-              the pink leak through, this doesn't. */}
-          {GUIDE_LINES_NATIVE.map((y) => (
-            <div
-              key={y}
-              style={{
-                position: "absolute",
-                left: -IMG_NATIVE_W * 0.06,
-                top: y - 10,
-                width: IMG_NATIVE_W * 1.12,
-                height: 20,
-                background:
-                  "linear-gradient(180deg, rgba(10,22,42,0) 0%, rgba(10,22,42,1) 35%, rgba(10,22,42,1) 65%, rgba(10,22,42,0) 100%)",
-                pointerEvents: "none",
-              }}
-            />
-          ))}
 
           {/* Caustic light shimmer — two drifting radials. Only above the
               waterline (native y < 539, the upper iceberg). */}
@@ -511,8 +445,6 @@ export const AntiCheatIceberg: React.FC = () => {
           state={state}
           tier={activeTier}
           activeFrameY={activeFrameY}
-          prefixOpacity={prefixOpacity}
-          prefixPulse={prefixPulse}
           frame={frame}
         />
       )}
@@ -575,9 +507,6 @@ export const AntiCheatIceberg: React.FC = () => {
           blendMode="multiply"
         />
       )}
-
-      {/* Loss counter — bigger and lower during T5 climax. */}
-      <LossCounter state={state} frame={frame} isClimax={isClimax} climaxT={t5HoldT} />
 
       {/* Source citation. */}
       {activeTier >= 0 && TIERS[activeTier].source && (
@@ -854,6 +783,32 @@ const TierImage: React.FC<{
       >
         {tier.label}
       </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 14,
+          left: 14,
+          right: 14,
+          padding: "10px 14px 11px",
+          background: "rgba(46, 6, 14, 0.86)",
+          border: "1.5px solid rgba(255, 86, 110, 0.85)",
+          borderRadius: 8,
+          fontFamily: monoFont,
+          fontSize: 32,
+          fontWeight: 700,
+          letterSpacing: "-0.015em",
+          color: isActive ? "rgba(255, 96, 110, 1)" : "rgba(255, 96, 110, 0.55)",
+          textAlign: "center",
+          lineHeight: 1,
+          textShadow: "0 2px 8px rgba(0,0,0,0.95)",
+          boxShadow: isActive
+            ? "0 6px 22px rgba(0,0,0,0.7), 0 0 26px rgba(255,56,80,0.5)"
+            : "0 2px 10px rgba(0,0,0,0.55)",
+          pointerEvents: "none",
+        }}
+      >
+        {TIER_PNL[index]}
+      </div>
     </div>
   );
 };
@@ -864,10 +819,8 @@ const ActiveRow: React.FC<{
   state: State;
   tier: number;
   activeFrameY: number;
-  prefixOpacity: number;
-  prefixPulse: number;
   frame: number;
-}> = ({ state, tier, activeFrameY, prefixOpacity, prefixPulse, frame }) => {
+}> = ({ state, tier, activeFrameY, frame }) => {
   const t = TIERS[tier];
   const isAnim = state.phase === "tier" && state.sub === "anim";
 
@@ -965,33 +918,6 @@ const ActiveRow: React.FC<{
 
   return (
     <>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 360,
-          top: activeFrameY,
-          transform: `translateY(calc(-100% - ${
-            sizes.totalHeight / 2 + (HAS_ICON ? 84 : 12)
-          }px)) scale(${(1 + prefixPulse).toFixed(3)})`,
-          transformOrigin: "center bottom",
-          opacity: prefixOpacity,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 38,
-          fontWeight: 500,
-          color: "rgba(255,255,255,0.82)",
-          letterSpacing: "-0.018em",
-          lineHeight: 1,
-          whiteSpace: "nowrap",
-          textShadow: HERO_SHADOW,
-          pointerEvents: "none",
-          willChange: "transform, top, opacity",
-        }}
-      >
-        I lost because of
-      </div>
-
       {HAS_ICON && (
         <div
           style={{
@@ -1185,111 +1111,6 @@ const PastSuffix: React.FC<{
           {line}
         </div>
       ))}
-    </div>
-  );
-};
-
-// ─── Loss counter ─────────────────────────────────────────────────────────────
-//
-// Replaces the old DepthGauge. Same animation shape (interpolated between
-// tier milestones), but the number is dollars extracted from retail rather
-// than metres. Anchor: HFT industry $5B/year across 26 firms — Brogaard et
-// al. 2014, JFE. See insider/ESTIMATES.md.
-
-const LossCounter: React.FC<{
-  state: State;
-  frame: number;
-  isClimax: boolean;
-  climaxT: number;
-}> = ({ state, frame, isClimax, climaxT }) => {
-  if (state.phase !== "tier") return null;
-  const loss = interpLoss(state);
-  const unit = LOSS_UNIT_LABELS[state.tier];
-  const ticking =
-    state.phase === "tier" && state.sub === "anim";
-  const lastStamp = TIER_STAMP_LOCAL[state.tier] ?? 0;
-  const pingDelta = frame - lastStamp;
-  const pingT = pingDelta >= 0 && pingDelta < 18 ? pingDelta / 18 : -1;
-
-  // Climax: move to centre-bottom in the abyss and grow.
-  const scale = isClimax
-    ? interpolate(climaxT, [0, 0.3], [1, 1.45], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      })
-    : 1;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        right: isClimax ? "auto" : 388,
-        left: isClimax ? "50%" : "auto",
-        bottom: 56,
-        transform: isClimax
-          ? `translateX(-50%) scale(${scale.toFixed(3)})`
-          : `scale(${scale.toFixed(3)})`,
-        transformOrigin: isClimax ? "center bottom" : "right bottom",
-        fontFamily: monoFont,
-        color: "rgba(220,235,250,0.95)",
-        textShadow: "0 1px 6px rgba(0,0,0,0.95), 0 0 18px rgba(120,180,240,0.35)",
-        pointerEvents: "none",
-        zIndex: 12,
-        textAlign: isClimax ? "center" : "left",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          letterSpacing: "0.24em",
-          textTransform: "uppercase",
-          color: "rgba(180,210,240,0.78)",
-          marginBottom: 6,
-        }}
-      >
-        taken from retail
-      </div>
-      <div
-        style={{
-          fontSize: 56,
-          fontWeight: 600,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          color: ticking ? "rgba(255,138,138,1)" : "rgba(255,196,196,0.95)",
-        }}
-      >
-        {formatLoss(loss)}
-      </div>
-      {unit ? (
-        <div
-          style={{
-            marginTop: 6,
-            fontSize: 14,
-            letterSpacing: "0.24em",
-            textTransform: "uppercase",
-            color: "rgba(255,170,170,0.82)",
-          }}
-        >
-          {unit}
-        </div>
-      ) : null}
-      {pingT >= 0 && (
-        <div
-          style={{
-            marginTop: 10,
-            height: 2,
-            width: 200,
-            marginLeft: isClimax ? "auto" : 0,
-            marginRight: isClimax ? "auto" : 0,
-            background: `linear-gradient(90deg,
-              rgba(180,220,255,${0.9 * (1 - pingT)}) 0%,
-              rgba(180,220,255,${0.9 * (1 - pingT)}) ${pingT * 100}%,
-              rgba(180,220,255,0.06) ${pingT * 100}%,
-              rgba(180,220,255,0.06) 100%)`,
-            boxShadow: `0 0 ${14 * (1 - pingT)}px rgba(180,220,255,${0.65 * (1 - pingT)})`,
-          }}
-        />
-      )}
     </div>
   );
 };
