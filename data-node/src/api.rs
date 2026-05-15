@@ -691,14 +691,41 @@ pub fn router(state: Arc<AppState>) -> Router {
 
 // ---- /health ----
 
+// Real-write probe threshold. BatchWriter flushes on a 30s cadence; legitimate
+// stalls of a few minutes happen during sweeps. 600s (10 min) is well past
+// every healthy interval and well before the 16h horror in 20260414.
+const DATA_NODE_WRITE_STALE_SECS: i64 = 600;
+
 #[derive(Serialize)]
 struct HealthResponse {
     status: String,
     db_connected: bool,
     writer_alive: bool,
     last_fetch_at: Option<DateTime<Utc>>,
+    last_write_at: Option<DateTime<Utc>>,
     symbols_tracked: usize,
     chain_event_lag_total: u64,
+}
+
+/// Probe the table BatchWriter actually writes to. Returning `None` means
+/// either the table is empty or the query itself failed/timed out — both
+/// are signals the writer is not landing rows, so the caller should treat
+/// `None` as stale rather than healthy.
+async fn probe_last_write_at(pool: &PgPool) -> Option<DateTime<Utc>> {
+    let q = sqlx::query_scalar::<_, Option<DateTime<Utc>>>(
+        "SELECT MAX(fetched_at) FROM market_prices_latest",
+    );
+    match tokio::time::timeout(Duration::from_secs(2), q.fetch_one(pool)).await {
+        Ok(Ok(val)) => val,
+        Ok(Err(e)) => {
+            tracing::warn!("health: last_write_at probe query failed: {e}");
+            None
+        }
+        Err(_) => {
+            tracing::warn!("health: last_write_at probe timed out after 2s");
+            None
+        }
+    }
 }
 
 async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, Json<HealthResponse>) {
@@ -707,10 +734,19 @@ async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, 
     let last_fetch_at = *state.collector.last_fetch_at.read().await;
     let symbols_tracked = *state.collector.symbols_tracked.read().await;
     let chain_event_lag_total = state.chain_event_lag_total.load(std::sync::atomic::Ordering::Relaxed);
+    let last_write_at = if db_connected {
+        probe_last_write_at(&state.pool).await
+    } else {
+        None
+    };
+    let write_age_secs = last_write_at.map(|ts| (Utc::now() - ts).num_seconds());
+    let writes_landing = write_age_secs
+        .map(|age| age <= DATA_NODE_WRITE_STALE_SECS)
+        .unwrap_or(false);
 
     let status = if !writer_alive {
         "critical"
-    } else if !db_connected {
+    } else if !db_connected || !writes_landing {
         "degraded"
     } else {
         "healthy"
@@ -727,6 +763,7 @@ async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, 
         db_connected,
         writer_alive,
         last_fetch_at,
+        last_write_at,
         symbols_tracked,
         chain_event_lag_total,
     }))
@@ -761,6 +798,11 @@ async fn health_ready(
         .writer_alive
         .load(std::sync::atomic::Ordering::Relaxed);
     let last_fetch_at = *state.collector.last_fetch_at.read().await;
+    let last_write_at = if db_connected {
+        probe_last_write_at(&state.pool).await
+    } else {
+        None
+    };
 
     let mut reasons: Vec<String> = Vec::new();
     if !db_connected {
@@ -785,6 +827,24 @@ async fn health_ready(
             -1
         }
     };
+    let write_age_secs = match last_write_at {
+        Some(ts) => {
+            let age = (Utc::now() - ts).num_seconds();
+            if age > DATA_NODE_WRITE_STALE_SECS {
+                reasons.push(format!(
+                    "last write to market_prices_latest {}s ago (> {}s)",
+                    age, DATA_NODE_WRITE_STALE_SECS
+                ));
+            }
+            age
+        }
+        None => {
+            if db_connected {
+                reasons.push("no rows in market_prices_latest (or probe failed)".to_string());
+            }
+            -1
+        }
+    };
 
     let body = serde_json::json!({
         "status": if reasons.is_empty() { "ready" } else { "not_ready" },
@@ -792,6 +852,8 @@ async fn health_ready(
         "db_connected": db_connected,
         "writer_alive": writer_alive,
         "last_fetch_age_secs": stale_secs,
+        "last_write_at": last_write_at,
+        "last_write_age_secs": write_age_secs,
     });
     let code = if reasons.is_empty() {
         axum::http::StatusCode::OK
