@@ -126,16 +126,34 @@ for (const sg of SCAPEGOATS) {
   prefetch(staticFile(sg.imageSrc));
 }
 
+// Marquee bands above and below each card — Apple "watched" pattern.
+// Verb per suspect, repeating across a strip that scrolls horizontally.
+// Direction is per-index by user spec: card 1 right, 2 left, 3 left,
+// 4 right. Top and bottom bands share direction per card.
+const SG_MARQUEE_TEXTS: readonly string[] = [
+  "liquidated",
+  "front-run",
+  "spoofed",
+  "leaked",
+];
+const SG_MARQUEE_DIRECTIONS: readonly (1 | -1)[] = [1, -1, -1, 1];
+const SG_BAND_H = 32;
+const SG_BAND_GAP = 14;
+const SG_MARQUEE_SPEED = 1.6; // px per frame
+
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
 // card vocabulary so the visual rhyme holds.
 const SG_CARD_W = 340;
 const SG_CARD_H = 460;
 const SG_CARD_GAP = 60;
+const SG_COL_H = SG_CARD_H + 2 * (SG_BAND_H + SG_BAND_GAP);
 const SG_GRID_W = SCAPEGOATS_COUNT * SG_CARD_W +
   (SCAPEGOATS_COUNT - 1) * SG_CARD_GAP;
 const SG_GRID_LEFT = (W - SG_GRID_W) / 2;
-const SG_GRID_TOP = 360;
+// Vertical anchor shifts up to keep the visible card body roughly where
+// the old grid sat (cards centred near y≈590) while the bands flank it.
+const SG_GRID_TOP = 316;
 
 const expoOutEase = (t: number): number =>
   t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
@@ -153,13 +171,14 @@ const ScapegoatLineup: React.FC = () => {
           left: SG_GRID_LEFT,
           top: SG_GRID_TOP,
           width: SG_GRID_W,
-          height: SG_CARD_H,
+          height: SG_COL_H,
           display: "flex",
           gap: SG_CARD_GAP,
+          alignItems: "center",
         }}
       >
         {SCAPEGOATS.map((s, i) => (
-          <ScapegoatCard
+          <ScapegoatColumn
             key={s.label.join("-")}
             scapegoat={s}
             index={i}
@@ -210,54 +229,153 @@ const ScapegoatHeadline: React.FC<{ frame: number }> = ({ frame }) => {
 
 // One piece. Full-bleed Girardian image fills the card; a dark
 // gradient veil rises from the bottom and the typography sits inside
-// the same surface. Each card behaves like a typed character — it
-// scales out from a vertical line in turn, all four hold the row
-// together, then they wipe back to lines in the same staggered
-// direction. Same wipe vocabulary as the EmberTypewriter flip below.
+// the same surface. Top and bottom marquee bands carry the crime in
+// verb form, scrolling in a direction picked per card (1→right, 2→left,
+// 3→left, 4→right). The column — bands + body — fades in together
+// with a soft scale + drift + blur. No scaleX wipe; the motion now
+// settles like a wave instead of snapping like a typewriter.
 
-const ScapegoatCard: React.FC<{
+// Smooth in/out for the whole column: scale 0.92→1, translateY 22→0,
+// opacity 0→1, blur 8→0. Easing tuned so the card glides in and pulls
+// out without the scaleX squeeze that used to look like a glitch.
+type ColumnAnim = {
+  opacity: number;
+  scale: number;
+  translateY: number;
+  blur: number;
+};
+
+const computeColumnAnim = (
+  frame: number,
+  enterStart: number,
+  exitStart: number,
+): ColumnAnim | null => {
+  if (frame < enterStart) return null;
+  if (frame < enterStart + SG_CARD_ENTER) {
+    const t = (frame - enterStart) / SG_CARD_ENTER;
+    const eased = expoOutEase(t);
+    return {
+      opacity: Math.min(1, t * 1.6),
+      scale: 0.92 + 0.08 * eased,
+      translateY: (1 - eased) * 22,
+      blur: (1 - eased) * 8,
+    };
+  }
+  if (frame < exitStart) {
+    return { opacity: 1, scale: 1, translateY: 0, blur: 0 };
+  }
+  if (frame < exitStart + SG_CARD_EXIT) {
+    const t = (frame - exitStart) / SG_CARD_EXIT;
+    // smootherStep — symmetric ease-in-out, no jolt at start or end
+    const eased = t * t * t * (t * (t * 6 - 15) + 10);
+    return {
+      opacity: 1 - eased,
+      scale: 1 - 0.04 * eased,
+      translateY: -eased * 14,
+      blur: eased * 6,
+    };
+  }
+  return null;
+};
+
+const ScapegoatColumn: React.FC<{
   scapegoat: Scapegoat;
   index: number;
   frame: number;
 }> = ({ scapegoat, index, frame }) => {
   const enterStart = SG_FIRST_CARD_AT + index * SG_CARD_STAGGER;
   const exitStart = SG_EXIT_AT + index * SG_EXIT_STAGGER;
+  const anim = computeColumnAnim(frame, enterStart, exitStart);
+  if (!anim || anim.opacity <= 0.001) return null;
 
-  // Enter: scaleX 0 → 1 over SG_CARD_ENTER frames.
-  // Hold:  scaleX 1, fully visible.
-  // Exit:  scaleX 1 → 0 over SG_CARD_EXIT frames, with a slight lag
-  //        between cards so the lineup wipes out the same way it
-  //        wiped in — left to right, like text being deleted.
-  if (frame < enterStart) return null;
-
-  let scaleX: number;
-  let opacity: number;
-  let enterBlur = 0;
-  if (frame < enterStart + SG_CARD_ENTER) {
-    const t = (frame - enterStart) / SG_CARD_ENTER;
-    const eased = expoOutEase(t);
-    scaleX = eased;
-    opacity = Math.min(1, t * 1.4);
-    enterBlur = (1 - eased) * 6;
-  } else if (frame < exitStart) {
-    scaleX = 1;
-    opacity = 1;
-  } else if (frame < exitStart + SG_CARD_EXIT) {
-    const t = (frame - exitStart) / SG_CARD_EXIT;
-    const eased = 1 - Math.pow(1 - t, 3);
-    scaleX = 1 - eased;
-    opacity = 1 - Math.max(0, t - 0.4) * 1.4;
-  } else {
-    return null;
-  }
-  if (scaleX <= 0.001) return null;
-
-  const bookingNumber = `#${String(index + 1).padStart(2, "0")}`;
+  const marqueeText = SG_MARQUEE_TEXTS[index];
+  const marqueeDir = SG_MARQUEE_DIRECTIONS[index];
 
   return (
     <div
       style={{
         flex: "0 0 auto",
+        width: SG_CARD_W,
+        height: SG_COL_H,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: SG_BAND_GAP,
+        opacity: anim.opacity,
+        transform: `translateY(${anim.translateY.toFixed(2)}px) scale(${anim.scale.toFixed(3)})`,
+        transformOrigin: "center center",
+        filter: anim.blur > 0.05 ? `blur(${anim.blur.toFixed(2)}px)` : undefined,
+        willChange: "transform, opacity, filter",
+      }}
+    >
+      <ScapegoatMarquee
+        text={marqueeText}
+        direction={marqueeDir}
+        frame={frame}
+      />
+      <ScapegoatCardBody scapegoat={scapegoat} index={index} />
+      <ScapegoatMarquee
+        text={marqueeText}
+        direction={marqueeDir}
+        frame={frame}
+      />
+    </div>
+  );
+};
+
+const ScapegoatMarquee: React.FC<{
+  text: string;
+  direction: 1 | -1;
+  frame: number;
+}> = ({ text, direction, frame }) => {
+  // Long strip of repeated text, centred and translated per frame.
+  // Strip is wide enough that the scroll never exposes either end
+  // during the card's lifetime, so we don't need pixel-perfect
+  // tile-width seam logic — the visual effect is continuous drift.
+  const tile = `${text}   `;
+  const repeated = Array.from({ length: 18 }, () => tile).join("");
+  const tx = direction * frame * SG_MARQUEE_SPEED;
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: SG_CARD_W,
+        height: SG_BAND_H,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: `translate(-50%, -50%) translateX(${tx.toFixed(2)}px)`,
+          whiteSpace: "nowrap",
+          fontFamily: font,
+          fontSize: 28,
+          fontWeight: 700,
+          letterSpacing: "-0.025em",
+          color: "rgba(8, 14, 28, 0.42)",
+          lineHeight: 1,
+          willChange: "transform",
+        }}
+      >
+        {repeated}
+      </div>
+    </div>
+  );
+};
+
+const ScapegoatCardBody: React.FC<{
+  scapegoat: Scapegoat;
+  index: number;
+}> = ({ scapegoat, index }) => {
+  const bookingNumber = `#${String(index + 1).padStart(2, "0")}`;
+
+  return (
+    <div
+      style={{
         width: SG_CARD_W,
         height: SG_CARD_H,
         borderRadius: 18,
@@ -266,11 +384,6 @@ const ScapegoatCard: React.FC<{
           "0 1px 0 rgba(255,255,255,0.06) inset, 0 32px 64px rgba(8, 14, 28, 0.30), 0 10px 20px rgba(8, 14, 28, 0.18)",
         border: "1px solid rgba(8, 14, 28, 0.55)",
         position: "relative",
-        opacity,
-        transform: `scaleX(${scaleX.toFixed(3)})`,
-        transformOrigin: "center center",
-        filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : undefined,
-        willChange: "transform, opacity, filter",
         overflow: "hidden",
       }}
     >
