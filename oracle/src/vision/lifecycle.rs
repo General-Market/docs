@@ -779,14 +779,16 @@ impl BatchLifecycleManager {
                     format!("batch {} not in scheduler or lifecycle table", batch_id)
                 })?;
 
+                // source_id column in vision_batch_lifecycle is the source NAME (e.g.
+                // "sports", "weather_alerts"). The on-chain source_id is keccak256(name).
+                let source_id_hash = H256::from(keccak256(sid_hex.as_bytes()));
+
                 let strip = |s: &str| -> String { s.trim_start_matches("0x").to_string() };
-                let sid_bytes = hex::decode(strip(&sid_hex))
-                    .map_err(|e| format!("decode source_id hex: {}", e))?;
                 let cfg_bytes = hex::decode(strip(&cfg_hex))
                     .map_err(|e| format!("decode config_hash hex: {}", e))?;
-                if sid_bytes.len() != 32 || cfg_bytes.len() != 32 {
+                if cfg_bytes.len() != 32 {
                     return Err(format!(
-                        "lifecycle row for batch {} has malformed source_id/config_hash",
+                        "lifecycle row for batch {} has malformed config_hash",
                         batch_id
                     )
                     .into());
@@ -794,7 +796,7 @@ impl BatchLifecycleManager {
                 let hydrated = super::types::Batch {
                     id: batch_id,
                     creator: Address::zero(),
-                    source_id: H256::from_slice(&sid_bytes),
+                    source_id: source_id_hash,
                     config_hash: H256::from_slice(&cfg_bytes),
                     tick_duration: tick_secs as u64,
                     lock_offset: 0,
