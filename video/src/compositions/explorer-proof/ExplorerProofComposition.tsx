@@ -1,3 +1,14 @@
+// ExplorerProof — landing video that mirrors HoudiniSwap's format. A
+// flat CSS phone in the middle plays a portrait screen recording of
+// /explorer; a CSS-3D coin field drifts behind it; left/right side
+// texts read GENERALMARKET and GENERALMARKET.IO; nine timed beats walk
+// the camera through zoom/dezoom/pan moves; an end card crossfades in
+// over the final two seconds.
+//
+// Drop the screen recording at video/public/broll/explorer-broll.mp4
+// and the studio picks it up. Until then the studio falls back to
+// glacier-drone.mp4 so the choreography is previewable.
+
 import React from "react";
 import {
   AbsoluteFill,
@@ -6,8 +17,8 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { DeviceBroll } from "../../lib/DeviceBroll";
 import { CoinsBackground } from "./CoinsBackground";
+import { CssPhone } from "./CssPhone";
 import { SideTexts } from "./SideTexts";
 import { EndCard } from "./EndCard";
 
@@ -15,15 +26,12 @@ export type ExplorerProofProps = {
   brollPath: string;
 };
 
-// Drop the screen recording of /explorer at:
-//   video/public/broll/explorer-broll.mp4
-// Until then the studio falls back to an existing broll so the camera
-// moves and 3D coins remain previewable.
 const DEFAULT_BROLL_PATH = "broll/explorer-broll.mp4";
 const FALLBACK_BROLL_PATH = "broll/glacier-drone.mp4";
 
-const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
+const BG_COLOR = "#E0D8EC";
 
+const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
 const EASE = Easing.bezier(0.4, 0, 0.6, 1);
 
 const driveProp = (frame: number, values: number[]) =>
@@ -35,43 +43,51 @@ const driveProp = (frame: number, values: number[]) =>
 
 export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   const frame = useCurrentFrame();
-  const resolvedBroll = staticFile(brollPath);
+  const brollSrc = staticFile(brollPath);
 
-  // Camera zoom across the 9 beats.
-  const zoom = driveProp(frame, [
+  // ── Camera beats (matched to the 9 reference frames) ─────────────────
+  //   1  0..300    dezoom wide
+  //   2  300..540  zoom in on swap form
+  //   3  540..780  phone up (tilt forward)
+  //   4  780..1020 phone down (tilt back)
+  //   5 1020..1260 dezoom
+  //   6 1260..1500 dezoom + slight yaw right
+  //   7 1500..1740 zoom close
+  //   8 1740..1980 dezoom
+  //   9 1980..2100 zoom into end card
+
+  // Phone scale stands in for the "camera zoom" — easier to reason about
+  // in CSS than a real perspective camera.
+  const phoneScale = driveProp(frame, [
     0.85, 1.15, 1.25, 1.25, 0.9, 0.9, 1.35, 0.85, 1.1, 1.1,
   ]);
 
-  // Phone vertical position — up on beat 3, down on beat 4.
-  const phoneY = driveProp(frame, [
-    2.5, 2.5, 2.8, 2.2, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5,
+  // Phone vertical translate — beat 3 lifts it (shows top of screen),
+  // beat 4 drops it (shows bottom). Pixels, not world units.
+  const phoneTranslateY = driveProp(frame, [
+    0, 0, -80, 80, 0, 0, 0, 0, 0, 0,
   ]);
 
-  // Phone tilt on X (forward/back).
-  const phoneRotX = driveProp(frame, [
-    0, 0, -0.12, 0.12, 0, 0, 0, 0, 0, 0,
+  // Subtle tilt — sells the up/down beats as a head-tilt rather than a
+  // pure pan. Degrees.
+  const phoneRotateX = driveProp(frame, [
+    0, 0, -6, 6, 0, 0, 0, 0, 0, 0,
   ]);
 
-  // Phone yaw on Y — slight right turn on beat 6.
-  const phoneRotY = driveProp(frame, [
-    0, 0, 0, 0, 0, 0.18, 0, 0, 0, 0,
-  ]);
-
-  // Phone scale — pushes slightly during close-ups.
-  const phoneScale = driveProp(frame, [
-    1.0, 1.05, 1.05, 1.05, 1.0, 1.0, 1.05, 1.0, 1.0, 1.0,
+  // Yaw — only the second dezoom beat has any.
+  const phoneRotateY = driveProp(frame, [
+    0, 0, 0, 0, 0, 8, 0, 0, 0, 0,
   ]);
 
   // Coin field — recedes when we zoom in, blooms when we pull back.
   const coinsForward = driveProp(frame, [
-    0.9, 0.3, 0.2, 0.2, 0.8, 0.85, 0.15, 0.95, 0.3, 0.3,
+    0.95, 0.3, 0.2, 0.2, 0.85, 0.9, 0.15, 1.0, 0.4, 0.4,
   ]);
-
   const coinsOpacity = driveProp(frame, [
     1.0, 0.7, 0.6, 0.6, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0,
   ]);
 
-  // Side texts dim during close-ups.
+  // Side texts dim during close-ups and the final beat.
   const sideTextsVis = driveProp(frame, [
     1.0, 0.8, 0.7, 0.7, 1.0, 1.0, 0.6, 1.0, 0.5, 0.5,
   ]);
@@ -84,25 +100,19 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   });
 
   return (
-    <AbsoluteFill style={{ background: "#E0D8EC" }}>
-      <DeviceBroll
-        device="phone"
-        broll={resolvedBroll}
-        brollAspect={9 / 19.5}
-        position={[-3, phoneY, 0]}
-        rotation={[phoneRotX, phoneRotY, 0]}
-        scale={phoneScale}
-        camera={{ zoom }}
+    <AbsoluteFill style={{ background: BG_COLOR }}>
+      <CoinsBackground
+        forwardProgress={coinsForward}
+        opacity={coinsOpacity}
         width={1920}
         height={1080}
-        background={
-          <CoinsBackground
-            forwardProgress={coinsForward}
-            opacity={coinsOpacity}
-            width={1920}
-            height={1080}
-          />
-        }
+      />
+      <CssPhone
+        brollSrc={brollSrc}
+        translateY={phoneTranslateY}
+        rotateXDeg={phoneRotateX}
+        rotateYDeg={phoneRotateY}
+        scale={phoneScale}
       />
       <SideTexts visibility={sideTextsVis} />
       <EndCard progress={endCardProg} />
@@ -119,3 +129,6 @@ export const explorerProofMeta = {
   durationInFrames: 2100,
   defaultProps: { brollPath: FALLBACK_BROLL_PATH } as ExplorerProofProps,
 };
+
+// Re-export for callers who want to render against the eventual recording.
+export { DEFAULT_BROLL_PATH };
