@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   Sequence,
   interpolate,
+  staticFile,
   useCurrentFrame,
 } from "remotion";
 import { loadFont as loadCaveat } from "@remotion/google-fonts/Caveat";
@@ -52,25 +53,54 @@ export const AntiCheatStat: React.FC = () => {
 
 // ─── Scapegoat lineup — who you blame, before the stat says otherwise ─────
 //
-// Four Apple-light cards lined up across the frame. Each stamps in on
-// its own beat with a quick scale-snap + lift; once all four are in,
-// the lineup holds, then fades down so the 0.04% typewriter can take
-// the stage. Content lifted from the retired Iceberg tiers — same
-// suspects, sharper format.
+// Four mug-shot cards lined up across the frame. Each carries a real
+// image of the institution it accuses — Capitol for insider trading,
+// Citadel for front running, Jump for spoofing, HFT racks for stop
+// hunting. Cards stamp in on a stagger; the 0.04% typewriter takes
+// the stage as the answer. Content lifted from the retired Iceberg
+// tiers — same suspects, sharper format.
 
 type Scapegoat = {
   label: [string, string];
   charge: string;
+  imageSrc: string;
+  imageFit: "cover" | "contain";
+  imageBg?: string;
+  imagePosition?: string;
 };
 
 const SCAPEGOATS: Scapegoat[] = [
-  { label: ["liquidation", "hunters"], charge: "triggers your stops" },
-  { label: ["front", "runners"], charge: "moves before you" },
-  { label: ["orderbook", "spoofers"], charge: "fakes the signal" },
-  { label: ["insider", "traders"], charge: "knows the news first" },
+  {
+    label: ["liquidation", "hunters"],
+    charge: "triggers your stops",
+    imageSrc: "anticheat-imgs/hft-racks.png",
+    imageFit: "cover",
+    imagePosition: "center 35%",
+  },
+  {
+    label: ["front", "runners"],
+    charge: "moves before you",
+    imageSrc: "shorts/short-02/logos/citadel.png",
+    imageFit: "contain",
+    imageBg: "#0A0A0A",
+  },
+  {
+    label: ["orderbook", "spoofers"],
+    charge: "fakes the signal",
+    imageSrc: "shorts/short-02/logos/jump-trading.png",
+    imageFit: "contain",
+    imageBg: "#0A0A0A",
+  },
+  {
+    label: ["insider", "traders"],
+    charge: "knows the news first",
+    imageSrc: "anticheat-imgs/congress.jpg",
+    imageFit: "cover",
+    imagePosition: "center 30%",
+  },
 ];
 
-const SCAPEGOAT_HEADLINE = "Who you blame";
+const SCAPEGOAT_HEADLINE = "Who to blame";
 
 // Card geometry — sized to fit a four-up row inside the 1920-wide frame
 // with healthy gaps. Heights match the Bars carousel card so the visual
@@ -171,6 +201,12 @@ const ScapegoatHeadline: React.FC<{ frame: number; exitFade: number }> = ({
   );
 };
 
+// Card split: top portion is the mug-shot photo, bottom portion is
+// the booking placard. Numbers picked so the placard reads as a single
+// piece of typography sitting under the suspect's portrait.
+const SG_PHOTO_H = 250;
+const SG_PLACARD_H = SG_CARD_H - SG_PHOTO_H;
+
 const ScapegoatCard: React.FC<{
   scapegoat: Scapegoat;
   index: number;
@@ -185,6 +221,7 @@ const ScapegoatCard: React.FC<{
   const scale = 0.94 + eased * 0.06;
   const opacity = eased;
   const enterBlur = (1 - eased) * 8;
+  const bookingNumber = `#${String(index + 1).padStart(2, "0")}`;
 
   return (
     <div
@@ -202,66 +239,112 @@ const ScapegoatCard: React.FC<{
         transform: `translateY(${lift.toFixed(2)}px) rotate(${tilt.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
         filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : undefined,
         willChange: "transform, opacity, filter",
+        overflow: "hidden",
       }}
     >
+      {/* Mug-shot photo, top of the card. */}
       <div
         style={{
           position: "absolute",
-          top: 26,
-          left: 28,
-          fontFamily: monoFont,
-          fontSize: 16,
-          fontWeight: 500,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: colors.dim,
+          top: 0,
+          left: 0,
+          right: 0,
+          height: SG_PHOTO_H,
+          background: scapegoat.imageBg ?? "#0A0A0A",
+          overflow: "hidden",
         }}
       >
-        suspect
+        <img
+          src={staticFile(scapegoat.imageSrc)}
+          alt=""
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: scapegoat.imageFit,
+            objectPosition: scapegoat.imagePosition ?? "center",
+            display: "block",
+            // Slight desaturation + cool wash so logos and photos read
+            // with a similar mug-shot temperament.
+            filter:
+              scapegoat.imageFit === "cover"
+                ? "saturate(0.85) contrast(1.04)"
+                : "none",
+          }}
+        />
+        {/* Subtle inner shadow on the photo so it nests into the card
+            without a hard seam against the placard. */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            boxShadow: "inset 0 -24px 32px rgba(8, 14, 28, 0.18)",
+            pointerEvents: "none",
+          }}
+        />
       </div>
+
+      {/* Booking number sticker — top-left over the photo. */}
       <div
         style={{
           position: "absolute",
-          top: 90,
-          left: 28,
-          right: 28,
-          fontFamily: font,
-          fontSize: 54,
-          fontWeight: 800,
-          letterSpacing: "-0.024em",
-          color: colors.fg,
-          lineHeight: 0.98,
-        }}
-      >
-        <div>{scapegoat.label[0]}</div>
-        <div style={{ color: colors.accent }}>{scapegoat.label[1]}</div>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          left: 28,
-          right: 28,
-          bottom: 76,
-          height: 1,
-          background: colors.rule,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 28,
-          right: 28,
-          bottom: 30,
+          top: 20,
+          left: 20,
+          padding: "6px 12px",
+          background: "rgba(8, 14, 28, 0.72)",
+          color: "#FFFFFF",
           fontFamily: monoFont,
-          fontSize: 16,
-          fontWeight: 500,
-          letterSpacing: "0.14em",
+          fontSize: 14,
+          fontWeight: 600,
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: colors.dim,
-          lineHeight: 1.3,
+          borderRadius: 6,
         }}
       >
-        {scapegoat.charge}
+        {bookingNumber} · suspect
+      </div>
+
+      {/* Placard — single piece sitting under the photo with the name
+          and the charge. Booking-card typography. */}
+      <div
+        style={{
+          position: "absolute",
+          top: SG_PHOTO_H,
+          left: 0,
+          right: 0,
+          height: SG_PLACARD_H,
+          padding: "20px 24px 22px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 42,
+            fontWeight: 800,
+            letterSpacing: "-0.022em",
+            color: colors.fg,
+            lineHeight: 0.98,
+          }}
+        >
+          <div>{scapegoat.label[0]}</div>
+          <div style={{ color: colors.accent }}>{scapegoat.label[1]}</div>
+        </div>
+        <div
+          style={{
+            fontFamily: monoFont,
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: colors.dim,
+            lineHeight: 1.3,
+          }}
+        >
+          {scapegoat.charge}
+        </div>
       </div>
     </div>
   );
