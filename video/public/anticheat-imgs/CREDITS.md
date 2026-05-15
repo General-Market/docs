@@ -34,11 +34,12 @@ and credit in the video's description / about page when shipping.
   Credit: Jean-Christophe BENOIST
   Licence: CC BY 3.0
 
-# scapegoat-{madoff,milken,belfort,rajaratnam} image credits
+# scapegoat-{madoff,griffin,milton,rajaratnam} image credits
 
-Real-face scapegoat lineup used in the AntiCheatStat scene — all four
-have personally pleaded guilty or been convicted of finance crimes.
-Two PD-USGov, two Creative Commons.
+Real-face scapegoat lineup used in the AntiCheatStat scene. Three are
+personally convicted of finance crimes; one (Griffin / Citadel) runs
+a firm that has been repeatedly sanctioned by FINRA and the SEC for
+order-handling and front-running of retail flow.
 
 - **scapegoat-madoff.jpg** — Bernie Madoff (DOJ booking photo, 16 March 2009)
   Pleaded guilty to 11 federal felonies (securities fraud, mail fraud,
@@ -46,17 +47,22 @@ Two PD-USGov, two Creative Commons.
   Source: Wikimedia Commons, *BernardMadoff.jpg*
   Licence: Public domain — work of the U.S. Department of Justice
 
-- **scapegoat-milken.jpg** — Michael Milken (Reagan Foundation 2026)
-  Pleaded guilty to securities fraud in 1990; sentenced to 10 years
-  (served 22 months). Later pardoned in 2020.
-  Source: Wikimedia Commons, *Reagan_Foundation_2026_-_Michael_Milken_01.jpg*
-  Licence: CC BY-SA 4.0 — credit the Wikimedia uploader; share-alike
+- **scapegoat-griffin.jpg** — Kenneth C. Griffin (Citadel)
+  Citadel Securities has been the subject of repeated FINRA and SEC
+  settlements over order-handling failures and trading ahead of
+  customer orders. Griffin personally has not been criminally charged.
+  Source: Wikimedia Commons, *Kenneth_C._Griffin_photo.jpg*
+  Photographer: Paul Elledge, 13 September 2017
+  Licence: CC BY-SA 4.0 — credit Paul Elledge; share-alike obligation
 
-- **scapegoat-belfort.jpg** — Jordan Belfort (Tai Lopez interview, 2017)
-  Pleaded guilty to securities fraud and money laundering in 1999
-  (Stratton Oakmont pump-and-dump); served 22 months.
-  Source: Wikimedia Commons, *JordanBelfort2017.png*
-  Licence: CC BY 3.0 — credit the Wikimedia uploader on publish
+- **scapegoat-milton.jpg** — Trevor Milton (Nikola Motor Company)
+  Convicted in October 2022 on three counts of fraud (securities fraud
+  and wire fraud) for misleading investors about Nikola's technology;
+  sentenced to four years in December 2023. Sentence later partially
+  reduced; he received a presidential pardon in 2025.
+  Source: Wikimedia Commons, *Trevor_Milton_1.png*
+  Photographer: Nikki Gordon-Bloomfield (Transport Evolved), 2019
+  Licence: CC BY-SA 4.0 — credit the photographer; share-alike
 
 - **scapegoat-rajaratnam.jpg** — Raj Rajaratnam (Galleon Group)
   Convicted on 14 counts of conspiracy and securities fraud in 2011

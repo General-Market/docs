@@ -53,14 +53,15 @@ export const AntiCheatStat: React.FC = () => {
 
 // ─── Scapegoat lineup — who to blame, before the stat says otherwise ─────
 //
-// Four wanted-poster cards lined up across the frame. Each carries a
-// face that has actually pleaded guilty or been convicted of finance
-// crimes — no innuendo, no logos, no implication of someone who only
-// faces tweets. Bernie Madoff (DOJ mugshot, Ponzi guilty plea),
-// Michael Milken (RICO + securities fraud guilty plea), Jordan
-// Belfort (Stratton Oakmont securities-fraud guilty plea), Raj
-// Rajaratnam (convicted of insider trading after the Galleon trial).
-// Same scapegoat mechanism, four different convictions.
+// Four wanted-poster cards lined up across the frame. Each suspect is
+// either personally convicted of finance crimes or runs a firm that
+// has been formally sanctioned for the relevant order-handling
+// practice. Bernie Madoff (Ponzi guilty plea, DOJ mugshot), Ken
+// Griffin (Citadel — repeated SEC settlements over order handling
+// and front-running of retail flow), Trevor Milton (Nikola
+// securities-fraud conviction, 2022), Raj Rajaratnam (Galleon
+// insider-trading conviction, 2011). Same scapegoat mechanism, four
+// different convictions and sanctions.
 //
 // Attribution lives in anticheat-imgs/CREDITS.md.
 
@@ -81,14 +82,14 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["front", "runners"],
     charge: "moves before you",
-    imageSrc: "anticheat-imgs/scapegoat-milken.jpg",
-    imagePosition: "center 28%",
+    imageSrc: "anticheat-imgs/scapegoat-griffin.jpg",
+    imagePosition: "center 18%",
   },
   {
     label: ["orderbook", "spoofers"],
     charge: "fakes the signal",
-    imageSrc: "anticheat-imgs/scapegoat-belfort.jpg",
-    imagePosition: "center 22%",
+    imageSrc: "anticheat-imgs/scapegoat-milton.jpg",
+    imagePosition: "center 25%",
   },
   {
     label: ["insider", "traders"],
