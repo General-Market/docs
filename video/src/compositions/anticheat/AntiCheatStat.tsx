@@ -51,21 +51,20 @@ export const AntiCheatStat: React.FC = () => {
   );
 };
 
-// ─── Scapegoat lineup — who you blame, before the stat says otherwise ─────
+// ─── Scapegoat lineup — who to blame, before the stat says otherwise ─────
 //
-// Four mug-shot cards lined up across the frame. Each carries a real
-// image of the institution it accuses — Capitol for insider trading,
-// Citadel for front running, Jump for spoofing, HFT racks for stop
-// hunting. Cards stamp in on a stagger; the 0.04% typewriter takes
-// the stage as the answer. Content lifted from the retired Iceberg
-// tiers — same suspects, sharper format.
+// Four wanted-poster cards lined up across the frame. Each carries a
+// Girardian scapegoat image — the literal goat (Holman Hunt), a
+// witch trial (Matteson), a pillory (Wellcome), an execution (Goya).
+// Same mechanism, four different victims. Image fills the whole card;
+// a gradient veil at the bottom holds the suspect name and charge so
+// the card reads as one piece, not photo-plus-placard. Content lifted
+// from the retired Iceberg tiers; the mug-shot framing is the cut.
 
 type Scapegoat = {
   label: [string, string];
   charge: string;
   imageSrc: string;
-  imageFit: "cover" | "contain";
-  imageBg?: string;
   imagePosition?: string;
 };
 
@@ -73,30 +72,26 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["liquidation", "hunters"],
     charge: "triggers your stops",
-    imageSrc: "anticheat-imgs/hft-racks.png",
-    imageFit: "cover",
-    imagePosition: "center 35%",
+    imageSrc: "anticheat-imgs/scapegoat-goat.jpg",
+    imagePosition: "center 60%",
   },
   {
     label: ["front", "runners"],
     charge: "moves before you",
-    imageSrc: "shorts/short-02/logos/citadel.png",
-    imageFit: "contain",
-    imageBg: "#0A0A0A",
+    imageSrc: "anticheat-imgs/scapegoat-pillory.jpg",
+    imagePosition: "center 30%",
   },
   {
     label: ["orderbook", "spoofers"],
     charge: "fakes the signal",
-    imageSrc: "shorts/short-02/logos/jump-trading.png",
-    imageFit: "contain",
-    imageBg: "#0A0A0A",
+    imageSrc: "anticheat-imgs/scapegoat-witch.jpg",
+    imagePosition: "center 40%",
   },
   {
     label: ["insider", "traders"],
     charge: "knows the news first",
-    imageSrc: "anticheat-imgs/congress.jpg",
-    imageFit: "cover",
-    imagePosition: "center 30%",
+    imageSrc: "anticheat-imgs/scapegoat-execution.jpg",
+    imagePosition: "center 35%",
   },
 ];
 
@@ -201,11 +196,9 @@ const ScapegoatHeadline: React.FC<{ frame: number; exitFade: number }> = ({
   );
 };
 
-// Card split: top portion is the mug-shot photo, bottom portion is
-// the booking placard. Numbers picked so the placard reads as a single
-// piece of typography sitting under the suspect's portrait.
-const SG_PHOTO_H = 250;
-const SG_PLACARD_H = SG_CARD_H - SG_PHOTO_H;
+// One piece. Full-bleed Girardian image fills the card; a dark
+// gradient veil rises from the bottom and the typography sits inside
+// the same surface. No placard, no seam — wanted-poster composition.
 
 const ScapegoatCard: React.FC<{
   scapegoat: Scapegoat;
@@ -229,11 +222,11 @@ const ScapegoatCard: React.FC<{
         flex: "0 0 auto",
         width: SG_CARD_W,
         height: SG_CARD_H,
-        borderRadius: 24,
-        background: colors.surface,
+        borderRadius: 18,
+        background: "#0A0A0A",
         boxShadow:
-          "0 1px 0 rgba(255,255,255,0.6) inset, 0 32px 64px rgba(8, 14, 28, 0.22), 0 10px 20px rgba(8, 14, 28, 0.12)",
-        border: `1px solid ${colors.rule}`,
+          "0 1px 0 rgba(255,255,255,0.06) inset, 0 32px 64px rgba(8, 14, 28, 0.30), 0 10px 20px rgba(8, 14, 28, 0.18)",
+        border: "1px solid rgba(8, 14, 28, 0.55)",
         position: "relative",
         opacity,
         transform: `translateY(${lift.toFixed(2)}px) rotate(${tilt.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
@@ -242,81 +235,67 @@ const ScapegoatCard: React.FC<{
         overflow: "hidden",
       }}
     >
-      {/* Mug-shot photo, top of the card. */}
-      <div
+      {/* Full-bleed mug-shot image. */}
+      <img
+        src={staticFile(scapegoat.imageSrc)}
+        alt=""
+        draggable={false}
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: SG_PHOTO_H,
-          background: scapegoat.imageBg ?? "#0A0A0A",
-          overflow: "hidden",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: scapegoat.imagePosition ?? "center",
+          display: "block",
+          // Bleach the colour out so the four periods sit on the same
+          // tonal axis — antique paint and engraved line read as one
+          // family instead of four loose scraps.
+          filter: "grayscale(0.55) sepia(0.18) contrast(1.06) brightness(0.92)",
         }}
-      >
-        <img
-          src={staticFile(scapegoat.imageSrc)}
-          alt=""
-          draggable={false}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: scapegoat.imageFit,
-            objectPosition: scapegoat.imagePosition ?? "center",
-            display: "block",
-            // Slight desaturation + cool wash so logos and photos read
-            // with a similar mug-shot temperament.
-            filter:
-              scapegoat.imageFit === "cover"
-                ? "saturate(0.85) contrast(1.04)"
-                : "none",
-          }}
-        />
-        {/* Subtle inner shadow on the photo so it nests into the card
-            without a hard seam against the placard. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            boxShadow: "inset 0 -24px 32px rgba(8, 14, 28, 0.18)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
+      />
 
-      {/* Booking number sticker — top-left over the photo. */}
+      {/* Veil — bottom gradient holds the booking text in one frame. */}
       <div
         style={{
           position: "absolute",
-          top: 20,
-          left: 20,
-          padding: "6px 12px",
-          background: "rgba(8, 14, 28, 0.72)",
-          color: "#FFFFFF",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(8, 14, 28, 0.55) 0%, rgba(8, 14, 28, 0.05) 18%, rgba(8, 14, 28, 0.05) 42%, rgba(8, 14, 28, 0.78) 78%, rgba(8, 14, 28, 0.94) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Booking number sticker — top-left, painted onto the same surface. */}
+      <div
+        style={{
+          position: "absolute",
+          top: 18,
+          left: 18,
+          padding: "5px 11px",
+          background: "rgba(255, 255, 255, 0.92)",
+          color: "#0A0A0A",
           fontFamily: monoFont,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 600,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          borderRadius: 6,
+          borderRadius: 4,
         }}
       >
         {bookingNumber} · suspect
       </div>
 
-      {/* Placard — single piece sitting under the photo with the name
-          and the charge. Booking-card typography. */}
+      {/* Suspect name + charge — overlaid on the veil. */}
       <div
         style={{
           position: "absolute",
-          top: SG_PHOTO_H,
-          left: 0,
-          right: 0,
-          height: SG_PLACARD_H,
-          padding: "20px 24px 22px",
+          left: 24,
+          right: 24,
+          bottom: 26,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
+          gap: 14,
         }}
       >
         <div
@@ -325,22 +304,24 @@ const ScapegoatCard: React.FC<{
             fontSize: 42,
             fontWeight: 800,
             letterSpacing: "-0.022em",
-            color: colors.fg,
+            color: "#FFFFFF",
             lineHeight: 0.98,
+            textShadow: "0 2px 12px rgba(0, 0, 0, 0.45)",
           }}
         >
           <div>{scapegoat.label[0]}</div>
-          <div style={{ color: colors.accent }}>{scapegoat.label[1]}</div>
+          <div style={{ color: "#FFFFFF" }}>{scapegoat.label[1]}</div>
         </div>
         <div
           style={{
             fontFamily: monoFont,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 500,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: colors.dim,
+            color: "rgba(255, 255, 255, 0.78)",
             lineHeight: 1.3,
+            textShadow: "0 1px 6px rgba(0, 0, 0, 0.55)",
           }}
         >
           {scapegoat.charge}
