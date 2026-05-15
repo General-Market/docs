@@ -674,6 +674,10 @@ const TouchedLine: React.FC = () => {
 const BG_WORD_PEAK_OPACITY = 0.10;
 const BG_WORD_FONT_SIZE = 460;
 const BG_WORD_FADE_IN = toFrames(0.35);
+// Sit the word in the upper tier of the frame rather than dead-centre.
+// Anchored on the word's vertical mid-line so the bottom of the
+// letterforms tucks just above the carousel's top edge.
+const BG_WORD_CENTER_Y_PCT = 0.22;
 
 const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
   if (local < 0) return null;
@@ -698,14 +702,7 @@ const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
   const step = 360 / CATEGORIES.length;
 
   return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
       {CATEGORIES.map((cat, i) => {
         const cardAngle = i * step;
         let delta = Math.abs(facingAngle - cardAngle);
@@ -721,13 +718,15 @@ const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
             key={cat.label}
             style={{
               position: "absolute",
+              left: "50%",
+              top: `${(BG_WORD_CENTER_Y_PCT * 100).toFixed(2)}%`,
+              transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
               fontFamily: font,
               fontSize: BG_WORD_FONT_SIZE,
               fontWeight: 900,
               letterSpacing: "-0.05em",
               color: colors.accent,
               opacity: op,
-              transform: `scale(${scale.toFixed(3)})`,
               whiteSpace: "nowrap",
               lineHeight: 1,
               willChange: "opacity, transform",

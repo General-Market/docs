@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -321,8 +322,71 @@ const BarChart3D: React.FC<{
         morphT={morphT}
       />
     ))}
+    <BlocksLogo frame={frame} morphT={morphT} />
   </>
 );
+
+// Stamps the General Market mark on the dominant Blocks bar. Same fate
+// as the bar — it fades out when the morph fires.
+const LOGO_FADE_IN_AT = 50;
+const LOGO_FADE_IN_LEN = 8;
+const LOGO_SIZE = 168;
+// Sit the mark on the upper half of the Blocks front face so the
+// "Blocks / 40%" label still reads above it without a clash.
+const LOGO_CENTER_Y_RATIO = 0.34;
+
+const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
+  frame,
+  morphT,
+}) => {
+  const blocks = ROWS[HERO_INDEX];
+  const barHeight = barTargetH(blocks.pct);
+  const yTop = BAR_BASELINE_Y - barHeight;
+  const cx = barCenterX(HERO_INDEX);
+  const cy = yTop + barHeight * LOGO_CENTER_Y_RATIO;
+
+  const enter = interpolate(
+    frame,
+    [LOGO_FADE_IN_AT, LOGO_FADE_IN_AT + LOGO_FADE_IN_LEN],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const exit = 1 - Math.max(0, Math.min(1, morphT * 1.4));
+  const opacity = enter * exit;
+  if (opacity < 0.005) return null;
+
+  const settle = Math.min(1, enter);
+  const lift = (1 - settle) * 8;
+  const scale = 0.96 + settle * 0.04;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: cx,
+        top: cy,
+        width: LOGO_SIZE,
+        height: LOGO_SIZE,
+        transform: `translate(-50%, -50%) translateY(${lift.toFixed(2)}px) scale(${scale.toFixed(3)})`,
+        opacity,
+        pointerEvents: "none",
+        willChange: "transform, opacity",
+      }}
+    >
+      <img
+        src={staticFile("gm-logo.svg")}
+        alt=""
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          filter: "drop-shadow(0 6px 22px rgba(0, 82, 255, 0.28))",
+        }}
+      />
+    </div>
+  );
+};
 
 const Bar3D: React.FC<{
   row: Row;
