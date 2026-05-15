@@ -43,25 +43,50 @@ function buildFaceTexture(): THREE.CanvasTexture {
   canvas.height = FACE_TEXTURE_SIZE;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    // Solid green disc covering the full UV square. The GLB face is a
-    // circular cap inscribed in this square, so only the inscribed
-    // disc gets sampled — but filling everything keeps the texture
-    // robust to UV edge cases.
-    ctx.fillStyle = BRAND_GREEN;
+    const cx = FACE_TEXTURE_SIZE / 2;
+    const cy = FACE_TEXTURE_SIZE / 2;
+    // Subtle vertical gradient from a lighter top to a deeper bottom —
+    // sells the disc as a dimensional object lit from above.
+    const bodyGrad = ctx.createLinearGradient(0, 0, 0, FACE_TEXTURE_SIZE);
+    bodyGrad.addColorStop(0, "#2ad08f");
+    bodyGrad.addColorStop(0.55, BRAND_GREEN);
+    bodyGrad.addColorStop(1, "#0e8a5a");
+    ctx.fillStyle = bodyGrad;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
-    // Soft radial vignette so the face has subtle depth toward the rim.
+    // Soft inner vignette so the face has depth toward the rim.
     const vignette = ctx.createRadialGradient(
-      FACE_TEXTURE_SIZE / 2,
-      FACE_TEXTURE_SIZE / 2,
-      FACE_TEXTURE_SIZE * 0.18,
-      FACE_TEXTURE_SIZE / 2,
-      FACE_TEXTURE_SIZE / 2,
+      cx,
+      cy * 0.85,
+      FACE_TEXTURE_SIZE * 0.12,
+      cx,
+      cy,
       FACE_TEXTURE_SIZE * 0.55,
     );
-    vignette.addColorStop(0, "rgba(255,255,255,0.10)");
-    vignette.addColorStop(1, "rgba(0,0,0,0.18)");
+    vignette.addColorStop(0, "rgba(255,255,255,0.18)");
+    vignette.addColorStop(0.65, "rgba(255,255,255,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.22)");
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
+    // Crescent highlight in the upper-left — the signature Houdini-coin
+    // specular sheen.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, FACE_TEXTURE_SIZE * 0.49, 0, Math.PI * 2);
+    ctx.clip();
+    const sheen = ctx.createRadialGradient(
+      cx - FACE_TEXTURE_SIZE * 0.22,
+      cy - FACE_TEXTURE_SIZE * 0.24,
+      FACE_TEXTURE_SIZE * 0.04,
+      cx - FACE_TEXTURE_SIZE * 0.22,
+      cy - FACE_TEXTURE_SIZE * 0.24,
+      FACE_TEXTURE_SIZE * 0.32,
+    );
+    sheen.addColorStop(0, "rgba(255,255,255,0.42)");
+    sheen.addColorStop(0.5, "rgba(255,255,255,0.12)");
+    sheen.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
+    ctx.restore();
     // White pill — match the brand mark but bigger on the face so it
     // reads as a "logo coin" the way Houdini's "H" reads on theirs.
     // Sized to ~70% of the inscribed disc.
@@ -110,12 +135,30 @@ type CoinSeed = {
   staticTiltZ: number; // constant lean left/right, radians
 };
 
+// Frame layout (world units, 16:9):
+//   visible half-width @ z=0  ≈ 9.05
+//   visible half-height        ≈ 5.1
+// Text bands sit at roughly x ∈ [-8.5, -5.2] (left wordmark) and
+// x ∈ [5.2, 8.5] (right URL), y ∈ [-1.2, 1.2]. Coins must NEVER
+// occupy that rectangle even at their largest scale. Phone occupies
+// roughly x ∈ [-1.8, 1.8], y ∈ [-4.0, 4.0]; coins behind the phone
+// fall behind the CSS phone naturally because the phone is drawn on
+// top of the canvas in the DOM.
+//
+// So coin world-x must satisfy ONE of:
+//   above text:   y > 1.8
+//   below text:   y < -1.8
+//   middle gap:   |x| < 5.0  (between phone and wordmark) — but
+//                 these would cross the phone, so we put them deep
+//
+// 12 coins total, 4 size tiers, dense.
+
 const COIN_SEEDS: CoinSeed[] = [
-  // ── Top band (above text) — hero size
+  // ── Top band — above text, hero size
   {
-    x: -5.8,
-    y: 3.2,
-    baseScale: 1.8,
+    x: -5.4,
+    y: 3.0,
+    baseScale: 1.7,
     cycleSec: 22,
     cyclePhase: 0.0,
     spinPeriodSec: 18,
@@ -125,8 +168,8 @@ const COIN_SEEDS: CoinSeed[] = [
   },
   {
     x: -0.6,
-    y: 3.6,
-    baseScale: 2.0,
+    y: 3.4,
+    baseScale: 1.9,
     cycleSec: 24,
     cyclePhase: 0.35,
     spinPeriodSec: 22,
@@ -135,9 +178,9 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltZ: 0.05,
   },
   {
-    x: 5.8,
-    y: 3.2,
-    baseScale: 1.7,
+    x: 5.4,
+    y: 3.0,
+    baseScale: 1.65,
     cycleSec: 20,
     cyclePhase: 0.62,
     spinPeriodSec: 19,
@@ -145,34 +188,11 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: 0.1,
     staticTiltZ: -0.18,
   },
-  // ── Mid band, far edges (next to wordmarks, not over them)
+  // ── Bottom band — below text, hero size
   {
-    x: -7.4,
-    y: 0.6,
-    baseScale: 1.5,
-    cycleSec: 23,
-    cyclePhase: 0.12,
-    spinPeriodSec: 20,
-    spinPhase: 0.7,
-    staticTiltX: 0.05,
-    staticTiltZ: 0.22,
-  },
-  {
-    x: 7.4,
-    y: -0.4,
-    baseScale: 1.55,
-    cycleSec: 21,
-    cyclePhase: 0.55,
-    spinPeriodSec: 17,
-    spinPhase: 1.8,
-    staticTiltX: -0.05,
-    staticTiltZ: -0.18,
-  },
-  // ── Bottom band hero coins
-  {
-    x: -5.2,
+    x: -5.4,
     y: -3.0,
-    baseScale: 2.1,
+    baseScale: 2.0,
     cycleSec: 26,
     cyclePhase: 0.18,
     spinPeriodSec: 24,
@@ -182,8 +202,8 @@ const COIN_SEEDS: CoinSeed[] = [
   },
   {
     x: 0.6,
-    y: -3.6,
-    baseScale: 1.6,
+    y: -3.5,
+    baseScale: 1.55,
     cycleSec: 21,
     cyclePhase: 0.5,
     spinPeriodSec: 17,
@@ -192,9 +212,9 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltZ: 0.0,
   },
   {
-    x: 5.6,
+    x: 5.4,
     y: -3.0,
-    baseScale: 1.95,
+    baseScale: 1.85,
     cycleSec: 25,
     cyclePhase: 0.75,
     spinPeriodSec: 20,
@@ -202,11 +222,35 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: -0.18,
     staticTiltZ: 0.15,
   },
-  // ── Back band — medium coins, deeper and smaller, for layered depth
+  // ── Far edges — sit above/below the text vertical band so they
+  // never cross the wordmark. y must satisfy |y| > 1.8 (text band).
   {
-    x: -2.4,
+    x: -8.0,
     y: 2.2,
-    baseScale: 0.85,
+    baseScale: 0.7,
+    cycleSec: 23,
+    cyclePhase: 0.12,
+    spinPeriodSec: 20,
+    spinPhase: 0.7,
+    staticTiltX: 0.05,
+    staticTiltZ: 0.22,
+  },
+  {
+    x: 8.0,
+    y: -2.2,
+    baseScale: 0.72,
+    cycleSec: 21,
+    cyclePhase: 0.55,
+    spinPeriodSec: 17,
+    spinPhase: 1.8,
+    staticTiltX: -0.05,
+    staticTiltZ: -0.18,
+  },
+  // ── Far back, behind the phone, just for depth — tiny.
+  {
+    x: -2.0,
+    y: 1.4,
+    baseScale: 0.55,
     cycleSec: 28,
     cyclePhase: 0.2,
     spinPeriodSec: 23,
@@ -215,9 +259,9 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltZ: -0.1,
   },
   {
-    x: 2.2,
-    y: 2.0,
-    baseScale: 0.85,
+    x: 2.0,
+    y: 1.4,
+    baseScale: 0.55,
     cycleSec: 29,
     cyclePhase: 0.7,
     spinPeriodSec: 21,
@@ -226,9 +270,9 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltZ: 0.12,
   },
   {
-    x: -3.0,
-    y: -1.6,
-    baseScale: 0.75,
+    x: -2.4,
+    y: -1.8,
+    baseScale: 0.5,
     cycleSec: 30,
     cyclePhase: 0.42,
     spinPeriodSec: 24,
@@ -237,9 +281,9 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltZ: 0.05,
   },
   {
-    x: 3.2,
-    y: -1.8,
-    baseScale: 0.8,
+    x: 2.4,
+    y: -2.0,
+    baseScale: 0.52,
     cycleSec: 27,
     cyclePhase: 0.9,
     spinPeriodSec: 26,
@@ -250,9 +294,12 @@ const COIN_SEEDS: CoinSeed[] = [
 ];
 
 const FPS = 30;
-const Z_BACK = -9;
-const Z_FRONT = 4;
-const FADE_BAND = 0.08; // fraction of cycle for fade in/out at the ends
+// Coins live in deep-to-mid z and never come right up to the camera —
+// that way their apparent screen size stays modest and they never
+// bleed into the wordmark vertical band.
+const Z_BACK = -14;
+const Z_FRONT = -3;
+const FADE_BAND = 0.06; // fraction of cycle for fade in/out at the ends
 
 function smoothstep(t: number): number {
   const x = Math.max(0, Math.min(1, t));
