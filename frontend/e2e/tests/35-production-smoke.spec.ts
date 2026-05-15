@@ -765,9 +765,10 @@ test.describe('Explorer (/explorer)', () => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     // Wait for explorer page to render tabs
     await page.locator('button:has-text("Consensus")').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-    // Actual tabs from translations (pages.explorer.tabs.*):
-    // Consensus, Orders, Price Feeds, P2P Network, Cycles, ITP & NAV, Vision, Sources, System, System Health, Chain & Gas
-    const TABS = ['Consensus', 'Orders', 'Price Feeds', 'P2P Network', 'Cycles', 'ITP & NAV', 'Vision', 'Sources', 'System', 'System Health', 'Chain & Gas']
+    // Tabs after the 2026-05 dedupe — Price Feeds, Cycles, System Health, Chain & Gas
+    // were dropped because every chart they showed was duplicated in another tab.
+    // Cycles' unique charts (slow alerts, orders-per-cycle) merged into Orders.
+    const TABS = ['Consensus', 'Orders', 'P2P Network', 'ITP & NAV', 'Lending', 'Vision', 'Sources', 'System']
     for (const tab of TABS) {
       const tabBtn = page.locator(`button:has-text("${tab}")`).first()
       const visible = await tabBtn.isVisible({ timeout: 5_000 }).catch(() => false)
@@ -880,53 +881,14 @@ test.describe('Explorer (/explorer)', () => {
     }
   })
 
-  test('Cycles tab shows cycle performance', async ({ page }) => {
+  test('Orders tab shows merged cycle alerts', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.locator('button:has-text("Cycles")').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('button:has-text("Cycles")').first().click()
-    const hasDuration = await page.locator('text=Cycle Duration').first().isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasDuration) {
-      console.warn('WARN: Cycles section card titles not visible — tab may not have switched or page JS error')
-      return
-    }
-    for (const label of ['Cycle Duration', 'Slow Cycle Alerts', 'Orders per Cycle']) {
-      const visible = await page.locator(`text=${label}`).first().isVisible({ timeout: 5_000 }).catch(() => false)
-      if (!visible) console.warn(`WARN: "${label}" card not visible on Cycles tab`)
-    }
-  })
-
-  test('System Health tab shows health charts', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.locator('button:has-text("System Health")').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('button:has-text("System Health")').first().click()
-    // Actual chart titles in SystemHealthSection:
-    // "Network Status", "Quorum History", "Consensus Success Rate", "Error Rate"
-    const hasNetworkStatus = await page.locator('text=Network Status').first().isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasNetworkStatus) {
-      console.warn('WARN: System Health section card titles not visible — tab may not have switched or page JS error')
-      return
-    }
-    for (const label of ['Network Status', 'Quorum History', 'Consensus Success Rate', 'Error Rate']) {
-      const visible = await page.locator(`text=${label}`).first().isVisible({ timeout: 5_000 }).catch(() => false)
-      if (!visible) console.warn(`WARN: "${label}" card not visible on System Health tab`)
-    }
-  })
-
-  test('Price Feeds tab shows feed charts', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.locator('button:has-text("Price Feeds")').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('button:has-text("Price Feeds")').first().click()
-    // Actual chart titles in PriceFeedSection:
-    // "Price Feeds" heading, "Consensus Duration Trend"
-    const hasPriceFeeds = await page.locator('text=Price Feeds').first().isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasPriceFeeds) {
-      console.warn('WARN: Price Feeds section not visible — tab may not have switched or page JS error')
-      return
-    }
-    // Already confirmed visible above — no duplicate assertion needed
-    const hasTrend = await page.locator('text=Consensus Duration Trend').first().isVisible({ timeout: 5_000 }).catch(() => false)
-    if (!hasTrend) {
-      console.warn('WARN: Consensus Duration Trend card not visible — explorer health API may be loading')
+    await page.locator('button:has-text("Orders")').first().waitFor({ state: 'visible', timeout: 15_000 })
+    await page.locator('button:has-text("Orders")').first().click()
+    // Cycles tab was merged into Orders — Slow Cycle Alerts and Orders per Cycle moved here.
+    for (const label of ['Slow Cycle Alerts', 'Orders per Cycle']) {
+      const visible = await page.locator(`text=${label}`).first().isVisible({ timeout: 10_000 }).catch(() => false)
+      if (!visible) console.warn(`WARN: "${label}" card not visible on Orders tab after cycles merge`)
     }
   })
 
@@ -974,30 +936,6 @@ test.describe('Explorer (/explorer)', () => {
       if (isEmpty) {
         console.warn('ITP section shows no data — SSE nav not connected')
       }
-    }
-  })
-
-  test('Chain & Gas tab shows consensus and P2P charts', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.locator('button:has-text("Chain & Gas")').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('button:has-text("Chain & Gas")').first().click()
-    // Actual chart titles in ChainGasSection:
-    // "Consensus Throughput", "Message Volume", "Order Pipeline", "Cycle Performance"
-    const hasThroughput = await page.locator('text=Consensus Throughput').first().isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasThroughput) {
-      console.warn('WARN: Chain & Gas section card titles not visible — tab may not have switched or page JS error')
-      return
-    }
-    for (const label of ['Consensus Throughput', 'Message Volume', 'Order Pipeline', 'Cycle Performance']) {
-      const visible = await page.locator(`text=${label}`).first().isVisible({ timeout: 5_000 }).catch(() => false)
-      if (!visible) console.warn(`WARN: "${label}" card not visible on Chain & Gas tab`)
-    }
-    // SVGs render only after the explorer health API responds (loading=false) — soft check
-    const svgs = page.locator('.recharts-responsive-container svg')
-    await page.waitForTimeout(3_000)
-    const svgCount = await svgs.count()
-    if (svgCount < 2) {
-      console.warn(`WARN: Chain & Gas SVGs=${svgCount} (expected ≥2) — explorer health API may be loading or unavailable`)
     }
   })
 

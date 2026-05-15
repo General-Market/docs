@@ -8,22 +8,18 @@ import { ExplorerSummaryBar } from '@/components/domain/explorer/ExplorerSummary
 import { ExplorerHeartbeat } from '@/components/domain/explorer/ExplorerHeartbeat'
 import { ConsensusSection } from '@/components/domain/explorer/ConsensusSection'
 import { OrdersSection } from '@/components/domain/explorer/OrdersSection'
-import { PriceFeedSection } from '@/components/domain/explorer/PriceFeedSection'
 import { P2PSection } from '@/components/domain/explorer/P2PSection'
-import { CycleSection } from '@/components/domain/explorer/CycleSection'
 import { ITPSection } from '@/components/domain/explorer/ITPSection'
 import { VisionSection } from '@/components/domain/explorer/VisionSection'
 import { TieRateSection } from '@/components/domain/explorer/TieRateSection'
 import { TieRateHistorySection } from '@/components/domain/explorer/TieRateHistorySection'
-import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSection'
-import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 import { SourcesExplorerSection } from '@/components/domain/explorer/SourcesExplorerSection'
 import { SystemExplorerSection } from '@/components/domain/explorer/SystemExplorerSection'
 import { LendingSection } from '@/components/domain/explorer/LendingSection'
 import { springs } from '@/components/ui/spring'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
-const TAB_IDS = ['consensus', 'orders', 'prices', 'p2p', 'cycles', 'itp', 'lending', 'vision', 'sources', 'system', 'health', 'chain'] as const
+const TAB_IDS = ['consensus', 'orders', 'p2p', 'itp', 'lending', 'vision', 'sources', 'system'] as const
 type TabId = (typeof TAB_IDS)[number]
 
 const STANDALONE_TABS = new Set<TabId>(['sources', 'system', 'lending'])
@@ -128,9 +124,7 @@ export default function ExplorerPageClient() {
         <div className="py-6 pb-16">
           {activeTab === 'consensus' && <ConsensusSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'orders' && <OrdersSection snapshots={snapshots} latest={latest} loading={loading} />}
-          {activeTab === 'prices' && <PriceFeedSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'p2p' && <P2PSection snapshots={snapshots} latest={latest} loading={loading} />}
-          {activeTab === 'cycles' && <CycleSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'lending' && <LendingSection loading={loading} />}
           {activeTab === 'vision' && (
@@ -146,8 +140,6 @@ export default function ExplorerPageClient() {
           )}
           {activeTab === 'sources' && <SourcesExplorerSection />}
           {activeTab === 'system' && <SystemExplorerSection />}
-          {activeTab === 'health' && <SystemHealthSection snapshots={snapshots} latest={latest} loading={loading} />}
-          {activeTab === 'chain' && <ChainGasSection snapshots={snapshots} latest={latest} loading={loading} />}
         </div>
       </div>
     </main>

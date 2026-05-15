@@ -33,7 +33,7 @@ test.describe('Explorer Page Sections', () => {
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 60_000 })
 
     // The explorer has section tabs — may be buttons, links, or custom elements
-    const expectedTabs = ['Consensus', 'Orders', 'Price Feeds', 'Sources', 'System']
+    const expectedTabs = ['Consensus', 'Orders', 'P2P Network', 'Sources', 'System']
     let found = 0
     for (const label of expectedTabs) {
       const tab = page.getByText(label, { exact: false }).first()
@@ -88,28 +88,27 @@ test.describe('Explorer Page Sections', () => {
     }
   })
 
-  test('Price Feeds tab renders section content', async ({ page }) => {
+  test('P2P tab renders section content', async ({ page }) => {
     test.setTimeout(120_000)
     await page.goto('/explorer', { waitUntil: 'domcontentloaded', timeout: 90_000 })
     const h1Visible = await page.locator('h1').first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!h1Visible) { console.log('Explorer page did not render h1'); return }
 
-    const priceFeedsBtn = page.getByRole('button', { name: 'Price Feeds' })
-    const btnVisible = await priceFeedsBtn.isVisible({ timeout: 15_000 }).catch(() => false)
+    const p2pBtn = page.getByRole('button', { name: 'P2P Network' })
+    const btnVisible = await p2pBtn.isVisible({ timeout: 15_000 }).catch(() => false)
     if (!btnVisible) {
-      console.log('Price Feeds tab button not found — tab layout may differ')
+      console.log('P2P tab button not found — tab layout may differ')
       return
     }
-    await priceFeedsBtn.click()
+    await p2pBtn.click()
 
-    // PriceFeedSection renders a section with h2 title
     const sectionVisible = await page
       .locator('section h2, section h3')
       .first()
       .isVisible({ timeout: 30_000 })
       .catch(() => false)
     if (!sectionVisible) {
-      console.log('Price Feeds section heading not visible — data may be loading')
+      console.log('P2P section heading not visible — data may be loading')
     }
   })
 

@@ -47,6 +47,20 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
     [snapshots]
   )
 
+  const slowCycleCount = useMemo(
+    () => snapshots.filter((s) => s.avg_cycle_duration_ms > 2000).length,
+    [snapshots]
+  )
+
+  const ordersPerCycleData = useMemo(
+    () =>
+      snapshots.map((s) => ({
+        time: s.poll_batch_ts,
+        orders_per_cycle: Math.round((s.orders_processed_last_60s / 12) * 100) / 100,
+      })),
+    [snapshots]
+  )
+
   return (
     <section>
       <h2 className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.orders_section.title')}</h2>
@@ -144,6 +158,53 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 4. Fill Latency Distribution */}
         <FillLatencyChart />
+
+        {/* 5. Slow Cycle Alerts (merged from cycles tab) */}
+        <ExplorerChartCard
+          title={t('explorer.cycle_section.slow_cycle_alerts')}
+          subtitle={t('explorer.cycle_section.slow_cycle_alerts_desc')}
+          loading={loading}
+        >
+          <div className="h-full flex flex-col items-center justify-center">
+            <p
+              className={`text-[48px] font-display font-semibold tracking-apple-tighter ${
+                slowCycleCount > 0 ? 'text-[#D70015]' : 'text-[#1F8F4D]'
+              }`}
+            >
+              {slowCycleCount}
+            </p>
+            <p className="text-caption text-[#86868b] mt-1">
+              {t('explorer.cycle_section.out_of_snapshots', { count: snapshots.length })}
+            </p>
+          </div>
+        </ExplorerChartCard>
+
+        {/* 6. Orders per Cycle (merged from cycles tab) */}
+        <ExplorerChartCard
+          title={t('explorer.cycle_section.orders_per_cycle')}
+          subtitle={t('explorer.cycle_section.orders_per_cycle_desc')}
+          loading={loading}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={ordersPerCycleData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={timeTickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <Tooltip
+                labelFormatter={(v) => new Date(v as string).toLocaleString()}
+                contentStyle={{ fontSize: 12 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="orders_per_cycle"
+                stroke="#0071E3"
+                strokeWidth={1.5}
+                dot={false}
+                name={t('explorer.cycle_section.orders_cycle')}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ExplorerChartCard>
 
       </div>
     </section>
