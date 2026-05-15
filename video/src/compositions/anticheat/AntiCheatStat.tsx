@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   Sequence,
   interpolate,
   staticFile,
@@ -21,16 +22,19 @@ const { fontFamily: caveatFont } = loadCaveat("normal", {
 // Two compositions live in this file:
 //   AntiCheatStat — scapegoat lineup → 0.01%/70% then hard-cut to 99.9%/30%
 //   AntiCheatBars — the carousel of categories
-// The Stat scene opens on a four-card lineup that types in like a
-// sentence: each suspect wipes horizontally out of a vertical line in
-// quick succession, holds the full row, then wipes back to lines in
-// the same direction. Same wipe vocabulary as the EmberTypewriter
-// flip in the stat itself. The whole lineup compresses into ~2 seconds.
-const SG_FIRST_CARD_AT = 4;
-const SG_CARD_STAGGER = 3;
-const SG_CARD_ENTER = 4;
-const SG_HOLD_FRAMES = 20;
-const SG_CARD_EXIT = 4;
+// The Stat scene opens on a four-card lineup. Each suspect wipes in
+// from a vertical line one at a time, with a clear beat between cards
+// so the eye registers each face. Once all four are present, the row
+// holds, then wipes back to lines in the same staggered direction.
+// Same wipe vocabulary as the EmberTypewriter flip in the stat itself.
+//
+// First card delayed past the Rigged→Stat snap-zoom-intense transition
+// (16f) so the entries aren't eaten by the blur peak.
+const SG_FIRST_CARD_AT = 14;
+const SG_CARD_STAGGER = 18;
+const SG_CARD_ENTER = 6;
+const SG_HOLD_FRAMES = 28;
+const SG_CARD_EXIT = 5;
 const SG_EXIT_STAGGER = 3;
 const SCAPEGOATS_COUNT = 4;
 const SG_LAST_IN_AT =
@@ -263,8 +267,9 @@ const ScapegoatCard: React.FC<{
         overflow: "hidden",
       }}
     >
-      {/* Full-bleed mug-shot image. */}
-      <img
+      {/* Full-bleed mug-shot image. Remotion <Img> blocks render until
+          the file is decoded — raw <img> flashes empty during scrubbing. */}
+      <Img
         src={staticFile(scapegoat.imageSrc)}
         alt=""
         draggable={false}
@@ -784,9 +789,9 @@ const StatPanel: React.FC = () => {
 //
 // The horizontal bar chart used to live here. We dropped it; the same
 // percentages now live on the carousel cards (see CATEGORIES below).
-// REVEAL_AT only governs when the carousel + headline take the stage:
-// give the caption a beat to land, then begin.
-const REVEAL_AT = toFrames(0.4);
+// REVEAL_AT used to give a 0.4s beat before the carousel appeared. Set to
+// 0 so frame 0 is already in action — no blank intro.
+const REVEAL_AT = 0;
 
 // Flanking hero words. "Extracted" sits on the left of the ring,
 // "From You" on the right; together with the rotating cards they read
