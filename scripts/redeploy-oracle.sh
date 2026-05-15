@@ -49,23 +49,22 @@ repo_local="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- 1. Sync source tree (skip target/, node_modules, .git, etc.) -------------
 echo "[1/5] rsyncing source → ${HOST}:${REPO_REMOTE}"
-rsync -az --delete \
-  --exclude '.git/' \
-  --exclude 'target/' \
-  --exclude 'node_modules/' \
-  --exclude '.next/' \
-  --exclude '.venv/' \
-  --exclude '__pycache__/' \
-  --exclude '*.log' \
-  -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
+rsync_opts=(-az --exclude '.git/' --exclude 'target/' --exclude 'node_modules/' \
+  --exclude '.next/' --exclude '.venv/' --exclude '__pycache__/' --exclude '*.log' \
+  -e "ssh -o ControlMaster=auto -o ControlPersist=60s")
+# oracle/ is the only directory that gets --delete (its own files); other dirs are
+# shared with build context but not owned by this script — never --delete them.
+rsync "${rsync_opts[@]}" --delete \
   "${repo_local}/oracle/" "${HOST}:${REPO_REMOTE}/oracle/"
-rsync -az -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
-  "${repo_local}/common/" "${HOST}:${REPO_REMOTE}/common/" 2>/dev/null || true
-rsync -az -e "ssh -o ControlMaster=auto -o ControlPersist=60s" \
-  "${repo_local}/data-node/Cargo.toml" \
-  "${repo_local}/Cargo.toml" \
-  "${repo_local}/Cargo.lock" \
-  "${HOST}:${REPO_REMOTE}/" 2>/dev/null || true
+for member in common ap curator data-node itp-bot; do
+  rsync "${rsync_opts[@]}" \
+    "${repo_local}/${member}/" "${HOST}:${REPO_REMOTE}/${member}/" 2>/dev/null || true
+done
+# Workspace root manifests: each file copied individually so basenames don't collide.
+# Earlier broken form rsync'd `data-node/Cargo.toml Cargo.toml` together — both had
+# basename Cargo.toml, second overwrote first on the remote.
+rsync "${rsync_opts[@]}" "${repo_local}/Cargo.toml" "${HOST}:${REPO_REMOTE}/Cargo.toml"
+rsync "${rsync_opts[@]}" "${repo_local}/Cargo.lock" "${HOST}:${REPO_REMOTE}/Cargo.lock"
 
 # --- 2. Stop and remove old containers (zombies block recreate) --------------
 echo "[2/5] removing old containers (if any)"
