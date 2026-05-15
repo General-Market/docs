@@ -137,20 +137,19 @@ const SG_MARQUEE_SPEED = 1.6; // px per frame
 
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
-// card vocabulary so the visual rhyme holds. Column is much taller
-// than the card itself — the bands stack the full column height and
-// the card floats centred, hiding the band rows directly behind it.
+// card vocabulary so the visual rhyme holds. The background marquee
+// lives at scene level (ScapegoatBackgroundMarquee), independent of
+// the card grid — the cards just sit on top.
 const SG_CARD_W = 340;
 const SG_CARD_H = 460;
 const SG_CARD_GAP = 60;
-const SG_COL_H = SG_BAND_COUNT * SG_BAND_H + (SG_BAND_COUNT - 1) * SG_BAND_GAP;
 const SG_GRID_W = SCAPEGOATS_COUNT * SG_CARD_W +
   (SCAPEGOATS_COUNT - 1) * SG_CARD_GAP;
 const SG_GRID_LEFT = (W - SG_GRID_W) / 2;
-// Vertically anchored below the headline. Column height is computed
-// from the band stack so the bands extend well above and below the
-// card body without bleeding into the headline.
-const SG_GRID_TOP = 304;
+// Centred vertically under the headline (which sits at y≈156 and ends
+// near y≈288). 360 keeps the original card position, with bands
+// flowing above the headline and below the cards.
+const SG_GRID_TOP = 360;
 
 const expoOutEase = (t: number): number =>
   t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
@@ -161,6 +160,11 @@ const ScapegoatLineup: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Full-frame marquee background — bands stretch edge to edge,
+          stacked across the entire frame. Verbs cycle, direction cycles
+          per the brief (1 right, 2 left, 3 left, 4 right). Cards sit
+          on top of this stack. */}
+      <ScapegoatBackgroundMarquee frame={frame} />
       <ScapegoatHeadline frame={frame} />
       <div
         style={{
@@ -168,7 +172,7 @@ const ScapegoatLineup: React.FC = () => {
           left: SG_GRID_LEFT,
           top: SG_GRID_TOP,
           width: SG_GRID_W,
-          height: SG_COL_H,
+          height: SG_CARD_H,
           display: "flex",
           gap: SG_CARD_GAP,
           alignItems: "center",
@@ -184,6 +188,43 @@ const ScapegoatLineup: React.FC = () => {
         ))}
       </div>
     </AbsoluteFill>
+  );
+};
+
+// Full-frame marquee — bands cover the whole frame, each band stretching
+// edge to edge. Verbs cycle [liquidated, front-run, spoofed, leaked]
+// across bands. Directions cycle [right, left, left, right]. Bands are
+// pure background; the cards sit on top in the centre and cover the
+// middle bands without breaking the rhythm.
+const ScapegoatBackgroundMarquee: React.FC<{ frame: number }> = ({
+  frame,
+}) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "stretch",
+        gap: SG_BAND_GAP,
+      }}
+    >
+      {Array.from({ length: SG_BAND_COUNT }).map((_, i) => {
+        const verb = SG_MARQUEE_TEXTS[i % SG_MARQUEE_TEXTS.length];
+        const dir = SG_MARQUEE_DIRECTIONS[i % SG_MARQUEE_DIRECTIONS.length];
+        return (
+          <ScapegoatMarquee
+            key={i}
+            text={verb}
+            direction={dir}
+            frame={frame}
+            rowIndex={i}
+          />
+        );
+      })}
+    </div>
   );
 };
 
@@ -285,16 +326,13 @@ const ScapegoatColumn: React.FC<{
   const anim = computeColumnAnim(frame, enterStart, exitStart);
   if (!anim || anim.opacity <= 0.001) return null;
 
-  const marqueeText = SG_MARQUEE_TEXTS[index];
-  const marqueeDir = SG_MARQUEE_DIRECTIONS[index];
-
   return (
     <div
       style={{
         flex: "0 0 auto",
         position: "relative",
         width: SG_CARD_W,
-        height: SG_COL_H,
+        height: SG_CARD_H,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -305,30 +343,8 @@ const ScapegoatColumn: React.FC<{
         willChange: "transform, opacity, filter",
       }}
     >
-      {/* Background marquee stack — fills the column, sits behind the
-          card. Card body covers the middle bands; only the bands above
-          and below the card are visible. */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: SG_BAND_GAP,
-        }}
-      >
-        {Array.from({ length: SG_BAND_COUNT }).map((_, i) => (
-          <ScapegoatMarquee
-            key={i}
-            text={marqueeText}
-            direction={marqueeDir}
-            frame={frame}
-            rowIndex={i}
-          />
-        ))}
-      </div>
-
-      {/* Foreground card body — opaque, floats over the middle bands. */}
+      {/* Foreground card body — opaque, floats over the full-frame
+          background marquee that lives in ScapegoatBackgroundMarquee. */}
       <ScapegoatCardBody scapegoat={scapegoat} index={index} />
     </div>
   );
