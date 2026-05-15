@@ -25,7 +25,10 @@ export type CoinsBackgroundProps = {
   height: number;
 };
 
-const BG_COLOR = "#E0D8EC";
+// Background gradient — lifts the centre slightly warmer to match
+// Houdini's reference. Pure flat lavender reads as a placeholder.
+const BG_GRADIENT =
+  "radial-gradient(ellipse at center, #E8E0F2 0%, #D8CFE7 60%, #C6BCD7 100%)";
 const COIN_MODEL_URL = staticFile("models/coin.glb");
 useGLTF.preload(COIN_MODEL_URL);
 
@@ -355,19 +358,21 @@ const CoinMesh: React.FC<{
           cloned.emissiveIntensity = 0.18;
         }
       } else {
-        // Rim — bright brand green, metallic so the bevel catches the
-        // environment light and reads as a token edge.
+        // Rim — slightly brighter than the face so the bevel pops
+        // when the coin is edge-on. Glossy metallic catches the
+        // hemisphere light and reads as a polished token edge.
         cloned.map = null;
-        cloned.color = COIN_RIM_COLOR;
-        cloned.roughness = 0.28;
-        cloned.metalness = 0.7;
+        cloned.color = new THREE.Color("#1aa770");
+        cloned.roughness = 0.22;
+        cloned.metalness = 0.85;
         if ("transmission" in cloned) {
           (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.6;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.18;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.85;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.12;
         }
         if ("emissive" in cloned) {
-          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.22);
+          cloned.emissive = new THREE.Color("#0e8a5a");
+          cloned.emissiveIntensity = 0.25;
         }
       }
       mesh.material = cloned;
@@ -497,7 +502,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
   const frame = useCurrentFrame();
 
   return (
-    <AbsoluteFill style={{ width, height, background: BG_COLOR }}>
+    <AbsoluteFill style={{ width, height, background: BG_GRADIENT }}>
       <ThreeCanvas
         width={width}
         height={height}
