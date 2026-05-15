@@ -272,13 +272,13 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
         </div>
       </ExplorerChartCard>
 
-      {/* Vision Network Activity — rounds settled & created per time bucket */}
-      <ExplorerChartCard
-        title={t('explorer.vision_section.network_activity')}
-        subtitle={t('explorer.vision_section.network_activity_desc')}
-        loading={activityLoading}
-      >
-        {activity.length > 0 ? (
+      {/* Vision Network Activity — render only when there's signal */}
+      {activity.length > 0 && (
+        <ExplorerChartCard
+          title={t('explorer.vision_section.network_activity')}
+          subtitle={t('explorer.vision_section.network_activity_desc')}
+          loading={activityLoading}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={activity}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
@@ -316,12 +316,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
               />
             </AreaChart>
           </ResponsiveContainer>
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_activity_data')}</p>
-          </div>
-        )}
-      </ExplorerChartCard>
+        </ExplorerChartCard>
+      )}
 
       {/* Top Players — from data-node leaderboard */}
       <ExplorerChartCard

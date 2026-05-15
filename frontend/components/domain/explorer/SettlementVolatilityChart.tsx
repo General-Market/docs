@@ -54,6 +54,11 @@ export function SettlementVolatilityChart() {
     return ((nearZero / values.length) * 100).toFixed(0)
   }, [values])
 
+  // Don't render the card at all while loading-and-empty or when there's no data —
+  // the explorer's principle is to hide what has no signal, not advertise the absence.
+  if (loading) return null
+  if (values.length === 0) return null
+
   return (
     <ExplorerChartCard
       title={t('explorer.vision_section.settlement_volatility')}
@@ -62,38 +67,32 @@ export function SettlementVolatilityChart() {
           ? `${tieZone}% ${t('explorer.vision_section.settlement_in_tie_zone')}`
           : undefined
       }
-      loading={loading}
+      loading={false}
     >
-      {values.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 9, fill: '#86868b' }}
-              stroke="#D2D2D7"
-              interval={0}
-              angle={-30}
-              textAnchor="end"
-              height={40}
-            />
-            <YAxis tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" allowDecimals={false} />
-            <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 6, background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.08)' }}
-              labelStyle={{ color: '#1d1d1f' }}
-              itemStyle={{ color: '#6e6e73' }}
-            />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36} name={t('explorer.vision_section.settlements')}>
-              {histogram.map((entry, i) => (
-                <Cell key={i} fill={bucketColor(entry.label)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="h-full flex items-center justify-center">
-          <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_settlement_data')}</p>
-        </div>
-      )}
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 9, fill: '#86868b' }}
+            stroke="#D2D2D7"
+            interval={0}
+            angle={-30}
+            textAnchor="end"
+            height={40}
+          />
+          <YAxis tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" allowDecimals={false} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 6, background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.08)' }}
+            labelStyle={{ color: '#1d1d1f' }}
+            itemStyle={{ color: '#6e6e73' }}
+          />
+          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36} name={t('explorer.vision_section.settlements')}>
+            {histogram.map((entry, i) => (
+              <Cell key={i} fill={bucketColor(entry.label)} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </ExplorerChartCard>
   )
 }

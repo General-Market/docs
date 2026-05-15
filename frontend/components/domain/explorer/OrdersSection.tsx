@@ -61,65 +61,84 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
     [snapshots]
   )
 
+  // Hide cards when their underlying metric is flat zero across the entire window —
+  // a flat-zero chart is louder about the absence than the data warrants.
+  const pendingEverNonZero = useMemo(
+    () => snapshots.some((s) => s.pending_order_count > 0),
+    [snapshots]
+  )
+  const processedEverNonZero = useMemo(
+    () => ordersProcessedDeltas.some((d) => d.delta > 0),
+    [ordersProcessedDeltas]
+  )
+  const ordersPerCycleEverNonZero = useMemo(
+    () => ordersPerCycleData.some((d) => d.orders_per_cycle > 0),
+    [ordersPerCycleData]
+  )
+
   return (
     <section>
       <h2 className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.orders_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. Pending Orders */}
-        <ExplorerChartCard
-          title={t('explorer.orders_section.pending')}
-          subtitle={
-            latest
-              ? t('explorer.orders_section.current_count', { count: latest.pending_order_count })
-              : undefined
-          }
-          loading={loading}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={snapshots}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
-              <XAxis {...xAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
-              <Tooltip
-                labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, t('explorer.orders_tooltip.pending')]}
-              />
-              <Area
-                type="monotone"
-                dataKey="pending_order_count"
-                stroke="#1d1d1f"
-                fill="#1d1d1f"
-                fillOpacity={0.06}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ExplorerChartCard>
+        {/* 1. Pending Orders — only render with signal */}
+        {pendingEverNonZero && (
+          <ExplorerChartCard
+            title={t('explorer.orders_section.pending')}
+            subtitle={
+              latest
+                ? t('explorer.orders_section.current_count', { count: latest.pending_order_count })
+                : undefined
+            }
+            loading={loading}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={snapshots}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+                <XAxis {...xAxisProps} />
+                <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
+                <Tooltip
+                  labelFormatter={(v) => new Date(v as string).toLocaleString()}
+                  formatter={(v: number) => [v, t('explorer.orders_tooltip.pending')]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pending_order_count"
+                  stroke="#1d1d1f"
+                  fill="#1d1d1f"
+                  fillOpacity={0.06}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </ExplorerChartCard>
+        )}
 
-        {/* 2. Orders Processed/min */}
-        <ExplorerChartCard
-          title={t('explorer.orders_section.processed_per_min')}
-          subtitle={t('explorer.orders_section.processed_desc')}
-          loading={loading}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={ordersProcessedDeltas}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
-              <XAxis {...deltaXAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
-              <Tooltip
-                labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, t('explorer.orders_tooltip.processed')]}
-              />
-              <Line
-                type="monotone"
-                dataKey="delta"
-                stroke="#1d1d1f"
-                dot={false}
-                strokeWidth={1.5}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </ExplorerChartCard>
+        {/* 2. Orders Processed/min — only render with signal */}
+        {processedEverNonZero && (
+          <ExplorerChartCard
+            title={t('explorer.orders_section.processed_per_min')}
+            subtitle={t('explorer.orders_section.processed_desc')}
+            loading={loading}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={ordersProcessedDeltas}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+                <XAxis {...deltaXAxisProps} />
+                <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
+                <Tooltip
+                  labelFormatter={(v) => new Date(v as string).toLocaleString()}
+                  formatter={(v: number) => [v, t('explorer.orders_tooltip.processed')]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="delta"
+                  stroke="#1d1d1f"
+                  dot={false}
+                  strokeWidth={1.5}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ExplorerChartCard>
+        )}
 
         {/* 3. Avg Cycle Duration */}
         <ExplorerChartCard
@@ -179,32 +198,34 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
           </div>
         </ExplorerChartCard>
 
-        {/* 6. Orders per Cycle (merged from cycles tab) */}
-        <ExplorerChartCard
-          title={t('explorer.cycle_section.orders_per_cycle')}
-          subtitle={t('explorer.cycle_section.orders_per_cycle_desc')}
-          loading={loading}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={ordersPerCycleData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
-              <XAxis dataKey="time" tickFormatter={timeTickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" />
-              <Tooltip
-                labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="orders_per_cycle"
-                stroke="#0071E3"
-                strokeWidth={1.5}
-                dot={false}
-                name={t('explorer.cycle_section.orders_cycle')}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </ExplorerChartCard>
+        {/* 6. Orders per Cycle — only render with signal (merged from cycles tab) */}
+        {ordersPerCycleEverNonZero && (
+          <ExplorerChartCard
+            title={t('explorer.cycle_section.orders_per_cycle')}
+            subtitle={t('explorer.cycle_section.orders_per_cycle_desc')}
+            loading={loading}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={ordersPerCycleData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+                <XAxis dataKey="time" tickFormatter={timeTickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+                <Tooltip
+                  labelFormatter={(v) => new Date(v as string).toLocaleString()}
+                  contentStyle={{ fontSize: 12 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="orders_per_cycle"
+                  stroke="#0071E3"
+                  strokeWidth={1.5}
+                  dot={false}
+                  name={t('explorer.cycle_section.orders_cycle')}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ExplorerChartCard>
+        )}
 
       </div>
     </section>

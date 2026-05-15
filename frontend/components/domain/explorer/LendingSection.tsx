@@ -96,9 +96,11 @@ export function LendingSection({ loading }: SectionProps) {
     return { totalSupply, totalBorrowed, vaultAssets, tvl, avgUtil, weightedApy, marketCount: markets.length, activeCount: activeMarkets.length }
   }, [enriched, activeMarkets, vault, markets.length])
 
-  // Bar chart data: utilization per market
+  // Bar chart data: utilization per market — drop zero-util markets so the chart
+  // doesn't render a phantom row with a label and an invisible bar
   const utilizationData = useMemo(() =>
     activeMarkets
+      .filter(m => m.util > 0)
       .sort((a, b) => b.util - a.util)
       .map(m => ({ name: m.label, utilization: parseFloat(m.util.toFixed(2)) })),
   [activeMarkets])
@@ -189,13 +191,13 @@ export function LendingSection({ loading }: SectionProps) {
           </div>
         </ExplorerChartCard>
 
-        {/* 2. Utilization Rate per Market */}
-        <ExplorerChartCard
-          title={t('explorer.lending_section.utilization')}
-          subtitle="Borrowed / Supplied per market"
-          loading={lendingLoading}
-        >
-          {utilizationData.length > 0 ? (
+        {/* 2. Utilization Rate per Market — only render when at least one market has util > 0 */}
+        {utilizationData.length > 0 && (
+          <ExplorerChartCard
+            title={t('explorer.lending_section.utilization')}
+            subtitle="Borrowed / Supplied per market"
+            loading={lendingLoading}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={utilizationData} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
@@ -209,18 +211,16 @@ export function LendingSection({ loading }: SectionProps) {
                 <Bar dataKey="utilization" fill="#0071E3" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No active markets</div>
-          )}
-        </ExplorerChartCard>
+          </ExplorerChartCard>
+        )}
 
-        {/* 3. Borrow APY per Market */}
-        <ExplorerChartCard
-          title={t('explorer.lending_section.borrow_apy')}
-          subtitle="Annualized borrow cost"
-          loading={lendingLoading}
-        >
-          {apyData.length > 0 ? (
+        {/* 3. Borrow APY per Market — only render when at least one market has APY > 0 */}
+        {apyData.length > 0 && (
+          <ExplorerChartCard
+            title={t('explorer.lending_section.borrow_apy')}
+            subtitle="Annualized borrow cost"
+            loading={lendingLoading}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={apyData} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
@@ -234,18 +234,16 @@ export function LendingSection({ loading }: SectionProps) {
                 <Bar dataKey="apy" fill="#AF52DE" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No borrow activity</div>
-          )}
-        </ExplorerChartCard>
+          </ExplorerChartCard>
+        )}
 
-        {/* 4. Borrowed Volume per Market */}
-        <ExplorerChartCard
-          title={t('explorer.lending_section.borrowed')}
-          subtitle="Outstanding debt per market"
-          loading={lendingLoading}
-        >
-          {borrowedData.length > 0 ? (
+        {/* 4. Borrowed Volume per Market — only render when there's outstanding debt */}
+        {borrowedData.length > 0 && (
+          <ExplorerChartCard
+            title={t('explorer.lending_section.borrowed')}
+            subtitle="Outstanding debt per market"
+            loading={lendingLoading}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={borrowedData} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
@@ -259,10 +257,8 @@ export function LendingSection({ loading }: SectionProps) {
                 <Bar dataKey="borrowed" fill="#B25600" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No outstanding debt</div>
-          )}
-        </ExplorerChartCard>
+          </ExplorerChartCard>
+        )}
 
         {/* 5. Supply per Market */}
         <ExplorerChartCard
