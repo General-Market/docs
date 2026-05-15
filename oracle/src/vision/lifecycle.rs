@@ -759,12 +759,59 @@ impl BatchLifecycleManager {
         batch_id: u64,
         source_name: &str,
     ) -> Result<(RoundSettlement, super::types::TickResult, H256), Box<dyn std::error::Error + Send + Sync>> {
-        // Get batch state from scheduler
-        let (batch, mut players) = self
-            .scheduler
-            .get_batch_state(batch_id)
-            .await
-            .ok_or_else(|| format!("batch {} not found in scheduler", batch_id))?;
+        // Get batch state from scheduler. After an oracle restart the in-memory
+        // scheduler is empty for any batch created before the restart; the
+        // chain_listener will eventually backfill but it lags 35k+ blocks. Hydrate
+        // the batch row from `vision_batch_lifecycle` so settle doesn't error out.
+        let (batch, mut players) = match self.scheduler.get_batch_state(batch_id).await {
+            Some(state) => state,
+            None => {
+                let row: Option<(String, i64, String)> = sqlx::query_as(
+                    "SELECT source_id, timeframe_secs, config_hash \
+                     FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1 LIMIT 1",
+                )
+                .bind(batch_id as i64)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| format!("lifecycle row lookup for batch {}: {}", batch_id, e))?;
+
+                let (sid_hex, tick_secs, cfg_hex) = row.ok_or_else(|| {
+                    format!("batch {} not in scheduler or lifecycle table", batch_id)
+                })?;
+
+                let strip = |s: &str| -> String { s.trim_start_matches("0x").to_string() };
+                let sid_bytes = hex::decode(strip(&sid_hex))
+                    .map_err(|e| format!("decode source_id hex: {}", e))?;
+                let cfg_bytes = hex::decode(strip(&cfg_hex))
+                    .map_err(|e| format!("decode config_hash hex: {}", e))?;
+                if sid_bytes.len() != 32 || cfg_bytes.len() != 32 {
+                    return Err(format!(
+                        "lifecycle row for batch {} has malformed source_id/config_hash",
+                        batch_id
+                    )
+                    .into());
+                }
+                let hydrated = super::types::Batch {
+                    id: batch_id,
+                    creator: Address::zero(),
+                    source_id: H256::from_slice(&sid_bytes),
+                    config_hash: H256::from_slice(&cfg_bytes),
+                    tick_duration: tick_secs as u64,
+                    lock_offset: 0,
+                    settlement_grace: 0,
+                    created_at_tick: 0,
+                    paused: false,
+                    settled: false,
+                };
+                info!(
+                    batch_id,
+                    source = %source_name,
+                    "Hydrated batch row from lifecycle table (scheduler was empty after restart)"
+                );
+                self.scheduler.on_batch_created(hydrated.clone()).await;
+                (hydrated, Vec::new())
+            }
+        };
 
         // If the chain_listener is behind the on-chain head, the in-memory scheduler
         // can be missing players for batches whose `PlayerJoined` blocks haven't been
