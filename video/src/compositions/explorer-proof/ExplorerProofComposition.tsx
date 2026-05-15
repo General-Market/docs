@@ -56,27 +56,25 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   //   8 1740..1980 dezoom
   //   9 1980..2100 zoom into end card
 
-  // Phone scale stands in for the "camera zoom" — easier to reason about
-  // in CSS than a real perspective camera.
+  // Phone scale — wider swing makes each beat read as a real camera
+  // move instead of a slow drift. 0.8 dezoom → 1.45 close-up.
   const phoneScale = driveProp(frame, [
-    0.85, 1.15, 1.25, 1.25, 0.9, 0.9, 1.35, 0.85, 1.1, 1.1,
+    0.8, 1.25, 1.4, 1.4, 0.85, 0.85, 1.5, 0.8, 1.2, 1.2,
   ]);
 
-  // Phone vertical translate — beat 3 lifts it (shows top of screen),
-  // beat 4 drops it (shows bottom). Pixels, not world units.
+  // Phone vertical translate — bigger lift/drop for the up/down beats.
   const phoneTranslateY = driveProp(frame, [
-    0, 0, -80, 80, 0, 0, 0, 0, 0, 0,
+    0, 0, -140, 140, 0, 0, 0, 0, 0, 0,
   ]);
 
-  // Subtle tilt — sells the up/down beats as a head-tilt rather than a
-  // pure pan. Degrees.
+  // Tilt — sharper lean during the up/down beats. Degrees.
   const phoneRotateX = driveProp(frame, [
-    0, 0, -6, 6, 0, 0, 0, 0, 0, 0,
+    0, 0, -10, 10, 0, 0, 0, 0, 0, 0,
   ]);
 
-  // Yaw — only the second dezoom beat has any.
+  // Yaw — beat 6 turns the phone to the right.
   const phoneRotateY = driveProp(frame, [
-    0, 0, 0, 0, 0, 8, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 14, 0, 0, 0, 0,
   ]);
 
   // Coin field — recedes when we zoom in, blooms when we pull back.
