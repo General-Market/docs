@@ -6,7 +6,6 @@ import {
 } from "@remotion/transitions";
 import { FPS, H, W, colors } from "./theme";
 import { antiCheatStatMeta, antiCheatBarsMeta } from "./AntiCheatStat";
-import { antiCheatIcebergMeta } from "./AntiCheatIceberg";
 import { antiCheatRiggedMeta } from "./AntiCheatRigged";
 import { antiCheatSolutionMeta } from "./AntiCheatSolution";
 import { antiCheatReassureMeta } from "./AntiCheatReassure";
@@ -29,17 +28,16 @@ import { MUSIC_START_FROM_AUDIO } from "./beats";
 // Tightened pass: shorter durations, smaller magnitudes, less blur.
 // Cuts now snap instead of swelling.
 //
-//   Bars → Iceberg      soft snap           18f
-//   Iceberg → Rigged    snap-zoom intense   16f
+//   Bars → Rigged       soft snap           18f
 //   Rigged → Stat       snap-zoom intense   16f
 //   Stat → Solution     snap-zoom out + veil 28f
 //   Solution → Reassure soft snap           18f
 //   Reassure → Bridge   soft snap           18f
 //   Bridge → EndCard    long pull           24f
-// The Hook (3D laptop / phone scene, ~3.7s) was removed — video now opens
-// on Bars directly.
-const T_BARS_ICEBERG = 18;
-const T_ICEBERG_RIGGED = 16;
+// Iceberg scene removed — its scapegoat content (liquidation hunters,
+// front runners, orderbook spoofers, insider traders) now lives as a
+// card lineup at the head of the Stat scene.
+const T_BARS_RIGGED = 18;
 const T_RIGGED_STAT = 16;
 const T_STAT_SOLUTION = 28;
 const T_SOLUTION_REASSURE = 18;
@@ -47,8 +45,7 @@ const T_REASSURE_BRIDGE = 18;
 const T_BRIDGE_END = 24;
 
 const TRANSITION_FRAMES =
-  T_BARS_ICEBERG +
-  T_ICEBERG_RIGGED +
+  T_BARS_RIGGED +
   T_RIGGED_STAT +
   T_STAT_SOLUTION +
   T_SOLUTION_REASSURE +
@@ -57,7 +54,6 @@ const TRANSITION_FRAMES =
 
 const TOTAL_FRAMES =
   antiCheatBarsMeta.durationInFrames +
-  antiCheatIcebergMeta.durationInFrames +
   antiCheatRiggedMeta.durationInFrames +
   antiCheatStatMeta.durationInFrames +
   antiCheatSolutionMeta.durationInFrames +
@@ -117,24 +113,11 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatBarsMeta.component />
         </TransitionSeries.Sequence>
 
-        {/* Bars → Iceberg: soft snap into the descent. The verdict landed,
-            now we descend through the reasons. */}
+        {/* Bars → Rigged: soft snap. The carousel hands off to the
+            "everyone is rigged" article wall — same descent, fewer steps. */}
         <TransitionSeries.Transition
           presentation={snapZoomSoft()}
-          timing={linearTiming({ durationInFrames: T_BARS_ICEBERG })}
-        />
-
-        <TransitionSeries.Sequence
-          durationInFrames={antiCheatIcebergMeta.durationInFrames}
-        >
-          <antiCheatIcebergMeta.component />
-        </TransitionSeries.Sequence>
-
-        {/* Iceberg → Rigged: snap-zoom intense. "Insider traders" hits
-            red, then "Everyone is rigged" lands as the evidence. */}
-        <TransitionSeries.Transition
-          presentation={snapZoomIntense()}
-          timing={linearTiming({ durationInFrames: T_ICEBERG_RIGGED })}
+          timing={linearTiming({ durationInFrames: T_BARS_RIGGED })}
         />
 
         <TransitionSeries.Sequence

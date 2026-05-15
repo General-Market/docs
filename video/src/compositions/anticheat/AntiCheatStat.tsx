@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Sequence,
   interpolate,
   useCurrentFrame,
 } from "remotion";
@@ -17,19 +18,19 @@ const { fontFamily: caveatFont } = loadCaveat("normal", {
 });
 
 // Two compositions live in this file:
-//   AntiCheatStat — primary number 0.01%/70% then hard-cut to 99.9%/30%
-//   AntiCheatBars — the % extracted by unfair trading bar chart
-// Both durations locked to beats. Stat = 145f (4.83s) — the primary
-// number cuts to its inverse on a beat partway through.
-// Bars = 78f (2.6s) — its hard cut to Rigged lands on beat 11.
-const STAT_FRAMES = 145;
-// Bars 129f (4.3s) — extended from 78f. The bar chart is gone; the room
-// goes to a screen-filling Carousel3D ring of category cards. Hard cut
-// to Rigged lands on beat 13 (357) instead of beat 11 (306). Rigged's
-// article cadence still hits beats 13–18 within ±1f — negligible drift.
+//   AntiCheatStat — scapegoat lineup → 0.01%/70% then hard-cut to 99.9%/30%
+//   AntiCheatBars — the carousel of categories
+// The Stat scene now opens on a four-card lineup of who you blame
+// (liquidation hunters, front runners, orderbook spoofers, insider
+// traders) — content lifted from the retired Iceberg scene. The cards
+// land, hold, then dissolve into the 0.04% / 99.96% punchline so the
+// stat reads as the answer to "but who actually wins?"
+const SCAPEGOATS_FRAMES = 130;
+const STAT_BEAT_FRAMES = 145;
+const STAT_FRAMES = SCAPEGOATS_FRAMES + STAT_BEAT_FRAMES;
 const BARS_FRAMES = 129;
-// Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on scene-local
-// beat 2 (frame 56 inside Stat = absolute beat 22, frame 583).
+// Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on the second beat
+// of the stat section (scene-local frame SCAPEGOATS_FRAMES + 56).
 const STAT_FLIP_AT = 56;
 
 export const AntiCheatStat: React.FC = () => {
@@ -37,12 +38,232 @@ export const AntiCheatStat: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
       <IdleZoom durationInFrames={STAT_FRAMES} from={1} to={1.04}>
         <DotGrid />
-        <StatPanel />
-        <StatAnnotations />
-        <StatFootnote />
+        <ScapegoatLineup />
+        <Sequence from={SCAPEGOATS_FRAMES}>
+          <StatPanel />
+          <StatAnnotations />
+          <StatFootnote />
+        </Sequence>
         <DotGridVignette intensity={0.22} />
       </IdleZoom>
     </AbsoluteFill>
+  );
+};
+
+// ─── Scapegoat lineup — who you blame, before the stat says otherwise ─────
+//
+// Four Apple-light cards lined up across the frame. Each stamps in on
+// its own beat with a quick scale-snap + lift; once all four are in,
+// the lineup holds, then fades down so the 0.04% typewriter can take
+// the stage. Content lifted from the retired Iceberg tiers — same
+// suspects, sharper format.
+
+type Scapegoat = {
+  label: [string, string];
+  charge: string;
+};
+
+const SCAPEGOATS: Scapegoat[] = [
+  { label: ["liquidation", "hunters"], charge: "triggers your stops" },
+  { label: ["front", "runners"], charge: "moves before you" },
+  { label: ["orderbook", "spoofers"], charge: "fakes the signal" },
+  { label: ["insider", "traders"], charge: "knows the news first" },
+];
+
+const SCAPEGOAT_HEADLINE = "Who you blame";
+
+// Card geometry — sized to fit a four-up row inside the 1920-wide frame
+// with healthy gaps. Heights match the Bars carousel card so the visual
+// vocabulary stays consistent.
+const SG_CARD_W = 340;
+const SG_CARD_H = 460;
+const SG_CARD_GAP = 60;
+const SG_GRID_W = 4 * SG_CARD_W + 3 * SG_CARD_GAP; // 1540
+const SG_GRID_LEFT = (W - SG_GRID_W) / 2;          // 190
+const SG_GRID_TOP = 360;
+
+// Timing — staggered entrance, hold, exit.
+const SG_HEADLINE_AT = 0;
+const SG_HEADLINE_DURATION = toFrames(0.45);
+const SG_FIRST_CARD_AT = toFrames(0.55);
+const SG_CARD_STAGGER = toFrames(0.42);
+const SG_CARD_ENTRANCE = toFrames(0.32);
+const SG_EXIT_AT = toFrames(3.4);
+const SG_EXIT_DURATION = toFrames(0.35);
+
+const expoOutEase = (t: number): number =>
+  t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
+
+const ScapegoatLineup: React.FC = () => {
+  const frame = useCurrentFrame();
+  if (frame >= SCAPEGOATS_FRAMES) return null;
+
+  const exitT = Math.max(
+    0,
+    Math.min(1, (frame - SG_EXIT_AT) / SG_EXIT_DURATION),
+  );
+  const exitFade = 1 - exitT;
+  const exitLift = -exitT * 14;
+  if (exitFade <= 0) return null;
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <ScapegoatHeadline frame={frame} exitFade={exitFade} />
+      <div
+        style={{
+          position: "absolute",
+          left: SG_GRID_LEFT,
+          top: SG_GRID_TOP,
+          width: SG_GRID_W,
+          height: SG_CARD_H,
+          display: "flex",
+          gap: SG_CARD_GAP,
+          opacity: exitFade,
+          transform: `translateY(${exitLift.toFixed(2)}px)`,
+        }}
+      >
+        {SCAPEGOATS.map((s, i) => (
+          <ScapegoatCard
+            key={s.label.join("-")}
+            scapegoat={s}
+            index={i}
+            frame={frame}
+          />
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const ScapegoatHeadline: React.FC<{ frame: number; exitFade: number }> = ({
+  frame,
+  exitFade,
+}) => {
+  const enterT = Math.max(
+    0,
+    Math.min(1, (frame - SG_HEADLINE_AT) / SG_HEADLINE_DURATION),
+  );
+  const eased = expoOutEase(enterT);
+  const y = (1 - eased) * 22;
+  const blur = (1 - eased) * 6;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 156,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        fontFamily: font,
+        fontSize: 132,
+        fontWeight: 800,
+        letterSpacing: "-0.04em",
+        color: colors.fg,
+        lineHeight: 1.0,
+        opacity: eased * exitFade,
+        transform: `translateY(${y.toFixed(2)}px)`,
+        filter: blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : undefined,
+      }}
+    >
+      {SCAPEGOAT_HEADLINE}
+    </div>
+  );
+};
+
+const ScapegoatCard: React.FC<{
+  scapegoat: Scapegoat;
+  index: number;
+  frame: number;
+}> = ({ scapegoat, index, frame }) => {
+  const start = SG_FIRST_CARD_AT + index * SG_CARD_STAGGER;
+  const local = frame - start;
+  const t = Math.max(0, Math.min(1, local / SG_CARD_ENTRANCE));
+  const eased = expoOutEase(t);
+  const lift = (1 - eased) * 38;
+  const tilt = (1 - eased) * 4;
+  const scale = 0.94 + eased * 0.06;
+  const opacity = eased;
+  const enterBlur = (1 - eased) * 8;
+
+  return (
+    <div
+      style={{
+        flex: "0 0 auto",
+        width: SG_CARD_W,
+        height: SG_CARD_H,
+        borderRadius: 24,
+        background: colors.surface,
+        boxShadow:
+          "0 1px 0 rgba(255,255,255,0.6) inset, 0 32px 64px rgba(8, 14, 28, 0.22), 0 10px 20px rgba(8, 14, 28, 0.12)",
+        border: `1px solid ${colors.rule}`,
+        position: "relative",
+        opacity,
+        transform: `translateY(${lift.toFixed(2)}px) rotate(${tilt.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
+        filter: enterBlur > 0.05 ? `blur(${enterBlur.toFixed(2)}px)` : undefined,
+        willChange: "transform, opacity, filter",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 26,
+          left: 28,
+          fontFamily: monoFont,
+          fontSize: 16,
+          fontWeight: 500,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: colors.dim,
+        }}
+      >
+        suspect
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 90,
+          left: 28,
+          right: 28,
+          fontFamily: font,
+          fontSize: 54,
+          fontWeight: 800,
+          letterSpacing: "-0.024em",
+          color: colors.fg,
+          lineHeight: 0.98,
+        }}
+      >
+        <div>{scapegoat.label[0]}</div>
+        <div style={{ color: colors.accent }}>{scapegoat.label[1]}</div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 28,
+          right: 28,
+          bottom: 76,
+          height: 1,
+          background: colors.rule,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 28,
+          right: 28,
+          bottom: 30,
+          fontFamily: monoFont,
+          fontSize: 16,
+          fontWeight: 500,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: colors.dim,
+          lineHeight: 1.3,
+        }}
+      >
+        {scapegoat.charge}
+      </div>
+    </div>
   );
 };
 
