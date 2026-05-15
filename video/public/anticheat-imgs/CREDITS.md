@@ -34,31 +34,36 @@ and credit in the video's description / about page when shipping.
   Credit: Jean-Christophe BENOIST
   Licence: CC BY 3.0
 
-# scapegoat-{sbf,griffin,cz,pelosi} image credits
+# scapegoat-{madoff,milken,belfort,rajaratnam} image credits
 
-Real-face scapegoat lineup used in the AntiCheatStat scene — the
-public villains the retail-finance internet has already chosen. Three
-are Creative Commons, one is US-Gov public domain.
+Real-face scapegoat lineup used in the AntiCheatStat scene — all four
+have personally pleaded guilty or been convicted of finance crimes.
+Two PD-USGov, two Creative Commons.
 
-- **scapegoat-sbf.jpg** — Sam Bankman-Fried (FTX / Alameda)
-  Source: Wikimedia Commons, *Sam_Bankman-Fried.png*
-  Photographer: Cointelegraph (Bitcoin 2021 conference interview)
-  Licence: CC BY 3.0 — credit Cointelegraph on publish
+- **scapegoat-madoff.jpg** — Bernie Madoff (DOJ booking photo, 16 March 2009)
+  Pleaded guilty to 11 federal felonies (securities fraud, mail fraud,
+  perjury, etc.) on 12 March 2009; sentenced to 150 years.
+  Source: Wikimedia Commons, *BernardMadoff.jpg*
+  Licence: Public domain — work of the U.S. Department of Justice
 
-- **scapegoat-griffin.jpg** — Kenneth C. Griffin (Citadel)
-  Source: Wikimedia Commons, *Kenneth_C._Griffin_photo.jpg*
-  Photographer: Paul Elledge, 13 September 2017
-  Licence: CC BY-SA 4.0 — credit Paul Elledge; share-alike obligation
+- **scapegoat-milken.jpg** — Michael Milken (Reagan Foundation 2026)
+  Pleaded guilty to securities fraud in 1990; sentenced to 10 years
+  (served 22 months). Later pardoned in 2020.
+  Source: Wikimedia Commons, *Reagan_Foundation_2026_-_Michael_Milken_01.jpg*
+  Licence: CC BY-SA 4.0 — credit the Wikimedia uploader; share-alike
 
-- **scapegoat-cz.jpg** — Changpeng Zhao "CZ" (Binance)
-  Source: Wikimedia Commons, *Changpeng_Zhao_in_2022.jpg*
-  Photographer: per the Wikimedia file page, 4 June 2022, Vietnam NFT Summit
-  Licence: CC BY-SA 4.0 — credit the photographer; share-alike obligation
+- **scapegoat-belfort.jpg** — Jordan Belfort (Tai Lopez interview, 2017)
+  Pleaded guilty to securities fraud and money laundering in 1999
+  (Stratton Oakmont pump-and-dump); served 22 months.
+  Source: Wikimedia Commons, *JordanBelfort2017.png*
+  Licence: CC BY 3.0 — credit the Wikimedia uploader on publish
 
-- **scapegoat-pelosi.jpg** — Nancy Pelosi (Speaker of the House, 2019)
-  Source: Wikimedia Commons, *Official_photo_of_Speaker_Nancy_Pelosi_in_2019.jpg*
-  Photographer: John Harrington, Office of the Speaker
-  Licence: Public domain — work of the U.S. federal government
+- **scapegoat-rajaratnam.jpg** — Raj Rajaratnam (Galleon Group)
+  Convicted on 14 counts of conspiracy and securities fraud in 2011
+  (insider trading); sentenced to 11 years — longest insider-trading
+  sentence on record at the time.
+  Source: Wikimedia Commons, *Raj_Rajaratnam_in_2024.jpg*
+  Licence: CC BY-SA 4.0 — credit the Wikimedia uploader; share-alike
 
 # scapegoat-{goat,witch,pillory,execution} image credits (retired)
 

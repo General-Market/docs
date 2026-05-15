@@ -54,15 +54,15 @@ export const AntiCheatStat: React.FC = () => {
 // ─── Scapegoat lineup — who to blame, before the stat says otherwise ─────
 //
 // Four wanted-poster cards lined up across the frame. Each carries a
-// real face the retail-finance internet has chosen to hate: SBF for
-// the cascade liquidations of FTX/Alameda, Ken Griffin for Citadel
-// front-running, CZ for Binance spoof wicks, Nancy Pelosi for the
-// Congressional trading meme. Same mechanism, different costumes.
-// Image fills the whole card; a gradient veil at the bottom holds the
-// suspect name and charge so the card reads as one piece.
+// face that has actually pleaded guilty or been convicted of finance
+// crimes — no innuendo, no logos, no implication of someone who only
+// faces tweets. Bernie Madoff (DOJ mugshot, Ponzi guilty plea),
+// Michael Milken (RICO + securities fraud guilty plea), Jordan
+// Belfort (Stratton Oakmont securities-fraud guilty plea), Raj
+// Rajaratnam (convicted of insider trading after the Galleon trial).
+// Same scapegoat mechanism, four different convictions.
 //
-// All four photos are Wikimedia Commons — three CC BY / CC BY-SA, one
-// PD-USGov. Attribution lives in anticheat-imgs/CREDITS.md.
+// Attribution lives in anticheat-imgs/CREDITS.md.
 
 type Scapegoat = {
   label: [string, string];
@@ -75,26 +75,26 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["liquidation", "hunters"],
     charge: "triggers your stops",
-    imageSrc: "anticheat-imgs/scapegoat-sbf.jpg",
+    imageSrc: "anticheat-imgs/scapegoat-madoff.jpg",
     imagePosition: "center 22%",
   },
   {
     label: ["front", "runners"],
     charge: "moves before you",
-    imageSrc: "anticheat-imgs/scapegoat-griffin.jpg",
-    imagePosition: "center 18%",
+    imageSrc: "anticheat-imgs/scapegoat-milken.jpg",
+    imagePosition: "center 28%",
   },
   {
     label: ["orderbook", "spoofers"],
     charge: "fakes the signal",
-    imageSrc: "anticheat-imgs/scapegoat-cz.jpg",
+    imageSrc: "anticheat-imgs/scapegoat-belfort.jpg",
     imagePosition: "center 22%",
   },
   {
     label: ["insider", "traders"],
     charge: "knows the news first",
-    imageSrc: "anticheat-imgs/scapegoat-pelosi.jpg",
-    imagePosition: "center 18%",
+    imageSrc: "anticheat-imgs/scapegoat-rajaratnam.jpg",
+    imagePosition: "center 22%",
   },
 ];
 
