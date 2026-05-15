@@ -130,12 +130,19 @@ type CoinSeed = {
   x: number;
   y: number;
   baseScale: number;
-  cycleSec: number; // total time deep → close → loop
+  cycleSec: number; // total time deep → past-camera → loop (faster)
   cyclePhase: number; // 0..1 offset so coins don't sync
-  spinPeriodSec: number; // slow rotation period (around world Y)
-  spinPhase: number;
-  staticTiltX: number; // constant lean forward/back, radians
-  staticTiltZ: number; // constant lean left/right, radians
+  // ── Wobble (replaces continuous spin) ────────────────────────────
+  // Each coin rocks back and forth on a diagonal axis. The axis is
+  // either /-diagonal (tiltAxisDir = +1) or \-diagonal (-1). The
+  // wobble oscillates between ±wobbleAmplitudeDeg degrees with a
+  // period of wobblePeriodSec seconds. wobblePhase shifts the start
+  // angle so coins aren't synchronised.
+  tiltAxisDir: 1 | -1;
+  wobbleAmplitudeDeg: number; // 30 or 15 (some coins have a smaller range)
+  wobblePeriodSec: number;   // ≥ 5 (5s for a full 60° swing → ≤12°/s)
+  wobblePhase: number;        // radians, sets starting angle
+  staticTiltDeg: number;      // additional constant lean (-30..+30°)
 };
 
 // Frame layout (world units, 16:9):
@@ -156,153 +163,71 @@ type CoinSeed = {
 //
 // 12 coins total, 4 size tiers, dense.
 
+// 14 coin tracks. Each one is a fixed x/y "lane" — the coin advances
+// along z, fades out past the camera, and the SAME lane immediately
+// starts a new coin from the back. With staggered cyclePhase values
+// across the seed list there is always a mix of "just entering" and
+// "about to leave" coins in the frame.
 const COIN_SEEDS: CoinSeed[] = [
-  // ── Top band — above text, hero size
-  {
-    x: -5.4,
-    y: 3.0,
-    baseScale: 1.7,
-    cycleSec: 22,
-    cyclePhase: 0.0,
-    spinPeriodSec: 18,
-    spinPhase: 0.4,
-    staticTiltX: 0.18,
-    staticTiltZ: 0.12,
-  },
-  {
-    x: -0.6,
-    y: 3.4,
-    baseScale: 1.9,
-    cycleSec: 24,
-    cyclePhase: 0.35,
-    spinPeriodSec: 22,
-    spinPhase: 1.2,
-    staticTiltX: -0.12,
-    staticTiltZ: 0.05,
-  },
-  {
-    x: 5.4,
-    y: 3.0,
-    baseScale: 1.65,
-    cycleSec: 20,
-    cyclePhase: 0.62,
-    spinPeriodSec: 19,
-    spinPhase: 2.0,
-    staticTiltX: 0.1,
-    staticTiltZ: -0.18,
-  },
-  // ── Bottom band — below text, hero size
-  {
-    x: -5.4,
-    y: -3.0,
-    baseScale: 2.0,
-    cycleSec: 26,
-    cyclePhase: 0.18,
-    spinPeriodSec: 24,
-    spinPhase: 0.9,
-    staticTiltX: -0.22,
-    staticTiltZ: -0.1,
-  },
-  {
-    x: 0.6,
-    y: -3.5,
-    baseScale: 1.55,
-    cycleSec: 21,
-    cyclePhase: 0.5,
-    spinPeriodSec: 17,
-    spinPhase: 1.7,
-    staticTiltX: 0.15,
-    staticTiltZ: 0.0,
-  },
-  {
-    x: 5.4,
-    y: -3.0,
-    baseScale: 1.85,
-    cycleSec: 25,
-    cyclePhase: 0.75,
-    spinPeriodSec: 20,
-    spinPhase: 2.4,
-    staticTiltX: -0.18,
-    staticTiltZ: 0.15,
-  },
-  // ── Far edges — sit above/below the text vertical band so they
-  // never cross the wordmark. y must satisfy |y| > 1.8 (text band).
-  {
-    x: -8.0,
-    y: 2.2,
-    baseScale: 0.7,
-    cycleSec: 23,
-    cyclePhase: 0.12,
-    spinPeriodSec: 20,
-    spinPhase: 0.7,
-    staticTiltX: 0.05,
-    staticTiltZ: 0.22,
-  },
-  {
-    x: 8.0,
-    y: -2.2,
-    baseScale: 0.72,
-    cycleSec: 21,
-    cyclePhase: 0.55,
-    spinPeriodSec: 17,
-    spinPhase: 1.8,
-    staticTiltX: -0.05,
-    staticTiltZ: -0.18,
-  },
-  // ── Far back, behind the phone, just for depth — tiny.
-  {
-    x: -2.0,
-    y: 1.4,
-    baseScale: 0.55,
-    cycleSec: 28,
-    cyclePhase: 0.2,
-    spinPeriodSec: 23,
-    spinPhase: 1.4,
-    staticTiltX: 0.1,
-    staticTiltZ: -0.1,
-  },
-  {
-    x: 2.0,
-    y: 1.4,
-    baseScale: 0.55,
-    cycleSec: 29,
-    cyclePhase: 0.7,
-    spinPeriodSec: 21,
-    spinPhase: 0.2,
-    staticTiltX: -0.08,
-    staticTiltZ: 0.12,
-  },
-  {
-    x: -2.4,
-    y: -1.8,
-    baseScale: 0.5,
-    cycleSec: 30,
-    cyclePhase: 0.42,
-    spinPeriodSec: 24,
-    spinPhase: 2.6,
-    staticTiltX: 0.0,
-    staticTiltZ: 0.05,
-  },
-  {
-    x: 2.4,
-    y: -2.0,
-    baseScale: 0.52,
-    cycleSec: 27,
-    cyclePhase: 0.9,
-    spinPeriodSec: 26,
-    spinPhase: 1.0,
-    staticTiltX: -0.1,
-    staticTiltZ: -0.05,
-  },
+  // ── Top band (above wordmark vertical band)
+  { x: -5.4, y: 3.0, baseScale: 1.4, cycleSec: 9, cyclePhase: 0.0,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.0,
+    wobblePhase: 0.4, staticTiltDeg: -18 },
+  { x: -0.6, y: 3.4, baseScale: 1.5, cycleSec: 11, cyclePhase: 0.35,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
+    wobblePhase: 1.2, staticTiltDeg: 12 },
+  { x: 5.4, y: 3.0, baseScale: 1.45, cycleSec: 10, cyclePhase: 0.62,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.0,
+    wobblePhase: 2.0, staticTiltDeg: 22 },
+  // ── Bottom band (below wordmark vertical band)
+  { x: -5.4, y: -3.0, baseScale: 1.55, cycleSec: 12, cyclePhase: 0.18,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.5,
+    wobblePhase: 0.9, staticTiltDeg: -25 },
+  { x: 0.6, y: -3.5, baseScale: 1.3, cycleSec: 9.5, cyclePhase: 0.5,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
+    wobblePhase: 1.7, staticTiltDeg: 8 },
+  { x: 5.4, y: -3.0, baseScale: 1.5, cycleSec: 11, cyclePhase: 0.75,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.0,
+    wobblePhase: 2.4, staticTiltDeg: 20 },
+  // ── Far edges, above and below text band
+  { x: -8.0, y: 2.2, baseScale: 0.85, cycleSec: 13, cyclePhase: 0.12,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.5,
+    wobblePhase: 0.7, staticTiltDeg: -10 },
+  { x: 8.0, y: -2.2, baseScale: 0.9, cycleSec: 12.5, cyclePhase: 0.55,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
+    wobblePhase: 1.8, staticTiltDeg: 14 },
+  { x: -7.4, y: -2.4, baseScale: 0.95, cycleSec: 11.5, cyclePhase: 0.3,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.0,
+    wobblePhase: 0.0, staticTiltDeg: 25 },
+  { x: 7.4, y: 2.4, baseScale: 0.95, cycleSec: 10.5, cyclePhase: 0.85,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.0,
+    wobblePhase: 2.6, staticTiltDeg: -16 },
+  // ── Back filler — tiny, behind the phone-and-text plane, just adds
+  // depth without ever blocking text.
+  { x: -2.0, y: 1.8, baseScale: 0.45, cycleSec: 14, cyclePhase: 0.2,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
+    wobblePhase: 1.4, staticTiltDeg: 6 },
+  { x: 2.0, y: 1.8, baseScale: 0.45, cycleSec: 14, cyclePhase: 0.7,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 6.0,
+    wobblePhase: 0.2, staticTiltDeg: -8 },
+  { x: -2.4, y: -1.8, baseScale: 0.42, cycleSec: 13.5, cyclePhase: 0.42,
+    tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.0,
+    wobblePhase: 2.6, staticTiltDeg: 18 },
+  { x: 2.4, y: -1.9, baseScale: 0.44, cycleSec: 13, cyclePhase: 0.9,
+    tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.5,
+    wobblePhase: 1.0, staticTiltDeg: -22 },
 ];
 
 const FPS = 30;
-// Coins live in deep-to-mid z and never come right up to the camera —
-// that way their apparent screen size stays modest and they never
-// bleed into the wordmark vertical band.
-const Z_BACK = -14;
-const Z_FRONT = -3;
-const FADE_BAND = 0.06; // fraction of cycle for fade in/out at the ends
+// Coins start deep, advance toward the camera, and exit the frame
+// LATERALLY via perspective — they don't fade. As a coin gets close
+// to the camera, its outer world-x/y projects further off-axis and
+// the coin sails out of view past the frame edges. Cycle then loops
+// silently and the same lane spawns a fresh coin from the back.
+const Z_BACK = -16;
+const Z_FRONT = 11; // near camera (sits at z = 14) — coin gets large
+const FADE_IN_BAND = 0.07;
+const FADE_OUT_BAND = 0.04; // very short — coin should EXIT the frame, not fade out
 
 function smoothstep(t: number): number {
   const x = Math.max(0, Math.min(1, t));
@@ -396,49 +321,58 @@ const CoinMesh: React.FC<{
     });
   });
 
-  // ── Advance cycle: deep z → near z, loop. Per-coin phase keeps them
-  //    out of sync. The forwardProgress beat modulates how aggressive
-  //    the advance is — at p=1 coins push closer.
+  // ── Advance cycle: deep z → past camera → loop. The cycle is short
+  //    enough that the field always reads as "tokens streaming past".
+  //    forwardProgress (a beat-level modulator) pushes coins a hair
+  //    further forward without changing the cycle itself.
   const p = smoothstep(forwardProgress);
   const cyclePosNormalised =
     (((frame / FPS) / seed.cycleSec + seed.cyclePhase) % 1 + 1) % 1;
   const zRange = Z_FRONT - Z_BACK;
   const zBase = Z_BACK + cyclePosNormalised * zRange;
-  // forwardProgress nudges coins a bit further forward.
-  const zOffset = p * 1.6;
+  const zOffset = p * 1.2;
   const z = zBase + zOffset;
 
-  // Fade at cycle ends so coins don't pop in/out.
-  const fadeIn = smoothstep(cyclePosNormalised / FADE_BAND);
-  const fadeOut = 1 - smoothstep((cyclePosNormalised - (1 - FADE_BAND)) / FADE_BAND);
+  // Fade — short fade-in at the start of the cycle, longer fade-out
+  // as the coin passes the camera so it glides out rather than pops.
+  const fadeIn = smoothstep(cyclePosNormalised / FADE_IN_BAND);
+  const fadeOut =
+    1 - smoothstep((cyclePosNormalised - (1 - FADE_OUT_BAND)) / FADE_OUT_BAND);
   const cycleAlpha = Math.min(fadeIn, fadeOut);
 
   // Scale grows as the coin approaches (perspective amplifier — makes
-  // the close pass feel close even at constant world scale).
-  const scale = seed.baseScale * (1 + cyclePosNormalised * 0.25);
+  // the close pass feel close at constant world scale).
+  const scale = seed.baseScale * (1 + cyclePosNormalised * 0.4);
 
   // ── Orientation
-  // The GLB lies flat in the XZ plane (face normals along ±Y). Tip
-  // it 90° around X so the face points toward the camera (+Z). Then
-  // apply a slow rotation around world Y so the coin gracefully
-  // turns — face → edge → back → edge → loop. A small static tilt
-  // per coin breaks up the synchrony.
+  // GLB lies flat in XZ (face normal ±Y). Tip 90° around X so the
+  // face points toward the camera. On top of that, the coin wobbles
+  // back and forth on a DIAGONAL axis. The diagonal axis is either
+  // /-direction (+1) or \-direction (-1). The total swing covers
+  // -wobbleAmplitudeDeg..+wobbleAmplitudeDeg (so 60° or 30° range).
+  // At least 5 seconds for a full 60° swing → max 12°/s.
   const baseOrient = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(1, 0, 0),
     Math.PI / 2,
   );
-  const spinAngle =
-    seed.spinPhase + frame * ((Math.PI * 2) / (seed.spinPeriodSec * FPS));
-  const spinQ = new THREE.Quaternion().setFromAxisAngle(
-    new THREE.Vector3(0, 1, 0),
-    spinAngle,
+  const wobbleSpeed = (Math.PI * 2) / (seed.wobblePeriodSec * FPS);
+  const wobbleRad =
+    (seed.wobbleAmplitudeDeg * Math.PI) / 180 *
+    Math.sin(seed.wobblePhase + frame * wobbleSpeed);
+  const staticRad = (seed.staticTiltDeg * Math.PI) / 180;
+  const totalAngle = wobbleRad + staticRad;
+  // Diagonal axis in world space. Camera looks along -Z, so the X/Y
+  // plane is the screen plane. A "/" diagonal is (1, 1, 0)/√2; a
+  // "\" diagonal is (1, -1, 0)/√2. Direction sign just flips Y.
+  const ax = Math.SQRT1_2;
+  const ay = Math.SQRT1_2 * seed.tiltAxisDir;
+  const diagonalAxis = new THREE.Vector3(ax, ay, 0);
+  const wobbleQ = new THREE.Quaternion().setFromAxisAngle(
+    diagonalAxis,
+    totalAngle,
   );
-  const tiltQ = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(seed.staticTiltX, 0, seed.staticTiltZ, "YXZ"),
-  );
-  // tiltQ * spinQ * baseOrient — apply baseOrient first (model → face camera),
-  // then spinQ (around world Y), then tiltQ (constant per-coin lean).
-  const quat = tiltQ.clone().multiply(spinQ).multiply(baseOrient);
+  // wobbleQ * baseOrient — orient coin to face camera, then rock it.
+  const quat = wobbleQ.clone().multiply(baseOrient);
 
   // Apply the cycle-fade by scaling material alpha via group opacity.
   // Instead of a render attribute, drive it on the materials directly.
