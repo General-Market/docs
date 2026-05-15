@@ -21,7 +21,9 @@ export type CoinsBackgroundProps = {
 
 const COIN_COUNT = 14;
 const BG_COLOR = "#E0D8EC";
-const LOGO_URL = staticFile("gm-logo.svg");
+const MARK_URL = staticFile("gm-logo-white.svg");
+const COIN_BODY = "#9b6cd6";
+const COIN_RIM = "#7a4dbf";
 
 const PERSPECTIVE = 1400;
 const FRAME_W = 1920;
@@ -141,17 +143,32 @@ const CoinView: React.FC<{
         willChange: "transform, opacity",
       }}
     >
+      {/* Coin body — purple disc with a softer rim ring */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          background: `radial-gradient(circle at 35% 30%, ${COIN_BODY} 0%, ${COIN_RIM} 75%, #5e3a9c 100%)`,
+          boxShadow:
+            "0 8px 24px rgba(80, 50, 160, 0.28), inset 0 2px 6px rgba(255,255,255,0.18), inset 0 -4px 10px rgba(40, 20, 80, 0.35)",
+        }}
+      />
+      {/* White GM mark centred on the disc */}
       <img
-        src={LOGO_URL}
+        src={MARK_URL}
         alt=""
         draggable={false}
         style={{
-          width: "100%",
-          height: "100%",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: "55%",
+          height: "55%",
+          marginLeft: "-27.5%",
+          marginTop: "-27.5%",
           display: "block",
           userSelect: "none",
-          // Soft purple glow under the mark.
-          filter: "drop-shadow(0 6px 18px rgba(80, 50, 160, 0.25))",
         }}
       />
     </div>

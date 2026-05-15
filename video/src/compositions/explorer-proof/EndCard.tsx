@@ -29,8 +29,14 @@ export const EndCard: React.FC<EndCardProps> = ({ progress }) => {
 
   const logoScale = interpolate(reveal, [0, 1], [0.85, 1]);
 
+  // Skip rendering entirely until the crossfade actually begins. The
+  // outer wrapper otherwise covers the lavender stage with a black
+  // fill, blanking every preceding beat.
+  if (clamped <= 0) return null;
+
   return (
-    <AbsoluteFill style={{ background: "#000000" }}>
+    <AbsoluteFill style={{ opacity: clamped, pointerEvents: "none" }}>
+      <AbsoluteFill style={{ background: "#000000" }} />
       {/* Radial deep-purple background, fades in first */}
       <AbsoluteFill
         style={{
