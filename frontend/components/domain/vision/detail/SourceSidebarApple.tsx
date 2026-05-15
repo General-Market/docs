@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
+import { sourcesWithVaults } from '@/lib/vision/sources-vaults'
 import {
   ArrowLeftIcon,
   BotIcon,
@@ -66,8 +67,14 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
 
   const peers = useMemo<PeerSource[]>(() => {
     if (!sources.length || !effectiveCategory) return []
+    const funded = sourcesWithVaults()
     return sources
-      .filter(s => s.sourceId !== sourceId && s.category === effectiveCategory && !SIDEBAR_EXCLUDED.has(s.sourceId))
+      .filter(s =>
+        s.sourceId !== sourceId
+        && s.category === effectiveCategory
+        && !SIDEBAR_EXCLUDED.has(s.sourceId)
+        && funded.has(s.sourceId),
+      )
       .slice(0, 6)
   }, [sources, sourceId, effectiveCategory])
 

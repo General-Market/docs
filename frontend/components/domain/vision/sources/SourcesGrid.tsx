@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { allInternalIds } from '@/lib/vision/source-ids'
+import { sourcesWithVaults } from '@/lib/vision/sources-vaults'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
@@ -51,9 +52,11 @@ export function SourcesGrid() {
   // 'stale'/'dead' = data hasn't moved in days. Both are noise on the grid.
   // Zero assetCount means the same — listed in the registry but not tradeable.
   const filteredSources = useMemo(() => {
+    const funded = sourcesWithVaults()
+    const byVault = registrySources.filter(s => funded.has(s.sourceId))
     const byCategory = activeCategory === 'all'
-      ? registrySources
-      : registrySources.filter(s => s.category === activeCategory)
+      ? byVault
+      : byVault.filter(s => s.category === activeCategory)
 
     if (!meta?.sources) return byCategory
     return byCategory.filter(s => {

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
@@ -7,6 +8,7 @@ import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2
 import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
+import { hasVaultForSource } from '@/lib/vision/sources-vaults'
 import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
 import { toInternalId } from '@/lib/vision/source-ids'
 
@@ -57,6 +59,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
+
+  // Sources without a vault are hidden from every UI listing. A direct
+  // deep-link (old share, stale bookmark) shouldn't resurrect them as
+  // an empty "no vault has stepped forward" placeholder — 404 instead.
+  if (!hasVaultForSource(sourceId)) {
+    notFound()
+  }
+
   const source = await getSourceDisplayServer(sourceId)
 
   // Server-side prefetch: snapshot + batch config + meta in parallel.
