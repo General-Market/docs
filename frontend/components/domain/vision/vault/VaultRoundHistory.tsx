@@ -74,9 +74,11 @@ function fmtRelTime(unixSec: number | null): string {
 
 function sortRounds(rows: RoundRow[], key: SortKey): RoundRow[] {
   const copy = [...rows]
-  const recency = (r: RoundRow) => r.resolveBlock ?? r.joinBlock
   if (key === 'recent') {
-    copy.sort((a, b) => recency(b) - recency(a))
+    // Sort by join time, not resolve time. The user cares when the vault
+    // acted, not when the keeper got around to housekeeping. An old refund
+    // auto-claimed seconds ago is still an old round.
+    copy.sort((a, b) => b.joinBlock - a.joinBlock)
   } else if (key === 'pnl_desc') {
     copy.sort((a, b) => (b.pnl ?? -Infinity) - (a.pnl ?? -Infinity))
   } else if (key === 'pnl_asc') {
@@ -290,12 +292,9 @@ function RoundRowView({
       <StatusPill status={row.status} expirationTime={row.expirationTime} />
       <span
         style={{ color: 'var(--apple-text-secondary)' }}
-        title={(() => {
-          const ts = row.resolveTime ?? row.joinTime
-          return ts ? new Date(ts * 1000).toLocaleString() : ''
-        })()}
+        title={row.joinTime ? new Date(row.joinTime * 1000).toLocaleString() : ''}
       >
-        {fmtRelTime(row.resolveTime ?? row.joinTime)}
+        {fmtRelTime(row.joinTime)}
       </span>
       <span style={cellRight}>{fmtUsd(row.deposit)}</span>
       <span style={cellRight}>{row.payout !== null ? fmtUsd(row.payout) : '—'}</span>
