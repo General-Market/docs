@@ -143,6 +143,14 @@ import { proposal03CourseMeta } from "./compositions/anticheat/proposals/Proposa
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { marketAnatomyMeta } from "./compositions/market-anatomy/MarketAnatomy";
 import { icebergDataMeta } from "./compositions/iceberg-data/IcebergData";
+import { retailPnLHorizonMeta } from "./compositions/retail-pnl/RetailPnLHorizon";
+import { retailPnLBucketsMeta } from "./compositions/retail-pnl/RetailPnLBuckets";
+import { retailPnLFanMeta } from "./compositions/retail-pnl/RetailPnLFan";
+import { retailPnLCohortMeta } from "./compositions/retail-pnl/RetailPnLCohort";
+import { retailPnLConcentrationMeta } from "./compositions/retail-pnl/RetailPnLConcentration";
+import { retailPnLTaxMeta } from "./compositions/retail-pnl/RetailPnLTax";
+import { retailPnLAllVariantsMeta } from "./compositions/retail-pnl/RetailPnLAllVariants";
+import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -224,6 +232,23 @@ export const RemotionRoot: React.FC = () => {
         width={marketAnatomyMeta.width}
         height={marketAnatomyMeta.height}
       />
+
+      {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
+      <Folder name="RetailPnL">
+        {[retailPnLAllVariantsMeta, retailPnLConcentrationMeta, retailPnLTaxMeta, retailPnLHorizonMeta, retailPnLBucketsMeta, retailPnLFanMeta, retailPnLCohortMeta].map(
+          (meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ),
+        )}
+      </Folder>
 
       {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
       <Composition
@@ -460,6 +485,16 @@ export const RemotionRoot: React.FC = () => {
           fps={laptopBrollDemoMeta.fps}
           width={laptopBrollDemoMeta.width}
           height={laptopBrollDemoMeta.height}
+        />
+
+        {/* --- Explorer Proof (the system is up online) --- */}
+        <Composition
+          id={explorerProofMeta.id}
+          component={explorerProofMeta.component}
+          durationInFrames={explorerProofMeta.durationInFrames}
+          fps={explorerProofMeta.fps}
+          width={explorerProofMeta.width}
+          height={explorerProofMeta.height}
         />
 
         {/* --- Ridd --- */}
