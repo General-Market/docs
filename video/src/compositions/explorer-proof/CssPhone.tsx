@@ -77,6 +77,7 @@ export const CssPhone: React.FC<CssPhoneProps> = ({
           <OffthreadVideo
             src={brollSrc}
             muted
+            pauseWhenBuffering={false}
             style={{
               width: "100%",
               height: "100%",
