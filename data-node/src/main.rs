@@ -11,6 +11,7 @@ mod chain_pollers;
 mod vault_event_writer;
 mod vault_event_backfill;
 mod account_pnl_curve_writer;
+mod retention;
 mod coingecko;
 mod collector;
 mod collector_loop;

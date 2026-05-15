@@ -2693,6 +2693,17 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("Account PnL curve writer started");
     }
 
+    // Bounded retention pruner — keeps vision_asset_settlement_players_archive
+    // and market_prices from growing into XID-wraparound territory. Chunked
+    // DELETEs so we never hold long locks; sleeps an hour between cycles.
+    {
+        let _h = crate::retention::spawn(app_state.pool.clone(), args.prune_retention_days);
+        info!(
+            prune_retention_days = args.prune_retention_days,
+            "retention-pruner started"
+        );
+    }
+
     // Spawn points engine (vision round-based + index hourly)
     {
         let points_pool = app_state.pool.clone();
