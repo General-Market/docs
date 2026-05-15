@@ -1007,6 +1007,7 @@ input[type="number"] {
 
 /* Dark gradient background with subtle radial accents */
 .explorer-dark-bg {
+  --explorer-bg: #0c0c14;
   background: linear-gradient(145deg, #09090f 0%, #111118 50%, #0c0c14 100%);
   position: relative;
 }

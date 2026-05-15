@@ -52,18 +52,18 @@ export default function ExplorerPageClient() {
 
         <ExplorerSummaryBar latest={latest} loading={loading} />
 
-        {/* Tab bar + time range */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] mt-4">
+        {/* Tab bar — full width, scroll-affordant */}
+        <div className="relative mt-4 border-b border-white/[0.08]">
           <LayoutGroup id="explorer-tabs">
-            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide -mx-1 px-1">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-3.5 py-3 text-caption font-semibold transition-colors whitespace-nowrap ${
-                      isActive ? 'text-white' : 'text-white/30 hover:text-white/60'
+                    className={`relative px-4 py-3 text-caption font-semibold transition-colors whitespace-nowrap ${
+                      isActive ? 'text-white' : 'text-white/55 hover:text-white/85'
                     }`}
                   >
                     {tab.label}
@@ -79,31 +79,36 @@ export default function ExplorerPageClient() {
               })}
             </div>
           </LayoutGroup>
-          {!isStandalone && (
-            <div className="flex items-center gap-1.5 shrink-0 ml-4">
-              {RANGES.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRange(r)}
-                  className={`px-2.5 py-1 text-label font-bold rounded transition-colors ${
-                    range === r
-                      ? 'bg-white/[0.12] text-white'
-                      : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-              <button
-                onClick={refresh}
-                disabled={loading}
-                className="ml-2 px-3 py-1 text-label font-bold text-white/30 hover:text-white/60 disabled:opacity-50 transition-colors"
-              >
-                {loading ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
-          )}
+          {/* Edge fades signal horizontal scroll */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-px w-6 bg-gradient-to-r from-[var(--explorer-bg,#0a0a0a)] to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-px w-6 bg-gradient-to-l from-[var(--explorer-bg,#0a0a0a)] to-transparent" />
         </div>
+
+        {/* Time range + refresh — own row, doesn't compete with tabs */}
+        {!isStandalone && (
+          <div className="flex items-center justify-end gap-1.5 mt-3">
+            {RANGES.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-2.5 py-1 text-label font-bold rounded transition-colors ${
+                  range === r
+                    ? 'bg-white/[0.12] text-white'
+                    : 'text-white/55 hover:text-white/85 hover:bg-white/[0.04]'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+            <button
+              onClick={refresh}
+              disabled={loading}
+              className="ml-2 px-3 py-1 text-label font-bold text-white/55 hover:text-white/85 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+        )}
 
         {/* Error */}
         {error && !isStandalone && (
