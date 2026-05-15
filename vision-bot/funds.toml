@@ -1230,41 +1230,47 @@ name = "Oracle"
 symbol = "ORCL"
 vault = "0x9509913E86D577AE076Dc72fd76135E20C9F63C3"
 sources = ["polymarket"]
-strategy = "momentum"
+strategy = "polymarket_consensus"
 [funds.params]
+margin = 0.02
 
 [[funds]]
 name = "Longshot"
 symbol = "LONG"
 vault = "0x4Bc62Bf1bC8a2dFfa7b199356F179e83A07DE1D9"
 sources = ["polymarket"]
-strategy = "contrarian"
+strategy = "polymarket_extreme_fade"
 [funds.params]
+upper = 0.90
+lower = 0.10
 
 [[funds]]
 name = "Consensus"
 symbol = "CNSN"
 vault = "0xE19CdF8402d7aE554d0a46340AE8C0573a87fFd9"
 sources = ["polymarket"]
-strategy = "momentum_threshold"
+strategy = "polymarket_consensus"
 [funds.params]
-min_change_pct = 5.0
+margin = 0.05
 
 [[funds]]
 name = "Arbitrage"
 symbol = "ARBI"
 vault = "0x930f69867A29C606416c5be016197AB51D52cb4b"
 sources = ["polymarket"]
-strategy = "mean_reversion"
+strategy = "polymarket_extreme_fade"
 [funds.params]
+upper = 0.95
+lower = 0.05
 
 [[funds]]
 name = "Polymarket 5"
 symbol = "POLYMA5"
 vault = "0xA183fA55E6cf7fC99D982f4f1CF2A4A78F8eC4BF"
 sources = ["polymarket"]
-strategy = "momentum"
+strategy = "polymarket_consensus"
 [funds.params]
+margin = 0.10
 
 [[funds]]
 name = "Preprint"

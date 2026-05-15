@@ -1,9 +1,9 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Img,
   Sequence,
   interpolate,
+  prefetch,
   staticFile,
   useCurrentFrame,
 } from "remotion";
@@ -118,6 +118,13 @@ const SCAPEGOATS: Scapegoat[] = [
 ];
 
 const SCAPEGOAT_HEADLINE = "Who to blame";
+
+// Prefetch the mug shots at module load so the files are warm in the
+// browser cache by the time the cards scale in. Without this the first
+// scrub to the scapegoat scene shows empty cards while the JPEGs decode.
+for (const sg of SCAPEGOATS) {
+  prefetch(staticFile(sg.imageSrc));
+}
 
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
@@ -267,12 +274,16 @@ const ScapegoatCard: React.FC<{
         overflow: "hidden",
       }}
     >
-      {/* Full-bleed mug-shot image. Remotion <Img> blocks render until
-          the file is decoded — raw <img> flashes empty during scrubbing. */}
-      <Img
+      {/* Full-bleed mug-shot image. Raw <img> on purpose — Remotion's
+          <Img> suspends the entire preview while it loads, blanking the
+          studio. Images are prefetched on mount so the file is warm by
+          the time the card scales in. */}
+      <img
         src={staticFile(scapegoat.imageSrc)}
         alt=""
         draggable={false}
+        decoding="sync"
+        loading="eager"
         style={{
           position: "absolute",
           inset: 0,
