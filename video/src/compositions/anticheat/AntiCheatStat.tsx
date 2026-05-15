@@ -19,22 +19,27 @@ const { fontFamily: caveatFont } = loadCaveat("normal", {
 });
 
 // Two compositions live in this file:
-//   AntiCheatStat — scapegoat slot → 0.01%/70% then hard-cut to 99.9%/30%
+//   AntiCheatStat — scapegoat lineup → 0.01%/70% then hard-cut to 99.9%/30%
 //   AntiCheatBars — the carousel of categories
-// The Stat scene now opens on a four-suspect slot: cards stamp in one
-// at a time centre-stage, hold briefly, then wipe horizontally inward
-// to a vertical line while the next card pops back out from the same
-// line — same wipe vocabulary as the EmberTypewriter flip in the stat
-// itself. The whole lineup compresses into roughly 2.8 seconds.
-const SG_FIRST_CARD_AT = 8;
-const SG_CARD_ENTER = 3;
-const SG_CARD_HOLD = 12;
-const SG_CARD_EXIT = 3;
-const SG_PER_CARD = SG_CARD_ENTER + SG_CARD_HOLD + SG_CARD_EXIT;
-const SG_OUTRO = 4;
+// The Stat scene opens on a four-card lineup that types in like a
+// sentence: each suspect wipes horizontally out of a vertical line in
+// quick succession, holds the full row, then wipes back to lines in
+// the same direction. Same wipe vocabulary as the EmberTypewriter
+// flip in the stat itself. The whole lineup compresses into ~2 seconds.
+const SG_FIRST_CARD_AT = 4;
+const SG_CARD_STAGGER = 3;
+const SG_CARD_ENTER = 4;
+const SG_HOLD_FRAMES = 20;
+const SG_CARD_EXIT = 4;
+const SG_EXIT_STAGGER = 3;
 const SCAPEGOATS_COUNT = 4;
-const SCAPEGOATS_FRAMES =
-  SG_FIRST_CARD_AT + SG_PER_CARD * SCAPEGOATS_COUNT + SG_OUTRO;
+const SG_LAST_IN_AT =
+  SG_FIRST_CARD_AT + (SCAPEGOATS_COUNT - 1) * SG_CARD_STAGGER + SG_CARD_ENTER;
+const SG_EXIT_AT = SG_LAST_IN_AT + SG_HOLD_FRAMES;
+const SG_LAST_OUT_AT =
+  SG_EXIT_AT + (SCAPEGOATS_COUNT - 1) * SG_EXIT_STAGGER + SG_CARD_EXIT;
+const SG_OUTRO = 2;
+const SCAPEGOATS_FRAMES = SG_LAST_OUT_AT + SG_OUTRO;
 const STAT_BEAT_FRAMES = 145;
 const STAT_FRAMES = SCAPEGOATS_FRAMES + STAT_BEAT_FRAMES;
 const BARS_FRAMES = 129;
@@ -110,12 +115,16 @@ const SCAPEGOATS: Scapegoat[] = [
 
 const SCAPEGOAT_HEADLINE = "Who to blame";
 
-// Card geometry — single card now sits centre-stage instead of a row.
-// Larger than the old lineup tile since it owns the frame on its own.
-const SG_CARD_W = 460;
-const SG_CARD_H = 600;
-const SG_CARD_TOP = 320;
-const SG_CARD_LEFT = (W - SG_CARD_W) / 2;
+// Card geometry — four-up row, sized to fit inside the 1920-wide
+// frame with healthy gaps. Tile sized to match the Bars carousel
+// card vocabulary so the visual rhyme holds.
+const SG_CARD_W = 340;
+const SG_CARD_H = 460;
+const SG_CARD_GAP = 60;
+const SG_GRID_W = SCAPEGOATS_COUNT * SG_CARD_W +
+  (SCAPEGOATS_COUNT - 1) * SG_CARD_GAP;
+const SG_GRID_LEFT = (W - SG_GRID_W) / 2;
+const SG_GRID_TOP = 360;
 
 const expoOutEase = (t: number): number =>
   t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
@@ -130,10 +139,12 @@ const ScapegoatLineup: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          left: SG_CARD_LEFT,
-          top: SG_CARD_TOP,
-          width: SG_CARD_W,
+          left: SG_GRID_LEFT,
+          top: SG_GRID_TOP,
+          width: SG_GRID_W,
           height: SG_CARD_H,
+          display: "flex",
+          gap: SG_CARD_GAP,
         }}
       >
         {SCAPEGOATS.map((s, i) => (
@@ -188,43 +199,45 @@ const ScapegoatHeadline: React.FC<{ frame: number }> = ({ frame }) => {
 
 // One piece. Full-bleed Girardian image fills the card; a dark
 // gradient veil rises from the bottom and the typography sits inside
-// the same surface. Each card is also its own slot in the lineup:
-// it scales out from a vertical line, holds while the suspect reads,
-// then collapses back to a line. Same direction as the EmberTypewriter
-// wipe in the stat panel below.
+// the same surface. Each card behaves like a typed character — it
+// scales out from a vertical line in turn, all four hold the row
+// together, then they wipe back to lines in the same staggered
+// direction. Same wipe vocabulary as the EmberTypewriter flip below.
 
 const ScapegoatCard: React.FC<{
   scapegoat: Scapegoat;
   index: number;
   frame: number;
 }> = ({ scapegoat, index, frame }) => {
-  const start = SG_FIRST_CARD_AT + index * SG_PER_CARD;
-  const local = frame - start;
-  // Outside this card's slot window — render nothing so all four
-  // suspects can share the same centre-stage rectangle without
-  // overlapping at the seams.
-  if (local < 0 || local >= SG_PER_CARD) return null;
+  const enterStart = SG_FIRST_CARD_AT + index * SG_CARD_STAGGER;
+  const exitStart = SG_EXIT_AT + index * SG_EXIT_STAGGER;
 
-  // Phase 1 (enter): horizontal scale 0 → 1, blooming out of a line.
-  // Phase 2 (hold): scaleX 1, motion blur cleared.
-  // Phase 3 (exit): scaleX 1 → 0, collapsing back to the same line.
+  // Enter: scaleX 0 → 1 over SG_CARD_ENTER frames.
+  // Hold:  scaleX 1, fully visible.
+  // Exit:  scaleX 1 → 0 over SG_CARD_EXIT frames, with a slight lag
+  //        between cards so the lineup wipes out the same way it
+  //        wiped in — left to right, like text being deleted.
+  if (frame < enterStart) return null;
+
   let scaleX: number;
   let opacity: number;
   let enterBlur = 0;
-  if (local < SG_CARD_ENTER) {
-    const t = local / SG_CARD_ENTER;
+  if (frame < enterStart + SG_CARD_ENTER) {
+    const t = (frame - enterStart) / SG_CARD_ENTER;
     const eased = expoOutEase(t);
     scaleX = eased;
     opacity = Math.min(1, t * 1.4);
     enterBlur = (1 - eased) * 6;
-  } else if (local < SG_CARD_ENTER + SG_CARD_HOLD) {
+  } else if (frame < exitStart) {
     scaleX = 1;
     opacity = 1;
-  } else {
-    const t = (local - SG_CARD_ENTER - SG_CARD_HOLD) / SG_CARD_EXIT;
-    const eased = 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+  } else if (frame < exitStart + SG_CARD_EXIT) {
+    const t = (frame - exitStart) / SG_CARD_EXIT;
+    const eased = 1 - Math.pow(1 - t, 3);
     scaleX = 1 - eased;
     opacity = 1 - Math.max(0, t - 0.4) * 1.4;
+  } else {
+    return null;
   }
   if (scaleX <= 0.001) return null;
 
@@ -233,15 +246,15 @@ const ScapegoatCard: React.FC<{
   return (
     <div
       style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
+        flex: "0 0 auto",
+        width: SG_CARD_W,
+        height: SG_CARD_H,
         borderRadius: 18,
         background: "#0A0A0A",
         boxShadow:
           "0 1px 0 rgba(255,255,255,0.06) inset, 0 32px 64px rgba(8, 14, 28, 0.30), 0 10px 20px rgba(8, 14, 28, 0.18)",
         border: "1px solid rgba(8, 14, 28, 0.55)",
+        position: "relative",
         opacity,
         transform: `scaleX(${scaleX.toFixed(3)})`,
         transformOrigin: "center center",
@@ -285,17 +298,17 @@ const ScapegoatCard: React.FC<{
       <div
         style={{
           position: "absolute",
-          top: 22,
-          left: 22,
-          padding: "6px 13px",
+          top: 18,
+          left: 18,
+          padding: "5px 11px",
           background: "rgba(255, 255, 255, 0.92)",
           color: "#0A0A0A",
           fontFamily: monoFont,
-          fontSize: 16,
+          fontSize: 13,
           fontWeight: 600,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          borderRadius: 5,
+          borderRadius: 4,
         }}
       >
         {bookingNumber} · suspect
@@ -305,23 +318,23 @@ const ScapegoatCard: React.FC<{
       <div
         style={{
           position: "absolute",
-          left: 30,
-          right: 30,
-          bottom: 32,
+          left: 24,
+          right: 24,
+          bottom: 26,
           display: "flex",
           flexDirection: "column",
-          gap: 18,
+          gap: 14,
         }}
       >
         <div
           style={{
             fontFamily: font,
-            fontSize: 60,
+            fontSize: 42,
             fontWeight: 800,
-            letterSpacing: "-0.026em",
+            letterSpacing: "-0.022em",
             color: "#FFFFFF",
             lineHeight: 0.98,
-            textShadow: "0 2px 14px rgba(0, 0, 0, 0.5)",
+            textShadow: "0 2px 12px rgba(0, 0, 0, 0.45)",
           }}
         >
           <div>{scapegoat.label[0]}</div>
@@ -330,11 +343,11 @@ const ScapegoatCard: React.FC<{
         <div
           style={{
             fontFamily: monoFont,
-            fontSize: 17,
+            fontSize: 13,
             fontWeight: 500,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "rgba(255, 255, 255, 0.82)",
+            color: "rgba(255, 255, 255, 0.78)",
             lineHeight: 1.3,
             textShadow: "0 1px 6px rgba(0, 0, 0, 0.55)",
           }}
