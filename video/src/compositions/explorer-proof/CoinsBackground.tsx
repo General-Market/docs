@@ -202,18 +202,12 @@ const COIN_SEEDS: CoinSeed[] = [
   { x: 7.4, y: 2.4, baseScale: 0.95, cycleSec: 10.5, cyclePhase: 0.85,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.0,
     wobblePhase: 2.6, staticTiltDeg: -16 },
-  // ── Back filler — tiny, behind the phone-and-text plane, just adds
-  // depth without ever blocking text.
-  { x: -2.0, y: 1.8, baseScale: 0.45, cycleSec: 14, cyclePhase: 0.2,
-    tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
-    wobblePhase: 1.4, staticTiltDeg: 6 },
-  { x: 2.0, y: 1.8, baseScale: 0.45, cycleSec: 14, cyclePhase: 0.7,
-    tiltAxisDir: 1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 6.0,
-    wobblePhase: 0.2, staticTiltDeg: -8 },
-  { x: -2.4, y: -1.8, baseScale: 0.42, cycleSec: 13.5, cyclePhase: 0.42,
+  // Two more above and below — fills upper/lower band density without
+  // crossing the wordmark vertical zone.
+  { x: -3.0, y: 3.8, baseScale: 0.7, cycleSec: 12, cyclePhase: 0.42,
     tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.0,
     wobblePhase: 2.6, staticTiltDeg: 18 },
-  { x: 2.4, y: -1.9, baseScale: 0.44, cycleSec: 13, cyclePhase: 0.9,
+  { x: 3.0, y: -3.8, baseScale: 0.7, cycleSec: 13, cyclePhase: 0.9,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.5,
     wobblePhase: 1.0, staticTiltDeg: -22 },
 ];
@@ -225,9 +219,12 @@ const FPS = 30;
 // the coin sails out of view past the frame edges. Cycle then loops
 // silently and the same lane spawns a fresh coin from the back.
 const Z_BACK = -16;
-const Z_FRONT = 11; // near camera (sits at z = 14) — coin gets large
+// Coins advance close enough to read as "passing the viewer" but stop
+// before they bloat across the wordmark band. Perspective alone makes
+// them swing toward the frame edges and exit laterally.
+const Z_FRONT = 6;
 const FADE_IN_BAND = 0.07;
-const FADE_OUT_BAND = 0.04; // very short — coin should EXIT the frame, not fade out
+const FADE_OUT_BAND = 0.06;
 
 function smoothstep(t: number): number {
   const x = Math.max(0, Math.min(1, t));
@@ -340,9 +337,10 @@ const CoinMesh: React.FC<{
     1 - smoothstep((cyclePosNormalised - (1 - FADE_OUT_BAND)) / FADE_OUT_BAND);
   const cycleAlpha = Math.min(fadeIn, fadeOut);
 
-  // Scale grows as the coin approaches (perspective amplifier — makes
-  // the close pass feel close at constant world scale).
-  const scale = seed.baseScale * (1 + cyclePosNormalised * 0.4);
+  // World scale stays constant. Perspective alone amplifies size as
+  // the coin nears the camera — adding extra growth on top of that
+  // makes coins balloon across the text bands.
+  const scale = seed.baseScale;
 
   // ── Orientation
   // GLB lies flat in XZ (face normal ±Y). Tip 90° around X so the
