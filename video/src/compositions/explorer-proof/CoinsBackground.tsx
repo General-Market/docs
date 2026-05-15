@@ -62,10 +62,11 @@ function buildFaceTexture(): THREE.CanvasTexture {
     vignette.addColorStop(1, "rgba(0,0,0,0.18)");
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
-    // White pill — proportions match the brand logo: 512×100 pill on a
-    // 1024×1024 frame, centered. Scaled down to fit our 512×512 canvas.
-    const pillW = FACE_TEXTURE_SIZE * 0.5;
-    const pillH = FACE_TEXTURE_SIZE * (100 / 1024);
+    // White pill — match the brand mark but bigger on the face so it
+    // reads as a "logo coin" the way Houdini's "H" reads on theirs.
+    // Sized to ~70% of the inscribed disc.
+    const pillW = FACE_TEXTURE_SIZE * 0.68;
+    const pillH = FACE_TEXTURE_SIZE * (100 / 1024) * 1.35;
     const pillX = (FACE_TEXTURE_SIZE - pillW) / 2;
     const pillY = (FACE_TEXTURE_SIZE - pillH) / 2;
     const pillR = pillH / 2;
@@ -110,11 +111,11 @@ type CoinSeed = {
 };
 
 const COIN_SEEDS: CoinSeed[] = [
-  // Top-left, above the GENERAL/MARKET wordmark
+  // ── Top band (above text) — hero size
   {
-    x: -5.4,
-    y: 3.0,
-    baseScale: 1.2,
+    x: -5.8,
+    y: 3.2,
+    baseScale: 1.8,
     cycleSec: 22,
     cyclePhase: 0.0,
     spinPeriodSec: 18,
@@ -122,11 +123,10 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: 0.18,
     staticTiltZ: 0.12,
   },
-  // Top-centre, above the phone
   {
-    x: -0.4,
-    y: 3.4,
-    baseScale: 1.45,
+    x: -0.6,
+    y: 3.6,
+    baseScale: 2.0,
     cycleSec: 24,
     cyclePhase: 0.35,
     spinPeriodSec: 22,
@@ -134,11 +134,10 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: -0.12,
     staticTiltZ: 0.05,
   },
-  // Top-right, above GENERALMARKET.IO
   {
-    x: 5.4,
-    y: 3.0,
-    baseScale: 1.25,
+    x: 5.8,
+    y: 3.2,
+    baseScale: 1.7,
     cycleSec: 20,
     cyclePhase: 0.62,
     spinPeriodSec: 19,
@@ -146,11 +145,34 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: 0.1,
     staticTiltZ: -0.18,
   },
-  // Bottom-left hero, below the wordmark band
+  // ── Mid band, far edges (next to wordmarks, not over them)
   {
-    x: -5.0,
-    y: -2.9,
+    x: -7.4,
+    y: 0.6,
+    baseScale: 1.5,
+    cycleSec: 23,
+    cyclePhase: 0.12,
+    spinPeriodSec: 20,
+    spinPhase: 0.7,
+    staticTiltX: 0.05,
+    staticTiltZ: 0.22,
+  },
+  {
+    x: 7.4,
+    y: -0.4,
     baseScale: 1.55,
+    cycleSec: 21,
+    cyclePhase: 0.55,
+    spinPeriodSec: 17,
+    spinPhase: 1.8,
+    staticTiltX: -0.05,
+    staticTiltZ: -0.18,
+  },
+  // ── Bottom band hero coins
+  {
+    x: -5.2,
+    y: -3.0,
+    baseScale: 2.1,
     cycleSec: 26,
     cyclePhase: 0.18,
     spinPeriodSec: 24,
@@ -158,11 +180,10 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: -0.22,
     staticTiltZ: -0.1,
   },
-  // Bottom-centre, below the phone
   {
-    x: 0.8,
-    y: -3.4,
-    baseScale: 1.1,
+    x: 0.6,
+    y: -3.6,
+    baseScale: 1.6,
     cycleSec: 21,
     cyclePhase: 0.5,
     spinPeriodSec: 17,
@@ -170,11 +191,10 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: 0.15,
     staticTiltZ: 0.0,
   },
-  // Bottom-right hero
   {
-    x: 5.2,
-    y: -2.9,
-    baseScale: 1.4,
+    x: 5.6,
+    y: -3.0,
+    baseScale: 1.95,
     cycleSec: 25,
     cyclePhase: 0.75,
     spinPeriodSec: 20,
@@ -182,17 +202,50 @@ const COIN_SEEDS: CoinSeed[] = [
     staticTiltX: -0.18,
     staticTiltZ: 0.15,
   },
-  // Deep back, mid-frame — small, slow, layered depth
+  // ── Back band — medium coins, deeper and smaller, for layered depth
   {
-    x: -1.8,
-    y: 0.2,
-    baseScale: 0.55,
+    x: -2.4,
+    y: 2.2,
+    baseScale: 0.85,
+    cycleSec: 28,
+    cyclePhase: 0.2,
+    spinPeriodSec: 23,
+    spinPhase: 1.4,
+    staticTiltX: 0.1,
+    staticTiltZ: -0.1,
+  },
+  {
+    x: 2.2,
+    y: 2.0,
+    baseScale: 0.85,
+    cycleSec: 29,
+    cyclePhase: 0.7,
+    spinPeriodSec: 21,
+    spinPhase: 0.2,
+    staticTiltX: -0.08,
+    staticTiltZ: 0.12,
+  },
+  {
+    x: -3.0,
+    y: -1.6,
+    baseScale: 0.75,
     cycleSec: 30,
-    cyclePhase: 0.45,
+    cyclePhase: 0.42,
+    spinPeriodSec: 24,
+    spinPhase: 2.6,
+    staticTiltX: 0.0,
+    staticTiltZ: 0.05,
+  },
+  {
+    x: 3.2,
+    y: -1.8,
+    baseScale: 0.8,
+    cycleSec: 27,
+    cyclePhase: 0.9,
     spinPeriodSec: 26,
     spinPhase: 1.0,
-    staticTiltX: 0.0,
-    staticTiltZ: 0.08,
+    staticTiltX: -0.1,
+    staticTiltZ: -0.05,
   },
 ];
 
@@ -237,32 +290,37 @@ const CoinMesh: React.FC<{
       cloned.transparent = true;
       const name = (mat.name || "").toLowerCase();
       if (name === "front" || name === "back") {
-        // Solid green face with the white pill baked in. No
-        // transmission — the disc is opaque token, not glass.
+        // Brand-green face with the white pill baked in. Glossy clearcoat
+        // gives the Houdini-style top-light highlight; emissive map keeps
+        // the pill readable when the rim catches a hot light.
         cloned.map = faceMap;
         cloned.color = new THREE.Color("#ffffff");
-        cloned.roughness = 0.36;
-        cloned.metalness = 0.15;
+        cloned.roughness = 0.22;
+        cloned.metalness = 0.05;
         if ("transmission" in cloned) {
           (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.95;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.08;
         }
         if ("emissive" in cloned) {
           cloned.emissive = new THREE.Color("#ffffff");
           cloned.emissiveMap = faceMap;
-          cloned.emissiveIntensity = 0.12;
+          cloned.emissiveIntensity = 0.18;
         }
       } else {
-        // Rim / body — darker brand green, more metallic so the
-        // bevel catches the key light.
+        // Rim — bright brand green, metallic so the bevel catches the
+        // environment light and reads as a token edge.
         cloned.map = null;
         cloned.color = COIN_RIM_COLOR;
-        cloned.roughness = 0.32;
-        cloned.metalness = 0.55;
+        cloned.roughness = 0.28;
+        cloned.metalness = 0.7;
         if ("transmission" in cloned) {
           (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.6;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.18;
         }
         if ("emissive" in cloned) {
-          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.18);
+          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.22);
         }
       }
       mesh.material = cloned;
@@ -361,10 +419,13 @@ const Scene: React.FC<{
 
   return (
     <>
-      <hemisphereLight args={["#ffffff", "#9eb5c8", 0.7]} />
-      <directionalLight position={[3, 8, 9]} intensity={1.5} color="#ffffff" />
-      <directionalLight position={[-5, 3, -6]} intensity={0.55} color="#b8e8d8" />
-      <directionalLight position={[-6, -2, 5]} intensity={0.35} color="#e8f5ee" />
+      {/* Hemisphere fill so the rim metal has something to reflect
+          (without a costly HDRI). */}
+      <hemisphereLight args={["#ffffff", "#9eb5c8", 0.9]} />
+      <ambientLight intensity={0.45} color="#ffffff" />
+      <directionalLight position={[4, 9, 10]} intensity={1.4} color="#ffffff" />
+      <directionalLight position={[-6, 3, -4]} intensity={0.6} color="#b8e8d8" />
+      <directionalLight position={[0, -5, 6]} intensity={0.35} color="#e8f5ee" />
       {COIN_SEEDS.map((seed, i) => (
         <CoinMesh
           key={i}
