@@ -70,7 +70,9 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
     [snapshots]
   )
 
-  // Per-interval success rate (delta success / delta rounds) — avoids misleading cumulative ratio
+  // Per-interval success rate (delta success / delta rounds) — avoids misleading cumulative ratio.
+  // Counter resets and oracle restarts can produce dSuccess > dRounds; clamp to [0, 100] so a
+  // single bad poll doesn't blow up the Y-axis to 58000%.
   const successRateData = useMemo(() => {
     const result: { poll_batch_ts: string; rate: number }[] = []
     for (let i = 1; i < snapshots.length; i++) {
@@ -78,13 +80,13 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
       const curr = snapshots[i]
       const dRounds = curr.consensus_rounds_total - prev.consensus_rounds_total
       const dSuccess = curr.consensus_success_total - prev.consensus_success_total
-      // Skip counter resets (negative deltas) and no-activity intervals
       if (dRounds <= 0) {
         result.push({ poll_batch_ts: curr.poll_batch_ts, rate: 100 })
       } else {
+        const raw = (Math.max(0, dSuccess) / dRounds) * 100
         result.push({
           poll_batch_ts: curr.poll_batch_ts,
-          rate: Math.round((Math.max(0, dSuccess) / dRounds) * 100),
+          rate: Math.round(Math.min(100, Math.max(0, raw))),
         })
       }
     }
@@ -221,6 +223,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <XAxis {...xAxisProps} />
               <YAxis
                 domain={[0, 100]}
+                allowDataOverflow
                 tick={{ fontSize: 10 }}
                 stroke="#D2D2D7"
                 width={40}
