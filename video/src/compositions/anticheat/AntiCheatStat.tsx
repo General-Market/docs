@@ -55,13 +55,14 @@ export const AntiCheatStat: React.FC = () => {
 //
 // Four wanted-poster cards lined up across the frame. Each suspect is
 // either personally convicted of finance crimes or runs a firm that
-// has been formally sanctioned for the relevant order-handling
-// practice. Bernie Madoff (Ponzi guilty plea, DOJ mugshot), Ken
-// Griffin (Citadel — repeated SEC settlements over order handling
-// and front-running of retail flow), Trevor Milton (Nikola
-// securities-fraud conviction, 2022), Raj Rajaratnam (Galleon
-// insider-trading conviction, 2011). Same scapegoat mechanism, four
-// different convictions and sanctions.
+// has been formally sanctioned for the relevant practice. Justin Sun
+// (SEC charges 2023 for market manipulation of TRX/BTT including wash
+// trading, settled 2024), Ken Griffin (Citadel — repeated SEC/FINRA
+// settlements over order handling and front-running of retail flow),
+// Jamie Dimon (JPMorgan — $920M DOJ + CFTC + SEC settlement for
+// orderbook spoofing across precious metals and Treasuries),
+// Martha Stewart (convicted 2004 in the ImClone insider-trading
+// affair). Same scapegoat mechanism, four different sanctions.
 //
 // Attribution lives in anticheat-imgs/CREDITS.md.
 
@@ -76,8 +77,8 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["liquidation", "hunters"],
     charge: "triggers your stops",
-    imageSrc: "anticheat-imgs/scapegoat-madoff.jpg",
-    imagePosition: "center 22%",
+    imageSrc: "anticheat-imgs/scapegoat-sun.jpg",
+    imagePosition: "center 18%",
   },
   {
     label: ["front", "runners"],
@@ -88,13 +89,13 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["orderbook", "spoofers"],
     charge: "fakes the signal",
-    imageSrc: "anticheat-imgs/scapegoat-milton.jpg",
-    imagePosition: "center 25%",
+    imageSrc: "anticheat-imgs/scapegoat-dimon.jpg",
+    imagePosition: "center 22%",
   },
   {
     label: ["insider", "traders"],
     charge: "knows the news first",
-    imageSrc: "anticheat-imgs/scapegoat-rajaratnam.jpg",
+    imageSrc: "anticheat-imgs/scapegoat-stewart.jpg",
     imagePosition: "center 22%",
   },
 ];
@@ -491,7 +492,7 @@ const StatAnnotations: React.FC = () => {
                 fontWeight={700}
                 fill={ink}
               >
-                Not You
+                Them
               </text>
             </g>
           </g>

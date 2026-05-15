@@ -44,6 +44,9 @@ pub const DISABLED_SOURCES: &[&str] = &[
     "flights",  // Provider HTTP 503 on every coordinate.
     "weather",  // Open-Meteo daily quota exhausted (free tier); resets at 00:00 UTC.
     "bestbuy",  // Free API key hits per-second rate limit on every call (HTTP 403).
+    "pumpfun",  // DexScreener exposes only ~44 trending tokens; Vision has 296 markets
+                // referencing tokens that have churned out of trending — upstream cannot
+                // scale to our market count. Re-seed Vision against a live snapshot if needed.
 ];
 
 pub fn is_source_disabled(source_id: &str) -> bool {

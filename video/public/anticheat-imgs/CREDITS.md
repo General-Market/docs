@@ -34,18 +34,21 @@ and credit in the video's description / about page when shipping.
   Credit: Jean-Christophe BENOIST
   Licence: CC BY 3.0
 
-# scapegoat-{madoff,griffin,milton,rajaratnam} image credits
+# scapegoat-{sun,griffin,dimon,stewart} image credits
 
-Real-face scapegoat lineup used in the AntiCheatStat scene. Three are
-personally convicted of finance crimes; one (Griffin / Citadel) runs
-a firm that has been repeatedly sanctioned by FINRA and the SEC for
-order-handling and front-running of retail flow.
+Real-face scapegoat lineup used in the AntiCheatStat scene. Each
+suspect has either been personally charged by the SEC/DOJ or runs a
+firm that paid an enforcement settlement for the relevant practice.
 
-- **scapegoat-madoff.jpg** — Bernie Madoff (DOJ booking photo, 16 March 2009)
-  Pleaded guilty to 11 federal felonies (securities fraud, mail fraud,
-  perjury, etc.) on 12 March 2009; sentenced to 150 years.
-  Source: Wikimedia Commons, *BernardMadoff.jpg*
-  Licence: Public domain — work of the U.S. Department of Justice
+- **scapegoat-sun.jpg** — Justin Sun (TRON Foundation, BitTorrent)
+  Sued by the SEC in March 2023 for orchestrating market manipulation
+  of TRX and BTT through wash trading and undisclosed celebrity
+  promotions. Settled with the SEC in June 2024 for $4.5M (no
+  admission). Stand-in here for crypto-perp market manipulation in
+  the spirit of the Mango Markets / liquidation-cascade case.
+  Source: Wikimedia Commons, *Justin_Sun-1_(cropped).jpg*
+  Photographer: MelfarraTron
+  Licence: CC BY-SA 4.0 — credit the photographer; share-alike
 
 - **scapegoat-griffin.jpg** — Kenneth C. Griffin (Citadel)
   Citadel Securities has been the subject of repeated FINRA and SEC
@@ -55,21 +58,26 @@ order-handling and front-running of retail flow.
   Photographer: Paul Elledge, 13 September 2017
   Licence: CC BY-SA 4.0 — credit Paul Elledge; share-alike obligation
 
-- **scapegoat-milton.jpg** — Trevor Milton (Nikola Motor Company)
-  Convicted in October 2022 on three counts of fraud (securities fraud
-  and wire fraud) for misleading investors about Nikola's technology;
-  sentenced to four years in December 2023. Sentence later partially
-  reduced; he received a presidential pardon in 2025.
-  Source: Wikimedia Commons, *Trevor_Milton_1.png*
-  Photographer: Nikki Gordon-Bloomfield (Transport Evolved), 2019
-  Licence: CC BY-SA 4.0 — credit the photographer; share-alike
+- **scapegoat-dimon.jpg** — Jamie Dimon (JPMorgan Chase, CEO)
+  Stand-in for JPMorgan's $920M settlement (DOJ + CFTC + SEC) in
+  September 2020 over a years-long orderbook-spoofing scheme across
+  precious metals and US Treasuries futures. Multiple JPM traders
+  (Michael Nowak, Gregg Smith, Christopher Jordan) were convicted at
+  trial in 2022; their convictions were affirmed on appeal in 2025.
+  Dimon was not personally indicted. He's the face the public attaches
+  to that bench, so he stands here in their place.
+  Source: Wikimedia Commons, *Jamie_Dimon,_CEO_of_JPMorgan_Chase.jpg*
+  Photographer: Steve Jurvetson
+  Licence: CC BY 2.0 — credit Steve Jurvetson on publish
 
-- **scapegoat-rajaratnam.jpg** — Raj Rajaratnam (Galleon Group)
-  Convicted on 14 counts of conspiracy and securities fraud in 2011
-  (insider trading); sentenced to 11 years — longest insider-trading
-  sentence on record at the time.
-  Source: Wikimedia Commons, *Raj_Rajaratnam_in_2024.jpg*
-  Licence: CC BY-SA 4.0 — credit the Wikimedia uploader; share-alike
+- **scapegoat-stewart.jpg** — Martha Stewart
+  Convicted in March 2004 on counts of conspiracy, obstruction of an
+  agency proceeding, and making false statements to federal
+  investigators, all related to insider trading in ImClone Systems
+  stock. Sentenced to five months in federal prison.
+  Source: Wikimedia Commons, *Martha_Stewart_by_Gage_Skidmore.jpg*
+  Photographer: Gage Skidmore
+  Licence: CC BY-SA 3.0 — credit Gage Skidmore; share-alike
 
 # scapegoat-{goat,witch,pillory,execution} image credits (retired)
 
