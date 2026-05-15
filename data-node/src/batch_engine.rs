@@ -43,6 +43,7 @@ pub const DISABLED_SOURCES: &[&str] = &[
     // Re-enable individually after confirming the upstream is live.
     "flights",  // Provider HTTP 503 on every coordinate.
     "weather",  // Open-Meteo daily quota exhausted (free tier); resets at 00:00 UTC.
+    "bestbuy",  // Free API key hits per-second rate limit on every call (HTTP 403).
 ];
 
 pub fn is_source_disabled(source_id: &str) -> bool {
