@@ -115,21 +115,43 @@ impl PolymarketMarketSource {
     /// Fetch all open markets from Gamma API with pagination (closed=false).
     /// Returns only markets the API considers open.
     ///
-    /// Note: Gamma caps page size at ~100 regardless of the `limit` parameter,
-    /// so we advance the offset by the actual returned count and only stop on
-    /// an empty page. A safety cap prevents an infinite loop if the API ever
-    /// returns a non-shrinking page.
+    /// Gamma has two undocumented limits:
+    ///   1. Page size caps at ~100 regardless of the `limit` parameter.
+    ///   2. Offset cannot exceed 10,000 — past that the API returns HTTP 422.
+    /// So we advance offset by the actual returned count, stop on an empty
+    /// page, and treat HTTP 422 as a soft end-of-stream signal.
     async fn fetch_open_markets(&self) -> Result<Vec<GammaMarket>> {
         let mut all_markets = Vec::new();
         let mut offset = 0usize;
-        const MAX_PAGES: usize = 500;
+        const MAX_OFFSET: usize = 10_000;
 
-        for _ in 0..MAX_PAGES {
+        loop {
+            if offset > MAX_OFFSET {
+                break;
+            }
             let url = format!(
                 "{}/markets?closed=false&limit={}&offset={}",
                 GAMMA_API_URL, PAGE_SIZE, offset
             );
-            let markets: Vec<GammaMarket> = self.http.get_json(&url).await.map_err(|e| anyhow::anyhow!("{}", e))?;
+            let page_result = self.http.get_json::<Vec<GammaMarket>>(&url).await;
+            let markets = match page_result {
+                Ok(m) => m,
+                Err(e) => {
+                    // Gamma returns HTTP 422 once offset exceeds the
+                    // pagination ceiling — that's a soft "no more rows."
+                    let msg = format!("{e}");
+                    if msg.contains("422")
+                        || msg.contains("offset exceeds maximum")
+                    {
+                        debug!(
+                            "Polymarket pagination ceiling reached at offset {} ({} markets so far)",
+                            offset, all_markets.len()
+                        );
+                        break;
+                    }
+                    return Err(anyhow::anyhow!("{}", e));
+                }
+            };
             let page_size = markets.len();
 
             debug!("Fetched {} open markets from offset {}", page_size, offset);
