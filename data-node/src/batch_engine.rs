@@ -41,7 +41,6 @@ pub const DISABLED_SOURCES: &[&str] = &[
     // Upstream APIs that stopped publishing fresh data — every batch refunds
     // until they recover. Disabled to keep Vision refund rate sane.
     // Re-enable individually after confirming the upstream is live.
-    "nyc311",   // Socrata erm2-nwe9 dataset still in 2020 (abandoned).
     "flights",  // Provider HTTP 503 on every coordinate.
     "weather",  // Open-Meteo daily quota exhausted (free tier); resets at 00:00 UTC.
 ];
