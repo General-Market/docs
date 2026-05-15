@@ -21,11 +21,11 @@ const BUCKETS = [
 ]
 
 function bucketColor(label: string): string {
-  if (label.includes('-2–+2')) return '#3b82f6'
-  if (label.includes('-5') || label.includes('+5')) return '#60a5fa'
-  if (label.includes('-10') || label.includes('+10')) return '#f59e0b'
-  if (label.includes('-20') || label.includes('+20') || label.includes('<') || label.includes('>')) return '#ef4444'
-  return '#6b7280'
+  if (label.includes('-2–+2')) return '#0071E3'
+  if (label.includes('-5') || label.includes('+5')) return '#5AC8FA'
+  if (label.includes('-10') || label.includes('+10')) return '#B25600'
+  if (label.includes('-20') || label.includes('+20') || label.includes('<') || label.includes('>')) return '#D70015'
+  return '#86868b'
 }
 
 export function SettlementVolatilityChart() {
@@ -69,18 +69,18 @@ export function SettlementVolatilityChart() {
           <BarChart data={histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 9, fill: '#999' }}
-              stroke="#ccc"
+              tick={{ fontSize: 9, fill: '#86868b' }}
+              stroke="#D2D2D7"
               interval={0}
               angle={-30}
               textAnchor="end"
               height={40}
             />
-            <YAxis tick={{ fontSize: 10, fill: '#999' }} stroke="#ccc" allowDecimals={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" allowDecimals={false} />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 6, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}
-              labelStyle={{ color: '#fff' }}
-              itemStyle={{ color: '#ccc' }}
+              contentStyle={{ fontSize: 12, borderRadius: 6, background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.08)' }}
+              labelStyle={{ color: '#1d1d1f' }}
+              itemStyle={{ color: '#6e6e73' }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36} name={t('explorer.vision_section.settlements')}>
               {histogram.map((entry, i) => (
@@ -91,7 +91,7 @@ export function SettlementVolatilityChart() {
         </ResponsiveContainer>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <p className="text-caption text-white/40">{t('explorer.vision_section.no_settlement_data')}</p>
+          <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_settlement_data')}</p>
         </div>
       )}
     </ExplorerChartCard>

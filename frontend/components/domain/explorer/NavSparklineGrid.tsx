@@ -80,17 +80,17 @@ export function NavSparklineGrid() {
           const first = s.points[0]?.close ?? 0
           const last = s.points[s.points.length - 1]?.close ?? 0
           const change = first > 0 ? ((last - first) / first) * 100 : 0
-          const color = change >= 0 ? '#10b981' : '#ef4444'
+          const color = change >= 0 ? '#1F8F4D' : '#D70015'
 
           return (
-            <div key={s.itp_id} className="bg-white/[0.04] rounded-lg p-2.5">
+            <div key={s.itp_id} className="bg-black/[0.04] rounded-apple-md p-2.5">
               <div className="flex items-baseline justify-between mb-0.5">
-                <span className="text-label font-bold text-white truncate">{s.symbol}</span>
-                <span className={`text-micro font-mono ${change >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                <span className="text-label font-semibold text-[#1d1d1f] truncate">{s.symbol}</span>
+                <span className={`text-micro font-mono ${change >= 0 ? 'text-[#1F8F4D]' : 'text-[#D70015]'}`}>
                   {change >= 0 ? '+' : ''}{change.toFixed(1)}%
                 </span>
               </div>
-              <div className="text-micro text-white/40 mb-1 font-mono">
+              <div className="text-micro text-[#86868b] mb-1 font-mono">
                 ${s.nav_per_share.toFixed(4)}
               </div>
               <div className="h-[40px]">
@@ -108,7 +108,7 @@ export function NavSparklineGrid() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex items-center justify-center">
-                    <span className="text-micro text-white/20">&mdash;</span>
+                    <span className="text-micro text-[#D2D2D7]">&mdash;</span>
                   </div>
                 )}
               </div>
@@ -116,7 +116,7 @@ export function NavSparklineGrid() {
           )
         })}
         {sparklines.length === 0 && !loading && navList.length > 0 && (
-          <div className="col-span-full text-center py-4 text-caption text-white/40">
+          <div className="col-span-full text-center py-4 text-caption text-[#86868b]">
             {t('explorer.itp_section.no_data')}
           </div>
         )}

@@ -38,14 +38,14 @@ export default function ExplorerPageClient() {
   const isStandalone = STANDALONE_TABS.has(activeTab)
 
   return (
-    <main className="min-h-screen explorer-dark-bg explorer-dark">
-      <div className="relative max-w-site-wide mx-auto px-4 md:px-8">
-        {/* Header */}
-        <div className="pt-10 pb-4">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-white/40 mb-1.5">
+    <main className="min-h-screen explorer-light-bg">
+      <div className="relative max-w-apple-max mx-auto px-4 md:px-8">
+        {/* Header — apple display */}
+        <div className="pt-12 pb-5">
+          <p className="text-[12px] font-semibold tracking-apple-loose uppercase text-[#86868b] mb-2">
             {t('explorer.network')}
           </p>
-          <h1 className="text-display font-black tracking-tight text-white leading-[1.1]">
+          <h1 className="text-display font-display font-semibold tracking-apple-tighter text-[#1d1d1f] leading-[1.05]">
             {t('explorer.title')}
           </h1>
         </div>
@@ -53,7 +53,7 @@ export default function ExplorerPageClient() {
         <ExplorerSummaryBar latest={latest} loading={loading} />
 
         {/* Tab bar — full width, scroll-affordant */}
-        <div className="relative mt-4 border-b border-white/[0.08]">
+        <div className="relative mt-6 border-b border-[#D2D2D7]">
           <LayoutGroup id="explorer-tabs">
             <div className="flex gap-0 overflow-x-auto scrollbar-hide -mx-1 px-1">
               {tabs.map((tab) => {
@@ -62,15 +62,15 @@ export default function ExplorerPageClient() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-3 text-caption font-semibold transition-colors whitespace-nowrap ${
-                      isActive ? 'text-white' : 'text-white/55 hover:text-white/85'
+                    className={`relative px-4 py-3 text-caption font-semibold tracking-apple-tight transition-colors whitespace-nowrap ${
+                      isActive ? 'text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'
                     }`}
                   >
                     {tab.label}
                     {isActive && (
                       <motion.div
                         layoutId="explorer-tab-indicator"
-                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-white"
+                        className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#1d1d1f]"
                         transition={reduced ? { duration: 0 } : springs.indicator}
                       />
                     )}
@@ -80,21 +80,21 @@ export default function ExplorerPageClient() {
             </div>
           </LayoutGroup>
           {/* Edge fades signal horizontal scroll */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-px w-6 bg-gradient-to-r from-[var(--explorer-bg,#0a0a0a)] to-transparent" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-px w-6 bg-gradient-to-l from-[var(--explorer-bg,#0a0a0a)] to-transparent" />
+          <div className="pointer-events-none absolute left-0 top-0 bottom-px w-6 bg-gradient-to-r from-[var(--explorer-bg,#FAFAFC)] to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-px w-6 bg-gradient-to-l from-[var(--explorer-bg,#FAFAFC)] to-transparent" />
         </div>
 
-        {/* Time range + refresh — own row, doesn't compete with tabs */}
+        {/* Time range + refresh — own row, apple pill controls */}
         {!isStandalone && (
-          <div className="flex items-center justify-end gap-1.5 mt-3">
+          <div className="flex items-center justify-end gap-1 mt-4">
             {RANGES.map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-2.5 py-1 text-label font-bold rounded transition-colors ${
+                className={`px-3 py-1.5 text-label font-semibold tracking-apple-tight rounded-apple-pill transition-colors ${
                   range === r
-                    ? 'bg-white/[0.12] text-white'
-                    : 'text-white/55 hover:text-white/85 hover:bg-white/[0.04]'
+                    ? 'bg-[#1d1d1f] text-white'
+                    : 'text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-black/[0.04]'
                 }`}
               >
                 {r}
@@ -103,7 +103,7 @@ export default function ExplorerPageClient() {
             <button
               onClick={refresh}
               disabled={loading}
-              className="ml-2 px-3 py-1 text-label font-bold text-white/55 hover:text-white/85 disabled:opacity-50 transition-colors"
+              className="ml-2 px-3.5 py-1.5 text-label font-semibold tracking-apple-tight rounded-apple-pill text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-black/[0.04] disabled:opacity-40 transition-colors"
             >
               {loading ? 'Loading...' : 'Refresh'}
             </button>
@@ -112,9 +112,9 @@ export default function ExplorerPageClient() {
 
         {/* Error */}
         {error && !isStandalone && (
-          <div className="mt-4 border border-red-500/30 bg-red-500/10 backdrop-blur-sm rounded-xl px-4 py-3">
-            <p className="text-red-400 text-caption font-semibold">{error}</p>
-            <button onClick={refresh} className="mt-2 text-caption font-bold text-blue-400 underline hover:no-underline">
+          <div className="mt-4 border border-[#FF3B30]/25 bg-[#FF3B30]/[0.06] rounded-apple-md px-4 py-3">
+            <p className="text-[#D70015] text-caption font-semibold">{error}</p>
+            <button onClick={refresh} className="mt-2 text-caption font-semibold text-[#0071E3] hover:text-[#0066CC] transition-colors">
               Retry
             </button>
           </div>

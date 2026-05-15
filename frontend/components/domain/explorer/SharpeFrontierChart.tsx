@@ -83,30 +83,30 @@ export function SharpeFrontierChart() {
         <div>
           <ResponsiveContainer width="100%" height={220}>
             <ScatterChart margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
               <XAxis
                 type="number"
                 dataKey="x"
                 name="Max Drawdown"
                 unit="%"
-                tick={{ fontSize: 10, fill: '#999' }}
-                stroke="#ccc"
-                label={{ value: t('explorer.itp_section.max_drawdown'), position: 'insideBottom', offset: -2, fontSize: 10, fill: '#666' }}
+                tick={{ fontSize: 10, fill: '#86868b' }}
+                stroke="#D2D2D7"
+                label={{ value: t('explorer.itp_section.max_drawdown'), position: 'insideBottom', offset: -2, fontSize: 10, fill: '#6e6e73' }}
               />
               <YAxis
                 type="number"
                 dataKey="y"
                 name="Annual Return"
                 unit="%"
-                tick={{ fontSize: 10, fill: '#999' }}
-                stroke="#ccc"
-                label={{ value: t('explorer.itp_section.annual_return'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: '#666' }}
+                tick={{ fontSize: 10, fill: '#86868b' }}
+                stroke="#D2D2D7"
+                label={{ value: t('explorer.itp_section.annual_return'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 10, fill: '#6e6e73' }}
               />
               <ZAxis type="number" dataKey="sharpe" range={[30, 200]} />
               <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 6, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}
-                labelStyle={{ color: '#fff' }}
-                itemStyle={{ color: '#ccc' }}
+                contentStyle={{ fontSize: 12, borderRadius: 12, background: '#ffffff', border: '1px solid #D2D2D7' }}
+                labelStyle={{ color: '#1d1d1f' }}
+                itemStyle={{ color: '#6e6e73' }}
                 formatter={(value: number, name: string) => {
                   if (name === 'Max Drawdown') return [`${value.toFixed(1)}%`, name]
                   if (name === 'Annual Return') return [`${value.toFixed(1)}%`, name]
@@ -117,11 +117,11 @@ export function SharpeFrontierChart() {
                   if (!active || !payload?.length) return null
                   const d = payload[0].payload
                   return (
-                    <div className="bg-[#1a1a2e] border border-white/10 rounded-md px-3 py-2 text-xs">
-                      <div className="font-bold text-white mb-1">{d.label}</div>
-                      <div className="text-white/60">Return: <span className="text-white">{d.y.toFixed(1)}%</span></div>
-                      <div className="text-white/60">Drawdown: <span className="text-white">{d.x.toFixed(1)}%</span></div>
-                      <div className="text-white/60">Sharpe: <span className="text-white">{d.sharpe.toFixed(2)}</span></div>
+                    <div className="bg-white border border-[#D2D2D7] shadow-[0_8px_24px_rgba(0,0,0,0.08)] rounded-apple-md px-3 py-2 text-xs">
+                      <div className="font-semibold text-[#1d1d1f] mb-1">{d.label}</div>
+                      <div className="text-[#6e6e73]">Return: <span className="text-[#1d1d1f]">{d.y.toFixed(1)}%</span></div>
+                      <div className="text-[#6e6e73]">Drawdown: <span className="text-[#1d1d1f]">{d.x.toFixed(1)}%</span></div>
+                      <div className="text-[#6e6e73]">Sharpe: <span className="text-[#1d1d1f]">{d.sharpe.toFixed(2)}</span></div>
                     </div>
                   )
                 }}
@@ -138,14 +138,14 @@ export function SharpeFrontierChart() {
             {categories.map(cat => (
               <div key={cat} className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: categoryColor(cat) }} />
-                <span className="text-micro text-white/50">{cat}</span>
+                <span className="text-micro text-[#86868b]">{cat}</span>
               </div>
             ))}
           </div>
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <p className="text-caption text-white/40">{t('explorer.itp_section.no_sim_data')}</p>
+          <p className="text-caption text-[#86868b]">{t('explorer.itp_section.no_sim_data')}</p>
         </div>
       )}
     </ExplorerChartCard>

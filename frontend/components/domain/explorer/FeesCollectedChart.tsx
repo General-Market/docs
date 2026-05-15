@@ -107,18 +107,18 @@ export function FeesCollectedChart() {
         {/* Header stats */}
         <div className="flex items-baseline gap-4 mb-3">
           <div>
-            <span className="text-label text-white/40 block">
+            <span className="text-label text-[#86868b] block tracking-apple-loose">
               {t('explorer.vision_section.accumulated_fees')}
             </span>
-            <span className="text-heading font-black text-white tracking-tight">
+            <span className="text-heading font-display font-semibold text-[#1d1d1f] tracking-apple-tighter">
               {formatUsdc(accumulatedFees)}
             </span>
           </div>
           <div className="ml-auto text-right">
-            <span className="text-label text-white/40 block">
+            <span className="text-label text-[#86868b] block tracking-apple-loose">
               {t('explorer.vision_section.fee_rate')}
             </span>
-            <span className="text-subhead font-bold text-white">
+            <span className="text-subhead font-semibold text-[#1d1d1f]">
               {(FEE_BPS / BPS_DENOM * 100).toFixed(2)}%
             </span>
           </div>
@@ -135,7 +135,7 @@ export function FeesCollectedChart() {
               >
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: '#999' }}
+                  tick={{ fontSize: 10, fill: '#86868b' }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => formatUsdc(v)}
@@ -143,7 +143,7 @@ export function FeesCollectedChart() {
                 <YAxis
                   type="category"
                   dataKey="source"
-                  tick={{ fontSize: 9, fill: '#aaa' }}
+                  tick={{ fontSize: 9, fill: '#6e6e73' }}
                   tickLine={false}
                   axisLine={false}
                   width={100}
@@ -151,12 +151,12 @@ export function FeesCollectedChart() {
                 <Tooltip
                   contentStyle={{
                     fontSize: 12,
-                    borderRadius: 6,
-                    background: '#1a1a2e',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    background: '#ffffff',
+                    border: '1px solid #D2D2D7',
                   }}
-                  labelStyle={{ color: '#fff' }}
-                  itemStyle={{ color: '#ccc' }}
+                  labelStyle={{ color: '#1d1d1f' }}
+                  itemStyle={{ color: '#6e6e73' }}
                   formatter={(v: number, _: string, entry: any) => [
                     formatUsdc(v),
                     entry.payload.fullName,
@@ -167,7 +167,7 @@ export function FeesCollectedChart() {
                   {feesBySource.map((_, i) => (
                     <Cell
                       key={i}
-                      fill="#10b981"
+                      fill="#1F8F4D"
                       fillOpacity={Math.max(0.3, 1 - i * 0.07)}
                     />
                   ))}
@@ -176,7 +176,7 @@ export function FeesCollectedChart() {
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-white/40">
+              <p className="text-caption text-[#86868b]">
                 {t('explorer.vision_section.no_fee_data')}
               </p>
             </div>

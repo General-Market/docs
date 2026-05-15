@@ -34,22 +34,22 @@ export function TieRateSection() {
     >
       <div className="p-4 space-y-0.5 max-h-[500px] overflow-y-auto" style={{ overflowY: 'auto' }}>
         {[...data].sort((a, b) => a.pct - b.pct).map(d => (
-          <div key={d.source} className="grid grid-cols-[100px_1fr_44px_44px] gap-2 items-center group hover:bg-white/[0.03] rounded px-1 -mx-1">
-            <div className="text-[10px] font-mono text-white/50 truncate group-hover:text-white/80 transition-colors">
+          <div key={d.source} className="grid grid-cols-[100px_1fr_44px_44px] gap-2 items-center group hover:bg-black/[0.04] rounded px-1 -mx-1">
+            <div className="text-[10px] font-mono text-[#86868b] truncate group-hover:text-[#1d1d1f] transition-colors">
               {d.source}
             </div>
-            <div className="h-3.5 bg-white/[0.06] rounded-sm overflow-hidden">
+            <div className="h-3.5 bg-black/[0.06] rounded-sm overflow-hidden">
               <div
                 className={`h-full rounded-sm transition-all ${
-                  d.pct > 30 ? 'bg-red-400/80' : d.pct > 20 ? 'bg-amber-400/70' : d.pct > 10 ? 'bg-amber-300/50' : 'bg-emerald-400/60'
+                  d.pct > 30 ? 'bg-[#D70015]/80' : d.pct > 20 ? 'bg-[#B25600]/70' : d.pct > 10 ? 'bg-[#B25600]/40' : 'bg-[#1F8F4D]/60'
                 }`}
                 style={{ width: `${(d.pct / maxPct) * 100}%` }}
               />
             </div>
-            <div className="text-[10px] font-mono tabular-nums text-right text-white/70 font-semibold">
+            <div className="text-[10px] font-mono tabular-nums text-right text-[#1d1d1f] font-semibold">
               {d.pct.toFixed(1)}%
             </div>
-            <div className="text-[10px] font-mono tabular-nums text-right text-white/30">
+            <div className="text-[10px] font-mono tabular-nums text-right text-[#86868b]">
               {d.total}r
             </div>
           </div>

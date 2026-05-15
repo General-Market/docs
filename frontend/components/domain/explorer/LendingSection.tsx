@@ -41,9 +41,9 @@ function truncAddr(addr: string): string {
 }
 
 const CHART_COLORS = [
-  '#60a5fa', '#34d399', '#f472b6', '#fbbf24',
-  '#a78bfa', '#fb923c', '#22d3ee', '#e879f9',
-  '#4ade80', '#f87171', '#38bdf8', '#c084fc',
+  '#0071E3', '#1F8F4D', '#B25600', '#AF52DE',
+  '#5856D6', '#FF9500', '#32ADE6', '#FF2D55',
+  '#34C759', '#FF3B30', '#5AC8FA', '#AF52DE',
 ]
 
 // ── Component ──
@@ -139,7 +139,7 @@ export function LendingSection({ loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-white mb-4">
+      <h2 className="text-subhead font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">
         {t('explorer.lending_section.title')}
       </h2>
 
@@ -154,35 +154,35 @@ export function LendingSection({ loading }: SectionProps) {
           <div className="h-full flex flex-col justify-center gap-4 px-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-micro text-white/40 block">Total Value Locked</span>
-                <span className="text-heading font-black text-white">{formatUsd(stats.tvl)}</span>
+                <span className="text-micro text-[#86868b] block">Total Value Locked</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatUsd(stats.tvl)}</span>
               </div>
               <div>
-                <span className="text-micro text-white/40 block">Vault Deposits</span>
-                <span className="text-heading font-black text-white">{formatUsd(stats.vaultAssets)}</span>
+                <span className="text-micro text-[#86868b] block">Vault Deposits</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatUsd(stats.vaultAssets)}</span>
               </div>
               <div>
-                <span className="text-micro text-white/40 block">Total Supplied</span>
-                <span className="text-heading font-black text-white">{formatUsd(stats.totalSupply)}</span>
+                <span className="text-micro text-[#86868b] block">Total Supplied</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatUsd(stats.totalSupply)}</span>
               </div>
               <div>
-                <span className="text-micro text-white/40 block">Total Borrowed</span>
-                <span className="text-heading font-black text-white">{formatUsd(stats.totalBorrowed)}</span>
+                <span className="text-micro text-[#86868b] block">Total Borrowed</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatUsd(stats.totalBorrowed)}</span>
               </div>
             </div>
             <div className="flex items-baseline gap-6">
               <div>
-                <span className="text-micro text-white/40 block">Avg Utilization</span>
-                <span className="text-body font-bold text-white">{formatPct(stats.avgUtil)}</span>
+                <span className="text-micro text-[#86868b] block">Avg Utilization</span>
+                <span className="text-body font-bold text-[#1d1d1f]">{formatPct(stats.avgUtil)}</span>
               </div>
               <div>
-                <span className="text-micro text-white/40 block">Wtd Avg Borrow APY</span>
-                <span className="text-body font-bold text-white">{formatPct(stats.weightedApy)}</span>
+                <span className="text-micro text-[#86868b] block">Wtd Avg Borrow APY</span>
+                <span className="text-body font-bold text-[#1d1d1f]">{formatPct(stats.weightedApy)}</span>
               </div>
               {vault && (
                 <div>
-                  <span className="text-micro text-white/40 block">Vault</span>
-                  <span className="text-body font-bold text-white">{vault.symbol || vault.name}</span>
+                  <span className="text-micro text-[#86868b] block">Vault</span>
+                  <span className="text-body font-bold text-[#1d1d1f]">{vault.symbol || vault.name}</span>
                 </div>
               )}
             </div>
@@ -198,19 +198,19 @@ export function LendingSection({ loading }: SectionProps) {
           {utilizationData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={utilizationData} layout="vertical" margin={{ left: 60, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#999' }} tickFormatter={v => `${v}%`} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#999' }} width={55} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#86868b' }} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#86868b' }} width={55} />
                 <Tooltip
                   formatter={(v: number) => [`${v.toFixed(2)}%`, 'Utilization']}
-                  contentStyle={{ fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: '#fff' }}
+                  contentStyle={{ fontSize: 12, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}
+                  labelStyle={{ color: '#1d1d1f' }}
                 />
-                <Bar dataKey="utilization" fill="#60a5fa" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="utilization" fill="#0071E3" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-white/30 text-caption">No active markets</div>
+            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No active markets</div>
           )}
         </ExplorerChartCard>
 
@@ -223,19 +223,19 @@ export function LendingSection({ loading }: SectionProps) {
           {apyData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={apyData} layout="vertical" margin={{ left: 60, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#999' }} tickFormatter={v => `${v}%`} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#999' }} width={55} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#86868b' }} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#86868b' }} width={55} />
                 <Tooltip
                   formatter={(v: number) => [`${v.toFixed(2)}%`, 'Borrow APY']}
-                  contentStyle={{ fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: '#fff' }}
+                  contentStyle={{ fontSize: 12, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}
+                  labelStyle={{ color: '#1d1d1f' }}
                 />
-                <Bar dataKey="apy" fill="#f472b6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="apy" fill="#AF52DE" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-white/30 text-caption">No borrow activity</div>
+            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No borrow activity</div>
           )}
         </ExplorerChartCard>
 
@@ -248,19 +248,19 @@ export function LendingSection({ loading }: SectionProps) {
           {borrowedData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={borrowedData} layout="vertical" margin={{ left: 60, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#999' }} tickFormatter={v => formatUsd(v)} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#999' }} width={55} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#86868b' }} tickFormatter={v => formatUsd(v)} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#86868b' }} width={55} />
                 <Tooltip
                   formatter={(v: number) => [formatUsd(v), 'Borrowed']}
-                  contentStyle={{ fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: '#fff' }}
+                  contentStyle={{ fontSize: 12, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}
+                  labelStyle={{ color: '#1d1d1f' }}
                 />
-                <Bar dataKey="borrowed" fill="#fbbf24" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="borrowed" fill="#B25600" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-white/30 text-caption">No outstanding debt</div>
+            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No outstanding debt</div>
           )}
         </ExplorerChartCard>
 
@@ -273,19 +273,19 @@ export function LendingSection({ loading }: SectionProps) {
           {supplyData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={supplyData} layout="vertical" margin={{ left: 60, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#999' }} tickFormatter={v => formatUsd(v)} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#999' }} width={55} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis type="number" tick={{ fontSize: 10, fill: '#86868b' }} tickFormatter={v => formatUsd(v)} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#86868b' }} width={55} />
                 <Tooltip
                   formatter={(v: number) => [formatUsd(v), 'Supplied']}
-                  contentStyle={{ fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: '#fff' }}
+                  contentStyle={{ fontSize: 12, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}
+                  labelStyle={{ color: '#1d1d1f' }}
                 />
-                <Bar dataKey="supply" fill="#34d399" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="supply" fill="#1F8F4D" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-white/30 text-caption">No supply data</div>
+            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No supply data</div>
           )}
         </ExplorerChartCard>
 
@@ -315,13 +315,13 @@ export function LendingSection({ loading }: SectionProps) {
                 </Pie>
                 <Tooltip
                   formatter={(v: number) => [formatUsd(v), 'Supplied']}
-                  contentStyle={{ fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: '#fff' }}
+                  contentStyle={{ fontSize: 12, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8 }}
+                  labelStyle={{ color: '#1d1d1f' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-white/30 text-caption">No market data</div>
+            <div className="h-full flex items-center justify-center text-[#86868b] text-caption">No market data</div>
           )}
         </ExplorerChartCard>
 

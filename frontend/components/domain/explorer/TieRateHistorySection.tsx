@@ -145,7 +145,7 @@ export function TieRateHistorySection() {
     >
       {noData ? (
         <div className="h-[260px] flex items-center justify-center">
-          <p className="text-label text-white/30">No tie-rate history available yet</p>
+          <p className="text-label text-[#86868b]">No tie-rate history available yet</p>
         </div>
       ) : (
         <>
@@ -162,16 +162,16 @@ export function TieRateHistorySection() {
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                  tick={{ fontSize: 10, fill: '#86868b' }}
                   tickLine={false}
                   axisLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }}
+                  tick={{ fontSize: 10, fill: '#86868b' }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => `${v}%`}
@@ -181,12 +181,12 @@ export function TieRateHistorySection() {
                   contentStyle={{
                     fontSize: 12,
                     borderRadius: 8,
-                    backgroundColor: 'rgba(20,20,25,0.95)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#fff',
+                    backgroundColor: 'rgba(255,255,255,0.98)',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    color: '#1d1d1f',
                   }}
                   formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name === 'aggregate' ? 'All Sources' : name]}
-                  labelStyle={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+                  labelStyle={{ color: '#6e6e73', fontSize: 11 }}
                 />
 
                 {/* Aggregate line — always visible */}
@@ -194,9 +194,9 @@ export function TieRateHistorySection() {
                   type="monotone"
                   dataKey="aggregate"
                   name="All Sources"
-                  stroke="#fff"
+                  stroke="#1d1d1f"
                   strokeWidth={mode === 'aggregate' ? 2 : 1}
-                  fill="#fff"
+                  fill="#1d1d1f"
                   fillOpacity={mode === 'aggregate' ? 0.08 : 0.02}
                   dot={false}
                 />
@@ -221,7 +221,7 @@ export function TieRateHistorySection() {
                   <Legend
                     verticalAlign="top"
                     height={28}
-                    wrapperStyle={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}
+                    wrapperStyle={{ fontSize: 11, color: '#6e6e73' }}
                   />
                 )}
               </AreaChart>
@@ -245,10 +245,10 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1 text-label font-bold rounded transition-colors ${
+      className={`px-2.5 py-1 text-label font-bold rounded-apple-pill transition-colors ${
         active
-          ? 'bg-white/[0.12] text-white'
-          : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
+          ? 'bg-[#1d1d1f] text-white'
+          : 'text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-black/[0.04]'
       }`}
     >
       {children}

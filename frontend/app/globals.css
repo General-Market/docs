@@ -1003,9 +1003,25 @@ input[type="number"] {
   animation: fluid-drawer-entrance 0.4s var(--spring) both;
 }
 
-/* ── EXPLORER DARK GLASS ── */
+/* ── EXPLORER APPLE-LIGHT ── */
 
-/* Dark gradient background with subtle radial accents */
+/* Off-white surface with the faintest tinted depth — apple marketing wash */
+.explorer-light-bg {
+  --explorer-bg: #FAFAFC;
+  background: #FAFAFC;
+  position: relative;
+}
+.explorer-light-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 18% 28%, rgba(0, 113, 227, 0.035) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 82% 72%, rgba(52, 199, 89, 0.025) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Legacy dark background — kept temporarily for any remaining consumers */
 .explorer-dark-bg {
   --explorer-bg: #0c0c14;
   background: linear-gradient(145deg, #09090f 0%, #111118 50%, #0c0c14 100%);
@@ -1021,17 +1037,62 @@ input[type="number"] {
   pointer-events: none;
 }
 
-/* Glass card cascade entrance — stagger via --i */
+/* Glass card cascade entrance — three-axis reveal (lift, scale, defocus clear) */
 @keyframes explorer-card-in {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.97);
-    filter: blur(6px);
+    transform: translateY(28px) scale(0.96);
+    filter: blur(8px);
+  }
+  55% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 .explorer-glass-card {
-  animation: explorer-card-in 0.6s var(--ease-out-expo) both;
-  animation-delay: calc(var(--i, 0) * 70ms);
+  animation: explorer-card-in 0.78s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 85ms);
+}
+
+/* Apple light card surface — subtle border, soft elevation, real backdrop */
+.explorer-light-card {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 8px 24px -12px rgba(0, 0, 0, 0.08);
+  transition:
+    border-color 0.3s cubic-bezier(0.25, 0.1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.25, 0.1, 0.3, 1);
+}
+.explorer-light-card:hover {
+  border-color: rgba(0, 0, 0, 0.10);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 16px 36px -18px rgba(0, 0, 0, 0.12);
+}
+
+/* Chart body reveal — runs after the card lands, draws confidence */
+@keyframes explorer-chart-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.explorer-chart-reveal {
+  animation: explorer-chart-reveal 0.55s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 85ms + 220ms);
 }
 
 /* ── Dark theme color inversions ── */
