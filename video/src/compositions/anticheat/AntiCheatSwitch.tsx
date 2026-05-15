@@ -374,7 +374,7 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
       }}
     >
       <img
-        src={staticFile("gm-logo.svg")}
+        src={staticFile("gm-mark.svg")}
         alt=""
         draggable={false}
         style={{

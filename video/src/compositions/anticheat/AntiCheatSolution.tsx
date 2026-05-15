@@ -325,7 +325,7 @@ const Headline: React.FC = () => {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
             <img
-              src={staticFile("gm-logo.svg")}
+              src={staticFile("gm-mark.svg")}
               alt=""
               style={{
                 width: 130,

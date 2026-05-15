@@ -678,6 +678,17 @@ const BG_WORD_FADE_IN = toFrames(0.35);
 // Anchored on the word's vertical mid-line so the bottom of the
 // letterforms tucks just above the carousel's top edge.
 const BG_WORD_CENTER_Y_PCT = 0.22;
+// Cap each word's rendered width so longer labels (predictions,
+// launchpads) shrink to fit instead of bleeding past the frame edges.
+// Estimated em-advance for SF Pro Display weight 900 with tight
+// tracking. Honest enough for fit-to-width; the visual hit from a
+// small over-estimate is just a little extra side margin.
+const BG_WORD_MAX_WIDTH = W * 0.92;
+const BG_WORD_EM_ADVANCE = 0.48;
+const fitBgWordFontSize = (label: string): number => {
+  const widthCap = BG_WORD_MAX_WIDTH / (label.length * BG_WORD_EM_ADVANCE);
+  return Math.min(BG_WORD_FONT_SIZE, widthCap);
+};
 
 const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
   if (local < 0) return null;
@@ -722,7 +733,7 @@ const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
               top: `${(BG_WORD_CENTER_Y_PCT * 100).toFixed(2)}%`,
               transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
               fontFamily: font,
-              fontSize: BG_WORD_FONT_SIZE,
+              fontSize: fitBgWordFontSize(cat.label),
               fontWeight: 900,
               letterSpacing: "-0.05em",
               color: colors.accent,
