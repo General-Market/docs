@@ -39,6 +39,7 @@ import {
 import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "./preloadOnce";
 // ── Model ──
 // `.opt.glb` — WebP-compressed textures. 8.3 MB (down from 12.4 MB,
 // −33%). Node graph and materials identical to the original; WebP
@@ -55,7 +56,7 @@ import * as THREE from "three";
 // Fallback order if the WebP variant ever misbehaves:
 //   `tabletop_macbook_iphone.glb` — 12.4 MB original, Draco + PNG.
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // ── Defaults ──
 

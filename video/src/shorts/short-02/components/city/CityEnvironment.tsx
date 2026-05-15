@@ -16,16 +16,17 @@ import {
   ROAD_CONFIG,
   type BuildingDef,
 } from "./cityConfig";
+import { preloadOnce } from "../../../../lib/preloadOnce";
 
 // ---------------------------------------------------------------------------
 // Asset URLs
 // ---------------------------------------------------------------------------
 
 const PALM_URL = staticFile("models/palm-tree.glb");
-useGLTF.preload(PALM_URL);
+preloadOnce(useGLTF.preload, PALM_URL);
 
 const CAR_URL = staticFile("models/car-sedan.glb");
-useGLTF.preload(CAR_URL);
+preloadOnce(useGLTF.preload, CAR_URL);
 
 // ---------------------------------------------------------------------------
 // CityTower — single building with canvas-textured facades

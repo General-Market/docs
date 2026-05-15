@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { staticFile } from "remotion";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 const CAR_URL = staticFile("models/car-sedan.glb");
-useGLTF.preload(CAR_URL);
+preloadOnce(useGLTF.preload, CAR_URL);
 
 export const SimpleCar: React.FC<{ position: [number, number, number]; rotationY?: number }> = ({
   position,

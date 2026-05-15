@@ -19,11 +19,12 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../../lib/preloadOnce";
 import { COLOR, FONT, ANIM } from "./tokens";
 
 const FPS = 30;
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // Camera views from DeviceShowcase
 const CAM_WIDE = {

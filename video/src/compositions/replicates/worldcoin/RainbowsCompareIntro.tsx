@@ -29,6 +29,7 @@ import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.j
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { LofiDots } from "../../endcard/LofiDots";
 import { useGsapProxy } from "../standrew/gsapUtils";
+import { preloadOnce } from "../../../lib/preloadOnce";
 
 const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
@@ -36,7 +37,7 @@ const { fontFamily } = loadFont("normal", {
 });
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // ── Screen mesh + per-beat canvas painters ─────────────────────────
 //

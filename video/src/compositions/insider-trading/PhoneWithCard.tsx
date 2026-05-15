@@ -17,10 +17,11 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../lib/preloadOnce";
 import { FEATURED_SOURCES } from "./SourceCardsWall";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // Defaults copied from DeviceBroll — these are the only camera + phone
 // positions proven to render the screen flush to the viewer.

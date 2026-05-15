@@ -27,6 +27,7 @@ import { PHASE_SCREENS, getAllScreenImages, type ScreenEntry, type ScreenDef } f
 import { CityEnvironment } from "./city/CityEnvironment";
 import { mulberry32 } from "./city/cityConfig";
 import { useQuality } from "../../../engine/quality";
+import { preloadOnce } from "../../../lib/preloadOnce";
 
 // ---------------------------------------------------------------------------
 // Phase config
@@ -897,7 +898,7 @@ const TradingSetup: React.FC<{
 // ---------------------------------------------------------------------------
 
 const CAR_URL = staticFile("models/car-sedan.glb");
-useGLTF.preload(CAR_URL);
+preloadOnce(useGLTF.preload, CAR_URL);
 
 const SimpleCar: React.FC<{ position: [number, number, number]; rotationY?: number }> = ({
   position,
@@ -944,7 +945,7 @@ const HeartSign: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const ROBOT_URL = staticFile("models/RobotExpressive.glb");
-useGLTF.preload(ROBOT_URL);
+preloadOnce(useGLTF.preload, ROBOT_URL);
 
 // Preload all logo textures at module level to avoid async lag during playback
 const LOGO_URLS = [
@@ -1203,7 +1204,7 @@ const SOLDIER_ANIM: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const SOLDIER_URL = staticFile("models/Soldier.glb");
-useGLTF.preload(SOLDIER_URL);
+preloadOnce(useGLTF.preload, SOLDIER_URL);
 
 /** Normalize any humanoid bone name to standard Mixamo canonical form */
 function canonicalBone(name: string): string {

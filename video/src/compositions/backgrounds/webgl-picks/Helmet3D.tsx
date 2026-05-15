@@ -11,9 +11,10 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, useTexture, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../../lib/preloadOnce";
 
 const HELMET_URL = staticFile("models/helmet.glb");
-useGLTF.preload(HELMET_URL);
+preloadOnce(useGLTF.preload, HELMET_URL);
 
 const IMAGE_URLS = Array.from({ length: 9 }, (_, i) =>
   staticFile(`tube/im${i + 1}.jpg`),

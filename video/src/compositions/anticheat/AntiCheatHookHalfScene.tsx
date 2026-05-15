@@ -17,6 +17,7 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../lib/preloadOnce";
 import { beatPulseScene } from "./beats";
 import {
   PhoneChart,
@@ -29,7 +30,7 @@ import {
 } from "./AntiCheatHookScene";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // ── Layout — single device, centered for half-canvas viewport ───────────────
 //

@@ -60,11 +60,8 @@ import {
 } from "./compositions/replicates/council/VirtualsReplicateComposition";
 import { emberMeta } from "./compositions/replicates/ember/EmberComposition";
 import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBySide";
-import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComposition";
 import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
-import { worldcoin2Meta } from "./compositions/replicates/worldcoin/Worldcoin2Composition";
 import { worldcoin2OverLofiMeta } from "./compositions/replicates/worldcoin/Worldcoin2OverLofi";
-import { rainbowsCompareIntroMeta } from "./compositions/replicates/worldcoin/RainbowsCompareIntro";
 import {
   phoneBrollDemoMeta,
   laptopBrollDemoMeta,
@@ -72,7 +69,6 @@ import {
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
-import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
 import {
   TOTAL_FRAMES as TUTORIAL_DURATION,
   FPS as TUTORIAL_FPS,
@@ -100,15 +96,12 @@ import {
   FPS as LAUNCH_FPS,
 } from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
-import { EndCard } from "./compositions/endcard/EndCard";
 import { HexPixelate } from "./compositions/effects/HexPixelate";
 import { VIDEO_SRC as LOFI_BROLL_SRC } from "./compositions/endcard/LofiDots";
-import { LofiDotsTitled } from "./compositions/endcard/LofiDotsTitled";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
 } from "./compositions/endcard/theme";
-import { Sequence02 } from "./compositions/sequence02/Sequence02";
 import {
   TOTAL_FRAMES as SEQ02_DURATION,
   FPS as SEQ02_FPS,
@@ -143,16 +136,16 @@ import { proposal03CourseMeta } from "./compositions/anticheat/proposals/Proposa
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { marketAnatomyMeta } from "./compositions/market-anatomy/MarketAnatomy";
 import { icebergDataMeta } from "./compositions/iceberg-data/IcebergData";
-import { retailPnLHorizonMeta } from "./compositions/retail-pnl/RetailPnLHorizon";
-import { retailPnLBucketsMeta } from "./compositions/retail-pnl/RetailPnLBuckets";
-import { retailPnLFanMeta } from "./compositions/retail-pnl/RetailPnLFan";
-import { retailPnLCohortMeta } from "./compositions/retail-pnl/RetailPnLCohort";
-import { retailPnLConcentrationMeta } from "./compositions/retail-pnl/RetailPnLConcentration";
-import { retailPnLTaxMeta } from "./compositions/retail-pnl/RetailPnLTax";
-import { retailPnLAllVariantsMeta } from "./compositions/retail-pnl/RetailPnLAllVariants";
-import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
+import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
+
+// `lazyComponent` typing helper. Without this, TS picks the `(props:T) => ReactNode`
+// arm of `LooseComponentType<Props>` and infers `Props=never` for empty FCs.
+// Casting the loader return tells TS to use the explicit Props.
+const lazyDefault = <P extends Record<string, unknown>>(
+  loader: () => Promise<{ default: React.FC<P> }>,
+): (() => Promise<{ default: React.FC<P> }>) => loader;
 
 const shorts: ShortConfig[] = [];
 
@@ -235,7 +228,7 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
       <Folder name="RetailPnL">
-        {[retailPnLAllVariantsMeta, retailPnLConcentrationMeta, retailPnLTaxMeta, retailPnLHorizonMeta, retailPnLBucketsMeta, retailPnLFanMeta, retailPnLCohortMeta].map(
+        {[retailPnLMarketsMeta].map(
           (meta) => (
             <Composition
               key={meta.id}
@@ -307,9 +300,14 @@ export const RemotionRoot: React.FC = () => {
       />
 
       {/* ═══ LOFI DOTS TITLED — same broll, but the titles are the broll ═══ */}
+      {/* Lazy: ThreeCanvas + r3f. */}
       <Composition
         id="LofiDotsTitled"
-        component={LofiDotsTitled}
+        lazyComponent={lazyDefault<{}>(() =>
+          import("./compositions/endcard/LofiDotsTitled").then((m) => ({
+            default: m.LofiDotsTitled,
+          })),
+        )}
         durationInFrames={Math.round(311 * ENDCARD_FPS)}
         fps={ENDCARD_FPS}
         width={1920}
@@ -430,13 +428,18 @@ export const RemotionRoot: React.FC = () => {
         />
 
         {/* --- Worldcoin --- */}
+        {/* Lazy: Three.js-heavy. Meta values inlined to keep this module out of the eager graph. */}
         <Composition
-          id={worldcoinMeta.id}
-          component={worldcoinMeta.component}
-          durationInFrames={worldcoinMeta.durationInFrames}
-          fps={worldcoinMeta.fps}
-          width={worldcoinMeta.width}
-          height={worldcoinMeta.height}
+          id="Worldcoin"
+          lazyComponent={lazyDefault<{}>(() =>
+            import("./compositions/replicates/worldcoin/WorldcoinComposition").then(
+              (m) => ({ default: m.WorldcoinComposition }),
+            ),
+          )}
+          durationInFrames={2880}
+          fps={60}
+          width={1920}
+          height={1080}
         />
         <Composition
           id={worldcoinSideBySideMeta.id}
@@ -447,12 +450,16 @@ export const RemotionRoot: React.FC = () => {
           height={worldcoinSideBySideMeta.height}
         />
         <Composition
-          id={worldcoin2Meta.id}
-          component={worldcoin2Meta.component}
-          durationInFrames={worldcoin2Meta.durationInFrames}
-          fps={worldcoin2Meta.fps}
-          width={worldcoin2Meta.width}
-          height={worldcoin2Meta.height}
+          id="Worldcoin2"
+          lazyComponent={lazyDefault<{ transparent?: boolean }>(() =>
+            import("./compositions/replicates/worldcoin/Worldcoin2Composition").then(
+              (m) => ({ default: m.Worldcoin2Composition }),
+            ),
+          )}
+          durationInFrames={600}
+          fps={60}
+          width={1920}
+          height={1080}
         />
         <Composition
           id={worldcoin2OverLofiMeta.id}
@@ -463,12 +470,16 @@ export const RemotionRoot: React.FC = () => {
           height={worldcoin2OverLofiMeta.height}
         />
         <Composition
-          id={rainbowsCompareIntroMeta.id}
-          component={rainbowsCompareIntroMeta.component}
-          durationInFrames={rainbowsCompareIntroMeta.durationInFrames}
-          fps={rainbowsCompareIntroMeta.fps}
-          width={rainbowsCompareIntroMeta.width}
-          height={rainbowsCompareIntroMeta.height}
+          id="RainbowsCompareIntro"
+          lazyComponent={lazyDefault<{}>(() =>
+            import("./compositions/replicates/worldcoin/RainbowsCompareIntro").then(
+              (m) => ({ default: m.RainbowsCompareIntro }),
+            ),
+          )}
+          durationInFrames={180}
+          fps={24}
+          width={1920}
+          height={1080}
         />
         <Composition
           id={phoneBrollDemoMeta.id}
@@ -488,14 +499,19 @@ export const RemotionRoot: React.FC = () => {
         />
 
         {/* --- Explorer Proof (the system is up online) --- */}
+        {/* Lazy: pulls Three.js via CoinsBackground. */}
         <Composition
-          id={explorerProofMeta.id}
-          component={explorerProofMeta.component}
-          durationInFrames={explorerProofMeta.durationInFrames}
-          fps={explorerProofMeta.fps}
-          width={explorerProofMeta.width}
-          height={explorerProofMeta.height}
-          defaultProps={explorerProofMeta.defaultProps}
+          id="ExplorerProof"
+          lazyComponent={lazyDefault<{ brollPath: string }>(() =>
+            import("./compositions/explorer-proof/ExplorerProofComposition").then(
+              (m) => ({ default: m.ExplorerProof }),
+            ),
+          )}
+          durationInFrames={2100}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={{ brollPath: "broll/glacier-drone.mp4" }}
         />
 
         {/* --- Ridd --- */}
@@ -852,25 +868,40 @@ export const RemotionRoot: React.FC = () => {
           width={insiderCasesMeta.width}
           height={insiderCasesMeta.height}
         />
+        {/* Lazy: pulls Three.js via children (AsciiOverlay / GreenAsciiScreen). */}
         <Composition
           id="EndCard"
-          component={EndCard}
+          lazyComponent={lazyDefault<{}>(() =>
+            import("./compositions/endcard/EndCard").then((m) => ({
+              default: m.EndCard,
+            })),
+          )}
           durationInFrames={ENDCARD_DURATION}
           fps={ENDCARD_FPS}
           width={1920}
           height={1080}
         />
+        {/* Lazy: pulls Three.js via HexPixelate + ASCII overlays. */}
         <Composition
           id="Sequence02"
-          component={Sequence02}
+          lazyComponent={lazyDefault<{}>(() =>
+            import("./compositions/sequence02/Sequence02").then((m) => ({
+              default: m.Sequence02,
+            })),
+          )}
           durationInFrames={SEQ02_DURATION}
           fps={SEQ02_FPS}
           width={SEQ02_W}
           height={SEQ02_H}
         />
+        {/* Lazy: pulls Three.js via WiseMouseLight overlay. */}
         <Composition
           id="Tutorial"
-          component={TutorialVideo}
+          lazyComponent={lazyDefault<{ theme?: unknown }>(() =>
+            import("./compositions/tutorial/TutorialVideo").then((m) => ({
+              default: m.TutorialVideo as React.FC<{ theme?: unknown }>,
+            })),
+          )}
           durationInFrames={TUTORIAL_DURATION}
           fps={TUTORIAL_FPS}
           width={1920}

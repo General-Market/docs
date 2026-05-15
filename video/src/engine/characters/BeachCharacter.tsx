@@ -4,9 +4,10 @@ import * as THREE from "three";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { useGLTF } from "@react-three/drei";
 import { staticFile } from "remotion";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 const ROBOT_URL = staticFile("models/RobotExpressive.glb");
-useGLTF.preload(ROBOT_URL);
+preloadOnce(useGLTF.preload, ROBOT_URL);
 
 export const BeachCharacter: React.FC<{
   frame: number;

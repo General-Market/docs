@@ -23,9 +23,10 @@ import { useThree } from "@react-three/fiber";
 import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { beatPulseScene } from "./beats";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.opt.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // ── Laptop / phone constants pulled from DeviceBroll so this component
 //    is self-contained.

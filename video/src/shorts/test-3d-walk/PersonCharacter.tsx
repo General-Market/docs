@@ -4,9 +4,10 @@ import * as THREE from "three";
 import { staticFile } from "remotion";
 // @ts-ignore — SkeletonUtils types may not be bundled
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 const MODEL_URL = staticFile("models/RobotExpressive.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 // ── Impact timing helper (shared between scene + characters) ────────────────
 export const IMPACT_EVENTS = [

@@ -10,9 +10,10 @@
 
 import { staticFile } from "remotion";
 import { useGLTF } from "@react-three/drei";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 export const SOLDIER_URL = staticFile("models/Soldier.glb");
-useGLTF.preload(SOLDIER_URL);
+preloadOnce(useGLTF.preload, SOLDIER_URL);
 
 /** Normalize any humanoid bone name to standard Mixamo canonical form */
 export function canonicalBone(name: string): string {

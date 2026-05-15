@@ -9,6 +9,7 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useGLTF, useTexture, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 export type CoinsBackgroundProps = {
   forwardProgress: number;
@@ -20,9 +21,9 @@ export type CoinsBackgroundProps = {
 const COIN_MODEL_URL = staticFile("models/coin.glb");
 const MATCAP_GLASS_URL = staticFile("three-challenge/glass.png");
 const MATCAP_NOISE_URL = staticFile("three-challenge/bnoise.png");
-useGLTF.preload(COIN_MODEL_URL);
-useTexture.preload(MATCAP_GLASS_URL);
-useTexture.preload(MATCAP_NOISE_URL);
+preloadOnce(useGLTF.preload, COIN_MODEL_URL);
+preloadOnce(useTexture.preload, MATCAP_GLASS_URL);
+preloadOnce(useTexture.preload, MATCAP_NOISE_URL);
 
 const BG_GRADIENT =
   "radial-gradient(ellipse at center, #E8E0F2 0%, #D8CFE7 60%, #C6BCD7 100%)";

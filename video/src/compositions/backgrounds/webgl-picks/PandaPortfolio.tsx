@@ -14,6 +14,7 @@ import { useThree, useLoader } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { preloadOnce } from "../../../lib/preloadOnce";
 
 // ── Asset paths ───────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ const MODELS = {
   waterfall: M("not_waterfall.glb"),
 };
 
-Object.values(MODELS).forEach((url) => useGLTF.preload(url));
+Object.values(MODELS).forEach((url) => preloadOnce(useGLTF.preload, url));
 
 // ── Texture paths ─────────────────────────────────────────────────────
 

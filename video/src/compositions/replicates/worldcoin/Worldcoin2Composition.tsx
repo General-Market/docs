@@ -25,9 +25,10 @@ import {
 import { useThree } from "@react-three/fiber";
 import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { preloadOnce } from "../../../lib/preloadOnce";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
-useGLTF.preload(MODEL_URL);
+preloadOnce(useGLTF.preload, MODEL_URL);
 
 const BROLL_SRC = staticFile("broll/glacier-drone.mp4");
 const BROLL_ASPECT = 1920 / 1080;

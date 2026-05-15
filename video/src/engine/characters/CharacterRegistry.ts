@@ -8,6 +8,7 @@ import { useGLTF } from "@react-three/drei";
 import { useLoader } from "@react-three/fiber";
 // @ts-ignore — FBXLoader types may not be bundled
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import { preloadOnce, preloadOnceWith } from "../../lib/preloadOnce";
 
 export const CHAR_DIR = "models/characters";
 
@@ -158,7 +159,7 @@ export const FBX_FALLBACKS: Record<string, string[]> = {
 
 // --- Auto-preload all GLB models ---
 for (const key of Object.keys(CHARACTERS) as CharacterKey[]) {
-  useGLTF.preload(CHAR_URLS[key]);
+  preloadOnce(useGLTF.preload, CHAR_URLS[key]);
 }
 
 // --- Auto-preload FBX animations ---
@@ -167,12 +168,12 @@ for (const [key, def] of Object.entries(CHARACTERS) as [CharacterKey, CharacterD
     const preloadList = CHAR_ALL_FBX_PRELOAD[key];
     if (preloadList) {
       for (const anim of preloadList) {
-        useLoader.preload(FBXLoader, staticFile(`${CHAR_DIR}/${def.folder}/${anim}.fbx`));
+        preloadOnceWith(useLoader.preload, FBXLoader, staticFile(`${CHAR_DIR}/${def.folder}/${anim}.fbx`));
       }
     }
   } else if (Array.isArray(def.fbxAnims)) {
     for (const anim of def.fbxAnims) {
-      useLoader.preload(FBXLoader, staticFile(`${CHAR_DIR}/${def.folder}/${anim}.fbx`));
+      preloadOnceWith(useLoader.preload, FBXLoader, staticFile(`${CHAR_DIR}/${def.folder}/${anim}.fbx`));
     }
   }
 }

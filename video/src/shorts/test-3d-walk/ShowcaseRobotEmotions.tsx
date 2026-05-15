@@ -11,6 +11,7 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 // @ts-ignore
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { preloadOnce } from "../../lib/preloadOnce";
 
 // ── All models to showcase ──────────────────────────────────────────────────
 interface ModelDef {
@@ -71,7 +72,7 @@ const MODELS: ModelDef[] = [
 
 // Preload all models
 const MODEL_URLS = MODELS.map((m) => staticFile(`models/${m.file}`));
-MODEL_URLS.forEach((url) => useGLTF.preload(url));
+MODEL_URLS.forEach((url) => preloadOnce(useGLTF.preload, url));
 
 // ── Meta ────────────────────────────────────────────────────────────────────
 export const showcaseRobotMeta = {
