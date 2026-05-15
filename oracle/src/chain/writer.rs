@@ -339,6 +339,13 @@ impl EthersChainWriter {
         &self.config
     }
 
+    /// Bare HTTP provider, ungilded by the signer middleware. Anyone needing
+    /// to issue read-only `eth_getLogs` or `eth_call` traffic uses this — the
+    /// signer's nonce queue is irrelevant for reads.
+    pub fn http_provider(&self) -> Arc<Provider<Http>> {
+        Arc::new(self.clients[0].provider().clone())
+    }
+
     /// Wait for a transaction receipt with timeout
     ///
     /// # Arguments

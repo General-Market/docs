@@ -18,7 +18,8 @@ use common::types::P2PMessage;
 use common::BLSSignature;
 use dashmap::DashMap;
 use ethers::abi::{encode, Token};
-use ethers::types::{Address, H256, U256};
+use ethers::providers::Middleware;
+use ethers::types::{Address, Filter, H256, U256, U64};
 use ethers::utils::keccak256;
 use sqlx::PgPool;
 use tokio::sync::{mpsc, Semaphore};
@@ -35,7 +36,7 @@ use super::cosign_aggregator::{ProposalState, SharedCosignAggregator};
 use super::resolver::{MarketPrices, TickResolver};
 use super::settlement::compute_settlement;
 use super::tick_scheduler::TickScheduler;
-use super::types::{MarketConfig, RoundSettlement};
+use super::types::{MarketConfig, PlayerPosition, RoundSettlement};
 
 /// Incoming co-sign message from a follower oracle for a pending createBatch proposal.
 ///
@@ -510,20 +511,36 @@ impl BatchLifecycleManager {
                                     // Set here, not in record_settlement (which runs spawned and
                                     // unconditionally). Without this guard, the refund metric
                                     // counted failed-on-chain attempts as settles — a metric lie.
-                                    if let Err(e) = sqlx::query(
-                                        "UPDATE vision_batch_lifecycle SET settled_at = NOW() WHERE on_chain_batch_id = $1",
-                                    )
-                                    .bind(prev_id as i64)
-                                    .execute(&mgr.pool)
-                                    .await
-                                    {
-                                        error!(batch_id = prev_id, error = %e, "Failed to mark settled_at on lifecycle row");
-                                    }
-                                    if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
-                                        error!(batch_id = prev_id, error = %e, "mark_settled failed");
-                                    }
-                                    if let Err(e) = mgr.bitmap_store.purge_batch_from_db(&mgr.pool, prev_id).await {
-                                        error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                                    //
+                                    // Additional guard: only mark settled when the settlement
+                                    // actually had players. `sign_and_aggregate_settlement`
+                                    // short-circuits to `Ok(())` on an empty player set —
+                                    // setting `settled_at` for those rows hides batches that
+                                    // were silently skipped (chain_listener lag, etc.) and
+                                    // makes the refund metric look healthy when funds are
+                                    // still locked. Leave `settled_at` NULL so the recovery
+                                    // sweep keeps poking and post-grace refunds can fire.
+                                    if !settlement.players.is_empty() {
+                                        if let Err(e) = sqlx::query(
+                                            "UPDATE vision_batch_lifecycle SET settled_at = NOW() WHERE on_chain_batch_id = $1",
+                                        )
+                                        .bind(prev_id as i64)
+                                        .execute(&mgr.pool)
+                                        .await
+                                        {
+                                            error!(batch_id = prev_id, error = %e, "Failed to mark settled_at on lifecycle row");
+                                        }
+                                        if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
+                                            error!(batch_id = prev_id, error = %e, "mark_settled failed");
+                                        }
+                                        if let Err(e) = mgr.bitmap_store.purge_batch_from_db(&mgr.pool, prev_id).await {
+                                            error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                                        }
+                                    } else {
+                                        info!(
+                                            batch_id = prev_id,
+                                            "No on-chain players — not marking settled_at, refund path will pick up"
+                                        );
                                     }
                                 }
                             }
@@ -743,29 +760,65 @@ impl BatchLifecycleManager {
         source_name: &str,
     ) -> Result<(RoundSettlement, super::types::TickResult, H256), Box<dyn std::error::Error + Send + Sync>> {
         // Get batch state from scheduler
-        let (batch, players) = self
+        let (batch, mut players) = self
             .scheduler
             .get_batch_state(batch_id)
             .await
             .ok_or_else(|| format!("batch {} not found in scheduler", batch_id))?;
 
+        // If the chain_listener is behind the on-chain head, the in-memory scheduler
+        // can be missing players for batches whose `PlayerJoined` blocks haven't been
+        // indexed yet. Settling with an empty player set silently marks the batch as
+        // "settled" without firing a `settleBatch` tx — funds stay locked.
+        //
+        // Fix: when scheduler returns empty, re-fetch positions directly from chain
+        // via `eth_getLogs`. This bypasses the chronically-behind indexer for the
+        // settle path. After hydration, push players back into the scheduler so any
+        // downstream consumer sees consistent state.
         if players.is_empty() {
-            let empty_settlement = RoundSettlement {
-                batch_id,
-                players: vec![],
-                payouts: vec![],
-                deposits: vec![],
-                correct_counts: vec![],
-                total_markets: 0,
-            };
-            let empty_tick = super::types::TickResult {
-                batch_id,
-                tick_id: 0,
-                market_results: vec![],
-                player_balances: vec![],
-                voided_players: vec![],
-            };
-            return Ok((empty_settlement, empty_tick, batch.config_hash));
+            match self.fetch_players_from_chain(batch_id).await {
+                Ok(fetched) if !fetched.is_empty() => {
+                    info!(
+                        batch_id,
+                        source = %source_name,
+                        count = fetched.len(),
+                        "Hydrated players from chain (scheduler was empty)"
+                    );
+                    for p in &fetched {
+                        self.scheduler.on_player_joined(batch_id, p.clone()).await;
+                    }
+                    players = fetched;
+                }
+                Ok(_) => {
+                    // Genuinely empty — no PlayerJoined events on-chain.
+                    debug!(batch_id, "No on-chain players for batch — settling empty");
+                    let empty_settlement = RoundSettlement {
+                        batch_id,
+                        players: vec![],
+                        payouts: vec![],
+                        deposits: vec![],
+                        correct_counts: vec![],
+                        total_markets: 0,
+                    };
+                    let empty_tick = super::types::TickResult {
+                        batch_id,
+                        tick_id: 0,
+                        market_results: vec![],
+                        player_balances: vec![],
+                        voided_players: vec![],
+                    };
+                    return Ok((empty_settlement, empty_tick, batch.config_hash));
+                }
+                Err(e) => {
+                    // Chain read failed — surface as error so the heartbeat retries
+                    // rather than silently mark the batch settled.
+                    return Err(format!(
+                        "failed to hydrate players from chain for batch {}: {}",
+                        batch_id, e
+                    )
+                    .into());
+                }
+            }
         }
 
         // Fetch market config by the batch's PINNED config hash — not the current
@@ -1027,6 +1080,131 @@ impl BatchLifecycleManager {
         let settlement = compute_settlement(&tick_result, &player_deposits);
 
         Ok((settlement, tick_result, batch.config_hash))
+    }
+
+    /// Read on-chain `PlayerJoined`, `BitmapUpdated`, and `PlayerWithdrawn`
+    /// events for a single batch via `eth_getLogs` and assemble the current
+    /// player set. Bypasses the in-memory scheduler entirely.
+    ///
+    /// Used as a fallback when the chain listener is behind: settlement must
+    /// not depend on a chronically-lagging indexer for fund-affecting decisions.
+    async fn fetch_players_from_chain(
+        &self,
+        batch_id: u64,
+    ) -> Result<Vec<PlayerPosition>, Box<dyn std::error::Error + Send + Sync>> {
+        let writer = self
+            .chain_writer
+            .as_ref()
+            .ok_or("no chain_writer — cannot fetch players from chain")?;
+        let provider = writer.http_provider();
+
+        let vision_address: Address = self
+            .config
+            .vision_address
+            .parse()
+            .map_err(|e| format!("invalid vision_address: {}", e))?;
+
+        // Event topic hashes (must match Vision.sol signatures used by chain_listener).
+        let topic_player_joined = H256::from(keccak256(
+            b"PlayerJoined(uint256,address,uint256,bytes32,bytes32)",
+        ));
+        let topic_bitmap_updated = H256::from(keccak256(
+            b"BitmapUpdated(uint256,address,bytes32,bytes32)",
+        ));
+        let topic_player_withdrawn =
+            H256::from(keccak256(b"PlayerWithdrawn(uint256,address,uint256)"));
+
+        // Indexed batchId topic: left-padded to 32 bytes.
+        let batch_topic = {
+            let mut buf = [0u8; 32];
+            U256::from(batch_id).to_big_endian(&mut buf);
+            H256::from_slice(&buf)
+        };
+
+        // Scan a bounded window back from the tip. A batch's PlayerJoined events
+        // sit between createBatch and settle, both within `tick_duration +
+        // settlement_grace` of each other. On Orbit at 0.25 s/block, ~700 000
+        // blocks covers ~48 hours — comfortably more than any in-flight batch.
+        // Indexed batchId makes the filter extremely selective, so even a wide
+        // range returns a handful of logs per batch. We chunk into ranges that
+        // stay friendly to RPC providers that cap per-call ranges.
+        const CHUNK: u64 = 10_000;
+        const LOOKBACK_BLOCKS: u64 = 800_000;
+        let tip = provider
+            .get_block_number()
+            .await
+            .map_err(|e| format!("get_block_number failed: {}", e))?
+            .as_u64();
+        let lookback_floor = tip.saturating_sub(LOOKBACK_BLOCKS);
+        let mut from = std::cmp::max(self.config.start_block, lookback_floor);
+
+        // Three event types, OR'd via topics[0] = [a, b, c]. ethers' Filter
+        // accepts a Vec of H256 for an OR match on topic0.
+        let topic0 = vec![topic_player_joined, topic_bitmap_updated, topic_player_withdrawn];
+
+        // We need to preserve event order to apply BitmapUpdated / PlayerWithdrawn
+        // after the initial PlayerJoined. Process chunks in ascending block order.
+        let mut positions: std::collections::HashMap<Address, PlayerPosition> =
+            std::collections::HashMap::new();
+
+        while from <= tip {
+            let to = std::cmp::min(from + CHUNK - 1, tip);
+            let filter = Filter::new()
+                .address(vision_address)
+                .from_block(U64::from(from))
+                .to_block(U64::from(to))
+                .topic0(topic0.clone())
+                .topic1(batch_topic);
+
+            let logs = provider
+                .get_logs(&filter)
+                .await
+                .map_err(|e| format!("eth_getLogs failed [{}..{}]: {}", from, to, e))?;
+
+            // Logs returned by eth_getLogs are already ordered by (block, txIndex,
+            // logIndex). Apply each in sequence.
+            for log in logs {
+                let topic0_v = match log.topics.first() {
+                    Some(t) => *t,
+                    None => continue,
+                };
+                let player = match log.topics.get(2) {
+                    Some(t) => Address::from_slice(&t.as_bytes()[12..]),
+                    None => continue,
+                };
+
+                if topic0_v == topic_player_joined {
+                    // data: deposit (uint256) + bitmapHash (bytes32) + configHash (bytes32)
+                    if log.data.len() < 64 {
+                        continue;
+                    }
+                    let deposit = U256::from_big_endian(&log.data[0..32]);
+                    let bitmap_hash = H256::from_slice(&log.data[32..64]);
+                    positions.insert(
+                        player,
+                        PlayerPosition {
+                            player,
+                            bitmap_hash,
+                            deposit,
+                        },
+                    );
+                } else if topic0_v == topic_bitmap_updated {
+                    if log.data.len() < 32 {
+                        continue;
+                    }
+                    let new_bitmap_hash = H256::from_slice(&log.data[0..32]);
+                    if let Some(pos) = positions.get_mut(&player) {
+                        pos.bitmap_hash = new_bitmap_hash;
+                    }
+                } else if topic0_v == topic_player_withdrawn {
+                    positions.remove(&player);
+                }
+            }
+
+            from = to + 1;
+        }
+
+        Ok(positions.into_values().collect())
     }
 
     /// Create a new round batch for a source.
