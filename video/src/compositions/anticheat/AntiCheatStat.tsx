@@ -130,10 +130,12 @@ const SG_MARQUEE_TEXTS: readonly string[] = [
   "leaked",
 ];
 const SG_MARQUEE_DIRECTIONS: readonly (1 | -1)[] = [1, -1, -1, 1];
-const SG_BAND_H = 44;
-const SG_BAND_GAP = 20;
-const SG_BAND_COUNT = 11;
-const SG_MARQUEE_SPEED = 1.6; // px per frame
+const SG_BAND_H = 130;
+const SG_BAND_GAP = 8;
+const SG_BAND_FONT = 124;
+const SG_TOP_BAND_COUNT = 3;
+const SG_BOT_BAND_COUNT = 3;
+const SG_MARQUEE_SPEED = 2.2; // px per frame
 
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
@@ -191,40 +193,64 @@ const ScapegoatLineup: React.FC = () => {
   );
 };
 
-// Full-frame marquee — bands cover the whole frame, each band stretching
-// edge to edge. Verbs cycle [liquidated, front-run, spoofed, leaked]
-// across bands. Directions cycle [right, left, left, right]. Bands are
-// pure background; the cards sit on top in the centre and cover the
-// middle bands without breaking the rhythm.
+// Full-frame marquee — three big bands at the top of the frame and
+// three at the bottom, the cards floating between them. Verbs cycle
+// [liquidated, front-run, spoofed, leaked] across bands. Directions
+// cycle [right, left, left, right]. Bands take ~2/3 of the frame
+// height; the middle third is the card lineup.
 const ScapegoatBackgroundMarquee: React.FC<{ frame: number }> = ({
   frame,
 }) => {
+  const renderBand = (bandIndex: number) => {
+    const verb = SG_MARQUEE_TEXTS[bandIndex % SG_MARQUEE_TEXTS.length];
+    const dir = SG_MARQUEE_DIRECTIONS[bandIndex % SG_MARQUEE_DIRECTIONS.length];
+    return (
+      <ScapegoatMarquee
+        key={bandIndex}
+        text={verb}
+        direction={dir}
+        frame={frame}
+        rowIndex={bandIndex}
+      />
+    );
+  };
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "stretch",
-        gap: SG_BAND_GAP,
-      }}
-    >
-      {Array.from({ length: SG_BAND_COUNT }).map((_, i) => {
-        const verb = SG_MARQUEE_TEXTS[i % SG_MARQUEE_TEXTS.length];
-        const dir = SG_MARQUEE_DIRECTIONS[i % SG_MARQUEE_DIRECTIONS.length];
-        return (
-          <ScapegoatMarquee
-            key={i}
-            text={verb}
-            direction={dir}
-            frame={frame}
-            rowIndex={i}
-          />
-        );
-      })}
-    </div>
+    <>
+      {/* Top band stack — anchored to the top edge */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: SG_BAND_GAP,
+          paddingTop: 0,
+        }}
+      >
+        {Array.from({ length: SG_TOP_BAND_COUNT }, (_, i) => renderBand(i))}
+      </div>
+
+      {/* Bottom band stack — anchored to the bottom edge */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: SG_BAND_GAP,
+          paddingBottom: 0,
+        }}
+      >
+        {Array.from({ length: SG_BOT_BAND_COUNT }, (_, i) =>
+          renderBand(SG_TOP_BAND_COUNT + i),
+        )}
+      </div>
+    </>
   );
 };
 
@@ -382,10 +408,10 @@ const ScapegoatMarquee: React.FC<{
           transform: `translate(-50%, -50%) translateX(${tx.toFixed(2)}px)`,
           whiteSpace: "nowrap",
           fontFamily: font,
-          fontSize: 38,
+          fontSize: SG_BAND_FONT,
           fontWeight: 800,
-          letterSpacing: "-0.03em",
-          color: "rgba(8, 14, 28, 0.55)",
+          letterSpacing: "-0.04em",
+          color: "rgba(8, 14, 28, 0.58)",
           lineHeight: 1,
           willChange: "transform",
         }}
