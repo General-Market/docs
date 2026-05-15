@@ -46,15 +46,15 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">{t('explorer.cycle_section.title')}</h2>
+      <h2 className="text-subhead font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.cycle_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Cycle Duration */}
         <ExplorerChartCard title={t('explorer.cycle_section.cycle_duration')} subtitle={t('explorer.cycle_section.cycle_duration_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={cycleDurationData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" unit="ms" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" unit="ms" />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(value: number) => [`${value}ms`, t('explorer.cycle_section.duration')]}
@@ -69,13 +69,13 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
         <ExplorerChartCard title={t('explorer.cycle_section.slow_cycle_alerts')} subtitle={t('explorer.cycle_section.slow_cycle_alerts_desc')} loading={loading}>
           <div className="h-full flex flex-col items-center justify-center">
             <p
-              className={`text-[48px] font-black tracking-[-0.04em] ${
+              className={`text-[48px] font-display font-semibold tracking-apple-tighter ${
                 slowCycleCount > 0 ? 'text-color-down' : 'text-color-up'
               }`}
             >
               {slowCycleCount}
             </p>
-            <p className="text-caption text-text-muted mt-1">
+            <p className="text-caption text-[#86868b] mt-1">
               {t('explorer.cycle_section.out_of_snapshots', { count: snapshots.length })}
             </p>
           </div>
@@ -89,9 +89,9 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={ordersPerCycleData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}

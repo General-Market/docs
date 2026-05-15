@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
 import { ExplorerChartCard } from '@/components/domain/explorer'
-import { chartColors, chartTooltipStyle, chartLabelStyle } from '@/lib/charts/tokens'
+import { chartColors, chartTooltipStyle } from '@/lib/charts/tokens'
 
 interface FillSpeedEntry {
   order_id: number
@@ -29,14 +29,14 @@ const BUCKETS = [
 
 /** Fast → slow latency gradient, derived from design-system tokens */
 const LATENCY_COLORS = [
-  chartColors.up,      // 0–5s   — fast
+  '#1F8F4D',           // 0–5s   — fast
   '#34d399',           // 5–15s  — good (up-light)
-  chartColors.warning, // 15–30s — caution
-  '#F59E0B',           // 30–60s — slow (warning-light)
-  chartColors.down,    // 1–2m   — bad
+  '#B25600',           // 15–30s — caution
+  '#B25600',           // 30–60s — slow (warning-light)
+  '#D70015',           // 1–2m   — bad
   '#991B1B',           // 2m+    — critical (down-dark)
 ]
-const LATENCY_OVERFLOW = chartColors.textMuted
+const LATENCY_OVERFLOW = '#86868b'
 
 export function FillLatencyChart() {
   const t = useTranslations('pages')
@@ -86,12 +86,12 @@ export function FillLatencyChart() {
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-          <XAxis dataKey="label" tick={chartLabelStyle} stroke={chartColors.border} />
-          <YAxis tick={chartLabelStyle} stroke={chartColors.border} allowDecimals={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" />
+          <YAxis tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" allowDecimals={false} />
           <Tooltip
             contentStyle={chartTooltipStyle}
             labelStyle={{ color: chartColors.tooltipText }}
-            itemStyle={{ color: chartColors.textMuted }}
+            itemStyle={{ color: '#86868b' }}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36} name={t('explorer.orders_section.orders')}>
             {histogram.map((_, i) => (

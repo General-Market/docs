@@ -29,14 +29,14 @@ const xAxisProps = {
   dataKey: 'poll_batch_ts' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 const deltaXAxisProps = {
   dataKey: 'time' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 const STATUS_MAP: Record<string, number> = {
@@ -98,7 +98,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.consensus_section.title')}</h2>
+      <h2 className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.consensus_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Quorum Status */}
         <ExplorerChartCard
@@ -112,14 +112,14 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={quorumData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 domain={[0, 1]}
                 ticks={[0, 1]}
                 tickFormatter={(v) => (v === 1 ? t('explorer.consensus_tooltip.yes') : t('explorer.consensus_tooltip.no'))}
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={32}
               />
               <Tooltip
@@ -129,8 +129,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Area
                 type="stepAfter"
                 dataKey="value"
-                stroke="#10b981"
-                fill="#10b981"
+                stroke="#1F8F4D"
+                fill="#1F8F4D"
                 fillOpacity={0.2}
               />
             </AreaChart>
@@ -147,7 +147,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={healthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 domain={[1, 3]}
@@ -156,7 +156,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
                   v === 1 ? t('explorer.consensus_section.ok') : v === 2 ? t('explorer.consensus_section.deg') : t('explorer.consensus_section.bad')
                 }
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={32}
                 reversed
               />
@@ -175,9 +175,9 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Area
                 type="stepAfter"
                 dataKey="value"
-                stroke="#000"
-                fill="#000"
-                fillOpacity={0.05}
+                stroke="#1d1d1f"
+                fill="#1d1d1f"
+                fillOpacity={0.06}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -191,9 +191,9 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={roundsPerMin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...deltaXAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(v: number) => [v, t('explorer.consensus_tooltip.rounds')]}
@@ -201,7 +201,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Line
                 type="monotone"
                 dataKey="delta"
-                stroke="#000"
+                stroke="#1d1d1f"
                 dot={false}
                 strokeWidth={1.5}
               />
@@ -217,12 +217,12 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={successRateData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 domain={[0, 100]}
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={40}
                 tickFormatter={(v) => `${v}%`}
               />
@@ -233,8 +233,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Area
                 type="monotone"
                 dataKey="rate"
-                stroke="#10b981"
-                fill="#10b981"
+                stroke="#1F8F4D"
+                fill="#1F8F4D"
                 fillOpacity={0.15}
               />
             </AreaChart>
@@ -253,11 +253,11 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshots}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={48}
                 tickFormatter={(v) => `${v}ms`}
               />
@@ -268,7 +268,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Line
                 type="monotone"
                 dataKey="avg_consensus_time_ms"
-                stroke="#000"
+                stroke="#1d1d1f"
                 dot={false}
                 strokeWidth={1.5}
               />
@@ -285,9 +285,9 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={failedDeltas}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...deltaXAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(v: number) => [v, t('explorer.consensus_tooltip.failures')]}
@@ -295,7 +295,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <Line
                 type="monotone"
                 dataKey="delta"
-                stroke="#ef4444"
+                stroke="#D70015"
                 dot={false}
                 strokeWidth={1.5}
               />

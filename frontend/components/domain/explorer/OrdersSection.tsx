@@ -30,14 +30,14 @@ const xAxisProps = {
   dataKey: 'poll_batch_ts' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 const deltaXAxisProps = {
   dataKey: 'time' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
@@ -49,7 +49,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.orders_section.title')}</h2>
+      <h2 className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.orders_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Pending Orders */}
         <ExplorerChartCard
@@ -63,9 +63,9 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={snapshots}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(v: number) => [v, t('explorer.orders_tooltip.pending')]}
@@ -73,8 +73,8 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               <Area
                 type="monotone"
                 dataKey="pending_order_count"
-                stroke="#000"
-                fill="#000"
+                stroke="#1d1d1f"
+                fill="#1d1d1f"
                 fillOpacity={0.06}
               />
             </AreaChart>
@@ -89,9 +89,9 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={ordersProcessedDeltas}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...deltaXAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(v: number) => [v, t('explorer.orders_tooltip.processed')]}
@@ -99,7 +99,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               <Line
                 type="monotone"
                 dataKey="delta"
-                stroke="#000"
+                stroke="#1d1d1f"
                 dot={false}
                 strokeWidth={1.5}
               />
@@ -119,11 +119,11 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshots}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={48}
                 tickFormatter={(v) => `${v}ms`}
               />
@@ -134,7 +134,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               <Line
                 type="monotone"
                 dataKey="avg_cycle_duration_ms"
-                stroke="#000"
+                stroke="#1d1d1f"
                 dot={false}
                 strokeWidth={1.5}
               />

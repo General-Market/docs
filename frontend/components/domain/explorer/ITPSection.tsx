@@ -76,21 +76,21 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">{t('explorer.itp_section.title')}</h2>
+      <h2 className="text-subhead font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.itp_section.title')}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Pending Order Volume */}
         <ExplorerChartCard title={t('explorer.itp_section.pending_volume')} subtitle={t('explorer.itp_section.pipeline_proxy')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={pendingOrderData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10, fill: '#86868b' }} stroke="#D2D2D7" allowDecimals={false} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="pending" stroke="#60a5fa" fill="#60a5fa" fillOpacity={0.15} name={t('explorer.orders_section.pending')} />
+              <Area type="monotone" dataKey="pending" stroke="#0071E3" fill="#0071E3" fillOpacity={0.15} name={t('explorer.orders_section.pending')} />
             </AreaChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
@@ -101,16 +101,16 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
             {/* Summary row */}
             <div className="flex items-baseline gap-4 mb-2 px-1">
               <div>
-                <span className="text-micro text-text-muted block">{t('explorer.itp_section.total_funds')}</span>
-                <span className="text-heading font-black text-black">{stats.total}</span>
+                <span className="text-micro text-[#86868b] block">{t('explorer.itp_section.total_funds')}</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{stats.total}</span>
               </div>
               <div>
-                <span className="text-micro text-text-muted block">{t('explorer.itp_section.total_aum')}</span>
-                <span className="text-heading font-black text-black">{formatUsd(stats.totalAum)}</span>
+                <span className="text-micro text-[#86868b] block">{t('explorer.itp_section.total_aum')}</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatUsd(stats.totalAum)}</span>
               </div>
               <div>
-                <span className="text-micro text-text-muted block">{t('explorer.itp_section.with_shares')}</span>
-                <span className="text-heading font-black text-black">{stats.withSupply}</span>
+                <span className="text-micro text-[#86868b] block">{t('explorer.itp_section.with_shares')}</span>
+                <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{stats.withSupply}</span>
               </div>
             </div>
             {/* Top ITPs table */}
@@ -118,32 +118,32 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border-light">
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.itp_section.fund')}</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">{t('explorer.itp_section.nav')}</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">{t('explorer.itp_section.aum')}</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">{t('explorer.itp_section.shares')}</th>
+                    <th className="text-micro font-semibold text-[#86868b] pb-1.5 pr-2">{t('explorer.itp_section.fund')}</th>
+                    <th className="text-micro font-semibold text-[#86868b] pb-1.5 pr-2 text-right">{t('explorer.itp_section.nav')}</th>
+                    <th className="text-micro font-semibold text-[#86868b] pb-1.5 pr-2 text-right">{t('explorer.itp_section.aum')}</th>
+                    <th className="text-micro font-semibold text-[#86868b] pb-1.5 text-right">{t('explorer.itp_section.shares')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topItps.map((itp) => (
                     <tr key={itp.itp_id} className="border-b border-border-light last:border-0">
                       <td className="py-1.5 pr-2">
-                        <span className="text-caption font-bold text-black">
+                        <span className="text-caption font-bold text-[#1d1d1f]">
                           {itp.symbol || itp.name || 'DTF'}
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right">
-                        <span className="text-caption font-mono text-black">
+                        <span className="text-caption font-mono text-[#1d1d1f]">
                           ${itp.nav_per_share.toFixed(4)}
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right">
-                        <span className="text-label font-mono text-black">
+                        <span className="text-label font-mono text-[#1d1d1f]">
                           {itp.aum_usd > 0 ? formatUsd(itp.aum_usd) : '--'}
                         </span>
                       </td>
                       <td className="py-1.5 text-right">
-                        <span className="text-label font-mono text-text-muted">
+                        <span className="text-label font-mono text-[#86868b]">
                           {formatShares(itp.total_supply)}
                         </span>
                       </td>
@@ -151,7 +151,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                   ))}
                   {topItps.length === 0 && !itpLoading && (
                     <tr>
-                      <td colSpan={4} className="py-4 text-center text-caption text-text-muted">
+                      <td colSpan={4} className="py-4 text-center text-caption text-[#86868b]">
                         {t('explorer.itp_section.no_data')}
                       </td>
                     </tr>

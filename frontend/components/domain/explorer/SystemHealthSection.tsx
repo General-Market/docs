@@ -91,21 +91,21 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
       >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={statusData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="poll_batch_ts"
               tickFormatter={(v) =>
                 new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <YAxis
               domain={[0.5, 3.5]}
               ticks={[1, 2, 3]}
               tickFormatter={(v) => STATUS_LABELS[v] ?? ''}
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
@@ -114,16 +114,16 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             />
             <defs>
               <linearGradient id="statusGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15} />
-                <stop offset="50%" stopColor="#f59e0b" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.15} />
+                <stop offset="0%" stopColor="#D70015" stopOpacity={0.15} />
+                <stop offset="50%" stopColor="#B25600" stopOpacity={0.1} />
+                <stop offset="100%" stopColor="#1F8F4D" stopOpacity={0.15} />
               </linearGradient>
             </defs>
             <Area
               type="stepAfter"
               dataKey="status"
               name={t('explorer.system_health_section.status')}
-              stroke="#6b7280"
+              stroke="#86868b"
               fill="url(#statusGrad)"
               strokeWidth={1.5}
             />
@@ -139,21 +139,21 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
       >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={quorumData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="poll_batch_ts"
               tickFormatter={(v) =>
                 new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <YAxis
               domain={[-0.1, 1.1]}
               ticks={[0, 1]}
               tickFormatter={(v) => (v === 1 ? t('explorer.system_health_section.met') : t('explorer.system_health_section.lost'))}
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
@@ -162,15 +162,15 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             />
             <defs>
               <linearGradient id="quorumGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                <stop offset="0%" stopColor="#1F8F4D" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#1F8F4D" stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <Area
               type="stepAfter"
               dataKey="quorum"
               name={t('explorer.system_health_section.quorum')}
-              stroke="#10b981"
+              stroke="#1F8F4D"
               fill="url(#quorumGrad)"
               strokeWidth={1.5}
             />
@@ -186,20 +186,20 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={successRateData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="poll_batch_ts"
               tickFormatter={(v) =>
                 new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <YAxis
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
@@ -210,7 +210,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
               type="monotone"
               dataKey="rate"
               name={t('explorer.system_health_section.success_rate')}
-              stroke="#10b981"
+              stroke="#1F8F4D"
               strokeWidth={1.5}
               dot={false}
             />
@@ -226,16 +226,16 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={errorRateData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="time"
               tickFormatter={(v) =>
                 new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
-            <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+            <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
               formatter={(value: number) => [value, t('explorer.system_health_section.failures')]}
@@ -245,7 +245,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
               type="monotone"
               dataKey="delta"
               name={t('explorer.system_health_section.failures')}
-              stroke="#ef4444"
+              stroke="#D70015"
               strokeWidth={1.5}
               dot={false}
             />

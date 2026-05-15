@@ -29,7 +29,7 @@ const deltaXAxisProps = {
   dataKey: 'time' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
@@ -80,9 +80,9 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
       >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={consensusDeltas}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis {...deltaXAxisProps} />
-            <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+            <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
               formatter={(value: number) => [value, t('explorer.chain_gas_section.rounds')]}
@@ -92,8 +92,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="delta"
               name={t('explorer.chain_gas_section.rounds')}
-              stroke="#000"
-              fill="#000"
+              stroke="#1d1d1f"
+              fill="#1d1d1f"
               fillOpacity={0.06}
               strokeWidth={1.5}
             />
@@ -109,9 +109,9 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={messageData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis {...deltaXAxisProps} />
-            <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+            <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
@@ -120,7 +120,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="sent"
               name={t('explorer.chain_gas_section.sent')}
-              stroke="#000"
+              stroke="#1d1d1f"
               strokeWidth={1.5}
               dot={false}
             />
@@ -128,7 +128,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="received"
               name={t('explorer.chain_gas_section.received')}
-              stroke="#000"
+              stroke="#1d1d1f"
               strokeWidth={1.5}
               strokeDasharray="4 3"
               dot={false}
@@ -145,14 +145,14 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
       >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={orderPipelineData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="time"
               tickFormatter={timeTickFormatter}
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
-            <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+            <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
@@ -161,8 +161,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="processed"
               name={t('explorer.chain_gas_section.processed_60s')}
-              stroke="#000"
-              fill="#000"
+              stroke="#1d1d1f"
+              fill="#1d1d1f"
               fillOpacity={0.08}
               strokeWidth={1.5}
             />
@@ -170,8 +170,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="pending"
               name={t('explorer.chain_gas_section.pending')}
-              stroke="#666"
-              fill="#666"
+              stroke="#86868b"
+              fill="#86868b"
               fillOpacity={0.05}
               strokeWidth={1.5}
               strokeDasharray="4 3"
@@ -188,18 +188,18 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={cycleData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
             <XAxis
               dataKey="poll_batch_ts"
               tickFormatter={(v) =>
                 new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
             />
             <YAxis
               tick={{ fontSize: 10 }}
-              stroke="#ccc"
+              stroke="#D2D2D7"
               tickFormatter={(v) => `${v}ms`}
             />
             <Tooltip
@@ -211,7 +211,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
               type="monotone"
               dataKey="cycle_ms"
               name={t('explorer.chain_gas_section.cycle_duration')}
-              stroke="#000"
+              stroke="#1d1d1f"
               strokeWidth={1.5}
               dot={false}
             />

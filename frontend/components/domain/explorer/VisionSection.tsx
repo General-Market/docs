@@ -159,8 +159,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           </div>
           <div className="border-t border-border-light pt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-title font-black text-black tracking-tight">{batchStats.total}</span>
-              <span className="text-caption text-text-muted">{t('explorer.vision_section.total_batches')}</span>
+              <span className="text-title font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{batchStats.total}</span>
+              <span className="text-caption text-[#86868b]">{t('explorer.vision_section.total_batches')}</span>
             </div>
             <div className="mt-1.5 flex gap-4">
               <MiniBar label={t('explorer.vision_section.active')} value={batchStats.active} total={batchStats.total} color="#000" />
@@ -175,12 +175,12 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
         <div className="h-full flex flex-col">
           <div className="flex items-baseline gap-3 mb-3">
             <div>
-              <span className="text-label text-text-muted block">{t('explorer.vision_section.total_tvl')}</span>
-              <span className="text-heading font-black text-black tracking-tight">{formatTvl(poolStats.totalTvl)}</span>
+              <span className="text-label text-[#86868b] block">{t('explorer.vision_section.total_tvl')}</span>
+              <span className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f]">{formatTvl(poolStats.totalTvl)}</span>
             </div>
             <div className="ml-auto text-right">
-              <span className="text-label text-text-muted block">{t('explorer.vision_section.avg_players_batch')}</span>
-              <span className="text-subhead font-bold text-black">{poolStats.avgPlayers.toFixed(1)}</span>
+              <span className="text-label text-[#86868b] block">{t('explorer.vision_section.avg_players_batch')}</span>
+              <span className="text-subhead font-bold text-[#1d1d1f]">{poolStats.avgPlayers.toFixed(1)}</span>
             </div>
           </div>
           <div className="flex-1 min-h-0">
@@ -193,7 +193,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 >
                   <XAxis
                     type="number"
-                    tick={{ fontSize: 10, fill: '#999' }}
+                    tick={{ fontSize: 10, fill: '#86868b' }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v: number) => formatTvl(v)}
@@ -201,7 +201,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                   <YAxis
                     type="category"
                     dataKey="source"
-                    tick={{ fontSize: 10, fill: '#666' }}
+                    tick={{ fontSize: 10, fill: '#86868b' }}
                     tickLine={false}
                     axisLine={false}
                     width={100}
@@ -213,14 +213,14 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                   />
                   <Bar dataKey="tvl" radius={[0, 3, 3, 0]} maxBarSize={16}>
                     {poolStats.top5.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? '#000' : '#888'} fillOpacity={1 - i * 0.15} />
+                      <Cell key={i} fill={i === 0 ? '#1d1d1f' : '#86868b'} fillOpacity={1 - i * 0.15} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-caption text-text-muted">{t('explorer.vision_section.no_batch_data')}</p>
+                <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_batch_data')}</p>
               </div>
             )}
           </div>
@@ -239,7 +239,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
               >
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: '#999' }}
+                  tick={{ fontSize: 10, fill: '#86868b' }}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
@@ -247,7 +247,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 <YAxis
                   type="category"
                   dataKey="source"
-                  tick={{ fontSize: 9, fill: '#666' }}
+                  tick={{ fontSize: 9, fill: '#86868b' }}
                   tickLine={false}
                   axisLine={false}
                   width={95}
@@ -259,14 +259,14 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 />
                 <Bar dataKey="count" radius={[0, 3, 3, 0]} maxBarSize={14}>
                   {sourceBreakdown.map((_, i) => (
-                    <Cell key={i} fill="#000" fillOpacity={Math.max(0.3, 1 - i * 0.06)} />
+                    <Cell key={i} fill="#1d1d1f" fillOpacity={Math.max(0.3, 1 - i * 0.06)} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">{t('explorer.vision_section.no_batch_data')}</p>
+              <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_batch_data')}</p>
             </div>
           )}
         </div>
@@ -281,16 +281,16 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
         {activity.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={activity}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis
                 dataKey="bucket"
                 tickFormatter={(v) =>
                   new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 }
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
               />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
@@ -299,8 +299,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 type="monotone"
                 dataKey="rounds_settled"
                 name={t('explorer.vision_section.rounds_settled')}
-                stroke="#000"
-                fill="#000"
+                stroke="#1d1d1f"
+                fill="#1d1d1f"
                 fillOpacity={0.08}
                 strokeWidth={1.5}
               />
@@ -308,9 +308,9 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 type="monotone"
                 dataKey="total_players"
                 name={t('explorer.vision_section.players_joined')}
-                stroke="#888"
-                fill="#888"
-                fillOpacity={0.05}
+                stroke="#86868b"
+                fill="#86868b"
+                fillOpacity={0.06}
                 strokeWidth={1}
                 strokeDasharray="4 2"
               />
@@ -318,7 +318,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         ) : (
           <div className="h-full flex items-center justify-center">
-            <p className="text-caption text-text-muted">{t('explorer.vision_section.no_activity_data')}</p>
+            <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_activity_data')}</p>
           </div>
         )}
       </ExplorerChartCard>
@@ -334,21 +334,21 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border-light">
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player_rank')}</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player')}</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.volume')}</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.roi')}</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">{t('explorer.vision_section.pnl')}</th>
+                  <th className="text-micro font-semibold text-[#86868b] pb-1.5 pr-2">{t('explorer.vision_section.player_rank')}</th>
+                  <th className="text-micro font-semibold text-[#86868b] pb-1.5 pr-2">{t('explorer.vision_section.player')}</th>
+                  <th className="text-micro font-semibold text-[#86868b] pb-1.5 text-right pr-2">{t('explorer.vision_section.volume')}</th>
+                  <th className="text-micro font-semibold text-[#86868b] pb-1.5 text-right pr-2">{t('explorer.vision_section.roi')}</th>
+                  <th className="text-micro font-semibold text-[#86868b] pb-1.5 text-right">{t('explorer.vision_section.pnl')}</th>
                 </tr>
               </thead>
               <tbody>
                 {leaderboard.slice(0, 10).map((p) => (
                   <tr key={p.walletAddress} className="border-b border-border-light last:border-0">
-                    <td className="py-1 pr-2 text-label text-text-muted">{p.rank}</td>
-                    <td className="py-1 pr-2 text-label font-mono text-black">
+                    <td className="py-1 pr-2 text-label text-[#86868b]">{p.rank}</td>
+                    <td className="py-1 pr-2 text-label font-mono text-[#1d1d1f]">
                       {p.walletAddress.slice(0, 6)}...{p.walletAddress.slice(-4)}
                     </td>
-                    <td className="py-1 pr-2 text-label font-mono text-right text-text-muted">
+                    <td className="py-1 pr-2 text-label font-mono text-right text-[#86868b]">
                       {p.totalVolume >= 1000 ? `$${(p.totalVolume / 1000).toFixed(1)}K` : `$${p.totalVolume.toFixed(0)}`}
                     </td>
                     <td className={`py-1 pr-2 text-label font-mono text-right font-semibold ${p.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
@@ -363,7 +363,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             </table>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">{t('explorer.vision_section.no_player_data')}</p>
+              <p className="text-caption text-[#86868b]">{t('explorer.vision_section.no_player_data')}</p>
             </div>
           )}
         </div>
@@ -382,8 +382,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
 function StatBlock({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-black/[0.03] rounded-lg px-3 py-2.5 text-center">
-      <div className="text-heading font-black text-black tracking-tight leading-none">{value}</div>
-      <div className="text-micro text-text-muted mt-1 leading-tight">{label}</div>
+      <div className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] leading-none">{value}</div>
+      <div className="text-micro text-[#86868b] mt-1 leading-tight">{label}</div>
     </div>
   )
 }
@@ -393,8 +393,8 @@ function MiniBar({ label, value, total, color }: { label: string; value: number;
   return (
     <div className="flex-1">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">{label}</span>
-        <span className="text-micro font-medium text-black">{pct.toFixed(0)}%</span>
+        <span className="text-micro text-[#86868b]">{label}</span>
+        <span className="text-micro font-medium text-[#1d1d1f]">{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 bg-black/5 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />

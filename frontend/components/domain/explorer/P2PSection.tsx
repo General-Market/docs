@@ -57,20 +57,20 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">{t('explorer.p2p_section.title')}</h2>
+      <h2 className="text-subhead font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.p2p_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Connected Peers */}
         <ExplorerChartCard title={t('explorer.p2p_section.connected_peers')} subtitle={t('explorer.p2p_section.connected_peers_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={peersData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="total_peers" stroke="#000" fill="#000" fillOpacity={0.08} />
+              <Area type="monotone" dataKey="total_peers" stroke="#1d1d1f" fill="#1d1d1f" fillOpacity={0.08} />
             </AreaChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
@@ -79,14 +79,14 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
         <ExplorerChartCard title={t('explorer.p2p_section.messages_sent_received')} subtitle={t('explorer.p2p_section.messages_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={messagesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Line type="monotone" dataKey="sent" stroke="#000" strokeWidth={1.5} dot={false} name={t('explorer.p2p_section.sent')} />
+              <Line type="monotone" dataKey="sent" stroke="#1d1d1f" strokeWidth={1.5} dot={false} name={t('explorer.p2p_section.sent')} />
               <Line type="monotone" dataKey="received" stroke="#6b7280" strokeWidth={1.5} dot={false} name={t('explorer.p2p_section.received')} />
             </LineChart>
           </ResponsiveContainer>
@@ -96,9 +96,9 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
         <ExplorerChartCard title={t('explorer.p2p_section.peer_health')} subtitle={t('explorer.p2p_section.peer_health_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={peerHealthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#ccc" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
+              <XAxis dataKey="time" tickFormatter={tickFormatter} tick={{ fontSize: 10 }} stroke="#D2D2D7" />
+              <YAxis tick={{ fontSize: 10 }} stroke="#D2D2D7" allowDecimals={false} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
@@ -107,8 +107,8 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
                 type="monotone"
                 dataKey="healthy"
                 stackId="1"
-                stroke="#10b981"
-                fill="#10b981"
+                stroke="#1F8F4D"
+                fill="#1F8F4D"
                 fillOpacity={0.3}
                 name={t('explorer.p2p_section.healthy')}
               />
@@ -116,8 +116,8 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
                 type="monotone"
                 dataKey="unhealthy"
                 stackId="1"
-                stroke="#ef4444"
-                fill="#ef4444"
+                stroke="#D70015"
+                fill="#D70015"
                 fillOpacity={0.3}
                 name={t('explorer.p2p_section.unhealthy')}
               />

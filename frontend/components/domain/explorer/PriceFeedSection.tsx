@@ -26,7 +26,7 @@ const xAxisProps = {
   dataKey: 'poll_batch_ts' as const,
   tickFormatter: timeTickFormatter,
   tick: { fontSize: 10 },
-  stroke: '#ccc',
+  stroke: '#D2D2D7',
 }
 
 export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
@@ -34,7 +34,7 @@ export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.price_feed_section.title')}</h2>
+      <h2 className="text-heading font-display font-semibold tracking-apple-tighter text-[#1d1d1f] mb-4">{t('explorer.price_feed_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Consensus Duration Trend — proxy for price consensus overhead */}
         <ExplorerChartCard
@@ -48,11 +48,11 @@ export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshots}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8ED" />
               <XAxis {...xAxisProps} />
               <YAxis
                 tick={{ fontSize: 10 }}
-                stroke="#ccc"
+                stroke="#D2D2D7"
                 width={48}
                 tickFormatter={(v) => `${v}ms`}
               />
