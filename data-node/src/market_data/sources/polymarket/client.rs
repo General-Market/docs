@@ -114,11 +114,17 @@ impl PolymarketMarketSource {
 
     /// Fetch all open markets from Gamma API with pagination (closed=false).
     /// Returns only markets the API considers open.
+    ///
+    /// Note: Gamma caps page size at ~100 regardless of the `limit` parameter,
+    /// so we advance the offset by the actual returned count and only stop on
+    /// an empty page. A safety cap prevents an infinite loop if the API ever
+    /// returns a non-shrinking page.
     async fn fetch_open_markets(&self) -> Result<Vec<GammaMarket>> {
         let mut all_markets = Vec::new();
-        let mut offset = 0;
+        let mut offset = 0usize;
+        const MAX_PAGES: usize = 500;
 
-        loop {
+        for _ in 0..MAX_PAGES {
             let url = format!(
                 "{}/markets?closed=false&limit={}&offset={}",
                 GAMMA_API_URL, PAGE_SIZE, offset
@@ -129,10 +135,10 @@ impl PolymarketMarketSource {
             debug!("Fetched {} open markets from offset {}", page_size, offset);
             all_markets.extend(markets);
 
-            if page_size < PAGE_SIZE {
+            if page_size == 0 {
                 break;
             }
-            offset += PAGE_SIZE;
+            offset += page_size;
         }
 
         info!(
