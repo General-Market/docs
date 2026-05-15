@@ -126,10 +126,11 @@ for (const sg of SCAPEGOATS) {
   prefetch(staticFile(sg.imageSrc));
 }
 
-// Marquee bands above and below each card — Apple "watched" pattern.
-// Verb per suspect, repeating across a strip that scrolls horizontally.
-// Direction is per-index by user spec: card 1 right, 2 left, 3 left,
-// 4 right. Top and bottom bands share direction per card.
+// Marquee bands behind each card — Apple "watched" pattern. Many
+// stacked rows of the suspect's verb repeating across the column,
+// the card sitting opaque in the middle. Direction is per-index by
+// user spec: card 1 right, 2 left, 3 left, 4 right. Every band in
+// a column shares direction so the eye reads one current per face.
 const SG_MARQUEE_TEXTS: readonly string[] = [
   "liquidated",
   "front-run",
@@ -137,23 +138,27 @@ const SG_MARQUEE_TEXTS: readonly string[] = [
   "leaked",
 ];
 const SG_MARQUEE_DIRECTIONS: readonly (1 | -1)[] = [1, -1, -1, 1];
-const SG_BAND_H = 32;
-const SG_BAND_GAP = 14;
+const SG_BAND_H = 44;
+const SG_BAND_GAP = 20;
+const SG_BAND_COUNT = 11;
 const SG_MARQUEE_SPEED = 1.6; // px per frame
 
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
-// card vocabulary so the visual rhyme holds.
+// card vocabulary so the visual rhyme holds. Column is much taller
+// than the card itself — the bands stack the full column height and
+// the card floats centred, hiding the band rows directly behind it.
 const SG_CARD_W = 340;
 const SG_CARD_H = 460;
 const SG_CARD_GAP = 60;
-const SG_COL_H = SG_CARD_H + 2 * (SG_BAND_H + SG_BAND_GAP);
+const SG_COL_H = SG_BAND_COUNT * SG_BAND_H + (SG_BAND_COUNT - 1) * SG_BAND_GAP;
 const SG_GRID_W = SCAPEGOATS_COUNT * SG_CARD_W +
   (SCAPEGOATS_COUNT - 1) * SG_CARD_GAP;
 const SG_GRID_LEFT = (W - SG_GRID_W) / 2;
-// Vertical anchor shifts up to keep the visible card body roughly where
-// the old grid sat (cards centred near y≈590) while the bands flank it.
-const SG_GRID_TOP = 316;
+// Vertically centred in the frame below the headline. Column height
+// is computed from the band stack so the bands extend well above and
+// below the card body.
+const SG_GRID_TOP = Math.round((H - SG_COL_H) / 2 + 40);
 
 const expoOutEase = (t: number): number =>
   t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
@@ -295,13 +300,12 @@ const ScapegoatColumn: React.FC<{
     <div
       style={{
         flex: "0 0 auto",
+        position: "relative",
         width: SG_CARD_W,
         height: SG_COL_H,
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: SG_BAND_GAP,
         opacity: anim.opacity,
         transform: `translateY(${anim.translateY.toFixed(2)}px) scale(${anim.scale.toFixed(3)})`,
         transformOrigin: "center center",
@@ -309,17 +313,31 @@ const ScapegoatColumn: React.FC<{
         willChange: "transform, opacity, filter",
       }}
     >
-      <ScapegoatMarquee
-        text={marqueeText}
-        direction={marqueeDir}
-        frame={frame}
-      />
+      {/* Background marquee stack — fills the column, sits behind the
+          card. Card body covers the middle bands; only the bands above
+          and below the card are visible. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: SG_BAND_GAP,
+        }}
+      >
+        {Array.from({ length: SG_BAND_COUNT }).map((_, i) => (
+          <ScapegoatMarquee
+            key={i}
+            text={marqueeText}
+            direction={marqueeDir}
+            frame={frame}
+            rowIndex={i}
+          />
+        ))}
+      </div>
+
+      {/* Foreground card body — opaque, floats over the middle bands. */}
       <ScapegoatCardBody scapegoat={scapegoat} index={index} />
-      <ScapegoatMarquee
-        text={marqueeText}
-        direction={marqueeDir}
-        frame={frame}
-      />
     </div>
   );
 };
@@ -328,19 +346,22 @@ const ScapegoatMarquee: React.FC<{
   text: string;
   direction: 1 | -1;
   frame: number;
-}> = ({ text, direction, frame }) => {
+  rowIndex: number;
+}> = ({ text, direction, frame, rowIndex }) => {
   // Long strip of repeated text, centred and translated per frame.
   // Strip is wide enough that the scroll never exposes either end
   // during the card's lifetime, so we don't need pixel-perfect
   // tile-width seam logic — the visual effect is continuous drift.
   const tile = `${text}   `;
-  const repeated = Array.from({ length: 18 }, () => tile).join("");
-  const tx = direction * frame * SG_MARQUEE_SPEED;
+  const repeated = Array.from({ length: 28 }, () => tile).join("");
+  const phase = (rowIndex * 73) % 200;
+  const tx = direction * frame * SG_MARQUEE_SPEED + direction * phase;
   return (
     <div
       style={{
         position: "relative",
-        width: SG_CARD_W,
+        flex: "0 0 auto",
+        width: "100%",
         height: SG_BAND_H,
         overflow: "hidden",
       }}
@@ -353,10 +374,10 @@ const ScapegoatMarquee: React.FC<{
           transform: `translate(-50%, -50%) translateX(${tx.toFixed(2)}px)`,
           whiteSpace: "nowrap",
           fontFamily: font,
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: "-0.025em",
-          color: "rgba(8, 14, 28, 0.42)",
+          fontSize: 38,
+          fontWeight: 800,
+          letterSpacing: "-0.03em",
+          color: "rgba(8, 14, 28, 0.55)",
           lineHeight: 1,
           willChange: "transform",
         }}
