@@ -220,18 +220,22 @@ const CoinMesh: React.FC<{
   const zBase = Z_BACK + cyclePosNormalised * zRange;
   const z = zBase + p * 1.0;
 
-  // ── Off-frame detection — coin fades only when it has fully exited
-  // the projected frame box.
+  // ── Off-frame detection — coin only fades when its full bounding
+  //    box is genuinely past the frame edge. Margin generous (1.6) so
+  //    a coin doesn't disappear while any pixel of it could still be
+  //    on screen.
   const cameraZ = 14;
   const distance = Math.max(0.5, cameraZ - z);
-  // Project world x/y to a normalised frame position [-1, 1].
-  const projX = seed.x / (distance * (FRAME_HALF_W / cameraZ));
-  const projY = seed.y / (distance * (FRAME_HALF_H / cameraZ));
-  const radiusOnFrame = (seed.baseScale * 1.0) / (distance * (FRAME_HALF_W / cameraZ));
-  const outsideRight = projX - radiusOnFrame > 1.2;
-  const outsideLeft = projX + radiusOnFrame < -1.2;
-  const outsideTop = projY - radiusOnFrame > 1.2;
-  const outsideBottom = projY + radiusOnFrame < -1.2;
+  const focalX = FRAME_HALF_W / cameraZ;
+  const focalY = FRAME_HALF_H / cameraZ;
+  const projX = seed.x / (distance * focalX);
+  const projY = seed.y / (distance * focalY);
+  const projRadiusX = (seed.baseScale * 1.0) / (distance * focalX);
+  const projRadiusY = (seed.baseScale * 1.0) / (distance * focalY);
+  const outsideRight = projX - projRadiusX > 1.6;
+  const outsideLeft = projX + projRadiusX < -1.6;
+  const outsideTop = projY - projRadiusY > 1.6;
+  const outsideBottom = projY + projRadiusY < -1.6;
   const fullyOffScreen =
     outsideRight || outsideLeft || outsideTop || outsideBottom;
   // Cycle-end fade only takes effect once the coin is already off-screen.
@@ -273,9 +277,14 @@ const CoinMesh: React.FC<{
   );
   const quat = wobbleQ.clone().multiply(baseOrient);
 
+  // Fatter coins — stretch on the local Y axis (which after baseOrient
+  // becomes the depth dimension of the disc). 2.4x makes the rim
+  // visibly thick and gives weight to the token edge.
   return (
-    <group position={[seed.x, seed.y, z]} scale={scale} quaternion={quat}>
-      <primitive object={clone} />
+    <group position={[seed.x, seed.y, z]} quaternion={quat}>
+      <group scale={[scale, scale * 2.4, scale]}>
+        <primitive object={clone} />
+      </group>
     </group>
   );
 };
@@ -302,19 +311,26 @@ const Scene: React.FC<{
   persp.fov = 40;
   persp.updateProjectionMatrix();
 
+  // ── Single key light (matches the ThreeChallenge scene rig at
+  // WebGLPicks 4:40). Direction normalised then scaled to 5 — one
+  // dominant source so coins all read with the same warm-from-upper-
+  // left shading. A faint ambient prevents the shadow side from
+  // crushing to black.
   return (
     <>
-      <hemisphereLight args={["#ffffff", "#b8b0c8", 0.85]} />
-      <directionalLight position={[4, 9, 10]} intensity={1.5} color="#ffffff" castShadow />
-      <directionalLight position={[-6, 3, -4]} intensity={0.55} color="#d0c8e8" />
-      <directionalLight position={[0, -5, 6]} intensity={0.4} color="#e8e0f5" />
-      {/* Ground shadow plane — picks up soft drop shadows from coins
-          so they read as grounded objects rather than floating cutouts. */}
+      <ambientLight intensity={0.35} color="#ffffff" />
+      <directionalLight
+        position={[-5, 4, 1.3]}
+        intensity={2.2}
+        color="#ffffff"
+        castShadow
+      />
+      {/* Ground shadow plane — soft drop shadows on the lavender stage. */}
       <ContactShadows
         position={[0, -5.5, 0]}
         scale={30}
         far={8}
-        blur={2.6}
+        blur={2.4}
         opacity={0.42}
         resolution={1024}
         color="#3d2b6a"

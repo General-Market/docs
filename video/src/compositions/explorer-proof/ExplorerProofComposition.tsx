@@ -97,6 +97,10 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
     easing: EASE,
   });
 
+  // Z stack (bottom → top):
+  //   coins (3D canvas) → wordmarks → phone → end card
+  // The phone sits ON TOP of the wordmarks so the text passes behind
+  // it during close-ups; the end card crossfades over everything.
   return (
     <AbsoluteFill style={{ background: BG_COLOR }}>
       <CoinsBackground
@@ -105,6 +109,7 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
         width={1920}
         height={1080}
       />
+      <SideTexts visibility={sideTextsVis} />
       <CssPhone
         brollSrc={brollSrc}
         translateY={phoneTranslateY}
@@ -112,7 +117,6 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
         rotateYDeg={phoneRotateY}
         scale={phoneScale}
       />
-      <SideTexts visibility={sideTextsVis} />
       <EndCard progress={endCardProg} />
     </AbsoluteFill>
   );
