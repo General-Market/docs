@@ -2,10 +2,16 @@
 
 import { useTranslations } from 'next-intl'
 import type { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
+import { useCountUp } from '@/hooks/useCountUp'
 
 interface ExplorerSummaryBarProps {
   latest: AggregatedSnapshot | null
   loading: boolean
+}
+
+function CountValue({ value, formatter, className }: { value: number; formatter: (v: number) => string; className?: string }) {
+  const display = useCountUp(value, 800)
+  return <span className={className}>{formatter(display)}</span>
 }
 
 export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps) {
@@ -31,37 +37,51 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
     )
   }
 
-  const items: { label: string; value: string; color: string }[] = [
+  type Item =
+    | { kind: 'string'; label: string; value: string; color: string }
+    | { kind: 'number'; label: string; value: number; formatter: (n: number) => string; color: string }
+
+  const oracleCount = Math.round((1 + Math.sqrt(1 + 4 * latest.total_peers)) / 2)
+
+  const items: Item[] = [
     {
+      kind: 'string',
       label: t('explorer.consensus_section.network_health'),
       value: latest.worst_status === 'healthy' ? t('explorer.consensus_section.healthy') : latest.worst_status === 'degraded' ? t('explorer.consensus_section.degraded') : t('explorer.consensus_section.unhealthy'),
       color: latest.worst_status === 'healthy' ? 'text-[#1F8F4D]' : latest.worst_status === 'degraded' ? 'text-[#B25600]' : 'text-[#D70015]',
     },
     {
+      kind: 'string',
       label: t('explorer.consensus_section.quorum_status'),
       value: latest.quorum_met ? t('explorer.consensus_section.met') : t('explorer.consensus_section.not_met'),
       color: latest.quorum_met ? 'text-[#1F8F4D]' : 'text-[#D70015]',
     },
     {
+      kind: 'number',
       label: t('explorer.summary.consensus'),
-      value: latest.consensus_rounds_total > 0 ? latest.consensus_rounds_total.toLocaleString() : '—',
+      value: latest.consensus_rounds_total,
+      formatter: (n) => (n > 0 ? Math.round(n).toLocaleString() : '—'),
       color: 'text-[#1d1d1f]',
     },
     {
+      kind: 'number',
       label: t('explorer.consensus_section.avg_duration'),
-      value: `${latest.avg_consensus_time_ms}ms`,
+      value: latest.avg_consensus_time_ms,
+      formatter: (n) => `${Math.round(n)}ms`,
       color: latest.avg_consensus_time_ms > 2000 ? 'text-[#D70015]' : 'text-[#1d1d1f]',
     },
     {
+      kind: 'number',
       label: t('explorer.orders_section.pending'),
-      value: latest.pending_order_count.toString(),
+      value: latest.pending_order_count,
+      formatter: (n) => Math.round(n).toString(),
       color: 'text-[#1d1d1f]',
     },
     {
+      kind: 'number',
       label: t('explorer.summary.oracles'),
-      // total_peers = SUM(connected_peers) across K nodes in a full mesh.
-      // Each node sees K-1 peers, so total = K*(K-1). Solve: K = (1+√(1+4·total))/2
-      value: Math.round((1 + Math.sqrt(1 + 4 * latest.total_peers)) / 2).toString(),
+      value: oracleCount,
+      formatter: (n) => Math.round(n).toString(),
       color: 'text-[#1d1d1f]',
     },
   ]
@@ -76,8 +96,12 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
           <p className="text-micro font-semibold tracking-apple-loose uppercase text-[#86868b] mb-1">
             {item.label}
           </p>
-          <p className={`text-heading font-display font-semibold tracking-apple-tighter ${item.color}`}>
-            {item.value}
+          <p className={`text-heading font-display font-semibold tracking-apple-tighter explorer-count-up ${item.color}`}>
+            {item.kind === 'number' ? (
+              <CountValue value={item.value} formatter={item.formatter} />
+            ) : (
+              item.value
+            )}
           </p>
         </div>
       ))}

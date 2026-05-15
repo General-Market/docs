@@ -5,6 +5,7 @@ import { motion, LayoutGroup } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { useExplorerHealth, type TimeRange } from '@/hooks/useExplorerHealth'
 import { ExplorerSummaryBar } from '@/components/domain/explorer/ExplorerSummaryBar'
+import { ExplorerHeartbeat } from '@/components/domain/explorer/ExplorerHeartbeat'
 import { ConsensusSection } from '@/components/domain/explorer/ConsensusSection'
 import { OrdersSection } from '@/components/domain/explorer/OrdersSection'
 import { PriceFeedSection } from '@/components/domain/explorer/PriceFeedSection'
@@ -48,6 +49,9 @@ export default function ExplorerPageClient() {
           <h1 className="text-display font-display font-semibold tracking-apple-tighter text-[#1d1d1f] leading-[1.05]">
             {t('explorer.title')}
           </h1>
+          <div className="mt-4">
+            <ExplorerHeartbeat snapshots={snapshots} latest={latest} />
+          </div>
         </div>
 
         <ExplorerSummaryBar latest={latest} loading={loading} />

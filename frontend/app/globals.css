@@ -1095,6 +1095,47 @@ input[type="number"] {
   animation-delay: calc(var(--i, 0) * 85ms + 220ms);
 }
 
+/* Heartbeat — pulsing live indicator */
+@keyframes heartbeat-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.86); }
+}
+@keyframes heartbeat-ring {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+.heartbeat-dot {
+  animation: heartbeat-pulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 0 0 currentColor;
+}
+.heartbeat-ring {
+  animation: heartbeat-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Heartbeat strip entrance — apple staged */
+@keyframes explorer-heartbeat-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.explorer-heartbeat {
+  animation: explorer-heartbeat-in 0.6s var(--ease-out-expo) 0.15s both;
+}
+
+/* Spark line draw-in */
+@keyframes explorer-spark-draw {
+  from { stroke-dashoffset: 200; opacity: 0; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+.explorer-heartbeat-spark svg path {
+  stroke-dasharray: 200;
+  animation: explorer-spark-draw 1.2s var(--ease-out-expo) 0.5s both;
+}
+
+/* Number count-up uses tabular-nums to keep width steady during interpolation */
+.explorer-count-up {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Dark theme color inversions ── */
 .explorer-dark .text-black { color: rgba(255, 255, 255, 0.92); }
 .explorer-dark .text-text-muted { color: rgba(255, 255, 255, 0.4); }
