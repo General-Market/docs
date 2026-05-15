@@ -15,7 +15,7 @@ import React, { useMemo, useEffect } from "react";
 import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 export type CoinsBackgroundProps = {
@@ -27,9 +27,64 @@ export type CoinsBackgroundProps = {
 
 const BG_COLOR = "#E0D8EC";
 const COIN_MODEL_URL = staticFile("models/coin.glb");
-const MARK_URL = staticFile("gm-mark-transparent-1024.png");
 useGLTF.preload(COIN_MODEL_URL);
-useTexture.preload(MARK_URL);
+
+// Brand identity: green body with a white pill mark (the current frontend
+// logo). Built procedurally as a CanvasTexture so the coin face is a
+// solid disc — not a transparent-bg PNG (which would let the lavender
+// background bleed through the geometry).
+const FACE_TEXTURE_SIZE = 512;
+const BRAND_GREEN = "#1cb37c";
+const BRAND_GREEN_DARK = "#0d6c4b";
+
+function buildFaceTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = FACE_TEXTURE_SIZE;
+  canvas.height = FACE_TEXTURE_SIZE;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    // Solid green disc covering the full UV square. The GLB face is a
+    // circular cap inscribed in this square, so only the inscribed
+    // disc gets sampled — but filling everything keeps the texture
+    // robust to UV edge cases.
+    ctx.fillStyle = BRAND_GREEN;
+    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
+    // Soft radial vignette so the face has subtle depth toward the rim.
+    const vignette = ctx.createRadialGradient(
+      FACE_TEXTURE_SIZE / 2,
+      FACE_TEXTURE_SIZE / 2,
+      FACE_TEXTURE_SIZE * 0.18,
+      FACE_TEXTURE_SIZE / 2,
+      FACE_TEXTURE_SIZE / 2,
+      FACE_TEXTURE_SIZE * 0.55,
+    );
+    vignette.addColorStop(0, "rgba(255,255,255,0.10)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.18)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
+    // White pill — proportions match the brand logo: 512×100 pill on a
+    // 1024×1024 frame, centered. Scaled down to fit our 512×512 canvas.
+    const pillW = FACE_TEXTURE_SIZE * 0.5;
+    const pillH = FACE_TEXTURE_SIZE * (100 / 1024);
+    const pillX = (FACE_TEXTURE_SIZE - pillW) / 2;
+    const pillY = (FACE_TEXTURE_SIZE - pillH) / 2;
+    const pillR = pillH / 2;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.moveTo(pillX + pillR, pillY);
+    ctx.lineTo(pillX + pillW - pillR, pillY);
+    ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(pillX + pillR, pillY + pillH);
+    ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 // ── Coin layout — placed around the text safe-zones ──────────────────
 // Camera at (0, 0.5, 14), fov 40°. Visible half-height at z=0 is ~5.1,
@@ -48,24 +103,24 @@ type CoinSeed = {
   baseScale: number;
   cycleSec: number; // total time deep → close → loop
   cyclePhase: number; // 0..1 offset so coins don't sync
-  spinPeriodSec: number; // slow rotation period
+  spinPeriodSec: number; // slow rotation period (around world Y)
   spinPhase: number;
-  spinTilt: number; // angle off the up-axis so the face flips visibly
-  tiltAxis: number; // rotation of the spin axis around Y
+  staticTiltX: number; // constant lean forward/back, radians
+  staticTiltZ: number; // constant lean left/right, radians
 };
 
 const COIN_SEEDS: CoinSeed[] = [
-  // Top-left area, above "GENERAL/MARKET" wordmark
+  // Top-left, above the GENERAL/MARKET wordmark
   {
-    x: -5.2,
+    x: -5.4,
     y: 3.0,
     baseScale: 1.2,
     cycleSec: 22,
     cyclePhase: 0.0,
-    spinPeriodSec: 13,
+    spinPeriodSec: 18,
     spinPhase: 0.4,
-    spinTilt: 0.6,
-    tiltAxis: 0.2,
+    staticTiltX: 0.18,
+    staticTiltZ: 0.12,
   },
   // Top-centre, above the phone
   {
@@ -74,34 +129,34 @@ const COIN_SEEDS: CoinSeed[] = [
     baseScale: 1.45,
     cycleSec: 24,
     cyclePhase: 0.35,
-    spinPeriodSec: 16,
+    spinPeriodSec: 22,
     spinPhase: 1.2,
-    spinTilt: 0.7,
-    tiltAxis: 0.9,
+    staticTiltX: -0.12,
+    staticTiltZ: 0.05,
   },
-  // Top-right, above "GENERALMARKET.IO"
+  // Top-right, above GENERALMARKET.IO
   {
     x: 5.4,
     y: 3.0,
     baseScale: 1.25,
     cycleSec: 20,
     cyclePhase: 0.62,
-    spinPeriodSec: 14,
+    spinPeriodSec: 19,
     spinPhase: 2.0,
-    spinTilt: 0.55,
-    tiltAxis: 1.4,
+    staticTiltX: 0.1,
+    staticTiltZ: -0.18,
   },
-  // Bottom-left hero, below text
+  // Bottom-left hero, below the wordmark band
   {
     x: -5.0,
     y: -2.9,
     baseScale: 1.55,
     cycleSec: 26,
     cyclePhase: 0.18,
-    spinPeriodSec: 17,
+    spinPeriodSec: 24,
     spinPhase: 0.9,
-    spinTilt: 0.65,
-    tiltAxis: 0.5,
+    staticTiltX: -0.22,
+    staticTiltZ: -0.1,
   },
   // Bottom-centre, below the phone
   {
@@ -110,35 +165,34 @@ const COIN_SEEDS: CoinSeed[] = [
     baseScale: 1.1,
     cycleSec: 21,
     cyclePhase: 0.5,
-    spinPeriodSec: 12,
+    spinPeriodSec: 17,
     spinPhase: 1.7,
-    spinTilt: 0.5,
-    tiltAxis: 2.1,
+    staticTiltX: 0.15,
+    staticTiltZ: 0.0,
   },
-  // Bottom-right hero, below text
+  // Bottom-right hero
   {
     x: 5.2,
     y: -2.9,
     baseScale: 1.4,
     cycleSec: 25,
     cyclePhase: 0.75,
-    spinPeriodSec: 15,
+    spinPeriodSec: 20,
     spinPhase: 2.4,
-    spinTilt: 0.6,
-    tiltAxis: 1.0,
+    staticTiltX: -0.18,
+    staticTiltZ: 0.15,
   },
-  // Deep back, mid-frame — never comes fully forward, just lives back
-  // there for layered depth. Small.
+  // Deep back, mid-frame — small, slow, layered depth
   {
     x: -1.8,
     y: 0.2,
     baseScale: 0.55,
     cycleSec: 30,
     cyclePhase: 0.45,
-    spinPeriodSec: 18,
+    spinPeriodSec: 26,
     spinPhase: 1.0,
-    spinTilt: 0.4,
-    tiltAxis: 0.0,
+    staticTiltX: 0.0,
+    staticTiltZ: 0.08,
   },
 ];
 
@@ -154,11 +208,11 @@ function smoothstep(t: number): number {
 
 // ── Coin instance ────────────────────────────────────────────────────
 // Clones the loaded GLB scene once (so each coin has its own material
-// instances) and binds the GM-mark texture to the Front and Back face
-// materials. The Rim material gets a darker brand-green tint.
+// instances) and binds the brand face texture to Front/Back. Rim and
+// any other body parts get the darker green so the rim catches light
+// and reads as a separate volume.
 
-const COIN_BODY_COLOR = new THREE.Color("#1cb37c"); // brand green, lifted a hair
-const COIN_RIM_COLOR = new THREE.Color("#0d6c4b");
+const COIN_RIM_COLOR = new THREE.Color(BRAND_GREEN_DARK);
 
 const CoinMesh: React.FC<{
   seed: CoinSeed;
@@ -176,43 +230,40 @@ const CoinMesh: React.FC<{
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
       if (Array.isArray(mesh.material)) return;
-      // The model has named materials: Front, Back, Rim. Clone each so
-      // texture/colour changes stay local.
       const mat = mesh.material as
         | THREE.MeshStandardMaterial
         | THREE.MeshPhysicalMaterial;
       const cloned = mat.clone();
       cloned.transparent = true;
-      cloned.depthWrite = false;
       const name = (mat.name || "").toLowerCase();
       if (name === "front" || name === "back") {
+        // Solid green face with the white pill baked in. No
+        // transmission — the disc is opaque token, not glass.
         cloned.map = faceMap;
         cloned.color = new THREE.Color("#ffffff");
+        cloned.roughness = 0.36;
+        cloned.metalness = 0.15;
+        if ("transmission" in cloned) {
+          (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
+        }
         if ("emissive" in cloned) {
           cloned.emissive = new THREE.Color("#ffffff");
           cloned.emissiveMap = faceMap;
-          cloned.emissiveIntensity = 0.35;
+          cloned.emissiveIntensity = 0.12;
         }
-        cloned.roughness = 0.32;
-        cloned.metalness = 0.15;
       } else {
-        // Rim / body — translucent brand green.
+        // Rim / body — darker brand green, more metallic so the
+        // bevel catches the key light.
         cloned.map = null;
-        cloned.color = name === "rim" ? COIN_RIM_COLOR : COIN_BODY_COLOR;
-        if ("emissive" in cloned) {
-          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.15);
-        }
-        cloned.roughness = 0.34;
-        cloned.metalness = 0.25;
+        cloned.color = COIN_RIM_COLOR;
+        cloned.roughness = 0.32;
+        cloned.metalness = 0.55;
         if ("transmission" in cloned) {
-          // Solid translucent — read as a token, not a glass ring.
-          (cloned as THREE.MeshPhysicalMaterial).transmission = 0.15;
-          (cloned as THREE.MeshPhysicalMaterial).thickness = 0.3;
-          (cloned as THREE.MeshPhysicalMaterial).ior = 1.45;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.6;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.22;
+          (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
         }
-        cloned.opacity = 0.95;
+        if ("emissive" in cloned) {
+          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.18);
+        }
       }
       mesh.material = cloned;
     });
@@ -250,20 +301,28 @@ const CoinMesh: React.FC<{
   // the close pass feel close even at constant world scale).
   const scale = seed.baseScale * (1 + cyclePosNormalised * 0.25);
 
-  // ── Slow continuous spin. Rotation axis is tilted off vertical so
-  //    the disc flips and reveals its rim mid-cycle.
+  // ── Orientation
+  // The GLB lies flat in the XZ plane (face normals along ±Y). Tip
+  // it 90° around X so the face points toward the camera (+Z). Then
+  // apply a slow rotation around world Y so the coin gracefully
+  // turns — face → edge → back → edge → loop. A small static tilt
+  // per coin breaks up the synchrony.
+  const baseOrient = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(1, 0, 0),
+    Math.PI / 2,
+  );
   const spinAngle =
     seed.spinPhase + frame * ((Math.PI * 2) / (seed.spinPeriodSec * FPS));
-  const tilt = seed.spinTilt;
-  const tiltDir = seed.tiltAxis;
-  // Build rotation: tilt the spin axis around Y by tiltAxis, then
-  // rotate around that tilted axis by spinAngle.
-  const axis = new THREE.Vector3(
-    Math.sin(tilt) * Math.cos(tiltDir),
-    Math.cos(tilt),
-    Math.sin(tilt) * Math.sin(tiltDir),
-  ).normalize();
-  const quat = new THREE.Quaternion().setFromAxisAngle(axis, spinAngle);
+  const spinQ = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    spinAngle,
+  );
+  const tiltQ = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(seed.staticTiltX, 0, seed.staticTiltZ, "YXZ"),
+  );
+  // tiltQ * spinQ * baseOrient — apply baseOrient first (model → face camera),
+  // then spinQ (around world Y), then tiltQ (constant per-coin lean).
+  const quat = tiltQ.clone().multiply(spinQ).multiply(baseOrient);
 
   // Apply the cycle-fade by scaling material alpha via group opacity.
   // Instead of a render attribute, drive it on the materials directly.
@@ -291,9 +350,8 @@ const Scene: React.FC<{
 }> = ({ frame, forwardProgress, opacity }) => {
   const { camera } = useThree();
   const gltf = useGLTF(COIN_MODEL_URL);
-  const faceMap = useTexture(MARK_URL);
-  faceMap.colorSpace = THREE.SRGBColorSpace;
-  faceMap.anisotropy = 8;
+  // Procedural face — green disc with white pill mark.
+  const faceMap = useMemo(() => buildFaceTexture(), []);
 
   const persp = camera as THREE.PerspectiveCamera;
   persp.position.set(0, 0.5, 14);
