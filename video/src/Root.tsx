@@ -495,6 +495,7 @@ export const RemotionRoot: React.FC = () => {
           fps={explorerProofMeta.fps}
           width={explorerProofMeta.width}
           height={explorerProofMeta.height}
+          defaultProps={explorerProofMeta.defaultProps}
         />
 
         {/* --- Ridd --- */}

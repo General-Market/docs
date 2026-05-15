@@ -11,7 +11,16 @@ import { CoinsBackground } from "./CoinsBackground";
 import { SideTexts } from "./SideTexts";
 import { EndCard } from "./EndCard";
 
-const BROLL_PATH = staticFile("broll/explorer-broll.mp4");
+export type ExplorerProofProps = {
+  brollPath: string;
+};
+
+// Drop the screen recording of /explorer at:
+//   video/public/broll/explorer-broll.mp4
+// Until then the studio falls back to an existing broll so the camera
+// moves and 3D coins remain previewable.
+const DEFAULT_BROLL_PATH = "broll/explorer-broll.mp4";
+const FALLBACK_BROLL_PATH = "broll/glacier-drone.mp4";
 
 const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
 
@@ -24,8 +33,9 @@ const driveProp = (frame: number, values: number[]) =>
     easing: EASE,
   });
 
-export const ExplorerProof: React.FC = () => {
+export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   const frame = useCurrentFrame();
+  const resolvedBroll = staticFile(brollPath);
 
   // Camera zoom across the 9 beats.
   const zoom = driveProp(frame, [
@@ -77,7 +87,7 @@ export const ExplorerProof: React.FC = () => {
     <AbsoluteFill style={{ background: "#E0D8EC" }}>
       <DeviceBroll
         device="phone"
-        broll={BROLL_PATH}
+        broll={resolvedBroll}
         brollAspect={9 / 19.5}
         position={[-3, phoneY, 0]}
         rotation={[phoneRotX, phoneRotY, 0]}
@@ -107,4 +117,5 @@ export const explorerProofMeta = {
   height: 1080,
   fps: 30,
   durationInFrames: 2100,
+  defaultProps: { brollPath: FALLBACK_BROLL_PATH } as ExplorerProofProps,
 };
