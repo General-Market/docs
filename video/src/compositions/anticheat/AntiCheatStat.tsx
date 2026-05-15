@@ -155,10 +155,10 @@ const SG_COL_H = SG_BAND_COUNT * SG_BAND_H + (SG_BAND_COUNT - 1) * SG_BAND_GAP;
 const SG_GRID_W = SCAPEGOATS_COUNT * SG_CARD_W +
   (SCAPEGOATS_COUNT - 1) * SG_CARD_GAP;
 const SG_GRID_LEFT = (W - SG_GRID_W) / 2;
-// Vertically centred in the frame below the headline. Column height
-// is computed from the band stack so the bands extend well above and
-// below the card body.
-const SG_GRID_TOP = Math.round((H - SG_COL_H) / 2 + 40);
+// Vertically anchored below the headline. Column height is computed
+// from the band stack so the bands extend well above and below the
+// card body without bleeding into the headline.
+const SG_GRID_TOP = 304;
 
 const expoOutEase = (t: number): number =>
   t === 1 ? 1 : 1 - Math.pow(2, -10 * Math.max(0, Math.min(1, t)));
