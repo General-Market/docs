@@ -5,6 +5,7 @@ import {
   OffthreadVideo,
   Sequence,
   interpolate,
+  prefetch,
   staticFile,
   useCurrentFrame,
 } from "remotion";
@@ -54,6 +55,12 @@ export const AntiCheatSolution: React.FC = () => {
 // "General is the safe table" zoom as the headline blasts forward.
 const BROLL_URL = staticFile("cheat-broll/insider-trading-clean.mp4");
 const BROLL_LEN_FRAMES = 200; // source is 206f — keep a safety margin
+
+// Warm the broll cache at module load. Without this the studio throws
+// "browser threw an error while playing the video" on the first scrub
+// into the phone wall: twelve OffthreadVideo elements all reaching for
+// the same file at once and racing the decoder.
+prefetch(BROLL_URL);
 
 const PHONE_W = 260;
 const PHONE_H = 540;
