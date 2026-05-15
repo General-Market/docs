@@ -561,6 +561,41 @@ const CAROUSEL_DEG_PER_BEAT = -360 / CATEGORIES.length; // −90° (one card)
 const CAROUSEL_SPEED_AMPLITUDE = 1.0;                   // freeze on beat,
                                                         // 2× speed mid-beat
 
+// The same rotation phase the carousel runs. Pulled out so the
+// big background word can read which card faces the camera without
+// having to listen back through the React tree.
+const computeContinuousRotY = (local: number): number => {
+  const rotationStartAbs = BARS_ABS_START + REVEAL_AT + CAROUSEL_SPIRAL_IN;
+  const absFrame = BARS_ABS_START + REVEAL_AT + local;
+  if (absFrame < rotationStartAbs) return 0;
+
+  const anchors: number[] = [rotationStartAbs];
+  for (const b of VIDEO_BEATS) {
+    if (b > rotationStartAbs) anchors.push(b);
+  }
+
+  let segIdx = anchors.length - 1;
+  for (let i = 0; i < anchors.length - 1; i++) {
+    if (absFrame >= anchors[i] && absFrame < anchors[i + 1]) {
+      segIdx = i;
+      break;
+    }
+  }
+
+  const segStart = anchors[segIdx];
+  const segLen =
+    segIdx < anchors.length - 1 ? anchors[segIdx + 1] - segStart : 26;
+
+  const phase = Math.max(0, Math.min(1, (absFrame - segStart) / segLen));
+  const A = CAROUSEL_SPEED_AMPLITUDE;
+  const positionInSegment =
+    CAROUSEL_DEG_PER_BEAT * phase -
+    ((CAROUSEL_DEG_PER_BEAT * A) / (2 * Math.PI)) *
+      Math.sin(2 * Math.PI * phase);
+
+  return CAROUSEL_DEG_PER_BEAT * segIdx + positionInSegment;
+};
+
 // The bars + caption are gone. The scene is now the carousel + flanking
 // hero words ("Extracted" / "From You") + a single headline below.
 const ExtractionBars: React.FC = () => (
@@ -577,6 +612,10 @@ const TouchedLine: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Giant background word — names the category currently facing the
+          camera. Rendered first so every other element sits on top. */}
+      <BackgroundWord local={local} />
+
       {/* Hero word — left flank */}
       <SideHeroWord
         text="Extracted"
@@ -620,6 +659,84 @@ const TouchedLine: React.FC = () => {
       >
         <TouchedHeadline local={local} />
       </div>
+    </AbsoluteFill>
+  );
+};
+
+// ─── Giant background word — names the facing card ────────────────────────
+//
+// Four overlapping words, one per category. Opacity follows the ring's
+// rotation — the card facing the camera gets ~10% alpha; siblings fade
+// to zero by the halfway angle. Fades in alongside the carousel's
+// spiral, fades out when the explode begins. Sits behind every other
+// element so it reads as a ghost label, never as foreground type.
+
+const BG_WORD_PEAK_OPACITY = 0.10;
+const BG_WORD_FONT_SIZE = 460;
+const BG_WORD_FADE_IN = toFrames(0.35);
+
+const BackgroundWord: React.FC<{ local: number }> = ({ local }) => {
+  if (local < 0) return null;
+
+  const rotY = computeContinuousRotY(local);
+  // Card i faces the camera when ring.rotateY + i*90° ≡ 0 (mod 360),
+  // i.e. when i*90° ≡ −ring.rotateY (mod 360).
+  const facingAngle = (((-rotY) % 360) + 360) % 360;
+
+  const fadeIn = Math.max(
+    0,
+    Math.min(1, (local - CAROUSEL_SPIRAL_IN) / BG_WORD_FADE_IN),
+  );
+  const explodeStart = CAROUSEL_ENTRY_FULL + CAROUSEL_HOLD;
+  const explodeT = Math.max(
+    0,
+    Math.min(1, (local - explodeStart) / CAROUSEL_EXPLODE),
+  );
+  const envelope = fadeIn * (1 - explodeT);
+  if (envelope <= 0) return null;
+
+  const step = 360 / CATEGORIES.length;
+
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {CATEGORIES.map((cat, i) => {
+        const cardAngle = i * step;
+        let delta = Math.abs(facingAngle - cardAngle);
+        if (delta > 180) delta = 360 - delta;
+        // 0° → fully on, half-step away → silent.
+        const t = Math.max(0, 1 - delta / (step / 2));
+        const eased = t * t * (3 - 2 * t);
+        const op = envelope * eased * BG_WORD_PEAK_OPACITY;
+        if (op < 0.001) return null;
+        const scale = 0.985 + eased * 0.03;
+        return (
+          <div
+            key={cat.label}
+            style={{
+              position: "absolute",
+              fontFamily: font,
+              fontSize: BG_WORD_FONT_SIZE,
+              fontWeight: 900,
+              letterSpacing: "-0.05em",
+              color: colors.accent,
+              opacity: op,
+              transform: `scale(${scale.toFixed(3)})`,
+              whiteSpace: "nowrap",
+              lineHeight: 1,
+              willChange: "opacity, transform",
+            }}
+          >
+            {cat.label}
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 };
@@ -828,45 +945,8 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   // So pos(0) = 0 and pos(N) = −90° regardless of the actual segment
   // length N (which varies a bit between beats — the music is human,
   // not a metronome).
-  const rotationStartAbs =
-    BARS_ABS_START + REVEAL_AT + CAROUSEL_SPIRAL_IN;
-  const absFrame = BARS_ABS_START + REVEAL_AT + local;
   const rotationFrames = Math.max(0, local - CAROUSEL_SPIRAL_IN);
-
-  let continuousRotY = 0;
-  if (absFrame >= rotationStartAbs) {
-    // Anchor the rotation start as the segment-0 boundary; then walk
-    // through each subsequent VIDEO_BEATS entry that lies after it.
-    const anchors: number[] = [rotationStartAbs];
-    for (const b of VIDEO_BEATS) {
-      if (b > rotationStartAbs) anchors.push(b);
-    }
-
-    // Locate the segment containing absFrame.
-    let segIdx = anchors.length - 1;
-    for (let i = 0; i < anchors.length - 1; i++) {
-      if (absFrame >= anchors[i] && absFrame < anchors[i + 1]) {
-        segIdx = i;
-        break;
-      }
-    }
-
-    const segStart = anchors[segIdx];
-    // Past the last anchor we extrapolate at the local average period.
-    const segLen =
-      segIdx < anchors.length - 1
-        ? anchors[segIdx + 1] - segStart
-        : 26;
-
-    const phase = Math.max(0, Math.min(1, (absFrame - segStart) / segLen));
-    const A = CAROUSEL_SPEED_AMPLITUDE;
-    const positionInSegment =
-      CAROUSEL_DEG_PER_BEAT * phase -
-      ((CAROUSEL_DEG_PER_BEAT * A) / (2 * Math.PI)) *
-        Math.sin(2 * Math.PI * phase);
-
-    continuousRotY = CAROUSEL_DEG_PER_BEAT * segIdx + positionInSegment;
-  }
+  const continuousRotY = computeContinuousRotY(local);
 
   // Tilt + card-tilt are still tied to a normalized scroll progress so
   // they peak around the original scroll-end and ease through.
