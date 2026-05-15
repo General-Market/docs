@@ -680,11 +680,11 @@ const BG_WORD_FADE_IN = toFrames(0.35);
 const BG_WORD_CENTER_Y_PCT = 0.22;
 // Cap each word's rendered width so longer labels (predictions,
 // launchpads) shrink to fit instead of bleeding past the frame edges.
-// Estimated em-advance for SF Pro Display weight 900 with tight
-// tracking. Honest enough for fit-to-width; the visual hit from a
-// small over-estimate is just a little extra side margin.
-const BG_WORD_MAX_WIDTH = W * 0.92;
-const BG_WORD_EM_ADVANCE = 0.48;
+// Em-advance measured against the actual SF Pro Display weight 900
+// render: ~0.60 em average per glyph, even with −0.05em tracking.
+// A small over-estimate just buys extra side margin.
+const BG_WORD_MAX_WIDTH = W * 0.9;
+const BG_WORD_EM_ADVANCE = 0.62;
 const fitBgWordFontSize = (label: string): number => {
   const widthCap = BG_WORD_MAX_WIDTH / (label.length * BG_WORD_EM_ADVANCE);
   return Math.min(BG_WORD_FONT_SIZE, widthCap);
