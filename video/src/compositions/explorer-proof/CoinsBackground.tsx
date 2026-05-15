@@ -32,13 +32,13 @@ const BG_GRADIENT =
 const COIN_MODEL_URL = staticFile("models/coin.glb");
 useGLTF.preload(COIN_MODEL_URL);
 
-// Brand identity: green body with a white pill mark (the current frontend
-// logo). Built procedurally as a CanvasTexture so the coin face is a
-// solid disc — not a transparent-bg PNG (which would let the lavender
-// background bleed through the geometry).
+// Houdini-style translucent purple coins with the white pill mark.
+// Glass material (transmission + clearcoat) reads as a glossy gem-like
+// token. Brand identity expressed by the mark, not by the coin colour.
 const FACE_TEXTURE_SIZE = 512;
-const BRAND_GREEN = "#1cb37c";
-const BRAND_GREEN_DARK = "#0d6c4b";
+const COIN_BODY_HEX = "#a78bd9";
+const COIN_BODY_LIGHT = "#c4b1ec";
+const COIN_BODY_DEEP = "#6a4cad";
 
 function buildFaceTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -51,10 +51,9 @@ function buildFaceTexture(): THREE.CanvasTexture {
     // Subtle vertical gradient from a lighter top to a deeper bottom —
     // sells the disc as a dimensional object lit from above.
     const bodyGrad = ctx.createLinearGradient(0, 0, 0, FACE_TEXTURE_SIZE);
-    bodyGrad.addColorStop(0, "#48dfa1");
-    bodyGrad.addColorStop(0.4, "#28c089");
-    bodyGrad.addColorStop(0.7, BRAND_GREEN);
-    bodyGrad.addColorStop(1, "#076f48");
+    bodyGrad.addColorStop(0, COIN_BODY_LIGHT);
+    bodyGrad.addColorStop(0.45, COIN_BODY_HEX);
+    bodyGrad.addColorStop(1, COIN_BODY_DEEP);
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
     // Soft inner vignette so the face has depth toward the rim.
@@ -312,11 +311,11 @@ function smoothstep(t: number): number {
 
 // ── Coin instance ────────────────────────────────────────────────────
 // Clones the loaded GLB scene once (so each coin has its own material
-// instances) and binds the brand face texture to Front/Back. Rim and
-// any other body parts get the darker green so the rim catches light
-// and reads as a separate volume.
+// instances) and binds the procedural face texture to Front/Back.
+// Rim and body get a darker purple so the bevel reads as a separate
+// volume against the lighter face.
 
-const COIN_RIM_COLOR = new THREE.Color(BRAND_GREEN_DARK);
+const COIN_RIM_COLOR = new THREE.Color(COIN_BODY_DEEP);
 
 const CoinMesh: React.FC<{
   seed: CoinSeed;
@@ -341,39 +340,45 @@ const CoinMesh: React.FC<{
       cloned.transparent = true;
       const name = (mat.name || "").toLowerCase();
       if (name === "front" || name === "back") {
-        // Brand-green face with the white pill baked in. Glossy clearcoat
-        // gives the Houdini-style top-light highlight; emissive map keeps
-        // the pill readable when the rim catches a hot light.
+        // Translucent purple face with the white pill baked in. Glass
+        // transmission + heavy clearcoat reads as Houdini's gem-like
+        // disc rather than an opaque token.
         cloned.map = faceMap;
         cloned.color = new THREE.Color("#ffffff");
-        cloned.roughness = 0.22;
-        cloned.metalness = 0.05;
+        cloned.roughness = 0.18;
+        cloned.metalness = 0.0;
         if ("transmission" in cloned) {
-          (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.95;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.08;
+          (cloned as THREE.MeshPhysicalMaterial).transmission = 0.35;
+          (cloned as THREE.MeshPhysicalMaterial).thickness = 0.35;
+          (cloned as THREE.MeshPhysicalMaterial).ior = 1.45;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 1.0;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.06;
+          (cloned as THREE.MeshPhysicalMaterial).attenuationColor = new THREE.Color(COIN_BODY_HEX);
+          (cloned as THREE.MeshPhysicalMaterial).attenuationDistance = 1.6;
         }
         if ("emissive" in cloned) {
           cloned.emissive = new THREE.Color("#ffffff");
           cloned.emissiveMap = faceMap;
-          cloned.emissiveIntensity = 0.18;
+          cloned.emissiveIntensity = 0.12;
         }
       } else {
-        // Rim — slightly brighter than the face so the bevel pops
-        // when the coin is edge-on. Glossy metallic catches the
-        // hemisphere light and reads as a polished token edge.
+        // Rim — deeper purple, glossy with subtle transmission. The
+        // bevel catches the key light and reads as the gem edge.
         cloned.map = null;
-        cloned.color = new THREE.Color("#1aa770");
-        cloned.roughness = 0.22;
-        cloned.metalness = 0.85;
+        cloned.color = COIN_RIM_COLOR;
+        cloned.roughness = 0.18;
+        cloned.metalness = 0.1;
         if ("transmission" in cloned) {
-          (cloned as THREE.MeshPhysicalMaterial).transmission = 0;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.85;
-          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.12;
+          (cloned as THREE.MeshPhysicalMaterial).transmission = 0.4;
+          (cloned as THREE.MeshPhysicalMaterial).thickness = 0.45;
+          (cloned as THREE.MeshPhysicalMaterial).ior = 1.5;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoat = 0.95;
+          (cloned as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.1;
+          (cloned as THREE.MeshPhysicalMaterial).attenuationColor = new THREE.Color(COIN_BODY_DEEP);
+          (cloned as THREE.MeshPhysicalMaterial).attenuationDistance = 1.2;
         }
         if ("emissive" in cloned) {
-          cloned.emissive = new THREE.Color("#0e8a5a");
-          cloned.emissiveIntensity = 0.25;
+          cloned.emissive = COIN_RIM_COLOR.clone().multiplyScalar(0.18);
         }
       }
       mesh.material = cloned;
