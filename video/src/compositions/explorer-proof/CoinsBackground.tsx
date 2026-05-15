@@ -51,9 +51,10 @@ function buildFaceTexture(): THREE.CanvasTexture {
     // Subtle vertical gradient from a lighter top to a deeper bottom —
     // sells the disc as a dimensional object lit from above.
     const bodyGrad = ctx.createLinearGradient(0, 0, 0, FACE_TEXTURE_SIZE);
-    bodyGrad.addColorStop(0, "#2ad08f");
-    bodyGrad.addColorStop(0.55, BRAND_GREEN);
-    bodyGrad.addColorStop(1, "#0e8a5a");
+    bodyGrad.addColorStop(0, "#48dfa1");
+    bodyGrad.addColorStop(0.4, "#28c089");
+    bodyGrad.addColorStop(0.7, BRAND_GREEN);
+    bodyGrad.addColorStop(1, "#076f48");
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
     // Soft inner vignette so the face has depth toward the rim.
@@ -84,8 +85,8 @@ function buildFaceTexture(): THREE.CanvasTexture {
       cy - FACE_TEXTURE_SIZE * 0.24,
       FACE_TEXTURE_SIZE * 0.32,
     );
-    sheen.addColorStop(0, "rgba(255,255,255,0.42)");
-    sheen.addColorStop(0.5, "rgba(255,255,255,0.12)");
+    sheen.addColorStop(0, "rgba(255,255,255,0.7)");
+    sheen.addColorStop(0.4, "rgba(255,255,255,0.25)");
     sheen.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = sheen;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
