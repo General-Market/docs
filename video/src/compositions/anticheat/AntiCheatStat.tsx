@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   Sequence,
   interpolate,
-  prefetch,
   staticFile,
   useCurrentFrame,
 } from "remotion";
@@ -118,13 +117,6 @@ const SCAPEGOATS: Scapegoat[] = [
 ];
 
 const SCAPEGOAT_HEADLINE = "Who to blame";
-
-// Prefetch the mug shots at module load so the files are warm in the
-// browser cache by the time the cards scale in. Without this the first
-// scrub to the scapegoat scene shows empty cards while the JPEGs decode.
-for (const sg of SCAPEGOATS) {
-  prefetch(staticFile(sg.imageSrc));
-}
 
 // Marquee bands behind each card — Apple "watched" pattern. Many
 // stacked rows of the suspect's verb repeating across the column,

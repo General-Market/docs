@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   Easing,
   interpolate,
-  prefetch,
   staticFile,
   useCurrentFrame,
 } from "remotion";
@@ -145,13 +144,6 @@ const ARTICLES: ArticleProof[] = [
     treatment: "fullscreen",
   },
 ];
-
-// Warm the cache at module load so each article image is decoded before
-// its beat fires. Remotion's <Img> would block the preview while these
-// load; raw <img> with prefetch gives us speed without the suspense.
-for (const a of ARTICLES) {
-  prefetch(staticFile(a.image));
-}
 
 export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
