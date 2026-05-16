@@ -61,16 +61,23 @@ async function main() {
   })
 
   const base = process.env.SITE_URL || 'https://www.generalmarket.io'
+  const magicLink = `${base}/room/${slug}?k=${encodeURIComponent(code)}`
   console.log('')
   console.log('  Data room created.')
   console.log('')
-  console.log(`  Title:   ${title}`)
-  console.log(`  Slug:    ${slug}`)
-  console.log(`  URL:     ${base}/room/${slug}`)
-  console.log(`  Code:    ${code}`)
-  if (expires_at) console.log(`  Expires: ${expires_at.toISOString()}`)
+  console.log(`  Title:        ${title}`)
+  console.log(`  Slug:         ${slug}`)
+  console.log(`  Magic link:   ${magicLink}`)
   console.log('')
-  console.log('  Send the URL and the code separately. The code is shown only once.')
+  console.log('  Or send URL + code separately (more secure — code not in URL):')
+  console.log(`  URL:          ${base}/room/${slug}`)
+  console.log(`  Code:         ${code}`)
+  if (expires_at) {
+    console.log('')
+    console.log(`  Expires:      ${expires_at.toISOString()}`)
+  }
+  console.log('')
+  console.log('  The code is shown only once. Save it somewhere if you want both options.')
   console.log('')
   process.exit(0)
 }

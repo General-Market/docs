@@ -3,10 +3,26 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function UnlockForm({ slug, title }: { slug: string; title: string }) {
+const INITIAL_ERROR: Record<string, string> = {
+  invalid: 'The link you used has an invalid code. Enter it manually below.',
+  throttled: 'Too many attempts. Wait a few minutes and try again.',
+  network: 'Connection failed. Try again.',
+}
+
+export function UnlockForm({
+  slug,
+  title,
+  initialError,
+}: {
+  slug: string
+  title: string
+  initialError?: string
+}) {
   const router = useRouter()
   const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    initialError ? INITIAL_ERROR[initialError] ?? null : null,
+  )
   const [submitting, setSubmitting] = useState(false)
 
   async function onSubmit(e: React.FormEvent) {
@@ -21,6 +37,8 @@ export function UnlockForm({ slug, title }: { slug: string; title: string }) {
       })
       if (res.ok) {
         router.refresh()
+      } else if (res.status === 429) {
+        setError('Too many attempts. Wait a few minutes.')
       } else {
         const body = (await res.json().catch(() => ({}))) as { error?: string }
         setError(body.error ?? 'Code rejected.')

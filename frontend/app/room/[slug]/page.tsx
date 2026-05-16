@@ -9,10 +9,12 @@ import { SESSION_COOKIE, verifySession } from '@/lib/dataroom/session'
 import { getRoom, logView } from '@/lib/dataroom/db'
 import { getRoomPage, listRoomPages, roomExists } from '@/lib/dataroom/content'
 import { UnlockForm } from './UnlockForm'
+import { AutoUnlock } from './AutoUnlock'
 import { RoomShell } from './RoomShell'
 
 interface Props {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ k?: string; error?: string }>
 }
 
 function hash(s: string | null | undefined): string | null {
@@ -20,8 +22,9 @@ function hash(s: string | null | undefined): string | null {
   return createHash('sha256').update(s).digest('hex').slice(0, 32)
 }
 
-export default async function RoomSlugPage({ params }: Props) {
+export default async function RoomSlugPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const sp = await searchParams
   const room = await getRoom(slug)
   const title = room?.title ?? 'Data Room'
 
@@ -31,7 +34,10 @@ export default async function RoomSlugPage({ params }: Props) {
   const authed = session !== null && session.slug === slug && room !== null
 
   if (!authed) {
-    return <UnlockForm slug={slug} title={title} />
+    if (sp.k) {
+      return <AutoUnlock slug={slug} code={sp.k} />
+    }
+    return <UnlockForm slug={slug} title={title} initialError={sp.error} />
   }
 
   if (!roomExists(slug)) {
