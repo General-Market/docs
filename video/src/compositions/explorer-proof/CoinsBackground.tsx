@@ -31,7 +31,7 @@ const BRAND_BLUE = "#1B45D7";
 // ── Coin geometry ────────────────────────────────────────────────────
 
 const COIN_RADIUS = 1.0;
-const COIN_THICKNESS = 0.16;
+const COIN_THICKNESS = 0.20;
 const BEVEL_SIZE = 0.045;
 const BEVEL_THICKNESS = 0.028;
 const FACE_Z = COIN_THICKNESS / 2 - BEVEL_THICKNESS; // where flat face sits
@@ -41,7 +41,7 @@ const FACE_Z = COIN_THICKNESS / 2 - BEVEL_THICKNESS; // where flat face sits
 // frequency normal map does at oblique angles. The bevel still rounds
 // the rim corners so the ridges fade smoothly into the face caps.
 const RIM_RIDGES = 84;
-const RIM_RIDGE_AMPLITUDE = 0.0085;
+const RIM_RIDGE_AMPLITUDE = 0.0042;
 const RIM_SEGMENTS = 420; // 5 polygon segments per ridge
 
 function buildCoinBodyGeometry(): THREE.BufferGeometry {
@@ -307,7 +307,9 @@ const CoinMesh: React.FC<{
       quaternion={quat}
       visible={isVisible}
     >
-      <group scale={[scale, scale, scale]}>
+      {/* Y is the coin's lathe axis (depth). 1.2× on Y makes each coin
+          20% thicker without changing its face diameter. */}
+      <group scale={[scale, scale * 1.2, scale]}>
         <mesh geometry={bodyGeom} material={[bodyFaceMat, bodyRimMat]} />
         <mesh geometry={reliefGeom} material={reliefMat} />
       </group>
