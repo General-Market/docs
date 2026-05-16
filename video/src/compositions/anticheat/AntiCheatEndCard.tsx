@@ -22,6 +22,40 @@ const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 // music is dying, anything else would shout into silence.
 const SETTLE_LEN = 28;
 
+// Footnotes — every numbered marker in the film resolves here.
+// (1)–(4) scapegoat dockets, (5) Polymarket source, (6) Switch
+// testnet caveat, (7) Anti-Cheat availability disclaimer.
+const FOOTNOTES: { n: number; text: string }[] = [
+  {
+    n: 1,
+    text: "Drew Niv (FXCM co-founder, CEO 1999–2017). CFTC order 17-04, 6 Feb 2017: $7M civil penalty and lifetime US retail-forex registration ban for the Effex Capital scheme that took the other side of customer stops.",
+  },
+  {
+    n: 2,
+    text: "Kenneth Griffin (Citadel Securities). FINRA AWC 2014041859202 (2020): $700K fine for trading ahead of customer OTC orders, 2012–2014. Griffin not personally charged.",
+  },
+  {
+    n: 3,
+    text: "Jamie Dimon (JPMorgan Chase). $920M DOJ + CFTC + SEC settlement, Sept 2020, for orderbook spoofing in precious metals and US Treasuries. Traders Nowak, Smith and Jordan convicted at trial 2022; affirmed on appeal 2025. Dimon not personally indicted.",
+  },
+  {
+    n: 4,
+    text: "Joe Lewis. Pleaded guilty 24 Jan 2024 in SDNY to one count of conspiracy to commit securities fraud and two counts of securities fraud. $50M penalty via Broad Bay Ltd. Pardoned by Donald Trump, Nov 2025 — plea stands.",
+  },
+  {
+    n: 5,
+    text: "Polymarket trader profit distribution, 2024. Top 0.04% captured ~$3.7B in profits while 70% of traders lost money. Sources: CryptoNews, Yellow.com, Yahoo Finance.",
+  },
+  {
+    n: 6,
+    text: "Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.",
+  },
+  {
+    n: 7,
+    text: "Currently available only via General Market trading bots.",
+  },
+];
+
 // The endcard inverts. Solid Base blue field, white wordmark.
 // A light dot grid laid over blue gives the same texture vocabulary as
 // the rest of the film, but the relationship is flipped.
@@ -224,6 +258,9 @@ export const AntiCheatEndCard: React.FC = () => {
             lineHeight: 1.1,
             opacity: sublineOpacity,
             transform: `translateY(${sublineY}px)`,
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
           }}
         >
           <RevealChars
@@ -235,24 +272,41 @@ export const AntiCheatEndCard: React.FC = () => {
             blur={3}
             scale={0.97}
           />
+          <span
+            style={{
+              fontFamily: font,
+              fontSize: 28,
+              fontWeight: 500,
+              color: "rgba(255, 255, 255, 0.55)",
+              marginLeft: 8,
+              marginTop: 4,
+              letterSpacing: 0,
+            }}
+          >
+            (7)
+          </span>
         </div>
 
       </div>
       </AbsoluteFill>
 
-      {/* Apple footnote — refined SF Pro, hairline separator, sentence case */}
+      {/* Footnotes block — all the fine print, gathered here. Numbered
+          markers (1)–(7) live on the cards, the stat, the Switch hero
+          and the Anti-Cheat subline above; their citations resolve here.
+          Apple-style hairline separator, dim SF Pro, multi-line. */}
       <div
         style={{
           position: "absolute",
-          bottom: 110,
+          bottom: 64,
           left: 0,
           right: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 28,
+          gap: 18,
           opacity: tertiaryOpacity,
           transform: `translateY(${tertiaryY * 0.5}px)`,
+          padding: "0 120px",
         }}
       >
         <div
@@ -265,14 +319,32 @@ export const AntiCheatEndCard: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 52,
+            fontSize: 18,
             fontWeight: 400,
-            letterSpacing: "-0.012em",
-            color: "rgba(255,255,255,0.88)",
-            lineHeight: 1.0,
+            letterSpacing: "-0.005em",
+            color: "rgba(255,255,255,0.78)",
+            lineHeight: 1.55,
+            textAlign: "left",
+            maxWidth: 1480,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
           }}
         >
-          Available only via trading bots
+          {FOOTNOTES.map((line) => (
+            <div key={line.n} style={{ display: "flex", gap: 10 }}>
+              <span
+                style={{
+                  fontFamily: font,
+                  color: "rgba(255,255,255,0.55)",
+                  minWidth: 28,
+                }}
+              >
+                ({line.n})
+              </span>
+              <span>{line.text}</span>
+            </div>
+          ))}
         </div>
       </div>
       </IdleZoom>

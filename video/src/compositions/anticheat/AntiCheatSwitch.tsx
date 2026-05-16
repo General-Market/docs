@@ -893,15 +893,15 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 44,
+                fontSize: 32,
                 color: colors.dim,
-                marginLeft: 4,
+                marginLeft: 6,
                 verticalAlign: "super",
                 fontWeight: 500,
                 letterSpacing: 0,
               }}
             >
-              *
+              (6)
             </span>
           </span>
         </span>
@@ -929,27 +929,6 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         <KickerTyping startFrame={KICKER_AT} />
       </div>
 
-      {/* Legal footnote — tiny, dim, defensible. Apple-style fine print. */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 56,
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          fontFamily: font,
-          fontSize: 18,
-          fontWeight: 400,
-          letterSpacing: "-0.005em",
-          color: colors.dim,
-          lineHeight: 1.35,
-          maxWidth: 1240,
-          margin: "0 auto",
-          opacity: kickOp,
-        }}
-      >
-        *Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.
-      </div>
     </>
   );
 };

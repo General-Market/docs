@@ -67,7 +67,6 @@ export const AntiCheatStat: React.FC = () => {
         <Sequence from={SCAPEGOATS_FRAMES}>
           <StatPanel />
           <StatAnnotations />
-          <StatFootnote />
         </Sequence>
         <DotGridVignette intensity={0.22} />
       </IdleZoom>
@@ -446,6 +445,16 @@ const ScapegoatCardBody: React.FC<{
           }}
         >
           {scapegoat.charge}
+          <sup
+            style={{
+              fontSize: 9,
+              marginLeft: 4,
+              letterSpacing: 0,
+              color: "rgba(255, 255, 255, 0.55)",
+            }}
+          >
+            ({index + 1})
+          </sup>
         </div>
       </div>
     </div>
@@ -669,43 +678,6 @@ const StatAnnotations: React.FC = () => {
   );
 };
 
-// Polymarket profit-distribution citation. Fades in early and holds — the
-// asterisks on both phases of the typewriter point here.
-const StatFootnote: React.FC = () => {
-  const frame = useCurrentFrame();
-  const op = interpolate(frame, [10, 28], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const y = interpolate(frame, [10, 28], [10, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 56,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: font,
-        fontSize: 18,
-        fontWeight: 400,
-        letterSpacing: "-0.005em",
-        color: colors.dim,
-        lineHeight: 1.35,
-        maxWidth: 1320,
-        margin: "0 auto",
-        opacity: op,
-        transform: `translateY(${y.toFixed(2)}px)`,
-      }}
-    >
-      *Polymarket trader profit distribution, 2024. Top 0.04% captured ~$3.7B in profits while 70% of traders lost money. Sources: CryptoNews, Yellow.com, Yahoo Finance.
-    </div>
-  );
-};
-
 export const AntiCheatBars: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, fontFamily: font }}>
@@ -877,7 +849,7 @@ const StatPanel: React.FC = () => {
           beat 17. Faster type-rate is the point: the line lands as a
           single percussive arrival, not a long crawl. */}
       <EmberTypewriter
-        text="0.04% rig the table take 70%*"
+        text="0.04% rig the table take 70%⁽⁵⁾"
         typeStart={0}
         typeEnd={10}
         wipeStart={STAT_FLIP_AT - 6}
@@ -896,7 +868,7 @@ const StatPanel: React.FC = () => {
         }}
       >
         <EmberTypewriter
-          text="99.96% battle royale for 30%*"
+          text="99.96% battle royale for 30%⁽⁵⁾"
           typeStart={STAT_FLIP_AT}
           typeEnd={STAT_FLIP_AT + 27}
           fontSize={120}
