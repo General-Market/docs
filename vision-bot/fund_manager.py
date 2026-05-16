@@ -23,6 +23,7 @@ from framework.chain import (
     fetch_markets,
     submit_bitmap,
 )
+from framework.bitmap_store import drop_bitmap, load_bitmap, save_bitmap
 from framework.feed import VisionFeed
 
 logging.basicConfig(
@@ -354,6 +355,12 @@ def _remove_from_active(fund, bid: int) -> None:
     fund.joined_batch_ids.discard(bid)
     fund.reconcile_retries.pop(bid, None)
     fund.join_blocks.pop(bid, None)
+    # Prune the bitmap so the on-disk store doesn't accrete one entry per
+    # batch forever. Settled batches will never be revealed again.
+    try:
+        drop_bitmap(fund.vault_addr, bid)
+    except Exception:
+        pass
 
 
 def reconcile_settled_batches(fund, executor):
@@ -847,30 +854,43 @@ def run_cycle(
 
         # Per-fund: predict, join, submit bitmap
         for fund in matched_funds:
-            # Strategy predict — each fund has its own strategy
-            if hasattr(fund.strategy, "predict_with_context"):
-                bets = fund.strategy.predict_with_context(
-                    markets, feed=feed, batch_id=bid_str,
-                )
+            # Persisted bitmap is authoritative. If we have one on disk for
+            # this (vault, batch_id) — from an earlier cycle, an earlier
+            # process, anything — reuse it verbatim. Recomputing from a
+            # fresh predict() is how the on-chain commitment and the bytes
+            # we reveal drift apart and every oracle returns 400.
+            cached = load_bitmap(fund.vault_addr, batch_id)
+            if cached is not None:
+                bitmap, bm_hash = cached
+                bets = None  # decoded counts would be cosmetic; skip
             else:
-                bets = fund.strategy.predict(markets)
+                # Strategy predict — each fund has its own strategy
+                if hasattr(fund.strategy, "predict_with_context"):
+                    bets = fund.strategy.predict_with_context(
+                        markets, feed=feed, batch_id=bid_str,
+                    )
+                else:
+                    bets = fund.strategy.predict(markets)
 
-            # If a strategy under-delivers, that's a bug in the strategy —
-            # don't paper over it with random coin flips. Pad with DOWN as
-            # a deterministic placeholder and shout about it.
-            if len(bets) < market_count:
-                log.warning(
-                    "[%s] Strategy %s returned %d bets for batch %d (expected %d) — padding with DOWN",
-                    fund.name,
-                    type(fund.strategy).__name__,
-                    len(bets),
-                    batch_id,
-                    market_count,
-                )
-                bets = list(bets) + ["DOWN"] * (market_count - len(bets))
+                # If a strategy under-delivers, that's a bug in the strategy —
+                # don't paper over it with random coin flips. Pad with DOWN as
+                # a deterministic placeholder and shout about it.
+                if len(bets) < market_count:
+                    log.warning(
+                        "[%s] Strategy %s returned %d bets for batch %d (expected %d) — padding with DOWN",
+                        fund.name,
+                        type(fund.strategy).__name__,
+                        len(bets),
+                        batch_id,
+                        market_count,
+                    )
+                    bets = list(bets) + ["DOWN"] * (market_count - len(bets))
 
-            bitmap = encode_bitmap(bets, market_count)
-            bm_hash = hash_bitmap(bitmap)
+                bitmap = encode_bitmap(bets, market_count)
+                bm_hash = hash_bitmap(bitmap)
+                # Persist BEFORE we commit on-chain. The whole point of the
+                # store is to survive a crash between commit and reveal.
+                save_bitmap(fund.vault_addr, batch_id, bitmap, bm_hash)
 
             # Compute deposit: alloc_bps × per-fund multiplier of current total
             # assets, floored at the contract minimum. Reuse the cached info —
@@ -892,6 +912,7 @@ def run_cycle(
             # Pre-check on chain. In-memory joined_batch_ids drifts on
             # restart and after reconcile races; without this guard we burn
             # a tx and a nonce on a guaranteed AlreadyJoined() revert.
+            already_joined = False
             try:
                 existing = executor.get_player_position(batch_id, fund.vault_addr)
                 if existing.get("joinTimestamp", 0) > 0:
@@ -899,41 +920,54 @@ def run_cycle(
                     fund.active_batches.setdefault(
                         batch_id, existing.get("totalDeposited", deposit_wei),
                     )
-                    log.debug(
-                        "[%s] Batch %d already joined on-chain — syncing state",
-                        fund.name, batch_id,
-                    )
-                    continue
+                    already_joined = True
             except Exception:
                 pass  # batch may not exist yet, proceed
 
-            # Join via vault. _sign_and_send waits for the receipt — by the
-            # time we return here, the tx is mined.
-            try:
-                fund.vault.join_batch(
-                    batch_id, config_hash, deposit_wei, bm_hash,
-                )
-                fund.joined_batch_ids.add(batch_id)
-                fund.active_batches[batch_id] = deposit_wei
-                fund.joined_total += 1
-                joined_this_cycle += 1
-                # Earmark capital so subsequent batches in the same cycle
-                # see the reduced effective idle balance.
-                fund._pending_join_amount += deposit_wei
-                # Track the join block so reconciliation can pass a precise
-                # from_block to get_settlement_payout instead of scanning
-                # the entire chain.
+            if not already_joined:
+                # Join via vault. _sign_and_send waits for the receipt — by the
+                # time we return here, the tx is mined.
                 try:
-                    fund.join_blocks[batch_id] = executor.w3.eth.block_number
-                except Exception:
-                    pass
-                log.info(
-                    "[%s] Joined batch %d (%s) — %d markets, %d UP / %d DOWN",
-                    fund.name, batch_id, source_name, market_count,
-                    bets.count("UP"), bets.count("DOWN"),
+                    fund.vault.join_batch(
+                        batch_id, config_hash, deposit_wei, bm_hash,
+                    )
+                    fund.joined_batch_ids.add(batch_id)
+                    fund.active_batches[batch_id] = deposit_wei
+                    fund.joined_total += 1
+                    joined_this_cycle += 1
+                    # Earmark capital so subsequent batches in the same cycle
+                    # see the reduced effective idle balance.
+                    fund._pending_join_amount += deposit_wei
+                    # Track the join block so reconciliation can pass a precise
+                    # from_block to get_settlement_payout instead of scanning
+                    # the entire chain.
+                    try:
+                        fund.join_blocks[batch_id] = executor.w3.eth.block_number
+                    except Exception:
+                        pass
+                    up_count = bets.count("UP") if bets is not None else -1
+                    down_count = bets.count("DOWN") if bets is not None else -1
+                    log.info(
+                        "[%s] Joined batch %d (%s) — %d markets, %d UP / %d DOWN",
+                        fund.name, batch_id, source_name, market_count,
+                        up_count, down_count,
+                    )
+                except Exception as e:
+                    log.warning("[%s] Batch %d join failed: %s", fund.name, batch_id, e)
+                    continue
+            elif cached is not None:
+                log.debug(
+                    "[%s] Batch %d already joined on-chain — resubmitting cached bitmap",
+                    fund.name, batch_id,
                 )
-            except Exception as e:
-                log.warning("[%s] Batch %d join failed: %s", fund.name, batch_id, e)
+            else:
+                # Joined by an earlier process that didn't persist its bitmap.
+                # We can't reconstruct what was committed; submitting a fresh
+                # bitmap would just hash-mismatch again. Skip.
+                log.debug(
+                    "[%s] Batch %d joined pre-fix without a saved bitmap — skipping submit",
+                    fund.name, batch_id,
+                )
                 continue
 
             # Wait until the oracle can see the PlayerJoined event before
