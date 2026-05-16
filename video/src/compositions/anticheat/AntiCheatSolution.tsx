@@ -489,13 +489,30 @@ const Terminal: React.FC = () => {
 
   // CTA: per-char reveal, last letter first, working back to the first.
   // Each char slides in from off-screen left (-1920px) and fades over 4f.
-  // Reveal completes in 30 frames — one beat — for a fast, punchy entry.
   // Wrap allowed so the line stays on two lines.
-  // Last letter (first to appear) fires at terminal-local 73 = scene
-  // 175. Reveal completes terminal 103 = scene 205 = beat 27.
+  //
+  // Per-letter cadence is pulled toward the nearest interior beat
+  // (terminal-local 77 = beat 26, terminal-local 103 = beat 27).
+  // Letters whose linear position lands near a beat snap onto it; the
+  // cascade lurches forward on each kick, hesitates between. Pull
+  // factor controls how musical vs. metronomic it reads.
   const CTA_TEXT = "Shield your PnL from bad actors";
   const CTA_START = 73; // Terminal-local — first char lands ahead of beat 26
   const CTA_REVEAL = 30;
+  const CTA_BEATS_LOCAL = [77, 103] as const;
+  const CTA_BEAT_PULL = 0.78;
+  const ctaBeatPull = (f: number): number => {
+    let nearest: number = CTA_BEATS_LOCAL[0];
+    let bestDist = Math.abs(f - nearest);
+    for (const b of CTA_BEATS_LOCAL) {
+      const d = Math.abs(f - b);
+      if (d < bestDist) {
+        nearest = b;
+        bestDist = d;
+      }
+    }
+    return f + (nearest - f) * CTA_BEAT_PULL;
+  };
 
   // Exit punch on beat 27 (terminal-local 103). Brief scale lift on
   // the whole terminal as the CTA finishes — sells the cut into
@@ -666,9 +683,10 @@ const Terminal: React.FC = () => {
                 {word.split("").map((ch, ci) => {
                   const i = wordStart + ci;
                   const order = CTA_TEXT.length - 1 - i;
-                  const startFrame =
+                  const linearStart =
                     CTA_START +
                     CTA_REVEAL * Math.sqrt(order / CTA_TEXT.length);
+                  const startFrame = ctaBeatPull(linearStart);
                   const local = frame - startFrame;
                   const op = Math.max(0, Math.min(1, local / 4));
                   const x = (1 - op) * -1920;

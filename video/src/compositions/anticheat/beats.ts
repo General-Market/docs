@@ -20,16 +20,18 @@ export const MUSIC_START_FROM_AUDIO = 2040;
 
 // Beats that fall inside the music's playing window for the video.
 // 38 beats at BPM 69.8 (≈26 frames apart), pulled from the audio
-// analysis and shifted by MUSIC_START_FROM_AUDIO. Six early beats
-// dropped off the front because the music now starts 139f deeper.
-//   Hook (0–112):        beats 0–4    (frames  18–96)
-//   Bars (97–226):       beats 5–9    (frames 121–224)
-//   Rigged (226–404):    beats 10–14  (frames 250–379)
-//   Stat (388–533):      beats 15–20  (frames 404–533)
-//   Solution (505–738):  beats 21–28  (frames 507–713)
-//   Reassure (720–841):  beats 29–32  (frames 738–841)
-//   Switch (823–1027):   beats 33–37  (frames 841–944)
-//   EndCard (1027–end):  spike at frame 1036; music outro at 36.63s.
+// analysis and shifted by MUSIC_START_FROM_AUDIO.
+//
+// Scene windows below reflect the *current* TransitionSeries math —
+// AntiCheatFull no longer mounts the Hook scene; Bars opens the film
+// at frame 0. If you re-add Hook, recompute SCENE_STARTS.
+//   Bars     (0–129):     beats 0–4    (frames  18–121)
+//   Rigged   (111–289):   beats 4–10   (frames 121–275)
+//   Stat     (273–536):   beats 10–20  (frames 275–533)
+//   Solution (508–741):   beats 20–28  (frames 533–738)
+//   Reassure (723–844):   beats 28–32  (frames 738–841)
+//   Switch   (826–1054):  beats 32–37  (frames 841–970)
+//   EndCard  (1030–1165): spike at frame 1036; music outro at 36.63s.
 export const VIDEO_BEATS: readonly number[] = [
   18, 44, 70, 96, 121, 147, 172, 198, 224, 250, 275, 301, 327, 353, 379,
   404, 430, 455, 482, 507, 533, 558, 584, 610, 636, 661, 687, 713, 738,
@@ -76,22 +78,25 @@ export const beatLocal = (absoluteBeat: number, sceneStart: number): number =>
 // scene durations and TransitionSeries overlaps; recompute if either
 // changes. Lets scene components drive beat-pulse FX from
 // useCurrentFrame() without knowing their parent offset.
+//
+// Hook is retained as a name (=0) for any orphan helper that still
+// references it; AntiCheatFull does not mount it.
 export const SCENE_STARTS = {
   Hook: 0,
-  Bars: 97,
-  Rigged: 226,
-  Stat: 388,
-  Solution: 505,
-  Reassure: 720,
-  Switch: 823,
-  EndCard: 1027,
+  Bars: 0,
+  Rigged: 111,
+  Stat: 273,
+  Solution: 508,
+  Reassure: 723,
+  Switch: 826,
+  EndCard: 1030,
 } as const;
 
 export type SceneName = keyof typeof SCENE_STARTS;
 
 // The drum spike — strongest energy plateau in the audio (t≈102.52s).
-// Lands inside EndCard at scene-local frame 9. Visual climax anchor.
-export const SPIKE_ENDCARD_LOCAL = 9;
+// Lands inside EndCard at scene-local frame 6. Visual climax anchor.
+export const SPIKE_ENDCARD_LOCAL = 6;
 
 // Max beat envelope across every beat that falls inside a scene's
 // window, expressed in scene-local frames. Pass useCurrentFrame()
