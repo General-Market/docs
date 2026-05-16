@@ -343,7 +343,7 @@ export const AntiCheatEndCard: React.FC = () => {
             padding: "0 96px",
           }}
         >
-          Only available for trading bots
+          Only available via trading bots
         </div>
 
       {/* Fine-print paragraph — Kalshi-style dense block.
