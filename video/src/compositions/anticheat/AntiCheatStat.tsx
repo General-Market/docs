@@ -11,7 +11,7 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
-import { VIDEO_BEATS } from "./beats";
+import { VIDEO_BEATS, beatPulseScene } from "./beats";
 
 const { fontFamily: caveatFont } = loadCaveat("normal", {
   subsets: ["latin"],
@@ -27,12 +27,17 @@ const { fontFamily: caveatFont } = loadCaveat("normal", {
 // holds, then wipes back to lines in the same staggered direction.
 // Same wipe vocabulary as the EmberTypewriter flip in the stat itself.
 //
-// First card delayed past the Rigged→Stat snap-zoom-intense transition
-// (16f) so the entries aren't eaten by the blur peak.
-const SG_FIRST_CARD_AT = 14;
-const SG_CARD_STAGGER = 18;
+// Card entrance is beat-locked. Beats inside Stat (scene-local):
+//   beat 10 → 2, 11 → 28, 12 → 54, 13 → 80, 14 → 106, 15 → 131,
+//   16 → 157, 17 → 182, 18 → 209, 19 → 234, 20 → 260.
+// First card lands on beat 11 (local 28) — past the Rigged→Stat
+// snap-zoom blur (16f) and squarely on a downbeat. Stagger = 26 = the
+// inter-beat interval, so cards 1..4 arrive on beats 11/12/13/14.
+const SG_FIRST_CARD_AT = 28;
+const SG_CARD_STAGGER = 26;
 const SG_CARD_ENTER = 6;
-const SG_HOLD_FRAMES = 28;
+// Hold trimmed so the last-card exit cascade starts on beat 15 (local 131).
+const SG_HOLD_FRAMES = 19;
 const SG_CARD_EXIT = 5;
 const SG_EXIT_STAGGER = 3;
 const SCAPEGOATS_COUNT = 4;
@@ -43,12 +48,15 @@ const SG_LAST_OUT_AT =
   SG_EXIT_AT + (SCAPEGOATS_COUNT - 1) * SG_EXIT_STAGGER + SG_CARD_EXIT;
 const SG_OUTRO = 2;
 const SCAPEGOATS_FRAMES = SG_LAST_OUT_AT + SG_OUTRO;
-const STAT_BEAT_FRAMES = 145;
-const STAT_FRAMES = SCAPEGOATS_FRAMES + STAT_BEAT_FRAMES;
+// STAT_FRAMES preserved at 263 (Stat scene window). The panel runs
+// from SCAPEGOATS_FRAMES to STAT_FRAMES — derived live so scapegoat
+// geometry tweaks don't drift the parent composition's scene boundary.
+const STAT_FRAMES = 263;
 const BARS_FRAMES = 129;
-// Hard-cut flip from 0.01%/take/70% to 99.9%/get/30% on the second beat
-// of the stat section (scene-local frame SCAPEGOATS_FRAMES + 56).
-const STAT_FLIP_AT = 56;
+// Flip from 0.04%/70% to 99.96%/30% on beat 17 (Stat-local 182).
+// Panel-local = 182 − SCAPEGOATS_FRAMES. Phase 2's typewriter then
+// completes on beat 18 (panel-local STAT_FLIP_AT + 28 ≈ beat 18).
+const STAT_FLIP_AT = 182 - SCAPEGOATS_FRAMES;
 
 export const AntiCheatStat: React.FC = () => {
   return (
@@ -265,6 +273,19 @@ const ScapegoatColumn: React.FC<{
   const anim = computeColumnAnim(frame, enterStart, exitStart);
   if (!anim || anim.opacity <= 0.001) return null;
 
+  // Halo flare — locked to the beat this card enters on. Cards arrive
+  // on beats 11/12/13/14 (Stat-local 28/54/80/106). The pulse rises
+  // 3f before the kick and decays over 14f after, so the eye sees a
+  // soft sapphire bloom rim the card just as it slams into place.
+  const haloEnv = beatPulseScene(frame, "Stat", 3, 14);
+  const localFromBeat = frame - enterStart;
+  // Only let the halo paint near its own beat — without this every
+  // card would flash on every beat (the scene envelope is global).
+  const ownBeatProximity =
+    localFromBeat >= -3 && localFromBeat <= 14 ? haloEnv : 0;
+  const haloOpacity = ownBeatProximity * 0.55;
+  const haloScale = 1 + ownBeatProximity * 0.06;
+
   return (
     <div
       style={{
@@ -282,6 +303,24 @@ const ScapegoatColumn: React.FC<{
         willChange: "transform, opacity, filter",
       }}
     >
+      {/* Beat-locked halo — sapphire bloom that flares on this card's
+          arrival beat and decays. Sits behind the card body. */}
+      {haloOpacity > 0.005 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: -28,
+            borderRadius: 32,
+            background:
+              "radial-gradient(ellipse at center, rgba(0, 82, 255, 0.55) 0%, rgba(0, 82, 255, 0) 65%)",
+            opacity: haloOpacity,
+            transform: `scale(${haloScale.toFixed(3)})`,
+            pointerEvents: "none",
+            willChange: "opacity, transform",
+            filter: "blur(8px)",
+          }}
+        />
+      )}
       {/* Foreground card body — opaque, floats over the full-frame
           background marquee that lives in ScapegoatBackgroundMarquee. */}
       <ScapegoatCardBody scapegoat={scapegoat} index={index} />
@@ -426,16 +465,19 @@ const ScapegoatCardBody: React.FC<{
 const StatAnnotations: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Phase 1 — "Not You"
-  const NY_APPEAR = 13;
-  const NY_BODY_END = 21;
-  const NY_WING1_START = 19;
-  const NY_WING1_END = 22;
-  const NY_WING2_START = 21;
-  const NY_WING2_END = 24;
-  const NY_LABEL_START = 24;
-  const NY_LABEL_END = 30;
-  const NY_FADE_OUT = 50;
+  // Phase 1 — "Them" arrow. Lands ON beat 16 (panel-local 10) and
+  // fades out exactly on beat 17 (panel-local 35) — the same beat the
+  // big stat flips. Sketch cascades over ~17f: body → wing1 → wing2 →
+  // handwritten label.
+  const NY_APPEAR = 10;
+  const NY_BODY_END = 18;
+  const NY_WING1_START = 16;
+  const NY_WING1_END = 19;
+  const NY_WING2_START = 18;
+  const NY_WING2_END = 21;
+  const NY_LABEL_START = 21;
+  const NY_LABEL_END = 27;
+  const NY_FADE_OUT = 35;
 
   const notYouFade = interpolate(
     frame,
@@ -468,15 +510,16 @@ const StatAnnotations: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Phase 2 — "You"
-  const Y_APPEAR = 73;
-  const Y_BODY_END = 81;
-  const Y_WING1_START = 79;
-  const Y_WING1_END = 82;
-  const Y_WING2_START = 81;
-  const Y_WING2_END = 84;
-  const Y_LABEL_START = 84;
-  const Y_LABEL_END = 90;
+  // Phase 2 — "You" arrow. Lands ON beat 18 (panel-local 62) — the
+  // same beat phase 2's typewriter completes — then holds.
+  const Y_APPEAR = 62;
+  const Y_BODY_END = 70;
+  const Y_WING1_START = 68;
+  const Y_WING1_END = 71;
+  const Y_WING2_START = 70;
+  const Y_WING2_END = 73;
+  const Y_LABEL_START = 73;
+  const Y_LABEL_END = 79;
 
   const youBodyDraw = interpolate(
     frame,
@@ -807,9 +850,27 @@ const EmberTypewriter: React.FC<{
 };
 
 const StatPanel: React.FC = () => {
+  // Beat 17 (panel-local 35) drives the flip itself. Beat 18 (62) is
+  // when the new line finishes typing. Beats 19 (87) and 20 (113) hold
+  // the verdict. We reuse the scene's beat envelope to shove a 1.5%
+  // scale + soft glow onto the headline at every beat past the flip,
+  // so the panel breathes with the kick instead of standing inert.
+  const frame = useCurrentFrame();
+  // SCAPEGOATS_FRAMES = 147 panel-mount offset — the StatPanel sits in
+  // a Sequence that already shifts the local clock; convert to scene-
+  // local (Stat-local) before asking beatPulseScene.
+  const sceneLocal = frame + SCAPEGOATS_FRAMES;
+  const beatLift = beatPulseScene(sceneLocal, "Stat", 3, 12);
+  const phase2Visible = frame >= STAT_FLIP_AT;
+  const lift = phase2Visible ? beatLift : 0;
+  const scale = 1 + lift * 0.015;
+  const shadow = lift > 0.05
+    ? `0 0 ${(lift * 24).toFixed(1)}px rgba(0, 82, 255, ${(lift * 0.35).toFixed(3)})`
+    : "none";
+
   return (
     <AbsoluteFill>
-      {/* Phase 1 — types in by beat 1, wipes out into the flip */}
+      {/* Phase 1 — types in by beat 16, wipes out into the flip on beat 17 */}
       <EmberTypewriter
         text="0.04% rig the table take 70%*"
         typeStart={0}
@@ -820,14 +881,23 @@ const StatPanel: React.FC = () => {
         endColor={colors.fg}
       />
 
-      {/* Phase 2 — flips on beat 2, types in by beat 3, holds to snap-zoom */}
-      <EmberTypewriter
-        text="99.96% battle royale for 30%*"
-        typeStart={STAT_FLIP_AT}
-        typeEnd={STAT_FLIP_AT + 28}
-        fontSize={120}
-        endColor={colors.fg}
-      />
+      {/* Phase 2 — flips on beat 17, finishes typing on beat 18, breathes
+          on beats 18/19/20 via beatPulseScene. */}
+      <AbsoluteFill
+        style={{
+          transform: `scale(${scale.toFixed(4)})`,
+          textShadow: shadow,
+          willChange: "transform",
+        }}
+      >
+        <EmberTypewriter
+          text="99.96% battle royale for 30%*"
+          typeStart={STAT_FLIP_AT}
+          typeEnd={STAT_FLIP_AT + 27}
+          fontSize={120}
+          endColor={colors.fg}
+        />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -881,9 +951,15 @@ const CAROUSEL_PERSPECTIVE = 1100;
 //   Hold            — beat
 //   Explode         — rotateX 0→90, rotateY adds -360, Z plunges -1800
 //                     then surges +1500, rotateZ +270, opacity past 0.8
-const CAROUSEL_SPIRAL_IN = toFrames(0.55);
+// Beats inside Bars (scene-local = absolute): 18, 44, 70, 96, 121.
+// Spiral-in lands ON beat 0 (frame 18) — the ring snaps to face the
+// camera right as the first kick hits, then the rotation phase
+// inherits the cadence beat-by-beat.
+const CAROUSEL_SPIRAL_IN = 18;
 const CAROUSEL_SCROLL = toFrames(1.95);
-const CAROUSEL_EXPLODE = toFrames(0.95);
+// Explode is sized so it begins on beat 3 (frame 96) and rides through
+// the scene tail. Beat 4 (121) lands inside the explode tail — usable.
+const CAROUSEL_EXPLODE = BARS_FRAMES - 96;
 const CAROUSEL_ENTRY_FULL = CAROUSEL_SPIRAL_IN + CAROUSEL_SCROLL;
 // Hold derived so explode ends on the hard cut to Rigged.
 const CAROUSEL_HOLD = BARS_FRAMES - REVEAL_AT - CAROUSEL_ENTRY_FULL - CAROUSEL_EXPLODE;
@@ -1217,6 +1293,13 @@ const SideHeroWord: React.FC<{
   const exitLocal = local - TOUCHED_EXIT_AT;
   const chars = Array.from(text);
   const center = (chars.length - 1) / 2;
+  // Each kick gives the whole word a brief electric-blue tint —
+  // ~12% lift in saturation feel. Beat 0 (frame 18) is the spiral
+  // landing, so the words read as struck-by-the-music as the ring snaps.
+  const beatEnv = beatPulseScene(local + REVEAL_AT, "Bars", 2, 10);
+  const beatGlow = beatEnv > 0.05
+    ? `0 0 ${(beatEnv * 22).toFixed(1)}px rgba(0, 82, 255, ${(beatEnv * 0.45).toFixed(3)})`
+    : undefined;
 
   return (
     <div
@@ -1232,6 +1315,7 @@ const SideHeroWord: React.FC<{
         color: colors.fg,
         lineHeight: 0.95,
         whiteSpace: "nowrap",
+        textShadow: beatGlow,
       }}
     >
       {chars.map((ch, i) => {
@@ -1359,6 +1443,14 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
   const finalRotX = ringRotX + explodeRotX;
   const finalRotZ = ringRotZ + explodeRotZAdd;
 
+  // Beat-locked breathing — only during the rotation phase, not during
+  // the spiral-in (which has its own velocity) or the explode (which
+  // has its own scale plunge). +1.2% scale punch on each kick.
+  const inRotation =
+    local >= CAROUSEL_SPIRAL_IN && local < explodeStart;
+  const beatLift = inRotation ? beatPulseScene(local, "Bars", 2, 10) : 0;
+  const beatScale = 1 + beatLift * 0.012;
+
   const step = 360 / CATEGORIES.length;
 
   return (
@@ -1369,6 +1461,8 @@ const CategoryCarousel: React.FC<{ local: number }> = ({ local }) => {
         perspective: CAROUSEL_PERSPECTIVE,
         opacity: spiralOpacity,
         position: "relative",
+        transform: `scale(${beatScale.toFixed(4)})`,
+        willChange: "transform",
       }}
     >
       {/* Soft scrim — lifts the carousel off the dot grid behind. */}
