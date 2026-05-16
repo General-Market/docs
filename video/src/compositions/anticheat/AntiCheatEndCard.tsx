@@ -28,6 +28,7 @@ const SCENE_SECONDS = 9.0;
 //                                 under the footnote paragraph. The
 //                                 music has died; the card holds for
 //                                 reading time.
+const PHASE_2_AT  = toFrames(1.8);  // ~54f  — title 2 takes over
 const SLIDE_AT    = toFrames(3.0);  // ~90f  — wordmark begins slide
 const ZOOM_AT     = toFrames(4.2);  // ~126f — slide done, zoom begins
 const SUBLINE_AT  = toFrames(0.45); // first headline reveal
@@ -170,24 +171,41 @@ export const AntiCheatEndCard: React.FC = () => {
       (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * zoomEased) *
     wordmarkPunch;
 
-  // ─── Subline — both lines stacked, no cross-fade ──────────────────
-  // The second line spells out the (g) footnote literally, so the
-  // marker is dropped. Both lines fade in together at SUBLINE_AT and
-  // fade out together when the wordmark begins its Phase 3 slide.
+  // ─── Two title beats — Phase 1 then Phase 2, cross-fade ───────────
+  // Phase 1: "Trading is easy with an Anti-Cheat" reveals at SUBLINE_AT,
+  //          holds until PHASE_2_AT.
+  // Phase 2: "Only available for trading bots" takes over at PHASE_2_AT,
+  //          holds until SLIDE_AT.
+  // Both share the same lift-in vocabulary so the swap reads like one
+  // breath, not two scenes.
   const sublineLocal = frame - SUBLINE_AT;
-  const sublineFadeIn = interpolate(
+  const phase1FadeIn = interpolate(
     sublineLocal,
     [0, toFrames(0.22)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const sublineFadeOut = interpolate(
+  const phase1FadeOut = interpolate(
+    frame,
+    [PHASE_2_AT - toFrames(0.18), PHASE_2_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const phase1Op = phase1FadeIn * phase1FadeOut;
+
+  const phase2FadeIn = interpolate(
+    frame,
+    [PHASE_2_AT, PHASE_2_AT + toFrames(0.22)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const phase2FadeOut = interpolate(
     frame,
     [SLIDE_AT - toFrames(0.18), SLIDE_AT],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const sublineOp = sublineFadeIn * sublineFadeOut;
+  const phase2Op = phase2FadeIn * phase2FadeOut;
 
   const sublineY = interpolate(
     sublineLocal,
@@ -273,9 +291,7 @@ export const AntiCheatEndCard: React.FC = () => {
           </ParallaxText>
         </div>
 
-        {/* Subline — two stacked lines, both visible together. The
-            second line is the literal expansion of the old (g)
-            footnote, so the superscript marker is gone. */}
+        {/* Title beat 1 — "Trading is easy with an Anti-Cheat" */}
         <div
           style={{
             position: "absolute",
@@ -285,42 +301,49 @@ export const AntiCheatEndCard: React.FC = () => {
             transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
             textAlign: "center",
             pointerEvents: "none",
-            opacity: sublineOp,
+            opacity: phase1Op,
+            fontFamily: font,
+            fontSize: 82,
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            color: "#FFFFFF",
+            lineHeight: 1.05,
+            padding: "0 96px",
           }}
         >
-          <div
-            style={{
-              fontFamily: font,
-              fontSize: 82,
-              fontWeight: 700,
-              letterSpacing: "-0.025em",
-              color: "#FFFFFF",
-              lineHeight: 1.05,
-            }}
-          >
-            <RevealChars
-              text="Trading is easy with an Anti-Cheat"
-              startFrame={SUBLINE_AT}
-              stagger={0.55}
-              duration={9}
-              y={14}
-              blur={3}
-              scale={0.97}
-            />
-          </div>
-          <div
-            style={{
-              marginTop: 18,
-              fontFamily: font,
-              fontSize: 38,
-              fontWeight: 500,
-              letterSpacing: "-0.012em",
-              color: "rgba(255, 255, 255, 0.72)",
-              lineHeight: 1.1,
-            }}
-          >
-            Currently available only via trading bots
-          </div>
+          <RevealChars
+            text="Trading is easy with an Anti-Cheat"
+            startFrame={SUBLINE_AT}
+            stagger={0.55}
+            duration={9}
+            y={14}
+            blur={3}
+            scale={0.97}
+          />
+        </div>
+
+        {/* Title beat 2 — "Only available for trading bots". Same
+            treatment as beat 1; cross-fades in at PHASE_2_AT. */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
+            textAlign: "center",
+            pointerEvents: "none",
+            opacity: phase2Op,
+            fontFamily: font,
+            fontSize: 82,
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            color: "#FFFFFF",
+            lineHeight: 1.05,
+            padding: "0 96px",
+          }}
+        >
+          Only available for trading bots
         </div>
 
       {/* Fine-print paragraph — Kalshi-style dense block.
