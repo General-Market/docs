@@ -1,13 +1,13 @@
-// CoinsBackground — solid brand-green tokens advancing toward the camera.
-// Diagonal wobble, no transparency, two matcap variants (glass + bnoise)
-// for surface variety, ContactShadows for grounded realism. Each lane
-// recycles continuously so the field never empties out.
+// CoinsBackground — vivid royal-blue brand tokens advancing toward the
+// camera. PBR materials lit by a studio HDRI; the rim carries a
+// procedural reeded normal map so the milled edge catches light at every
+// angle. Diagonal wobble, lane-recycling depth, no transparency on body.
 
 import React, { useMemo, useEffect } from "react";
 import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { useGLTF, useTexture, ContactShadows } from "@react-three/drei";
+import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { preloadOnce } from "../../lib/preloadOnce";
 
@@ -19,20 +19,17 @@ export type CoinsBackgroundProps = {
 };
 
 const COIN_MODEL_URL = staticFile("models/coin.glb");
-const MATCAP_GLASS_URL = staticFile("three-challenge/glass.png");
-const MATCAP_NOISE_URL = staticFile("three-challenge/bnoise.png");
+const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 preloadOnce(useGLTF.preload, COIN_MODEL_URL);
-preloadOnce(useTexture.preload, MATCAP_GLASS_URL);
-preloadOnce(useTexture.preload, MATCAP_NOISE_URL);
 
 const BG_GRADIENT =
   "radial-gradient(ellipse at center, #E8E0F2 0%, #D8CFE7 60%, #C6BCD7 100%)";
 
-// Brand identity — solid green token. NO transparency.
+// Brand identity — vivid royal blue token.
 const FACE_TEXTURE_SIZE = 512;
-const BRAND_GREEN = "#1cb37c";
-const BRAND_GREEN_DEEP = "#0d6c4b";
-const BRAND_GREEN_LIGHT = "#3ed59a";
+const BRAND_BLUE = "#2856F6";
+const BRAND_BLUE_DEEP = "#0A249A";
+const BRAND_BLUE_LIGHT = "#4170FF";
 
 function buildFaceTexture(): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -42,11 +39,10 @@ function buildFaceTexture(): THREE.CanvasTexture {
   if (ctx) {
     const cx = FACE_TEXTURE_SIZE / 2;
     const cy = FACE_TEXTURE_SIZE / 2;
-    // Vertical body gradient — lighter top, deeper bottom.
     const bodyGrad = ctx.createLinearGradient(0, 0, 0, FACE_TEXTURE_SIZE);
-    bodyGrad.addColorStop(0, BRAND_GREEN_LIGHT);
-    bodyGrad.addColorStop(0.5, BRAND_GREEN);
-    bodyGrad.addColorStop(1, BRAND_GREEN_DEEP);
+    bodyGrad.addColorStop(0, BRAND_BLUE_LIGHT);
+    bodyGrad.addColorStop(0.5, BRAND_BLUE);
+    bodyGrad.addColorStop(1, BRAND_BLUE_DEEP);
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
     // Crescent specular sheen — upper-left highlight.
@@ -62,8 +58,8 @@ function buildFaceTexture(): THREE.CanvasTexture {
       cy - FACE_TEXTURE_SIZE * 0.24,
       FACE_TEXTURE_SIZE * 0.32,
     );
-    sheen.addColorStop(0, "rgba(255,255,255,0.55)");
-    sheen.addColorStop(0.5, "rgba(255,255,255,0.18)");
+    sheen.addColorStop(0, "rgba(255,255,255,0.32)");
+    sheen.addColorStop(0.5, "rgba(255,255,255,0.10)");
     sheen.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = sheen;
     ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
@@ -91,9 +87,78 @@ function buildFaceTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+// Bump map for the face — white pill on black, blurred at the edges so
+// the emboss reads as soft relief instead of a stairstep.
+function buildFaceBumpMap(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = FACE_TEXTURE_SIZE;
+  canvas.height = FACE_TEXTURE_SIZE;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
+    const pillW = FACE_TEXTURE_SIZE * 0.68;
+    const pillH = FACE_TEXTURE_SIZE * (100 / 1024) * 1.35;
+    const pillX = (FACE_TEXTURE_SIZE - pillW) / 2;
+    const pillY = (FACE_TEXTURE_SIZE - pillH) / 2;
+    const pillR = pillH / 2;
+    ctx.filter = "blur(2px)";
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(pillX + pillR, pillY);
+    ctx.lineTo(pillX + pillW - pillR, pillY);
+    ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(pillX + pillR, pillY + pillH);
+    ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.filter = "none";
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Procedural reeded-edge normal map. Sin wave across U gives 96 ridges
+// per UV strip; the rim's UVs are expected to wrap once around. Encoded
+// directly as tangent-space normals so Three doesn't have to derive them.
+function buildRimNormalMap(): THREE.DataTexture {
+  const ridgesPerStrip = 96;
+  const width = 2048;
+  const height = 4;
+  const data = new Uint8Array(width * height * 4);
+  const amplitude = 0.6;
+  for (let x = 0; x < width; x++) {
+    const u = x / width;
+    const phase = u * ridgesPerStrip * Math.PI * 2;
+    const nx = Math.sin(phase) * amplitude;
+    const ny = 0;
+    const nz = Math.sqrt(Math.max(0.0001, 1 - nx * nx - ny * ny));
+    const r = Math.round((nx + 1) * 0.5 * 255);
+    const g = Math.round((ny + 1) * 0.5 * 255);
+    const b = Math.round((nz + 1) * 0.5 * 255);
+    for (let y = 0; y < height; y++) {
+      const i = (y * width + x) * 4;
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = 255;
+    }
+  }
+  const tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 // ── Coin lanes ───────────────────────────────────────────────────────
-// 8 lanes total — sparser than before. Each lane has its own matcap
-// variant (glass-like or noise-grunge) so the field has visual variety.
+// 8 lanes total. The "variant" field now drives PBR tuning instead of
+// matcap selection — glossy vs satin — so the field keeps visual
+// variety without the matcap crutch.
 
 type CoinSeed = {
   x: number;
@@ -106,46 +171,40 @@ type CoinSeed = {
   wobblePeriodSec: number;
   wobblePhase: number;
   staticTiltDeg: number;
-  variant: "glass" | "noise";
+  variant: "glossy" | "satin";
 };
 
 const COIN_SEEDS: CoinSeed[] = [
-  // Top band
   { x: -5.8, y: 3.0, baseScale: 1.4, cycleSec: 10, cyclePhase: 0.0,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.0,
-    wobblePhase: 0.4, staticTiltDeg: -18, variant: "glass" },
+    wobblePhase: 0.4, staticTiltDeg: -18, variant: "glossy" },
   { x: 5.8, y: 3.2, baseScale: 1.5, cycleSec: 11, cyclePhase: 0.5,
     tiltAxisDir: 1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
-    wobblePhase: 1.6, staticTiltDeg: 22, variant: "noise" },
-  // Bottom band
+    wobblePhase: 1.6, staticTiltDeg: 22, variant: "satin" },
   { x: -5.8, y: -3.0, baseScale: 1.6, cycleSec: 12, cyclePhase: 0.25,
     tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.0,
-    wobblePhase: 1.0, staticTiltDeg: -25, variant: "noise" },
+    wobblePhase: 1.0, staticTiltDeg: -25, variant: "satin" },
   { x: 5.8, y: -3.0, baseScale: 1.45, cycleSec: 11, cyclePhase: 0.75,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.5,
-    wobblePhase: 2.2, staticTiltDeg: 20, variant: "glass" },
-  // Far edges
+    wobblePhase: 2.2, staticTiltDeg: 20, variant: "glossy" },
   { x: -7.8, y: 2.4, baseScale: 1.0, cycleSec: 13, cyclePhase: 0.15,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.5,
-    wobblePhase: 0.7, staticTiltDeg: -10, variant: "glass" },
+    wobblePhase: 0.7, staticTiltDeg: -10, variant: "glossy" },
   { x: 7.8, y: -2.4, baseScale: 1.05, cycleSec: 12.5, cyclePhase: 0.6,
     tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 6.0,
-    wobblePhase: 2.0, staticTiltDeg: 24, variant: "noise" },
+    wobblePhase: 2.0, staticTiltDeg: 24, variant: "satin" },
   { x: -7.4, y: -2.6, baseScale: 1.05, cycleSec: 11.5, cyclePhase: 0.35,
     tiltAxisDir: 1, wobbleAmplitudeDeg: 30, wobblePeriodSec: 7.0,
-    wobblePhase: 0.0, staticTiltDeg: 18, variant: "noise" },
+    wobblePhase: 0.0, staticTiltDeg: 18, variant: "satin" },
   { x: 7.4, y: 2.6, baseScale: 1.0, cycleSec: 10.5, cyclePhase: 0.88,
     tiltAxisDir: -1, wobbleAmplitudeDeg: 15, wobblePeriodSec: 5.0,
-    wobblePhase: 2.5, staticTiltDeg: -16, variant: "glass" },
+    wobblePhase: 2.5, staticTiltDeg: -16, variant: "glossy" },
 ];
 
 const FPS = 30;
 const Z_BACK = -16;
 const Z_FRONT = 7;
-// Frame margin for "off-screen" detection. Coins fade only once their
-// projected screen position is outside the frame box, so they exit
-// laterally rather than fading in the middle of the frame.
-const FRAME_HALF_W = 9.5; // world units at z=0 (a bit more than visible)
+const FRAME_HALF_W = 9.5;
 const FRAME_HALF_H = 5.5;
 
 function smoothstep01(t: number): number {
@@ -153,7 +212,8 @@ function smoothstep01(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-const COIN_RIM_COLOR = new THREE.Color(BRAND_GREEN_DEEP);
+const COIN_RIM_COLOR = new THREE.Color(BRAND_BLUE_DEEP);
+const COIN_FACE_TINT = new THREE.Color("#ffffff");
 
 const CoinMesh: React.FC<{
   seed: CoinSeed;
@@ -162,8 +222,8 @@ const CoinMesh: React.FC<{
   globalAlpha: number;
   gltfScene: THREE.Group;
   faceMap: THREE.Texture;
-  matcapGlass: THREE.Texture;
-  matcapNoise: THREE.Texture;
+  faceBump: THREE.Texture;
+  rimNormal: THREE.Texture;
 }> = ({
   seed,
   frame,
@@ -171,13 +231,12 @@ const CoinMesh: React.FC<{
   globalAlpha,
   gltfScene,
   faceMap,
-  matcapGlass,
-  matcapNoise,
+  faceBump,
+  rimNormal,
 }) => {
-  const matcap = seed.variant === "glass" ? matcapGlass : matcapNoise;
-
   const clone = useMemo(() => {
     const c = gltfScene.clone(true);
+    const glossy = seed.variant === "glossy";
     c.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -185,25 +244,41 @@ const CoinMesh: React.FC<{
       const mat = mesh.material as THREE.MeshStandardMaterial;
       const name = (mat.name || "").toLowerCase();
       if (name === "front" || name === "back") {
-        // Solid green face with brand pill. No transparency.
-        const m = new THREE.MeshStandardMaterial({
+        // Face — saturated blue dielectric with a clearcoat. Low
+        // metalness keeps the painted blue from being eaten by HDRI
+        // reflection; the clearcoat gives the wet glossy sheen.
+        const m = new THREE.MeshPhysicalMaterial({
           map: faceMap,
-          color: new THREE.Color("#ffffff"),
-          roughness: 0.32,
-          metalness: 0.12,
-          transparent: true, // we still drive global opacity for fade
+          color: COIN_FACE_TINT,
+          metalness: 0.15,
+          roughness: glossy ? 0.35 : 0.5,
+          envMapIntensity: 0.55,
+          clearcoat: glossy ? 0.7 : 0.45,
+          clearcoatRoughness: glossy ? 0.12 : 0.25,
+          bumpMap: faceBump,
+          bumpScale: 0.2,
+          transparent: true,
           opacity: 1.0,
         });
-        m.emissive = new THREE.Color("#ffffff");
-        m.emissiveMap = faceMap;
-        m.emissiveIntensity = 0.12;
         mesh.material = m;
       } else {
-        // Rim — matcap material for metallic environment reflection.
-        // No transparency — solid token edge.
-        const m = new THREE.MeshMatcapMaterial({
-          matcap,
+        // Rim — deep blue PBR metal carrying the reeded normal map.
+        // Repeats are clones-of-the-texture so the GLB's existing UV
+        // wrap is preserved across instances.
+        const rimTex = rimNormal.clone();
+        rimTex.wrapS = THREE.RepeatWrapping;
+        rimTex.wrapT = THREE.RepeatWrapping;
+        rimTex.repeat.set(1, 1);
+        rimTex.needsUpdate = true;
+        const m = new THREE.MeshPhysicalMaterial({
           color: COIN_RIM_COLOR,
+          metalness: 0.95,
+          roughness: glossy ? 0.32 : 0.45,
+          envMapIntensity: 1.4,
+          clearcoat: glossy ? 0.3 : 0.12,
+          clearcoatRoughness: 0.3,
+          normalMap: rimTex,
+          normalScale: new THREE.Vector2(0.6, 0.6),
           transparent: true,
           opacity: 1.0,
         });
@@ -211,9 +286,8 @@ const CoinMesh: React.FC<{
       }
     });
     return c;
-  }, [gltfScene, faceMap, matcap]);
+  }, [gltfScene, faceMap, faceBump, rimNormal, seed.variant]);
 
-  // ── Advance cycle
   const p = smoothstep01(forwardProgress);
   const cyclePosNormalised =
     (((frame / FPS) / seed.cycleSec + seed.cyclePhase) % 1 + 1) % 1;
@@ -221,10 +295,6 @@ const CoinMesh: React.FC<{
   const zBase = Z_BACK + cyclePosNormalised * zRange;
   const z = zBase + p * 1.0;
 
-  // ── Off-frame detection — coin only fades when its full bounding
-  //    box is genuinely past the frame edge. Margin generous (1.6) so
-  //    a coin doesn't disappear while any pixel of it could still be
-  //    on screen.
   const cameraZ = 14;
   const distance = Math.max(0.5, cameraZ - z);
   const focalX = FRAME_HALF_W / cameraZ;
@@ -239,13 +309,10 @@ const CoinMesh: React.FC<{
   const outsideBottom = projY + projRadiusY < -1.6;
   const fullyOffScreen =
     outsideRight || outsideLeft || outsideTop || outsideBottom;
-  // Cycle-end fade only takes effect once the coin is already off-screen.
   const cycleAlpha = fullyOffScreen ? 0 : 1;
-  // Subtle fade-in at cycle start so a fresh coin doesn't pop in deep z.
   const fadeIn = smoothstep01((cyclePosNormalised - 0.0) / 0.04);
   const visibility = Math.min(fadeIn, cycleAlpha);
 
-  // Drive material opacity each frame.
   useEffect(() => {
     clone.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
@@ -258,7 +325,6 @@ const CoinMesh: React.FC<{
 
   const scale = seed.baseScale;
 
-  // ── Orientation: face camera, then diagonal wobble
   const baseOrient = new THREE.Quaternion().setFromAxisAngle(
     new THREE.Vector3(1, 0, 0),
     Math.PI / 2,
@@ -278,9 +344,6 @@ const CoinMesh: React.FC<{
   );
   const quat = wobbleQ.clone().multiply(baseOrient);
 
-  // Fatter coins — stretch on the local Y axis (which after baseOrient
-  // becomes the depth dimension of the disc). 2.4x makes the rim
-  // visibly thick and gives weight to the token edge.
   return (
     <group position={[seed.x, seed.y, z]} quaternion={quat}>
       <group scale={[scale, scale * 2.4, scale]}>
@@ -297,14 +360,9 @@ const Scene: React.FC<{
 }> = ({ frame, forwardProgress, opacity }) => {
   const { camera } = useThree();
   const gltf = useGLTF(COIN_MODEL_URL);
-  const matcapGlass = useTexture(MATCAP_GLASS_URL);
-  const matcapNoise = useTexture(MATCAP_NOISE_URL);
   const faceMap = useMemo(() => buildFaceTexture(), []);
-
-  useEffect(() => {
-    matcapGlass.colorSpace = THREE.SRGBColorSpace;
-    matcapNoise.colorSpace = THREE.SRGBColorSpace;
-  }, [matcapGlass, matcapNoise]);
+  const faceBump = useMemo(() => buildFaceBumpMap(), []);
+  const rimNormal = useMemo(() => buildRimNormalMap(), []);
 
   const persp = camera as THREE.PerspectiveCamera;
   persp.position.set(0, 0.5, 14);
@@ -312,21 +370,19 @@ const Scene: React.FC<{
   persp.fov = 40;
   persp.updateProjectionMatrix();
 
-  // ── Single key light from the VIEWER'S LEFT (camera at +Z, so a
-  //    strongly negative X positions the light past the viewer's left
-  //    shoulder). Slightly elevated and forward of the coin field.
-  //    Same one-source rig as ThreeChallenge — every coin shaded the
-  //    same way, no conflicting highlights.
   return (
     <>
-      <ambientLight intensity={0.32} color="#ffffff" />
+      {/* Studio HDRI — sets scene.environment so MeshPhysicalMaterial
+          picks it up automatically. Background stays transparent so the
+          AbsoluteFill gradient shows through. */}
+      <Environment files={HDRI_URL} resolution={256} />
+      <ambientLight intensity={0.18} color="#ffffff" />
       <directionalLight
         position={[-9, 3.5, 9]}
-        intensity={2.4}
+        intensity={1.8}
         color="#ffffff"
         castShadow
       />
-      {/* Ground shadow plane — soft drop shadows on the lavender stage. */}
       <ContactShadows
         position={[0, -5.5, 0]}
         scale={30}
@@ -345,8 +401,8 @@ const Scene: React.FC<{
           globalAlpha={opacity}
           gltfScene={gltf.scene}
           faceMap={faceMap}
-          matcapGlass={matcapGlass}
-          matcapNoise={matcapNoise}
+          faceBump={faceBump}
+          rimNormal={rimNormal}
         />
       ))}
     </>
@@ -391,3 +447,4 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
     </AbsoluteFill>
   );
 };
+
