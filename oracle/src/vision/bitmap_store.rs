@@ -116,7 +116,7 @@ impl BitmapStore {
     /// Drain up to `BATCH_HARD_CAP` rows from the buffer and write them in a
     /// single multi-row INSERT via UNNEST. Returns the number flushed.
     async fn flush_persist_buffer(&self, pool: &PgPool) -> Result<usize, BitmapStoreError> {
-        let drained: Vec<PendingRow> = {
+        let mut drained: Vec<PendingRow> = {
             let mut buf = self.persist_buffer.lock().await;
             if buf.is_empty() {
                 return Ok(0);
@@ -124,6 +124,16 @@ impl BitmapStore {
             let take = buf.len().min(BATCH_HARD_CAP);
             buf.drain(..take).collect()
         };
+
+        // Sort by (batch_id, player) — the PK prefix for vision_bitmaps. Forces
+        // this INSERT-with-ON-CONFLICT to acquire row locks in PK order, which
+        // matches the order used by concurrent DELETE FROM vision_bitmaps
+        // WHERE batch_id=… in purge_batch_from_db and by INSERTs from the
+        // other two oracles writing to the same table. Without this sort, the
+        // arrival order is arbitrary and Postgres deadlock-detector fires.
+        drained.sort_by(|a, b| {
+            a.batch_id.cmp(&b.batch_id).then_with(|| a.player.cmp(&b.player))
+        });
 
         let n = drained.len();
         let batch_ids: Vec<i64> = drained.iter().map(|r| r.batch_id).collect();

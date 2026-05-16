@@ -165,15 +165,19 @@ impl<'a> ConsensusBuilder<'a> {
 
         // Build consensus timeouts (use CLI override or defaults)
         let timeouts = if let Some(total_ms) = self.params.consensus_timeout_ms {
-            // Distribute: 15% proposal, 20% vote, 15% batch proposal, 50% batch sign
-            // Batch signing needs the most time (collect from N-1 peers + BLS verify)
-            let proposal = total_ms * 15 / 100;
-            let vote = total_ms * 20 / 100;
-            let batch_proposal = total_ms * 15 / 100;
-            let batch_sign = total_ms - proposal - vote - batch_proposal;
+            // Price phases are pinned at 200ms each — large enough to absorb
+            // P2P tail latency under DB pressure, small enough to fit inside
+            // a 1500ms cycle alongside the batch phases. Batch phases split
+            // the remainder 30/70, since batch_sign collects N-1 signatures
+            // and runs BLS verification.
+            const PRICE_PROPOSAL_MS: u64 = 200;
+            const PRICE_VOTE_MS: u64 = 200;
+            let remainder = total_ms.saturating_sub(PRICE_PROPOSAL_MS + PRICE_VOTE_MS);
+            let batch_proposal = remainder * 30 / 100;
+            let batch_sign = remainder - batch_proposal;
             ConsensusTimeouts::new(
-                std::time::Duration::from_millis(proposal),
-                std::time::Duration::from_millis(vote),
+                std::time::Duration::from_millis(PRICE_PROPOSAL_MS),
+                std::time::Duration::from_millis(PRICE_VOTE_MS),
                 std::time::Duration::from_millis(batch_proposal),
                 std::time::Duration::from_millis(batch_sign),
             )
