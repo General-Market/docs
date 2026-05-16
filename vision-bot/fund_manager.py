@@ -888,9 +888,6 @@ def run_cycle(
 
                 bitmap = encode_bitmap(bets, market_count)
                 bm_hash = hash_bitmap(bitmap)
-                # Persist BEFORE we commit on-chain. The whole point of the
-                # store is to survive a crash between commit and reveal.
-                save_bitmap(fund.vault_addr, batch_id, bitmap, bm_hash)
 
             # Compute deposit: alloc_bps × per-fund multiplier of current total
             # assets, floored at the contract minimum. Reuse the cached info —
@@ -931,6 +928,12 @@ def run_cycle(
                     fund.vault.join_batch(
                         batch_id, config_hash, deposit_wei, bm_hash,
                     )
+                    # Persist ONLY after a successful commit. Saving before
+                    # the join would poison the store with bytes whose hash
+                    # does not match any on-chain commitment — exactly the
+                    # failure mode we are trying to extinguish.
+                    if cached is None:
+                        save_bitmap(fund.vault_addr, batch_id, bitmap, bm_hash)
                     fund.joined_batch_ids.add(batch_id)
                     fund.active_batches[batch_id] = deposit_wei
                     fund.joined_total += 1
