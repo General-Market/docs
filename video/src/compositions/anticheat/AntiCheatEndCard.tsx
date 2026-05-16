@@ -12,10 +12,9 @@ import { ParallaxText } from "./transitions";
 import { RevealChars } from "./vibe";
 import { SPIKE_ENDCARD_LOCAL } from "./beats";
 
-// 6.0s ends the whole video at 40.0s (after the 10-frame head trim).
-// Title beats + slide + zoom run from 0 to 5.2s; the final ~0.8s holds
-// on the zoomed wordmark and the footnote paragraph.
-const SCENE_SECONDS = 6.0;
+// 7.35s — waitlist 1.7s, slide+zoom combined 1.0s, final pose 2.0s.
+// Composition total lands at ~41.4s after the 10-frame head trim.
+const SCENE_SECONDS = 7.35;
 
 // Sequential phases inside the end card. Each beat does ONE thing —
 // no compound motion that fights itself.
@@ -34,12 +33,12 @@ const SCENE_SECONDS = 6.0;
 const SUBLINE_AT  = toFrames(0.30); // title 1 reveal
 const PHASE_2_AT  = toFrames(1.50); // title 2 takes over (title 1 holds 1.20s)
 const PHASE_3_AT  = toFrames(2.65); // title 3 (waitlist) takes over (title 2 holds 1.15s)
-const SLIDE_AT    = toFrames(3.35); // wordmark begins slide (waitlist holds 0.70s)
-const ZOOM_AT     = toFrames(4.25); // slide done, zoom begins
+const SLIDE_AT    = toFrames(4.35); // wordmark begins slide (waitlist holds 1.70s)
+const ZOOM_AT     = toFrames(4.85); // slide done, zoom begins (slide is 0.50s)
 const FOOTNOTES_AT = toFrames(0.7); // footnote paragraph fades in
 
 const SLIDE_LEN = ZOOM_AT - SLIDE_AT;
-const ZOOM_LEN  = toFrames(0.75);   // 22f zoom duration; final pose holds 1.0s
+const ZOOM_LEN  = toFrames(0.50);   // 15f zoom; final pose holds 2.0s after
 
 // Settle: after the spike fires, the wordmark eases back from its
 // scale punch over SETTLE_LEN frames. The music is dying, anything
