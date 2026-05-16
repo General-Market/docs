@@ -169,6 +169,15 @@ pub struct BatchStrategy {
     /// Some(86400) = compare to the value 24 hours ago.
     /// Stored in batch config for the oracle resolver to read.
     pub reference_lookback_secs: Option<u64>,
+
+    /// When true, the batch engine never picks the `flat_x` resolution
+    /// type. Stationary markets become `up_0`/`down_0` instead — any
+    /// move wins, no refund band. Prediction-market sources (polymarket,
+    /// sports books) need this: their prices barely move within a tick,
+    /// `flat_x` collapses every market to a refund, and the parimutuel
+    /// returns every player's deposit. Bots cannot trade against each
+    /// other if the venue refuses to declare a winner.
+    pub force_binary_resolution: bool,
 }
 
 impl BatchStrategy {
@@ -179,6 +188,7 @@ impl BatchStrategy {
         max_threshold_bps: 10000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: false,
     };
 
     /// Fast volatile source (meme tokens, live streams).
@@ -189,6 +199,7 @@ impl BatchStrategy {
         max_threshold_bps: 10000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: false,
     };
 
     /// Slow environmental source (weather, air quality, tides).
@@ -199,6 +210,7 @@ impl BatchStrategy {
         max_threshold_bps: 5000,
         zero_trend_type: "up_0",
         reference_lookback_secs: Some(86400), // 24h
+        force_binary_resolution: false,
     };
 
     /// Macro/daily source (rates, bonds, inflation).
@@ -209,6 +221,7 @@ impl BatchStrategy {
         max_threshold_bps: 1000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: false,
     };
 
     /// Engagement/social source (reddit, twitch, hackernews).
@@ -219,6 +232,7 @@ impl BatchStrategy {
         max_threshold_bps: 10000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: false,
     };
 
     /// Status/event source (transit delays, outages, alerts).
@@ -229,16 +243,21 @@ impl BatchStrategy {
         max_threshold_bps: 5000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: false,
     };
 
     /// Probability source (polymarket, sports odds).
-    /// Already 0-100, moderate lookback.
+    /// Already 0-100, moderate lookback. `force_binary_resolution = true`
+    /// because YES prices barely move within a tick — `flat_x` collapses
+    /// every market to a refund and the parimutuel returns every deposit.
+    /// Any move wins.
     pub const PROBABILITY: Self = Self {
         lookback_ticks: 20,
-        min_threshold_bps: 10,
+        min_threshold_bps: 1,
         max_threshold_bps: 5000,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
+        force_binary_resolution: true,
     };
 }
 

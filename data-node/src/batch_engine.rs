@@ -519,13 +519,16 @@ async fn get_healthy_assets(
 /// - 0.3-3%            → "up_x"   with 30 bps (moderate volatility)
 /// - 3-30%             → "up_300" with 300 bps (high volatility)
 /// - 30%+              → "up_3000" with 3000 bps (extreme volatility)
-fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
+fn resolution_for_volatility(change_pct: f64, force_binary: bool) -> (&'static str, u32) {
     // Use the same exact-threshold logic as resolution_from_median —
     // compute bps from the actual change instead of bucketing into presets.
     let threshold_bps = sanitize_threshold_bps(change_pct.abs());
     let up = change_pct >= 0.0;
 
     if threshold_bps < 10 {
+        if force_binary {
+            return if up { ("up_0", 0) } else { ("down_0", 0) };
+        }
         return ("flat_x", 30);
     }
     if threshold_bps < 20 {
@@ -540,12 +543,16 @@ fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
 /// - `flat_x` — nearly stationary (|median| < 0.1%), ternary: flat/up/down
 /// - `up_0` / `down_0` — trivial volatility (0.1-0.2%), any movement wins
 /// - `up_x` / `down_x` — everything else, exact median threshold for 50/50
-fn resolution_from_median(median_change_pct: f64) -> (&'static str, u32) {
+fn resolution_from_median(median_change_pct: f64, force_binary: bool) -> (&'static str, u32) {
     let threshold_bps = sanitize_threshold_bps(median_change_pct.abs());
     let up = median_change_pct >= 0.0;
 
-    // Nearly stationary — flat within ±threshold
+    // Nearly stationary — flat within ±threshold. With `force_binary`
+    // we never sit on the fence; any move declares a winner.
     if threshold_bps < 10 {
+        if force_binary {
+            return if up { ("up_0", 0) } else { ("down_0", 0) };
+        }
         return ("flat_x", 30);
     }
 
@@ -607,7 +614,8 @@ async fn compute_asset_thresholds(
             // 1. Median calibration — 50/50 by construction
             if let Some(&median_pct) = median_changes.get(asset_id) {
                 if !median_pct.is_nan() && !median_pct.is_infinite() {
-                    let (res_type, raw_bps) = resolution_from_median(median_pct);
+                    let (res_type, raw_bps) =
+                        resolution_from_median(median_pct, strategy.force_binary_resolution);
                     let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
@@ -621,7 +629,8 @@ async fn compute_asset_thresholds(
             // 2. Last settlement (fallback — volatility bands)
             if let Some(&change_pct) = settlement_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, raw_bps) = resolution_for_volatility(change_pct);
+                    let (res_type, raw_bps) =
+                        resolution_for_volatility(change_pct, strategy.force_binary_resolution);
                     let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
@@ -635,7 +644,8 @@ async fn compute_asset_thresholds(
             // 3. 24h history (fallback — volatility bands)
             if let Some(&change_pct) = history_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, raw_bps) = resolution_for_volatility(change_pct);
+                    let (res_type, raw_bps) =
+                        resolution_for_volatility(change_pct, strategy.force_binary_resolution);
                     let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
@@ -1129,52 +1139,52 @@ mod tests {
 
     #[test]
     fn test_resolution_for_volatility() {
-        // Low volatility → flat_x 30 bps
-        assert_eq!(resolution_for_volatility(0.0), ("flat_x", 30));
-        assert_eq!(resolution_for_volatility(0.1), ("flat_x", 30));
-        assert_eq!(resolution_for_volatility(-0.1), ("flat_x", 30));
+        // Stationary band (< 0.1% / 10 bps) → flat_x
+        assert_eq!(resolution_for_volatility(0.0, false), ("flat_x", 30));
+        assert_eq!(resolution_for_volatility(0.05, false), ("flat_x", 30));
+        assert_eq!(resolution_for_volatility(-0.05, false), ("flat_x", 30));
 
-        // Moderate positive → up_x
-        assert_eq!(resolution_for_volatility(0.3), ("up_x", 30));
-        assert_eq!(resolution_for_volatility(2.99), ("up_x", 30));
-        // Moderate negative → down_0
-        assert_eq!(resolution_for_volatility(-0.3), ("down_0", 30));
-        assert_eq!(resolution_for_volatility(-2.99), ("down_0", 30));
+        // Trivial volatility (0.1-0.2%) → up_0 / down_0
+        assert_eq!(resolution_for_volatility(0.1, false), ("up_0", 0));
+        assert_eq!(resolution_for_volatility(-0.1, false), ("down_0", 0));
 
-        // High positive → up_300
-        assert_eq!(resolution_for_volatility(3.0), ("up_300", 300));
-        assert_eq!(resolution_for_volatility(15.0), ("up_300", 300));
-        // High negative → down_300
-        assert_eq!(resolution_for_volatility(-3.0), ("down_300", 300));
-        assert_eq!(resolution_for_volatility(-15.0), ("down_300", 300));
+        // Moderate volatility → up_x / down_x with exact bps
+        assert_eq!(resolution_for_volatility(0.3, false), ("up_x", 30));
+        assert_eq!(resolution_for_volatility(2.99, false), ("up_x", 299));
+        assert_eq!(resolution_for_volatility(-0.3, false), ("down_x", 30));
+        assert_eq!(resolution_for_volatility(-2.99, false), ("down_x", 299));
 
-        // Extreme positive → up_3000
-        assert_eq!(resolution_for_volatility(30.0), ("up_3000", 3000));
-        // Extreme negative → down_3000
-        assert_eq!(resolution_for_volatility(-30.0), ("down_3000", 3000));
+        // force_binary=true rewrites the stationary band into up_0/down_0.
+        assert_eq!(resolution_for_volatility(0.0, true), ("up_0", 0));
+        assert_eq!(resolution_for_volatility(0.05, true), ("up_0", 0));
+        assert_eq!(resolution_for_volatility(-0.05, true), ("down_0", 0));
     }
 
     #[test]
     fn test_resolution_from_median() {
         // Nearly stationary → flat_x
-        assert_eq!(resolution_from_median(0.0), ("flat_x", 30));
-        assert_eq!(resolution_from_median(0.05), ("flat_x", 30));
-        assert_eq!(resolution_from_median(-0.05), ("flat_x", 30));
+        assert_eq!(resolution_from_median(0.0, false), ("flat_x", 30));
+        assert_eq!(resolution_from_median(0.05, false), ("flat_x", 30));
+        assert_eq!(resolution_from_median(-0.05, false), ("flat_x", 30));
 
         // Trivial volatility → up_0 / down_0
-        assert_eq!(resolution_from_median(0.15), ("up_0", 0));
-        assert_eq!(resolution_from_median(-0.15), ("down_0", 0));
+        assert_eq!(resolution_from_median(0.15, false), ("up_0", 0));
+        assert_eq!(resolution_from_median(-0.15, false), ("down_0", 0));
 
         // Everything else → up_x / down_x with exact median threshold
-        assert_eq!(resolution_from_median(0.3), ("up_x", 30));
-        assert_eq!(resolution_from_median(0.5), ("up_x", 50));
-        assert_eq!(resolution_from_median(-0.3), ("down_x", 30));
-        assert_eq!(resolution_from_median(1.0), ("up_x", 100));
-        assert_eq!(resolution_from_median(-1.5), ("down_x", 150));
-        assert_eq!(resolution_from_median(3.0), ("up_x", 300));
-        assert_eq!(resolution_from_median(10.0), ("up_x", 1000));
-        assert_eq!(resolution_from_median(-15.0), ("down_x", 1500));
-        assert_eq!(resolution_from_median(50.0), ("up_x", 5000));
+        assert_eq!(resolution_from_median(0.3, false), ("up_x", 30));
+        assert_eq!(resolution_from_median(0.5, false), ("up_x", 50));
+        assert_eq!(resolution_from_median(-0.3, false), ("down_x", 30));
+        assert_eq!(resolution_from_median(1.0, false), ("up_x", 100));
+        assert_eq!(resolution_from_median(-1.5, false), ("down_x", 150));
+        assert_eq!(resolution_from_median(3.0, false), ("up_x", 300));
+        assert_eq!(resolution_from_median(10.0, false), ("up_x", 1000));
+        assert_eq!(resolution_from_median(-15.0, false), ("down_x", 1500));
+        assert_eq!(resolution_from_median(50.0, false), ("up_x", 5000));
+
+        // force_binary=true never returns flat_x for the stationary band.
+        assert_eq!(resolution_from_median(0.0, true), ("up_0", 0));
+        assert_eq!(resolution_from_median(-0.05, true), ("down_0", 0));
     }
 
     #[test]
