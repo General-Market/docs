@@ -1,7 +1,9 @@
-// CoinsBackground — vivid royal-blue brand tokens advancing toward the
-// camera. PBR materials lit by a studio HDRI; the rim carries a
-// procedural reeded normal map so the milled edge catches light at every
-// angle. Diagonal wobble, lane-recycling depth, no transparency on body.
+// CoinsBackground — anodised-blue tokens lit by a studio HDRI.
+// One metal across the whole coin. The brand mark, the inner ring and
+// the ring of denticles around the perimeter are pressed into the face
+// via a procedural height→normal map. The milled edge is reeded the
+// same way. No painted face textures anywhere — the only colour is the
+// material tint, the rest is reflection.
 
 import React, { useMemo, useEffect } from "react";
 import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
@@ -25,105 +27,146 @@ preloadOnce(useGLTF.preload, COIN_MODEL_URL);
 const BG_GRADIENT =
   "radial-gradient(ellipse at center, #E8E0F2 0%, #D8CFE7 60%, #C6BCD7 100%)";
 
-// Brand identity — vivid royal blue token.
-const FACE_TEXTURE_SIZE = 512;
 const BRAND_BLUE = "#2856F6";
 const BRAND_BLUE_DEEP = "#0A249A";
-const BRAND_BLUE_LIGHT = "#4170FF";
 
-function buildFaceTexture(): THREE.CanvasTexture {
+// ── Procedural relief ────────────────────────────────────────────────
+// Render the coin design as a grayscale height map on canvas, then run
+// a Sobel pass to convert to a tangent-space normal map. This is what
+// gives the surface its struck-metal feel — denticles, embossed pill,
+// recessed inner ring, all carrying real shadow direction under any
+// light angle.
+
+const FACE_HEIGHT_SIZE = 1024;
+
+function buildFaceHeightMap(): HTMLCanvasElement {
+  const size = FACE_HEIGHT_SIZE;
   const canvas = document.createElement("canvas");
-  canvas.width = FACE_TEXTURE_SIZE;
-  canvas.height = FACE_TEXTURE_SIZE;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext("2d");
-  if (ctx) {
-    const cx = FACE_TEXTURE_SIZE / 2;
-    const cy = FACE_TEXTURE_SIZE / 2;
-    const bodyGrad = ctx.createLinearGradient(0, 0, 0, FACE_TEXTURE_SIZE);
-    bodyGrad.addColorStop(0, BRAND_BLUE_LIGHT);
-    bodyGrad.addColorStop(0.5, BRAND_BLUE);
-    bodyGrad.addColorStop(1, BRAND_BLUE_DEEP);
-    ctx.fillStyle = bodyGrad;
-    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
-    // Crescent specular sheen — upper-left highlight.
-    ctx.save();
+  if (!ctx) return canvas;
+
+  // Off-disc area sits at black (recessed / invisible).
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, size, size);
+
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // The disc itself is the baseline plateau.
+  ctx.fillStyle = "#262626";
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.485, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Recessed perimeter channel — a thin valley just inside the rim.
+  ctx.strokeStyle = "#101010";
+  ctx.lineWidth = size * 0.012;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.455, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Denticles — small raised dots around the perimeter. The visual
+  // tell that says "this is currency, not a chip token".
+  const denticleCount = 84;
+  const denticleR = size * 0.428;
+  const denticleSize = size * 0.0085;
+  ctx.fillStyle = "#a0a0a0";
+  for (let i = 0; i < denticleCount; i++) {
+    const a = (i / denticleCount) * Math.PI * 2;
+    const x = cx + Math.cos(a) * denticleR;
+    const y = cy + Math.sin(a) * denticleR;
     ctx.beginPath();
-    ctx.arc(cx, cy, FACE_TEXTURE_SIZE * 0.49, 0, Math.PI * 2);
-    ctx.clip();
-    const sheen = ctx.createRadialGradient(
-      cx - FACE_TEXTURE_SIZE * 0.22,
-      cy - FACE_TEXTURE_SIZE * 0.24,
-      FACE_TEXTURE_SIZE * 0.04,
-      cx - FACE_TEXTURE_SIZE * 0.22,
-      cy - FACE_TEXTURE_SIZE * 0.24,
-      FACE_TEXTURE_SIZE * 0.32,
+    ctx.arc(x, y, denticleSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Inner ring — a thin raised circle that frames the brand mark.
+  ctx.strokeStyle = "#666666";
+  ctx.lineWidth = size * 0.006;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.34, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Central pill — the brand mark, strongly embossed. Soft blur so the
+  // normal map produces smooth side gradients instead of a step.
+  ctx.filter = "blur(3px)";
+  const pillW = size * 0.58;
+  const pillH = size * 0.13;
+  const pillX = (size - pillW) / 2;
+  const pillY = (size - pillH) / 2;
+  const pillR = pillH / 2;
+  ctx.fillStyle = "#e8e8e8";
+  ctx.beginPath();
+  ctx.moveTo(pillX + pillR, pillY);
+  ctx.lineTo(pillX + pillW - pillR, pillY);
+  ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(pillX + pillR, pillY + pillH);
+  ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.filter = "none";
+
+  return canvas;
+}
+
+function heightCanvasToNormalMap(
+  source: HTMLCanvasElement,
+  strength: number,
+): THREE.DataTexture {
+  const w = source.width;
+  const h = source.height;
+  const ctx = source.getContext("2d");
+  if (!ctx) {
+    return new THREE.DataTexture(
+      new Uint8Array(4),
+      1,
+      1,
+      THREE.RGBAFormat,
     );
-    sheen.addColorStop(0, "rgba(255,255,255,0.32)");
-    sheen.addColorStop(0.5, "rgba(255,255,255,0.10)");
-    sheen.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = sheen;
-    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
-    ctx.restore();
-    // White pill mark — current frontend logo, 70% of inscribed disc.
-    const pillW = FACE_TEXTURE_SIZE * 0.68;
-    const pillH = FACE_TEXTURE_SIZE * (100 / 1024) * 1.35;
-    const pillX = (FACE_TEXTURE_SIZE - pillW) / 2;
-    const pillY = (FACE_TEXTURE_SIZE - pillH) / 2;
-    const pillR = pillH / 2;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.beginPath();
-    ctx.moveTo(pillX + pillR, pillY);
-    ctx.lineTo(pillX + pillW - pillR, pillY);
-    ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
-    ctx.lineTo(pillX + pillR, pillY + pillH);
-    ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
-    ctx.closePath();
-    ctx.fill();
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// Bump map for the face — white pill on black, blurred at the edges so
-// the emboss reads as soft relief instead of a stairstep.
-function buildFaceBumpMap(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = FACE_TEXTURE_SIZE;
-  canvas.height = FACE_TEXTURE_SIZE;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, FACE_TEXTURE_SIZE, FACE_TEXTURE_SIZE);
-    const pillW = FACE_TEXTURE_SIZE * 0.68;
-    const pillH = FACE_TEXTURE_SIZE * (100 / 1024) * 1.35;
-    const pillX = (FACE_TEXTURE_SIZE - pillW) / 2;
-    const pillY = (FACE_TEXTURE_SIZE - pillH) / 2;
-    const pillR = pillH / 2;
-    ctx.filter = "blur(2px)";
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(pillX + pillR, pillY);
-    ctx.lineTo(pillX + pillW - pillR, pillY);
-    ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
-    ctx.lineTo(pillX + pillR, pillY + pillH);
-    ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.filter = "none";
+  const src = ctx.getImageData(0, 0, w, h).data;
+  const data = new Uint8Array(w * h * 4);
+  const sample = (x: number, y: number): number => {
+    const cx = Math.max(0, Math.min(w - 1, x));
+    const cy = Math.max(0, Math.min(h - 1, y));
+    return src[(cy * w + cx) * 4] / 255;
+  };
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const hL = sample(x - 1, y);
+      const hR = sample(x + 1, y);
+      const hU = sample(x, y - 1);
+      const hD = sample(x, y + 1);
+      const dx = (hR - hL) * strength;
+      const dy = (hD - hU) * strength;
+      const nz = 1.0;
+      const len = Math.sqrt(dx * dx + dy * dy + nz * nz);
+      const nxN = -dx / len;
+      const nyN = -dy / len;
+      const nzN = nz / len;
+      const i = (y * w + x) * 4;
+      data[i] = Math.round((nxN + 1) * 0.5 * 255);
+      data[i + 1] = Math.round((nyN + 1) * 0.5 * 255);
+      data[i + 2] = Math.round((nzN + 1) * 0.5 * 255);
+      data[i + 3] = 255;
+    }
   }
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.DataTexture(data, w, h, THREE.RGBAFormat);
   tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearMipMapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
   tex.needsUpdate = true;
   return tex;
 }
 
-// Procedural reeded-edge normal map. Sin wave across U gives 96 ridges
-// per UV strip; the rim's UVs are expected to wrap once around. Encoded
-// directly as tangent-space normals so Three doesn't have to derive them.
+// Reeded-edge normal map for the rim. Sin wave across U → 96 vertical
+// ridges wrapping the cylinder.
 function buildRimNormalMap(): THREE.DataTexture {
   const ridgesPerStrip = 96;
   const width = 2048;
@@ -156,9 +199,6 @@ function buildRimNormalMap(): THREE.DataTexture {
 }
 
 // ── Coin lanes ───────────────────────────────────────────────────────
-// 8 lanes total. The "variant" field now drives PBR tuning instead of
-// matcap selection — glossy vs satin — so the field keeps visual
-// variety without the matcap crutch.
 
 type CoinSeed = {
   x: number;
@@ -212,8 +252,8 @@ function smoothstep01(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
+const COIN_FACE_COLOR = new THREE.Color(BRAND_BLUE);
 const COIN_RIM_COLOR = new THREE.Color(BRAND_BLUE_DEEP);
-const COIN_FACE_TINT = new THREE.Color("#ffffff");
 
 const CoinMesh: React.FC<{
   seed: CoinSeed;
@@ -221,8 +261,7 @@ const CoinMesh: React.FC<{
   forwardProgress: number;
   globalAlpha: number;
   gltfScene: THREE.Group;
-  faceMap: THREE.Texture;
-  faceBump: THREE.Texture;
+  faceNormal: THREE.Texture;
   rimNormal: THREE.Texture;
 }> = ({
   seed,
@@ -230,8 +269,7 @@ const CoinMesh: React.FC<{
   forwardProgress,
   globalAlpha,
   gltfScene,
-  faceMap,
-  faceBump,
+  faceNormal,
   rimNormal,
 }) => {
   const clone = useMemo(() => {
@@ -244,40 +282,28 @@ const CoinMesh: React.FC<{
       const mat = mesh.material as THREE.MeshStandardMaterial;
       const name = (mat.name || "").toLowerCase();
       if (name === "front" || name === "back") {
-        // Face — saturated blue dielectric with a clearcoat. Low
-        // metalness keeps the painted blue from being eaten by HDRI
-        // reflection; the clearcoat gives the wet glossy sheen.
         const m = new THREE.MeshPhysicalMaterial({
-          map: faceMap,
-          color: COIN_FACE_TINT,
-          metalness: 0.15,
-          roughness: glossy ? 0.35 : 0.5,
-          envMapIntensity: 0.55,
-          clearcoat: glossy ? 0.7 : 0.45,
-          clearcoatRoughness: glossy ? 0.12 : 0.25,
-          bumpMap: faceBump,
-          bumpScale: 0.2,
+          color: COIN_FACE_COLOR,
+          metalness: 0.94,
+          roughness: glossy ? 0.28 : 0.4,
+          envMapIntensity: 1.35,
+          clearcoat: glossy ? 0.45 : 0.2,
+          clearcoatRoughness: glossy ? 0.15 : 0.28,
+          normalMap: faceNormal,
+          normalScale: new THREE.Vector2(1.4, 1.4),
           transparent: true,
           opacity: 1.0,
         });
         mesh.material = m;
       } else {
-        // Rim — deep blue PBR metal carrying the reeded normal map.
-        // Repeats are clones-of-the-texture so the GLB's existing UV
-        // wrap is preserved across instances.
-        const rimTex = rimNormal.clone();
-        rimTex.wrapS = THREE.RepeatWrapping;
-        rimTex.wrapT = THREE.RepeatWrapping;
-        rimTex.repeat.set(1, 1);
-        rimTex.needsUpdate = true;
         const m = new THREE.MeshPhysicalMaterial({
           color: COIN_RIM_COLOR,
-          metalness: 0.95,
-          roughness: glossy ? 0.32 : 0.45,
+          metalness: 0.96,
+          roughness: glossy ? 0.32 : 0.44,
           envMapIntensity: 1.4,
           clearcoat: glossy ? 0.3 : 0.12,
           clearcoatRoughness: 0.3,
-          normalMap: rimTex,
+          normalMap: rimNormal,
           normalScale: new THREE.Vector2(0.6, 0.6),
           transparent: true,
           opacity: 1.0,
@@ -286,7 +312,7 @@ const CoinMesh: React.FC<{
       }
     });
     return c;
-  }, [gltfScene, faceMap, faceBump, rimNormal, seed.variant]);
+  }, [gltfScene, faceNormal, rimNormal, seed.variant]);
 
   const p = smoothstep01(forwardProgress);
   const cyclePosNormalised =
@@ -360,8 +386,10 @@ const Scene: React.FC<{
 }> = ({ frame, forwardProgress, opacity }) => {
   const { camera } = useThree();
   const gltf = useGLTF(COIN_MODEL_URL);
-  const faceMap = useMemo(() => buildFaceTexture(), []);
-  const faceBump = useMemo(() => buildFaceBumpMap(), []);
+  const faceNormal = useMemo(
+    () => heightCanvasToNormalMap(buildFaceHeightMap(), 4.0),
+    [],
+  );
   const rimNormal = useMemo(() => buildRimNormalMap(), []);
 
   const persp = camera as THREE.PerspectiveCamera;
@@ -372,14 +400,11 @@ const Scene: React.FC<{
 
   return (
     <>
-      {/* Studio HDRI — sets scene.environment so MeshPhysicalMaterial
-          picks it up automatically. Background stays transparent so the
-          AbsoluteFill gradient shows through. */}
       <Environment files={HDRI_URL} resolution={256} />
-      <ambientLight intensity={0.18} color="#ffffff" />
+      <ambientLight intensity={0.14} color="#ffffff" />
       <directionalLight
         position={[-9, 3.5, 9]}
-        intensity={1.8}
+        intensity={1.6}
         color="#ffffff"
         castShadow
       />
@@ -400,8 +425,7 @@ const Scene: React.FC<{
           forwardProgress={forwardProgress}
           globalAlpha={opacity}
           gltfScene={gltf.scene}
-          faceMap={faceMap}
-          faceBump={faceBump}
+          faceNormal={faceNormal}
           rimNormal={rimNormal}
         />
       ))}
@@ -447,4 +471,3 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
     </AbsoluteFill>
   );
 };
-
