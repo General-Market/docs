@@ -12,6 +12,7 @@
 import React, { useRef } from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   interpolate,
   staticFile,
@@ -75,7 +76,10 @@ const driveProp = (frame: number, values: number[]) => {
   });
 };
 
-const BROLL_INTRO_SKIP_FRAMES = 75; // 2.5s at 30fps
+// The broll file is pre-trimmed by ffmpeg (first 8s of page-load cut
+// off in the recording script), so it opens on real /explorer UI.
+const BROLL_INTRO_SKIP_FRAMES = 0;
+const MUSIC_URL = staticFile("music/launch-track.mp3");
 
 export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   const frame = useCurrentFrame();
@@ -157,8 +161,24 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   // The phone lives inside the 3D scene so it picks up the same lights
   // as the coins. Wordmarks remain 2D — they slide behind the phone
   // during close-ups because the phone is opaque in screen space.
+  // Score — `music/launch-track.mp3` (124s). 1-second fade-in at the
+  // top, 2-second fade-out at the very end so the title cut and end
+  // card aren't lopped off by a hard music edit.
+  const musicVolume = (audioFrame: number) => {
+    const fadeIn = interpolate(audioFrame, [0, 30], [0, 0.55], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    const fadeOut = interpolate(audioFrame, [2040, 2100], [0.55, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    return Math.min(fadeIn, fadeOut);
+  };
+
   return (
     <AbsoluteFill style={{ background: BG_COLOR }}>
+      <Audio src={MUSIC_URL} volume={musicVolume} />
       {/* Hidden video element. <Video> syncs playback to composition
           time; useVideoTexture inside Phone3D reads frames from this
           DOM element. Position off-screen so the bare <video> never
