@@ -20,9 +20,13 @@ const DISPLAY_STACK =
 const SHADOW = "0 2px 12px rgba(255,255,255,0.18)";
 
 export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
+  // Visibility now only drives a tiny slide-in at the very start of the
+  // composition. Once on-screen the text is fully opaque — it never
+  // fades during the beats and never goes translucent.
   const clamped = Math.max(0, Math.min(1, visibility));
-  const leftOffset = -30 + clamped * 30;
-  const rightOffset = 30 - clamped * 30;
+  const settled = clamped > 0.05 ? 1 : clamped / 0.05;
+  const leftOffset = -30 + settled * 30;
+  const rightOffset = 30 - settled * 30;
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
@@ -30,16 +34,16 @@ export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
       <div
         style={{
           position: "absolute",
-          left: "8%",
+          left: "1.5%",
           top: "50%",
           transform: `translate(${leftOffset}px, -50%)`,
-          opacity: clamped,
+          opacity: 1,
           color: "#000000",
           fontFamily: DISPLAY_STACK,
           letterSpacing: "-0.022em",
           lineHeight: 0.92,
           textShadow: SHADOW,
-          willChange: "transform, opacity",
+          willChange: "transform",
         }}
       >
         <div style={{ fontSize: 120, fontWeight: 800 }}>GENERAL</div>
@@ -50,15 +54,15 @@ export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
       <div
         style={{
           position: "absolute",
-          right: "8%",
+          right: "1.5%",
           top: "50%",
           transform: `translate(${rightOffset}px, -50%)`,
-          opacity: clamped,
+          opacity: 1,
           color: "#000000",
           fontFamily: monoFont,
           textAlign: "right",
           textShadow: SHADOW,
-          willChange: "transform, opacity",
+          willChange: "transform",
         }}
       >
         <div

@@ -34,7 +34,10 @@ const FALLBACK_BROLL_PATH = "broll/explorer-broll.mp4";
 
 const BG_COLOR = "#E0D8EC";
 
-const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
+// Hook beat: first zoom snap lands at frame 60 (2s) so viewers see
+// motion within the swipe-away window. Subsequent beats stay long
+// enough to read the screen.
+const BREAKPOINTS = [0, 60, 240, 480, 750, 1020, 1290, 1560, 1830, 2100];
 // Sharp acceleration into the new pose, gentle settle out. Closer to a
 // real camera operator's whip-pan than the symmetrical bezier we had.
 const EASE = Easing.bezier(0.72, 0.02, 0.18, 1.0);
@@ -141,8 +144,10 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
     1.0, 0.8, 0.7, 0.7, 1.0, 1.0, 0.6, 1.0, 0.5, 0.5,
   ]);
 
-  // End card crossfade over the last two seconds.
-  const endCardProg = interpolate(frame, [2040, 2100], [0, 1], {
+  // End card 3D reveal — 8s ramp so the coin grow + logo emerge has
+  // time to land. Starts at frame 1740 (28s mark, beat 9 begins at 1830
+  // but we want the end-card to start animating well before its beat).
+  const endCardProg = interpolate(frame, [1740, 2100], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE,
