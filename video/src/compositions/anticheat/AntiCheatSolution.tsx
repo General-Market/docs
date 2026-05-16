@@ -14,13 +14,14 @@ import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom } from "./vibe";
 import { beatPulseScene } from "./beats";
 
-// Solution = 233f (7.77s). Solution→Reassure transition midpoint sits
-// near beat 33 (frame 866 absolute). Terminal flies in on scene-local
-// beat 3 (absolute beat 28, frame 737) — gives the headline ~3.1s
-// before the terminal arrives, then ~4.7s of terminal + CTA.
+// Solution = 233f (7.77s). SCENE_STARTS.Solution = 508; interior beats
+// land at scene-local 25, 50, 76, 102, 128, 153, 179, 205, 230.
+// Wordmark holds through beat 22 (local 76), terminal mounts on beat 23
+// (local 102) — gives the headline ~3.4s of stillness, then ~4.4s of
+// terminal + CTA. Lines, halo, and CTA all snap to interior beats.
 const SCENE_FRAMES = 233;
 const SCENE_SECONDS = SCENE_FRAMES / FPS;
-const TERMINAL_AT = 93;
+const TERMINAL_AT = 102; // beat 23, scene-local
 
 export const AntiCheatSolution: React.FC = () => {
   return (
@@ -38,10 +39,18 @@ export const AntiCheatSolution: React.FC = () => {
           <Terminal />
         </Sequence>
 
-        <DotGridVignette intensity={0.18} />
+        <PressurizedVignette />
       </IdleZoom>
     </AbsoluteFill>
   );
+};
+
+// Vignette breathes with the beat grid. Base sits at 0.18; each beat
+// adds up to +0.06. Subtle — feels like the room tightens on the kick.
+const PressurizedVignette: React.FC = () => {
+  const frame = useCurrentFrame();
+  const pulse = beatPulseScene(frame, "Solution", 4, 22);
+  return <DotGridVignette intensity={0.18 + pulse * 0.06} />;
 };
 
 // ─── Phone wall — 4 columns of 3 flat phones, scrolling, masked safe ────────
@@ -70,9 +79,10 @@ const COLS: { x: number; dir: -1 | 1 }[] = [
 ];
 
 const WALL_ENTER = 8;
-// Phones exit on the same frame the headline begins its zoom (HOLD_END=68
-// in Headline). Keeps the two motions on the same downbeat.
-const WALL_HOLD_END = 68;
+// Phones exit on the same frame the headline begins its zoom (HOLD_END=76
+// in Headline — beat 22, scene-local). Keeps the two motions on the
+// same downbeat.
+const WALL_HOLD_END = 76;
 const WALL_EXIT = 16;
 const WALL_TOTAL = WALL_HOLD_END + WALL_EXIT;
 
@@ -170,10 +180,12 @@ const PhoneWall: React.FC = () => {
   // being absorbed by the wordmark blast.
   const wallScale = 1 - exitEased * 0.22;
 
-  // Safety mask sweeps in once the headline has been read.
+  // Safety mask sweeps in once the headline has been read. Rises into
+  // beat 21 (local 50), holds through beat 22 (HOLD_END), washes out
+  // with the wall.
   const safetyMask = interpolate(
     frame,
-    [28, 46, WALL_HOLD_END, WALL_HOLD_END + WALL_EXIT],
+    [32, 50, WALL_HOLD_END, WALL_HOLD_END + WALL_EXIT],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -220,18 +232,36 @@ const PhoneWall: React.FC = () => {
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Hold for the first two beats so the wordmark sits still and legible.
-  // The blast collapses into the third beat — bezier surge, then a fast
-  // white wash that erases the close-up letterforms before the terminal
-  // mounts. Read first, blast last.
-  const HOLD_END = 68; // beat 2 — ≈2.3s of stillness
-  const ZOOM_END = TERMINAL_AT;
+  // Hold through beats 20, 21, 22 so the wordmark sits still and
+  // legible. The blast collapses into beat 23 — bezier surge, then a
+  // fast white wash that erases the close-up letterforms before the
+  // terminal mounts. Read first, blast last.
+  const HOLD_END = 76; // beat 22 — ≈2.5s of stillness
+  const ZOOM_END = TERMINAL_AT; // beat 23
   const zoomT = interpolate(frame, [HOLD_END, ZOOM_END], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.bezier(0.7, 0, 0.84, 0.3),
   });
-  const scale = interpolate(zoomT, [0, 1], [1, 88]);
+
+  // Beat-driven halo behind the wordmark. Pulses on every Solution
+  // beat (scene-local 25, 50, 76, 102…) — the room behind the brand
+  // breathes with the kick. Visible during the held window only;
+  // collapses ahead of the surge so the wash reads clean.
+  const haloPulse = beatPulseScene(frame, "Solution", 3, 18);
+  const haloVis = interpolate(
+    frame,
+    [0, 8, HOLD_END + 4, ZOOM_END - 12],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const haloAmt = haloPulse * haloVis;
+  const haloScale = 0.92 + haloAmt * 0.18 + Math.sin(frame * 0.08) * 0.012;
+
+  // Sub-1% wordmark scale lift on each held beat. Imperceptible alone,
+  // but the eye reads it as breathing in time with the halo.
+  const wordmarkBeatLift = haloPulse * haloVis * 0.008;
+  const scale = interpolate(zoomT, [0, 1], [1, 88]) + wordmarkBeatLift;
 
   const opacity = interpolate(frame, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
@@ -247,19 +277,9 @@ const Headline: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Beat-driven halo behind the wordmark. Pulses on every Solution
-  // beat (scene-local 2, 28, 53, 79) — the room behind the brand
-  // breathes with the kick. Visible during the held window only;
-  // collapses ahead of the surge so the wash reads clean.
-  const haloPulse = beatPulseScene(frame, "Solution", 3, 18);
-  const haloVis = interpolate(
-    frame,
-    [0, 8, HOLD_END + 6, ZOOM_END - 14],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const haloAmt = haloPulse * haloVis;
-  const haloScale = 0.92 + haloAmt * 0.18 + Math.sin(frame * 0.08) * 0.012;
+  // Wordmark glow lift on the held beats — text-shadow strength tracks
+  // the same pulse as the halo.
+  const wordmarkGlow = haloAmt;
 
   return (
     <AbsoluteFill style={{ opacity }}>
@@ -331,7 +351,7 @@ const Headline: React.FC = () => {
                 width: 130,
                 height: 130,
                 flexShrink: 0,
-                filter: "drop-shadow(0 8px 28px rgba(0, 82, 255, 0.30))",
+                filter: `drop-shadow(0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(0, 82, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)}))`,
               }}
             />
             <span
@@ -342,7 +362,7 @@ const Headline: React.FC = () => {
                 letterSpacing: "-0.05em",
                 color: colors.fg,
                 lineHeight: 0.95,
-                textShadow: "0 8px 28px rgba(0, 82, 255, 0.30)",
+                textShadow: `0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(0, 82, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)})`,
               }}
             >
               General
@@ -356,8 +376,7 @@ const Headline: React.FC = () => {
               letterSpacing: "-0.05em",
               color: colors.accent,
               lineHeight: 0.95,
-              textShadow:
-                "0 0 18px rgba(255,255,255,0.85), 0 0 6px rgba(255,255,255,0.95), 0 4px 14px rgba(10,10,12,0.22)",
+              textShadow: `0 0 ${(18 + wordmarkGlow * 10).toFixed(2)}px rgba(255,255,255,${(0.85 + wordmarkGlow * 0.10).toFixed(3)}), 0 0 6px rgba(255,255,255,0.95), 0 4px 14px rgba(10,10,12,0.22)`,
             }}
           >
             is the safe table
@@ -433,10 +452,16 @@ const Terminal: React.FC = () => {
   });
 
   // Lines paced so each typewriter event lands on a beat. Terminal
-  // mounts at scene-local 77 (beat 3); delays are local to the
-  // sequence. Line 0 types out from beat 3, line 1 from beat 4, line 2
-  // finishes typing on beat 6 — that's the "shielded" punch.
-  const LINE_DELAYS = [0, 26, 67];
+  // mounts at scene-local 102 (beat 23); delays are terminal-local.
+  // Beat 24 lands at terminal-local 26, beat 25 at 51, beat 26 at 77,
+  // beat 27 at 103.
+  //
+  // Line 0 ("$ claude", ~10f to type): starts beat 23, finishes ~10.
+  // Line 1 ("> upgrade…", ~39f to type): starts terminal 12, finishes
+  //   terminal 51 = beat 25 exactly.
+  // Line 2 ("anti-cheat", ~12f to type): starts terminal 65, finishes
+  //   terminal 77 = beat 26 — that's the "shielded" punch.
+  const LINE_DELAYS = [0, 12, 65];
   const CHARS_PER_FRAME = 0.85;
 
   // Frame at which the absolute scene-frame "✓ shielded" finishes typing.
@@ -466,11 +491,23 @@ const Terminal: React.FC = () => {
   // Each char slides in from off-screen left (-1920px) and fades over 4f.
   // Reveal completes in 30 frames — one beat — for a fast, punchy entry.
   // Wrap allowed so the line stays on two lines.
-  // First char fires at scene-local 119 (= 25.43s absolute = beat 4 in
-  // Solution, frame 763).
+  // Last letter (first to appear) fires at terminal-local 73 = scene
+  // 175. Reveal completes terminal 103 = scene 205 = beat 27.
   const CTA_TEXT = "Shield your PnL from bad actors";
-  const CTA_START = 26; // Terminal-local
+  const CTA_START = 73; // Terminal-local — first char lands ahead of beat 26
   const CTA_REVEAL = 30;
+
+  // Exit punch on beat 27 (terminal-local 103). Brief scale lift on
+  // the whole terminal as the CTA finishes — sells the cut into
+  // Reassure.
+  const EXIT_BEAT = 103;
+  const exitPunch = interpolate(
+    frame,
+    [EXIT_BEAT - 4, EXIT_BEAT, EXIT_BEAT + 8, EXIT_BEAT + 22],
+    [0, 1, 0.25, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const exitScale = 1 + exitPunch * 0.018;
 
   return (
     <AbsoluteFill
@@ -495,7 +532,7 @@ const Terminal: React.FC = () => {
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 8,
           transformStyle: "preserve-3d",
-          transform: `rotateY(${panelRotY}deg) rotateX(${panelRotX}deg) scale(${panelScale})`,
+          transform: `rotateY(${panelRotY}deg) rotateX(${panelRotX}deg) scale(${(panelScale * exitScale).toFixed(4)})`,
           transformOrigin: "50% 50%",
           boxShadow:
             "0 0 0 1px rgba(10,12,18,0.10), 0 24px 56px rgba(10,12,18,0.20)",
@@ -552,8 +589,31 @@ const Terminal: React.FC = () => {
             const showCursor = isActive && !isComplete;
             const isShielded = line.mode === "ok";
 
-            const lineScale = isShielded ? 1 + punch : 1;
+            // Each line completes on a beat. Sample a tight flare
+            // window after completion: 0→peak in 2f, decay over 14f.
+            // The shielded line already has its own punch+glow stack;
+            // the flare is for the other two lines.
+            const completionFrame =
+              start + Math.ceil(line.text.length / CHARS_PER_FRAME);
+            const sinceLineDone = Math.max(0, frame - completionFrame);
+            const flare = interpolate(
+              sinceLineDone,
+              [0, 2, 16],
+              [0, 1, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+
+            const lineScale = isShielded ? 1 + punch : 1 + flare * 0.012;
             const shieldGlow = isShielded ? glow : 0;
+
+            // Non-shielded lines get a +1px text-shadow flare on
+            // completion; shielded keeps its richer blue glow.
+            const baseShadow =
+              isShielded && isComplete
+                ? `0 0 ${22 + shieldGlow * 44}px rgba(91,134,255,${0.45 + shieldGlow * 0.35})`
+                : flare > 0.01
+                  ? `0 0 ${(1 + flare * 6).toFixed(2)}px rgba(241,243,245,${(0.55 * flare).toFixed(3)})`
+                  : undefined;
 
             return (
               <div
@@ -569,10 +629,7 @@ const Terminal: React.FC = () => {
                   minHeight: "1.5em",
                   transform: `scale(${lineScale})`,
                   transformOrigin: "left center",
-                  textShadow:
-                    isShielded && isComplete
-                      ? `0 0 ${22 + shieldGlow * 44}px rgba(91,134,255,${0.45 + shieldGlow * 0.35})`
-                      : undefined,
+                  textShadow: baseShadow,
                 }}
               >
                 {isShielded && isActive ? (
@@ -641,9 +698,12 @@ const Terminal: React.FC = () => {
   );
 };
 
+// Cursor blinks on half-beats (≈13f). Terminal mounts on beat 23, so
+// terminal-local frame phase aligns with the beat grid — the toggle
+// hits beats and half-beats cleanly.
 const Cursor: React.FC = () => {
   const frame = useCurrentFrame();
-  const blink = Math.floor(frame / 8) % 2 === 0;
+  const blink = Math.floor(frame / 13) % 2 === 0;
   return (
     <span
       style={{
