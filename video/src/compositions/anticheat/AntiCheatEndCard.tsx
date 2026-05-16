@@ -63,7 +63,7 @@ const FOOTNOTES: { letter: string; text: string }[] = [
   },
   {
     letter: "c",
-    text: "Jamie Dimon (JPMorgan Chase). $920M DOJ + CFTC + SEC settlement, Sept 2020, for orderbook spoofing in precious metals and US Treasuries. Traders Nowak, Smith and Jordan convicted at trial 2022; affirmed on appeal 2025. Dimon not personally indicted.",
+    text: "Michael Nowak (head of JPMorgan's global precious-metals desk, 2012–2019). Convicted 10 Aug 2022 in N.D. Ill. on spoofing, wire fraud, commodities fraud and attempted price manipulation across gold and silver futures 2008–2016; one year and a day in prison + $35K fine; conviction affirmed on appeal 2025. JPMorgan paid $920M to settle the parent matter (DOJ + CFTC + SEC, Sept 2020).",
   },
   {
     letter: "d",

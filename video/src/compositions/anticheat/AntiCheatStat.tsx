@@ -81,13 +81,14 @@ export const AntiCheatStat: React.FC = () => {
 // CFTC 2017, $7M fine + lifetime US-forex ban for the secret Effex
 // Capital scheme that took the other side of customer stops),
 // Ken Griffin (Citadel Securities — FINRA 2020, $700K for trading
-// ahead of customer orders in OTC stocks 2012–2014), Jamie Dimon
-// (JPMorgan — $920M DOJ + CFTC + SEC settlement 2020 for orderbook
-// spoofing across precious metals and Treasuries; trader convictions
-// affirmed on appeal 2025), Joe Lewis (pleaded guilty January 2024
-// in SDNY to three counts of securities-fraud-related conspiracy and
-// fraud; $50M penalty via Broad Bay Ltd; subsequently pardoned 2025).
-// Same scapegoat mechanism, four different dockets.
+// ahead of customer orders in OTC stocks 2012–2014), Michael Nowak
+// (JPMorgan precious-metals desk head — convicted August 2022 in
+// N.D. Ill. on spoofing, wire fraud, commodities fraud and attempted
+// price manipulation; one year and one day in prison + $35K fine;
+// conviction affirmed on appeal 2025), Joe Lewis (pleaded guilty
+// January 2024 in SDNY to three counts of securities-fraud-related
+// conspiracy and fraud; $50M penalty via Broad Bay Ltd; subsequently
+// pardoned 2025). Same scapegoat mechanism, four different dockets.
 //
 // Attribution lives in anticheat-imgs/CREDITS.md.
 
@@ -114,8 +115,8 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["orderbook", "spoofers"],
     charge: "fakes the signal",
-    imageSrc: "anticheat-imgs/scapegoat-dimon.jpg",
-    imagePosition: "center 22%",
+    imageSrc: "anticheat-imgs/scapegoat-nowak.jpg",
+    imagePosition: "center 18%",
   },
   {
     label: ["insider", "traders"],

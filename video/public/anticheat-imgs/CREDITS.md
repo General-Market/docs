@@ -62,17 +62,25 @@ face has a real sanction attached to the charge on the card.
   Photographer: Paul Elledge, 13 September 2017
   Licence: CC BY-SA 4.0 — credit Paul Elledge; share-alike obligation
 
-- **scapegoat-dimon.jpg** — Jamie Dimon (JPMorgan Chase, CEO)
-  Stand-in for JPMorgan's $920M settlement (DOJ + CFTC + SEC) in
-  September 2020 over a years-long orderbook-spoofing scheme across
-  precious metals and US Treasuries futures. Multiple JPM traders
-  (Michael Nowak, Gregg Smith, Christopher Jordan) were convicted at
-  trial in 2022; their convictions were affirmed on appeal in 2025.
-  Dimon was not personally indicted. He's the face the public attaches
-  to that bench, so he stands here in their place.
-  Source: Wikimedia Commons, *Jamie_Dimon,_CEO_of_JPMorgan_Chase.jpg*
-  Photographer: Steve Jurvetson
-  Licence: CC BY 2.0 — credit Steve Jurvetson on publish
+- **scapegoat-nowak.jpg** — Michael Nowak (JPMorgan Chase, former head
+  of global precious-metals trading)
+  Convicted in N.D. Ill. on 10 August 2022 of spoofing, wire fraud,
+  commodities fraud and attempted price manipulation in an eight-year
+  scheme (2008–2016) across gold and silver futures. Sentenced to a
+  year and a day in prison plus a $35,000 fine on 22 August 2023 by
+  Judge Edmond Chang. Conviction affirmed on appeal in 2025. Same
+  docket the parent JPMorgan paid $920M to resolve in September 2020
+  (DOJ + CFTC + SEC); Nowak ran the desk where it happened. Replaces
+  the prior Jamie Dimon stand-in (CEO, never indicted) so the face on
+  the card matches the docket.
+  Source: Bloomberg via Getty Images, *Cheney Orr*, 8 July 2022 —
+  Nowak arriving at federal court in Chicago for trial. Cropped to
+  portrait and lightly de-watermarked for editorial use.
+  Used here under fair-use commentary doctrine for criticism of a
+  public defendant's adjudicated conduct. Bloomberg / Cheney Orr
+  credit must appear in the published video's description / about
+  page.
+  Retained file `scapegoat-dimon.jpg` kept in the folder for fallback.
 
 - **scapegoat-lewis.jpg** — Joe Lewis (British billionaire, ex-owner
   of Tottenham Hotspur via family trust)
