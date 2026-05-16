@@ -384,13 +384,21 @@ def bootstrap_joined_from_chain(funds, executor):
     try:
         with psycopg2.connect(VISION_DB_URL, connect_timeout=10) as conn:
             with conn.cursor() as cur:
+                # Only seed batches that still need management — i.e.
+                # unsettled. Settled rounds have nothing the bot can do
+                # except claim once, and the existing reconcile loop
+                # handles those on its own. Seeding them just burns
+                # reverts on already-reconciled batches.
                 cur.execute(
                     "SELECT LOWER(vp.player), vp.batch_id, vp.total_deposited::text "
                     "FROM vision_positions vp "
                     "JOIN vision_batches vb ON vb.id = vp.batch_id "
+                    "LEFT JOIN vision_batch_lifecycle vbl "
+                    "  ON vbl.on_chain_batch_id = vp.batch_id "
                     "WHERE LOWER(vp.player) = ANY(%s) "
                     "  AND vp.balance > 0 "
-                    "  AND vb.state = 'active'",
+                    "  AND vb.state = 'active' "
+                    "  AND (vbl.settled_at IS NULL OR vbl.batch_id IS NULL)",
                     (addrs,),
                 )
                 rows = cur.fetchall()
