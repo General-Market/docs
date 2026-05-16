@@ -20,6 +20,9 @@ export type CssPhoneProps = {
   /** Broll duration in seconds — used to loop the video across the full
    *  composition (default 10s for the cheat-broll/phone-trading clip). */
   brollDurationSec?: number;
+  /** Seconds to trim off the start of the broll on each loop iteration
+   *  (skips a black/intro frame). Default 1s for phone-trading.mp4. */
+  brollIntroSkipSec?: number;
 };
 
 const PHONE_W = 480;
@@ -36,9 +39,14 @@ export const CssPhone: React.FC<CssPhoneProps> = ({
   rotateYDeg,
   scale,
   brollDurationSec = 10,
+  brollIntroSkipSec = 1.0,
 }) => {
   const { fps } = useVideoConfig();
-  const loopFrames = Math.max(1, Math.round(brollDurationSec * fps));
+  const introSkipFrames = Math.max(0, Math.round(brollIntroSkipSec * fps));
+  const loopFrames = Math.max(
+    1,
+    Math.round(brollDurationSec * fps) - introSkipFrames,
+  );
   return (
     <div
       style={{
@@ -85,6 +93,7 @@ export const CssPhone: React.FC<CssPhoneProps> = ({
               src={brollSrc}
               muted
               pauseWhenBuffering={false}
+              startFrom={introSkipFrames}
               style={{
                 width: "100%",
                 height: "100%",
