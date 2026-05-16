@@ -87,7 +87,7 @@ const nextConfig: NextConfig = {
         // Locale routing fallback
         { source: "/", destination: "/en" },
         {
-          source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health)[^.]+)",
+          source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health|room|pitchdeck)[^.]+)",
           destination: "/en/:path",
         },
       ],
