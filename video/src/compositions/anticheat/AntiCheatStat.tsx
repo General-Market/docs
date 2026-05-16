@@ -827,13 +827,17 @@ const EmberTypewriter: React.FC<{
         {smallSuffix && (
           <span
             style={{
-              fontSize: Math.round(fontSize * 0.07),
+              fontSize: Math.round(fontSize * 0.11),
               fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.45)",
-              marginLeft: Math.round(fontSize * 0.02),
+              color: "rgba(255, 255, 255, 0.85)",
+              marginLeft: Math.round(fontSize * 0.04),
               verticalAlign: "super",
               letterSpacing: 0,
               fontVariantNumeric: "normal",
+              // Override the global beat-glow textShadow inherited from
+              // AntiCheatFull's root AbsoluteFill — at this glyph size
+              // (~13pt) the 88px bloom completely engulfs the character.
+              textShadow: "none",
             }}
           >
             {smallSuffix}
