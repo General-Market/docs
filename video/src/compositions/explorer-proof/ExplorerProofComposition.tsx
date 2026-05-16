@@ -19,7 +19,6 @@ import {
   Video,
 } from "remotion";
 import { CoinsBackground } from "./CoinsBackground";
-import { SideTexts } from "./SideTexts";
 import { EndCard } from "./EndCard";
 
 export type ExplorerProofProps = {
@@ -196,8 +195,8 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
           rotateYDeg: phoneRotateY,
           scale: phoneScale,
         }}
+        sideTextsVisibility={sideTextsVis}
       />
-      <SideTexts visibility={sideTextsVis} />
       <EndCard progress={endCardProg} />
     </AbsoluteFill>
   );

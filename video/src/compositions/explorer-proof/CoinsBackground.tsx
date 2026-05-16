@@ -9,10 +9,11 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, staticFile } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { ContactShadows, Environment } from "@react-three/drei";
+import { ContactShadows, Environment, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Phone3D, type Phone3DProps } from "./Phone3D";
+import { LeftWordmark, RightWordmark } from "./SideTexts";
 
 export type CoinsBackgroundProps = {
   forwardProgress: number;
@@ -20,6 +21,7 @@ export type CoinsBackgroundProps = {
   width: number;
   height: number;
   phone: Phone3DProps;
+  sideTextsVisibility: number;
 };
 
 const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
@@ -322,7 +324,8 @@ const Scene: React.FC<{
   forwardProgress: number;
   opacity: number;
   phone: Phone3DProps;
-}> = ({ frame, forwardProgress, opacity, phone }) => {
+  sideTextsVisibility: number;
+}> = ({ frame, forwardProgress, opacity, phone, sideTextsVisibility }) => {
   const { camera } = useThree();
   const bodyGeom = useMemo(() => buildCoinBodyGeometry(), []);
   const reliefGeom = useMemo(() => buildReliefGeometry(), []);
@@ -368,6 +371,28 @@ const Scene: React.FC<{
         />
       ))}
       <Phone3D {...phone} />
+      {/* Side wordmarks live inside the 3D scene so the phone and
+          coins can occlude them naturally. transform={false} keeps the
+          text screen-space-sized; occlude raycasts every frame against
+          scene meshes so a close-up phone cleanly hides the text. */}
+      <Html
+        position={[-8.8, 0, 0]}
+        transform={false}
+        occlude
+        pointerEvents="none"
+        zIndexRange={[10, 0]}
+      >
+        <LeftWordmark visibility={sideTextsVisibility} />
+      </Html>
+      <Html
+        position={[8.8, 0, 0]}
+        transform={false}
+        occlude
+        pointerEvents="none"
+        zIndexRange={[10, 0]}
+      >
+        <RightWordmark visibility={sideTextsVisibility} />
+      </Html>
     </>
   );
 };
@@ -378,6 +403,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
   width,
   height,
   phone,
+  sideTextsVisibility,
 }) => {
   const frame = useCurrentFrame();
   return (
@@ -406,6 +432,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
             forwardProgress={forwardProgress}
             opacity={opacity}
             phone={phone}
+            sideTextsVisibility={sideTextsVisibility}
           />
         </React.Suspense>
       </ThreeCanvas>
