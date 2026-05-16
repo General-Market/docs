@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Delete the misplaced first-pass tutorial items (right-column, y < 2000).
+"""Delete every tutorial item in the right-hand storyboard column.
 
-The first upload placed items at x=1800, y in [-3160, +840] — overlapping the
-top of the predator-anatomy hero area. This script wipes those items so the
-second-pass upload can place a fuller column at x=+4800.
+The column lives at CENTRE_X=4800 (see upload_to_miro.py). Hero text at y≈0,
+ten cards stack down to y≈12900, closer below at y≈14000. Items are 1200–1500
+wide, so x bounds span roughly 4050–5550. Box is generous in both axes; nothing
+else lives in this corner of the board.
+
+Usage:
+    export $(grep -E "^MIRO_" .env | xargs)
+    python3 docs/bot-tutorial/scripts/wipe_misplaced.py
 """
 import os
 import urllib.parse
@@ -16,9 +21,9 @@ BOARD_ENC = urllib.parse.quote(BOARD_ID, safe="")
 BASE = f"https://api.miro.com/v2/boards/{BOARD_ENC}"
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 
-# Bounding box of items to delete.
-X_MIN, X_MAX = 1500, 2100
-Y_MIN, Y_MAX = -4000, 2000
+# Bounding box of items to delete — the full bot-tutorial column.
+X_MIN, X_MAX = 4000, 5600
+Y_MIN, Y_MAX = -400, 15000
 
 
 def list_items(item_type: str):
