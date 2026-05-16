@@ -51,50 +51,78 @@ export function UnlockForm({
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-[13px] uppercase tracking-[0.14em] text-neutral-500">
-            General Market
+    <main className="fixed inset-0 flex items-center justify-center px-6 overflow-hidden bg-black">
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover"
+        aria-hidden="true"
+      >
+        <source src="/room/bg-loop.mp4" type="video/mp4" />
+      </video>
+
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div
+          className="rounded-2xl border border-white/15 bg-white/8 p-8 md:p-10 space-y-7 shadow-2xl"
+          style={{
+            backdropFilter: 'saturate(180%) blur(20px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+            backgroundColor: 'rgba(255,255,255,0.08)',
+          }}
+        >
+          <div className="text-center space-y-2">
+            <p className="text-[12px] uppercase tracking-[0.18em] text-white/60">
+              General Market
+            </p>
+            <h1 className="text-[28px] font-semibold tracking-tight text-white">
+              {title}
+            </h1>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-4">
+            <label className="block">
+              <span className="block text-[12px] font-medium text-white/70 mb-2 uppercase tracking-wider">
+                Access code
+              </span>
+              <input
+                type="text"
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="ABCD-EFGH-IJKL"
+                required
+                disabled={submitting}
+                className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-[17px] font-mono tracking-wider text-white placeholder:text-white/30 focus:outline-none focus:border-white/60 focus:ring-2 focus:ring-white/20 disabled:opacity-50"
+              />
+            </label>
+
+            {error && (
+              <p className="text-[14px] text-red-300">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting || code.length === 0}
+              className="w-full rounded-full bg-white text-black py-3 text-[15px] font-medium hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Unlocking…' : 'Unlock'}
+            </button>
+          </form>
+
+          <p className="text-center text-[12px] text-white/50">
+            This link is personal. Don&apos;t share it.
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
         </div>
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <label className="block">
-            <span className="block text-[13px] font-medium text-neutral-700 mb-2">
-              Access code
-            </span>
-            <input
-              type="text"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="ABCD-EFGH-IJKL"
-              required
-              disabled={submitting}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-[17px] font-mono tracking-wider placeholder:text-neutral-400 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 disabled:opacity-50"
-            />
-          </label>
-
-          {error && (
-            <p className="text-[14px] text-red-600">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting || code.length === 0}
-            className="w-full rounded-full bg-black text-white py-3 text-[15px] font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Unlocking…' : 'Unlock'}
-          </button>
-        </form>
-
-        <p className="text-center text-[13px] text-neutral-500">
-          This link is personal. Don't share it.
-        </p>
       </div>
     </main>
   )
