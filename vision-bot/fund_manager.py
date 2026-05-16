@@ -14,6 +14,7 @@ from pathlib import Path
 
 from framework.core import encode_bitmap, hash_bitmap, load_strategy
 from framework.chain import (
+    BatchNotFoundError,
     BitmapSubmitError,
     Executor,
     VaultExecutor,
@@ -344,6 +345,86 @@ def load_state(funds, state_file=STATE_FILE):
             len(fund.active_batches),
             fund.joined_total,
         )
+
+
+def bootstrap_joined_from_chain(funds, executor):
+    """Seed joined_batch_ids / active_batches from chain truth on startup.
+
+    The persisted state file is incomplete after any unclean shutdown — the
+    bot then rediscovers its own joins one AlreadyJoined() revert at a time.
+    The data-node DB indexes BatchJoined events; query it once per vault,
+    then verify each hit on chain. Belt and braces because the DB can lag.
+
+    Falls back gracefully: no DB URL, no DB connection, or DB error → log
+    and return. The bot still works (the pre-check guards individual joins);
+    this just stops the thundering herd of reverts on first cycle.
+    """
+    if not VISION_DB_URL:
+        log.info("Chain-bootstrap: VISION_DB_URL not set — skipping")
+        return
+    try:
+        import psycopg2
+    except Exception as e:
+        log.warning("Chain-bootstrap: psycopg2 import failed: %s", e)
+        return
+
+    seeded_total = 0
+    try:
+        with psycopg2.connect(VISION_DB_URL) as conn:
+            for fund in funds:
+                try:
+                    with conn.cursor() as cur:
+                        # vision_positions only holds live joins. A row gets
+                        # deleted (or balance zeroed) on settlement.
+                        cur.execute(
+                            "SELECT batch_id FROM vision_positions "
+                            "WHERE LOWER(player) = LOWER(%s) AND balance > 0",
+                            (fund.vault_addr,),
+                        )
+                        candidate_ids = [int(r[0]) for r in cur.fetchall()]
+                except Exception as e:
+                    log.warning(
+                        "[%s] Chain-bootstrap DB query failed: %s", fund.name, e,
+                    )
+                    continue
+
+                if not candidate_ids:
+                    continue
+
+                seeded = 0
+                for bid in candidate_ids:
+                    if bid in fund.joined_batch_ids:
+                        continue
+                    try:
+                        pos = executor.get_player_position(bid, fund.vault_addr)
+                    except BatchNotFoundError:
+                        # Indexer ahead of chain reorg, or batch wiped.
+                        continue
+                    except Exception as e:
+                        log.warning(
+                            "[%s] Chain-bootstrap verify failed for batch %d: %s",
+                            fund.name, bid, e,
+                        )
+                        continue
+                    if pos.get("joinTimestamp", 0) > 0:
+                        fund.joined_batch_ids.add(bid)
+                        fund.active_batches.setdefault(
+                            bid, int(pos.get("totalDeposited", 0)),
+                        )
+                        seeded += 1
+
+                if seeded:
+                    log.info(
+                        "[%s] Chain-bootstrap: seeded %d joined batches from DB+chain",
+                        fund.name, seeded,
+                    )
+                seeded_total += seeded
+    except Exception as e:
+        log.warning("Chain-bootstrap: postgres connect failed: %s", e)
+        return
+
+    log.info("Chain-bootstrap complete: %d batches seeded across %d funds",
+             seeded_total, len(funds))
 
 
 # ── Reconciliation ─────────────────────────────────────────────
@@ -909,17 +990,35 @@ def run_cycle(
             # Pre-check on chain. In-memory joined_batch_ids drifts on
             # restart and after reconcile races; without this guard we burn
             # a tx and a nonce on a guaranteed AlreadyJoined() revert.
+            #
+            # Three outcomes from get_player_position:
+            #   1. returns dict, joinTimestamp > 0  → already joined, skip
+            #   2. returns dict, joinTimestamp == 0 → not joined, proceed
+            #   3. raises BatchNotFoundError        → batch not on chain yet,
+            #      skip this cycle and try again later
+            #   4. raises anything else (RPC hiccup, decode error, etc.)
+            #      → we DON'T KNOW. Skip. Assuming "not joined" and falling
+            #      through is what burned 150+ AlreadyJoined() reverts per
+            #      10 minutes during the 2026-05-15 sequencer trouble.
             already_joined = False
             try:
                 existing = executor.get_player_position(batch_id, fund.vault_addr)
-                if existing.get("joinTimestamp", 0) > 0:
-                    fund.joined_batch_ids.add(batch_id)
-                    fund.active_batches.setdefault(
-                        batch_id, existing.get("totalDeposited", deposit_wei),
-                    )
-                    already_joined = True
-            except Exception:
-                pass  # batch may not exist yet, proceed
+            except BatchNotFoundError:
+                # Chain hasn't surfaced this batch yet. Try next cycle.
+                continue
+            except Exception as e:
+                log.warning(
+                    "[%s] get_player_position(batch=%d) failed: %s — skipping this cycle",
+                    fund.name, batch_id, e,
+                )
+                continue
+
+            if existing.get("joinTimestamp", 0) > 0:
+                fund.joined_batch_ids.add(batch_id)
+                fund.active_batches.setdefault(
+                    batch_id, existing.get("totalDeposited", deposit_wei),
+                )
+                already_joined = True
 
             if not already_joined:
                 # Join via vault. _sign_and_send waits for the receipt — by the
@@ -1194,6 +1293,14 @@ def main():
             fund.joined_batch_ids.discard(bid)
         if stale:
             log.info("[%s] Purged %d stale batches on startup", fund.name, len(stale))
+
+    # Rebuild joined_batch_ids from chain truth. The persisted state file
+    # is whatever the last graceful shutdown wrote; the bot would otherwise
+    # rediscover its own joins one AlreadyJoined() revert at a time.
+    try:
+        bootstrap_joined_from_chain(funds, executor)
+    except Exception as e:
+        log.warning("Chain-bootstrap raised — continuing without it: %s", e)
 
     # Caller-owned tracking set so run_cycle can unsubscribe stale entries
     # without re-asking the feed for its private state.
