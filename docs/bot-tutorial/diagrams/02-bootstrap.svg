@@ -1,23 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
   <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
-    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #86868B; }
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
+    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
     .term     { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
     .term-cmd { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .term-tag { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #2997FF; }
+    .term-tag { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
     .term-ok  { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-    .term-mut { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #86868B; }
+    .term-mut { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
     .term-acc { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
     .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.08px; }
-    .side-label { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 1.98px; }
-    .side-fig   { font: 800 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.484px; }
-    .side-sub   { font: 400 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.065px; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
+    .side-label { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
+    .side-fig   { font: 800 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.484px; }
+    .side-sub   { font: 400 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.065px; }
   </style>
 
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
 
   <!-- header -->
   <text x="60" y="82" class="eyebrow">STEP 02 · THE BOOTSTRAP</text>
@@ -25,7 +25,7 @@
   <text x="60" y="190" class="tagline">One command. The wallet is generated, funded, and idle. Three minutes from clone to ready.</text>
 
   <!-- terminal window -->
-  <rect x="60" y="240" width="980" height="680" rx="12" fill="#1D1D1F"/>
+  <rect x="60" y="240" width="980" height="680" rx="12" fill="#0A0A0A"/>
 
   <!-- terminal chrome -->
   <rect x="60" y="240" width="980" height="44" rx="12" fill="#2C2C2E"/>
@@ -112,19 +112,19 @@
   </g>
 
   <g transform="translate(1080, 720)">
-    <rect x="0" y="0" width="360" height="200" rx="12" fill="#E8F2FE" stroke="#B5D4F5"/>
-    <text x="24" y="34" class="side-label" style="fill:#0071E3">FAUCETED</text>
-    <text x="24" y="74" class="side-fig" style="fill:#0071E3">1.0 WUSDC</text>
+    <rect x="0" y="0" width="360" height="200" rx="12" fill="#E5EBFF" stroke="#9FB3FF"/>
+    <text x="24" y="34" class="side-label" style="fill:#0052FF">FAUCETED</text>
+    <text x="24" y="74" class="side-fig" style="fill:#0052FF">1.0 WUSDC</text>
     <text x="24" y="100" class="side-sub">+ 0.01 ETH for gas.</text>
     <text x="24" y="120" class="side-sub">Enough for 10 joins.</text>
 
-    <line x1="24" y1="148" x2="336" y2="148" stroke="#B5D4F5"/>
-    <text x="24" y="178" class="side-label" style="fill:#0071E3">MIN DEPOSIT</text>
+    <line x1="24" y1="148" x2="336" y2="148" stroke="#9FB3FF"/>
+    <text x="24" y="178" class="side-label" style="fill:#0052FF">MIN DEPOSIT</text>
     <text x="155" y="178" class="side-sub">0.1 WUSDC per block.</text>
   </g>
 
   <!-- footer command pill -->
-  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0071E3"/>
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0052FF"/>
   <text x="92" y="1010" class="pill">$ ./setup.sh --auto-fund</text>
 
   <!-- caption -->

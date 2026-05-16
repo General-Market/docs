@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <style>
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
+    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term     { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
+    .term-cmd { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .term-tag { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
+    .term-ok  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
+    .term-mut { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term-acc { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
+    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
+    .chart-l { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
+    .chart-v { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.616px; }
+    .axis    { font: 500 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+  </style>
+
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+
+  <text x="60" y="82" class="eyebrow">STEP 05 · THE BACKTEST</text>
+  <text x="60" y="146" class="title">Test against the past.</text>
+  <text x="60" y="190" class="tagline">Walk-forward over 72 hours of real ticks. The dead market remembers every move you would have made.</text>
+
+  <rect x="60" y="240" width="900" height="680" rx="12" fill="#0A0A0A"/>
+  <rect x="60" y="240" width="900" height="44" rx="12" fill="#2C2C2E"/>
+  <rect x="60" y="276" width="900" height="8" fill="#2C2C2E"/>
+  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
+  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
+  <circle cx="126" cy="262" r="6" fill="#28C840"/>
+  <text x="510" y="266" class="term-mute" text-anchor="middle">claude — backtest — 90×30</text>
+
+  <g transform="translate(92, 320)">
+    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
+    <text x="226" y="0" class="term-cmd">.venv/bin/python main.py backtest --strategy ensemble --hours 72</text>
+
+    <text x="0" y="40" class="term-tag">[backtest]</text>
+    <text x="104" y="40" class="term">loading 72h history …</text>
+    <text x="312" y="40" class="term-mut">8,217 markets × 4,320 ticks</text>
+
+    <text x="0" y="68" class="term-tag">[backtest]</text>
+    <text x="104" y="68" class="term">walk-forward in 60-tick windows</text>
+
+    <text x="0" y="104" class="term-mut">window  acc    flip   lift</text>
+
+    <text x="0" y="130" class="term-tag">[bt]</text>
+    <text x="40" y="130" class="term">  1/72  0.972  0.21  </text>
+    <text x="232" y="130" class="term-ok">+0.34pp</text>
+    <text x="0" y="154" class="term-tag">[bt]</text>
+    <text x="40" y="154" class="term">  2/72  0.969  0.18  </text>
+    <text x="232" y="154" class="term-ok">+0.29pp</text>
+    <text x="0" y="178" class="term-tag">[bt]</text>
+    <text x="40" y="178" class="term">  3/72  0.971  0.19  </text>
+    <text x="232" y="178" class="term-ok">+0.31pp</text>
+    <text x="0" y="202" class="term-mut">   ⋮      ⋮     ⋮       ⋮</text>
+    <text x="0" y="226" class="term-tag">[bt]</text>
+    <text x="40" y="226" class="term"> 70/72  0.974  0.22  </text>
+    <text x="232" y="226" class="term-ok">+0.37pp</text>
+    <text x="0" y="250" class="term-tag">[bt]</text>
+    <text x="40" y="250" class="term"> 71/72  0.970  0.18  </text>
+    <text x="232" y="250" class="term-ok">+0.28pp</text>
+    <text x="0" y="274" class="term-tag">[bt]</text>
+    <text x="40" y="274" class="term"> 72/72  0.971  0.19  </text>
+    <text x="232" y="274" class="term-ok">+0.31pp</text>
+
+    <text x="0" y="316" class="term-mut">────────────────────────────────────────────</text>
+
+    <text x="0" y="346" class="term-tag">[result]</text>
+    <text x="80" y="346" class="term">aggregate accuracy   </text>
+    <text x="296" y="346" class="term-acc">97.1%</text>
+
+    <text x="0" y="372" class="term-tag">[result]</text>
+    <text x="80" y="372" class="term">sticky baseline      </text>
+    <text x="296" y="372" class="term">96.6%</text>
+
+    <text x="0" y="398" class="term-tag">[result]</text>
+    <text x="80" y="398" class="term">lift over baseline   </text>
+    <text x="296" y="398" class="term-ok">+0.5pp</text>
+
+    <text x="0" y="424" class="term-tag">[result]</text>
+    <text x="80" y="424" class="term">flip-catch rate      </text>
+    <text x="296" y="424" class="term-acc">19.2%</text>
+
+    <text x="0" y="464" class="term-mut">elapsed 38s</text>
+
+    <text x="0" y="540" class="term-mute">~/vision-bot-examples $ ▍</text>
+  </g>
+
+  <!-- right side: result cards + chart -->
+  <g transform="translate(1000, 280)">
+    <rect x="0" y="0" width="440" height="180" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
+    <text x="24" y="36" class="chart-l">ACCURACY · 72h</text>
+    <text x="24" y="86" class="chart-v">97.1<tspan font-size="20" fill="#6E727A">%</tspan></text>
+    <text x="24" y="120" class="chart-l">SAMPLE</text>
+    <text x="24" y="150" class="term-mut" style="fill:#0A0A0A">35,498,440 predictions</text>
+  </g>
+
+  <g transform="translate(1000, 476)">
+    <rect x="0" y="0" width="440" height="180" rx="14" fill="#E5EBFF" stroke="#9FB3FF"/>
+    <text x="24" y="36" class="chart-l" style="fill:#0052FF">LIFT · OVER BASELINE</text>
+    <text x="24" y="86" class="chart-v" style="fill:#0052FF">+0.5<tspan font-size="20" fill="#0052FF">pp</tspan></text>
+    <text x="24" y="120" class="chart-l" style="fill:#0052FF">WHERE IT LIVES</text>
+    <text x="24" y="150" class="term-mut" style="fill:#0A0A0A">in the 19% of ticks that flip</text>
+  </g>
+
+  <g transform="translate(1000, 672)">
+    <rect x="0" y="0" width="440" height="248" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
+    <text x="24" y="36" class="chart-l">CUMULATIVE LIFT · 72 WINDOWS</text>
+
+    <!-- chart axes -->
+    <g transform="translate(40, 80)">
+      <line x1="0" y1="120" x2="360" y2="120" stroke="#D2D2D7"/>
+      <line x1="0" y1="0" x2="0" y2="120" stroke="#D2D2D7"/>
+
+      <!-- lift line — climbing curve from (0,110) to (360, 20) -->
+      <polyline fill="none" stroke="#0052FF" stroke-width="2"
+        points="0,110 30,98 60,92 90,88 120,80 150,72 180,68 210,60 240,52 270,46 300,38 330,28 360,20" />
+
+      <!-- baseline at flat -->
+      <line x1="0" y1="110" x2="360" y2="110" stroke="#6E727A" stroke-dasharray="3 3"/>
+
+      <!-- labels -->
+      <text x="0" y="138" class="axis">0h</text>
+      <text x="180" y="138" class="axis" text-anchor="middle">36h</text>
+      <text x="360" y="138" class="axis" text-anchor="end">72h</text>
+      <text x="-6" y="14" class="axis" text-anchor="end">+0.5</text>
+      <text x="-6" y="114" class="axis" text-anchor="end">0.0</text>
+    </g>
+  </g>
+
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
+  <text x="92" y="1010" class="pill">$ .venv/bin/python main.py backtest --strategy ensemble --hours 72</text>
+  <text x="60" y="1066" class="caption">Offline accuracy is mostly stickiness. The real edge is the half-percent of flips you catch — and whether anyone else is paying for them.</text>
+</svg>

@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <style>
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
+    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term     { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
+    .term-cmd { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .term-tag { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
+    .term-ok  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
+    .term-mut { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term-acc { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
+    .term-warn { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #FF9F0A; }
+    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
+    .step-l  { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
+    .step-h  { font: 700 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.08px; }
+    .step-d  { font: 500 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.065px; }
+  </style>
+
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+
+  <text x="60" y="82" class="eyebrow">STEP 07 · THE DRY RUN</text>
+  <text x="60" y="146" class="title">Build the transaction. Don't sign.</text>
+  <text x="60" y="190" class="tagline">Same code path as live, minus the wallet. Last chance to catch a mistake before it costs gas.</text>
+
+  <rect x="60" y="240" width="900" height="680" rx="12" fill="#0A0A0A"/>
+  <rect x="60" y="240" width="900" height="44" rx="12" fill="#2C2C2E"/>
+  <rect x="60" y="276" width="900" height="8" fill="#2C2C2E"/>
+  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
+  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
+  <circle cx="126" cy="262" r="6" fill="#28C840"/>
+  <text x="510" y="266" class="term-mute" text-anchor="middle">claude — dryrun — 90×30</text>
+
+  <g transform="translate(92, 320)">
+    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
+    <text x="226" y="0" class="term-cmd">main.py dryrun --strategy ensemble</text>
+
+    <text x="0" y="40" class="term-tag">[dryrun]</text>
+    <text x="86" y="40" class="term">strategy=</text>
+    <text x="172" y="40" class="term-acc">ensemble</text>
+
+    <text x="0" y="68" class="term-tag">[dryrun]</text>
+    <text x="86" y="68" class="term">discovering vision source </text>
+    <text x="316" y="68" class="term-acc">twitch</text>
+    <text x="0" y="92" class="term-mut">          active batch 412 (8,217 markets, lock in 42s)</text>
+
+    <text x="0" y="130" class="term-tag">[dryrun]</text>
+    <text x="86" y="130" class="term">running ensemble on 8,217 markets …</text>
+    <text x="0" y="156" class="term-mut">    ↳ xgb classification …  </text>
+    <text x="276" y="156" class="term-ok">812 ms</text>
+    <text x="0" y="180" class="term-mut">    ↳ rolling features …    </text>
+    <text x="276" y="180" class="term-ok">91 ms</text>
+    <text x="0" y="204" class="term-mut">    ↳ weighted blend …      </text>
+    <text x="276" y="204" class="term-ok">6 ms</text>
+
+    <text x="0" y="240" class="term-tag">[dryrun]</text>
+    <text x="86" y="240" class="term">bets →</text>
+    <text x="146" y="240" class="term-acc">4,103 UP</text>
+    <text x="226" y="240" class="term">,</text>
+    <text x="236" y="240" class="term-acc">4,114 DOWN</text>
+
+    <text x="0" y="276" class="term-tag">[dryrun]</text>
+    <text x="86" y="276" class="term">bitmap sealed (1024 B, MSB-first)</text>
+    <text x="0" y="300" class="term-mut">          hash </text>
+    <text x="104" y="300" class="term-acc">0xa14d8e93c1c8…f1c8</text>
+
+    <text x="0" y="340" class="term-tag">[dryrun]</text>
+    <text x="86" y="340" class="term-warn">tx (UNSIGNED)</text>
+    <text x="0" y="364" class="term-mut">          to       0x94d540bb…6c61</text>
+    <text x="0" y="388" class="term-mut">          value    0</text>
+    <text x="0" y="412" class="term-mut">          gas      682,400</text>
+    <text x="0" y="436" class="term-mut">          gasPrice 0.1 gwei</text>
+    <text x="0" y="460" class="term-mut">          data     0xa61f4b7e…</text>
+
+    <text x="0" y="500" class="term-tag">[dryrun]</text>
+    <text x="86" y="500" class="term">cost estimate </text>
+    <text x="214" y="500" class="term-acc">0.0000682 ETH</text>
+
+    <text x="0" y="540" class="term-warn">[abort]</text>
+    <text x="74" y="540" class="term">not signed, not sent.</text>
+    <text x="0" y="566" class="term-mut">          (add --live to commit.)</text>
+
+    <text x="0" y="610" class="term-mute">~/vision-bot-examples $ ▍</text>
+  </g>
+
+  <!-- right side: 5-step verification sequence -->
+  <g transform="translate(1000, 280)">
+    <rect x="0" y="0" width="440" height="640" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
+    <text x="24" y="36" class="step-l">WHAT THE DRY RUN VERIFIES</text>
+
+    <g transform="translate(24, 78)">
+      <circle cx="14" cy="14" r="14" fill="#FFFFFF" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="14" y="19" class="step-l" style="fill:#0052FF" text-anchor="middle">1</text>
+      <text x="44" y="14" class="step-h">Strategy runs.</text>
+      <text x="44" y="34" class="step-d">xgb + rolling produce a bitmap.</text>
+    </g>
+
+    <g transform="translate(24, 158)">
+      <circle cx="14" cy="14" r="14" fill="#FFFFFF" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="14" y="19" class="step-l" style="fill:#0052FF" text-anchor="middle">2</text>
+      <text x="44" y="14" class="step-h">Bitmap is 1024 bytes.</text>
+      <text x="44" y="34" class="step-d">Short bitmaps hash wrong — silent reject.</text>
+    </g>
+
+    <g transform="translate(24, 238)">
+      <circle cx="14" cy="14" r="14" fill="#FFFFFF" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="14" y="19" class="step-l" style="fill:#0052FF" text-anchor="middle">3</text>
+      <text x="44" y="14" class="step-h">Vision contract is alive.</text>
+      <text x="44" y="34" class="step-d">getBatch(412) returns a non-empty config.</text>
+    </g>
+
+    <g transform="translate(24, 318)">
+      <circle cx="14" cy="14" r="14" fill="#FFFFFF" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="14" y="19" class="step-l" style="fill:#0052FF" text-anchor="middle">4</text>
+      <text x="44" y="14" class="step-h">Gas is in range.</text>
+      <text x="44" y="34" class="step-d">682k gas at 0.1 gwei = 0.0000682 ETH.</text>
+    </g>
+
+    <g transform="translate(24, 398)">
+      <circle cx="14" cy="14" r="14" fill="#FFFFFF" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="14" y="19" class="step-l" style="fill:#0052FF" text-anchor="middle">5</text>
+      <text x="44" y="14" class="step-h">Lock window is open.</text>
+      <text x="44" y="34" class="step-d">tick_end - now &gt; 10s. No guaranteed revert.</text>
+    </g>
+
+    <line x1="24" y1="490" x2="416" y2="490" stroke="#E8E8ED"/>
+
+    <text x="24" y="524" class="step-l" style="fill:#FF9F0A">WHAT IT DOES NOT DO</text>
+    <text x="24" y="556" class="step-d" style="fill:#0A0A0A">Sign. Send. Pay. Reveal.</text>
+    <text x="24" y="578" class="step-d">The bitmap stays in memory. The chain doesn't see it.</text>
+    <text x="24" y="608" class="step-d">Add --live to convert to a real tx.</text>
+  </g>
+
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
+  <text x="92" y="1010" class="pill">$ .venv/bin/python main.py dryrun --strategy ensemble</text>
+  <text x="60" y="1066" class="caption">The dry run knows your strategy, your gas, your bytes. It refuses only the last step — the one that costs.</text>
+</svg>

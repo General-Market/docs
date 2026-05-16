@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <style>
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
+    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term     { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
+    .term-cmd { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .term-tag { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
+    .term-ok  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
+    .term-mut { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
+    .term-acc { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
+    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
+    .panel-l { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
+    .panel-v { font: 700 18px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.396px; }
+    .feat-name { font: 600 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A0A0A; }
+    .feat-val  { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; }
+  </style>
+
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+
+  <text x="60" y="82" class="eyebrow">STEP 06 · THE TRAINING</text>
+  <text x="60" y="146" class="title">Compile the model.</text>
+  <text x="60" y="190" class="tagline">XGBoost on eighteen features. Three minutes of CPU. The strategy gets opinions it can defend.</text>
+
+  <rect x="60" y="240" width="900" height="680" rx="12" fill="#0A0A0A"/>
+  <rect x="60" y="240" width="900" height="44" rx="12" fill="#2C2C2E"/>
+  <rect x="60" y="276" width="900" height="8" fill="#2C2C2E"/>
+  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
+  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
+  <circle cx="126" cy="262" r="6" fill="#28C840"/>
+  <text x="510" y="266" class="term-mute" text-anchor="middle">claude — train-xgb — 90×30</text>
+
+  <g transform="translate(92, 320)">
+    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
+    <text x="226" y="0" class="term-cmd">…/main.py train-xgb --hours 72 --max-assets 500</text>
+
+    <text x="0" y="40" class="term-tag">[train]</text>
+    <text x="80" y="40" class="term">fetching 72h history …</text>
+    <text x="306" y="40" class="term-mut">500 × 4,320 rows</text>
+
+    <text x="0" y="68" class="term-tag">[train]</text>
+    <text x="80" y="68" class="term">features …</text>
+    <text x="0" y="92" class="term-mut">         rolling_3, rolling_12, ema_20, volatility_24,</text>
+    <text x="0" y="116" class="term-mut">         distance, slope_30, drawdown, momentum_6, …</text>
+
+    <text x="0" y="152" class="term-tag">[train]</text>
+    <text x="80" y="152" class="term">dataset </text>
+    <text x="156" y="152" class="term-acc">2,160,000 rows × 18 cols</text>
+
+    <text x="0" y="180" class="term-tag">[train]</text>
+    <text x="80" y="180" class="term">train/val split 80/20</text>
+
+    <text x="0" y="218" class="term-tag">[xgb]</text>
+    <text x="62" y="218" class="term">depth=6, eta=0.08, rounds=400, n_jobs=8</text>
+
+    <text x="0" y="252" class="term-mut">round  val-logloss   acc</text>
+
+    <text x="0" y="276" class="term-tag">[xgb]</text>
+    <text x="62" y="276" class="term">  050   0.4123      0.9694</text>
+    <text x="0" y="300" class="term-tag">[xgb]</text>
+    <text x="62" y="300" class="term">  100   0.3987      0.9712</text>
+    <text x="0" y="324" class="term-tag">[xgb]</text>
+    <text x="62" y="324" class="term">  200   0.3892      </text>
+    <text x="284" y="324" class="term-ok">0.9716</text>
+    <text x="0" y="348" class="term-tag">[xgb]</text>
+    <text x="62" y="348" class="term">  300   0.3863      </text>
+    <text x="284" y="348" class="term-ok">0.9718</text>
+    <text x="0" y="372" class="term-tag">[xgb]</text>
+    <text x="62" y="372" class="term">  400   0.3851      </text>
+    <text x="284" y="372" class="term-ok">0.9719</text>
+
+    <text x="0" y="412" class="term-tag">[save]</text>
+    <text x="64" y="412" class="term">→ models/xgb.pkl  </text>
+    <text x="234" y="412" class="term-mut">(2.1 MB)</text>
+
+    <text x="0" y="440" class="term-mut">elapsed 174s</text>
+
+    <text x="0" y="510" class="term-mute">~/vision-bot-examples $ ▍</text>
+  </g>
+
+  <!-- right side: feature importance + stats -->
+  <g transform="translate(1000, 280)">
+    <rect x="0" y="0" width="440" height="180" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
+    <text x="24" y="36" class="panel-l">VALIDATION ACCURACY</text>
+    <text x="24" y="80" class="panel-v" style="font-size:32px">97.19<tspan font-size="20" fill="#6E727A">%</tspan></text>
+    <text x="24" y="120" class="panel-l">VS BASELINE</text>
+    <text x="24" y="146" class="term-mut" style="fill:#0A7C42;font-weight:700">+0.5pp lift</text>
+  </g>
+
+  <g transform="translate(1000, 476)">
+    <rect x="0" y="0" width="440" height="444" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
+    <text x="24" y="36" class="panel-l">FEATURE IMPORTANCE · TOP 8</text>
+
+    <!-- bars -->
+    <g transform="translate(24, 64)">
+      <text x="0" y="14" class="feat-name">rolling_12</text>
+      <rect x="160" y="2" width="240" height="14" rx="2" fill="#0052FF"/>
+      <text x="408" y="14" class="feat-val">0.18</text>
+
+      <text x="0" y="44" class="feat-name">ema_20</text>
+      <rect x="160" y="32" width="208" height="14" rx="2" fill="#0052FF"/>
+      <text x="376" y="44" class="feat-val">0.16</text>
+
+      <text x="0" y="74" class="feat-name">volatility_24</text>
+      <rect x="160" y="62" width="176" height="14" rx="2" fill="#0052FF"/>
+      <text x="344" y="74" class="feat-val">0.13</text>
+
+      <text x="0" y="104" class="feat-name">distance</text>
+      <rect x="160" y="92" width="156" height="14" rx="2" fill="#0052FF"/>
+      <text x="324" y="104" class="feat-val">0.12</text>
+
+      <text x="0" y="134" class="feat-name">slope_30</text>
+      <rect x="160" y="122" width="124" height="14" rx="2" fill="#9FB3FF"/>
+      <text x="292" y="134" class="feat-val">0.09</text>
+
+      <text x="0" y="164" class="feat-name">rolling_3</text>
+      <rect x="160" y="152" width="100" height="14" rx="2" fill="#9FB3FF"/>
+      <text x="268" y="164" class="feat-val">0.08</text>
+
+      <text x="0" y="194" class="feat-name">drawdown</text>
+      <rect x="160" y="182" width="88" height="14" rx="2" fill="#9FB3FF"/>
+      <text x="256" y="194" class="feat-val">0.07</text>
+
+      <text x="0" y="224" class="feat-name">momentum_6</text>
+      <rect x="160" y="212" width="76" height="14" rx="2" fill="#9FB3FF"/>
+      <text x="244" y="224" class="feat-val">0.06</text>
+    </g>
+
+    <line x1="24" y1="332" x2="416" y2="332" stroke="#E8E8ED"/>
+
+    <text x="24" y="364" class="panel-l">ARTIFACT</text>
+    <text x="24" y="392" class="feat-name">models/xgb.pkl  ·  2.1 MB</text>
+    <text x="24" y="416" class="feat-val">trained on 1.73M rows, 174s wall</text>
+  </g>
+
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
+  <text x="92" y="1010" class="pill">$ .venv/bin/python main.py train-xgb --hours 72 --max-assets 500</text>
+  <text x="60" y="1066" class="caption">Skip this for momentum or rolling — they need no model. For xgb / ensemble / claude, the model is the strategy.</text>
+</svg>

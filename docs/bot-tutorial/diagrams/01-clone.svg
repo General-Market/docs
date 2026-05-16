@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
   <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
-    .gh-org  { font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0071E3; }
-    .gh-slash{ font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; }
-    .gh-repo { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0071E3; }
-    .gh-mute { font: 500 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; }
-    .gh-btn  { font: 600 12px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; }
-    .tree    { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
-    .tree-2  { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; }
-    .md-h1   { font: 700 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.484px; }
-    .md-h2   { font: 700 16px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.352px; }
-    .md-p    { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
-    .code    { font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
-    .code-mut{ font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; }
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
+    .gh-org  { font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0052FF; }
+    .gh-slash{ font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; }
+    .gh-repo { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0052FF; }
+    .gh-mute { font: 500 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; }
+    .gh-btn  { font: 600 12px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0A0A0A; }
+    .tree    { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A0A0A; }
+    .tree-2  { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; }
+    .md-h1   { font: 700 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.484px; }
+    .md-h2   { font: 700 16px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.352px; }
+    .md-p    { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.07px; }
+    .code    { font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A0A0A; }
+    .code-mut{ font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; }
     .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; letter-spacing: 0.08px; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.08px; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
   </style>
 
   <!-- frame -->
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
 
   <!-- header -->
   <text x="60" y="82" class="eyebrow">STEP 01 · THE REPO</text>
@@ -93,11 +93,11 @@
     <text x="20" y="334" class="code">.venv/bin/python twitch/live_trader.py --deposit 0.1 --max-joins 1</text>
 
     <!-- highlight marker on first line -->
-    <rect x="-12" y="186" width="4" height="10" fill="#0071E3"/>
+    <rect x="-12" y="186" width="4" height="10" fill="#0052FF"/>
   </g>
 
   <!-- footer command pill -->
-  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#1D1D1F"/>
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
   <text x="92" y="1010" class="pill">$ git clone https://github.com/General-Market/vision-bot-examples</text>
 
   <!-- caption -->
