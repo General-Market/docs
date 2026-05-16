@@ -374,14 +374,14 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
       }}
     >
       <img
-        src={staticFile("gm-mark.svg")}
+        src={staticFile("gm-mark-blue.svg")}
         alt=""
         draggable={false}
         style={{
           width: "100%",
           height: "100%",
           display: "block",
-          filter: "drop-shadow(0 6px 22px rgba(0, 82, 255, 0.28))",
+          filter: "drop-shadow(0 6px 22px rgba(0, 82, 255, 0.36))",
         }}
       />
     </div>
@@ -712,7 +712,7 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
 // half ("the same markets") types in blue once the gray prefix lands.
 
 const KICKER_TEXT_PRE = "simply by trading ";
-const KICKER_TEXT_HERO = "the same markets";
+const KICKER_TEXT_HERO = "blocks";
 const KICKER_CHARS_PER_FRAME = 1.2;
 
 const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
