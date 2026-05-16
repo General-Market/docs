@@ -371,52 +371,52 @@ def bootstrap_joined_from_chain(funds, executor):
         log.warning("Chain-bootstrap: psycopg2 import failed: %s", e)
         return
 
-    seeded_total = 0
-    try:
-        with psycopg2.connect(VISION_DB_URL, connect_timeout=10) as conn:
-            for fund in funds:
-                try:
-                    with conn.cursor() as cur:
-                        # Active-state filter is what makes this bounded.
-                        # Heavy vaults carry 20k+ historical positions; we
-                        # only want batches that are currently joinable.
-                        cur.execute(
-                            "SELECT vp.batch_id, vp.total_deposited::text "
-                            "FROM vision_positions vp "
-                            "JOIN vision_batches vb ON vb.id = vp.batch_id "
-                            "WHERE LOWER(vp.player) = LOWER(%s) "
-                            "  AND vp.balance > 0 "
-                            "  AND vb.state = 'active'",
-                            (fund.vault_addr,),
-                        )
-                        rows = cur.fetchall()
-                except Exception as e:
-                    log.warning(
-                        "[%s] Chain-bootstrap DB query failed: %s", fund.name, e,
-                    )
-                    continue
-
-                seeded = 0
-                for bid_raw, dep_raw in rows:
-                    bid = int(bid_raw)
-                    if bid in fund.joined_batch_ids:
-                        continue
-                    fund.joined_batch_ids.add(bid)
-                    fund.active_batches.setdefault(bid, int(dep_raw or 0))
-                    seeded += 1
-
-                if seeded:
-                    log.info(
-                        "[%s] Chain-bootstrap: seeded %d joined batches from DB",
-                        fund.name, seeded,
-                    )
-                seeded_total += seeded
-    except Exception as e:
-        log.warning("Chain-bootstrap: postgres connect failed: %s", e)
+    # Index fund vaults by lower-cased address so we can demultiplex one
+    # bulk query result. Per-fund queries are ~3s each cold → 20 min for
+    # 421 funds; one query with player = ANY(%s) is a few hundred ms.
+    fund_by_addr = {f.vault_addr.lower(): f for f in funds}
+    addrs = list(fund_by_addr.keys())
+    if not addrs:
         return
 
+    seeded_total = 0
+    seeded_funds = 0
+    try:
+        with psycopg2.connect(VISION_DB_URL, connect_timeout=10) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT LOWER(vp.player), vp.batch_id, vp.total_deposited::text "
+                    "FROM vision_positions vp "
+                    "JOIN vision_batches vb ON vb.id = vp.batch_id "
+                    "WHERE LOWER(vp.player) = ANY(%s) "
+                    "  AND vp.balance > 0 "
+                    "  AND vb.state = 'active'",
+                    (addrs,),
+                )
+                rows = cur.fetchall()
+    except Exception as e:
+        log.warning("Chain-bootstrap: postgres query failed: %s", e)
+        return
+
+    per_fund_seeded: dict[str, int] = {}
+    for player_lower, bid_raw, dep_raw in rows:
+        fund = fund_by_addr.get(player_lower)
+        if fund is None:
+            continue
+        bid = int(bid_raw)
+        if bid in fund.joined_batch_ids:
+            continue
+        fund.joined_batch_ids.add(bid)
+        fund.active_batches.setdefault(bid, int(dep_raw or 0))
+        per_fund_seeded[fund.name] = per_fund_seeded.get(fund.name, 0) + 1
+        seeded_total += 1
+
+    for name, n in sorted(per_fund_seeded.items()):
+        log.info("[%s] Chain-bootstrap: seeded %d joined batches from DB", name, n)
+        seeded_funds += 1
+
     log.info("Chain-bootstrap complete: %d batches seeded across %d funds",
-             seeded_total, len(funds))
+             seeded_total, seeded_funds)
 
 
 # ── Reconciliation ─────────────────────────────────────────────
