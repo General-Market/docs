@@ -9,16 +9,16 @@
 // and the studio picks it up. Until then the studio falls back to
 // glacier-drone.mp4 so the choreography is previewable.
 
-import React from "react";
+import React, { useRef } from "react";
 import {
   AbsoluteFill,
   Easing,
   interpolate,
   staticFile,
   useCurrentFrame,
+  Video,
 } from "remotion";
 import { CoinsBackground } from "./CoinsBackground";
-import { CssPhone } from "./CssPhone";
 import { SideTexts } from "./SideTexts";
 import { EndCard } from "./EndCard";
 
@@ -71,9 +71,12 @@ const driveProp = (frame: number, values: number[]) => {
   });
 };
 
+const BROLL_INTRO_SKIP_FRAMES = 75; // 2.5s at 30fps
+
 export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   const frame = useCurrentFrame();
   const brollSrc = staticFile(brollPath);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // ── Camera beats (matched to the 9 reference frames) ─────────────────
   //   1  0..300    dezoom wide
@@ -128,27 +131,50 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   });
 
   // Z stack (bottom → top):
-  //   coins (3D canvas) → wordmarks → phone → end card
-  // The phone sits ON TOP of the wordmarks so the text passes behind
-  // it during close-ups; the end card crossfades over everything.
+  //   3D scene (coins + phone, sharing one HDRI) → wordmarks → end card
+  // The phone lives inside the 3D scene so it picks up the same lights
+  // as the coins. Wordmarks remain 2D — they slide behind the phone
+  // during close-ups because the phone is opaque in screen space.
   return (
     <AbsoluteFill style={{ background: BG_COLOR }}>
+      {/* Hidden video element. <Video> syncs playback to composition
+          time; useVideoTexture inside Phone3D reads frames from this
+          DOM element. Position off-screen so the bare <video> never
+          paints, but it keeps decoding. */}
+      <div
+        style={{
+          position: "absolute",
+          width: 8,
+          height: 8,
+          left: -100,
+          top: -100,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      >
+        <Video
+          ref={videoRef}
+          src={brollSrc}
+          muted
+          loop
+          startFrom={BROLL_INTRO_SKIP_FRAMES}
+          pauseWhenBuffering={false}
+        />
+      </div>
       <CoinsBackground
         forwardProgress={coinsForward}
         opacity={coinsOpacity}
         width={1920}
         height={1080}
+        phone={{
+          videoRef,
+          translateY: phoneTranslateY,
+          rotateXDeg: phoneRotateX,
+          rotateYDeg: phoneRotateY,
+          scale: phoneScale,
+        }}
       />
       <SideTexts visibility={sideTextsVis} />
-      <CssPhone
-        brollSrc={brollSrc}
-        translateY={phoneTranslateY}
-        rotateXDeg={phoneRotateX}
-        rotateYDeg={phoneRotateY}
-        scale={phoneScale}
-        brollDurationSec={56.5}
-        brollIntroSkipSec={2.5}
-      />
       <EndCard progress={endCardProg} />
     </AbsoluteFill>
   );

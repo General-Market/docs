@@ -12,12 +12,14 @@ import { useThree } from "@react-three/fiber";
 import { ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { Phone3D, type Phone3DProps } from "./Phone3D";
 
 export type CoinsBackgroundProps = {
   forwardProgress: number;
   opacity: number;
   width: number;
   height: number;
+  phone: Phone3DProps;
 };
 
 const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
@@ -338,7 +340,8 @@ const Scene: React.FC<{
   frame: number;
   forwardProgress: number;
   opacity: number;
-}> = ({ frame, forwardProgress, opacity }) => {
+  phone: Phone3DProps;
+}> = ({ frame, forwardProgress, opacity, phone }) => {
   const { camera } = useThree();
   const bodyGeom = useMemo(() => buildCoinBodyGeometry(), []);
   const reliefGeom = useMemo(() => buildReliefGeometry(), []);
@@ -385,6 +388,7 @@ const Scene: React.FC<{
           rimNormal={rimNormal}
         />
       ))}
+      <Phone3D {...phone} />
     </>
   );
 };
@@ -394,6 +398,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
   opacity,
   width,
   height,
+  phone,
 }) => {
   const frame = useCurrentFrame();
   return (
@@ -421,6 +426,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
             frame={frame}
             forwardProgress={forwardProgress}
             opacity={opacity}
+            phone={phone}
           />
         </React.Suspense>
       </ThreeCanvas>
