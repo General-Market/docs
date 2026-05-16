@@ -36,12 +36,24 @@ const BEVEL_SIZE = 0.045;
 const BEVEL_THICKNESS = 0.028;
 const FACE_Z = COIN_THICKNESS / 2 - BEVEL_THICKNESS; // where flat face sits
 
-// Body — circle Shape extruded with a 4-segment bevel at both ends. The
-// bevel is what catches the light along the silhouette; without it the
-// rim reads like a hockey puck.
+// Body — shape's radius is sine-modulated to carry 84 real geometric
+// ridges around the rim. Real ridges don't alias the way a high-
+// frequency normal map does at oblique angles. The bevel still rounds
+// the rim corners so the ridges fade smoothly into the face caps.
+const RIM_RIDGES = 84;
+const RIM_RIDGE_AMPLITUDE = 0.0085;
+const RIM_SEGMENTS = 420; // 5 polygon segments per ridge
+
 function buildCoinBodyGeometry(): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  shape.absarc(0, 0, COIN_RADIUS, 0, Math.PI * 2, false);
+  for (let i = 0; i <= RIM_SEGMENTS; i++) {
+    const a = (i / RIM_SEGMENTS) * Math.PI * 2;
+    const r = COIN_RADIUS + Math.sin(a * RIM_RIDGES) * RIM_RIDGE_AMPLITUDE;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
   const depth = COIN_THICKNESS - BEVEL_THICKNESS * 2;
   const geom = new THREE.ExtrudeGeometry(shape, {
     depth,
@@ -49,7 +61,6 @@ function buildCoinBodyGeometry(): THREE.BufferGeometry {
     bevelSegments: 5,
     bevelSize: BEVEL_SIZE,
     bevelThickness: BEVEL_THICKNESS,
-    curveSegments: 96,
   });
   geom.translate(0, 0, -depth / 2 - BEVEL_THICKNESS);
   geom.computeVertexNormals();
@@ -140,34 +151,6 @@ function buildReliefGeometry(): THREE.BufferGeometry {
   return merged;
 }
 
-// Reeded-edge normal map for the rim. 96 ridges wrap once around U.
-function buildRimNormalMap(): THREE.DataTexture {
-  const ridgesPerStrip = 96;
-  const width = 2048;
-  const height = 4;
-  const data = new Uint8Array(width * height * 4);
-  const amplitude = 0.55;
-  for (let x = 0; x < width; x++) {
-    const u = x / width;
-    const phase = u * ridgesPerStrip * Math.PI * 2;
-    const nx = Math.sin(phase) * amplitude;
-    const nz = Math.sqrt(Math.max(0.0001, 1 - nx * nx));
-    for (let y = 0; y < height; y++) {
-      const i = (y * width + x) * 4;
-      data[i] = Math.round((nx + 1) * 0.5 * 255);
-      data[i + 1] = 128;
-      data[i + 2] = Math.round((nz + 1) * 0.5 * 255);
-      data[i + 3] = 255;
-    }
-  }
-  const tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
-  tex.colorSpace = THREE.NoColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.needsUpdate = true;
-  return tex;
-}
-
 // ── Coin lanes ───────────────────────────────────────────────────────
 
 type CoinSeed = {
@@ -232,7 +215,6 @@ const CoinMesh: React.FC<{
   globalAlpha: number;
   bodyGeom: THREE.BufferGeometry;
   reliefGeom: THREE.BufferGeometry;
-  rimNormal: THREE.Texture;
 }> = ({
   seed,
   frame,
@@ -240,7 +222,6 @@ const CoinMesh: React.FC<{
   globalAlpha,
   bodyGeom,
   reliefGeom,
-  rimNormal,
 }) => {
   const glossy = seed.variant === "glossy";
 
@@ -263,8 +244,6 @@ const CoinMesh: React.FC<{
       envMapIntensity: 1.45,
       clearcoat: glossy ? 0.3 : 0.12,
       clearcoatRoughness: 0.28,
-      normalMap: rimNormal,
-      normalScale: new THREE.Vector2(0.55, 0.55),
     });
     // The pill, denticles and ring read as white enamel inlay, not as
     // chrome. Low metalness keeps the white from being eaten by the
@@ -278,7 +257,7 @@ const CoinMesh: React.FC<{
       clearcoatRoughness: glossy ? 0.1 : 0.2,
     });
     return { bodyFaceMat, bodyRimMat, reliefMat };
-  }, [glossy, rimNormal]);
+  }, [glossy]);
 
   const p = smoothstep01(forwardProgress);
   const cyclePosNormalised =
@@ -345,7 +324,6 @@ const Scene: React.FC<{
   const { camera } = useThree();
   const bodyGeom = useMemo(() => buildCoinBodyGeometry(), []);
   const reliefGeom = useMemo(() => buildReliefGeometry(), []);
-  const rimNormal = useMemo(() => buildRimNormalMap(), []);
 
   const persp = camera as THREE.PerspectiveCamera;
   persp.position.set(0, 0.5, 14);
@@ -385,7 +363,6 @@ const Scene: React.FC<{
           globalAlpha={opacity}
           bodyGeom={bodyGeom}
           reliefGeom={reliefGeom}
-          rimNormal={rimNormal}
         />
       ))}
       <Phone3D {...phone} />
