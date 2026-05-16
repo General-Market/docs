@@ -69,26 +69,73 @@ function buildCoinBodyGeometry(): THREE.BufferGeometry {
   return geom;
 }
 
-// Relief — denticles, inner ring, brand pill — extruded as real
-// geometry and merged into a single buffer. Built once and shared
-// across every coin instance.
-function buildReliefGeometry(): THREE.BufferGeometry {
-  const pieces: THREE.BufferGeometry[] = [];
-  const reliefDepth = 0.022;
-  const reliefBaseZ = FACE_Z; // sits flush on the face plane
+// Brand mark geometry — matches the EndCard hero: a white rounded
+// square with a blue pill struck through its centre. Two separate
+// merged buffers so each can carry its own material.
 
-  // Denticles — small cylinders around the perimeter, both faces.
-  const denticleCount = 84;
+const MARK_HALF = COIN_RADIUS * 0.4;     // half-side of the rounded square
+const MARK_RADIUS = MARK_HALF * 0.227;   // rx/size = 232/1024 ≈ 0.227
+const MARK_DEPTH = 0.024;
+const PILL_HW = MARK_HALF * 0.5;          // half-width of the inner pill
+const PILL_HH = MARK_HALF * 0.098;        // half-height of the inner pill
+const PILL_DEPTH = 0.016;
+
+function buildMarkSquareShape(): THREE.Shape {
+  const shape = new THREE.Shape();
+  const s = MARK_HALF;
+  const r = MARK_RADIUS;
+  shape.moveTo(-s + r, -s);
+  shape.lineTo(s - r, -s);
+  shape.absarc(s - r, -s + r, r, -Math.PI / 2, 0, false);
+  shape.lineTo(s, s - r);
+  shape.absarc(s - r, s - r, r, 0, Math.PI / 2, false);
+  shape.lineTo(-s + r, s);
+  shape.absarc(-s + r, s - r, r, Math.PI / 2, Math.PI, false);
+  shape.lineTo(-s, -s + r);
+  shape.absarc(-s + r, -s + r, r, Math.PI, Math.PI * 1.5, false);
+  shape.closePath();
+  return shape;
+}
+
+function buildBrandPillShape(): THREE.Shape {
+  const shape = new THREE.Shape();
+  shape.moveTo(-PILL_HW + PILL_HH, -PILL_HH);
+  shape.lineTo(PILL_HW - PILL_HH, -PILL_HH);
+  shape.absarc(PILL_HW - PILL_HH, 0, PILL_HH, -Math.PI / 2, Math.PI / 2, false);
+  shape.lineTo(-PILL_HW + PILL_HH, PILL_HH);
+  shape.absarc(-PILL_HW + PILL_HH, 0, PILL_HH, Math.PI / 2, -Math.PI / 2, false);
+  shape.closePath();
+  return shape;
+}
+
+function mergeOrThrow(pieces: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const normalised = pieces.map((p) => {
+    const flat = p.index ? p.toNonIndexed() : p;
+    p.dispose();
+    return flat;
+  });
+  const merged = mergeGeometries(normalised, false);
+  for (const p of normalised) p.dispose();
+  if (!merged) throw new Error("relief geometry merge failed");
+  merged.computeVertexNormals();
+  return merged;
+}
+
+// White relief — denticles around the perimeter + the rounded-square
+// body of the GM mark. Painted white so the mark reads as enamel.
+function buildWhiteReliefGeometry(): THREE.BufferGeometry {
+  const pieces: THREE.BufferGeometry[] = [];
+  const denticleDepth = 0.022;
   const denticleR = 0.022;
-  const denticleH = reliefDepth;
+  const denticleCount = 84;
   const denticleOrbit = COIN_RADIUS * 0.87;
   const denticleProto = new THREE.CylinderGeometry(
     denticleR,
     denticleR,
-    denticleH,
+    denticleDepth,
     14,
   );
-  denticleProto.rotateX(Math.PI / 2); // stand upright along Z
+  denticleProto.rotateX(Math.PI / 2);
 
   for (const sign of [1, -1] as const) {
     for (let i = 0; i < denticleCount; i++) {
@@ -97,60 +144,55 @@ function buildReliefGeometry(): THREE.BufferGeometry {
       g.translate(
         Math.cos(a) * denticleOrbit,
         Math.sin(a) * denticleOrbit,
-        sign * (reliefBaseZ + reliefDepth / 2),
+        sign * (FACE_Z + denticleDepth / 2),
       );
       pieces.push(g);
     }
   }
   denticleProto.dispose();
 
-  // Brand pill — rounded rectangle extruded with a soft bevel. Reads
-  // as the brand mark struck into the metal once it picks up reflection.
-  const pillW = COIN_RADIUS * 0.6;
-  const pillH = COIN_RADIUS * 0.16;
-  const pillR = pillH / 2;
-  const pillShape = new THREE.Shape();
-  pillShape.moveTo(-pillW / 2 + pillR, -pillH / 2);
-  pillShape.lineTo(pillW / 2 - pillR, -pillH / 2);
-  pillShape.absarc(pillW / 2 - pillR, 0, pillR, -Math.PI / 2, Math.PI / 2, false);
-  pillShape.lineTo(-pillW / 2 + pillR, pillH / 2);
-  pillShape.absarc(-pillW / 2 + pillR, 0, pillR, Math.PI / 2, -Math.PI / 2, false);
-  pillShape.closePath();
-  const pillDepth = 0.028;
-
+  const markShape = buildMarkSquareShape();
   for (const sign of [1, -1] as const) {
-    const pill = new THREE.ExtrudeGeometry(pillShape, {
-      depth: pillDepth,
+    const mark = new THREE.ExtrudeGeometry(markShape, {
+      depth: MARK_DEPTH,
       bevelEnabled: true,
-      bevelSize: 0.008,
-      bevelThickness: 0.006,
+      bevelSize: 0.007,
+      bevelThickness: 0.005,
       bevelSegments: 2,
-      curveSegments: 28,
+      curveSegments: 24,
     });
     if (sign === -1) {
-      // Mirror BEFORE translating so the pill sticks out from the back
-      // face, not into the body.
-      pill.applyMatrix4(new THREE.Matrix4().makeScale(1, 1, -1));
+      mark.applyMatrix4(new THREE.Matrix4().makeScale(1, 1, -1));
     }
-    pill.translate(0, 0, sign * reliefBaseZ);
-    pieces.push(pill);
+    mark.translate(0, 0, sign * FACE_Z);
+    pieces.push(mark);
   }
 
-  // mergeGeometries demands every input share the same index / no-index
-  // state. Normalising to non-indexed across the lot is the universal
-  // fix — denticles and the torus are indexed, ExtrudeGeometry isn't.
-  const normalised = pieces.map((p) => {
-    const flat = p.index ? p.toNonIndexed() : p;
-    p.dispose();
-    return flat;
-  });
-  const merged = mergeGeometries(normalised, false);
-  for (const p of normalised) p.dispose();
-  if (!merged) {
-    throw new Error("relief geometry merge failed");
+  return mergeOrThrow(pieces);
+}
+
+// Blue brand pill — sits on top of the white mark on each face, struck
+// through its centre. Painted in the brand blue.
+function buildBluePillGeometry(): THREE.BufferGeometry {
+  const pieces: THREE.BufferGeometry[] = [];
+  const pillShape = buildBrandPillShape();
+  for (const sign of [1, -1] as const) {
+    const pill = new THREE.ExtrudeGeometry(pillShape, {
+      depth: PILL_DEPTH,
+      bevelEnabled: true,
+      bevelSize: 0.004,
+      bevelThickness: 0.003,
+      bevelSegments: 2,
+      curveSegments: 24,
+    });
+    if (sign === -1) {
+      pill.applyMatrix4(new THREE.Matrix4().makeScale(1, 1, -1));
+    }
+    // Sit ON TOP of the white mark — z starts where the mark ends.
+    pill.translate(0, 0, sign * (FACE_Z + MARK_DEPTH));
+    pieces.push(pill);
   }
-  merged.computeVertexNormals();
-  return merged;
+  return mergeOrThrow(pieces);
 }
 
 // ── Coin lanes ───────────────────────────────────────────────────────
@@ -216,21 +258,23 @@ const CoinMesh: React.FC<{
   forwardProgress: number;
   globalAlpha: number;
   bodyGeom: THREE.BufferGeometry;
-  reliefGeom: THREE.BufferGeometry;
+  whiteReliefGeom: THREE.BufferGeometry;
+  bluePillGeom: THREE.BufferGeometry;
 }> = ({
   seed,
   frame,
   forwardProgress,
   globalAlpha,
   bodyGeom,
-  reliefGeom,
+  whiteReliefGeom,
+  bluePillGeom,
 }) => {
   const glossy = seed.variant === "glossy";
 
   // ExtrudeGeometry tags its caps as material group 0 and its sides
   // (bevel + extrusion) as group 1. So an array of two materials gives
   // smooth face caps and a reeded rim from one geometry.
-  const { bodyFaceMat, bodyRimMat, reliefMat } = useMemo(() => {
+  const { bodyFaceMat, bodyRimMat, whiteReliefMat, bluePillMat } = useMemo(() => {
     const bodyFaceMat = new THREE.MeshPhysicalMaterial({
       color: COIN_BODY_COLOR,
       metalness: 0.93,
@@ -250,7 +294,9 @@ const CoinMesh: React.FC<{
     // The pill, denticles and ring read as white enamel inlay, not as
     // chrome. Low metalness keeps the white from being eaten by the
     // HDRI reflection; clearcoat carries the gloss.
-    const reliefMat = new THREE.MeshPhysicalMaterial({
+    // The denticles + white mark read as enamel inlay. Low metalness
+    // keeps the white from being eaten by HDRI reflection.
+    const whiteReliefMat = new THREE.MeshPhysicalMaterial({
       color: COIN_RELIEF_COLOR,
       metalness: 0.08,
       roughness: glossy ? 0.24 : 0.36,
@@ -258,7 +304,17 @@ const CoinMesh: React.FC<{
       clearcoat: glossy ? 0.85 : 0.6,
       clearcoatRoughness: glossy ? 0.1 : 0.2,
     });
-    return { bodyFaceMat, bodyRimMat, reliefMat };
+    // Blue pill on top of the white mark — moderate metalness so it
+    // picks up the HDRI as a brand-blue chrome inlay.
+    const bluePillMat = new THREE.MeshPhysicalMaterial({
+      color: COIN_BODY_COLOR,
+      metalness: 0.55,
+      roughness: glossy ? 0.26 : 0.38,
+      envMapIntensity: 1.1,
+      clearcoat: glossy ? 0.6 : 0.3,
+      clearcoatRoughness: glossy ? 0.14 : 0.24,
+    });
+    return { bodyFaceMat, bodyRimMat, whiteReliefMat, bluePillMat };
   }, [glossy]);
 
   const p = smoothstep01(forwardProgress);
@@ -313,7 +369,8 @@ const CoinMesh: React.FC<{
           20% thicker without changing its face diameter. */}
       <group scale={[scale, scale * 1.2, scale]}>
         <mesh geometry={bodyGeom} material={[bodyFaceMat, bodyRimMat]} />
-        <mesh geometry={reliefGeom} material={reliefMat} />
+        <mesh geometry={whiteReliefGeom} material={whiteReliefMat} />
+        <mesh geometry={bluePillGeom} material={bluePillMat} />
       </group>
     </group>
   );
@@ -328,7 +385,8 @@ const Scene: React.FC<{
 }> = ({ frame, forwardProgress, opacity, phone, sideTextsVisibility }) => {
   const { camera } = useThree();
   const bodyGeom = useMemo(() => buildCoinBodyGeometry(), []);
-  const reliefGeom = useMemo(() => buildReliefGeometry(), []);
+  const whiteReliefGeom = useMemo(() => buildWhiteReliefGeometry(), []);
+  const bluePillGeom = useMemo(() => buildBluePillGeometry(), []);
 
   const persp = camera as THREE.PerspectiveCamera;
   persp.position.set(0, 0.5, 14);
@@ -367,7 +425,8 @@ const Scene: React.FC<{
           forwardProgress={forwardProgress}
           globalAlpha={opacity}
           bodyGeom={bodyGeom}
-          reliefGeom={reliefGeom}
+          whiteReliefGeom={whiteReliefGeom}
+          bluePillGeom={bluePillGeom}
         />
       ))}
       <Phone3D {...phone} />

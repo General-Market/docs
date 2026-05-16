@@ -13,7 +13,7 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, Easing, interpolate, staticFile } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
+import { ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 
 export type EndCardProps = {
@@ -22,6 +22,7 @@ export type EndCardProps = {
 };
 
 const LOGO_URL = staticFile("gm-mark.svg");
+const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 
 const DISPLAY_STACK =
   '"SF Pro Display", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -110,11 +111,11 @@ const HeroCoin: React.FC<{ progress: number }> = ({ progress }) => {
     () =>
       new THREE.MeshPhysicalMaterial({
         color: new THREE.Color("#ffffff"),
-        metalness: 0.05,
-        roughness: 0.32,
-        envMapIntensity: 0.95,
-        clearcoat: 0.7,
-        clearcoatRoughness: 0.14,
+        metalness: 0.12,
+        roughness: 0.26,
+        envMapIntensity: 1.35,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.1,
       }),
     [],
   );
@@ -123,11 +124,11 @@ const HeroCoin: React.FC<{ progress: number }> = ({ progress }) => {
     () =>
       new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(BRAND_BLUE),
-        metalness: 0.4,
-        roughness: 0.28,
-        envMapIntensity: 1.1,
-        clearcoat: 0.6,
-        clearcoatRoughness: 0.18,
+        metalness: 0.65,
+        roughness: 0.24,
+        envMapIntensity: 1.5,
+        clearcoat: 0.75,
+        clearcoatRoughness: 0.14,
       }),
     [],
   );
@@ -192,11 +193,14 @@ const Scene: React.FC<{ progress: number }> = ({ progress }) => {
 
   return (
     <>
-      {/* Three-point rig — no Environment, no HDRI suspense surprises. */}
-      <ambientLight intensity={0.55} color="#ffffff" />
-      <directionalLight position={[-6, 4, 8]} intensity={2.0} color="#ffffff" />
-      <directionalLight position={[5, 2, 4]} intensity={0.9} color="#a8b5ff" />
-      <directionalLight position={[0, -3, -2]} intensity={0.35} color="#5060c8" />
+      {/* Studio HDRI gives the white body and the blue pill real
+          reflective depth — the metallic clearcoat lifts off the dark
+          background instead of reading as a flat 2D logo. */}
+      <Environment files={HDRI_URL} resolution={256} />
+      <ambientLight intensity={0.32} color="#ffffff" />
+      <directionalLight position={[-6, 4, 8]} intensity={1.6} color="#ffffff" />
+      <directionalLight position={[5, 2, 4]} intensity={0.8} color="#a8b5ff" />
+      <directionalLight position={[0, -3, -2]} intensity={0.3} color="#5060c8" />
       <HeroCoin progress={progress} />
       <ContactShadows
         position={[0, -1.5, 0]}
