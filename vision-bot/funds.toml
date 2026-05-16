@@ -1021,7 +1021,7 @@ name = "Mta_subway 5"
 symbol = "MTA_SU5"
 vault = "0xbd4d7Ce7A2ceE4cD69e064779Ad730182e48B6A5"
 sources = ["mta_subway"]
-strategy = "momentum"
+strategy = "contrarian"
 [funds.params]
 
 [[funds]]
@@ -1094,7 +1094,7 @@ name = "Noaa_met 4"
 symbol = "NOAA_M4"
 vault = "0xe42B6971bF6C52Ddbb52ccB889d7cd892Bd9f8cd"
 sources = ["noaa_met"]
-strategy = "momentum"
+strategy = "regime"
 [funds.params]
 
 [[funds]]
@@ -1102,7 +1102,7 @@ name = "Noaa_met 5"
 symbol = "NOAA_M5"
 vault = "0x4Cd57152544b338E876068D2068BbB9A78caA580"
 sources = ["noaa_met"]
-strategy = "momentum"
+strategy = "volatility_fade"
 [funds.params]
 
 [[funds]]
@@ -1134,7 +1134,7 @@ name = "Noaa_tides 4"
 symbol = "NOAA_T4"
 vault = "0x7F6E2D44377CdFD1e390CDC22c8D13c588d77338"
 sources = ["noaa_tides"]
-strategy = "momentum"
+strategy = "regime"
 [funds.params]
 
 [[funds]]
@@ -1142,7 +1142,7 @@ name = "Noaa_tides 5"
 symbol = "NOAA_T5"
 vault = "0x47A37d06BAb59F8f3243F650921b4f8D8f7aA191"
 sources = ["noaa_tides"]
-strategy = "momentum"
+strategy = "volatility_fade"
 [funds.params]
 
 [[funds]]
@@ -1174,7 +1174,7 @@ name = "Nwps 4"
 symbol = "NWPS4"
 vault = "0x5ba8061E357A54fb49C8F6a956D6559F3E1760b0"
 sources = ["nwps"]
-strategy = "momentum"
+strategy = "regime"
 [funds.params]
 
 [[funds]]
@@ -1182,7 +1182,7 @@ name = "Nwps 5"
 symbol = "NWPS5"
 vault = "0xDFE49d6904e243aF0649DE162B06D93Cc06FeBaa"
 sources = ["nwps"]
-strategy = "momentum"
+strategy = "volatility_fade"
 [funds.params]
 
 [[funds]]
@@ -1973,7 +1973,7 @@ symbol = "CRATES2"
 vault = "0xCEe3Af14DDCC1B386Cf5474044De6124CC84BA4C"
 sources = ["crates_io"]
 allocation_multiplier = 5.0
-strategy = "momentum"
+strategy = "contrarian"
 [funds.params]
 
 [[funds]]
@@ -1982,7 +1982,7 @@ symbol = "CRATES3"
 vault = "0x1604373a897dB481d8ef3e40B88396b864f6E746"
 sources = ["crates_io"]
 allocation_multiplier = 5.0
-strategy = "momentum"
+strategy = "momentum_threshold"
 [funds.params]
 
 [[funds]]
@@ -1991,7 +1991,7 @@ symbol = "CRATES4"
 vault = "0xb6166dd3f5913274D91bD70e6E4dFc11023bBE53"
 sources = ["crates_io"]
 allocation_multiplier = 5.0
-strategy = "momentum"
+strategy = "adoption_curve"
 [funds.params]
 
 [[funds]]
@@ -2000,7 +2000,7 @@ symbol = "CRATES5"
 vault = "0x0026E55F79743f0D44b8bCb16fB143219873D2B7"
 sources = ["crates_io"]
 allocation_multiplier = 5.0
-strategy = "momentum"
+strategy = "regime"
 [funds.params]
 
 [[funds]]
@@ -2538,7 +2538,7 @@ name = "Ryanair 2"
 symbol = "RYANAI2"
 vault = "0x8901961f049dD5e36121E435E3598967e18d2661"
 sources = ["ryanair"]
-strategy = "momentum"
+strategy = "contrarian"
 [funds.params]
 
 [[funds]]
@@ -2546,7 +2546,7 @@ name = "Ryanair 3"
 symbol = "RYANAI3"
 vault = "0x83d8546317c7Cbff9503b40723fc814B53B3FfAb"
 sources = ["ryanair"]
-strategy = "momentum"
+strategy = "regime"
 [funds.params]
 
 [[funds]]
@@ -2554,7 +2554,7 @@ name = "Ryanair 4"
 symbol = "RYANAI4"
 vault = "0x95B706Df6746ec8a49165912bf777492E968c62E"
 sources = ["ryanair"]
-strategy = "momentum"
+strategy = "time_of_day"
 [funds.params]
 
 [[funds]]
