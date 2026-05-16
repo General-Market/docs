@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Upload bot-tutorial storyboard to the right side of the Miro board.
+"""Upload the full ten-frame bot-tutorial storyboard to Miro.
 
-Board:        uXjVOkYo-do=
-Center column (predator-anatomy) lives at x=0, width≈1100.
-This column starts at centre_x=+1800 and stacks three frames vertically.
+Board:    uXjVOkYo-do=
+Column:   far right, past every other section (existing content max x ≈ +2625).
+          Hero at x=+4800, y=0. Frames stack down with 1300 px between centres.
 
 Usage:
     export $(grep -E "^MIRO_" .env | xargs)
@@ -26,51 +26,33 @@ HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 REPO = pathlib.Path(__file__).resolve().parents[3]
 SVG_DIR = REPO / "docs" / "bot-tutorial" / "diagrams"
 
-# Apple palette
-INK = "#1D1D1F"
-INK_2 = "#424245"
-INK_3 = "#6E6E73"
-BLUE = "#0071E3"
-RULE = "#D2D2D7"
-PAPER = "#FFFFFF"
+# Palette — kept in sync with the SVGs.
+INK = "#0A0A0A"
+INK_2 = "#1F1F24"
+INK_3 = "#6E727A"
+BLUE = "#0052FF"
 
-# Right column anchor
-CENTRE_X = 1800
+# Right column anchor — past the rightmost existing item (x ≈ +2625).
+CENTRE_X = 4800
 SVG_WIDTH = 1200            # rendered width on board
-FRAME_HEIGHT = 880          # 1200 * 1100/1500 — preserves SVG aspect
+START_Y = 1200              # first card centre, just below the hero
+GAP_Y = 1300                # centre-to-centre between cards
+HERO_Y = 0                  # aligned with the existing board hero
+CLOSER_OFFSET = 900         # closer placed below the last card
 
-# Three frames stacked top-down, ~280 px clear gap between cards.
-START_Y = -2400
-GAP_Y = 1160                # centre-to-centre
 
 CARDS = [
-    {
-        "n": "01",
-        "title": "Clone the bot",
-        "frame": "THE REPO",
-        "svg": "01-clone.svg",
-        "command": "git clone https://github.com/General-Market/vision-bot-examples",
-    },
-    {
-        "n": "02",
-        "title": "Let it assemble itself",
-        "frame": "THE BOOTSTRAP",
-        "svg": "02-bootstrap.svg",
-        "command": "./setup.sh --auto-fund",
-    },
-    {
-        "n": "03",
-        "title": "Trade one block",
-        "frame": "THE WAGER",
-        "svg": "03-trade.svg",
-        "command": ".venv/bin/python twitch/live_trader.py --deposit 0.1 --max-joins 1",
-    },
+    {"n": "01", "svg": "01-clone.svg",     "title": "Clone the bot"},
+    {"n": "02", "svg": "02-bootstrap.svg", "title": "Bootstrap + faucet"},
+    {"n": "03", "svg": "03-probe.svg",     "title": "Probe the chain"},
+    {"n": "04", "svg": "04-strategy.svg",  "title": "Pick a thesis"},
+    {"n": "05", "svg": "05-backtest.svg",  "title": "Backtest"},
+    {"n": "06", "svg": "06-training.svg",  "title": "Train the model"},
+    {"n": "07", "svg": "07-dryrun.svg",    "title": "Dry run"},
+    {"n": "08", "svg": "08-trade.svg",     "title": "First live wager"},
+    {"n": "09", "svg": "09-race.svg",      "title": "Race two strategies"},
+    {"n": "10", "svg": "10-track.svg",     "title": "Track the ledger"},
 ]
-
-HERO_Y = START_Y - 760
-CLOSER_Y_OFFSET = 720       # closer placed below the last frame
-
-# ── Miro helpers ──────────────────────────────────────────────────
 
 
 def create_item(endpoint: str, payload: dict) -> dict:
@@ -131,32 +113,14 @@ def text(
 
 def main() -> None:
     # ── Hero ──
+    text("YOUR FIRST VISION BOT",        CENTRE_X, HERO_Y,        1500, 96, INK)
+    text("Ten steps from clone to live wager.", CENTRE_X, HERO_Y + 130, 1500, 30, INK_3, bold=False)
     text(
-        "YOUR FIRST VISION BOT",
-        CENTRE_X,
-        HERO_Y,
-        1400,
-        88,
-        INK,
-    )
-    text(
-        "Three steps. One claude. Three minutes from clone to live wager.",
-        CENTRE_X,
-        HERO_Y + 130,
-        1400,
-        28,
-        INK_3,
-        bold=False,
-    )
-    text(
-        "Storyboard for a Claude Code-driven demo. Each frame is one shot in the video — "
-        "the mock UIs match the real UIs you will see when you run the commands.",
-        CENTRE_X,
-        HERO_Y + 200,
-        1100,
-        18,
-        INK_2,
-        bold=False,
+        "Storyboard for a Claude Code-driven demo of "
+        "github.com/General-Market/vision-bot-examples. "
+        "Each frame is one shot. The video records the same commands, in the same order, "
+        "against the real chain.",
+        CENTRE_X, HERO_Y + 220, 1200, 18, INK_2, bold=False,
     )
 
     # ── Cards ──
@@ -170,31 +134,12 @@ def main() -> None:
         time.sleep(0.3)
 
     # ── Closer ──
-    closer_y = last_y + CLOSER_Y_OFFSET
-    text(
-        "The repo is solved.",
-        CENTRE_X,
-        closer_y,
-        1500,
-        54,
-        INK,
-    )
-    text(
-        "The strategy is yours.",
-        CENTRE_X,
-        closer_y + 80,
-        1500,
-        54,
-        BLUE,
-    )
+    closer_y = last_y + CLOSER_OFFSET
+    text("The plumbing is solved.",       CENTRE_X, closer_y,        1500, 54, INK)
+    text("The strategy is yours.",        CENTRE_X, closer_y + 80,   1500, 54, BLUE)
     text(
         "github.com/General-Market/vision-bot-examples",
-        CENTRE_X,
-        closer_y + 200,
-        1200,
-        20,
-        INK_3,
-        bold=False,
+        CENTRE_X, closer_y + 220, 1200, 20, INK_3, bold=False,
     )
 
     print(f"\nDone. View: https://miro.com/app/board/{BOARD_ID}")
