@@ -31,14 +31,15 @@ const SCENE_SECONDS = 6.0;
 //                                 under the footnote paragraph. The
 //                                 music has died; the card holds for
 //                                 reading time.
-const PHASE_2_AT  = toFrames(1.8);  // ~54f  — title 2 takes over
-const SLIDE_AT    = toFrames(3.0);  // ~90f  — wordmark begins slide
-const ZOOM_AT     = toFrames(4.2);  // ~126f — slide done, zoom begins
-const SUBLINE_AT  = toFrames(0.45); // first headline reveal
-const FOOTNOTES_AT = toFrames(0.9); // footnote paragraph fades in
+const SUBLINE_AT  = toFrames(0.30); // title 1 reveal
+const PHASE_2_AT  = toFrames(1.45); // title 2 takes over
+const PHASE_3_AT  = toFrames(2.65); // title 3 (waitlist) takes over
+const SLIDE_AT    = toFrames(3.85); // wordmark begins slide
+const ZOOM_AT     = toFrames(4.75); // slide done, zoom begins
+const FOOTNOTES_AT = toFrames(0.7); // footnote paragraph fades in
 
 const SLIDE_LEN = ZOOM_AT - SLIDE_AT;
-const ZOOM_LEN  = toFrames(1.0);    // 30f zoom duration
+const ZOOM_LEN  = toFrames(0.75);   // 22f zoom duration
 
 // Settle: after the spike fires, the wordmark eases back from its
 // scale punch over SETTLE_LEN frames. The music is dying, anything
@@ -178,41 +179,31 @@ export const AntiCheatEndCard: React.FC = () => {
       (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * zoomEased) *
     wordmarkPunch;
 
-  // ─── Two title beats — Phase 1 then Phase 2, cross-fade ───────────
-  // Phase 1: "Trading is easy with an Anti-Cheat" reveals at SUBLINE_AT,
-  //          holds until PHASE_2_AT.
-  // Phase 2: "Only available for trading bots" takes over at PHASE_2_AT,
-  //          holds until SLIDE_AT.
-  // Both share the same lift-in vocabulary so the swap reads like one
-  // breath, not two scenes.
+  // ─── Three title beats — Phase 1 → 2 → 3, cross-fade ──────────────
+  // Phase 1: "Trading is easy with an Anti-Cheat"
+  // Phase 2: "Only available via trading bots"
+  // Phase 3: "Private access — generalmarket.io/waitlist"
+  // All share the same lift-in and the same 82pt weight so the three
+  // swaps read like one breath, not three scenes.
   const sublineLocal = frame - SUBLINE_AT;
-  const phase1FadeIn = interpolate(
-    sublineLocal,
-    [0, toFrames(0.22)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase1FadeOut = interpolate(
-    frame,
-    [PHASE_2_AT - toFrames(0.18), PHASE_2_AT],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase1Op = phase1FadeIn * phase1FadeOut;
-
-  const phase2FadeIn = interpolate(
-    frame,
-    [PHASE_2_AT, PHASE_2_AT + toFrames(0.22)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase2FadeOut = interpolate(
-    frame,
-    [SLIDE_AT - toFrames(0.18), SLIDE_AT],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase2Op = phase2FadeIn * phase2FadeOut;
+  const fadeFor = (inAt: number, outAt: number): number => {
+    const fadeIn = interpolate(
+      frame,
+      [inAt, inAt + toFrames(0.20)],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
+    const fadeOut = interpolate(
+      frame,
+      [outAt - toFrames(0.16), outAt],
+      [1, 0],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
+    return fadeIn * fadeOut;
+  };
+  const phase1Op = fadeFor(SUBLINE_AT, PHASE_2_AT);
+  const phase2Op = fadeFor(PHASE_2_AT, PHASE_3_AT);
+  const phase3Op = fadeFor(PHASE_3_AT, SLIDE_AT);
 
   const sublineY = interpolate(
     sublineLocal,
@@ -339,7 +330,7 @@ export const AntiCheatEndCard: React.FC = () => {
           />
         </div>
 
-        {/* Title beat 2 — "Only available for trading bots". Same
+        {/* Title beat 2 — "Only available via trading bots". Same
             treatment as beat 1; cross-fades in at PHASE_2_AT. */}
         <div
           style={{
@@ -361,6 +352,33 @@ export const AntiCheatEndCard: React.FC = () => {
           }}
         >
           Only available via trading bots
+        </div>
+
+        {/* Title beat 3 — waitlist CTA. Smaller font so the URL fits
+            comfortably on one line; takes over at PHASE_3_AT. */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
+            textAlign: "center",
+            pointerEvents: "none",
+            opacity: phase3Op,
+            fontFamily: font,
+            fontSize: 64,
+            fontWeight: 700,
+            letterSpacing: "-0.022em",
+            color: "#FFFFFF",
+            lineHeight: 1.05,
+            padding: "0 96px",
+          }}
+        >
+          Private access —{" "}
+          <span style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+            generalmarket.io/waitlist
+          </span>
         </div>
 
       {/* Fine-print paragraph — Kalshi-style dense block.
