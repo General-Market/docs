@@ -60,6 +60,7 @@
     "geist": "^1.7.0",
     "gray-matter": "^4.0.3",
     "html2canvas": "^1.4.1",
+    "jose": "^6.2.3",
     "lightweight-charts": "^5.1.0",
     "lit": "^3.3.2",
     "merge-options": "^3.0.4",

@@ -3,6 +3,8 @@ User-agent: *
 Allow: /
 Allow: /llms.txt
 Allow: /llms-full.txt
+Disallow: /room
+Disallow: /room/
 
 # Sitemap
 Sitemap: https://www.generalmarket.io/sitemap.xml
