@@ -176,6 +176,26 @@ const useCamera = (): { scale: number; shakeX: number; shakeY: number } => {
   return { scale, shakeX, shakeY };
 };
 
+// Sharp envelope around a specific scene-local beat frame. Returns a
+// 0..1 value that ramps up over `attack` frames before the beat and
+// decays over `decay` after. Linear; the consumer eases.
+const localBeatEnvelope = (
+  frame: number,
+  beatLocal: number,
+  attack: number,
+  decay: number,
+): number => {
+  const delta = frame - beatLocal;
+  if (delta < -attack || delta > decay) return 0;
+  if (delta <= 0) return (delta + attack) / attack;
+  return 1 - delta / decay;
+};
+
+// Reassure interior beats expressed in scene-local frames. Only the
+// climax beat (31, panel-exit kick) is keyed off directly here — the
+// others ride beatPulseScene which sweeps all interior beats.
+const REASSURE_BEAT_31 = 92;
+
 const Headline: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -186,6 +206,18 @@ const Headline: React.FC = () => {
     config: { damping: 22, stiffness: 100, mass: 0.8 },
   });
 
+  // Beat-driven scale pulse on the entire headline. Subtle 1.0 → ~1.022
+  // attack-decay envelope so the text breathes on every interior kick.
+  const beat = beatPulseScene(frame, "Reassure", 3, 16);
+  const headlineScale = 1 + beat * 0.022;
+
+  // Jitter shake on each beat — tiny RGB-like offset for kinetic punch.
+  // Pseudo-random per-beat via sine combinations; amplitude rides the
+  // same beat envelope so it dies between kicks.
+  const shakeAmp = beat * 4;
+  const shakeX = Math.sin(frame * 9.7) * shakeAmp;
+  const shakeY = Math.cos(frame * 7.3) * shakeAmp * 0.5;
+
   // One-shot text-shadow flare on the second line's arrival beat (30).
   // beatPulseScene reads scene-local frames directly.
   const flare = beatPulseScene(frame, "Reassure", 4, 14);
@@ -195,6 +227,19 @@ const Headline: React.FC = () => {
           flare * 0.55
         ).toFixed(3)})`
       : "none";
+
+  // Climax stamp — strong scale punch on "Anti-Cheat" at beat 31.
+  // Quick attack (2f) then slow decay (18f) so the word slams and rings.
+  const stamp31 = localBeatEnvelope(frame, REASSURE_BEAT_31, 2, 18);
+  const antiCheatScale = 1 + stamp31 * 0.085;
+  const antiCheatShadow =
+    stamp31 > 0
+      ? `0 0 ${(stamp31 * 44).toFixed(2)}px rgba(91, 134, 255, ${(
+          stamp31 * 0.85
+        ).toFixed(3)}), 0 0 ${(stamp31 * 80).toFixed(2)}px rgba(0, 82, 255, ${(
+          stamp31 * 0.4
+        ).toFixed(3)})`
+      : flareShadow;
 
   return (
     <div
@@ -208,6 +253,9 @@ const Headline: React.FC = () => {
         alignItems: "center",
         textAlign: "center",
         padding: "0 96px",
+        transform: `translate(${shakeX.toFixed(2)}px, ${shakeY.toFixed(2)}px) scale(${headlineScale.toFixed(4)})`,
+        transformOrigin: "50% 50%",
+        willChange: "transform",
       }}
     >
       <div
@@ -244,7 +292,7 @@ const Headline: React.FC = () => {
           alignItems: "baseline",
           justifyContent: "center",
           gap: 4,
-          textShadow: flareShadow,
+          textShadow: antiCheatShadow,
         }}
       >
         <OvershootDots startFrame={SECOND_LINE_AT} />
@@ -258,7 +306,16 @@ const Headline: React.FC = () => {
             blur={4}
           />
           <span>&nbsp;</span>
-          <span style={{ position: "relative", color: colors.accent }}>
+          <span
+            style={{
+              position: "relative",
+              color: colors.accent,
+              display: "inline-block",
+              transform: `scale(${antiCheatScale.toFixed(3)})`,
+              transformOrigin: "50% 60%",
+              willChange: "transform",
+            }}
+          >
             <RevealChars
               text="Anti-Cheat"
               startFrame={SECOND_LINE_AT + toFrames(0.66)}
@@ -283,6 +340,20 @@ const Headline: React.FC = () => {
                 stagger={1.4}
                 color="rgba(91, 134, 255, 0.85)"
                 maxBlurPx={20}
+                style={{ color: "transparent" }}
+              >
+                {"Anti-Cheat"}
+              </Letterglow>
+              {/* Climax glow — second Letterglow on beat 31 so the word
+                  ignites again on the panel-exit kick, not just once. */}
+              <Letterglow
+                beatIndex={31}
+                mountFrame={REASSURE_START}
+                attack={3}
+                decay={26}
+                stagger={1.2}
+                color="rgba(140, 175, 255, 0.95)"
+                maxBlurPx={28}
                 style={{ color: "transparent" }}
               >
                 {"Anti-Cheat"}
