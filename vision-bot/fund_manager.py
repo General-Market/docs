@@ -41,6 +41,37 @@ MAX_BATCH_BPS = 500  # 5% of totalAssets per batch
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
+
+# keccak256("AlreadyJoined()")[:4] — Vision's terminal "you've been here" revert.
+# The pre-check via get_player_position can't see it because the per-position
+# struct is pruned post-settlement, but joinedBatches[vault][batchId] persists
+# and produces this selector. Treat it as the contract telling us the truth.
+ALREADY_JOINED_SELECTOR = "0x003b2682"
+
+
+def _is_already_joined_revert(err: BaseException) -> bool:
+    """Detect AlreadyJoined() in a Web3 revert, defensively.
+
+    The exception surface varies — sometimes structured `.data`, sometimes
+    a bare message string, sometimes nested under `args`. Match either the
+    canonical selector or the textual signature anywhere we find it.
+    """
+    needles = (ALREADY_JOINED_SELECTOR, "AlreadyJoined()", "AlreadyJoined")
+    # Structured field on web3.exceptions.ContractCustomError and friends.
+    for attr in ("data", "message"):
+        val = getattr(err, attr, None)
+        if isinstance(val, str) and any(n in val for n in needles):
+            return True
+    # args is a tuple — scan every stringifiable element.
+    args = getattr(err, "args", ()) or ()
+    for a in args:
+        s = a if isinstance(a, str) else str(a)
+        if any(n in s for n in needles):
+            return True
+    # Last resort: str(err) catches everything else (RPCError, ValueError,
+    # bare strings raised by the executor).
+    msg = str(err)
+    return any(n in msg for n in needles)
 SNAPSHOT_INTERVAL = 1  # write snapshots every cycle. At poll_interval=30s
 # that's a snapshot per vault per 30s — 183 inserts per cycle, ~6/s, well
 # within postgres throughput. Higher resolution gives the NAV chart enough
@@ -1130,6 +1161,19 @@ def run_cycle(
                         up_count, down_count,
                     )
                 except Exception as e:
+                    # AlreadyJoined() is terminal — the contract has a flag we
+                    # can't read off the pruned position struct. Stop retrying
+                    # this batch forever; the bitmap is already committed (or
+                    # was, before settlement). Don't try to submit a fresh one:
+                    # we have no cached bitmap and the position state is gone.
+                    if _is_already_joined_revert(e):
+                        log.info(
+                            "[%s] Batch %d AlreadyJoined — adding to joined set, will not retry",
+                            fund.name, batch_id,
+                        )
+                        fund.joined_batch_ids.add(batch_id)
+                        fund.active_batches.setdefault(batch_id, deposit_wei)
+                        continue
                     log.warning("[%s] Batch %d join failed: %s", fund.name, batch_id, e)
                     continue
             elif cached is not None:
