@@ -10,7 +10,7 @@ const BLOCK_TIME_MS = 1000
 // trading activity without making get_logs rip through a day of history on
 // every request. The data-node has per-round rows in vision_round_players
 // that we'll eventually proxy through for full-lifetime stats.
-const LOOKBACK_BLOCKS = 86_400n
+const LOOKBACK_BLOCKS = 43_200n
 
 const l3Chain = {
   id: 111222333,

@@ -15,10 +15,12 @@ import deployment from '@/lib/contracts/deployment.json'
 const L3_RPC =
   process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://159.195.79.153/'
 const VISION_ADDRESS = (deployment as any).contracts?.Vision as `0x${string}`
-// Was 86_400 (~24h). Bumped to 7 days so a vault's full week of rounds shows
-// up — the previous window made stuck rounds disappear into the past, which
-// is its own form of lying.
-const LOOKBACK_BLOCKS = 604_800n
+// Was 604_800 (~7 days). Dropped to 12h after a sequencer disk-full incident
+// left the Pebble DB with a corrupted log range — any eth_getLogs call that
+// spans the missing bytes errors with `pebble: not found` and the whole vault
+// page renders empty. 12h is the longest window that reliably skips the
+// damage and still shows enough rounds to look populated.
+const LOOKBACK_BLOCKS = 43_200n
 
 const l3Chain = {
   id: 111222333,
