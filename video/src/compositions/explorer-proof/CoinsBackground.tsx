@@ -5,7 +5,7 @@
 // faces, then struck onto the body. One MeshPhysicalMaterial across
 // the lot, lit by a studio HDRI. No painted face textures anywhere.
 
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, staticFile } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
@@ -22,8 +22,7 @@ export type CoinsBackgroundProps = {
 
 const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 
-const BG_GRADIENT =
-  "radial-gradient(ellipse at center, #E8E0F2 0%, #D8CFE7 60%, #C6BCD7 100%)";
+const BG_COLOR = "#FFFFFF";
 
 const BRAND_BLUE = "#2856F6";
 const BRAND_BLUE_DEEP = "#0A249A";
@@ -255,8 +254,6 @@ const CoinMesh: React.FC<{
       envMapIntensity: 1.4,
       clearcoat: glossy ? 0.5 : 0.2,
       clearcoatRoughness: glossy ? 0.14 : 0.3,
-      transparent: true,
-      opacity: 1.0,
     });
     const bodyRimMat = new THREE.MeshPhysicalMaterial({
       color: COIN_BODY_COLOR,
@@ -267,8 +264,6 @@ const CoinMesh: React.FC<{
       clearcoatRoughness: 0.28,
       normalMap: rimNormal,
       normalScale: new THREE.Vector2(0.55, 0.55),
-      transparent: true,
-      opacity: 1.0,
     });
     const reliefMat = new THREE.MeshPhysicalMaterial({
       color: COIN_RELIEF_COLOR,
@@ -277,8 +272,6 @@ const CoinMesh: React.FC<{
       envMapIntensity: 1.55,
       clearcoat: glossy ? 0.35 : 0.12,
       clearcoatRoughness: 0.26,
-      transparent: true,
-      opacity: 1.0,
     });
     return { bodyFaceMat, bodyRimMat, reliefMat };
   }, [glossy, rimNormal]);
@@ -304,23 +297,13 @@ const CoinMesh: React.FC<{
   const outsideBottom = projY + projRadiusY < -1.6;
   const fullyOffScreen =
     outsideRight || outsideLeft || outsideTop || outsideBottom;
-  const cycleAlpha = fullyOffScreen ? 0 : 1;
-  const fadeIn = smoothstep01((cyclePosNormalised - 0.0) / 0.04);
-  const visibility = Math.min(fadeIn, cycleAlpha);
-  const a = globalAlpha * visibility;
-
-  useEffect(() => {
-    bodyFaceMat.opacity = a;
-    bodyRimMat.opacity = a;
-    reliefMat.opacity = a;
-  });
+  const isVisible = !fullyOffScreen && globalAlpha > 0.01;
 
   const scale = seed.baseScale;
 
-  const baseOrient = new THREE.Quaternion().setFromAxisAngle(
-    new THREE.Vector3(1, 0, 0),
-    Math.PI / 2,
-  );
+  // The procedural body extrudes along +Z, so its face already points
+  // toward the camera at identity rotation. The wobble alone tilts it
+  // around a diagonal in the XY plane.
   const wobbleSpeed = (Math.PI * 2) / (seed.wobblePeriodSec * FPS);
   const wobbleRad =
     (seed.wobbleAmplitudeDeg * Math.PI) / 180 *
@@ -330,15 +313,18 @@ const CoinMesh: React.FC<{
   const ax = Math.SQRT1_2;
   const ay = Math.SQRT1_2 * seed.tiltAxisDir;
   const diagonalAxis = new THREE.Vector3(ax, ay, 0);
-  const wobbleQ = new THREE.Quaternion().setFromAxisAngle(
+  const quat = new THREE.Quaternion().setFromAxisAngle(
     diagonalAxis,
     totalAngle,
   );
-  const quat = wobbleQ.clone().multiply(baseOrient);
 
   return (
-    <group position={[seed.x, seed.y, z]} quaternion={quat}>
-      <group scale={[scale, scale, scale * 1.0]}>
+    <group
+      position={[seed.x, seed.y, z]}
+      quaternion={quat}
+      visible={isVisible}
+    >
+      <group scale={[scale, scale, scale]}>
         <mesh geometry={bodyGeom} material={[bodyFaceMat, bodyRimMat]} />
         <mesh geometry={reliefGeom} material={reliefMat} />
       </group>
@@ -381,9 +367,9 @@ const Scene: React.FC<{
         scale={30}
         far={8}
         blur={2.4}
-        opacity={0.42}
+        opacity={0.32}
         resolution={1024}
-        color="#3d2b6a"
+        color="#000000"
       />
       {COIN_SEEDS.map((seed, i) => (
         <CoinMesh
@@ -409,7 +395,7 @@ export const CoinsBackground: React.FC<CoinsBackgroundProps> = ({
 }) => {
   const frame = useCurrentFrame();
   return (
-    <AbsoluteFill style={{ width, height, background: BG_GRADIENT }}>
+    <AbsoluteFill style={{ width, height, background: BG_COLOR }}>
       <ThreeCanvas
         width={width}
         height={height}
