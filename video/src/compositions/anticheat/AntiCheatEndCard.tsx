@@ -32,14 +32,14 @@ const SCENE_SECONDS = 6.0;
 //                                 music has died; the card holds for
 //                                 reading time.
 const SUBLINE_AT  = toFrames(0.30); // title 1 reveal
-const PHASE_2_AT  = toFrames(1.45); // title 2 takes over
-const PHASE_3_AT  = toFrames(2.65); // title 3 (waitlist) takes over
-const SLIDE_AT    = toFrames(3.85); // wordmark begins slide
-const ZOOM_AT     = toFrames(4.75); // slide done, zoom begins
+const PHASE_2_AT  = toFrames(1.50); // title 2 takes over (title 1 holds 1.20s)
+const PHASE_3_AT  = toFrames(2.65); // title 3 (waitlist) takes over (title 2 holds 1.15s)
+const SLIDE_AT    = toFrames(3.35); // wordmark begins slide (waitlist holds 0.70s)
+const ZOOM_AT     = toFrames(4.25); // slide done, zoom begins
 const FOOTNOTES_AT = toFrames(0.7); // footnote paragraph fades in
 
 const SLIDE_LEN = ZOOM_AT - SLIDE_AT;
-const ZOOM_LEN  = toFrames(0.75);   // 22f zoom duration
+const ZOOM_LEN  = toFrames(0.75);   // 22f zoom duration; final pose holds 1.0s
 
 // Settle: after the spike fires, the wordmark eases back from its
 // scale punch over SETTLE_LEN frames. The music is dying, anything
@@ -354,8 +354,8 @@ export const AntiCheatEndCard: React.FC = () => {
           Only available via trading bots
         </div>
 
-        {/* Title beat 3 — waitlist CTA. Smaller font so the URL fits
-            comfortably on one line; takes over at PHASE_3_AT. */}
+        {/* Title beat 3 — waitlist URL only. Same treatment as the
+            first two beats; takes over at PHASE_3_AT. */}
         <div
           style={{
             position: "absolute",
@@ -367,18 +367,15 @@ export const AntiCheatEndCard: React.FC = () => {
             pointerEvents: "none",
             opacity: phase3Op,
             fontFamily: font,
-            fontSize: 64,
+            fontSize: 82,
             fontWeight: 700,
-            letterSpacing: "-0.022em",
+            letterSpacing: "-0.025em",
             color: "#FFFFFF",
             lineHeight: 1.05,
             padding: "0 96px",
           }}
         >
-          Private access —{" "}
-          <span style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-            generalmarket.io/waitlist
-          </span>
+          generalmarket.io/waitlist
         </div>
 
       {/* Fine-print paragraph — Kalshi-style dense block.
