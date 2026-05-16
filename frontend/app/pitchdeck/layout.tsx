@@ -10,18 +10,20 @@ export const metadata: Metadata = {
     description: 'The case for General Market.',
     url: 'https://www.generalmarket.io/pitchdeck',
     type: 'website',
+    images: [{ url: '/pitchdeck/slides/01.jpg', width: 1920, height: 1080 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'General Market — Pitch',
     description: 'The case for General Market.',
+    images: ['/pitchdeck/slides/01.jpg'],
   },
   robots: { index: true, follow: true },
 }
 
 export default function PitchdeckLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-page text-black antialiased">
+    <div className="min-h-screen bg-black text-white antialiased">
       {children}
     </div>
   )

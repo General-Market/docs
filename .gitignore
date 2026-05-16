@@ -95,6 +95,9 @@ data/symbol-map-local.json
 !frontend/public/source-video/*.mp4
 !frontend/public/source-video/hd/*.mp4
 !nsgame/public/source-video/*.mp4
+# Exception: pitch deck (rendered from video/, served by frontend/)
+!frontend/public/pitchdeck/*.mp4
+!frontend/public/pitchdeck/slides/*.mp4
 
 # Stress test reports
 scripts/stress-test/reports/
