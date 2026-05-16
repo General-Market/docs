@@ -17,6 +17,11 @@ const SUBLINE_AT = toFrames(0.7);
 const TERTIARY_AT = toFrames(1.2);
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
+// Settle: after the spike fires, the wordmark eases back from its
+// scale punch over SETTLE_LEN frames. Pure rest from then on — the
+// music is dying, anything else would shout into silence.
+const SETTLE_LEN = 28;
+
 // The endcard inverts. Solid Base blue field, white wordmark.
 // A light dot grid laid over blue gives the same texture vocabulary as
 // the rest of the film, but the relationship is flipped.
@@ -45,10 +50,10 @@ export const AntiCheatEndCard: React.FC = () => {
   });
 
   // Drum-spike anchor — the climax of the music lands at scene-local
-  // frame 9. A scale impulse on the wordmark + a white halo burst land
-  // exactly with the kick. Pre-attack (3f) eases in so the impact reads
-  // as inevitable, decay (24f) releases slowly so the wordmark settles
-  // back into its resting punch.
+  // SPIKE_ENDCARD_LOCAL (currently frame 6). A scale impulse on the
+  // wordmark + a white halo burst land exactly with the kick. Pre-
+  // attack (3f) eases in so the impact reads as inevitable; decay
+  // (24f) releases slowly so the wordmark settles back into rest.
   const spikeDelta = frame - SPIKE_ENDCARD_LOCAL;
   const spikeImpulse =
     spikeDelta < -3
@@ -58,17 +63,33 @@ export const AntiCheatEndCard: React.FC = () => {
         : Math.max(0, 1 - spikeDelta / 24);
   const spikeKick = Math.pow(spikeImpulse, 1.6); // sharper attack curve
 
+  // Post-spike settle: the wordmark eases back to rest over SETTLE_LEN
+  // frames after the kick. No further beats, no further pulses — the
+  // music is dying, the card holds its breath.
+  const settleT = Math.max(
+    0,
+    Math.min(1, (frame - SPIKE_ENDCARD_LOCAL) / SETTLE_LEN),
+  );
+  const settleEased = 1 - Math.pow(1 - settleT, 3);
+  // After the spike has fully decayed, allow a tiny residual breath so
+  // the mark visibly relaxes into its final rest pose rather than
+  // freezing mid-frame.
+  const restRelief = settleEased * 0.012;
+
   const wordmarkPunch =
     1 +
     Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06 +
-    spikeKick * 0.085;
+    spikeKick * 0.085 -
+    restRelief;
 
   // Underline rides the spike — accelerates so it completes RIGHT at
-  // the kick rather than 0.7s later. Reads as the brand asserting
-  // itself in time with the music.
+  // the kick rather than later. Window starts at frame 2 (was 5) to
+  // give it 6 frames of ramp now that the spike anchor moved 3f
+  // earlier (9 → 6). Reads as the brand asserting itself in time with
+  // the music.
   const underlineT = interpolate(
     frame,
-    [toFrames(0.18), SPIKE_ENDCARD_LOCAL + 2],
+    [2, SPIKE_ENDCARD_LOCAL + 2],
     [0, 1],
     {
       extrapolateLeft: "clamp",

@@ -12,27 +12,36 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
+import { beatPulseScene } from "./beats";
 
-// 180 frames, opens at absolute frame 947 (just after the Reassure→Switch
-// snap). Scene-local beats inside Switch land at frames 22, 47, 73, 99
-// (absolute beats 37–40, frames 969 / 994 / 1020 / 1046).
+// 228 frames, opens at absolute frame 826 (just after the Reassure→Switch
+// snap). Interior music beats inside Switch land at scene-local frames
+// 41, 67, 92, 118, 144 (absolute beats 33–37 at frames 867/893/918/944/970).
+// Beat 32 (abs 841, local 15) lands inside the entrance transition.
 //
 // Setup → pivot → knife. Three rows with proportional bars; the Blocks
 // row's "40%" doesn't crossfade out — it physically inflates from its
-// row slot into the centre of the frame, becoming the hero.
+// row slot into the centre of the frame, becoming the hero. Pivot lands
+// on beat 35; hero copy slams on beat 36; kicker types in on beat 37.
 const SCENE_FRAMES = toFrames(7.6);
 
 const HEADLINE_AT = 0;
 const ROWS_AT = 18;
 const ROW_STAGGER = 3;
-// Hold the bar chart long enough to read three percentages before the
-// morph fires; streak + morph + settle share the pivot anchor so the
-// impact still lands on the morph. Scene extended +0.6s so the post-
-// kicker hold is long enough to read "simply by trading the same
-// product" — EndCard + its pullLong transition shift 18f later.
-const PIVOT_AT = 107;
-const COPY_AT = 130;
-const KICKER_AT = 156;
+// Anchored to the audio. Pivot/morph slams on beat 35 (local 92); hero
+// copy lands on beat 36 (local 118); kicker types in on beat 37 (local
+// 144) — the final kick before the music yields to the EndCard spike.
+const PIVOT_AT = 92;
+const COPY_AT = 118;
+const KICKER_AT = 144;
+
+// Interior music beats expressed in scene-local frames. Beats 33 and 34
+// (local 41, 67) and beat 36 (local 118 — covered by COPY_AT) are
+// handled implicitly: the brand-mark and vignette ride beatPulseScene,
+// which sweeps every interior beat. The named constants below are only
+// the ones that structural anchors / micro-pulses key off directly.
+const BEAT_35_LOCAL = 92;  // pivot / morph / impact flash
+const BEAT_37_LOCAL = 144; // final 2× punch on the last kick
 
 type Row = { label: string; pct: number; accent: boolean };
 // Order: Blocks first as the dominant bar — descending stair, matching
@@ -144,10 +153,20 @@ export const AntiCheatSwitch: React.FC = () => (
       <DotGrid speed={3} />
       <ParticleField />
       <Stage />
-      <DotGridVignette intensity={0.20} />
+      <BeatVignette />
     </IdleZoom>
   </AbsoluteFill>
 );
+
+// Vignette breathes on every interior kick — base 0.20, peaks at 0.30
+// when a beat lands, then settles back. Reads as the room dimming for
+// a heartbeat. Linear envelope; the eye sees only the contraction.
+const BeatVignette: React.FC = () => {
+  const frame = useCurrentFrame();
+  const env = beatPulseScene(frame, "Switch", 4, 14);
+  const intensity = 0.20 + env * 0.10;
+  return <DotGridVignette intensity={intensity} />;
+};
 
 // ─── Particle field — soft drifting dots, GMBrand SegSupercharge pattern ──
 //
@@ -169,11 +188,11 @@ const ParticleField: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Fade in around the impact, hold through the hero state, retreat at the
-  // very tail so the EndCard transition starts clean.
+  // Fade in around the impact (beat 35), hold through the hero state,
+  // retreat at the very tail so the EndCard transition starts clean.
   const fieldOp = interpolate(
     frame,
-    [100, 130, SCENE_FRAMES - 18, SCENE_FRAMES],
+    [85, 118, SCENE_FRAMES - 18, SCENE_FRAMES],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -370,8 +389,11 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
 
   // Logo size scales with the bar's height so the mark feels embedded
   // rather than dropped on top. At full height it's LOGO_SIZE; as the
-  // bar shrinks the mark shrinks with it.
-  const scale = Math.min(1, currentH / targetH);
+  // bar shrinks the mark shrinks with it. Beat envelope adds a tiny
+  // breath on every interior kick — the mark inhales with the music.
+  const baseScale = Math.min(1, currentH / targetH);
+  const beatEnv = beatPulseScene(frame, "Switch", 4, 14);
+  const scale = baseScale * (1 + beatEnv * 0.045);
 
   return (
     <div
@@ -589,10 +611,13 @@ const BarLabel: React.FC<{
 // settle orb fades in behind the hero and holds. Reference: Apple's
 // "watched" reveal — adapted to single-color accent.
 
-const STREAK_START = 89;
-const STREAK_IMPACT = 106;
-const FLASH_END = 117;
-const SETTLE_START = 109;
+// Streak races into impact on beat 35; flash + settle ride the same kick
+// so the morph, the burst and the orb all land on one frame.
+const STREAK_IMPACT = BEAT_35_LOCAL;        // 92 — kick
+const STREAK_TRAVEL = 17;
+const STREAK_START = STREAK_IMPACT - STREAK_TRAVEL; // 75
+const FLASH_END = STREAK_IMPACT + 11;       // 103
+const SETTLE_START = STREAK_IMPACT + 3;     // 95
 
 const Streak: React.FC<{
   frame: number;
@@ -793,6 +818,17 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const kickOp = interpolate(kickT, [0, 1], [0, 1]);
   const kickY = interpolate(kickT, [0, 1], [12, 0]);
 
+  // Final pre-EndCard pulse on beat 37 (local 144). Punches the "2×"
+  // multiplier on the last kick before the music yields to the spike.
+  const beat37Delta = frame - BEAT_37_LOCAL;
+  const beat37Env =
+    beat37Delta < -4 || beat37Delta > 18
+      ? 0
+      : beat37Delta <= 0
+        ? (beat37Delta + 4) / 4
+        : 1 - beat37Delta / 18;
+  const heroPunch = 1 + beat37Env * 0.045;
+
   return (
     <>
       {/* Hero line: "Earn up to 2× more*" — one row, "2×" sized at the old
@@ -837,6 +873,10 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
               letterSpacing: "-0.045em",
               lineHeight: 1.0,
               color: colors.accent,
+              display: "inline-block",
+              transform: `scale(${heroPunch.toFixed(3)})`,
+              transformOrigin: "center center",
+              willChange: "transform",
             }}
           >
             2×
