@@ -74,9 +74,9 @@ pub struct ServeArgs {
     pub retention_days: u32,
 
     /// Retention horizon (days) for the chunked pruner that trims
-    /// `vision_asset_settlement_players_archive` and `market_prices`.
-    /// Independent of `--retention-days` so the two big append-only tables
-    /// can be tuned without disturbing the source-level collectors.
+    /// `market_prices`. Independent of `--retention-days` so the big
+    /// append-only table can be tuned without disturbing the source-level
+    /// collectors.
     #[arg(long, default_value = "30", env = "DATA_NODE_PRUNE_RETENTION_DAYS")]
     pub prune_retention_days: u32,
 
