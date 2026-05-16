@@ -35,14 +35,41 @@ const FALLBACK_BROLL_PATH = "broll/explorer-broll.mp4";
 const BG_COLOR = "#E0D8EC";
 
 const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
-const EASE = Easing.bezier(0.4, 0, 0.6, 1);
+const EASE = Easing.bezier(0.45, 0, 0.2, 1);
 
-const driveProp = (frame: number, values: number[]) =>
-  interpolate(frame, BREAKPOINTS, values, {
+// Snap-and-hold camera. The phone sits still for most of each beat,
+// then snaps to the next pose in ~SNAP_FRAMES. Anything < 18f reads as
+// a clean cut without feeling jittery on playback.
+const SNAP_FRAMES = 16;
+
+// Convert a "one value per beat" array into the double-breakpoint
+// shape that produces a hold→snap→hold curve via `interpolate`.
+function buildSnap(values: number[]): { bps: number[]; vs: number[] } {
+  const bps: number[] = [];
+  const vs: number[] = [];
+  for (let i = 0; i < BREAKPOINTS.length; i += 1) {
+    if (i === 0) {
+      bps.push(BREAKPOINTS[i]);
+      vs.push(values[i]);
+    } else {
+      // Snap zone: the last SNAP_FRAMES of the previous beat ramps
+      // from the previous value to this beat's value. Then hold this
+      // value until the next snap.
+      bps.push(BREAKPOINTS[i] - SNAP_FRAMES, BREAKPOINTS[i]);
+      vs.push(values[i - 1], values[i]);
+    }
+  }
+  return { bps, vs };
+}
+
+const driveProp = (frame: number, values: number[]) => {
+  const { bps, vs } = buildSnap(values);
+  return interpolate(frame, bps, vs, {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE,
   });
+};
 
 export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
   const frame = useCurrentFrame();
