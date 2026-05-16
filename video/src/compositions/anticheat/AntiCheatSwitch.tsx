@@ -326,10 +326,14 @@ const BarChart3D: React.FC<{
   </>
 );
 
-// Stamps the General Market mark on the dominant Blocks bar. Same fate
-// as the bar — it fades out when the morph fires.
-const LOGO_FADE_IN_AT = 50;
-const LOGO_FADE_IN_LEN = 8;
+// Stamps the General Market mark on the dominant Blocks bar. Sync'd
+// to the bar's own lifecycle so the logo reads as embedded in the
+// face: it appears as the bar grows up to its target height, and
+// dissolves at the same rate as the bar retracts during the morph.
+// Hero bar starts at scene-local frame (ROWS_AT + 2) = 20 and reaches
+// full height at frame 29 (count ease over 9f).
+const LOGO_FADE_IN_AT = ROWS_AT + HERO_INDEX * ROW_STAGGER + 2;
+const LOGO_FADE_IN_LEN = 9;
 const LOGO_SIZE = 168;
 // Sit the mark on the upper half of the Blocks front face so the
 // "Blocks / 40%" label still reads above it without a clash.
@@ -345,19 +349,18 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
   const cx = barCenterX(HERO_INDEX);
   const cy = yTop + barHeight * LOGO_CENTER_Y_RATIO;
 
-  const enter = interpolate(
-    frame,
-    [LOGO_FADE_IN_AT, LOGO_FADE_IN_AT + LOGO_FADE_IN_LEN],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  // Match the bar's own enter curve (cubic-out over 9 frames, see Bar3D).
+  // Bar opacity is a 6-frame ramp; mark opacity tracks the height growth
+  // so the mark "fills in" as the bar rises behind it.
+  const enterT = Math.max(
+    0,
+    Math.min(1, (frame - LOGO_FADE_IN_AT) / LOGO_FADE_IN_LEN),
   );
-  const exit = 1 - Math.max(0, Math.min(1, morphT * 1.4));
+  const enter = 1 - Math.pow(1 - enterT, 3);
+  // Hero bar uses heightFactor = max(0, 1 - morphT * 1.4) — same curve.
+  const exit = Math.max(0, Math.min(1, 1 - morphT * 1.4));
   const opacity = enter * exit;
   if (opacity < 0.005) return null;
-
-  const settle = Math.min(1, enter);
-  const lift = (1 - settle) * 8;
-  const scale = 0.96 + settle * 0.04;
 
   return (
     <div
@@ -367,10 +370,10 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
         top: cy,
         width: LOGO_SIZE,
         height: LOGO_SIZE,
-        transform: `translate(-50%, -50%) translateY(${lift.toFixed(2)}px) scale(${scale.toFixed(3)})`,
+        transform: "translate(-50%, -50%)",
         opacity,
         pointerEvents: "none",
-        willChange: "transform, opacity",
+        willChange: "opacity",
       }}
     >
       <img
