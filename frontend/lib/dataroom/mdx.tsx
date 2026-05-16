@@ -1,6 +1,7 @@
 import NextLink from 'next/link'
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { mdxComponents } from '@/components/mdx'
+import { YouTube } from '@/components/mdx/YouTube'
 
 function PlainAnchor({
   href,
@@ -33,4 +34,5 @@ function PlainAnchor({
 export const dataroomMdxComponents = {
   ...mdxComponents,
   a: PlainAnchor,
+  YouTube,
 }
