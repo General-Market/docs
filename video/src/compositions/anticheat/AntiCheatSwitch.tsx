@@ -343,24 +343,35 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
   frame,
   morphT,
 }) => {
+  // Track the hero bar's CURRENT height — not its target. The bar
+  // grows up during enter and shrinks down during the morph. The
+  // logo's position, scale and opacity all key off that height so
+  // the mark genuinely lives inside the bar instead of floating
+  // above it after the bar collapses.
   const blocks = ROWS[HERO_INDEX];
-  const barHeight = barTargetH(blocks.pct);
-  const yTop = BAR_BASELINE_Y - barHeight;
-  const cx = barCenterX(HERO_INDEX);
-  const cy = yTop + barHeight * LOGO_CENTER_Y_RATIO;
+  const targetH = barTargetH(blocks.pct);
+  const countT = Math.max(0, Math.min(1, (frame - LOGO_FADE_IN_AT) / LOGO_FADE_IN_LEN));
+  const countEased = 1 - Math.pow(1 - countT, 3);
+  const heightFactor = Math.max(0, Math.min(1, 1 - morphT * 1.4));
+  const currentH = targetH * countEased * heightFactor;
+  // Same disappearance threshold as Bar3D — match the bar's own
+  // "I'm gone" rule so the mark dies on the same frame as the polygon.
+  if (currentH < 0.5) return null;
 
-  // Match the bar's own enter curve (cubic-out over 9 frames, see Bar3D).
-  // Bar opacity is a 6-frame ramp; mark opacity tracks the height growth
-  // so the mark "fills in" as the bar rises behind it.
-  const enterT = Math.max(
-    0,
-    Math.min(1, (frame - LOGO_FADE_IN_AT) / LOGO_FADE_IN_LEN),
-  );
-  const enter = 1 - Math.pow(1 - enterT, 3);
-  // Hero bar uses heightFactor = max(0, 1 - morphT * 1.4) — same curve.
-  const exit = Math.max(0, Math.min(1, 1 - morphT * 1.4));
-  const opacity = enter * exit;
+  const yTop = BAR_BASELINE_Y - currentH;
+  const cx = barCenterX(HERO_INDEX);
+  const cy = yTop + currentH * LOGO_CENTER_Y_RATIO;
+
+  // Opacity from the same combined alpha the bar uses (enter × exit).
+  // Bar fades its polygon via exitOp = (1 - morphT); we mirror it so
+  // the mark feels stitched into the same alpha channel.
+  const opacity = countEased * (1 - Math.max(0, Math.min(1, morphT)));
   if (opacity < 0.005) return null;
+
+  // Logo size scales with the bar's height so the mark feels embedded
+  // rather than dropped on top. At full height it's LOGO_SIZE; as the
+  // bar shrinks the mark shrinks with it.
+  const scale = Math.min(1, currentH / targetH);
 
   return (
     <div
@@ -370,10 +381,10 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
         top: cy,
         width: LOGO_SIZE,
         height: LOGO_SIZE,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
         opacity,
         pointerEvents: "none",
-        willChange: "opacity",
+        willChange: "transform, opacity",
       }}
     >
       <img
