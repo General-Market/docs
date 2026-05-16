@@ -26,10 +26,11 @@ export type ExplorerProofProps = {
   brollPath: string;
 };
 
+// Real /explorer screen recording (mobile portrait, 450x972, ~18.5s).
+// Recorded with Playwright against https://generalmarket.io/explorer —
+// proves the testnet is live in the video itself.
 const DEFAULT_BROLL_PATH = "broll/explorer-broll.mp4";
-// Portrait trading capture from the AntiCheat scenes — reads as the
-// dapp UI until the real /explorer recording lands at the path above.
-const FALLBACK_BROLL_PATH = "cheat-broll/phone-trading.mp4";
+const FALLBACK_BROLL_PATH = "broll/explorer-broll.mp4";
 
 const BG_COLOR = "#E0D8EC";
 
@@ -118,6 +119,8 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
         rotateXDeg={phoneRotateX}
         rotateYDeg={phoneRotateY}
         scale={phoneScale}
+        brollDurationSec={18.5}
+        brollIntroSkipSec={3.0}
       />
       <EndCard progress={endCardProg} />
     </AbsoluteFill>
