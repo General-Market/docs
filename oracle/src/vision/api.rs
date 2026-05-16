@@ -758,59 +758,82 @@ struct MarketRatioRow {
 }
 
 /// Get per-market parimutuel ratios for a settled batch.
+///
+/// Reads from `vision_settlements` — one JSONB row per batch — and unpacks
+/// `outcome_summary` into the same per-market shape the old
+/// `vision_market_ratios` query produced.
 async fn batch_ratios(
     State(state): State<Arc<VisionState>>,
     Path(id): Path<u64>,
 ) -> impl IntoResponse {
-    let rows = sqlx::query_as::<_, MarketRatioRow>(
-        "SELECT asset_id, up_stake, down_stake, outcome, pct_change_bps, settled_at
-         FROM vision_market_ratios
-         WHERE batch_id = $1
-         ORDER BY asset_id",
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        outcome_summary: serde_json::Value,
+        settled_at: chrono::DateTime<chrono::Utc>,
+    }
+
+    let row = sqlx::query_as::<_, Row>(
+        "SELECT outcome_summary, settled_at
+           FROM vision_settlements
+          WHERE batch_id = $1 OR on_chain_batch_id = $1
+          ORDER BY settled_at DESC
+          LIMIT 1",
     )
     .bind(id as i64)
-    .fetch_all(&state.pool)
+    .fetch_optional(&state.pool)
     .await;
 
-    match rows {
-        Ok(rows) => {
-            let markets: Vec<MarketRatioEntry> = rows
-                .into_iter()
-                .map(|r| {
-                    let up: f64 = r.up_stake.parse().unwrap_or(0.0);
-                    let down: f64 = r.down_stake.parse().unwrap_or(0.0);
-                    let total = up + down;
-                    let (up_pct, down_pct) = if total > 0.0 {
-                        ((up / total * 1000.0).round() / 10.0, (down / total * 1000.0).round() / 10.0)
-                    } else {
-                        (50.0, 50.0)
-                    };
-                    MarketRatioEntry {
-                        asset_id: r.asset_id,
-                        up_stake: r.up_stake,
-                        down_stake: r.down_stake,
-                        up_pct,
-                        down_pct,
-                        outcome: r.outcome,
-                        pct_change_bps: r.pct_change_bps,
-                        settled_at: r.settled_at.to_rfc3339(),
-                    }
-                })
-                .collect();
-
-            (StatusCode::OK, Json(serde_json::json!({
-                "batchId": id,
-                "markets": markets,
-            }))).into_response()
-        }
-        Err(e) => {
-            warn!("Failed to query market ratios for batch {id}: {e}");
-            (StatusCode::OK, Json(serde_json::json!({
+    let row = match row {
+        Ok(Some(r)) => r,
+        Ok(None) => {
+            return (StatusCode::OK, Json(serde_json::json!({
                 "batchId": id,
                 "markets": Vec::<()>::new(),
-            }))).into_response()
+            }))).into_response();
         }
+        Err(e) => {
+            warn!("Failed to query vision_settlements for batch {id}: {e}");
+            return (StatusCode::OK, Json(serde_json::json!({
+                "batchId": id,
+                "markets": Vec::<()>::new(),
+            }))).into_response();
+        }
+    };
+
+    let settled_at = row.settled_at.to_rfc3339();
+    let mut markets: Vec<MarketRatioEntry> = Vec::new();
+    if let Some(map) = row.outcome_summary.as_object() {
+        for (asset_id, entry) in map.iter() {
+            let up_stake = entry.get("up_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+            let down_stake = entry.get("down_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+            let outcome = entry.get("outcome").and_then(|v| v.as_str()).unwrap_or("Cancelled").to_string();
+            let pct_change_bps = entry.get("pct_change_bps").and_then(|v| v.as_i64()).unwrap_or(0);
+            let up: f64 = up_stake.parse().unwrap_or(0.0);
+            let down: f64 = down_stake.parse().unwrap_or(0.0);
+            let total = up + down;
+            let (up_pct, down_pct) = if total > 0.0 {
+                ((up / total * 1000.0).round() / 10.0, (down / total * 1000.0).round() / 10.0)
+            } else {
+                (50.0, 50.0)
+            };
+            markets.push(MarketRatioEntry {
+                asset_id: asset_id.clone(),
+                up_stake,
+                down_stake,
+                up_pct,
+                down_pct,
+                outcome,
+                pct_change_bps,
+                settled_at: settled_at.clone(),
+            });
+        }
+        markets.sort_by(|a, b| a.asset_id.cmp(&b.asset_id));
     }
+
+    (StatusCode::OK, Json(serde_json::json!({
+        "batchId": id,
+        "markets": markets,
+    }))).into_response()
 }
 
 // ---------------------------------------------------------------------------
@@ -3139,29 +3162,28 @@ async fn asset_settlements(
 ) -> impl IntoResponse {
     let limit = query.limit.unwrap_or(200).clamp(1, 500);
 
+    // One row per batch in vision_settlements. outcome_summary holds the
+    // per-asset aggregate; player_results[..].by_asset filters down to this
+    // asset_id for the per-player breakdown.
     #[derive(sqlx::FromRow)]
     struct Row {
         batch_id: i64,
         settled_at: chrono::DateTime<chrono::Utc>,
-        outcome: String,
-        up_stake: String,
-        down_stake: String,
-        pct_change_bps: i64,
+        outcome_summary: serde_json::Value,
+        player_results: serde_json::Value,
     }
 
     let rows = sqlx::query_as::<_, Row>(
-        "SELECT mr.batch_id,
-                COALESCE(bl.settled_at, mr.settled_at) AS settled_at,
-                mr.outcome,
-                mr.up_stake,
-                mr.down_stake,
-                mr.pct_change_bps
-           FROM vision_market_ratios mr
-           JOIN vision_batch_lifecycle bl ON bl.on_chain_batch_id = mr.batch_id
-          WHERE bl.source_id = $1
-            AND mr.asset_id = $2
-            AND bl.settled_at IS NOT NULL
-          ORDER BY bl.settled_at DESC
+        "SELECT vs.batch_id,
+                COALESCE(bl.settled_at, vs.settled_at) AS settled_at,
+                vs.outcome_summary,
+                vs.player_results
+           FROM vision_settlements vs
+           LEFT JOIN vision_batch_lifecycle bl
+                  ON bl.on_chain_batch_id = vs.on_chain_batch_id
+          WHERE vs.source_id = $1
+            AND vs.outcome_summary ? $2
+          ORDER BY COALESCE(bl.settled_at, vs.settled_at) DESC
           LIMIT $3",
     )
     .bind(&source_id)
@@ -3182,66 +3204,53 @@ async fn asset_settlements(
         }
     };
 
-    let batch_ids: Vec<i64> = rows.iter().map(|r| r.batch_id).collect();
-
-    #[derive(sqlx::FromRow)]
-    struct PlayerRow {
-        batch_id: i64,
-        player: String,
-        side: String,
-        won: bool,
-        effective_stake: String,
-        payout: String,
-    }
-
-    let players = if batch_ids.is_empty() {
-        Vec::new()
-    } else {
-        match sqlx::query_as::<_, PlayerRow>(
-            "SELECT batch_id, player, side, won, effective_stake, payout
-               FROM vision_asset_settlement_players
-              WHERE asset_id = $1
-                AND batch_id = ANY($2)",
-        )
-        .bind(&asset_id)
-        .bind(&batch_ids)
-        .fetch_all(&state.pool)
-        .await
-        {
-            Ok(p) => p,
-            Err(e) => {
-                warn!("asset_settlements players query failed: {e}");
-                Vec::new()
-            }
-        }
-    };
-
-    let mut by_batch: std::collections::HashMap<i64, Vec<serde_json::Value>> =
-        std::collections::HashMap::new();
-    for p in players {
-        by_batch
-            .entry(p.batch_id)
-            .or_default()
-            .push(serde_json::json!({
-                "player": p.player,
-                "side": p.side,
-                "won": p.won,
-                "effectiveStake": p.effective_stake,
-                "payout": p.payout,
-            }));
-    }
-
     let settlements: Vec<serde_json::Value> = rows
         .into_iter()
         .map(|r| {
+            let entry = r
+                .outcome_summary
+                .get(&asset_id)
+                .cloned()
+                .unwrap_or(serde_json::Value::Null);
+            let outcome = entry.get("outcome").and_then(|v| v.as_str()).unwrap_or("Cancelled").to_string();
+            let up_stake = entry.get("up_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+            let down_stake = entry.get("down_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+            let pct_change_bps = entry.get("pct_change_bps").and_then(|v| v.as_i64()).unwrap_or(0);
+
+            // Per-player rollup: walk player_results.{player}.by_asset[*]
+            // and emit only entries that match this asset.
+            let mut players: Vec<serde_json::Value> = Vec::new();
+            if let Some(pmap) = r.player_results.as_object() {
+                for (player_addr, pdata) in pmap.iter() {
+                    let by_asset = pdata.get("by_asset").and_then(|v| v.as_array());
+                    if let Some(arr) = by_asset {
+                        for ba in arr {
+                            if ba.get("asset").and_then(|v| v.as_str()) == Some(asset_id.as_str()) {
+                                let side = ba.get("side").and_then(|v| v.as_str()).unwrap_or("Up").to_string();
+                                let won = ba.get("won").and_then(|v| v.as_bool()).unwrap_or(false);
+                                let stake = ba.get("stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+                                let payout = ba.get("payout").and_then(|v| v.as_str()).unwrap_or("0").to_string();
+                                players.push(serde_json::json!({
+                                    "player": player_addr,
+                                    "side": side,
+                                    "won": won,
+                                    "effectiveStake": stake,
+                                    "payout": payout,
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+
             serde_json::json!({
                 "batchId": r.batch_id,
                 "settledAt": r.settled_at,
-                "outcome": r.outcome,
-                "upStake": r.up_stake,
-                "downStake": r.down_stake,
-                "pctChangeBps": r.pct_change_bps,
-                "players": by_batch.remove(&r.batch_id).unwrap_or_default(),
+                "outcome": outcome,
+                "upStake": up_stake,
+                "downStake": down_stake,
+                "pctChangeBps": pct_change_bps,
+                "players": players,
             })
         })
         .collect();
