@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { CameraMotionBlur } from "@remotion/motion-blur";
-import { font, monoFont } from "../../common/fonts";
+import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { VerticalDotGrid } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
@@ -345,7 +345,7 @@ const GlitchVerdict: React.FC<{ glitch: number }> = ({ glitch }) => {
     <>
       <div>
         <RevealChars
-          text="Everyone"
+          text="Everywhere"
           startFrame={TITLE_IN}
           stagger={2.0}
           duration={9}

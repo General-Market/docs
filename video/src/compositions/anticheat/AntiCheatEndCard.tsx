@@ -28,7 +28,6 @@ const SCENE_SECONDS = 9.0;
 //                                 under the footnote paragraph. The
 //                                 music has died; the card holds for
 //                                 reading time.
-const PHASE_2_AT  = toFrames(1.8);  // ~54f  — "Only available …"
 const SLIDE_AT    = toFrames(3.0);  // ~90f  — wordmark begins slide
 const ZOOM_AT     = toFrames(4.2);  // ~126f — slide done, zoom begins
 const SUBLINE_AT  = toFrames(0.45); // first headline reveal
@@ -75,10 +74,6 @@ const FOOTNOTES: { letter: string; text: string }[] = [
   {
     letter: "f",
     text: "Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.",
-  },
-  {
-    letter: "g",
-    text: "Currently available only via General Market trading bots.",
   },
 ];
 
@@ -152,10 +147,12 @@ export const AntiCheatEndCard: React.FC = () => {
   const settleEased = 1 - Math.pow(1 - settleT, 3);
   const restRelief = settleEased * 0.012;
 
+  // Wordmark punch — kept deliberately small so the end-card feels
+  // restrained. Old values (0.06 sin + 0.085 spike) read as a flash.
   const wordmarkPunch =
     1 +
-    Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.06 +
-    spikeKick * 0.085 -
+    Math.sin(Math.min(1, Math.max(0, punch)) * Math.PI) * 0.02 +
+    spikeKick * 0.025 -
     restRelief;
 
   // ─── Phase 3a: slide top → centre (position only, no scale change) ─
@@ -173,40 +170,25 @@ export const AntiCheatEndCard: React.FC = () => {
       (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * zoomEased) *
     wordmarkPunch;
 
-  // ─── Subline (Phase 1 → Phase 2 → fade for Phase 3) ────────────────
-  // Phase 1 text: "Trading is easy with an Anti-Cheat(g)"
-  // Phase 2 text: "Only available for trading bots"
-  // Cross-fade between them around PHASE_2_AT; both vanish by PHASE_3_AT.
+  // ─── Subline — both lines stacked, no cross-fade ──────────────────
+  // The second line spells out the (g) footnote literally, so the
+  // marker is dropped. Both lines fade in together at SUBLINE_AT and
+  // fade out together when the wordmark begins its Phase 3 slide.
   const sublineLocal = frame - SUBLINE_AT;
-  const phase1FadeIn = interpolate(
+  const sublineFadeIn = interpolate(
     sublineLocal,
     [0, toFrames(0.22)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const phase1FadeOut = interpolate(
+  const sublineFadeOut = interpolate(
     frame,
-    [PHASE_2_AT - toFrames(0.16), PHASE_2_AT],
+    [SLIDE_AT - toFrames(0.18), SLIDE_AT],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const phase1Op = phase1FadeIn * phase1FadeOut;
+  const sublineOp = sublineFadeIn * sublineFadeOut;
 
-  const phase2FadeIn = interpolate(
-    frame,
-    [PHASE_2_AT, PHASE_2_AT + toFrames(0.18)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase2FadeOut = interpolate(
-    frame,
-    [SLIDE_AT - toFrames(0.16), SLIDE_AT],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const phase2Op = phase2FadeIn * phase2FadeOut;
-
-  // Subline lift-in (shared)
   const sublineY = interpolate(
     sublineLocal,
     [0, toFrames(0.22)],
@@ -233,18 +215,20 @@ export const AntiCheatEndCard: React.FC = () => {
     >
         <WhiteDotGrid />
 
-        {/* Spike-anchored halo burst — blooms at the kick. */}
+        {/* Spike-anchored halo burst — much subtler now. The earlier
+            1700px white bloom + 0.55 opacity at peak was reading as a
+            full-screen flash on a card meant to feel like a press hold. */}
         <div
           style={{
             position: "absolute",
             left: "50%",
             top: `${WORDMARK_TOP_Y}px`,
-            width: 1700,
-            height: 1700,
-            transform: `translate(-50%, -50%) scale(${(0.55 + spikeKick * 0.55).toFixed(3)})`,
-            background: `radial-gradient(circle at center, rgba(255,255,255,${(0.55 * spikeKick).toFixed(3)}) 0%, rgba(255,255,255,${(0.18 * spikeKick).toFixed(3)}) 22%, rgba(255,255,255,0) 58%)`,
+            width: 900,
+            height: 900,
+            transform: `translate(-50%, -50%) scale(${(0.55 + spikeKick * 0.20).toFixed(3)})`,
+            background: `radial-gradient(circle at center, rgba(255,255,255,${(0.16 * spikeKick).toFixed(3)}) 0%, rgba(255,255,255,${(0.06 * spikeKick).toFixed(3)}) 22%, rgba(255,255,255,0) 58%)`,
             filter: "blur(40px)",
-            opacity: spikeImpulse,
+            opacity: spikeImpulse * 0.7,
             mixBlendMode: "screen",
             pointerEvents: "none",
           }}
@@ -277,6 +261,10 @@ export const AntiCheatEndCard: React.FC = () => {
                 alignItems: "center",
                 gap: 30,
                 whiteSpace: "nowrap",
+                // Override the global 88px beat-glow textShadow inherited
+                // from AntiCheatFull — at this scale (up to ~250pt) the
+                // halo turned the wordmark into a smeared white blob.
+                textShadow: "none",
               }}
             >
               <GeneralMark size={200} />
@@ -285,9 +273,9 @@ export const AntiCheatEndCard: React.FC = () => {
           </ParallaxText>
         </div>
 
-        {/* Phase 1 headline — "Trading is easy with an Anti-Cheat(g)".
-            Cross-fades with Phase 2 around PHASE_2_AT. Both occupy
-            the canvas vertical centre. */}
+        {/* Subline — two stacked lines, both visible together. The
+            second line is the literal expansion of the old (g)
+            footnote, so the superscript marker is gone. */}
         <div
           style={{
             position: "absolute",
@@ -297,62 +285,42 @@ export const AntiCheatEndCard: React.FC = () => {
             transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
             textAlign: "center",
             pointerEvents: "none",
-            fontFamily: font,
-            fontSize: 86,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            color: "#FFFFFF",
-            lineHeight: 1.05,
-            opacity: phase1Op,
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
+            opacity: sublineOp,
           }}
         >
-          <RevealChars
-            text="Trading is easy with an Anti-Cheat"
-            startFrame={SUBLINE_AT}
-            stagger={0.55}
-            duration={9}
-            y={14}
-            blur={3}
-            scale={0.97}
-          />
-          <span
+          <div
             style={{
               fontFamily: font,
-              fontSize: 14,
-              fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.5)",
-              marginLeft: 4,
-              marginTop: 2,
-              letterSpacing: 0,
+              fontSize: 82,
+              fontWeight: 700,
+              letterSpacing: "-0.025em",
+              color: "#FFFFFF",
+              lineHeight: 1.05,
             }}
           >
-            (g)
-          </span>
-        </div>
-
-        {/* Phase 2 headline — "Only available for trading bots". */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: 0,
-            right: 0,
-            transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
-            textAlign: "center",
-            pointerEvents: "none",
-            fontFamily: font,
-            fontSize: 86,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            color: "#FFFFFF",
-            lineHeight: 1.05,
-            opacity: phase2Op,
-          }}
-        >
-          Only available for trading bots
+            <RevealChars
+              text="Trading is easy with an Anti-Cheat"
+              startFrame={SUBLINE_AT}
+              stagger={0.55}
+              duration={9}
+              y={14}
+              blur={3}
+              scale={0.97}
+            />
+          </div>
+          <div
+            style={{
+              marginTop: 18,
+              fontFamily: font,
+              fontSize: 38,
+              fontWeight: 500,
+              letterSpacing: "-0.012em",
+              color: "rgba(255, 255, 255, 0.72)",
+              lineHeight: 1.1,
+            }}
+          >
+            Currently available only via trading bots
+          </div>
         </div>
 
       {/* Fine-print paragraph — Kalshi-style dense block.
