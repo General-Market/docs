@@ -872,11 +872,14 @@ const StatPanel: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Phase 1 — types in by beat 16, wipes out into the flip on beat 17 */}
+      {/* Phase 1 — types in *on* beat 16 (panel-local 10), holds 19f
+          while the audience reads it, then wipes out into the flip on
+          beat 17. Faster type-rate is the point: the line lands as a
+          single percussive arrival, not a long crawl. */}
       <EmberTypewriter
         text="0.04% rig the table take 70%*"
         typeStart={0}
-        typeEnd={28}
+        typeEnd={10}
         wipeStart={STAT_FLIP_AT - 6}
         wipeEnd={STAT_FLIP_AT}
         fontSize={120}
