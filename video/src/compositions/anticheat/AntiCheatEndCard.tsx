@@ -12,7 +12,10 @@ import { ParallaxText } from "./transitions";
 import { RevealChars } from "./vibe";
 import { SPIKE_ENDCARD_LOCAL } from "./beats";
 
-const SCENE_SECONDS = 9.0;
+// 6.0s ends the whole video at 40.0s (after the 10-frame head trim).
+// Title beats + slide + zoom run from 0 to 5.2s; the final ~0.8s holds
+// on the zoomed wordmark and the footnote paragraph.
+const SCENE_SECONDS = 6.0;
 
 // Sequential phases inside the end card. Each beat does ONE thing —
 // no compound motion that fights itself.
@@ -78,34 +81,38 @@ const FOOTNOTES: { letter: string; text: string }[] = [
   },
 ];
 
-// Article sources for the Rigged scene (≈ video t=4–10s). Each line is
-// the published evidence behind one of the six exchange-is-rigged
-// flashes. Citations resolve at SOURCES_AT, on the silent hold after
-// the music has ended — reading time.
-const SOURCES: { label: string; text: string }[] = [
+// Article sources for the Rigged scene. URLs included so the
+// publication can be located.
+const SOURCES: { label: string; text: string; url: string }[] = [
   {
     label: "Binance",
     text: "Daniel Kuhn, The Block, 'Binance post confirming insider trading sends \"year of the yellow fruit\" meme token higher,' 8 Dec 2025.",
+    url: "theblock.co/post/381752/binance-confirm-insider-trading-year-yellow-fruit-meme-token-higher",
   },
   {
     label: "Robinhood",
     text: "PYMNTS, 'Robinhood blocks some prediction markets over insider-trading worries,' 12 Apr 2026.",
+    url: "pymnts.com/markets/2026/robinhood-blocks-some-prediction-markets-over-insider-trading-worries",
   },
   {
     label: "Polymarket",
     text: "Shaurya Malwa, CoinDesk, 'Polymarket bettors appear to have insider-traded on a market designed to catch insider traders,' 27 Feb 2026.",
+    url: "coindesk.com/markets/2026/02/27/polymarket-bettors-appear-to-have-insider-traded-on-a-market-designed-to-catch-insider-traders",
   },
   {
     label: "pump.fun",
     text: "James G., Cointribune, 'Solana memecoin lawsuit advances as investors cite insider-trading claims,' 22 Dec 2025.",
+    url: "cointribune.com/en/solana-memecoin-lawsuit-advances-as-investors-cite-insider-trading-claims",
   },
   {
     label: "Kalshi",
     text: "Tara Suter, The Hill, 'Kalshi, Polymarket strengthen insider-trading bans,' 24 Mar 2026.",
+    url: "thehill.com/policy/technology/5797999-prediction-markets-insider-trading-ban",
   },
   {
     label: "Coinbase",
     text: "U.S. SEC press release 2022-127, 'SEC charges former Coinbase manager and two others in crypto-asset insider-trading action,' 21 Jul 2022.",
+    url: "sec.gov/newsroom/press-releases/2022-127",
   },
 ];
 
@@ -214,14 +221,24 @@ export const AntiCheatEndCard: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // ─── Footnote paragraph (fades in early, holds) ────────────────────
+  // ─── Footnote paragraph: fade in early, hold, then fade out at zoom.
+  // The user wants the little white text gone from the bottom once the
+  // wordmark begins zooming up — the eye should rest on the brand, not
+  // be pulled to a fine-print block.
   const footnotesLocal = frame - FOOTNOTES_AT;
-  const footnotesOpacity = interpolate(
+  const footnotesFadeIn = interpolate(
     footnotesLocal,
     [0, toFrames(0.22)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const footnotesFadeOut = interpolate(
+    frame,
+    [ZOOM_AT - toFrames(0.18), ZOOM_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const footnotesOpacity = footnotesFadeIn * footnotesFadeOut;
 
 
   return (
@@ -389,6 +406,9 @@ export const AntiCheatEndCard: React.FC = () => {
                 {s.label}:
               </span>{" "}
               {s.text}{" "}
+              <span style={{ color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" }}>
+                {s.url}
+              </span>{" "}
             </React.Fragment>
           ))}
         </div>
