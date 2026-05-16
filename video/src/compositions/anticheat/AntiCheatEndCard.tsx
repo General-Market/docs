@@ -31,7 +31,6 @@ const SCENE_SECONDS = 9.0;
 const PHASE_2_AT  = toFrames(1.8);  // ~54f  — "Only available …"
 const SLIDE_AT    = toFrames(3.0);  // ~90f  — wordmark begins slide
 const ZOOM_AT     = toFrames(4.2);  // ~126f — slide done, zoom begins
-const SOURCES_AT  = toFrames(6.0);  // ~180f — source citations fade in
 const SUBLINE_AT  = toFrames(0.45); // first headline reveal
 const FOOTNOTES_AT = toFrames(0.9); // footnote paragraph fades in
 
@@ -224,14 +223,6 @@ export const AntiCheatEndCard: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // ─── Article sources (Rigged scene) — fade in at SOURCES_AT ───────
-  const sourcesLocal = frame - SOURCES_AT;
-  const sourcesOpacity = interpolate(
-    sourcesLocal,
-    [0, toFrames(0.55)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
 
   return (
     <AbsoluteFill
@@ -364,11 +355,10 @@ export const AntiCheatEndCard: React.FC = () => {
           Only available for trading bots
         </div>
 
-      {/* Footnote + Sources block — single dense Kalshi-style paragraph
-          at the bottom. Footnotes appear early (FOOTNOTES_AT) and hold
-          for the whole card; the Sources sub-block fades in later
-          (SOURCES_AT, t=6s) so the viewer gets time to read it on the
-          silent hold after the music has died. */}
+      {/* Fine-print paragraph — Kalshi-style dense block.
+          Footnotes (a)–(g) and the Rigged article sources are all in
+          ONE wrapped paragraph. Fades in once at FOOTNOTES_AT and holds
+          for the whole card. */}
       <div
         style={{
           position: "absolute",
@@ -376,9 +366,7 @@ export const AntiCheatEndCard: React.FC = () => {
           left: 0,
           right: 0,
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 14,
+          justifyContent: "center",
           padding: "0 120px",
           pointerEvents: "none",
         }}
@@ -396,51 +384,20 @@ export const AntiCheatEndCard: React.FC = () => {
             opacity: footnotesOpacity,
           }}
         >
-          {FOOTNOTES.map((line, i) => (
+          {FOOTNOTES.map((line) => (
             <React.Fragment key={line.letter}>
               <span style={{ color: "rgba(255,255,255,0.55)" }}>
                 ({line.letter})
               </span>{" "}
-              {line.text}
-              {i < FOOTNOTES.length - 1 ? " " : ""}
+              {line.text}{" "}
             </React.Fragment>
           ))}
-        </div>
-
-        {/* Sources sub-paragraph — fades in at t=6s, the silent reading
-            hold. Same typographic family as the footnote above, slightly
-            dimmer so the eye reads it as a second pass. */}
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 12,
-            fontWeight: 400,
-            letterSpacing: "-0.003em",
-            color: "rgba(255,255,255,0.62)",
-            lineHeight: 1.45,
-            textAlign: "center",
-            maxWidth: 1560,
-            opacity: sourcesOpacity,
-          }}
-        >
-          <span
-            style={{
-              color: "rgba(255,255,255,0.45)",
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              fontSize: 10,
-              marginRight: 10,
-            }}
-          >
-            Sources
-          </span>
-          {SOURCES.map((s, i) => (
+          {SOURCES.map((s) => (
             <React.Fragment key={s.label}>
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>
+              <span style={{ color: "rgba(255,255,255,0.55)" }}>
                 {s.label}:
               </span>{" "}
-              {s.text}
-              {i < SOURCES.length - 1 ? " " : ""}
+              {s.text}{" "}
             </React.Fragment>
           ))}
         </div>

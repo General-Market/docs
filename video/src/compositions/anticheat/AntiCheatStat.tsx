@@ -824,17 +824,16 @@ const EmberTypewriter: React.FC<{
             </span>
           );
         })}
-        {smallSuffix && phase !== "typing" && (
+        {smallSuffix && (
           <span
             style={{
-              fontSize: Math.round(fontSize * 0.12),
+              fontSize: Math.round(fontSize * 0.07),
               fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.55)",
-              marginLeft: Math.round(fontSize * 0.03),
+              color: "rgba(255, 255, 255, 0.45)",
+              marginLeft: Math.round(fontSize * 0.02),
               verticalAlign: "super",
               letterSpacing: 0,
               fontVariantNumeric: "normal",
-              opacity: phase === "wiping" ? 0 : 1,
             }}
           >
             {smallSuffix}

@@ -319,62 +319,7 @@ export const AntiCheatRigged: React.FC = () => {
           />
         )}
       </IdleZoom>
-
-      {/* Source citation — pinned to the scene frame, not the article. Stays
-          legible through every zoom, dolly, whip, and fullscreen takeover. */}
-      {currentArticle && (
-        <SceneSourceCitation
-          url={currentArticle.source}
-          startFrame={articleStartFrame}
-          dark
-        />
-      )}
     </AbsoluteFill>
-  );
-};
-
-// ─── Scene-level source citation ──────────────────────────────────────────────
-//
-// Pinned to the bottom-left of the 1080×1920 frame. Independent of any card
-// transform, so it survives whip-pans, dollies, and the fullscreen takeover.
-// The full URL is shown — wraps if too long, never truncated.
-
-const SceneSourceCitation: React.FC<{
-  url: string;
-  startFrame: number;
-  dark: boolean;
-}> = ({ url, startFrame, dark }) => {
-  const frame = useCurrentFrame();
-  const local = frame - startFrame;
-  // Quick fade-swap when the article changes — 4f in.
-  const opacity = interpolate(local, [0, 4], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const ink = dark ? "rgba(255,255,255,0.82)" : "rgba(10,12,18,0.72)";
-  const label = dark ? "rgba(255,255,255,0.55)" : "rgba(10,12,18,0.45)";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 56,
-        bottom: 56,
-        maxWidth: 940,
-        fontFamily: monoFont,
-        fontSize: 22,
-        lineHeight: 1.35,
-        color: ink,
-        letterSpacing: "0.01em",
-        wordBreak: "break-all",
-        opacity,
-        textShadow: dark ? "0 1px 2px rgba(0,0,0,0.6)" : "none",
-        pointerEvents: "none",
-        zIndex: 10,
-      }}
-    >
-      <span style={{ color: label, marginRight: 8 }}>source —</span>
-      {url}
-    </div>
   );
 };
 
