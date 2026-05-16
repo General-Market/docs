@@ -118,21 +118,9 @@ const SCAPEGOATS: Scapegoat[] = [
 
 const SCAPEGOAT_HEADLINE = "Who to blame";
 
-// Background giant word vocabulary — one verb per scapegoat, shown
-// behind everything in the lower tier of the frame as the Bars-scene
-// BackgroundWord vocabulary (SF Pro Display 900, accent blue, ~10%).
-const SG_MARQUEE_TEXTS: readonly string[] = [
-  "liquidated",
-  "front-run",
-  "spoofed",
-  "leaked",
-];
-
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
-// card vocabulary so the visual rhyme holds. The background marquee
-// lives at scene level (ScapegoatBackgroundMarquee), independent of
-// the card grid — the cards just sit on top.
+// card vocabulary so the visual rhyme holds.
 const SG_CARD_W = 340;
 const SG_CARD_H = 460;
 const SG_CARD_GAP = 60;
@@ -153,9 +141,6 @@ const ScapegoatLineup: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Background giant word — Bars-scene vocabulary, lower tier.
-          One verb at a time, tied to whichever scapegoat is current. */}
-      <ScapegoatBackgroundWord frame={frame} />
       <ScapegoatHeadline frame={frame} />
       <div
         style={{
@@ -178,68 +163,6 @@ const ScapegoatLineup: React.FC = () => {
           />
         ))}
       </div>
-    </AbsoluteFill>
-  );
-};
-
-// Background giant word — same vocabulary as the Bars scene's
-// BackgroundWord: SF Pro Display 900, accent blue, ~10% opacity,
-// letter-spacing −0.05em. One word at a time, the verb tied to the
-// card that's currently the focal point. Sits in the LOWER TIER of
-// the frame (y≈82%) so the cards keep the middle.
-const SG_BG_WORD_PEAK_OPACITY = 0.12;
-const SG_BG_WORD_CENTER_Y_PCT = 0.82;
-const SG_BG_WORD_FADE = 8; // crossfade between verbs, in frames
-
-const ScapegoatBackgroundWord: React.FC<{ frame: number }> = ({ frame }) => {
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {SCAPEGOATS.map((_, i) => {
-        const verb = SG_MARQUEE_TEXTS[i];
-        const enterStart = SG_FIRST_CARD_AT + i * SG_CARD_STAGGER;
-        const nextEnterStart =
-          i < SCAPEGOATS.length - 1
-            ? SG_FIRST_CARD_AT + (i + 1) * SG_CARD_STAGGER
-            : SG_EXIT_AT + i * SG_EXIT_STAGGER + SG_CARD_EXIT;
-
-        // Fade in when this card enters, fade out when the next one
-        // enters (or when the last one starts exiting).
-        const op = interpolate(
-          frame,
-          [
-            enterStart,
-            enterStart + SG_BG_WORD_FADE,
-            nextEnterStart - SG_BG_WORD_FADE,
-            nextEnterStart,
-          ],
-          [0, 1, 1, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        );
-        if (op < 0.005) return null;
-
-        return (
-          <div
-            key={verb}
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: `${(SG_BG_WORD_CENTER_Y_PCT * 100).toFixed(2)}%`,
-              transform: "translate(-50%, -50%)",
-              fontFamily: font,
-              fontSize: fitBgWordFontSize(verb),
-              fontWeight: 900,
-              letterSpacing: "-0.05em",
-              color: colors.accent,
-              opacity: op * SG_BG_WORD_PEAK_OPACITY,
-              whiteSpace: "nowrap",
-              lineHeight: 1,
-              willChange: "opacity",
-            }}
-          >
-            {verb}
-          </div>
-        );
-      })}
     </AbsoluteFill>
   );
 };
