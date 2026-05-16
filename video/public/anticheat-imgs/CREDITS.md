@@ -34,26 +34,30 @@ and credit in the video's description / about page when shipping.
   Credit: Jean-Christophe BENOIST
   Licence: CC BY 3.0
 
-# scapegoat-{sun,griffin,dimon,stewart} image credits
+# scapegoat-{niv,griffin,dimon,lewis} image credits
 
 Real-face scapegoat lineup used in the AntiCheatStat scene. Each
-suspect has either been personally charged by the SEC/DOJ or runs a
-firm that paid an enforcement settlement for the relevant practice.
+face has a real sanction attached to the charge on the card.
 
-- **scapegoat-sun.jpg** — Justin Sun (TRON Foundation, BitTorrent)
-  Sued by the SEC in March 2023 for orchestrating market manipulation
-  of TRX and BTT through wash trading and undisclosed celebrity
-  promotions. Settled with the SEC in June 2024 for $4.5M (no
-  admission). Stand-in here for crypto-perp market manipulation in
-  the spirit of the Mango Markets / liquidation-cascade case.
-  Source: Wikimedia Commons, *Justin_Sun-1_(cropped).jpg*
-  Photographer: MelfarraTron
-  Licence: CC BY-SA 4.0 — credit the photographer; share-alike
+- **scapegoat-niv.jpg** — Dror "Drew" Niv (FXCM, co-founder & CEO)
+  CFTC order 17-04 (6 February 2017): FXCM, FXCM Holdings, Niv and
+  William Ahdout paid a $7M civil penalty and accepted a lifetime
+  ban from US retail-forex registration for "defrauding retail
+  forex customers" by hiding that the firm's "no dealing desk"
+  market maker, Effex Capital, was in fact controlled by FXCM and
+  trading against customer stops. The textbook broker-vs-client
+  stop-hunting case. ([CFTC PR-7528-17][cftc-7528])
+  Source: LeapRate news photo (uncredited press image), used here
+  under fair-use commentary doctrine. No CC licence; file is
+  retained for editorial criticism of a public business figure.
+  No portrait of Niv exists on Wikimedia Commons.
 
-- **scapegoat-griffin.jpg** — Kenneth C. Griffin (Citadel)
-  Citadel Securities has been the subject of repeated FINRA and SEC
-  settlements over order-handling failures and trading ahead of
-  customer orders. Griffin personally has not been criminally charged.
+  [cftc-7528]: https://www.cftc.gov/PressRoom/PressReleases/7528-17
+
+- **scapegoat-griffin.jpg** — Kenneth C. Griffin (Citadel Securities)
+  FINRA AWC 2014041859202 (2020): Citadel Securities paid $700,000
+  for trading ahead of customer OTC orders 2012–2014 — literal
+  front-running on the docket. Griffin personally was not charged.
   Source: Wikimedia Commons, *Kenneth_C._Griffin_photo.jpg*
   Photographer: Paul Elledge, 13 September 2017
   Licence: CC BY-SA 4.0 — credit Paul Elledge; share-alike obligation
@@ -70,14 +74,28 @@ firm that paid an enforcement settlement for the relevant practice.
   Photographer: Steve Jurvetson
   Licence: CC BY 2.0 — credit Steve Jurvetson on publish
 
-- **scapegoat-stewart.jpg** — Martha Stewart
-  Convicted in March 2004 on counts of conspiracy, obstruction of an
-  agency proceeding, and making false statements to federal
-  investigators, all related to insider trading in ImClone Systems
-  stock. Sentenced to five months in federal prison.
-  Source: Wikimedia Commons, *Martha_Stewart_by_Gage_Skidmore.jpg*
-  Photographer: Gage Skidmore
-  Licence: CC BY-SA 3.0 — credit Gage Skidmore; share-alike
+- **scapegoat-lewis.jpg** — Joe Lewis (British billionaire, ex-owner
+  of Tottenham Hotspur via family trust)
+  Pleaded guilty 24 January 2024 in SDNY to one count of conspiracy
+  to commit securities fraud and two counts of securities fraud for
+  feeding non-public information about Mirati Therapeutics and other
+  issuers to pilots, personal assistants, and a girlfriend (2013–
+  2021). Broad Bay Ltd paid a $50M penalty. Pardoned by Donald
+  Trump in November 2025; the guilty plea stands on the record.
+  Source: Mary Altaffer / Associated Press, 26 July 2023
+  (AP25317739873591). Lewis walking into Manhattan federal court
+  flanked by counsel and press cameras for his initial appearance.
+  Used here under fair-use commentary doctrine for editorial
+  criticism of a public figure's adjudicated conduct. AP credit
+  must appear in the published video's description / about page.
+
+# scapegoat-{sun,stewart} image credits (retired)
+
+Earlier real-face lineup, swapped out 2026-05-16 in favour of the
+Niv (FXCM) and Lewis (Mirati insider tips) faces above. Files
+retained for fallback / future reuse. Both remain Wikimedia Commons
+sourced (Justin_Sun-1_(cropped).jpg by MelfarraTron, CC BY-SA 4.0;
+Martha_Stewart_by_Gage_Skidmore.jpg by Gage Skidmore, CC BY-SA 3.0).
 
 # scapegoat-{goat,witch,pillory,execution} image credits (retired)
 

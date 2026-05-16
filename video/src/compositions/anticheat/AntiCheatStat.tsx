@@ -77,16 +77,18 @@ export const AntiCheatStat: React.FC = () => {
 
 // ─── Scapegoat lineup — who to blame, before the stat says otherwise ─────
 //
-// Four wanted-poster cards lined up across the frame. Each suspect is
-// either personally convicted of finance crimes or runs a firm that
-// has been formally sanctioned for the relevant practice. Justin Sun
-// (SEC charges 2023 for market manipulation of TRX/BTT including wash
-// trading, settled 2024), Ken Griffin (Citadel — repeated SEC/FINRA
-// settlements over order handling and front-running of retail flow),
-// Jamie Dimon (JPMorgan — $920M DOJ + CFTC + SEC settlement for
-// orderbook spoofing across precious metals and Treasuries),
-// Martha Stewart (convicted 2004 in the ImClone insider-trading
-// affair). Same scapegoat mechanism, four different sanctions.
+// Four wanted-poster cards lined up across the frame. Each face has a
+// real sanction attached to the charge on the card. Drew Niv (FXCM —
+// CFTC 2017, $7M fine + lifetime US-forex ban for the secret Effex
+// Capital scheme that took the other side of customer stops),
+// Ken Griffin (Citadel Securities — FINRA 2020, $700K for trading
+// ahead of customer orders in OTC stocks 2012–2014), Jamie Dimon
+// (JPMorgan — $920M DOJ + CFTC + SEC settlement 2020 for orderbook
+// spoofing across precious metals and Treasuries; trader convictions
+// affirmed on appeal 2025), Joe Lewis (pleaded guilty January 2024
+// in SDNY to three counts of securities-fraud-related conspiracy and
+// fraud; $50M penalty via Broad Bay Ltd; subsequently pardoned 2025).
+// Same scapegoat mechanism, four different dockets.
 //
 // Attribution lives in anticheat-imgs/CREDITS.md.
 
@@ -101,8 +103,8 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["liquidation", "hunters"],
     charge: "triggers your stops",
-    imageSrc: "anticheat-imgs/scapegoat-sun.jpg",
-    imagePosition: "center 18%",
+    imageSrc: "anticheat-imgs/scapegoat-niv.jpg",
+    imagePosition: "center 30%",
   },
   {
     label: ["front", "runners"],
@@ -119,7 +121,7 @@ const SCAPEGOATS: Scapegoat[] = [
   {
     label: ["insider", "traders"],
     charge: "knows the news first",
-    imageSrc: "anticheat-imgs/scapegoat-stewart.jpg",
+    imageSrc: "anticheat-imgs/scapegoat-lewis.jpg",
     imagePosition: "center 22%",
   },
 ];
