@@ -24,8 +24,7 @@ const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 
 const BG_COLOR = "#FFFFFF";
 
-const BRAND_BLUE = "#2856F6";
-const BRAND_BLUE_DEEP = "#0A249A";
+const BRAND_BLUE = "#1B45D7";
 
 // ── Coin geometry ────────────────────────────────────────────────────
 
@@ -222,7 +221,7 @@ function smoothstep01(t: number): number {
 }
 
 const COIN_BODY_COLOR = new THREE.Color(BRAND_BLUE);
-const COIN_RELIEF_COLOR = new THREE.Color(BRAND_BLUE_DEEP);
+const COIN_RELIEF_COLOR = new THREE.Color("#FFFFFF");
 
 const CoinMesh: React.FC<{
   seed: CoinSeed;
@@ -265,13 +264,16 @@ const CoinMesh: React.FC<{
       normalMap: rimNormal,
       normalScale: new THREE.Vector2(0.55, 0.55),
     });
+    // The pill, denticles and ring read as white enamel inlay, not as
+    // chrome. Low metalness keeps the white from being eaten by the
+    // HDRI reflection; clearcoat carries the gloss.
     const reliefMat = new THREE.MeshPhysicalMaterial({
       color: COIN_RELIEF_COLOR,
-      metalness: 0.96,
-      roughness: glossy ? 0.28 : 0.42,
-      envMapIntensity: 1.55,
-      clearcoat: glossy ? 0.35 : 0.12,
-      clearcoatRoughness: 0.26,
+      metalness: 0.08,
+      roughness: glossy ? 0.24 : 0.36,
+      envMapIntensity: 0.55,
+      clearcoat: glossy ? 0.85 : 0.6,
+      clearcoatRoughness: glossy ? 0.1 : 0.2,
     });
     return { bodyFaceMat, bodyRimMat, reliefMat };
   }, [glossy, rimNormal]);
