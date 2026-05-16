@@ -119,8 +119,8 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
         rotateXDeg={phoneRotateX}
         rotateYDeg={phoneRotateY}
         scale={phoneScale}
-        brollDurationSec={18.5}
-        brollIntroSkipSec={3.0}
+        brollDurationSec={56.5}
+        brollIntroSkipSec={2.5}
       />
       <EndCard progress={endCardProg} />
     </AbsoluteFill>
