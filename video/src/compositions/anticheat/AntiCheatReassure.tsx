@@ -14,13 +14,22 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { DotGrid, DotGridVignette } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
+import { Letterglow } from "./fx/Letterglow";
+import { SCENE_STARTS, beatPulseScene } from "./beats";
 
-// Reassure = 106f (3.53s). Reassure→Switch cut midpoint at frame 956.
-// SECOND_LINE_AT lands on scene-local beat 2 (frame 58 inside Reassure
-// = absolute beat 35, frame 917) so "but shielded" lands on a kick.
+// Reassure = 121f (4.03s). Window = 723..844.
+// Interior beats (Reassure-local): 29 → 41, 30 → 67, 31 → 92. Beat 28
+// at local 15 lands inside the entrance from Solution; beat 32 at
+// local 118 lands inside the exit into Switch — both ignored.
+//
+// Beat layout for this scene:
+//   beat 29 (local 41) — click + camera punch.
+//   beat 30 (local 67) — "but with an Anti-Cheat" line arrives.
+//   beat 31 (local 92) — panel exits, subtitle fades in.
 const SCENE_FRAMES = 121;
 const SCENE_SECONDS = SCENE_FRAMES / FPS;
-const SECOND_LINE_AT = 58;
+const REASSURE_START = SCENE_STARTS.Reassure;
+const SECOND_LINE_AT = 67;
 
 // UI panel geometry — asset is 2000×984 (logged-in homepage).
 const UI_SRC_W = 2000;
@@ -37,18 +46,17 @@ const BTN_X = (BTN_SRC_X / UI_SRC_W) * UI_W;
 const BTN_Y = (BTN_SRC_Y / UI_SRC_H) * UI_H;
 
 // Cursor flight path — enters from off-panel bottom-right. Click lands
-// on scene-local beat 1 (frame 32 inside Reassure = absolute beat 34,
-// frame 891). The cursor races in over ~22 frames so the click hits
-// the kick.
+// on Reassure-local 41 (absolute beat 29, frame 764). The cursor
+// races in over ~22 frames so the click hits the kick.
 const CURSOR_FROM_X = UI_W * 0.82;
 const CURSOR_FROM_Y = UI_H * 1.05;
-const CURSOR_MOVE_START = 10;
-const CURSOR_MOVE_END = 29;
-const CLICK_AT = 32;
+const CURSOR_MOVE_START = 19;
+const CURSOR_MOVE_END = 38;
+const CLICK_AT = 41;
 
-// Panel exit on scene-local beat 3 (frame 84 inside Reassure = absolute
-// beat 36, frame 943). Pulls left out of frame.
-const PANEL_EXIT_AT = 84;
+// Panel exit on Reassure-local 92 (absolute beat 31, frame 815). Pulls
+// left out of frame.
+const PANEL_EXIT_AT = 92;
 const PANEL_EXIT_END = SCENE_FRAMES - toFrames(0.1);
 
 // Emoji burst — bursts from the click, the same vocabulary as
@@ -76,9 +84,18 @@ export const AntiCheatReassure: React.FC = () => {
       <EmojiBurst />
       <ClickFlash />
       <Subtitle />
-      <DotGridVignette intensity={0.20} />
+      <BreathingVignette />
     </AbsoluteFill>
   );
+};
+
+// Vignette that breathes on each interior beat. Base 0.20, lifts to
+// ~0.245 at peak — barely perceptible, just enough to register motion.
+const BreathingVignette: React.FC = () => {
+  const frame = useCurrentFrame();
+  const env = beatPulseScene(frame, "Reassure", 6, 22);
+  const intensity = 0.20 + env * 0.045;
+  return <DotGridVignette intensity={intensity} />;
 };
 
 // Panel exit progress 0 → 1 over the closing window. Used by the
@@ -102,8 +119,9 @@ const usePanelExit = (): { tx: number; rot: number; opacity: number } => {
 const useCamera = (): { scale: number; shakeX: number; shakeY: number } => {
   const frame = useCurrentFrame();
 
-  // Phase 1 — pull from 1.18 to 1.00 over the first beat. Starts pressed
-  // against the UI, breathes out to fit the whole product by frame 26.
+  // Phase 1 — pull from 1.18 to 1.00 over the first interior beat
+  // (beat 29 at local 41). Starts pressed against the UI, breathes out
+  // to fit the whole product by the click.
   const phase1 = interpolate(
     frame,
     [0, CLICK_AT],
@@ -168,6 +186,16 @@ const Headline: React.FC = () => {
     config: { damping: 22, stiffness: 100, mass: 0.8 },
   });
 
+  // One-shot text-shadow flare on the second line's arrival beat (30).
+  // beatPulseScene reads scene-local frames directly.
+  const flare = beatPulseScene(frame, "Reassure", 4, 14);
+  const flareShadow =
+    flare > 0
+      ? `0 0 ${(flare * 26).toFixed(2)}px rgba(91, 134, 255, ${(
+          flare * 0.55
+        ).toFixed(3)})`
+      : "none";
+
   return (
     <div
       style={{
@@ -216,6 +244,7 @@ const Headline: React.FC = () => {
           alignItems: "baseline",
           justifyContent: "center",
           gap: 4,
+          textShadow: flareShadow,
         }}
       >
         <OvershootDots startFrame={SECOND_LINE_AT} />
@@ -229,7 +258,7 @@ const Headline: React.FC = () => {
             blur={4}
           />
           <span>&nbsp;</span>
-          <span style={{ color: colors.accent }}>
+          <span style={{ position: "relative", color: colors.accent }}>
             <RevealChars
               text="Anti-Cheat"
               startFrame={SECOND_LINE_AT + toFrames(0.66)}
@@ -238,6 +267,27 @@ const Headline: React.FC = () => {
               y={16}
               blur={5}
             />
+            <span
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+              }}
+            >
+              <Letterglow
+                beatIndex={30}
+                mountFrame={REASSURE_START}
+                attack={4}
+                decay={22}
+                stagger={1.4}
+                color="rgba(91, 134, 255, 0.85)"
+                maxBlurPx={20}
+                style={{ color: "transparent" }}
+              >
+                {"Anti-Cheat"}
+              </Letterglow>
+            </span>
           </span>
         </span>
       </div>
@@ -310,6 +360,11 @@ const RotatingProductPanel: React.FC = () => {
   const rotateY = Math.sin(t * ((2 * Math.PI) / 12)) * 8;
   const rotateX = Math.cos(t * ((2 * Math.PI) / 16)) * -2.5;
 
+  // Tiny scale punch on every interior beat (29, 30, 31). Capped at
+  // 0.3% — restraint matters here; the scene is the calm.
+  const beatPunch = 1 + beatPulseScene(frame, "Reassure", 3, 12) * 0.003;
+  const totalScale = cameraScale * beatPunch;
+
   // Pulse on shielded reveal — the click triggers a soft accent bloom.
   const pulse = interpolate(
     frame,
@@ -350,7 +405,7 @@ const RotatingProductPanel: React.FC = () => {
           width: "100%",
           height: "100%",
           transformStyle: "preserve-3d",
-          transform: `scale(${cameraScale}) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
+          transform: `scale(${totalScale}) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
           borderRadius: 14,
           overflow: "hidden",
           boxShadow:
@@ -795,7 +850,7 @@ const ShieldStamp: React.FC = () => {
 
 const Subtitle: React.FC = () => {
   const frame = useCurrentFrame();
-  // Fades in on scene-local beat 3 (frame 84 = absolute beat 36), the
+  // Fades in on Reassure-local 92 (absolute beat 31, frame 815), the
   // same kick that triggers the panel exit. Subtitle solidifies as the
   // product slides off — one motion, two layers.
   const FADE_AT = PANEL_EXIT_AT;
