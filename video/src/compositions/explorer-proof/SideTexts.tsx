@@ -15,7 +15,9 @@ export type SideTextsProps = {
 
 const DISPLAY_STACK =
   '"SF Pro Display", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif';
-const SHADOW = "0 2px 12px rgba(0,0,0,0.08)";
+// Soft light-on-light shadow so black text gains a touch of separation
+// from the lavender background without halo-ing.
+const SHADOW = "0 2px 12px rgba(255,255,255,0.18)";
 
 export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
   const clamped = Math.max(0, Math.min(1, visibility));
@@ -32,7 +34,7 @@ export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
           top: "50%",
           transform: `translate(${leftOffset}px, -50%)`,
           opacity: clamped,
-          color: "#FFFFFF",
+          color: "#000000",
           fontFamily: DISPLAY_STACK,
           letterSpacing: "-0.022em",
           lineHeight: 0.92,
@@ -52,7 +54,7 @@ export const SideTexts: React.FC<SideTextsProps> = ({ visibility }) => {
           top: "50%",
           transform: `translate(${rightOffset}px, -50%)`,
           opacity: clamped,
-          color: "#FFFFFF",
+          color: "#000000",
           fontFamily: monoFont,
           textAlign: "right",
           textShadow: SHADOW,

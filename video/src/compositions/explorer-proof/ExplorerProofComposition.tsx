@@ -35,12 +35,14 @@ const FALLBACK_BROLL_PATH = "broll/explorer-broll.mp4";
 const BG_COLOR = "#E0D8EC";
 
 const BREAKPOINTS = [0, 300, 540, 780, 1020, 1260, 1500, 1740, 1980, 2100];
-const EASE = Easing.bezier(0.45, 0, 0.2, 1);
+// Sharp acceleration into the new pose, gentle settle out. Closer to a
+// real camera operator's whip-pan than the symmetrical bezier we had.
+const EASE = Easing.bezier(0.72, 0.02, 0.18, 1.0);
 
-// Snap-and-hold camera. The phone sits still for most of each beat,
-// then snaps to the next pose in ~SNAP_FRAMES. Anything < 18f reads as
-// a clean cut without feeling jittery on playback.
-const SNAP_FRAMES = 16;
+// Snap-and-hold camera. Hold for most of each beat, then snap to the
+// next pose. 22 frames is long enough to look cinematic (not jerky)
+// and short enough to read as a deliberate camera move, not a drift.
+const SNAP_FRAMES = 22;
 
 // Convert a "one value per beat" array into the double-breakpoint
 // shape that produces a hold→snap→hold curve via `interpolate`.
@@ -91,24 +93,40 @@ export const ExplorerProof: React.FC<ExplorerProofProps> = ({ brollPath }) => {
 
   // Phone scale — wider swing makes each beat read as a real camera
   // move instead of a slow drift. 0.8 dezoom → 1.45 close-up.
-  const phoneScale = driveProp(frame, [
+  const phoneScaleBase = driveProp(frame, [
     0.8, 1.25, 1.4, 1.4, 0.85, 0.85, 1.5, 0.8, 1.2, 1.2,
   ]);
 
   // Phone vertical translate — bigger lift/drop for the up/down beats.
-  const phoneTranslateY = driveProp(frame, [
+  const phoneTranslateYBase = driveProp(frame, [
     0, 0, -140, 140, 0, 0, 0, 0, 0, 0,
   ]);
 
   // Tilt — sharper lean during the up/down beats. Degrees.
-  const phoneRotateX = driveProp(frame, [
+  const phoneRotateXBase = driveProp(frame, [
     0, 0, -10, 10, 0, 0, 0, 0, 0, 0,
   ]);
 
   // Yaw — beat 6 turns the phone to the right.
-  const phoneRotateY = driveProp(frame, [
+  const phoneRotateYBase = driveProp(frame, [
     0, 0, 0, 0, 0, 14, 0, 0, 0, 0,
   ]);
+
+  // ── Micro-motion during holds (camera breath)
+  // Sub-1px / sub-0.005 amplitude on top of the snapped pose. Period
+  // ~4s on scale, ~3s on translateY. Imperceptible per frame, but the
+  // viewer reads it as a handheld feel — "alive" — instead of a still
+  // image between snaps.
+  const t = frame / 30;
+  const breathScale = 1 + Math.sin(t * (Math.PI * 2) / 4.0) * 0.004;
+  const breathTranslateY = Math.sin(t * (Math.PI * 2) / 3.2 + 1.1) * 2.5;
+  const breathRotateX = Math.sin(t * (Math.PI * 2) / 5.0 + 0.4) * 0.35;
+  const breathRotateY = Math.sin(t * (Math.PI * 2) / 4.5 + 2.0) * 0.4;
+
+  const phoneScale = phoneScaleBase * breathScale;
+  const phoneTranslateY = phoneTranslateYBase + breathTranslateY;
+  const phoneRotateX = phoneRotateXBase + breathRotateX;
+  const phoneRotateY = phoneRotateYBase + breathRotateY;
 
   // Coin field — recedes when we zoom in, blooms when we pull back.
   const coinsForward = driveProp(frame, [
