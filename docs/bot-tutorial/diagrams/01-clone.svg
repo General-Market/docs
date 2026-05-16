@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <style>
+    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; letter-spacing: 2.34px; }
+    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.968px; }
+    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; letter-spacing: -0.228px; }
+    .gh-org  { font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0071E3; }
+    .gh-slash{ font: 500 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; }
+    .gh-repo { font: 700 17px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0071E3; }
+    .gh-mute { font: 500 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E6E73; }
+    .gh-btn  { font: 600 12px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1D1D1F; }
+    .tree    { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
+    .tree-2  { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; }
+    .md-h1   { font: 700 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.484px; }
+    .md-h2   { font: 700 16px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #1D1D1F; letter-spacing: -0.352px; }
+    .md-p    { font: 400 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.07px; }
+    .code    { font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1D1D1F; }
+    .code-mut{ font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E6E73; }
+    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; letter-spacing: 0.08px; }
+    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #424245; letter-spacing: -0.08px; }
+  </style>
+
+  <!-- frame -->
+  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
+
+  <!-- header -->
+  <text x="60" y="82" class="eyebrow">STEP 01 · THE REPO</text>
+  <text x="60" y="146" class="title">Clone the bot.</text>
+  <text x="60" y="190" class="tagline">One repo. Three example sources. The plumbing is already solved.</text>
+
+  <!-- github mock card -->
+  <rect x="60" y="240" width="1380" height="680" rx="12" fill="#FFFFFF" stroke="#D2D2D7" stroke-width="1"/>
+
+  <!-- gh browser chrome -->
+  <rect x="60" y="240" width="1380" height="44" rx="12" fill="#F6F8FA"/>
+  <rect x="60" y="276" width="1380" height="8" fill="#F6F8FA"/>
+  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
+  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
+  <circle cx="126" cy="262" r="6" fill="#28C840"/>
+  <rect x="160" y="250" width="380" height="24" rx="6" fill="#FFFFFF" stroke="#D2D2D7"/>
+  <text x="170" y="266" class="gh-mute">github.com/General-Market/vision-bot-examples</text>
+
+  <!-- repo header -->
+  <text x="92" y="328" class="gh-org">General-Market</text>
+  <text x="240" y="328" class="gh-slash">/</text>
+  <text x="252" y="328" class="gh-repo">vision-bot-examples</text>
+  <text x="468" y="328" class="gh-mute">Public</text>
+
+  <!-- gh action buttons -->
+  <rect x="1100" y="312" width="84" height="26" rx="6" fill="#FFFFFF" stroke="#D2D2D7"/>
+  <text x="1118" y="329" class="gh-btn">★ Star</text>
+  <rect x="1192" y="312" width="92" height="26" rx="6" fill="#FFFFFF" stroke="#D2D2D7"/>
+  <text x="1211" y="329" class="gh-btn">⌥ Watch</text>
+  <rect x="1292" y="312" width="84" height="26" rx="6" fill="#FFFFFF" stroke="#D2D2D7"/>
+  <text x="1310" y="329" class="gh-btn">⑂ Fork</text>
+
+  <rect x="92" y="354" width="1316" height="1" fill="#E8E8ED"/>
+
+  <!-- file tree -->
+  <g transform="translate(92, 380)">
+    <text x="0" y="0" class="gh-mute">main ▾</text>
+    <text x="80" y="0" class="gh-mute">5 files</text>
+
+    <g transform="translate(0, 30)">
+      <text x="0" y="20" class="tree-2">📁  polymarket/</text>
+      <text x="0" y="56" class="tree-2">📁  twitch/</text>
+      <text x="0" y="92" class="tree-2">📁  visualizer/</text>
+      <text x="0" y="128" class="tree">📄  .gitignore</text>
+      <text x="0" y="164" class="tree">📄  AGENTS.md</text>
+      <text x="0" y="200" class="tree">📄  README.md</text>
+      <text x="0" y="236" class="tree">📄  setup.sh</text>
+    </g>
+  </g>
+
+  <!-- divider between tree and readme -->
+  <rect x="468" y="370" width="1" height="510" fill="#E8E8ED"/>
+
+  <!-- readme preview -->
+  <g transform="translate(508, 384)">
+    <text x="0" y="22" class="md-h1"># vision-bot-examples</text>
+    <text x="0" y="56" class="md-p">Reference trading bots for Vision — an on-chain parimutuel</text>
+    <text x="0" y="76" class="md-p">prediction-market layer running on Index L3.</text>
+
+    <text x="0" y="120" class="md-h2">## Zero-to-trading in under 3 minutes</text>
+
+    <!-- code block -->
+    <rect x="0" y="140" width="880" height="186" rx="8" fill="#F5F5F7" stroke="#E8E8ED"/>
+    <text x="20" y="170" class="code-mut"># clone</text>
+    <text x="20" y="194" class="code">git clone https://github.com/General-Market/vision-bot-examples</text>
+    <text x="20" y="218" class="code">cd vision-bot-examples</text>
+    <text x="20" y="252" class="code-mut"># bootstrap + faucet</text>
+    <text x="20" y="276" class="code">./setup.sh --auto-fund</text>
+    <text x="20" y="310" class="code-mut"># trade one block</text>
+    <text x="20" y="334" class="code">.venv/bin/python twitch/live_trader.py --deposit 0.1 --max-joins 1</text>
+
+    <!-- highlight marker on first line -->
+    <rect x="-12" y="186" width="4" height="10" fill="#0071E3"/>
+  </g>
+
+  <!-- footer command pill -->
+  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#1D1D1F"/>
+  <text x="92" y="1010" class="pill">$ git clone https://github.com/General-Market/vision-bot-examples</text>
+
+  <!-- caption -->
+  <text x="60" y="1066" class="caption">The repo is a contract. It promises one thing: a wallet that can trade.</text>
+</svg>
