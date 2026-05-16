@@ -11,6 +11,7 @@ import { font, monoFont } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { VerticalDotGrid } from "./DotGrid";
 import { IdleZoom, RevealChars } from "./vibe";
+import { SCENE_STARTS, beat, beatPulseScene } from "./beats";
 
 // 4.5s scene. Title block holds on the LEFT for the entire scene:
 //   line 1 — exchange name (green, underlined; updates per article)
@@ -18,19 +19,43 @@ import { IdleZoom, RevealChars } from "./vibe";
 // Articles flash hard-cut on the RIGHT, much larger than before, with the
 // original yellow highlighter restored on the article phrase.
 // 5.93s — articles + glitches + verdict, snap-zoom intense to Stat.
-// Locked so the Rigged→Stat transition starts on beat 17 (frame 460).
+// Locked so the Rigged→Stat transition starts on beat 10 (frame 275).
 const SCENE_SECONDS = 178 / FPS;
 const SCENE_FRAMES = 178;
 
-const TITLE_IN = 0;
-// One article per beat. Rigged starts on beat 11, articles cycle on
-// beats 11–16 (scene-local 0, 26, 51, 77, 102, 129). Beat-to-beat gaps
-// aren't uniform (25, 25, 26, 25, 27) so spell them out, don't step.
-const ARTICLE_FRAMES = [0, 26, 51, 77, 102, 129];
+// TITLE_IN shifted from 0 → 3 so that "rigged" finishes its char-stagger
+// on Rigged-local 36 — the second interior beat (kick #5). The verdict
+// completes assembly exactly on the snare.
+const TITLE_IN = 3;
 
-// Glitches detonate on scene-local beats 1, 3, 5 (frames 26, 77, 129).
-const GLITCH_AT = [26, 77, 129];
+// Beat lock — every article mounts on a kick. Rigged owns beats 4..9.
+// Scene-local frames derived from VIDEO_BEATS minus SCENE_STARTS.Rigged
+// (=111). Beat-to-beat gaps aren't uniform (26, 25, 26, 26, 26) so spell
+// them out, don't step.
+//
+//   article  beat#  abs  scene-local
+//   binance     4   121     10
+//   robinhood   5   147     36
+//   polymarket  6   172     61
+//   pump.fun    7   198     87
+//   kalshi      8   224    113
+//   coinbase    9   250    139
+//
+// Beat 10 (abs 275 → local 164) lands inside the snapZoomIntense exit
+// into Stat — the brand-mark flicker rides it out.
+const RIGGED_BEATS_LOCAL = [10, 36, 61, 87, 113, 139] as const;
+const ARTICLE_FRAMES: readonly number[] = RIGGED_BEATS_LOCAL;
+
+// Glitches detonate on every other beat — local 36, 87, 139 (beats 5, 7, 9).
+const GLITCH_AT: readonly number[] = [
+  RIGGED_BEATS_LOCAL[1],
+  RIGGED_BEATS_LOCAL[3],
+  RIGGED_BEATS_LOCAL[5],
+];
 const GLITCH_LEN = 6;
+
+// Absolute beat anchors used for the exit flicker on beat 10.
+const RIGGED_EXIT_BEAT_INDEX = 10;
 
 type Highlight = { x: number; y: number; w: number; h: number };
 
@@ -148,8 +173,13 @@ const ARTICLES: ArticleProof[] = [
 export const AntiCheatRigged: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Subtle breath so the verdict doesn't flatten over 5s.
-  const verdictPulse = 1 + Math.sin((frame / 45) * Math.PI * 2) * 0.012;
+  // Single source of truth for "how loud is the kick right now". Sharp
+  // attack (3f), longer decay (16f) — feels like a snare, not a sine.
+  const pulse = beatPulseScene(frame, "Rigged", 3, 16);
+
+  // Verdict breath now rides the kick instead of a free-running sine.
+  // Floor at 1.0, peak at +1.6% on the beat — visible, never wobbly.
+  const verdictPulse = 1 + pulse * 0.016;
 
   // Glitch intensity: the strongest pulse currently active.
   let glitch = 0;
@@ -160,6 +190,11 @@ export const AntiCheatRigged: React.FC = () => {
       if (v > glitch) glitch = v;
     }
   }
+  // Mild RGB-split that rides every kick — the chromatic ghosts shimmer
+  // even on beats that don't carry a hard glitch detonation. Cap at 0.45
+  // so the dedicated GLITCH_AT detonations still dominate.
+  const beatGhost = Math.min(0.45, pulse * 0.55);
+  const ghostIntensity = Math.max(glitch, beatGhost);
 
   // Active article based on frame — pick the latest beat that has fired.
   let articleIdx = -1;
@@ -181,6 +216,24 @@ export const AntiCheatRigged: React.FC = () => {
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         )
       : 1;
+
+  // Vignette clenches on the kick. Floor 0.30, peak 0.56 — the world
+  // squeezes inward each time the snare lands.
+  const vignetteAlpha = 0.30 + pulse * 0.26;
+
+  // Red bloodstain underline — the rigged narrative leaves a mark.
+  // Sits below the verdict column. Brightens on the beat.
+  const bloodAlpha = 0.18 + pulse * 0.42;
+  const bloodGlow = pulse * 18;
+
+  // Exit-beat flicker (beat 10, abs frame 275 → local 164). One last
+  // brand-mark twitch as Rigged hands off to Stat.
+  const exitBeatAbs = beat(RIGGED_EXIT_BEAT_INDEX);
+  const exitDelta = frame + SCENE_STARTS.Rigged - exitBeatAbs;
+  const exitFlicker =
+    exitDelta >= -3 && exitDelta <= 8
+      ? Math.max(0, 1 - Math.abs(exitDelta) / 8)
+      : 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.accent, fontFamily: font }}>
@@ -208,8 +261,24 @@ export const AntiCheatRigged: React.FC = () => {
               willChange: "transform",
             }}
           >
-            <GlitchVerdict glitch={glitch} />
+            <GlitchVerdict glitch={ghostIntensity} />
           </div>
+
+          {/* Red bloodstain — a single hard underline beneath "rigged" that
+              lifts on every kick. The narrative's mark on the page. */}
+          <div
+            style={{
+              marginTop: 18,
+              width: 360,
+              height: 8,
+              background: "#ff2b44",
+              opacity: bloodAlpha,
+              borderRadius: 2,
+              transform: "skewX(-6deg)",
+              boxShadow: `0 0 ${bloodGlow.toFixed(1)}px rgba(255,43,68,${(0.45 * pulse).toFixed(3)})`,
+              willChange: "opacity, box-shadow",
+            }}
+          />
         </div>
 
         {/* Right — big article flash */}
@@ -220,14 +289,35 @@ export const AntiCheatRigged: React.FC = () => {
           />
         )}
 
-        {/* Inverted vignette — corners deepen toward navy on the blue field */}
+        {/* Inverted vignette — corners deepen toward navy on the blue field.
+            The alpha rides beatPulseScene so the frame clenches on each kick. */}
         <AbsoluteFill
           style={{
             pointerEvents: "none",
-            background:
-              "radial-gradient(ellipse at center, rgba(0,18,80,0) 50%, rgba(0,18,80,0.35) 100%)",
+            background: `radial-gradient(ellipse at center, rgba(0,18,80,0) 50%, rgba(0,18,80,${vignetteAlpha.toFixed(3)}) 100%)`,
           }}
         />
+
+        {/* Beat-driven red wash — a faint blood film over the entire frame
+            that pulses with the kick. Caps at ~6% so it never dominates. */}
+        <AbsoluteFill
+          style={{
+            pointerEvents: "none",
+            background: `rgba(255,43,68,${(pulse * 0.06).toFixed(3)})`,
+            mixBlendMode: "multiply",
+          }}
+        />
+
+        {/* Exit flicker — one chromatic snap on the handoff beat into Stat. */}
+        {exitFlicker > 0 && (
+          <AbsoluteFill
+            style={{
+              pointerEvents: "none",
+              background: `rgba(255,255,255,${(exitFlicker * 0.10).toFixed(3)})`,
+              mixBlendMode: "screen",
+            }}
+          />
+        )}
       </IdleZoom>
 
       {/* Source citation — pinned to the scene frame, not the article. Stays
