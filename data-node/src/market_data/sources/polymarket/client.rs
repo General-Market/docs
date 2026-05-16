@@ -89,10 +89,14 @@ pub struct PolymarketMarketSource {
 impl PolymarketMarketSource {
     /// Create from environment variables
     pub fn from_env() -> Result<Self> {
+        // 1200 s (20 min) gives bots a real chance: 8192-market bitmaps need
+        // time to be generated, signed, submitted to 3 oracles, accepted
+        // on-chain, and only then can settlement fire. Earlier 300 s was the
+        // sync cadence and the batch lifetime — bots never made it in time.
         let sync_interval_secs = std::env::var("POLYMARKET_SYNC_INTERVAL_SECS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(300); // 5 minutes default
+            .unwrap_or(1200); // 20 min — bot needs time to react to 8192-market batches
 
         let http = SourceHttpClient::new(
             RateLimitConfig {
