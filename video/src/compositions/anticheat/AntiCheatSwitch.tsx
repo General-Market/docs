@@ -893,12 +893,13 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             <span
               style={{
                 fontFamily: monoFont,
-                fontSize: 32,
+                fontSize: 16,
                 color: colors.dim,
-                marginLeft: 6,
+                marginLeft: 4,
                 verticalAlign: "super",
                 fontWeight: 500,
                 letterSpacing: 0,
+                opacity: 0.7,
               }}
             >
               (f)

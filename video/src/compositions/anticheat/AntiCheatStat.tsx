@@ -447,10 +447,10 @@ const ScapegoatCardBody: React.FC<{
           {scapegoat.charge}
           <sup
             style={{
-              fontSize: 9,
-              marginLeft: 4,
+              fontSize: 6,
+              marginLeft: 3,
               letterSpacing: 0,
-              color: "rgba(255, 255, 255, 0.55)",
+              color: "rgba(255, 255, 255, 0.45)",
             }}
           >
             ({String.fromCharCode(97 + index)})

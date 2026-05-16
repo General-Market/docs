@@ -9,24 +9,34 @@ import {
 import { font } from "../../common/fonts";
 import { FPS, H, W, colors, toFrames } from "./theme";
 import { ParallaxText } from "./transitions";
-import { IdleZoom, RevealChars } from "./vibe";
+import { RevealChars } from "./vibe";
 import { SPIKE_ENDCARD_LOCAL } from "./beats";
 
-const SCENE_SECONDS = 4.5;
-const SCENE_FRAMES = toFrames(SCENE_SECONDS);
+const SCENE_SECONDS = 9.0;
 
-// Three phases inside the end card:
-//   Phase 1 (0 → P2): wordmark small at top, headline "Trading is
-//                     easy with an Anti-Cheat(g)" centered.
-//   Phase 2 (P2 → P3): headline swaps to "Only available for
-//                     trading bots". Wordmark unchanged.
-//   Phase 3 (P3 → end): headline fades out; wordmark drops to the
-//                     vertical centre and scales up — the final
-//                     beat the card holds on.
-const PHASE_2_AT = toFrames(1.8);   // ~54f — "Only available …"
-const PHASE_3_AT = toFrames(3.0);   // ~90f — logo descends + zooms
-const SUBLINE_AT = toFrames(0.45);  // first headline reveal
+// Sequential phases inside the end card. Each beat does ONE thing —
+// no compound motion that fights itself.
+//   Phase 1 (0 → P2):           wordmark small at top, headline
+//                                 "Trading is easy with an Anti-Cheat(g)".
+//   Phase 2 (P2 → SLIDE_AT):    headline swaps to "Only available for
+//                                 trading bots". Wordmark unchanged.
+//   Phase 3a (SLIDE_AT → ZOOM_AT): wordmark glides from top to centre.
+//                                  Scale unchanged. Just position.
+//   Phase 3b (ZOOM_AT → SOURCES_AT): wordmark scales up. Position
+//                                  held at centre. Just zoom.
+//   Phase 4 (SOURCES_AT → end): article-source sub-block fades in
+//                                 under the footnote paragraph. The
+//                                 music has died; the card holds for
+//                                 reading time.
+const PHASE_2_AT  = toFrames(1.8);  // ~54f  — "Only available …"
+const SLIDE_AT    = toFrames(3.0);  // ~90f  — wordmark begins slide
+const ZOOM_AT     = toFrames(4.2);  // ~126f — slide done, zoom begins
+const SOURCES_AT  = toFrames(6.0);  // ~180f — source citations fade in
+const SUBLINE_AT  = toFrames(0.45); // first headline reveal
 const FOOTNOTES_AT = toFrames(0.9); // footnote paragraph fades in
+
+const SLIDE_LEN = ZOOM_AT - SLIDE_AT;
+const ZOOM_LEN  = toFrames(1.0);    // 30f zoom duration
 
 // Settle: after the spike fires, the wordmark eases back from its
 // scale punch over SETTLE_LEN frames. The music is dying, anything
@@ -70,6 +80,37 @@ const FOOTNOTES: { letter: string; text: string }[] = [
   {
     letter: "g",
     text: "Currently available only via General Market trading bots.",
+  },
+];
+
+// Article sources for the Rigged scene (≈ video t=4–10s). Each line is
+// the published evidence behind one of the six exchange-is-rigged
+// flashes. Citations resolve at SOURCES_AT, on the silent hold after
+// the music has ended — reading time.
+const SOURCES: { label: string; text: string }[] = [
+  {
+    label: "Binance",
+    text: "Daniel Kuhn, The Block, 'Binance post confirming insider trading sends \"year of the yellow fruit\" meme token higher,' 8 Dec 2025.",
+  },
+  {
+    label: "Robinhood",
+    text: "PYMNTS, 'Robinhood blocks some prediction markets over insider-trading worries,' 12 Apr 2026.",
+  },
+  {
+    label: "Polymarket",
+    text: "Shaurya Malwa, CoinDesk, 'Polymarket bettors appear to have insider-traded on a market designed to catch insider traders,' 27 Feb 2026.",
+  },
+  {
+    label: "pump.fun",
+    text: "James G., Cointribune, 'Solana memecoin lawsuit advances as investors cite insider-trading claims,' 22 Dec 2025.",
+  },
+  {
+    label: "Kalshi",
+    text: "Tara Suter, The Hill, 'Kalshi, Polymarket strengthen insider-trading bans,' 24 Mar 2026.",
+  },
+  {
+    label: "Coinbase",
+    text: "U.S. SEC press release 2022-127, 'SEC charges former Coinbase manager and two others in crypto-asset insider-trading action,' 21 Jul 2022.",
   },
 ];
 
@@ -118,17 +159,19 @@ export const AntiCheatEndCard: React.FC = () => {
     spikeKick * 0.085 -
     restRelief;
 
-  // ─── Phase 3: wordmark glides from small-top to big-centre ─────────
-  const phase3Local = Math.max(0, frame - PHASE_3_AT);
-  const phase3Total = Math.max(1, SCENE_FRAMES - PHASE_3_AT);
-  const phase3T = Math.min(1, phase3Local / phase3Total);
-  // Smootherstep — symmetric ease, no jolt at start or finish
-  const phase3Eased = phase3T * phase3T * phase3T * (phase3T * (phase3T * 6 - 15) + 10);
+  // ─── Phase 3a: slide top → centre (position only, no scale change) ─
+  const slideT = Math.max(0, Math.min(1, (frame - SLIDE_AT) / SLIDE_LEN));
+  const slideEased =
+    slideT * slideT * slideT * (slideT * (slideT * 6 - 15) + 10);
   const wordmarkY = WORDMARK_TOP_Y +
-    (WORDMARK_CENTER_Y - WORDMARK_TOP_Y) * phase3Eased;
+    (WORDMARK_CENTER_Y - WORDMARK_TOP_Y) * slideEased;
+
+  // ─── Phase 3b: zoom small → big (scale only, position held) ────────
+  const zoomT = Math.max(0, Math.min(1, (frame - ZOOM_AT) / ZOOM_LEN));
+  const zoomEased = zoomT * zoomT * zoomT * (zoomT * (zoomT * 6 - 15) + 10);
   const wordmarkScale =
     (WORDMARK_SCALE_SMALL +
-      (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * phase3Eased) *
+      (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * zoomEased) *
     wordmarkPunch;
 
   // ─── Subline (Phase 1 → Phase 2 → fade for Phase 3) ────────────────
@@ -158,7 +201,7 @@ export const AntiCheatEndCard: React.FC = () => {
   );
   const phase2FadeOut = interpolate(
     frame,
-    [PHASE_3_AT - toFrames(0.16), PHASE_3_AT],
+    [SLIDE_AT - toFrames(0.16), SLIDE_AT],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
@@ -181,6 +224,15 @@ export const AntiCheatEndCard: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // ─── Article sources (Rigged scene) — fade in at SOURCES_AT ───────
+  const sourcesLocal = frame - SOURCES_AT;
+  const sourcesOpacity = interpolate(
+    sourcesLocal,
+    [0, toFrames(0.55)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
   return (
     <AbsoluteFill
       style={{
@@ -188,7 +240,6 @@ export const AntiCheatEndCard: React.FC = () => {
         fontFamily: font,
       }}
     >
-      <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.018}>
         <WhiteDotGrid />
 
         {/* Spike-anchored halo burst — blooms at the kick. */}
@@ -279,11 +330,11 @@ export const AntiCheatEndCard: React.FC = () => {
           <span
             style={{
               fontFamily: font,
-              fontSize: 26,
+              fontSize: 14,
               fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.55)",
-              marginLeft: 8,
-              marginTop: 4,
+              color: "rgba(255, 255, 255, 0.5)",
+              marginLeft: 4,
+              marginTop: 2,
               letterSpacing: 0,
             }}
           >
@@ -313,45 +364,87 @@ export const AntiCheatEndCard: React.FC = () => {
           Only available for trading bots
         </div>
 
-        {/* Footnote paragraph — single dense block, all letters inline.
-            Kalshi-style: one paragraph that wraps, very small, dim. */}
+      {/* Footnote + Sources block — single dense Kalshi-style paragraph
+          at the bottom. Footnotes appear early (FOOTNOTES_AT) and hold
+          for the whole card; the Sources sub-block fades in later
+          (SOURCES_AT, t=6s) so the viewer gets time to read it on the
+          silent hold after the music has died. */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 60,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 14,
+          padding: "0 120px",
+          pointerEvents: "none",
+        }}
+      >
         <div
           style={{
-            position: "absolute",
-            bottom: 60,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
+            fontFamily: font,
+            fontSize: 13,
+            fontWeight: 400,
+            letterSpacing: "-0.003em",
+            color: "rgba(255,255,255,0.72)",
+            lineHeight: 1.45,
+            textAlign: "center",
+            maxWidth: 1560,
             opacity: footnotesOpacity,
-            padding: "0 120px",
-            pointerEvents: "none",
           }}
         >
-          <div
+          {FOOTNOTES.map((line, i) => (
+            <React.Fragment key={line.letter}>
+              <span style={{ color: "rgba(255,255,255,0.55)" }}>
+                ({line.letter})
+              </span>{" "}
+              {line.text}
+              {i < FOOTNOTES.length - 1 ? " " : ""}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Sources sub-paragraph — fades in at t=6s, the silent reading
+            hold. Same typographic family as the footnote above, slightly
+            dimmer so the eye reads it as a second pass. */}
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 12,
+            fontWeight: 400,
+            letterSpacing: "-0.003em",
+            color: "rgba(255,255,255,0.62)",
+            lineHeight: 1.45,
+            textAlign: "center",
+            maxWidth: 1560,
+            opacity: sourcesOpacity,
+          }}
+        >
+          <span
             style={{
-              fontFamily: font,
-              fontSize: 13,
-              fontWeight: 400,
-              letterSpacing: "-0.003em",
-              color: "rgba(255,255,255,0.72)",
-              lineHeight: 1.45,
-              textAlign: "center",
-              maxWidth: 1560,
+              color: "rgba(255,255,255,0.45)",
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              fontSize: 10,
+              marginRight: 10,
             }}
           >
-            {FOOTNOTES.map((line, i) => (
-              <React.Fragment key={line.letter}>
-                <span style={{ color: "rgba(255,255,255,0.55)" }}>
-                  ({line.letter})
-                </span>{" "}
-                {line.text}
-                {i < FOOTNOTES.length - 1 ? " " : ""}
-              </React.Fragment>
-            ))}
-          </div>
+            Sources
+          </span>
+          {SOURCES.map((s, i) => (
+            <React.Fragment key={s.label}>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>
+                {s.label}:
+              </span>{" "}
+              {s.text}
+              {i < SOURCES.length - 1 ? " " : ""}
+            </React.Fragment>
+          ))}
         </div>
-      </IdleZoom>
+      </div>
     </AbsoluteFill>
   );
 };
