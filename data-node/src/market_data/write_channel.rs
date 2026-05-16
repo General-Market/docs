@@ -51,6 +51,18 @@ static CHANNEL_CAPACITY: LazyLock<usize> = LazyLock::new(|| {
         .unwrap_or(10_000)
 });
 
+/// Phase 1 of the storage redesign. When `USE_NEW_STORAGE=1`, every batch
+/// inserted into `market_prices` is also mirrored to the hypertable
+/// `market_prices_v2`. The dual write runs best-effort — a v2 failure logs
+/// at warn but does not poison the primary path. Reads stay on the old
+/// table for the entirety of phase 1.
+static USE_NEW_STORAGE: LazyLock<bool> = LazyLock::new(|| {
+    matches!(
+        std::env::var("USE_NEW_STORAGE").as_deref(),
+        Ok("1") | Ok("true") | Ok("TRUE") | Ok("yes")
+    )
+});
+
 /// Max retries for a failed DB batch before dropping
 const MAX_INSERT_RETRIES: u32 = 3;
 
@@ -433,6 +445,12 @@ impl BatchWriter {
     }
 
     /// Insert a batch of rows into market_prices (append-only history, no dedup).
+    ///
+    /// Phase 1 dual-write: when `USE_NEW_STORAGE=1`, mirror the same batch
+    /// into `market_prices_v2` after the primary insert succeeds. The mirror
+    /// is best-effort — a v2 failure logs at warn but does not poison the
+    /// primary path. We do not want to lose price history while we wait for
+    /// the new hypertable to prove itself.
     async fn insert_history_batch(&self, rows: &[PriceRow]) -> Result<usize, sqlx::Error> {
         if rows.is_empty() {
             return Ok(0);
@@ -456,7 +474,49 @@ impl BatchWriter {
         });
 
         let result = qb.build().execute(&self.pool).await?;
-        Ok(result.rows_affected() as usize)
+        let inserted = result.rows_affected() as usize;
+
+        if *USE_NEW_STORAGE {
+            if let Err(e) = self.insert_history_batch_v2(rows).await {
+                warn!(
+                    "[BatchWriter] market_prices_v2 mirror failed ({} rows): {:?}",
+                    rows.len(), e
+                );
+            }
+        }
+
+        Ok(inserted)
+    }
+
+    /// Phase 1 mirror writer for `market_prices_v2` (TimescaleDB hypertable).
+    /// Same row shape as `market_prices` minus the BIGSERIAL id — the
+    /// hypertable's natural ordering is `fetched_at` and the (source,
+    /// asset_id, fetched_at) tuple is identifying enough for the dedup
+    /// contract phase 2 introduces.
+    async fn insert_history_batch_v2(&self, rows: &[PriceRow]) -> Result<(), sqlx::Error> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+
+        let mut qb = sqlx::QueryBuilder::new(
+            "INSERT INTO market_prices_v2 (asset_id, source, symbol, value, prev_close, change_pct, volume_24h, market_cap, fetched_at, created_at) "
+        );
+
+        qb.push_values(rows, |mut b, row| {
+            b.push_bind(&row.asset_id)
+                .push_bind(&row.source)
+                .push_bind(&row.symbol)
+                .push_bind(row.value)
+                .push_bind(row.prev_close)
+                .push_bind(row.change_pct)
+                .push_bind(row.volume_24h)
+                .push_bind(row.market_cap)
+                .push_bind(row.fetched_at)
+                .push_bind(row.fetched_at);
+        });
+
+        qb.build().execute(&self.pool).await?;
+        Ok(())
     }
 
     /// Update market_prices_latest cache. Deduplicates by (source, asset_id) — last value wins.

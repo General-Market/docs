@@ -38,6 +38,22 @@ use super::settlement::compute_settlement;
 use super::tick_scheduler::TickScheduler;
 use super::types::{MarketConfig, PlayerPosition, RoundSettlement};
 
+/// Phase 1 of the storage redesign. When `USE_NEW_STORAGE=1` is set on the
+/// oracle process, every settled round also gets recorded as a single
+/// JSONB-compacted row in `vision_settlements` (hypertable). The old
+/// per-row writers stay in place — reads remain on the old tables for the
+/// duration of phase 1. The mirror is best-effort: a v2 failure logs at
+/// warn but does not affect on-chain settlement or the old writers.
+fn use_new_storage() -> bool {
+    static FLAG: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *FLAG.get_or_init(|| {
+        matches!(
+            std::env::var("USE_NEW_STORAGE").as_deref(),
+            Ok("1") | Ok("true") | Ok("TRUE") | Ok("yes")
+        )
+    })
+}
+
 /// Incoming co-sign message from a follower oracle for a pending createBatch proposal.
 ///
 /// Protocol.rs routes these to the correct per-source channel via CosignRouter.
@@ -456,6 +472,22 @@ impl BatchLifecycleManager {
                                         }
                                         if let Err(e) = mgr_bg.record_market_ratios(&tick_result_bg).await {
                                             error!(batch_id = prev_id, error = %e, "Background: record_market_ratios failed");
+                                        }
+                                        // Phase 1 mirror — one JSONB row in
+                                        // vision_settlements. Best-effort.
+                                        if use_new_storage() {
+                                            if let Err(e) = mgr_bg.record_settlement_v2_jsonb(
+                                                &source_name_bg,
+                                                prev_id,
+                                                &settlement_bg,
+                                                &tick_result_bg,
+                                            ).await {
+                                                warn!(
+                                                    batch_id = prev_id,
+                                                    error = %e,
+                                                    "Background: vision_settlements v2 mirror failed"
+                                                );
+                                            }
                                         }
                                         super::shared::record_settlements(
                                             &mgr_bg.config.data_node_url,
@@ -2233,6 +2265,132 @@ impl BatchLifecycleManager {
                 .await?;
             }
         }
+
+        Ok(())
+    }
+
+    /// Phase 1 of the storage redesign — write the entire settlement as a
+    /// single JSONB-compacted row in `vision_settlements` (TimescaleDB
+    /// hypertable). Replaces the ~49 000 per-player INSERTs that
+    /// `record_settlement` + `record_market_ratios` issue today.
+    ///
+    /// Called best-effort from the same background spawn that runs the old
+    /// writers, gated on `USE_NEW_STORAGE=1`. A failure here logs at warn
+    /// and is otherwise ignored — the old tables remain the source of
+    /// truth for the duration of phase 1.
+    async fn record_settlement_v2_jsonb(
+        &self,
+        source_name: &str,
+        on_chain_batch_id: u64,
+        settlement: &RoundSettlement,
+        tick_result: &super::types::TickResult,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use super::types::{MarketOutcome, Side};
+
+        // outcome_summary: per-asset aggregate. Keyed by asset_id for O(1)
+        // frontend lookup. Stake totals stringified — wei doesn't fit in
+        // JSONB numbers.
+        let mut outcome_summary = serde_json::Map::new();
+        for mr in &tick_result.market_results {
+            let mut up_stake = U256::zero();
+            let mut down_stake = U256::zero();
+            for pr in &mr.player_results {
+                match pr.side {
+                    Side::Up => up_stake = up_stake + pr.effective_stake,
+                    Side::Down => down_stake = down_stake + pr.effective_stake,
+                }
+            }
+            let outcome_str = match mr.outcome {
+                MarketOutcome::Up => "Up",
+                MarketOutcome::Down => "Down",
+                MarketOutcome::Flat => "Flat",
+                MarketOutcome::Cancelled => "Cancelled",
+                MarketOutcome::AllSameSide => "AllSameSide",
+                MarketOutcome::AllLosers => "AllLosers",
+            };
+            outcome_summary.insert(
+                mr.asset_id.clone(),
+                serde_json::json!({
+                    "outcome": outcome_str,
+                    "up_stake": up_stake.to_string(),
+                    "down_stake": down_stake.to_string(),
+                    "pct_change_bps": mr.pct_change_bps,
+                }),
+            );
+        }
+
+        // player_results: per-player rollup with `by_asset` breakdown.
+        // Build the by_asset index first so we can attach to each player
+        // in one pass.
+        let mut by_player_assets: std::collections::HashMap<Address, Vec<serde_json::Value>> =
+            std::collections::HashMap::new();
+        for mr in &tick_result.market_results {
+            for pr in &mr.player_results {
+                let side_str = match pr.side {
+                    Side::Up => "Up",
+                    Side::Down => "Down",
+                };
+                let won = matches!(
+                    (&mr.outcome, pr.side),
+                    (MarketOutcome::Up, Side::Up) | (MarketOutcome::Down, Side::Down),
+                );
+                by_player_assets
+                    .entry(pr.player)
+                    .or_default()
+                    .push(serde_json::json!({
+                        "asset": mr.asset_id,
+                        "side": side_str,
+                        "won": won,
+                        "stake": pr.effective_stake.to_string(),
+                        "payout": pr.payout.to_string(),
+                    }));
+            }
+        }
+
+        let mut player_results = serde_json::Map::new();
+        for (i, player) in settlement.players.iter().enumerate() {
+            let payout = settlement.payouts[i];
+            let deposited = settlement.deposits.get(i).copied().unwrap_or(U256::zero());
+            let correct = settlement.correct_counts[i];
+            let pnl_str = {
+                let dep = deposited.low_u128() as i128;
+                let pay = payout.low_u128() as i128;
+                (pay - dep).to_string()
+            };
+            let player_key = format!("{:?}", player);
+            let by_asset = by_player_assets.remove(player).unwrap_or_default();
+            player_results.insert(
+                player_key,
+                serde_json::json!({
+                    "deposited": deposited.to_string(),
+                    "payout": payout.to_string(),
+                    "pnl": pnl_str,
+                    "correct": correct,
+                    "total": settlement.total_markets,
+                    "by_asset": by_asset,
+                }),
+            );
+        }
+
+        let outcome_json = serde_json::Value::Object(outcome_summary);
+        let players_json = serde_json::Value::Object(player_results);
+
+        // ON CONFLICT DO NOTHING — settlement runs at most once per batch,
+        // but the background spawn can race with a recovery sweep
+        // restarting the same code path. Idempotent insert sidesteps that.
+        sqlx::query(
+            "INSERT INTO vision_settlements
+                 (batch_id, source_id, on_chain_batch_id, settled_at, outcome_summary, player_results)
+             VALUES ($1, $2, $3, NOW(), $4, $5)
+             ON CONFLICT (batch_id, settled_at) DO NOTHING",
+        )
+        .bind(tick_result.batch_id as i64)
+        .bind(source_name)
+        .bind(on_chain_batch_id as i64)
+        .bind(&outcome_json)
+        .bind(&players_json)
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
