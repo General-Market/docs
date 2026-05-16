@@ -41,6 +41,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 use super::bitmap_store::BitmapStore;
+use super::chain_refresh::ChainRefresher;
 use super::config::VisionConfig;
 use super::tick_scheduler::TickScheduler;
 
@@ -77,6 +78,12 @@ pub struct VisionState {
     pub config: VisionConfig,
     /// Broadcast channel for settlement SSE events.
     pub settlement_tx: tokio::sync::broadcast::Sender<SettlementEvent>,
+    /// On-demand chain re-fetcher for player commitments. When the in-memory
+    /// `players` map drifts away from the contract — dropped events, missed
+    /// reorgs, vault joins not yet processed — the bitmap handler falls back
+    /// to this to read the truth directly. `None` only in tests that don't
+    /// stand up the RPC provider.
+    pub chain_refresh: Option<Arc<ChainRefresher>>,
     // TODO: Add TickResolver when Task 3.6 is complete
     // pub resolver: Arc<TickResolver>,
     // TODO: Add BLS signer for balance proofs
@@ -1153,34 +1160,86 @@ async fn submit_bitmap(
         }
     };
 
-    // Verify player is actually in this batch (check scheduler)
-    let on_chain_hash = state
+    // Verify player is actually in this batch. The scheduler's in-memory
+    // `players` map mirrors on-chain commitments via PlayerJoined /
+    // BitmapUpdated events. When that mirror drifts (dropped event, missed
+    // reorg, vault join not yet processed) every bot submission is rejected
+    // against a stale hash. Don't trust the mirror blindly — when it
+    // disagrees with the bot, re-read `Vision.getPosition` and accept if the
+    // chain agrees.
+    let cached_hash = state
         .scheduler
         .get_player_bitmap_hash(req.batch_id, player)
         .await;
 
-    match on_chain_hash {
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(ApiError::new(format!(
-                    "Player {:?} not found in batch {}",
-                    player, req.batch_id
-                ))),
-            )
-                .into_response();
-        }
-        Some(chain_hash) => {
-            // Verify submitted hash matches on-chain commitment
-            if chain_hash != expected_hash {
+    let cache_agrees = matches!(cached_hash, Some(h) if h == expected_hash);
+
+    if !cache_agrees {
+        // Either the cache is empty for this (batch, player) or its value
+        // differs from what the bot submitted. Ask the chain.
+        let refreshed = match state.chain_refresh.as_ref() {
+            Some(r) => r.refresh_if_allowed(req.batch_id, player).await,
+            None => None,
+        };
+
+        match refreshed {
+            Some(pos) if pos.bitmap_hash == expected_hash => {
+                // Chain agrees with the bot. Repopulate the scheduler so
+                // subsequent submissions for this pair short-circuit on the
+                // cache path again. `on_player_joined` upserts.
+                state
+                    .scheduler
+                    .on_player_joined(req.batch_id, pos.clone())
+                    .await;
+                info!(
+                    player = ?player,
+                    batch_id = req.batch_id,
+                    "Bitmap cache repopulated from chain (cache was stale)"
+                );
+            }
+            Some(pos) => {
+                // Chain returned a position but the bot's hash doesn't match
+                // it either. Repopulate the cache with the truth and reject
+                // with the actual on-chain value.
+                state
+                    .scheduler
+                    .on_player_joined(req.batch_id, pos.clone())
+                    .await;
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(ApiError::new(format!(
                         "expected_hash {:?} does not match on-chain commitment {:?}",
-                        expected_hash, chain_hash
+                        expected_hash, pos.bitmap_hash
                     ))),
                 )
                     .into_response();
+            }
+            None => {
+                // Cooldown blocked the re-fetch, the RPC failed, or the
+                // player genuinely hasn't joined on-chain. Fall back to the
+                // cached answer.
+                match cached_hash {
+                    None => {
+                        return (
+                            StatusCode::NOT_FOUND,
+                            Json(ApiError::new(format!(
+                                "Player {:?} not found in batch {}",
+                                player, req.batch_id
+                            ))),
+                        )
+                            .into_response();
+                    }
+                    Some(chain_hash) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(ApiError::new(format!(
+                                "expected_hash {:?} does not match on-chain commitment {:?}",
+                                expected_hash, chain_hash
+                            ))),
+                        )
+                            .into_response();
+                    }
+                }
             }
         }
     }

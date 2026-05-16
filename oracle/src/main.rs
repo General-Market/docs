@@ -709,6 +709,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
 
+                    // Build the on-demand chain refresher first so we can share the
+                    // same HTTP provider between the event listener and the bitmap
+                    // submission fallback path.
+                    let chain_refresher = std::sync::Arc::new(
+                        oracle::vision::chain_refresh::ChainRefresher::new(
+                            cl_provider.clone(),
+                            vision_address,
+                        ),
+                    );
+
                     let chain_listener = oracle::vision::chain_listener::ChainListener::new(
                         cl_provider,
                         vision_address,
@@ -900,6 +910,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         bitmap_store: bitmap_store.clone(),
                         config: vision_cfg.clone(),
                         settlement_tx: settlement_tx.clone(),
+                        chain_refresh: Some(chain_refresher.clone()),
                     });
 
                     // Build the Vision router (merged into health port in run_main_loop)

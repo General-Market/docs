@@ -7,6 +7,7 @@ pub mod api;
 pub mod batch_config_orchestrator;
 pub mod bitmap_store;
 pub mod chain_listener;
+pub mod chain_refresh;
 pub mod config;
 pub mod cosign_aggregator;
 pub mod epoch_points;
