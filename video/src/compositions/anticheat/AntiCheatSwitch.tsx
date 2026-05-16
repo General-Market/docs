@@ -901,7 +901,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
                 letterSpacing: 0,
               }}
             >
-              (6)
+              (f)
             </span>
           </span>
         </span>

@@ -13,45 +13,62 @@ import { IdleZoom, RevealChars } from "./vibe";
 import { SPIKE_ENDCARD_LOCAL } from "./beats";
 
 const SCENE_SECONDS = 4.5;
-const SUBLINE_AT = toFrames(0.7);
-const TERTIARY_AT = toFrames(1.2);
 const SCENE_FRAMES = toFrames(SCENE_SECONDS);
 
+// Three phases inside the end card:
+//   Phase 1 (0 → P2): wordmark small at top, headline "Trading is
+//                     easy with an Anti-Cheat(g)" centered.
+//   Phase 2 (P2 → P3): headline swaps to "Only available for
+//                     trading bots". Wordmark unchanged.
+//   Phase 3 (P3 → end): headline fades out; wordmark drops to the
+//                     vertical centre and scales up — the final
+//                     beat the card holds on.
+const PHASE_2_AT = toFrames(1.8);   // ~54f — "Only available …"
+const PHASE_3_AT = toFrames(3.0);   // ~90f — logo descends + zooms
+const SUBLINE_AT = toFrames(0.45);  // first headline reveal
+const FOOTNOTES_AT = toFrames(0.9); // footnote paragraph fades in
+
 // Settle: after the spike fires, the wordmark eases back from its
-// scale punch over SETTLE_LEN frames. Pure rest from then on — the
-// music is dying, anything else would shout into silence.
+// scale punch over SETTLE_LEN frames. The music is dying, anything
+// else would shout into silence.
 const SETTLE_LEN = 28;
 
-// Footnotes — every numbered marker in the film resolves here.
-// (1)–(4) scapegoat dockets, (5) Polymarket source, (6) Switch
-// testnet caveat, (7) Anti-Cheat availability disclaimer.
-const FOOTNOTES: { n: number; text: string }[] = [
+// Wordmark geometry — small-top vs. centre-zoom.
+const WORDMARK_TOP_Y = 168;       // y of the small wordmark, top phase
+const WORDMARK_CENTER_Y = H / 2;  // y of the zoomed wordmark, phase 3
+const WORDMARK_SCALE_SMALL = 0.42;
+const WORDMARK_SCALE_BIG = 1.10;
+
+// Footnotes — every lettered marker in the film resolves here.
+// (a)–(d) scapegoat dockets, (e) Polymarket source, (f) Switch
+// testnet caveat, (g) Anti-Cheat availability disclaimer.
+const FOOTNOTES: { letter: string; text: string }[] = [
   {
-    n: 1,
+    letter: "a",
     text: "Drew Niv (FXCM co-founder, CEO 1999–2017). CFTC order 17-04, 6 Feb 2017: $7M civil penalty and lifetime US retail-forex registration ban for the Effex Capital scheme that took the other side of customer stops.",
   },
   {
-    n: 2,
+    letter: "b",
     text: "Kenneth Griffin (Citadel Securities). FINRA AWC 2014041859202 (2020): $700K fine for trading ahead of customer OTC orders, 2012–2014. Griffin not personally charged.",
   },
   {
-    n: 3,
+    letter: "c",
     text: "Jamie Dimon (JPMorgan Chase). $920M DOJ + CFTC + SEC settlement, Sept 2020, for orderbook spoofing in precious metals and US Treasuries. Traders Nowak, Smith and Jordan convicted at trial 2022; affirmed on appeal 2025. Dimon not personally indicted.",
   },
   {
-    n: 4,
+    letter: "d",
     text: "Joe Lewis. Pleaded guilty 24 Jan 2024 in SDNY to one count of conspiracy to commit securities fraud and two counts of securities fraud. $50M penalty via Broad Bay Ltd. Pardoned by Donald Trump, Nov 2025 — plea stands.",
   },
   {
-    n: 5,
+    letter: "e",
     text: "Polymarket trader profit distribution, 2024. Top 0.04% captured ~$3.7B in profits while 70% of traders lost money. Sources: CryptoNews, Yellow.com, Yahoo Finance.",
   },
   {
-    n: 6,
+    letter: "f",
     text: "Based on General Market testnet data. Indicative comparison under favorable market conditions. Net of fees and slippage. Past performance does not guarantee future returns.",
   },
   {
-    n: 7,
+    letter: "g",
     text: "Currently available only via General Market trading bots.",
   },
 ];
@@ -64,16 +81,11 @@ export const AntiCheatEndCard: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // ─── Wordmark fade-in (small, top-positioned) ──────────────────────
   const wordmarkOpacity = interpolate(
     frame,
     [0, toFrames(0.18)],
     [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const wordmarkY = interpolate(
-    frame,
-    [0, toFrames(0.18)],
-    [14, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -83,11 +95,7 @@ export const AntiCheatEndCard: React.FC = () => {
     config: { damping: 9, stiffness: 220, mass: 0.55 },
   });
 
-  // Drum-spike anchor — the climax of the music lands at scene-local
-  // SPIKE_ENDCARD_LOCAL (currently frame 6). A scale impulse on the
-  // wordmark + a white halo burst land exactly with the kick. Pre-
-  // attack (3f) eases in so the impact reads as inevitable; decay
-  // (24f) releases slowly so the wordmark settles back into rest.
+  // ─── Music spike (kick lands at SPIKE_ENDCARD_LOCAL) ───────────────
   const spikeDelta = frame - SPIKE_ENDCARD_LOCAL;
   const spikeImpulse =
     spikeDelta < -3
@@ -95,19 +103,13 @@ export const AntiCheatEndCard: React.FC = () => {
       : spikeDelta <= 0
         ? (spikeDelta + 3) / 3
         : Math.max(0, 1 - spikeDelta / 24);
-  const spikeKick = Math.pow(spikeImpulse, 1.6); // sharper attack curve
+  const spikeKick = Math.pow(spikeImpulse, 1.6);
 
-  // Post-spike settle: the wordmark eases back to rest over SETTLE_LEN
-  // frames after the kick. No further beats, no further pulses — the
-  // music is dying, the card holds its breath.
   const settleT = Math.max(
     0,
     Math.min(1, (frame - SPIKE_ENDCARD_LOCAL) / SETTLE_LEN),
   );
   const settleEased = 1 - Math.pow(1 - settleT, 3);
-  // After the spike has fully decayed, allow a tiny residual breath so
-  // the mark visibly relaxes into its final rest pose rather than
-  // freezing mid-frame.
   const restRelief = settleEased * 0.012;
 
   const wordmarkPunch =
@@ -116,47 +118,66 @@ export const AntiCheatEndCard: React.FC = () => {
     spikeKick * 0.085 -
     restRelief;
 
-  // Underline rides the spike — accelerates so it completes RIGHT at
-  // the kick rather than later. Window starts at frame 2 (was 5) to
-  // give it 6 frames of ramp now that the spike anchor moved 3f
-  // earlier (9 → 6). Reads as the brand asserting itself in time with
-  // the music.
-  const underlineT = interpolate(
-    frame,
-    [2, SPIKE_ENDCARD_LOCAL + 2],
-    [0, 1],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: (t) => 1 - Math.pow(1 - t, 2.4),
-    },
-  );
+  // ─── Phase 3: wordmark glides from small-top to big-centre ─────────
+  const phase3Local = Math.max(0, frame - PHASE_3_AT);
+  const phase3Total = Math.max(1, SCENE_FRAMES - PHASE_3_AT);
+  const phase3T = Math.min(1, phase3Local / phase3Total);
+  // Smootherstep — symmetric ease, no jolt at start or finish
+  const phase3Eased = phase3T * phase3T * phase3T * (phase3T * (phase3T * 6 - 15) + 10);
+  const wordmarkY = WORDMARK_TOP_Y +
+    (WORDMARK_CENTER_Y - WORDMARK_TOP_Y) * phase3Eased;
+  const wordmarkScale =
+    (WORDMARK_SCALE_SMALL +
+      (WORDMARK_SCALE_BIG - WORDMARK_SCALE_SMALL) * phase3Eased) *
+    wordmarkPunch;
 
+  // ─── Subline (Phase 1 → Phase 2 → fade for Phase 3) ────────────────
+  // Phase 1 text: "Trading is easy with an Anti-Cheat(g)"
+  // Phase 2 text: "Only available for trading bots"
+  // Cross-fade between them around PHASE_2_AT; both vanish by PHASE_3_AT.
   const sublineLocal = frame - SUBLINE_AT;
-  const sublineOpacity = interpolate(
+  const phase1FadeIn = interpolate(
     sublineLocal,
-    [0, toFrames(0.18)],
+    [0, toFrames(0.22)],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const phase1FadeOut = interpolate(
+    frame,
+    [PHASE_2_AT - toFrames(0.16), PHASE_2_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const phase1Op = phase1FadeIn * phase1FadeOut;
+
+  const phase2FadeIn = interpolate(
+    frame,
+    [PHASE_2_AT, PHASE_2_AT + toFrames(0.18)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const phase2FadeOut = interpolate(
+    frame,
+    [PHASE_3_AT - toFrames(0.16), PHASE_3_AT],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const phase2Op = phase2FadeIn * phase2FadeOut;
+
+  // Subline lift-in (shared)
   const sublineY = interpolate(
     sublineLocal,
-    [0, toFrames(0.18)],
+    [0, toFrames(0.22)],
     [14, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  const tertiaryLocal = frame - TERTIARY_AT;
-  const tertiaryOpacity = interpolate(
-    tertiaryLocal,
-    [0, toFrames(0.18)],
+  // ─── Footnote paragraph (fades in early, holds) ────────────────────
+  const footnotesLocal = frame - FOOTNOTES_AT;
+  const footnotesOpacity = interpolate(
+    footnotesLocal,
+    [0, toFrames(0.22)],
     [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const tertiaryY = interpolate(
-    tertiaryLocal,
-    [0, toFrames(0.18)],
-    [14, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -168,96 +189,79 @@ export const AntiCheatEndCard: React.FC = () => {
       }}
     >
       <IdleZoom durationInFrames={SCENE_FRAMES} from={1} to={1.018}>
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0 96px",
-        }}
-      >
-      <WhiteDotGrid />
-      {/* Spike-anchored halo burst. White-on-blue: blooms with the kick,
-       * radiates out behind the wordmark, settles to nothing by frame 35. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          width: 1700,
-          height: 1700,
-          transform: `translate(-50%, -50%) scale(${(0.55 + spikeKick * 0.55).toFixed(3)})`,
-          background: `radial-gradient(circle at center, rgba(255,255,255,${(0.55 * spikeKick).toFixed(3)}) 0%, rgba(255,255,255,${(0.18 * spikeKick).toFixed(3)}) 22%, rgba(255,255,255,0) 58%)`,
-          filter: "blur(40px)",
-          opacity: spikeImpulse,
-          mixBlendMode: "screen",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        <ParallaxText origin="center">
-          <div
-            style={{
-              fontFamily: font,
-              fontSize: 220,
-              fontWeight: 800,
-              letterSpacing: "-0.05em",
-              color: "#FFFFFF",
-              lineHeight: 0.95,
-              opacity: wordmarkOpacity,
-              transform: `translateY(${wordmarkY}px) scale(${wordmarkPunch})`,
-              transformOrigin: "center",
-              display: "flex",
-              alignItems: "center",
-              gap: 30,
-            }}
-          >
-            <GeneralMark size={200} />
-            <span>General</span>
-          </div>
-        </ParallaxText>
+        <WhiteDotGrid />
 
+        {/* Spike-anchored halo burst — blooms at the kick. */}
         <div
           style={{
-            position: "relative",
-            width: 720,
-            height: 2,
-            marginTop: 28,
-            marginBottom: 36,
-            background: "rgba(255,255,255,0.20)",
-            overflow: "hidden",
+            position: "absolute",
+            left: "50%",
+            top: `${WORDMARK_TOP_Y}px`,
+            width: 1700,
+            height: 1700,
+            transform: `translate(-50%, -50%) scale(${(0.55 + spikeKick * 0.55).toFixed(3)})`,
+            background: `radial-gradient(circle at center, rgba(255,255,255,${(0.55 * spikeKick).toFixed(3)}) 0%, rgba(255,255,255,${(0.18 * spikeKick).toFixed(3)}) 22%, rgba(255,255,255,0) 58%)`,
+            filter: "blur(40px)",
+            opacity: spikeImpulse,
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Wordmark — centred at (canvas-x-mid, wordmarkY); drifts down +
+            scales up during Phase 3. */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: `${wordmarkY.toFixed(2)}px`,
+            transform: `translate(-50%, -50%) scale(${wordmarkScale.toFixed(3)})`,
+            transformOrigin: "center center",
+            opacity: wordmarkOpacity,
+            pointerEvents: "none",
+            willChange: "transform",
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: `${underlineT * 100}%`,
-              background:
-                "linear-gradient(90deg, rgba(255,255,255,0) 0%, #FFFFFF 50%, rgba(255,255,255,0) 100%)",
-            }}
-          />
+          <ParallaxText origin="center">
+            <div
+              style={{
+                fontFamily: font,
+                fontSize: 220,
+                fontWeight: 800,
+                letterSpacing: "-0.05em",
+                color: "#FFFFFF",
+                lineHeight: 0.95,
+                display: "flex",
+                alignItems: "center",
+                gap: 30,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <GeneralMark size={200} />
+              <span>General</span>
+            </div>
+          </ParallaxText>
         </div>
 
+        {/* Phase 1 headline — "Trading is easy with an Anti-Cheat(g)".
+            Cross-fades with Phase 2 around PHASE_2_AT. Both occupy
+            the canvas vertical centre. */}
         <div
           style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
+            textAlign: "center",
+            pointerEvents: "none",
             fontFamily: font,
-            fontSize: 78,
+            fontSize: 86,
             fontWeight: 700,
             letterSpacing: "-0.025em",
             color: "#FFFFFF",
-            lineHeight: 1.1,
-            opacity: sublineOpacity,
-            transform: `translateY(${sublineY}px)`,
+            lineHeight: 1.05,
+            opacity: phase1Op,
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "center",
@@ -275,7 +279,7 @@ export const AntiCheatEndCard: React.FC = () => {
           <span
             style={{
               fontFamily: font,
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 500,
               color: "rgba(255, 255, 255, 0.55)",
               marginLeft: 8,
@@ -283,70 +287,70 @@ export const AntiCheatEndCard: React.FC = () => {
               letterSpacing: 0,
             }}
           >
-            (7)
+            (g)
           </span>
         </div>
 
-      </div>
-      </AbsoluteFill>
-
-      {/* Footnotes block — all the fine print, gathered here. Numbered
-          markers (1)–(7) live on the cards, the stat, the Switch hero
-          and the Anti-Cheat subline above; their citations resolve here.
-          Apple-style hairline separator, dim SF Pro, multi-line. */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 64,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 18,
-          opacity: tertiaryOpacity,
-          transform: `translateY(${tertiaryY * 0.5}px)`,
-          padding: "0 120px",
-        }}
-      >
+        {/* Phase 2 headline — "Only available for trading bots". */}
         <div
           style={{
-            width: 140,
-            height: 1,
-            background: "rgba(255,255,255,0.30)",
-          }}
-        />
-        <div
-          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: `translateY(-50%) translateY(${sublineY.toFixed(2)}px)`,
+            textAlign: "center",
+            pointerEvents: "none",
             fontFamily: font,
-            fontSize: 18,
-            fontWeight: 400,
-            letterSpacing: "-0.005em",
-            color: "rgba(255,255,255,0.78)",
-            lineHeight: 1.55,
-            textAlign: "left",
-            maxWidth: 1480,
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
+            fontSize: 86,
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            color: "#FFFFFF",
+            lineHeight: 1.05,
+            opacity: phase2Op,
           }}
         >
-          {FOOTNOTES.map((line) => (
-            <div key={line.n} style={{ display: "flex", gap: 10 }}>
-              <span
-                style={{
-                  fontFamily: font,
-                  color: "rgba(255,255,255,0.55)",
-                  minWidth: 28,
-                }}
-              >
-                ({line.n})
-              </span>
-              <span>{line.text}</span>
-            </div>
-          ))}
+          Only available for trading bots
         </div>
-      </div>
+
+        {/* Footnote paragraph — single dense block, all letters inline.
+            Kalshi-style: one paragraph that wraps, very small, dim. */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 60,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            opacity: footnotesOpacity,
+            padding: "0 120px",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 13,
+              fontWeight: 400,
+              letterSpacing: "-0.003em",
+              color: "rgba(255,255,255,0.72)",
+              lineHeight: 1.45,
+              textAlign: "center",
+              maxWidth: 1560,
+            }}
+          >
+            {FOOTNOTES.map((line, i) => (
+              <React.Fragment key={line.letter}>
+                <span style={{ color: "rgba(255,255,255,0.55)" }}>
+                  ({line.letter})
+                </span>{" "}
+                {line.text}
+                {i < FOOTNOTES.length - 1 ? " " : ""}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
       </IdleZoom>
     </AbsoluteFill>
   );

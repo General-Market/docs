@@ -453,7 +453,7 @@ const ScapegoatCardBody: React.FC<{
               color: "rgba(255, 255, 255, 0.55)",
             }}
           >
-            ({index + 1})
+            ({String.fromCharCode(97 + index)})
           </sup>
         </div>
       </div>
@@ -849,7 +849,7 @@ const StatPanel: React.FC = () => {
           beat 17. Faster type-rate is the point: the line lands as a
           single percussive arrival, not a long crawl. */}
       <EmberTypewriter
-        text="0.04% rig the table take 70%⁽⁵⁾"
+        text="0.04% rig the table take 70%⁽ᵉ⁾"
         typeStart={0}
         typeEnd={10}
         wipeStart={STAT_FLIP_AT - 6}
@@ -868,7 +868,7 @@ const StatPanel: React.FC = () => {
         }}
       >
         <EmberTypewriter
-          text="99.96% battle royale for 30%⁽⁵⁾"
+          text="99.96% battle royale for 30%⁽ᵉ⁾"
           typeStart={STAT_FLIP_AT}
           typeEnd={STAT_FLIP_AT + 27}
           fontSize={120}
