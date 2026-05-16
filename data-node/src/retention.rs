@@ -1,22 +1,25 @@
 //! Bounded retention pruner for the append-only giants.
 //!
-//! Three targets, three different TTLs. One shared rhythm: chunked
-//! DELETEs of 50k rows with 250ms breathing room, every hour, forever.
+//! Two row-DELETE targets, plus a list of hypertables pruned via
+//! `drop_chunks`. One shared rhythm: chunked DELETEs of 50k rows with
+//! 250ms breathing room, every hour, forever.
 //!
 //! Why per-table TTLs. `market_prices` stays at 30d because reports and
-//! backfills still read it. `vision_asset_settlement_players_archive`
-//! is cut to 4h — the per-(batch, asset, player) detail is only needed
-//! while the UI shows a live settlement; the aggregate ratios live in
-//! `vision_market_ratios_archive` and survive untouched. `vision_bitmaps`
-//! is cut to 4h after batch settlement — once a batch is final, the
-//! commit-reveal bitmaps are evidence we will never re-verify.
+//! backfills still read it. `vision_bitmaps` is cut to 4h after batch
+//! settlement — once a batch is final, the commit-reveal bitmaps are
+//! evidence we will never re-verify. The phase-5 archive drop
+//! (vision_asset_settlement_players_archive, vision_market_ratios_archive)
+//! removed the other two targets; their JSONB replacement
+//! (`vision_settlements`) is now a Timescale hypertable pruned by chunk
+//! drop in the HYPERTABLE_DROP_TARGETS list below.
 //!
-//! What this prevents. Both `market_prices` (141 GB) and the players
-//! archive (84 GB) have already pushed Postgres into XID-wraparound
-//! territory. The emergency `VACUUM FREEZE` that follows locks the
-//! table for over an hour and drags oracle consensus down with it. We
-//! pay a small cost continuously so autovacuum keeps up and the freezer
-//! never has to wake up screaming.
+//! What this prevents. `market_prices` (~82 GB) was the last write-heavy
+//! plain table; without retention it would push Postgres into
+//! XID-wraparound territory the way the players archive (84 GB) and
+//! ratios archive (20 GB) did before the phase-5 drop. The emergency
+//! `VACUUM FREEZE` that follows wraparound locks the table for over an
+//! hour and drags oracle consensus down with it. We pay a small cost
+//! continuously so autovacuum keeps up.
 //!
 //! Modeled after `account_pnl_curve_writer::spawn`: bare `tokio::spawn`,
 //! shared sqlx pool, one-hour cadence between cycles, never crashes.
@@ -71,14 +74,6 @@ struct RetentionTarget {
 /// else is hard-coded — 4h is a finality window, not a tunable.
 fn targets(market_prices_days: u32) -> Vec<RetentionTarget> {
     vec![
-        // Per-(batch, asset, player) settlement detail. The aggregate
-        // ratios are preserved in vision_market_ratios_archive; this
-        // table is only useful while the settlement is fresh.
-        RetentionTarget {
-            table: "vision_asset_settlement_players_archive",
-            predicate: Predicate::Direct { column: "settled_at" },
-            retention: ChronoDuration::hours(4),
-        },
         // Commit-reveal bitmaps. No own timestamp; aged by the parent
         // batch's settled_at. Bitmaps for unsettled batches are spared
         // — only batches that have actually finalized lose their evidence.
@@ -101,11 +96,22 @@ fn targets(market_prices_days: u32) -> Vec<RetentionTarget> {
     ]
 }
 
+/// Hypertable targets pruned by `drop_chunks`. Apache-edition-safe; no
+/// compression, no policies. Chunks older than the cutoff disappear
+/// atomically — far cheaper than DELETE for the v2 tables.
+const HYPERTABLE_DROP_TARGETS: &[(&str, i64)] = &[
+    ("market_prices_v2", 30),
+    ("prices_v2", 90),
+    ("vision_bitmaps_v2", 7),
+    ("vision_settlements", 30),
+];
+
 pub fn spawn(pool: PgPool, market_prices_retention_days: u32) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let targets = targets(market_prices_retention_days);
         info!(
             target_count = targets.len(),
+            hypertable_targets = HYPERTABLE_DROP_TARGETS.len(),
             market_prices_retention_days, "retention-pruner started"
         );
         loop {
@@ -129,9 +135,33 @@ pub fn spawn(pool: PgPool, market_prices_retention_days: u32) -> tokio::task::Jo
                     }
                 }
             }
+            for (table, days) in HYPERTABLE_DROP_TARGETS {
+                match drop_old_chunks(&pool, table, *days).await {
+                    Ok(dropped) => info!(
+                        "retention: dropped {} chunks from {} (older than {}d)",
+                        dropped, table, days
+                    ),
+                    Err(e) => warn!(?e, table, "retention: drop_chunks failed"),
+                }
+            }
             tokio::time::sleep(CYCLE_SLEEP).await;
         }
     })
+}
+
+async fn drop_old_chunks(
+    pool: &PgPool,
+    table: &str,
+    older_than_days: i64,
+) -> Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*)::bigint FROM drop_chunks($1::regclass, older_than => make_interval(days => $2::int))",
+    )
+    .bind(table)
+    .bind(older_than_days)
+    .fetch_one(pool)
+    .await?;
+    Ok(row.0)
 }
 
 async fn prune_target(
