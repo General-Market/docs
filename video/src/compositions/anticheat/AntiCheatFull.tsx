@@ -1,5 +1,12 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, interpolate, staticFile } from "remotion";
+import {
+  AbsoluteFill,
+  Audio,
+  Sequence,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+} from "remotion";
 import {
   TransitionSeries,
   linearTiming,
@@ -17,7 +24,24 @@ import {
   snapZoomSoft,
   pullLong,
 } from "./transitions";
-import { MUSIC_START_FROM_AUDIO } from "./beats";
+import { MUSIC_START_FROM_AUDIO, VIDEO_BEATS } from "./beats";
+
+// Beat-locked glow envelope. Sharp attack, longer decay — the halo
+// flares on the kick and ebbs back to rest before the next one.
+const GLOW_ATTACK = 4;
+const GLOW_DECAY = 18;
+
+const beatGlow = (frame: number): number => {
+  let max = 0;
+  for (const b of VIDEO_BEATS) {
+    const delta = frame - b;
+    if (delta < -GLOW_ATTACK || delta > GLOW_DECAY) continue;
+    const env =
+      delta <= 0 ? (delta + GLOW_ATTACK) / GLOW_ATTACK : 1 - delta / GLOW_DECAY;
+    if (env > max) max = env;
+  }
+  return max;
+};
 
 // Snap-zoom-through-blur. Both halves of the camera path move in the
 // same direction so velocity stays high through the cut — no "stuck
@@ -52,7 +76,14 @@ const TRANSITION_FRAMES =
   T_REASSURE_BRIDGE +
   T_BRIDGE_END;
 
-const TOTAL_FRAMES =
+// Trim the first 10 frames off the head — the opening Bars carousel
+// pre-roll was burning real estate before the first hard beat. Content
+// is shifted by wrapping the body in <Sequence from={-TRIM_HEAD_FRAMES}>
+// below; TOTAL_FRAMES is reduced by the same amount so the tail still
+// lands cleanly.
+const TRIM_HEAD_FRAMES = 10;
+
+const RAW_TOTAL_FRAMES =
   antiCheatBarsMeta.durationInFrames +
   antiCheatRiggedMeta.durationInFrames +
   antiCheatStatMeta.durationInFrames +
@@ -61,6 +92,7 @@ const TOTAL_FRAMES =
   antiCheatSwitchMeta.durationInFrames +
   antiCheatEndCardMeta.durationInFrames -
   TRANSITION_FRAMES;
+const TOTAL_FRAMES = RAW_TOTAL_FRAMES - TRIM_HEAD_FRAMES;
 
 // Music timing — MUSIC_START_FROM_AUDIO is hardcoded in beats.ts so the
 // beat grid stays stable across scene-duration changes. The drum spike
@@ -80,8 +112,34 @@ const MUSIC_FADE_OUT_END = Math.round(36.63 * FPS);
 const MUSIC_FADE_OUT_DURATION = Math.round(FPS * 1.0);
 
 export const AntiCheatFull: React.FC = () => {
+  const frame = useCurrentFrame();
+  // Beats are authored against the RAW (untrimmed) composition timeline.
+  // Adding TRIM_HEAD_FRAMES here keeps the bloom firing on the same
+  // VISUAL moments after the head trim.
+  const pulse = beatGlow(frame + TRIM_HEAD_FRAMES);
+  const lerp = (a: number, b: number) => a + (b - a) * pulse;
+  // Resting halo always present; on-beat halo flares wider and brighter.
+  const a1 = lerp(0.45, 0.95);
+  const a2 = lerp(0.55, 1.0);
+  const a3 = lerp(0.30, 0.70);
+  const r1 = lerp(4, 6);
+  const r2 = lerp(22, 38);
+  const r3 = lerp(56, 88);
   return (
-    <AbsoluteFill style={{ backgroundColor: colors.bg }}>
+    <AbsoluteFill
+      style={{
+        backgroundColor: colors.bg,
+        // Inherited white bloom behind every glyph — Apple-keynote style.
+        // Pulses on every audio beat from VIDEO_BEATS.
+        textShadow: `0 0 ${r1}px rgba(255, 255, 255, ${a1}), 0 0 ${r2}px rgba(255, 255, 255, ${a2}), 0 0 ${r3}px rgba(255, 255, 255, ${a3})`,
+      }}
+    >
+      {/* Shift the entire body (music + visuals) by -TRIM_HEAD_FRAMES so
+          the first 10 frames of the original Bars pre-roll are clipped.
+          Audio and visuals shift together — every beat still lands on
+          the same visual moment as before. The music file simply plays
+          from MUSIC_START_FROM_AUDIO + 10 instead of MUSIC_START_FROM_AUDIO. */}
+      <Sequence from={-TRIM_HEAD_FRAMES}>
       <Sequence from={0} durationInFrames={MUSIC_END_FRAME}>
         <Audio
           src={staticFile("music/twitter/Dagored - The Dead Man's March (freetouse.com).mp3")}
@@ -181,6 +239,7 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatEndCardMeta.component />
         </TransitionSeries.Sequence>
       </TransitionSeries>
+      </Sequence>
     </AbsoluteFill>
   );
 };
