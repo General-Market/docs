@@ -27,7 +27,9 @@ export type ExplorerProofProps = {
 };
 
 const DEFAULT_BROLL_PATH = "broll/explorer-broll.mp4";
-const FALLBACK_BROLL_PATH = "broll/glacier-drone.mp4";
+// Portrait trading capture from the AntiCheat scenes — reads as the
+// dapp UI until the real /explorer recording lands at the path above.
+const FALLBACK_BROLL_PATH = "cheat-broll/phone-trading.mp4";
 
 const BG_COLOR = "#E0D8EC";
 

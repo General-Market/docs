@@ -312,17 +312,17 @@ const Scene: React.FC<{
   persp.fov = 40;
   persp.updateProjectionMatrix();
 
-  // ── Single key light (matches the ThreeChallenge scene rig at
-  // WebGLPicks 4:40). Direction normalised then scaled to 5 — one
-  // dominant source so coins all read with the same warm-from-upper-
-  // left shading. A faint ambient prevents the shadow side from
-  // crushing to black.
+  // ── Single key light from the VIEWER'S LEFT (camera at +Z, so a
+  //    strongly negative X positions the light past the viewer's left
+  //    shoulder). Slightly elevated and forward of the coin field.
+  //    Same one-source rig as ThreeChallenge — every coin shaded the
+  //    same way, no conflicting highlights.
   return (
     <>
-      <ambientLight intensity={0.35} color="#ffffff" />
+      <ambientLight intensity={0.32} color="#ffffff" />
       <directionalLight
-        position={[-5, 4, 1.3]}
-        intensity={2.2}
+        position={[-9, 3.5, 9]}
+        intensity={2.4}
         color="#ffffff"
         castShadow
       />

@@ -9,7 +9,7 @@
 //   scale       uniform scale
 
 import React from "react";
-import { OffthreadVideo } from "remotion";
+import { Loop, OffthreadVideo, useVideoConfig } from "remotion";
 
 export type CssPhoneProps = {
   brollSrc: string;
@@ -17,6 +17,9 @@ export type CssPhoneProps = {
   rotateXDeg: number;
   rotateYDeg: number;
   scale: number;
+  /** Broll duration in seconds — used to loop the video across the full
+   *  composition (default 10s for the cheat-broll/phone-trading clip). */
+  brollDurationSec?: number;
 };
 
 const PHONE_W = 480;
@@ -32,7 +35,10 @@ export const CssPhone: React.FC<CssPhoneProps> = ({
   rotateXDeg,
   rotateYDeg,
   scale,
+  brollDurationSec = 10,
 }) => {
+  const { fps } = useVideoConfig();
+  const loopFrames = Math.max(1, Math.round(brollDurationSec * fps));
   return (
     <div
       style={{
@@ -74,16 +80,18 @@ export const CssPhone: React.FC<CssPhoneProps> = ({
             background: "#000",
           }}
         >
-          <OffthreadVideo
-            src={brollSrc}
-            muted
-            pauseWhenBuffering={false}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
+          <Loop durationInFrames={loopFrames}>
+            <OffthreadVideo
+              src={brollSrc}
+              muted
+              pauseWhenBuffering={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </Loop>
           {/* Subtle glass reflection across the top of the screen. */}
           <div
             style={{
