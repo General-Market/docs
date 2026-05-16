@@ -711,6 +711,10 @@ const EmberTypewriter: React.FC<{
   endColor?: string;
   typePower?: number;
   align?: "center" | "bottom-right";
+  // Optional tiny suffix (e.g. "(e)") that appears after typing completes.
+  // Rendered at ~12% of the parent fontSize as a true superscript, so it
+  // reads as a footnote mark rather than a glyph that fights the digits.
+  smallSuffix?: string;
 }> = ({
   text,
   typeStart,
@@ -721,6 +725,7 @@ const EmberTypewriter: React.FC<{
   endColor = colors.fg,
   typePower = 2.8,
   align = "center",
+  smallSuffix,
 }) => {
   const frame = useCurrentFrame();
   const len = text.length;
@@ -819,6 +824,22 @@ const EmberTypewriter: React.FC<{
             </span>
           );
         })}
+        {smallSuffix && phase !== "typing" && (
+          <span
+            style={{
+              fontSize: Math.round(fontSize * 0.12),
+              fontWeight: 500,
+              color: "rgba(255, 255, 255, 0.55)",
+              marginLeft: Math.round(fontSize * 0.03),
+              verticalAlign: "super",
+              letterSpacing: 0,
+              fontVariantNumeric: "normal",
+              opacity: phase === "wiping" ? 0 : 1,
+            }}
+          >
+            {smallSuffix}
+          </span>
+        )}
       </div>
     </AbsoluteFill>
   );
@@ -850,7 +871,8 @@ const StatPanel: React.FC = () => {
           beat 17. Faster type-rate is the point: the line lands as a
           single percussive arrival, not a long crawl. */}
       <EmberTypewriter
-        text="0.04% rig the table take 70%⁽ᵉ⁾"
+        text="0.04% rig the table take 70%"
+        smallSuffix="(e)"
         typeStart={0}
         typeEnd={10}
         wipeStart={STAT_FLIP_AT - 6}
@@ -869,7 +891,8 @@ const StatPanel: React.FC = () => {
         }}
       >
         <EmberTypewriter
-          text="99.96% battle royale for 30%⁽ᵉ⁾"
+          text="99.96% battle royale for 30%"
+          smallSuffix="(e)"
           typeStart={STAT_FLIP_AT}
           typeEnd={STAT_FLIP_AT + 27}
           fontSize={120}
