@@ -429,6 +429,68 @@ async fn get_all_24h_changes(
 // median_lookback_ticks removed — strategies now live in each source's
 // `batch_strategy()` method and are read via get_strategy().
 
+/// Per-asset median absolute Δ (in bps) over the last `window_minutes` of
+/// `market_prices`. One bulk query, no per-asset loop.
+///
+/// Used by sources with `median_recent_delta_window` set — prediction
+/// markets, sports books, anything where a 5-min move differs fundamentally
+/// from a 24h move and the per-tick scale is what matters.
+///
+/// `threshold = median |Δ|` ⇒ ~50% of past ticks crossed it, ~50% didn't.
+/// The question is fair. Bots with edge win; bots without lose.
+async fn get_median_recent_delta_bps(
+    pool: &PgPool,
+    source_id: &str,
+    asset_ids: &[String],
+    window_minutes: u32,
+) -> Result<HashMap<String, u32>, sqlx::Error> {
+    if asset_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let interval = format!("{} minutes", window_minutes);
+
+    let rows: Vec<(String, Option<f64>)> = sqlx::query_as(
+        r#"
+        WITH samples AS (
+            SELECT asset_id,
+                   abs(
+                       (value - lag(value) OVER (PARTITION BY asset_id ORDER BY fetched_at))
+                       / NULLIF(lag(value) OVER (PARTITION BY asset_id ORDER BY fetched_at), 0)
+                   )::float8 * 10000.0 AS delta_bps
+            FROM market_prices
+            WHERE source = $1
+              AND asset_id = ANY($2)
+              AND fetched_at > NOW() - $3::interval
+              AND value IS NOT NULL
+        )
+        SELECT asset_id,
+               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY delta_bps) AS median_bps
+        FROM samples
+        WHERE delta_bps IS NOT NULL
+        GROUP BY asset_id
+        "#,
+    )
+    .bind(source_id)
+    .bind(asset_ids)
+    .bind(&interval)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(id, median)| {
+            median.and_then(|m| {
+                if m.is_nan() || m.is_infinite() || m < 0.0 {
+                    None
+                } else {
+                    Some((id, m.round().min(u32::MAX as f64) as u32))
+                }
+            })
+        })
+        .collect())
+}
+
 /// Get the median signed change % over the last N settlements per asset.
 /// Returns HashMap<asset_id, median_change_pct>.
 ///
@@ -586,6 +648,93 @@ async fn compute_asset_thresholds(
     asset_ids: &[String],
 ) -> Vec<BatchMarket> {
     let strategy = get_strategy(source_id);
+
+    // Per-asset median-recent-Δ mode. Each market's threshold is its own
+    // median |Δ| over the last `window_minutes` of `market_prices`. ~50%
+    // of past ticks crossed it, ~50% didn't — the question is fair.
+    //
+    // Takes precedence over `fixed_threshold_bps`: when both are set,
+    // dynamic per-market wins over flat per-source.
+    if let Some(window) = strategy.median_recent_delta_window {
+        // Convert sample count to a minute interval. Sync intervals on
+        // probability sources sit around 5 min, so 30 samples ≈ 150 min.
+        // A x4 safety factor (sample slippage, sync gaps) keeps the
+        // SQL window from starving when the source hiccups.
+        let window_minutes = ((window as u32) * 5 * 4).max(60);
+
+        let medians = get_median_recent_delta_bps(pool, source_id, asset_ids, window_minutes)
+            .await
+            .unwrap_or_default();
+
+        // Direction hint: last settlement sign, else 24h sign, else up.
+        let last = get_all_last_settlement_changes(pool, source_id)
+            .await
+            .unwrap_or_default();
+        let h24 = if last.len() < asset_ids.len() {
+            get_all_24h_changes(pool, source_id).await.unwrap_or_default()
+        } else {
+            HashMap::new()
+        };
+
+        return asset_ids
+            .iter()
+            .map(|asset_id| {
+                let dir = last
+                    .get(asset_id)
+                    .copied()
+                    .or_else(|| h24.get(asset_id).copied())
+                    .unwrap_or(0.0);
+                let up = dir >= 0.0;
+                let res_type = if up { "up_x" } else { "down_x" };
+
+                // No history → floor. Otherwise clamp to strategy bounds.
+                let (threshold_bps, source) = match medians.get(asset_id).copied() {
+                    Some(median) => (clamp_threshold(median, &strategy), "median_recent_delta"),
+                    None => (strategy.min_threshold_bps, "median_recent_delta_floor"),
+                };
+
+                BatchMarket {
+                    asset_id: asset_id.clone(),
+                    resolution_type: res_type.to_string(),
+                    threshold_bps,
+                    threshold_source: source.to_string(),
+                }
+            })
+            .collect();
+    }
+
+    // Fixed-threshold mode bypasses every calibration path.
+    // Used by PROBABILITY sources whose per-tick movement is orders of
+    // magnitude smaller than any volatility-derived threshold.
+    if let Some(bps) = strategy.fixed_threshold_bps {
+        // Direction hint: last settlement sign, then 24h sign, else up.
+        let last = get_all_last_settlement_changes(pool, source_id)
+            .await
+            .unwrap_or_default();
+        let h24 = if last.len() < asset_ids.len() {
+            get_all_24h_changes(pool, source_id).await.unwrap_or_default()
+        } else {
+            HashMap::new()
+        };
+        return asset_ids
+            .iter()
+            .map(|asset_id| {
+                let dir = last
+                    .get(asset_id)
+                    .copied()
+                    .or_else(|| h24.get(asset_id).copied())
+                    .unwrap_or(0.0);
+                let up = dir >= 0.0;
+                let res_type = if up { "up_x" } else { "down_x" };
+                BatchMarket {
+                    asset_id: asset_id.clone(),
+                    resolution_type: res_type.to_string(),
+                    threshold_bps: bps,
+                    threshold_source: "fixed".to_string(),
+                }
+            })
+            .collect();
+    }
 
     // Primary: median calibration from settlement history
     let median_changes = get_median_settlement_changes(pool, source_id, strategy.lookback_ticks)

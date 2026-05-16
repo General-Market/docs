@@ -178,6 +178,31 @@ pub struct BatchStrategy {
     /// returns every player's deposit. Bots cannot trade against each
     /// other if the venue refuses to declare a winner.
     pub force_binary_resolution: bool,
+
+    /// When `Some(bps)`, bypass median / last_batch / 24h_history calibration
+    /// entirely and use a flat fixed threshold for every asset in this source.
+    /// The resolution type is decided by the asset's most recent directional
+    /// hint (median sign if available, else `up_x`). Used by prediction-market
+    /// sources where 24h cumulative drift dwarfs 5-min tick movement — a
+    /// volatility-derived threshold (e.g. 344 bps from 3.44% over 24h) is two
+    /// orders of magnitude larger than the actual per-tick move and produces
+    /// rounds where every market refunds. A small fixed value (15–20 bps)
+    /// crosses on most ticks while still filtering pure noise.
+    pub fixed_threshold_bps: Option<u32>,
+
+    /// When `Some(n)`, derive each market's threshold from the median of
+    /// the absolute price deltas across the last `n` tick samples in
+    /// `market_prices`. With threshold = median |Δ|, ~50% of past ticks
+    /// crossed it — so a batch of N markets averages to roughly N/2 UP
+    /// winners and N/2 DOWN winners. The vaults can finally trade.
+    ///
+    /// The window is in raw samples, not seconds. With polymarket syncing
+    /// every 5 minutes, 30 samples ≈ 2.5h of history — long enough to
+    /// smooth single-tick noise, short enough to follow regime changes.
+    /// Clamped by `min_threshold_bps` / `max_threshold_bps`.
+    ///
+    /// Takes precedence over `fixed_threshold_bps` when both are set.
+    pub median_recent_delta_window: Option<usize>,
 }
 
 impl BatchStrategy {
@@ -189,6 +214,8 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Fast volatile source (meme tokens, live streams).
@@ -200,6 +227,8 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Slow environmental source (weather, air quality, tides).
@@ -211,6 +240,8 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: Some(86400), // 24h
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Macro/daily source (rates, bonds, inflation).
@@ -222,6 +253,8 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Engagement/social source (reddit, twitch, hackernews).
@@ -233,6 +266,8 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Status/event source (transit delays, outages, alerts).
@@ -244,20 +279,27 @@ impl BatchStrategy {
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: false,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: None,
     };
 
     /// Probability source (polymarket, sports odds).
-    /// Already 0-100, moderate lookback. `force_binary_resolution = true`
-    /// because YES prices barely move within a tick — `flat_x` collapses
-    /// every market to a refund and the parimutuel returns every deposit.
-    /// Any move wins.
+    /// Already 0-100, prices barely move within a tick.
+    ///
+    /// `force_binary_resolution = true` rules out `flat_x` so stationary
+    /// markets don't collapse to refund. `median_recent_delta_window` derives
+    /// each market's threshold from its own recent tick history — median |Δ|
+    /// over the last 30 samples (~2.5 h at 5-min sync). 50% of past ticks
+    /// crossed it, 50% didn't — the question is finally fair.
     pub const PROBABILITY: Self = Self {
         lookback_ticks: 20,
         min_threshold_bps: 1,
-        max_threshold_bps: 5000,
+        max_threshold_bps: 200,
         zero_trend_type: "up_0",
         reference_lookback_secs: None,
         force_binary_resolution: true,
+        fixed_threshold_bps: None,
+        median_recent_delta_window: Some(30),
     };
 }
 
