@@ -348,16 +348,19 @@ def load_state(funds, state_file=STATE_FILE):
 
 
 def bootstrap_joined_from_chain(funds, executor):
-    """Seed joined_batch_ids / active_batches from chain truth on startup.
+    """Seed joined_batch_ids / active_batches from the data-node DB on startup.
 
     The persisted state file is incomplete after any unclean shutdown — the
     bot then rediscovers its own joins one AlreadyJoined() revert at a time.
-    The data-node DB indexes BatchJoined events; query it once per vault,
-    then verify each hit on chain. Belt and braces because the DB can lag.
+    The data-node indexes every BatchJoined event into vision_positions;
+    join against vision_batches to keep only batches still active on chain
+    (settled rounds have balance>0 rows for pending withdrawals but joining
+    is no longer a valid action). The per-cycle pre-check still re-verifies
+    each batch on chain before any join tx, so a slightly stale DB is safe.
 
     Falls back gracefully: no DB URL, no DB connection, or DB error → log
-    and return. The bot still works (the pre-check guards individual joins);
-    this just stops the thundering herd of reverts on first cycle.
+    and return. The bot still works without this; bootstrap just stops the
+    thundering herd of reverts on first cycle.
     """
     if not VISION_DB_URL:
         log.info("Chain-bootstrap: VISION_DB_URL not set — skipping")
@@ -370,52 +373,41 @@ def bootstrap_joined_from_chain(funds, executor):
 
     seeded_total = 0
     try:
-        with psycopg2.connect(VISION_DB_URL) as conn:
+        with psycopg2.connect(VISION_DB_URL, connect_timeout=10) as conn:
             for fund in funds:
                 try:
                     with conn.cursor() as cur:
-                        # vision_positions only holds live joins. A row gets
-                        # deleted (or balance zeroed) on settlement.
+                        # Active-state filter is what makes this bounded.
+                        # Heavy vaults carry 20k+ historical positions; we
+                        # only want batches that are currently joinable.
                         cur.execute(
-                            "SELECT batch_id FROM vision_positions "
-                            "WHERE LOWER(player) = LOWER(%s) AND balance > 0",
+                            "SELECT vp.batch_id, vp.total_deposited::text "
+                            "FROM vision_positions vp "
+                            "JOIN vision_batches vb ON vb.id = vp.batch_id "
+                            "WHERE LOWER(vp.player) = LOWER(%s) "
+                            "  AND vp.balance > 0 "
+                            "  AND vb.state = 'active'",
                             (fund.vault_addr,),
                         )
-                        candidate_ids = [int(r[0]) for r in cur.fetchall()]
+                        rows = cur.fetchall()
                 except Exception as e:
                     log.warning(
                         "[%s] Chain-bootstrap DB query failed: %s", fund.name, e,
                     )
                     continue
 
-                if not candidate_ids:
-                    continue
-
                 seeded = 0
-                for bid in candidate_ids:
+                for bid_raw, dep_raw in rows:
+                    bid = int(bid_raw)
                     if bid in fund.joined_batch_ids:
                         continue
-                    try:
-                        pos = executor.get_player_position(bid, fund.vault_addr)
-                    except BatchNotFoundError:
-                        # Indexer ahead of chain reorg, or batch wiped.
-                        continue
-                    except Exception as e:
-                        log.warning(
-                            "[%s] Chain-bootstrap verify failed for batch %d: %s",
-                            fund.name, bid, e,
-                        )
-                        continue
-                    if pos.get("joinTimestamp", 0) > 0:
-                        fund.joined_batch_ids.add(bid)
-                        fund.active_batches.setdefault(
-                            bid, int(pos.get("totalDeposited", 0)),
-                        )
-                        seeded += 1
+                    fund.joined_batch_ids.add(bid)
+                    fund.active_batches.setdefault(bid, int(dep_raw or 0))
+                    seeded += 1
 
                 if seeded:
                     log.info(
-                        "[%s] Chain-bootstrap: seeded %d joined batches from DB+chain",
+                        "[%s] Chain-bootstrap: seeded %d joined batches from DB",
                         fund.name, seeded,
                     )
                 seeded_total += seeded
