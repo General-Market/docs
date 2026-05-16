@@ -1,16 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 280" width="2400" height="280">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="2400" height="280" rx="0" fill="#FFFFFF"/>
-<text x="1200" y="80" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:18px;font-weight:700;fill:#6E6E73;letter-spacing:3.24px">PART · C</text>
-<line x1="720" y1="155" x2="960" y2="155" stroke="#D2D2D7" stroke-width="1"/>
-<line x1="1440" y1="155" x2="1680" y2="155" stroke="#D2D2D7" stroke-width="1"/>
-<text x="1200" y="170" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:52px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.14px">THE REFUSAL</text>
-<text x="1200" y="222" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:22px;font-weight:500;fill:#6E6E73;letter-spacing:-0.48px;font-style:italic">how each extraction stops being possible.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 280" width="2400" height="280" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <style>
+      .bloom {
+        filter:
+          drop-shadow(0 0 6px rgba(255,255,255,0.95))
+          drop-shadow(0 0 24px rgba(255,255,255,0.55))
+          drop-shadow(0 8px 36px rgba(0, 82, 255, 0.32));
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="2400" height="280" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="2400" height="280" fill="url(#dotgrid)"/>
+  <rect x="0" y="0" width="2400" height="280" fill="url(#vignette)"/>
+
+  <text x="1200" y="84" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">SECTION 04 · PART C</text>
+
+  <line x1="780" y1="155" x2="1020" y2="155" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+  <line x1="1380" y1="155" x2="1620" y2="155" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+
+  <text x="1200" y="170" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="60" font-weight="800"
+        letter-spacing="-3" fill="#0A0A0A" class="bloom">The refusal.</text>
+
+  <text x="1200" y="232" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="22" font-weight="500"
+        letter-spacing="-0.48" fill="#6E727A">How each extraction stops being possible.</text>
 </svg>

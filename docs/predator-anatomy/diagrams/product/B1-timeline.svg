@@ -1,55 +1,134 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
-<text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">TIMELINE B1 · THE THREE PHASES</text>
-<text x="1023" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">Submit. Reveal.</text>
-<text x="1051" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">Claim.</text>
-<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">Every block trades in three ten-minute phases. While you submit, your bets are</text>
-<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">encrypted. No one can see them, copy them, or trade ahead of them.</text>
-<rect x="80" y="440" width="1440" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="120" y="490" width="432" height="420" rx="14" fill="#FBFBFD" stroke="#0071E3" stroke-width="2"/>
-<circle cx="170" cy="540" r="32" fill="#0071E3"/>
-<text x="170" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#FFFFFF">01</text>
-<rect x="384" y="516" width="140" height="50" rx="980" fill="#FFFFFF" stroke="#0071E3" stroke-width="1"/>
-<text x="454" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#0071E3;letter-spacing:0.88px">10 min</text>
-<text x="336" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:84px;font-weight:800;fill:#1D1D1F;letter-spacing:-1.85px">SUBMIT</text>
-<text x="336" y="770" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">You place your bets.</text>
-<text x="336" y="806" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">Encrypted.</text>
-<rect x="584" y="490" width="432" height="420" rx="14" fill="#FBFBFD" stroke="#1D1D1F" stroke-width="2"/>
-<circle cx="634" cy="540" r="32" fill="#1D1D1F"/>
-<text x="634" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#FFFFFF">02</text>
-<rect x="848" y="516" width="140" height="50" rx="980" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1"/>
-<text x="918" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#1D1D1F;letter-spacing:0.88px">10 min</text>
-<text x="800" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:84px;font-weight:800;fill:#1D1D1F;letter-spacing:-1.85px">REVEAL</text>
-<text x="800" y="770" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">Everyone reveals at once.</text>
-<text x="800" y="806" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">Bets are locked.</text>
-<rect x="1048" y="490" width="432" height="420" rx="14" fill="#FBFBFD" stroke="#34C759" stroke-width="2"/>
-<circle cx="1098" cy="540" r="32" fill="#34C759"/>
-<text x="1098" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:800;fill:#FFFFFF">03</text>
-<rect x="1312" y="516" width="140" height="50" rx="980" fill="#FFFFFF" stroke="#34C759" stroke-width="1"/>
-<text x="1382" y="550" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:0.88px">10 min</text>
-<text x="1264" y="690" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:84px;font-weight:800;fill:#1D1D1F;letter-spacing:-1.85px">CLAIM</text>
-<text x="1264" y="770" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">Winners take</text>
-<text x="1264" y="806" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#424245;letter-spacing:-0.53px">the pool.</text>
-<line x1="120" y1="980" x2="1480" y2="980" stroke="#D2D2D7" stroke-width="3"/>
-<line x1="120" y1="980" x2="552" y2="980" stroke="#0071E3" stroke-width="5"/>
-<circle cx="120" cy="980" r="10" fill="#FFFFFF" stroke="#0071E3" stroke-width="3"/>
-<text x="120" y="1026" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">t = 0 min</text>
-<line x1="584" y1="980" x2="1016" y2="980" stroke="#1D1D1F" stroke-width="5"/>
-<circle cx="584" cy="980" r="10" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="3"/>
-<text x="584" y="1026" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">t = 10 min</text>
-<line x1="1048" y1="980" x2="1480" y2="980" stroke="#34C759" stroke-width="5"/>
-<circle cx="1048" cy="980" r="10" fill="#FFFFFF" stroke="#34C759" stroke-width="3"/>
-<text x="1048" y="1026" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">t = 20 min</text>
-<circle cx="1480" cy="980" r="10" fill="#FFFFFF" stroke="#34C759" stroke-width="3"/>
-<text x="1480" y="1026" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">t = 30 min</text>
-<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">ON A NORMAL EXCHANGE, EVERY ORDER IS VISIBLE THE SECOND YOU PLACE IT.</text>
-<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">Three phases. Zero visibility for ten minutes.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#0052FF"/>
+    </marker>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1300" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#dotgrid)"/>
+  <ellipse cx="800" cy="800" rx="700" ry="240" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#vignette)"/>
+
+  <!-- eyebrow -->
+  <text x="800" y="180" text-anchor="middle"
+        font-family="'SF Mono', ui-monospace, Menlo, monospace"
+        font-size="22" font-weight="700" letter-spacing="4" fill="#6E727A">PROTOCOL · B1 · THE THREE PHASES</text>
+
+  <!-- title -->
+  <text x="800" y="320" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#0A0A0A" class="bloom">Submit. Reveal.</text>
+  <text x="800" y="420" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#0052FF" class="bloom">Claim.</text>
+
+  <!-- caption -->
+  <text x="800" y="510" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="22" font-weight="500"
+        letter-spacing="-0.48" fill="#6E727A">Three ten-minute phases. While you submit, no one sees you.</text>
+
+  <!-- timeline rail with arrowhead -->
+  <g transform="translate(0, 800)">
+    <line x1="200" y1="0" x2="1400" y2="0"
+          stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+    <!-- tick marks at t=0, 10, 20, 30 -->
+    <line x1="200"  y1="-10" x2="200"  y2="10" stroke="rgba(10,10,12,0.22)" stroke-width="1.5"/>
+    <line x1="600"  y1="-10" x2="600"  y2="10" stroke="rgba(10,10,12,0.22)" stroke-width="1.5"/>
+    <line x1="1000" y1="-10" x2="1000" y2="10" stroke="rgba(10,10,12,0.22)" stroke-width="1.5"/>
+    <line x1="1400" y1="-10" x2="1400" y2="10" stroke="rgba(10,10,12,0.22)" stroke-width="1.5"/>
+
+    <!-- time labels -->
+    <text x="200"  y="50" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="1.4" fill="#6E727A">t = 0</text>
+    <text x="600"  y="50" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="1.4" fill="#6E727A">t = 10 min</text>
+    <text x="1000" y="50" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="1.4" fill="#6E727A">t = 20 min</text>
+    <text x="1400" y="50" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="1.4" fill="#6E727A">t = 30 min</text>
+  </g>
+
+  <!-- phase 1 — SUBMIT -->
+  <g transform="translate(400, 660)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="0" y="9" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+          letter-spacing="2" fill="#0052FF">01</text>
+    <text x="0" y="100" text-anchor="middle"
+          font-size="44" font-weight="800" letter-spacing="-1" fill="#0A0A0A">Submit.</text>
+    <text x="0" y="148" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="13" font-weight="600"
+          letter-spacing="2.34" fill="#6E727A">SEALED</text>
+    <text x="0" y="210" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">You place your bets.</text>
+    <text x="0" y="240" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">No one can read them.</text>
+  </g>
+
+  <!-- phase 2 — REVEAL -->
+  <g transform="translate(800, 660)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="0" y="9" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+          letter-spacing="2" fill="#0052FF">02</text>
+    <text x="0" y="100" text-anchor="middle"
+          font-size="44" font-weight="800" letter-spacing="-1" fill="#0A0A0A">Reveal.</text>
+    <text x="0" y="148" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="13" font-weight="600"
+          letter-spacing="2.34" fill="#6E727A">PRINTED</text>
+    <text x="0" y="210" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">Markets close. Prices print.</text>
+    <text x="0" y="240" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">Every bet, at once.</text>
+  </g>
+
+  <!-- phase 3 — CLAIM -->
+  <g transform="translate(1200, 660)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="0" y="9" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+          letter-spacing="2" fill="#0052FF">03</text>
+    <text x="0" y="100" text-anchor="middle"
+          font-size="44" font-weight="800" letter-spacing="-1" fill="#0052FF">Claim.</text>
+    <text x="0" y="148" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="13" font-weight="600"
+          letter-spacing="2.34" fill="#6E727A">PAID</text>
+    <text x="0" y="210" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">Winners split the pool.</text>
+    <text x="0" y="240" text-anchor="middle"
+          font-family="'SF Pro Text', sans-serif" font-size="18" font-weight="500"
+          letter-spacing="-0.4" fill="#1F1F24">Losers, the silence.</text>
+  </g>
+
+  <!-- closing knife -->
+  <text x="800" y="1200" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="600"
+        letter-spacing="2.5" fill="#6E727A">ELSEWHERE, EVERY ORDER IS VISIBLE THE SECOND YOU PLACE IT.</text>
 </svg>

@@ -1,66 +1,137 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
-<text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">PRIMITIVE A2 · THE POOL</text>
-<text x="764" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">Pool clears.</text>
-<text x="792" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">Winners split.</text>
-<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">Each market in a block is parimutuel: everyone bets into a pool, winners split</text>
-<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">losers' money, no market maker.</text>
-<rect x="80" y="440" width="1440" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="120" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="281" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">BTC</text>
-<text x="281" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="160" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="160" y="614" width="145" height="22" rx="4" fill="#34C759" opacity="0.9"/>
-<text x="281" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$60</text>
-<text x="281" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="160" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="160" y="744" width="96" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="281" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$40</text>
-<line x1="144" y1="878" x2="418" y2="878" stroke="#E8E8ED" stroke-width="1"/>
-<text x="281" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">WIN ×1.67</text>
-<rect x="466" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="627" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ETH</text>
-<text x="627" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="506" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="506" y="614" width="72" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
-<text x="627" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$30</text>
-<text x="627" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="506" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="506" y="744" width="169" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="627" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#FF3B30;letter-spacing:-0.88px">$70</text>
-<line x1="490" y1="878" x2="764" y2="878" stroke="#E8E8ED" stroke-width="1"/>
-<text x="627" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FF3B30;letter-spacing:-0.7px">WIN ×1.43</text>
-<rect x="812" y="490" width="322" height="490" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<text x="973" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">SOL</text>
-<text x="973" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="852" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="852" y="614" width="121" height="22" rx="4" fill="#34C759" opacity="0.9"/>
-<text x="973" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#34C759;letter-spacing:-0.88px">$50</text>
-<text x="973" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="852" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="852" y="744" width="121" height="22" rx="4" fill="#FF3B30" opacity="0.9"/>
-<text x="973" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#424245;letter-spacing:-0.88px">$50</text>
-<line x1="836" y1="878" x2="1110" y2="878" stroke="#E8E8ED" stroke-width="1"/>
-<text x="973" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#34C759;letter-spacing:-0.7px">WIN ×2.00</text>
-<rect x="1158" y="490" width="322" height="490" rx="12" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="546" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:44px;font-weight:800;fill:#1D1D1F;letter-spacing:-0.97px">ARB</text>
-<text x="1319" y="600" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">UP</text>
-<rect x="1198" y="614" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="1198" y="614" width="242" height="22" rx="4" fill="#6E6E73" opacity="0.9"/>
-<text x="1319" y="678" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$100</text>
-<text x="1319" y="730" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:0.8px">DOWN</text>
-<rect x="1198" y="744" width="242" height="22" rx="4" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="808" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:40px;font-weight:800;fill:#6E6E73;letter-spacing:-0.88px">$0</text>
-<line x1="1182" y1="878" x2="1456" y2="878" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1319" y="922" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#6E6E73;letter-spacing:-0.7px">REFUND</text>
-<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">SAME MODEL AS A HORSE-RACING POOL. SAME MODEL AS THE LOTTERY.</text>
-<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">No spread. No middleman. The pool is the price.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#0052FF"/>
+    </marker>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1300" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#dotgrid)"/>
+  <ellipse cx="800" cy="780" rx="700" ry="240" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#vignette)"/>
+
+  <!-- eyebrow -->
+  <text x="800" y="180" text-anchor="middle"
+        font-family="'SF Mono', ui-monospace, Menlo, monospace"
+        font-size="22" font-weight="700" letter-spacing="4" fill="#6E727A">PROTOCOL · A2 · THE POOL</text>
+
+  <!-- title -->
+  <text x="800" y="320" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#0A0A0A" class="bloom">Pool clears.</text>
+  <text x="800" y="420" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#0052FF" class="bloom">Winners split losers.</text>
+
+  <!-- three phases on the dot-grid stage -->
+  <g transform="translate(0, 720)">
+    <!-- phase 1 — COMMIT -->
+    <g transform="translate(280, 0)">
+      <circle cx="0" cy="-80" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="0" y="-71" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+            letter-spacing="2" fill="#0052FF">01</text>
+      <text x="0" y="0" text-anchor="middle"
+            font-family="'SF Pro Display', sans-serif" font-size="40" font-weight="700"
+            letter-spacing="-0.88" fill="#0A0A0A">Commit.</text>
+      <text x="0" y="56" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="14" font-weight="600"
+            letter-spacing="2.5" fill="#6E727A">SEALED BETS</text>
+      <text x="0" y="118" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">Everyone pays in.</text>
+      <text x="0" y="148" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">No one can read.</text>
+    </g>
+
+    <!-- connector -->
+    <line x1="430" y1="0" x2="690" y2="0" stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+    <!-- phase 2 — REVEAL -->
+    <g transform="translate(800, 0)">
+      <circle cx="0" cy="-80" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="0" y="-71" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+            letter-spacing="2" fill="#0052FF">02</text>
+      <text x="0" y="0" text-anchor="middle"
+            font-family="'SF Pro Display', sans-serif" font-size="40" font-weight="700"
+            letter-spacing="-0.88" fill="#0A0A0A">Reveal.</text>
+      <text x="0" y="56" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="14" font-weight="600"
+            letter-spacing="2.5" fill="#6E727A">PRICES PRINT</text>
+      <text x="0" y="118" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">Markets close.</text>
+      <text x="0" y="148" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">Bets reveal at once.</text>
+    </g>
+
+    <!-- connector -->
+    <line x1="950" y1="0" x2="1210" y2="0" stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+    <!-- phase 3 — SETTLE -->
+    <g transform="translate(1320, 0)">
+      <circle cx="0" cy="-80" r="40" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+      <text x="0" y="-71" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+            letter-spacing="2" fill="#0052FF">03</text>
+      <text x="0" y="0" text-anchor="middle"
+            font-family="'SF Pro Display', sans-serif" font-size="40" font-weight="700"
+            letter-spacing="-0.88" fill="#0A0A0A">Settle.</text>
+      <text x="0" y="56" text-anchor="middle"
+            font-family="'SF Mono', monospace" font-size="14" font-weight="600"
+            letter-spacing="2.5" fill="#6E727A">POOL DIVIDES</text>
+      <text x="0" y="118" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">Winners take it.</text>
+      <text x="0" y="148" text-anchor="middle"
+            font-size="18" font-weight="500" letter-spacing="-0.4" fill="#1F1F24">Losers paid for it.</text>
+    </g>
+  </g>
+
+  <!-- pool illustration: simple parimutuel diagram below -->
+  <g transform="translate(800, 1010)">
+    <!-- pool circle -->
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#0052FF" stroke-width="2.5"/>
+    <text x="0" y="8" text-anchor="middle"
+          font-family="'SF Pro Display', sans-serif" font-size="28" font-weight="800"
+          letter-spacing="-0.6" fill="#0052FF">$100</text>
+    <text x="0" y="36" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="11" font-weight="700"
+          letter-spacing="2" fill="#6E727A">POOL</text>
+
+    <!-- in arrows -->
+    <line x1="-220" y1="-10" x2="-75" y2="-10" stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+    <text x="-280" y="-4" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="2" fill="#6E727A">UP $60</text>
+    <line x1="-220" y1="20" x2="-75" y2="20" stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+    <text x="-280" y="26" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="2" fill="#6E727A">DOWN $40</text>
+
+    <!-- out arrows -->
+    <line x1="75" y1="0" x2="220" y2="0" stroke="rgba(10,10,12,0.22)" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+    <text x="280" y="6" text-anchor="middle"
+          font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+          letter-spacing="2" fill="#0052FF">×1.67</text>
+  </g>
+
+  <!-- caption -->
+  <text x="800" y="1230" text-anchor="middle"
+        font-size="22" font-weight="500" letter-spacing="-0.48" fill="#6E727A">Parimutuel. The pool is the only counterparty.</text>
 </svg>

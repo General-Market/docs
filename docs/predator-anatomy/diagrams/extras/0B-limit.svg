@@ -1,41 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
-<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 02</text>
-<text x="797" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">Start winning.</text>
-<text x="821" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">Watch the door close.</text>
-<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">Internal mediation — the closer your model, the more violent the imitation. The path</text>
-<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">from retail to pro looks open. The moment you start using it, the system removes the</text>
-<rect x="160" y="460" width="700" height="700" rx="18" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
-<text x="510" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">THE OPEN ROAD</text>
-<text x="510" y="590" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:24px;font-weight:500;fill:#424245;font-style:italic;letter-spacing:-0.384px">what they sold you</text>
-<line x1="240" y1="680" x2="780" y2="680" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
-<text x="260" y="668" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">RETAIL</text>
-<line x1="240" y1="758" x2="780" y2="758" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
-<text x="260" y="746" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">SMALL-FUNDED</text>
-<line x1="240" y1="836" x2="780" y2="836" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
-<text x="260" y="824" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">PROP FIRM</text>
-<line x1="240" y1="914" x2="780" y2="914" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
-<text x="260" y="902" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">FUND LP</text>
-<line x1="240" y1="992" x2="780" y2="992" stroke="#6E6E73" stroke-width="1.5" opacity="0.4"/>
-<text x="260" y="980" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#1D1D1F;letter-spacing:1.12px">PRINCIPAL TRADER</text>
-<text x="510" y="1110" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:600;fill:#6E6E73">the deck of cards they showed you</text>
-<rect x="940" y="460" width="700" height="700" rx="18" fill="#1D1D1F"/>
-<text x="1290" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#E8F2FE;letter-spacing:2.52px">DRAFTKINGS · YOUR ACCOUNT</text>
-<text x="1290" y="660" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#FFFFFF;letter-spacing:2.7px;opacity:0.85">MAX BET</text>
-<text x="1290" y="780" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:180px;font-weight:800;fill:#FFFFFF;letter-spacing:-3.96px">$1.37</text>
-<text x="1290" y="860" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:500;fill:#FFFFFF;letter-spacing:-0.18px;opacity:0.85">limit applied · 14 hours after VIP invite</text>
-<text x="1290" y="970" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.352px">“I got up 40k and my host politely told me</text>
-<text x="1290" y="1002" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.352px">to fuck off lol.”</text>
-<text x="1290" y="1056" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#E8F2FE;letter-spacing:0.52px">u/Live-Horror · r/sportsbook</text>
-<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:28px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.448px">“Scumbag piece of fucking shit sportsbooks fucking bums.”</text>
-<text x="900" y="1240" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">u/MomCallsMeLowlife · r/sportsbook · on five years of getting limited</text>
-<text x="900" y="1290" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:22px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.352px">The ladder is real. The rungs above you are not.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0052FF"/>
+    </marker>
+    <marker id="arrBlueRev" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#0052FF"/>
+    </marker>
+    <style>
+      .bloom {
+        filter:
+          drop-shadow(0 0 6px rgba(255,255,255,0.95))
+          drop-shadow(0 0 24px rgba(255,255,255,0.55))
+          drop-shadow(0 8px 36px rgba(0, 82, 255, 0.32));
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1400" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1800" height="1400" fill="url(#dotgrid)"/>
+  <rect x="0" y="0" width="1800" height="1400" fill="url(#vignette)"/>
+
+  <!-- eyebrow -->
+  <text x="900" y="160" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="18" font-weight="700"
+        letter-spacing="3.2" fill="#6E727A">THEORY · 0B · RIVALRY · THE DOUBLES</text>
+
+  <!-- title -->
+  <text x="900" y="290" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="96" font-weight="800"
+        letter-spacing="-4.8" fill="#0A0A0A" class="bloom">Start winning. The door closes.</text>
+
+  <!-- two mirrored figures — symmetric diagram, no card wrap -->
+  <!-- left figure: RETAIL, right figure: HOUSE. They start as doubles, then a wall drops. -->
+
+  <!-- vertical wall down the middle — the "limit", Base blue -->
+  <line x1="900" y1="500" x2="900" y2="1180" stroke="#0052FF" stroke-width="3"/>
+  <text x="900" y="475" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+        letter-spacing="3" fill="#0052FF">THE LIMIT</text>
+
+  <!-- LEFT — retail figure -->
+  <!-- head -->
+  <circle cx="440" cy="600" r="48" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <!-- body -->
+  <path d="M 440 660 L 440 880" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <!-- reaching arm (toward the limit) -->
+  <path d="M 440 720 L 760 740" fill="none" stroke="#0A0A0A" stroke-width="1.5" marker-end="url(#arrBlue)"/>
+  <!-- legs -->
+  <path d="M 440 880 L 380 980" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <path d="M 440 880 L 500 980" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+
+  <text x="440" y="1060" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+        letter-spacing="3" fill="#0A0A0A">RETAIL</text>
+  <text x="440" y="1098" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="20" font-weight="500"
+        letter-spacing="-0.44" fill="#1F1F24">starts winning</text>
+
+  <!-- RIGHT — house figure (mirror of left) -->
+  <circle cx="1360" cy="600" r="48" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <path d="M 1360 660 L 1360 880" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <!-- reaching arm meeting the wall -->
+  <path d="M 1360 720 L 1040 740" fill="none" stroke="#0A0A0A" stroke-width="1.5" marker-end="url(#arrBlue)"/>
+  <path d="M 1360 880 L 1300 980" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+  <path d="M 1360 880 L 1420 980" fill="none" stroke="#0A0A0A" stroke-width="1.5"/>
+
+  <text x="1360" y="1060" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+        letter-spacing="3" fill="#0A0A0A">HOUSE</text>
+  <text x="1360" y="1098" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="20" font-weight="500"
+        letter-spacing="-0.44" fill="#1F1F24">closes the table</text>
+
+  <!-- labels on the wall — the rungs -->
+  <g font-family="'SF Mono', monospace" font-size="15" font-weight="700" letter-spacing="2" fill="#6E727A">
+    <line x1="860" y1="560" x2="940" y2="560" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="950" y="566">PRINCIPAL TRADER</text>
+    <line x1="860" y1="640" x2="940" y2="640" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="950" y="646">FUND LP</text>
+    <line x1="860" y1="720" x2="940" y2="720" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="950" y="726">PROP FIRM</text>
+    <line x1="860" y1="800" x2="940" y2="800" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="950" y="806">SMALL FUNDED</text>
+    <line x1="860" y1="880" x2="940" y2="880" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="950" y="886">RETAIL</text>
+  </g>
+
+  <!-- max bet stat — the violence of the limit, big number on the dot-grid stage -->
+  <text x="900" y="1232" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">DRAFTKINGS · MAX BET · 14H AFTER VIP INVITE</text>
+  <text x="900" y="1330" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="120" font-weight="800"
+        letter-spacing="-6" fill="#0052FF" class="bloom">$1.37</text>
 </svg>

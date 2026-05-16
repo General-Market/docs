@@ -1,180 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
-  <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
-    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
-    .stat-l  { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
-    .stat-v  { font: 800 36px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.792px; }
-    .stat-u  { font: 600 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.08px; }
-    .stat-pos { fill: #0A7C42; }
-    .stat-neg { fill: #D70015; }
-    .axis    { font: 500 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .tbl-h   { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.4px; }
-    .tbl-name { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A0A0A; }
-    .tbl-row  { font: 500 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #1F1F24; }
-    .schema-k { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #0052FF; }
-    .schema-t { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; }
-  </style>
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%"  stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <linearGradient id="termBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0d10"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
 
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#dotgrid)"/>
+  <ellipse cx="750" cy="330" rx="640" ry="220" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#vignette)"/>
 
-  <text x="60" y="82" class="eyebrow">STEP 10 · THE LEDGER</text>
-  <text x="60" y="146" class="title">Track every join, every settle, every dollar.</text>
-  <text x="60" y="190" class="tagline">pnl_logger writes a SQLite ledger. race_report reads it. The chain remembers; this just makes it legible.</text>
+  <!-- eyebrow -->
+  <text x="750" y="190" text-anchor="middle"
+        font-family="'SF Mono', ui-monospace, Menlo, monospace"
+        font-size="14" font-weight="700" letter-spacing="2.5" fill="#6E727A">STEP 10 · THE LEDGER</text>
 
-  <!-- top stats row -->
-  <g transform="translate(60, 240)">
-    <rect x="0" y="0" width="330" height="160" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="stat-l">TOTAL JOINS</text>
-    <text x="24" y="92" class="stat-v">128</text>
-    <text x="24" y="124" class="stat-u">across 2 strategies · 7d</text>
+  <!-- title -->
+  <text x="750" y="320" text-anchor="middle"
+        font-size="96" font-weight="800" letter-spacing="-4.8" fill="#0A0A0A" class="bloom">Read the receipts.</text>
+
+  <!-- terminal panel -->
+  <g transform="translate(750, 660)">
+    <rect x="-540" y="-180" width="1080" height="360" rx="10"
+          fill="url(#termBg)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <circle cx="-510" cy="-150" r="7" fill="#FF5F57"/>
+    <circle cx="-488" cy="-150" r="7" fill="#FEBC2E"/>
+    <circle cx="-466" cy="-150" r="7" fill="#28C840"/>
+    <text x="-430" y="-145"
+          font-family="'SF Mono', ui-monospace, monospace"
+          font-size="18" font-weight="500" letter-spacing="1.4" fill="#9aa0a6">~/bot — race_report</text>
+    <line x1="-540" y1="-120" x2="540" y2="-120" stroke="rgba(255,255,255,0.08)"/>
+
+    <text x="-500" y="-60" font-family="'SF Mono', monospace" font-size="28" font-weight="500" fill="#9aa0a6">$</text>
+    <text x="-470" y="-60" font-family="'SF Mono', monospace" font-size="28" font-weight="500" fill="#f1f3f5">race_report.py pnl-ensemble.db pnl-xgb.db</text>
+
+    <text x="-500" y="0" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#6E727A">ensemble  64 joins  ·  pnl +0.391  ·  roi +6.1%  ·  win 58.1%</text>
+
+    <text x="-500" y="40" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#6E727A">xgb       32 joins  ·  pnl +0.087  ·  roi +2.7%  ·  win 54.4%</text>
+
+    <text x="-500" y="110" font-family="'SF Mono', monospace" font-size="28" font-weight="700" fill="#5B79FF">→ net +0.412 wUSDC  ·  128 joins  ·  7 days  ·  +3.2% ROI</text>
+
+    <text x="-500" y="155" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#6E727A">schema: joins(id, batch, strategy, deposit) · settles(payout, pnl)</text>
   </g>
 
-  <g transform="translate(410, 240)">
-    <rect x="0" y="0" width="330" height="160" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="stat-l">WAGERED</text>
-    <text x="24" y="92" class="stat-v">12.80 <tspan class="stat-u">wUSDC</tspan></text>
-    <text x="24" y="124" class="stat-u">0.10 per join</text>
-  </g>
-
-  <g transform="translate(760, 240)">
-    <rect x="0" y="0" width="330" height="160" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="stat-l">PNL · NET</text>
-    <text x="24" y="92" class="stat-v stat-pos">+0.412</text>
-    <text x="24" y="124" class="stat-u">after 0.05% protocol fee</text>
-  </g>
-
-  <g transform="translate(1110, 240)">
-    <rect x="0" y="0" width="330" height="160" rx="14" fill="#E5EBFF" stroke="#9FB3FF"/>
-    <text x="24" y="36" class="stat-l" style="fill:#0052FF">ROI · 7d</text>
-    <text x="24" y="92" class="stat-v" style="fill:#0052FF">+3.2<tspan class="stat-u" style="fill:#0052FF">%</tspan></text>
-    <text x="24" y="124" class="stat-u" style="fill:#0052FF">on a 1.0 wUSDC starting bag</text>
-  </g>
-
-  <!-- left: per-strategy table -->
-  <g transform="translate(60, 420)">
-    <rect x="0" y="0" width="880" height="380" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="stat-l">PER STRATEGY · race_report.py</text>
-
-    <g transform="translate(24, 76)">
-      <text x="0" y="0" class="tbl-h">STRATEGY</text>
-      <text x="220" y="0" class="tbl-h">JOINS</text>
-      <text x="320" y="0" class="tbl-h">WAGERED</text>
-      <text x="470" y="0" class="tbl-h">PNL</text>
-      <text x="580" y="0" class="tbl-h">ROI</text>
-      <text x="680" y="0" class="tbl-h">WIN RATE</text>
-
-      <line x1="0" y1="14" x2="824" y2="14" stroke="#E8E8ED"/>
-
-      <text x="0" y="50" class="tbl-name">ensemble</text>
-      <text x="220" y="50" class="tbl-row">64</text>
-      <text x="320" y="50" class="tbl-row">6.40</text>
-      <text x="470" y="50" class="tbl-row" style="fill:#0A7C42">+0.391</text>
-      <text x="580" y="50" class="tbl-row" style="fill:#0A7C42">+6.1%</text>
-      <text x="680" y="50" class="tbl-row">58.1%</text>
-
-      <line x1="0" y1="68" x2="824" y2="68" stroke="#F5F5F7"/>
-
-      <text x="0" y="100" class="tbl-name">xgb</text>
-      <text x="220" y="100" class="tbl-row">32</text>
-      <text x="320" y="100" class="tbl-row">3.20</text>
-      <text x="470" y="100" class="tbl-row" style="fill:#0A7C42">+0.087</text>
-      <text x="580" y="100" class="tbl-row" style="fill:#0A7C42">+2.7%</text>
-      <text x="680" y="100" class="tbl-row">54.4%</text>
-
-      <line x1="0" y1="118" x2="824" y2="118" stroke="#F5F5F7"/>
-
-      <text x="0" y="150" class="tbl-name">momentum</text>
-      <text x="220" y="150" class="tbl-row">22</text>
-      <text x="320" y="150" class="tbl-row">2.20</text>
-      <text x="470" y="150" class="tbl-row" style="fill:#0A7C42">+0.012</text>
-      <text x="580" y="150" class="tbl-row" style="fill:#0A7C42">+0.5%</text>
-      <text x="680" y="150" class="tbl-row">50.9%</text>
-
-      <line x1="0" y1="168" x2="824" y2="168" stroke="#F5F5F7"/>
-
-      <text x="0" y="200" class="tbl-name">all_yes</text>
-      <text x="220" y="200" class="tbl-row">10</text>
-      <text x="320" y="200" class="tbl-row">1.00</text>
-      <text x="470" y="200" class="tbl-row" style="fill:#D70015">−0.078</text>
-      <text x="580" y="200" class="tbl-row" style="fill:#D70015">−7.8%</text>
-      <text x="680" y="200" class="tbl-row">47.2%</text>
-
-      <line x1="0" y1="232" x2="824" y2="232" stroke="#E8E8ED"/>
-
-      <text x="0" y="266" class="tbl-name">total</text>
-      <text x="220" y="266" class="tbl-name">128</text>
-      <text x="320" y="266" class="tbl-name">12.80</text>
-      <text x="470" y="266" class="tbl-name" style="fill:#0A7C42">+0.412</text>
-      <text x="580" y="266" class="tbl-name" style="fill:#0A7C42">+3.2%</text>
-      <text x="680" y="266" class="tbl-name">54.0%</text>
-    </g>
-
-    <!-- mini chart annotation -->
-    <text x="24" y="350" class="schema-t">Read with: race_report.py pnl-ensemble.db pnl-xgb.db</text>
-  </g>
-
-  <!-- right: cumulative PnL chart + schema -->
-  <g transform="translate(960, 420)">
-    <rect x="0" y="0" width="480" height="380" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="stat-l">CUMULATIVE PNL · 7 DAYS</text>
-
-    <g transform="translate(40, 80)">
-      <line x1="0" y1="180" x2="400" y2="180" stroke="#D2D2D7"/>
-      <line x1="0" y1="0" x2="0" y2="180" stroke="#D2D2D7"/>
-
-      <!-- zero baseline -->
-      <line x1="0" y1="156" x2="400" y2="156" stroke="#8A8E94" stroke-dasharray="3 3"/>
-
-      <!-- ensemble curve - climbing -->
-      <polyline fill="none" stroke="#0052FF" stroke-width="2.5"
-        points="0,156 32,152 64,144 96,136 128,128 160,124 192,118 224,108 256,100 288,84 320,70 352,52 384,38 400,32"/>
-
-      <!-- xgb curve - flatter -->
-      <polyline fill="none" stroke="#34C759" stroke-width="2"
-        points="0,156 32,156 64,154 96,150 128,148 160,144 192,140 224,138 256,134 288,128 320,124 352,120 384,116 400,112"/>
-
-      <!-- all_yes curve - down -->
-      <polyline fill="none" stroke="#D70015" stroke-width="2"
-        points="0,156 32,158 64,160 96,164 128,166 160,170 192,172 224,176 256,178 288,180 320,182 352,184 384,186 400,188"/>
-
-      <text x="0" y="208" class="axis">d0</text>
-      <text x="200" y="208" class="axis" text-anchor="middle">d3</text>
-      <text x="400" y="208" class="axis" text-anchor="end">d7</text>
-
-      <text x="-6" y="14" class="axis" text-anchor="end">+0.4</text>
-      <text x="-6" y="160" class="axis" text-anchor="end">0.0</text>
-      <text x="-6" y="194" class="axis" text-anchor="end">−0.1</text>
-    </g>
-
-    <!-- legend -->
-    <g transform="translate(40, 310)">
-      <rect x="0" y="0" width="14" height="3" fill="#0052FF"/>
-      <text x="22" y="6" class="tbl-row" style="font-size:13px">ensemble</text>
-      <rect x="120" y="0" width="14" height="3" fill="#34C759"/>
-      <text x="142" y="6" class="tbl-row" style="font-size:13px">xgb</text>
-      <rect x="200" y="0" width="14" height="3" fill="#D70015"/>
-      <text x="222" y="6" class="tbl-row" style="font-size:13px">all_yes</text>
-    </g>
-
-    <text x="24" y="356" class="schema-t">Source: pnl-&lt;strategy&gt;.db · table joins, settles</text>
-  </g>
-
-  <!-- footer pill -->
-  <rect x="60" y="820" width="1380" height="100" rx="14" fill="#0A0A0A"/>
-  <text x="92" y="858" class="stat-l" style="fill:#8A8E94">SCHEMA · pnl_logger.py · SQLite</text>
-  <g transform="translate(92, 880)">
-    <text x="0" y="0" class="schema-k">joins</text>
-    <text x="64" y="0" class="schema-t">(id, batch_id, strategy, deposit, bitmap_hash, ts)</text>
-    <text x="0" y="24" class="schema-k">settles</text>
-    <text x="64" y="24" class="schema-t">(join_id, payout, pnl, win_rate, settled_ts)</text>
-  </g>
-
-  <rect x="60" y="940" width="1380" height="60" rx="12" fill="#0052FF"/>
-  <text x="92" y="978" class="pill">$ .venv/bin/python race_report.py pnl-ensemble.db pnl-xgb.db</text>
-
-  <text x="60" y="1036" class="caption">Accuracy lies in tweets. Wallets do not. The ledger is the proof that the strategy held its bets and the chain kept its word.</text>
-  <text x="60" y="1066" class="caption" style="fill:#6E727A">generalmarket.io/profile/&lt;wallet&gt;  ·  same data, rendered for everyone else.</text>
+  <!-- caption -->
+  <text x="750" y="970" text-anchor="middle"
+        font-size="22" font-weight="500" letter-spacing="-0.48" fill="#6E727A">The ledger doesn't argue.</text>
 </svg>

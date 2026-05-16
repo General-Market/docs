@@ -1,57 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 2050" width="600" height="2050">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 2050" width="600" height="2050" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
 <defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
+<pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+<circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+</pattern>
+<radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+<stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+<stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+</radialGradient>
 </defs>
-<rect x="0" y="0" width="600" height="2050" rx="0" fill="#FFFFFF"/>
-<text x="300" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#0071E3;letter-spacing:2.7px">VOICES</text>
-<text x="300" y="156" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">From below the tape</text>
-<line x1="80" y1="200" x2="520" y2="200" stroke="#0071E3" stroke-width="2"/>
-<text x="40" y="260" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">LEVEL 3 DATA</text>
-<line x1="40" y1="274" x2="560" y2="274" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="40" y="288" width="520" height="190" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="72" cy="320" r="16" fill="#FF66AC"/>
-<text x="72" y="325" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">A</text>
-<text x="100" y="325" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/anon · r/Daytrading · 3y</text>
-<text x="56" y="364" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">MM have level 3, so they can see the</text>
-<text x="56" y="388" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">stops. Most people play similar style</text>
-<text x="56" y="412" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">putting stops near obvious support.</text>
-<path d="M 56 460 L 63 453 L 70 460" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="78" y="461" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">3.4k</text>
-<rect x="138" y="449" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
-<path d="M 141 461 L 143 464 L 145 461" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="162" y="461" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">214</text>
-<text x="40" y="518" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">WICK HUNT</text>
-<line x1="40" y1="532" x2="560" y2="532" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="40" y="546" width="520" height="190" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="72" cy="578" r="16" fill="#7193FF"/>
-<text x="72" y="583" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">F</text>
-<text x="100" y="583" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/Firm_Diet · r/Daytrading · 1y</text>
-<text x="56" y="622" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">Stopped out for −$3,000. I wouldn't have</text>
-<text x="56" y="646" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">held this whole trade but would've been</text>
-<text x="56" y="670" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">+$12,000.</text>
-<path d="M 56 718 L 63 711 L 70 718" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="78" y="719" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">892</text>
-<rect x="130" y="707" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
-<path d="M 133 719 L 135 722 L 137 719" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="154" y="719" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">64</text>
-<text x="40" y="776" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:12px;font-weight:700;fill:#6E6E73;letter-spacing:2.16px">FTX</text>
-<line x1="40" y1="790" x2="560" y2="790" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="40" y="804" width="520" height="214" rx="12" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<circle cx="72" cy="836" r="16" fill="#FF66AC"/>
-<text x="72" y="841" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:700;fill:#FFFFFF">N</text>
-<text x="100" y="841" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:600;fill:#6E6E73;letter-spacing:0.143px">u/No_Fuel_4676 · r/CryptoCurrency · 2y</text>
-<text x="56" y="880" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">There was not one time I didn't buy either</text>
-<text x="56" y="904" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">the top or bottom with 2x on FTX. Almost</text>
-<text x="56" y="928" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">instantly after buying price went against</text>
-<text x="56" y="952" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:400;fill:#1D1D1F;letter-spacing:-0.374px">me and activated stop loss.</text>
-<path d="M 56 1000 L 63 993 L 70 1000" fill="none" stroke="#FF4500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="78" y="1001" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">2.1k</text>
-<rect x="138" y="989" width="16" height="12" rx="2" fill="none" stroke="#6E6E73" stroke-width="1.5"/>
-<path d="M 141 1001 L 143 1004 L 145 1001" fill="none" stroke="#6E6E73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="162" y="1001" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:0.143px">156</text>
+<rect x="0" y="0" width="600" height="2050" fill="#F0F2F4"/>
+<rect x="0" y="0" width="600" height="2050" fill="url(#dotgrid)"/>
+<rect x="0" y="0" width="600" height="2050" fill="url(#vignette)"/>
+
+<line x1="56" y1="280" x2="56" y2="1480" stroke="#0052FF" stroke-width="1.5"/>
+
+<text x="84" y="220" font-family="'SF Mono', monospace" font-size="14" font-weight="700" letter-spacing="2.5" fill="#6E727A">VOICE · 02</text>
+
+<text x="84" y="360" font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500" letter-spacing="-0.8" fill="#0A0A0A">“MMs have</text>
+<text x="84" y="408" font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500" letter-spacing="-0.8" fill="#0A0A0A">level 3.</text>
+<text x="84" y="476" font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500" letter-spacing="-0.8" fill="#0A0A0A">They can</text>
+<text x="84" y="524" font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500" letter-spacing="-0.8" fill="#0A0A0A">see the</text>
+<text x="84" y="572" font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500" letter-spacing="-0.8" fill="#0A0A0A">stops.”</text>
+
+<text x="84" y="1980" font-family="'SF Pro Text', sans-serif" font-size="16" font-weight="500" letter-spacing="-0.35" fill="#6E727A">— retail trader</text>
+<text x="84" y="2006" font-family="'SF Pro Text', sans-serif" font-size="16" font-weight="500" letter-spacing="-0.35" fill="#6E727A">r/Daytrading, 2022</text>
 </svg>

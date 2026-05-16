@@ -1,33 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1300" width="2400" height="1300">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="2400" height="1300" rx="0" fill="#FFFFFF"/>
-<text x="1200" y="140" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:18px;font-weight:700;fill:#6E6E73;letter-spacing:3.24px">GENERAL MARKET · TECHNICAL REVIEW Nº 002</text>
-<text x="1200" y="460" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:200px;font-weight:800;fill:#1D1D1F;letter-spacing:-4.4px">THE</text>
-<text x="1200" y="700" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:240px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-5.28px">ICEBERG</text>
-<text x="1200" y="820" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:500;fill:#6E6E73;letter-spacing:-0.704px">What sits below the tape, and what to do about it.</text>
-<line x1="500" y1="1020" x2="1900" y2="1020" stroke="#0071E3" stroke-width="2" opacity="0.4"/>
-<text x="500" y="1004" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">↑ the tape</text>
-<text x="1900" y="1050" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">↓ what they kept</text>
-<circle cx="840" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="840" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">01</text>
-<circle cx="960" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="960" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">02</text>
-<circle cx="1080" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="1080" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">03</text>
-<circle cx="1200" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="1200" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">04</text>
-<circle cx="1320" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="1320" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">05</text>
-<circle cx="1440" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="1440" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">06</text>
-<circle cx="1560" cy="1110" r="22" fill="#FFFFFF" stroke="#1D1D1F" stroke-width="1.5"/>
-<text x="1560" y="1116" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#1D1D1F">07</text>
-<text x="1200" y="1180" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">seven extractions · one fix</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1300" width="2400" height="1300" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <style>
+      .bloom {
+        filter:
+          drop-shadow(0 0 6px rgba(255,255,255,0.95))
+          drop-shadow(0 0 24px rgba(255,255,255,0.55))
+          drop-shadow(0 8px 36px rgba(0, 82, 255, 0.32));
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="2400" height="1300" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="2400" height="1300" fill="url(#dotgrid)"/>
+  <rect x="0" y="0" width="2400" height="1300" fill="url(#vignette)"/>
+
+  <!-- halo behind wordmark -->
+  <ellipse cx="1200" cy="640" rx="900" ry="280" fill="url(#halo)" filter="url(#haloBlur)"/>
+
+  <!-- eyebrow -->
+  <text x="1200" y="280" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="22" font-weight="700"
+        letter-spacing="4" fill="#6E727A">GENERAL MARKET · TECHNICAL REVIEW Nº 002</text>
+
+  <!-- hero wordmark -->
+  <text x="1200" y="660" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="200" font-weight="800"
+        letter-spacing="-10" fill="#0A0A0A" class="bloom">Predator</text>
+  <text x="1200" y="860" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="200" font-weight="800"
+        letter-spacing="-10" fill="#0052FF" class="bloom">Anatomy.</text>
+
+  <!-- tagline -->
+  <text x="1200" y="970" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="34" font-weight="500"
+        letter-spacing="-0.75" fill="#6E727A">What sits below the tape. What to do about it.</text>
+
+  <!-- mechanism counter row -->
+  <line x1="700" y1="1110" x2="980" y2="1110" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+  <line x1="1420" y1="1110" x2="1700" y2="1110" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+
+  <g font-family="'SF Mono', monospace" font-size="16" font-weight="700" fill="#0052FF" letter-spacing="2">
+    <circle cx="1020" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1020" y="1117" text-anchor="middle">01</text>
+    <circle cx="1080" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1080" y="1117" text-anchor="middle">02</text>
+    <circle cx="1140" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1140" y="1117" text-anchor="middle">03</text>
+    <circle cx="1200" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1200" y="1117" text-anchor="middle">04</text>
+    <circle cx="1260" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1260" y="1117" text-anchor="middle">05</text>
+    <circle cx="1320" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1320" y="1117" text-anchor="middle">06</text>
+    <circle cx="1380" cy="1110" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1380" y="1117" text-anchor="middle">07</text>
+  </g>
+
+  <text x="1200" y="1200" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="16" font-weight="700"
+        letter-spacing="3" fill="#6E727A">SEVEN EXTRACTIONS · ONE FIX</text>
 </svg>

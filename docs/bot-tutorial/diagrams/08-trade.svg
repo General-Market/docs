@@ -1,165 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
-  <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
-    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term-cmd { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .term     { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
-    .term-tag { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
-    .term-ok  { font: 700 14px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-    .term-mut { font: 500 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term-acc { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
-    .term-blue{ font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
-    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%"  stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <linearGradient id="termBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0d10"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
 
-    .card-h    { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
-    .card-addr { font: 600 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A0A0A; }
-    .card-fig  { font: 800 28px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.616px; }
-    .card-lbl  { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
-    .card-row  { font: 500 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.07px; }
-    .card-mut  { font: 500 14px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.07px; }
-    .live-dot  { fill: #34C759; }
-    .live-txt  { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; letter-spacing: 0.91px; }
-  </style>
+  <rect x="0" y="0" width="1500" height="1100" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#dotgrid)"/>
+  <ellipse cx="750" cy="330" rx="640" ry="220" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#vignette)"/>
 
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+  <!-- eyebrow -->
+  <text x="750" y="190" text-anchor="middle"
+        font-family="'SF Mono', ui-monospace, Menlo, monospace"
+        font-size="14" font-weight="700" letter-spacing="2.5" fill="#6E727A">STEP 08 · THE WAGER</text>
 
-  <!-- header -->
-  <text x="60" y="82" class="eyebrow">STEP 03 · THE WAGER</text>
-  <text x="60" y="146" class="title">Trade one block.</text>
-  <text x="60" y="190" class="tagline">One deposit. One tick. The machine has an opinion. The chain decides.</text>
+  <!-- title -->
+  <text x="750" y="320" text-anchor="middle"
+        font-size="96" font-weight="800" letter-spacing="-4.8" fill="#0A0A0A" class="bloom">Trade one block.</text>
 
-  <!-- terminal -->
-  <rect x="60" y="240" width="900" height="680" rx="12" fill="#0A0A0A"/>
-  <rect x="60" y="240" width="900" height="44" rx="12" fill="#2C2C2E"/>
-  <rect x="60" y="276" width="900" height="8" fill="#2C2C2E"/>
-  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
-  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
-  <circle cx="126" cy="262" r="6" fill="#28C840"/>
-  <text x="510" y="266" class="term-mute" text-anchor="middle">claude — live_trader.py — 90×30</text>
+  <!-- terminal panel -->
+  <g transform="translate(750, 660)">
+    <rect x="-540" y="-180" width="1080" height="360" rx="10"
+          fill="url(#termBg)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <circle cx="-510" cy="-150" r="7" fill="#FF5F57"/>
+    <circle cx="-488" cy="-150" r="7" fill="#FEBC2E"/>
+    <circle cx="-466" cy="-150" r="7" fill="#28C840"/>
+    <text x="-430" y="-145"
+          font-family="'SF Mono', ui-monospace, monospace"
+          font-size="18" font-weight="500" letter-spacing="1.4" fill="#9aa0a6">~/bot — live_trader</text>
+    <line x1="-540" y1="-120" x2="540" y2="-120" stroke="rgba(255,255,255,0.08)"/>
 
-  <g transform="translate(92, 320)">
-    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
-    <text x="226" y="0" class="term-cmd">…/live_trader.py --deposit 0.1 --max-joins 1</text>
+    <text x="-500" y="-60" font-family="'SF Mono', monospace" font-size="28" font-weight="500" fill="#9aa0a6">$</text>
+    <text x="-470" y="-60" font-family="'SF Mono', monospace" font-size="28" font-weight="500" fill="#f1f3f5">live_trader.py --deposit 0.1 --max-joins 1</text>
 
-    <text x="0" y="40" class="term-tag">[trader]</text>
-    <text x="92" y="40" class="term">connecting rpc 142.132.164.24 …</text>
-    <text x="490" y="40" class="term-ok">ok</text>
+    <text x="-500" y="0" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#6E727A">approve 0.1 wUSDC  ·  joinBatchDirect(412)  ·  oracle{1,2,3} reveal ✓</text>
 
-    <text x="0" y="70" class="term-tag">[trader]</text>
-    <text x="92" y="70" class="term">vision 0x94d540… alive</text>
+    <text x="-500" y="80" font-family="'SF Mono', monospace" font-size="28" font-weight="700" fill="#5B79FF">→ settled in 1 tick  ·  pnl +0.034  ·  roi +34%</text>
 
-    <text x="0" y="100" class="term-tag">[trader]</text>
-    <text x="92" y="100" class="term">active batch </text>
-    <text x="220" y="100" class="term-acc">412</text>
-    <text x="252" y="100" class="term-mut">(8217 markets, tick 60s)</text>
-
-    <text x="0" y="130" class="term-tag">[trader]</text>
-    <text x="92" y="130" class="term">strategy=</text>
-    <text x="186" y="130" class="term-blue">momentum</text>
-
-    <text x="0" y="160" class="term-tag">[trader]</text>
-    <text x="92" y="160" class="term">bitmap sealed </text>
-    <text x="230" y="160" class="term-acc">0xa14d…f1c8</text>
-
-    <text x="0" y="190" class="term-tag">[trader]</text>
-    <text x="92" y="190" class="term">approve(0.1 WUSDC) …</text>
-    <text x="346" y="190" class="term-ok">✓</text>
-
-    <text x="0" y="220" class="term-tag">[trader]</text>
-    <text x="92" y="220" class="term">joinBatchDirect(412) …</text>
-    <text x="362" y="220" class="term-ok">✓</text>
-    <text x="386" y="220" class="term-mut">tx 0x7e2c…3a9b</text>
-
-    <text x="0" y="250" class="term-tag">[trader]</text>
-    <text x="92" y="250" class="term">waiting 6s for indexer …</text>
-
-    <text x="0" y="280" class="term-tag">[reveal]</text>
-    <text x="92" y="280" class="term">POST /vision/bitmap → oracle1 </text>
-    <text x="436" y="280" class="term-ok">✓</text>
-    <text x="0" y="306" class="term-tag">[reveal]</text>
-    <text x="92" y="306" class="term">                       → oracle2 </text>
-    <text x="436" y="306" class="term-ok">✓</text>
-    <text x="0" y="332" class="term-tag">[reveal]</text>
-    <text x="92" y="332" class="term">                       → oracle3 </text>
-    <text x="436" y="332" class="term-ok">✓</text>
-
-    <text x="0" y="368" class="term-tag">[trader]</text>
-    <text x="92" y="368" class="term-ok">PlayerSettled in 1 tick. portfolio →</text>
-    <text x="0" y="396" class="term-blue">  generalmarket.io/profile/0xB168EF…87cd0a</text>
-
-    <text x="0" y="450" class="term-mut">────────────────────────────────────────────</text>
-    <text x="0" y="478" class="term-mut">  joins  </text>
-    <text x="92" y="478" class="term">1</text>
-    <text x="0" y="504" class="term-mut">  wagered</text>
-    <text x="92" y="504" class="term">0.10 WUSDC</text>
-    <text x="0" y="530" class="term-mut">  pnl    </text>
-    <text x="92" y="530" class="term-ok">+0.034 WUSDC</text>
-    <text x="240" y="530" class="term-mut">(roi +34%)</text>
-
-    <text x="0" y="580" class="term-mute">~/vision-bot-examples $ ▍</text>
+    <text x="-500" y="140" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#6E727A">generalmarket.io/profile/0xB168EF…87cd0a</text>
   </g>
-
-  <!-- profile card -->
-  <g transform="translate(1000, 280)">
-    <rect x="0" y="0" width="440" height="400" rx="14" fill="#FFFFFF" stroke="#D2D2D7"/>
-    <!-- card header -->
-    <rect x="0" y="0" width="440" height="56" rx="14" fill="#F5F5F7"/>
-    <rect x="0" y="36" width="440" height="20" fill="#F5F5F7"/>
-    <text x="24" y="36" class="card-h">PROFILE</text>
-    <g transform="translate(360, 28)">
-      <circle cx="0" cy="0" r="5" class="live-dot"/>
-      <text x="12" y="4" class="live-txt">LIVE</text>
-    </g>
-
-    <g transform="translate(24, 92)">
-      <text x="0" y="0" class="card-lbl">WALLET</text>
-      <text x="0" y="28" class="card-addr">0xB168EF4f…87cd0a</text>
-    </g>
-
-    <line x1="24" y1="140" x2="416" y2="140" stroke="#E8E8ED"/>
-
-    <g transform="translate(24, 168)">
-      <text x="0" y="0" class="card-lbl">JOINS · BATCH 412</text>
-      <text x="0" y="40" class="card-fig">1</text>
-      <text x="40" y="40" class="card-mut">tick of 8217 markets</text>
-    </g>
-
-    <line x1="24" y1="232" x2="416" y2="232" stroke="#E8E8ED"/>
-
-    <g transform="translate(24, 260)">
-      <text x="0" y="0" class="card-lbl">DEPOSIT</text>
-      <text x="0" y="36" class="card-fig">0.10 wUSDC</text>
-      <text x="220" y="0" class="card-lbl">PNL</text>
-      <text x="220" y="36" class="card-fig" style="fill:#0A7C42">+0.034</text>
-    </g>
-
-    <line x1="24" y1="332" x2="416" y2="332" stroke="#E8E8ED"/>
-
-    <g transform="translate(24, 360)">
-      <text x="0" y="0" class="card-row">strategy</text>
-      <text x="120" y="0" class="card-mut">momentum</text>
-      <text x="220" y="0" class="card-row">status</text>
-      <text x="300" y="0" class="card-mut">settled · 1 tick</text>
-    </g>
-  </g>
-
-  <!-- watch-live note -->
-  <g transform="translate(1000, 720)">
-    <rect x="0" y="0" width="440" height="200" rx="14" fill="#E5EBFF" stroke="#9FB3FF"/>
-    <text x="24" y="36" class="card-lbl" style="fill:#0052FF">NEXT</text>
-    <text x="24" y="80" class="card-row" style="font-size:18px;letter-spacing:-0.09px">Race two strategies.</text>
-    <text x="24" y="116" class="card-mut">./race.sh ensemble all_yes 0.1</text>
-    <text x="24" y="160" class="card-mut">Watch the live PnL diff. The only honest</text>
-    <text x="24" y="180" class="card-mut">benchmark is another bot.</text>
-  </g>
-
-  <!-- footer command pill -->
-  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
-  <text x="92" y="1010" class="pill">$ .venv/bin/python twitch/live_trader.py --deposit 0.1 --max-joins 1</text>
 
   <!-- caption -->
-  <text x="60" y="1066" class="caption">The browser opens to your profile. The bot has its first commitment on record. From here, every tick is the same loop.</text>
+  <text x="750" y="970" text-anchor="middle"
+        font-size="22" font-weight="500" letter-spacing="-0.48" fill="#6E727A">The first wager is the cheapest you'll ever make.</text>
 </svg>

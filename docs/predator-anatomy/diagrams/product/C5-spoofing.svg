@@ -1,73 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="1600" height="1300" rx="0" fill="#FFFFFF"/>
-<text x="800" y="100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:24px;font-weight:700;fill:#6E6E73;letter-spacing:4.32px">EXTRACTION C5 · SPOOFING</text>
-<text x="618" y="230" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:110px;font-weight:700;fill:#1D1D1F;letter-spacing:-2.42px">No book.</text>
-<text x="646" y="230" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:110px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.76px">No wall to fake.</text>
-<text x="800" y="350" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">There is no order book — no list of bids and offers a manipulator can post</text>
-<text x="800" y="388" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:26px;font-weight:500;fill:#424245;letter-spacing:-0.57px">fake walls on. The pool clears at one price. You cannot spoof a lottery.</text>
-<rect x="80" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="216" y="475" width="128" height="42" rx="980" fill="#E5F8EC" stroke="#34C759" stroke-width="1"/>
-<text x="280" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#34C759;letter-spacing:1.76px">BLOCKS</text>
-<circle cx="716" cy="496" r="28" fill="#34C759"/>
-<text x="716" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✓</text>
-<rect x="820" y="440" width="700" height="590" rx="14" fill="#FFFFFF" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="943" y="475" width="114" height="42" rx="980" fill="#FFEBE9" stroke="#FF3B30" stroke-width="1"/>
-<text x="1000" y="505" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#FF3B30;letter-spacing:1.76px">PERPS</text>
-<circle cx="1456" cy="496" r="28" fill="#FF3B30"/>
-<text x="1456" y="506" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:34px;font-weight:800;fill:#FFFFFF">✗</text>
-<rect x="160" y="600" width="540" height="380" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="190" y="629" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="210" y="658" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="650" y="658" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">500</text>
-<rect x="190" y="679" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="210" y="708" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="650" y="708" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">600</text>
-<rect x="190" y="729" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="210" y="758" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="650" y="758" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">700</text>
-<line x1="190" y1="800" x2="670" y2="800" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 5"/>
-<rect x="190" y="829" width="480" height="42" rx="6" fill="#E8F2FE"/>
-<text x="210" y="858" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$99.95</text>
-<text x="650" y="858" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">900</text>
-<rect x="190" y="879" width="480" height="42" rx="6" fill="#E8F2FE"/>
-<text x="210" y="908" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$99.95</text>
-<text x="650" y="908" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">1000</text>
-<rect x="190" y="929" width="480" height="42" rx="6" fill="#E8F2FE"/>
-<text x="210" y="958" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$99.95</text>
-<text x="650" y="958" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">1100</text>
-<line x1="160" y1="600" x2="700" y2="980" stroke="#34C759" stroke-width="8" opacity="0.7"/>
-<line x1="700" y1="600" x2="160" y2="980" stroke="#34C759" stroke-width="8" opacity="0.7"/>
-<text x="430" y="970" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:28px;font-weight:800;fill:#34C759;letter-spacing:5.04px">NO ORDERBOOK</text>
-<rect x="900" y="600" width="540" height="380" rx="12" fill="#FBFBFD" stroke="#E8E8ED" stroke-width="1"/>
-<rect x="930" y="629" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="950" y="658" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="1390" y="658" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">500</text>
-<rect x="930" y="679" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="950" y="708" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="1390" y="708" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">600</text>
-<rect x="930" y="729" width="480" height="42" rx="6" fill="#FFEBE9"/>
-<text x="950" y="758" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$100.05</text>
-<text x="1390" y="758" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">700</text>
-<line x1="930" y1="800" x2="1410" y2="800" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="3 5"/>
-<rect x="930" y="829" width="480" height="42" rx="6" fill="#FF3B30" opacity="0.9"/>
-<text x="950" y="858" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#FFFFFF;letter-spacing:0.88px">$99.95</text>
-<text x="1390" y="858" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:800;fill:#FFFFFF;letter-spacing:0.88px">14,028</text>
-<rect x="930" y="879" width="480" height="42" rx="6" fill="#E8F2FE"/>
-<text x="950" y="908" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$99.93</text>
-<text x="1390" y="908" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">550</text>
-<rect x="930" y="929" width="480" height="42" rx="6" fill="#E8F2FE"/>
-<text x="950" y="958" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">$99.93</text>
-<text x="1390" y="958" text-anchor="end" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:22px;font-weight:700;fill:#6E6E73;letter-spacing:0.88px">600</text>
-<text x="1170" y="970" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:700;fill:#6E6E73;letter-spacing:3.6px">FAKE WALL · JPMORGAN PAID $920M IN FINES</text>
-<line x1="800" y1="500" x2="800" y2="970" stroke="#E8E8ED" stroke-width="1" stroke-dasharray="2 6"/>
-<text x="800" y="1100" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:20px;font-weight:500;fill:#6E6E73;letter-spacing:0.4px">THE FAKE-WALL TRICK ON EVERY TRADINGVIEW CHART. IT NEEDS A BOOK. THERE ISN'T ONE.</text>
-<text x="800" y="1220" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:28px;font-weight:500;fill:#1D1D1F;letter-spacing:-0.62px">The chart is not a stage if there is no audience.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1300" width="1600" height="1300" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#0052FF"/>
+    </marker>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1300" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#dotgrid)"/>
+  <ellipse cx="800" cy="720" rx="640" ry="240" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1600" height="1300" fill="url(#vignette)"/>
+
+  <!-- eyebrow -->
+  <text x="800" y="200" text-anchor="middle"
+        font-family="'SF Mono', ui-monospace, Menlo, monospace"
+        font-size="22" font-weight="700" letter-spacing="4" fill="#6E727A">REFUSAL · C5 · SPOOFING</text>
+
+  <!-- problem -->
+  <text x="800" y="440" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#FF453A">Spoofers post fake walls</text>
+  <text x="800" y="540" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#FF453A">to bend the signal.</text>
+
+  <!-- down arrow -->
+  <line x1="800" y1="620" x2="800" y2="760" stroke="#0052FF" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- shield -->
+  <g transform="translate(440, 850) scale(3.6)">
+    <path d="M12 1.4 L22 5 L22 13 C22 19 17.4 24.8 12 26.6 C6.6 24.8 2 19 2 13 L2 5 Z" fill="#0052FF"/>
+    <path d="M7.6 13.4 L10.8 16.6 L16.8 9.6" stroke="#F0F2F4" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- fix -->
+  <text x="820" y="910" text-anchor="middle"
+        font-size="84" font-weight="800" letter-spacing="-3.2" fill="#0052FF" class="bloom">No book.</text>
+
+  <!-- caption -->
+  <text x="800" y="1100" text-anchor="middle"
+        font-size="26" font-weight="500" letter-spacing="-0.58" fill="#1F1F24">No bids. No offers. No wall to post and cancel.</text>
+  <text x="800" y="1140" text-anchor="middle"
+        font-size="26" font-weight="500" letter-spacing="-0.58" fill="#1F1F24">The pool clears at one price. You cannot spoof a lottery.</text>
+
+  <text x="800" y="1230" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="16" font-weight="700"
+        letter-spacing="3" fill="#6E727A">ORDER BOOK: NONE</text>
 </svg>

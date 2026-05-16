@@ -1,116 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
-  <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
-    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term     { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
-    .term-cmd { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .term-tag { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
-    .term-ok  { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-    .term-mut { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term-acc { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
-    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
-    .badge-l { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
-    .badge-v { font: 600 15px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.075px; }
-    .badge-ok { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #0A7C42; letter-spacing: 0.91px; }
-  </style>
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%"  stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <linearGradient id="termBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0d10"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
 
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#dotgrid)"/>
+  <ellipse cx="750" cy="330" rx="640" ry="220" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#vignette)"/>
 
-  <text x="60" y="82" class="eyebrow">STEP 03 · THE PROBE</text>
-  <text x="60" y="146" class="title">Check the chain before you spend.</text>
-  <text x="60" y="190" class="tagline">main.py probe verifies RPC, contract bytecode, faucet balance, oracle health. Zero gas.</text>
+  <text x="750" y="190" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">STEP 03 · THE PROBE</text>
 
-  <rect x="60" y="240" width="900" height="680" rx="12" fill="#0A0A0A"/>
-  <rect x="60" y="240" width="900" height="44" rx="12" fill="#2C2C2E"/>
-  <rect x="60" y="276" width="900" height="8" fill="#2C2C2E"/>
-  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
-  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
-  <circle cx="126" cy="262" r="6" fill="#28C840"/>
-  <text x="510" y="266" class="term-mute" text-anchor="middle">claude — main.py probe — 90×30</text>
+  <text x="750" y="320" text-anchor="middle"
+        font-size="96" font-weight="800" letter-spacing="-4.8" fill="#0A0A0A" class="bloom">Check the room first.</text>
 
-  <g transform="translate(92, 320)">
-    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
-    <text x="226" y="0" class="term-cmd">.venv/bin/python main.py probe</text>
+  <g transform="translate(750, 670)">
+    <rect x="-560" y="-200" width="1120" height="400" rx="10"
+          fill="url(#termBg)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <circle cx="-530" cy="-170" r="7" fill="#FF5F57"/>
+    <circle cx="-508" cy="-170" r="7" fill="#FEBC2E"/>
+    <circle cx="-486" cy="-170" r="7" fill="#28C840"/>
+    <text x="-450" y="-165"
+          font-family="'SF Mono', monospace"
+          font-size="18" font-weight="500" letter-spacing="1.4" fill="#9aa0a6">~/vision-bot-examples — probe</text>
+    <line x1="-560" y1="-140" x2="560" y2="-140" stroke="rgba(255,255,255,0.08)"/>
 
-    <text x="0" y="44" class="term-tag">[probe]</text>
-    <text x="80" y="44" class="term">rpc http://142.132.164.24/ →</text>
-    <text x="384" y="44" class="term-ok">ok</text>
-    <text x="410" y="44" class="term-mut">(block 14,802,113)</text>
+    <text x="-520" y="-80" font-family="'SF Mono', monospace" font-size="26" font-weight="500" fill="#9aa0a6">$</text>
+    <text x="-492" y="-80" font-family="'SF Mono', monospace" font-size="26" font-weight="500" fill="#f1f3f5">.venv/bin/python main.py probe</text>
 
-    <text x="0" y="76" class="term-tag">[probe]</text>
-    <text x="80" y="76" class="term">chainId </text>
-    <text x="158" y="76" class="term-acc">111222333</text>
+    <text x="-520" y="-20" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#5B79FF">[probe]</text>
+    <text x="-430" y="-20" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#f1f3f5">rpc 142.132.164.24 → </text>
+    <text x="-130" y="-20" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#28C840">ok</text>
+    <text x="-100" y="-20" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#9aa0a6">(block 14,802,113)</text>
 
-    <text x="0" y="108" class="term-tag">[probe]</text>
-    <text x="80" y="108" class="term">vision 0x94d540…6c61 (bytecode 41,283 B)</text>
-    <text x="544" y="108" class="term-ok">✓</text>
+    <text x="-520" y="20" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#5B79FF">[probe]</text>
+    <text x="-430" y="20" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#f1f3f5">vision 0x94d540…6c61 · bytecode 41,283 B  </text>
+    <text x="120" y="20" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#28C840">✓</text>
 
-    <text x="0" y="140" class="term-tag">[probe]</text>
-    <text x="80" y="140" class="term">WUSDC self-discovered</text>
-    <text x="0" y="166" class="term-mut">         0x6F31C8…0c7af</text>
-    <text x="270" y="166" class="term-mut">(18 decimals)</text>
+    <text x="-520" y="60" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#5B79FF">[probe]</text>
+    <text x="-430" y="60" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#f1f3f5">3 oracles healthy · batch </text>
+    <text x="-90" y="60" font-family="'SF Mono', monospace" font-size="22" font-weight="700" fill="#FFD60A">412</text>
+    <text x="-50" y="60" font-family="'SF Mono', monospace" font-size="22" font-weight="500" fill="#9aa0a6">· lock in 47s</text>
 
-    <text x="0" y="206" class="term-tag">[probe]</text>
-    <text x="80" y="206" class="term">bot </text>
-    <text x="116" y="206" class="term-acc">0xB168EF…87cd0a</text>
-    <text x="0" y="234" class="term-mut">         balance 1.0 WUSDC, 0.01 ETH</text>
-
-    <text x="0" y="274" class="term-tag">[probe]</text>
-    <text x="80" y="274" class="term">data-node /bot-api →</text>
-    <text x="296" y="274" class="term-ok">ok</text>
-    <text x="0" y="300" class="term-mut">         3 oracles healthy</text>
-
-    <text x="0" y="340" class="term-tag">[probe]</text>
-    <text x="80" y="340" class="term">active batch </text>
-    <text x="208" y="340" class="term-acc">412</text>
-    <text x="0" y="366" class="term-mut">         8,217 markets · tick 60s · lock in 47s</text>
-
-    <text x="0" y="412" class="term-mut">────────────────────────────────────────────</text>
-    <text x="0" y="440" class="term-tag">[probe]</text>
-    <text x="80" y="440" class="term-ok">READY.</text>
-
-    <text x="0" y="510" class="term-mute">~/vision-bot-examples $ ▍</text>
+    <text x="-520" y="130" font-family="'SF Mono', monospace" font-size="28" font-weight="700" fill="#28C840">✓ READY — zero gas spent.</text>
   </g>
 
-  <!-- right status badges -->
-  <g transform="translate(1000, 280)">
-    <rect x="0" y="0" width="440" height="156" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="badge-l">RPC</text>
-    <text x="24" y="74" class="badge-v">http://142.132.164.24/</text>
-    <text x="24" y="102" class="badge-l">CHAIN ID</text>
-    <text x="24" y="130" class="badge-v">111222333  (Index L3 / Orbit)</text>
-    <text x="380" y="36" class="badge-ok" text-anchor="end">OK</text>
-  </g>
-
-  <g transform="translate(1000, 452)">
-    <rect x="0" y="0" width="440" height="156" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="badge-l">CONTRACT</text>
-    <text x="24" y="74" class="badge-v">vision 0x94d540…6c61</text>
-    <text x="24" y="102" class="badge-l">WUSDC</text>
-    <text x="24" y="130" class="badge-v">0x6F31C8…0c7af  ·  18 dec</text>
-    <text x="380" y="36" class="badge-ok" text-anchor="end">ALIVE</text>
-  </g>
-
-  <g transform="translate(1000, 624)">
-    <rect x="0" y="0" width="440" height="156" rx="14" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="36" class="badge-l">BALANCE</text>
-    <text x="24" y="74" class="badge-v">1.0 WUSDC  ·  0.01 ETH</text>
-    <text x="24" y="102" class="badge-l">ORACLES</text>
-    <text x="24" y="130" class="badge-v">3 / 3 healthy</text>
-    <text x="380" y="36" class="badge-ok" text-anchor="end">FUNDED</text>
-  </g>
-
-  <g transform="translate(1000, 796)">
-    <rect x="0" y="0" width="440" height="124" rx="14" fill="#E5EBFF" stroke="#9FB3FF"/>
-    <text x="24" y="36" class="badge-l" style="fill:#0052FF">BATCH 412</text>
-    <text x="24" y="74" class="badge-v">8,217 markets · 60s tick</text>
-    <text x="24" y="102" class="badge-v" style="fill:#0052FF">locks in 47s — plenty of time</text>
-  </g>
-
-  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0A0A0A"/>
-  <text x="92" y="1010" class="pill">$ .venv/bin/python main.py probe</text>
-  <text x="60" y="1066" class="caption">No money moves. If anything is wrong, you find out before you sign.</text>
+  <text x="750" y="970" text-anchor="middle"
+        font-size="22" font-weight="500" letter-spacing="-0.48" fill="#6E727A">Confirm the chain is alive before you wager. Cheaper than learning later.</text>
 </svg>

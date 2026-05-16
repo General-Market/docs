@@ -1,59 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1600" width="2400" height="1600">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="2400" height="1600" rx="0" fill="#FFFFFF"/>
-<text x="1200" y="120" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:18px;font-weight:700;fill:#6E6E73;letter-spacing:3.24px">THE FIX · ONE PRIMITIVE</text>
-<text x="1200" y="290" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:140px;font-weight:800;fill:#1D1D1F;letter-spacing:-3.08px">BLOCK</text>
-<text x="1200" y="430" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:140px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-2.24px">TRADING</text>
-<text x="1200" y="510" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">sealed bets · parimutuel settlement · one clearing price per round</text>
-<rect x="515" y="660" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="675" cy="710" r="28" fill="#0071E3"/>
-<text x="675" y="720" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="675" y="770" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">01</text>
-<text x="675" y="802" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Toxic-flow market making</text>
-<text x="675" y="852" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">no MM, no widen</text>
-<rect x="865" y="660" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="1025" cy="710" r="28" fill="#0071E3"/>
-<text x="1025" y="720" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="1025" y="770" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">02</text>
-<text x="1025" y="802" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Stop & liquidation hunting</text>
-<text x="1025" y="852" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">no order book, no stops to read</text>
-<rect x="1215" y="660" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="1375" cy="710" r="28" fill="#0071E3"/>
-<text x="1375" y="720" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="1375" y="770" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">03</text>
-<text x="1375" y="802" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Cross-venue arbitrage</text>
-<text x="1375" y="852" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">one venue, one clearing price</text>
-<rect x="1565" y="660" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="1725" cy="710" r="28" fill="#0071E3"/>
-<text x="1725" y="720" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="1725" y="770" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">04</text>
-<text x="1725" y="802" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Latency arbitrage</text>
-<text x="1725" y="852" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">sealed batch, microseconds = nothing</text>
-<rect x="515" y="930" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="675" cy="980" r="28" fill="#0071E3"/>
-<text x="675" y="990" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="675" y="1040" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">05</text>
-<text x="675" y="1072" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Information edge</text>
-<text x="675" y="1122" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">resolves against an oracle, not a counterparty</text>
-<rect x="865" y="930" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="1025" cy="980" r="28" fill="#0071E3"/>
-<text x="1025" y="990" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="1025" y="1040" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">06</text>
-<text x="1025" y="1072" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Spoofing & layering</text>
-<text x="1025" y="1122" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">no order book, no wall to fake</text>
-<rect x="1215" y="930" width="320" height="240" rx="18" fill="#E8F2FE" stroke="#0071E3" stroke-width="1"/>
-<circle cx="1375" cy="980" r="28" fill="#0071E3"/>
-<text x="1375" y="990" text-anchor="middle" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:32px;font-weight:800;fill:#FFFFFF">✓</text>
-<text x="1375" y="1040" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#0071E3;letter-spacing:2.34px">07</text>
-<text x="1375" y="1072" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:18px;font-weight:700;fill:#1D1D1F;letter-spacing:-0.198px">Payment for order flow</text>
-<text x="1375" y="1122" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;font-weight:500;fill:#6E6E73;font-style:italic;letter-spacing:-0.14px">parimutuel pool, no wholesaler</text>
-<text x="1200" y="1490" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.512px">“If you can't trade like a hedge fund,</text>
-<text x="1200" y="1536" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:32px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-0.512px">trade where hedge funds trade like you.”</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1600" width="2400" height="1600" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <style>
+      .bloom {
+        filter:
+          drop-shadow(0 0 6px rgba(255,255,255,0.95))
+          drop-shadow(0 0 24px rgba(255,255,255,0.55))
+          drop-shadow(0 8px 36px rgba(0, 82, 255, 0.32));
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="2400" height="1600" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="2400" height="1600" fill="url(#dotgrid)"/>
+  <rect x="0" y="0" width="2400" height="1600" fill="url(#vignette)"/>
+
+  <!-- halo behind wordmark -->
+  <ellipse cx="1200" cy="720" rx="900" ry="280" fill="url(#halo)" filter="url(#haloBlur)"/>
+
+  <!-- eyebrow -->
+  <text x="1200" y="320" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="22" font-weight="700"
+        letter-spacing="4" fill="#6E727A">THE FIX · ONE PRIMITIVE</text>
+
+  <!-- hero wordmark -->
+  <text x="1200" y="640" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="180" font-weight="800"
+        letter-spacing="-9" fill="#0A0A0A" class="bloom">Block</text>
+  <text x="1200" y="820" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="180" font-weight="800"
+        letter-spacing="-9" fill="#0052FF" class="bloom">trading.</text>
+
+  <!-- tagline -->
+  <text x="1200" y="930" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="32" font-weight="500"
+        letter-spacing="-0.7" fill="#6E727A">Sealed bets. Parimutuel settlement. One clearing price per round.</text>
+
+  <!-- mechanism counter row -->
+  <line x1="700" y1="1080" x2="980" y2="1080" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+  <line x1="1420" y1="1080" x2="1700" y2="1080" stroke="rgba(10,10,12,0.22)" stroke-width="1"/>
+
+  <g font-family="'SF Mono', monospace" font-size="16" font-weight="700" fill="#0052FF" letter-spacing="2">
+    <circle cx="1020" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1020" y="1087" text-anchor="middle">01</text>
+    <circle cx="1080" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1080" y="1087" text-anchor="middle">02</text>
+    <circle cx="1140" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1140" y="1087" text-anchor="middle">03</text>
+    <circle cx="1200" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1200" y="1087" text-anchor="middle">04</text>
+    <circle cx="1260" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1260" y="1087" text-anchor="middle">05</text>
+    <circle cx="1320" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1320" y="1087" text-anchor="middle">06</text>
+    <circle cx="1380" cy="1080" r="22" fill="none" stroke="#0052FF" stroke-width="1.5"/>
+    <text x="1380" y="1087" text-anchor="middle">07</text>
+  </g>
+
+  <text x="1200" y="1170" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="16" font-weight="700"
+        letter-spacing="3" fill="#6E727A">SEVEN EXTRACTIONS — REFUSED</text>
+
+  <!-- closing line -->
+  <text x="1200" y="1380" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500"
+        letter-spacing="-0.8" fill="#0A0A0A">If you can’t trade like a hedge fund,</text>
+  <text x="1200" y="1432" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="36" font-weight="500"
+        letter-spacing="-0.8" fill="#0052FF">trade where hedge funds trade like you.</text>
+
+  <!-- caption -->
+  <text x="1200" y="1520" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="16" font-weight="700"
+        letter-spacing="3" fill="#6E727A">GENERALMARKET.IO</text>
 </svg>

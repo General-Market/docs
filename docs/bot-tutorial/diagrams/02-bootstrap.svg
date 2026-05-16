@@ -1,132 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1100" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
-  <style>
-    .eyebrow { font: 700 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 2.34px; }
-    .title   { font: 700 44px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.968px; }
-    .tagline { font: 500 19px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.228px; }
-    .term-mute { font: 500 13px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term     { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #E8E8ED; }
-    .term-cmd { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .term-tag { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #5B79FF; }
-    .term-ok  { font: 700 15px "SF Mono", ui-monospace, Menlo, monospace; fill: #34C759; }
-    .term-mut { font: 500 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #8A8E94; }
-    .term-acc { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFD60A; }
-    .pill    { font: 700 16px "SF Mono", ui-monospace, Menlo, monospace; fill: #FFFFFF; }
-    .caption { font: 400 16px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #1F1F24; letter-spacing: -0.08px; }
-    .side-label { font: 700 11px "SF Mono", ui-monospace, Menlo, monospace; fill: #6E727A; letter-spacing: 1.98px; }
-    .side-fig   { font: 800 22px "SF Pro Display", "Helvetica Neue", sans-serif; fill: #0A0A0A; letter-spacing: -0.484px; }
-    .side-sub   { font: 400 13px "SF Pro Text", "Helvetica Neue", sans-serif; fill: #6E727A; letter-spacing: -0.065px; }
-  </style>
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%"  stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <linearGradient id="termBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0d10"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+    <style>
+      .bloom { filter: drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 24px rgba(255,255,255,0.55)) drop-shadow(0 8px 36px rgba(0,82,255,0.32)); }
+    </style>
+  </defs>
 
-  <rect x="0" y="0" width="1500" height="1100" rx="14" fill="#F0F2F4" stroke="#E8E8ED" stroke-width="1"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#dotgrid)"/>
+  <ellipse cx="750" cy="330" rx="640" ry="220" fill="url(#halo)" filter="url(#haloBlur)"/>
+  <rect x="0" y="0" width="1500" height="1100" fill="url(#vignette)"/>
 
-  <!-- header -->
-  <text x="60" y="82" class="eyebrow">STEP 02 · THE BOOTSTRAP</text>
-  <text x="60" y="146" class="title">Let it assemble itself.</text>
-  <text x="60" y="190" class="tagline">One command. The wallet is generated, funded, and idle. Three minutes from clone to ready.</text>
+  <text x="750" y="190" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">STEP 02 · THE BOOTSTRAP</text>
 
-  <!-- terminal window -->
-  <rect x="60" y="240" width="980" height="680" rx="12" fill="#0A0A0A"/>
+  <text x="750" y="320" text-anchor="middle"
+        font-size="96" font-weight="800" letter-spacing="-4.8" fill="#0A0A0A" class="bloom">It assembles itself.</text>
 
-  <!-- terminal chrome -->
-  <rect x="60" y="240" width="980" height="44" rx="12" fill="#2C2C2E"/>
-  <rect x="60" y="276" width="980" height="8" fill="#2C2C2E"/>
-  <circle cx="86" cy="262" r="6" fill="#FF5F57"/>
-  <circle cx="106" cy="262" r="6" fill="#FEBC2E"/>
-  <circle cx="126" cy="262" r="6" fill="#28C840"/>
-  <text x="550" y="266" class="term-mute" text-anchor="middle">claude — vision-bot-examples — 96×30</text>
+  <g transform="translate(750, 670)">
+    <rect x="-560" y="-200" width="1120" height="400" rx="10"
+          fill="url(#termBg)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <circle cx="-530" cy="-170" r="7" fill="#FF5F57"/>
+    <circle cx="-508" cy="-170" r="7" fill="#FEBC2E"/>
+    <circle cx="-486" cy="-170" r="7" fill="#28C840"/>
+    <text x="-450" y="-165"
+          font-family="'SF Mono', monospace"
+          font-size="18" font-weight="500" letter-spacing="1.4" fill="#9aa0a6">~/vision-bot-examples — setup</text>
+    <line x1="-560" y1="-140" x2="560" y2="-140" stroke="rgba(255,255,255,0.08)"/>
 
-  <!-- terminal body -->
-  <g transform="translate(92, 320)">
-    <text x="0" y="0" class="term-mute">~/vision-bot-examples $</text>
-    <text x="226" y="0" class="term-cmd">./setup.sh --auto-fund</text>
+    <text x="-520" y="-80" font-family="'SF Mono', monospace" font-size="26" font-weight="500" fill="#9aa0a6">$</text>
+    <text x="-492" y="-80" font-family="'SF Mono', monospace" font-size="26" font-weight="500" fill="#f1f3f5">./setup.sh --auto-fund</text>
 
-    <text x="0" y="44"  class="term-tag">[bootstrap]</text>
-    <text x="116" y="44" class="term">source=twitch</text>
+    <text x="-520" y="-20" font-family="'SF Mono', monospace" font-size="24" font-weight="700" fill="#5B79FF">[setup]</text>
+    <text x="-420" y="-20" font-family="'SF Mono', monospace" font-size="24" font-weight="500" fill="#f1f3f5">.venv created · requirements installed</text>
 
-    <text x="0" y="76" class="term-tag">[setup]</text>
-    <text x="80" y="76" class="term">python 3.14.0 detected</text>
+    <text x="-520" y="20" font-family="'SF Mono', monospace" font-size="24" font-weight="700" fill="#5B79FF">[setup]</text>
+    <text x="-420" y="20" font-family="'SF Mono', monospace" font-size="24" font-weight="500" fill="#f1f3f5">wallet </text>
+    <text x="-330" y="20" font-family="'SF Mono', monospace" font-size="24" font-weight="700" fill="#FFD60A">0xB168EF…87cd0a</text>
 
-    <text x="0" y="108" class="term-tag">[setup]</text>
-    <text x="80" y="108" class="term">creating .venv …</text>
-    <text x="280" y="108" class="term-ok">done</text>
+    <text x="-520" y="60" font-family="'SF Mono', monospace" font-size="24" font-weight="700" fill="#5B79FF">[faucet]</text>
+    <text x="-410" y="60" font-family="'SF Mono', monospace" font-size="24" font-weight="500" fill="#f1f3f5">+1.0 WUSDC  ·  +0.01 ETH</text>
 
-    <text x="0" y="140" class="term-tag">[setup]</text>
-    <text x="80" y="140" class="term">installing requirements.txt …</text>
-    <text x="426" y="140" class="term-ok">done</text>
-
-    <text x="0" y="172" class="term-tag">[setup]</text>
-    <text x="80" y="172" class="term">generated BOT_PRIVATE_KEY → .env</text>
-
-    <text x="0" y="204" class="term-tag">[setup]</text>
-    <text x="80" y="204" class="term">wallet </text>
-    <text x="180" y="204" class="term-acc">0xB168EF4f3a9c5dE2…1c87cd0a</text>
-
-    <text x="0" y="236" class="term-tag">[faucet]</text>
-    <text x="90" y="236" class="term">requesting from 142.132.164.24 …</text>
-
-    <text x="0" y="268" class="term-tag">[faucet]</text>
-    <text x="90" y="268" class="term">+1.0 WUSDC</text>
-    <text x="222" y="268" class="term-mut">(0x4a3c…f1 confirmed)</text>
-
-    <text x="0" y="300" class="term-tag">[faucet]</text>
-    <text x="90" y="300" class="term">+0.01 ETH</text>
-    <text x="222" y="300" class="term-mut">(0x9b21…e4 confirmed)</text>
-
-    <text x="0" y="336" class="term-tag">[setup]</text>
-    <text x="80" y="336" class="term-ok">ready.</text>
-
-    <text x="0" y="372" class="term-mut">────────────────────────────────────────────────────────</text>
-    <text x="0" y="404" class="term-mut">  bot address  </text>
-    <text x="180" y="404" class="term-acc">0xB168EF4f3a9c5dE2…1c87cd0a</text>
-    <text x="0" y="430" class="term-mut">  balance      </text>
-    <text x="180" y="430" class="term">1.0 WUSDC, 0.01 ETH</text>
-    <text x="0" y="456" class="term-mut">  next         </text>
-    <text x="180" y="456" class="term">.venv/bin/python twitch/live_trader.py --deposit 0.1 --max-joins 1</text>
-
-    <text x="0" y="510" class="term-mute">~/vision-bot-examples $ ▍</text>
+    <text x="-520" y="120" font-family="'SF Mono', monospace" font-size="28" font-weight="700" fill="#28C840">✓ ready in 2m 47s</text>
   </g>
 
-  <!-- right side panel — three "what just happened" labels -->
-  <g transform="translate(1080, 280)">
-    <rect x="0" y="0" width="360" height="200" rx="12" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="34" class="side-label">VIRTUAL ENV</text>
-    <text x="24" y="74" class="side-fig">.venv/</text>
-    <text x="24" y="100" class="side-sub">Python 3.14, isolated deps.</text>
-    <text x="24" y="120" class="side-sub">No system pollution.</text>
-
-    <line x1="24" y1="148" x2="336" y2="148" stroke="#E8E8ED"/>
-    <text x="24" y="178" class="side-label">XGBOOST</text>
-    <text x="120" y="178" class="side-sub">brew install libomp on macOS.</text>
-  </g>
-
-  <g transform="translate(1080, 500)">
-    <rect x="0" y="0" width="360" height="200" rx="12" fill="#FFFFFF" stroke="#E8E8ED"/>
-    <text x="24" y="34" class="side-label">FRESH WALLET</text>
-    <text x="24" y="74" class="side-fig">0xB168EF…0a</text>
-    <text x="24" y="100" class="side-sub">Generated locally.</text>
-    <text x="24" y="120" class="side-sub">Private key in .env, gitignored.</text>
-
-    <line x1="24" y1="148" x2="336" y2="148" stroke="#E8E8ED"/>
-    <text x="24" y="178" class="side-label">CHAIN</text>
-    <text x="120" y="178" class="side-sub">Index L3 — chainId 111222333.</text>
-  </g>
-
-  <g transform="translate(1080, 720)">
-    <rect x="0" y="0" width="360" height="200" rx="12" fill="#E5EBFF" stroke="#9FB3FF"/>
-    <text x="24" y="34" class="side-label" style="fill:#0052FF">FAUCETED</text>
-    <text x="24" y="74" class="side-fig" style="fill:#0052FF">1.0 WUSDC</text>
-    <text x="24" y="100" class="side-sub">+ 0.01 ETH for gas.</text>
-    <text x="24" y="120" class="side-sub">Enough for 10 joins.</text>
-
-    <line x1="24" y1="148" x2="336" y2="148" stroke="#9FB3FF"/>
-    <text x="24" y="178" class="side-label" style="fill:#0052FF">MIN DEPOSIT</text>
-    <text x="155" y="178" class="side-sub">0.1 WUSDC per block.</text>
-  </g>
-
-  <!-- footer command pill -->
-  <rect x="60" y="970" width="1380" height="64" rx="12" fill="#0052FF"/>
-  <text x="92" y="1010" class="pill">$ ./setup.sh --auto-fund</text>
-
-  <!-- caption -->
-  <text x="60" y="1066" class="caption">The setup script is idempotent. Re-run it on any machine; the wallet stays the same.</text>
+  <text x="750" y="970" text-anchor="middle"
+        font-size="22" font-weight="500" letter-spacing="-0.48" fill="#6E727A">Wallet, venv, faucet. Three minutes — and one of them was patience.</text>
 </svg>

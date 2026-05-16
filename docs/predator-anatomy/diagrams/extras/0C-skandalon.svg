@@ -1,36 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400">
-<defs>
-<marker id="arrInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1D1D1F"/></marker>
-<marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0071E3"/></marker>
-<marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3B30"/></marker>
-<marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34C759"/></marker>
-<marker id="arrInk3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6E6E73"/></marker>
-</defs>
-<rect x="0" y="0" width="1800" height="1400" rx="0" fill="#FFFFFF"/>
-<text x="900" y="88" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#6E6E73;letter-spacing:2.7px">THEORY · 03 · REVELATION</text>
-<text x="822" y="200" text-anchor="end" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:80px;font-weight:700;fill:#1D1D1F;letter-spacing:-1.76px">You knew.</text>
-<text x="846" y="200" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:80px;font-weight:500;fill:#0071E3;font-style:italic;letter-spacing:-1.28px">You came back.</text>
-<text x="900" y="290" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">The skandalon is the obstacle that fascinates. Once named, the spell breaks. Tenev</text>
-<text x="900" y="326" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;font-weight:500;fill:#6E6E73;letter-spacing:-0.288px">said it on camera. Reddit screenshotted it. Then everyone opened the app anyway.</text>
-<rect x="120" y="460" width="820" height="700" rx="18" fill="#1D1D1F"/>
-<text x="530" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#E8F2FE;letter-spacing:2.52px">CNBC · DECEMBER 2023</text>
-<text x="530" y="660" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">“I make more money</text>
-<text x="530" y="756" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">by getting you</text>
-<text x="530" y="852" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:68px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-1.088px">to transact more.”</text>
-<text x="530" y="1060" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:15px;font-weight:700;fill:#E8F2FE;letter-spacing:2.7px">VLADIMIR TENEV · CEO, ROBINHOOD</text>
-<text x="530" y="1092" text-anchor="middle" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:17px;font-weight:500;fill:#FFFFFF;font-style:italic;letter-spacing:-0.17px;opacity:0.85">live, on camera, no retraction</text>
-<rect x="980" y="460" width="700" height="700" rx="18" fill="#F5F5F7" stroke="#E8E8ED" stroke-width="1"/>
-<text x="1330" y="520" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">THE USER · ONE DAY LATER</text>
-<text x="1040" y="600" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:1.12px">u/anonymous · r/wallstreetbets</text>
-<text x="1040" y="680" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">Thanks Robinhood,</text>
-<text x="1040" y="728" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">still won't use</text>
-<text x="1040" y="776" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">your fucking app</text>
-<text x="1040" y="824" text-anchor="start" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:40px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.64px">though.</text>
-<line x1="1040" y1="948" x2="1620" y2="948" stroke="#D2D2D7" stroke-width="1"/>
-<text x="1040" y="988" text-anchor="start" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:13px;font-weight:700;fill:#6E6E73;letter-spacing:2.34px">ROBINHOOD — APP STORE</text>
-<text x="1040" y="1056" text-anchor="start" style="font-family:'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:48px;font-weight:800;fill:#1D1D1F;letter-spacing:-1.056px">4.2 ★ · 4.1M ratings</text>
-<text x="1040" y="1100" text-anchor="start" style="font-family:'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:16px;font-weight:500;fill:#424245;letter-spacing:-0.16px">26M monthly active users · still climbing</text>
-<text x="900" y="1200" text-anchor="middle" style="font-family:'New York', 'Times New Roman', Georgia, serif;font-size:36px;font-weight:500;fill:#1D1D1F;font-style:italic;letter-spacing:-0.576px">Knowing was not the cure. Knowing was the trap.</text>
-<text x="900" y="1270" text-anchor="middle" style="font-family:'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;font-size:14px;font-weight:700;fill:#6E6E73;letter-spacing:2.52px">GIRARD · BATTLING TO THE END · 2007</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif">
+  <defs>
+    <pattern id="dotgrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="1.6" fill="#0052FF" opacity="0.22"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="40%" stop-color="#F0F2F4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#F0F2F4" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0052FF" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#0052FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0052FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="haloBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="48"/>
+    </filter>
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0052FF"/>
+    </marker>
+    <style>
+      .bloom {
+        filter:
+          drop-shadow(0 0 6px rgba(255,255,255,0.95))
+          drop-shadow(0 0 24px rgba(255,255,255,0.55))
+          drop-shadow(0 8px 36px rgba(0, 82, 255, 0.32));
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="1400" fill="#F0F2F4"/>
+  <rect x="0" y="0" width="1800" height="1400" fill="url(#dotgrid)"/>
+  <rect x="0" y="0" width="1800" height="1400" fill="url(#vignette)"/>
+
+  <!-- eyebrow -->
+  <text x="900" y="160" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="18" font-weight="700"
+        letter-spacing="3.2" fill="#6E727A">THEORY · 0C · SKANDALON</text>
+
+  <!-- title -->
+  <text x="900" y="290" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="96" font-weight="800"
+        letter-spacing="-4.8" fill="#0A0A0A" class="bloom">The crowd needs one to blame.</text>
+
+  <!-- halo behind the scapegoat node -->
+  <ellipse cx="900" cy="870" rx="360" ry="200" fill="url(#halo)" filter="url(#haloBlur)"/>
+
+  <!-- four converging arrows on the centre node.
+       Sources at the cardinals, target at (900, 870), radius 16 around centre. -->
+
+  <!-- North source: (900, 510) -->
+  <line x1="900" y1="540" x2="900" y2="820" stroke="#0052FF" stroke-width="2" marker-end="url(#arrBlue)"/>
+  <!-- East source: (1280, 870) -->
+  <line x1="1250" y1="870" x2="970" y2="870" stroke="#0052FF" stroke-width="2" marker-end="url(#arrBlue)"/>
+  <!-- South source: (900, 1230) -->
+  <line x1="900" y1="1200" x2="900" y2="920" stroke="#0052FF" stroke-width="2" marker-end="url(#arrBlue)"/>
+  <!-- West source: (520, 870) -->
+  <line x1="550" y1="870" x2="830" y2="870" stroke="#0052FF" stroke-width="2" marker-end="url(#arrBlue)"/>
+
+  <!-- crowd node: NORTH -->
+  <circle cx="900" cy="510" r="14" fill="#0A0A0A"/>
+  <text x="900" y="468" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">RETAIL</text>
+
+  <!-- crowd node: EAST -->
+  <circle cx="1280" cy="870" r="14" fill="#0A0A0A"/>
+  <text x="1320" y="876" text-anchor="start"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">PRESS</text>
+
+  <!-- crowd node: SOUTH -->
+  <circle cx="900" cy="1230" r="14" fill="#0A0A0A"/>
+  <text x="900" y="1282" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">CONGRESS</text>
+
+  <!-- crowd node: WEST -->
+  <circle cx="520" cy="870" r="14" fill="#0A0A0A"/>
+  <text x="480" y="876" text-anchor="end"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="700"
+        letter-spacing="2.5" fill="#6E727A">SEC</text>
+
+  <!-- the scapegoat — Base blue, slightly larger -->
+  <circle cx="900" cy="870" r="22" fill="#0052FF"/>
+  <text x="900" y="942" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="20" font-weight="700"
+        letter-spacing="3" fill="#0052FF">SCAPEGOAT</text>
+  <text x="900" y="982" text-anchor="middle"
+        font-family="'SF Pro Display', sans-serif" font-size="32" font-weight="700"
+        letter-spacing="-0.7" fill="#0A0A0A">one name. one face. one app.</text>
+  <text x="900" y="1024" text-anchor="middle"
+        font-family="'SF Mono', monospace" font-size="14" font-weight="600"
+        letter-spacing="1" fill="#6E727A">named on camera · screenshotted · forgiven by Monday</text>
+
+  <!-- caption (knife) -->
+  <text x="900" y="1340" text-anchor="middle"
+        font-family="'SF Pro Text', sans-serif" font-size="22" font-weight="500"
+        letter-spacing="-0.48" fill="#6E727A">Naming the predator does not unmake it. It re-elects it.</text>
 </svg>
