@@ -118,24 +118,15 @@ const SCAPEGOATS: Scapegoat[] = [
 
 const SCAPEGOAT_HEADLINE = "Who to blame";
 
-// Marquee bands behind each card — Apple "watched" pattern. Many
-// stacked rows of the suspect's verb repeating across the column,
-// the card sitting opaque in the middle. Direction is per-index by
-// user spec: card 1 right, 2 left, 3 left, 4 right. Every band in
-// a column shares direction so the eye reads one current per face.
+// Background giant word vocabulary — one verb per scapegoat, shown
+// behind everything in the lower tier of the frame as the Bars-scene
+// BackgroundWord vocabulary (SF Pro Display 900, accent blue, ~10%).
 const SG_MARQUEE_TEXTS: readonly string[] = [
   "liquidated",
   "front-run",
   "spoofed",
   "leaked",
 ];
-const SG_MARQUEE_DIRECTIONS: readonly (1 | -1)[] = [1, -1, -1, 1];
-const SG_BAND_H = 130;
-const SG_BAND_GAP = 8;
-const SG_BAND_FONT = 124;
-const SG_TOP_BAND_COUNT = 3;
-const SG_BOT_BAND_COUNT = 3;
-const SG_MARQUEE_SPEED = 2.2; // px per frame
 
 // Card geometry — four-up row, sized to fit inside the 1920-wide
 // frame with healthy gaps. Tile sized to match the Bars carousel
@@ -162,11 +153,9 @@ const ScapegoatLineup: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Full-frame marquee background — bands stretch edge to edge,
-          stacked across the entire frame. Verbs cycle, direction cycles
-          per the brief (1 right, 2 left, 3 left, 4 right). Cards sit
-          on top of this stack. */}
-      <ScapegoatBackgroundMarquee frame={frame} />
+      {/* Background giant word — Bars-scene vocabulary, lower tier.
+          One verb at a time, tied to whichever scapegoat is current. */}
+      <ScapegoatBackgroundWord frame={frame} />
       <ScapegoatHeadline frame={frame} />
       <div
         style={{
@@ -193,64 +182,65 @@ const ScapegoatLineup: React.FC = () => {
   );
 };
 
-// Full-frame marquee — three big bands at the top of the frame and
-// three at the bottom, the cards floating between them. Verbs cycle
-// [liquidated, front-run, spoofed, leaked] across bands. Directions
-// cycle [right, left, left, right]. Bands take ~2/3 of the frame
-// height; the middle third is the card lineup.
-const ScapegoatBackgroundMarquee: React.FC<{ frame: number }> = ({
-  frame,
-}) => {
-  const renderBand = (bandIndex: number) => {
-    const verb = SG_MARQUEE_TEXTS[bandIndex % SG_MARQUEE_TEXTS.length];
-    const dir = SG_MARQUEE_DIRECTIONS[bandIndex % SG_MARQUEE_DIRECTIONS.length];
-    return (
-      <ScapegoatMarquee
-        key={bandIndex}
-        text={verb}
-        direction={dir}
-        frame={frame}
-        rowIndex={bandIndex}
-      />
-    );
-  };
+// Background giant word — same vocabulary as the Bars scene's
+// BackgroundWord: SF Pro Display 900, accent blue, ~10% opacity,
+// letter-spacing −0.05em. One word at a time, the verb tied to the
+// card that's currently the focal point. Sits in the LOWER TIER of
+// the frame (y≈82%) so the cards keep the middle.
+const SG_BG_WORD_PEAK_OPACITY = 0.12;
+const SG_BG_WORD_CENTER_Y_PCT = 0.82;
+const SG_BG_WORD_FADE = 8; // crossfade between verbs, in frames
 
+const ScapegoatBackgroundWord: React.FC<{ frame: number }> = ({ frame }) => {
   return (
-    <>
-      {/* Top band stack — anchored to the top edge */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: SG_BAND_GAP,
-          paddingTop: 0,
-        }}
-      >
-        {Array.from({ length: SG_TOP_BAND_COUNT }, (_, i) => renderBand(i))}
-      </div>
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {SCAPEGOATS.map((_, i) => {
+        const verb = SG_MARQUEE_TEXTS[i];
+        const enterStart = SG_FIRST_CARD_AT + i * SG_CARD_STAGGER;
+        const nextEnterStart =
+          i < SCAPEGOATS.length - 1
+            ? SG_FIRST_CARD_AT + (i + 1) * SG_CARD_STAGGER
+            : SG_EXIT_AT + i * SG_EXIT_STAGGER + SG_CARD_EXIT;
 
-      {/* Bottom band stack — anchored to the bottom edge */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: SG_BAND_GAP,
-          paddingBottom: 0,
-        }}
-      >
-        {Array.from({ length: SG_BOT_BAND_COUNT }, (_, i) =>
-          renderBand(SG_TOP_BAND_COUNT + i),
-        )}
-      </div>
-    </>
+        // Fade in when this card enters, fade out when the next one
+        // enters (or when the last one starts exiting).
+        const op = interpolate(
+          frame,
+          [
+            enterStart,
+            enterStart + SG_BG_WORD_FADE,
+            nextEnterStart - SG_BG_WORD_FADE,
+            nextEnterStart,
+          ],
+          [0, 1, 1, 0],
+          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        );
+        if (op < 0.005) return null;
+
+        return (
+          <div
+            key={verb}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: `${(SG_BG_WORD_CENTER_Y_PCT * 100).toFixed(2)}%`,
+              transform: "translate(-50%, -50%)",
+              fontFamily: font,
+              fontSize: fitBgWordFontSize(verb),
+              fontWeight: 900,
+              letterSpacing: "-0.05em",
+              color: colors.accent,
+              opacity: op * SG_BG_WORD_PEAK_OPACITY,
+              whiteSpace: "nowrap",
+              lineHeight: 1,
+              willChange: "opacity",
+            }}
+          >
+            {verb}
+          </div>
+        );
+      })}
+    </AbsoluteFill>
   );
 };
 
@@ -376,51 +366,6 @@ const ScapegoatColumn: React.FC<{
   );
 };
 
-const ScapegoatMarquee: React.FC<{
-  text: string;
-  direction: 1 | -1;
-  frame: number;
-  rowIndex: number;
-}> = ({ text, direction, frame, rowIndex }) => {
-  // Long strip of repeated text, centred and translated per frame.
-  // Strip is wide enough that the scroll never exposes either end
-  // during the card's lifetime, so we don't need pixel-perfect
-  // tile-width seam logic — the visual effect is continuous drift.
-  const tile = `${text}   `;
-  const repeated = Array.from({ length: 28 }, () => tile).join("");
-  const phase = (rowIndex * 73) % 200;
-  const tx = direction * frame * SG_MARQUEE_SPEED + direction * phase;
-  return (
-    <div
-      style={{
-        position: "relative",
-        flex: "0 0 auto",
-        width: "100%",
-        height: SG_BAND_H,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(-50%, -50%) translateX(${tx.toFixed(2)}px)`,
-          whiteSpace: "nowrap",
-          fontFamily: font,
-          fontSize: SG_BAND_FONT,
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          color: "rgba(8, 14, 28, 0.58)",
-          lineHeight: 1,
-          willChange: "transform",
-        }}
-      >
-        {repeated}
-      </div>
-    </div>
-  );
-};
 
 const ScapegoatCardBody: React.FC<{
   scapegoat: Scapegoat;
