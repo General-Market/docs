@@ -750,8 +750,8 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
 // blinking cursor while typing, cursor fades after completion. The accent
 // half ("the same markets") types in blue once the gray prefix lands.
 
-const KICKER_TEXT_PRE = "simply by trading ";
-const KICKER_TEXT_HERO = "blocks";
+const KICKER_TEXT_PRE = "simply by ";
+const KICKER_TEXT_HERO = "NOT trading against insiders";
 const KICKER_CHARS_PER_FRAME = 1.2;
 
 const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
@@ -785,7 +785,7 @@ const KickerTyping: React.FC<{ startFrame: number }> = ({ startFrame }) => {
           style={{
             display: "inline-block",
             width: 4,
-            height: 96 * 0.7,
+            height: 76 * 0.7,
             backgroundColor:
               charsVisible > KICKER_TEXT_PRE.length ? colors.accent : colors.fg,
             opacity: cursorOpacity,
@@ -917,7 +917,7 @@ const HeroCopy: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           right: 0,
           textAlign: "center",
           fontFamily: font,
-          fontSize: 96,
+          fontSize: 76,
           fontWeight: 700,
           letterSpacing: "-0.032em",
           color: colors.fg,
