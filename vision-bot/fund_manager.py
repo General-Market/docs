@@ -170,6 +170,15 @@ def build_source_id_map(fund_sources):
 
 
 MAX_RECONCILE_RETRIES = 5
+# Cap reconcile work per cycle so 51k stale batches don't starve the join phase.
+# Each cycle still chips away at the active set; eviction is permanent once
+# applied, so cardinality drops monotonically.
+MAX_RECONCILE_PER_CYCLE = int(os.environ.get("MAX_RECONCILE_PER_CYCLE", "500"))
+# Vision.sol evicts per-player batch state once a batch has aged past
+# (createdAtTick + N) * tickDuration. Anything beyond this window reverts the
+# vault.reconcile tx with 'no data' — and no amount of retry will undo it.
+# Six hours is comfortably past the settlement grace for every source.
+RECONCILE_AGE_OUT_SECONDS = int(os.environ.get("RECONCILE_AGE_OUT_SECONDS", str(6 * 3600)))
 
 
 class FundState:
@@ -444,17 +453,47 @@ def _remove_from_active(fund, bid: int) -> None:
         pass
 
 
+def _is_no_data_revert(err: Exception) -> bool:
+    """Match the 'no data' revert Vision emits once per-player batch state has
+    been pruned. Empty-data reverts also surface as bare 'execution reverted'
+    with no selector — treat both as terminal."""
+    msg = str(err).lower()
+    if "'no data'" in msg or '"no data"' in msg or "no data" in msg:
+        return True
+    # Empty-data revert: no selector, no string. Looks like
+    # "Transaction reverted: ('execution reverted', '0x')" or similar.
+    if "execution reverted" in msg and ("'0x'" in msg or '"0x"' in msg):
+        return True
+    return False
+
+
 def reconcile_settled_batches(fund, executor):
-    """Check all tracked batches and reconcile any that have settled on-chain."""
-    # Read latest block once per call so the from_block fallback for
-    # get_settlement_payout doesn't issue an extra RPC per batch.
+    """Check all tracked batches and reconcile any that have settled on-chain.
+
+    Filters out aged-out batches before any chain read. Vision evicts per-
+    player state once a batch has aged past its retention window — reconcile
+    txs against those batches revert with 'no data' and burn nonces forever.
+    Anything we can't reconcile here is dropped, not retried.
+    """
+    # Read latest block + timestamp once per call so the from_block fallback
+    # for get_settlement_payout and the age-out cutoff don't issue extra RPCs.
     try:
         latest_block = executor.w3.eth.block_number
     except Exception:
         latest_block = 0
+    try:
+        now_ts = executor.w3.eth.get_block("latest")["timestamp"]
+    except Exception:
+        now_ts = int(time.time())
 
+    processed = 0
+    aged_out = 0
     for bid in list(fund.active_batches.keys()):
-        # Check batch exists on-chain and read its settled flag.
+        if processed >= MAX_RECONCILE_PER_CYCLE:
+            break
+        processed += 1
+
+        # ── Read batch metadata once. ──
         try:
             batch_info = executor.get_batch_info(bid)
             if batch_info.get("paused"):
@@ -471,6 +510,25 @@ def reconcile_settled_batches(fund, executor):
                 )
                 _remove_from_active(fund, bid)
             continue
+
+        # ── Option A: filter aged-out batches. ──
+        # Vision evicts per-player batch state once a batch has aged past its
+        # retention window. Estimate the window from createdAtTick + tickDuration;
+        # past it, the reconcile tx will revert with 'no data' no matter what.
+        tick_duration = int(batch_info.get("tickDuration", 0) or 0)
+        created_at_tick = int(batch_info.get("createdAtTick", 0) or 0)
+        if tick_duration > 0 and created_at_tick > 0:
+            # Round closes at (createdAtTick + 1) * tickDuration. Past that
+            # plus the age-out buffer, contract state is gone.
+            round_end_ts = (created_at_tick + 1) * tick_duration
+            if now_ts > round_end_ts + RECONCILE_AGE_OUT_SECONDS:
+                aged_out += 1
+                log.info(
+                    "[%s] Dropping batch %d from active set: aged out of contract state",
+                    fund.name, bid,
+                )
+                _remove_from_active(fund, bid)
+                continue
 
         # Only reconcile batches that Vision has actually settled.
         if not batch_info.get("settled", False):
@@ -519,6 +577,17 @@ def reconcile_settled_batches(fund, executor):
                 _remove_from_active(fund, bid)
                 continue
 
+            # ── Option B: 'no data' is terminal. ──
+            # Vision has pruned per-player state for this batch. Retrying
+            # forever just burns gas + RPC. Drop on first occurrence.
+            if _is_no_data_revert(e):
+                log.info(
+                    "[%s] Batch %d: contract state pruned (no data) — dropping",
+                    fund.name, bid,
+                )
+                _remove_from_active(fund, bid)
+                continue
+
             retries = fund.reconcile_retries.get(bid, 0) + 1
             fund.reconcile_retries[bid] = retries
             if retries >= MAX_RECONCILE_RETRIES:
@@ -535,6 +604,12 @@ def reconcile_settled_batches(fund, executor):
             )
             # Leave in active_batches, retry next cycle.
             continue
+
+    if aged_out > 0 or processed >= MAX_RECONCILE_PER_CYCLE:
+        log.info(
+            "[%s] Reconcile cycle: processed=%d aged_out=%d remaining=%d",
+            fund.name, processed, aged_out, len(fund.active_batches),
+        )
 
 
 # ── NAV table ──────────────────────────────────────────────────
