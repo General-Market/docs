@@ -829,7 +829,11 @@ const EmberTypewriter: React.FC<{
             style={{
               fontSize: Math.round(fontSize * 0.11),
               fontWeight: 500,
-              color: "rgba(255, 255, 255, 0.85)",
+              // Inherit the typewriter's own ink (dark on Stat's light bg,
+              // bright on dark scenes) at ~70% strength so the suffix reads
+              // as a quiet footnote rather than a competing character.
+              color: endColor,
+              opacity: 0.7,
               marginLeft: Math.round(fontSize * 0.04),
               verticalAlign: "super",
               letterSpacing: 0,
