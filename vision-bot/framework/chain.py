@@ -280,6 +280,7 @@ VISION_ABI = [
                     {"name": "configHash", "type": "bytes32"},
                     {"name": "tickDuration", "type": "uint256"},
                     {"name": "lockOffset", "type": "uint256"},
+                    {"name": "settlementGrace", "type": "uint256"},
                     {"name": "createdAtTick", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
                     {"name": "settled", "type": "bool"},
@@ -583,9 +584,10 @@ class Executor:
             "configHash": info[2],
             "tickDuration": info[3],
             "lockOffset": info[4],
-            "createdAtTick": info[5],
-            "paused": info[6],
-            "settled": info[7],
+            "settlementGrace": info[5],
+            "createdAtTick": info[6],
+            "paused": info[7],
+            "settled": info[8],
         }
 
     def next_batch_id(self) -> int:
