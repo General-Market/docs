@@ -313,19 +313,26 @@ async fn dtf_fills(
     // Pivot both tables into a single row per bucket BEFORE joining, so the
     // bucket-grid left-join doesn't fan out (trade_fills has up to 2 rows
     // per bucket, lending up to 6 — naive join would cartesian them).
+    //
+    // All three bucket sources use the same floor(epoch / N) * N expression
+    // so the join keys are byte-identical timestamptz values. Earlier
+    // revisions of this query mixed date_trunc on one side and to_timestamp
+    // on the other, producing buckets that were neither aligned nor of the
+    // same type — the join silently matched nothing.
     let rows = sqlx::query_as::<_, FillsBucket>(
         r#"
         WITH buckets AS (
-            SELECT generate_series(
-                date_trunc('second', NOW() - make_interval(secs => $1)),
-                date_trunc('second', NOW()),
+            SELECT DISTINCT
+                to_timestamp(floor(extract(epoch FROM gs) / $2) * $2) AS bucket
+            FROM generate_series(
+                NOW() - make_interval(secs => $1),
+                NOW(),
                 make_interval(secs => $2)
-            ) AS bucket
+            ) AS gs
         ),
         trade_pivot AS (
             SELECT
-                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2)
-                    AT TIME ZONE 'UTC' AS bucket,
+                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2) AS bucket,
                 COUNT(*) FILTER (WHERE side = 0) AS buy_count,
                 COUNT(*) FILTER (WHERE side = 1) AS sell_count,
                 COALESCE(SUM(NULLIF(fill_amount, '')::numeric) FILTER (WHERE side = 0), 0) AS buy_amount,
@@ -337,8 +344,7 @@ async fn dtf_fills(
         ),
         lending_pivot AS (
             SELECT
-                to_timestamp(floor(extract(epoch FROM block_time) / $2) * $2)
-                    AT TIME ZONE 'UTC' AS bucket,
+                to_timestamp(floor(extract(epoch FROM block_time) / $2) * $2) AS bucket,
                 COUNT(*) FILTER (WHERE event_kind = 0) AS supply_count,
                 COUNT(*) FILTER (WHERE event_kind = 1) AS withdraw_count,
                 COUNT(*) FILTER (WHERE event_kind = 2) AS borrow_count,
@@ -410,16 +416,17 @@ async fn dtf_order_lifecycle(
     let rows = sqlx::query_as::<_, LifecycleBucket>(
         r#"
         WITH buckets AS (
-            SELECT generate_series(
-                date_trunc('second', NOW() - make_interval(secs => $1)),
-                date_trunc('second', NOW()),
+            SELECT DISTINCT
+                to_timestamp(floor(extract(epoch FROM gs) / $2) * $2) AS bucket
+            FROM generate_series(
+                NOW() - make_interval(secs => $1),
+                NOW(),
                 make_interval(secs => $2)
-            ) AS bucket
+            ) AS gs
         ),
         placed AS (
             SELECT
-                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2)
-                    AT TIME ZONE 'UTC' AS bucket,
+                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2) AS bucket,
                 COUNT(*) AS cnt
             FROM trades
             WHERE order_timestamp > NOW() - make_interval(secs => $1)
@@ -427,8 +434,7 @@ async fn dtf_order_lifecycle(
         ),
         filled AS (
             SELECT
-                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2)
-                    AT TIME ZONE 'UTC' AS bucket,
+                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2) AS bucket,
                 COUNT(*) AS cnt
             FROM trades
             WHERE fill_timestamp IS NOT NULL
@@ -438,8 +444,7 @@ async fn dtf_order_lifecycle(
         ),
         cancelled AS (
             SELECT
-                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2)
-                    AT TIME ZONE 'UTC' AS bucket,
+                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2) AS bucket,
                 COUNT(*) AS cnt
             FROM trades
             WHERE status = 3
@@ -531,6 +536,9 @@ async fn dtf_orders_per_hour(
     check_auth(&headers, &state.token)?;
     let secs = range_to_secs(q.range.as_deref().unwrap_or("24h"));
 
+    // Counts orders that became active in this hour: a new placement
+    // (order_timestamp) OR a fill (fill_timestamp). On a quiet venue with
+    // legacy backlog, fills carry the signal that placements lost.
     let rows = sqlx::query_as::<_, HourlyBucket>(
         r#"
         WITH buckets AS (
@@ -540,19 +548,22 @@ async fn dtf_orders_per_hour(
                 INTERVAL '1 hour'
             ) AS bucket
         ),
-        placed AS (
-            SELECT
-                date_trunc('hour', order_timestamp) AS bucket,
-                COUNT(*) AS cnt
-            FROM trades
+        activity AS (
+            SELECT date_trunc('hour', order_timestamp) AS bucket FROM trades
             WHERE order_timestamp > NOW() - make_interval(secs => $1)
-            GROUP BY 1
+            UNION ALL
+            SELECT date_trunc('hour', fill_timestamp) AS bucket FROM trades
+            WHERE fill_timestamp IS NOT NULL
+              AND fill_timestamp > NOW() - make_interval(secs => $1)
+        ),
+        per_bucket AS (
+            SELECT bucket, COUNT(*) AS cnt FROM activity GROUP BY 1
         )
         SELECT
             b.bucket,
             COALESCE(p.cnt, 0)::BIGINT AS count
         FROM buckets b
-        LEFT JOIN placed p ON p.bucket = b.bucket
+        LEFT JOIN per_bucket p ON p.bucket = b.bucket
         ORDER BY b.bucket ASC
         "#,
     )

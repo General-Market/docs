@@ -235,7 +235,7 @@ export function ITPSection({ snapshots: _snapshots, latest: _latest, loading: _l
         {/* Orders per hour */}
         <ExplorerChartCard
           title="Orders per Hour"
-          subtitle="OrderSubmitted bucketed by hour"
+          subtitle="Placements and fills, bucketed by hour"
           loading={dtf.loading}
         >
           {ordersHasSignal ? (

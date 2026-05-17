@@ -1,8 +1,9 @@
 -- Protocol-wide AUM snapshots. Written every N minutes by tvl_collector.
--- Sum of (totalSupply × NAV) across all ITPs, denominated in USD with 6
--- decimals of fixed-point precision (USDC-style). itp_count is the number
--- of ITPs the snapshot integrated; supply_count is the number whose total
--- supply was > 0 at sample time.
+-- Sum of totalSupply times NAV across all ITPs, USD with 6 decimals of
+-- fixed-point precision. itp_count is the snapshot population. supply_count
+-- is the subset whose total supply was greater than zero at sample time.
+-- (Do not write semicolons inside comments. The migration runner splits
+-- statements on the raw character.)
 
 CREATE TABLE IF NOT EXISTS tvl_history (
     id            BIGSERIAL    PRIMARY KEY,
