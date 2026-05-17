@@ -9,6 +9,7 @@ import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
 import { AutoFaucet } from '@/components/AutoFaucet'
 import { WaitlistGateProvider } from '@/components/waitlist/WaitlistGateProvider'
+import { OnboardingCards } from '@/components/onboarding/OnboardingCards'
 import { Web3Provider } from '@/lib/contexts/Web3Context'
 import { ReactNode, useMemo, useState } from 'react'
 
@@ -46,6 +47,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
               <ChainGuard>
                 <WaitlistGateProvider>
                   <AutoFaucet />
+                  <OnboardingCards />
                   {children}
                 </WaitlistGateProvider>
               </ChainGuard>
