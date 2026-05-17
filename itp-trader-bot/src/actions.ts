@@ -93,18 +93,25 @@ export async function actBuy(ring: Keyring[number]): Promise<ActionResult> {
 export async function actSell(ring: Keyring[number]): Promise<ActionResult> {
   const pub = makePublic()
   const itps = await listItps()
-  // find any ITP where the wallet has shares
-  const held: { itp: Itp; shares: bigint }[] = []
-  for (const itp of itps.slice(0, 25)) {
-    const shares = (await pub.readContract({
-      address: ADDR.Index,
-      abi: INDEX_ABI,
-      functionName: 'getUserShares',
-      args: [itp.itpId, ring.account.address],
-    })) as bigint
-    if (shares > 0n) held.push({ itp, shares })
-  }
-  if (held.length === 0) return { kind: 'sell', status: 'skip', wallet: ring.account.address, note: 'no shares held in top-25 ITPs' }
+  // Scan ALL ITPs in parallel for any holding. Sequential getUserShares calls
+  // were too slow at 96 markets; Promise.all keeps the tick under one second.
+  const shareList = await Promise.all(
+    itps.map(async (itp) => {
+      try {
+        const shares = (await pub.readContract({
+          address: ADDR.Index,
+          abi: INDEX_ABI,
+          functionName: 'getUserShares',
+          args: [itp.itpId, ring.account.address],
+        })) as bigint
+        return { itp, shares }
+      } catch {
+        return { itp, shares: 0n }
+      }
+    }),
+  )
+  const held = shareList.filter((x) => x.shares > 0n)
+  if (held.length === 0) return { kind: 'sell', status: 'skip', wallet: ring.account.address, note: `no shares held across ${itps.length} ITPs` }
   const pick = pickOne(held)
   const pct = rngFloat(0.01, 0.1)
   const sellAmt = (pick.shares * BigInt(Math.floor(pct * 10_000))) / 10_000n

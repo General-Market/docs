@@ -26,8 +26,8 @@ export const ADDR = {
 // can override via DATA_NODE_URL=https://api.generalmarket.io/data-node.
 export const DATA_NODE_URL = process.env.DATA_NODE_URL ?? 'https://generalmarket.io/api/dn'
 
-export const TICK_INTERVAL_MS = 12 * 60 * 1000
-export const TICK_JITTER_MS = 90 * 1000
+export const TICK_INTERVAL_MS = 4 * 60 * 1000
+export const TICK_JITTER_MS = 60 * 1000
 
 export const HEALTH_PORT = Number(process.env.HEALTH_PORT ?? 8090)
 
@@ -36,7 +36,7 @@ export const KEYRING_SIZE = Number(process.env.KEYRING_SIZE ?? 5)
 
 export const DRY_RUN = process.argv.includes('--dry-run')
 
-export const BUY_USDC_MIN = 1
-export const BUY_USDC_MAX = 10
+export const BUY_USDC_MIN = 5
+export const BUY_USDC_MAX = 50
 export const LEND_USDC_MIN = 1
 export const LEND_USDC_MAX = 20
