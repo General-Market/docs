@@ -864,6 +864,7 @@ async fn store_batch_config(pool: &PgPool, config: &BatchConfig) -> Result<(), s
         r#"
         INSERT INTO batch_configs (source_id, config_hash, tick_duration_secs, lock_offset_secs, markets, asset_count, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (source_id, config_hash) DO NOTHING
         "#,
     )
     .bind(&config.source_id)
@@ -1155,14 +1156,27 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
             }
         }
 
-        // GC: delete batch configs older than 30 days that were never signed.
-        // Must be generous — on-chain batches reference config hashes immutably,
-        // and bots need to look them up for the full tick lifetime + buffer.
-        // 2 hours was too aggressive; data-node restarts left in-flight batches
-        // with unresolvable hashes.
+        // GC: delete batch configs older than 7 days, preserving (a) the latest
+        // config per source — readers fall back to it on restart — and (b) any
+        // config_hash still referenced by vision_batch_lifecycle, since on-chain
+        // batches need the markets payload for tick resolution.
+        //
+        // The prior 30-day window with NOT IN signed_batch_configs was an empty
+        // safety net (signed_batch_configs has never been populated), so every
+        // config older than 30 days was deleted unconditionally — leaving 5k+
+        // referenced hashes orphaned by the time we audited.
+        //
+        // lifecycle.config_hash is text '0x…'; batch_configs.config_hash is bytea.
         if let Err(e) = sqlx::query(
-            "DELETE FROM batch_configs WHERE created_at < NOW() - INTERVAL '30 days' \
-             AND config_hash NOT IN (SELECT config_hash FROM signed_batch_configs)",
+            "DELETE FROM batch_configs WHERE created_at < NOW() - INTERVAL '7 days' \
+             AND (source_id, config_hash) NOT IN ( \
+                 SELECT DISTINCT ON (source_id) source_id, config_hash \
+                 FROM batch_configs ORDER BY source_id, created_at DESC \
+             ) \
+             AND config_hash NOT IN ( \
+                 SELECT DISTINCT decode(substring(config_hash from 3), 'hex') \
+                 FROM vision_batch_lifecycle WHERE config_hash IS NOT NULL \
+             )",
         )
         .execute(&pool)
         .await
