@@ -3257,7 +3257,785 @@
     "skipped": 72,
     "failed": 0,
     "usdc_added": 149992.78378100332,
-    "nav_liars": [],
+    "nav_liars": [
+      {
+        "symbol": "PTCH",
+        "name": "Patch",
+        "source": "steam",
+        "stale_active": 15065.532862345925,
+        "real_balance": 19.035022599315177
+      },
+      {
+        "symbol": "STOCKS3",
+        "name": "Stocks Fund 3",
+        "source": "nasdaq",
+        "stale_active": 14005.009587790262,
+        "real_balance": 2.75427087139061
+      },
+      {
+        "symbol": "TPOF",
+        "name": "Topoff",
+        "source": "tomtom_evcharge",
+        "stale_active": 11646.49417160203,
+        "real_balance": 4.553680960187229
+      },
+      {
+        "symbol": "TNRE",
+        "name": "Tenure",
+        "source": "openalex",
+        "stale_active": 11511.956702149257,
+        "real_balance": 35.94136211874817
+      },
+      {
+        "symbol": "vBSPOT-M20",
+        "name": "Binance Spot Momentum 20",
+        "source": "binance_spot",
+        "stale_active": 11029.485,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBFUND-R",
+        "name": "Binance Funding Reversion",
+        "source": "binance_futures_funding",
+        "stale_active": 10939.53,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "UPST",
+        "name": "Upset",
+        "source": "sports",
+        "stale_active": 10246.005137164202,
+        "real_balance": 4.22488893891594
+      },
+      {
+        "symbol": "BORW",
+        "name": "Borrow",
+        "source": "crates_io",
+        "stale_active": 10136.565212855461,
+        "real_balance": 42.357346596244675
+      },
+      {
+        "symbol": "vBOPT-MP",
+        "name": "Binance Options Puts Momentum",
+        "source": "binance_options",
+        "stale_active": 10047.976,
+        "real_balance": 1.999
+      },
+      {
+        "symbol": "vBSPOT-M5",
+        "name": "Binance Spot Momentum 5",
+        "source": "binance_spot",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBSPOT-R5",
+        "name": "Binance Spot Reversion 5",
+        "source": "binance_spot",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBSPOT-R20",
+        "name": "Binance Spot Reversion 20",
+        "source": "binance_spot",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBFUND-M",
+        "name": "Binance Funding Continuation",
+        "source": "binance_futures_funding",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBFUND-F",
+        "name": "Binance Funding Sign Flip",
+        "source": "binance_futures_funding",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBFUND-X",
+        "name": "Binance Funding Extreme",
+        "source": "binance_futures_funding",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBOPT-MA",
+        "name": "Binance Options Momentum All",
+        "source": "binance_options",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBOPT-RA",
+        "name": "Binance Options Reversion All",
+        "source": "binance_options",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "vBOPT-MC",
+        "name": "Binance Options Calls Momentum",
+        "source": "binance_options",
+        "stale_active": 10000.0,
+        "real_balance": 0.0
+      },
+      {
+        "symbol": "XPLT",
+        "name": "Exploit",
+        "source": "defillama",
+        "stale_active": 9964.57703229026,
+        "real_balance": 5.229477442325348
+      },
+      {
+        "symbol": "DARK",
+        "name": "After Dark",
+        "source": "chaturbate",
+        "stale_active": 9960.209553356884,
+        "real_balance": 4.632869289578047
+      },
+      {
+        "symbol": "INDX",
+        "name": "Index",
+        "source": "crossref",
+        "stale_active": 9933.013499910818,
+        "real_balance": 27.350086694772386
+      },
+      {
+        "symbol": "IMPC",
+        "name": "Impact",
+        "source": "crossref",
+        "stale_active": 9918.518613157863,
+        "real_balance": 49.145400977792775
+      },
+      {
+        "symbol": "BLTZ",
+        "name": "Blitz",
+        "source": "lichess",
+        "stale_active": 9903.082340096338,
+        "real_balance": 0.9199251325418769
+      },
+      {
+        "symbol": "CRGO",
+        "name": "Cargo",
+        "source": "crates_io",
+        "stale_active": 9899.247710491158,
+        "real_balance": 40.557698172487065
+      },
+      {
+        "symbol": "RTRC",
+        "name": "Retraction",
+        "source": "crossref",
+        "stale_active": 9889.945541239584,
+        "real_balance": 18.741173509187853
+      },
+      {
+        "symbol": "ANON",
+        "name": "Anon",
+        "source": "fourchan",
+        "stale_active": 9876.985655100352,
+        "real_balance": 0.6699003036146748
+      },
+      {
+        "symbol": "YILD",
+        "name": "Yield",
+        "source": "defillama",
+        "stale_active": 9874.863249649823,
+        "real_balance": 5.050502259105936
+      },
+      {
+        "symbol": "XPRS",
+        "name": "Express",
+        "source": "mta_subway",
+        "stale_active": 9874.478332103858,
+        "real_balance": 1.7868592315141238
+      },
+      {
+        "symbol": "ULCK",
+        "name": "Unlock",
+        "source": "defillama",
+        "stale_active": 9874.311906788067,
+        "real_balance": 4.074526550114028
+      },
+      {
+        "symbol": "EPIC",
+        "name": "Epicenter",
+        "source": "earthquake",
+        "stale_active": 9874.130815920245,
+        "real_balance": 2.9190767803501103
+      },
+      {
+        "symbol": "FILR",
+        "name": "Filler",
+        "source": "anilist",
+        "stale_active": 9872.723516598911,
+        "real_balance": 4.744802611748322
+      },
+      {
+        "symbol": "ENDG",
+        "name": "Endgame",
+        "source": "lichess",
+        "stale_active": 9871.535284964335,
+        "real_balance": 4.097653847468973
+      },
+      {
+        "symbol": "DRFT",
+        "name": "Drift",
+        "source": "defillama",
+        "stale_active": 9871.062269469016,
+        "real_balance": 7.644733847570551
+      },
+      {
+        "symbol": "NOIS",
+        "name": "Noise",
+        "source": "fourchan",
+        "stale_active": 9869.577277203589,
+        "real_balance": 8.860894763704822
+      },
+      {
+        "symbol": "UCRT",
+        "name": "Uncrate",
+        "source": "backpacktf",
+        "stale_active": 9863.387715919258,
+        "real_balance": 6.266666921993769
+      },
+      {
+        "symbol": "RCTR",
+        "name": "Richter",
+        "source": "earthquake",
+        "stale_active": 9861.54400017601,
+        "real_balance": 5.896427560020932
+      },
+      {
+        "symbol": "XFER",
+        "name": "Transfer",
+        "source": "mta_subway",
+        "stale_active": 9861.303132926085,
+        "real_balance": 8.31216650124468
+      },
+      {
+        "symbol": "SHOW",
+        "name": "Show",
+        "source": "hackernews",
+        "stale_active": 9859.824770230249,
+        "real_balance": 3.107513648704486
+      },
+      {
+        "symbol": "VNTG",
+        "name": "Vintage",
+        "source": "backpacktf",
+        "stale_active": 9857.648206780774,
+        "real_balance": 2.0820005969858046
+      },
+      {
+        "symbol": "SAGE",
+        "name": "Sage",
+        "source": "fourchan",
+        "stale_active": 9855.993742616332,
+        "real_balance": 0.9744937535663317
+      },
+      {
+        "symbol": "TRNS",
+        "name": "Turnstile",
+        "source": "mta_subway",
+        "stale_active": 9851.178029720262,
+        "real_balance": 2.688881423734168
+      },
+      {
+        "symbol": "UNSL",
+        "name": "Unusual",
+        "source": "backpacktf",
+        "stale_active": 9849.771820944228,
+        "real_balance": 0.039107588081292374
+      },
+      {
+        "symbol": "FBRK",
+        "name": "Firebreak",
+        "source": "wildfire",
+        "stale_active": 9849.740646862441,
+        "real_balance": 45.99177991624328
+      },
+      {
+        "symbol": "DCAY",
+        "name": "Decay",
+        "source": "hackernews",
+        "stale_active": 9845.569034940454,
+        "real_balance": 1.043277563933605
+      },
+      {
+        "symbol": "SABT",
+        "name": "Sabbatical",
+        "source": "openalex",
+        "stale_active": 9842.111185391837,
+        "real_balance": 5.355856952812745
+      },
+      {
+        "symbol": "RAID",
+        "name": "Raid",
+        "source": "fourchan",
+        "stale_active": 9840.331510010372,
+        "real_balance": 7.755678940730733
+      },
+      {
+        "symbol": "FLAG",
+        "name": "Flagged",
+        "source": "hackernews",
+        "stale_active": 9836.131813579846,
+        "real_balance": 2.70443392840236
+      },
+      {
+        "symbol": "BRWN",
+        "name": "Brownout",
+        "source": "power_outages",
+        "stale_active": 9827.0,
+        "real_balance": 13.0
+      },
+      {
+        "symbol": "DKLS",
+        "name": "Dockless",
+        "source": "citybikes",
+        "stale_active": 9823.166248153308,
+        "real_balance": 1.7991096361631023
+      },
+      {
+        "symbol": "MKDN",
+        "name": "Markdown",
+        "source": "bestbuy",
+        "stale_active": 9820.955027777778,
+        "real_balance": 0.1555277777777778
+      },
+      {
+        "symbol": "METR",
+        "name": "Meter",
+        "source": "parking",
+        "stale_active": 9818.095316626846,
+        "real_balance": 1.6896638017385803
+      },
+      {
+        "symbol": "AFTR",
+        "name": "Aftershock",
+        "source": "earthquake",
+        "stale_active": 9813.86220813453,
+        "real_balance": 7.155811824929727
+      },
+      {
+        "symbol": "OXDZ",
+        "name": "Oxidize",
+        "source": "crates_io",
+        "stale_active": 9808.376806475326,
+        "real_balance": 40.8589120866424
+      },
+      {
+        "symbol": "GRVN",
+        "name": "Grievance",
+        "source": "nyc311",
+        "stale_active": 9806.296236567954,
+        "real_balance": 9.967296764013712
+      },
+      {
+        "symbol": "SWEL",
+        "name": "Swell",
+        "source": "ndbc",
+        "stale_active": 9802.41316594805,
+        "real_balance": 9.934232121912494
+      },
+      {
+        "symbol": "CALM",
+        "name": "Calm",
+        "source": "ndbc",
+        "stale_active": 9802.173524920918,
+        "real_balance": 5.1027418829277575
+      },
+      {
+        "symbol": "BSFL",
+        "name": "Baseflow",
+        "source": "usgs_water",
+        "stale_active": 9801.020428140453,
+        "real_balance": 2.8796024599073333
+      },
+      {
+        "symbol": "OVTM",
+        "name": "Overtime",
+        "source": "sports",
+        "stale_active": 9799.872446989863,
+        "real_balance": 9.874941895030624
+      },
+      {
+        "symbol": "PICD",
+        "name": "Piccadilly",
+        "source": "tfl_tube",
+        "stale_active": 9793.4112788658,
+        "real_balance": 7.934767604422412
+      },
+      {
+        "symbol": "RPTD",
+        "name": "Riptide",
+        "source": "ndbc",
+        "stale_active": 9791.584169153391,
+        "real_balance": 4.0256467051983345
+      },
+      {
+        "symbol": "SLST",
+        "name": "Solstice",
+        "source": "spaceweather",
+        "stale_active": 9790.342377454519,
+        "real_balance": 1.8860971634083414
+      },
+      {
+        "symbol": "CLST",
+        "name": "Cluster",
+        "source": "queue_times",
+        "stale_active": 9790.156387858155,
+        "real_balance": 4.927984239535002
+      },
+      {
+        "symbol": "SNSP",
+        "name": "Sunspot",
+        "source": "spaceweather",
+        "stale_active": 9787.82569737476,
+        "real_balance": 13.890636819846245
+      },
+      {
+        "symbol": "SCRM",
+        "name": "Scramble",
+        "source": "mil_aircraft",
+        "stale_active": 9787.688125214792,
+        "real_balance": 4.2788963476262
+      },
+      {
+        "symbol": "BSDE",
+        "name": "B-Side",
+        "source": "lastfm",
+        "stale_active": 9786.080641586548,
+        "real_balance": 4.727730485572916
+      },
+      {
+        "symbol": "ENCR",
+        "name": "Encore",
+        "source": "lastfm",
+        "stale_active": 9781.14972444887,
+        "real_balance": 8.362210155672784
+      },
+      {
+        "symbol": "WSHD",
+        "name": "Watershed",
+        "source": "usgs_water",
+        "stale_active": 9776.210124173045,
+        "real_balance": 3.773391327716025
+      },
+      {
+        "symbol": "GARG",
+        "name": "Garage",
+        "source": "parking",
+        "stale_active": 9775.146106675069,
+        "real_balance": 5.549887663355751
+      },
+      {
+        "symbol": "STDN",
+        "name": "Standdown",
+        "source": "mil_aircraft",
+        "stale_active": 9773.558377470972,
+        "real_balance": 6.137554503595743
+      },
+      {
+        "symbol": "TRNT",
+        "name": "Torrent",
+        "source": "usgs_water",
+        "stale_active": 9771.286315970121,
+        "real_balance": 6.42619871506987
+      },
+      {
+        "symbol": "BARO",
+        "name": "Barometer",
+        "source": "noaa_met",
+        "stale_active": 9764.395678968252,
+        "real_balance": 38.563997119780005
+      },
+      {
+        "symbol": "DRHT",
+        "name": "Drought",
+        "source": "usgs_water",
+        "stale_active": 9763.641979829918,
+        "real_balance": 3.189640471491845
+      },
+      {
+        "symbol": "ANTM",
+        "name": "Anthem",
+        "source": "lastfm",
+        "stale_active": 9762.628013525047,
+        "real_balance": 7.6509217845566475
+      },
+      {
+        "symbol": "LULL",
+        "name": "Lull",
+        "source": "noaa_met",
+        "stale_active": 9759.767239446839,
+        "real_balance": 39.52538218370637
+      },
+      {
+        "symbol": "MTRO",
+        "name": "Metro",
+        "source": "mta_subway",
+        "stale_active": 9751.887667163459,
+        "real_balance": 9.871157247640559
+      },
+      {
+        "symbol": "RUSH",
+        "name": "Rush",
+        "source": "queue_times",
+        "stale_active": 9748.719671977902,
+        "real_balance": 9.98585101767019
+      },
+      {
+        "symbol": "TRIL",
+        "name": "Trial",
+        "source": "pubmed",
+        "stale_active": 9744.956151453007,
+        "real_balance": 46.8428272712974
+      },
+      {
+        "symbol": "ACLR",
+        "name": "All Clear",
+        "source": "weather_alerts",
+        "stale_active": 9734.071410075603,
+        "real_balance": 4.305458697189764
+      },
+      {
+        "symbol": "ESPORTS2",
+        "name": "Esports Fund 2",
+        "source": "esports",
+        "stale_active": 9727.903302167097,
+        "real_balance": 1.9340574242055768
+      },
+      {
+        "symbol": "BNKR",
+        "name": "Bunker",
+        "source": "weather_alerts",
+        "stale_active": 9719.23066008424,
+        "real_balance": 7.177306422188079
+      },
+      {
+        "symbol": "PREM",
+        "name": "Premiere",
+        "source": "tmdb",
+        "stale_active": 9710.103425915284,
+        "real_balance": 5.18380557503938
+      },
+      {
+        "symbol": "FRWL",
+        "name": "Freewheel",
+        "source": "citybikes",
+        "stale_active": 9707.939591396631,
+        "real_balance": 8.751684319396004
+      },
+      {
+        "symbol": "STRT",
+        "name": "Strait",
+        "source": "twse",
+        "stale_active": 9705.001855380751,
+        "real_balance": 16.623010234601644
+      },
+      {
+        "symbol": "STBY",
+        "name": "Standby",
+        "source": "ryanair",
+        "stale_active": 9694.420353889602,
+        "real_balance": 23.18357412920608
+      },
+      {
+        "symbol": "CRNA",
+        "name": "Corona",
+        "source": "spaceweather",
+        "stale_active": 9693.387717801532,
+        "real_balance": 12.565969982254948
+      },
+      {
+        "symbol": "TNDO",
+        "name": "Tornado",
+        "source": "weather_alerts",
+        "stale_active": 9680.645635815485,
+        "real_balance": 0.4252762466166441
+      },
+      {
+        "symbol": "DSPT",
+        "name": "Dispatch",
+        "source": "nyc311",
+        "stale_active": 9678.980278846719,
+        "real_balance": 7.918361710183915
+      },
+      {
+        "symbol": "PNKT",
+        "name": "Punktlich",
+        "source": "db_trains",
+        "stale_active": 9649.325043067058,
+        "real_balance": 2.5807041213349597
+      },
+      {
+        "symbol": "FAST",
+        "name": "Fastpass",
+        "source": "queue_times",
+        "stale_active": 9609.412585170223,
+        "real_balance": 2.275450083257651
+      },
+      {
+        "symbol": "NOCT",
+        "name": "Nocturnal",
+        "source": "chaturbate",
+        "stale_active": 9581.44374984455,
+        "real_balance": 49.19202235496095
+      },
+      {
+        "symbol": "ANML",
+        "name": "Anomaly",
+        "source": "noaa_met",
+        "stale_active": 9535.16248423231,
+        "real_balance": 47.94429760881059
+      },
+      {
+        "symbol": "STOCKS2",
+        "name": "Stocks Fund 2",
+        "source": "nasdaq",
+        "stale_active": 9473.704109581682,
+        "real_balance": 3.9104895377500943
+      },
+      {
+        "symbol": "LOBY",
+        "name": "Lobby",
+        "source": "steam",
+        "stale_active": 9460.865469375658,
+        "real_balance": 37.956517442863905
+      },
+      {
+        "symbol": "RAGE",
+        "name": "Ragequit",
+        "source": "steam",
+        "stale_active": 9455.814673570525,
+        "real_balance": 40.742553194210146
+      },
+      {
+        "symbol": "HOME",
+        "name": "Homecourt",
+        "source": "sports",
+        "stale_active": 9389.558661069059,
+        "real_balance": 4.447636252378686
+      },
+      {
+        "symbol": "SORT",
+        "name": "Sortie",
+        "source": "mil_aircraft",
+        "stale_active": 9382.8207822625,
+        "real_balance": 5.476433541426635
+      },
+      {
+        "symbol": "TIDE",
+        "name": "Tideline",
+        "source": "noaa_tides",
+        "stale_active": 9332.598698834667,
+        "real_balance": 7.902155823935252
+      },
+      {
+        "symbol": "STRM",
+        "name": "Stormwatch",
+        "source": "weather_alerts",
+        "stale_active": 9296.841354379181,
+        "real_balance": 9.304725610575524
+      },
+      {
+        "symbol": "AURA",
+        "name": "Aurora",
+        "source": "spaceweather",
+        "stale_active": 9276.802080624717,
+        "real_balance": 43.81999993142524
+      },
+      {
+        "symbol": "TPEI",
+        "name": "Taipei",
+        "source": "twse",
+        "stale_active": 9259.736014137658,
+        "real_balance": 9.859344686730688
+      },
+      {
+        "symbol": "ESPORTS1",
+        "name": "Esports Fund 1",
+        "source": "esports",
+        "stale_active": 9257.548092054936,
+        "real_balance": 9.406507632306873
+      },
+      {
+        "symbol": "OYTR",
+        "name": "Oyster",
+        "source": "tfl_tube",
+        "stale_active": 9220.983474277351,
+        "real_balance": 9.527571421698887
+      },
+      {
+        "symbol": "PPIP",
+        "name": "Pip",
+        "source": "pypi",
+        "stale_active": 9189.49925,
+        "real_balance": 0.45075
+      },
+      {
+        "symbol": "VSPT",
+        "name": "Verspatung",
+        "source": "db_trains",
+        "stale_active": 9174.002965771182,
+        "real_balance": 8.183313508784606
+      },
+      {
+        "symbol": "RSTR",
+        "name": "Restore",
+        "source": "power_outages",
+        "stale_active": 9153.1,
+        "real_balance": 27.38
+      },
+      {
+        "symbol": "UNMT",
+        "name": "Unmaintained",
+        "source": "pypi",
+        "stale_active": 8649.5,
+        "real_balance": 5.5
+      },
+      {
+        "symbol": "BDGT",
+        "name": "Budget",
+        "source": "ryanair",
+        "stale_active": 8492.390082030757,
+        "real_balance": 24.92916007409427
+      },
+      {
+        "symbol": "BTNK",
+        "name": "Bottleneck",
+        "source": "tomtom_traffic",
+        "stale_active": 8460.728240307724,
+        "real_balance": 6.426355258745883
+      },
+      {
+        "symbol": "PRPT",
+        "name": "Preprint",
+        "source": "pubmed",
+        "stale_active": 8397.410861772816,
+        "real_balance": 2.8629476565639616
+      },
+      {
+        "symbol": "CLWY",
+        "name": "Clearway",
+        "source": "tomtom_traffic",
+        "stale_active": 8379.785341459237,
+        "real_balance": 8.45361080450992
+      },
+      {
+        "symbol": "RNGE",
+        "name": "Range",
+        "source": "tomtom_evcharge",
+        "stale_active": 8363.46693303849,
+        "real_balance": 6.632967011499701
+      }
+    ],
     "completed_at": 1779036114
   }
 }
