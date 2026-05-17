@@ -128,16 +128,15 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
         </span>
       </div>
       <div className="relative h-[6px] overflow-hidden rounded-full bg-black/[0.04]">
-        {/* CSS transition rather than framer-motion: width changes only
-            re-animate when the value actually moves, eliminating the
-            per-render flicker the user reported. */}
+        {/* transform/scaleX instead of width — keeps the animation off the
+            layout path. Same visual under overflow:hidden. */}
         <div
-          className="absolute inset-y-0 left-0 rounded-full"
+          className="absolute inset-y-0 left-0 right-0 rounded-full origin-left will-change-transform"
           style={{
             background: batch.sourceBrandBg,
             opacity: 0.85,
-            width: `${widthPct}%`,
-            transition: 'width 0.9s cubic-bezier(0.25,0.1,0.3,1)',
+            transform: `scaleX(${(Math.max(0, Math.min(100, widthPct)) / 100).toFixed(4)})`,
+            transition: 'transform 900ms cubic-bezier(0.25,0.1,0.3,1)',
           }}
         />
       </div>

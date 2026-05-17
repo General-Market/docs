@@ -28,7 +28,7 @@ function ShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#F5F5F7"
+        stroke="var(--apple-coverage-anticheat)"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -44,8 +44,8 @@ function CoveragePill({ coverage }: { coverage: Coverage }) {
       <span
         className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"
         style={{
-          background: '#F5F5F7',
-          color: '#6E6E73',
+          background: 'var(--apple-coverage-anticheat)',
+          color: 'var(--apple-text)',
           fontSize: 10,
           letterSpacing: '0.04em',
         }}
@@ -61,8 +61,8 @@ function CoveragePill({ coverage }: { coverage: Coverage }) {
       <span
         className="inline-flex items-center rounded-full px-2 py-0.5 font-medium"
         style={{
-          background: 'rgba(255,255,255,0.85)',
-          color: 'var(--apple-text-secondary)',
+          background: 'rgba(255,255,255,0.92)',
+          color: 'var(--apple-text)',
           fontSize: 10,
           letterSpacing: '0.04em',
           backdropFilter: 'saturate(180%) blur(8px)',

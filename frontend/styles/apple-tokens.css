@@ -30,15 +30,20 @@
   --apple-surface: #f5f5f7;
   --apple-text: #1d1d1f;
   --apple-text-secondary: #6e6e73;
-  --apple-text-tertiary: #86868b;
+  /* Tertiary used to be #86868b. WCAG AA on #fff requires ~4.5:1 for body
+     and ~3:1 for large/UI text; #86868b lands at 3.5:1 and fails on the
+     small eyebrow labels and category pills that lean on it. Bump to the
+     Apple HIG secondary-label value (#6e6e73, 5.7:1). Hierarchy survives
+     via size, weight, and tracking. */
+  --apple-text-tertiary: #6e6e73;
   --apple-accent: #0071e3;
   --apple-accent-hover: #0066cc;
   --apple-accent-on-dark: #2997ff;
   --apple-border: rgba(0, 0, 0, 0.08);
   --apple-divider: #e8e8ed;
 
-  --apple-coverage-anticheat: #F5F5F7;
-  --apple-coverage-external: #86868b;
+  --apple-coverage-anticheat: #e8e8ed;
+  --apple-coverage-external: #6e6e73;
 
   --apple-ease-default: cubic-bezier(0.4, 0, 0.6, 1);
   --apple-ease-out: cubic-bezier(0.25, 0.1, 0.3, 1);
@@ -96,12 +101,12 @@
 
 .apple-pill--anticheat {
   background: var(--apple-coverage-anticheat);
-  color: #6E6E73;
+  color: var(--apple-text);
 }
 
 .apple-pill--external {
   background: transparent;
-  color: var(--apple-text-secondary);
+  color: var(--apple-text);
   border: 1px solid var(--apple-border);
 }
 

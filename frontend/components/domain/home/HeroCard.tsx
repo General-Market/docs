@@ -34,7 +34,7 @@ function ShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#F5F5F7"
+        stroke="var(--apple-coverage-anticheat)"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -50,8 +50,8 @@ function PillCoverage({ coverage }: { coverage: Coverage }) {
       <span
         className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold"
         style={{
-          background: '#F5F5F7',
-          color: '#6E6E73',
+          background: 'var(--apple-coverage-anticheat)',
+          color: 'var(--apple-text)',
           fontSize: 11,
           letterSpacing: '0.04em',
         }}
@@ -230,12 +230,12 @@ export function HeroCard({ feature, side, dots }: Props) {
             {feature.assetName && (
               <div className="absolute top-6 left-6 right-6 z-10">
                 <div
-                  className="font-medium line-clamp-2"
+                  className="font-semibold line-clamp-2"
                   style={{
                     fontFamily: 'var(--apple-font-text)',
                     fontSize: 14,
                     letterSpacing: 'var(--apple-track-tight)',
-                    color: 'var(--apple-text-secondary)',
+                    color: 'var(--apple-text)',
                     lineHeight: 1.3,
                   }}
                 >
@@ -299,7 +299,7 @@ function SideShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#F5F5F7"
+        stroke="var(--apple-coverage-anticheat)"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -358,8 +358,8 @@ function SideRow({ feed }: { feed: SourceFeed }) {
             <span
               className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold"
               style={{
-                background: '#F5F5F7',
-                color: '#6E6E73',
+                background: 'var(--apple-coverage-anticheat)',
+                color: 'var(--apple-text)',
                 fontSize: 9,
                 letterSpacing: '0.04em',
               }}

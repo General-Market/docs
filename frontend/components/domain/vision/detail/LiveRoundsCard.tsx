@@ -230,11 +230,11 @@ export function LiveRoundsCard({ sourceId }: LiveRoundsCardProps) {
                   style={{ background: 'rgba(0,0,0,0.06)' }}
                 >
                   <div
-                    className="absolute inset-y-0 left-0 transition-[width] duration-1000"
+                    className="absolute inset-y-0 left-0 right-0 origin-left will-change-transform"
                     style={{
-                      width: `${(stats.progress * 100).toFixed(2)}%`,
+                      transform: `scaleX(${Math.max(0, Math.min(1, stats.progress)).toFixed(4)})`,
                       background: accent,
-                      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.6, 1)',
+                      transition: 'transform 1000ms cubic-bezier(0.4, 0, 0.6, 1)',
                     }}
                   />
                 </div>

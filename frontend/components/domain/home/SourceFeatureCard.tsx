@@ -46,7 +46,7 @@ function CoveragePill({ coverage }: { coverage: Coverage }) {
             d="M6 1L2 3v3.2c0 2.4 1.7 4.4 4 4.8 2.3-.4 4-2.4 4-4.8V3L6 1z"
             fill="currentColor"
           />
-          <path d="M4.4 6l1.2 1.2L8 4.8" stroke="#F5F5F7" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4.4 6l1.2 1.2L8 4.8" stroke="var(--apple-coverage-anticheat)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         Anti-Cheat
       </span>

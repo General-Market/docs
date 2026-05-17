@@ -191,8 +191,8 @@ function Brand() {
           fontSize: 10,
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          background: '#F5F5F7',
-          color: '#6E6E73',
+          background: 'var(--apple-coverage-anticheat)',
+          color: 'var(--apple-text)',
         }}
       >
         <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden>
@@ -202,7 +202,7 @@ function Brand() {
           />
           <path
             d="M4.4 6l1.2 1.2L8 4.8"
-            stroke="#F5F5F7"
+            stroke="var(--apple-coverage-anticheat)"
             strokeWidth="1.4"
             fill="none"
             strokeLinecap="round"
