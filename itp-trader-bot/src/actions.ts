@@ -248,10 +248,21 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
     await pub.waitForTransactionReceipt({ hash: supTx, timeout: 60_000 })
   }
 
-  // Borrow a small slice — bot keeps positions tiny on purpose.
-  // We do not compute LLTV here; we attempt a small fixed nominal and let Morpho revert if unhealthy.
-  const borrowUsd = rngFloat(0.5, 2)
-  const borrowAmt = parseUnits(borrowUsd.toFixed(6), USDC_DEC)
+  // Compute max borrowable so we never request more than the collateral
+  // backs. Mock oracle is 1e36 (1 collateral = 1 loan, both 18-dec), so
+  // max ≈ collateral * lltv / 1e18. Borrow a random 20–60 % of that, minus
+  // any debt already on the position.
+  const freshPos = await readPosition(pub, m.marketId, ring.account.address)
+  const maxBorrowable = (freshPos.collateral * params.lltv) / BigInt(1e18)
+  const headroom = maxBorrowable > 0n ? maxBorrowable / 2n : 0n // half max to leave health buffer
+  if (headroom === 0n) {
+    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'no borrow headroom' }
+  }
+  const pct = BigInt(Math.floor(rngFloat(0.4, 1.0) * 10_000))
+  const borrowAmt = (headroom * pct) / 10_000n
+  if (borrowAmt === 0n) {
+    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'borrow amount rounded to 0' }
+  }
   if (DRY_RUN) {
     return { kind: 'borrow', status: 'ok', wallet: ring.account.address, tx: '0xdry' as Hex, note: `would borrow ${formatUnits(borrowAmt, USDC_DEC)} USDC` }
   }
