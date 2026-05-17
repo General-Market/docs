@@ -215,6 +215,38 @@ strategy = "momentum"
 [funds.params]
 
 [[funds]]
+name = "Binance Funding Reversion"
+symbol = "vBFUND-R"
+vault = "0xF0373C3cCb1C847F1a985bD097d9b6eBC1a61791"
+sources = ["binance_futures_funding"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Binance Funding Continuation"
+symbol = "vBFUND-M"
+vault = "0x1dca99FB7aEdcC83a6Dca21DB94DEbF09fc985C1"
+sources = ["binance_futures_funding"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Binance Funding Sign Flip"
+symbol = "vBFUND-F"
+vault = "0xd7ba442A3E593652452e5E76ffC11e8177574ba4"
+sources = ["binance_futures_funding"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Binance Funding Extreme"
+symbol = "vBFUND-X"
+vault = "0x35459f84D905511AD9Fee5eC2fD696d5FF52EC30"
+sources = ["binance_futures_funding"]
+strategy = "momentum_threshold"
+[funds.params]
+
+[[funds]]
 name = "Hashrate"
 symbol = "HASH"
 vault = "0x0351CDeBe3AAdcb5b40bB5ba606B7aDa70B52B43"
