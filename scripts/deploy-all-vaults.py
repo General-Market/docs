@@ -15,7 +15,7 @@ from web3 import Web3
 
 RPC = os.environ.get("L3_RPC_URL", "http://159.195.79.153:3001/")
 USDC_ADDR = os.environ.get("USDC_ADDR", "0xaddB799BC1499b224DC4368e92b9042a54908553")
-FACTORY_ADDR = os.environ.get("FACTORY_ADDR", "0xe54DB21b61FD50d5F1191C3BCb70AD184F4D58D0")
+FACTORY_ADDR = os.environ.get("FACTORY_ADDR", "0x73dbd15d872b80e7a9e90be3cacedf4ad00407ca")
 DEPOSIT_AMOUNT = int(os.environ.get("DEPOSIT_AMOUNT_WHOLE", "10000")) * 10**18
 PERF_FEE_BPS = int(os.environ.get("PERF_FEE_BPS", "500"))  # 5%
 

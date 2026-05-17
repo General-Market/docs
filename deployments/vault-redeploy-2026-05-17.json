@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-05-17T11:37:40.942549",
-  "factory": "0xe54DB21b61FD50d5F1191C3BCb70AD184F4D58D0",
-  "vision": "0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61",
+  "timestamp": "2026-05-17T11:57:31.751158",
+  "factory": "0x73dbd15d872b80e7a9e90be3cacedf4ad00407ca",
+  "vision": "0x36a28967544c301a3c66dcfb6c6c90e548412693",
   "usdc": "0xaddB799BC1499b224DC4368e92b9042a54908553",
   "deposit_per_vault": "10000 USDC (18-dec)",
   "funded_count": 258,
@@ -9,1807 +9,1807 @@
     {
       "symbol": "VCNY",
       "name": "Vacancy",
-      "old_vault": "0x81e80c465F7775f7f556792342B8478a03Ceb376",
-      "new_vault": "0x6FbCcFd1a02fB5cdDEb57EE0976921a8236324f1",
+      "old_vault": "0x6FbCcFd1a02fB5cdDEb57EE0976921a8236324f1",
+      "new_vault": "0xD0DE5953D99529D0f1630E20dD840c4f26281044",
       "funded": true
     },
     {
       "symbol": "LYOF",
       "name": "Layoff",
-      "old_vault": "0x2C74ac225329E78b1C126B07Be4319e3A0AE3107",
-      "new_vault": "0xf42ad73C1C76eAbf0a88F933F504f39Bb6847183",
+      "old_vault": "0xf42ad73C1C76eAbf0a88F933F504f39Bb6847183",
+      "new_vault": "0x299F7deeCddf3b60DaD0844868c7801F24f8C386",
       "funded": true
     },
     {
       "symbol": "DMND",
       "name": "Demand",
-      "old_vault": "0x0ce59C5945FeA7708913A0Af12550D7Bfc2A71ed",
-      "new_vault": "0xd1BbD38Ee47441b3aA1C5Df3bae0e18a5F23f12F",
+      "old_vault": "0xd1BbD38Ee47441b3aA1C5Df3bae0e18a5F23f12F",
+      "new_vault": "0xDe02948599dCE9a5de4876060C7594275F9e60FF",
       "funded": true
     },
     {
       "symbol": "HDCT",
       "name": "Headcount",
-      "old_vault": "0xa2295Adb8b3Fa64760E4d142dE7C33988A195f41",
-      "new_vault": "0x9979F9dc62033c4B09C75Fbd41D0547070F2C21F",
+      "old_vault": "0x9979F9dc62033c4B09C75Fbd41D0547070F2C21F",
+      "new_vault": "0x4F15965847A9174959366BF0388565Abb7eB5154",
       "funded": true
     },
     {
       "symbol": "CLRS",
       "name": "Clearsky",
-      "old_vault": "0xc38D57e506E1414acbe37cec7A9D9eB12df3Af0f",
-      "new_vault": "0xD6bB9E38155479BcD300BdAd0C8338Bc02828367",
+      "old_vault": "0xD6bB9E38155479BcD300BdAd0C8338Bc02828367",
+      "new_vault": "0x045473C327b24460F386a7C7BC11257d41C3B364",
       "funded": true
     },
     {
       "symbol": "SMOG",
       "name": "Smog",
-      "old_vault": "0x69263C482c10aC03D6edB0182A762e7b6dFFFD67",
-      "new_vault": "0x270C5D900009E7eBf5ff6578fd496678eb8822b9",
+      "old_vault": "0x270C5D900009E7eBf5ff6578fd496678eb8822b9",
+      "new_vault": "0x926F0D9F948b4d2C0f958a0f4E889E7b856D6a79",
       "funded": true
     },
     {
       "symbol": "BRZE",
       "name": "Breeze",
-      "old_vault": "0x4597A892ED478FF1578cC8994a96d857fb586025",
-      "new_vault": "0x7Ed03e70ba71C3875B35155E2dac6FF3d3621bA2",
+      "old_vault": "0x7Ed03e70ba71C3875B35155E2dac6FF3d3621bA2",
+      "new_vault": "0x4542661955E03B3eBfD6a9b1024464420f3c514A",
       "funded": true
     },
     {
       "symbol": "INHL",
       "name": "Inhalant",
-      "old_vault": "0xF04446279b9Bb245B268aF619360e7264B8333b0",
-      "new_vault": "0x917Ec1CF8B8C75E028c3D1464877DB7eFD08906f",
+      "old_vault": "0x917Ec1CF8B8C75E028c3D1464877DB7eFD08906f",
+      "new_vault": "0xB485A0930a4fB82BE5e63c3Ec0c0aF53fE1281f2",
       "funded": true
     },
     {
       "symbol": "SZON",
       "name": "Season",
-      "old_vault": "0xCF70F59aE5350123B298965D1a0Fb7Ee4D42F249",
-      "new_vault": "0xb9E65F5C8beF9243b95E3f4Cc564a2ae6FeDd3ef",
+      "old_vault": "0xb9E65F5C8beF9243b95E3f4Cc564a2ae6FeDd3ef",
+      "new_vault": "0x53fa1553b83f0995c56a7C59F823FF9A4208a4C1",
       "funded": true
     },
     {
       "symbol": "FILR",
       "name": "Filler",
-      "old_vault": "0xCE9d73D5b1a4118eb261cF5183650b3c94400050",
-      "new_vault": "0xb9DF2fe5C031C65E4934AE3e8DCA120A6d9D2a62",
+      "old_vault": "0xb9DF2fe5C031C65E4934AE3e8DCA120A6d9D2a62",
+      "new_vault": "0xCaD4d99e52674d0fFa924F3064ef64b71B63F793",
       "funded": true
     },
     {
       "symbol": "SIMU",
       "name": "Simulcast",
-      "old_vault": "0x12337f083c6ED4e810eFDB5cdB6B001dE5dbc499",
-      "new_vault": "0x0629BeAcFf6fa0218Fc3ABb5741117Eb9f5a1aF0",
+      "old_vault": "0x0629BeAcFf6fa0218Fc3ABb5741117Eb9f5a1aF0",
+      "new_vault": "0x4973209dac9486CcA06CD0081d607b35664F7fE6",
       "funded": true
     },
     {
       "symbol": "CANN",
       "name": "Canon",
-      "old_vault": "0x1fc0ce35353CBb3dc6fEfd9AEE429e32991a2C8C",
-      "new_vault": "0x6cA23fFBA9a91CA04641Ea02B9CF63085c699397",
+      "old_vault": "0x6cA23fFBA9a91CA04641Ea02B9CF63085c699397",
+      "new_vault": "0x9064297c4c0f18B1665f5AF8F7974aE9a310a15B",
       "funded": true
     },
     {
       "symbol": "SFRI",
       "name": "Safari",
-      "old_vault": "0x212459093F015E881ED154CC70117E87a8E195F8",
-      "new_vault": "0x469253fe9c9a74d3Edc3c53658DEAD1c8DE15BD0",
+      "old_vault": "0x469253fe9c9a74d3Edc3c53658DEAD1c8DE15BD0",
+      "new_vault": "0xCd1157428149a337c2EEa1Aa286F69Ad4388b421",
       "funded": true
     },
     {
       "symbol": "HBRN",
       "name": "Hibernate",
-      "old_vault": "0x72e56935AC8B3E48208ec4526F07be932E369Db2",
-      "new_vault": "0x607c072678a0aE7A64ba7df5e4772b79219B55d5",
+      "old_vault": "0x607c072678a0aE7A64ba7df5e4772b79219B55d5",
+      "new_vault": "0xaCc91e84091C7F3a6039423DCf7a66c023035A16",
       "funded": true
     },
     {
       "symbol": "BIOM",
       "name": "Biome",
-      "old_vault": "0xC8fd2565EEFB14Bfb61C2f0ABCA03bF9ce6E29c0",
-      "new_vault": "0xd858DaFB40CCdE7E44aeb27f8aA4F163A3309299",
+      "old_vault": "0xd858DaFB40CCdE7E44aeb27f8aA4F163A3309299",
+      "new_vault": "0x95DE0976d8C80E907C26e7d1e70e72CE84792a48",
       "funded": true
     },
     {
       "symbol": "NTRN",
       "name": "Nocturne",
-      "old_vault": "0xC9A8a234E3f94f37C3dd8D8b754e83Caf6154869",
-      "new_vault": "0x6bc4C230107051407FF94a7dd5dba4e85f71F8de",
+      "old_vault": "0x6bc4C230107051407FF94a7dd5dba4e85f71F8de",
+      "new_vault": "0x590C53ACD369Cdb7fA78EEE45FB45FE5080198A0",
       "funded": true
     },
     {
       "symbol": "UNSL",
       "name": "Unusual",
-      "old_vault": "0x366EE08cC9f9b59a893c13AA6FC70E7EA2b010b9",
-      "new_vault": "0x0e48f80071473a8a40805F9559692eEA32B3C6cb",
+      "old_vault": "0x0e48f80071473a8a40805F9559692eEA32B3C6cb",
+      "new_vault": "0x6CC0Eb6936EAf41bFdB5e056D2E157EFa1eF79bF",
       "funded": true
     },
     {
       "symbol": "UCRT",
       "name": "Uncrate",
-      "old_vault": "0x2E3aBB8550322F77b97e39e3794cA4aCCe070890",
-      "new_vault": "0x3a20c215f7E84ad95DFb327b89a58730b78445ae",
+      "old_vault": "0x3a20c215f7E84ad95DFb327b89a58730b78445ae",
+      "new_vault": "0x1655507A9FD1f156De92aa9d7f52271841B0ebFc",
       "funded": true
     },
     {
       "symbol": "VNTG",
       "name": "Vintage",
-      "old_vault": "0x4f1354e2D1f47bF06D4827c62f085B76d997332A",
-      "new_vault": "0xC730DB61Ae6CF60FE1Dc1f4DF328531fA925C4C8",
+      "old_vault": "0xC730DB61Ae6CF60FE1Dc1f4DF328531fA925C4C8",
+      "new_vault": "0x08b8B2EdF8965C84bdC1B059a659297a70C3abf2",
       "funded": true
     },
     {
       "symbol": "HASH",
       "name": "Hashrate",
-      "old_vault": "0x0351CDeBe3AAdcb5b40bB5ba606B7aDa70B52B43",
-      "new_vault": "0x2b83D9163A9d677C8fD40E03170d8C6809347820",
+      "old_vault": "0x2b83D9163A9d677C8fD40E03170d8C6809347820",
+      "new_vault": "0x77057a457567D88C49e491121738043B43954F57",
       "funded": true
     },
     {
       "symbol": "HALV",
       "name": "Halving",
-      "old_vault": "0x1305E8151605a989006085f2b27a3FF0D8b36bd1",
-      "new_vault": "0xf5E0e91d32990A92B4cc32F5572D6c32Bb476665",
+      "old_vault": "0xf5E0e91d32990A92B4cc32F5572D6c32Bb476665",
+      "new_vault": "0x166A903aD04BFa6d040242B69B6f8c52c0eCac98",
       "funded": true
     },
     {
       "symbol": "SATS",
       "name": "Satoshi",
-      "old_vault": "0x598fd31afD9744c8Af1E423A221b73BEb03086A1",
-      "new_vault": "0x4Bc2491aa297125833dA1C72B08BfDc9B375c652",
+      "old_vault": "0x4Bc2491aa297125833dA1C72B08BfDc9B375c652",
+      "new_vault": "0x1F8D3a4B7895D1647130DC17c5828Fa4e3fc6842",
       "funded": true
     },
     {
       "symbol": "MPLM",
       "name": "Mempool",
-      "old_vault": "0x87EaAb41b1A655322b62E1C825e0C69eE92ab10E",
-      "new_vault": "0x09C479ECfb356C2350eb2A5fE52A391C87d66961",
+      "old_vault": "0x09C479ECfb356C2350eb2A5fE52A391C87d66961",
+      "new_vault": "0xAc76CfC348aeaa056E307F06eA1FF96FE7EC3155",
       "funded": true
     },
     {
       "symbol": "MKDN",
       "name": "Markdown",
-      "old_vault": "0x399cb078F565458694AA7Ad43b61Cc4fcba25982",
-      "new_vault": "0xED3f948e544a3F2A2452EAc6490620f16D9AB97a",
+      "old_vault": "0xED3f948e544a3F2A2452EAc6490620f16D9AB97a",
+      "new_vault": "0xe252d89b016C2fB083A48829D589A9598De76500",
       "funded": true
     },
     {
       "symbol": "BNCE",
       "name": "Bounce",
-      "old_vault": "0x0542c3d824eCb5CDcD2EE3AB8ad02Db0Aa7a9bE8",
-      "new_vault": "0xD6B34227980e136553F99647E9CD662D3A23F845",
+      "old_vault": "0xD6B34227980e136553F99647E9CD662D3A23F845",
+      "new_vault": "0x557AF78bE2ceAB160990822dB1f99061C0f67e51",
       "funded": true
     },
     {
       "symbol": "DOOR",
       "name": "Doorbuster",
-      "old_vault": "0x6D73348C52a01d2208E767cf2A50e8598f0D4cF7",
-      "new_vault": "0x9a8BEc05B8936c31cC2df2678F71fcdDC7C49E8D",
+      "old_vault": "0x9a8BEc05B8936c31cC2df2678F71fcdDC7C49E8D",
+      "new_vault": "0x11c80b0C249f3186A382B91c0cba520b8547eBE6",
       "funded": true
     },
     {
       "symbol": "CLRN",
       "name": "Clearance",
-      "old_vault": "0x8630267C94048CFeD21E794591f8155Fb4cFEF47",
-      "new_vault": "0x1d6256dC580120a8ADd25Cd0c5802c6E98FfCEa4",
+      "old_vault": "0x1d6256dC580120a8ADd25Cd0c5802c6E98FfCEa4",
+      "new_vault": "0x3c02281e0Df898935c7C5b9D3d0abC94b41665b9",
       "funded": true
     },
     {
       "symbol": "PYRL",
       "name": "Payroll",
-      "old_vault": "0xC3996351e875edF50760888395Fd5195f53AdA3a",
-      "new_vault": "0x1e5ca61788D50cDe13A2f4A1af58A2870cb3F0d8",
+      "old_vault": "0x1e5ca61788D50cDe13A2f4A1af58A2870cb3F0d8",
+      "new_vault": "0x57DE3577c0ec93aeC96F968130F202DF7d26b72E",
       "funded": true
     },
     {
       "symbol": "NFRM",
       "name": "Nonfarm",
-      "old_vault": "0x09fa5c3EfbF557b25DD083dAb019F998d0045a88",
-      "new_vault": "0xa2Ec34Ba8f142CA927C6E2C50bc732Aa5C500401",
+      "old_vault": "0xa2Ec34Ba8f142CA927C6E2C50bc732Aa5C500401",
+      "new_vault": "0x5e14cA41Fd924915D7a75B683736Abd8CBd8b046",
       "funded": true
     },
     {
       "symbol": "WAGE",
       "name": "Wage",
-      "old_vault": "0xfc9eA12Cf30A8ba80b61EcAFe0d8a2836B48623E",
-      "new_vault": "0x73C2C7F53a3D43cF55092504899AF0d145BdeC0e",
+      "old_vault": "0x73C2C7F53a3D43cF55092504899AF0d145BdeC0e",
+      "new_vault": "0xefDB5549d9E5A0447F8C2436CB28B41D53FeaDfe",
       "funded": true
     },
     {
       "symbol": "UNEM",
       "name": "Underemployed",
-      "old_vault": "0x196b0f736DDA8DCcaeA017BD065a567D9297d63B",
-      "new_vault": "0x775AA3c8D0AbdD21752961f1fB71067e9aBfBD5D",
+      "old_vault": "0x775AA3c8D0AbdD21752961f1fB71067e9aBfBD5D",
+      "new_vault": "0x03C2534f6037204002107847E945c1b46d331625",
       "funded": true
     },
     {
       "symbol": "DARK",
       "name": "After Dark",
-      "old_vault": "0x58afd45Ed7440FCed40408CA6f877e6D65D39e78",
-      "new_vault": "0x4562440623B03DDB916F22a09b1c7B623a6b1Cf5",
+      "old_vault": "0x4562440623B03DDB916F22a09b1c7B623a6b1Cf5",
+      "new_vault": "0x5ECC755F0E6919636d21aa4af189124093c89F61",
       "funded": true
     },
     {
       "symbol": "INTR",
       "name": "Intermission",
-      "old_vault": "0x1B01b641E80F0D0044A1311588796e73d1fDAc1A",
-      "new_vault": "0x977CBdaD3D918c1a04B0c2338a44239C2dd64597",
+      "old_vault": "0x977CBdaD3D918c1a04B0c2338a44239C2dd64597",
+      "new_vault": "0x354Ea7D36ea1491Bf57396bF09FdC3B734e7F997",
       "funded": true
     },
     {
       "symbol": "NOCT",
       "name": "Nocturnal",
-      "old_vault": "0x0091A0D6ce65134273858aD1A316183182643415",
-      "new_vault": "0x3D01f4be841E314090570c8aA31315C8951a7cbb",
+      "old_vault": "0x3D01f4be841E314090570c8aA31315C8951a7cbb",
+      "new_vault": "0x74afe23d2d89C431DBAB215Bae6E284344e226B1",
       "funded": true
     },
     {
       "symbol": "PKHR",
       "name": "Peakhour",
-      "old_vault": "0xf81DA1c5611D45c3c76B4bf6ed12D048F150CCC4",
-      "new_vault": "0x56f4eB7D783cC7E745C30fa32829ac053027Ce30",
+      "old_vault": "0x56f4eB7D783cC7E745C30fa32829ac053027Ce30",
+      "new_vault": "0x5f62DA31C03bA10acCDFa8dC9EdEa1e1D348351e",
       "funded": true
     },
     {
       "symbol": "SPOK",
       "name": "Spoke",
-      "old_vault": "0x746a3412cE3D9b82Cf1704E50574aDC247566A62",
-      "new_vault": "0xaAb62f6AB6140095Bb0176978f78e5b5EDf3fa7d",
+      "old_vault": "0xaAb62f6AB6140095Bb0176978f78e5b5EDf3fa7d",
+      "new_vault": "0xF030271F5dFFBD743730f4d39014f75700d4419C",
       "funded": true
     },
     {
       "symbol": "PEDL",
       "name": "Pedal",
-      "old_vault": "0x192D88600F6dCd5c860121ce461B8F7FDeD00A11",
-      "new_vault": "0xaEcC68114c52307A8830Ea0eac23fE2DFc782668",
+      "old_vault": "0xaEcC68114c52307A8830Ea0eac23fE2DFc782668",
+      "new_vault": "0x7A4B5A22CA026fB94f3bDFcdF25a9B2e03A18803",
       "funded": true
     },
     {
       "symbol": "FRWL",
       "name": "Freewheel",
-      "old_vault": "0xceA4c70A99B30D1413aE309A281ca075b22eB3c3",
-      "new_vault": "0x2Eb6C43BC5aAf1c5CD6abbe2FB3508b4bef56aDD",
+      "old_vault": "0x2Eb6C43BC5aAf1c5CD6abbe2FB3508b4bef56aDD",
+      "new_vault": "0x19059FEE9dF8D3d03eeCdc4B2B8D1a9fCf57B3af",
       "funded": true
     },
     {
       "symbol": "DKLS",
       "name": "Dockless",
-      "old_vault": "0xD33d02Fa6dcEBB8Cc25dE8DD56ED5fb825Ee5C27",
-      "new_vault": "0x3B22096fb53b64c9243943b2348EA82F231A3512",
+      "old_vault": "0x3B22096fb53b64c9243943b2348EA82F231A3512",
+      "new_vault": "0xc25b0E81A2300755cFcdba1eE36be3e6B9dd7b29",
       "funded": true
     },
     {
       "symbol": "TRFC",
       "name": "Traffic",
-      "old_vault": "0xc1b623E953C7550C6Da8eec1E8dF8c24f0A422BE",
-      "new_vault": "0x9e515D6c22d3b396E13bbdda1c881d3faA63Ce77",
+      "old_vault": "0x9e515D6c22d3b396E13bbdda1c881d3faA63Ce77",
+      "new_vault": "0x33B767CE704B19ECe5c3F9b643a495a691e8fEe7",
       "funded": true
     },
     {
       "symbol": "DNRK",
       "name": "Darknet",
-      "old_vault": "0x89beda85a0837EC1ca25C14Fa7474676C7A95B17",
-      "new_vault": "0x032Df12B3989bdD29b83A7F8DE631F01C0309eA2",
+      "old_vault": "0x032Df12B3989bdD29b83A7F8DE631F01C0309eA2",
+      "new_vault": "0xf42779BE04f94a66e0E2B2B2f3c36682A3E56937",
       "funded": true
     },
     {
       "symbol": "CRWL",
       "name": "Crawl",
-      "old_vault": "0x4968f27Da0AFBFF6e060bD572F683B3FC24309a4",
-      "new_vault": "0x90B8402D19026645b9A1126d17e08b55FB9a6CE3",
+      "old_vault": "0x90B8402D19026645b9A1126d17e08b55FB9a6CE3",
+      "new_vault": "0x64126B3C8E19cF6442565f4acbCb9092436f822E",
       "funded": true
     },
     {
       "symbol": "OUTG",
       "name": "Outage",
-      "old_vault": "0x2fFc02f3BFd762e156750aaCAE4C72598d2F065f",
-      "new_vault": "0x3eD1C09F4f94ea59c05e94C19cf3a4ab76d72082",
+      "old_vault": "0x3eD1C09F4f94ea59c05e94C19cf3a4ab76d72082",
+      "new_vault": "0x86b4658143e5bcBbb49f13D39CA763b5E3c64b56",
       "funded": true
     },
     {
       "symbol": "SESN",
       "name": "Session",
-      "old_vault": "0x4d7AADED1234ACb868e4CD6cb1eb5e9b2b6c8F9e",
-      "new_vault": "0xA69dD1Bf46C77A66E0b96B7ecD7333450524B424",
+      "old_vault": "0xA69dD1Bf46C77A66E0b96B7ecD7333450524B424",
+      "new_vault": "0x11909b01Bca16520C1Ab0Bac09DdCA7a48ebd56A",
       "funded": true
     },
     {
       "symbol": "RECS",
       "name": "Recess",
-      "old_vault": "0xBaF127171c55a1f53F9e23C5eA7633Bd344c7FBD",
-      "new_vault": "0x837494A72fEe3C6B2946F9E3941Fe59De51F6f1c",
+      "old_vault": "0x837494A72fEe3C6B2946F9E3941Fe59De51F6f1c",
+      "new_vault": "0x83179778DDBB4D894b916027744bFDEDbDb8EDfb",
       "funded": true
     },
     {
       "symbol": "FLBS",
       "name": "Filibuster",
-      "old_vault": "0xb633027C8Af616Fa4785B425e309EFf30D29b1da",
-      "new_vault": "0xc6224E8e718A93b12fCec41156A8dD40adB29729",
+      "old_vault": "0xc6224E8e718A93b12fCec41156A8dD40adB29729",
+      "new_vault": "0x4cE41Ae52422D1F5E5f2aa61503966814197539F",
       "funded": true
     },
     {
       "symbol": "BPRT",
       "name": "Bipartisan",
-      "old_vault": "0xa71ce614874982C8285b4A71a94575ef1fD0dc59",
-      "new_vault": "0x41d71b969620297afd9D7B797a3b6775B59410fb",
+      "old_vault": "0x41d71b969620297afd9D7B797a3b6775B59410fb",
+      "new_vault": "0x8e5F0D557Ea7b0A0979b153EEbED918A0b473ABc",
       "funded": true
     },
     {
       "symbol": "CITE",
       "name": "Citation",
-      "old_vault": "0xE5105cd298cfF97382A74c3b32CC6FE998Ced3de",
-      "new_vault": "0x659D5AE2aD7a56F02419EA47027BEEca9dbB2634",
+      "old_vault": "0x659D5AE2aD7a56F02419EA47027BEEca9dbB2634",
+      "new_vault": "0x601c6Be9772363d25Be923e0a1750421938B0B8E",
       "funded": true
     },
     {
       "symbol": "RTRC",
       "name": "Retraction",
-      "old_vault": "0xdabA6a51ba660E76B64d1dAaE87f2f0C585Fa849",
-      "new_vault": "0x2b8fD67E1F54B00E20176E4373E3089d641a4721",
+      "old_vault": "0x2b8fD67E1F54B00E20176E4373E3089d641a4721",
+      "new_vault": "0x1119A300F77DD5aaDE6920018473E46E237F4836",
       "funded": true
     },
     {
       "symbol": "INDX",
       "name": "Index",
-      "old_vault": "0x56Dd87cf597D88e6584a0877C776d8E161619bCB",
-      "new_vault": "0x9f2071c287AC03119321e3f95549cC8156c68BF2",
+      "old_vault": "0x9f2071c287AC03119321e3f95549cC8156c68BF2",
+      "new_vault": "0x5a1c11d13b2e21e708164a4D8Eb2ACD6EB5F7244",
       "funded": true
     },
     {
       "symbol": "IMPC",
       "name": "Impact",
-      "old_vault": "0xA611E54db41c21C1B5Df80b13EAC01e2ccC66E1C",
-      "new_vault": "0x58931ab5735d89814ecb2Aa7762867cAFC3548D4",
+      "old_vault": "0x58931ab5735d89814ecb2Aa7762867cAFC3548D4",
+      "new_vault": "0x1a7C960cEae8C939284F9C57601C5dD6429af64e",
       "funded": true
     },
     {
       "symbol": "LOCK",
       "name": "Lockflow",
-      "old_vault": "0x8ca7797bB22A2EB60d5e05A4Af7DD18a9E2A9890",
-      "new_vault": "0xD1D121254539fffD6Fe66F13DbE80f4a2f748e8a",
+      "old_vault": "0xD1D121254539fffD6Fe66F13DbE80f4a2f748e8a",
+      "new_vault": "0xa8c6Ca95aE3D3Eee398305c56D48c7D16a40036A",
       "funded": true
     },
     {
       "symbol": "ULCK",
       "name": "Unlock",
-      "old_vault": "0x5F1F88ce5F60B41F589da22B9D49B911f97fF17a",
-      "new_vault": "0x1FCA3688ED44a8D43ad59d44342BB4F197Be7686",
+      "old_vault": "0x1FCA3688ED44a8D43ad59d44342BB4F197Be7686",
+      "new_vault": "0xFeA8f6bb8bec5e7401b96b218E489DD56934AFC6",
       "funded": true
     },
     {
       "symbol": "YILD",
       "name": "Yield",
-      "old_vault": "0x8CA8b0955a9f8648ef77333Ca720aD0FC45ed6A4",
-      "new_vault": "0x75C5645DBBd939b552B1b339182F3Ef3dE6925e6",
+      "old_vault": "0x75C5645DBBd939b552B1b339182F3Ef3dE6925e6",
+      "new_vault": "0xe0857DEcBe438e2967e8800fb79bE3Efa3812817",
       "funded": true
     },
     {
       "symbol": "XPLT",
       "name": "Exploit",
-      "old_vault": "0xA27F6855Ce6f03d48c68EB53f57A62938a1c3eCd",
-      "new_vault": "0x254aD7c0F2BE81495fDecAB2FcF6645d35867be1",
+      "old_vault": "0x254aD7c0F2BE81495fDecAB2FcF6645d35867be1",
+      "new_vault": "0x9CD93b1b1CA6a8150f8573015316A04664ae97C3",
       "funded": true
     },
     {
       "symbol": "DRFT",
       "name": "Drift",
-      "old_vault": "0x434e1aF90681e645E7902ec82cf1B13A1754e20c",
-      "new_vault": "0x032e70E96F3E131587642FDEED05a15c4fD6aaFC",
+      "old_vault": "0x032e70E96F3E131587642FDEED05a15c4fD6aaFC",
+      "new_vault": "0xa8ae940e134b558802bEA369CC4ba7719CdF82aD",
       "funded": true
     },
     {
       "symbol": "AFTR",
       "name": "Aftershock",
-      "old_vault": "0x24EF60fF1abEB87dA736e3BDE9C5DC6C8eAc4c5c",
-      "new_vault": "0x6874fFd65080eae92f315B5C10B80181A4ACA440",
+      "old_vault": "0x6874fFd65080eae92f315B5C10B80181A4ACA440",
+      "new_vault": "0x5Bea15ff32b66809fcFb55E719db5beE99611312",
       "funded": true
     },
     {
       "symbol": "DRMT",
       "name": "Dormant",
-      "old_vault": "0xf3e1Db0447E83136489692E5F6De7E5371bBa505",
-      "new_vault": "0xd26b66691fF0b9Fd37da6582b1E91446B4BDC255",
+      "old_vault": "0xd26b66691fF0b9Fd37da6582b1E91446B4BDC255",
+      "new_vault": "0x7C8D61BE0e12D769c99d579C739cb3C83999c701",
       "funded": true
     },
     {
       "symbol": "EPIC",
       "name": "Epicenter",
-      "old_vault": "0x755C25F4ac3Cd4Ad50dfeE6B976C74ACF2F3eA3e",
-      "new_vault": "0x6464dA249096D01c355a6F8E9BF3847C7747a4B2",
+      "old_vault": "0x6464dA249096D01c355a6F8E9BF3847C7747a4B2",
+      "new_vault": "0xE97908cb0AaF0cfA313d877e7a4A53fE44529628",
       "funded": true
     },
     {
       "symbol": "RCTR",
       "name": "Richter",
-      "old_vault": "0xc9936b524298cE724974F782f270EB04871268bE",
-      "new_vault": "0x9c0e2143ba0c987577110fD4a06dfA71D7f1033b",
+      "old_vault": "0x9c0e2143ba0c987577110fD4a06dfA71D7f1033b",
+      "new_vault": "0xFa9F2BC7Fc8d9e0081f2Ed8C0B0d77D8F5cb776C",
       "funded": true
     },
     {
       "symbol": "EURO",
       "name": "Euro",
-      "old_vault": "0x92539684f68950C97729422A4B89421Fe42Ee59F",
-      "new_vault": "0xE836622438F9318193193e80907ca8E50074d117",
+      "old_vault": "0xE836622438F9318193193e80907ca8E50074d117",
+      "new_vault": "0xC35f8A48f140D46073142381A5705fE526110aEC",
       "funded": true
     },
     {
       "symbol": "PRTY",
       "name": "Parity",
-      "old_vault": "0xDA1Cc052F56714073F722774e7d15923F5eE19C8",
-      "new_vault": "0xC827809ff8e791bAcF6FA08570DA3764Fc87a9E0",
+      "old_vault": "0xC827809ff8e791bAcF6FA08570DA3764Fc87a9E0",
+      "new_vault": "0x3162b6A175cf587124660691F61A090dfbC3822B",
       "funded": true
     },
     {
       "symbol": "DRGI",
       "name": "Draghi",
-      "old_vault": "0x3F20715311282ffEe92A58bb7Cd3AF05AF35e3b0",
-      "new_vault": "0xd57A4f0f6D98741156fb75d62D2333Df44d9dd3A",
+      "old_vault": "0xd57A4f0f6D98741156fb75d62D2333Df44d9dd3A",
+      "new_vault": "0xEfc62ebF32c519628100Db2C721D656C5A582C2a",
       "funded": true
     },
     {
       "symbol": "ASTR",
       "name": "Austerity",
-      "old_vault": "0xf3Fc4eE40B675e8db115187a4688e795442204da",
-      "new_vault": "0x2239a063a809f4c6a1425869959642602942012F",
+      "old_vault": "0x2239a063a809f4c6a1425869959642602942012F",
+      "new_vault": "0x7d1fF43e02D4068fe7c37d764913238641dAB861",
       "funded": true
     },
     {
       "symbol": "PIPE",
       "name": "Pipeline",
-      "old_vault": "0x743cD5675b9205E89EF84c6576F3D7906e0b85FA",
-      "new_vault": "0x677D51CD434071055349f7A7342d26dE47Ac33cb",
+      "old_vault": "0x677D51CD434071055349f7A7342d26dE47Ac33cb",
+      "new_vault": "0x9Dbe2EB0fcf20d9d5a64CB599695C15c232922B1",
       "funded": true
     },
     {
       "symbol": "SRPL",
       "name": "Surplus",
-      "old_vault": "0x816dA8b3794F89E1A09d51Ee50A256297f06b464",
-      "new_vault": "0xCE91eE65dB2D487ea92900D1d0FEed720d9f83eC",
+      "old_vault": "0xCE91eE65dB2D487ea92900D1d0FEed720d9f83eC",
+      "new_vault": "0x29B3E111E1914523df09597264b76D1C7259E639",
       "funded": true
     },
     {
       "symbol": "JOUL",
       "name": "Joule",
-      "old_vault": "0x358a27b26a5383Ef73D082405238D69b5a83A2D3",
-      "new_vault": "0x944bb84ccb19824a824fBe19C91bdAa8B9603171",
+      "old_vault": "0x944bb84ccb19824a824fBe19C91bdAa8B9603171",
+      "new_vault": "0x1E281eea59ca1D29418902D49373e5452e1b230a",
       "funded": true
     },
     {
       "symbol": "RSRV",
       "name": "Reserve",
-      "old_vault": "0x5Cb445481711bb3a91Af1F0AC4D55136CDa5e97A",
-      "new_vault": "0xe4359cbE0667d8658A4270ba49116366ea132ba8",
+      "old_vault": "0xe4359cbE0667d8658A4270ba49116366ea132ba8",
+      "new_vault": "0x39F696Af0841dC6A347C8286865cA6Ac9A79A647",
       "funded": true
     },
     {
       "symbol": "CRWD",
       "name": "Crowd",
-      "old_vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641",
-      "new_vault": "0x27bbEd240A02Ce522eB073D5E7D7107a79E812f6",
+      "old_vault": "0x27bbEd240A02Ce522eB073D5E7D7107a79E812f6",
+      "new_vault": "0x440459280D2FEA202f16368f9aD566b4Fc71F486",
       "funded": true
     },
     {
       "symbol": "UWND",
       "name": "Unwind",
-      "old_vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2",
-      "new_vault": "0x33594412B589aE9C87984C918B5e6427D3BeE7Ce",
+      "old_vault": "0x33594412B589aE9C87984C918B5e6427D3BeE7Ce",
+      "new_vault": "0xee4aF97E7889ccAc32F65f21b3ae811031eb8215",
       "funded": true
     },
     {
       "symbol": "VSPK",
       "name": "Spike",
-      "old_vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d",
-      "new_vault": "0xD0dEF175fC52e88179E462f630A0257b80f1292b",
+      "old_vault": "0xD0dEF175fC52e88179E462f630A0257b80f1292b",
+      "new_vault": "0xE4F662ce2a1218Fb8f78aBC5eCaa6CE10c9F11B5",
       "funded": true
     },
     {
       "symbol": "PRES",
       "name": "Pressure",
-      "old_vault": "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8",
-      "new_vault": "0x4bE4C9d7e4C1fD41B705f5282D31103c2ac7C09c",
+      "old_vault": "0x4bE4C9d7e4C1fD41B705f5282D31103c2ac7C09c",
+      "new_vault": "0x6241E367942698CdcFf14bC2e5Ea2b270EF14A31",
       "funded": true
     },
     {
       "symbol": "NOIS",
       "name": "Noise",
-      "old_vault": "0x2C3aa9D1AdB0526561B8fA377A6B0a8ECc8b6DA3",
-      "new_vault": "0x3AD1D3072e2E8626b85712Ba6583E88031165a1c",
+      "old_vault": "0x3AD1D3072e2E8626b85712Ba6583E88031165a1c",
+      "new_vault": "0x839fD4609ffBD550f905630Fd9e092003d465d51",
       "funded": true
     },
     {
       "symbol": "RAID",
       "name": "Raid",
-      "old_vault": "0x4b284BB6e3237652d5e2E46D4F560Db6B47939a5",
-      "new_vault": "0x2093Ec955dADAd0DC747cDee90f21EcE2dF8E058",
+      "old_vault": "0x2093Ec955dADAd0DC747cDee90f21EcE2dF8E058",
+      "new_vault": "0xD1dDBbC6f8fC8A709B35689a8259518635c19430",
       "funded": true
     },
     {
       "symbol": "SAGE",
       "name": "Sage",
-      "old_vault": "0x541Fd12852ABa9eAA39da0969B9e676338E1F9B4",
-      "new_vault": "0x1f73aF1c525095cAEf2E756f69E3CaD8c6D79ceC",
+      "old_vault": "0x1f73aF1c525095cAEf2E756f69E3CaD8c6D79ceC",
+      "new_vault": "0x70907409d0a746D942776F282808dB22D1A3058e",
       "funded": true
     },
     {
       "symbol": "ANON",
       "name": "Anon",
-      "old_vault": "0x98e84b9816251B075b752eFF3789C0f4666532De",
-      "new_vault": "0x333d51b73365B64b14447ae211d528BdCA504D0f",
+      "old_vault": "0x333d51b73365B64b14447ae211d528BdCA504D0f",
+      "new_vault": "0xA9E9c7D0356A432967e28C3AD97FB3Fa1beB8B84",
       "funded": true
     },
     {
       "symbol": "FRNT",
       "name": "Frontpage",
-      "old_vault": "0xa88b0096E4a9e4d33b23986446a08a45Ac73d456",
-      "new_vault": "0x3B8ab88110Fd3A143301163adFb0dF854F53C2e7",
+      "old_vault": "0x3B8ab88110Fd3A143301163adFb0dF854F53C2e7",
+      "new_vault": "0xce635A22aCE4A92848942E5Fe3f41e1AB6Da2e36",
       "funded": true
     },
     {
       "symbol": "DCAY",
       "name": "Decay",
-      "old_vault": "0x5326D777F59d4d5C8AeB959F72920e5D5BcbDABf",
-      "new_vault": "0xC7a049E78792864fDC1A76A9200Df6B8aEc45c36",
+      "old_vault": "0xC7a049E78792864fDC1A76A9200Df6B8aEc45c36",
+      "new_vault": "0xA12c7807e4fF938B1Da699962382A241ed28f7Cc",
       "funded": true
     },
     {
       "symbol": "FLAG",
       "name": "Flagged",
-      "old_vault": "0x22aD84D39ee74D7FfE144Cd8A86ba54d071419c8",
-      "new_vault": "0xFd70150c968D49682bd5070C4aBf4ab58D4ea27d",
+      "old_vault": "0xFd70150c968D49682bd5070C4aBf4ab58D4ea27d",
+      "new_vault": "0x9Ab9DF460D572ff117246F6d23C1776822765821",
       "funded": true
     },
     {
       "symbol": "SHOW",
       "name": "Show",
-      "old_vault": "0x0551843B3eDD3a25D0fF34C9a72fC4aDF9728229",
-      "new_vault": "0xfe97d56E81170b46512D99CC94B20f91Af873C56",
+      "old_vault": "0xfe97d56E81170b46512D99CC94B20f91Af873C56",
+      "new_vault": "0x920D1419F18A6E0A87FCB449Aa4E8c4064a63B61",
       "funded": true
     },
     {
       "symbol": "ORBT",
       "name": "Orbit",
-      "old_vault": "0xA9aDe4742F36c62B52d1E5408D94F6D392C94dbc",
-      "new_vault": "0xaD680F5c4F3dDC87604E2662423bb3f639A7C01B",
+      "old_vault": "0xaD680F5c4F3dDC87604E2662423bb3f639A7C01B",
+      "new_vault": "0x82E77B4DDf8681a5B82c521cf8517A2eb79046F6",
       "funded": true
     },
     {
       "symbol": "RENT",
       "name": "Reentry",
-      "old_vault": "0x483d34360884246e4DAC07023C96816B09b27DCB",
-      "new_vault": "0xDDD2F928D7F78C3f397529baF7430711232E32Dc",
+      "old_vault": "0xDDD2F928D7F78C3f397529baF7430711232E32Dc",
+      "new_vault": "0xC4B7679D2a55307EF830603a83B38D21B299263c",
       "funded": true
     },
     {
       "symbol": "MGRV",
       "name": "Microgravity",
-      "old_vault": "0x37c47d6d31Be1f01aA28cEBF1fC52d76DCEFDe7f",
-      "new_vault": "0x4ad922bE914e1c88AD194aDd1488A14f53740092",
+      "old_vault": "0x4ad922bE914e1c88AD194aDd1488A14f53740092",
+      "new_vault": "0x57B96e2F59C66dE1c7D08c4022ea7ED92C04aD46",
       "funded": true
     },
     {
       "symbol": "DOCK",
       "name": "Docking",
-      "old_vault": "0xC614F0dB715A42D3D6B746400aA9452723B54773",
-      "new_vault": "0x6911cBf871143c979142519193b593a64E2c88d9",
+      "old_vault": "0x6911cBf871143c979142519193b593a64E2c88d9",
+      "new_vault": "0x694152dCe31186806F9935e3Cbd1C38384506701",
       "funded": true
     },
     {
       "symbol": "SORT",
       "name": "Sortie",
-      "old_vault": "0x6C3eF66ee8E01748B1CcDa0ec7E1707b5B39454F",
-      "new_vault": "0x4b63015ECcecaE2F16F7196C9a2e9cC6Cd19F17a",
+      "old_vault": "0x4b63015ECcecaE2F16F7196C9a2e9cC6Cd19F17a",
+      "new_vault": "0x95D8bf961428fE54753d14A8001f3B7Da75E6988",
       "funded": true
     },
     {
       "symbol": "STDN",
       "name": "Standdown",
-      "old_vault": "0x0F40015864151c6c6e9316eA4E06E2A301D01b2C",
-      "new_vault": "0x1200F71cE20A68e80F1D3a7Ab824B904f42D2214",
+      "old_vault": "0x1200F71cE20A68e80F1D3a7Ab824B904f42D2214",
+      "new_vault": "0x26c590EBEBe1936F50e1042044CdF75e2b895fD5",
       "funded": true
     },
     {
       "symbol": "OVWT",
       "name": "Overwatch",
-      "old_vault": "0xE5661fa4c39AD44270B9D232AB2b351700B02060",
-      "new_vault": "0x5b7Eed0C0342eB3296ff0b451549Cbb5a252CBA0",
+      "old_vault": "0x5b7Eed0C0342eB3296ff0b451549Cbb5a252CBA0",
+      "new_vault": "0x6ED194F706c0745f268720426BffBB1Fa997AFE0",
       "funded": true
     },
     {
       "symbol": "SCRM",
       "name": "Scramble",
-      "old_vault": "0x60C3DB5Dadf6c6A88966f7877FF0f319f630775b",
-      "new_vault": "0x86Ca92A8Bb862235e9556dbf71058B32c130240B",
+      "old_vault": "0x86Ca92A8Bb862235e9556dbf71058B32c130240B",
+      "new_vault": "0xd022DA2A11943DB217B73E36e45c40e45f5072Db",
       "funded": true
     },
     {
       "symbol": "MTRO",
       "name": "Metro",
-      "old_vault": "0x600759ec228a47A714f04710a70b3eEAF00c7AC0",
-      "new_vault": "0x5988c1C15907C869463aAf08110Ee56016aB8365",
+      "old_vault": "0x5988c1C15907C869463aAf08110Ee56016aB8365",
+      "new_vault": "0x3ff2a1FC998FEC1d15c3AfE2199A9dA36d9133FE",
       "funded": true
     },
     {
       "symbol": "XPRS",
       "name": "Express",
-      "old_vault": "0xb666e61446a2bCf0cA58bC3Cb8C8d1c4F88dfBE2",
-      "new_vault": "0x428abfA925d54550c24eB069982ef17cA327709A",
+      "old_vault": "0x428abfA925d54550c24eB069982ef17cA327709A",
+      "new_vault": "0x473555953F6d7D483875D5F81bD1429aC7595086",
       "funded": true
     },
     {
       "symbol": "XFER",
       "name": "Transfer",
-      "old_vault": "0x664dA40B8E3253FD967f0c152957356a95c44Cd8",
-      "new_vault": "0xCAD0978e5c112a1515dB6f1A1B51d73e3c735b18",
+      "old_vault": "0xCAD0978e5c112a1515dB6f1A1B51d73e3c735b18",
+      "new_vault": "0xDa5D6E8c4FaB53b18B2dB7Ef3847D6df3787C672",
       "funded": true
     },
     {
       "symbol": "TRNS",
       "name": "Turnstile",
-      "old_vault": "0x8d31858c7242d5E99ab59255aEd0084c6E69684e",
-      "new_vault": "0x1Bc4ECA0c00d9AE2Aa0A2E7b87F632A838dbc78b",
+      "old_vault": "0x1Bc4ECA0c00d9AE2Aa0A2E7b87F632A838dbc78b",
+      "new_vault": "0xEC75bbC151480C26cDCaCFF39e9C6696Bc03f756",
       "funded": true
     },
     {
       "symbol": "SWEL",
       "name": "Swell",
-      "old_vault": "0xA42198a47aEe06783B007dE647F73111Cb131c88",
-      "new_vault": "0xE51B2d01163b151ed136FD0C6473a8d0cE250721",
+      "old_vault": "0xE51B2d01163b151ed136FD0C6473a8d0cE250721",
+      "new_vault": "0x90FDbd04715ED362f5D175054B80154A1725f725",
       "funded": true
     },
     {
       "symbol": "CALM",
       "name": "Calm",
-      "old_vault": "0x513584D3eb6Cdc3Dc7211a70Ec8A62B08Bf7b0D4",
-      "new_vault": "0x0b6Ae129Bff356CD6a9E58c25E0A5E28799f5037",
+      "old_vault": "0x0b6Ae129Bff356CD6a9E58c25E0A5E28799f5037",
+      "new_vault": "0xeEa9292CE660D3Ee1A84FDF65D92b105DD839491",
       "funded": true
     },
     {
       "symbol": "RPTD",
       "name": "Riptide",
-      "old_vault": "0x83cC2c26a6B4F53c0dF120727e8d56BCdc458E66",
-      "new_vault": "0xDFd360D2F1F34A630D0D05Ba621431CB989a981D",
+      "old_vault": "0xDFd360D2F1F34A630D0D05Ba621431CB989a981D",
+      "new_vault": "0xBd818e83F4f7c1B65616D32a45102CB41a3a1044",
       "funded": true
     },
     {
       "symbol": "ANML",
       "name": "Anomaly",
-      "old_vault": "0x27eDeFfEd3678c5C143928Af0C40fCBD1ee1a61c",
-      "new_vault": "0x4E9F82A5d6CAad80B3AaF0c0a174969492F87fB0",
+      "old_vault": "0x4E9F82A5d6CAad80B3AaF0c0a174969492F87fB0",
+      "new_vault": "0x75Ef65970aE4C72A7E82ad395ad4Bf1b848a552B",
       "funded": true
     },
     {
       "symbol": "LULL",
       "name": "Lull",
-      "old_vault": "0x198b65542563Fa4E933f98306ad9c581A3C0ebeD",
-      "new_vault": "0x6BBdA2C03E4Df0B1ec1dec71C0A77BfFBA976769",
+      "old_vault": "0x6BBdA2C03E4Df0B1ec1dec71C0A77BfFBA976769",
+      "new_vault": "0x217970e662F35918296d4DbCEd32137691D684B6",
       "funded": true
     },
     {
       "symbol": "BARO",
       "name": "Barometer",
-      "old_vault": "0x07498851caaA638b6c94f2E071e3C59Bd775a924",
-      "new_vault": "0x27ddb3E316e1aF23f0f718a919713E43a133A605",
+      "old_vault": "0x27ddb3E316e1aF23f0f718a919713E43a133A605",
+      "new_vault": "0x1BDD3fAc29DBDF6E116C3e840fFE4A92A9cdeD8b",
       "funded": true
     },
     {
       "symbol": "TIDE",
       "name": "Tideline",
-      "old_vault": "0x54E1c1199551FD4be63E06A55873c75FA96D2785",
-      "new_vault": "0x1e3e8Cb9d8d74FD9dD5eD4f633c309B51442AD55",
+      "old_vault": "0x1e3e8Cb9d8d74FD9dD5eD4f633c309B51442AD55",
+      "new_vault": "0x9c69911dd68530615FbC99c27F3617e6df7894DE",
       "funded": true
     },
     {
       "symbol": "SRGE",
       "name": "Surge",
-      "old_vault": "0x0978e92B2D15293e1E9b7AB510601dd2A99592E4",
-      "new_vault": "0x9C4E549d08159D9cbA9272882E9955E5E02e8Df2",
+      "old_vault": "0x9C4E549d08159D9cbA9272882E9955E5E02e8Df2",
+      "new_vault": "0x3D88E0BAA05dA5B22a99758357754613D673C620",
       "funded": true
     },
     {
       "symbol": "NEAP",
       "name": "Neap",
-      "old_vault": "0x5c2A064EE483157E254BEc8b07D36fD0f95C672C",
-      "new_vault": "0x5763A23082294d5692F508E96F3ba1ceA2a5Bb01",
+      "old_vault": "0x5763A23082294d5692F508E96F3ba1ceA2a5Bb01",
+      "new_vault": "0xB4fA5D49b17BdA3BcaC97039982F8A0789ADCc33",
       "funded": true
     },
     {
       "symbol": "FLOD",
       "name": "Flood",
-      "old_vault": "0x0B966E8DB5B3cF6687bF80085460c3267fE87a94",
-      "new_vault": "0x6C010D216e5d776bb442975A5DB0D2C9B848452f",
+      "old_vault": "0x6C010D216e5d776bb442975A5DB0D2C9B848452f",
+      "new_vault": "0x97e829f8F58432cdA9a392Da226aA9C1F039E2DE",
       "funded": true
     },
     {
       "symbol": "SNBR",
       "name": "Snowbank",
-      "old_vault": "0x411Bfc053fa04D40452B9c2c1B433160808Ae3ec",
-      "new_vault": "0x73d7f5B7edc363839DBA3Dfd19F79219e1Bf5c6c",
+      "old_vault": "0x73d7f5B7edc363839DBA3Dfd19F79219e1Bf5c6c",
+      "new_vault": "0x7756c6014D8902393475cAB56bf92a02A3c7c87D",
       "funded": true
     },
     {
       "symbol": "CRST",
       "name": "Crest",
-      "old_vault": "0x399af8FF184F1A2379d07d6D59C2800134220113",
-      "new_vault": "0x60375a595E938d268F2ce3bad34eb10Af13E5CB7",
+      "old_vault": "0x60375a595E938d268F2ce3bad34eb10Af13E5CB7",
+      "new_vault": "0x6d1bcfc87eB8ED25B9699de2e26Dc49221d792C9",
       "funded": true
     },
     {
       "symbol": "VALT",
       "name": "Valet",
-      "old_vault": "0x545098BA2dc8dE24BD70d99fef3c03C73B3c1d67",
-      "new_vault": "0xE7Ac339D493A5fAc4cEC812C74E46D2aC5Bfc6f8",
+      "old_vault": "0xE7Ac339D493A5fAc4cEC812C74E46D2aC5Bfc6f8",
+      "new_vault": "0x3798465A7B725903E0226aD24C5A483f4395be46",
       "funded": true
     },
     {
       "symbol": "GARG",
       "name": "Garage",
-      "old_vault": "0x420E5E7826648CFb9E4E5f3Ccd5a9510e82A0B78",
-      "new_vault": "0xA60277D9283C0B1ADfF3CFCC31637A6A99e700D6",
+      "old_vault": "0xA60277D9283C0B1ADfF3CFCC31637A6A99e700D6",
+      "new_vault": "0x0B2ab225432aAa9E8167740d67dC198a3DA2A311",
       "funded": true
     },
     {
       "symbol": "METR",
       "name": "Meter",
-      "old_vault": "0x861A66aED8B8C420bD10a9a51FbB35543b86cc09",
-      "new_vault": "0xeFe88DC66F38dFf483B30902b38e750590b3e8A0",
+      "old_vault": "0xeFe88DC66F38dFf483B30902b38e750590b3e8A0",
+      "new_vault": "0x334FD37151288BF9fD9a0e1302f4635edD1d7325",
       "funded": true
     },
     {
       "symbol": "DBLP",
       "name": "Double Park",
-      "old_vault": "0x97f37a106C7906468C1de6Dad6F4cC2d0Ee32022",
-      "new_vault": "0x3EA28B195A784266bc5669064acB7DA032D95460",
+      "old_vault": "0x3EA28B195A784266bc5669064acB7DA032D95460",
+      "new_vault": "0xFeF59134c4079B5fE631773f8B11c75e6d58d63B",
       "funded": true
     },
     {
       "symbol": "ORCL",
       "name": "Oracle",
-      "old_vault": "0x9509913E86D577AE076Dc72fd76135E20C9F63C3",
-      "new_vault": "0x5d1780f15595b98cB6C393105aC665edb957b282",
+      "old_vault": "0x5d1780f15595b98cB6C393105aC665edb957b282",
+      "new_vault": "0x7d063eF93ccd703076e267A5116C3d3D31f302b2",
       "funded": true
     },
     {
       "symbol": "LONG",
       "name": "Longshot",
-      "old_vault": "0x4Bc62Bf1bC8a2dFfa7b199356F179e83A07DE1D9",
-      "new_vault": "0xAA98F157559a2A1E64f08c9b4b10A64e26f7BB91",
+      "old_vault": "0xAA98F157559a2A1E64f08c9b4b10A64e26f7BB91",
+      "new_vault": "0xd598F5b9C88042b755022399A18715ec9b18E80D",
       "funded": true
     },
     {
       "symbol": "CNSN",
       "name": "Consensus",
-      "old_vault": "0xE19CdF8402d7aE554d0a46340AE8C0573a87fFd9",
-      "new_vault": "0x28261C1b55367899CB999E1039de36AF7A809a23",
+      "old_vault": "0x28261C1b55367899CB999E1039de36AF7A809a23",
+      "new_vault": "0xbBF5090bD7A31e00Bc6df3748cFed3e3a876e275",
       "funded": true
     },
     {
       "symbol": "ARBI",
       "name": "Arbitrage",
-      "old_vault": "0x930f69867A29C606416c5be016197AB51D52cb4b",
-      "new_vault": "0xA70512c60f2cb5aE5a6a36DEaffF40f131DBE2C4",
+      "old_vault": "0xA70512c60f2cb5aE5a6a36DEaffF40f131DBE2C4",
+      "new_vault": "0x37c76A59cF4d7EDe5f06F8E08c01dDbEAaFd8362",
       "funded": true
     },
     {
       "symbol": "PRPT",
       "name": "Preprint",
-      "old_vault": "0x32Ca2e5ffAb892EcBF71B224A395A90968a8d233",
-      "new_vault": "0x9B3F8195dEc1b11F64FE213659702666DF77F13e",
+      "old_vault": "0x9B3F8195dEc1b11F64FE213659702666DF77F13e",
+      "new_vault": "0x61b681de28f21d116B295F208624A8Db2844eA11",
       "funded": true
     },
     {
       "symbol": "PLBO",
       "name": "Placebo",
-      "old_vault": "0x78198A204411390a8926908cd2a13E18Af77A94b",
-      "new_vault": "0xf281e84D459FD77c7C18520D537a7d7110a4052C",
+      "old_vault": "0xf281e84D459FD77c7C18520D537a7d7110a4052C",
+      "new_vault": "0x15Ec898E963FC9Cd6b403cb203912457169AfA15",
       "funded": true
     },
     {
       "symbol": "PEER",
       "name": "Peer",
-      "old_vault": "0xEEE6032848E58801408B1f97c355626cEc747A55",
-      "new_vault": "0x3CeBf43ba46cC31131A56cc0113def12EC350AE8",
+      "old_vault": "0x3CeBf43ba46cC31131A56cc0113def12EC350AE8",
+      "new_vault": "0xE68eadE95c45EB23D6C816D6B214B2c20c51e3B1",
       "funded": true
     },
     {
       "symbol": "TRIL",
       "name": "Trial",
-      "old_vault": "0xab555c7439349e4Aa7dA1387a862603Be254929b",
-      "new_vault": "0x5c7324A0De22f22840c8A03F83A46d81464c3AcD",
+      "old_vault": "0x5c7324A0De22f22840c8A03F83A46d81464c3AcD",
+      "new_vault": "0x0ac1998919C7b2DC3C39bc57720d7E22b4a4E107",
       "funded": true
     },
     {
       "symbol": "DGEN",
       "name": "Degenerator",
-      "old_vault": "0x186FcD3478c8899B3a62F34Cb6fc5C4574B69adA",
-      "new_vault": "0x64A9eaEAc1191564864Bd82244eaed9CfD014a4f",
+      "old_vault": "0x64A9eaEAc1191564864Bd82244eaed9CfD014a4f",
+      "new_vault": "0x1d12A4F41Cff04fef38242B78266b71F1Be77058",
       "funded": true
     },
     {
       "symbol": "RUGP",
       "name": "Rugpull",
-      "old_vault": "0xBe5a21b79Dd1465071394C4EAe4E94fab6e3993c",
-      "new_vault": "0x7f2d2B36daa70dc94BF324f39Bc5D7c64c9d2858",
+      "old_vault": "0x7f2d2B36daa70dc94BF324f39Bc5D7c64c9d2858",
+      "new_vault": "0xdEccb0b530C680d304C6537AF36Cb2A97aA7734E",
       "funded": true
     },
     {
       "symbol": "DGNS",
       "name": "Diagnosis",
-      "old_vault": "0x8b0b25CD51d62220d55eed3EBddb0502e949f2E9",
-      "new_vault": "0x42F488a835d3a5cbbA889E869496D17C5566db9d",
+      "old_vault": "0x42F488a835d3a5cbbA889E869496D17C5566db9d",
+      "new_vault": "0x5AB52780E09c8f2b6E6439AF2eA06D47e4688fcA",
       "funded": true
     },
     {
       "symbol": "BNDG",
       "name": "Bonding",
-      "old_vault": "0x0860389CF8871Ca3e0Fdcf78BE8FC70583aD614F",
-      "new_vault": "0x5106539700a9eb0091AAdC53F359Ab1F4023a85D",
+      "old_vault": "0x5106539700a9eb0091AAdC53F359Ab1F4023a85D",
+      "new_vault": "0x699DAc77242cC143Dc33858E4DDF133220e35C6c",
       "funded": true
     },
     {
       "symbol": "FAST",
       "name": "Fastpass",
-      "old_vault": "0xddA415F94B261F03f877331F2542EBF5d429D129",
-      "new_vault": "0xd06A55Bdd4256122E653181F34Cd1CDAB922406c",
+      "old_vault": "0xd06A55Bdd4256122E653181F34Cd1CDAB922406c",
+      "new_vault": "0xbD7381194ba496E718bf1D77dF12486B7E8B3C85",
       "funded": true
     },
     {
       "symbol": "RUSH",
       "name": "Rush",
-      "old_vault": "0xC5983757724ACD11451116958f74a6097ACd3257",
-      "new_vault": "0x9450189C19f3dEBE916035461CF2A99BBBDb33A6",
+      "old_vault": "0x9450189C19f3dEBE916035461CF2A99BBBDb33A6",
+      "new_vault": "0xB3F391D18d7be47F3BEe215c1ee088E12d5C75F1",
       "funded": true
     },
     {
       "symbol": "CLST",
       "name": "Cluster",
-      "old_vault": "0x0f28bfe6e1c11b6b000aF5fF0a6b94c85471Cf5b",
-      "new_vault": "0xAb082bCE437f93671495e643729b2EDE523401fb",
+      "old_vault": "0xAb082bCE437f93671495e643729b2EDE523401fb",
+      "new_vault": "0x049Dfd1BcD9ABCc0e8F5B5ACD946D864B4BC23Ac",
       "funded": true
     },
     {
       "symbol": "DDLN",
       "name": "Deadline",
-      "old_vault": "0x6b559059fC5775aADB5bea1A85fab711eF63f3B5",
-      "new_vault": "0x4292915231EC770B865B5011Dba8474dBaabC6d9",
+      "old_vault": "0x4292915231EC770B865B5011Dba8474dBaabC6d9",
+      "new_vault": "0x4896dB5d6B3d43952D6E27108fe415421634Cf64",
       "funded": true
     },
     {
       "symbol": "DSCL",
       "name": "Disclosure",
-      "old_vault": "0x882aDc8623e2d3A29bCA11C50ae9ff3ff004fF3B",
-      "new_vault": "0x3Ac2dB8e6a6fc36Fa14aA57F6973Af21F3D5B177",
+      "old_vault": "0x3Ac2dB8e6a6fc36Fa14aA57F6973Af21F3D5B177",
+      "new_vault": "0x9710670BB187EeC128F09b02f49dB58a3415C7F0",
       "funded": true
     },
     {
       "symbol": "INSD",
       "name": "Insider",
-      "old_vault": "0x9aFFa4cf32047e755f02A2AE5a157256EA1BeEB9",
-      "new_vault": "0xDEb8e95cec4C1A117DFbE6C734c88CfD19f099d2",
+      "old_vault": "0xDEb8e95cec4C1A117DFbE6C734c88CfD19f099d2",
+      "new_vault": "0xdf7D81863545aE9c0a9dfdF0bb4f5BAA9F8BF327",
       "funded": true
     },
     {
       "symbol": "HLDG",
       "name": "Holdings",
-      "old_vault": "0x859C448C56197Ac19016dD1241b72b279b847c1a",
-      "new_vault": "0x434101Df87a94607627c66c90B24654500D742aC",
+      "old_vault": "0x434101Df87a94607627c66c90B24654500D742aC",
+      "new_vault": "0xF7859E4799d907716f6Ec95467700eafAa6AE279",
       "funded": true
     },
     {
       "symbol": "AURA",
       "name": "Aurora",
-      "old_vault": "0xB16EE7A826e2f80B4418b2961F380708c121984E",
-      "new_vault": "0xB98104c5aF27be222cAa06C24a47CA3D4D0678d9",
+      "old_vault": "0xB98104c5aF27be222cAa06C24a47CA3D4D0678d9",
+      "new_vault": "0xF5120F9801617a26AFed4446f6effd7efF8Da6Bb",
       "funded": true
     },
     {
       "symbol": "SLST",
       "name": "Solstice",
-      "old_vault": "0x69d26Cd0Bc97a97F9F23d0E038d93ab17346bc30",
-      "new_vault": "0xEdfC87d60361406eBaA3abB9737555c51951CE6b",
+      "old_vault": "0xEdfC87d60361406eBaA3abB9737555c51951CE6b",
+      "new_vault": "0x6908B13964f38604fF9EB46B2f6E3e23ba765D4E",
       "funded": true
     },
     {
       "symbol": "SNSP",
       "name": "Sunspot",
-      "old_vault": "0xE095574729Af0F9aE5512bAda365df26E019F4Ab",
-      "new_vault": "0xb2e219665A5b3E913D3f994e27Fc86C9c17a3073",
+      "old_vault": "0xb2e219665A5b3E913D3f994e27Fc86C9c17a3073",
+      "new_vault": "0x06c7f71ffC7ad363d7275BB6A575ecBB9fE6932A",
       "funded": true
     },
     {
       "symbol": "CRNA",
       "name": "Corona",
-      "old_vault": "0x85868911cf4810fD2201E8A84cE710CfF7aa7b86",
-      "new_vault": "0x2bDD8dBf517c25a9B6c8612712359AEB2e760225",
+      "old_vault": "0x2bDD8dBf517c25a9B6c8612712359AEB2e760225",
+      "new_vault": "0x2c6Fc5A079DD74e6d1CACF524485A7C029CE5926",
       "funded": true
     },
     {
       "symbol": "HOME",
       "name": "Homecourt",
-      "old_vault": "0xdAe7AF481027786A840cf732B5406c386B9cC5Bf",
-      "new_vault": "0x2413Ac1C05d52574967E21669028d9cFddFC0108",
+      "old_vault": "0x2413Ac1C05d52574967E21669028d9cFddFC0108",
+      "new_vault": "0x10d1248b6F03F292305317bad69E1242A43FDe46",
       "funded": true
     },
     {
       "symbol": "STRK",
       "name": "Streak",
-      "old_vault": "0xa3A77443623D95a533305fA41b37A05E9145ea5d",
-      "new_vault": "0x0414483dc9F94C7e65a1d1a2D6Bedd3BE2e8c32c",
+      "old_vault": "0x0414483dc9F94C7e65a1d1a2D6Bedd3BE2e8c32c",
+      "new_vault": "0x469AEa2b9EEE612501F0F8c699342948dF558F20",
       "funded": true
     },
     {
       "symbol": "UPST",
       "name": "Upset",
-      "old_vault": "0xe18eD1d9790dB06B1275b04E026D10C8d1bdFD90",
-      "new_vault": "0xF095ebB0371AA655C6df997125Efad421D548D88",
+      "old_vault": "0xF095ebB0371AA655C6df997125Efad421D548D88",
+      "new_vault": "0xF65E94b7A357EBC9801C5e5F8a9c9524735FbEaB",
       "funded": true
     },
     {
       "symbol": "OVTM",
       "name": "Overtime",
-      "old_vault": "0x2D09AfeA7DffEfe61368573D822beC5589faBa1d",
-      "new_vault": "0xf27e16f30E2677B6be92Ea8230Ef0dC248cd6533",
+      "old_vault": "0xf27e16f30E2677B6be92Ea8230Ef0dC248cd6533",
+      "new_vault": "0x6334bfCf1F4E36b13a4B95d94FA96e87b457C81d",
       "funded": true
     },
     {
       "symbol": "WKND",
       "name": "Weekend",
-      "old_vault": "0x580582762a8203e36E0F6A31E71965AFC36F4E59",
-      "new_vault": "0x8C837521E5D86aEC19091b377C6581C1a2b4E39c",
+      "old_vault": "0x8C837521E5D86aEC19091b377C6581C1a2b4E39c",
+      "new_vault": "0x363C28196C891A355015Aca5C4929A7b05A45Bb7",
       "funded": true
     },
     {
       "symbol": "LOBY",
       "name": "Lobby",
-      "old_vault": "0x92129A82eb47f33597731b412779aB65aB69ED51",
-      "new_vault": "0xbedCb1ECd3Bbc9Db898b62f6AC51e9b470129F43",
+      "old_vault": "0xbedCb1ECd3Bbc9Db898b62f6AC51e9b470129F43",
+      "new_vault": "0x9D8E5dF6306CB2fd87a3c9b31065346Ad51d431c",
       "funded": true
     },
     {
       "symbol": "RAGE",
       "name": "Ragequit",
-      "old_vault": "0xB6950399C46Cfa9B41E41318707Eb9BD0B832ee4",
-      "new_vault": "0x86Ca1F8373e26Edc67442F0044Ea70dD135CD3D0",
+      "old_vault": "0x86Ca1F8373e26Edc67442F0044Ea70dD135CD3D0",
+      "new_vault": "0x4d890DB5C62E08E709510A1855ec6D608057f748",
       "funded": true
     },
     {
       "symbol": "PTCH",
       "name": "Patch",
-      "old_vault": "0xEcDfc6dDe60948990569a66Cc8f7A935f329F76a",
-      "new_vault": "0xEE5bAbD5A47F84e2609b96D36290813715e84D09",
+      "old_vault": "0xEE5bAbD5A47F84e2609b96D36290813715e84D09",
+      "new_vault": "0x4496Def7845571c8DE3697d072eB86367b69ff5b",
       "funded": true
     },
     {
       "symbol": "PRME",
       "name": "Prime Time",
-      "old_vault": "0xBb31bD1E82C68725cA4cb84c027328d099e06B3B",
-      "new_vault": "0x8601C6fAbf3D29cf4B624501aC095Be2d5E2f111",
+      "old_vault": "0x8601C6fAbf3D29cf4B624501aC095Be2d5E2f111",
+      "new_vault": "0x295c2993AC1c45411224108E83f92A7B8f090e73",
       "funded": true
     },
     {
       "symbol": "OFLN",
       "name": "Offline",
-      "old_vault": "0x1108Ab4Bab7444b44ce3F3d09a3dDE344377437e",
-      "new_vault": "0x7E9514659cF1f277797b9964BE3a0e88F5f75A35",
+      "old_vault": "0x7E9514659cF1f277797b9964BE3a0e88F5f75A35",
+      "new_vault": "0x9b25D511E0441d9FEf58694009B9165149392786",
       "funded": true
     },
     {
       "symbol": "SUBR",
       "name": "Subscribe",
-      "old_vault": "0x99EfE3C13352c892cC39121B797aC9f90F2e9333",
-      "new_vault": "0xc0932524fd80bc0deB8459b098ae5b8640FAd0c6",
+      "old_vault": "0xc0932524fd80bc0deB8459b098ae5b8640FAd0c6",
+      "new_vault": "0xc0622E8A31B30C76C31f1826E44CF5925373d6a6",
       "funded": true
     },
     {
       "symbol": "HOST",
       "name": "Host",
-      "old_vault": "0xaa41fb30E9544076Bdf9f334369b29437F38Ea62",
-      "new_vault": "0x7187FC052afb57C94a191db5390a694FB45e21b4",
+      "old_vault": "0x7187FC052afb57C94a191db5390a694FB45e21b4",
+      "new_vault": "0xD0e17b64C772561592E7B5c46D10f2E2b2a6D0E8",
       "funded": true
     },
     {
       "symbol": "STIM",
       "name": "Stimulus",
-      "old_vault": "0xd8283Ed1Eb3dd0A1f1aBaF8DA471aec4076910fB",
-      "new_vault": "0x45c822c1699E27373846F997BA10443fbf5a74b1",
+      "old_vault": "0x45c822c1699E27373846F997BA10443fbf5a74b1",
+      "new_vault": "0x9a44177f420ee04C2A1aB20c69234F2A137953f2",
       "funded": true
     },
     {
       "symbol": "SQST",
       "name": "Sequester",
-      "old_vault": "0x9F37578A824964137CcE5D92567293cE9414A603",
-      "new_vault": "0xc34Fa4EEf781B1794768Bf3091E92e4dd0b69447",
+      "old_vault": "0xc34Fa4EEf781B1794768Bf3091E92e4dd0b69447",
+      "new_vault": "0x1ce44AE1495Ab7C54f520a7243e1f6B3c272c9d8",
       "funded": true
     },
     {
       "symbol": "DFCT",
       "name": "Deficit",
-      "old_vault": "0x2d82214c8e8C1c182F5E0a2C4d6ADa558FF034eF",
-      "new_vault": "0xe4152742F7661B9Bf1DFdFCEB2b71424FfD3e65E",
+      "old_vault": "0xe4152742F7661B9Bf1DFdFCEB2b71424FfD3e65E",
+      "new_vault": "0x56340902f78bB238B950E066601E3efC7A1fe833",
       "funded": true
     },
     {
       "symbol": "EMRK",
       "name": "Earmark",
-      "old_vault": "0x07925D5d07a3FeD23220762a3fcaDd9deaD01490",
-      "new_vault": "0x317423Bff3ff25063CDF1925b08F9c2629a549dc",
+      "old_vault": "0x317423Bff3ff25063CDF1925b08F9c2629a549dc",
+      "new_vault": "0xeeFbd8a63579a89B9A964F19d8c34D0754176a62",
       "funded": true
     },
     {
       "symbol": "TRNT",
       "name": "Torrent",
-      "old_vault": "0x317FdcDb75D084dE10a817759348F3A03bE6cBF7",
-      "new_vault": "0x088E34645b0112e0122219aF1D5E36236dED5583",
+      "old_vault": "0x088E34645b0112e0122219aF1D5E36236dED5583",
+      "new_vault": "0x2b8B49a2ac345388301606185482c45cc7428522",
       "funded": true
     },
     {
       "symbol": "DRHT",
       "name": "Drought",
-      "old_vault": "0x40CF93cA7ECcdCCa5F5A411FBc959D2b0BAc90C3",
-      "new_vault": "0x4E2105F785ed781BA696792DDbefd670393987F8",
+      "old_vault": "0x4E2105F785ed781BA696792DDbefd670393987F8",
+      "new_vault": "0xC5bAA1fc9c5DFD5E120D0aa4FFFCC4064f07e732",
       "funded": true
     },
     {
       "symbol": "WSHD",
       "name": "Watershed",
-      "old_vault": "0x121A3Fb2CC6Df39B30c5B9167b80d627F8a7d9dd",
-      "new_vault": "0x0F44b02CE0cb2E4359150830eA80b4B12B196e39",
+      "old_vault": "0x0F44b02CE0cb2E4359150830eA80b4B12B196e39",
+      "new_vault": "0x903A693e6a8C89eab87E6653EFB307e5F378C39a",
       "funded": true
     },
     {
       "symbol": "BSFL",
       "name": "Baseflow",
-      "old_vault": "0x83C2cDbb96BAdB3A5915A4d9a612CA53CD9AFE71",
-      "new_vault": "0xA9b9Dda581D795d8400165A6b4b19407E5f91b81",
+      "old_vault": "0xA9b9Dda581D795d8400165A6b4b19407E5f91b81",
+      "new_vault": "0x0E1700ce605d7B8cFb93b94F10F919166a335017",
       "funded": true
     },
     {
       "symbol": "WFRT",
       "name": "Weatherfront",
-      "old_vault": "0xadD533b5d1e93730435AbB70Ec7fc37353216922",
-      "new_vault": "0x7F0203b435240cDdbE0b4fC5b8FA8EcFE0c87378",
+      "old_vault": "0x7F0203b435240cDdbE0b4fC5b8FA8EcFE0c87378",
+      "new_vault": "0x1a247767B611281DdD0b312f143108a596e12a0B",
       "funded": true
     },
     {
       "symbol": "RVRT",
       "name": "Revert",
-      "old_vault": "0xCE0efE66702E1745c9Ec4fae0C0A734726A48ce2",
-      "new_vault": "0xb77f3a5C7F2357D5847E420d05bA68B914cB2cCF",
+      "old_vault": "0xb77f3a5C7F2357D5847E420d05bA68B914cB2cCF",
+      "new_vault": "0x6A5236c466E003CE514E46D921377D0dB41874d1",
       "funded": true
     },
     {
       "symbol": "SSNL",
       "name": "Seasonal",
-      "old_vault": "0xC6834AD44487e2F74587DC14D656BaDf35Ca0119",
-      "new_vault": "0x9957A2126ec69Af5986a8Fc5521662C7784c3650",
+      "old_vault": "0x9957A2126ec69Af5986a8Fc5521662C7784c3650",
+      "new_vault": "0x8827a235d73C75bc6afDA85D1cD99341aBFEa79e",
       "funded": true
     },
     {
       "symbol": "HEAT",
       "name": "Heatwave",
-      "old_vault": "0x270Ea24ab2a23F175f30BdFd64baa6313A5Fe9eb",
-      "new_vault": "0x5709639bFDF3f6e86A4A6CD4aF6179EcF1908F2F",
+      "old_vault": "0x5709639bFDF3f6e86A4A6CD4aF6179EcF1908F2F",
+      "new_vault": "0x59A6EB8bebAB34837d0482C5Ee48D470026732C1",
       "funded": true
     },
     {
       "symbol": "STRM",
       "name": "Stormwatch",
-      "old_vault": "0x9d761cF139Ab3EBBf46d57Fc2269959c532623c9",
-      "new_vault": "0x98270d2deD8b6FB972d027f29EccDf70d4FBd463",
+      "old_vault": "0x98270d2deD8b6FB972d027f29EccDf70d4FBd463",
+      "new_vault": "0x02c0b3383Ba77E6d99bd9223F746cF144B0273Ad",
       "funded": true
     },
     {
       "symbol": "ACLR",
       "name": "All Clear",
-      "old_vault": "0xdb982B7E39e81A54F1e47ee1EDa056c13d7B1872",
-      "new_vault": "0x57FB0BAB3CFfbd271E07b5B5cc0D39930383e17A",
+      "old_vault": "0x57FB0BAB3CFfbd271E07b5B5cc0D39930383e17A",
+      "new_vault": "0xB3d7b653a272c94fb45d01d160B2Fb23260586AB",
       "funded": true
     },
     {
       "symbol": "TNDO",
       "name": "Tornado",
-      "old_vault": "0x8695a927e5c6c3d22D9dC4b7a4bc94a85bbEA732",
-      "new_vault": "0x6B071B8ddE1D7f9733bBCD66B16Ba4bc86f9D519",
+      "old_vault": "0x6B071B8ddE1D7f9733bBCD66B16Ba4bc86f9D519",
+      "new_vault": "0xc8Be5F462EEf32947Cd948F9C927e0a3E8588F2C",
       "funded": true
     },
     {
       "symbol": "BNKR",
       "name": "Bunker",
-      "old_vault": "0x3256157CFEFBE9305fc66173dfd3961Bfc6eBb8D",
-      "new_vault": "0xcB74Df135f172413d3082485AC9E14Ba59361ebA",
+      "old_vault": "0xcB74Df135f172413d3082485AC9E14Ba59361ebA",
+      "new_vault": "0x121D21899966E67187109620cD7B5a83a1E79dd3",
       "funded": true
     },
     {
       "symbol": "EMBR",
       "name": "Ember",
-      "old_vault": "0x57A9896025D99950053c1F6f44d7b322FA8F8FEE",
-      "new_vault": "0xE127924A51cB880b786AC16d5389985A95caa374",
+      "old_vault": "0xE127924A51cB880b786AC16d5389985A95caa374",
+      "new_vault": "0x6C43819986D0EEB19C09dD5c339C5B4721A7b6a5",
       "funded": true
     },
     {
       "symbol": "CNTD",
       "name": "Contained",
-      "old_vault": "0x766340dA491a40a30F01B3D807C1fe552DDEDDb8",
-      "new_vault": "0x321860Fd7D0Fa65D72c0D49fDd94B7aDb20E9767",
+      "old_vault": "0x321860Fd7D0Fa65D72c0D49fDd94B7aDb20E9767",
+      "new_vault": "0xDFF885C6FDbEAfEe0ec06d29d14Cfcf92B0F48e5",
       "funded": true
     },
     {
       "symbol": "TNDR",
       "name": "Tinder",
-      "old_vault": "0x955F44F66050364D4c5558D0AE4386aAf7470190",
-      "new_vault": "0x08fc2F9f0861f754992f27cFC702aBE8c4F53ca3",
+      "old_vault": "0x08fc2F9f0861f754992f27cFC702aBE8c4F53ca3",
+      "new_vault": "0xc8Aa44a2adF85eE5d669A319eBa4E9a0CC55c01c",
       "funded": true
     },
     {
       "symbol": "FBRK",
       "name": "Firebreak",
-      "old_vault": "0x92011F6b0F5117f36d660dA473f4283d9dDB08f6",
-      "new_vault": "0xE9e691f8dF14BE6292c799615d3b3bE72f0d26a3",
+      "old_vault": "0xE9e691f8dF14BE6292c799615d3b3bE72f0d26a3",
+      "new_vault": "0x94f748ed2382c3968a1145c7C25976364393DBE7",
       "funded": true
     },
     {
       "symbol": "GLCR",
       "name": "Glacier",
-      "old_vault": "0x108D5e0Af10D089809AfaaE19AD2B5aE99A2D752",
-      "new_vault": "0xFe08a770B917067De6890A88ad8632FFD355c196",
+      "old_vault": "0xFe08a770B917067De6890A88ad8632FFD355c196",
+      "new_vault": "0xcbDF53B12A9F36675a13f33E40976425Be7DdB56",
       "funded": true
     },
     {
       "symbol": "CNVG",
       "name": "Convergence",
-      "old_vault": "0x07df8a5D3769DeBd3e843e735C16190F11248613",
-      "new_vault": "0x7703EF7e419b9c0539FB70E0b205a2Cd346E135c",
+      "old_vault": "0x7703EF7e419b9c0539FB70E0b205a2Cd346E135c",
+      "new_vault": "0x709e980a53C32244e735F5Dca1Cc27c8e94B3c08",
       "funded": true
     },
     {
       "symbol": "EMRG",
       "name": "Emergence",
-      "old_vault": "0x3c0a3343d5aAaC0fAd4cdB7bee592aA4deEbb01d",
-      "new_vault": "0x3eEd78Eb180dA9D2Cf815C42657071255Ad5c1F4",
+      "old_vault": "0x3eEd78Eb180dA9D2Cf815C42657071255Ad5c1F4",
+      "new_vault": "0x9eC97285C85390DC4cF2636a53411A8e51CF2Fed",
       "funded": true
     },
     {
       "symbol": "STGN",
       "name": "Stagnation",
-      "old_vault": "0xB1Ca8860A5BeC64616b6aA20b6F985e52ad13186",
-      "new_vault": "0x3A8bb040A811De26D2c4201C11C1D0290169a902",
+      "old_vault": "0x3A8bb040A811De26D2c4201C11C1D0290169a902",
+      "new_vault": "0x6eebf9c835fe046b6cEdb7e9a1Bc4fc1931d7D50",
       "funded": true
     },
     {
       "symbol": "FNDM",
       "name": "Foundation",
-      "old_vault": "0xc69B68aff3ed3d8d73ddFf397c4871D673b3e6a8",
-      "new_vault": "0xdA4828782dcdaC90BDc84d38D70C447E2d3c4F94",
+      "old_vault": "0xdA4828782dcdaC90BDc84d38D70C447E2d3c4F94",
+      "new_vault": "0x6688cC8c6d4B8be1c4C37D152f9d49ACf5835dB6",
       "funded": true
     },
     {
       "symbol": "OVSH",
       "name": "Overshoot",
-      "old_vault": "0xD44290E89B167F2eE3A3C7547e8d2dB269B0A345",
-      "new_vault": "0x51C5360a1E364FA8DadD2271BD03aebeCd415F12",
+      "old_vault": "0x51C5360a1E364FA8DadD2271BD03aebeCd415F12",
+      "new_vault": "0x4D7395232491486af4A58827b7f8a855fC2990b7",
       "funded": true
     },
     {
       "symbol": "SHLT",
       "name": "Shelter",
-      "old_vault": "0x81018c397a1CcC401ec18F2402BA5Ca97b7FE196",
-      "new_vault": "0x116234770568f3BadAB29c347E1e8B54812AB6fF",
+      "old_vault": "0x116234770568f3BadAB29c347E1e8B54812AB6fF",
+      "new_vault": "0x9D93636607675544Ec11c0C96bedF7086eb6fBAf",
       "funded": true
     },
     {
       "symbol": "APSL",
       "name": "Appraisal",
-      "old_vault": "0xe7875282689B68153aCe9f41cC24e2b3fd149D46",
-      "new_vault": "0xb4d8398020c7480B3530052266e1C3bDe6D07b10",
+      "old_vault": "0xb4d8398020c7480B3530052266e1C3bDe6D07b10",
+      "new_vault": "0x46133aaA4D524618A64C9ac183058f843D9874AA",
       "funded": true
     },
     {
       "symbol": "SQZE",
       "name": "Squeeze",
-      "old_vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641",
-      "new_vault": "0x1533EA034D40c25B4CA8Dd4356cF12c6974cE0B9",
+      "old_vault": "0x1533EA034D40c25B4CA8Dd4356cF12c6974cE0B9",
+      "new_vault": "0x5994E6251FA11ea2A6Ef44B588c8D8b5fBcFAf8B",
       "funded": true
     },
     {
       "symbol": "COVR",
       "name": "Cover",
-      "old_vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2",
-      "new_vault": "0xa58c4d7eDC8A8dECC8F391D7160b8FB790d5c05C",
+      "old_vault": "0xa58c4d7eDC8A8dECC8F391D7160b8FB790d5c05C",
+      "new_vault": "0x0D64eF0E966fa12f7b9AFB6721E3c96C31813098",
       "funded": true
     },
     {
       "symbol": "PRSS",
       "name": "Pressure",
-      "old_vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d",
-      "new_vault": "0x31e24384669B5Bc87BAf6e206005c2DdFf3307Ac",
+      "old_vault": "0x31e24384669B5Bc87BAf6e206005c2DdFf3307Ac",
+      "new_vault": "0x9c68ce1954f238149C529116563E1ed68F814F15",
       "funded": true
     },
     {
       "symbol": "ESPR",
       "name": "Espresso",
-      "old_vault": "0x8af24e4964BD46513E8031C23961A84e6b22BE31",
-      "new_vault": "0x3671451905C88FF063718fEb04B2739C53D81f41",
+      "old_vault": "0x3671451905C88FF063718fEb04B2739C53D81f41",
+      "new_vault": "0xcEed2CbAAC2BD576E9f0907D04e3E9D850af97C2",
       "funded": true
     },
     {
       "symbol": "RAIN",
       "name": "Raincheck",
-      "old_vault": "0x78b724Fe2603C0a58D8bAe179EC4eaAf2420BB5A",
-      "new_vault": "0x3c5e08cc60537eC3A37e05b00C088fc901aD8C62",
+      "old_vault": "0x3c5e08cc60537eC3A37e05b00C088fc901aD8C62",
+      "new_vault": "0x0184237824089084dEDd4D9b5B4275058241dC0b",
       "funded": true
     },
     {
       "symbol": "ROST",
       "name": "Roast",
-      "old_vault": "0xb43c4768D32ebC3218EfB44B3f7E6d6Cd044E5BC",
-      "new_vault": "0x7e1064Cbb55710cd1cCB79155421Bc5B7F909E6c",
+      "old_vault": "0x7e1064Cbb55710cd1cCB79155421Bc5B7F909E6c",
+      "new_vault": "0x26e3d9969674fEfD0D5c5ddC62eCF30cEC7746A8",
       "funded": true
     },
     {
       "symbol": "TPEI",
       "name": "Taipei",
-      "old_vault": "0x157e5Cf02b4b41e259B1842AF14F2E739e5e3c49",
-      "new_vault": "0xBA979133cbDD9dc64Bc999924BA92ad933df68Ec",
+      "old_vault": "0xBA979133cbDD9dc64Bc999924BA92ad933df68Ec",
+      "new_vault": "0x27C5916779Ee95c5c03b99d9e25320C7FA307dCe",
       "funded": true
     },
     {
       "symbol": "STRT",
       "name": "Strait",
-      "old_vault": "0x6F6442f35fbA7b6de60d4a71487809724a340C58",
-      "new_vault": "0x6a32E05702e300DA031d9D978aBe6543dd854f01",
+      "old_vault": "0x6a32E05702e300DA031d9D978aBe6543dd854f01",
+      "new_vault": "0xcA0f844B2249A657D2f594CcdDFe2ace52b586f0",
       "funded": true
     },
     {
       "symbol": "PCFC",
       "name": "Pacific",
-      "old_vault": "0xAa6bF2a01899f82862A2E90565750C2BaB012d77",
-      "new_vault": "0x297577A3590dD3B85F47b2eeFE3812E9899f9C77",
+      "old_vault": "0x297577A3590dD3B85F47b2eeFE3812E9899f9C77",
+      "new_vault": "0x6Ef57CFCc084DEa213135bb42f8F54B1B71fF168",
       "funded": true
     },
     {
       "symbol": "TRND",
       "name": "Trending",
-      "old_vault": "0x0ABdf2D7289127478FD89A4ae1e8F3aF49f248C3",
-      "new_vault": "0x4a6E2F52F132A52BD38487E6c4847a16cbe58522",
+      "old_vault": "0x4a6E2F52F132A52BD38487E6c4847a16cbe58522",
+      "new_vault": "0xF30667431bE538Af90E8Eb95eE15Ab3c61F19815",
       "funded": true
     },
     {
       "symbol": "BRNT",
       "name": "Burnout",
-      "old_vault": "0x4aEcA750896e26713a57340c704ab33A2218adB4",
-      "new_vault": "0xb89977368ca1099Bbfb45599f18B4d2338573521",
+      "old_vault": "0xb89977368ca1099Bbfb45599f18B4d2338573521",
+      "new_vault": "0x09df086966F08C184D32E9bb7a2fa2549D9e8462",
       "funded": true
     },
     {
       "symbol": "STAR",
       "name": "Stargazer",
-      "old_vault": "0x00FFc646e17c5C782353A3f015183a178Ce1FDdd",
-      "new_vault": "0x9CAc5AaeDD48E0038B775FeD84082684242F55C1",
+      "old_vault": "0x9CAc5AaeDD48E0038B775FeD84082684242F55C1",
+      "new_vault": "0xaC141DB8C08BA35539241a97276d489447aB0469",
       "funded": true
     },
     {
       "symbol": "IMPT",
       "name": "Import",
-      "old_vault": "0x591CF5554608157250ABAf9564E12D3aEC766a84",
-      "new_vault": "0x9E28d1ECCd67e4daCD96e9843F4dC90699f7eC7b",
+      "old_vault": "0x9E28d1ECCd67e4daCD96e9843F4dC90699f7eC7b",
+      "new_vault": "0xCe9f409DCd8Cc3d552fE35A6d2200427aFca56C3",
       "funded": true
     },
     {
       "symbol": "UNMT",
       "name": "Unmaintained",
-      "old_vault": "0x1A1a3F7020d1d70D3899Ec2dF70466d14f3385EC",
-      "new_vault": "0x1eCbF2BAD9e8d54789BA38e9f40e5DAFfeC1DC27",
+      "old_vault": "0x1eCbF2BAD9e8d54789BA38e9f40e5DAFfeC1DC27",
+      "new_vault": "0x1096CA41b18Eab1140a94c30017f0Cce3f6d1537",
       "funded": true
     },
     {
       "symbol": "PPIP",
       "name": "Pip",
-      "old_vault": "0x5F3a3662bcD379b5959896823c60961Ebc447f93",
-      "new_vault": "0x12C3b849C0c384e2396B50a57154A97240d00074",
+      "old_vault": "0x12C3b849C0c384e2396B50a57154A97240d00074",
+      "new_vault": "0x707483fd8a95A9CB922A1975c0750485845BA5E0",
       "funded": true
     },
     {
       "symbol": "OXDZ",
       "name": "Oxidize",
-      "old_vault": "0x807615E801B1f12cA39E61739c82F8b519FCC4d4",
-      "new_vault": "0x06B9d7FA071cc14eee2BfB43C90B512810B02101",
+      "old_vault": "0x06B9d7FA071cc14eee2BfB43C90B512810B02101",
+      "new_vault": "0x4D5faf51450B96BD360C906Ed62BaA3b162A1a74",
       "funded": true
     },
     {
       "symbol": "BORW",
       "name": "Borrow",
-      "old_vault": "0xCEe3Af14DDCC1B386Cf5474044De6124CC84BA4C",
-      "new_vault": "0xF670B48B8F8d7Aec564A5Aa85A63231690287Ea2",
+      "old_vault": "0xF670B48B8F8d7Aec564A5Aa85A63231690287Ea2",
+      "new_vault": "0x6aB080AbbB920546854e4cC0BC53e3C6d5E65dfb",
       "funded": true
     },
     {
       "symbol": "CRGO",
       "name": "Cargo",
-      "old_vault": "0x1604373a897dB481d8ef3e40B88396b864f6E746",
-      "new_vault": "0x14360723093cA0119824c48f87e6266B57898676",
+      "old_vault": "0x14360723093cA0119824c48f87e6266B57898676",
+      "new_vault": "0x3496B6444fCC3b5e74e1850150065310B8059F1d",
       "funded": true
     },
     {
       "symbol": "PUBL",
       "name": "Publish",
-      "old_vault": "0xB9967a4618C2492A5BD305D83231962f1a1f53B1",
-      "new_vault": "0x89dfd79b7305B1AE421CE8566e21ed27e7C3f00c",
+      "old_vault": "0x89dfd79b7305B1AE421CE8566e21ed27e7C3f00c",
+      "new_vault": "0x206570aae679B920BFaE33cD33Af29dB4b0FBAf9",
       "funded": true
     },
     {
       "symbol": "SABT",
       "name": "Sabbatical",
-      "old_vault": "0xcBdf35951445b04c9F4c3725a7Be950215660674",
-      "new_vault": "0x4dDeAb858E5caBf2C9d7C80D03581B3ca3027956",
+      "old_vault": "0x4dDeAb858E5caBf2C9d7C80D03581B3ca3027956",
+      "new_vault": "0xfB1a0a291F5d1622479305D8D98CB6c4073EBbc5",
       "funded": true
     },
     {
       "symbol": "TNRE",
       "name": "Tenure",
-      "old_vault": "0xFc804E67c81BC02De35C7c40A8A7ceDC82CE7164",
-      "new_vault": "0xb89F87ADE9d1f9cede19796F1528f3D37AC92A44",
+      "old_vault": "0xb89F87ADE9d1f9cede19796F1528f3D37AC92A44",
+      "new_vault": "0xB0Ee1bA7D013345ee691f3e043ef130DBd665A18",
       "funded": true
     },
     {
       "symbol": "PREM",
       "name": "Premiere",
-      "old_vault": "0x3cfA652eF953e9c36739a1D50Ad14F164EbA37a6",
-      "new_vault": "0x2e457C30b44C70c580EFfafadb8D47B1c091730c",
+      "old_vault": "0x2e457C30b44C70c580EFfafadb8D47B1c091730c",
+      "new_vault": "0x78b5a5d213003f894587494a4230a6cE86aF1250",
       "funded": true
     },
     {
       "symbol": "SQEL",
       "name": "Sequel",
-      "old_vault": "0xC354f984E94BCB76FA3a36935d8830Db63C4cEA5",
-      "new_vault": "0x25328F21420A71f8e50Cf5cd13753aA3dD6A4aff",
+      "old_vault": "0x25328F21420A71f8e50Cf5cd13753aA3dD6A4aff",
+      "new_vault": "0x0983D4625Bc97b191E70B672481898706F23eD8A",
       "funded": true
     },
     {
       "symbol": "BNGE",
       "name": "Binge",
-      "old_vault": "0xeA8dac0cCd5F2159631bdba44D75068045731cD6",
-      "new_vault": "0xb5f00ED57D01Ca9C06743Eecbb3504f89F6dA4A5",
+      "old_vault": "0xb5f00ED57D01Ca9C06743Eecbb3504f89F6dA4A5",
+      "new_vault": "0x3Fab92ea04Dd3302C32cF3205Eb821c3a278fdf2",
       "funded": true
     },
     {
       "symbol": "ANTM",
       "name": "Anthem",
-      "old_vault": "0x01D6554785DA81f2F455b028F3677728Ee9229Df",
-      "new_vault": "0xBb4Caed29660d806a2CDF84F9a40C09f3A8a4585",
+      "old_vault": "0xBb4Caed29660d806a2CDF84F9a40C09f3A8a4585",
+      "new_vault": "0x5Df51Cf59e60E12BaeA318eA052D6e8e7bB666a2",
       "funded": true
     },
     {
       "symbol": "BSDE",
       "name": "B-Side",
-      "old_vault": "0xc110eEDa6cB8882CbB862c0C4546A38a95E7c8E0",
-      "new_vault": "0x201213724947db469acBf8b2fb0581298336b0bc",
+      "old_vault": "0x201213724947db469acBf8b2fb0581298336b0bc",
+      "new_vault": "0x5552eE303b5F011b1Bb9474BFf93369Ec40Cdf93",
       "funded": true
     },
     {
       "symbol": "ENCR",
       "name": "Encore",
-      "old_vault": "0xB5E65383ce81FF9137E535c64fb2848776e11A3C",
-      "new_vault": "0xf1773F88F0A5085Dd5dCa48CF17Db5d055903a4e",
+      "old_vault": "0xf1773F88F0A5085Dd5dCa48CF17Db5d055903a4e",
+      "new_vault": "0xb73EAaB7D86Ff51F11b2F4BB8bBe40F6d5eACc35",
       "funded": true
     },
     {
       "symbol": "MGMA",
       "name": "Magma",
-      "old_vault": "0xdb4269f1a96E8f9368231C0e27C13209284CaD88",
-      "new_vault": "0x9c35351381c3b823786e171f61C6bAE7e67Fb83F",
+      "old_vault": "0x9c35351381c3b823786e171f61C6bAE7e67Fb83F",
+      "new_vault": "0x5D6AeD531D29A3a63F4165F5aeFBce2FD22c8e85",
       "funded": true
     },
     {
       "symbol": "CLDR",
       "name": "Caldera",
-      "old_vault": "0xdBB4D5361E3948f0F981342b64E5287014C87a3c",
-      "new_vault": "0xE2b1e11e1D0248746114a1442752E5e6ed756AB7",
+      "old_vault": "0xE2b1e11e1D0248746114a1442752E5e6ed756AB7",
+      "new_vault": "0x8Ad447eB83F5Fd1D30c3ffc5d1E9C102D1d50ae0",
       "funded": true
     },
     {
       "symbol": "PLUM",
       "name": "Plume",
-      "old_vault": "0x0A566A4D645040575205c194604074f838734A2d",
-      "new_vault": "0x34C044d07a6e07cb97AA68027EdD00fe49897D23",
+      "old_vault": "0x34C044d07a6e07cb97AA68027EdD00fe49897D23",
+      "new_vault": "0xE67BF07c314Bc3d1f7Db6b4EC4b995Faee6E8280",
       "funded": true
     },
     {
       "symbol": "CTGN",
       "name": "Contagion",
-      "old_vault": "0x9f079ACA0dFe6Ff9F4086f09949D3C55D03Eb136",
-      "new_vault": "0xc213979b19D86ed20C97aAD8E50079de4Fb4A32A",
+      "old_vault": "0xc213979b19D86ed20C97aAD8E50079de4Fb4A32A",
+      "new_vault": "0xd031f29cBc5d6A5b98991974bc5456C1F3f68f32",
       "funded": true
     },
     {
       "symbol": "RMSN",
       "name": "Remission",
-      "old_vault": "0xc5a0fF3707bEF3094D000E99a9784F04381BC211",
-      "new_vault": "0x9b89b86366B2b660202c1e1edd2A21d83301c232",
+      "old_vault": "0x9b89b86366B2b660202c1e1edd2A21d83301c232",
+      "new_vault": "0x827f95ce9D512fae223D3095D73E6aFe1be45797",
       "funded": true
     },
     {
       "symbol": "VCNE",
       "name": "Vaccine",
-      "old_vault": "0x807aF8dBBE6C517154965916860759D752aF66f3",
-      "new_vault": "0xfa97dbCdeC32d51C37e5803f2B75a3E40e3D4149",
+      "old_vault": "0xfa97dbCdeC32d51C37e5803f2B75a3E40e3D4149",
+      "new_vault": "0x3FD7814BAD73b5D1D134C21A928e10445B409C11",
       "funded": true
     },
     {
       "symbol": "BRWN",
       "name": "Brownout",
-      "old_vault": "0x4d19157ac01db80F69FC11064753b07f69720B88",
-      "new_vault": "0x4450340166c5fA5D790af80E8ccF8455F5bb68Cc",
+      "old_vault": "0x4450340166c5fA5D790af80E8ccF8455F5bb68Cc",
+      "new_vault": "0x8c66980b757e47e2b88a4A58A86AB07E19B7140D",
       "funded": true
     },
     {
       "symbol": "RSTR",
       "name": "Restore",
-      "old_vault": "0x4468A53D8b187094da6efaAa0108d428f5A319e0",
-      "new_vault": "0x1c8A264b0fDeB7859Dc2607a8FCc70e92a0087ED",
+      "old_vault": "0x1c8A264b0fDeB7859Dc2607a8FCc70e92a0087ED",
+      "new_vault": "0xDfceA428d92636c475DdE18854ad4b14b7DF6eE6",
       "funded": true
     },
     {
       "symbol": "SPRT",
       "name": "Surge Protect",
-      "old_vault": "0xD8AF40acD51998FA39E69172E96F8fe02c8C8Ab7",
-      "new_vault": "0x618C8f81940418daeBCC38DAf97C0765ffCd3Ba0",
+      "old_vault": "0x618C8f81940418daeBCC38DAf97C0765ffCd3Ba0",
+      "new_vault": "0xD4801fD1F4f954e48EF34A603Fa865085329984b",
       "funded": true
     },
     {
       "symbol": "HOLD",
       "name": "Holding",
-      "old_vault": "0x5C58732bBa92671026459f29475aF510fbfA3829",
-      "new_vault": "0xb24437B3cEB7C33F372cB3B7E1059646746d2d14",
+      "old_vault": "0xb24437B3cEB7C33F372cB3B7E1059646746d2d14",
+      "new_vault": "0x202F6EaBb1f558D9BB8ab6902181B4801a85c030",
       "funded": true
     },
     {
       "symbol": "TAIL",
       "name": "Tailwind",
-      "old_vault": "0xF5802C00ca1bBa014b7b67d4a9e3De3103B6035A",
-      "new_vault": "0x7A1160079b872C8db1BD6C2bf699BB663517549D",
+      "old_vault": "0x7A1160079b872C8db1BD6C2bf699BB663517549D",
+      "new_vault": "0x1FfB03f47F576d51A95EbFcb53ee4Cb45d92597b",
       "funded": true
     },
     {
       "symbol": "LIFT",
       "name": "Liftoff",
-      "old_vault": "0xf3B1f6566dEdf6b4906bd1Ab8f1d56ffE3Fa3c36",
-      "new_vault": "0x6310148fbf3D71593971A97041c7bCfCf25Bb1dB",
+      "old_vault": "0x6310148fbf3D71593971A97041c7bCfCf25Bb1dB",
+      "new_vault": "0x34120878968F9b442eF02A0c3264a674836317E3",
       "funded": true
     },
     {
       "symbol": "RSHH",
       "name": "Rush Hour",
-      "old_vault": "0x45121AF49b56d5E1305524A50A57E760a1e276E8",
-      "new_vault": "0x98127E1aCf6CBaD5f561AB0568D0BD5aC0389f4d",
+      "old_vault": "0x98127E1aCf6CBaD5f561AB0568D0BD5aC0389f4d",
+      "new_vault": "0x5c0fDF815FF3Ba8D87F48349887439b98f50DFc1",
       "funded": true
     },
     {
       "symbol": "CLWY",
       "name": "Clearway",
-      "old_vault": "0x3B7D77ad321648706BfCb488E33ab7CeC7100abB",
-      "new_vault": "0xb26504CE78DeF56ff0b95e6cf65C5cff438d8E08",
+      "old_vault": "0xb26504CE78DeF56ff0b95e6cf65C5cff438d8E08",
+      "new_vault": "0xC4Af392A3ed12A52c58A7e36aE578EA1090891d7",
       "funded": true
     },
     {
       "symbol": "BTNK",
       "name": "Bottleneck",
-      "old_vault": "0x115Ce93e629d062fD54Cd9Ee83e393bc4418d404",
-      "new_vault": "0x04B85B2f807689e558Ad7Ad42B7c80f41606FD46",
+      "old_vault": "0x04B85B2f807689e558Ad7Ad42B7c80f41606FD46",
+      "new_vault": "0xe345D96bB0Cc79c6e719C2758D7FA29220b8F8aC",
       "funded": true
     },
     {
       "symbol": "CHRG",
       "name": "Charger",
-      "old_vault": "0x1BA02eCe218169C5784D1869442FD2916Eb8C350",
-      "new_vault": "0x7298Ab1Cd3fccD56501834E366e06A07d76FCeba",
+      "old_vault": "0x7298Ab1Cd3fccD56501834E366e06A07d76FCeba",
+      "new_vault": "0x2aa960d8FaC3c18589d8565C507BbCE0FFd80fD4",
       "funded": true
     },
     {
       "symbol": "TPOF",
       "name": "Topoff",
-      "old_vault": "0x6cb3cc63e2d280AB4575cD0C47c180971F553367",
-      "new_vault": "0x68BC91F99634e5Cd8fc4d83103AA2b1476De08a3",
+      "old_vault": "0x68BC91F99634e5Cd8fc4d83103AA2b1476De08a3",
+      "new_vault": "0x5E7ab4fbA469ac4d193A595E28FDF9fB50BAc477",
       "funded": true
     },
     {
       "symbol": "RNGE",
       "name": "Range",
-      "old_vault": "0x319b0c07cA7ee157CEBf03F187bCDdbdCAdd0430",
-      "new_vault": "0xA9aa93F9f53e06A74b11B886395c3Bcf83dDCD04",
+      "old_vault": "0xA9aa93F9f53e06A74b11B886395c3Bcf83dDCD04",
+      "new_vault": "0x2d73B513515460592a3eEd48239726586dD8e661",
       "funded": true
     },
     {
       "symbol": "GRND",
       "name": "Grounded",
-      "old_vault": "0x7cF78D72374C24F31d5bDa8f113484929B6F4058",
-      "new_vault": "0x62E3A1F76C6E4c004cfCb29697575830B208041c",
+      "old_vault": "0x62E3A1F76C6E4c004cfCb29697575830B208041c",
+      "new_vault": "0xb6862936c42d58353c4D2006b8E04244186Db56c",
       "funded": true
     },
     {
       "symbol": "CLRD",
       "name": "Cleared",
-      "old_vault": "0xbee6154BF1e2940b666eaA43250645b1baEa7324",
-      "new_vault": "0xEC8A57822567b306EAEa0ea5E5cbd16a99D2F5b5",
+      "old_vault": "0xEC8A57822567b306EAEa0ea5E5cbd16a99D2F5b5",
+      "new_vault": "0x6DF2Bc57967E8097BD9B2C6df2218CdfE3beEC11",
       "funded": true
     },
     {
       "symbol": "TRBL",
       "name": "Turbulence",
-      "old_vault": "0x411aB9e3E78879f2E2E99eC83F554CeD0CC47B04",
-      "new_vault": "0xBcd7bE8feca2eB60cbfC4cC51fF414da9474004D",
+      "old_vault": "0xBcd7bE8feca2eB60cbfC4cC51fF414da9474004D",
+      "new_vault": "0x34c4812A3133F5b3Df602c5a207a5eBd1179c9cd",
       "funded": true
     },
     {
       "symbol": "VSPT",
       "name": "Verspatung",
-      "old_vault": "0x164d0d7678FC161dFD29280b62efBa3e67272Bdd",
-      "new_vault": "0xD1f3Bee6E011BC9CBfcB0F550D12797Be86486A5",
+      "old_vault": "0xD1f3Bee6E011BC9CBfcB0F550D12797Be86486A5",
+      "new_vault": "0xa3a2CA36047B5bAD9ba02B3d8E71A04F2D7fd262",
       "funded": true
     },
     {
       "symbol": "PNKT",
       "name": "Punktlich",
-      "old_vault": "0x4a5C3A2D76F2d2d2809d45A8f62E6Cd59945A91c",
-      "new_vault": "0xE2809644005a281175a8064da4510853ceFdA1f0",
+      "old_vault": "0xE2809644005a281175a8064da4510853ceFdA1f0",
+      "new_vault": "0x355bB39E74cDfe535e4cF0C16F188BE951529B34",
       "funded": true
     },
     {
       "symbol": "GLIS",
       "name": "Gleis",
-      "old_vault": "0xE9A5d94D29289f8eAc1aAD27F781731f0B369D5E",
-      "new_vault": "0x74798ea1D071Ac09b005EF2FB7AC8FD93974628e",
+      "old_vault": "0x74798ea1D071Ac09b005EF2FB7AC8FD93974628e",
+      "new_vault": "0x5DCe58FD89db05743E3fc464c8DCbE5B9202194d",
       "funded": true
     },
     {
       "symbol": "BDGT",
       "name": "Budget",
-      "old_vault": "0x6C026F41E25eBAfF1F6511a82C354E8C6ce4398c",
-      "new_vault": "0x00ec7CC2Ae9F0b058A4D398FaAf00cc46505F671",
+      "old_vault": "0x00ec7CC2Ae9F0b058A4D398FaAf00cc46505F671",
+      "new_vault": "0x9fFa0B115D3f07AfEA8acb0D382e345A84AF6452",
       "funded": true
     },
     {
       "symbol": "STBY",
       "name": "Standby",
-      "old_vault": "0x8901961f049dD5e36121E435E3598967e18d2661",
-      "new_vault": "0xF2891782583193095b12366a585B24e3287622ef",
+      "old_vault": "0xF2891782583193095b12366a585B24e3287622ef",
+      "new_vault": "0xca74Aad3cab22cA8FCe989f900FE815b3DB16CA3",
       "funded": true
     },
     {
       "symbol": "OVHD",
       "name": "Overhead",
-      "old_vault": "0x83d8546317c7Cbff9503b40723fc814B53B3FfAb",
-      "new_vault": "0xcDAB6D38AADdbB6dF8fF33f50233E42c241f3af6",
+      "old_vault": "0xcDAB6D38AADdbB6dF8fF33f50233E42c241f3af6",
+      "new_vault": "0xfAfA74f56C73621114b9E3F4b685Ec3508BBFcD4",
       "funded": true
     },
     {
       "symbol": "MGAP",
       "name": "Mind Gap",
-      "old_vault": "0xff48088241D7A28828B6227519880B65d383F0d7",
-      "new_vault": "0x6f1c5A332a179856855c546E8532231D997B6F96",
+      "old_vault": "0x6f1c5A332a179856855c546E8532231D997B6F96",
+      "new_vault": "0x25B769036d27618e3F37A37B183c91D9770eAD8E",
       "funded": true
     },
     {
       "symbol": "OYTR",
       "name": "Oyster",
-      "old_vault": "0x7b9fC0AA70a99b1b0D159E67f7eFb17024006811",
-      "new_vault": "0x0933E590B348Fa0ccC203dE0e6f6153fAf0FA3AF",
+      "old_vault": "0x0933E590B348Fa0ccC203dE0e6f6153fAf0FA3AF",
+      "new_vault": "0x543E1BD05dE3C336D4Ce887Db49244eee0d68545",
       "funded": true
     },
     {
       "symbol": "PICD",
       "name": "Piccadilly",
-      "old_vault": "0xaC789e0622f86E4c379beB3F05Cb23eAE2FdB10A",
-      "new_vault": "0xd7255d358c4955E695eddF6db390931C5A8E6C95",
+      "old_vault": "0xd7255d358c4955E695eddF6db390931C5A8E6C95",
+      "new_vault": "0x405A703bD02e4Cd7101bE12d30c0C153c4EeD44e",
       "funded": true
     },
     {
       "symbol": "STLG",
       "name": "Sterling",
-      "old_vault": "0xE13aD28859a71B6f6015E65c401709449b169976",
-      "new_vault": "0x4d90e75d925137B89d99e707Ebdd97A7BB69DeFD",
+      "old_vault": "0x4d90e75d925137B89d99e707Ebdd97A7BB69DeFD",
+      "new_vault": "0x74c1BD06EC5a533f9bf04fEb7855bE737a02C63e",
       "funded": true
     },
     {
       "symbol": "THRD",
       "name": "Threadneedle",
-      "old_vault": "0xB3fe5bfA84032c337168fa51E0731D2AFa4F91A2",
-      "new_vault": "0xD8803F8B5B7DAe5DE6cAeAA88dF53EdbF308188a",
+      "old_vault": "0xD8803F8B5B7DAe5DE6cAeAA88dF53EdbF308188a",
+      "new_vault": "0xf63B6B2Ea20D73111be8f84aC124B9bAc11756f3",
       "funded": true
     },
     {
       "symbol": "GILT",
       "name": "Gilt",
-      "old_vault": "0x72d7f149Ef87Af4BE26Dedb335A219b6C9Bfbe60",
-      "new_vault": "0x22793b7b51e9250e785BAA99a9Cc6761760B77f0",
+      "old_vault": "0x22793b7b51e9250e785BAA99a9Cc6761760B77f0",
+      "new_vault": "0x1d91d768f4F3917F795b1d3b568560779Ac7C4cD",
       "funded": true
     },
     {
       "symbol": "OPNG",
       "name": "Opening",
-      "old_vault": "0xFbdE044662704F378706A081391D4b7aA6c5b89B",
-      "new_vault": "0x0459eC10a3d9AD60b9EDdd43B1f40D8364B317Ef",
+      "old_vault": "0x0459eC10a3d9AD60b9EDdd43B1f40D8364B317Ef",
+      "new_vault": "0xb82eeBf1B27d92e5526194664Dd1D70110e35E9C",
       "funded": true
     },
     {
       "symbol": "ENDG",
       "name": "Endgame",
-      "old_vault": "0x7c5D53806ec10707fC517e730ddae91FaE742302",
-      "new_vault": "0x5051A4019Fa69bcb0614F68084446d7095E0D837",
+      "old_vault": "0x5051A4019Fa69bcb0614F68084446d7095E0D837",
+      "new_vault": "0x5fFa8335b51a8d3CbD687c095A0f5Bd531259848",
       "funded": true
     },
     {
       "symbol": "BLTZ",
       "name": "Blitz",
-      "old_vault": "0xa1e305d29e371539d6fdB6d95e477f07f3DDef31",
-      "new_vault": "0x895A0A36436dEE77bcDBf5Ed28dfaA4877ce9478",
+      "old_vault": "0x895A0A36436dEE77bcDBf5Ed28dfaA4877ce9478",
+      "new_vault": "0xA04331BEFF09AAe5Ef53DaE5A819048f19C1F1e1",
       "funded": true
     },
     {
       "symbol": "BRKN",
       "name": "Brokenness",
-      "old_vault": "0x4aF7d35733F5fA0F6dBe618A859Ec6943e2e2ce4",
-      "new_vault": "0xe88c7CF232A4aa660F48e1e291493E9D197Bd4DB",
+      "old_vault": "0xe88c7CF232A4aa660F48e1e291493E9D197Bd4DB",
+      "new_vault": "0x3569d5cae6546f8244f34e9f1aF34b709cBC5b0f",
       "funded": true
     },
     {
       "symbol": "SRVE",
       "name": "Serve",
-      "old_vault": "0x3c92d9c64085FA81BFA2F2C1Fc3327d6D1410327",
-      "new_vault": "0xE5d0fA096b18E00452A40610149984da037326fe",
+      "old_vault": "0xE5d0fA096b18E00452A40610149984da037326fe",
+      "new_vault": "0x36782425C68bF487c4340121276F82be388503f5",
       "funded": true
     },
     {
       "symbol": "SNDE",
       "name": "Sundae",
-      "old_vault": "0xe38693cE4Fc571A8f7d36c028Daf1822963Fb9be",
-      "new_vault": "0x29a6C68c21573CBe18A8273952B6ad73615E10e2",
+      "old_vault": "0x29a6C68c21573CBe18A8273952B6ad73615E10e2",
+      "new_vault": "0x1E64C426Bd55b294ceAF206aa6F23802F40506d0",
       "funded": true
     },
     {
       "symbol": "GRVN",
       "name": "Grievance",
-      "old_vault": "0x410018E7262251CBe8C2f0D42404B5C0C29AE829",
-      "new_vault": "0x3aC0820fA1b66D6892D9a46E6435f97dF45b32EA",
+      "old_vault": "0x3aC0820fA1b66D6892D9a46E6435f97dF45b32EA",
+      "new_vault": "0xF80ff812eE13dB0e6F5512B82DD699D473EA5d7c",
       "funded": true
     },
     {
       "symbol": "BORO",
       "name": "Borough",
-      "old_vault": "0xd23c9eDBe09E1F8F63a479031F6bD87e15955D3F",
-      "new_vault": "0x347C62548B1636f7E1AeE5FEeB1FE2f61d5B42dD",
+      "old_vault": "0x347C62548B1636f7E1AeE5FEeB1FE2f61d5B42dD",
+      "new_vault": "0x9BfdDB550DF388F36C01d277F2F8e9D8838d33A6",
       "funded": true
     },
     {
       "symbol": "DSPT",
       "name": "Dispatch",
-      "old_vault": "0xb7a9b5F61CbB56B5232dAB15Ece5aD53B97ec7bD",
-      "new_vault": "0xdAa5e8c293728f3aecC2d6c3642460664926747C",
+      "old_vault": "0xdAa5e8c293728f3aecC2d6c3642460664926747C",
+      "new_vault": "0x348be91D9ce57eAF62c9E52a8Af661BC512EB191",
       "funded": true
     },
     {
       "symbol": "STOCKS1",
       "name": "Stocks Fund 1",
-      "old_vault": "0x87cE9fEd5179E9651a28aA0546f72dCBD066f7C5",
-      "new_vault": "0x3828946Eb65dc0429c0514F1aBE3f04969282905",
+      "old_vault": "0x3828946Eb65dc0429c0514F1aBE3f04969282905",
+      "new_vault": "0x8CF7213212CCE70e7d10B1993b1eF8FE89fA1cF0",
       "funded": true
     },
     {
       "symbol": "STOCKS2",
       "name": "Stocks Fund 2",
-      "old_vault": "0x6AF735f9961F14Ad94308B34733C85973E35b788",
-      "new_vault": "0xF905C12D760c83e391f77cCd549E3b50996d50A5",
+      "old_vault": "0xF905C12D760c83e391f77cCd549E3b50996d50A5",
+      "new_vault": "0x93Cf790C5a4720B5c5Bb64f4D344f10B6f0D0f5E",
       "funded": true
     },
     {
       "symbol": "STOCKS3",
       "name": "Stocks Fund 3",
-      "old_vault": "0xe9A5f6B20766b60e2c98BfE1453A4317c44DA9F4",
-      "new_vault": "0x4990d498A476CE17EF53f648593022B0B85665fE",
+      "old_vault": "0x4990d498A476CE17EF53f648593022B0B85665fE",
+      "new_vault": "0xA94B02afAa8Df46F4e23f64643eF8b58E50018Eb",
       "funded": true
     },
     {
       "symbol": "ESPORTS1",
       "name": "Esports Fund 1",
-      "old_vault": "0x44f7f33c1291C7E628a83AC35c46145dBc38d561",
-      "new_vault": "0x51dfd63897f474a5788CC8CB6AE386F51312688b",
+      "old_vault": "0x51dfd63897f474a5788CC8CB6AE386F51312688b",
+      "new_vault": "0x0E9CF49F3f1aAc8390034FeA1801666BBb476BB7",
       "funded": true
     },
     {
       "symbol": "ESPORTS2",
       "name": "Esports Fund 2",
-      "old_vault": "0x5Ea768F0d35432D8B5BEb24E5489F0144cEA0F7c",
-      "new_vault": "0xc9d54d6f1492dB7B4eb22aA38830d67eEd9e7603",
+      "old_vault": "0xc9d54d6f1492dB7B4eb22aA38830d67eEd9e7603",
+      "new_vault": "0x9dC8b5126b7C8C898250a5bDfd812ecb41ec185c",
       "funded": true
     },
     {
       "symbol": "ESPORTS3",
       "name": "Esports Fund 3",
-      "old_vault": "0xEA20E717B79Ba4aA1805b253136ad502397ECE5c",
-      "new_vault": "0xa508A934C32DE6A1945D6CeBb2CE6D0d3E69aF80",
+      "old_vault": "0xa508A934C32DE6A1945D6CeBb2CE6D0d3E69aF80",
+      "new_vault": "0xD105ab1EeA62508FbA5DFC15D9Eb65fE809e907C",
       "funded": true
     },
     {
       "symbol": "vBSPOT-M5",
       "name": "Binance Spot Momentum 5",
-      "old_vault": "0xA060331cECBC546d940a9372264B644256c6574C",
-      "new_vault": "0x6C628eC9B191995C66160422034697A662BFAE6A",
+      "old_vault": "0x6C628eC9B191995C66160422034697A662BFAE6A",
+      "new_vault": "0xc34b12D0eeD960Aa273d2a4ea988b5B0b6110d16",
       "funded": true
     },
     {
       "symbol": "vBSPOT-R5",
       "name": "Binance Spot Reversion 5",
-      "old_vault": "0xdA22bfd4781b84900949e38B090F30aC4d044f99",
-      "new_vault": "0x3Cb94D76591c3686b486680098Cc9888584805cA",
+      "old_vault": "0x3Cb94D76591c3686b486680098Cc9888584805cA",
+      "new_vault": "0xfA5CD5d53E64f9E1347e08dCA096dD7FB96C6baC",
       "funded": true
     },
     {
       "symbol": "vBSPOT-M20",
       "name": "Binance Spot Momentum 20",
-      "old_vault": "0xE3034595dC7f20C9073bdDBb40e2f590e8F10c0B",
-      "new_vault": "0x48042A4F2170684b696Cbd0CB0e22de6f38c607e",
+      "old_vault": "0x48042A4F2170684b696Cbd0CB0e22de6f38c607e",
+      "new_vault": "0x534d779aA944a59A04C86a15E22D1dfDec461Bb0",
       "funded": true
     },
     {
       "symbol": "vBSPOT-R20",
       "name": "Binance Spot Reversion 20",
-      "old_vault": "0x3303288675E02463307983EAABf338556839e8E2",
-      "new_vault": "0x6ADeb40e685295b39C9F0b45ac5B2466370784B7",
+      "old_vault": "0x6ADeb40e685295b39C9F0b45ac5B2466370784B7",
+      "new_vault": "0x08254Cd3da3f062964ef4016A3E237304cE5D95c",
       "funded": true
     },
     {
       "symbol": "vBFUND-R",
       "name": "Binance Funding Reversion",
-      "old_vault": "0xF0373C3cCb1C847F1a985bD097d9b6eBC1a61791",
-      "new_vault": "0x323b78E8FE7db2AFEc76B3A7Bc1EAEA7258A2a72",
+      "old_vault": "0x323b78E8FE7db2AFEc76B3A7Bc1EAEA7258A2a72",
+      "new_vault": "0xDf13e2AF3391E993bB2b6B57773D88fE5e218B01",
       "funded": true
     },
     {
       "symbol": "vBFUND-M",
       "name": "Binance Funding Continuation",
-      "old_vault": "0x1dca99FB7aEdcC83a6Dca21DB94DEbF09fc985C1",
-      "new_vault": "0x36b0155BA4D1BEA9bA550069e447ba8DB2FcB201",
+      "old_vault": "0x36b0155BA4D1BEA9bA550069e447ba8DB2FcB201",
+      "new_vault": "0x07403cb76Eb22B24a265544A1BE0f887528F0de9",
       "funded": true
     },
     {
       "symbol": "vBFUND-F",
       "name": "Binance Funding Sign Flip",
-      "old_vault": "0xd7ba442A3E593652452e5E76ffC11e8177574ba4",
-      "new_vault": "0x5d1f59c9C345fc2ffd5c6C1867F937181a1115F1",
+      "old_vault": "0x5d1f59c9C345fc2ffd5c6C1867F937181a1115F1",
+      "new_vault": "0x1510bB5D3Ce0977486084CBfE25A4eB7458D5900",
       "funded": true
     },
     {
       "symbol": "vBFUND-X",
       "name": "Binance Funding Extreme",
-      "old_vault": "0x35459f84D905511AD9Fee5eC2fD696d5FF52EC30",
-      "new_vault": "0xBB1e27bEe0C22A7a84B6D14EA3b660aDE61a41ED",
+      "old_vault": "0xBB1e27bEe0C22A7a84B6D14EA3b660aDE61a41ED",
+      "new_vault": "0x5ef36C2a3BBe658E62265e759e453F46E5f518Bb",
       "funded": true
     },
     {
       "symbol": "vBOPT-MA",
       "name": "Binance Options Momentum All",
-      "old_vault": "0x7999208C85283A81498EBec2C5d77f3580936569",
-      "new_vault": "0x46957a403ADCaaE2cc963C98186028671D3bF579",
+      "old_vault": "0x46957a403ADCaaE2cc963C98186028671D3bF579",
+      "new_vault": "0x396B58f60B87aF7301450E3E6102C918bD07872f",
       "funded": true
     },
     {
       "symbol": "vBOPT-RA",
       "name": "Binance Options Reversion All",
-      "old_vault": "0x37Fd6C653a898813dA2502a109b4522dE6C67139",
-      "new_vault": "0xE01BBd29334b3aC1F0515341492Fa6B3f794D1b5",
+      "old_vault": "0xE01BBd29334b3aC1F0515341492Fa6B3f794D1b5",
+      "new_vault": "0xd832dBc462593Ce3e629e573de36789899186a38",
       "funded": true
     },
     {
       "symbol": "vBOPT-MC",
       "name": "Binance Options Calls Momentum",
-      "old_vault": "0xaC69dA53f54Dc3BCBaD381648cec9D3681BE0f3A",
-      "new_vault": "0xAD83f1DB4cf39f61Aa90Fed4e24761fE34ace479",
+      "old_vault": "0xAD83f1DB4cf39f61Aa90Fed4e24761fE34ace479",
+      "new_vault": "0xC81c9208F39c92Ff601c816A88661a31452787BB",
       "funded": true
     },
     {
       "symbol": "vBOPT-MP",
       "name": "Binance Options Puts Momentum",
-      "old_vault": "0xC57853C7B0CEE30048639ddB832916d917DA4210",
-      "new_vault": "0x11203F080e64C33fad7EB3B279874356A2666df1",
+      "old_vault": "0x11203F080e64C33fad7EB3B279874356A2666df1",
+      "new_vault": "0x7540C5A132650fEa9fcd4df154C1b1CcB5daa2a6",
       "funded": true
     }
   ]
