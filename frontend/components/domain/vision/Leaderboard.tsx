@@ -11,6 +11,13 @@ import type { VisionLeaderboardEntry, Tone } from '@/lib/leaderboard/types'
 
 export type LeaderboardVariant = 'full' | 'compact'
 
+/**
+ * Default volume floor for the full variant. Anything below is treated as
+ * noise (lucky-streak micro-traders) and hidden until the user opts in.
+ * Compact variants never filter — they show what the parent asked for.
+ */
+const DEFAULT_MIN_VOLUME = 100
+
 interface Props {
   variant?: LeaderboardVariant
   sourceId?: string
@@ -57,14 +64,26 @@ export function Leaderboard({
   const defaultInitial = variant === 'compact' ? 5 : 50
   const step = pageSize ?? initialPageSize ?? defaultInitial
   const [visible, setVisible] = useState(initialPageSize ?? defaultInitial)
+  const [showNoise, setShowNoise] = useState(false)
 
   const highlight = useMemo(() => {
     const target = highlightAddress === undefined ? address : highlightAddress
     return target ? target.toLowerCase() : null
   }, [address, highlightAddress])
 
-  const rows = leaderboard.slice(0, visible)
-  const hasMore = variant === 'full' && visible < leaderboard.length
+  // Full variant filters noise traders by default. Connected wallet survives
+  // the filter so a user never disappears from their own board.
+  const filtered = useMemo(() => {
+    if (variant !== 'full' || showNoise) return leaderboard
+    return leaderboard.filter(p =>
+      p.totalVolume >= DEFAULT_MIN_VOLUME
+      || (highlight !== null && p.walletAddress.toLowerCase() === highlight)
+    )
+  }, [variant, showNoise, leaderboard, highlight])
+
+  const hiddenCount = leaderboard.length - filtered.length
+  const rows = filtered.slice(0, visible)
+  const hasMore = variant === 'full' && visible < filtered.length
 
   return (
     <section
@@ -117,13 +136,25 @@ export function Leaderboard({
         />
       ))}
 
+      {variant === 'full' && hiddenCount > 0 && !hasMore && !isLoading && (
+        <button
+          type="button"
+          onClick={() => setShowNoise(s => !s)}
+          className="w-full px-5 py-3 text-[12px] text-text-muted hover:text-text-primary bg-muted border-t border-border-light transition-colors"
+        >
+          {showNoise
+            ? `Hide low-volume traders (under $${DEFAULT_MIN_VOLUME})`
+            : `Show ${hiddenCount} hidden trader${hiddenCount === 1 ? '' : 's'} under $${DEFAULT_MIN_VOLUME} volume`}
+        </button>
+      )}
+
       {hasMore && (
         <button
           type="button"
           onClick={() => setVisible(v => v + step)}
           className="w-full px-5 py-3 text-[13px] font-semibold text-color-info bg-muted border-t border-border-light hover:bg-surface transition-colors"
         >
-          Show {Math.min(step, leaderboard.length - visible)} more
+          Show {Math.min(step, filtered.length - visible)} more
         </button>
       )}
 
@@ -153,10 +184,11 @@ function Header({ variant }: { variant: LeaderboardVariant }) {
       >
         <span className={HEADER_CELL}>{t('vision_leaderboard.rank')}</span>
         <span className={HEADER_CELL}>{t('vision_leaderboard.player')}</span>
-        <span className={`${HEADER_CELL} text-right`}>
-          {variant === 'full' ? t('vision_leaderboard.rounds') : t('vision_leaderboard.batches')}
-        </span>
+        <span className={`${HEADER_CELL} text-right`}>{t('vision_leaderboard.rounds')}</span>
         <span className={`${HEADER_CELL} text-right`}>{t('vision_leaderboard.volume')}</span>
+        {variant === 'full' && (
+          <span className={`${HEADER_CELL} text-right`}>{t('vision_leaderboard.win_pct')}</span>
+        )}
         <span className={`${HEADER_CELL} text-right`}>{t('vision_leaderboard.roi')}</span>
         <span className={`${HEADER_CELL} text-right`}>{t('vision_leaderboard.pnl')}</span>
       </div>
@@ -185,7 +217,6 @@ function LeaderboardRow({
 }) {
   const pnl = fmtPnl(entry.pnl)
   const roi = fmtRoi(entry.roi)
-  const rounds = variant === 'full' ? entry.roundsPlayed : entry.portfolioBets
   const medal = rankMedal(entry.rank)
   const cols = variant === 'full' ? FULL_COLS : COMPACT_COLS
   const rowHeight = variant === 'full' ? 56 : 44
@@ -214,11 +245,16 @@ function LeaderboardRow({
           )}
         </span>
         <span className="text-[13px] font-mono tabular-nums text-right text-text-secondary">
-          {fmtRounds(rounds)}
+          {fmtRounds(entry.roundsPlayed)}
         </span>
         <span className="text-[13px] font-mono tabular-nums text-right text-text-secondary">
           {fmtVolume(entry.totalVolume)}
         </span>
+        {variant === 'full' && (
+          <span className="text-[13px] font-mono tabular-nums text-right text-text-secondary">
+            {entry.winRate > 0 ? `${entry.winRate.toFixed(0)}%` : '—'}
+          </span>
+        )}
         <span className={`text-[13px] font-mono tabular-nums text-right font-semibold ${TONE_TEXT[roi.tone]}`}>
           {roi.text}
         </span>
@@ -287,6 +323,7 @@ function SkeletonRows({ variant, count }: { variant: LeaderboardVariant; count: 
             <span className="skeleton h-[12px] w-32 rounded" />
             <span className="skeleton h-[12px] w-8 rounded ml-auto" />
             <span className="skeleton h-[12px] w-14 rounded ml-auto" />
+            {variant === 'full' && <span className="skeleton h-[12px] w-10 rounded ml-auto" />}
             <span className="skeleton h-[12px] w-12 rounded ml-auto" />
             <span className="skeleton h-[12px] w-16 rounded ml-auto" />
           </div>
@@ -322,6 +359,8 @@ function EmptyState({
 const HEADER_CELL =
   'font-text text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted'
 
-const FULL_COLS = '40px minmax(0,1fr) 90px 110px 100px 120px'
+// full: rank, player, rounds, volume, win%, roi, pnl
+const FULL_COLS = '40px minmax(0,1fr) 80px 90px 70px 90px 110px'
+// compact: rank, player, rounds, volume, roi, pnl
 const COMPACT_COLS = '36px minmax(0,1fr) 60px 80px 80px 100px'
 const MOBILE_COLS = '28px minmax(0,1fr) auto auto'
