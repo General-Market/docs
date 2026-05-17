@@ -17,7 +17,7 @@ interface SourceBatch {
   avgPnl: number
   /** Top earner's net P&L. Can be 0 or negative. */
   topEarnerPnl?: number
-  /** Largest gross payout any player received. Always >= 0. The "TOP PAYOUT"
+  /** Largest gross payout any player received. Always >= 0. The "Top Payout"
    *  column reads this, distinct from PnL. A round can have $0 PnL for the
    *  top earner but still a real payout if everyone got their stake back. */
   topPayout?: number
@@ -35,6 +35,11 @@ interface HistoryResponse {
   totalPages: number
 }
 
+const CARD =
+  'border border-[var(--apple-border,rgba(0,0,0,0.08))] bg-[var(--surface,#fff)] p-5 rounded-[var(--apple-r-md,12px)]'
+const HEADER =
+  'text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--apple-text-tertiary,#86868b)] mb-3'
+
 function formatTime(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleTimeString(undefined, {
@@ -47,7 +52,7 @@ function formatTime(iso: string): string {
 
 function truncAddr(addr: string): string {
   if (!addr || addr.length < 10) return addr || '--'
-  return `${addr.slice(0, 6)}\u2026${addr.slice(-4)}`
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
 function groupBatchesByDate(
@@ -79,7 +84,6 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
   const [page, setPage] = useState(1)
   const [mobileExpanded, setMobileExpanded] = useState(false)
 
-  // Batch history
   const { data: historyData, isLoading } = useQuery<HistoryResponse>({
     queryKey: ['source-history', sourceId, page],
     queryFn: async () => {
@@ -105,177 +109,218 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
   const groups = useMemo(() => groupBatchesByDate(settled), [settled])
   const totalPages = historyData?.totalPages ?? 0
   const isEmpty = !isLoading && settled.length === 0
+  const totalSettled = historyData?.totalSettled ?? 0
 
   return (
-    <div>
-      {/* ── Recent Batches, HLTV "Recent results" style ── */}
-      <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
-              {t('batch_results.past_rounds_desc')}
-            </div>
-            <h3 className="text-[15px] font-bold text-white">
-              {t('batch_results.recent_batches')}
-              <span className="text-[11px] font-normal text-white/30 ml-2">
-                {historyData?.totalSettled ?? 0} {t('batch_results.total')}
-              </span>
-            </h3>
+    <section className={CARD}>
+      <header className="flex items-center justify-between mb-3">
+        <h2 className={HEADER + ' mb-0'}>{t('batch_results.recent_batches')}</h2>
+        <span
+          className="text-[11px] font-mono tabular-nums"
+          style={{ color: 'var(--apple-text-tertiary)' }}
+        >
+          {totalSettled} {totalSettled === 1 ? 'round' : 'rounds'}
+        </span>
+      </header>
+
+      {isLoading && settled.length === 0 ? (
+        <div aria-hidden="true">
+          <div
+            className="hidden md:grid grid-cols-[64px_1fr_64px_104px] items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
+            style={{ color: 'var(--apple-text-tertiary)' }}
+          >
+            <div>Time</div>
+            <div>Round</div>
+            <div className="text-right">Players</div>
+            <div className="text-right">Top Payout</div>
+          </div>
+          <div
+            className="rounded-[10px] overflow-hidden"
+            style={{ border: '1px solid var(--apple-border)' }}
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[64px_1fr_64px_104px] items-center gap-2 px-3 py-2.5"
+                style={{
+                  borderBottom: i < 5 ? '1px solid var(--apple-divider,#e8e8ed)' : 'none',
+                  animationDelay: `${i * 50}ms`,
+                }}
+              >
+                <span className="skeleton h-[11px] w-12 rounded" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="skeleton h-[12px] w-20 rounded" />
+                  <span className="hidden md:inline skeleton h-[10px] w-24 rounded" />
+                </div>
+                <span className="hidden md:block skeleton h-[12px] w-8 rounded justify-self-end" />
+                <span className="skeleton h-[12px] w-16 rounded justify-self-end" />
+              </div>
+            ))}
           </div>
         </div>
-        {isLoading && settled.length === 0 ? (
-          <div aria-hidden="true">
-            <div className="hidden md:grid grid-cols-[56px_1fr_56px_96px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
-              <div>Time</div>
-              <div className="text-center">Round</div>
-              <div className="text-right">Players</div>
-              <div className="text-right">Top Payout</div>
-            </div>
-            <div className="bg-white border border-t-0 border-border-light">
-              <div className="px-4 py-2.5 bg-[var(--surface)] border-y border-border-light">
-                <span className="skeleton block h-[13px] w-32 rounded" />
-              </div>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[56px_1fr_56px_96px] items-center gap-2 px-4 py-2.5 border-b border-border-light last:border-b-0"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  <span className="skeleton h-[11px] w-12 rounded" />
-                  <div className="flex items-center md:justify-center gap-3 min-w-0">
-                    <span className="skeleton h-[12px] w-20 rounded" />
-                    <span className="hidden md:inline skeleton h-[10px] w-24 rounded" />
-                  </div>
-                  <span className="hidden md:block skeleton h-[12px] w-8 rounded justify-self-end" />
-                  <span className="skeleton h-[12px] w-16 rounded justify-self-end" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : isEmpty ? (
-          <div className="bg-white border border-border-light px-5 py-8 text-center">
-            <p className="text-[13px] text-text-muted">
-              No settled rounds yet. The first result will land here after the current round settles.
-            </p>
-          </div>
-        ) : (
-          <div>
-          {/* Column headers — desktop only, matches the desktop row grid */}
-          <div className="hidden md:grid grid-cols-[56px_1fr_56px_96px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+      ) : isEmpty ? (
+        <div
+          className="rounded-[10px] px-5 py-8 text-center"
+          style={{
+            border: '1px solid var(--apple-border)',
+            background: 'var(--apple-panel-2,#fbfbfd)',
+          }}
+        >
+          <p className="text-[13px]" style={{ color: 'var(--apple-text-secondary)' }}>
+            No settled rounds yet. The first result lands here once the current round settles.
+          </p>
+        </div>
+      ) : (
+        <div>
+          {/* Column headers — desktop only */}
+          <div
+            className="hidden md:grid grid-cols-[64px_1fr_64px_104px] items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
+            style={{ color: 'var(--apple-text-tertiary)' }}
+          >
             <div>Time</div>
-            <div className="text-center">Round</div>
+            <div>Round</div>
             <div className="text-right">Players</div>
             <div className="text-right">Top Payout</div>
           </div>
 
-          <div className="bg-white border border-t-0 border-border-light">
-            <div className={cn(
-              'overflow-y-auto sm:max-h-[500px]',
-              mobileExpanded ? 'max-h-[500px]' : 'max-h-[280px]',
-            )}>
-            {groups.map(group => (
-              <div key={group.label}>
-                {/* Group header, like HLTV tournament name */}
-                <div className="px-4 py-2.5 bg-[var(--surface)] border-y border-border-light">
-                  <span className="text-[13px] font-black text-black">
-                    {group.label}
-                  </span>
-                </div>
-
-                {group.batches.map(batch => {
-                  // Top payout = largest gross winnings paid to any player.
-                  // The backend exposes `topPayout` (>= 0). Fall back to deriving
-                  // it from PnL + average deposit per player if the field is
-                  // missing, for any oracle still on the old shape.
-                  const rawPayout = batch.topPayout
-                  const fallbackPayout =
-                    batch.topEarnerPnl != null && batch.playerCount > 0
-                      ? batch.topEarnerPnl + batch.totalPool / batch.playerCount
-                      : undefined
-                  const payout = rawPayout ?? fallbackPayout
-                  const hasPlayers = batch.playerCount > 0
-                  const showPayout = hasPlayers && payout != null && payout > 0
-                  const addr = batch.topEarnerAddress
-
-                  return (
-                    <div
-                      key={batch.batchId}
-                      className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[56px_1fr_56px_96px] items-center gap-2 px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
+          <div
+            className="rounded-[10px] overflow-hidden"
+            style={{ border: '1px solid var(--apple-border)' }}
+          >
+            <div
+              className={cn(
+                'overflow-y-auto sm:max-h-[500px]',
+                mobileExpanded ? 'max-h-[500px]' : 'max-h-[280px]',
+              )}
+            >
+              {groups.map((group, groupIdx) => (
+                <div key={group.label}>
+                  <div
+                    className="px-3 py-2"
+                    style={{
+                      background: 'var(--apple-panel-2,#fbfbfd)',
+                      borderTop: groupIdx === 0 ? 'none' : '1px solid var(--apple-divider,#e8e8ed)',
+                      borderBottom: '1px solid var(--apple-divider,#e8e8ed)',
+                    }}
+                  >
+                    <span
+                      className="text-[11px] font-semibold tracking-tight"
+                      style={{ color: 'var(--apple-text-secondary)' }}
                     >
-                      {/* Time */}
-                      <div className="text-[11px] text-text-muted font-mono tabular-nums">
-                        {formatTime(batch.settledAt ?? batch.timestamp)}
-                      </div>
+                      {group.label}
+                    </span>
+                  </div>
 
-                      {/* Batch info — secondary metadata is desktop-only so the
-                          mobile cell never overflows the row */}
-                      <div className="flex items-center md:justify-center gap-3 min-w-0">
-                        <span className="text-[12px] font-bold text-black font-mono shrink-0">
-                          {t('batch_results.batch')} #{batch.batchId}
-                        </span>
-                        {addr && (
-                          <span
-                            className="hidden md:inline text-[10px] font-mono text-text-muted truncate"
-                            title={addr}
-                          >
-                            {truncAddr(addr)}
-                          </span>
-                        )}
-                        {/* marketCount omitted — same for every round in a source, adds noise */}
-                      </div>
+                  {group.batches.map((batch, idx) => {
+                    const rawPayout = batch.topPayout
+                    const fallbackPayout =
+                      batch.topEarnerPnl != null && batch.playerCount > 0
+                        ? batch.topEarnerPnl + batch.totalPool / batch.playerCount
+                        : undefined
+                    const payout = rawPayout ?? fallbackPayout
+                    const hasPlayers = batch.playerCount > 0
+                    const showPayout = hasPlayers && payout != null && payout > 0
+                    const addr = batch.topEarnerAddress
 
-                      {/* Players — desktop only, mobile drops it to make room
-                          for the dollar value, which is the column users care
-                          about most */}
-                      <div className="hidden md:block text-right text-[12px] font-mono tabular-nums text-text-secondary font-bold">
-                        {batch.playerCount}
-                      </div>
-
-                      {/* Top Payout, gross winnings for the top player.
-                          Em-dash only when nobody played the round. */}
+                    return (
                       <div
-                        className={cn(
-                          'text-right text-[12px] font-mono tabular-nums font-bold tabular-nums',
-                          showPayout ? 'text-color-up' : 'text-text-muted',
-                        )}
+                        key={batch.batchId}
+                        className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[64px_1fr_64px_104px] items-center gap-2 px-3 py-2.5 transition-colors hover:bg-[var(--apple-panel-2,#fbfbfd)]"
+                        style={{
+                          borderBottom:
+                            idx < group.batches.length - 1
+                              ? '1px solid var(--apple-divider,#e8e8ed)'
+                              : 'none',
+                        }}
                       >
-                        {showPayout ? `$${payout!.toFixed(2)}` : '\u2014'}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+                        <div
+                          className="text-[11px] font-mono tabular-nums"
+                          style={{ color: 'var(--apple-text-tertiary)' }}
+                        >
+                          {formatTime(batch.settledAt ?? batch.timestamp)}
+                        </div>
 
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className="text-[12px] font-mono font-bold shrink-0"
+                            style={{ color: 'var(--apple-text)' }}
+                          >
+                            #{batch.batchId}
+                          </span>
+                          {addr && (
+                            <span
+                              className="hidden md:inline text-[10px] font-mono truncate"
+                              title={addr}
+                              style={{ color: 'var(--apple-text-tertiary)' }}
+                            >
+                              {truncAddr(addr)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          className="hidden md:block text-right text-[12px] font-mono tabular-nums font-semibold"
+                          style={{ color: 'var(--apple-text-secondary)' }}
+                        >
+                          {batch.playerCount}
+                        </div>
+
+                        <div
+                          className="text-right text-[12px] font-mono tabular-nums font-bold"
+                          style={{
+                            color: showPayout ? '#1f8a40' : 'var(--apple-text-tertiary)',
+                          }}
+                        >
+                          {showPayout ? `$${payout!.toFixed(2)}` : '—'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
             </div>
 
-            {/* Mobile-only expand/collapse. Desktop keeps the fixed 500px
-                scroll box; mobile starts shorter and reveals on tap. */}
             {settled.length > 4 && (
               <button
                 onClick={() => setMobileExpanded(v => !v)}
-                className="sm:hidden w-full py-2.5 border-t border-border-light text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted hover:text-black transition-colors"
+                className="sm:hidden w-full py-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors"
+                style={{
+                  borderTop: '1px solid var(--apple-divider,#e8e8ed)',
+                  color: 'var(--apple-text-tertiary)',
+                  background: 'var(--apple-panel-2,#fbfbfd)',
+                }}
               >
                 {mobileExpanded ? t('batch_results.show_less') : t('batch_results.show_more')}
               </button>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-[var(--surface)]">
+              <div
+                className="flex items-center justify-between px-3 py-2.5"
+                style={{
+                  borderTop: '1px solid var(--apple-divider,#e8e8ed)',
+                  background: 'var(--apple-panel-2,#fbfbfd)',
+                }}
+              >
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="text-[11px] font-mono font-bold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="text-[11px] font-mono font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  style={{ color: 'var(--apple-text-secondary)' }}
                 >
                   &larr; {t('batch_results.prev')}
                 </button>
-                <span className="text-[10px] font-mono text-text-muted tabular-nums">
+                <span
+                  className="text-[10px] font-mono tabular-nums"
+                  style={{ color: 'var(--apple-text-tertiary)' }}
+                >
                   {page} / {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="text-[11px] font-mono font-bold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="text-[11px] font-mono font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  style={{ color: 'var(--apple-text-secondary)' }}
                 >
                   {t('batch_results.next')} &rarr;
                 </button>
@@ -284,6 +329,6 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }

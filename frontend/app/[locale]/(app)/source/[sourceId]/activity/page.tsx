@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 import { BatchVaultResults } from '@/components/domain/vision/detail/BatchVaultResults'
 import { ActivityRecentBets } from '@/components/domain/vision/detail/ActivityRecentBets'
+import { LiveRoundsCard } from '@/components/domain/vision/detail/LiveRoundsCard'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceTabNav } from '@/components/domain/vision/detail/SourceTabNav'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
@@ -93,11 +94,9 @@ export default async function ActivityPage({ params }: Props) {
               </h1>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="border border-[var(--apple-border,rgba(0,0,0,0.08))] bg-[var(--surface,#fff)] p-5 rounded-[var(--apple-r-md,12px)]">
-                <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--apple-text-tertiary,#86868b)] mb-3">
-                  Round History
-                </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              <div className="flex flex-col gap-6">
+                <LiveRoundsCard sourceId={sourceId} />
                 <BatchVaultResults sourceId={sourceId} />
               </div>
               <ActivityRecentBets />
