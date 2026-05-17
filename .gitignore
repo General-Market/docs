@@ -133,3 +133,7 @@ audit-data/
 # Invite codes — generated locally, never committed
 waitlist-codes.txt
 waitlist-codes.sql
+
+# Keeper progress files — large local audit trails, not source of truth
+deployments/reconcile-phantom-*.json
+deployments/refund-progress-*.json
