@@ -142,11 +142,12 @@ export function HeroCard({ feature, side }: Props) {
     >
       {/* Featured card — text + graph */}
       <div
-        className="overflow-hidden border grid grid-cols-1 md:grid-cols-[minmax(0,42%)_minmax(0,58%)]"
+        className="overflow-hidden border grid grid-cols-1 md:grid-cols-[minmax(0,42%)_minmax(0,58%)] cursor-pointer transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.10),0_4px_14px_rgba(0,0,0,0.06)]"
         style={{
           background: '#F5F5F7',
           borderColor: 'var(--apple-line)',
           borderRadius: 'var(--apple-r-card)',
+          transitionTimingFunction: 'var(--apple-ease-default)',
         }}
       >
         <Link
@@ -216,9 +217,9 @@ export function HeroCard({ feature, side }: Props) {
             </span>
           </div>
 
-          {/* Right gradient + chart — rounded on the outer corners */}
+          {/* Right gradient + chart — bleeds to top/right/bottom; only left gets a gap */}
           <div
-            className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px] md:m-3 md:rounded-[20px] overflow-hidden"
+            className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px] md:ml-3 md:rounded-l-[20px] md:rounded-r-none overflow-hidden"
             style={{ background: sourceGradient(feature.sourceId) }}
           >
             <ShineOverlay size={420} intensity={0.18} />
@@ -304,18 +305,18 @@ function SideRow({ feed }: { feed: SourceFeed }) {
   return (
     <Link
       href={href as never}
-      className="flex flex-1 items-center gap-3 px-3 py-3 border transition hover:bg-[rgba(0,0,0,0.02)]"
+      className="flex flex-1 items-stretch gap-3 border overflow-hidden cursor-pointer transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.04)]"
       style={{
         borderColor: 'var(--apple-line)',
         borderRadius: 16,
         background: '#ffffff',
         boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        transitionTimingFunction: 'var(--apple-ease-default)',
       }}
     >
       <div
-        className="relative h-14 w-20 shrink-0 overflow-hidden"
+        className="relative w-24 shrink-0 self-stretch overflow-hidden"
         style={{
-          borderRadius: 'var(--apple-r-sm)',
           background: sourceGradient(feed.sourceId),
         }}
       >
@@ -324,13 +325,13 @@ function SideRow({ feed }: { feed: SourceFeed }) {
           <Sparkline
             series={feed.series}
             width={160}
-            height={56}
+            height={72}
             stroke={sourceStroke(feed.sourceId)}
             fill={sourceFill(feed.sourceId)}
           />
         </div>
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-3 pr-3 flex flex-col justify-center">
         <div className="flex items-center gap-1.5 mb-0.5">
           <div
             className="truncate font-semibold"

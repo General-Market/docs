@@ -22,20 +22,41 @@ const TOP_MARKETS_IDS = [
   'polymarket',
 ] as const
 
-// Coming soon: surfaces in the registry without live feeds yet. Curated set —
-// the ones a trader would actually want first. Each renders as a tile with
-// the gradient + name; no fabricated sparklines.
+// Coming soon: four curated surfaces, rendered as a normal grid of cards.
+// Same visual language as Top markets — no fabricated sparklines.
 const SOON_FEEDS: SourceFeed[] = [
-  { sourceId: 'bitcoin', displayName: 'Bitcoin', meta: 'Mempool · hashrate · halving', coverage: 'soon', series: [] },
-  { sourceId: 'finnhub', displayName: 'Finnhub', meta: 'Stocks · forex · earnings', coverage: 'soon', series: [] },
-  { sourceId: 'sec', displayName: 'SEC', meta: '10-K · 13F · 8-K filings', coverage: 'soon', series: [] },
-  { sourceId: 'treasury', displayName: 'US Treasury', meta: 'Yields · auctions · debt', coverage: 'soon', series: [] },
-  { sourceId: 'ecb', displayName: 'ECB', meta: 'Rates · FX reference · M3', coverage: 'soon', series: [] },
-  { sourceId: 'hackernews', displayName: 'Hacker News', meta: 'Front page · score · age', coverage: 'soon', series: [] },
-  { sourceId: 'noaa', displayName: 'NOAA', meta: 'Storms · climate · records', coverage: 'soon', series: [] },
-  { sourceId: 'flights', displayName: 'Flights', meta: 'Delays · cancellations · ETA', coverage: 'soon', series: [] },
-  { sourceId: 'cftc', displayName: 'CFTC', meta: 'COT · futures positioning', coverage: 'soon', series: [] },
-  { sourceId: 'eia', displayName: 'EIA', meta: 'Oil · gas · electricity', coverage: 'soon', series: [] },
+  {
+    sourceId: '4chan',
+    displayName: '4chan',
+    meta: 'Boards · post velocity · thread heat',
+    assetName: '/biz/ posts per hour',
+    coverage: 'soon',
+    series: [],
+  },
+  {
+    sourceId: 'rust',
+    displayName: 'Rust',
+    meta: 'crates.io · downloads · releases',
+    assetName: 'tokio downloads · 24h',
+    coverage: 'soon',
+    series: [],
+  },
+  {
+    sourceId: 'binance-options',
+    displayName: 'Binance Options',
+    meta: 'BTC · ETH · open interest',
+    assetName: 'BTC option open interest',
+    coverage: 'soon',
+    series: [],
+  },
+  {
+    sourceId: 'cloudflare',
+    displayName: 'Cloudflare',
+    meta: 'Radar · global traffic · outages',
+    assetName: 'Worldwide traffic index',
+    coverage: 'soon',
+    series: [],
+  },
 ]
 
 function pick(feeds: FeedMap, id: string): SourceFeed {
@@ -117,8 +138,8 @@ export function HomeDashboard({
   })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
-  // The hardcoded SOON list ages quickly — once a source ships it shouldn't
-  // keep parading as upcoming. Filter against the live registry.
+  // Four curated surfaces. Still hide any that quietly went live in the
+  // registry — promising a Coming Soon for something already shipped looks bad.
   const soonFeeds = liveSourceIds
     ? SOON_FEEDS.filter((f) => !liveSourceIds.has(f.sourceId))
     : SOON_FEEDS
@@ -166,7 +187,7 @@ export function HomeDashboard({
       {soonFeeds.length > 0 && (
         <section className="mt-8 mb-4">
           <SectionHeader title="Coming soon" href="/explorer" />
-          <ScrollRow>
+          <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {soonFeeds.map((feed) => (
               <AssetCard
                 key={feed.sourceId}
@@ -174,10 +195,12 @@ export function HomeDashboard({
                 displayName={feed.displayName}
                 meta={feed.meta}
                 series={feed.series}
+                assetName={feed.assetName}
+                assetValue={feed.assetValue}
                 coverage={feed.coverage}
               />
             ))}
-          </ScrollRow>
+          </div>
         </section>
       )}
     </div>
