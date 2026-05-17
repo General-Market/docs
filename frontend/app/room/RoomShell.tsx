@@ -35,7 +35,7 @@ export function RoomShell({ title, pages, currentPageSlug, children }: RoomShell
           <Link href="/" className="shrink-0 flex items-center gap-2.5" aria-label="General Market — home">
             <img src="/logo.svg" alt="" width={36} height={36} className="w-9 h-9" />
             <span className="text-[19px] sm:text-[22px] font-black tracking-[-0.03em] text-black">
-              General Market
+              General
             </span>
           </Link>
 
