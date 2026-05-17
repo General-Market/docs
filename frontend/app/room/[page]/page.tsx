@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -8,13 +8,11 @@ import { dataroomMdxComponents } from '@/lib/dataroom/mdx'
 import { SESSION_COOKIE, verifySession } from '@/lib/dataroom/session'
 import { getRoom, logView } from '@/lib/dataroom/db'
 import { getRoomPage, listRoomPages, roomExists } from '@/lib/dataroom/content'
-import { UnlockForm } from './UnlockForm'
-import { AutoUnlock } from './AutoUnlock'
-import { RoomShell } from './RoomShell'
+import { ROOM_SLUG } from '@/lib/dataroom/config'
+import { RoomShell } from '../RoomShell'
 
 interface Props {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<{ k?: string; error?: string }>
+  params: Promise<{ page: string }>
 }
 
 function hash(s: string | null | undefined): string | null {
@@ -22,45 +20,37 @@ function hash(s: string | null | undefined): string | null {
   return createHash('sha256').update(s).digest('hex').slice(0, 32)
 }
 
-export default async function RoomSlugPage({ params, searchParams }: Props) {
-  const { slug } = await params
-  const sp = await searchParams
-  const room = await getRoom(slug)
-  const title = room?.title ?? 'Data Room'
+export default async function RoomInnerPage({ params }: Props) {
+  const { page } = await params
 
   const cookieStore = await cookies()
   const token = cookieStore.get(SESSION_COOKIE)?.value
   const session = token ? await verifySession(token) : null
-  const authed = session !== null && session.slug === slug && room !== null
+  const room = await getRoom(ROOM_SLUG)
 
-  if (!authed) {
-    if (sp.k) {
-      return <AutoUnlock slug={slug} code={sp.k} />
-    }
-    return <UnlockForm slug={slug} title={title} initialError={sp.error} />
+  if (!session || session.slug !== ROOM_SLUG || !room) {
+    redirect('/room')
   }
 
-  if (!roomExists(slug)) {
-    notFound()
-  }
+  if (!roomExists()) notFound()
 
-  const pages = listRoomPages(slug)
-  const indexPage = getRoomPage(slug, 'index') ?? pages[0]
-  if (!indexPage) notFound()
+  const pageDoc = getRoomPage(page)
+  if (!pageDoc) notFound()
 
+  const pages = listRoomPages()
   const h = await headers()
   await logView({
-    slug,
-    page: indexPage.pageSlug,
+    slug: ROOM_SLUG,
+    page,
     jti: session.jti,
     ipHash: hash(h.get('x-forwarded-for') ?? h.get('x-real-ip')),
     uaHash: hash(h.get('user-agent')),
   })
 
   return (
-    <RoomShell slug={slug} title={title} pages={pages} currentPageSlug={null}>
+    <RoomShell title={room.title} pages={pages} currentPageSlug={page}>
       <MDXRemote
-        source={indexPage.content}
+        source={pageDoc.content}
         components={dataroomMdxComponents}
         options={{
           mdxOptions: {

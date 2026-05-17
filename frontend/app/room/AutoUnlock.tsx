@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function AutoUnlock({ slug, code }: { slug: string; code: string }) {
+export function AutoUnlock({ code }: { code: string }) {
   const router = useRouter()
   const fired = useRef(false)
 
@@ -12,23 +12,23 @@ export function AutoUnlock({ slug, code }: { slug: string; code: string }) {
     fired.current = true
     ;(async () => {
       try {
-        const res = await fetch(`/room/${encodeURIComponent(slug)}/unlock`, {
+        const res = await fetch(`/room/unlock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
         })
         if (res.ok) {
-          router.replace(`/room/${encodeURIComponent(slug)}`)
+          router.replace(`/room`)
         } else if (res.status === 429) {
-          router.replace(`/room/${encodeURIComponent(slug)}?error=throttled`)
+          router.replace(`/room?error=throttled`)
         } else {
-          router.replace(`/room/${encodeURIComponent(slug)}?error=invalid`)
+          router.replace(`/room?error=invalid`)
         }
       } catch {
-        router.replace(`/room/${encodeURIComponent(slug)}?error=network`)
+        router.replace(`/room?error=network`)
       }
     })()
-  }, [slug, code, router])
+  }, [code, router])
 
   return (
     <main className="fixed inset-0 flex items-center justify-center px-6 overflow-hidden bg-black">

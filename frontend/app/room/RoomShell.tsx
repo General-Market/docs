@@ -3,14 +3,13 @@ import type { ReactNode } from 'react'
 import type { RoomPage } from '@/lib/dataroom/content'
 
 interface RoomShellProps {
-  slug: string
   title: string
   pages: RoomPage[]
   currentPageSlug: string | null
   children: ReactNode
 }
 
-export function RoomShell({ slug, title, pages, currentPageSlug, children }: RoomShellProps) {
+export function RoomShell({ title, pages, currentPageSlug, children }: RoomShellProps) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       <aside className="md:w-72 md:min-h-screen md:border-r border-neutral-200 bg-neutral-50/60 backdrop-blur-sm">
@@ -27,8 +26,8 @@ export function RoomShell({ slug, title, pages, currentPageSlug, children }: Roo
                 p.pageSlug === currentPageSlug
               const href =
                 p.pageSlug === 'index'
-                  ? `/room/${slug}`
-                  : `/room/${slug}/${p.pageSlug}`
+                  ? `/room`
+                  : `/room/${p.pageSlug}`
               return (
                 <Link
                   key={p.pageSlug}
@@ -45,7 +44,7 @@ export function RoomShell({ slug, title, pages, currentPageSlug, children }: Roo
             })}
           </nav>
 
-          <form action={`/room/${slug}/logout`} method="post" className="mt-10">
+          <form action="/room/logout" method="post" className="mt-10">
             <button
               type="submit"
               className="text-[12px] text-neutral-500 hover:text-neutral-900 underline-offset-4 hover:underline"

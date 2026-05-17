@@ -9,35 +9,32 @@ export interface RoomPageFrontmatter {
 }
 
 export interface RoomPage {
-  slug: string
   pageSlug: string
   frontmatter: RoomPageFrontmatter
   content: string
 }
 
-const ROOMS_DIR = path.join(process.cwd(), 'content', 'room')
+const ROOM_DIR = path.join(process.cwd(), 'content', 'room')
 const DECK_DIR = path.join(process.cwd(), 'content', 'pitchdeck')
 
-export function getRoomDir(slug: string): string {
-  return path.join(ROOMS_DIR, slug)
+export function roomDir(): string {
+  return ROOM_DIR
 }
 
-export function roomExists(slug: string): boolean {
-  return fs.existsSync(getRoomDir(slug))
+export function roomExists(): boolean {
+  return fs.existsSync(ROOM_DIR)
 }
 
-export function listRoomPages(slug: string): RoomPage[] {
-  const dir = getRoomDir(slug)
-  if (!fs.existsSync(dir)) return []
+export function listRoomPages(): RoomPage[] {
+  if (!fs.existsSync(ROOM_DIR)) return []
   return fs
-    .readdirSync(dir)
+    .readdirSync(ROOM_DIR)
     .filter((f) => f.endsWith('.mdx'))
     .map((f) => {
       const pageSlug = f.replace(/\.mdx$/, '')
-      const raw = fs.readFileSync(path.join(dir, f), 'utf-8')
+      const raw = fs.readFileSync(path.join(ROOM_DIR, f), 'utf-8')
       const { data, content } = matter(raw)
       return {
-        slug,
         pageSlug,
         frontmatter: data as RoomPageFrontmatter,
         content,
@@ -53,12 +50,12 @@ export function listRoomPages(slug: string): RoomPage[] {
     })
 }
 
-export function getRoomPage(slug: string, pageSlug: string): RoomPage | null {
-  const filePath = path.join(getRoomDir(slug), `${pageSlug}.mdx`)
+export function getRoomPage(pageSlug: string): RoomPage | null {
+  const filePath = path.join(ROOM_DIR, `${pageSlug}.mdx`)
   if (!fs.existsSync(filePath)) return null
   const raw = fs.readFileSync(filePath, 'utf-8')
   const { data, content } = matter(raw)
-  return { slug, pageSlug, frontmatter: data as RoomPageFrontmatter, content }
+  return { pageSlug, frontmatter: data as RoomPageFrontmatter, content }
 }
 
 export function getPitchdeck(): { content: string; frontmatter: Record<string, unknown> } | null {

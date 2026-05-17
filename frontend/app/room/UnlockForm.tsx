@@ -10,11 +10,9 @@ const INITIAL_ERROR: Record<string, string> = {
 }
 
 export function UnlockForm({
-  slug,
   title,
   initialError,
 }: {
-  slug: string
   title: string
   initialError?: string
 }) {
@@ -30,7 +28,7 @@ export function UnlockForm({
     setError(null)
     setSubmitting(true)
     try {
-      const res = await fetch(`/room/${encodeURIComponent(slug)}/unlock`, {
+      const res = await fetch(`/room/unlock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),

@@ -76,6 +76,10 @@ const nextConfig: NextConfig = {
       // The bytecode remembers, but the URLs do not.
       { source: '/docs/vision', destination: '/docs/blocks/introduction', permanent: true },
       { source: '/docs/vision/:path*', destination: '/docs/blocks/:path*', permanent: true },
+      // Pre-seed room URLs collapsed to /room. The slug was a multi-tenant
+      // artifact we no longer need; redirect any old magic links.
+      { source: '/room/pre-seed', destination: '/room', permanent: true },
+      { source: '/room/pre-seed/:path*', destination: '/room/:path*', permanent: true },
     ]
   },
   // All backend/data-node/oracle/vision/rpc proxies are now handled by

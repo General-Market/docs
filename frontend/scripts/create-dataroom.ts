@@ -1,16 +1,18 @@
 #!/usr/bin/env tsx
 /**
- * Create or update a data room. Outputs the access code and the URL.
+ * (Re-)issue the data room — sets the title and access code for the
+ * single room served at /room.
  *
  * Usage:
- *   npx tsx scripts/create-dataroom.ts <slug> "Title" [--ttl-days=90] [--notes="..."] [--code=EXPLICIT]
+ *   npx tsx scripts/create-dataroom.ts "Title" [--ttl-days=N] [--notes="..."] [--code=EXPLICIT]
  *
  * Example:
- *   npx tsx scripts/create-dataroom.ts series-a-2026 "Series A Data Room" --ttl-days=60
+ *   npx tsx scripts/create-dataroom.ts "Pre-Seed Data Room" --ttl-days=120
  */
 
 import { hashCode, generateCode } from '@/lib/dataroom/codes'
 import { insertRoom } from '@/lib/dataroom/db'
+import { ROOM_SLUG } from '@/lib/dataroom/config'
 
 function parseArgs() {
   const argv = process.argv.slice(2)
@@ -30,15 +32,9 @@ function parseArgs() {
 
 async function main() {
   const { positional, flags } = parseArgs()
-  const slug = positional[0]
-  const title = positional[1]
-  if (!slug || !title) {
-    console.error('Usage: create-dataroom <slug> "Title" [--ttl-days=N] [--notes="..."] [--code=...]')
-    process.exit(1)
-  }
-
-  if (!/^[a-z0-9-]+$/.test(slug)) {
-    console.error('Slug must be lowercase letters, numbers, and dashes only.')
+  const title = positional[0]
+  if (!title) {
+    console.error('Usage: create-dataroom "Title" [--ttl-days=N] [--notes="..."] [--code=...]')
     process.exit(1)
   }
 
@@ -52,7 +48,7 @@ async function main() {
   const { hash, salt } = await hashCode(code)
 
   await insertRoom({
-    slug,
+    slug: ROOM_SLUG,
     title,
     code_hash: hash,
     code_salt: salt,
@@ -61,16 +57,15 @@ async function main() {
   })
 
   const base = process.env.SITE_URL || 'https://www.generalmarket.io'
-  const magicLink = `${base}/room/${slug}?k=${encodeURIComponent(code)}`
+  const magicLink = `${base}/room?k=${encodeURIComponent(code)}`
   console.log('')
-  console.log('  Data room created.')
+  console.log('  Data room (re-)issued.')
   console.log('')
   console.log(`  Title:        ${title}`)
-  console.log(`  Slug:         ${slug}`)
   console.log(`  Magic link:   ${magicLink}`)
   console.log('')
   console.log('  Or send URL + code separately (more secure — code not in URL):')
-  console.log(`  URL:          ${base}/room/${slug}`)
+  console.log(`  URL:          ${base}/room`)
   console.log(`  Code:         ${code}`)
   if (expires_at) {
     console.log('')

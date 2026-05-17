@@ -3,6 +3,7 @@ import { getRoom } from '@/lib/dataroom/db'
 import { verifyCode } from '@/lib/dataroom/codes'
 import { issueSession, SESSION_COOKIE } from '@/lib/dataroom/session'
 import { rateLimit, clearRateLimit } from '@/lib/rate-limit'
+import { ROOM_SLUG } from '@/lib/dataroom/config'
 
 export const runtime = 'nodejs'
 
@@ -40,12 +41,9 @@ async function constantTimeFail(
   return NextResponse.json(body, { status })
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
-) {
+export async function POST(request: NextRequest) {
   const startedAt = Date.now()
-  const { slug } = await params
+  const slug = ROOM_SLUG
   const ip = clientIp(request)
 
   const ipKey = `dataroom:unlock:ip:${ip}:${slug}`
