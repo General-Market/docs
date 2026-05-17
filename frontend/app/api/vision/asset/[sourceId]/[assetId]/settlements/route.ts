@@ -9,29 +9,38 @@ export async function GET(
   const qs = new URLSearchParams(searchParams)
   const path = `/vision/asset/${encodeURIComponent(sourceId)}/${encodeURIComponent(assetId)}/settlements?${qs}`
 
-  // Try oracle1 → oracle2 → oracle3. Each oracle restarts on its own schedule;
-  // failing over is cheaper than telling the user there are no participants
-  // when 1/3 of the oracles is alive with the data.
+  // Race all three oracles in parallel. They share a postgres so the answer
+  // is identical; whichever oracle finishes first wins, the others get
+  // discarded. Failing serially (20s × 3) routinely exceeded the user's
+  // patience when one oracle was restarting.
   const oracles = getVisionOracleUrls()
-  const errors: string[] = []
-  for (const base of oracles) {
-    try {
-      const res = await fetch(`${base}${path}`, {
-        cache: 'no-store',
-        // Oracle JSONB scan + 99-row TOAST detoast can take ~30s under load.
-        // nginx upstream is 60s; keep us under it but well above the median.
-        signal: AbortSignal.timeout(20_000),
-      })
-      if (res.ok) {
-        return Response.json(await res.json())
-      }
-      errors.push(`${base} → ${res.status}`)
-    } catch (e) {
-      errors.push(`${base} → ${(e as Error).message}`)
-    }
-  }
+  const controllers = oracles.map(() => new AbortController())
+  // Outer budget — nginx upstream is 60s; stay well under so the route
+  // returns 503 before the platform 504s us.
+  const deadline = setTimeout(() => controllers.forEach(c => c.abort()), 35_000)
 
-  console.error('Vision asset settlements proxy error:', errors.join(' | '))
+  const attempts = oracles.map(async (base, i) => {
+    const res = await fetch(`${base}${path}`, {
+      cache: 'no-store',
+      signal: controllers[i].signal,
+    })
+    if (!res.ok) throw new Error(`${base} → ${res.status}`)
+    return res.json()
+  })
+
+  try {
+    const winner = await Promise.any(attempts)
+    controllers.forEach(c => c.abort())
+    return Response.json(winner)
+  } catch (e) {
+    const reasons =
+      e instanceof AggregateError
+        ? e.errors.map(err => (err as Error).message).join(' | ')
+        : (e as Error).message
+    console.error('Vision asset settlements proxy error:', reasons)
+  } finally {
+    clearTimeout(deadline)
+  }
   // 503 — temporary unavailability — lets the client distinguish from
   // a 200 with an empty `settlements` array (which means "no participants").
   return Response.json(
