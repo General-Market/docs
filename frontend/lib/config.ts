@@ -36,6 +36,26 @@ export function getIssuerVisionUrl(): string {
   return process.env['ISSUER_VISION_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001'
 }
 
+/**
+ * All three vision oracle endpoints, primary first.
+ *
+ * Reads of historical data (settlements, vault history, leaderboards) can
+ * point at any of the three — they read from the same postgres. When one
+ * oracle is restarting or its event loop is busy with a settlement cycle,
+ * we want to fall through to the next instead of returning 502 to the user.
+ */
+export function getVisionOracleUrls(): string[] {
+  const primary = getIssuerVisionUrl()
+  // Derive siblings by swapping the trailing /oracleN segment.
+  // For local dev (http://localhost:10001) we keep just the primary.
+  const m = primary.match(/^(.*)\/oracle([123])(\/?)$/)
+  if (!m) return [primary]
+  const [, base, n] = m
+  const idx = Number(n)
+  const order = [idx, (idx % 3) + 1, ((idx + 1) % 3) + 1]
+  return order.map(i => `${base}/oracle${i}`)
+}
+
 export function getL3RpcServer(): string {
   return process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
 }
