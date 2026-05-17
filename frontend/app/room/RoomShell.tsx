@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { RoomPage } from '@/lib/dataroom/content'
+import { PrintButton } from './PrintButton'
 
 interface RoomShellProps {
   title: string
@@ -9,10 +10,27 @@ interface RoomShellProps {
   children: ReactNode
 }
 
+function pageNumber(pages: RoomPage[], currentPageSlug: string | null): number {
+  const slug = currentPageSlug ?? 'index'
+  const idx = pages.findIndex((p) => p.pageSlug === slug)
+  return idx === -1 ? 1 : idx + 1
+}
+
+function currentTitle(pages: RoomPage[], currentPageSlug: string | null): string {
+  const slug = currentPageSlug ?? 'index'
+  const p = pages.find((x) => x.pageSlug === slug)
+  return p?.frontmatter.title ?? slug
+}
+
 export function RoomShell({ title, pages, currentPageSlug, children }: RoomShellProps) {
+  const n = pageNumber(pages, currentPageSlug)
+  const total = pages.length
+  const docTitle = currentTitle(pages, currentPageSlug)
+  const pad = (x: number) => String(x).padStart(2, '0')
+
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F]">
-      <header className="sticky top-0 z-30 bg-white/80 border-b border-black/[0.08] backdrop-blur-xl">
+    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] print:bg-white">
+      <header className="sticky top-0 z-30 bg-white/80 border-b border-black/[0.08] backdrop-blur-xl print:hidden">
         <div className="mx-auto max-w-[1068px] px-6 lg:px-10 flex items-center justify-between h-14 sm:h-16">
           <Link href="/" className="shrink-0 flex items-center gap-2.5" aria-label="General Market — home">
             <img src="/logo.svg" alt="" width={36} height={36} className="w-9 h-9" />
@@ -45,15 +63,15 @@ export function RoomShell({ title, pages, currentPageSlug, children }: RoomShell
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1068px] px-6 lg:px-10">
-        <div className="flex flex-col md:flex-row gap-10 lg:gap-14 pt-8 md:pt-14 pb-16 md:pb-24">
-          <aside className="md:w-56 lg:w-60 shrink-0">
+      <div className="mx-auto max-w-[1068px] px-6 lg:px-10 print:max-w-none print:px-0">
+        <div className="flex flex-col md:flex-row gap-10 lg:gap-14 pt-8 md:pt-14 pb-16 md:pb-24 print:block print:py-0">
+          <aside className="md:w-56 lg:w-60 shrink-0 print:hidden">
             <div className="md:sticky md:top-24">
               <p className="text-[11px] uppercase tracking-[0.18em] text-[#86868B] mb-4">
                 {title}
               </p>
               <nav className="space-y-0.5">
-                {pages.map((p) => {
+                {pages.map((p, i) => {
                   const isCurrent =
                     (p.pageSlug === 'index' && currentPageSlug === null) ||
                     p.pageSlug === currentPageSlug
@@ -64,13 +82,21 @@ export function RoomShell({ title, pages, currentPageSlug, children }: RoomShell
                       key={p.pageSlug}
                       href={href}
                       className={
-                        'block px-3 py-2 rounded-lg text-[14px] tracking-[-0.016em] transition-colors ' +
+                        'group flex items-baseline gap-3 px-3 py-2 rounded-lg text-[14px] tracking-[-0.016em] transition-colors ' +
                         (isCurrent
                           ? 'bg-black text-white font-medium'
                           : 'text-[#1D1D1F]/80 hover:text-black hover:bg-black/[0.04]')
                       }
                     >
-                      {p.frontmatter.title || p.pageSlug}
+                      <span
+                        className={
+                          'font-mono text-[11px] tabular-nums tracking-normal ' +
+                          (isCurrent ? 'text-white/60' : 'text-[#86868B]')
+                        }
+                      >
+                        {pad(i + 1)}
+                      </span>
+                      <span>{p.frontmatter.title || p.pageSlug}</span>
                     </Link>
                   )
                 })}
@@ -80,7 +106,8 @@ export function RoomShell({ title, pages, currentPageSlug, children }: RoomShell
 
           <main className="flex-1 min-w-0">
             <article
-              className="max-w-[680px] [&_h1]:text-[44px] [&_h1]:md:text-[56px] [&_h1]:font-bold [&_h1]:tracking-[-0.025em] [&_h1]:leading-[1.05] [&_h1]:mb-6
+              className="max-w-[680px] print:max-w-none print:mx-auto print:px-16
+                         [&_h1]:text-[44px] [&_h1]:md:text-[56px] [&_h1]:font-bold [&_h1]:tracking-[-0.025em] [&_h1]:leading-[1.05] [&_h1]:mb-6
                          [&_h2]:text-[28px] [&_h2]:md:text-[32px] [&_h2]:font-semibold [&_h2]:tracking-[-0.022em] [&_h2]:leading-[1.15] [&_h2]:mt-14 [&_h2]:mb-4
                          [&_h3]:text-[22px] [&_h3]:font-semibold [&_h3]:tracking-[-0.016em] [&_h3]:mt-8 [&_h3]:mb-2
                          [&_p]:text-[17px] [&_p]:leading-[1.6] [&_p]:tracking-[-0.022em] [&_p]:text-[#1D1D1F] [&_p]:mb-5
@@ -92,7 +119,31 @@ export function RoomShell({ title, pages, currentPageSlug, children }: RoomShell
                          [&_hr]:my-10 [&_hr]:border-black/10
                          [&_a]:text-[#0071E3] [&_a]:no-underline [&_a:hover]:underline"
             >
+              <div className="mb-10 pb-5 border-b border-black/[0.08] flex items-baseline justify-between gap-4">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[#86868B] font-mono tabular-nums">
+                  <span className="text-black/80">Document {pad(n)}</span>
+                  <span className="mx-2 text-[#86868B]/60">/</span>
+                  <span>{pad(total)}</span>
+                  <span className="mx-3 text-[#86868B]/60">·</span>
+                  <span className="font-sans tracking-[0.14em]">{title}</span>
+                </p>
+                <PrintButton />
+              </div>
+
               {children}
+
+              <div className="mt-20 pt-8 border-t border-black/[0.08] flex items-center justify-between gap-4 print:hidden">
+                <div className="text-[12px] text-[#86868B]">
+                  <span className="uppercase tracking-[0.14em]">End of document</span>
+                  <span className="mx-2 text-[#86868B]/50">·</span>
+                  <span className="font-mono tabular-nums">{docTitle}</span>
+                </div>
+                <PrintButton label="Download this document (PDF)" />
+              </div>
+
+              <div className="hidden print:block mt-12 pt-6 border-t border-black/10 text-[10px] uppercase tracking-[0.18em] text-[#86868B] text-center">
+                {title} · Document {pad(n)} of {pad(total)} · {docTitle}
+              </div>
             </article>
           </main>
         </div>
