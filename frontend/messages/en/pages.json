@@ -154,8 +154,8 @@
       "lending": "Lending"
     },
     "summary": {
-      "oracles": "Oracles",
-      "consensus": "Consensus",
+      "oracles": "Oracles online",
+      "consensus": "Rounds run",
       "orders": "Orders",
       "cycle": "Cycle",
       "gas": "Gas",
@@ -354,6 +354,21 @@
       "borrowed": "Outstanding Debt",
       "supply": "Market Liquidity",
       "distribution": "Market Distribution"
+    },
+    "subtitle": "The chain, watched. Consensus, oracle health, NAV drift, lending utilization. The plumbing in public.",
+    "tab_desc": {
+      "consensus": "Quorum, rounds, signature throughput.",
+      "orders": "Pending depth, fill latency, cycle time.",
+      "p2p": "Peer count, message rate, link health.",
+      "itp": "Fund AUM, NAV trend, risk frontier.",
+      "lending": "Markets, utilization, borrow APY.",
+      "vision": "Active batches, settlements, leaders.",
+      "sources": "Price feed liveness per provider.",
+      "system": "Service heartbeats and uptime."
+    },
+    "controls": {
+      "range_label": "Window",
+      "auto_refresh": "Auto-refresh every 60s"
     }
   },
   "points": {

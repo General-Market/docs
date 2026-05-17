@@ -150,11 +150,12 @@
       "sources": "소스",
       "system": "시스템",
       "health": "시스템 상태",
-      "chain": "체인 & 가스"
+      "chain": "체인 & 가스",
+      "lending": "대출"
     },
     "summary": {
-      "oracles": "오라클",
-      "consensus": "합의",
+      "oracles": "온라인 오라클",
+      "consensus": "실행된 라운드",
       "orders": "주문",
       "cycle": "사이클",
       "gas": "가스",
@@ -344,6 +345,21 @@
       "settlements": "정산",
       "no_settlement_data": "정산 데이터 없음",
       "roi": "ROI"
+    },
+    "subtitle": "체인을 지켜보는 곳. 합의, 오라클 상태, NAV 편차, 대출 사용률 — 모든 배관을 공개합니다.",
+    "tab_desc": {
+      "consensus": "쿼럼, 라운드, 서명 처리량.",
+      "orders": "대기 깊이, 체결 지연, 사이클 시간.",
+      "p2p": "피어 수, 메시지 속도, 링크 상태.",
+      "itp": "펀드 AUM, NAV 추세, 리스크 프론티어.",
+      "lending": "마켓, 사용률, 차입 APY.",
+      "vision": "활성 배치, 정산, 리더보드.",
+      "sources": "프로바이더별 가격 피드 가동률.",
+      "system": "서비스 하트비트 및 가동 시간."
+    },
+    "controls": {
+      "range_label": "기간",
+      "auto_refresh": "60초마다 자동 새로고침"
     }
   },
   "points": {
