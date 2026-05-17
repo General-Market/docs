@@ -1,0 +1,1034 @@
+{
+  "VCNY": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "LYOF": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DMND": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HDCT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLRS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SMOG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BRZE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "INHL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SZON": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FILR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SIMU": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CANN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SFRI": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HBRN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BIOM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "NTRN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "UNSL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "UCRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "VNTG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HASH": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HALV": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SATS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MPLM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MKDN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BNCE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DOOR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLRN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PYRL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "NFRM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "WAGE": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "UNEM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DARK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "INTR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "NOCT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PKHR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SPOK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PEDL": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "FRWL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DKLS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRFC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DNRK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CRWL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OUTG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SESN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RECS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FLBS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BPRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CITE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RTRC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "INDX": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "IMPC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "LOCK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ULCK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "YILD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "XPLT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DRFT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "AFTR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DRMT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "EPIC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RCTR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "EURO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PRTY": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DRGI": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ASTR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PIPE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SRPL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "JOUL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RSRV": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CRWD": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "UWND": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "VSPK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PRES": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "NOIS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RAID": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SAGE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ANON": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FRNT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DCAY": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FLAG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SHOW": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ORBT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RENT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MGRV": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DOCK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SORT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STDN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OVWT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SCRM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MTRO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "XPRS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "XFER": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRNS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SWEL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CALM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RPTD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ANML": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "LULL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BARO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TIDE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SRGE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "NEAP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FLOD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SNBR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CRST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "VALT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GARG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "METR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DBLP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ORCL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "LONG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CNSN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ARBI": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PRPT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PLBO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PEER": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRIL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DGEN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RUGP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DGNS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BNDG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FAST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RUSH": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DDLN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DSCL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "INSD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HLDG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "AURA": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SLST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SNSP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CRNA": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HOME": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STRK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "UPST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OVTM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "WKND": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "LOBY": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RAGE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PTCH": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PRME": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OFLN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SUBR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HOST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STIM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SQST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DFCT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "EMRK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRNT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DRHT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "WSHD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BSFL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "WFRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RVRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SSNL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HEAT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STRM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ACLR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TNDO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BNKR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "EMBR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CNTD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TNDR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FBRK": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GLCR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CNVG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "EMRG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STGN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "FNDM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OVSH": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SHLT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "APSL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SQZE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "COVR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PRSS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ESPR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RAIN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ROST": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TPEI": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PCFC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRND": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BRNT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STAR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "IMPT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "UNMT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PPIP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OXDZ": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BORW": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CRGO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PUBL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SABT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TNRE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PREM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SQEL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BNGE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ANTM": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BSDE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ENCR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MGMA": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLDR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PLUM": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "CTGN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RMSN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "VCNE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BRWN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RSTR": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "SPRT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "HOLD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TAIL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "LIFT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RSHH": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLWY": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BTNK": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "CHRG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TPOF": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "RNGE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GRND": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "CLRD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "TRBL": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "VSPT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PNKT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GLIS": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BDGT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STBY": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OVHD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "MGAP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OYTR": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "PICD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STLG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "THRD": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GILT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "OPNG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ENDG": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BLTZ": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BRKN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SRVE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "SNDE": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "GRVN": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "BORO": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "DSPT": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STOCKS1": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "STOCKS2": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "STOCKS3": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ESPORTS1": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ESPORTS2": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "ESPORTS3": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBSPOT-M5": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBSPOT-R5": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBSPOT-M20": {
+    "drained": true,
+    "reclaimed_wei": 20000000000000000000000
+  },
+  "vBSPOT-R20": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBFUND-R": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBFUND-M": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBFUND-F": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBFUND-X": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBOPT-MA": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBOPT-RA": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBOPT-MC": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  },
+  "vBOPT-MP": {
+    "drained": true,
+    "reclaimed_wei": 10000000000000000000000
+  }
+}
