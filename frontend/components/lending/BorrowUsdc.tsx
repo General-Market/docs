@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import { parseUnits, formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
@@ -137,12 +137,55 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
   const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 18) : '0'
 
+  const maxDisabled = isProcessing || maxBorrow === 0n
+  const directDisabled = !amount || parsedAmount === 0n || isProcessing || !canBorrow
+  const isSuccessState = step === 'success'
+  const bundlerDisabled = isBundlerPending || isBundlerConfirming
+  const healthColor = (hf: number) =>
+    hf >= 1.5 ? '#16a34a' :
+    hf >= 1.0 ? '#b45309' :
+    '#dc2626'
+  const quoteHealth = quote ? parseFloat(quote.terms.healthFactor) : 0
+
+  const primaryButtonStyle = (disabled: boolean, success: boolean): CSSProperties => ({
+    width: '100%',
+    padding: '12px 16px',
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 15,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: disabled && !success ? 'var(--apple-text-tertiary)' : '#fff',
+    background: success ? '#16a34a' : disabled ? '#e5e5ea' : '#0071e3',
+    border: 'none',
+    borderRadius: 12,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+  })
+
   return (
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">{t('borrow_usdc.amount_label')}</label>
-            <span className="text-xs text-text-muted">
+            <label
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-secondary)',
+              }}
+            >
+              {t('borrow_usdc.amount_label')}
+            </label>
+            <span
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {t('borrow_usdc.max_borrow_label', { amount: parseFloat(formatMaxBorrow).toFixed(2) })}
             </span>
           </div>
@@ -156,7 +199,30 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+              style={{
+                width: '100%',
+                padding: '12px 56px 12px 14px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 17,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                outline: 'none',
+                transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+                fontVariantNumeric: 'tabular-nums',
+                opacity: isProcessing ? 0.5 : 1,
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#0071e3'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.18)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = 'var(--apple-line)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             />
             <button
               onClick={() => {
@@ -164,8 +230,25 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
                 const raw = parseFloat(formatMaxBorrow)
                 setAmount((Math.floor(raw * 100) / 100).toFixed(2))
               }}
-              disabled={isProcessing || maxBorrow === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+              disabled={maxDisabled}
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: '4px 10px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#0071e3',
+                background: 'rgba(0,113,227,0.08)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: maxDisabled ? 'not-allowed' : 'pointer',
+                opacity: maxDisabled ? 0.5 : 1,
+                transition: 'background 180ms var(--apple-ease-default)',
+              }}
             >
               {t('actions.max')}
             </button>
@@ -174,24 +257,61 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Projected Health Factor */}
         {amount && parsedAmount > 0n && (
-          <div className="bg-muted rounded-xl p-3">
+          <div
+            style={{
+              background: 'var(--apple-surface)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+              padding: 12,
+            }}
+          >
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">{t('borrow_usdc.projected_health_factor')}</span>
-              <span className={`font-mono tabular-nums font-bold ${
-                projectedHealthFactor >= 1.5 ? 'text-color-up' :
-                projectedHealthFactor >= 1.0 ? 'text-color-warning' :
-                'text-color-down'
-              }`}>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('borrow_usdc.projected_health_factor')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: healthColor(projectedHealthFactor),
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {projectedHealthFactor === Infinity ? '∞' : projectedHealthFactor.toFixed(2)}
               </span>
             </div>
             {projectedHealthFactor < 1.0 && (
-              <p className="text-color-down text-xs mt-2">
+              <p
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: '#dc2626',
+                  margin: '8px 0 0 0',
+                }}
+              >
                 {t('borrow_usdc.cannot_borrow_health')}
               </p>
             )}
             {projectedHealthFactor >= 1.0 && projectedHealthFactor < 1.5 && (
-              <p className="text-color-warning text-xs mt-2">
+              <p
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: '#b45309',
+                  margin: '8px 0 0 0',
+                }}
+              >
                 {t('borrow_usdc.low_health_warning')}
               </p>
             )}
@@ -200,37 +320,164 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Quote API Terms (when in quote mode) */}
         {useQuoteMode && quote && !isExpired && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-            <div className="text-xs text-blue-700 font-bold uppercase tracking-[0.08em]">{t('borrow_usdc.quote.title')}</div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">{t('borrow_usdc.quote.borrow_apr')}</span>
-              <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>
+          <div
+            className="space-y-2"
+            style={{
+              padding: 12,
+              background: 'rgba(0,113,227,0.06)',
+              border: '1px solid rgba(0,113,227,0.2)',
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-loose)',
+                textTransform: 'uppercase',
+                color: '#0071e3',
+              }}
+            >
+              {t('borrow_usdc.quote.title')}
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">{t('borrow_usdc.quote.health_factor')}</span>
-              <span className={`font-mono tabular-nums font-bold ${
-                parseFloat(quote.terms.healthFactor) >= 1.5 ? 'text-color-up' :
-                parseFloat(quote.terms.healthFactor) >= 1.0 ? 'text-color-warning' :
-                'text-color-down'
-              }`}>{quote.terms.healthFactor}</span>
+            <div className="flex justify-between items-center">
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('borrow_usdc.quote.borrow_apr')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {quote.terms.borrowRate}%
+              </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">{t('borrow_usdc.quote.liquidation_price')}</span>
-              <span className="text-text-primary font-mono tabular-nums">${quote.terms.liquidationPrice}</span>
+            <div className="flex justify-between items-center">
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('borrow_usdc.quote.health_factor')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: healthColor(quoteHealth),
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {quote.terms.healthFactor}
+              </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">{t('borrow_usdc.quote.max_borrow')}</span>
-              <span className="text-text-primary font-mono tabular-nums">{t('borrow_usdc.quote.max_borrow_value', { amount: quote.terms.maxBorrow })}</span>
+            <div className="flex justify-between items-center">
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('borrow_usdc.quote.liquidation_price')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                ${quote.terms.liquidationPrice}
+              </span>
             </div>
-            <div className="text-xs text-text-muted">
+            <div className="flex justify-between items-center">
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('borrow_usdc.quote.max_borrow')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {t('borrow_usdc.quote.max_borrow_value', { amount: quote.terms.maxBorrow })}
+              </span>
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
               {t('borrow_usdc.quote.bundle_steps', { steps: quote.bundler.steps.join(' \u2192 ') })}
             </div>
           </div>
         )}
 
         {useQuoteMode && isExpired && (
-          <div className="bg-surface-warning border border-orange-300 rounded-xl p-2 text-orange-700 text-xs text-center">
-            {t('borrow_usdc.quote.expired')} <button onClick={fetchQuote} className="underline">{t('borrow_usdc.quote.refresh')}</button>
+          <div
+            style={{
+              padding: 8,
+              background: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: 12,
+              color: '#b45309',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              textAlign: 'center',
+            }}
+          >
+            {t('borrow_usdc.quote.expired')}{' '}
+            <button
+              onClick={fetchQuote}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#0071e3',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                padding: 0,
+              }}
+            >
+              {t('borrow_usdc.quote.refresh')}
+            </button>
           </div>
         )}
 
@@ -238,8 +485,8 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {useQuoteMode && quote && !isExpired ? (
           <button
             onClick={() => executeBundler(quote)}
-            disabled={isBundlerPending || isBundlerConfirming}
-            className="w-full py-3 font-bold rounded-lg transition-colors bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed"
+            disabled={bundlerDisabled}
+            style={primaryButtonStyle(bundlerDisabled, isBundlerSuccess)}
           >
             {isBundlerPending ? t('borrow_usdc.quote.confirm_wallet') :
              isBundlerConfirming ? t('borrow_usdc.quote.executing_bundle') :
@@ -249,12 +496,8 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         ) : (
           <WalletActionButton
             onClick={handleBorrow}
-            disabled={!amount || parsedAmount === 0n || isProcessing || !canBorrow}
-            className={`w-full py-3 font-bold rounded-lg transition-colors ${
-              step === 'success'
-                ? 'bg-color-up text-white'
-                : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
-            }`}
+            disabled={directDisabled}
+            style={primaryButtonStyle(directDisabled, isSuccessState)}
           >
             {buttonText}
           </WalletActionButton>
@@ -263,13 +506,25 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {/* Quote mode toggle — hidden, direct borrow is default */}
 
         {(txError || quoteError || bundlerError) && (
-          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(220, 38, 38, 0.06)',
+              border: '1px solid rgba(220, 38, 38, 0.25)',
+              borderRadius: 12,
+              color: '#b91c1c',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+              wordBreak: 'break-word',
+            }}
+          >
             {(() => {
               const msg = txError || quoteError?.message || bundlerError?.message || 'Unknown error'
               if (msg.includes('User rejected') || msg.includes('denied')) return t('common.transaction_rejected')
               if (quoteError?.isMarketFrozen) return t('common.market_frozen')
               if (quoteError?.isRateLimited) return t('common.rate_limited', { seconds: quoteError.retryAfter ?? 0 })
-              return <span className="break-all">{msg}</span>
+              return <span style={{ wordBreak: 'break-all' }}>{msg}</span>
             })()}
           </div>
         )}

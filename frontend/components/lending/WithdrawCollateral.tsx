@@ -165,12 +165,38 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   // Check if position will be closed
   const willClosePosition = parsedAmount === collateralAmount && debtAmount === 0n
 
+  const isDisabled = !amount || parsedAmount === 0n || isProcessing || !canWithdraw
+  const isSuccessState = step === 'success'
+  const maxDisabled = isProcessing || collateralAmount === 0n
+  const healthColor =
+    projectedHealthFactor >= 1.5 ? '#16a34a' :
+    projectedHealthFactor >= 1.0 ? '#b45309' :
+    '#dc2626'
+
   return (
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">{t('withdraw_collateral.amount_label')}</label>
-            <span className="text-xs text-text-muted">
+            <label
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-secondary)',
+              }}
+            >
+              {t('withdraw_collateral.amount_label')}
+            </label>
+            <span
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {debtAmount === 0n
                 ? t('withdraw_collateral.deposited_label', { amount: parseFloat(formattedCollateral).toFixed(4) })
                 : t('withdraw_collateral.max_withdraw_label', { amount: parseFloat(formattedMaxWithdraw).toFixed(4) })}
@@ -186,12 +212,52 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
               min="0"
               step="0.1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+              style={{
+                width: '100%',
+                padding: '12px 56px 12px 14px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 17,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                outline: 'none',
+                transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+                fontVariantNumeric: 'tabular-nums',
+                opacity: isProcessing ? 0.5 : 1,
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#0071e3'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.18)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = 'var(--apple-line)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             />
             <button
               onClick={handleMax}
-              disabled={isProcessing || collateralAmount === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+              disabled={maxDisabled}
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: '4px 10px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#0071e3',
+                background: 'rgba(0,113,227,0.08)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: maxDisabled ? 'not-allowed' : 'pointer',
+                opacity: maxDisabled ? 0.5 : 1,
+                transition: 'background 180ms var(--apple-ease-default)',
+              }}
             >
               {t('actions.max')}
             </button>
@@ -200,19 +266,48 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
         {/* Projected Health Factor (only if has debt) */}
         {debtAmount > 0n && amount && parsedAmount > 0n && (
-          <div className="bg-muted rounded-xl p-3">
+          <div
+            style={{
+              background: 'var(--apple-surface)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+              padding: 12,
+            }}
+          >
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">{t('withdraw_collateral.projected_health_factor')}</span>
-              <span className={`font-mono tabular-nums font-bold ${
-                projectedHealthFactor >= 1.5 ? 'text-color-up' :
-                projectedHealthFactor >= 1.0 ? 'text-color-warning' :
-                'text-color-down'
-              }`}>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: 'var(--apple-text-secondary)',
+                }}
+              >
+                {t('withdraw_collateral.projected_health_factor')}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: healthColor,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {projectedHealthFactor === Infinity ? '∞' : projectedHealthFactor.toFixed(2)}
               </span>
             </div>
             {projectedHealthFactor < 1.0 && (
-              <p className="text-color-down text-xs mt-2">
+              <p
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: '#dc2626',
+                  margin: '8px 0 0 0',
+                }}
+              >
                 {t('withdraw_collateral.cannot_withdraw_health')}
               </p>
             )}
@@ -221,8 +316,23 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
         {/* Close position notice */}
         {willClosePosition && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-            <p className="text-blue-700 text-sm">
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(0,113,227,0.06)',
+              border: '1px solid rgba(0,113,227,0.2)',
+              borderRadius: 12,
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#0071e3',
+              }}
+            >
               {t('withdraw_collateral.close_position_notice')}
             </p>
           </div>
@@ -230,12 +340,21 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
         <button
           onClick={handleWithdraw}
-          disabled={!amount || parsedAmount === 0n || isProcessing || !canWithdraw}
-          className={`w-full py-3 font-bold rounded-lg transition-colors ${
-            step === 'success'
-              ? 'bg-color-up text-white'
-              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
-          }`}
+          disabled={isDisabled}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 15,
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: isDisabled && !isSuccessState ? 'var(--apple-text-tertiary)' : '#fff',
+            background: isSuccessState ? '#16a34a' : isDisabled ? '#e5e5ea' : '#0071e3',
+            border: 'none',
+            borderRadius: 12,
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+          }}
         >
           {buttonText}
         </button>
@@ -245,7 +364,16 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
             href={getTxUrl(withdrawTxHash, 'l3')}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
+            style={{
+              display: 'block',
+              textAlign: 'center',
+              padding: '6px 0',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: '#0071e3',
+              textDecoration: 'none',
+            }}
           >
             {t('common.view_on_explorer')} ↗
           </a>
@@ -254,24 +382,59 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         {isProcessing && (
           <button
             onClick={handleCancel}
-            className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
+            style={{
+              display: 'block',
+              width: '100%',
+              textAlign: 'center',
+              padding: '8px 0',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
-          <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
-            <p className="font-bold">{t('common.tx_stuck_title')}</p>
-            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: 12,
+              color: '#b45309',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+            }}
+          >
+            <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>{t('common.tx_stuck_title')}</p>
+            <p style={{ fontSize: 12, color: '#92400e', marginTop: 4, marginBottom: 0 }}>{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(220, 38, 38, 0.06)',
+              border: '1px solid rgba(220, 38, 38, 0.25)',
+              borderRadius: 12,
+              color: '#b91c1c',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+              wordBreak: 'break-word',
+            }}
+          >
             {txError.includes('User rejected') || txError.includes('denied')
               ? t('common.transaction_rejected')
-              : <span className="break-all">{txError}</span>}
+              : <span style={{ wordBreak: 'break-all' }}>{txError}</span>}
           </div>
         )}
       </div>

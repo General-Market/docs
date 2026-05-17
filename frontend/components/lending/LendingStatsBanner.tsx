@@ -6,8 +6,13 @@ import { formatUnits } from 'viem'
 import { useAllMorphoMarkets } from '@/hooks/useAllMorphoMarkets'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 
-function Bone({ w = 'w-16' }: { w?: string }) {
-  return <div className={`${w} h-5 bg-border-light rounded animate-pulse`} />
+function Bone({ w = 80 }: { w?: number }) {
+  return (
+    <div
+      className="animate-pulse rounded"
+      style={{ width: w, height: 22, background: 'var(--apple-line)' }}
+    />
+  )
 }
 
 export function LendingStatsBanner() {
@@ -42,56 +47,73 @@ export function LendingStatsBanner() {
 
   const isLoading = marketsLoading || vaultLoading
 
-  // Show zero values explicitly. Bones stay only while data is genuinely in
-  // flight. Empty pools should read as "0", not as a perpetual skeleton.
   const tvlDisplay = vaultInfo
     ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
     : (vaultLoading ? null : '$0')
 
-  const items = [
+  const items: { label: string; value: string | null; accent?: boolean }[] = [
     {
       label: t('stats.vault_tvl'),
       value: tvlDisplay,
-      color: 'text-text-primary',
     },
     {
       label: t('stats.supply_apy'),
       value: aggregated ? `${aggregated.supplyApy.toFixed(2)}%` : (marketsLoading ? null : '0.00%'),
-      color: aggregated && aggregated.supplyApy > 0 ? 'text-color-up' : 'text-text-primary',
+      accent: aggregated != null && aggregated.supplyApy > 0,
     },
     {
       label: t('stats.borrow_apy'),
       value: aggregated ? `${aggregated.borrowApy.toFixed(2)}%` : (marketsLoading ? null : '0.00%'),
-      color: 'text-text-primary',
     },
     {
       label: t('stats.utilization'),
       value: aggregated ? `${aggregated.utilization.toFixed(1)}%` : (marketsLoading ? null : '0.0%'),
-      color: 'text-text-primary',
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4">
-      {items.map((item, idx) => (
-        <div
-          key={item.label}
-          className={`flex flex-col gap-0.5 px-4 py-2 ${
-            idx < items.length - 1 ? 'lg:border-r border-black/[0.06]' : ''
-          } ${idx >= 2 ? 'border-t lg:border-t-0 border-black/[0.06]' : ''}`}
-        >
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
-            {item.label}
-          </span>
-          {isLoading || !item.value ? (
-            <Bone w={idx === 0 ? 'w-20' : 'w-14'} />
-          ) : (
-            <span className={`text-sm font-bold font-mono tabular-nums ${item.color}`}>
-              {item.value}
+    <div
+      style={{
+        background: 'var(--apple-panel)',
+        border: '1px solid var(--apple-line)',
+        borderRadius: 12,
+        padding: '20px 24px',
+      }}
+    >
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        {items.map(item => (
+          <div key={item.label} className="flex flex-col gap-1">
+            <span
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-loose)',
+                textTransform: 'uppercase',
+                color: 'var(--apple-text-tertiary)',
+              }}
+            >
+              {item.label}
             </span>
-          )}
-        </div>
-      ))}
+            {isLoading || !item.value ? (
+              <Bone w={72} />
+            ) : (
+              <span
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 'var(--apple-fs-24)',
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tighter)',
+                  color: item.accent ? '#16a34a' : 'var(--apple-text)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {item.value}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

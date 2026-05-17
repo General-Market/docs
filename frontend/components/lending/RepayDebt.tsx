@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
@@ -227,14 +227,66 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
     ? t('repay_debt.button.approve_and_repay')
     : t('repay_debt.button.repay_debt')
 
+  const isInsufficient = Boolean(amount) && parsedAmount > usdcBalance
+  const isDisabled = !amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance
+
+  const submitStyle: CSSProperties = isDisabled
+    ? {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: 'var(--apple-text-tertiary)',
+        background: '#e5e5ea',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'not-allowed',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+    : {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: '#fff',
+        background: step === 'success' ? '#16a34a' : '#0071e3',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'pointer',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+
   return (
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-text-secondary">{t('repay_debt.amount_label')}</label>
-            <div className="text-xs text-text-muted space-x-2">
+            <label
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-secondary)',
+              }}
+            >
+              {t('repay_debt.amount_label')}
+            </label>
+            <div
+              className="flex items-center gap-2"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text-tertiary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               <span>{t('repay_debt.debt_label', { amount: parseFloat(formattedDebt).toFixed(2) })}</span>
-              <span>|</span>
+              <span style={{ color: 'var(--apple-line)' }}>|</span>
               <span>{t('repay_debt.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
             </div>
           </div>
@@ -248,54 +300,133 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+              style={{
+                width: '100%',
+                padding: '12px 56px 12px 14px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 17,
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: 'var(--apple-text)',
+                background: 'var(--apple-panel)',
+                border: '1px solid var(--apple-line)',
+                borderRadius: 12,
+                outline: 'none',
+                transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+                fontVariantNumeric: 'tabular-nums',
+                opacity: isProcessing ? 0.5 : 1,
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#0071e3'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.18)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = 'var(--apple-line)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             />
             <button
               onClick={handleMax}
               disabled={isProcessing || currentDebt === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: '4px 10px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#0071e3',
+                background: 'rgba(0,113,227,0.08)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: isProcessing || currentDebt === 0n ? 'not-allowed' : 'pointer',
+                opacity: isProcessing || currentDebt === 0n ? 0.5 : 1,
+                transition: 'background 180ms var(--apple-ease-default)',
+              }}
             >
               {t('actions.max')}
             </button>
           </div>
-          {amount && parsedAmount > usdcBalance && (
-            <p className="text-color-down text-xs mt-1">{t('repay_debt.insufficient_balance')}</p>
+          {isInsufficient && (
+            <p
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#dc2626',
+                margin: '6px 0 0 0',
+              }}
+            >
+              {t('repay_debt.insufficient_balance')}
+            </p>
           )}
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance}
-          className={`w-full py-3 font-bold rounded-lg transition-colors ${
-            step === 'success'
-              ? 'bg-color-up text-white'
-              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
-          }`}
-        >
+        <button onClick={handleSubmit} disabled={isDisabled} style={submitStyle}>
           {buttonText}
         </button>
 
         {isProcessing && (
           <button
             onClick={handleCancel}
-            className="w-full text-center text-sm text-text-muted hover:text-text-secondary py-2 transition-colors"
+            style={{
+              display: 'block',
+              width: '100%',
+              textAlign: 'center',
+              padding: '8px 0',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
-          <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
-            <p className="font-bold">{t('common.tx_stuck_title')}</p>
-            <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: 12,
+              color: '#b45309',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+            }}
+          >
+            <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>{t('common.tx_stuck_title')}</p>
+            <p style={{ fontSize: 12, color: '#92400e', marginTop: 4, marginBottom: 0 }}>
+              {t('common.tx_stuck_description')}
+            </p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+          <div
+            style={{
+              padding: 12,
+              background: 'rgba(220, 38, 38, 0.06)',
+              border: '1px solid rgba(220, 38, 38, 0.25)',
+              borderRadius: 12,
+              color: '#b91c1c',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              letterSpacing: 'var(--apple-track-tight)',
+              wordBreak: 'break-word',
+            }}
+          >
             {txError.includes('User rejected') || txError.includes('denied')
               ? t('common.transaction_rejected')
-              : <span className="break-all">{txError}</span>}
+              : <span>{txError}</span>}
           </div>
         )}
       </div>

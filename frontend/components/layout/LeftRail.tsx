@@ -10,7 +10,6 @@ import {
   BotIcon,
   UserIcon,
   TrophyIcon,
-  VaultIcon,
 } from './apple-icons'
 import { Watchlist } from './Watchlist'
 
@@ -27,7 +26,6 @@ const PRIMARY: NavItem[] = [
 ]
 
 const SECONDARY: NavItem[] = [
-  { id: 'lending', href: '/lending', label: 'Lending', icon: VaultIcon },
   { id: 'explorer', href: '/explorer', label: 'Explorer', icon: CompassIcon },
   { id: 'leaderboard', href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { id: 'build-bot', href: '/build-bot', label: 'Build a Bot', icon: BotIcon },

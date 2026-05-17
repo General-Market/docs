@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
@@ -156,100 +156,231 @@ export function VaultDeposit() {
     ? t('vault_deposit.button.approve_and_deposit')
     : t('vault_deposit.button.deposit_usdc')
 
+  const balanceBig = (usdcBalance as bigint | undefined) ?? 0n
+  const isInsufficient = Boolean(amount) && parsedAmount > balanceBig
+  const isDisabled = !amount || parsedAmount === 0n || isProcessing || parsedAmount > balanceBig
+
+  const submitStyle: CSSProperties = isDisabled
+    ? {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: 'var(--apple-text-tertiary)',
+        background: '#e5e5ea',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'not-allowed',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+    : {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: '#fff',
+        background: step === 'success' ? '#16a34a' : '#0071e3',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'pointer',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+
   return (
-    <div className="py-5">
-      <div className="section-bar">
-        <div>
-          <div className="section-bar-title">{t('vault_deposit.section_title')}</div>
-          <div className="section-bar-value">{t('vault_deposit.section_subtitle')}</div>
-        </div>
-      </div>
-
-      <div className="border border-border-light border-t-0 p-5 space-y-4">
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vault_deposit.amount_label')}</label>
-            <span className="text-label text-text-muted font-mono tabular-nums">
-              {t('vault_deposit.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}
-            </span>
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="1"
-              disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-2.5 text-text-primary text-body font-mono tabular-nums focus:border-zinc-900 focus:outline-none disabled:opacity-50"
-            />
-            <button
-              onClick={() => {
-                const parsed = parseFloat(formattedBalance)
-                setAmount((Math.floor(parsed * 100) / 100).toFixed(2))
-              }}
-              disabled={isProcessing}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-bold text-zinc-900 hover:text-zinc-700 disabled:opacity-50 uppercase tracking-[0.08em]"
-            >
-              {t('actions.max')}
-            </button>
-          </div>
-          {amount && parsedAmount > (usdcBalance as bigint ?? 0n) && (
-            <p className="text-color-down text-label mt-1">{t('vault_deposit.insufficient_balance')}</p>
-          )}
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance as bigint ?? 0n)}
-          className={`w-full py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
-            step === 'success'
-              ? 'bg-color-up text-white'
-              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
-          }`}
-        >
-          {buttonText}
-        </button>
-
-        {step === 'success' && txHash && (
-          <a
-            href={getTxUrl(txHash, 'l3')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
+    <div className="space-y-4">
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <label
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              fontWeight: 500,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+            }}
           >
-            {t('common.view_on_explorer')} ↗
-          </a>
-        )}
-
-        {isProcessing && (
+            {t('vault_deposit.amount_label')}
+          </label>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-tertiary)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {t('vault_deposit.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}
+          </span>
+        </div>
+        <div className="relative">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            min="0"
+            step="1"
+            disabled={isProcessing}
+            style={{
+              width: '100%',
+              padding: '12px 56px 12px 14px',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 17,
+              fontWeight: 500,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text)',
+              background: 'var(--apple-panel)',
+              border: '1px solid var(--apple-line)',
+              borderRadius: 12,
+              outline: 'none',
+              transition: 'border-color 200ms var(--apple-ease-default), box-shadow 200ms var(--apple-ease-default)',
+              fontVariantNumeric: 'tabular-nums',
+              opacity: isProcessing ? 0.5 : 1,
+            }}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = '#0071e3'
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,113,227,0.18)'
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = 'var(--apple-line)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          />
           <button
-            onClick={handleCancel}
-            className="w-full text-center text-label text-text-muted hover:text-text-secondary py-1 transition-colors"
+            onClick={() => {
+              const parsed = parseFloat(formattedBalance)
+              setAmount((Math.floor(parsed * 100) / 100).toFixed(2))
+            }}
+            disabled={isProcessing}
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '4px 10px',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: '#0071e3',
+              background: 'rgba(0,113,227,0.08)',
+              border: 'none',
+              borderRadius: 6,
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              opacity: isProcessing ? 0.5 : 1,
+              transition: 'background 180ms var(--apple-ease-default)',
+            }}
           >
-            {t('actions.cancel')}
+            {t('actions.max')}
           </button>
-        )}
-
-        {stuckWarning && (
-          <div className="bg-orange-500/10 border border-orange-300 p-3 text-orange-700 text-caption">
-            <p className="font-bold">{t('common.tx_stuck_title')}</p>
-            <p className="text-label mt-1">{t('common.tx_stuck_description')}</p>
-          </div>
-        )}
-
-        {txError && (
-          <div className="bg-color-down/10 border border-color-down/30 p-3 text-color-down text-caption">
-            {txError.includes('User rejected') || txError.includes('denied')
-              ? t('common.transaction_rejected')
-              : txError.length > 100
-              ? txError.slice(0, 100) + '...'
-              : txError}
-          </div>
+        </div>
+        {isInsufficient && (
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: '#dc2626',
+              margin: '6px 0 0 0',
+            }}
+          >
+            {t('vault_deposit.insufficient_balance')}
+          </p>
         )}
       </div>
+
+      <button onClick={handleSubmit} disabled={isDisabled} style={submitStyle}>
+        {buttonText}
+      </button>
+
+      {step === 'success' && txHash && (
+        <a
+          href={getTxUrl(txHash, 'l3')}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            padding: '6px 0',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 12,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: '#0071e3',
+            textDecoration: 'none',
+          }}
+        >
+          {t('common.view_on_explorer')} ↗
+        </a>
+      )}
+
+      {isProcessing && (
+        <button
+          onClick={handleCancel}
+          style={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'center',
+            padding: '8px 0',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: 'var(--apple-text-secondary)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          {t('actions.cancel')}
+        </button>
+      )}
+
+      {stuckWarning && (
+        <div
+          style={{
+            padding: 12,
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: 12,
+            color: '#b45309',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+          }}
+        >
+          <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>{t('common.tx_stuck_title')}</p>
+          <p style={{ fontSize: 12, color: '#92400e', marginTop: 4, marginBottom: 0 }}>
+            {t('common.tx_stuck_description')}
+          </p>
+        </div>
+      )}
+
+      {txError && (
+        <div
+          style={{
+            padding: 12,
+            background: 'rgba(220, 38, 38, 0.06)',
+            border: '1px solid rgba(220, 38, 38, 0.25)',
+            borderRadius: 12,
+            color: '#b91c1c',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+            wordBreak: 'break-word',
+          }}
+        >
+          {txError.includes('User rejected') || txError.includes('denied')
+            ? t('common.transaction_rejected')
+            : txError.length > 100
+            ? txError.slice(0, 100) + '...'
+            : txError}
+        </div>
+      )}
     </div>
   )
 }

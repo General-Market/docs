@@ -30,10 +30,31 @@ interface MarketActionPanelProps {
   onSuccess: () => void
 }
 
-/**
- * Right-column action panel for the two-column lending layout.
- * Receives everything from the parent — fetches nothing itself.
- */
+const panelStyle: React.CSSProperties = {
+  background: 'var(--apple-panel)',
+  border: '1px solid var(--apple-line)',
+  borderRadius: 12,
+  overflow: 'hidden',
+}
+
+const labelMicro: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-loose)',
+  textTransform: 'uppercase',
+  color: 'var(--apple-text-tertiary)',
+}
+
+const valueText: React.CSSProperties = {
+  fontFamily: 'var(--apple-font-text)',
+  fontSize: 13,
+  fontWeight: 600,
+  letterSpacing: 'var(--apple-track-tight)',
+  color: 'var(--apple-text)',
+  fontVariantNumeric: 'tabular-nums',
+}
+
 export function MarketActionPanel({
   selectedMarket,
   position,
@@ -48,7 +69,6 @@ export function MarketActionPanel({
   const hasPosition = hasCollateral || hasDebt
   const healthFactor = position?.healthFactor ?? Infinity
 
-  // Determine which tabs to show
   const tabs = useMemo<{ id: TabId; label: string; group: 'collateral' | 'debt' }[]>(() => {
     if (!hasPosition) {
       return [
@@ -64,13 +84,11 @@ export function MarketActionPanel({
     ]
   }, [hasPosition, t])
 
-  // Auto-select the most relevant tab ONLY when the user clicks a different market.
-  // Must NOT re-fire on SSE position updates — that hijacks the user's tab choice.
   const marketKey = selectedMarket?.collateralToken ?? ''
   const prevMarketKey = useRef(marketKey)
   useEffect(() => {
     if (!selectedMarket) return
-    if (prevMarketKey.current === marketKey) return // same market — don't override
+    if (prevMarketKey.current === marketKey) return
     prevMarketKey.current = marketKey
 
     if (healthFactor < 1.2 && hasDebt) {
@@ -84,7 +102,6 @@ export function MarketActionPanel({
     }
   }, [marketKey, selectedMarket, hasCollateral, hasDebt, healthFactor])
 
-  // If the active tab is no longer in the visible set, reset
   useEffect(() => {
     const tabIds = tabs.map(t => t.id)
     if (!tabIds.includes(activeTab)) {
@@ -92,31 +109,54 @@ export function MarketActionPanel({
     }
   }, [tabs, activeTab])
 
-  // Health factor color
   const healthColor =
     healthFactor >= 1.5
-      ? 'text-color-up'
+      ? '#16a34a'
       : healthFactor >= 1.0
-        ? 'text-color-warning'
-        : 'text-color-down'
+        ? '#b45309'
+        : '#dc2626'
 
-  // ── Empty state ──────────────────────────────────────────────────────
   if (!selectedMarket) {
     return (
-      <div className="border border-border-light bg-white">
-        <div className="min-h-[300px] flex flex-col items-center justify-center gap-2 px-6">
-          {/* Arrow pointing left toward the table */}
+      <div style={panelStyle}>
+        <div
+          className="flex flex-col items-center justify-center gap-3"
+          style={{ minHeight: 300, padding: 24 }}
+        >
           <svg
-            className="w-6 h-6 text-text-muted"
+            width="28"
+            height="28"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={1.5}
+            style={{ color: 'var(--apple-text-tertiary)' }}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
-          <p className="text-sm text-text-muted">Select a market</p>
-          <p className="text-xs text-text-muted">Click a market row to manage your position</p>
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 15,
+              fontWeight: 500,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text)',
+              margin: 0,
+            }}
+          >
+            Select a market
+          </p>
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary)',
+              margin: 0,
+            }}
+          >
+            Click a market row to manage your position.
+          </p>
         </div>
       </div>
     )
@@ -126,97 +166,146 @@ export function MarketActionPanel({
   const debt = position ? formatUnits(position.debtAmount, 18) : null
 
   return (
-    <div className="border border-border-light bg-white">
-      {/* ── Header: market identity + key rates ────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border-light">
-        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center shrink-0">
-          <span className="text-text-primary text-[10px] font-bold leading-none">
-            {selectedMarket.symbol.slice(0, 3)}
-          </span>
+    <div style={panelStyle}>
+      <div
+        className="flex items-center gap-3"
+        style={{
+          padding: '14px 16px',
+          borderBottom: '1px solid var(--apple-line)',
+        }}
+      >
+        <div
+          className="flex items-center justify-center shrink-0"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 999,
+            background: 'var(--apple-surface)',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 'var(--apple-track-loose)',
+            color: 'var(--apple-text)',
+          }}
+        >
+          {selectedMarket.symbol.slice(0, 3)}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text-primary leading-tight truncate">
+          <p
+            className="truncate"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 14,
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text)',
+              margin: 0,
+            }}
+          >
             {selectedMarket.name}
           </p>
-          <p className="text-xs text-text-muted font-mono">
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-tertiary)',
+              margin: 0,
+            }}
+          >
             ${selectedMarket.symbol}
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 text-xs font-mono tabular-nums">
+        <div className="flex items-center gap-4 shrink-0">
           <div className="text-right">
-            <span className="text-text-muted block text-[10px] uppercase tracking-wide">APY</span>
-            <span className="text-text-primary font-semibold">
-              {selectedMarket.borrowApy.toFixed(2)}%
-            </span>
+            <span className="block" style={labelMicro}>APY</span>
+            <span style={valueText}>{selectedMarket.borrowApy.toFixed(2)}%</span>
           </div>
           <div className="text-right">
-            <span className="text-text-muted block text-[10px] uppercase tracking-wide">LLTV</span>
-            <span className="text-text-primary font-semibold">
-              {selectedMarket.lltv.toFixed(0)}%
-            </span>
+            <span className="block" style={labelMicro}>LLTV</span>
+            <span style={valueText}>{selectedMarket.lltv.toFixed(0)}%</span>
           </div>
         </div>
       </div>
 
-      {/* ── Position summary ─────────────────────────────────────────── */}
       {hasPosition && !positionLoading && (
-        <div className="flex items-center gap-4 px-4 py-2.5 border-b border-border-light text-xs font-mono tabular-nums">
+        <div
+          className="flex items-center gap-5"
+          style={{
+            padding: '10px 16px',
+            borderBottom: '1px solid var(--apple-line)',
+            background: 'var(--apple-surface)',
+          }}
+        >
           <div>
-            <span className="text-text-muted uppercase tracking-wide mr-1">
+            <span className="mr-1.5" style={labelMicro}>
               {t('position_card.collateral')}
             </span>
-            <span className="text-text-primary font-semibold">
-              {parseFloat(collateral!).toFixed(4)}
-            </span>
+            <span style={valueText}>{parseFloat(collateral!).toFixed(4)}</span>
           </div>
           <div>
-            <span className="text-text-muted uppercase tracking-wide mr-1">
+            <span className="mr-1.5" style={labelMicro}>
               {t('position_card.debt')}
             </span>
-            <span className="text-text-primary font-semibold">
-              {parseFloat(debt!).toFixed(2)}
-            </span>
+            <span style={valueText}>{parseFloat(debt!).toFixed(2)}</span>
           </div>
           <div>
-            <span className="text-text-muted uppercase tracking-wide mr-1">HF</span>
-            <span className={`font-bold ${healthColor}`}>
-              {healthFactor === Infinity ? '\u221e' : healthFactor.toFixed(2)}
+            <span className="mr-1.5" style={labelMicro}>HF</span>
+            <span style={{ ...valueText, color: healthColor, fontWeight: 700 }}>
+              {healthFactor === Infinity ? '∞' : healthFactor.toFixed(2)}
             </span>
           </div>
         </div>
       )}
 
-      {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex border-b border-border-light">
+      <div
+        className="flex"
+        style={{ borderBottom: '1px solid var(--apple-line)' }}
+      >
         {tabs.map((tab, i) => {
-          // Insert extra gap between collateral-side and debt-side tabs
           const prevGroup = i > 0 ? tabs[i - 1].group : null
           const gapBefore = prevGroup != null && prevGroup !== tab.group
-
+          const isActive = activeTab === tab.id
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                gapBefore ? 'ml-px border-l border-border-light' : ''
-              } ${
-                activeTab === tab.id
-                  ? 'text-text-primary'
-                  : 'text-text-muted hover:text-text-secondary'
-              }`}
+              style={{
+                position: 'relative',
+                padding: '10px 16px',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: isActive ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                borderLeft: gapBefore ? '1px solid var(--apple-line)' : 'none',
+                transition: 'color 180ms var(--apple-ease-default)',
+              }}
             >
               {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+              {isActive && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    right: 12,
+                    bottom: -1,
+                    height: 2,
+                    background: '#0071e3',
+                    borderRadius: 2,
+                  }}
+                />
               )}
             </button>
           )
         })}
       </div>
 
-      {/* ── Tab content ──────────────────────────────────────────────── */}
-      <div className="p-5">
+      <div style={{ padding: 20 }}>
         {activeTab === 'supply' && (
           <DepositCollateral
             market={selectedMarket.market}

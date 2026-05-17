@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
@@ -58,65 +58,118 @@ export function VaultPosition() {
 
   const isProcessing = isPending || isConfirming
 
+  const labelMicro: CSSProperties = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-loose)',
+    color: 'var(--apple-text-tertiary)',
+    textTransform: 'uppercase',
+    margin: 0,
+  }
+  const valueText: CSSProperties = {
+    fontFamily: 'var(--apple-font-display)',
+    fontSize: 24,
+    fontWeight: 600,
+    letterSpacing: 'var(--apple-track-tighter)',
+    color: 'var(--apple-text)',
+    fontVariantNumeric: 'tabular-nums',
+    margin: '4px 0 2px 0',
+  }
+  const subText: CSSProperties = {
+    fontFamily: 'var(--apple-font-text)',
+    fontSize: 12,
+    letterSpacing: 'var(--apple-track-tight)',
+    color: 'var(--apple-text-tertiary)',
+    margin: 0,
+  }
+
+  const isDisabled = isProcessing || userPosition.shares === 0n
+
+  const withdrawStyle: CSSProperties = isDisabled
+    ? {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: 'var(--apple-text-tertiary)',
+        background: '#e5e5ea',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'not-allowed',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+    : {
+        width: '100%',
+        padding: '12px 16px',
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 15,
+        fontWeight: 600,
+        letterSpacing: 'var(--apple-track-tight)',
+        color: '#fff',
+        background: isSuccess ? '#16a34a' : '#0071e3',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'pointer',
+        transition: 'background 180ms var(--apple-ease-default), opacity 180ms var(--apple-ease-default)',
+      }
+
   return (
-    <div>
-      <div className="section-bar">
-        <div>
-          <div className="section-bar-title">{t('vault_position.section_title')}</div>
-          <div className="section-bar-value">{t('vault_position.section_subtitle')}</div>
+    <div className="space-y-4">
+      <div
+        className="grid grid-cols-2"
+        style={{
+          background: 'var(--apple-surface)',
+          border: '1px solid var(--apple-line)',
+          borderRadius: 12,
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '14px 16px' }}>
+          <p style={labelMicro}>{t('vault_position.vault_shares')}</p>
+          <p style={valueText}>{parseFloat(sharesFormatted).toFixed(4)}</p>
+          <p style={subText}>{vaultInfo?.symbol ?? t('vault_position.shares_fallback')}</p>
+        </div>
+        <div style={{ padding: '14px 16px', borderLeft: '1px solid var(--apple-line)' }}>
+          <p style={labelMicro}>{t('vault_position.current_value')}</p>
+          <p style={{ ...valueText, color: '#16a34a' }}>${parseFloat(valueFormatted).toFixed(2)}</p>
+          <p style={subText}>USDC</p>
         </div>
       </div>
 
-      <div className="border border-border-light border-t-0">
-        {/* Position stats */}
-        <div className="grid grid-cols-2 border-b border-border-light">
-          <div className="px-5 py-4">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vault_position.vault_shares')}</p>
-            <p className="text-heading font-extrabold font-mono tabular-nums text-black">
-              {parseFloat(sharesFormatted).toFixed(4)}
-            </p>
-            <p className="text-label text-text-muted">{vaultInfo?.symbol ?? t('vault_position.shares_fallback')}</p>
-          </div>
-          <div className="px-5 py-4 border-l border-border-light">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vault_position.current_value')}</p>
-            <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
-              ${parseFloat(valueFormatted).toFixed(2)}
-            </p>
-            <p className="text-label text-text-muted">USDC</p>
-          </div>
-        </div>
+      <button onClick={handleWithdraw} disabled={isDisabled} style={withdrawStyle}>
+        {isPending
+          ? t('vault_position.button.confirm_wallet')
+          : isConfirming
+          ? t('vault_position.button.withdrawing')
+          : isSuccess
+          ? t('vault_position.button.withdrawn')
+          : t('vault_position.button.withdraw_all')}
+      </button>
 
-        {/* Withdraw button */}
-        <div className="px-5 py-4">
-          <button
-            onClick={handleWithdraw}
-            disabled={isProcessing || userPosition.shares === 0n}
-            className={`w-full py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
-              isSuccess
-                ? 'bg-color-up text-white'
-                : 'bg-muted text-text-primary hover:bg-zinc-200 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
-            }`}
-          >
-            {isPending
-              ? t('vault_position.button.confirm_wallet')
-              : isConfirming
-              ? t('vault_position.button.withdrawing')
-              : isSuccess
-              ? t('vault_position.button.withdrawn')
-              : t('vault_position.button.withdraw_all')}
-          </button>
-
-          {txError && (
-            <div className="mt-3 bg-color-down/10 border border-color-down/30 p-3 text-color-down text-caption">
-              {txError.includes('User rejected') || txError.includes('denied')
-                ? t('common.transaction_rejected')
-                : txError.length > 100
-                ? txError.slice(0, 100) + '...'
-                : txError}
-            </div>
-          )}
+      {txError && (
+        <div
+          style={{
+            padding: 12,
+            background: 'rgba(220, 38, 38, 0.06)',
+            border: '1px solid rgba(220, 38, 38, 0.25)',
+            borderRadius: 12,
+            color: '#b91c1c',
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            letterSpacing: 'var(--apple-track-tight)',
+            wordBreak: 'break-word',
+          }}
+        >
+          {txError.includes('User rejected') || txError.includes('denied')
+            ? t('common.transaction_rejected')
+            : txError.length > 100
+            ? txError.slice(0, 100) + '...'
+            : txError}
         </div>
-      </div>
+      )}
     </div>
   )
 }
