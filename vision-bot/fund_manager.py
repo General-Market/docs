@@ -36,8 +36,12 @@ log = logging.getLogger("fund-manager")
 DECIMALS = 18
 # Mirror of Vision.MIN_STAKE_PER_TICK — joins below this revert.
 MIN_DEPOSIT_WEI = 10**17  # 0.1 USDC
-# Mirror of VisionVault.MAX_BATCH_BPS — anything above this reverts.
-MAX_BATCH_BPS = 500  # 5% of totalAssets per batch
+# Bot-side cap on per-batch deposit. The on-chain VisionVault.MAX_BATCH_BPS
+# is 500 (5%); the bot stays well under that to keep positions small and
+# losses recoverable in a single cycle. 175 = 1.75% per batch, ≈ 35% of the
+# old 5% target — applies uniformly across every fund regardless of any
+# per-fund allocation_multiplier (the cap binds last).
+MAX_BATCH_BPS = 175
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
