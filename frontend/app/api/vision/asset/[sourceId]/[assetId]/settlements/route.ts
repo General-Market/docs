@@ -13,12 +13,19 @@ export async function GET(
     )}/${encodeURIComponent(assetId)}/settlements?${qs}`
     const res = await fetch(url, {
       cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
+      // Oracle JSONB scan + 99-row TOAST detoast can take ~30s under load.
+      // nginx upstream is 60s; keep us under it but well above the median.
+      signal: AbortSignal.timeout(45_000),
     })
     if (!res.ok) throw new Error(`Oracle API ${res.status}`)
     return Response.json(await res.json())
   } catch (e) {
     console.error('Vision asset settlements proxy error:', e)
-    return Response.json({ settlements: [] }, { status: 502 })
+    // 503 — temporary unavailability — lets the client distinguish from
+    // a 200 with an empty `settlements` array (which means "no participants").
+    return Response.json(
+      { settlements: [], error: 'upstream_unavailable' },
+      { status: 503 },
+    )
   }
 }

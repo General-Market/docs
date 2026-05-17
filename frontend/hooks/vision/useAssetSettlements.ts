@@ -42,8 +42,12 @@ export function useAssetSettlements(
         `/api/vision/asset/${encodeURIComponent(sourceId)}/${encodeURIComponent(
           assetId,
         )}/settlements?limit=${limit}`,
+        { signal: AbortSignal.timeout(35_000) },
       )
-      if (!res.ok) return []
+      // Throw on transport failure so React Query surfaces an error state
+      // instead of caching an empty array — otherwise the UI is indistinguishable
+      // from "no participants" when the upstream just timed out.
+      if (!res.ok) throw new Error(`Settlements fetch failed: ${res.status}`)
       const data = await res.json()
       const raw = Array.isArray(data.settlements) ? data.settlements : []
       return raw.map((s: any) => ({
@@ -66,5 +70,7 @@ export function useAssetSettlements(
     },
     refetchInterval: 30_000,
     staleTime: 15_000,
+    retry: 2,
+    retryDelay: attempt => Math.min(2_000 * 2 ** attempt, 10_000),
   })
 }

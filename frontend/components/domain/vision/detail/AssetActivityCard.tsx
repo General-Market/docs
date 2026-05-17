@@ -42,11 +42,15 @@ const TOP_N = 12
 const X_PADDING = 16
 
 type WindowHours = 12 | 24 | 168 | 1176
+// Each row carries the full per-batch `player_results` JSONB (avg ~91KB).
+// Smaller limits keep the proxy under its 45s budget and the network payload
+// under a megabyte. The matrix only renders TOP_N rows, so deeper history
+// rarely changes the visible result.
 const WINDOW_OPTIONS: { hours: WindowHours; label: string; settleLimit: number }[] = [
-  { hours: 12, label: '12h', settleLimit: 80 },
-  { hours: 24, label: '24h', settleLimit: 160 },
-  { hours: 168, label: '7d', settleLimit: 400 },
-  { hours: 1176, label: '7w', settleLimit: 500 },
+  { hours: 12, label: '12h', settleLimit: 40 },
+  { hours: 24, label: '24h', settleLimit: 60 },
+  { hours: 168, label: '7d', settleLimit: 120 },
+  { hours: 1176, label: '7w', settleLimit: 200 },
 ]
 type ChartMode = 'settlement' | 'time'
 
@@ -248,11 +252,11 @@ export function AssetActivityCard({
     () => WINDOW_OPTIONS.find(o => o.hours === windowHours)?.settleLimit ?? 200,
     [windowHours],
   )
-  const { data: settlements } = useAssetSettlements(
-    dataNodeSourceId,
-    assetId,
-    settlementLimit,
-  )
+  const {
+    data: settlements,
+    isLoading: settlementsLoading,
+    isError: settlementsFailed,
+  } = useAssetSettlements(dataNodeSourceId, assetId, settlementLimit)
 
   const { columns: allColumns, rows: allRows } = useMemo(
     () => buildMatrix(settlements ?? []),
@@ -616,9 +620,16 @@ export function AssetActivityCard({
                 padding: '14px',
                 fontSize: 12,
                 color: 'var(--apple-text-tertiary)',
+                lineHeight: 1.4,
               }}
             >
-              No participants yet.
+              {settlementsLoading
+                ? 'Loading participants…'
+                : settlementsFailed
+                ? 'Participant history unavailable. The settlement index is catching up.'
+                : (settlements?.length ?? 0) === 0
+                ? 'Awaiting first settlement. Joins land before the matrix does.'
+                : 'No participants in this window.'}
             </div>
           )}
         </div>
