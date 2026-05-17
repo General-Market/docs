@@ -195,7 +195,7 @@ export function AppleFooter() {
         <div className="apple-footer-grid">
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
-              <h3 style={headingStyle}>{col.heading}</h3>
+              <h2 style={headingStyle}>{col.heading}</h2>
               <ul
                 style={{
                   listStyle: 'none',

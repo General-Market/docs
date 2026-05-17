@@ -139,7 +139,7 @@ export function LiveRoundsCard({ sourceId }: LiveRoundsCardProps) {
         <h2 className={HEADER + ' mb-0'}>Live Rounds</h2>
         <span
           className="text-[11px] font-mono tabular-nums"
-          style={{ color: 'var(--apple-text-tertiary)' }}
+          style={{ color: 'var(--apple-text-secondary)' }}
         >
           {active.length} active
         </span>
@@ -242,13 +242,13 @@ export function LiveRoundsCard({ sourceId }: LiveRoundsCardProps) {
                 <div className="flex items-center justify-between mt-2 text-[11px]">
                   <span
                     className="uppercase tracking-[0.08em] font-semibold"
-                    style={{ color: 'var(--apple-text-tertiary)' }}
+                    style={{ color: 'var(--apple-text-secondary)' }}
                   >
                     {stats.phaseLabel}
                   </span>
                   <span
                     className="font-mono tabular-nums"
-                    style={{ color: 'var(--apple-text-secondary)' }}
+                    style={{ color: 'var(--apple-text)' }}
                   >
                     {remaining}
                   </span>

@@ -153,7 +153,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
                 fontSize: 12,
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                color: 'var(--apple-text-tertiary)',
+                color: 'var(--apple-text-secondary)',
                 margin: '2px 0 0',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -204,7 +204,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
                   fontSize: 14,
                   fontWeight: 500,
                   letterSpacing: 'var(--apple-track-tight)',
-                  color: 'var(--apple-text-secondary)',
+                  color: 'var(--apple-text)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -230,7 +230,7 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
           fontSize: 11,
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          color: 'var(--apple-text-tertiary)',
+          color: 'var(--apple-text-secondary)',
         }}
       >
         Anti-Cheat · Beta
@@ -255,7 +255,7 @@ function GroupHeader({ label }: { label: string }) {
         fontSize: 11,
         fontWeight: 600,
         letterSpacing: '0.04em',
-        color: 'var(--apple-text-tertiary)',
+        color: 'var(--apple-text-secondary)',
         textTransform: 'uppercase',
         margin: '4px 0 6px 12px',
       }}

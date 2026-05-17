@@ -415,13 +415,13 @@ export default function BatchEntryPanel({
               <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
                 {counts.up > 0 && (
                   <div
-                    className="bg-color-up transition-all"
+                    className="bg-color-up"
                     style={{ width: `${(counts.up / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
                   />
                 )}
                 {counts.down > 0 && (
                   <div
-                    className="bg-color-down transition-all"
+                    className="bg-color-down"
                     style={{ width: `${(counts.down / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
                   />
                 )}

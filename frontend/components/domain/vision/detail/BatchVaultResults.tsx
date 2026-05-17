@@ -117,7 +117,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
         <h2 className={HEADER + ' mb-0'}>{t('batch_results.recent_batches')}</h2>
         <span
           className="text-[11px] font-mono tabular-nums"
-          style={{ color: 'var(--apple-text-tertiary)' }}
+          style={{ color: 'var(--apple-text-secondary)' }}
         >
           {totalSettled} {totalSettled === 1 ? 'round' : 'rounds'}
         </span>
@@ -127,7 +127,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
         <div aria-hidden="true">
           <div
             className="hidden md:grid grid-cols-[64px_1fr_64px_104px] items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
-            style={{ color: 'var(--apple-text-tertiary)' }}
+            style={{ color: 'var(--apple-text-secondary)' }}
           >
             <div>Time</div>
             <div>Round</div>
@@ -175,7 +175,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
           {/* Column headers — desktop only */}
           <div
             className="hidden md:grid grid-cols-[64px_1fr_64px_104px] items-center px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
-            style={{ color: 'var(--apple-text-tertiary)' }}
+            style={{ color: 'var(--apple-text-secondary)' }}
           >
             <div>Time</div>
             <div>Round</div>
@@ -235,7 +235,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                       >
                         <div
                           className="text-[11px] font-mono tabular-nums"
-                          style={{ color: 'var(--apple-text-tertiary)' }}
+                          style={{ color: 'var(--apple-text-secondary)' }}
                         >
                           {formatTime(batch.settledAt ?? batch.timestamp)}
                         </div>
@@ -268,7 +268,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                         <div
                           className="text-right text-[12px] font-mono tabular-nums font-bold"
                           style={{
-                            color: showPayout ? '#1f8a40' : 'var(--apple-text-tertiary)',
+                            color: showPayout ? '#0E8F4A' : 'var(--apple-text-secondary)',
                           }}
                         >
                           {showPayout ? `$${payout!.toFixed(2)}` : '—'}
@@ -312,7 +312,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                 </button>
                 <span
                   className="text-[10px] font-mono tabular-nums"
-                  style={{ color: 'var(--apple-text-tertiary)' }}
+                  style={{ color: 'var(--apple-text-secondary)' }}
                 >
                   {page} / {totalPages}
                 </span>

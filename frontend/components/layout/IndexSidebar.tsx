@@ -36,7 +36,7 @@ export function IndexSidebar() {
   const router = useRouter()
   const pathname = usePathname()
   const hasWeb3 = useWeb3Available()
-  const { address } = useAccount()
+  const { address, isConnected } = useAccount()
   const [active, setActive] = useState<SectionId>('markets')
 
   useEffect(() => {
@@ -65,6 +65,9 @@ export function IndexSidebar() {
 
   const portfolioHref = address ? `/profile/${address}` : '/profile'
   const portfolioActive = pathname.startsWith('/profile')
+  // Profile is personal — hide it from the rail until a wallet is actually
+  // connected. The link without an address routes to a stub page.
+  const showProfile = hasWeb3 && isConnected && !!address
 
   const sectionRow = (s: (typeof SECTIONS)[number]) => (
     <SectionButton
@@ -94,7 +97,7 @@ export function IndexSidebar() {
           active={pathname === '/'}
           icon={<HomeIcon className="w-[18px] h-[18px]" />}
         />
-        {hasWeb3 && (
+        {showProfile && (
           <NavLink
             href={portfolioHref}
             label="Profile"
@@ -133,7 +136,7 @@ export function IndexSidebar() {
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.04em',
-          color: 'var(--apple-text-tertiary)',
+          color: 'var(--apple-text-secondary)',
           textTransform: 'uppercase',
         }}
       >
@@ -151,7 +154,7 @@ function GroupHeader({ label }: { label: string }) {
         fontSize: 11,
         fontWeight: 600,
         letterSpacing: 'var(--apple-track-loose)',
-        color: 'var(--apple-text-tertiary)',
+        color: 'var(--apple-text-secondary)',
         textTransform: 'uppercase',
         margin: '0 0 4px 8px',
       }}

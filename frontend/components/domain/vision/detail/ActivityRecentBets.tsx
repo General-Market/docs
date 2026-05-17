@@ -125,7 +125,7 @@ export function ActivityRecentBets() {
                     <span className="font-mono text-[12px] font-bold text-[var(--apple-text,#1d1d1f)]">
                       ${parseFloat(event.amount).toFixed(2)}
                     </span>
-                    <span className="font-mono text-[10px] text-[var(--apple-text-tertiary,#86868b)] tabular-nums w-[28px] text-right">
+                    <span className="font-mono text-[10px] text-[var(--apple-text-secondary,#6e6e73)] tabular-nums w-[28px] text-right">
                       {timeAgo(event.timestamp, now)}
                     </span>
                   </div>

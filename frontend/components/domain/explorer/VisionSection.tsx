@@ -393,7 +393,15 @@ function MiniBar({ label, value, total, color }: { label: string; value: number;
         <span className="text-micro font-medium text-[#1d1d1f]">{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 bg-black/5 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+        <div
+          className="h-full rounded-full origin-left will-change-transform"
+          style={{
+            width: '100%',
+            transform: `scaleX(${(Math.max(0, Math.min(100, pct)) / 100).toFixed(4)})`,
+            backgroundColor: color,
+            transition: 'transform 300ms var(--apple-ease-default)',
+          }}
+        />
       </div>
     </div>
   )

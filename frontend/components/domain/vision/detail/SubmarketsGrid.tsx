@@ -164,7 +164,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: 'var(--apple-track-loose)',
-              color: 'var(--apple-text-tertiary)',
+              color: 'var(--apple-text-secondary)',
               textTransform: 'uppercase',
             }}
           >
@@ -350,15 +350,15 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                       <span
                         className="px-2 py-[3px] rounded"
                         style={{
-                          background: 'rgba(52,199,89,0.10)',
-                          border: '1px solid rgba(52,199,89,0.20)',
+                          background: 'rgba(15,143,74,0.10)',
+                          border: '1px solid rgba(15,143,74,0.24)',
                         }}
                       >
                         <div
                           style={{
                             fontSize: 8,
-                            fontWeight: 600,
-                            color: 'rgba(52,199,89,0.60)',
+                            fontWeight: 700,
+                            color: '#0E8F4A',
                             lineHeight: 1,
                             letterSpacing: '0.04em',
                           }}
@@ -370,7 +370,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                             fontFamily: 'var(--apple-font-text)',
                             fontSize: 13,
                             fontWeight: 700,
-                            color: 'rgb(52,199,89)',
+                            color: '#0E8F4A',
                             fontVariantNumeric: 'tabular-nums',
                             lineHeight: 1.2,
                           }}
@@ -381,15 +381,15 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                       <span
                         className="px-2 py-[3px] rounded"
                         style={{
-                          background: 'rgba(255,59,48,0.10)',
-                          border: '1px solid rgba(255,59,48,0.20)',
+                          background: 'rgba(197,40,61,0.10)',
+                          border: '1px solid rgba(197,40,61,0.24)',
                         }}
                       >
                         <div
                           style={{
                             fontSize: 8,
-                            fontWeight: 600,
-                            color: 'rgba(255,59,48,0.60)',
+                            fontWeight: 700,
+                            color: '#C5283D',
                             lineHeight: 1,
                             letterSpacing: '0.04em',
                           }}
@@ -401,7 +401,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                             fontFamily: 'var(--apple-font-text)',
                             fontSize: 13,
                             fontWeight: 700,
-                            color: 'rgb(255,59,48)',
+                            color: '#C5283D',
                             fontVariantNumeric: 'tabular-nums',
                             lineHeight: 1.2,
                           }}

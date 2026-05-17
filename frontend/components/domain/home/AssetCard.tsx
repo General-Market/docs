@@ -94,7 +94,7 @@ export function AssetCard({
       className="group flex flex-col gap-2 text-left transition"
     >
       <div
-        className="relative aspect-[16/8] w-full overflow-hidden isolate border"
+        className="relative aspect-[16/7] w-full overflow-hidden isolate border"
         style={{
           borderRadius: 'var(--apple-r-md)',
           background: sourceGradient(sourceId),

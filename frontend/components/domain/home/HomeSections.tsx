@@ -145,13 +145,13 @@ export function HomeDashboard({
     : SOON_FEEDS
 
   return (
-    <div className="px-6 py-8 md:px-8 lg:px-10 lg:py-10">
+    <div className="px-6 py-6 md:px-8 lg:px-10 lg:py-7">
       <Reveal mask>
         <h1
           className="font-semibold"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 32,
+            fontSize: 28,
             letterSpacing: 'var(--apple-track-tight)',
             lineHeight: 1.07,
             color: 'var(--apple-text)',
@@ -161,11 +161,11 @@ export function HomeDashboard({
         </h1>
       </Reveal>
 
-      <Reveal delay={0.08} className="mt-6">
+      <Reveal delay={0.08} className="mt-4">
         <HeroCarousel features={heroRotation} side={side} />
       </Reveal>
 
-      <section className="mt-8">
+      <section className="mt-6">
         <SectionHeader title="Top markets" href="/explorer" />
         <ScrollRow>
           {topMarkets.map((feed) => (
@@ -185,7 +185,7 @@ export function HomeDashboard({
       </section>
 
       {soonFeeds.length > 0 && (
-        <section className="mt-8 mb-4">
+        <section className="mt-6 mb-4">
           <SectionHeader title="Coming soon" href="/explorer" />
           <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {soonFeeds.map((feed) => (

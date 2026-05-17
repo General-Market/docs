@@ -159,14 +159,14 @@ export function HeroCard({ feature, side, dots }: Props) {
           aria-label={`Open ${feature.displayName} — ${feature.assetName ?? ''}`}
         >
           {/* Left text column */}
-          <div className="flex flex-col justify-between p-6 sm:p-8">
+          <div className="flex flex-col justify-between p-5 sm:p-6">
             <div>
               <FeaturedTag />
               <h2
-                className="mt-3 font-semibold"
+                className="mt-2.5 font-semibold"
                 style={{
                   fontFamily: 'var(--apple-font-display)',
-                  fontSize: 32,
+                  fontSize: 28,
                   letterSpacing: 'var(--apple-track-tight)',
                   lineHeight: 1.07,
                   color: 'var(--apple-text)',
@@ -203,7 +203,7 @@ export function HeroCard({ feature, side, dots }: Props) {
               </div>
             </div>
             <span
-              className="inline-flex w-fit items-center gap-2 mt-6 transition group-hover:opacity-90"
+              className="inline-flex w-fit items-center gap-2 mt-4 transition group-hover:opacity-90"
               style={{
                 background: '#ffffff',
                 color: 'var(--apple-text)',
@@ -222,7 +222,7 @@ export function HeroCard({ feature, side, dots }: Props) {
 
           {/* Right gradient + chart — bleeds to top/right/bottom; only left gets a gap */}
           <div
-            className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px] md:ml-3 md:rounded-l-[20px] md:rounded-r-none overflow-hidden"
+            className="relative min-h-[200px] sm:min-h-[230px] lg:min-h-[260px] md:ml-3 md:rounded-l-[20px] md:rounded-r-none overflow-hidden"
             style={{ background: sourceGradient(feature.sourceId) }}
           >
             <ShineOverlay size={420} intensity={0.18} />

@@ -74,10 +74,13 @@ function Row({
 export function LeftRail() {
   const pathname = usePathname()
   const hasWeb3 = useWeb3Available()
-  const { address } = useAccount()
+  const { address, isConnected } = useAccount()
 
   const portfolioHref = address ? `/profile/${address}` : '/profile'
   const portfolioActive = pathname.startsWith('/profile')
+  // Portfolio link only appears for connected wallets — there's no "you" to
+  // route to otherwise, and the empty profile page reads as a dead end.
+  const showPortfolio = hasWeb3 && isConnected && !!address
 
   return (
     <aside
@@ -98,7 +101,7 @@ export function LeftRail() {
             active={isActive(pathname, it.href)}
           />
         ))}
-        {hasWeb3 && (
+        {showPortfolio && (
           <Row
             href={portfolioHref}
             label="Portfolio"
@@ -127,7 +130,7 @@ export function LeftRail() {
       <div
         className="px-3 py-2 text-[11px]"
         style={{
-          color: 'var(--apple-text-tertiary)',
+          color: 'var(--apple-text-secondary)',
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
         }}
