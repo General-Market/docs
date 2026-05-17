@@ -5206,3 +5206,11 @@ End-to-end ITP order test: **NOT ATTEMPTED**. L3 sequencer dead. Cost of attempt
 [REFERENCE] Vision batches deployed with BATCH_VERSION=binance-v1: sourceIds = keccak256("binance_spot_binance-v1") etc.
 [REFERENCE] On-chain batchIds: binance_spot=22641, binance_futures_funding=22642, binance_options=22643. Vision contract 0x36a28967544c301a3c66dcfb6c6c90e548412693.
 [REFERENCE] 12 manager keys at envs/testnet/keys/binance-*.json (gitignored). 12 vault addresses at envs/testnet/active-deployment.json#sourceVaults.binance_*.
+
+## 20260517-1110-v3sn settlements proxy failover (vision per-market page)
+[DECISION] Vision asset-settlements proxy now fails over across oracle1/2/3 with a 20s per-host budget. Pin-to-oracle1 + a 10s timeout was returning 502 even when 2/3 oracles had the data, and the UI rendered "No participants yet." for active markets.
+[DECISION] Hook throws on transport failure so React Query surfaces isError; UI distinguishes (loading | failed | truly empty | filtered-by-window).
+[DECISION] settleLimit cut roughly in half across all windows. Each settlement row carries ~91KB of player_results JSONB (avg) and detoasts for seconds. The matrix only renders TOP_N=12 rows; deeper history rarely changes what's visible.
+[DECISION] GIN(jsonb_path_ops) index on vision_settlements.outcome_summary added to postgres. Reduced per-row scan cost but does not eliminate TOAST cost.
+[REFERENCE] Oracle1 crashes during heavy JSONB scans — root cause for the 502s. Container restarts each cycle.
+[REFERENCE] All three oracles share the same postgres (localhost:6432 pgbouncer), so reading from any of them returns the same data.
