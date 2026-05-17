@@ -529,6 +529,56 @@ async fn get_median_settlement_changes(
         .collect())
 }
 
+/// How many consecutive zero-change settlements before an asset is considered
+/// stagnant. Scaled to sync_interval: fast sources need more ticks before
+/// exile (they tick so often that a quiet minute is normal); slow sources
+/// (≥ hourly) get exiled after a single dead cycle.
+fn stagnation_window(sync_interval_secs: u64) -> usize {
+    match sync_interval_secs {
+        0..=30 => 3,
+        31..=300 => 2,
+        _ => 1,
+    }
+}
+
+/// Asset IDs whose last `window` settlements every had `change_pct = 0`.
+///
+/// An asset that has not yet accumulated `window` settlements is treated as
+/// fresh — not stagnant — so newly-listed markets get a chance to print
+/// real movement before they can be exiled.
+///
+/// Re-inclusion is implicit: the moment any of the last `window` settlements
+/// is non-zero, the asset drops out of the result set and re-enters the next
+/// batch automatically.
+async fn get_stagnant_assets(
+    pool: &PgPool,
+    source_id: &str,
+    window: usize,
+) -> Result<std::collections::HashSet<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as(
+        r#"
+        WITH recent AS (
+            SELECT asset_id, change_pct,
+                   ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY settled_at DESC) AS rn
+            FROM batch_settlements
+            WHERE source_id = $1
+        )
+        SELECT asset_id
+        FROM recent
+        WHERE rn <= $2
+        GROUP BY asset_id
+        HAVING COUNT(*) = $2
+           AND SUM(CASE WHEN change_pct = 0 THEN 0 ELSE 1 END) = 0
+        "#,
+    )
+    .bind(source_id)
+    .bind(window as i64)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(id,)| id).collect())
+}
+
 /// Get all healthy assets for a source.
 /// "Healthy" = has a price in `market_prices_latest` within 2× sync_interval and value > 0.
 ///
@@ -832,6 +882,47 @@ async fn generate_batch_config(
     };
 
     if healthy.is_empty() {
+        return None;
+    }
+
+    // Drop assets whose last K settlements were all exactly 0% change. K
+    // scales with sync_interval. A stagnant asset makes a boring market —
+    // every bet refunds, every cycle wastes oracle work. Re-inclusion is
+    // automatic: one non-zero settlement clears the asset from the stagnant
+    // set on the next cycle.
+    let window = stagnation_window(sync_interval_secs);
+    let stagnant = match get_stagnant_assets(pool, source_id, window).await {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(source = source_id, %e, "Failed to query stagnant assets — skipping filter");
+            std::collections::HashSet::new()
+        }
+    };
+
+    let healthy: Vec<String> = if stagnant.is_empty() {
+        healthy
+    } else {
+        let before = healthy.len();
+        let filtered: Vec<String> = healthy.into_iter().filter(|id| !stagnant.contains(id)).collect();
+        let removed = before - filtered.len();
+        if removed > 0 {
+            info!(
+                source = source_id,
+                stagnant_window = window,
+                removed,
+                remaining = filtered.len(),
+                "Excluded stagnant assets ({} consecutive zero-change settlements)",
+                window
+            );
+        }
+        filtered
+    };
+
+    if healthy.is_empty() {
+        info!(
+            source = source_id,
+            "All assets stagnant — skipping source this cycle"
+        );
         return None;
     }
 
