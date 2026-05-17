@@ -268,6 +268,12 @@ class FundState:
             self.allocation_multiplier = 1.0
         self.active_batches: dict[int, int] = {}   # batch_id -> deposit_wei
         self.joined_batch_ids: set[int] = set()
+        # Batches we've decided are dead: settled on-chain, or otherwise
+        # unjoinable. Persisted across restarts so we don't rejoin a
+        # settled batch and dump USDC into an unreclaimable slot. Vision's
+        # joinBatchDirect doesn't check b.settled, and settle deletes the
+        # _positions entry — so the only safe guard is on the bot side.
+        self.settled_skip_ids: set[int] = set()
         self.joined_total: int = 0
         self.reconciled_total: int = 0
         self.reconcile_retries: dict[int, int] = {}  # batch_id -> failure count
@@ -348,11 +354,17 @@ def save_state(funds, vault_info_cache=None, state_file=STATE_FILE):
             str(bid): blk for bid, blk in fund.join_blocks.items()
         }
 
+        # Cap settled-skip persistence at the 5000 most recent batch ids per
+        # fund. Past that, the set is just postgres' job and the per-batch
+        # on-chain check still catches anything older.
+        settled_skip_serialized = sorted(fund.settled_skip_ids)[-5000:]
+
         state["funds"][fund.name] = {
             "vault": fund.vault_addr,
             "active_batches": active_batches_serialized,
             "reconcile_retries": reconcile_retries_serialized,
             "join_blocks": join_blocks_serialized,
+            "settled_skip_ids": settled_skip_serialized,
             "joined_total": fund.joined_total,
             "reconciled_total": fund.reconciled_total,
             "total_assets_usdc": round(total_assets / 1e18, 4),
@@ -411,6 +423,13 @@ def load_state(funds, state_file=STATE_FILE):
         for bid_str, blk in raw_blocks.items():
             try:
                 fund.join_blocks[int(bid_str)] = int(blk)
+            except (TypeError, ValueError):
+                continue
+
+        raw_skip = fund_state.get("settled_skip_ids", []) or []
+        for bid in raw_skip:
+            try:
+                fund.settled_skip_ids.add(int(bid))
             except (TypeError, ValueError):
                 continue
 
@@ -502,6 +521,41 @@ def bootstrap_joined_from_chain(funds, executor):
 
     log.info("Chain-bootstrap complete: %d batches seeded across %d funds",
              seeded_total, seeded_funds)
+
+    # Second pass: seed settled_skip_ids from every batch this vault has
+    # already participated in that's now settled. Vision deletes the
+    # _positions entry on settle, so the per-cycle "joinTimestamp > 0"
+    # guard returns 0 and the bot rejoins — depositing USDC into a slot
+    # that can never settle again. Marking these as skip is the only fix
+    # short of a contract redeploy.
+    skipped_total = 0
+    try:
+        with psycopg2.connect(VISION_DB_URL, connect_timeout=10) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT LOWER(vp.player), vp.batch_id "
+                    "FROM vision_positions vp "
+                    "JOIN vision_batch_lifecycle vbl "
+                    "  ON vbl.on_chain_batch_id = vp.batch_id "
+                    "WHERE LOWER(vp.player) = ANY(%s) "
+                    "  AND vbl.settled_at IS NOT NULL",
+                    (addrs,),
+                )
+                for player_lower, bid_raw in cur.fetchall():
+                    fund = fund_by_addr.get(player_lower)
+                    if fund is None:
+                        continue
+                    bid = int(bid_raw)
+                    if bid not in fund.settled_skip_ids:
+                        fund.settled_skip_ids.add(bid)
+                        skipped_total += 1
+    except Exception as e:
+        log.warning("Chain-bootstrap: settled-skip query failed: %s", e)
+        return
+
+    if skipped_total:
+        log.info("Chain-bootstrap: marked %d settled batches as skip across funds",
+                 skipped_total)
 
 
 # ── Reconciliation ─────────────────────────────────────────────
@@ -609,6 +663,7 @@ def reconcile_settled_batches(fund, executor):
             continue
         if dep == 0:
             log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
+            fund.settled_skip_ids.add(bid)
             _remove_from_active(fund, bid)
             continue
 
@@ -634,6 +689,7 @@ def reconcile_settled_batches(fund, executor):
                 fund.name, bid, payout / 1e18, deposited / 1e18, pnl,
             )
             fund.reconciled_total += 1
+            fund.settled_skip_ids.add(bid)
             _remove_from_active(fund, bid)
             continue
         except Exception as e:
@@ -642,6 +698,7 @@ def reconcile_settled_batches(fund, executor):
             if "BatchAlreadyReconciled" in err or "4c03a47b" in err:
                 log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
                 fund.reconciled_total += 1
+                fund.settled_skip_ids.add(bid)
                 _remove_from_active(fund, bid)
                 continue
 
@@ -991,7 +1048,9 @@ def run_cycle(
 
         matched_funds = [
             f for f in funds
-            if f.matches_source(source_name) and batch_id not in f.joined_batch_ids
+            if f.matches_source(source_name)
+            and batch_id not in f.joined_batch_ids
+            and batch_id not in f.settled_skip_ids
         ]
         if matched_funds:
             matched_any_source = True
@@ -1017,14 +1076,37 @@ def run_cycle(
         if not matched_funds:
             continue
 
+        # Read the on-chain batch struct once per candidate batch and reuse
+        # it for: (a) the settled gate below, (b) configHash fallback when
+        # the API didn't include it. Vision's joinBatchDirect does NOT
+        # reject joins on settled batches; the per-player position is
+        # deleted at settle, so the post-settle rejoin slips through the
+        # _positions check and deposits USDC into a slot that can never
+        # settle again. The activeBatchDeposits grows by that amount and
+        # is unreclaimable. One RPC per batch is the cheapest price for
+        # not bleeding ~$180/round.
+        try:
+            batch_info_chain = executor.get_batch_info(batch_id)
+        except Exception as e:
+            log.warning("Batch %d: cannot read batch struct: %s", batch_id, e)
+            continue
+
+        if batch_info_chain.get("settled"):
+            for f in matched_funds:
+                f.settled_skip_ids.add(batch_id)
+            log.info(
+                "Batch %d already settled on-chain — refusing rejoin "
+                "(marked skip for %d funds)",
+                batch_id, len(matched_funds),
+            )
+            continue
+
         # Fetch batch config ONCE per batch (not per fund)
         config_hash = batch.get("config_hash") or batch.get("configHash") or ""
         if not config_hash:
-            try:
-                info = executor.get_batch_info(batch_id)
-                config_hash = info["configHash"]
-            except Exception as e:
-                log.warning("Batch %d: cannot read configHash: %s", batch_id, e)
+            config_hash = batch_info_chain.get("configHash", "")
+            if not config_hash:
+                log.warning("Batch %d: no configHash from API or chain", batch_id)
                 continue
 
         if isinstance(config_hash, bytes):
@@ -1156,7 +1238,13 @@ def run_cycle(
                 )
                 continue
 
-            if existing.get("joinTimestamp", 0) > 0:
+            # Either field non-zero means a position is live. Vision deletes
+            # the whole struct on settle, so post-settle both fields are 0 —
+            # which is why the settled gate above is the real protection.
+            if (
+                existing.get("joinTimestamp", 0) > 0
+                or existing.get("totalDeposited", 0) > 0
+            ):
                 fund.joined_batch_ids.add(batch_id)
                 fund.active_batches.setdefault(
                     batch_id, existing.get("totalDeposited", deposit_wei),
