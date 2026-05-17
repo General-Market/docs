@@ -10,7 +10,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x81e80c465F7775f7f556792342B8478a03Ceb376"
+      "vault": "0x6FbCcFd1a02fB5cdDEb57EE0976921a8236324f1"
     },
     {
       "name": "Layoff",
@@ -22,7 +22,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x2C74ac225329E78b1C126B07Be4319e3A0AE3107"
+      "vault": "0xf42ad73C1C76eAbf0a88F933F504f39Bb6847183"
     },
     {
       "name": "Demand",
@@ -36,7 +36,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x0ce59C5945FeA7708913A0Af12550D7Bfc2A71ed"
+      "vault": "0xd1BbD38Ee47441b3aA1C5Df3bae0e18a5F23f12F"
     },
     {
       "name": "Headcount",
@@ -48,7 +48,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xa2295Adb8b3Fa64760E4d142dE7C33988A195f41"
+      "vault": "0x9979F9dc62033c4B09C75Fbd41D0547070F2C21F"
     },
     {
       "name": "Clearsky",
@@ -60,7 +60,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xc38D57e506E1414acbe37cec7A9D9eB12df3Af0f"
+      "vault": "0xD6bB9E38155479BcD300BdAd0C8338Bc02828367"
     },
     {
       "name": "Smog",
@@ -72,7 +72,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x69263C482c10aC03D6edB0182A762e7b6dFFFD67"
+      "vault": "0x270C5D900009E7eBf5ff6578fd496678eb8822b9"
     },
     {
       "name": "Breeze",
@@ -86,7 +86,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x4597A892ED478FF1578cC8994a96d857fb586025"
+      "vault": "0x7Ed03e70ba71C3875B35155E2dac6FF3d3621bA2"
     },
     {
       "name": "Inhalant",
@@ -98,7 +98,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xF04446279b9Bb245B268aF619360e7264B8333b0"
+      "vault": "0x917Ec1CF8B8C75E028c3D1464877DB7eFD08906f"
     },
     {
       "name": "Season",
@@ -110,7 +110,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xCF70F59aE5350123B298965D1a0Fb7Ee4D42F249"
+      "vault": "0xb9E65F5C8beF9243b95E3f4Cc564a2ae6FeDd3ef"
     },
     {
       "name": "Filler",
@@ -122,7 +122,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xCE9d73D5b1a4118eb261cF5183650b3c94400050"
+      "vault": "0xb9DF2fe5C031C65E4934AE3e8DCA120A6d9D2a62"
     },
     {
       "name": "Simulcast",
@@ -134,7 +134,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x12337f083c6ED4e810eFDB5cdB6B001dE5dbc499"
+      "vault": "0x0629BeAcFf6fa0218Fc3ABb5741117Eb9f5a1aF0"
     },
     {
       "name": "Canon",
@@ -146,7 +146,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x1fc0ce35353CBb3dc6fEfd9AEE429e32991a2C8C"
+      "vault": "0x6cA23fFBA9a91CA04641Ea02B9CF63085c699397"
     },
     {
       "name": "Safari",
@@ -158,7 +158,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x212459093F015E881ED154CC70117E87a8E195F8"
+      "vault": "0x469253fe9c9a74d3Edc3c53658DEAD1c8DE15BD0"
     },
     {
       "name": "Hibernate",
@@ -170,7 +170,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x72e56935AC8B3E48208ec4526F07be932E369Db2"
+      "vault": "0x607c072678a0aE7A64ba7df5e4772b79219B55d5"
     },
     {
       "name": "Biome",
@@ -182,7 +182,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0xC8fd2565EEFB14Bfb61C2f0ABCA03bF9ce6E29c0"
+      "vault": "0xd858DaFB40CCdE7E44aeb27f8aA4F163A3309299"
     },
     {
       "name": "Nocturne",
@@ -194,7 +194,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0xC9A8a234E3f94f37C3dd8D8b754e83Caf6154869"
+      "vault": "0x6bc4C230107051407FF94a7dd5dba4e85f71F8de"
     },
     {
       "name": "Unusual",
@@ -206,7 +206,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x366EE08cC9f9b59a893c13AA6FC70E7EA2b010b9"
+      "vault": "0x0e48f80071473a8a40805F9559692eEA32B3C6cb"
     },
     {
       "name": "Uncrate",
@@ -218,7 +218,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x2E3aBB8550322F77b97e39e3794cA4aCCe070890"
+      "vault": "0x3a20c215f7E84ad95DFb327b89a58730b78445ae"
     },
     {
       "name": "Vintage",
@@ -230,7 +230,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x4f1354e2D1f47bF06D4827c62f085B76d997332A"
+      "vault": "0xC730DB61Ae6CF60FE1Dc1f4DF328531fA925C4C8"
     },
     {
       "name": "Hashrate",
@@ -242,7 +242,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x0351CDeBe3AAdcb5b40bB5ba606B7aDa70B52B43"
+      "vault": "0x2b83D9163A9d677C8fD40E03170d8C6809347820"
     },
     {
       "name": "Halving",
@@ -254,7 +254,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x1305E8151605a989006085f2b27a3FF0D8b36bd1"
+      "vault": "0xf5E0e91d32990A92B4cc32F5572D6c32Bb476665"
     },
     {
       "name": "Satoshi",
@@ -266,7 +266,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x598fd31afD9744c8Af1E423A221b73BEb03086A1"
+      "vault": "0x4Bc2491aa297125833dA1C72B08BfDc9B375c652"
     },
     {
       "name": "Mempool",
@@ -278,7 +278,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x87EaAb41b1A655322b62E1C825e0C69eE92ab10E"
+      "vault": "0x09C479ECfb356C2350eb2A5fE52A391C87d66961"
     },
     {
       "name": "Markdown",
@@ -290,7 +290,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x399cb078F565458694AA7Ad43b61Cc4fcba25982"
+      "vault": "0xED3f948e544a3F2A2452EAc6490620f16D9AB97a"
     },
     {
       "name": "Bounce",
@@ -302,7 +302,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x0542c3d824eCb5CDcD2EE3AB8ad02Db0Aa7a9bE8"
+      "vault": "0xD6B34227980e136553F99647E9CD662D3A23F845"
     },
     {
       "name": "Doorbuster",
@@ -316,7 +316,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x6D73348C52a01d2208E767cf2A50e8598f0D4cF7"
+      "vault": "0x9a8BEc05B8936c31cC2df2678F71fcdDC7C49E8D"
     },
     {
       "name": "Clearance",
@@ -328,7 +328,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x8630267C94048CFeD21E794591f8155Fb4cFEF47"
+      "vault": "0x1d6256dC580120a8ADd25Cd0c5802c6E98FfCEa4"
     },
     {
       "name": "Payroll",
@@ -340,7 +340,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xC3996351e875edF50760888395Fd5195f53AdA3a"
+      "vault": "0x1e5ca61788D50cDe13A2f4A1af58A2870cb3F0d8"
     },
     {
       "name": "Nonfarm",
@@ -352,7 +352,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x09fa5c3EfbF557b25DD083dAb019F998d0045a88"
+      "vault": "0xa2Ec34Ba8f142CA927C6E2C50bc732Aa5C500401"
     },
     {
       "name": "Wage",
@@ -366,7 +366,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xfc9eA12Cf30A8ba80b61EcAFe0d8a2836B48623E"
+      "vault": "0x73C2C7F53a3D43cF55092504899AF0d145BdeC0e"
     },
     {
       "name": "Underemployed",
@@ -380,7 +380,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x196b0f736DDA8DCcaeA017BD065a567D9297d63B"
+      "vault": "0x775AA3c8D0AbdD21752961f1fB71067e9aBfBD5D"
     },
     {
       "name": "After Dark",
@@ -392,7 +392,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x58afd45Ed7440FCed40408CA6f877e6D65D39e78"
+      "vault": "0x4562440623B03DDB916F22a09b1c7B623a6b1Cf5"
     },
     {
       "name": "Intermission",
@@ -404,7 +404,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x1B01b641E80F0D0044A1311588796e73d1fDAc1A"
+      "vault": "0x977CBdaD3D918c1a04B0c2338a44239C2dd64597"
     },
     {
       "name": "Nocturnal",
@@ -416,7 +416,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x0091A0D6ce65134273858aD1A316183182643415"
+      "vault": "0x3D01f4be841E314090570c8aA31315C8951a7cbb"
     },
     {
       "name": "Peakhour",
@@ -428,7 +428,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xf81DA1c5611D45c3c76B4bf6ed12D048F150CCC4"
+      "vault": "0x56f4eB7D783cC7E745C30fa32829ac053027Ce30"
     },
     {
       "name": "Spoke",
@@ -440,7 +440,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x746a3412cE3D9b82Cf1704E50574aDC247566A62"
+      "vault": "0xaAb62f6AB6140095Bb0176978f78e5b5EDf3fa7d"
     },
     {
       "name": "Pedal",
@@ -452,7 +452,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x192D88600F6dCd5c860121ce461B8F7FDeD00A11"
+      "vault": "0xaEcC68114c52307A8830Ea0eac23fE2DFc782668"
     },
     {
       "name": "Freewheel",
@@ -464,7 +464,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xceA4c70A99B30D1413aE309A281ca075b22eB3c3"
+      "vault": "0x2Eb6C43BC5aAf1c5CD6abbe2FB3508b4bef56aDD"
     },
     {
       "name": "Dockless",
@@ -476,7 +476,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xD33d02Fa6dcEBB8Cc25dE8DD56ED5fb825Ee5C27"
+      "vault": "0x3B22096fb53b64c9243943b2348EA82F231A3512"
     },
     {
       "name": "Traffic",
@@ -488,7 +488,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xc1b623E953C7550C6Da8eec1E8dF8c24f0A422BE"
+      "vault": "0x9e515D6c22d3b396E13bbdda1c881d3faA63Ce77"
     },
     {
       "name": "Darknet",
@@ -500,7 +500,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x89beda85a0837EC1ca25C14Fa7474676C7A95B17"
+      "vault": "0x032Df12B3989bdD29b83A7F8DE631F01C0309eA2"
     },
     {
       "name": "Crawl",
@@ -512,7 +512,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x4968f27Da0AFBFF6e060bD572F683B3FC24309a4"
+      "vault": "0x90B8402D19026645b9A1126d17e08b55FB9a6CE3"
     },
     {
       "name": "Outage",
@@ -524,7 +524,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x2fFc02f3BFd762e156750aaCAE4C72598d2F065f"
+      "vault": "0x3eD1C09F4f94ea59c05e94C19cf3a4ab76d72082"
     },
     {
       "name": "Session",
@@ -536,7 +536,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0x4d7AADED1234ACb868e4CD6cb1eb5e9b2b6c8F9e"
+      "vault": "0xA69dD1Bf46C77A66E0b96B7ecD7333450524B424"
     },
     {
       "name": "Recess",
@@ -548,7 +548,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xBaF127171c55a1f53F9e23C5eA7633Bd344c7FBD"
+      "vault": "0x837494A72fEe3C6B2946F9E3941Fe59De51F6f1c"
     },
     {
       "name": "Filibuster",
@@ -560,7 +560,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xb633027C8Af616Fa4785B425e309EFf30D29b1da"
+      "vault": "0xc6224E8e718A93b12fCec41156A8dD40adB29729"
     },
     {
       "name": "Bipartisan",
@@ -572,7 +572,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xa71ce614874982C8285b4A71a94575ef1fD0dc59"
+      "vault": "0x41d71b969620297afd9D7B797a3b6775B59410fb"
     },
     {
       "name": "Citation",
@@ -584,7 +584,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xE5105cd298cfF97382A74c3b32CC6FE998Ced3de"
+      "vault": "0x659D5AE2aD7a56F02419EA47027BEEca9dbB2634"
     },
     {
       "name": "Retraction",
@@ -596,7 +596,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xdabA6a51ba660E76B64d1dAaE87f2f0C585Fa849"
+      "vault": "0x2b8fD67E1F54B00E20176E4373E3089d641a4721"
     },
     {
       "name": "Index",
@@ -608,7 +608,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x56Dd87cf597D88e6584a0877C776d8E161619bCB"
+      "vault": "0x9f2071c287AC03119321e3f95549cC8156c68BF2"
     },
     {
       "name": "Impact",
@@ -622,7 +622,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xA611E54db41c21C1B5Df80b13EAC01e2ccC66E1C"
+      "vault": "0x58931ab5735d89814ecb2Aa7762867cAFC3548D4"
     },
     {
       "name": "Lockflow",
@@ -634,7 +634,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x8ca7797bB22A2EB60d5e05A4Af7DD18a9E2A9890"
+      "vault": "0xD1D121254539fffD6Fe66F13DbE80f4a2f748e8a"
     },
     {
       "name": "Unlock",
@@ -646,7 +646,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x5F1F88ce5F60B41F589da22B9D49B911f97fF17a"
+      "vault": "0x1FCA3688ED44a8D43ad59d44342BB4F197Be7686"
     },
     {
       "name": "Yield",
@@ -658,7 +658,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x8CA8b0955a9f8648ef77333Ca720aD0FC45ed6A4"
+      "vault": "0x75C5645DBBd939b552B1b339182F3Ef3dE6925e6"
     },
     {
       "name": "Exploit",
@@ -670,7 +670,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xA27F6855Ce6f03d48c68EB53f57A62938a1c3eCd"
+      "vault": "0x254aD7c0F2BE81495fDecAB2FcF6645d35867be1"
     },
     {
       "name": "Drift",
@@ -682,7 +682,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x434e1aF90681e645E7902ec82cf1B13A1754e20c"
+      "vault": "0x032e70E96F3E131587642FDEED05a15c4fD6aaFC"
     },
     {
       "name": "Aftershock",
@@ -694,7 +694,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0x24EF60fF1abEB87dA736e3BDE9C5DC6C8eAc4c5c"
+      "vault": "0x6874fFd65080eae92f315B5C10B80181A4ACA440"
     },
     {
       "name": "Dormant",
@@ -706,7 +706,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xf3e1Db0447E83136489692E5F6De7E5371bBa505"
+      "vault": "0xd26b66691fF0b9Fd37da6582b1E91446B4BDC255"
     },
     {
       "name": "Epicenter",
@@ -718,7 +718,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0x755C25F4ac3Cd4Ad50dfeE6B976C74ACF2F3eA3e"
+      "vault": "0x6464dA249096D01c355a6F8E9BF3847C7747a4B2"
     },
     {
       "name": "Richter",
@@ -732,7 +732,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xc9936b524298cE724974F782f270EB04871268bE"
+      "vault": "0x9c0e2143ba0c987577110fD4a06dfA71D7f1033b"
     },
     {
       "name": "Euro",
@@ -744,7 +744,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x92539684f68950C97729422A4B89421Fe42Ee59F"
+      "vault": "0xE836622438F9318193193e80907ca8E50074d117"
     },
     {
       "name": "Parity",
@@ -756,7 +756,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xDA1Cc052F56714073F722774e7d15923F5eE19C8"
+      "vault": "0xC827809ff8e791bAcF6FA08570DA3764Fc87a9E0"
     },
     {
       "name": "Draghi",
@@ -770,7 +770,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x3F20715311282ffEe92A58bb7Cd3AF05AF35e3b0"
+      "vault": "0xd57A4f0f6D98741156fb75d62D2333Df44d9dd3A"
     },
     {
       "name": "Austerity",
@@ -782,7 +782,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xf3Fc4eE40B675e8db115187a4688e795442204da"
+      "vault": "0x2239a063a809f4c6a1425869959642602942012F"
     },
     {
       "name": "Pipeline",
@@ -794,7 +794,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x743cD5675b9205E89EF84c6576F3D7906e0b85FA"
+      "vault": "0x677D51CD434071055349f7A7342d26dE47Ac33cb"
     },
     {
       "name": "Surplus",
@@ -806,7 +806,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x816dA8b3794F89E1A09d51Ee50A256297f06b464"
+      "vault": "0xCE91eE65dB2D487ea92900D1d0FEed720d9f83eC"
     },
     {
       "name": "Joule",
@@ -818,7 +818,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x358a27b26a5383Ef73D082405238D69b5a83A2D3"
+      "vault": "0x944bb84ccb19824a824fBe19C91bdAa8B9603171"
     },
     {
       "name": "Reserve",
@@ -830,7 +830,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x5Cb445481711bb3a91Af1F0AC4D55136CDa5e97A"
+      "vault": "0xe4359cbE0667d8658A4270ba49116366ea132ba8"
     },
     {
       "name": "Crowd",
@@ -842,7 +842,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641"
+      "vault": "0x27bbEd240A02Ce522eB073D5E7D7107a79E812f6"
     },
     {
       "name": "Unwind",
@@ -854,7 +854,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2"
+      "vault": "0x33594412B589aE9C87984C918B5e6427D3BeE7Ce"
     },
     {
       "name": "Spike",
@@ -868,7 +868,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d"
+      "vault": "0xD0dEF175fC52e88179E462f630A0257b80f1292b"
     },
     {
       "name": "Pressure",
@@ -880,7 +880,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xa8cE1D1bDd59D37FfBa31988789d29c7B431C0A8"
+      "vault": "0x4bE4C9d7e4C1fD41B705f5282D31103c2ac7C09c"
     },
     {
       "name": "Noise",
@@ -892,7 +892,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x2C3aa9D1AdB0526561B8fA377A6B0a8ECc8b6DA3"
+      "vault": "0x3AD1D3072e2E8626b85712Ba6583E88031165a1c"
     },
     {
       "name": "Raid",
@@ -904,7 +904,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x4b284BB6e3237652d5e2E46D4F560Db6B47939a5"
+      "vault": "0x2093Ec955dADAd0DC747cDee90f21EcE2dF8E058"
     },
     {
       "name": "Sage",
@@ -916,7 +916,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x541Fd12852ABa9eAA39da0969B9e676338E1F9B4"
+      "vault": "0x1f73aF1c525095cAEf2E756f69E3CaD8c6D79ceC"
     },
     {
       "name": "Anon",
@@ -928,7 +928,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x98e84b9816251B075b752eFF3789C0f4666532De"
+      "vault": "0x333d51b73365B64b14447ae211d528BdCA504D0f"
     },
     {
       "name": "Frontpage",
@@ -940,7 +940,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0xa88b0096E4a9e4d33b23986446a08a45Ac73d456"
+      "vault": "0x3B8ab88110Fd3A143301163adFb0dF854F53C2e7"
     },
     {
       "name": "Decay",
@@ -952,7 +952,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x5326D777F59d4d5C8AeB959F72920e5D5BcbDABf"
+      "vault": "0xC7a049E78792864fDC1A76A9200Df6B8aEc45c36"
     },
     {
       "name": "Flagged",
@@ -964,7 +964,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x22aD84D39ee74D7FfE144Cd8A86ba54d071419c8"
+      "vault": "0xFd70150c968D49682bd5070C4aBf4ab58D4ea27d"
     },
     {
       "name": "Show",
@@ -976,7 +976,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x0551843B3eDD3a25D0fF34C9a72fC4aDF9728229"
+      "vault": "0xfe97d56E81170b46512D99CC94B20f91Af873C56"
     },
     {
       "name": "Orbit",
@@ -988,7 +988,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xA9aDe4742F36c62B52d1E5408D94F6D392C94dbc"
+      "vault": "0xaD680F5c4F3dDC87604E2662423bb3f639A7C01B"
     },
     {
       "name": "Reentry",
@@ -1000,7 +1000,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0x483d34360884246e4DAC07023C96816B09b27DCB"
+      "vault": "0xDDD2F928D7F78C3f397529baF7430711232E32Dc"
     },
     {
       "name": "Microgravity",
@@ -1012,7 +1012,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0x37c47d6d31Be1f01aA28cEBF1fC52d76DCEFDe7f"
+      "vault": "0x4ad922bE914e1c88AD194aDd1488A14f53740092"
     },
     {
       "name": "Docking",
@@ -1026,7 +1026,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xC614F0dB715A42D3D6B746400aA9452723B54773"
+      "vault": "0x6911cBf871143c979142519193b593a64E2c88d9"
     },
     {
       "name": "Sortie",
@@ -1038,7 +1038,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x6C3eF66ee8E01748B1CcDa0ec7E1707b5B39454F"
+      "vault": "0x4b63015ECcecaE2F16F7196C9a2e9cC6Cd19F17a"
     },
     {
       "name": "Standdown",
@@ -1050,7 +1050,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x0F40015864151c6c6e9316eA4E06E2A301D01b2C"
+      "vault": "0x1200F71cE20A68e80F1D3a7Ab824B904f42D2214"
     },
     {
       "name": "Overwatch",
@@ -1062,7 +1062,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0xE5661fa4c39AD44270B9D232AB2b351700B02060"
+      "vault": "0x5b7Eed0C0342eB3296ff0b451549Cbb5a252CBA0"
     },
     {
       "name": "Scramble",
@@ -1076,7 +1076,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x60C3DB5Dadf6c6A88966f7877FF0f319f630775b"
+      "vault": "0x86Ca92A8Bb862235e9556dbf71058B32c130240B"
     },
     {
       "name": "Metro",
@@ -1088,7 +1088,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x600759ec228a47A714f04710a70b3eEAF00c7AC0"
+      "vault": "0x5988c1C15907C869463aAf08110Ee56016aB8365"
     },
     {
       "name": "Express",
@@ -1100,7 +1100,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xb666e61446a2bCf0cA58bC3Cb8C8d1c4F88dfBE2"
+      "vault": "0x428abfA925d54550c24eB069982ef17cA327709A"
     },
     {
       "name": "Transfer",
@@ -1112,7 +1112,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x664dA40B8E3253FD967f0c152957356a95c44Cd8"
+      "vault": "0xCAD0978e5c112a1515dB6f1A1B51d73e3c735b18"
     },
     {
       "name": "Turnstile",
@@ -1124,7 +1124,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x8d31858c7242d5E99ab59255aEd0084c6E69684e"
+      "vault": "0x1Bc4ECA0c00d9AE2Aa0A2E7b87F632A838dbc78b"
     },
     {
       "name": "Swell",
@@ -1136,7 +1136,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0xA42198a47aEe06783B007dE647F73111Cb131c88"
+      "vault": "0xE51B2d01163b151ed136FD0C6473a8d0cE250721"
     },
     {
       "name": "Calm",
@@ -1148,7 +1148,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x513584D3eb6Cdc3Dc7211a70Ec8A62B08Bf7b0D4"
+      "vault": "0x0b6Ae129Bff356CD6a9E58c25E0A5E28799f5037"
     },
     {
       "name": "Riptide",
@@ -1160,7 +1160,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x83cC2c26a6B4F53c0dF120727e8d56BCdc458E66"
+      "vault": "0xDFd360D2F1F34A630D0D05Ba621431CB989a981D"
     },
     {
       "name": "Anomaly",
@@ -1172,7 +1172,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x27eDeFfEd3678c5C143928Af0C40fCBD1ee1a61c"
+      "vault": "0x4E9F82A5d6CAad80B3AaF0c0a174969492F87fB0"
     },
     {
       "name": "Lull",
@@ -1184,7 +1184,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x198b65542563Fa4E933f98306ad9c581A3C0ebeD"
+      "vault": "0x6BBdA2C03E4Df0B1ec1dec71C0A77BfFBA976769"
     },
     {
       "name": "Barometer",
@@ -1198,7 +1198,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x07498851caaA638b6c94f2E071e3C59Bd775a924"
+      "vault": "0x27ddb3E316e1aF23f0f718a919713E43a133A605"
     },
     {
       "name": "Tideline",
@@ -1210,7 +1210,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x54E1c1199551FD4be63E06A55873c75FA96D2785"
+      "vault": "0x1e3e8Cb9d8d74FD9dD5eD4f633c309B51442AD55"
     },
     {
       "name": "Surge",
@@ -1222,7 +1222,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x0978e92B2D15293e1E9b7AB510601dd2A99592E4"
+      "vault": "0x9C4E549d08159D9cbA9272882E9955E5E02e8Df2"
     },
     {
       "name": "Neap",
@@ -1234,7 +1234,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x5c2A064EE483157E254BEc8b07D36fD0f95C672C"
+      "vault": "0x5763A23082294d5692F508E96F3ba1ceA2a5Bb01"
     },
     {
       "name": "Flood",
@@ -1246,7 +1246,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x0B966E8DB5B3cF6687bF80085460c3267fE87a94"
+      "vault": "0x6C010D216e5d776bb442975A5DB0D2C9B848452f"
     },
     {
       "name": "Snowbank",
@@ -1258,7 +1258,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x411Bfc053fa04D40452B9c2c1B433160808Ae3ec"
+      "vault": "0x73d7f5B7edc363839DBA3Dfd19F79219e1Bf5c6c"
     },
     {
       "name": "Crest",
@@ -1270,7 +1270,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x399af8FF184F1A2379d07d6D59C2800134220113"
+      "vault": "0x60375a595E938d268F2ce3bad34eb10Af13E5CB7"
     },
     {
       "name": "Valet",
@@ -1282,7 +1282,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x545098BA2dc8dE24BD70d99fef3c03C73B3c1d67"
+      "vault": "0xE7Ac339D493A5fAc4cEC812C74E46D2aC5Bfc6f8"
     },
     {
       "name": "Garage",
@@ -1294,7 +1294,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x420E5E7826648CFb9E4E5f3Ccd5a9510e82A0B78"
+      "vault": "0xA60277D9283C0B1ADfF3CFCC31637A6A99e700D6"
     },
     {
       "name": "Meter",
@@ -1306,7 +1306,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x861A66aED8B8C420bD10a9a51FbB35543b86cc09"
+      "vault": "0xeFe88DC66F38dFf483B30902b38e750590b3e8A0"
     },
     {
       "name": "Double Park",
@@ -1318,7 +1318,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x97f37a106C7906468C1de6Dad6F4cC2d0Ee32022"
+      "vault": "0x3EA28B195A784266bc5669064acB7DA032D95460"
     },
     {
       "name": "Oracle",
@@ -1330,7 +1330,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x9509913E86D577AE076Dc72fd76135E20C9F63C3"
+      "vault": "0x5d1780f15595b98cB6C393105aC665edb957b282"
     },
     {
       "name": "Longshot",
@@ -1342,7 +1342,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x4Bc62Bf1bC8a2dFfa7b199356F179e83A07DE1D9"
+      "vault": "0xAA98F157559a2A1E64f08c9b4b10A64e26f7BB91"
     },
     {
       "name": "Consensus",
@@ -1356,7 +1356,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xE19CdF8402d7aE554d0a46340AE8C0573a87fFd9"
+      "vault": "0x28261C1b55367899CB999E1039de36AF7A809a23"
     },
     {
       "name": "Arbitrage",
@@ -1368,7 +1368,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0x930f69867A29C606416c5be016197AB51D52cb4b"
+      "vault": "0xA70512c60f2cb5aE5a6a36DEaffF40f131DBE2C4"
     },
     {
       "name": "Preprint",
@@ -1380,7 +1380,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x32Ca2e5ffAb892EcBF71B224A395A90968a8d233"
+      "vault": "0x9B3F8195dEc1b11F64FE213659702666DF77F13e"
     },
     {
       "name": "Placebo",
@@ -1392,7 +1392,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x78198A204411390a8926908cd2a13E18Af77A94b"
+      "vault": "0xf281e84D459FD77c7C18520D537a7d7110a4052C"
     },
     {
       "name": "Peer",
@@ -1404,7 +1404,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xEEE6032848E58801408B1f97c355626cEc747A55"
+      "vault": "0x3CeBf43ba46cC31131A56cc0113def12EC350AE8"
     },
     {
       "name": "Trial",
@@ -1416,7 +1416,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xab555c7439349e4Aa7dA1387a862603Be254929b"
+      "vault": "0x5c7324A0De22f22840c8A03F83A46d81464c3AcD"
     },
     {
       "name": "Degenerator",
@@ -1428,7 +1428,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x186FcD3478c8899B3a62F34Cb6fc5C4574B69adA"
+      "vault": "0x64A9eaEAc1191564864Bd82244eaed9CfD014a4f"
     },
     {
       "name": "Rugpull",
@@ -1440,7 +1440,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xBe5a21b79Dd1465071394C4EAe4E94fab6e3993c"
+      "vault": "0x7f2d2B36daa70dc94BF324f39Bc5D7c64c9d2858"
     },
     {
       "name": "Diagnosis",
@@ -1452,7 +1452,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x8b0b25CD51d62220d55eed3EBddb0502e949f2E9"
+      "vault": "0x42F488a835d3a5cbbA889E869496D17C5566db9d"
     },
     {
       "name": "Bonding",
@@ -1466,7 +1466,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x0860389CF8871Ca3e0Fdcf78BE8FC70583aD614F"
+      "vault": "0x5106539700a9eb0091AAdC53F359Ab1F4023a85D"
     },
     {
       "name": "Fastpass",
@@ -1478,7 +1478,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0xddA415F94B261F03f877331F2542EBF5d429D129"
+      "vault": "0xd06A55Bdd4256122E653181F34Cd1CDAB922406c"
     },
     {
       "name": "Rush",
@@ -1490,7 +1490,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0xC5983757724ACD11451116958f74a6097ACd3257"
+      "vault": "0x9450189C19f3dEBE916035461CF2A99BBBDb33A6"
     },
     {
       "name": "Cluster",
@@ -1502,7 +1502,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0x0f28bfe6e1c11b6b000aF5fF0a6b94c85471Cf5b"
+      "vault": "0xAb082bCE437f93671495e643729b2EDE523401fb"
     },
     {
       "name": "Deadline",
@@ -1514,7 +1514,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x6b559059fC5775aADB5bea1A85fab711eF63f3B5"
+      "vault": "0x4292915231EC770B865B5011Dba8474dBaabC6d9"
     },
     {
       "name": "Disclosure",
@@ -1526,7 +1526,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x882aDc8623e2d3A29bCA11C50ae9ff3ff004fF3B"
+      "vault": "0x3Ac2dB8e6a6fc36Fa14aA57F6973Af21F3D5B177"
     },
     {
       "name": "Insider",
@@ -1540,7 +1540,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x9aFFa4cf32047e755f02A2AE5a157256EA1BeEB9"
+      "vault": "0xDEb8e95cec4C1A117DFbE6C734c88CfD19f099d2"
     },
     {
       "name": "Holdings",
@@ -1552,7 +1552,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x859C448C56197Ac19016dD1241b72b279b847c1a"
+      "vault": "0x434101Df87a94607627c66c90B24654500D742aC"
     },
     {
       "name": "Aurora",
@@ -1564,7 +1564,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0xB16EE7A826e2f80B4418b2961F380708c121984E"
+      "vault": "0xB98104c5aF27be222cAa06C24a47CA3D4D0678d9"
     },
     {
       "name": "Solstice",
@@ -1576,7 +1576,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x69d26Cd0Bc97a97F9F23d0E038d93ab17346bc30"
+      "vault": "0xEdfC87d60361406eBaA3abB9737555c51951CE6b"
     },
     {
       "name": "Sunspot",
@@ -1588,7 +1588,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0xE095574729Af0F9aE5512bAda365df26E019F4Ab"
+      "vault": "0xb2e219665A5b3E913D3f994e27Fc86C9c17a3073"
     },
     {
       "name": "Corona",
@@ -1600,7 +1600,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x85868911cf4810fD2201E8A84cE710CfF7aa7b86"
+      "vault": "0x2bDD8dBf517c25a9B6c8612712359AEB2e760225"
     },
     {
       "name": "Homecourt",
@@ -1612,7 +1612,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0xdAe7AF481027786A840cf732B5406c386B9cC5Bf"
+      "vault": "0x2413Ac1C05d52574967E21669028d9cFddFC0108"
     },
     {
       "name": "Streak",
@@ -1624,7 +1624,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0xa3A77443623D95a533305fA41b37A05E9145ea5d"
+      "vault": "0x0414483dc9F94C7e65a1d1a2D6Bedd3BE2e8c32c"
     },
     {
       "name": "Upset",
@@ -1636,7 +1636,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0xe18eD1d9790dB06B1275b04E026D10C8d1bdFD90"
+      "vault": "0xF095ebB0371AA655C6df997125Efad421D548D88"
     },
     {
       "name": "Overtime",
@@ -1648,7 +1648,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x2D09AfeA7DffEfe61368573D822beC5589faBa1d"
+      "vault": "0xf27e16f30E2677B6be92Ea8230Ef0dC248cd6533"
     },
     {
       "name": "Weekend",
@@ -1660,7 +1660,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x580582762a8203e36E0F6A31E71965AFC36F4E59"
+      "vault": "0x8C837521E5D86aEC19091b377C6581C1a2b4E39c"
     },
     {
       "name": "Lobby",
@@ -1672,7 +1672,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x92129A82eb47f33597731b412779aB65aB69ED51"
+      "vault": "0xbedCb1ECd3Bbc9Db898b62f6AC51e9b470129F43"
     },
     {
       "name": "Ragequit",
@@ -1684,7 +1684,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0xB6950399C46Cfa9B41E41318707Eb9BD0B832ee4"
+      "vault": "0x86Ca1F8373e26Edc67442F0044Ea70dD135CD3D0"
     },
     {
       "name": "Patch",
@@ -1696,7 +1696,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0xEcDfc6dDe60948990569a66Cc8f7A935f329F76a"
+      "vault": "0xEE5bAbD5A47F84e2609b96D36290813715e84D09"
     },
     {
       "name": "Prime Time",
@@ -1708,7 +1708,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xBb31bD1E82C68725cA4cb84c027328d099e06B3B"
+      "vault": "0x8601C6fAbf3D29cf4B624501aC095Be2d5E2f111"
     },
     {
       "name": "Offline",
@@ -1720,7 +1720,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x1108Ab4Bab7444b44ce3F3d09a3dDE344377437e"
+      "vault": "0x7E9514659cF1f277797b9964BE3a0e88F5f75A35"
     },
     {
       "name": "Subscribe",
@@ -1732,7 +1732,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x99EfE3C13352c892cC39121B797aC9f90F2e9333"
+      "vault": "0xc0932524fd80bc0deB8459b098ae5b8640FAd0c6"
     },
     {
       "name": "Host",
@@ -1744,7 +1744,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xaa41fb30E9544076Bdf9f334369b29437F38Ea62"
+      "vault": "0x7187FC052afb57C94a191db5390a694FB45e21b4"
     },
     {
       "name": "Stimulus",
@@ -1756,7 +1756,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0xd8283Ed1Eb3dd0A1f1aBaF8DA471aec4076910fB"
+      "vault": "0x45c822c1699E27373846F997BA10443fbf5a74b1"
     },
     {
       "name": "Sequester",
@@ -1768,7 +1768,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x9F37578A824964137CcE5D92567293cE9414A603"
+      "vault": "0xc34Fa4EEf781B1794768Bf3091E92e4dd0b69447"
     },
     {
       "name": "Deficit",
@@ -1780,7 +1780,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x2d82214c8e8C1c182F5E0a2C4d6ADa558FF034eF"
+      "vault": "0xe4152742F7661B9Bf1DFdFCEB2b71424FfD3e65E"
     },
     {
       "name": "Earmark",
@@ -1792,7 +1792,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x07925D5d07a3FeD23220762a3fcaDd9deaD01490"
+      "vault": "0x317423Bff3ff25063CDF1925b08F9c2629a549dc"
     },
     {
       "name": "Torrent",
@@ -1804,7 +1804,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x317FdcDb75D084dE10a817759348F3A03bE6cBF7"
+      "vault": "0x088E34645b0112e0122219aF1D5E36236dED5583"
     },
     {
       "name": "Drought",
@@ -1816,7 +1816,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x40CF93cA7ECcdCCa5F5A411FBc959D2b0BAc90C3"
+      "vault": "0x4E2105F785ed781BA696792DDbefd670393987F8"
     },
     {
       "name": "Watershed",
@@ -1828,7 +1828,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x121A3Fb2CC6Df39B30c5B9167b80d627F8a7d9dd"
+      "vault": "0x0F44b02CE0cb2E4359150830eA80b4B12B196e39"
     },
     {
       "name": "Baseflow",
@@ -1840,7 +1840,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x83C2cDbb96BAdB3A5915A4d9a612CA53CD9AFE71"
+      "vault": "0xA9b9Dda581D795d8400165A6b4b19407E5f91b81"
     },
     {
       "name": "Weatherfront",
@@ -1852,7 +1852,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xadD533b5d1e93730435AbB70Ec7fc37353216922"
+      "vault": "0x7F0203b435240cDdbE0b4fC5b8FA8EcFE0c87378"
     },
     {
       "name": "Revert",
@@ -1864,7 +1864,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xCE0efE66702E1745c9Ec4fae0C0A734726A48ce2"
+      "vault": "0xb77f3a5C7F2357D5847E420d05bA68B914cB2cCF"
     },
     {
       "name": "Seasonal",
@@ -1876,7 +1876,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xC6834AD44487e2F74587DC14D656BaDf35Ca0119"
+      "vault": "0x9957A2126ec69Af5986a8Fc5521662C7784c3650"
     },
     {
       "name": "Heatwave",
@@ -1890,7 +1890,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x270Ea24ab2a23F175f30BdFd64baa6313A5Fe9eb"
+      "vault": "0x5709639bFDF3f6e86A4A6CD4aF6179EcF1908F2F"
     },
     {
       "name": "Stormwatch",
@@ -1902,7 +1902,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x9d761cF139Ab3EBBf46d57Fc2269959c532623c9"
+      "vault": "0x98270d2deD8b6FB972d027f29EccDf70d4FBd463"
     },
     {
       "name": "All Clear",
@@ -1914,7 +1914,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xdb982B7E39e81A54F1e47ee1EDa056c13d7B1872"
+      "vault": "0x57FB0BAB3CFfbd271E07b5B5cc0D39930383e17A"
     },
     {
       "name": "Tornado",
@@ -1926,7 +1926,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x8695a927e5c6c3d22D9dC4b7a4bc94a85bbEA732"
+      "vault": "0x6B071B8ddE1D7f9733bBCD66B16Ba4bc86f9D519"
     },
     {
       "name": "Bunker",
@@ -1938,7 +1938,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x3256157CFEFBE9305fc66173dfd3961Bfc6eBb8D"
+      "vault": "0xcB74Df135f172413d3082485AC9E14Ba59361ebA"
     },
     {
       "name": "Ember",
@@ -1950,7 +1950,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x57A9896025D99950053c1F6f44d7b322FA8F8FEE"
+      "vault": "0xE127924A51cB880b786AC16d5389985A95caa374"
     },
     {
       "name": "Contained",
@@ -1962,7 +1962,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x766340dA491a40a30F01B3D807C1fe552DDEDDb8"
+      "vault": "0x321860Fd7D0Fa65D72c0D49fDd94B7aDb20E9767"
     },
     {
       "name": "Tinder",
@@ -1974,7 +1974,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x955F44F66050364D4c5558D0AE4386aAf7470190"
+      "vault": "0x08fc2F9f0861f754992f27cFC702aBE8c4F53ca3"
     },
     {
       "name": "Firebreak",
@@ -1986,7 +1986,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x92011F6b0F5117f36d660dA473f4283d9dDB08f6"
+      "vault": "0xE9e691f8dF14BE6292c799615d3b3bE72f0d26a3"
     },
     {
       "name": "Glacier",
@@ -2000,7 +2000,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x108D5e0Af10D089809AfaaE19AD2B5aE99A2D752"
+      "vault": "0xFe08a770B917067De6890A88ad8632FFD355c196"
     },
     {
       "name": "Convergence",
@@ -2012,7 +2012,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x07df8a5D3769DeBd3e843e735C16190F11248613"
+      "vault": "0x7703EF7e419b9c0539FB70E0b205a2Cd346E135c"
     },
     {
       "name": "Emergence",
@@ -2024,7 +2024,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x3c0a3343d5aAaC0fAd4cdB7bee592aA4deEbb01d"
+      "vault": "0x3eEd78Eb180dA9D2Cf815C42657071255Ad5c1F4"
     },
     {
       "name": "Stagnation",
@@ -2036,7 +2036,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xB1Ca8860A5BeC64616b6aA20b6F985e52ad13186"
+      "vault": "0x3A8bb040A811De26D2c4201C11C1D0290169a902"
     },
     {
       "name": "Foundation",
@@ -2048,7 +2048,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0xc69B68aff3ed3d8d73ddFf397c4871D673b3e6a8"
+      "vault": "0xdA4828782dcdaC90BDc84d38D70C447E2d3c4F94"
     },
     {
       "name": "Overshoot",
@@ -2060,7 +2060,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0xD44290E89B167F2eE3A3C7547e8d2dB269B0A345"
+      "vault": "0x51C5360a1E364FA8DadD2271BD03aebeCd415F12"
     },
     {
       "name": "Shelter",
@@ -2072,7 +2072,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x81018c397a1CcC401ec18F2402BA5Ca97b7FE196"
+      "vault": "0x116234770568f3BadAB29c347E1e8B54812AB6fF"
     },
     {
       "name": "Appraisal",
@@ -2084,7 +2084,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0xe7875282689B68153aCe9f41cC24e2b3fd149D46"
+      "vault": "0xb4d8398020c7480B3530052266e1C3bDe6D07b10"
     },
     {
       "name": "Squeeze",
@@ -2096,7 +2096,7 @@
       "color": "#1A3C6E",
       "fee": 500,
       "category": "finance",
-      "vault": "0xFb372D85Bef3dc187e9Cfb9Bfecb7ee335179641"
+      "vault": "0x1533EA034D40c25B4CA8Dd4356cF12c6974cE0B9"
     },
     {
       "name": "Cover",
@@ -2108,7 +2108,7 @@
       "color": "#4FC3F7",
       "fee": 500,
       "category": "finance",
-      "vault": "0x938531303C6E13557cF8B0c90411cce8e5Da8Ab2"
+      "vault": "0xa58c4d7eDC8A8dECC8F391D7160b8FB790d5c05C"
     },
     {
       "name": "Pressure",
@@ -2122,7 +2122,7 @@
       "color": "#1565C0",
       "fee": 500,
       "category": "finance",
-      "vault": "0x28ABaBfa2dd68970DeC49219c2a67512ea5D460d"
+      "vault": "0x31e24384669B5Bc87BAf6e206005c2DdFf3307Ac"
     },
     {
       "name": "Espresso",
@@ -2134,7 +2134,7 @@
       "color": "#6F4E37",
       "fee": 500,
       "category": "finance",
-      "vault": "0x8af24e4964BD46513E8031C23961A84e6b22BE31"
+      "vault": "0x3671451905C88FF063718fEb04B2739C53D81f41"
     },
     {
       "name": "Raincheck",
@@ -2146,7 +2146,7 @@
       "color": "#8D6E63",
       "fee": 500,
       "category": "finance",
-      "vault": "0x78b724Fe2603C0a58D8bAe179EC4eaAf2420BB5A"
+      "vault": "0x3c5e08cc60537eC3A37e05b00C088fc901aD8C62"
     },
     {
       "name": "Roast",
@@ -2160,7 +2160,7 @@
       "color": "#4E342E",
       "fee": 500,
       "category": "finance",
-      "vault": "0xb43c4768D32ebC3218EfB44B3f7E6d6Cd044E5BC"
+      "vault": "0x7e1064Cbb55710cd1cCB79155421Bc5B7F909E6c"
     },
     {
       "name": "Taipei",
@@ -2172,7 +2172,7 @@
       "color": "#C80815",
       "fee": 500,
       "category": "finance",
-      "vault": "0x157e5Cf02b4b41e259B1842AF14F2E739e5e3c49"
+      "vault": "0xBA979133cbDD9dc64Bc999924BA92ad933df68Ec"
     },
     {
       "name": "Strait",
@@ -2184,7 +2184,7 @@
       "color": "#D32F2F",
       "fee": 500,
       "category": "finance",
-      "vault": "0x6F6442f35fbA7b6de60d4a71487809724a340C58"
+      "vault": "0x6a32E05702e300DA031d9D978aBe6543dd854f01"
     },
     {
       "name": "Pacific",
@@ -2196,7 +2196,7 @@
       "color": "#B71C1C",
       "fee": 500,
       "category": "finance",
-      "vault": "0xAa6bF2a01899f82862A2E90565750C2BaB012d77"
+      "vault": "0x297577A3590dD3B85F47b2eeFE3812E9899f9C77"
     },
     {
       "name": "Trending",
@@ -2208,7 +2208,7 @@
       "color": "#24292E",
       "fee": 500,
       "category": "tech",
-      "vault": "0x0ABdf2D7289127478FD89A4ae1e8F3aF49f248C3"
+      "vault": "0x4a6E2F52F132A52BD38487E6c4847a16cbe58522"
     },
     {
       "name": "Burnout",
@@ -2220,7 +2220,7 @@
       "color": "#6A1B9A",
       "fee": 500,
       "category": "tech",
-      "vault": "0x4aEcA750896e26713a57340c704ab33A2218adB4"
+      "vault": "0xb89977368ca1099Bbfb45599f18B4d2338573521"
     },
     {
       "name": "Stargazer",
@@ -2232,7 +2232,7 @@
       "color": "#1B5E20",
       "fee": 500,
       "category": "tech",
-      "vault": "0x00FFc646e17c5C782353A3f015183a178Ce1FDdd"
+      "vault": "0x9CAc5AaeDD48E0038B775FeD84082684242F55C1"
     },
     {
       "name": "Import",
@@ -2244,7 +2244,7 @@
       "color": "#006DAD",
       "fee": 500,
       "category": "tech",
-      "vault": "0x591CF5554608157250ABAf9564E12D3aEC766a84"
+      "vault": "0x9E28d1ECCd67e4daCD96e9843F4dC90699f7eC7b"
     },
     {
       "name": "Unmaintained",
@@ -2256,7 +2256,7 @@
       "color": "#01579B",
       "fee": 500,
       "category": "tech",
-      "vault": "0x1A1a3F7020d1d70D3899Ec2dF70466d14f3385EC"
+      "vault": "0x1eCbF2BAD9e8d54789BA38e9f40e5DAFfeC1DC27"
     },
     {
       "name": "Pip",
@@ -2268,7 +2268,7 @@
       "color": "#0277BD",
       "fee": 500,
       "category": "tech",
-      "vault": "0x5F3a3662bcD379b5959896823c60961Ebc447f93"
+      "vault": "0x12C3b849C0c384e2396B50a57154A97240d00074"
     },
     {
       "name": "Oxidize",
@@ -2280,7 +2280,7 @@
       "color": "#173D13",
       "fee": 500,
       "category": "tech",
-      "vault": "0x807615E801B1f12cA39E61739c82F8b519FCC4d4"
+      "vault": "0x06B9d7FA071cc14eee2BfB43C90B512810B02101"
     },
     {
       "name": "Borrow",
@@ -2292,7 +2292,7 @@
       "color": "#2E7D32",
       "fee": 500,
       "category": "tech",
-      "vault": "0xCEe3Af14DDCC1B386Cf5474044De6124CC84BA4C"
+      "vault": "0xF670B48B8F8d7Aec564A5Aa85A63231690287Ea2"
     },
     {
       "name": "Cargo",
@@ -2304,7 +2304,7 @@
       "color": "#1B5E20",
       "fee": 500,
       "category": "tech",
-      "vault": "0x1604373a897dB481d8ef3e40B88396b864f6E746"
+      "vault": "0x14360723093cA0119824c48f87e6266B57898676"
     },
     {
       "name": "Publish",
@@ -2316,7 +2316,7 @@
       "color": "#2E7D32",
       "fee": 500,
       "category": "academic",
-      "vault": "0xB9967a4618C2492A5BD305D83231962f1a1f53B1"
+      "vault": "0x89dfd79b7305B1AE421CE8566e21ed27e7C3f00c"
     },
     {
       "name": "Sabbatical",
@@ -2328,7 +2328,7 @@
       "color": "#1B5E20",
       "fee": 500,
       "category": "academic",
-      "vault": "0xcBdf35951445b04c9F4c3725a7Be950215660674"
+      "vault": "0x4dDeAb858E5caBf2C9d7C80D03581B3ca3027956"
     },
     {
       "name": "Tenure",
@@ -2340,7 +2340,7 @@
       "color": "#004D40",
       "fee": 500,
       "category": "academic",
-      "vault": "0xFc804E67c81BC02De35C7c40A8A7ceDC82CE7164"
+      "vault": "0xb89F87ADE9d1f9cede19796F1528f3D37AC92A44"
     },
     {
       "name": "Premiere",
@@ -2352,7 +2352,7 @@
       "color": "#032551",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0x3cfA652eF953e9c36739a1D50Ad14F164EbA37a6"
+      "vault": "0x2e457C30b44C70c580EFfafadb8D47B1c091730c"
     },
     {
       "name": "Sequel",
@@ -2364,7 +2364,7 @@
       "color": "#1A237E",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0xC354f984E94BCB76FA3a36935d8830Db63C4cEA5"
+      "vault": "0x25328F21420A71f8e50Cf5cd13753aA3dD6A4aff"
     },
     {
       "name": "Binge",
@@ -2376,7 +2376,7 @@
       "color": "#0D47A1",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0xeA8dac0cCd5F2159631bdba44D75068045731cD6"
+      "vault": "0xb5f00ED57D01Ca9C06743Eecbb3504f89F6dA4A5"
     },
     {
       "name": "Anthem",
@@ -2388,7 +2388,7 @@
       "color": "#D51007",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0x01D6554785DA81f2F455b028F3677728Ee9229Df"
+      "vault": "0xBb4Caed29660d806a2CDF84F9a40C09f3A8a4585"
     },
     {
       "name": "B-Side",
@@ -2400,7 +2400,7 @@
       "color": "#C62828",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0xc110eEDa6cB8882CbB862c0C4546A38a95E7c8E0"
+      "vault": "0x201213724947db469acBf8b2fb0581298336b0bc"
     },
     {
       "name": "Encore",
@@ -2412,7 +2412,7 @@
       "color": "#B71C1C",
       "fee": 500,
       "category": "entertainment",
-      "vault": "0xB5E65383ce81FF9137E535c64fb2848776e11A3C"
+      "vault": "0xf1773F88F0A5085Dd5dCa48CF17Db5d055903a4e"
     },
     {
       "name": "Magma",
@@ -2424,7 +2424,7 @@
       "color": "#B71C1C",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0xdb4269f1a96E8f9368231C0e27C13209284CaD88"
+      "vault": "0x9c35351381c3b823786e171f61C6bAE7e67Fb83F"
     },
     {
       "name": "Caldera",
@@ -2436,7 +2436,7 @@
       "color": "#D32F2F",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0xdBB4D5361E3948f0F981342b64E5287014C87a3c"
+      "vault": "0xE2b1e11e1D0248746114a1442752E5e6ed756AB7"
     },
     {
       "name": "Plume",
@@ -2450,7 +2450,7 @@
       "color": "#C62828",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0x0A566A4D645040575205c194604074f838734A2d"
+      "vault": "0x34C044d07a6e07cb97AA68027EdD00fe49897D23"
     },
     {
       "name": "Contagion",
@@ -2462,7 +2462,7 @@
       "color": "#8E24AA",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0x9f079ACA0dFe6Ff9F4086f09949D3C55D03Eb136"
+      "vault": "0xc213979b19D86ed20C97aAD8E50079de4Fb4A32A"
     },
     {
       "name": "Remission",
@@ -2474,7 +2474,7 @@
       "color": "#6A1B9A",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0xc5a0fF3707bEF3094D000E99a9784F04381BC211"
+      "vault": "0x9b89b86366B2b660202c1e1edd2A21d83301c232"
     },
     {
       "name": "Vaccine",
@@ -2486,7 +2486,7 @@
       "color": "#4A148C",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0x807aF8dBBE6C517154965916860759D752aF66f3"
+      "vault": "0xfa97dbCdeC32d51C37e5803f2B75a3E40e3D4149"
     },
     {
       "name": "Brownout",
@@ -2498,7 +2498,7 @@
       "color": "#FF6F00",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0x4d19157ac01db80F69FC11064753b07f69720B88"
+      "vault": "0x4450340166c5fA5D790af80E8ccF8455F5bb68Cc"
     },
     {
       "name": "Restore",
@@ -2510,7 +2510,7 @@
       "color": "#FF8F00",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0x4468A53D8b187094da6efaAa0108d428f5A319e0"
+      "vault": "0x1c8A264b0fDeB7859Dc2607a8FCc70e92a0087ED"
     },
     {
       "name": "Surge Protect",
@@ -2524,7 +2524,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "geophysical",
-      "vault": "0xD8AF40acD51998FA39E69172E96F8fe02c8C8Ab7"
+      "vault": "0x618C8f81940418daeBCC38DAf97C0765ffCd3Ba0"
     },
     {
       "name": "Holding",
@@ -2536,7 +2536,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "transport",
-      "vault": "0x5C58732bBa92671026459f29475aF510fbfA3829"
+      "vault": "0xb24437B3cEB7C33F372cB3B7E1059646746d2d14"
     },
     {
       "name": "Tailwind",
@@ -2548,7 +2548,7 @@
       "color": "#34495E",
       "fee": 500,
       "category": "transport",
-      "vault": "0xF5802C00ca1bBa014b7b67d4a9e3De3103B6035A"
+      "vault": "0x7A1160079b872C8db1BD6C2bf699BB663517549D"
     },
     {
       "name": "Liftoff",
@@ -2560,7 +2560,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "transport",
-      "vault": "0xf3B1f6566dEdf6b4906bd1Ab8f1d56ffE3Fa3c36"
+      "vault": "0x6310148fbf3D71593971A97041c7bCfCf25Bb1dB"
     },
     {
       "name": "Rush Hour",
@@ -2572,7 +2572,7 @@
       "color": "#34495E",
       "fee": 500,
       "category": "transport",
-      "vault": "0x45121AF49b56d5E1305524A50A57E760a1e276E8"
+      "vault": "0x98127E1aCf6CBaD5f561AB0568D0BD5aC0389f4d"
     },
     {
       "name": "Clearway",
@@ -2584,7 +2584,7 @@
       "color": "#455A64",
       "fee": 500,
       "category": "transport",
-      "vault": "0x3B7D77ad321648706BfCb488E33ab7CeC7100abB"
+      "vault": "0xb26504CE78DeF56ff0b95e6cf65C5cff438d8E08"
     },
     {
       "name": "Bottleneck",
@@ -2598,7 +2598,7 @@
       "color": "#263238",
       "fee": 500,
       "category": "transport",
-      "vault": "0x115Ce93e629d062fD54Cd9Ee83e393bc4418d404"
+      "vault": "0x04B85B2f807689e558Ad7Ad42B7c80f41606FD46"
     },
     {
       "name": "Charger",
@@ -2610,7 +2610,7 @@
       "color": "#43A047",
       "fee": 500,
       "category": "transport",
-      "vault": "0x1BA02eCe218169C5784D1869442FD2916Eb8C350"
+      "vault": "0x7298Ab1Cd3fccD56501834E366e06A07d76FCeba"
     },
     {
       "name": "Topoff",
@@ -2622,7 +2622,7 @@
       "color": "#2E7D32",
       "fee": 500,
       "category": "transport",
-      "vault": "0x6cb3cc63e2d280AB4575cD0C47c180971F553367"
+      "vault": "0x68BC91F99634e5Cd8fc4d83103AA2b1476De08a3"
     },
     {
       "name": "Range",
@@ -2634,7 +2634,7 @@
       "color": "#1B5E20",
       "fee": 500,
       "category": "transport",
-      "vault": "0x319b0c07cA7ee157CEBf03F187bCDdbdCAdd0430"
+      "vault": "0xA9aa93F9f53e06A74b11B886395c3Bcf83dDCD04"
     },
     {
       "name": "Grounded",
@@ -2646,7 +2646,7 @@
       "color": "#1A237E",
       "fee": 500,
       "category": "transport",
-      "vault": "0x7cF78D72374C24F31d5bDa8f113484929B6F4058"
+      "vault": "0x62E3A1F76C6E4c004cfCb29697575830B208041c"
     },
     {
       "name": "Cleared",
@@ -2658,7 +2658,7 @@
       "color": "#283593",
       "fee": 500,
       "category": "transport",
-      "vault": "0xbee6154BF1e2940b666eaA43250645b1baEa7324"
+      "vault": "0xEC8A57822567b306EAEa0ea5E5cbd16a99D2F5b5"
     },
     {
       "name": "Turbulence",
@@ -2672,7 +2672,7 @@
       "color": "#1A237E",
       "fee": 500,
       "category": "transport",
-      "vault": "0x411aB9e3E78879f2E2E99eC83F554CeD0CC47B04"
+      "vault": "0xBcd7bE8feca2eB60cbfC4cC51fF414da9474004D"
     },
     {
       "name": "Verspatung",
@@ -2684,7 +2684,7 @@
       "color": "#EC0016",
       "fee": 500,
       "category": "transport",
-      "vault": "0x164d0d7678FC161dFD29280b62efBa3e67272Bdd"
+      "vault": "0xD1f3Bee6E011BC9CBfcB0F550D12797Be86486A5"
     },
     {
       "name": "Punktlich",
@@ -2696,7 +2696,7 @@
       "color": "#D32F2F",
       "fee": 500,
       "category": "transport",
-      "vault": "0x4a5C3A2D76F2d2d2809d45A8f62E6Cd59945A91c"
+      "vault": "0xE2809644005a281175a8064da4510853ceFdA1f0"
     },
     {
       "name": "Gleis",
@@ -2708,7 +2708,7 @@
       "color": "#B71C1C",
       "fee": 500,
       "category": "transport",
-      "vault": "0xE9A5d94D29289f8eAc1aAD27F781731f0B369D5E"
+      "vault": "0x74798ea1D071Ac09b005EF2FB7AC8FD93974628e"
     },
     {
       "name": "Budget",
@@ -2720,7 +2720,7 @@
       "color": "#073590",
       "fee": 500,
       "category": "transport",
-      "vault": "0x6C026F41E25eBAfF1F6511a82C354E8C6ce4398c"
+      "vault": "0x00ec7CC2Ae9F0b058A4D398FaAf00cc46505F671"
     },
     {
       "name": "Standby",
@@ -2732,7 +2732,7 @@
       "color": "#1565C0",
       "fee": 500,
       "category": "transport",
-      "vault": "0x8901961f049dD5e36121E435E3598967e18d2661"
+      "vault": "0xF2891782583193095b12366a585B24e3287622ef"
     },
     {
       "name": "Overhead",
@@ -2744,7 +2744,7 @@
       "color": "#0D47A1",
       "fee": 500,
       "category": "transport",
-      "vault": "0x83d8546317c7Cbff9503b40723fc814B53B3FfAb"
+      "vault": "0xcDAB6D38AADdbB6dF8fF33f50233E42c241f3af6"
     },
     {
       "name": "Mind Gap",
@@ -2756,7 +2756,7 @@
       "color": "#E32017",
       "fee": 500,
       "category": "transport",
-      "vault": "0xff48088241D7A28828B6227519880B65d383F0d7"
+      "vault": "0x6f1c5A332a179856855c546E8532231D997B6F96"
     },
     {
       "name": "Oyster",
@@ -2768,7 +2768,7 @@
       "color": "#C62828",
       "fee": 500,
       "category": "transport",
-      "vault": "0x7b9fC0AA70a99b1b0D159E67f7eFb17024006811"
+      "vault": "0x0933E590B348Fa0ccC203dE0e6f6153fAf0FA3AF"
     },
     {
       "name": "Piccadilly",
@@ -2780,7 +2780,7 @@
       "color": "#B71C1C",
       "fee": 500,
       "category": "transport",
-      "vault": "0xaC789e0622f86E4c379beB3F05Cb23eAE2FdB10A"
+      "vault": "0xd7255d358c4955E695eddF6db390931C5A8E6C95"
     },
     {
       "name": "Sterling",
@@ -2792,7 +2792,7 @@
       "color": "#004B87",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xE13aD28859a71B6f6015E65c401709449b169976"
+      "vault": "0x4d90e75d925137B89d99e707Ebdd97A7BB69DeFD"
     },
     {
       "name": "Threadneedle",
@@ -2804,7 +2804,7 @@
       "color": "#004B87",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xB3fe5bfA84032c337168fa51E0731D2AFa4F91A2"
+      "vault": "0xD8803F8B5B7DAe5DE6cAeAA88dF53EdbF308188a"
     },
     {
       "name": "Gilt",
@@ -2816,7 +2816,7 @@
       "color": "#004B87",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x72d7f149Ef87Af4BE26Dedb335A219b6C9Bfbe60"
+      "vault": "0x22793b7b51e9250e785BAA99a9Cc6761760B77f0"
     },
     {
       "name": "Opening",
@@ -2828,7 +2828,7 @@
       "color": "#629923",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xFbdE044662704F378706A081391D4b7aA6c5b89B"
+      "vault": "0x0459eC10a3d9AD60b9EDdd43B1f40D8364B317Ef"
     },
     {
       "name": "Endgame",
@@ -2840,7 +2840,7 @@
       "color": "#629923",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x7c5D53806ec10707fC517e730ddae91FaE742302"
+      "vault": "0x5051A4019Fa69bcb0614F68084446d7095E0D837"
     },
     {
       "name": "Blitz",
@@ -2852,7 +2852,7 @@
       "color": "#629923",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xa1e305d29e371539d6fdB6d95e477f07f3DDef31"
+      "vault": "0x895A0A36436dEE77bcDBf5Ed28dfaA4877ce9478"
     },
     {
       "name": "Brokenness",
@@ -2864,7 +2864,7 @@
       "color": "#FFC72C",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x4aF7d35733F5fA0F6dBe618A859Ec6943e2e2ce4"
+      "vault": "0xe88c7CF232A4aa660F48e1e291493E9D197Bd4DB"
     },
     {
       "name": "Serve",
@@ -2876,7 +2876,7 @@
       "color": "#FFC72C",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x3c92d9c64085FA81BFA2F2C1Fc3327d6D1410327"
+      "vault": "0xE5d0fA096b18E00452A40610149984da037326fe"
     },
     {
       "name": "Sundae",
@@ -2888,7 +2888,7 @@
       "color": "#FFC72C",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xe38693cE4Fc571A8f7d36c028Daf1822963Fb9be"
+      "vault": "0x29a6C68c21573CBe18A8273952B6ad73615E10e2"
     },
     {
       "name": "Grievance",
@@ -2900,7 +2900,7 @@
       "color": "#002D72",
       "fee": 500,
       "category": "Regulatory",
-      "vault": "0x410018E7262251CBe8C2f0D42404B5C0C29AE829"
+      "vault": "0x3aC0820fA1b66D6892D9a46E6435f97dF45b32EA"
     },
     {
       "name": "Borough",
@@ -2912,7 +2912,7 @@
       "color": "#002D72",
       "fee": 500,
       "category": "Regulatory",
-      "vault": "0xd23c9eDBe09E1F8F63a479031F6bD87e15955D3F"
+      "vault": "0x347C62548B1636f7E1AeE5FEeB1FE2f61d5B42dD"
     },
     {
       "name": "Dispatch",
@@ -2924,7 +2924,7 @@
       "color": "#002D72",
       "fee": 500,
       "category": "Regulatory",
-      "vault": "0xb7a9b5F61CbB56B5232dAB15Ece5aD53B97ec7bD"
+      "vault": "0xdAa5e8c293728f3aecC2d6c3642460664926747C"
     },
     {
       "name": "Stocks Fund 1",
@@ -2936,7 +2936,7 @@
       "color": "#1F77B4",
       "fee": 1000,
       "category": "Equities",
-      "vault": "0x87cE9fEd5179E9651a28aA0546f72dCBD066f7C5"
+      "vault": "0x3828946Eb65dc0429c0514F1aBE3f04969282905"
     },
     {
       "name": "Stocks Fund 2",
@@ -2948,7 +2948,7 @@
       "color": "#1F77B4",
       "fee": 1000,
       "category": "Equities",
-      "vault": "0x6AF735f9961F14Ad94308B34733C85973E35b788"
+      "vault": "0xF905C12D760c83e391f77cCd549E3b50996d50A5"
     },
     {
       "name": "Stocks Fund 3",
@@ -2960,7 +2960,7 @@
       "color": "#1F77B4",
       "fee": 1000,
       "category": "Equities",
-      "vault": "0xe9A5f6B20766b60e2c98BfE1453A4317c44DA9F4"
+      "vault": "0x4990d498A476CE17EF53f648593022B0B85665fE"
     },
     {
       "name": "Esports Fund 1",
@@ -2972,7 +2972,7 @@
       "color": "#9467BD",
       "fee": 1000,
       "category": "Sports",
-      "vault": "0x44f7f33c1291C7E628a83AC35c46145dBc38d561"
+      "vault": "0x51dfd63897f474a5788CC8CB6AE386F51312688b"
     },
     {
       "name": "Esports Fund 2",
@@ -2984,7 +2984,7 @@
       "color": "#9467BD",
       "fee": 1000,
       "category": "Sports",
-      "vault": "0x5Ea768F0d35432D8B5BEb24E5489F0144cEA0F7c"
+      "vault": "0xc9d54d6f1492dB7B4eb22aA38830d67eEd9e7603"
     },
     {
       "name": "Esports Fund 3",
@@ -2996,7 +2996,7 @@
       "color": "#9467BD",
       "fee": 1000,
       "category": "Sports",
-      "vault": "0xEA20E717B79Ba4aA1805b253136ad502397ECE5c"
+      "vault": "0xa508A934C32DE6A1945D6CeBb2CE6D0d3E69aF80"
     },
     {
       "name": "Binance Spot Momentum 5",
@@ -3008,7 +3008,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xA060331cECBC546d940a9372264B644256c6574C"
+      "vault": "0x6C628eC9B191995C66160422034697A662BFAE6A"
     },
     {
       "name": "Binance Spot Reversion 5",
@@ -3020,7 +3020,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xdA22bfd4781b84900949e38B090F30aC4d044f99"
+      "vault": "0x3Cb94D76591c3686b486680098Cc9888584805cA"
     },
     {
       "name": "Binance Spot Momentum 20",
@@ -3032,7 +3032,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xE3034595dC7f20C9073bdDBb40e2f590e8F10c0B"
+      "vault": "0x48042A4F2170684b696Cbd0CB0e22de6f38c607e"
     },
     {
       "name": "Binance Spot Reversion 20",
@@ -3044,7 +3044,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x3303288675E02463307983EAABf338556839e8E2"
+      "vault": "0x6ADeb40e685295b39C9F0b45ac5B2466370784B7"
     },
     {
       "name": "Binance Funding Reversion",
@@ -3056,7 +3056,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xF0373C3cCb1C847F1a985bD097d9b6eBC1a61791"
+      "vault": "0x323b78E8FE7db2AFEc76B3A7Bc1EAEA7258A2a72"
     },
     {
       "name": "Binance Funding Continuation",
@@ -3068,7 +3068,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x1dca99FB7aEdcC83a6Dca21DB94DEbF09fc985C1"
+      "vault": "0x36b0155BA4D1BEA9bA550069e447ba8DB2FcB201"
     },
     {
       "name": "Binance Funding Sign Flip",
@@ -3080,7 +3080,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xd7ba442A3E593652452e5E76ffC11e8177574ba4"
+      "vault": "0x5d1f59c9C345fc2ffd5c6C1867F937181a1115F1"
     },
     {
       "name": "Binance Funding Extreme",
@@ -3092,7 +3092,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x35459f84D905511AD9Fee5eC2fD696d5FF52EC30"
+      "vault": "0xBB1e27bEe0C22A7a84B6D14EA3b660aDE61a41ED"
     },
     {
       "name": "Binance Options Momentum All",
@@ -3104,7 +3104,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x7999208C85283A81498EBec2C5d77f3580936569"
+      "vault": "0x46957a403ADCaaE2cc963C98186028671D3bF579"
     },
     {
       "name": "Binance Options Reversion All",
@@ -3116,7 +3116,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0x37Fd6C653a898813dA2502a109b4522dE6C67139"
+      "vault": "0xE01BBd29334b3aC1F0515341492Fa6B3f794D1b5"
     },
     {
       "name": "Binance Options Calls Momentum",
@@ -3128,7 +3128,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xaC69dA53f54Dc3BCBaD381648cec9D3681BE0f3A"
+      "vault": "0xAD83f1DB4cf39f61Aa90Fed4e24761fE34ace479"
     },
     {
       "name": "Binance Options Puts Momentum",
@@ -3140,7 +3140,7 @@
       "color": "#F0B90B",
       "fee": 1000,
       "category": "Crypto",
-      "vault": "0xC57853C7B0CEE30048639ddB832916d917DA4210"
+      "vault": "0x11203F080e64C33fad7EB3B279874356A2666df1"
     }
   ]
 }

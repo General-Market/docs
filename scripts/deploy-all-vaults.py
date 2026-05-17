@@ -13,11 +13,11 @@ from pathlib import Path
 
 from web3 import Web3
 
-RPC = os.environ.get("L3_RPC_URL", "http://142.132.164.24/")
-USDC_ADDR = "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827"
-FACTORY_ADDR = "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
-DEPOSIT_AMOUNT = 10_000 * 10**18
-PERF_FEE_BPS = 500  # 5%
+RPC = os.environ.get("L3_RPC_URL", "http://159.195.79.153:3001/")
+USDC_ADDR = os.environ.get("USDC_ADDR", "0xaddB799BC1499b224DC4368e92b9042a54908553")
+FACTORY_ADDR = os.environ.get("FACTORY_ADDR", "0xe54DB21b61FD50d5F1191C3BCb70AD184F4D58D0")
+DEPOSIT_AMOUNT = int(os.environ.get("DEPOSIT_AMOUNT_WHOLE", "10000")) * 10**18
+PERF_FEE_BPS = int(os.environ.get("PERF_FEE_BPS", "500"))  # 5%
 
 FACTORY_ABI = [
     {"type": "function", "name": "createVault",
@@ -127,8 +127,9 @@ def main():
             print(f"[{i}/{len(funds)}] {symbol}: skip (already deployed at {new_addresses[symbol]})", flush=True)
             continue
         name = fund["name"]
+        fee_bps = int(fund.get("fee", PERF_FEE_BPS))
         try:
-            tx = factory.functions.createVault(name, symbol, PERF_FEE_BPS, addr).build_transaction(
+            tx = factory.functions.createVault(name, symbol, fee_bps, addr).build_transaction(
                 build_tx(w3, addr, gas=2_500_000)
             )
             receipt = send(w3, account, tx, f"createVault[{symbol}]")
