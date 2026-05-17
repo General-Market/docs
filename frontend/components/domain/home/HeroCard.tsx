@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/routing'
+import Image from 'next/image'
 import { Sparkline } from './Sparkline'
 import { ShineOverlay } from './ShineOverlay'
 import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
@@ -30,7 +31,7 @@ function ShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#0071e3"
+        stroke="#F5F5F7"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -46,8 +47,8 @@ function PillCoverage({ coverage }: { coverage: Coverage }) {
       <span
         className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold"
         style={{
-          background: '#0071e3',
-          color: '#fff',
+          background: '#F5F5F7',
+          color: '#6E6E73',
           fontSize: 11,
           letterSpacing: '0.04em',
         }}
@@ -91,7 +92,7 @@ function PillCoverage({ coverage }: { coverage: Coverage }) {
 function FeaturedTag() {
   return (
     <div
-      className="inline-flex items-center gap-1.5 font-medium"
+      className="inline-flex items-center gap-2 font-medium"
       style={{
         fontFamily: 'var(--apple-font-text)',
         fontSize: 12,
@@ -99,9 +100,14 @@ function FeaturedTag() {
         color: 'var(--apple-text-secondary)',
       }}
     >
-      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
-        <path d="M6 1l1.4 3.2L11 5l-3.6.8L6 11 4.6 5.8 1 5l3.6-.8L6 1z" fill="#0071e3" />
-      </svg>
+      <Image
+        src="/logo.svg"
+        alt=""
+        width={16}
+        height={16}
+        style={{ borderRadius: 4 }}
+        aria-hidden
+      />
       <span>Featured</span>
     </div>
   )
@@ -112,16 +118,16 @@ function PlayGlyph() {
     <span
       className="inline-flex shrink-0 items-center justify-center"
       style={{
-        width: 20,
-        height: 20,
+        width: 22,
+        height: 22,
         borderRadius: 999,
-        background: '#fff',
+        background: 'var(--apple-text)',
         marginLeft: -4,
       }}
       aria-hidden
     >
       <svg width="9" height="9" viewBox="0 0 24 24" aria-hidden>
-        <path d="M8 5v14l11-7z" fill="var(--apple-text)" />
+        <path d="M8 5v14l11-7z" fill="#ffffff" />
       </svg>
     </span>
   )
@@ -132,140 +138,140 @@ export function HeroCard({ feature, side }: Props) {
 
   return (
     <div
-      className="grid gap-0 overflow-hidden border grid-cols-1 lg:grid-cols-[minmax(280px,340px)_1fr_minmax(260px,320px)]"
-      style={{
-        background: 'var(--apple-panel)',
-        borderColor: 'var(--apple-line)',
-        borderRadius: 'var(--apple-r-card)',
-      }}
+      className="grid gap-0 lg:gap-3 grid-cols-1 lg:grid-cols-[1fr_minmax(240px,300px)]"
     >
-      {/* Left + middle wrapped in one Link → fully clickable */}
-      <Link
-        href={href as never}
-        className="contents group"
-        aria-label={`Open ${feature.displayName} — ${feature.assetName ?? ''}`}
+      {/* Featured card — text + graph */}
+      <div
+        className="overflow-hidden border grid grid-cols-1 md:grid-cols-[minmax(0,42%)_minmax(0,58%)]"
+        style={{
+          background: '#F5F5F7',
+          borderColor: 'var(--apple-line)',
+          borderRadius: 'var(--apple-r-card)',
+        }}
       >
-        {/* Left text column */}
-        <div className="flex flex-col justify-between p-6 sm:p-8">
-          <div>
-            <FeaturedTag />
-            <h2
-              className="mt-3 font-semibold"
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: 32,
-                letterSpacing: 'var(--apple-track-tight)',
-                lineHeight: 1.07,
-                color: 'var(--apple-text)',
-              }}
-            >
-              {feature.displayName}
-            </h2>
-            {feature.assetName && (
-              <p
-                className="mt-2"
+        <Link
+          href={href as never}
+          className="contents group"
+          aria-label={`Open ${feature.displayName} — ${feature.assetName ?? ''}`}
+        >
+          {/* Left text column */}
+          <div className="flex flex-col justify-between p-6 sm:p-8">
+            <div>
+              <FeaturedTag />
+              <h2
+                className="mt-3 font-semibold"
                 style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 17,
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 32,
                   letterSpacing: 'var(--apple-track-tight)',
-                  lineHeight: 1.3,
+                  lineHeight: 1.07,
                   color: 'var(--apple-text)',
                 }}
               >
-                {feature.assetName}
-              </p>
-            )}
-            <p
-              className="mt-2"
-              style={{
-                fontSize: 14,
-                lineHeight: 1.4,
-                color: 'var(--apple-text-secondary)',
-              }}
-            >
-              {feature.meta}
-            </p>
-            <div className="mt-4 flex items-center gap-2">
-              <PillCoverage coverage={feature.coverage} />
-            </div>
-          </div>
-          <span
-            className="inline-flex w-fit items-center gap-2 mt-6 transition group-hover:opacity-90"
-            style={{
-              background: 'var(--apple-text)',
-              color: '#fff',
-              borderRadius: 'var(--apple-r-pill)',
-              padding: '8px 18px 8px 10px',
-              fontSize: 14,
-              fontWeight: 500,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            <PlayGlyph />
-            Open
-          </span>
-        </div>
-
-        {/* Middle gradient + chart */}
-        <div
-          className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px]"
-          style={{ background: sourceGradient(feature.sourceId) }}
-        >
-          <ShineOverlay size={420} intensity={0.18} />
-
-          {/* Top label — asset name only; source name already established on the left */}
-          {feature.assetName && (
-            <div className="absolute top-6 left-6 right-6 z-10">
-              <div
-                className="font-medium line-clamp-2"
+                {feature.displayName}
+              </h2>
+              {feature.assetName && (
+                <p
+                  className="mt-2"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 17,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    lineHeight: 1.3,
+                    color: 'var(--apple-text)',
+                  }}
+                >
+                  {feature.assetName}
+                </p>
+              )}
+              <p
+                className="mt-2"
                 style={{
-                  fontFamily: 'var(--apple-font-text)',
                   fontSize: 14,
-                  letterSpacing: 'var(--apple-track-tight)',
+                  lineHeight: 1.4,
                   color: 'var(--apple-text-secondary)',
-                  lineHeight: 1.3,
                 }}
               >
-                {feature.assetName}
+                {feature.meta}
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <PillCoverage coverage={feature.coverage} />
               </div>
             </div>
-          )}
-
-          {/* Sparkline filling the lower half */}
-          <div className="absolute inset-x-0 bottom-0 h-[60%] overflow-hidden">
-            <Sparkline
-              series={feature.series}
-              width={800}
-              height={220}
-              stroke={sourceStroke(feature.sourceId)}
-              fill={sourceFill(feature.sourceId)}
-              ariaLabel={`${feature.displayName} 24h activity`}
-            />
-          </div>
-
-          {feature.assetValue && (
-            <div
-              className="absolute bottom-4 right-4 rounded-full px-3 py-1 font-semibold num"
+            <span
+              className="inline-flex w-fit items-center gap-2 mt-6 transition group-hover:opacity-90"
               style={{
-                fontSize: 13,
-                letterSpacing: '0.02em',
-                background: 'rgba(255,255,255,0.92)',
+                background: '#ffffff',
                 color: 'var(--apple-text)',
-                backdropFilter: 'saturate(180%) blur(8px)',
-                fontVariantNumeric: 'tabular-nums',
+                borderRadius: 'var(--apple-r-pill)',
+                padding: '8px 18px 8px 10px',
+                fontSize: 14,
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
               }}
             >
-              {feature.assetValue}
-            </div>
-          )}
-        </div>
-      </Link>
+              <PlayGlyph />
+              Start Trading
+            </span>
+          </div>
 
-      {/* Right side rail — independent links per row */}
-      <div
-        className="flex flex-col border-t lg:border-l lg:border-t-0"
-        style={{ borderColor: 'var(--apple-line)' }}
-      >
+          {/* Right gradient + chart — rounded on the outer corners */}
+          <div
+            className="relative min-h-[240px] sm:min-h-[280px] lg:min-h-[320px] md:m-3 md:rounded-[20px] overflow-hidden"
+            style={{ background: sourceGradient(feature.sourceId) }}
+          >
+            <ShineOverlay size={420} intensity={0.18} />
+
+            {feature.assetName && (
+              <div className="absolute top-6 left-6 right-6 z-10">
+                <div
+                  className="font-medium line-clamp-2"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 14,
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'var(--apple-text-secondary)',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {feature.assetName}
+                </div>
+              </div>
+            )}
+
+            <div className="absolute inset-x-0 bottom-0 h-[60%] overflow-hidden">
+              <Sparkline
+                series={feature.series}
+                width={800}
+                height={220}
+                stroke={sourceStroke(feature.sourceId)}
+                fill={sourceFill(feature.sourceId)}
+                ariaLabel={`${feature.displayName} 24h activity`}
+              />
+            </div>
+
+            {feature.assetValue && (
+              <div
+                className="absolute bottom-4 right-4 rounded-full px-3 py-1 font-semibold num"
+                style={{
+                  fontSize: 13,
+                  letterSpacing: '0.02em',
+                  background: 'rgba(255,255,255,0.92)',
+                  color: 'var(--apple-text)',
+                  backdropFilter: 'saturate(180%) blur(8px)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {feature.assetValue}
+              </div>
+            )}
+          </div>
+        </Link>
+      </div>
+
+      {/* Side rail — 4 independent cards, breathing room between each */}
+      <div className="flex flex-col gap-3 mt-3 lg:mt-0">
         {side.slice(0, 4).map((s) => (
           <SideRow key={s.sourceId} feed={s} />
         ))}
@@ -283,7 +289,7 @@ function SideShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#0071e3"
+        stroke="#F5F5F7"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -298,8 +304,13 @@ function SideRow({ feed }: { feed: SourceFeed }) {
   return (
     <Link
       href={href as never}
-      className="flex flex-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 transition hover:bg-[rgba(0,0,0,0.02)]"
-      style={{ borderColor: 'var(--apple-line)' }}
+      className="flex flex-1 items-center gap-3 px-3 py-3 border transition hover:bg-[rgba(0,0,0,0.02)]"
+      style={{
+        borderColor: 'var(--apple-line)',
+        borderRadius: 16,
+        background: '#ffffff',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+      }}
     >
       <div
         className="relative h-14 w-20 shrink-0 overflow-hidden"
@@ -337,8 +348,8 @@ function SideRow({ feed }: { feed: SourceFeed }) {
             <span
               className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 font-semibold"
               style={{
-                background: '#0071e3',
-                color: '#fff',
+                background: '#F5F5F7',
+                color: '#6E6E73',
                 fontSize: 9,
                 letterSpacing: '0.04em',
               }}

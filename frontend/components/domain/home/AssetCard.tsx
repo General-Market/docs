@@ -28,7 +28,7 @@ function ShieldDot() {
       />
       <path
         d="M4.4 6l1.2 1.2L8 4.8"
-        stroke="#0071e3"
+        stroke="#F5F5F7"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -44,8 +44,8 @@ function CoveragePill({ coverage }: { coverage: Coverage }) {
       <span
         className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"
         style={{
-          background: '#0071e3',
-          color: '#fff',
+          background: '#F5F5F7',
+          color: '#6E6E73',
           fontSize: 10,
           letterSpacing: '0.04em',
         }}
@@ -94,7 +94,7 @@ export function AssetCard({
       className="group flex flex-col gap-2 text-left transition"
     >
       <div
-        className="relative aspect-[16/10] w-full overflow-hidden isolate border"
+        className="relative aspect-[16/8] w-full overflow-hidden isolate border"
         style={{
           borderRadius: 'var(--apple-r-md)',
           background: sourceGradient(sourceId),

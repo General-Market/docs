@@ -140,11 +140,11 @@ export function HomeDashboard({
         </h1>
       </Reveal>
 
-      <Reveal delay={0.08} className="mt-8">
+      <Reveal delay={0.08} className="mt-6">
         <HeroCarousel features={heroRotation} side={side} />
       </Reveal>
 
-      <section className="mt-12">
+      <section className="mt-8">
         <SectionHeader title="Top markets" href="/explorer" />
         <ScrollRow>
           {topMarkets.map((feed) => (
@@ -164,7 +164,7 @@ export function HomeDashboard({
       </section>
 
       {soonFeeds.length > 0 && (
-        <section className="mt-12 mb-4">
+        <section className="mt-8 mb-4">
           <SectionHeader title="Coming soon" href="/explorer" />
           <ScrollRow>
             {soonFeeds.map((feed) => (
