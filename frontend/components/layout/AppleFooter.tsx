@@ -22,7 +22,7 @@ const COLUMNS: Col[] = [
       { label: 'Polymarket', href: '/source/polymarket' },
       { label: 'Pumpfun', href: '/source/pumpfun' },
       { label: 'DefiLlama', href: '/source/defillama' },
-      { label: 'NYSE', href: '/source/equities' },
+      { label: 'Nasdaq', href: '/source/nasdaq' },
       { label: 'ESPN', href: '/source/espn' },
     ],
   },

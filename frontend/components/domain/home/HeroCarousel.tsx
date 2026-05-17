@@ -38,51 +38,52 @@ export function HeroCarousel({ features, side, intervalMs = 7000 }: Props) {
   const active = features[i] ?? features[0]
   if (!active) return null
 
+  const dots =
+    features.length > 1 ? (
+      <div
+        className="flex items-center gap-2"
+        role="tablist"
+        aria-label="Featured sources"
+      >
+        {features.map((f, idx) => {
+          const isActive = idx === i
+          return (
+            <button
+              key={f.sourceId}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={`Show ${f.displayName}`}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setI(idx)
+              }}
+              className="transition-all"
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 999,
+                background: isActive ? 'var(--apple-text)' : 'rgba(0,0,0,0.22)',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                transitionTimingFunction: 'var(--apple-ease-default)',
+                transitionDuration: '300ms',
+              }}
+            />
+          )
+        })}
+      </div>
+    ) : null
+
   return (
     <div
       className="relative"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <HeroCard feature={active} side={side} />
-
-      {features.length > 1 && (
-        <div
-          className="mt-3 flex justify-center gap-2"
-          role="tablist"
-          aria-label="Featured sources"
-        >
-          {features.map((f, idx) => {
-            const isActive = idx === i
-            return (
-              <button
-                key={f.sourceId}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-label={`Show ${f.displayName}`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setI(idx)
-                }}
-                className="transition-all"
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 999,
-                  background: isActive ? 'var(--apple-text)' : 'rgba(0,0,0,0.18)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  transitionTimingFunction: 'var(--apple-ease-default)',
-                  transitionDuration: '300ms',
-                }}
-              />
-            )
-          })}
-        </div>
-      )}
+      <HeroCard feature={active} side={side} dots={dots} />
     </div>
   )
 }

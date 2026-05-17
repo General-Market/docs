@@ -6,7 +6,7 @@ import { Link } from '@/i18n/routing'
 const ROWS: Array<{ id: string; name: string; iconId: string }> = [
   { id: 'polymarket', name: 'Polymarket', iconId: 'polymarket' },
   { id: 'defillama', name: 'DefiLlama', iconId: 'defillama' },
-  { id: 'equities', name: 'NYSE', iconId: 'nasdaq' },
+  { id: 'nasdaq', name: 'Nasdaq', iconId: 'nasdaq' },
   { id: 'sports', name: 'Sports', iconId: 'sports' },
   { id: 'twitch', name: 'Twitch', iconId: 'twitch' },
   { id: 'github', name: 'GitHub', iconId: 'github' },

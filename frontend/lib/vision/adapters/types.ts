@@ -28,7 +28,7 @@ export const SOURCE_IMAGES: Record<string, string> = {
   polymarket: '/source-imgs/new-polymarket.webp',
   pumpfun: '/source-imgs/new-pumpfun.webp',
   defillama: '/source-imgs/new-defillama.webp',
-  equities: '/source-imgs/grab-nasdaq.webp',
+  nasdaq: '/source-imgs/grab-nasdaq.webp',
   sports: '/source-imgs/grab-espn.webp',
   twitch: '/source-imgs/new-twitch.webp',
   steam: '/source-imgs/new-steam.webp',

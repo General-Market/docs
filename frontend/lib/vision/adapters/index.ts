@@ -1,7 +1,7 @@
 import type { SourceFeed } from './types'
 import { SOURCE_IMAGES } from './types'
 import { getDefiLlamaFeed } from './defillama'
-import { getEquitiesFeed } from './equities'
+import { getNasdaqFeed } from './nasdaq'
 import { getSportsFeed } from './sports'
 import { getIssFeed } from './iss'
 import { getPolymarketFeed } from './polymarket'
@@ -14,7 +14,7 @@ export type { SourceFeed, Coverage } from './types'
 
 const ADAPTERS: Record<string, () => Promise<SourceFeed>> = {
   defillama: getDefiLlamaFeed,
-  equities: getEquitiesFeed,
+  nasdaq: getNasdaqFeed,
   sports: getSportsFeed,
   iss: getIssFeed,
   polymarket: getPolymarketFeed,
@@ -26,7 +26,7 @@ const ADAPTERS: Record<string, () => Promise<SourceFeed>> = {
 
 const DISPLAY: Record<string, { displayName: string; meta: string; coverage: 'anticheat' | 'external' | 'soon' }> = {
   defillama: { displayName: 'DefiLlama', meta: 'TVL across 240+ protocols', coverage: 'anticheat' },
-  equities: { displayName: 'NYSE', meta: 'NYSE-listed · pre-market + close', coverage: 'anticheat' },
+  nasdaq: { displayName: 'Nasdaq', meta: 'Nasdaq-listed · pre-market + close', coverage: 'anticheat' },
   sports: { displayName: 'Sports', meta: 'NFL · NBA · MLB · NHL · soccer', coverage: 'anticheat' },
   iss: { displayName: 'ISS', meta: 'Position · pass times', coverage: 'anticheat' },
   polymarket: { displayName: 'Polymarket', meta: 'Prediction markets', coverage: 'external' },

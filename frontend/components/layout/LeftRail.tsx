@@ -108,12 +108,7 @@ export function LeftRail() {
         )}
       </div>
 
-      <div
-        className="my-2 border-t"
-        style={{ borderColor: 'var(--apple-line)' }}
-      />
-
-      <div className="flex flex-col gap-0.5">
+      <div className="mt-1 flex flex-col gap-0.5">
         {SECONDARY.map((it) => (
           <Row
             key={it.id}

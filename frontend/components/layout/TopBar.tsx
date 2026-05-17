@@ -165,7 +165,7 @@ function MobileSearch({ children }: { children: ReactNode }) {
 
 function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2">
+    <Link href="/" className="flex items-center gap-3 sm:gap-4">
       <Image
         src="/logo.svg"
         alt="General"
@@ -186,7 +186,7 @@ function Brand() {
         General
       </span>
       <span
-        className="hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold"
+        className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold"
         style={{
           fontSize: 10,
           letterSpacing: '0.04em',

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 import { Sparkline } from './Sparkline'
@@ -20,6 +21,8 @@ type HeroSpec = {
 interface Props {
   feature: HeroSpec
   side: SourceFeed[]
+  /** Carousel position indicators, rendered at the bottom-left inside the graph. */
+  dots?: ReactNode
 }
 
 function ShieldDot() {
@@ -133,7 +136,7 @@ function PlayGlyph() {
   )
 }
 
-export function HeroCard({ feature, side }: Props) {
+export function HeroCard({ feature, side, dots }: Props) {
   const href = feature.hrefOverride ?? `/source/${feature.sourceId}`
 
   return (
@@ -265,6 +268,12 @@ export function HeroCard({ feature, side }: Props) {
                 }}
               >
                 {feature.assetValue}
+              </div>
+            )}
+
+            {dots && (
+              <div className="absolute bottom-4 left-4 z-20">
+                {dots}
               </div>
             )}
           </div>

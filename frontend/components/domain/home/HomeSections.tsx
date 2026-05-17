@@ -6,13 +6,13 @@ import type { SourceFeed } from '@/lib/vision/adapters'
 
 type FeedMap = Record<string, SourceFeed>
 
-const HERO_ROTATION_IDS = ['polymarket', 'defillama', 'equities', 'sports'] as const
+const HERO_ROTATION_IDS = ['polymarket', 'defillama', 'nasdaq', 'sports'] as const
 const SIDE_RAIL_IDS = ['pumpfun', 'iss', 'twitch', 'steam'] as const
 
 // Top markets: every source we currently feed live data for, in display order.
 const TOP_MARKETS_IDS = [
   'defillama',
-  'equities',
+  'nasdaq',
   'sports',
   'twitch',
   'steam',
