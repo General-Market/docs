@@ -13,9 +13,5 @@ export const metadata: Metadata = {
 }
 
 export default function RoomLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen bg-page text-black antialiased">
-      {children}
-    </div>
-  )
+  return <div className="antialiased">{children}</div>
 }
