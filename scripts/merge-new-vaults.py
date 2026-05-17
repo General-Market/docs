@@ -22,11 +22,15 @@ try:
 except ImportError:
     import tomli as tomllib  # type: ignore
 
+import os
+
 ROOT = Path(__file__).resolve().parent.parent
 BRANDING = ROOT / "frontend" / "data" / "fund-branding.json"
 TOML = ROOT / "vision-bot" / "funds.toml"
-NEW_ADDRS = ROOT / "deployments" / "new-vault-addresses.json"
-FUNDED = ROOT / "deployments" / "funded-vaults.json"
+ADDR_FILE = os.environ.get("ADDR_FILE", "new-vault-addresses-2026-05-18.json")
+FUNDED_FILE = os.environ.get("FUNDED_FILE", "funded-vaults-2026-05-18.json")
+NEW_ADDRS = ROOT / "deployments" / ADDR_FILE
+FUNDED = ROOT / "deployments" / FUNDED_FILE
 REDEPLOY_LOG = ROOT / "deployments" / f"vault-redeploy-{dt.date.today().isoformat()}.json"
 
 
@@ -162,7 +166,7 @@ def main() -> int:
         "factory": manager.get("factory"),
         "vision": manager.get("vision_address"),
         "usdc": manager.get("usdc_address"),
-        "deposit_per_vault": "10000 USDC (18-dec)",
+        "deposit_per_vault": "1000 USDC (18-dec)",
         "funded_count": len(funded),
         "mapping": mapping,
     }, indent=2))

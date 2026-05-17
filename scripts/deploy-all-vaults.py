@@ -13,11 +13,13 @@ from pathlib import Path
 
 from web3 import Web3
 
-RPC = os.environ.get("L3_RPC_URL", "http://159.195.79.153:3001/")
+RPC = os.environ.get("L3_RPC_URL", "https://rpc.generalmarket.io/")
 USDC_ADDR = os.environ.get("USDC_ADDR", "0xaddB799BC1499b224DC4368e92b9042a54908553")
 FACTORY_ADDR = os.environ.get("FACTORY_ADDR", "0x73dbd15d872b80e7a9e90be3cacedf4ad00407ca")
-DEPOSIT_AMOUNT = int(os.environ.get("DEPOSIT_AMOUNT_WHOLE", "10000")) * 10**18
+DEPOSIT_AMOUNT = int(os.environ.get("DEPOSIT_AMOUNT_WHOLE", "1000")) * 10**18
 PERF_FEE_BPS = int(os.environ.get("PERF_FEE_BPS", "500"))  # 5%
+ADDR_FILE = os.environ.get("ADDR_FILE", "new-vault-addresses-2026-05-18.json")
+FUNDED_FILE = os.environ.get("FUNDED_FILE", "funded-vaults-2026-05-18.json")
 
 FACTORY_ABI = [
     {"type": "function", "name": "createVault",
@@ -53,23 +55,37 @@ ERC20_ABI = [
 ]
 
 
-def build_tx(w3, sender, gas):
+def build_tx(w3, sender, gas, nonce=None):
     return {
         "from": sender,
         "gas": gas,
         "gasPrice": w3.eth.gas_price,
-        "nonce": w3.eth.get_transaction_count(sender, "pending"),
+        "nonce": nonce if nonce is not None else w3.eth.get_transaction_count(sender, "pending"),
         "chainId": w3.eth.chain_id,
     }
 
 
-def send(w3, account, tx, label=""):
-    signed = account.sign_transaction(tx)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-    if receipt["status"] != 1:
-        raise RuntimeError(f"{label} reverted: {tx_hash.hex()}")
-    return receipt
+def send_with_retry(w3, account, build_fn, label="", max_retries=6):
+    """Build, sign, send with nonce-self-heal on `nonce too low` / `replacement underpriced`."""
+    last_err = None
+    for attempt in range(max_retries):
+        nonce = w3.eth.get_transaction_count(account.address, "pending")
+        tx = build_fn(nonce)
+        try:
+            signed = account.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt["status"] != 1:
+                raise RuntimeError(f"{label} reverted: {tx_hash.hex()}")
+            return receipt
+        except Exception as e:
+            msg = str(e).lower()
+            if "nonce too low" in msg or "already known" in msg or "replacement" in msg:
+                last_err = e
+                time.sleep(0.5 + attempt * 0.5)
+                continue
+            raise
+    raise RuntimeError(f"{label}: exhausted retries — last error: {last_err}")
 
 
 def main():
@@ -88,10 +104,10 @@ def main():
         wanted = {s.strip() for s in only.split(",")}
         funds = [f for f in funds if f["symbol"] in wanted]
 
-    skip_existing = os.environ.get("SKIP_EXISTING", "0") == "1"
-    out_path = Path(__file__).resolve().parent.parent / "deployments" / "new-vault-addresses.json"
+    # Always resume from prior progress for this dated run (idempotent).
+    out_path = Path(__file__).resolve().parent.parent / "deployments" / ADDR_FILE
     out_path.parent.mkdir(exist_ok=True)
-    if skip_existing and out_path.exists():
+    if out_path.exists():
         existing = json.loads(out_path.read_text())
     else:
         existing = {}
@@ -103,7 +119,7 @@ def main():
     factory = w3.eth.contract(address=Web3.to_checksum_address(FACTORY_ADDR), abi=FACTORY_ABI)
     usdc = w3.eth.contract(address=Web3.to_checksum_address(USDC_ADDR), abi=ERC20_ABI)
 
-    funded_path = Path(__file__).resolve().parent.parent / "deployments" / "funded-vaults.json"
+    funded_path = Path(__file__).resolve().parent.parent / "deployments" / FUNDED_FILE
     funded = json.loads(funded_path.read_text()) if funded_path.exists() else {}
 
     bal = usdc.functions.balanceOf(addr).call()
@@ -129,10 +145,13 @@ def main():
         name = fund["name"]
         fee_bps = int(fund.get("fee", PERF_FEE_BPS))
         try:
-            tx = factory.functions.createVault(name, symbol, fee_bps, addr).build_transaction(
-                build_tx(w3, addr, gas=2_500_000)
+            receipt = send_with_retry(
+                w3, account,
+                lambda n: factory.functions.createVault(name, symbol, fee_bps, addr).build_transaction(
+                    build_tx(w3, addr, gas=2_500_000, nonce=n)
+                ),
+                f"createVault[{symbol}]",
             )
-            receipt = send(w3, account, tx, f"createVault[{symbol}]")
             # Parse VaultCreated event from logs
             vault_addr = None
             for log in receipt["logs"]:
@@ -150,8 +169,8 @@ def main():
         except Exception as e:
             print(f"[{i}/{len(funds)}] {symbol}: FAILED — {e}", flush=True)
 
-    # ── Phase 2: fund each vault with 10K USDC ──
-    print("\n=== PHASE 2: FUND VAULTS (10,000 USDC EACH) ===", flush=True)
+    # ── Phase 2: fund each vault ──
+    print(f"\n=== PHASE 2: FUND VAULTS ({DEPOSIT_AMOUNT//10**18} USDC EACH) ===", flush=True)
 
     for i, fund in enumerate(funds, 1):
         symbol = fund["symbol"]
@@ -164,21 +183,27 @@ def main():
             continue
         try:
             vault = w3.eth.contract(address=vault_addr, abi=VAULT_ABI)
-            # 1) approve
-            tx = usdc.functions.approve(vault_addr, DEPOSIT_AMOUNT).build_transaction(
-                build_tx(w3, addr, gas=200_000)
+            send_with_retry(
+                w3, account,
+                lambda n: usdc.functions.approve(vault_addr, DEPOSIT_AMOUNT).build_transaction(
+                    build_tx(w3, addr, gas=200_000, nonce=n)
+                ),
+                f"approve[{symbol}]",
             )
-            send(w3, account, tx, f"approve[{symbol}]")
-            # 2) requestDeposit
-            tx = vault.functions.requestDeposit(DEPOSIT_AMOUNT, addr, addr).build_transaction(
-                build_tx(w3, addr, gas=500_000)
+            send_with_retry(
+                w3, account,
+                lambda n: vault.functions.requestDeposit(DEPOSIT_AMOUNT, addr, addr).build_transaction(
+                    build_tx(w3, addr, gas=500_000, nonce=n)
+                ),
+                f"requestDeposit[{symbol}]",
             )
-            send(w3, account, tx, f"requestDeposit[{symbol}]")
-            # 3) claimDeposit
-            tx = vault.functions.claimDeposit(addr, addr).build_transaction(
-                build_tx(w3, addr, gas=500_000)
+            send_with_retry(
+                w3, account,
+                lambda n: vault.functions.claimDeposit(addr, addr).build_transaction(
+                    build_tx(w3, addr, gas=500_000, nonce=n)
+                ),
+                f"claimDeposit[{symbol}]",
             )
-            send(w3, account, tx, f"claimDeposit[{symbol}]")
             total = vault.functions.totalAssets().call()
             idle = vault.functions.idleUSDC().call()
             print(f"[{i}/{len(funds)}] {symbol:6s} funded — total={total/1e18:,.0f}  idle={idle/1e18:,.0f}", flush=True)
