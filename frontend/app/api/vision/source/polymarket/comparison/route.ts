@@ -199,6 +199,7 @@ export async function GET(request: Request) {
 
   const historyResp = await fetchJson<{ batches: BatchHistoryItem[]; totalSettled?: number }>(
     `${issuerBase}/vision/source/${SOURCE_ID}/history?page=1&per_page=1`,
+    15_000,
   )
   const latest = historyResp?.batches?.[0]
   if (!latest || !latest.batchId) {
@@ -373,5 +374,5 @@ export async function GET(request: Request) {
     source: 'live',
   }
 
-  return Response.json(response, { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } })
+  return Response.json(response, { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=60' } })
 }

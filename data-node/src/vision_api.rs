@@ -516,6 +516,10 @@ pub async fn batch_history(
 #[derive(Deserialize)]
 pub struct LeaderboardQuery {
     pub source_id: Option<String>,
+    /// Shorthand alias for `source_id`. The frontend canonicalises to
+    /// `source_id`, but smoke tests and ad-hoc curls often type `source=`.
+    /// Treat them as the same query.
+    pub source: Option<String>,
     pub batch_id: Option<u64>,
 }
 
@@ -532,12 +536,18 @@ impl LeaderboardProxyCache {
         Self {
             oracle_url,
             client: reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
+                // Upstream leaderboard query gets slow under load — give it
+                // room before we fail the cache miss. Successful misses
+                // populate the cache and shelter the next 60s.
+                .timeout(std::time::Duration::from_secs(25))
                 .build()
                 .unwrap_or_default(),
             cache: mini_moka::sync::Cache::builder()
                 .max_capacity(100)
-                .time_to_live(std::time::Duration::from_secs(15))
+                // 60s is generous for a leaderboard that updates on settle —
+                // the upstream materialises it from Postgres aggregations and
+                // hammering it on every request costs more than it pays.
+                .time_to_live(std::time::Duration::from_secs(60))
                 .build(),
         }
     }
@@ -587,9 +597,11 @@ pub async fn leaderboard(
     State(state): State<Arc<AppState>>,
     Query(params): Query<LeaderboardQuery>,
 ) -> impl IntoResponse {
+    // `source_id` wins when both are present.
+    let source = params.source_id.as_deref().or(params.source.as_deref());
     match state
         .leaderboard_cache
-        .get_or_fetch(params.source_id.as_deref(), params.batch_id)
+        .get_or_fetch(source, params.batch_id)
         .await
     {
         Ok(json) => (

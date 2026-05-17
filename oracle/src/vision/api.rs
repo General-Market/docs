@@ -1553,6 +1553,10 @@ struct LeaderboardEntry {
 struct LeaderboardQuery {
     batch_id: Option<u64>,
     source_id: Option<String>,
+    /// Shorthand alias for `source_id` used by ad-hoc curls and the public
+    /// proxy. The handler treats either as equivalent; `source_id` wins
+    /// when both are present.
+    source: Option<String>,
     /// Include settled round results from `vision_round_players`. Defaults to true.
     include_rounds: Option<bool>,
 }
@@ -1584,8 +1588,10 @@ async fn vision_leaderboard(
 
     // Per-source leaderboard: delegate to Postgres which JOINs vision_round_players
     // with vision_batches to filter by source_id. This covers both active and settled rounds.
-    if let Some(ref source_id) = query.source_id {
-        return leaderboard_from_postgres(&state.pool, Some(source_id.as_str()), None).await;
+    // Accept either `source_id` or the `source` shorthand.
+    let source_filter = query.source_id.as_deref().or(query.source.as_deref());
+    if let Some(source_id) = source_filter {
+        return leaderboard_from_postgres(&state.pool, Some(source_id), None).await;
     }
 
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins,
@@ -3461,10 +3467,15 @@ async fn vision_activity(
         "7d" => 604_800.0,
         _ => 86_400.0,
     };
-    let bucket_mins = params.bucket_mins.unwrap_or(5).clamp(1, 60);
+    let bucket_mins: i32 = params.bucket_mins.unwrap_or(5).clamp(1, 60) as i32;
 
     // Two sub-queries: one for rounds settled (settled_at), one for rounds created (created_at).
     // UNION them into a single time-series with both metrics per bucket.
+    //
+    // `make_interval(mins => …)` is overloaded only on `int`, not `bigint`. Bind
+    // bucket_mins as i32 and the i32/i32 division stays an int — otherwise the
+    // planner reports `function make_interval(mins => bigint) does not exist`
+    // and the whole endpoint 500s.
     let rows = sqlx::query_as::<_, ActivityBucket>(
         r#"
         WITH settled AS (
@@ -3500,7 +3511,7 @@ async fn vision_activity(
     )
     .bind(range_secs)      // $1
     .bind(2000_i64)        // $2 max rows
-    .bind(bucket_mins)     // $3
+    .bind(bucket_mins)     // $3 — i32 so make_interval(mins => …) resolves
     .fetch_all(&state.pool)
     .await;
 
