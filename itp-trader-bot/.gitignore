@@ -1,0 +1,6 @@
+node_modules/
+dist/
+keys.json
+*.log
+.env
+.env.local

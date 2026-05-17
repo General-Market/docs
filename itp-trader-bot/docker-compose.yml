@@ -1,0 +1,15 @@
+services:
+  itp-trader-bot:
+    image: itp-trader-bot:latest
+    container_name: itp-trader-bot
+    restart: always
+    environment:
+      - LOG_LEVEL=info
+      - DATA_NODE_URL=https://generalmarket.io/api/dn
+      - HEALTH_PORT=8090
+      - KEYS_PATH=/data/keys.json
+      - KEYRING_SIZE=5
+    volumes:
+      - /opt/itp-trader-bot/data:/data
+    ports:
+      - "127.0.0.1:8090:8090"
