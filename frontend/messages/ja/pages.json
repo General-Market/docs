@@ -150,11 +150,12 @@
       "sources": "ソース",
       "system": "システム",
       "health": "システムヘルス",
-      "chain": "チェーン & ガス"
+      "chain": "チェーン & ガス",
+      "lending": "レンディング"
     },
     "summary": {
-      "oracles": "オラクル",
-      "consensus": "コンセンサス",
+      "oracles": "オンラインのオラクル",
+      "consensus": "実行されたラウンド",
       "orders": "オーダー",
       "cycle": "サイクル",
       "gas": "ガス",
@@ -344,6 +345,21 @@
       "settlements": "決済",
       "no_settlement_data": "決済データなし",
       "roi": "ROI"
+    },
+    "subtitle": "見守られるチェーン。コンセンサス、オラクル健全性、NAVドリフト、貸出使用率 — 配管をすべて公開する。",
+    "tab_desc": {
+      "consensus": "クォーラム、ラウンド、署名スループット。",
+      "orders": "待機深度、約定遅延、サイクル時間。",
+      "p2p": "ピア数、メッセージ速度、リンク健全性。",
+      "itp": "ファンドAUM、NAV推移、リスクフロンティア。",
+      "lending": "マーケット、使用率、借入APY。",
+      "vision": "アクティブバッチ、決済、リーダーボード。",
+      "sources": "プロバイダーごとの価格フィード稼働率。",
+      "system": "サービスのハートビートと稼働時間。"
+    },
+    "controls": {
+      "range_label": "期間",
+      "auto_refresh": "60秒ごとに自動更新"
     }
   },
   "points": {

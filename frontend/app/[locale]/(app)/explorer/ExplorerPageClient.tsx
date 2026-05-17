@@ -30,7 +30,11 @@ export default function ExplorerPageClient() {
   const { snapshots, latest, loading, error, range, setRange, refresh } = useExplorerHealth()
   const [activeTab, setActiveTab] = useState<TabId>('consensus')
   const reduced = usePrefersReducedMotion()
-  const tabs = TAB_IDS.map(id => ({ id, label: t(`explorer.tabs.${id}`) }))
+  const tabs = TAB_IDS.map(id => ({
+    id,
+    label: t(`explorer.tabs.${id}`),
+    desc: t(`explorer.tab_desc.${id}`),
+  }))
 
   const isStandalone = STANDALONE_TABS.has(activeTab)
 
@@ -45,6 +49,19 @@ export default function ExplorerPageClient() {
           <h1 className="text-display font-display font-semibold tracking-apple-tighter text-[#1d1d1f] leading-[1.05]">
             {t('explorer.title')}
           </h1>
+          <p
+            className="mt-3 max-w-[680px]"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 'var(--apple-fs-19, 19px)',
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'var(--apple-text-secondary, #6e6e73)',
+              lineHeight: 1.4,
+              margin: '12px 0 0',
+            }}
+          >
+            {t('explorer.subtitle')}
+          </p>
           <div className="mt-4">
             <ExplorerHeartbeat snapshots={snapshots} latest={latest} />
           </div>
@@ -62,6 +79,7 @@ export default function ExplorerPageClient() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
+                    title={tab.desc}
                     className={`relative px-4 py-3 text-caption font-semibold tracking-apple-tight transition-colors whitespace-nowrap ${
                       isActive ? 'text-[#1d1d1f]' : 'text-[#86868b] hover:text-[#1d1d1f]'
                     }`}
@@ -86,7 +104,17 @@ export default function ExplorerPageClient() {
 
         {/* Time range + refresh — own row, apple pill controls */}
         {!isStandalone && (
-          <div className="flex items-center justify-end gap-1 mt-4">
+          <div className="flex items-center justify-end gap-1 mt-4 flex-wrap">
+            <span
+              className="mr-2 text-[12px]"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                color: 'var(--apple-text-tertiary, #86868b)',
+                letterSpacing: 'var(--apple-track-tight)',
+              }}
+            >
+              {t('explorer.controls.auto_refresh')}
+            </span>
             {RANGES.map((r) => (
               <button
                 key={r}

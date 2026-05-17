@@ -150,11 +150,12 @@
       "sources": "数据源",
       "system": "系统",
       "health": "系统健康",
-      "chain": "链 & Gas"
+      "chain": "链 & Gas",
+      "lending": "借贷"
     },
     "summary": {
-      "oracles": "预言机",
-      "consensus": "共识",
+      "oracles": "在线预言机",
+      "consensus": "已运行轮次",
       "orders": "订单",
       "cycle": "周期",
       "gas": "Gas",
@@ -344,6 +345,21 @@
       "settlements": "结算",
       "no_settlement_data": "无结算数据",
       "roi": "ROI"
+    },
+    "subtitle": "链，被注视。共识、预言机健康、NAV 漂移、借贷使用率 — 一切管线公开。",
+    "tab_desc": {
+      "consensus": "法定人数、轮次、签名吞吐量。",
+      "orders": "待挂深度、成交延迟、周期时间。",
+      "p2p": "节点数、消息速率、链路健康。",
+      "itp": "基金 AUM、NAV 趋势、风险前沿。",
+      "lending": "市场、使用率、借款 APY。",
+      "vision": "活跃批次、结算、领先者。",
+      "sources": "各提供方价格源运行率。",
+      "system": "服务心跳与正常运行时间。"
+    },
+    "controls": {
+      "range_label": "时段",
+      "auto_refresh": "每 60 秒自动刷新"
     }
   },
   "points": {
