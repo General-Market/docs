@@ -124,6 +124,14 @@
       "disclaimer": "NAV는 실시간 가격 피드에서 계산됩니다. 데이터는 60초마다 업데이트됩니다. 과거 성과가 미래 결과를 보장하지 않습니다.",
       "json_ld_category": "Index Fund"
     },
+    "itps": {
+      "title": "인덱스 펀드 — General Market",
+      "description": "온체인 DTF 전체 목록. 실시간 NAV, 실제 AUM, 두 번의 클릭으로 매수·매도. KYC 불필요. 과거 수익은 아무것도 보장하지 않습니다."
+    },
+    "lending": {
+      "title": "렌딩 — General Market",
+      "description": "USDC를 예치하고 수익을 얻으세요. DTF를 담보로 차입. 청산은 봇이 처리합니다, 위원회가 아닙니다."
+    },
     "legal_vision": {
       "title": "Vision 법적 고지 — General Market",
       "description": "Vision 예측 마켓 법적 고지. P2P 마켓 구조, 데이터 소스 사용, 지적 재산권 고지 및 위험 공시. IM Standards LLC."

@@ -124,6 +124,14 @@
       "disclaimer": "NAV 根据实时价格数据计算。数据每 60 秒更新一次。过往业绩不代表未来表现。",
       "json_ld_category": "指数基金"
     },
+    "itps": {
+      "title": "指数基金 — General Market",
+      "description": "所有链上 DTF 一览。实时 NAV、真实 AUM、两次点击买卖。无需 KYC。过往业绩不决定任何事情。"
+    },
+    "lending": {
+      "title": "借贷 — General Market",
+      "description": "存入 USDC，赚取收益。以 DTF 作为抵押借款。清算由机器人执行，不是委员会。"
+    },
     "legal_vision": {
       "title": "Vision 法律免责声明 — General Market",
       "description": "Vision 预测市场法律免责声明。P2P 市场结构、数据源使用、知识产权声明和风险披露。IM Standards LLC。"

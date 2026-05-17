@@ -47,7 +47,7 @@
     "org_description": "The institutional-grade protocol for on-chain index products.",
     "website_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
     "app_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
-    "itp_description": "{name} \u2014 on-chain Dex Traded Fund (DTF) with {count} crypto assets. NAV: ${nav}.",
+    "itp_description": "{name} — on-chain Dex Traded Fund (DTF) with {count} crypto assets. NAV: ${nav}.",
     "category_index_fund": "Index Fund"
   },
   "pages": {
@@ -121,6 +121,14 @@
       "learn_about": "Learn About DTFs",
       "disclaimer": "NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.",
       "json_ld_category": "Index Fund"
+    },
+    "itps": {
+      "title": "Index Funds — General Market",
+      "description": "Every on-chain DTF in one list. Live NAV, real AUM, two-click buy or sell. No KYC. Past performance settles nothing."
+    },
+    "lending": {
+      "title": "Lending — General Market",
+      "description": "Deposit USDC, earn yield. Borrow against your DTFs. Liquidations are bots, not committees."
     }
   },
   "breadcrumbs": {

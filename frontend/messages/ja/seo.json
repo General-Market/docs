@@ -131,6 +131,14 @@
       "learn_about": "DTFについて学ぶ",
       "disclaimer": "NAVはリアルタイム価格フィードから算出されます。データは60秒ごとに更新されます。過去のパフォーマンスは将来の結果を示すものではありません。",
       "json_ld_category": "Index Fund"
+    },
+    "itps": {
+      "title": "インデックスファンド — General Market",
+      "description": "すべてのオンチェーンDTFを一覧で。リアルタイムNAV、実際のAUM、2クリックで売買。KYC不要。過去のパフォーマンスは何も決めない。"
+    },
+    "lending": {
+      "title": "レンディング — General Market",
+      "description": "USDCを預け入れて利息を獲得。DTFを担保に借入。清算はボットが行う、委員会ではない。"
     }
   },
   "breadcrumbs": {
