@@ -159,6 +159,34 @@ def _load_source_aliases(path: str = "source-aliases.json") -> dict[str, list[st
     return {}
 
 
+# Module-level cache: load aliases once on first access.
+_SOURCE_ALIASES_CACHE: dict[str, list[str]] | None = None
+
+
+def get_source_aliases() -> dict[str, list[str]]:
+    """Return the canonical -> [legacy names] alias map, loaded once."""
+    global _SOURCE_ALIASES_CACHE
+    if _SOURCE_ALIASES_CACHE is None:
+        _SOURCE_ALIASES_CACHE = _load_source_aliases()
+    return _SOURCE_ALIASES_CACHE
+
+
+def expand_source_match_set(sources: set[str]) -> set[str]:
+    """Return sources plus every alias the registry maps them to.
+
+    Funds in funds.toml declare canonical names (e.g. "defillama"). The
+    batches API returns whatever name the data-node tags the batch with
+    on-chain (e.g. "defi"). Without alias expansion the in-memory match
+    set never sees "defi" and the fund joins zero batches.
+    """
+    aliases = get_source_aliases()
+    expanded = set(sources)
+    for canonical in sources:
+        for legacy in aliases.get(canonical, []):
+            expanded.add(legacy)
+    return expanded
+
+
 def build_source_id_map(fund_sources):
     """Build keccak256(source_name_vN) -> canonical fund source.
 
@@ -171,7 +199,7 @@ def build_source_id_map(fund_sources):
     """
     from web3 import Web3
 
-    aliases = _load_source_aliases()
+    aliases = get_source_aliases()
     mapping: dict[str, str] = {}
 
     def _add(name_for_hashing: str, canonical: str) -> None:
@@ -220,6 +248,11 @@ class FundState:
         self.symbol = fund_cfg["symbol"]
         self.vault_addr = fund_cfg["vault"]
         self.sources = set(fund_cfg.get("sources", []))
+        # Expanded set used by matches_source: canonical names plus every
+        # alias the registry maps them to. The batches API returns the
+        # data-node's tag (e.g. "defi"), not the canonical fund source
+        # ("defillama"). Without expansion, defillama funds join nothing.
+        self.match_set = expand_source_match_set(self.sources)
         self.vault = vault_executor
         self.strategy = strategy
         # Per-fund allocation multiplier. Multiplies the manager-level
@@ -251,7 +284,7 @@ class FundState:
     def matches_source(self, source_name):
         if not self.sources:
             return True  # empty = trade all
-        return source_name in self.sources
+        return source_name in self.match_set
 
 
 # ── State persistence ──────────────────────────────────────────

@@ -16,6 +16,10 @@ export const HIDDEN_SOURCE_IDS = new Set<string>([
   'tomtom_evcharge',
   'tomtom_traffic',
   'npm',
+  // Bucket B — data-node DISABLED_SOURCES (legacy batches still resolve
+  // via deep link; UI listings stop pretending these are live)
+  'bestbuy',
+  'flights',
   // Bucket C — registry empty / not started
   'aisstream',
   'bgg',
@@ -28,7 +32,6 @@ export const HIDDEN_SOURCE_IDS = new Set<string>([
   'ioda',
   'maritime',
   'movebank',
-  'nasdaq',
   'finra',
   'nrc_nuclear',
   'opec',
