@@ -153,7 +153,7 @@ export default function ExplorerPageClient() {
           {activeTab === 'consensus' && <ConsensusSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'orders' && <OrdersSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'p2p' && <P2PSection snapshots={snapshots} latest={latest} loading={loading} />}
-          {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} range={range} />}
           {activeTab === 'lending' && <LendingSection loading={loading} />}
           {activeTab === 'vision' && (
             <>

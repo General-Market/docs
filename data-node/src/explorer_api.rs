@@ -243,5 +243,328 @@ pub fn explorer_routes(pool: PgPool, token: String) -> axum::Router {
             "/explorer/health/latest",
             axum::routing::get(health_latest),
         )
+        .route(
+            "/explorer/dtf/fills",
+            axum::routing::get(dtf_fills),
+        )
+        .route(
+            "/explorer/dtf/order-lifecycle",
+            axum::routing::get(dtf_order_lifecycle),
+        )
+        .route(
+            "/explorer/dtf/tvl",
+            axum::routing::get(dtf_tvl),
+        )
+        .route(
+            "/explorer/dtf/orders-per-hour",
+            axum::routing::get(dtf_orders_per_hour),
+        )
         .with_state(state)
+}
+
+// ---------------------------------------------------------------------------
+// DTF metrics — fills, order lifecycle, TVL history, orders per hour.
+// ---------------------------------------------------------------------------
+//
+// Bucket size is picked to give roughly 60 buckets per window — enough
+// resolution for trends, sparse enough to render at 60fps. The same
+// secs_to_bucket() function is used by every DTF endpoint so the four
+// charts share a time axis.
+
+fn secs_to_bucket(secs: f64) -> i64 {
+    // Target ~60 buckets — round up to a sensible interval.
+    let target = (secs / 60.0).max(60.0) as i64;
+    // Snap to {1, 5, 10, 30 min, 1, 4, 12, 24 hours}.
+    for snap in [60, 300, 600, 1_800, 3_600, 14_400, 43_200, 86_400] {
+        if target <= snap {
+            return snap;
+        }
+    }
+    86_400
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct FillsBucket {
+    bucket: DateTime<Utc>,
+    buy_count: i64,
+    sell_count: i64,
+    buy_amount: String,
+    sell_amount: String,
+    borrow_count: i64,
+    repay_count: i64,
+    supply_count: i64,
+    withdraw_count: i64,
+    borrow_amount: String,
+    repay_amount: String,
+    supply_amount: String,
+    withdraw_amount: String,
+}
+
+async fn dtf_fills(
+    State(state): State<Arc<ExplorerState>>,
+    headers: HeaderMap,
+    Query(q): Query<HistoryQuery>,
+) -> impl IntoResponse {
+    check_auth(&headers, &state.token)?;
+
+    let secs = range_to_secs(q.range.as_deref().unwrap_or("24h"));
+    let bucket = secs_to_bucket(secs);
+
+    // Pivot both tables into a single row per bucket BEFORE joining, so the
+    // bucket-grid left-join doesn't fan out (trade_fills has up to 2 rows
+    // per bucket, lending up to 6 — naive join would cartesian them).
+    let rows = sqlx::query_as::<_, FillsBucket>(
+        r#"
+        WITH buckets AS (
+            SELECT generate_series(
+                date_trunc('second', NOW() - make_interval(secs => $1)),
+                date_trunc('second', NOW()),
+                make_interval(secs => $2)
+            ) AS bucket
+        ),
+        trade_pivot AS (
+            SELECT
+                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2)
+                    AT TIME ZONE 'UTC' AS bucket,
+                COUNT(*) FILTER (WHERE side = 0) AS buy_count,
+                COUNT(*) FILTER (WHERE side = 1) AS sell_count,
+                COALESCE(SUM(NULLIF(fill_amount, '')::numeric) FILTER (WHERE side = 0), 0) AS buy_amount,
+                COALESCE(SUM(NULLIF(fill_amount, '')::numeric) FILTER (WHERE side = 1), 0) AS sell_amount
+            FROM trades
+            WHERE fill_timestamp IS NOT NULL
+              AND fill_timestamp > NOW() - make_interval(secs => $1)
+            GROUP BY 1
+        ),
+        lending_pivot AS (
+            SELECT
+                to_timestamp(floor(extract(epoch FROM block_time) / $2) * $2)
+                    AT TIME ZONE 'UTC' AS bucket,
+                COUNT(*) FILTER (WHERE event_kind = 0) AS supply_count,
+                COUNT(*) FILTER (WHERE event_kind = 1) AS withdraw_count,
+                COUNT(*) FILTER (WHERE event_kind = 2) AS borrow_count,
+                COUNT(*) FILTER (WHERE event_kind = 3) AS repay_count,
+                COALESCE(SUM(amount) FILTER (WHERE event_kind = 0), 0) AS supply_amount,
+                COALESCE(SUM(amount) FILTER (WHERE event_kind = 1), 0) AS withdraw_amount,
+                COALESCE(SUM(amount) FILTER (WHERE event_kind = 2), 0) AS borrow_amount,
+                COALESCE(SUM(amount) FILTER (WHERE event_kind = 3), 0) AS repay_amount
+            FROM lending_events
+            WHERE block_time > NOW() - make_interval(secs => $1)
+            GROUP BY 1
+        )
+        SELECT
+            b.bucket,
+            COALESCE(tp.buy_count, 0)::BIGINT     AS buy_count,
+            COALESCE(tp.sell_count, 0)::BIGINT    AS sell_count,
+            COALESCE(tp.buy_amount, 0)::TEXT      AS buy_amount,
+            COALESCE(tp.sell_amount, 0)::TEXT     AS sell_amount,
+            COALESCE(lp.borrow_count, 0)::BIGINT  AS borrow_count,
+            COALESCE(lp.repay_count, 0)::BIGINT   AS repay_count,
+            COALESCE(lp.supply_count, 0)::BIGINT  AS supply_count,
+            COALESCE(lp.withdraw_count, 0)::BIGINT AS withdraw_count,
+            COALESCE(lp.borrow_amount, 0)::TEXT   AS borrow_amount,
+            COALESCE(lp.repay_amount, 0)::TEXT    AS repay_amount,
+            COALESCE(lp.supply_amount, 0)::TEXT   AS supply_amount,
+            COALESCE(lp.withdraw_amount, 0)::TEXT AS withdraw_amount
+        FROM buckets b
+        LEFT JOIN trade_pivot   tp ON tp.bucket = b.bucket
+        LEFT JOIN lending_pivot lp ON lp.bucket = b.bucket
+        ORDER BY b.bucket ASC
+        "#,
+    )
+    .bind(secs)
+    .bind(bucket as f64)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => Ok(Json(serde_json::json!({
+            "bucket_secs": bucket,
+            "series": data,
+        }))),
+        Err(e) => {
+            tracing::error!(error = %e, "dtf_fills query failed");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct LifecycleBucket {
+    bucket: DateTime<Utc>,
+    placed: i64,
+    filled: i64,
+    cancelled: i64,
+}
+
+async fn dtf_order_lifecycle(
+    State(state): State<Arc<ExplorerState>>,
+    headers: HeaderMap,
+    Query(q): Query<HistoryQuery>,
+) -> impl IntoResponse {
+    check_auth(&headers, &state.token)?;
+
+    let secs = range_to_secs(q.range.as_deref().unwrap_or("24h"));
+    let bucket = secs_to_bucket(secs);
+
+    // Status: 0=pending, 2=filled, 3=cancelled (per trades schema)
+    let rows = sqlx::query_as::<_, LifecycleBucket>(
+        r#"
+        WITH buckets AS (
+            SELECT generate_series(
+                date_trunc('second', NOW() - make_interval(secs => $1)),
+                date_trunc('second', NOW()),
+                make_interval(secs => $2)
+            ) AS bucket
+        ),
+        placed AS (
+            SELECT
+                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2)
+                    AT TIME ZONE 'UTC' AS bucket,
+                COUNT(*) AS cnt
+            FROM trades
+            WHERE order_timestamp > NOW() - make_interval(secs => $1)
+            GROUP BY 1
+        ),
+        filled AS (
+            SELECT
+                to_timestamp(floor(extract(epoch FROM fill_timestamp) / $2) * $2)
+                    AT TIME ZONE 'UTC' AS bucket,
+                COUNT(*) AS cnt
+            FROM trades
+            WHERE fill_timestamp IS NOT NULL
+              AND fill_timestamp > NOW() - make_interval(secs => $1)
+              AND status = 2
+            GROUP BY 1
+        ),
+        cancelled AS (
+            SELECT
+                to_timestamp(floor(extract(epoch FROM order_timestamp) / $2) * $2)
+                    AT TIME ZONE 'UTC' AS bucket,
+                COUNT(*) AS cnt
+            FROM trades
+            WHERE status = 3
+              AND order_timestamp > NOW() - make_interval(secs => $1)
+            GROUP BY 1
+        )
+        SELECT
+            b.bucket,
+            COALESCE(p.cnt, 0)::BIGINT AS placed,
+            COALESCE(f.cnt, 0)::BIGINT AS filled,
+            COALESCE(c.cnt, 0)::BIGINT AS cancelled
+        FROM buckets b
+        LEFT JOIN placed    p ON p.bucket = b.bucket
+        LEFT JOIN filled    f ON f.bucket = b.bucket
+        LEFT JOIN cancelled c ON c.bucket = b.bucket
+        ORDER BY b.bucket ASC
+        "#,
+    )
+    .bind(secs)
+    .bind(bucket as f64)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => Ok(Json(serde_json::json!({
+            "bucket_secs": bucket,
+            "series": data,
+        }))),
+        Err(e) => {
+            tracing::error!(error = %e, "dtf_order_lifecycle query failed");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct TvlPoint {
+    snapshot_ts: DateTime<Utc>,
+    total_aum_usd: f64,
+    itp_count: i32,
+    supply_count: i32,
+}
+
+async fn dtf_tvl(
+    State(state): State<Arc<ExplorerState>>,
+    headers: HeaderMap,
+    Query(q): Query<HistoryQuery>,
+) -> impl IntoResponse {
+    check_auth(&headers, &state.token)?;
+    let secs = range_to_secs(q.range.as_deref().unwrap_or("24h"));
+
+    let rows = sqlx::query_as::<_, TvlPoint>(
+        r#"
+        SELECT
+            snapshot_ts,
+            total_aum_usd::DOUBLE PRECISION AS total_aum_usd,
+            itp_count,
+            supply_count
+        FROM tvl_history
+        WHERE snapshot_ts > NOW() - make_interval(secs => $1)
+        ORDER BY snapshot_ts ASC
+        LIMIT 2000
+        "#,
+    )
+    .bind(secs)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => Ok(Json(serde_json::json!({"series": data}))),
+        Err(e) => {
+            tracing::error!(error = %e, "dtf_tvl query failed");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct HourlyBucket {
+    bucket: DateTime<Utc>,
+    count: i64,
+}
+
+async fn dtf_orders_per_hour(
+    State(state): State<Arc<ExplorerState>>,
+    headers: HeaderMap,
+    Query(q): Query<HistoryQuery>,
+) -> impl IntoResponse {
+    check_auth(&headers, &state.token)?;
+    let secs = range_to_secs(q.range.as_deref().unwrap_or("24h"));
+
+    let rows = sqlx::query_as::<_, HourlyBucket>(
+        r#"
+        WITH buckets AS (
+            SELECT generate_series(
+                date_trunc('hour', NOW() - make_interval(secs => $1)),
+                date_trunc('hour', NOW()),
+                INTERVAL '1 hour'
+            ) AS bucket
+        ),
+        placed AS (
+            SELECT
+                date_trunc('hour', order_timestamp) AS bucket,
+                COUNT(*) AS cnt
+            FROM trades
+            WHERE order_timestamp > NOW() - make_interval(secs => $1)
+            GROUP BY 1
+        )
+        SELECT
+            b.bucket,
+            COALESCE(p.cnt, 0)::BIGINT AS count
+        FROM buckets b
+        LEFT JOIN placed p ON p.bucket = b.bucket
+        ORDER BY b.bucket ASC
+        "#,
+    )
+    .bind(secs)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => Ok(Json(serde_json::json!({"series": data}))),
+        Err(e) => {
+            tracing::error!(error = %e, "dtf_orders_per_hour query failed");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }

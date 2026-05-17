@@ -2516,6 +2516,50 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     // Chain cache — created early for itp_collector, reused for SSE pollers
     let chain_cache = chain_cache_early;
 
+    // Morpho event collector — global Supply/Borrow/Withdraw/Repay/{Supply,Withdraw}Collateral ledger.
+    // Powers the DTF Fills chart and any future protocol-wide lending analytics.
+    {
+        let morpho_addr_opt = crate::api::deployment_addr(&morpho_deployment, "MORPHO").ok();
+        let morpho_addr_str = morpho_addr_opt
+            .map(|a| format!("{:?}", a))
+            .unwrap_or_default();
+        if morpho_addr_str.is_empty() {
+            info!("Morpho collector skipped (no MORPHO address in deployment file)");
+        } else {
+            let morpho_pool = pool.clone();
+            let morpho_rpc_url = args.rpc_url.clone();
+            let morpho_address = morpho_addr_str.clone();
+            let morpho_poll_interval = args.itp_poll_interval;
+            let deploy_block: u64 = std::fs::read_to_string(&args.deployment_file)
+                .ok()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                .and_then(|v| v.get("deployBlock").and_then(|b| b.as_u64()))
+                .unwrap_or(0);
+            tokio::spawn(async move {
+                crate::morpho_collector::run(
+                    morpho_pool,
+                    Arc::new(crate::morpho_collector::MorphoCollectorState::new()),
+                    morpho_rpc_url,
+                    morpho_address,
+                    morpho_poll_interval,
+                    deploy_block,
+                )
+                .await;
+            });
+            info!(morpho_addr = %morpho_addr_str, "Morpho collector started");
+        }
+    }
+
+    // TVL collector — periodic sum of aum_usd across the cached NAV list.
+    {
+        let tvl_pool = pool.clone();
+        let tvl_cache = Arc::clone(&chain_cache);
+        tokio::spawn(async move {
+            crate::tvl_collector::run(tvl_pool, tvl_cache, 300).await;
+        });
+        info!("TVL collector started");
+    }
+
     // Background health stats cache (refreshes every 60s)
     let health_stats_cache = Arc::new(crate::api::HealthStatsCache::new());
     let interval_map = source_registry.internal_id_meta()

@@ -35,6 +35,8 @@ mod logo_downloader;
 mod simulation;
 mod source_registry;
 mod trade_collector;
+mod morpho_collector;
+mod tvl_collector;
 mod work_queue;
 mod market_data;
 mod points;
