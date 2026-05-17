@@ -180,12 +180,13 @@ export function LendingPage() {
 
   // ── Filter chip — Apple segmented control ──
   const FilterChip = useCallback(
-    ({ mode, label }: { mode: FilterMode; label: string }) => {
+    ({ mode, label, hint }: { mode: FilterMode; label: string; hint?: string }) => {
       const active = filter === mode
       return (
         <button
           type="button"
           onClick={() => setFilter(mode)}
+          title={hint}
           style={{
             padding: '6px 14px',
             fontFamily: 'var(--apple-font-text)',
@@ -451,9 +452,9 @@ export function LendingPage() {
                   gap: 2,
                 }}
               >
-                <FilterChip mode="all" label="All" />
-                {isConnected && <FilterChip mode="positions" label="Your positions" />}
-                <FilterChip mode="liquidity" label="Has Liquidity" />
+                <FilterChip mode="all" label="All" hint={t('tooltips.all')} />
+                {isConnected && <FilterChip mode="positions" label="Your positions" hint={t('tooltips.positions')} />}
+                <FilterChip mode="liquidity" label="Has Liquidity" hint={t('tooltips.has_liquidity')} />
               </div>
             </div>
 

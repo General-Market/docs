@@ -1,8 +1,8 @@
 {
   "heading": {
-    "label": "Morpho 金库",
-    "title": "借贷",
-    "description": "存入 USDC 赚取收益，或抵押您的 DTF 持仓进行借款。"
+    "label": "借贷",
+    "title": "存入。借出。清算。",
+    "description": "向金库供应 USDC，赚取借款 APY。以 DTF 作抵押借入 USDC。清算由机器人执行，不是委员会。"
   },
   "stats": {
     "vault_tvl": "金库 TVL (总锁仓量)",
@@ -272,5 +272,15 @@
     "borrow_rate_serm": "借款利率 (SERM)",
     "protocol": "协议",
     "live_data_unavailable": "实时市场数据不可用 -- 显示配置参数"
+  },
+  "empty_states": {
+    "no_markets": "尚无借款市场。市场开放的那一刻，金库就开始产生收益。",
+    "no_markets_hint": "当 DTF 被作为抵押品质押到 Morpho 上时，市场便会显示。"
+  },
+  "tooltips": {
+    "has_liquidity": "只显示有 USDC 可供借出的市场。",
+    "all": "所有已注册市场，包括流动性为零的。",
+    "positions": "你当前持有抵押品或债务的市场。",
+    "approve_deposit": "两笔交易：先授权金库转移你的 USDC，再存入。钱包会提示两次。"
   }
 }

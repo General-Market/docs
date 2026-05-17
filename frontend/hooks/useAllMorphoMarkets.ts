@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSSEMorphoMarkets, type MorphoMarketSSE } from './useSSE'
 import { mergeSSEMarket } from '@/lib/contracts/morpho-markets-registry'
 
@@ -48,5 +48,15 @@ export function useAllMorphoMarkets() {
     return map
   }, [sseMarkets])
 
-  return { data: marketsMap, isLoading: sseMarkets.length === 0 }
+  // Stop "loading" after 6 seconds even if SSE has not produced anything yet.
+  // Otherwise an empty pool reads as a perpetual skeleton — the user cannot tell
+  // whether data is in flight or simply zero.
+  const [deadlineHit, setDeadlineHit] = useState(false)
+  useEffect(() => {
+    if (sseMarkets.length > 0) { setDeadlineHit(false); return }
+    const t = setTimeout(() => setDeadlineHit(true), 6000)
+    return () => clearTimeout(t)
+  }, [sseMarkets.length])
+
+  return { data: marketsMap, isLoading: sseMarkets.length === 0 && !deadlineHit }
 }

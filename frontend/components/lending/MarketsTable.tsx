@@ -203,8 +203,27 @@ export const MarketsTable = memo(function MarketsTable({
 
   if (rows.length === 0) {
     return (
-      <div className="w-full py-12 text-center text-sm text-text-muted">
-        No markets available
+      <div
+        className="w-full text-center"
+        style={{
+          padding: '64px 24px',
+          fontFamily: 'var(--apple-font-text)',
+          letterSpacing: 'var(--apple-track-tight)',
+        }}
+      >
+        <p style={{ fontSize: 17, color: 'var(--apple-text)', margin: 0, fontWeight: 500 }}>
+          No borrow markets yet.
+        </p>
+        <p
+          style={{
+            fontSize: 14,
+            color: 'var(--apple-text-secondary)',
+            margin: '6px auto 0',
+            maxWidth: 460,
+          }}
+        >
+          The vault still earns the moment a market opens. Markets surface once a DTF has been pledged as collateral on Morpho.
+        </p>
       </div>
     )
   }

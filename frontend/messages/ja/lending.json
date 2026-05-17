@@ -1,8 +1,8 @@
 {
   "heading": {
-    "label": "Morpho Vaults",
-    "title": "レンディング",
-    "description": "USDCを預けて利回りを獲得するか、DTFポジションを担保に借入を行えます。"
+    "label": "レンディング",
+    "title": "貸す。借りる。清算される。",
+    "description": "ボルトにUSDCを供給し、借入APYを得る。DTFを担保にUSDCを借りる。清算はボットが行う、委員会ではない。"
   },
   "stats": {
     "vault_tvl": "Vault TVL (預入総額)",
@@ -272,5 +272,15 @@
     "borrow_rate_serm": "借入金利 (SERM)",
     "protocol": "プロトコル",
     "live_data_unavailable": "リアルタイムマーケットデータを利用できません -- 設定パラメータを表示しています"
+  },
+  "empty_states": {
+    "no_markets": "借入マーケットはまだありません。マーケットが開いた瞬間、ボルトは収益を生み始めます。",
+    "no_markets_hint": "DTFがMorphoに担保として預けられるとマーケットが表示されます。"
+  },
+  "tooltips": {
+    "has_liquidity": "レンダーがUSDCを供給したマーケットのみ表示。",
+    "all": "流動性ゼロを含むすべての登録マーケット。",
+    "positions": "現在担保または負債を保有しているマーケット。",
+    "approve_deposit": "2段階のトランザクション: ボルトがUSDCを移動することを承認し、次に預入。ウォレットは2回求めてきます。"
   }
 }

@@ -1,8 +1,8 @@
 {
   "heading": {
-    "label": "Morpho 볼트",
-    "title": "대출",
-    "description": "USDC를 예치하여 수익을 얻거나 DTF 포지션을 담보로 대출받으세요."
+    "label": "대출",
+    "title": "빌려주고, 빌리고, 청산하라.",
+    "description": "볼트에 USDC를 공급하고 차입 APY를 받으세요. DTF를 담보로 USDC를 빌리세요. 청산은 봇이 처리합니다, 위원회가 아닙니다."
   },
   "stats": {
     "vault_tvl": "볼트 TVL (총예치금액)",
@@ -272,5 +272,15 @@
     "borrow_rate_serm": "대출 금리 (SERM)",
     "protocol": "프로토콜",
     "live_data_unavailable": "실시간 마켓 데이터를 이용할 수 없습니다 -- 설정 파라미터를 표시합니다"
+  },
+  "empty_states": {
+    "no_markets": "아직 차입 마켓이 없습니다. 마켓이 열리는 순간 볼트는 즉시 수익을 냅니다.",
+    "no_markets_hint": "DTF가 Morpho에 담보로 예치되면 마켓이 표시됩니다."
+  },
+  "tooltips": {
+    "has_liquidity": "대출자가 USDC를 공급한 마켓만 표시됩니다.",
+    "all": "유동성이 0인 마켓을 포함한 모든 등록 마켓.",
+    "positions": "현재 담보 또는 부채를 보유한 마켓.",
+    "approve_deposit": "두 단계 트랜잭션: 볼트가 USDC를 이동할 수 있도록 승인한 다음 예치. 지갑이 두 번 요청합니다."
   }
 }

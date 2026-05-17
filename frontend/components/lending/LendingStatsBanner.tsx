@@ -42,9 +42,11 @@ export function LendingStatsBanner() {
 
   const isLoading = marketsLoading || vaultLoading
 
+  // Show zero values explicitly. Bones stay only while data is genuinely in
+  // flight. Empty pools should read as "0", not as a perpetual skeleton.
   const tvlDisplay = vaultInfo
     ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : null
+    : (vaultLoading ? null : '$0')
 
   const items = [
     {
@@ -54,17 +56,17 @@ export function LendingStatsBanner() {
     },
     {
       label: t('stats.supply_apy'),
-      value: aggregated ? `${aggregated.supplyApy.toFixed(2)}%` : null,
+      value: aggregated ? `${aggregated.supplyApy.toFixed(2)}%` : (marketsLoading ? null : '0.00%'),
       color: aggregated && aggregated.supplyApy > 0 ? 'text-color-up' : 'text-text-primary',
     },
     {
       label: t('stats.borrow_apy'),
-      value: aggregated ? `${aggregated.borrowApy.toFixed(2)}%` : null,
+      value: aggregated ? `${aggregated.borrowApy.toFixed(2)}%` : (marketsLoading ? null : '0.00%'),
       color: 'text-text-primary',
     },
     {
       label: t('stats.utilization'),
-      value: aggregated ? `${aggregated.utilization.toFixed(1)}%` : null,
+      value: aggregated ? `${aggregated.utilization.toFixed(1)}%` : (marketsLoading ? null : '0.0%'),
       color: 'text-text-primary',
     },
   ]

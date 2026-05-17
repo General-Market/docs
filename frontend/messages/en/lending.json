@@ -1,8 +1,8 @@
 {
   "heading": {
-    "label": "Morpho Vaults",
-    "title": "Lend",
-    "description": "Deposit USDC to earn yield or borrow against your DTF positions."
+    "label": "Lending",
+    "title": "Lend. Borrow. Liquidate.",
+    "description": "Supply USDC to the vault, earn the borrow APY. Pledge your DTFs, borrow USDC against them. Liquidations are bots, not committees."
   },
   "stats": {
     "vault_tvl": "Vault TVL",
@@ -11,7 +11,7 @@
     "utilization": "Utilization"
   },
   "supply_panel": {
-    "title": "Supply \u2014 USDC Vault",
+    "title": "Supply — USDC Vault",
     "your_deposits": "Your Deposits",
     "accrued_interest": "Accrued Interest",
     "current_apy": "Current APY",
@@ -272,5 +272,15 @@
     "borrow_rate_serm": "Borrow Rate (SERM)",
     "protocol": "Protocol",
     "live_data_unavailable": "Live market data unavailable -- showing config parameters"
+  },
+  "empty_states": {
+    "no_markets": "No borrow markets yet. The vault still earns the moment a market opens.",
+    "no_markets_hint": "Markets surface once a DTF has been pledged as collateral on Morpho."
+  },
+  "tooltips": {
+    "has_liquidity": "Only markets where lenders have supplied USDC available to borrow.",
+    "all": "Every registered market, even those with zero liquidity.",
+    "positions": "Markets where you currently hold collateral or debt.",
+    "approve_deposit": "Two transactions: approve the vault to move your USDC, then deposit. Your wallet will prompt twice."
   }
 }
