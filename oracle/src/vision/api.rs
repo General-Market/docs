@@ -3482,8 +3482,8 @@ async fn vision_activity(
             SELECT
                 date_trunc('hour', settled_at)
                     + make_interval(mins => (EXTRACT(MINUTE FROM settled_at)::INT / $3) * $3) AS bucket,
-                COUNT(*) AS rounds_settled,
-                COALESCE(SUM(player_count), 0) AS total_players
+                COUNT(*)::bigint AS rounds_settled,
+                COALESCE(SUM(player_count), 0)::bigint AS total_players
             FROM vision_batch_lifecycle
             WHERE settled_at IS NOT NULL
               AND settled_at > NOW() - make_interval(secs => $1)
@@ -3493,16 +3493,16 @@ async fn vision_activity(
             SELECT
                 date_trunc('hour', created_at)
                     + make_interval(mins => (EXTRACT(MINUTE FROM created_at)::INT / $3) * $3) AS bucket,
-                COUNT(*) AS rounds_created
+                COUNT(*)::bigint AS rounds_created
             FROM vision_batch_lifecycle
             WHERE created_at > NOW() - make_interval(secs => $1)
             GROUP BY bucket
         )
         SELECT
             COALESCE(s.bucket, c.bucket) AS bucket,
-            COALESCE(s.rounds_settled, 0) AS rounds_settled,
-            COALESCE(c.rounds_created, 0) AS rounds_created,
-            COALESCE(s.total_players, 0) AS total_players
+            COALESCE(s.rounds_settled, 0)::bigint AS rounds_settled,
+            COALESCE(c.rounds_created, 0)::bigint AS rounds_created,
+            COALESCE(s.total_players, 0)::bigint AS total_players
         FROM settled s
         FULL OUTER JOIN created c ON s.bucket = c.bucket
         ORDER BY bucket ASC
