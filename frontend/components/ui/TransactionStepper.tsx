@@ -164,8 +164,11 @@ export function TransactionStepper({
                 <div className="relative h-0.5 flex-1 -mx-0.5" style={{ marginTop: -12 }}>
                   <div className="absolute inset-0 bg-border-light rounded-full" />
                   <div
-                    className="absolute inset-y-0 left-0 bg-zinc-900 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${getConnectorFill(i) * 100}%` }}
+                    className="absolute inset-y-0 left-0 right-0 bg-zinc-900 rounded-full origin-left will-change-transform"
+                    style={{
+                      transform: `scaleX(${getConnectorFill(i).toFixed(4)})`,
+                      transition: 'transform 500ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+                    }}
                   />
                 </div>
               )}

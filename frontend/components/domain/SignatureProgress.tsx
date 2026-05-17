@@ -171,8 +171,12 @@ export function SignatureProgress({
         {data.status === 'collecting' && (
           <div className="w-16 h-1.5 bg-border-light rounded-full overflow-hidden">
             <div
-              className={`h-full ${progressColor} transition-all duration-500 ease-out`}
-              style={{ width: `${progress.percentage}%` }}
+              className={`h-full ${progressColor} origin-left will-change-transform`}
+              style={{
+                width: '100%',
+                transform: `scaleX(${(progress.percentage / 100).toFixed(4)})`,
+                transition: 'transform 500ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+              }}
             />
           </div>
         )}
@@ -195,8 +199,12 @@ export function SignatureProgress({
       <div className="mb-2">
         <div className="w-full h-2 bg-border-light rounded-full overflow-hidden">
           <div
-            className={`h-full ${progressColor} transition-all duration-500 ease-out`}
-            style={{ width: `${progress.percentage}%` }}
+            className={`h-full ${progressColor} origin-left will-change-transform`}
+            style={{
+              width: '100%',
+              transform: `scaleX(${(progress.percentage / 100).toFixed(4)})`,
+              transition: 'transform 500ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+            }}
           />
         </div>
       </div>

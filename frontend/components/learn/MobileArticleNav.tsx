@@ -35,8 +35,12 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
       {/* Horizontal progress bar */}
       <div className="h-[2px] bg-zinc-100">
         <div
-          className="h-full bg-black transition-all duration-150"
-          style={{ width: `${scrollProgress * 100}%` }}
+          className="h-full bg-black origin-left will-change-transform"
+          style={{
+            width: '100%',
+            transform: `scaleX(${scrollProgress.toFixed(4)})`,
+            transition: 'transform 150ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+          }}
         />
       </div>
 

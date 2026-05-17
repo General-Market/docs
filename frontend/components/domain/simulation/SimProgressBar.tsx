@@ -33,8 +33,12 @@ export function SimProgressBar(props: SimProgressBarProps) {
         </div>
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${Math.min(progress.pct, 100)}%` }}
+            className="h-full bg-zinc-900 rounded-full origin-left will-change-transform"
+            style={{
+              width: '100%',
+              transform: `scaleX(${(Math.min(progress.pct, 100) / 100).toFixed(4)})`,
+              transition: 'transform 300ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+            }}
           />
         </div>
       </div>
@@ -67,8 +71,12 @@ export function SimProgressBar(props: SimProgressBarProps) {
       </div>
       <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
         <div
-          className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${totalVariants === 0 ? 0 : progress ? ((completedCount + progress.pct / 100) / safeTotalVariants) * 100 : (completedCount / safeTotalVariants) * 100}%` }}
+          className="h-full bg-zinc-900 rounded-full origin-left will-change-transform"
+          style={{
+            width: '100%',
+            transform: `scaleX(${((totalVariants === 0 ? 0 : progress ? ((completedCount + progress.pct / 100) / safeTotalVariants) * 100 : (completedCount / safeTotalVariants) * 100) / 100).toFixed(4)})`,
+            transition: 'transform 300ms cubic-bezier(0.25, 0.1, 0.3, 1)',
+          }}
         />
       </div>
       {/* Variant pills */}

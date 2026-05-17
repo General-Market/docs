@@ -1,7 +1,10 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { useFloorBatches } from '@/hooks/vision/useFloorStream'
 import { SourceBatchCard } from './SourceBatchCard'
+
+const LAYOUT_EASE: [number, number, number, number] = [0.25, 0.1, 0.3, 1]
 
 export function SourceBatchGrid() {
   const batches = useFloorBatches()
@@ -35,7 +38,13 @@ export function SourceBatchGrid() {
         ) : (
           <div className="flex flex-col gap-2">
             {sorted.map(b => (
-              <SourceBatchCard key={`${b.sourceId}-${b.batchId}`} batch={b} />
+              <motion.div
+                key={`${b.sourceId}-${b.batchId}`}
+                layout="position"
+                transition={{ layout: { duration: 0.55, ease: LAYOUT_EASE } }}
+              >
+                <SourceBatchCard batch={b} />
+              </motion.div>
             ))}
           </div>
         )}

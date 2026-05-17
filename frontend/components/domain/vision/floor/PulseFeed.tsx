@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatUnits } from 'viem'
 import {
@@ -9,6 +9,8 @@ import {
   type FlowRow,
   type FloorBatch,
 } from '@/hooks/vision/useFloorStream'
+
+const LAYOUT_EASE: [number, number, number, number] = [0.25, 0.1, 0.3, 1]
 
 function formatUSD(weiStr: string): string {
   try {
@@ -109,6 +111,19 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
   const widthPct = maxTvl > 0n ? Number((tvl * 1000n) / maxTvl) / 10 : 0
   const tvlStr = formatUSD(batch.tvlStr)
 
+  const prevTvlRef = useRef<string>(batch.tvlStr)
+  const lastGlintAtRef = useRef<number>(0)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    if (prevTvlRef.current === batch.tvlStr) return
+    prevTvlRef.current = batch.tvlStr
+    const now = Date.now()
+    if (now - lastGlintAtRef.current < 800) return
+    lastGlintAtRef.current = now
+    setTick(t => t + 1)
+  }, [batch.tvlStr])
+
   return (
     <div className="relative">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
@@ -139,6 +154,26 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
             transition: 'transform 900ms cubic-bezier(0.25,0.1,0.3,1)',
           }}
         />
+        {/* Tiny travelling glint — fires on every TVL update so the bar
+            visibly reacts even when the rounded dollar text doesn't budge.
+            Suppressed on first mount so the page doesn't shimmer on load. */}
+        {tick > 0 && (
+          <motion.span
+            key={tick}
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 w-[28px] rounded-full"
+            initial={{ opacity: 0, x: '-30%' }}
+            animate={{
+              opacity: [0, 0.55, 0],
+              x: `${Math.max(0, Math.min(100, widthPct)) - 8}%`,
+            }}
+            transition={{ duration: 0.7, ease: LAYOUT_EASE }}
+            style={{
+              background: `linear-gradient(90deg, transparent, ${batch.sourceBrandBg}, transparent)`,
+              mixBlendMode: 'screen',
+            }}
+          />
+        )}
       </div>
     </div>
   )
@@ -286,9 +321,15 @@ export function PulseFeed() {
             <h3 className="floor-pane-header">Top pools</h3>
             <span className="tabular-nums text-[11px] text-[#86868b]">{top.length}</span>
           </div>
-          <div className="space-y-2.5 px-8 pb-8">
+          <div className="flex flex-col gap-2.5 px-8 pb-8">
             {top.map(b => (
-              <PoolBar key={`${b.sourceId}-${b.batchId}`} batch={b} maxTvl={maxTopTvl} />
+              <motion.div
+                key={`${b.sourceId}-${b.batchId}`}
+                layout="position"
+                transition={{ layout: { duration: 0.55, ease: LAYOUT_EASE } }}
+              >
+                <PoolBar batch={b} maxTvl={maxTopTvl} />
+              </motion.div>
             ))}
           </div>
         </section>

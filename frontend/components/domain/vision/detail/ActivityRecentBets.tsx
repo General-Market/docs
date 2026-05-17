@@ -70,7 +70,7 @@ export function ActivityRecentBets() {
 
   return (
     <div className={CARD}>
-      <h3 className={HEADER}>Recent Bets</h3>
+      <h2 className={HEADER}>Recent Bets</h2>
 
       {isLoading && !sorted.length ? (
         <div className="space-y-2">
