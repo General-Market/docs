@@ -10,7 +10,7 @@ const USDC_DEC = 18 // L3 USDC is 18 decimals (NOT 6 — see CLAUDE.md)
 const SLIPPAGE_TIER = 2n
 const DEADLINE_SECS = 30n * 60n
 
-export type ActionKind = 'buy' | 'sell' | 'lend' | 'borrow'
+export type ActionKind = 'buy' | 'sell' | 'lend' | 'withdraw' | 'borrow' | 'repay'
 export type ActionResult =
   | { kind: ActionKind; status: 'ok'; wallet: `0x${string}`; tx: Hex; note: string }
   | { kind: ActionKind; status: 'skip'; wallet: `0x${string}`; note: string }
@@ -270,13 +270,99 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
   }
 }
 
+// ── WITHDRAW (MetaMorpho redeem) ─────────────────────────────────────────────
+export async function actWithdraw(ring: Keyring[number]): Promise<ActionResult> {
+  const pub = makePublic()
+  const shares = (await pub.readContract({
+    address: ADDR.MetaMorphoUSDC,
+    abi: METAMORPHO_ABI,
+    functionName: 'balanceOf',
+    args: [ring.account.address],
+  })) as bigint
+  if (shares === 0n) return { kind: 'withdraw', status: 'skip', wallet: ring.account.address, note: 'no vault shares to withdraw' }
+  // Withdraw a random 5–40 % slice. MetaMorpho's withdraw takes assets, not
+  // shares — so estimate assets by share value at 1:1 (close enough at
+  // zero/near-zero utilization; vault accounting will reconcile).
+  const pct = BigInt(Math.floor(rngFloat(0.05, 0.4) * 10_000))
+  const burn = (shares * pct) / 10_000n
+  if (burn === 0n) return { kind: 'withdraw', status: 'skip', wallet: ring.account.address, note: 'withdraw rounded to 0' }
+  if (DRY_RUN) {
+    return { kind: 'withdraw', status: 'ok', wallet: ring.account.address, tx: '0xdry' as Hex, note: `would withdraw ~${formatUnits(burn, USDC_DEC)} USDC` }
+  }
+  const wallet = makeWallet(ring.account)
+  try {
+    const tx = await wallet.writeContract({
+      chain: wallet.chain,
+      account: ring.account,
+      address: ADDR.MetaMorphoUSDC,
+      abi: METAMORPHO_ABI,
+      functionName: 'withdraw',
+      args: [burn, ring.account.address, ring.account.address],
+    })
+    return { kind: 'withdraw', status: 'ok', wallet: ring.account.address, tx, note: `withdraw ~${formatUnits(burn, USDC_DEC)} USDC` }
+  } catch (e) {
+    return { kind: 'withdraw', status: 'skip', wallet: ring.account.address, note: `withdraw reverted: ${String(e).slice(0, 80)}` }
+  }
+}
+
+// ── REPAY (Morpho.repay against an existing borrow position) ─────────────────
+export async function actRepay(ring: Keyring[number]): Promise<ActionResult> {
+  const pub = makePublic()
+  const markets = await listMorphoMarkets()
+  // Find any market where this wallet has an outstanding borrow.
+  for (const m of markets) {
+    const params = await readMarketParams(pub, m.marketId)
+    if (params.lltv === 0n) continue
+    const pos = await readPosition(pub, m.marketId, ring.account.address)
+    if (pos.borrowShares === 0n) continue
+    const tuple = { loanToken: params.loanToken, collateralToken: params.collateralToken, oracle: params.oracle, irm: params.irm, lltv: params.lltv } as const
+
+    // Repay a random 20–100 % slice of the debt by shares.
+    const pct = BigInt(Math.floor(rngFloat(0.2, 1.0) * 10_000))
+    const repayShares = (pos.borrowShares * pct) / 10_000n
+    if (repayShares === 0n) continue
+
+    // Approve USDC up to a generous bound; the actual debt is small.
+    const usdcBal = (await pub.readContract({
+      address: ADDR.USDC,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [ring.account.address],
+    })) as bigint
+    if (usdcBal === 0n) return { kind: 'repay', status: 'skip', wallet: ring.account.address, note: 'no USDC to repay with' }
+    await ensureAllowance(pub, ring, ADDR.USDC, ADDR.Morpho, usdcBal)
+
+    if (DRY_RUN) {
+      return { kind: 'repay', status: 'ok', wallet: ring.account.address, tx: '0xdry' as Hex, note: `would repay ${repayShares} shares on ${m.marketId.slice(0, 10)}` }
+    }
+    const wallet = makeWallet(ring.account)
+    try {
+      const tx = await wallet.writeContract({
+        chain: wallet.chain,
+        account: ring.account,
+        address: ADDR.Morpho,
+        abi: MORPHO_ABI,
+        functionName: 'repay',
+        // repay(MarketParams, assets=0, shares, onBehalf, data=0x)
+        args: [tuple, 0n, repayShares, ring.account.address, '0x'],
+      })
+      return { kind: 'repay', status: 'ok', wallet: ring.account.address, tx, note: `repay ${repayShares} shares against ${m.collateralToken.slice(0, 10)}` }
+    } catch (e) {
+      return { kind: 'repay', status: 'skip', wallet: ring.account.address, note: `repay reverted: ${String(e).slice(0, 80)}` }
+    }
+  }
+  return { kind: 'repay', status: 'skip', wallet: ring.account.address, note: 'no open borrow positions' }
+}
+
 export async function runAction(kind: ActionKind, ring: Keyring[number]): Promise<ActionResult> {
   try {
     switch (kind) {
       case 'buy': return await actBuy(ring)
       case 'sell': return await actSell(ring)
       case 'lend': return await actLend(ring)
+      case 'withdraw': return await actWithdraw(ring)
       case 'borrow': return await actBorrow(ring)
+      case 'repay': return await actRepay(ring)
     }
   } catch (e) {
     log.error({ err: String(e), kind, wallet: ring.account.address }, 'action error')

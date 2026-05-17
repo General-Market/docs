@@ -5,7 +5,7 @@ import { runAction, type ActionKind, type ActionResult } from './actions.js'
 import { pickOne } from './state.js'
 import { log } from './log.js'
 
-const ACTIONS: ActionKind[] = ['buy', 'sell', 'lend', 'borrow']
+const ACTIONS: ActionKind[] = ['buy', 'sell', 'lend', 'withdraw', 'borrow', 'repay']
 
 const state: { lastTick: string | null; lastAction: ActionResult | null } = {
   lastTick: null,

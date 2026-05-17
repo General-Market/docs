@@ -102,6 +102,32 @@ export const MORPHO_ABI = [
       { name: 'collateral', type: 'uint128' },
     ],
   },
+  {
+    type: 'function',
+    name: 'repay',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'marketParams',
+        type: 'tuple',
+        components: [
+          { name: 'loanToken', type: 'address' },
+          { name: 'collateralToken', type: 'address' },
+          { name: 'oracle', type: 'address' },
+          { name: 'irm', type: 'address' },
+          { name: 'lltv', type: 'uint256' },
+        ],
+      },
+      { name: 'assets', type: 'uint256' },
+      { name: 'shares', type: 'uint256' },
+      { name: 'onBehalf', type: 'address' },
+      { name: 'data', type: 'bytes' },
+    ],
+    outputs: [
+      { name: 'assetsRepaid', type: 'uint256' },
+      { name: 'sharesRepaid', type: 'uint256' },
+    ],
+  },
 ] as const
 
 export const METAMORPHO_ABI = [
