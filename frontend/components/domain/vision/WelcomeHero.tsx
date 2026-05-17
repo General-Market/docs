@@ -10,6 +10,7 @@ import { allInternalIds, toInternalId } from '@/lib/vision/source-ids'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { fmtPnl as fmtPnlShared, fmtVolume as fmtVolShared, truncAddr as truncAddrShared } from '@/lib/leaderboard/format'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import Image from 'next/image'
 import { Link, useRouter } from '@/i18n/routing'
@@ -1193,20 +1194,15 @@ const RANK_ACCENT = [
     badge: 'bg-amber-600 text-amber-50',
   },
 ] as const
-function fmtVol(v: number): string {
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
-  if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`
-  return `$${v.toFixed(0)}`
-}
+const fmtVol = fmtVolShared
+const truncAddr = truncAddrShared
 function fmtPnl(pnl: number): { text: string; color: string } {
-  const abs = Math.abs(pnl)
-  const s = abs >= 1000 ? `$${(abs / 1000).toFixed(1)}K` : `$${abs.toFixed(2)}`
-  if (pnl > 0) return { text: `+${s}`, color: 'text-emerald-500' }
-  if (pnl < 0) return { text: `-${s}`, color: 'text-red-500' }
-  return { text: '$0.00', color: 'text-zinc-400' }
-}
-function truncAddr(a: string): string {
-  return a.length > 12 ? `${a.slice(0, 6)}...${a.slice(-4)}` : a
+  const f = fmtPnlShared(pnl)
+  const color =
+    f.tone === 'pos' ? 'text-emerald-500'
+    : f.tone === 'neg' ? 'text-red-500'
+    : 'text-zinc-400'
+  return { text: f.text, color }
 }
 
 /** Per-source stats for a player */
@@ -1343,7 +1339,7 @@ function PodiumCard({ player, accentIdx, height, displayIdx, goTo, reduced }: {
   const accent = RANK_ACCENT[accentIdx]
   const pnl = fmtPnl(player.pnl)
   const rank = player.rank || accentIdx + 1
-  const vol = player.totalVolume || player.volume || 0
+  const vol = player.totalVolume || 0
   return (
     <motion.button
       key={player.walletAddress}
@@ -1442,7 +1438,7 @@ export function HeroLeaderboard() {
               <h2 className="text-[18px] font-semibold text-black tracking-[-0.02em]">Leaderboard</h2>
               <p className="text-[12px] text-zinc-400 mt-0.5">Ranked by P&L across all prediction markets</p>
             </div>
-            <Link href="/explorer" className="text-[12px] font-semibold text-zinc-500 hover:text-black transition-colors">
+            <Link href="/leaderboard" className="text-[12px] font-semibold text-zinc-500 hover:text-black transition-colors">
               View all &rarr;
             </Link>
           </div>
@@ -1485,7 +1481,7 @@ export function HeroLeaderboard() {
             <div className="border border-zinc-200 bg-white">
               {rest.map((player, i) => {
                 const pnl = fmtPnl(player.pnl)
-                const vol = player.totalVolume || player.volume || 0
+                const vol = player.totalVolume || 0
                 const rank = player.rank || i + 4
                 return (
                   <motion.button

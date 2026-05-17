@@ -5,6 +5,7 @@
  */
 import { getAaDataNodeUrl, getDataNodeServer, getIssuerVisionUrl } from '@/lib/config'
 import { toInternalId } from '@/lib/vision/source-ids'
+import { parseLeaderboardResponse } from '@/lib/leaderboard/parse'
 
 // ── Snapshot Meta ───────────────────────────────────────
 interface BulkSourceEntry {
@@ -62,12 +63,6 @@ export async function prefetchSnapshotMeta() {
 }
 
 // ── Leaderboard ─────────────────────────────────────────
-function parseNum(v: unknown): number {
-  if (typeof v === 'number') return isNaN(v) ? 0 : v
-  if (typeof v === 'string') { const n = parseFloat(v); return isNaN(n) ? 0 : n }
-  return 0
-}
-
 export async function prefetchLeaderboard(sourceId?: string) {
   const qs = sourceId ? `?source_id=${encodeURIComponent(toInternalId(sourceId))}` : ''
   const res = await fetch(`${getIssuerVisionUrl()}/vision/leaderboard${qs}`, {
@@ -75,31 +70,7 @@ export async function prefetchLeaderboard(sourceId?: string) {
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) throw new Error(`Leaderboard HTTP ${res.status}`)
-  const data = await res.json()
-  const entries = data.leaderboard ?? []
-
-  const leaderboard = entries.map((e: Record<string, unknown>) => ({
-    rank: (e.rank as number) ?? 0,
-    walletAddress: (e.walletAddress as string) ?? '',
-    pnl: parseNum(e.pnl),
-    winRate: parseNum(e.winRate),
-    roi: parseNum(e.roi),
-    totalVolume: parseNum(e.totalVolume),
-    portfolioBets: (e.portfolioBets as number) ?? 0,
-    avgPortfolioSize: parseNum(e.avgPortfolioSize),
-    largestPortfolio: (e.largestPortfolio as number) ?? 0,
-    roundsPlayed: parseNum(e.roundsPlayed),
-    roundsWon: parseNum(e.roundsWon),
-    avgCorrectPct: parseNum(e.avgCorrectPct),
-    volume: parseNum(e.totalVolume),
-    totalBets: (e.portfolioBets as number) ?? 0,
-    maxPortfolioSize: (e.largestPortfolio as number) ?? 0,
-  }))
-
-  return {
-    leaderboard,
-    updatedAt: data.updatedAt ?? new Date().toISOString(),
-  }
+  return parseLeaderboardResponse(await res.json())
 }
 
 // ── Per-Source Detail Prefetch ───────────────────────────

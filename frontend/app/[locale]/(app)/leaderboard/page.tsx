@@ -1,7 +1,7 @@
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
-import { LeaderboardApple } from '@/components/domain/vision/LeaderboardApple'
+import { Leaderboard } from '@/components/domain/vision/Leaderboard'
 import { prefetchLeaderboard } from '@/lib/vision/prefetch'
 
 export const metadata = {
@@ -50,10 +50,10 @@ export default async function LeaderboardPage() {
                 maxWidth: 560,
               }}
             >
-              Who is winning. Who is paying. The Anti-Cheat tells the truth.
+              Who is winning. Who is paying. Ranked by realized P&L across every settled round.
             </p>
           </header>
-          <LeaderboardApple />
+          <Leaderboard variant="full" />
         </div>
       </AppShell>
     </HydrationBoundary>

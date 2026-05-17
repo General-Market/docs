@@ -374,6 +374,7 @@
     "rank": "#",
     "player": "Player",
     "pnl_usdc": "PnL (USDC)",
+    "pnl": "P&L",
     "roi": "ROI",
     "rounds": "Rounds",
     "win_pct": "Win%",

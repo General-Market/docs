@@ -374,6 +374,7 @@
     "rank": "#",
     "player": "プレイヤー",
     "pnl_usdc": "PnL (USDC)",
+    "pnl": "損益",
     "roi": "ROI",
     "rounds": "ラウンド",
     "win_pct": "勝率%",

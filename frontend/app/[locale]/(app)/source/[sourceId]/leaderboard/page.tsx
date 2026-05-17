@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
-import { LeaderboardApple } from '@/components/domain/vision/LeaderboardApple'
+import { Leaderboard } from '@/components/domain/vision/Leaderboard'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceTabNav } from '@/components/domain/vision/detail/SourceTabNav'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
@@ -116,11 +116,18 @@ export default async function LeaderboardPage({ params }: Props) {
                     color: 'var(--apple-text-secondary)',
                   }}
                 >
-                  Bots and vaults trading {source.name}. Nothing else.
+                  Wallets ranked by realized P&L on {source.name} rounds. The rest of the protocol is hidden.
                 </p>
               )}
             </header>
-            <LeaderboardApple sourceId={sourceId} />
+            <Leaderboard
+              variant="full"
+              sourceId={sourceId}
+              scopeLabel={source?.name ?? sourceId}
+              scopeClearHref="/leaderboard"
+              emptyTitle={`No settled rounds on ${source?.name ?? sourceId} yet.`}
+              emptySubtitle="The first round to settle will name a winner here."
+            />
           </div>
         </div>
       </AppShell>

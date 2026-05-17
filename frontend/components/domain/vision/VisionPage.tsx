@@ -7,7 +7,7 @@ import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { useSettlementSSE } from '@/hooks/vision/useSettlementSSE'
 import { BatchCard } from './BatchCard'
 import { CreateBatchModal } from './CreateBatchModal'
-import { VisionLeaderboard } from './VisionLeaderboard'
+import { Leaderboard } from './Leaderboard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
@@ -84,7 +84,9 @@ export function VisionPage() {
           <h3 className="text-title font-bold tracking-tight text-black leading-[1.1]">{t('leaderboard.title')}</h3>
           <p className="text-body text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
           <ErrorBoundary fallback={<div className="py-8 text-center text-text-muted font-mono text-sm">{t('vision_page.leaderboard_unavailable')}</div>}>
-            <VisionLeaderboard />
+            <div className="mt-4">
+              <Leaderboard variant="compact" initialPageSize={10} viewAllHref="/leaderboard" />
+            </div>
           </ErrorBoundary>
         </div>
       </section>

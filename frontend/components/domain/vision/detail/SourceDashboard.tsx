@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from '@/i18n/routing'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { fmtRoi, truncAddr as truncAddrShared } from '@/lib/leaderboard/format'
 import { useRecentBets } from '@/hooks/useRecentBets'
 import { useBetsSSE } from '@/hooks/useBetsSSE'
 import type { RoundInfo } from '@/hooks/vision/useRounds'
@@ -50,9 +51,7 @@ function useNow(intervalMs: number = 1000): number {
   return now
 }
 
-function truncAddr(addr: string): string {
-  return `${addr.slice(0, 6)}..${addr.slice(-4)}`
-}
+const truncAddr = truncAddrShared
 
 const HEADER = 'text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-3'
 const CARD = 'border border-border-light bg-[var(--surface)] p-5'
@@ -191,15 +190,8 @@ function RoundSpotlight({ sourceId }: { sourceId: string }) {
 }
 
 function Leaderboard({ sourceId }: { sourceId: string }) {
-  // Per-source leaderboard only populates after rounds settle. For fresh
-  // sources that's an empty list — fall back to the global leaderboard so
-  // the card always has someone to chase.
-  const { leaderboard: perSource, isLoading: perSourceLoading } = useVisionLeaderboard(undefined, sourceId)
-  const { leaderboard: global, isLoading: globalLoading } = useVisionLeaderboard()
-  const isLoading = (perSourceLoading || globalLoading) && perSource.length === 0 && global.length === 0
-  const usingFallback = perSource.length === 0 && global.length > 0
-  const list = usingFallback ? global : perSource
-  const top5 = list.slice(0, 5)
+  const { leaderboard, isLoading } = useVisionLeaderboard(undefined, sourceId)
+  const top5 = leaderboard.slice(0, 5)
 
   if (isLoading) {
     return (
@@ -227,38 +219,45 @@ function Leaderboard({ sourceId }: { sourceId: string }) {
 
   return (
     <div className={CARD}>
-      <h3 className={HEADER}>
-        {usingFallback ? 'Top Traders' : 'Leaderboard'}
-      </h3>
+      <h3 className={HEADER}>Leaderboard</h3>
 
       {top5.length > 0 ? (
         <div className="space-y-2">
-          {top5.map((entry, i) => (
-            <div key={entry.walletAddress} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold text-text-muted w-4">{i + 1}</span>
-                <span className="font-mono text-[13px] text-black">
-                  {truncAddr(entry.walletAddress)}
-                </span>
-              </div>
-              <span
-                className={`font-mono text-[13px] font-bold ${
-                  entry.roi >= 0 ? 'text-color-up' : 'text-color-down'
-                }`}
+          {top5.map((entry, i) => {
+            const roi = fmtRoi(entry.roi)
+            const roiColor =
+              roi.tone === 'pos' ? 'text-color-up'
+              : roi.tone === 'neg' ? 'text-color-down'
+              : 'text-text-muted'
+            return (
+              <Link
+                key={entry.walletAddress}
+                href={`/profile/${entry.walletAddress}`}
+                className="flex items-center justify-between hover:opacity-80 transition-opacity"
               >
-                {entry.roi >= 0 ? '+' : ''}
-                {entry.roi.toFixed(1)}%
-              </span>
-            </div>
-          ))}
-          {usingFallback && (
-            <p className="pt-2 text-[10px] text-text-muted/70 uppercase tracking-[0.08em]">
-              Across all markets — this source has no settled rounds yet
-            </p>
-          )}
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-bold text-text-muted w-4">{i + 1}</span>
+                  <span className="font-mono text-[13px] text-black">
+                    {truncAddr(entry.walletAddress)}
+                  </span>
+                </div>
+                <span className={`font-mono text-[13px] font-bold ${roiColor}`}>
+                  {roi.text}
+                </span>
+              </Link>
+            )
+          })}
+          <Link
+            href={`/source/${sourceId}/leaderboard`}
+            className="block pt-2 text-[10px] text-text-muted hover:text-text-secondary uppercase tracking-[0.08em] transition-colors"
+          >
+            View full leaderboard →
+          </Link>
         </div>
       ) : (
-        <p className="py-4 text-[13px] text-text-muted">No traders yet</p>
+        <p className="py-4 text-[13px] text-text-muted">
+          No settled rounds on this source yet.
+        </p>
       )}
 
       <BotCta text="You're not on this list yet." />
