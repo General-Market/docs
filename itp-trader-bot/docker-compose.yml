@@ -9,6 +9,7 @@ services:
       - HEALTH_PORT=8090
       - KEYS_PATH=/data/keys.json
       - KEYRING_SIZE=5
+      - EXTRA_MORPHO_MARKETS=0x736b6e07edd80ab0ce7e4657ea4bb1eafb4cb9523fccf38bb2bbd65bea143fc5
     volumes:
       - /opt/itp-trader-bot/data:/data
     ports:

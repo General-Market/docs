@@ -1,4 +1,6 @@
-import { DATA_NODE_URL } from './config.js'
+import { DATA_NODE_URL, EXTRA_MORPHO_MARKETS, ADDR } from './config.js'
+import { makePublic } from './clients.js'
+import { MORPHO_ABI } from './abis.js'
 
 export type Itp = { itpId: `0x${string}`; symbol: string; name: string; nav: number; aum: number }
 export type MorphoMarket = {
@@ -40,7 +42,7 @@ export async function listMorphoMarkets(): Promise<MorphoMarket[]> {
   const arr = Array.isArray(raw)
     ? (raw as Record<string, unknown>[])
     : ((raw as { markets?: Record<string, unknown>[] }).markets ?? [])
-  const data: MorphoMarket[] = arr
+  const sseMarkets: MorphoMarket[] = arr
     .filter((m) => m && typeof m === 'object')
     .map((m) => ({
       marketId: String(m.marketId ?? m.market_id ?? '0x') as `0x${string}`,
@@ -52,6 +54,41 @@ export async function listMorphoMarkets(): Promise<MorphoMarket[]> {
       itpId: m.itpId || m.itp_id ? (String(m.itpId ?? m.itp_id) as `0x${string}`) : undefined,
     }))
     .filter((m) => m.marketId !== '0x' && m.collateralToken !== '0x')
+
+  // Merge in any EXTRA markets passed via env. Reads marketParams from chain
+  // so the bot doesn't need them hard-coded — only the marketId.
+  const extra: MorphoMarket[] = []
+  if (EXTRA_MORPHO_MARKETS.length > 0) {
+    const pub = makePublic()
+    for (const marketId of EXTRA_MORPHO_MARKETS) {
+      try {
+        const res = (await pub.readContract({
+          address: ADDR.Morpho,
+          abi: MORPHO_ABI,
+          functionName: 'idToMarketParams',
+          args: [marketId],
+        })) as readonly [`0x${string}`, `0x${string}`, `0x${string}`, `0x${string}`, bigint]
+        if (res[4] === 0n) continue // not registered
+        extra.push({
+          marketId,
+          loanToken: res[0].toLowerCase() as `0x${string}`,
+          collateralToken: res[1].toLowerCase() as `0x${string}`,
+          oracle: res[2].toLowerCase() as `0x${string}`,
+          irm: res[3].toLowerCase() as `0x${string}`,
+          lltv: res[4],
+        })
+      } catch {
+        // skip silently — Morpho reverts mean market doesn't exist on this address
+      }
+    }
+  }
+
+  // De-dup by marketId (extra wins over SSE if both contain the same id)
+  const byId = new Map<string, MorphoMarket>()
+  for (const m of sseMarkets) byId.set(m.marketId, m)
+  for (const m of extra) byId.set(m.marketId, m)
+  const data = Array.from(byId.values())
+
   mktCache = { at: Date.now(), data }
   return data
 }

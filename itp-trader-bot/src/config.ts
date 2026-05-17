@@ -40,3 +40,11 @@ export const BUY_USDC_MIN = 5
 export const BUY_USDC_MAX = 50
 export const LEND_USDC_MIN = 1
 export const LEND_USDC_MAX = 20
+
+// Comma-separated extra Morpho marketIds the bot should consider for borrow,
+// on top of whatever the data-node SSE returns. Used to surface markets the
+// SSE pipeline hasn't picked up (or to override phantom ones).
+export const EXTRA_MORPHO_MARKETS = (process.env.EXTRA_MORPHO_MARKETS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter((s): s is `0x${string}` => /^0x[0-9a-fA-F]{64}$/.test(s)) as `0x${string}`[]
