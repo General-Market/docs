@@ -43,12 +43,6 @@ export const FEATURED_SOURCES: FeaturedSource[] = [
     assetName: 'Worldwide traffic index',
   },
   {
-    id: 'hackernews',
-    displayName: 'Hacker News',
-    meta: 'Front page · story velocity · decay',
-    assetName: 'Top story score · 1h',
-  },
-  {
     id: 'zillow',
     displayName: 'Zillow',
     meta: 'Housing · list prices · cuts',
@@ -59,6 +53,18 @@ export const FEATURED_SOURCES: FeaturedSource[] = [
     displayName: 'Congress',
     meta: 'Sessions · bills · votes',
     assetName: 'Bills introduced · this week',
+  },
+  {
+    id: 'db_trains',
+    displayName: 'Deutsche Bahn',
+    meta: 'Long-distance · delays · cancellations',
+    assetName: 'ICE delay rate · today',
+  },
+  {
+    id: 'airnow',
+    displayName: 'AirNow',
+    meta: 'EPA · air quality index · USA',
+    assetName: 'PM2.5 · national average',
   },
 ]
 
