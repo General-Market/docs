@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Rap Sheet — General Market</title>
-<meta name="description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
-<meta property="og:title" content="The Rap Sheet — General Market">
-<meta property="og:description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
+<title>Anti-Cheat Flags — General Market</title>
+<meta name="description" content="Fourteen venues. The iconic flag from each one. The losses retail filed, the fines regulators wrote, the confessions the executives signed.">
+<meta property="og:title" content="Anti-Cheat Flags — General Market">
+<meta property="og:description" content="Fourteen venues. The iconic flag from each one.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://generalmarket.io/case-studies/rap-sheet/">
+<meta property="og:url" content="https://generalmarket.io/anticheat-flags">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The Rap Sheet — General Market">
-<meta name="twitter:description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
+<meta name="twitter:title" content="Anti-Cheat Flags — General Market">
+<meta name="twitter:description" content="Fourteen venues. The iconic flag from each one.">
 <style>
 :root {
   --ink: #1D1D1F;
@@ -182,6 +182,190 @@ footer.foot .meta { margin-top: 32px; font-size: 12px; color: var(--ink-3); lett
 footer.foot .meta a { color: var(--blue); text-decoration: none; }
 footer.foot .meta a:hover { text-decoration: underline; }
 
+/* BENTO GALLERY — iconic flags per venue */
+.gallery { background: var(--night); color: #FFF; padding: 56px 22px 120px; position: relative; overflow: hidden; }
+.gallery::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 80% 10%, rgba(221,4,38,0.12) 0%, transparent 55%), radial-gradient(ellipse at 10% 90%, rgba(0,113,227,0.10) 0%, transparent 55%); z-index: 0; pointer-events: none; }
+.gallery-inner { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; }
+.gallery-head { display: flex; align-items: baseline; justify-content: space-between; gap: 22px; margin-bottom: 36px; padding-bottom: 22px; border-bottom: 1px solid rgba(255,255,255,0.14); flex-wrap: wrap; }
+.gallery-eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--red); font-weight: 700; }
+.gallery-title { font-family: var(--display); font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.028em; line-height: 1; color: #FFF; }
+.gallery-title em { font-family: var(--serif); font-style: italic; font-weight: 500; color: var(--red); }
+.gallery-hint { font-family: var(--display); font-size: 14px; color: rgba(255,255,255,0.55); font-weight: 500; letter-spacing: -0.008em; }
+.gallery-hint::after { content: " →"; opacity: 0.6; }
+
+.bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) { .bento { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .bento { grid-template-columns: 1fr; } }
+
+.flag-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 18px;
+  min-height: 420px;
+  padding: 28px 26px 24px;
+  border-radius: 22px;
+  background: var(--card-bg, #1A1A1C);
+  color: var(--card-fg, #FFF);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 360ms var(--ease-out, cubic-bezier(0.25, 0.1, 0.3, 1)), box-shadow 360ms ease;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.flag-card:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0,0,0,0.45); }
+.flag-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 100%, rgba(0,0,0,0.32) 0%, transparent 60%);
+  pointer-events: none;
+}
+.flag-card > * { position: relative; z-index: 1; }
+
+.flag-top { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.flag-year { font-family: var(--serif); font-style: italic; font-size: 22px; font-weight: 500; letter-spacing: -0.012em; color: var(--card-fg, #FFF); opacity: 0.85; }
+.flag-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: var(--card-fg, #FFF); opacity: 0.6; }
+
+.flag-body { display: flex; flex-direction: column; gap: 10px; }
+.flag-name { font-family: var(--display); font-size: clamp(28px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.03em; line-height: 0.96; color: var(--card-fg, #FFF); }
+.flag-name em { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.018em; opacity: 0.78; }
+.flag-stat { font-family: var(--display); font-size: clamp(34px, 4.6vw, 56px); font-weight: 800; letter-spacing: -0.034em; line-height: 0.92; color: var(--card-fg, #FFF); margin-top: 4px; }
+.flag-knife { font-family: var(--serif); font-style: italic; font-size: 16px; line-height: 1.32; letter-spacing: -0.008em; color: var(--card-fg, #FFF); opacity: 0.85; max-width: 100%; }
+
+.flag-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
+
+/* Per-card mechanism chart */
+.flag-chart {
+  margin: 4px -6px 0;
+  padding: 14px 14px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.flag-card.light-fg .flag-chart,
+.flag-card.bybit .flag-chart,
+.flag-card.deribit .flag-chart,
+.flag-card.polymarket .flag-chart,
+.flag-card.robinhood .flag-chart,
+.flag-card.hyperliquid .flag-chart { background: rgba(0,0,0,0.10); border-color: rgba(0,0,0,0.08); }
+.flag-chart svg { display: block; width: 100%; height: auto; max-height: 96px; }
+.flag-chart-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-top: 8px; opacity: 0.62; font-weight: 700; }
+.flag-chart-axis { stroke: currentColor; stroke-width: 1; opacity: 0.18; }
+.flag-chart-line { fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.flag-chart-line.faint { opacity: 0.55; stroke-width: 1.6; }
+.flag-chart-line.dashed { stroke-dasharray: 3 4; stroke-width: 1.5; opacity: 0.5; }
+.flag-chart-area { opacity: 0.18; }
+.flag-chart-marker { fill: #FFF; stroke: currentColor; stroke-width: 1.5; }
+.flag-card.light-fg .flag-chart-marker,
+.flag-card.bybit .flag-chart-marker,
+.flag-card.deribit .flag-chart-marker,
+.flag-card.polymarket .flag-chart-marker,
+.flag-card.robinhood .flag-chart-marker,
+.flag-card.hyperliquid .flag-chart-marker { fill: #1D1D1F; stroke: currentColor; }
+.flag-chart-blood { fill: #FF3B30; }
+.flag-card.binance .flag-chart-blood,
+.flag-card.bitmex .flag-chart-blood { fill: #FFF; }
+.flag-chart-label-svg { font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.06em; fill: currentColor; opacity: 0.7; font-weight: 700; }
+
+/* Sequenced reveal animation system — 8.4s loop, six step slots */
+@keyframes seq-fade {
+  0%, 4% { opacity: 0; }
+  8% { opacity: 1; }
+  86% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes seq-draw {
+  0%, 4% { opacity: 0; stroke-dashoffset: var(--len, 320); }
+  8% { opacity: 1; }
+  22% { stroke-dashoffset: 0; opacity: 1; }
+  86% { opacity: 1; stroke-dashoffset: 0; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes seq-pulse {
+  0%, 4% { opacity: 0; transform: scale(0.2); }
+  8% { opacity: 1; transform: scale(1.4); }
+  14% { transform: scale(1); }
+  86% { opacity: 1; transform: scale(1); }
+  96%, 100% { opacity: 0; }
+}
+.flag-chart .seq, .flag-chart .seq-draw, .flag-chart .seq-pulse {
+  animation-duration: 8.4s;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+  animation-delay: calc(var(--s, 0) * 1s + var(--card-offset, 0s));
+}
+.flag-chart .seq { animation-name: seq-fade; opacity: 0; }
+.flag-chart .seq-draw {
+  animation-name: seq-draw;
+  opacity: 0;
+  stroke-dasharray: var(--len, 320);
+  stroke-dashoffset: var(--len, 320);
+}
+.flag-chart .seq-pulse {
+  animation-name: seq-pulse;
+  opacity: 0;
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
+  transform-box: fill-box;
+}
+
+/* Stagger card animations slightly so the page doesn't pulse in unison */
+.bento .flag-card:nth-child(1)  { --card-offset: 0s; }
+.bento .flag-card:nth-child(2)  { --card-offset: 0.8s; }
+.bento .flag-card:nth-child(3)  { --card-offset: 1.6s; }
+.bento .flag-card:nth-child(4)  { --card-offset: 0.4s; }
+.bento .flag-card:nth-child(5)  { --card-offset: 1.2s; }
+.bento .flag-card:nth-child(6)  { --card-offset: 2.0s; }
+.bento .flag-card:nth-child(7)  { --card-offset: 0.2s; }
+.bento .flag-card:nth-child(8)  { --card-offset: 1.0s; }
+.bento .flag-card:nth-child(9)  { --card-offset: 1.8s; }
+.bento .flag-card:nth-child(10) { --card-offset: 0.6s; }
+.bento .flag-card:nth-child(11) { --card-offset: 1.4s; }
+.bento .flag-card:nth-child(12) { --card-offset: 2.2s; }
+.bento .flag-card:nth-child(13) { --card-offset: 0s; }
+.bento .flag-card:nth-child(14) { --card-offset: 1.6s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-chart .seq, .flag-chart .seq-draw, .flag-chart .seq-pulse {
+    animation: none; opacity: 1; stroke-dashoffset: 0; transform: none;
+  }
+}
+
+.flag-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: -0.008em;
+  background: rgba(255,255,255,0.92); color: var(--ink);
+  padding: 8px 14px; border-radius: 980px;
+}
+.flag-pill .arrow { font-family: var(--display); font-weight: 700; font-size: 14px; line-height: 1; transform: translateY(-0.5px); }
+.flag-card.light-fg .flag-pill { background: rgba(0,0,0,0.78); color: #FFF; }
+.flag-count { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--card-fg, #FFF); opacity: 0.62; font-weight: 700; }
+
+/* Card color variants — per venue */
+.flag-card.binance      { --card-bg: #C42424; --card-fg: #FFF; }
+.flag-card.coinbase     { --card-bg: #0052FF; --card-fg: #FFF; }
+.flag-card.ftx          { --card-bg: #11141A; --card-fg: #FFF; }
+.flag-card.bybit        { --card-bg: #F4A521; --card-fg: #1D1D1F; }
+.flag-card.hyperliquid  { --card-bg: #2BBEAE; --card-fg: #06231F; }
+.flag-card.bitmex       { --card-bg: #5F0810; --card-fg: #FFF; }
+.flag-card.deribit      { --card-bg: #E8DCC5; --card-fg: #1D1D1F; }
+.flag-card.kraken       { --card-bg: #4B3FBB; --card-fg: #FFF; }
+.flag-card.okx          { --card-bg: #2A2A2D; --card-fg: #FFF; }
+.flag-card.polymarket   { --card-bg: #F4D03F; --card-fg: #1D1D1F; }
+.flag-card.kalshi       { --card-bg: #1F5F46; --card-fg: #FFF; }
+.flag-card.robinhood    { --card-bg: #00C805; --card-fg: #062606; }
+.flag-card.pumpfun      { --card-bg: #FF1A6C; --card-fg: #FFF; }
+.flag-card.fxcfd        { --card-bg: #0A1F44; --card-fg: #FFF; }
+
+.flag-card.bybit .flag-pill,
+.flag-card.deribit .flag-pill,
+.flag-card.polymarket .flag-pill { background: rgba(0,0,0,0.88); color: #FFF; }
+.flag-card.hyperliquid .flag-pill { background: rgba(255,255,255,0.95); color: #06231F; }
+.flag-card.robinhood .flag-pill { background: rgba(0,0,0,0.85); color: #FFF; }
+
+@media (max-width: 560px) {
+  .flag-card { aspect-ratio: 5 / 4; padding: 24px 22px 22px; }
+  .flag-name { font-size: 28px; }
+  .flag-stat { font-size: 36px; }
+}
+
 /* PRINT */
 @media print {
   .tabs-wrap, .closer, footer.foot { display: none; }
@@ -213,28 +397,461 @@ footer.foot .meta a:hover { text-decoration: underline; }
       </span>
       <span class="meta">TECHNICAL REVIEW № 003</span>
     </div>
-    <h1>The Rap <em>Sheet</em></h1>
-    <p class="dek">Ten exchanges. One hundred seventy-six receipts. The losses retail filed, the fines regulators wrote, the confessions the executives signed.</p>
+    <h1>Anti-Cheat <em>Flags</em></h1>
+    <p class="dek">Fourteen venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.</p>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-fig">176</div>
-        <div class="hero-stat-lbl">Incidents</div>
+        <div class="hero-stat-fig">14</div>
+        <div class="hero-stat-lbl">Venues flagged</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-fig">$60B<em>+</em></div>
         <div class="hero-stat-lbl">Fines, hacks, losses</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-fig">11</div>
-        <div class="hero-stat-lbl">Venues</div>
+        <div class="hero-stat-fig">200<em>+</em></div>
+        <div class="hero-stat-lbl">Incidents on file</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-fig">2017<em>—26</em></div>
+        <div class="hero-stat-fig">2015<em>—26</em></div>
         <div class="hero-stat-lbl">Years documented</div>
       </div>
     </div>
   </div>
 </header>
+
+<!-- BENTO GALLERY — the iconic flags -->
+<section class="gallery" aria-label="Iconic flags per venue">
+  <div class="gallery-inner">
+    <div class="gallery-head">
+      <div>
+        <div class="gallery-eyebrow">Iconic Flags</div>
+        <h2 class="gallery-title">One flag per <em>venue.</em></h2>
+      </div>
+      <span class="gallery-hint">Tap a card for the full file</span>
+    </div>
+    <div class="bento">
+
+      <a class="flag-card binance" href="#binance">
+        <div class="flag-top">
+          <span class="flag-year">2023</span>
+          <span class="flag-tag">DOJ · 4 mo prison</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="62" x2="240" y2="62"/>
+            <line class="flag-chart-line dashed seq" style="--s:1" x1="0" y1="54" x2="240" y2="54"/>
+            <path class="flag-chart-line seq-draw" style="--s:2;--len:520" d="M 0 30 L 30 32 L 60 28 L 95 30 L 110 31 L 116 72 L 122 30 L 155 26 L 195 30 L 240 28"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3;--ox:116px;--oy:72px" cx="116" cy="72" r="3"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3.2;--ox:111px;--oy:66px" cx="111" cy="66" r="2"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3.2;--ox:121px;--oy:66px" cx="121" cy="66" r="2"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="128" y="52">STOPS</text>
+          </svg>
+          <div class="flag-chart-label">Scam wick · liquidations clear the book</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Binance</div>
+          <div class="flag-stat">$4.3B</div>
+          <p class="flag-knife">The largest corporate crime fine in American history. He served four months.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">23 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card ftx" href="#ftx">
+        <div class="flag-top">
+          <span class="flag-year">2022</span>
+          <span class="flag-tag">SBF · 25 yrs</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <rect class="seq" style="--s:0" x="20" y="22" width="120" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <text class="flag-chart-label-svg seq" style="--s:0" x="38" y="36">FTX wallet</text>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:14" d="M 40 8 L 40 20"/>
+            <path class="flag-chart-line seq-draw" style="--s:1.1;--len:14" d="M 65 8 L 65 20"/>
+            <path class="flag-chart-line seq-draw" style="--s:1.2;--len:14" d="M 90 8 L 90 20"/>
+            <path class="flag-chart-line seq-draw" style="--s:1.3;--len:14" d="M 115 8 L 115 20"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="50" y="56">allow_negative</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:2.4;--ox:80px;--oy:50px" cx="80" cy="50" r="3"/>
+            <path class="flag-chart-line seq-draw" style="--s:3;--len:90" d="M 140 50 Q 175 50 200 24"/>
+            <polygon class="seq" style="--s:3.5" points="200,12 194,26 206,26" fill="currentColor"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="156" y="10">→ ALAMEDA</text>
+          </svg>
+          <div class="flag-chart-label">Backdoor drain · one Boolean flag</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">FTX</div>
+          <div class="flag-stat">$8B</div>
+          <p class="flag-knife">One Boolean flag, eight billion dollars, three plea-bargained lieutenants.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">20 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card bybit" href="#bybit">
+        <div class="flag-top">
+          <span class="flag-year">2025</span>
+          <span class="flag-tag">Lazarus · Largest heist</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <path class="flag-chart-line seq-draw" style="--s:0;--len:170" d="M 0 22 L 170 22"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="44" y="14">$1.5B IN HOT WALLET</text>
+            <line class="flag-chart-line seq-draw" style="--s:2;--len:44" x1="170" y1="22" x2="170" y2="64"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:2.5;--ox:170px;--oy:42px" cx="170" cy="42" r="4"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="100" y="44">delegatecall</text>
+            <path class="flag-chart-line seq-draw" style="--s:3;--len:70" d="M 170 64 L 240 64"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="184" y="60">$0</text>
+          </svg>
+          <div class="flag-chart-label">Spoofed signing UI · one delegatecall</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Bybit</div>
+          <div class="flag-stat">$1.5B</div>
+          <p class="flag-knife">The signature was real. Only the interface lied — and that was enough.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">12 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card coinbase" href="#coinbase">
+        <div class="flag-top">
+          <span class="flag-year">2025</span>
+          <span class="flag-tag">Support bribed · 70k records</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:60" d="M 0 50 L 60 50"/>
+            <path class="flag-chart-line seq-draw" style="--s:2;--len:80" d="M 60 50 Q 92 48 120 22"/>
+            <text class="flag-chart-label-svg seq" style="--s:2.4" x="60" y="44">private info</text>
+            <line class="flag-chart-line dashed seq" style="--s:3" x1="135" y1="0" x2="135" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="140" y="14">LIST →</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3.5;--ox:135px;--oy:22px" cx="135" cy="22" r="3"/>
+            <path class="flag-chart-line seq-draw" style="--s:4;--len:105" d="M 135 22 L 240 28"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="160" y="44">retail bag</text>
+          </svg>
+          <div class="flag-chart-label">Listing run-up · the leak was a person</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Coinbase</div>
+          <div class="flag-stat">$400M</div>
+          <p class="flag-knife">Two hundred dollars a photograph. Two hundred photographs a day. Six months unnoticed.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">21 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card okx" href="#okx">
+        <div class="flag-top">
+          <span class="flag-year">2025</span>
+          <span class="flag-tag">DOJ plea · $1T US flow</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <text class="flag-chart-label-svg seq" style="--s:0" x="0" y="14">US RETAIL</text>
+            <path class="flag-chart-line seq-draw" style="--s:0.4;--len:90" d="M 10 22 L 100 40"/>
+            <rect class="seq" style="--s:1" x="100" y="32" width="42" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="108" y="46">OKX</text>
+            <path class="flag-chart-line seq-draw" style="--s:2;--len:90" d="M 142 42 L 230 22"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="146" y="14">"random country"</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:4;--ox:230px;--oy:22px" cx="230" cy="22" r="3"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="170" y="72">→ DPRK · Iran</text>
+          </svg>
+          <div class="flag-chart-label">Sanctioned flow · "no transaction monitor"</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">OKX</div>
+          <div class="flag-stat">$505M</div>
+          <p class="flag-knife">One employee told Americans to "just put a random country." The half-billion fine was the tip.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">13 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card bitmex" href="#bitmex">
+        <div class="flag-top">
+          <span class="flag-year">2020</span>
+          <span class="flag-tag">Black Thursday · DDoS</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:80" d="M 0 18 L 70 34"/>
+            <line class="flag-chart-line dashed seq" style="--s:2" x1="80" y1="2" x2="80" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="50" y="12">OFFLINE</text>
+            <path class="flag-chart-line seq-draw" style="--s:3;--len:64" d="M 80 34 L 144 64"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3.5;--ox:144px;--oy:64px" cx="144" cy="64" r="3"/>
+            <line class="flag-chart-line dashed seq" style="--s:4" x1="160" y1="2" x2="160" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="166" y="12">ONLINE</text>
+            <path class="flag-chart-line seq-draw" style="--s:5;--len:84" d="M 160 64 L 240 24"/>
+          </svg>
+          <div class="flag-chart-label">Convenient outage · cascade then snap</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">BitMEX</div>
+          <div class="flag-stat">$702M</div>
+          <p class="flag-knife">The engine that ate longs took a nap precisely when there were no longs left to eat.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">18 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card hyperliquid" href="#hyperliquid">
+        <div class="flag-top">
+          <span class="flag-year">2025</span>
+          <span class="flag-tag">JELLY override</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <line class="flag-chart-line dashed seq" style="--s:1" x1="0" y1="16" x2="240" y2="16"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="0" y="12">LIQUIDATION</text>
+            <path class="flag-chart-line seq-draw" style="--s:2;--len:140" d="M 0 44 L 50 32 L 100 22 L 130 18"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3;--ox:138px;--oy:40px" cx="138" cy="40" r="4"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="118" y="54">VOTE</text>
+            <path class="flag-chart-line seq-draw" style="--s:4;--len:104" d="M 140 40 L 240 62"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="156" y="74">price they chose</text>
+          </svg>
+          <div class="flag-chart-label">Validator override · the tape rewritten</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Hyperliquid</div>
+          <div class="flag-stat">$13M</div>
+          <p class="flag-knife">When the trade went wrong, the validators changed the price.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">12 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card kraken" href="#kraken">
+        <div class="flag-top">
+          <span class="flag-year">2023</span>
+          <span class="flag-tag">SEC · Staking shut</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:160" d="M 0 60 Q 60 50 130 16"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="68" y="42">21% APR</text>
+            <line class="flag-chart-line dashed seq" style="--s:3" x1="142" y1="2" x2="142" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="146" y="12">SEC</text>
+            <path class="flag-chart-line seq-draw" style="--s:4;--len:50" d="M 142 16 L 142 64"/>
+            <path class="flag-chart-line seq-draw" style="--s:5;--len:96" d="M 142 64 L 240 64"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="176" y="58">0%</text>
+          </svg>
+          <div class="flag-chart-label">Yield pulled · the promise was a security</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Kraken</div>
+          <div class="flag-stat">$30M</div>
+          <p class="flag-knife">They sold yield by promise. The promise was a security. The yield, eventually, was a fine.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">18 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card deribit" href="#deribit">
+        <div class="flag-top">
+          <span class="flag-year">2022</span>
+          <span class="flag-tag">Hot-wallet · Three jurisdictions</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <rect class="seq" style="--s:1" x="20" y="30" width="60" height="38" fill="currentColor" opacity="0.4"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="22" y="44">EQUITY</text>
+            <line class="flag-chart-line dashed seq" style="--s:2" x1="0" y1="46" x2="120" y2="46"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="88" y="42">OLD MM</text>
+            <line class="flag-chart-line seq-draw" style="--s:3;--len:24" x1="120" y1="46" x2="120" y2="22"/>
+            <line class="flag-chart-line dashed seq" style="--s:3.4" x1="120" y1="22" x2="240" y2="22"/>
+            <text class="flag-chart-label-svg seq" style="--s:3.4" x="202" y="18">NEW MM</text>
+            <rect class="seq-pulse" style="--s:4;--ox:170px;--oy:52px" x="140" y="46" width="56" height="22" fill="currentColor" opacity="0.18"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="146" y="60">LIQUIDATED</text>
+          </svg>
+          <div class="flag-chart-label">Margin doubled · the rules under your feet</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Deribit</div>
+          <div class="flag-stat">$28M</div>
+          <p class="flag-knife">A decade of silence ended with a single hot wallet. Silence was always the product.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">12 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card polymarket" href="#polymarket">
+        <div class="flag-top">
+          <span class="flag-year">2026</span>
+          <span class="flag-tag">Insider · 98% win rate</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:0" x="0" y="12">100%</text>
+            <text class="flag-chart-label-svg seq" style="--s:0" x="0" y="66">0%</text>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:90" d="M 22 60 L 110 60"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="46" y="56">5%</text>
+            <path class="flag-chart-line seq-draw" style="--s:2;--len:60" d="M 110 60 L 150 18"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:2.5;--ox:150px;--oy:18px" cx="150" cy="18" r="3"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="116" y="14">insider bet</text>
+            <line class="flag-chart-line dashed seq" style="--s:4" x1="186" y1="2" x2="186" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="190" y="12">EVENT</text>
+            <path class="flag-chart-line seq-draw" style="--s:5;--len:54" d="M 150 18 L 186 14 L 240 14"/>
+          </svg>
+          <div class="flag-chart-label">Insider bet · dawn before the headline</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Polymarket</div>
+          <div class="flag-stat">$2.4M</div>
+          <p class="flag-knife">Ninety-eight percent in markets that priced fifty — luck, or a subscription to the briefing.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">14 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card kalshi" href="#kalshi">
+        <div class="flag-top">
+          <span class="flag-year">2025</span>
+          <span class="flag-tag">Death-carveout · MM affiliate</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="20" y1="68" x2="240" y2="68"/>
+            <line class="flag-chart-axis seq" style="--s:0" x1="20" y1="2" x2="20" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:0" x="0" y="12">$54M</text>
+            <path class="flag-chart-line seq-draw dashed" style="--s:1;--len:108" d="M 20 68 L 130 14"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="44" y="44">expected</text>
+            <line class="flag-chart-line dashed seq" style="--s:3" x1="138" y1="2" x2="138" y2="68"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="142" y="12">DEATH</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:3.5;--ox:138px;--oy:14px" cx="138" cy="14" r="3"/>
+            <path class="flag-chart-line seq-draw" style="--s:4;--len:54" d="M 138 14 L 138 62"/>
+            <path class="flag-chart-line seq-draw" style="--s:5;--len:100" d="M 138 62 L 240 62"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="166" y="58">→ $0 paid</text>
+          </svg>
+          <div class="flag-chart-label">Carveout · the door was written shut</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Kalshi</div>
+          <div class="flag-stat">$54M</div>
+          <p class="flag-knife">A peer-to-peer exchange where one peer wrote the protocol and another peer is its subsidiary.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">13 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card robinhood" href="#robinhood">
+        <div class="flag-top">
+          <span class="flag-year">2021</span>
+          <span class="flag-tag">GME freeze · PFOF</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <rect class="seq" style="--s:0" x="20" y="22" width="80" height="36" rx="18" fill="none" stroke="currentColor" stroke-width="2"/>
+            <text class="flag-chart-label-svg seq" style="--s:0" x="48" y="44">BUY</text>
+            <rect class="seq" style="--s:1" x="140" y="22" width="80" height="36" rx="18" fill="currentColor"/>
+            <text class="flag-chart-label-svg seq" style="--s:1" x="164" y="44" fill="#062606">SELL</text>
+            <line class="flag-chart-line seq-draw" style="--s:2;--len:80" x1="32" y1="32" x2="92" y2="48" stroke-width="3"/>
+            <line class="flag-chart-line seq-draw" style="--s:2.4;--len:80" x1="92" y1="32" x2="32" y2="48" stroke-width="3"/>
+            <text class="flag-chart-label-svg seq" style="--s:3" x="20" y="74">retail</text>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="144" y="74">hedge funds</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:5;--ox:62px;--oy:40px" cx="62" cy="40" r="3"/>
+          </svg>
+          <div class="flag-chart-label">Buy button frozen · the arrow flies one way</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">Robinhood</div>
+          <div class="flag-stat">$70M</div>
+          <p class="flag-knife">They froze the buy button for the stock retail wanted. The hedge funds kept their key.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">12 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card pumpfun" href="#pumpfun">
+        <div class="flag-top">
+          <span class="flag-year">2024</span>
+          <span class="flag-tag">Memecoin launchpad · Solana</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="68" x2="240" y2="68"/>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:170" d="M 0 64 Q 60 60 130 10"/>
+            <circle class="flag-chart-blood seq-pulse" style="--s:2;--ox:130px;--oy:10px" cx="130" cy="10" r="3"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="62" y="22">insiders sell</text>
+            <path class="flag-chart-line seq-draw" style="--s:3;--len:60" d="M 130 10 L 134 64"/>
+            <path class="flag-chart-line seq-draw" style="--s:4;--len:106" d="M 134 64 L 240 66"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="156" y="60">retail</text>
+          </svg>
+          <div class="flag-chart-label">Rug · the only honest metric is volume</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">pump.fun</div>
+          <div class="flag-stat">99%</div>
+          <p class="flag-knife">A factory for tokens whose only product is the rug. The 1% that doesn't is the marketing.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">13 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+      <a class="flag-card fxcfd" href="#fxcfd">
+        <div class="flag-top">
+          <span class="flag-year">2017</span>
+          <span class="flag-tag">FXCM · NFA permanent bar</span>
+        </div>
+        <div class="flag-chart">
+          <svg viewBox="0 0 240 80" aria-hidden="true">
+            <line class="flag-chart-axis seq" style="--s:0" x1="0" y1="40" x2="240" y2="40"/>
+            <path class="flag-chart-line seq-draw" style="--s:1;--len:260" d="M 0 12 Q 60 14 120 40 Q 180 66 240 70"/>
+            <text class="flag-chart-label-svg seq" style="--s:2" x="2" y="10">RETAIL</text>
+            <path class="flag-chart-line faint seq-draw" style="--s:3;--len:260" d="M 0 70 Q 60 66 120 40 Q 180 14 240 12"/>
+            <text class="flag-chart-label-svg seq" style="--s:4" x="206" y="10">HOUSE</text>
+            <circle class="flag-chart-blood seq-pulse" style="--s:5;--ox:120px;--oy:40px" cx="120" cy="40" r="3"/>
+            <text class="flag-chart-label-svg seq" style="--s:5" x="80" y="76">your loss = their P&amp;L</text>
+          </svg>
+          <div class="flag-chart-label">B-book mirror · they took the other side</div>
+        </div>
+        <div class="flag-body">
+          <div class="flag-name">FX <em>&amp;</em> CFDs</div>
+          <div class="flag-stat">B-book</div>
+          <p class="flag-knife">They took the other side of every customer trade and called it a market.</p>
+        </div>
+        <div class="flag-foot">
+          <span class="flag-count">13 flags</span>
+          <span class="flag-pill">View file <span class="arrow">→</span></span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
 
 <!-- TAB NAV -->
 <nav class="tabs-wrap" aria-label="Exchanges">
@@ -251,6 +868,9 @@ footer.foot .meta a:hover { text-decoration: underline; }
       <button class="tab" role="tab" data-target="okx">OKX <span class="count">13</span></button>
       <button class="tab" role="tab" data-target="polymarket">Polymarket <span class="count">14</span></button>
       <button class="tab" role="tab" data-target="kalshi">Kalshi <span class="count">13</span></button>
+      <button class="tab" role="tab" data-target="robinhood">Robinhood <span class="count">12</span></button>
+      <button class="tab" role="tab" data-target="pumpfun">pump.fun <span class="count">13</span></button>
+      <button class="tab" role="tab" data-target="fxcfd">FX &amp; CFDs <span class="count">13</span></button>
     </div>
   </div>
 </nav>
@@ -1843,6 +2463,358 @@ footer.foot .meta a:hover { text-decoration: underline; }
   </ol>
 </section>
 
+<section class="exchange" data-exchange="robinhood">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2013 · 12 INCIDENTS</div>
+    <h2 class="exch-name">Robinhood</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$70M</div><div class="exch-stat-lbl">FINRA — largest at the time</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$1B+</div><div class="exch-stat-lbl">/yr Citadel PFOF</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">7M</div><div class="exch-stat-lbl">Records exfiltrated</div></div>
+    </div>
+    <p class="exch-indictment">Free trades meant the order flow was the product. A bot approved children for naked options. The buy button froze on the only stock retail wanted. The customer service line, the day it mattered, was a recording.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-12-17</time><span class="incident-amount">$65M</span></div>
+      <h3 class="incident-title">SEC fines Robinhood for hiding PFOF and inferior executions</h3>
+      <p class="incident-knife">They called it "commission-free" so nobody would notice who was paying.</p>
+      <p class="incident-summary">From 2015 through late 2018, Robinhood misled customers about its largest revenue source and routed orders for inferior execution that cost users $34.1M even net of zero commissions.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2020-321">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-06-12</time><span class="incident-amount">$730K phantom</span></div>
+      <h3 class="incident-title">Alex Kearns, 20, kills himself over a phantom options balance</h3>
+      <p class="incident-knife">The app gamified options for kids and outsourced the helpline to silence.</p>
+      <p class="incident-summary">A college student saw a negative $730,000 balance after a multi-leg options assignment glitch, could not reach a human, and took his own life. Family settled the wrongful death suit confidentially.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cbsnews.com/news/alex-kearns-robinhood-trader-suicide-wrongful-death-suit/">CBS</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-03-02</time><span class="incident-amount">$9.9M</span></div>
+      <h3 class="incident-title">App goes dark for two days as markets crash</h3>
+      <p class="incident-knife">The platform built for democracy froze on the only day democracy mattered.</p>
+      <p class="incident-summary">Robinhood was offline for all but three minutes of NYSE hours on March 2, plus parts of March 3 and 9 — the steepest crash since 1987. 150,000 users could not exit positions. Class-action settled $9.9M, ~half of calculated losses.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://news.bloomberglaw.com/litigation/robinhood-gets-final-ok-for-9-9-million-settlement-over-outages">Bloomberg Law</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-01-28</time><span class="incident-amount">$3B margin call</span></div>
+      <h3 class="incident-title">Robinhood freezes the GameStop buy button</h3>
+      <p class="incident-knife">Sell-only for retail, full menu for the funds. The arrow only flies one way.</p>
+      <p class="incident-summary">As retail piled into GME, AMC, BBBY against Citadel-linked shorts, Robinhood restricted purchases — sells only. Cited a $3B NSCC margin call. Multidistrict litigation dismissed in 2023 on the customer agreement's broad discretion clauses.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2021/01/28/robinhood-customer-sues-trading-app-over-gamestop-restrictions.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-06-30</time><span class="incident-amount">$70M</span></div>
+      <h3 class="incident-title">FINRA hits Robinhood with record $70M penalty</h3>
+      <p class="incident-knife">They let a bot approve children for naked options. The regulator brought a calculator.</p>
+      <p class="incident-summary">FINRA cited outages, false or misleading communications to millions, options approvals handed out by bots to users who didn't qualify, and supervisory failures. Largest financial penalty FINRA had ever imposed at the time.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2021/06/30/robinhood-to-pay-70-million-for-misleading-customers-and-outages-the-largest-finra-penalty-ever.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-01-18</time><span class="incident-amount">$7.5M</span></div>
+      <h3 class="incident-title">Massachusetts wins gamification consent order</h3>
+      <p class="incident-knife">They put a casino in a pocket and called it democratized finance.</p>
+      <p class="incident-summary">Secretary Galvin pursued Robinhood from 2020 for treating brokerage like a slot machine — confetti, scratch-off rewards, push notifications. Robinhood lost at the state Supreme Judicial Court, then settled.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://finance.yahoo.com/news/robinhood-settles-massachusetts-gamification-case-165454008.html">Yahoo Finance</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-07-29</time><span class="incident-amount">$100M+ at IPO</span></div>
+      <h3 class="incident-title">Founders Tenev and Bhatt sell $50M each at the IPO</h3>
+      <p class="incident-knife">They priced the IPO for the founders and the chart for the believers.</p>
+      <p class="incident-summary">Robinhood went public at $38; co-founders sold roughly $50M each into the offering, plus prior 2018 secondaries ($55M each) and 2019 tender (~$67.6M). Stock fell more than 70% within a year.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2021/07/29/robinhood-hood-ipo-stock-starts-trading-on-the-nasdaq.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-11-03</time><span class="incident-amount">7M users</span></div>
+      <h3 class="incident-title">Data breach exposes 7 million users via vishing</h3>
+      <p class="incident-knife">The hardest security perimeter in finance turned out to be a phone call.</p>
+      <p class="incident-summary">An attacker phoned a customer support employee, talked their way into customer systems, and exfiltrated names, emails, and for some users dates of birth and ZIP codes. Then demanded ransom.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/2021/11/08/robinhood-data-breach-7-million-customers/">Fortune</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-08-02</time><span class="incident-amount">$30M</span></div>
+      <h3 class="incident-title">NYDFS fines Robinhood Crypto for AML failures</h3>
+      <p class="incident-knife">They scaled the customer base. The compliance team stayed where it was.</p>
+      <p class="incident-summary">First crypto enforcement by NYDFS. Robinhood Crypto failed at BSA/AML, cybersecurity, and consumer protection — manual transaction monitoring couldn't scale to its user base.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.dfs.ny.gov/reports_and_publications/press_releases/pr202208021">NYDFS</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-01-13</time><span class="incident-amount">$45M</span></div>
+      <h3 class="incident-title">SEC fines for record-keeping, SAR, identity theft failures</h3>
+      <p class="incident-knife">A broker who cannot keep books is a broker who does not want them found.</p>
+      <p class="incident-summary">More than ten separate securities-law provisions. Late SAR filings, failure to safeguard customer information (the 2021 breach lives here), inaccurate trade reporting for over five years, short-sale rule failures.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2025-5">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-12-03</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Robinhood and Kalshi ordered to cease sports event contracts</h3>
+      <p class="incident-knife">They called sports gambling "prediction markets" and waited for the regulators to learn the new vocabulary.</p>
+      <p class="incident-summary">Connecticut, New Jersey, Massachusetts, Nevada, and California tribes accused Robinhood and Kalshi of running unlicensed sports books dressed as CFTC futures. Several preliminary injunctions issued.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2025/12/03/connecticut-orders-kalshi-robinhood-crypto-com-to-cease-sports-betting">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-Q1</time><span class="incident-amount">$331M / Q1</span></div>
+      <h3 class="incident-title">Citadel Securities pays $1B+/year for Robinhood's order flow</h3>
+      <p class="incident-knife">Free trades meant the order flow was the product, not the trader.</p>
+      <p class="incident-summary">Robinhood's free-trade model is funded by Citadel Securities and other wholesalers buying the right to fill its customers' orders. The same Citadel whose short positions melted in January 2021. ~80% of Robinhood revenue from PFOF.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.thetradenews.com/citadel-securities-forks-out-2-6-billion-annually-for-payment-for-order-flow-and-most-of-its-on-options/">The TRADE</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="pumpfun">
+  <div class="exch-head">
+    <div class="exch-eyebrow">LAUNCHED 2024 · 13 INCIDENTS</div>
+    <h2 class="exch-name">pump<em>.</em>fun</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">98%</div><div class="exch-stat-lbl">Rugs or pump-dumps</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$600M</div><div class="exch-stat-lbl">Lifetime fees</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">$5.5B</div><div class="exch-stat-lbl">RICO claim</div></div>
+    </div>
+    <p class="exch-indictment">A factory whose only output is the rug. Seven million tokens, ninety-seven thousand with measurable liquidity. The president as launchpad, the populace as exit liquidity. They built a Twitch for fraud and were startled when fraud arrived.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05-07</time><span class="incident-amount">98.6%</span></div>
+      <h3 class="incident-title">Solidus Labs: 98% of tokens fraud or rug</h3>
+      <p class="incident-knife">They industrialized the rug pull. Volume is the only honest metric.</p>
+      <p class="incident-summary">Analyzed every pump.fun launch and found 98.6% met definitions of rug or pump-and-dump. Over 1,700 wallets each lost $100K+. Forty-six wallets lost over $1M each. 60% of all wallets on the platform are underwater.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2025/05/07/98-of-tokens-on-pump-fun-have-been-rug-pulls-or-an-act-of-fraud-new-report-says">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-01-30</time><span class="incident-amount muted">SDNY class</span></div>
+      <h3 class="incident-title">Burwick Law sues pump.fun as unregistered securities exchange</h3>
+      <p class="incident-knife">A platform built to sell unregistered tokens called this a surprise.</p>
+      <p class="incident-summary">Burwick Law and Wolf Popper filed in SDNY, alleging every memecoin minted on pump.fun is an unregistered security under the 1933 Act. Defendants: Baton Corporation Ltd. (UK), founders Alon Cohen, Dylan Kerler, Noah Tweedale.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2025/01/30/pump-fun-hit-with-proposed-class-action-lawsuit-alleging-securities-violations">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05</time><span class="incident-amount">$5.5B</span></div>
+      <h3 class="incident-title">Amended complaint adds RICO, Solana, Jito as defendants</h3>
+      <p class="incident-knife">The casino, the dealer, the chip-maker, the doorman — all named, all surprised to be named.</p>
+      <p class="incident-summary">Plaintiffs expanded the case to a racketeering enterprise — naming Solana Labs, Solana Foundation, Jito Labs as facilitators. Treble damages math sits at $5.5B.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://hodder.law/pumpfun-solana-jito-lawsuit-2025/">Hodder Law</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-03</time><span class="incident-amount">UK exit</span></div>
+      <h3 class="incident-title">UK FCA warning, pump.fun blocks UK users in three days</h3>
+      <p class="incident-knife">Three days to choose between a license and exile. They chose exile.</p>
+      <p class="incident-summary">FCA published a Section 21 warning: pump.fun was offering financial services without UK authorization. Within 72 hours pump.fun amended its terms to geo-block the UK rather than register.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.fca.org.uk/news/warnings/pumpfun">FCA</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-11</time><span class="incident-amount">−33% rev</span></div>
+      <h3 class="incident-title">Livestream chaos — 13-year-old streams rug, guns, prison stunts</h3>
+      <p class="incident-knife">They built a Twitch for fraud and were startled when fraud arrived.</p>
+      <p class="incident-summary">A 13-year-old launched "Gen Z Quant," livestreamed himself dumping 5% of supply, walked away with ~$50K. Same weekend: man with a goldfish at gunpoint, streams from inside US prisons, a suicide threat tied to a token price. Livestreams killed; revenue fell 33%.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://en.wikipedia.org/wiki/Pump.fun">Wikipedia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-05</time><span class="incident-amount">−85%</span></div>
+      <h3 class="incident-title">Caitlyn Jenner JENNER token collapses 85% in days</h3>
+      <p class="incident-knife">A celebrity sold attention; the holders bought a tombstone.</p>
+      <p class="incident-summary">Promoter Sahil Arora (Dubai) ran a celebrity-launch scheme. Jenner's account posted hype while insiders dumped. Peak market cap $43.6M, down 85% within weeks.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blockworks.co/news/pump-dot-fun-caitlyn-jenner-memecoin">Blockworks</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-05</time><span class="incident-amount">$2M</span></div>
+      <h3 class="incident-title">Iggy Azalea MOTHER token insider dump</h3>
+      <p class="incident-knife">The insiders bought the floor before the singer turned on the lights.</p>
+      <p class="incident-summary">Bubblemaps flagged that insider wallets bought 20% of MOTHER before launch, then unloaded ~$2M after public hype. The pattern is the platform's default, not a deviation.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://beincrypto.com/iggy-azalea-mother-meme-coin-controversy/">BeInCrypto</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-06</time><span class="incident-amount">$30M</span></div>
+      <h3 class="incident-title">Sahil Arora's $30M celebrity-token racket</h3>
+      <p class="incident-knife">One man, eight celebrities, one launchpad, thirty million dollars. Industrial-scale.</p>
+      <p class="incident-summary">Sahil Arora used pump.fun to launch tokens for Caitlyn Jenner, Floyd Mayweather, Amber Rose, Sunny Leone, Rich the Kid, Iggy Azalea and others. Promoted, dumped, moved on.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://coingape.com/pump-fun-scam-dubai-investor-mints-30-million-in-crypto-celebrity-pump-and-dump/">CoinGape</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-04</time><span class="incident-amount">−90%</span></div>
+      <h3 class="incident-title">Hawk Tuah $HAWK token crashes 90% in hours</h3>
+      <p class="incident-knife">Fifteen minutes of fame, monetized in twelve minutes of dumping.</p>
+      <p class="incident-summary">Haliey Welch's viral meme spawned a token launched via OverHere/Solana with pump.fun-style mechanics. 96% of supply in insider wallets at launch; price collapsed 90% within hours. Class action filed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.rollingstone.com/culture/culture-news/hawk-tuah-meme-coin-haliey-welch-crypto-1235213606/">Rolling Stone</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-01-17</time><span class="incident-amount">$4.3B</span></div>
+      <h3 class="incident-title">TRUMP memecoin — $4.3B retail losses, $600M insider take</h3>
+      <p class="incident-knife">A president as launchpad, a populace as exit liquidity.</p>
+      <p class="incident-summary">Days before inauguration, TRUMP launched via pump-style mechanics. FDV peaked at $8.7B; now down 90%+. For every $1 insiders earned, retail lost ~$20. $2.7B insider tokens still locked until 2028.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.dlnews.com/articles/defi/how-scandals-and-lawsuits-shaped-memecoins-in-2025/">DL News</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-07-12</time><span class="incident-amount">$500M / 12 min</span></div>
+      <h3 class="incident-title">PUMP token ICO raises $500M in twelve minutes</h3>
+      <p class="incident-knife">The croupier finally sold shares of the table.</p>
+      <p class="incident-summary">After three years of facilitating retail evisceration, pump.fun launched its own token. 12.5% to public (scaled back from 15% with no explanation). 340 wallets bought ~60% of the public allocation. FDV $5.6B at debut.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.dlnews.com/articles/markets/pumpfun-ico-raise-500m-minutes-token-allocation-scale-back/">DL News</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-11</time><span class="incident-amount">$465M</span></div>
+      <h3 class="incident-title">PUMP treasury cashes $465M to USDC during 25% drop</h3>
+      <p class="incident-knife">When the chart fell, the founders were already in stable assets.</p>
+      <p class="incident-summary">As the PUMP token fell, the platform's treasury moved nearly half a billion dollars into stablecoins. Buyers got the chart. Operators got the cash.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://en.wikipedia.org/wiki/Pump.fun">Wikipedia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-2025</time><span class="incident-amount">$600M</span></div>
+      <h3 class="incident-title">Platform fees: ~$600M extracted from retail since launch</h3>
+      <p class="incident-knife">Six hundred million dollars in commissions from a game that is mostly losing.</p>
+      <p class="incident-summary">Pump.fun charges per token created and per trade on its internal AMM. Co-founder Alon Cohen publicly cited ~$600M in lifetime revenue. That is the bonding curve, paid by the holders, kept by the house.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://beincrypto.com/pump-fun-co-founder-discusses-revenue-sharing/">BeInCrypto</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="fxcfd">
+  <div class="exch-head">
+    <div class="exch-eyebrow">RETAIL FX/CFD INDUSTRY · 13 INCIDENTS</div>
+    <h2 class="exch-name">FX <em>&amp;</em> CFDs</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">68%</div><div class="exch-stat-lbl">ASIC: retail losing</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$458M</div><div class="exch-stat-lbl">AU losses, 1 fiscal year</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">B-book</div><div class="exch-stat-lbl">FXCM US ban</div></div>
+    </div>
+    <p class="exch-indictment">The retail broker industry that quietly takes the other side of every trade. "No Dealing Desk" run by a desk they owned and lied about. A central bank moved the franc; a hundred brokers vaporized. Two-thirds of customers lose. The remaining third pays the funding to make it interesting.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017-02-06</time><span class="incident-amount">$7M · banned</span></div>
+      <h3 class="incident-title">FXCM banned from US, founders barred</h3>
+      <p class="incident-knife">"No dealing desk" — except the one they owned, operated, and lied about.</p>
+      <p class="incident-summary">FXCM marketed "No Dealing Desk." In reality its principal market maker — secretly an FXCM-owned spinoff run by an ex-managing director — consistently took the opposite side of customer trades. NFA permanent bar.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/7528-17">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2015-01-15</time><span class="incident-amount">$300M bailout</span></div>
+      <h3 class="incident-title">Swiss franc black swan blows up the retail FX industry</h3>
+      <p class="incident-knife">They sold infinite leverage on a peg the central bank already wanted gone.</p>
+      <p class="incident-summary">SNB removed the 1.20 EURCHF floor without warning. CHF rallied 30% in 45 minutes. FXCM lost $225M overnight; took $300M Leucadia bailout at 10–17% interest. Alpari UK insolvent next day with ~$22M client shortfall. Dozens of smaller brokers vaporized.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://en.wikipedia.org/wiki/FXCM">Wikipedia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2015-05-18</time><span class="incident-amount">UK frozen</span></div>
+      <h3 class="incident-title">Plus500 UK accounts frozen by FCA-ordered AML review</h3>
+      <p class="incident-knife">Open an account with a Facebook login. Close it with a passport scan and a prayer.</p>
+      <p class="incident-summary">Plus500's UK arm let users sign up via Facebook and trade leveraged CFDs before verifying identity. The FCA ordered every UK account frozen pending re-KYC. Market cap halved. 28% of affected clients never came back.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.bloomberg.com/news/articles/2015-05-22/plus500-shares-suspended-as-short-sellers-circle-trading-firm">Bloomberg</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-09-12</time><span class="incident-amount">$1.5M</span></div>
+      <h3 class="incident-title">eToro pays $1.5M, exits US crypto</h3>
+      <p class="incident-knife">The social trading network learned which assets were also social contracts.</p>
+      <p class="incident-summary">eToro operated as an unregistered broker and clearing agency for crypto assets the SEC deemed securities. US users restricted to BTC, BCH, ETH; the rest delisted and liquidated within 180 days.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2024-125">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-07-02</time><span class="incident-amount">EU ban</span></div>
+      <h3 class="incident-title">ESMA permanently bans binary options to retail across Europe</h3>
+      <p class="incident-knife">A product whose expected return was negative for the buyer required a regulator to admit it.</p>
+      <p class="incident-summary">Years of complaints, Israeli call-centre fraud rings, and structurally negative-expectancy products forced ESMA to suspend binary options to retail across the EU. Made permanent by NCAs. Banc de Binary, IronFX, dozens of clones folded.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.thebureauinvestigates.com/stories/2018-03-28/binary-options-fraud-finally-banned">The Bureau</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-FY</time><span class="incident-amount">$458M</span></div>
+      <h3 class="incident-title">ASIC: 68% of Australian CFD retail traders lose money</h3>
+      <p class="incident-knife">Two-thirds of customers lose. The remaining third pays the funding to make it interesting.</p>
+      <p class="incident-summary">ASIC's own data: 68% of retail CFD investors in Australia lost money in FY2024, totalling more than AU$458M. Of that, $73M was fees and funding costs paid to issuers — the house's cut even when the trader is right.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.asic.gov.au/about-asic/news-centre/find-a-media-release/2026-releases/26-004mr-asic-secures-nearly-40-million-in-refunds-to-investors-and-drives-change-after-cfd-sector-falls-short/">ASIC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-09+</time><span class="incident-amount">AU$4.3M</span></div>
+      <h3 class="incident-title">Seven Australian CFD brokers caught violating leverage caps</h3>
+      <p class="incident-knife">Every broker was independently surprised the same rules applied to them.</p>
+      <p class="incident-summary">CMC Markets, IG, Pepperstone, Saxo, Capital.com, Eightcap, City Index all self-reported breaching ASIC's leverage caps under the Product Intervention Order. Blamed manual errors and untested platform updates. >50% of the sector also breached via "margin discount" gimmicks.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.financemagnates.com/forex/cmc-ig-and-more-7-cfds-brokers-violated-aussie-leverage-rules-returns-au43m/">Finance Magnates</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2015-01-15</time><span class="incident-amount">£18.4M exp.</span></div>
+      <h3 class="incident-title">IG Group stop-hunting allegations during SNB shock</h3>
+      <p class="incident-knife">They denied running a B-book on the days the B-book showed.</p>
+      <p class="incident-summary">During the Swiss franc move, IG continued executing client stops at prices many clients argued were not obtainable in the market. Years of forum complaints accuse IG of B-book stop-hunting; IG denies operating a B-book despite running a CFD market-making model.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://financefeeds.com/revolt-b-book-traders-take-ig-court-brokerage-business-fully-embracess-multi-asset/">Finance Feeds</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019</time><span class="incident-amount">$250K</span></div>
+      <h3 class="incident-title">Gain Capital UK fined for unregistered US onboarding</h3>
+      <p class="incident-knife">The simplest way to avoid US regulation is to ignore it. The cheapest way is to settle later.</p>
+      <p class="incident-summary">Forex.com UK acted as counterparty to US retail traders from Feb 2014 to Mar 2019 without registering as a Retail Foreign Exchange Dealer.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fxnewsgroup.com/forex-news/regulatory/forex-com-uk-hit-with-490k-fine-for-taking-us-customers/">FX News Group</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2015-09</time><span class="incident-amount">$650K</span></div>
+      <h3 class="incident-title">FXCM pays $650K after SNB undercapitalization</h3>
+      <p class="incident-knife">They sold leverage they did not have. The regulator merely confirmed the absence.</p>
+      <p class="incident-summary">Beyond the $225M loss and Leucadia rescue, FXCM separately settled with the CFTC for breaching net capital requirements during and after the franc move. Closer to the regulatory minimum than disclosed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://atozmarkets.com/news/cftc-fxcm-2015-black-swan-settlement/">A to Z Markets</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2014-10-31</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Plus500 pre-emptively froze accounts for "inadequate KYC"</h3>
+      <p class="incident-knife">The freeze was always there in the contract; the regulator only made it visible.</p>
+      <p class="incident-summary">Three months before the FCA review, Plus500 had already filed a document with the FCA giving itself the right to freeze accounts where existing customers lacked "verified adequate customer due diligence." A forewarning of the May 2015 mass freeze.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.leaprate.com/news/plus500-uk-may-account-freeze-was-not-the-first-time-for-the-company-leaprate-exclusive/">LeapRate</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-06-07</time><span class="incident-amount">$17.3M</span></div>
+      <h3 class="incident-title">Alpari UK final shortfall: $17M of client money missing</h3>
+      <p class="incident-knife">Segregated client money turned out to be a marketing claim, not an arithmetic one.</p>
+      <p class="incident-summary">KPMG's final administration confirmed segregated client money was short by $17.3M on $95.8M agreed balances. FSCS covered up to £50K per client; sophisticated and corporate clients ate the rest.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.leaprate.com/forex/brokers/alpari-uk-final-bankruptcy-distribution-results-15-7-million-client-funds-shortfall/">LeapRate</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017-01</time><span class="incident-amount">$11M</span></div>
+      <h3 class="incident-title">Banc de Binary shuts after US, EU, Israeli enforcement</h3>
+      <p class="incident-knife">A product engineered for negative expectation eventually exhausted even its regulators.</p>
+      <p class="incident-summary">Banc de Binary had been sued by SEC and CFTC in 2013 for offering off-exchange binary options to US retail without registration, settled 2016 for $11M, faced CySEC sanctions, and finally shut in January 2017 ahead of ESMA's industry-wide ban.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.binaryoptions.net/closed-brokers">BinaryOptions.net</a></div>
+    </li>
+
+  </ol>
+</section>
+
 <!-- EXCHANGE-SECTIONS-END -->
 
 </main>
@@ -1852,7 +2824,7 @@ footer.foot .meta a:hover { text-decoration: underline; }
   <div class="closer-inner">
     <div class="closer-eyebrow">THE FIX</div>
     <h2>Cheating priced into every venue. We built one <em>without the room.</em></h2>
-    <p>The list above is what happens when the venue keeps the order book, the matching engine, the price feed, the listing decision, and the audit. Eleven exchanges, the same five conflicts, a different fine each year.</p>
+    <p>The list above is what happens when the venue keeps the order book, the matching engine, the price feed, the listing decision, and the audit. Fourteen venues, the same handful of mechanisms, a different fine each year.</p>
     <p>General Market is on-chain. Sealed bets. Parimutuel pools. BLS-verified oracles. The house cannot front-run because there is no house.</p>
     <a class="cta" href="https://generalmarket.io">Open General Market →</a>
   </div>
@@ -1874,23 +2846,45 @@ footer.foot .meta a:hover { text-decoration: underline; }
 (function() {
   var tabs = document.querySelectorAll('.tab');
   var sections = document.querySelectorAll('.exchange');
+  var cards = document.querySelectorAll('.flag-card');
+  var validTargets = Array.from(tabs).map(function(t) { return t.dataset.target; });
 
-  function activate(target) {
+  function activate(target, scroll) {
     tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.target === target); });
     sections.forEach(function(s) { s.classList.toggle('active', s.dataset.exchange === target); });
     if (window.history && window.history.replaceState) {
       window.history.replaceState(null, '', '#' + target);
     }
-    window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (scroll) {
+      var anchor = document.querySelector('.tabs-wrap');
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   }
 
   tabs.forEach(function(tab) {
-    tab.addEventListener('click', function() { activate(tab.dataset.target); });
+    tab.addEventListener('click', function() { activate(tab.dataset.target, false); });
+  });
+
+  cards.forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      var href = card.getAttribute('href') || '';
+      var target = href.replace('#', '');
+      if (validTargets.indexOf(target) !== -1) {
+        e.preventDefault();
+        activate(target, true);
+      }
+    });
+  });
+
+  window.addEventListener('hashchange', function() {
+    var t = window.location.hash.replace('#', '');
+    if (validTargets.indexOf(t) !== -1) activate(t, false);
   });
 
   var initial = (window.location.hash || '#binance').replace('#', '');
-  var valid = Array.from(tabs).some(function(t) { return t.dataset.target === initial; });
-  activate(valid ? initial : 'binance');
+  activate(validTargets.indexOf(initial) !== -1 ? initial : 'binance', false);
 })();
 </script>
 
