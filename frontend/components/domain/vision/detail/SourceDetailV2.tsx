@@ -10,7 +10,6 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { PendingPositions } from './PendingPositions'
 import { SourceSidebarApple } from './SourceSidebarApple'
 import { SourceTabNav } from './SourceTabNav'
-import { SourceSidebarMobile } from './SourceSidebarMobile'
 import { FeaturedVaultHero } from './FeaturedVaultHero'
 import { UpNextRail } from './UpNextRail'
 import { TrendingBotsRail } from './TrendingBotsRail'
@@ -166,9 +165,6 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
         >
           <TrendingBotsRail sourceId={sourceId} />
         </SectionWithHeader>
-
-        {/* Mobile-only "more sources" strip — desktop sidebar handles lg+. */}
-        <SourceSidebarMobile currentSourceId={sourceId} category={source.category} />
       </div>
     </div>
   )
