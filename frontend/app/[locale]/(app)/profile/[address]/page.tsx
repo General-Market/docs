@@ -47,18 +47,17 @@ function ProfileContent({ address }: { address: string }) {
   // own profile — the SSE streams scope to the connected wallet.
   const vaultTotals = useVaultsTotals(isSelf && tab === 'vaults')
 
-  // The account-level P&L curve is now precomputed by the data-node writer
-  // and read in one indexed lookup — no per-vault fanout, no client merge,
-  // no "current shares × historical NAV" approximation. The curve covers
-  // both vault shares and ITP fills, so it drives the hero on every tab
-  // except 'vision' (parimutuel positions have a different shape and stay
-  // on the Vision profile feed).
+  // The account-level P&L curve is precomputed by the data-node writer and
+  // read in one indexed lookup. It covers vault shares + ITP fills, and now
+  // drives the hero on EVERY tab — including 'vision'. Otherwise a visitor
+  // landing on someone's profile (default tab = vision) sees a blank hero
+  // when that wallet only has vault/ITP activity. The Vision tab's own
+  // content (batches, ticks) still pulls from the parimutuel feed below.
   const [pnlRange, setPnlRange] = useState<PnlTimeRange>('ALL')
   const rangeParam: AccountPnlRange =
     pnlRange === '1D' ? '1d' : pnlRange === '1W' ? '1w' : pnlRange === '1M' ? '1m' : 'all'
-  const showingUnifiedCurve = tab !== 'vision'
   const { history: pnlPoints, livePnl: pnlLive } = useAccountPnlHistory(
-    showingUnifiedCurve ? address : undefined,
+    address,
     rangeParam,
   )
   const curveHistory = useMemo(
@@ -71,13 +70,13 @@ function ProfileContent({ address }: { address: string }) {
     router.replace(`?tab=${newTab}`)
   }
 
-  // The unified curve drives PnL on vaults and index tabs. Vault SSE totals
+  // The unified curve drives the hero PnL on every tab. Vault SSE totals
   // remain a fallback for the brief window after a fresh deposit before the
-  // curve writer's 60s sweep catches up. Vision tab keeps its own feed.
+  // curve writer's 60s sweep catches up.
   const showingVaults = tab === 'vaults' && isSelf
   const vaultsPriced = !vaultTotals.pricingIncomplete
   const headlinePnl =
-    showingUnifiedCurve && pnlLive !== null
+    pnlLive !== null
       ? pnlLive
       : showingVaults && vaultsPriced
         ? vaultTotals.totalPnl
@@ -135,8 +134,8 @@ function ProfileContent({ address }: { address: string }) {
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
         joined={joinedLabel}
         stats={stats}
-        pnlHistory={showingUnifiedCurve ? curveHistory : profile?.pnlHistory ?? []}
-        pnlOverride={showingUnifiedCurve && headlinePnl !== null ? headlinePnl : undefined}
+        pnlHistory={curveHistory}
+        pnlOverride={headlinePnl !== null ? headlinePnl : undefined}
         pnlRange={pnlRange}
         onPnlRangeChange={setPnlRange}
       />
