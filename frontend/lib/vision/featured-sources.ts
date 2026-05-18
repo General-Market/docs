@@ -43,18 +43,6 @@ export const FEATURED_SOURCES: FeaturedSource[] = [
     assetName: 'Worldwide traffic index',
   },
   {
-    id: 'zillow',
-    displayName: 'Zillow',
-    meta: 'Housing · list prices · cuts',
-    assetName: 'Median list price · USA',
-  },
-  {
-    id: 'congress',
-    displayName: 'Congress',
-    meta: 'Sessions · bills · votes',
-    assetName: 'Bills introduced · this week',
-  },
-  {
     id: 'db_trains',
     displayName: 'Deutsche Bahn',
     meta: 'Long-distance · delays · cancellations',
@@ -65,6 +53,12 @@ export const FEATURED_SOURCES: FeaturedSource[] = [
     displayName: 'AirNow',
     meta: 'EPA · air quality index · USA',
     assetName: 'PM2.5 · national average',
+  },
+  {
+    id: 'animals',
+    displayName: 'Wildlife',
+    meta: 'iNaturalist · species sightings · 24h',
+    assetName: 'Observations · worldwide',
   },
 ]
 
