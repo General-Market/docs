@@ -65,9 +65,11 @@ type Mechanism = 'colo' | 'region' | 'designated' | 'cross-connect' | 'pfof' | '
 interface LatencyRow {
   slug: string
   name: string
-  edgeMs: number
+  edgeMs: number        // total geographic + structural edge over outsider retail
+  gatedMs: number       // portion behind a real barrier (>$100/mo, contract, KYC, capital)
   mechanism: Mechanism
   lane: string
+  barrier: string       // one phrase: what costs more than a $50 VPS in the same AWS region
   source?: { label: string; url: string }
 }
 
@@ -83,63 +85,75 @@ const MECH_LABEL: Record<Mechanism, string> = {
 
 const LATENCY_ROWS: LatencyRow[] = [
   {
-    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197, mechanism: 'region',
+    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197, gatedMs: 2, mechanism: 'region',
     lane: 'Tokyo desk vs European desk',
+    barrier: 'Foundation node — 10,000 HYPE staked + Tier-1 maker volume',
     source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
   },
   {
-    slug: 'binance', name: 'Binance', edgeMs: 145, mechanism: 'colo',
+    slug: 'binance', name: 'Binance', edgeMs: 145, gatedMs: 5, mechanism: 'colo',
     lane: 'AWS Tokyo VIP colo vs global retail',
+    barrier: 'Dedicated FIX gateway · VIP tier 9 program',
     source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
   },
   {
-    slug: 'bybit', name: 'Bybit', edgeMs: 140, mechanism: 'colo',
+    slug: 'bybit', name: 'Bybit', edgeMs: 140, gatedMs: 5, mechanism: 'colo',
     lane: 'AWS Singapore/Tokyo colo vs global retail',
+    barrier: 'Institutional Services agreement · dedicated FIX',
     source: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
   },
   {
-    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, mechanism: 'region',
+    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, gatedMs: 25, mechanism: 'region',
     lane: 'Solana validator-adjacent snipers vs default RPC',
+    barrier: 'Jito private mempool · staked-validator routing · paid Helius / QuickNode',
     source: { label: 'Helius · Solana latency', url: 'https://www.helius.dev/blog/solana-rpc-latency' },
   },
   {
-    slug: 'etoro', name: 'eToro', edgeMs: 100, mechanism: 'b-book',
+    slug: 'etoro', name: 'eToro', edgeMs: 100, gatedMs: 100, mechanism: 'b-book',
     lane: 'Internal CFD book — order never reaches a public market',
+    barrier: 'Broker-only — the entire edge is structural; no retail equivalent at any price',
     source: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
   },
   {
-    slug: 'polymarket', name: 'Polymarket', edgeMs: 78, mechanism: 'colo',
+    slug: 'polymarket', name: 'Polymarket', edgeMs: 78, gatedMs: 3, mechanism: 'colo',
     lane: 'KYC\'d London colo vs New York retail',
+    barrier: 'KYC/KYB form approval · direct colocation in eu-west-2',
     source: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
   },
   {
-    slug: 'deribit', name: 'Deribit', edgeMs: 75, mechanism: 'colo',
+    slug: 'deribit', name: 'Deribit', edgeMs: 75, gatedMs: 2, mechanism: 'colo',
     lane: 'London matching engine colo vs US retail',
+    barrier: 'Pro institutional FIX gateway · MM agreement',
     source: { label: 'Deribit · institutional', url: 'https://www.deribit.com/kb/api-overview' },
   },
   {
-    slug: 'fxcfd', name: 'FX / CFD industry', edgeMs: 65, mechanism: 'cross-connect',
+    slug: 'fxcfd', name: 'FX / CFD industry', edgeMs: 65, gatedMs: 40, mechanism: 'cross-connect',
     lane: 'NY4 (Equinix Secaucus) LP cross-connect vs retail home internet',
+    barrier: 'NY4 cabinet — $5k–15k/mo cabinet + ~$500/mo per cross-connect',
     source: { label: 'Equinix · NY4', url: 'https://www.equinix.com/data-centers/americas-colocation/united-states-colocation/new-york-data-centers/ny4' },
   },
   {
-    slug: 'coinbase', name: 'Coinbase', edgeMs: 60, mechanism: 'colo',
+    slug: 'coinbase', name: 'Coinbase', edgeMs: 60, gatedMs: 5, mechanism: 'colo',
     lane: 'Coinbase Prime us-east-1 / Equinix LD4 vs Asian or EU retail',
+    barrier: 'Coinbase Prime onboarding · institutional FIX endpoint',
     source: { label: 'Coinbase · Prime', url: 'https://prime.coinbase.com/' },
   },
   {
-    slug: 'ibkr', name: 'Interactive Brokers', edgeMs: 50, mechanism: 'cross-connect',
+    slug: 'ibkr', name: 'Interactive Brokers', edgeMs: 50, gatedMs: 50, mechanism: 'cross-connect',
     lane: 'Direct Market Access pro vs retail SmartRouter',
+    barrier: 'Pro / institutional account · capital + commercial agreement · no retail bypass',
     source: { label: 'IBKR · DMA', url: 'https://www.interactivebrokers.com/en/trading/orders/smartRouting.php' },
   },
   {
-    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, mechanism: 'designated',
+    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 15, mechanism: 'designated',
     lane: 'Chicago designated MM vs retail browser',
+    barrier: 'Designated MM contract — application, capital, reduced fees, adjusted position limits',
     source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
   },
   {
-    slug: 'robinhood', name: 'Robinhood', edgeMs: 35, mechanism: 'pfof',
+    slug: 'robinhood', name: 'Robinhood', edgeMs: 35, gatedMs: 35, mechanism: 'pfof',
     lane: 'Citadel PFOF info window vs lit-market execution',
+    barrier: 'PFOF contract — Citadel only; not for sale at any retail price',
     source: { label: 'SEC · Robinhood PFOF', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
   },
 ]
@@ -288,6 +302,7 @@ function MechanismPill({ mechanism }: { mechanism: Mechanism }) {
 
 function LatencyBarRow({ row }: { row: LatencyRow }) {
   const pct = (row.edgeMs / MAX_EDGE) * 100
+  const gatedPct = (row.gatedMs / row.edgeMs) * 100
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
@@ -325,6 +340,7 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
           overflow: 'hidden',
         }}
       >
+        {/* Total edge — lighter accent (the part anyone can rent for <$100/mo) */}
         <div
           style={{
             position: 'absolute',
@@ -333,23 +349,54 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
             bottom: 0,
             width: `${pct}%`,
             background: ACCENT,
+            opacity: 0.32,
+            borderRadius: 4,
+          }}
+        />
+        {/* Gated edge — solid accent (the part behind a real barrier) */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${pct * (gatedPct / 100)}%`,
+            background: ACCENT,
             borderRadius: 4,
           }}
         />
       </div>
       <div
         style={{
-          flex: '0 0 72px',
+          flex: '0 0 96px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
-          fontSize: 15,
-          fontWeight: 600,
-          color: ACCENT,
           fontVariantNumeric: 'tabular-nums',
           letterSpacing: '-0.016em',
+          lineHeight: 1.05,
         }}
       >
-        {row.edgeMs}ms
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: ACCENT,
+          }}
+        >
+          {row.edgeMs}ms
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            color: TERTIARY,
+            marginTop: 2,
+            fontFamily: 'var(--apple-font-text)',
+            letterSpacing: '-0.005em',
+          }}
+        >
+          {row.gatedMs}ms gated
+        </div>
       </div>
     </div>
   )
@@ -389,17 +436,35 @@ function GeneralMarketRow() {
       />
       <div
         style={{
-          flex: '0 0 72px',
+          flex: '0 0 96px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
-          fontSize: 15,
-          fontWeight: 600,
-          color: TERTIARY,
           fontVariantNumeric: 'tabular-nums',
           letterSpacing: '-0.016em',
+          lineHeight: 1.05,
         }}
       >
-        0ms
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: TERTIARY,
+          }}
+        >
+          0ms
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            color: TERTIARY,
+            marginTop: 2,
+            fontFamily: 'var(--apple-font-text)',
+            letterSpacing: '-0.005em',
+          }}
+        >
+          0ms gated
+        </div>
       </div>
     </div>
   )
@@ -498,11 +563,24 @@ export function ColocationSection() {
               fontWeight: 600,
               letterSpacing: 'var(--apple-track-tight)',
               color: TEXT,
-              marginBottom: 28,
+              marginBottom: 8,
             }}
           >
             How far ahead the inside lane sits.
           </h3>
+          <p
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 13,
+              color: SECONDARY,
+              letterSpacing: '-0.011em',
+              lineHeight: 1.5,
+              marginBottom: 24,
+              maxWidth: 720,
+            }}
+          >
+            Solid bar = portion truly gated behind a barrier (contract, KYC, capital, dedicated FIX, PFOF deal, internal book). Faded bar = portion anyone can rent for under $100/month — a VPS in the same AWS region. The grey number names the barrier in milliseconds: how much of the edge is actually for sale only.
+          </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {LATENCY_ROWS.map((row) => (
@@ -533,10 +611,14 @@ export function ColocationSection() {
                   lineHeight: 1.45,
                 }}
               >
-                <div style={{ color: TEXT, fontWeight: 500, marginBottom: 2 }}>
-                  {row.name} · {row.edgeMs}ms
+                <div style={{ color: TEXT, fontWeight: 500, marginBottom: 2, fontVariantNumeric: 'tabular-nums' }}>
+                  {row.name} · <span style={{ color: ACCENT }}>{row.edgeMs}ms</span> ·{' '}
+                  <span style={{ color: TERTIARY }}>{row.gatedMs}ms gated</span>
                 </div>
                 <div style={{ marginBottom: 4 }}>{row.lane}</div>
+                <div style={{ marginBottom: 4, color: SECONDARY, fontStyle: 'italic' }}>
+                  Barrier: {row.barrier}
+                </div>
                 {row.source && (
                   <a
                     href={row.source.url}
@@ -568,7 +650,7 @@ export function ColocationSection() {
               borderTop: `1px solid ${LINE}`,
             }}
           >
-            Bar length = round-trip latency edge between the insider seat and the outside trader, in milliseconds. Numbers reflect the dominant axis at each venue: same-region AWS proximity (Hyperliquid validator cluster, Binance/Bybit VIP colo, Pump.fun Solana sniper, Coinbase Prime, Deribit, Polymarket), Chicago cross-connect for designated MMs (Kalshi), DMA cross-connect or LP fibre for traditional brokers (IBKR, FX/CFD), payment-for-order-flow holding window (Robinhood/Citadel), and the internal CFD book where the order never reaches a public market (eToro). General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no published price, no door.
+            Accent bar = total geographic + structural edge. Faded portion = what a $50/mo VPS in the same AWS region already gives anyone — no contract, no application, no KYC. Solid portion (and the grey "gated" number) = the part that genuinely costs more than $100/month to access: colocated cabinet, dedicated FIX gateway, designated-MM contract, capital-gated DMA, Citadel PFOF deal, or an internal CFD book retail can never bypass. For Hyperliquid, Binance, Bybit, Polymarket, Deribit, Coinbase: most of the visible edge is permissionless AWS-region proximity; the real barrier is a small marginal improvement on top. For eToro, Robinhood, IBKR, FX/CFD, Kalshi: every millisecond is gated — there is no public-market lane to rent. General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no permissionless seat, no door.
           </div>
 
           <AssumptionsBlock />
