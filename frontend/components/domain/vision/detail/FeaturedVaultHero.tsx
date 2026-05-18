@@ -311,10 +311,21 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
     return map
   }, [chainVaults])
 
-  // Determine the featured vault: largest totalAssets. Mirrors VaultShowcase.
+  // Determine the featured vault: largest totalAssets among *active* vaults.
+  // Active = the chain or SSE confirms non-zero supply or assets. A branded
+  // entry whose contract is silent shouldn't headline.
   const featuredFund = useMemo(() => {
     if (funds.length === 0) return null
-    return [...funds].sort((a: any, b: any) => {
+    const active = funds.filter((f: any) => {
+      const k = (f.vault as string).toLowerCase()
+      const chain = chainByAddress[k]
+      if (chain && (chain.totalAssets > 0n || chain.totalSupply > 0n)) return true
+      const sse = sseByAddress[k]
+      if (sse && (safeBigInt(sse.total_assets) > 0n || safeBigInt(sse.total_supply) > 0n)) return true
+      return false
+    })
+    if (active.length === 0) return null
+    return [...active].sort((a: any, b: any) => {
       const keyA = (a.vault as string).toLowerCase()
       const keyB = (b.vault as string).toLowerCase()
       const assA = chainByAddress[keyA]?.totalAssets ?? safeBigInt(sseByAddress[keyA]?.total_assets)

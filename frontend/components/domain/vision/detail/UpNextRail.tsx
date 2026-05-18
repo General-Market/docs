@@ -22,7 +22,13 @@ import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useTrendingBots } from '@/hooks/vision/useTrendingBots'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
+import { useSSEVisionVaults } from '@/hooks/useSSE'
 import { Sparkline } from '@/components/domain/home/Sparkline'
+
+function safeBigInt(v: string | undefined): bigint {
+  if (!v) return 0n
+  try { return BigInt(v) } catch { return 0n }
+}
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -131,8 +137,11 @@ function RailCard({
 function RoundClosesCard({ sourceId }: { sourceId: string }) {
   const { data: rounds } = useRounds(sourceId)
 
+  // A betting round with no markets is just a clock — and the clock already
+  // lives in the settlement strip and the featured-hero countdown. Skip until
+  // the round actually has something to bet on.
   const bettingRound = useMemo(
-    () => rounds?.find(r => r.status === 'betting') ?? null,
+    () => rounds?.find(r => r.status === 'betting' && r.marketCount > 0) ?? null,
     [rounds],
   )
 
@@ -174,10 +183,27 @@ function RoundClosesCard({ sourceId }: { sourceId: string }) {
 /* ─── card: newest vault ─────────────────────────────────────────── */
 
 function NewestVaultCard({ sourceId }: { sourceId: string }) {
+  const sseVaults = useSSEVisionVaults()
+  const sseByAddress = useMemo(() => {
+    const map: Record<string, typeof sseVaults[number]> = {}
+    for (const v of sseVaults) map[v.address.toLowerCase()] = v
+    return map
+  }, [sseVaults])
+
+  // Walk the source's funds from newest to oldest; pick the most recent
+  // entry whose contract has any state. Branded addresses without code (or
+  // never deposited into) drop out — the rail is silent rather than fake.
   const fund = useMemo(() => {
     const all = (fundData as any).funds.filter((f: any) => f.source === sourceId && f.vault)
-    return all.length > 0 ? all[all.length - 1] : null
-  }, [sourceId])
+    for (let i = all.length - 1; i >= 0; i--) {
+      const key = (all[i].vault as string).toLowerCase()
+      const sse = sseByAddress[key]
+      if (sse && (safeBigInt(sse.total_assets) > 0n || safeBigInt(sse.total_supply) > 0n)) {
+        return all[i]
+      }
+    }
+    return null
+  }, [sourceId, sseByAddress])
 
   // Real NAV history. The card showed no chart for months — the comment in
   // this file admitted "performance data is a follow-up". Now it isn't.

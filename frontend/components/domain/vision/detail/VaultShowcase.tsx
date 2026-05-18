@@ -542,8 +542,22 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     return buildVaultInfo(fund, 0n, 0n)
   }, [chainVaultByAddress, sseVaultByAddress])
 
+  // Active = the address answered on-chain and reports at least some supply
+  // or assets, OR SSE has a non-zero snapshot. A branded entry that no
+  // contract backs is just decoration — keep it out of the carousel.
+  const activeFunds = useMemo(() => {
+    return funds.filter((f: any) => {
+      const key = (f.vault as string).toLowerCase()
+      const chain = chainVaultByAddress[key]
+      if (chain && (chain.totalAssets > 0n || chain.totalSupply > 0n)) return true
+      const sse = sseVaultByAddress[key]
+      if (sse && (sse.totalAssets > 0n || sse.totalSupply > 0n)) return true
+      return false
+    })
+  }, [funds, chainVaultByAddress, sseVaultByAddress])
+
   const sortedFunds = useMemo(() => {
-    return [...funds].sort((a: any, b: any) => {
+    return [...activeFunds].sort((a: any, b: any) => {
       const aKey = (a.vault as string).toLowerCase()
       const bKey = (b.vault as string).toLowerCase()
       const tvlA = chainVaultByAddress[aKey]?.totalAssets
@@ -554,7 +568,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
         ?? 0n
       return tvlB > tvlA ? 1 : tvlB < tvlA ? -1 : 0
     })
-  }, [funds, chainVaultByAddress, sseVaultByAddress])
+  }, [activeFunds, chainVaultByAddress, sseVaultByAddress])
 
   // Empty: this source has no vaults registered. Return null so the parent's
   // `[&:has(>div:empty)]:hidden` hack on SourceDetailV2 hides the wrapper. A

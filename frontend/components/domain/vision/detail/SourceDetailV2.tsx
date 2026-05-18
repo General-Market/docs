@@ -110,7 +110,7 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
     <div className="flex-1 min-w-0 flex flex-col">
       <SourceTabNav sourceId={sourceId} activeTab="overview" />
 
-      <div className="px-4 sm:px-6 lg:px-10 py-6 lg:py-10 flex flex-col gap-10 lg:gap-12">
+      <div className="px-6 py-6 md:px-8 lg:px-10 lg:py-7 flex flex-col gap-6 lg:gap-8">
         {/* Identity — renders synchronously from initialSource so the brand greets you before any data. */}
         <SourceIdentityCard
           sourceId={source.id}
