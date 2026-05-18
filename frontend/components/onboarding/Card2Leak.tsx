@@ -1,12 +1,18 @@
 'use client'
 
 import { motion, useReducedMotion } from 'framer-motion'
+import { CitationCard, type CitationKind } from './CitationCard'
 
 type Row = {
   label: string
   extracted: number
   trader: number
-  source: string
+  citation: {
+    kind: CitationKind
+    title: string
+    meta: string
+    href?: string
+  }
   highlight?: boolean
 }
 
@@ -15,25 +21,45 @@ const ROWS: Row[] = [
     label: 'Options',
     extracted: 88,
     trader: 12,
-    source: '88% of $4.13B retail cost → Citadel, Susquehanna, Optiver, IMC (JoF 2023, jofi.13285)',
+    citation: {
+      kind: 'paper',
+      title: 'Retail Trading in Options and the Rise of the Big Three',
+      meta: 'Bryzgalova, Pavlova, Sikorskaya · Journal of Finance, 2023 · $4.13B retail cost — 88% to Citadel, Susquehanna, Optiver, IMC',
+      href: 'https://doi.org/10.1111/jofi.13285',
+    },
   },
   {
     label: 'Perps',
     extracted: 70,
     trader: 30,
-    source: 'Taker fees + funding spread + liquidation engine; ~80% of leveraged accounts close at loss (Binance, Hyperliquid)',
+    citation: {
+      kind: 'data',
+      title: 'Hyperliquid trader PnL distribution',
+      meta: 'Public on-chain data · ~80% of leveraged accounts close at loss · funding + spread + liquidation engine',
+      href: 'https://stats.hyperliquid.xyz/',
+    },
   },
   {
     label: 'Memecoins',
     extracted: 80,
     trader: 20,
-    source: '1% Pump.fun fee + ~4% Solana DEX slippage to LPs, every trade (DefiLlama, May 2026)',
+    citation: {
+      kind: 'data',
+      title: 'Pump.fun fees + Solana DEX slippage',
+      meta: 'DefiLlama, May 2026 · 1% platform fee + ~4% LP slippage on every trade',
+      href: 'https://defillama.com/protocol/pumpfun',
+    },
   },
   {
     label: 'General Market',
     extracted: 3,
     trader: 97,
-    source: 'Parimutuel pool fee · trader pays trader · no spread, no MM, no MEV',
+    citation: {
+      kind: 'concept',
+      title: 'Parimutuel block · trader pays trader',
+      meta: '3% pool fee · no spread, no MM, no MEV · liquidity emerges from opposing bets',
+      href: 'https://en.wikipedia.org/wiki/Parimutuel_betting',
+    },
     highlight: true,
   },
 ]
@@ -61,7 +87,7 @@ export function Card2Leak({ active }: { active: boolean }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           {ROWS.map((row, i) => (
             <BarRow
               key={row.label}
@@ -117,7 +143,7 @@ function BarRow({
   active: boolean
   reduced: boolean
 }) {
-  const delay = 0.15 + index * 0.18
+  const delay = 0.12 + index * 0.16
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-4">
@@ -204,26 +230,28 @@ function BarRow({
       </div>
 
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.3, delay: delay + 0.9 }}
+        initial={{ opacity: 0, y: 4 }}
+        animate={
+          active && !reduced
+            ? { opacity: 1, y: 0 }
+            : reduced
+              ? { opacity: 1, y: 0 }
+              : { opacity: 0, y: 4 }
+        }
+        transition={{ duration: 0.35, delay: delay + 0.9 }}
         className="flex"
       >
-        <div style={{ width: 130, flexShrink: 0 }} />
-        <p
-          className="flex-1"
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: '11.5px',
-            letterSpacing: '0.005em',
-            color: row.highlight ? 'rgba(41,151,255,0.85)' : 'rgba(255,255,255,0.45)',
-            lineHeight: 1.5,
-            marginLeft: 16,
-            fontStyle: 'italic',
-          }}
-        >
-          {row.source}
-        </p>
+        <div style={{ width: 130, flexShrink: 0 }} className="hidden md:block" />
+        <div className="md:ml-4 flex-1 min-w-0">
+          <CitationCard
+            compact
+            kind={row.citation.kind}
+            title={row.citation.title}
+            meta={row.citation.meta}
+            href={row.citation.href}
+            highlight={row.highlight}
+          />
+        </div>
       </motion.div>
     </div>
   )

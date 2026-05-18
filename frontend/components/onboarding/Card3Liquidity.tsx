@@ -2,6 +2,7 @@
 
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo } from 'react'
+import { CitationCard } from './CitationCard'
 
 const GRID = 28
 const TARGET = 10000
@@ -168,6 +169,35 @@ export function Card3Liquidity({ active }: { active: boolean }) {
         >
           The order book was a tax. We removed it.
         </p>
+      </div>
+
+      <div className="w-full max-w-[680px] flex flex-col gap-2">
+        <div
+          className="mb-1"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-12)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.45)',
+          }}
+        >
+          The proof
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <CitationCard
+            kind="concept"
+            title="Parimutuel design"
+            meta="Wikipedia · Pool-based wagering · two opposing sides cover every market without an order book"
+            href="https://en.wikipedia.org/wiki/Parimutuel_betting"
+          />
+          <CitationCard
+            kind="data"
+            title="Long-tail markets starve on order books"
+            meta="Polymarket and Kalshi · sub-1% open interest on niche markets · liquidity collapses past the top 50"
+            href="https://defillama.com/protocol/polymarket"
+          />
+        </div>
       </div>
     </div>
   )

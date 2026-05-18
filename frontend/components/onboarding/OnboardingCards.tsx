@@ -7,7 +7,6 @@ import { Card1Block } from './Card1Block'
 import { Card2Leak } from './Card2Leak'
 import { Card3Liquidity } from './Card3Liquidity'
 
-const STORAGE_KEY = 'gm-onboarding-seen-v2'
 const TOTAL = 3
 
 export function OnboardingCards() {
@@ -20,33 +19,16 @@ export function OnboardingCards() {
   useEffect(() => {
     setMounted(true)
     if (typeof window === 'undefined') return
-    try {
-      const seen = window.localStorage.getItem(STORAGE_KEY)
-      if (!seen) {
-        const t = setTimeout(() => setOpen(true), 350)
-        return () => clearTimeout(t)
-      }
-    } catch {
-      // localStorage unavailable — skip the tour silently.
-    }
+    const t = setTimeout(() => setOpen(true), 350)
+    return () => clearTimeout(t)
   }, [])
 
-  const persistSeen = useCallback(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, new Date().toISOString())
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  const dismissPermanent = useCallback(() => {
-    persistSeen()
-    setOpen(false)
-  }, [persistSeen])
-
-  const dismissTemporary = useCallback(() => {
+  const dismiss = useCallback(() => {
     setOpen(false)
   }, [])
+
+  const dismissPermanent = dismiss
+  const dismissTemporary = dismiss
 
   const next = useCallback(() => {
     setDirection(1)
