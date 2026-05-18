@@ -59,19 +59,6 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     generalMarketLabel: 'Sealed bets — listings impossible to front-run',
     rows: [
       {
-        slug: 'polymarket-french-trump',
-        name: 'Polymarket',
-        tag: 'CNBC 2024',
-        value: 28,
-        gatedValue: 28,
-        lane: 'Retail: 0 | MM: $28M (four-account Trump bet, French national; Venezuela ring +$2.4M)',
-        barrier: 'Self-review by the house',
-        sources: [
-          { label: 'CNBC · French trader $28M Trump bet via 4 accounts', url: 'https://www.cnbc.com/2024/10/24/polymarket-trump-french-election-bet.html' },
-          { label: 'Benzinga · 60 Minutes / WSJ Polymarket insider trading coverage', url: 'https://www.benzinga.com/markets/prediction-markets/26/05/52644733/polymarkets-rough-weekend-60-minutes-wall-street-journal-scrutinize-insider-trading-and-resolution-system' },
-        ],
-      },
-      {
         slug: 'pumpfun-sniper-month',
         name: 'Pump.fun',
         tag: 'Bitget 2025',

@@ -1,8 +1,6 @@
 import { Reveal } from '@/components/ui/Reveal'
 import {
   EDGE_TOPICS,
-  CATEGORY_LABEL,
-  type EdgeCategory,
   type EdgeTopic,
   type CompanyRow,
 } from './data-edge-matrix'
@@ -13,8 +11,6 @@ const TERTIARY = 'var(--apple-text-tertiary)'
 const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
 const SURFACE = 'var(--apple-surface)'
-
-const CATEGORY_ORDER: EdgeCategory[] = ['information', 'latency', 'execution', 'subsidy', 'risk']
 
 /**
  * Format a number + unit for the right-side value pill on each bar.
@@ -294,7 +290,7 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
                 marginBottom: 10,
               }}
             >
-              {CATEGORY_LABEL[topic.category]} · {topic.rows.length} venues · {topic.unit}
+              {topic.rows.length} venues · {topic.unit}
             </div>
             <h3
               style={{
@@ -359,33 +355,6 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
   )
 }
 
-function CategoryDivider({ cat, count }: { cat: EdgeCategory; count: number }) {
-  return (
-    <Reveal>
-      <div
-        style={{
-          marginTop: 64,
-          paddingBottom: 8,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 11,
-            color: TERTIARY,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-            marginBottom: 6,
-          }}
-        >
-          {CATEGORY_LABEL[cat]} · {count} edge{count === 1 ? '' : 's'}
-        </div>
-      </div>
-    </Reveal>
-  )
-}
-
 export function EdgeMatrixSection() {
   return (
     <section
@@ -442,18 +411,9 @@ export function EdgeMatrixSection() {
         </p>
       </Reveal>
 
-      {CATEGORY_ORDER.map(cat => {
-        const topics = EDGE_TOPICS.filter(t => t.category === cat)
-        if (topics.length === 0) return null
-        return (
-          <div key={cat}>
-            <CategoryDivider cat={cat} count={topics.length} />
-            {topics.map(topic => (
-              <TopicBlock key={topic.slug} topic={topic} />
-            ))}
-          </div>
-        )
-      })}
+      {EDGE_TOPICS.map(topic => (
+        <TopicBlock key={topic.slug} topic={topic} />
+      ))}
     </section>
   )
 }
