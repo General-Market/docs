@@ -27,6 +27,36 @@ export const INDEX_ABI = [
     inputs: [{ name: 'itpId', type: 'bytes32' }, { name: 'user', type: 'address' }],
     outputs: [{ type: 'uint256' }],
   },
+  {
+    // Materialises Index._userShares into the per-ITP ITPVault ERC20.
+    // Without this, a wallet that bought via submitOrder still has 0
+    // balanceOf on the Morpho collateral token — the borrow path looks
+    // dead even though shares are owed.
+    type: 'function',
+    name: 'syncVaultBalance',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'itpId', type: 'bytes32' }, { name: 'u', type: 'address' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'itpVaults',
+    stateMutability: 'view',
+    inputs: [{ name: 'itpId', type: 'bytes32' }],
+    outputs: [{ type: 'address' }],
+  },
+] as const
+
+// Minimal ITPVault surface — needed to map a Morpho market's collateral token
+// back to the ITP id so we can sync share balances before borrowing.
+export const ITP_VAULT_ABI = [
+  {
+    type: 'function',
+    name: 'itpId',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'bytes32' }],
+  },
 ] as const
 
 export const MORPHO_ABI = [

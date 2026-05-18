@@ -1,6 +1,6 @@
 import { parseUnits, formatUnits, maxUint256, type Hex, type PublicClient } from 'viem'
 import { ADDR, BUY_USDC_MAX, BUY_USDC_MIN, CURATOR_API_KEY, CURATOR_API_URL, DRY_RUN, LEND_USDC_MAX, LEND_USDC_MIN } from './config.js'
-import { ERC20_ABI, INDEX_ABI, METAMORPHO_ABI, MORPHO_ABI } from './abis.js'
+import { ERC20_ABI, INDEX_ABI, ITP_VAULT_ABI, METAMORPHO_ABI, MORPHO_ABI } from './abis.js'
 import { listItps, listMorphoMarkets, pickOne, type Itp, type MorphoMarket } from './state.js'
 import { makePublic, makeWallet } from './clients.js'
 import { log } from './log.js'
@@ -221,56 +221,99 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
   const markets = await listMorphoMarkets()
   if (markets.length === 0) return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'no morpho markets' }
 
-  // Bias toward markets the wallet can actually borrow against. Scan every
-  // market and look for one where the wallet either already has a Morpho
-  // collateral position OR holds the underlying collateral ERC20. Shuffle
-  // so successive borrow ticks don't keep racing the same market.
-  // Falls back to a single random pick so the deeper skip path still
-  // surfaces during cold-start.
+  // Find a market this wallet can actually borrow against.
+  //
+  // L3-direct ITPs store shares inside Index._userShares — the ERC20
+  // ITPVault wrapper only materialises when Index.syncVaultBalance fires.
+  // So a wallet that bought via submitOrder shows balanceOf == 0 on the
+  // collateral token until we sync. We need to look at the original
+  // ledger (Index.getUserShares), not the ERC20 mirror.
+  //
+  // Strategy: pull each market's collateral token → ITPVault.itpId →
+  // Index.getUserShares(itpId, wallet). Any wallet that already
+  // collateralized on Morpho counts even with zero pending shares.
   const candidates = [...markets].sort(() => Math.random() - 0.5)
   let m: MorphoMarket | undefined
-  let collBal = 0n
+  let itpIdForMarket: `0x${string}` | undefined
+  let pendingShares = 0n
   for (const candidate of candidates) {
-    let bal = 0n
+    let itpId: `0x${string}`
     try {
-      bal = (await pub.readContract({
+      itpId = (await pub.readContract({
         address: candidate.collateralToken.toLowerCase() as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [ring.account.address],
+        abi: ITP_VAULT_ABI,
+        functionName: 'itpId',
+      })) as `0x${string}`
+    } catch {
+      // Collateral isn't an ITPVault — skip; the bot can't sync it.
+      continue
+    }
+
+    let shares = 0n
+    try {
+      shares = (await pub.readContract({
+        address: ADDR.Index,
+        abi: INDEX_ABI,
+        functionName: 'getUserShares',
+        args: [itpId, ring.account.address],
       })) as bigint
     } catch {
       continue
     }
-    if (bal > 0n) {
+
+    // Wallet either has pending shares to sync, OR has already-supplied
+    // collateral on Morpho (in which case borrow can lift more).
+    if (shares > 0n) {
       m = candidate
-      collBal = bal
+      itpIdForMarket = itpId
+      pendingShares = shares
       break
     }
     try {
       const pos = await readPosition(pub, candidate.marketId, ring.account.address)
       if (pos.collateral > 0n) {
         m = candidate
-        collBal = bal
+        itpIdForMarket = itpId
+        pendingShares = 0n
         break
       }
     } catch {
-      // ignore — keep scanning
+      // continue scanning
     }
   }
   if (!m) {
-    // No candidate matched. Take a random pick so the deeper skip reason surfaces.
-    m = pickOne(markets)
+    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'no ITP collateral across known markets' }
+  }
+
+  // Sync pending shares into the ITPVault ERC20 so supplyCollateral can
+  // pull them. No-op when shares == ERC20 balance already.
+  if (pendingShares > 0n && itpIdForMarket) {
     try {
-      collBal = (await pub.readContract({
-        address: m.collateralToken.toLowerCase() as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [ring.account.address],
-      })) as bigint
-    } catch {
-      return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `collateral ${m.collateralToken.slice(0, 10)} not a deployed ERC20` }
+      const wallet0 = makeWallet(ring.account)
+      const sx = await wallet0.writeContract({
+        chain: wallet0.chain,
+        account: ring.account,
+        address: ADDR.Index,
+        abi: INDEX_ABI,
+        functionName: 'syncVaultBalance',
+        args: [itpIdForMarket, ring.account.address],
+      })
+      await pub.waitForTransactionReceipt({ hash: sx, timeout: 60_000 })
+    } catch (e) {
+      return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `sync failed: ${String(e).slice(0, 80)}` }
     }
+  }
+
+  let collBal = 0n
+  try {
+    collBal = (await pub.readContract({
+      address: m.collateralToken.toLowerCase() as `0x${string}`,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [ring.account.address],
+    })) as bigint
+  } catch {
+    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `collateral ${m.collateralToken.slice(0, 10)} not a deployed ERC20` }
   }
 
   const params = await readMarketParams(pub, m.marketId)
