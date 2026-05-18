@@ -4,25 +4,27 @@ import { Footer } from '@/components/layout/Footer'
 import { Reveal } from '@/components/ui/Reveal'
 import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
+import { FeeTierSection } from './FeeTierSection'
 import { binance } from './data-binance'
-import { coinbase, ftx, bybit } from './data-crypto-1'
-import { hyperliquid, bitmex, deribit, kraken } from './data-crypto-2'
-import { okx, polymarket, kalshi, robinhood } from './data-prediction'
+import { coinbase, bybit } from './data-crypto-1'
+import { hyperliquid, deribit } from './data-crypto-2'
+import { polymarket, kalshi, robinhood } from './data-prediction'
+import { ibkr, etoro } from './data-brokers'
 import { pumpfun, fxcfd } from './data-misc'
 import type { Venue } from './types'
 
 export const metadata: Metadata = {
   title: 'Anti-Cheat Flags — General Market',
   description:
-    'Fourteen venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
+    'Twelve venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
   alternates: { canonical: '/anticheat-flags' },
   robots: { index: true, follow: true },
 }
 
 const VENUES: Venue[] = [
-  binance, coinbase, ftx, bybit, hyperliquid,
-  bitmex, deribit, kraken, okx, polymarket,
-  kalshi, robinhood, pumpfun, fxcfd,
+  binance, coinbase, bybit, hyperliquid, deribit,
+  polymarket, kalshi, robinhood, ibkr, etoro,
+  pumpfun, fxcfd,
 ]
 
 const TEXT = 'var(--apple-text)'
@@ -134,7 +136,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 680,
                 }}
               >
-                Fourteen venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.
+                Twelve venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.
               </p>
             </Reveal>
 
@@ -317,6 +319,9 @@ export default function AntiCheatFlagsPage() {
           {/* COLOCATION EDGE — the receipts that aren't even illegal */}
           <ColocationSection />
 
+          {/* FEE TIER EDGE — the spread in basis points + cost of staying inside */}
+          <FeeTierSection />
+
           {/* CLOSER */}
           <section
             style={{
@@ -341,7 +346,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 820,
                 }}
               >
-                Fourteen venues. The same handful of mechanisms. We built one without the room.
+                Twelve venues. The same handful of mechanisms. We built one without the room.
               </h2>
             </Reveal>
             <Reveal delay={0.08}>
