@@ -111,8 +111,23 @@ export function useAccountPnlHistory(
   // Stitch the live tip onto the server history when it's strictly newer
   // than the last bucket. Pruning the duplicate (same ts) keeps recharts
   // from drawing a vertical segment at NOW.
+  //
+  // We also drop leading pre-position buckets — rows where cost=0 AND
+  // value=0. The writer occasionally emits a zero-zero row at the bucket
+  // boundary preceding a first trade, which then graphs as a vertical
+  // cliff from PnL=0 down to (price − cost). It reads as a portfolio
+  // crash when the user has merely opened a position.
   const history = useMemo<AccountPnlPoint[]>(() => {
-    const base = q.data?.points ?? []
+    const raw = q.data?.points ?? []
+    let firstReal = 0
+    while (
+      firstReal < raw.length &&
+      raw[firstReal].cost === 0 &&
+      raw[firstReal].value === 0
+    ) {
+      firstReal += 1
+    }
+    const base = raw.slice(firstReal)
     if (!liveTip) return base
     if (base.length === 0) return [liveTip]
     const last = base[base.length - 1]

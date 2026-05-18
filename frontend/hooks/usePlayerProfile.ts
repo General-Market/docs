@@ -22,6 +22,12 @@ export interface ProfileBatch {
 export interface PnlPoint {
   timestamp: string
   pnl: number
+  /** Cost basis at this bucket — optional. The hero chart uses the
+   *  series-max cost basis to size the Y-axis so a small drawdown on a
+   *  large position doesn't render as a cliff. Vision-only pnlHistory
+   *  (from the parimutuel feed) omits it and the chart falls back to
+   *  pure auto-scale. */
+  cost?: number
 }
 
 export interface ProfileStats {

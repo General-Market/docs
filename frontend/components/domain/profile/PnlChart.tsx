@@ -83,6 +83,18 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
     return baseHistory.slice(-2)
   }, [baseHistory, range])
 
+  // Series-max cost basis — used by the Y-axis domain so a $3 drawdown on a
+  // $122 position renders as a small dip, not a vertical cliff. Zero when
+  // upstream points don't carry cost (e.g. legacy Vision-only feeds).
+  const referenceMagnitude = useMemo(() => {
+    let max = 0
+    for (const p of filtered) {
+      const c = p.cost
+      if (typeof c === 'number' && c > max) max = c
+    }
+    return max
+  }, [filtered])
+
   // Playback: an integer index into `filtered`. `null` means "show the tip".
   // The card auto-plays a sweep from the first point to the last, holds, and
   // loops — same idea as the Polymarket card, ours just rolls digits.
@@ -313,6 +325,19 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
             <YAxis
               hide
               domain={([dataMin, dataMax]: [number, number]) => {
+                // When we know the cost basis, anchor the chart so a small
+                // drawdown reads as small. Floor the visible amplitude at
+                // ~25% of the position size, expanding only when real
+                // moves exceed it. Otherwise -$3 on a $122 ITP renders as
+                // a vertical cliff thanks to recharts' tight auto-fit.
+                if (referenceMagnitude > 0) {
+                  const floor = referenceMagnitude * 0.25
+                  const span = Math.max(dataMax - dataMin, floor)
+                  const center = (dataMin + dataMax) / 2
+                  const half = span / 2
+                  const padded = span * 0.08
+                  return [center - half - padded, center + half + padded]
+                }
                 if (dataMin === dataMax) {
                   const pad = Math.max(1, Math.abs(dataMin) * 0.1)
                   return [dataMin - pad, dataMax + pad]

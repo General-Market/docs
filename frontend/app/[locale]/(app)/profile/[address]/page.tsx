@@ -62,7 +62,11 @@ function ProfileContent({ address }: { address: string }) {
   )
   const curveHistory = useMemo(
     () =>
-      pnlPoints.map((p) => ({ timestamp: new Date(p.ts).toISOString(), pnl: p.pnl })),
+      pnlPoints.map((p) => ({
+        timestamp: new Date(p.ts).toISOString(),
+        pnl: p.pnl,
+        cost: p.cost,
+      })),
     [pnlPoints],
   )
 

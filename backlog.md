@@ -5222,3 +5222,10 @@ End-to-end ITP order test: **NOT ATTEMPTED**. L3 sequencer dead. Cost of attempt
 [FAILED] The secondary log message `Failed to create new round — no recommended config for source X` is a downstream effect of the failed createBatch, not a config problem. Don't chase it.
 [REFERENCE] Fleet-key map: oracle-1 = 0xba03882C / 0x37eF0D9d, oracle-2 = 0x6B4cBc6f / 0x3Ede2E74, oracle-3 = 0xdF00D68d / 0x82067AEC. Defined in `docker/testnet/oracle/docker-compose.override.yml` under each service's `ORACLE_FLEET_KEYS`. Memory: `oracle-leader-wallets-drain.md`.
 [REFERENCE] Open follow-up: build a watchdog that auto-funds any fleet key below a threshold from the ISSUER_2 mother lode. Until that exists, every few weeks someone has to refuel by hand.
+
+## 20260518-1655-w9zk bulk gas refuel — every testnet wallet to 10k GM
+[DECISION] User requested unlimited L3 gas for all bots, oracles, keepers — preempt future drains. Enumerated 34 wallets across docker compose, env vars, and mounted key files. 33 of them funded to ~10,000 GM each (skipping the mother lode itself). Source: ISSUER_2 = 0xC0d3ca67… (~100M GM).
+[REFERENCE] Wallet inventory: deployer, issuer1, issuer3, AP, 6 oracle fleet keys (oracle-1/2/3 × 2 each), itp-bot, curator, 12 bot-bot-* manager wallets, 9 vision-swarm bot keys. Settlement keys 1/2/3 on each oracle container = same as ORACLE_N_PRIVATE_KEY (not separate wallets). Curator key was root-owned in /tmp; needed sudo to read.
+[DECISION] At current burn rate (~6 GM/hour on the heaviest fleet key, oracle-3), 10k GM is months of headroom. Mother lode dropped from 99.997M → 99.667M GM. ~0.33% of supply moved.
+[FAILED] Sonic-side not topped up. Mother lode on Sonic only holds ~104 S — not enough to call unlimited. Reported back; user will decide whether to faucet or handle separately. Bots/oracle main keys on Sonic range 4–10 S, curator at 0 S.
+[REFERENCE] Auto-funder still missing. Recommend a watchdog daemon that refills any fleet key below 1k GM from the mother lode every cron tick. Until then this is manual.
