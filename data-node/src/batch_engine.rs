@@ -347,8 +347,8 @@ async fn get_all_last_settlement_changes(
 /// The underlying query is a `WITH ranked AS (...)` over `market_prices` (130 GB,
 /// 264 M rows). A cold pass burns IO/CPU for ~100 s. The data it returns —
 /// "approx pct change over the last 24 h" — does not move appreciably second by
-/// second. A 60 s TTL drops query load to once per minute per source while
-/// preserving fallback-tier calibration quality. Cache lives behind an
+/// second. A 300 s TTL drops query load to once per five minutes per source
+/// while preserving fallback-tier calibration quality. Cache lives behind an
 /// `OnceLock<Mutex<...>>` so multiple concurrent callers share the same store.
 static TWENTY_FOUR_H_CACHE: OnceLock<std::sync::Mutex<HashMap<String, (Instant, HashMap<String, f64>)>>> = OnceLock::new();
 
@@ -356,12 +356,17 @@ fn twenty_four_h_cache() -> &'static std::sync::Mutex<HashMap<String, (Instant, 
     TWENTY_FOUR_H_CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()))
 }
 
-const TWENTY_FOUR_H_CACHE_TTL_SECS: u64 = 60;
+// The 24h-change query is a fallback path (callers prefer settlement-history
+// caches) and feeds only a direction hint for resolution_type. The number
+// doesn't move on a per-minute scale, and the per-source loop revisits each
+// source roughly every 60s — a TTL at the loop period meant nearly every call
+// was a 100s cold pass. 300s converts ~60 misses/hour into ~12.
+const TWENTY_FOUR_H_CACHE_TTL_SECS: u64 = 300;
 
 /// Get 24h price change % for ALL assets of a source in one query.
 /// Returns HashMap<asset_id, change_pct>.
 ///
-/// Result is cached per-source with a 60s TTL — see TWENTY_FOUR_H_CACHE above.
+/// Result is cached per-source with a 300s TTL — see TWENTY_FOUR_H_CACHE above.
 async fn get_all_24h_changes(
     pool: &PgPool,
     source_id: &str,
