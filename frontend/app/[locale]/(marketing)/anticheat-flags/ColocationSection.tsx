@@ -60,7 +60,91 @@ const COLO_VENUES: ColoVenue[] = [
   },
 ]
 
-const MAX_GAP = Math.max(...COLO_VENUES.map(v => v.outsiderMs - v.insiderMs))
+type Mechanism = 'colo' | 'region' | 'designated' | 'cross-connect' | 'pfof' | 'b-book' | 'none'
+
+interface LatencyRow {
+  slug: string
+  name: string
+  edgeMs: number
+  mechanism: Mechanism
+  lane: string
+  source?: { label: string; url: string }
+}
+
+const MECH_LABEL: Record<Mechanism, string> = {
+  'colo': 'Colocation',
+  'region': 'AWS region',
+  'designated': 'Designated MM',
+  'cross-connect': 'Cross-connect',
+  'pfof': 'PFOF',
+  'b-book': 'Internal book',
+  'none': 'None',
+}
+
+const LATENCY_ROWS: LatencyRow[] = [
+  {
+    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197, mechanism: 'region',
+    lane: 'Tokyo desk vs European desk',
+    source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
+  },
+  {
+    slug: 'binance', name: 'Binance', edgeMs: 145, mechanism: 'colo',
+    lane: 'AWS Tokyo VIP colo vs global retail',
+    source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
+  },
+  {
+    slug: 'bybit', name: 'Bybit', edgeMs: 140, mechanism: 'colo',
+    lane: 'AWS Singapore/Tokyo colo vs global retail',
+    source: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
+  },
+  {
+    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, mechanism: 'region',
+    lane: 'Solana validator-adjacent snipers vs default RPC',
+    source: { label: 'Helius · Solana latency', url: 'https://www.helius.dev/blog/solana-rpc-latency' },
+  },
+  {
+    slug: 'etoro', name: 'eToro', edgeMs: 100, mechanism: 'b-book',
+    lane: 'Internal CFD book — order never reaches a public market',
+    source: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
+  },
+  {
+    slug: 'polymarket', name: 'Polymarket', edgeMs: 78, mechanism: 'colo',
+    lane: 'KYC\'d London colo vs New York retail',
+    source: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
+  },
+  {
+    slug: 'deribit', name: 'Deribit', edgeMs: 75, mechanism: 'colo',
+    lane: 'London matching engine colo vs US retail',
+    source: { label: 'Deribit · institutional', url: 'https://www.deribit.com/kb/api-overview' },
+  },
+  {
+    slug: 'fxcfd', name: 'FX / CFD industry', edgeMs: 65, mechanism: 'cross-connect',
+    lane: 'NY4 (Equinix Secaucus) LP cross-connect vs retail home internet',
+    source: { label: 'Equinix · NY4', url: 'https://www.equinix.com/data-centers/americas-colocation/united-states-colocation/new-york-data-centers/ny4' },
+  },
+  {
+    slug: 'coinbase', name: 'Coinbase', edgeMs: 60, mechanism: 'colo',
+    lane: 'Coinbase Prime us-east-1 / Equinix LD4 vs Asian or EU retail',
+    source: { label: 'Coinbase · Prime', url: 'https://prime.coinbase.com/' },
+  },
+  {
+    slug: 'ibkr', name: 'Interactive Brokers', edgeMs: 50, mechanism: 'cross-connect',
+    lane: 'Direct Market Access pro vs retail SmartRouter',
+    source: { label: 'IBKR · DMA', url: 'https://www.interactivebrokers.com/en/trading/orders/smartRouting.php' },
+  },
+  {
+    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, mechanism: 'designated',
+    lane: 'Chicago designated MM vs retail browser',
+    source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
+  },
+  {
+    slug: 'robinhood', name: 'Robinhood', edgeMs: 35, mechanism: 'pfof',
+    lane: 'Citadel PFOF info window vs lit-market execution',
+    source: { label: 'SEC · Robinhood PFOF', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
+  },
+]
+
+const MAX_EDGE = Math.max(...LATENCY_ROWS.map(r => r.edgeMs))
 
 function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
   const gap = v.outsiderMs - v.insiderMs
@@ -178,32 +262,58 @@ function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
   )
 }
 
-function BarRow({
-  label,
-  value,
-  pct,
-  filled,
-  note,
-}: {
-  label: string
-  value: number
-  pct: number
-  filled: boolean
-  note?: string
-}) {
+function MechanismPill({ mechanism }: { mechanism: Mechanism }) {
+  if (mechanism === 'none') return null
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 'var(--apple-r-pill)',
+        background: 'var(--apple-surface)',
+        color: TERTIARY,
+        fontFamily: 'var(--apple-font-text)',
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {MECH_LABEL[mechanism]}
+    </span>
+  )
+}
+
+function LatencyBarRow({ row }: { row: LatencyRow }) {
+  const pct = (row.edgeMs / MAX_EDGE) * 100
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
         style={{
-          flex: '0 0 132px',
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 14,
-          color: TEXT,
-          letterSpacing: '-0.011em',
-          fontWeight: 500,
+          flex: '0 0 200px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
         }}
       >
-        {label}
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 14,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {row.name}
+        </span>
+        <MechanismPill mechanism={row.mechanism} />
       </div>
       <div
         style={{
@@ -215,33 +325,81 @@ function BarRow({
           overflow: 'hidden',
         }}
       >
-        {filled && pct > 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: `${pct}%`,
-              background: ACCENT,
-              borderRadius: 4,
-            }}
-          />
-        )}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${pct}%`,
+            background: ACCENT,
+            borderRadius: 4,
+          }}
+        />
       </div>
       <div
         style={{
-          flex: '0 0 120px',
+          flex: '0 0 72px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
           fontSize: 15,
           fontWeight: 600,
-          color: filled ? ACCENT : TERTIARY,
+          color: ACCENT,
           fontVariantNumeric: 'tabular-nums',
           letterSpacing: '-0.016em',
         }}
       >
-        {note ?? `${value}ms`}
+        {row.edgeMs}ms
+      </div>
+    </div>
+  )
+}
+
+function GeneralMarketRow() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div
+        style={{
+          flex: '0 0 200px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 14,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 600,
+          }}
+        >
+          General Market
+        </span>
+        <MechanismPill mechanism="none" />
+      </div>
+      <div
+        style={{
+          flex: 1,
+          height: 14,
+          background: 'var(--apple-surface)',
+          borderRadius: 4,
+        }}
+      />
+      <div
+        style={{
+          flex: '0 0 72px',
+          textAlign: 'right',
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 15,
+          fontWeight: 600,
+          color: TERTIARY,
+          fontVariantNumeric: 'tabular-nums',
+          letterSpacing: '-0.016em',
+        }}
+      >
+        0ms
       </div>
     </div>
   )
@@ -268,7 +426,7 @@ export function ColocationSection() {
             marginBottom: 10,
           }}
         >
-          The receipts that aren't even illegal · 3 venues · no published prices
+          The receipts that aren't even illegal · {LATENCY_ROWS.length} venues · no published prices
         </div>
       </Reveal>
       <Reveal mask delay={0.04}>
@@ -299,7 +457,7 @@ export function ColocationSection() {
             maxWidth: 780,
           }}
         >
-          Every venue sells the same product: proximity. A cabinet next to the matching engine, a validator in the right AWS region, the cross-connect the institutional desk already paid for. Each foundation insists the door is open. None of them publishes the price.
+          Every venue sells the same product: proximity. A cabinet next to the matching engine, a validator in the right AWS region, the cross-connect the institutional desk already paid for, the order flow auctioned before it touches a public book. Each foundation insists the door is open. None of them publishes the price.
         </p>
       </Reveal>
 
@@ -331,7 +489,7 @@ export function ColocationSection() {
               marginBottom: 4,
             }}
           >
-            The front-runner edge, measured in milliseconds
+            The front-runner edge, measured in milliseconds · {LATENCY_ROWS.length + 1} venues
           </div>
           <h3
             style={{
@@ -346,26 +504,56 @@ export function ColocationSection() {
             How far ahead the inside lane sits.
           </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {COLO_VENUES.map((v) => {
-              const gap = v.outsiderMs - v.insiderMs
-              return (
-                <BarRow
-                  key={v.slug}
-                  label={v.name}
-                  value={gap}
-                  pct={(gap / MAX_GAP) * 100}
-                  filled
-                />
-              )
-            })}
-            <BarRow
-              label="General Market"
-              value={0}
-              pct={0}
-              filled={false}
-              note="No house"
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {LATENCY_ROWS.map((row) => (
+              <LatencyBarRow key={row.slug} row={row} />
+            ))}
+            <GeneralMarketRow />
+          </div>
+
+          {/* Source attribution block */}
+          <div
+            style={{
+              marginTop: 28,
+              paddingTop: 20,
+              borderTop: `1px solid ${LINE}`,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: '12px 20px',
+            }}
+          >
+            {LATENCY_ROWS.map((row) => (
+              <div
+                key={row.slug}
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                  lineHeight: 1.45,
+                }}
+              >
+                <div style={{ color: TEXT, fontWeight: 500, marginBottom: 2 }}>
+                  {row.name} · {row.edgeMs}ms
+                </div>
+                <div style={{ marginBottom: 4 }}>{row.lane}</div>
+                {row.source && (
+                  <a
+                    href={row.source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: ACCENT,
+                      fontSize: 11,
+                      fontWeight: 500,
+                    }}
+                    className="hover:underline"
+                  >
+                    {row.source.label} ›
+                  </a>
+                )}
+              </div>
+            ))}
           </div>
 
           <div
@@ -374,13 +562,13 @@ export function ColocationSection() {
               fontSize: 11,
               color: TERTIARY,
               letterSpacing: '-0.005em',
-              lineHeight: 1.5,
-              marginTop: 24,
+              lineHeight: 1.6,
+              marginTop: 20,
               paddingTop: 16,
               borderTop: `1px solid ${LINE}`,
             }}
           >
-            Bar length = round-trip gap between the insider seat and the outside trader. Polymarket: KYC&apos;d London colo (~2ms) vs New York retail (~80ms), per Polymarket docs. Hyperliquid: Tokyo desk (~3ms) vs European desk (~200ms), per Glassnode / Coindesk, 30 March 2026. Kalshi: Chicago designated MM (~1ms) vs retail browser (~50ms), per BusinessWire announcement and the November 2025 federal complaint. General Market: on-chain, sealed bets, parimutuel, BLS-verified — no insider seat to sell.
+            Bar length = round-trip latency edge between the insider seat and the outside trader, in milliseconds. Numbers reflect the dominant axis at each venue: same-region AWS proximity (Hyperliquid validator cluster, Binance/Bybit VIP colo, Pump.fun Solana sniper, Coinbase Prime, Deribit, Polymarket), Chicago cross-connect for designated MMs (Kalshi), DMA cross-connect or LP fibre for traditional brokers (IBKR, FX/CFD), payment-for-order-flow holding window (Robinhood/Citadel), and the internal CFD book where the order never reaches a public market (eToro). General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no published price, no door.
           </div>
         </div>
       </Reveal>
