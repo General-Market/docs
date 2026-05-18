@@ -204,18 +204,55 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
   const markets = await listMorphoMarkets()
   if (markets.length === 0) return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'no morpho markets' }
 
-  // Pick a market the wallet holds the collateral for. If none, deposit collateral first.
-  const m: MorphoMarket = pickOne(markets)
+  // Bias toward markets the wallet can actually borrow against. Scan up to
+  // 16 random markets and look for one where the wallet either already has
+  // a Morpho collateral position OR holds the underlying collateral ERC20.
+  // Falls back to a single random pick so the original "no collateral"
+  // skip path still surfaces during cold-start.
+  const candidates = [...markets].sort(() => Math.random() - 0.5).slice(0, Math.min(16, markets.length))
+  let m: MorphoMarket | undefined
   let collBal = 0n
-  try {
-    collBal = (await pub.readContract({
-      address: m.collateralToken.toLowerCase() as `0x${string}`,
-      abi: ERC20_ABI,
-      functionName: 'balanceOf',
-      args: [ring.account.address],
-    })) as bigint
-  } catch {
-    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `collateral ${m.collateralToken.slice(0, 10)} not a deployed ERC20` }
+  for (const candidate of candidates) {
+    let bal = 0n
+    try {
+      bal = (await pub.readContract({
+        address: candidate.collateralToken.toLowerCase() as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [ring.account.address],
+      })) as bigint
+    } catch {
+      continue
+    }
+    if (bal > 0n) {
+      m = candidate
+      collBal = bal
+      break
+    }
+    try {
+      const pos = await readPosition(pub, candidate.marketId, ring.account.address)
+      if (pos.collateral > 0n) {
+        m = candidate
+        collBal = bal
+        break
+      }
+    } catch {
+      // ignore — keep scanning
+    }
+  }
+  if (!m) {
+    // No candidate matched. Take a random pick so the deeper skip reason surfaces.
+    m = pickOne(markets)
+    try {
+      collBal = (await pub.readContract({
+        address: m.collateralToken.toLowerCase() as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [ring.account.address],
+      })) as bigint
+    } catch {
+      return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `collateral ${m.collateralToken.slice(0, 10)} not a deployed ERC20` }
+    }
   }
 
   const params = await readMarketParams(pub, m.marketId)
