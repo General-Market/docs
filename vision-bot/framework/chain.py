@@ -565,6 +565,15 @@ class Executor:
         info = self.vision.functions.getBatch(batch_id).call()
         if int(info[0], 16) == 0:
             raise BatchNotFoundError(f"Batch {batch_id} does not exist")
+        return self.get_position_only(batch_id, player)
+
+    def get_position_only(self, batch_id: int, player: str) -> dict:
+        """Read getPosition without re-verifying batch existence.
+
+        Use this when the caller has already validated the batch in the same
+        cycle (e.g. via get_batch_info). Saves one RPC per call. Does not
+        raise BatchNotFoundError — caller is responsible for that check.
+        """
         raw = self.vision.functions.getPosition(
             batch_id, Web3.to_checksum_address(player)
         ).call()
@@ -1157,6 +1166,10 @@ class VaultExecutor:
             self._factory = self.w3.eth.contract(
                 address=Web3.to_checksum_address(factory_addr), abi=FACTORY_ABI
             )
+        # Cache of immutable vault fields. name/manager/perf_fee_rate cannot
+        # change after deployment; reading them every cycle across hundreds of
+        # vaults was burning ~3 RPCs/fund/cycle for no reason.
+        self._static_meta: dict | None = None
 
     def _build_tx(self, gas: int = 500_000) -> dict:
         return self.executor._build_tx(gas)
@@ -1268,18 +1281,27 @@ class VaultExecutor:
     # ── reads ──
 
     def get_vault_info(self) -> dict:
-        """Read vault state in one shot."""
+        """Read vault state. Mutable fields hit the chain every call; the
+        immutable triplet (name, manager, perf_fee_rate) is fetched once on
+        first call and reused forever after. Cuts ~3 RPCs/fund/cycle.
+        """
+        if self._static_meta is None:
+            self._static_meta = {
+                "name": self.vault.functions.name().call(),
+                "manager": self.vault.functions.manager().call(),
+                "perf_fee_rate": self.vault.functions.performanceFeeRate().call(),
+            }
         return {
             "address": self.vault_addr,
-            "name": self.vault.functions.name().call(),
+            "name": self._static_meta["name"],
             "total_assets": self.vault.functions.totalAssets().call(),
             "total_supply": self.vault.functions.totalSupply().call(),
             "hwm": self.vault.functions.highWaterMark().call(),
             "active_capital": self.vault.functions.totalActiveCapital().call(),
             "idle_usdc": self.vault.functions.idleUSDC().call(),
-            "manager": self.vault.functions.manager().call(),
+            "manager": self._static_meta["manager"],
             "manager_shares": self.vault.functions.balanceOf(self.bot_addr).call(),
-            "perf_fee_rate": self.vault.functions.performanceFeeRate().call(),
+            "perf_fee_rate": self._static_meta["perf_fee_rate"],
         }
 
     def get_active_deposit(self, batch_id: int) -> int:

@@ -14,7 +14,6 @@ from pathlib import Path
 
 from framework.core import encode_bitmap, hash_bitmap, load_strategy
 from framework.chain import (
-    BatchNotFoundError,
     BitmapSubmitError,
     Executor,
     VaultExecutor,
@@ -91,26 +90,6 @@ SNAPSHOT_INTERVAL = 1  # write snapshots every cycle. At poll_interval=30s
 AUTO_SEED_USDC = float(os.environ.get("AUTO_SEED_USDC", "0"))
 AUTO_SEED_BUDGET_USDC = float(os.environ.get("AUTO_SEED_BUDGET_USDC", "50"))
 AUTO_SEED_MAX_ATTEMPTS = int(os.environ.get("AUTO_SEED_MAX_ATTEMPTS", "2"))
-
-
-def _wait_for_join(executor, batch_id: int, player: str, timeout: float = 10.0) -> bool:
-    """Poll on-chain getPosition until the join is visible.
-
-    The bitmap submission below races the oracle's view of PlayerJoined.
-    Without this gate, oracles return "Player not found" for the first ~1s
-    after a successful join tx, the two-shot retry exhausts before quorum,
-    and the vault sits joined-but-unbacked-on-bitmap forever.
-    """
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            pos = executor.get_player_position(batch_id, player)
-            if pos.get("joinTimestamp", 0) > 0:
-                return True
-        except Exception:
-            pass
-        time.sleep(0.5)
-    return False
 
 
 # ── Config ─────────────────────────────────────────────────────
@@ -1223,10 +1202,18 @@ def run_cycle(
         else:
             markets = fetch_markets(cfg["data_node"], market_ids)
 
-        # Check tick lock once per batch
+        # Check tick lock once per batch — reuse batch_info_chain instead of
+        # re-fetching the same struct. is_tick_locked() would issue another
+        # getBatch + get_block call we already paid for above.
         try:
-            if executor.is_tick_locked(batch_id):
-                continue
+            tick_duration = int(batch_info_chain.get("tickDuration", 0) or 0)
+            lock_offset = int(batch_info_chain.get("lockOffset", 0) or 0)
+            if lock_offset > 0 and tick_duration > 0:
+                now_ts = int(time.time())
+                current_abs_tick = now_ts // tick_duration
+                tick_end = (current_abs_tick + 1) * tick_duration
+                if now_ts >= tick_end - lock_offset - 10:
+                    continue
         except Exception:
             pass
 
@@ -1293,24 +1280,21 @@ def run_cycle(
             # restart and after reconcile races; without this guard we burn
             # a tx and a nonce on a guaranteed AlreadyJoined() revert.
             #
-            # Three outcomes from get_player_position:
+            # Three outcomes from get_position_only:
             #   1. returns dict, joinTimestamp > 0  → already joined, skip
             #   2. returns dict, joinTimestamp == 0 → not joined, proceed
-            #   3. raises BatchNotFoundError        → batch not on chain yet,
-            #      skip this cycle and try again later
-            #   4. raises anything else (RPC hiccup, decode error, etc.)
-            #      → we DON'T KNOW. Skip. Assuming "not joined" and falling
-            #      through is what burned 150+ AlreadyJoined() reverts per
-            #      10 minutes during the 2026-05-15 sequencer trouble.
+            #   3. raises RPC/decode error          → we DON'T KNOW. Skip.
+            #      Assuming "not joined" and falling through is what burned
+            #      150+ AlreadyJoined() reverts per 10 minutes during the
+            #      2026-05-15 sequencer trouble.
             already_joined = False
             try:
-                existing = executor.get_player_position(batch_id, fund.vault_addr)
-            except BatchNotFoundError:
-                # Chain hasn't surfaced this batch yet. Try next cycle.
-                continue
+                # Batch existence was verified at line ~1166 via batch_info_chain.
+                # Skip the redundant getBatch — saves 1 RPC per fund per batch.
+                existing = executor.get_position_only(batch_id, fund.vault_addr)
             except Exception as e:
                 log.warning(
-                    "[%s] get_player_position(batch=%d) failed: %s — skipping this cycle",
+                    "[%s] get_position_only(batch=%d) failed: %s — skipping this cycle",
                     fund.name, batch_id, e,
                 )
                 continue
@@ -1393,16 +1377,13 @@ def run_cycle(
                 )
                 continue
 
-            # Wait until the oracle can see the PlayerJoined event before
-            # we POST the bitmap. Otherwise the first wave of submissions
-            # all 404 with "Player not found" and the two-shot retry runs
-            # out before quorum, leaving the vault joined-but-bitmap-less.
-            if not _wait_for_join(executor, batch_id, fund.vault_addr, timeout=10):
-                log.warning(
-                    "[%s] Batch %d join not visible on-chain after 10s — "
-                    "submitting bitmap anyway, retry path is the safety net",
-                    fund.name, batch_id,
-                )
+            # The receipt for join_batch has already been waited on by
+            # _sign_and_send, so the PlayerJoined event is on-chain by now.
+            # The oracle indexer is independent of chain visibility — it may
+            # still 404 the first attempt regardless, which is exactly what
+            # submit_bitmap(retries=5) exists to handle. Polling getPosition
+            # in a 500ms loop here was burning hundreds of RPCs per cycle
+            # without changing the outcome.
 
             # Submit bitmap to oracles. BitmapSubmitError is the typed quorum
             # failure from the new chain.py — log it and move on rather than
