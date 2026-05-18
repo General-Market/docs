@@ -5,10 +5,12 @@ import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
+import { SourceEarlyAccess } from '@/components/domain/vision/detail/SourceEarlyAccess'
 import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { hasVaultForSource } from '@/lib/vision/sources-vaults'
+import { getEarlyAccessSource } from '@/lib/vision/early-access-sources'
 import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
 import { toInternalId } from '@/lib/vision/source-ids'
 
@@ -20,6 +22,15 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sourceId } = await params
+
+  const earlyAccess = getEarlyAccessSource(sourceId)
+  if (earlyAccess) {
+    return {
+      title: `${earlyAccess.displayName} | Vision`,
+      description: `${earlyAccess.displayName} markets are being wired up. ${earlyAccess.meta}.`,
+    }
+  }
+
   const source = await getSourceDisplayServer(sourceId)
 
   if (!source) {
@@ -59,6 +70,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
+
+  // Early-access surfaces: announced on the homepage, not yet wired to a
+  // vault or the data-node. Render a quiet placeholder rather than 404'ing.
+  const earlyAccess = getEarlyAccessSource(sourceId)
+  if (earlyAccess) {
+    return (
+      <AppShell
+        search={<SourceSearch />}
+        sidebar={<SourceSidebarApple sourceId={sourceId} />}
+      >
+        <SourceEarlyAccess source={earlyAccess} />
+        <HomeOnboardingCompass />
+      </AppShell>
+    )
+  }
 
   // Sources without a vault are hidden from every UI listing. A direct
   // deep-link (old share, stale bookmark) shouldn't resurrect them as

@@ -1,9 +1,12 @@
 import { AssetCard } from './AssetCard'
-import { ComingSoonCard } from './ComingSoonCard'
 import { HeroCarousel } from './HeroCarousel'
 import { ScrollRow } from './ScrollRow'
 import { Reveal } from '@/components/ui/Reveal'
 import type { SourceFeed } from '@/lib/vision/adapters'
+import {
+  EARLY_ACCESS_SOURCES,
+  seededSeries,
+} from '@/lib/vision/early-access-sources'
 
 type FeedMap = Record<string, SourceFeed>
 
@@ -22,48 +25,6 @@ const TOP_MARKETS_IDS = [
   'pumpfun',
   'polymarket',
 ] as const
-
-// Coming soon: curated surfaces, rendered as teaser cards. Non-clickable,
-// placeholder sparklines — they don't route anywhere and don't lie about data.
-type SoonFeed = {
-  sourceId: string
-  displayName: string
-  meta: string
-  assetName: string
-}
-
-const SOON_FEEDS: SoonFeed[] = [
-  {
-    sourceId: '4chan',
-    displayName: '4chan',
-    meta: 'Boards · post velocity · thread heat',
-    assetName: '/biz/ posts per hour',
-  },
-  {
-    sourceId: 'rust',
-    displayName: 'Rust',
-    meta: 'crates.io · downloads · releases',
-    assetName: 'tokio downloads · 24h',
-  },
-  {
-    sourceId: 'binance-options',
-    displayName: 'Binance Options',
-    meta: 'BTC · ETH · open interest',
-    assetName: 'BTC option open interest',
-  },
-  {
-    sourceId: 'binance-funding',
-    displayName: 'Binance Funding',
-    meta: 'Perp funding rate · 8h',
-    assetName: 'BTC perp funding rate',
-  },
-  {
-    sourceId: 'cloudflare',
-    displayName: 'Cloudflare',
-    meta: 'Radar · global traffic · outages',
-    assetName: 'Worldwide traffic index',
-  },
-]
 
 function pick(feeds: FeedMap, id: string): SourceFeed {
   return (
@@ -144,11 +105,11 @@ export function HomeDashboard({
   })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
-  // Four curated surfaces. Still hide any that quietly went live in the
-  // registry — promising a Coming Soon for something already shipped looks bad.
-  const soonFeeds = liveSourceIds
-    ? SOON_FEEDS.filter((f) => !liveSourceIds.has(f.sourceId))
-    : SOON_FEEDS
+  // Newer surfaces — they route to a placeholder until the data-node
+  // catches up. Hide any that quietly went live so we don't double-list.
+  const earlyAccess = liveSourceIds
+    ? EARLY_ACCESS_SOURCES.filter((s) => !liveSourceIds.has(s.id))
+    : EARLY_ACCESS_SOURCES
 
   return (
     <div className="px-6 py-6 md:px-8 lg:px-10 lg:py-7">
@@ -190,20 +151,22 @@ export function HomeDashboard({
         </ScrollRow>
       </section>
 
-      {soonFeeds.length > 0 && (
+      {earlyAccess.length > 0 && (
         <section className="mt-6 mb-4">
-          <SectionHeader title="Coming soon" href="/explorer" />
-          <ScrollRow>
-            {soonFeeds.map((feed) => (
-              <ComingSoonCard
-                key={feed.sourceId}
-                sourceId={feed.sourceId}
-                displayName={feed.displayName}
-                meta={feed.meta}
-                assetName={feed.assetName}
+          <SectionHeader title="More sources" href="/explorer" />
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {earlyAccess.map((s) => (
+              <AssetCard
+                key={s.id}
+                sourceId={s.id}
+                displayName={s.displayName}
+                meta={s.meta}
+                series={seededSeries(s.id)}
+                assetName={s.assetName}
+                coverage="external"
               />
             ))}
-          </ScrollRow>
+          </div>
         </section>
       )}
     </div>
