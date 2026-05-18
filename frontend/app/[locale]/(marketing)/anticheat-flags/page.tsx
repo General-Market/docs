@@ -5,6 +5,7 @@ import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
 import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
+import { EdgeWaysSection } from './EdgeWaysSection'
 import { EDGE_TOPICS } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
@@ -159,6 +160,9 @@ export default function AntiCheatFlagsPage() {
               </div>
             </Reveal>
           </section>
+
+          {/* FOURTEEN MECHANISMS — the page thesis as a chart */}
+          <EdgeWaysSection />
 
           {/* VENUE PILLS — matches the homepage See All pattern */}
           <section style={{ paddingBottom: 16 }}>
