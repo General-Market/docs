@@ -112,6 +112,17 @@ export function useAccountPnlHistory(
     if (!anyKnown) return null
 
     const last = points[points.length - 1]
+    // Sanity clamp. liveValue and last.value should differ only by the
+    // few seconds of NAV drift between the writer's last flush and now —
+    // typically <1%. A larger gap means the SSE stream and the curve
+    // writer are looking at different sets of positions (e.g. a deposit
+    // that only one side has picked up, or stale cached vault NAVs). In
+    // that case the "live tip" is a phantom spike, not a price tick.
+    // Reject it and let the historical bucket carry the tip instead.
+    const drift = Math.abs(liveValue - last.value)
+    const tolerance = Math.max(Math.abs(last.value) * 0.05, 5)
+    if (drift > tolerance) return null
+
     return {
       ts: Date.now(),
       value: liveValue,
