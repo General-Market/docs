@@ -114,10 +114,10 @@ function GridBackdrop({ ticks }: { ticks?: string[] }) {
 
 /* ──────────────────────────────────────────────────────────────────────────
    1. WICK — smooth Bezier baseline + sharp accent anomaly + halo + callout.
-   Used for: spike, cliff, runup, outage, dump.
+   Used for: spike, cliff, runup, dump.
    ────────────────────────────────────────────────────────────────────────── */
 
-type WickKind = 'spike' | 'cliff' | 'runup' | 'outage' | 'dump'
+type WickKind = 'spike' | 'cliff' | 'runup' | 'dump'
 
 interface WickGeometry {
   baseline: string
@@ -159,16 +159,6 @@ const WICK_GEOM: Record<WickKind, WickGeometry> = {
     accentPt: { x: 400, y: 9 },
     callout: { x1: 320, y1: 32, x2: 280, y2: 18, align: 'end' },
     ticks: ['T−14d', 'T−7d', 'T−1d', 'EVENT'],
-  },
-  // Plateau, gap (offline period dashed), step down on resume.
-  outage: {
-    baseline: 'M 0 36 C 60 36, 120 37, 180 36 L 190 36',
-    baselineLen: 200,
-    accent: 'M 210 80 L 400 80',
-    accentLen: 190,
-    accentPt: { x: 210, y: 80 },
-    callout: { x1: 200, y1: 58, x2: 235, y2: 50, align: 'start' },
-    ticks: ['ONLINE', 'STALL', 'RESUME', '+1h'],
   },
   // Spike up at listing, slow decay.
   dump: {
@@ -286,14 +276,13 @@ function kindLabel(k: WickKind): string {
     case 'spike': return 'price · stops cleared'
     case 'cliff': return 'price · insiders out'
     case 'runup': return 'price · ahead of public'
-    case 'outage': return 'price · engine offline'
     case 'dump': return 'price · listing → grind'
   }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
    2. DRAIN — stacked balance bars. Last bar collapses to a stub.
-   Used for: hack-drain, withdrawal-freeze, button-freeze, backdoor.
+   Used for: button-freeze, backdoor.
    ────────────────────────────────────────────────────────────────────────── */
 
 function DrainDiagram({
@@ -451,7 +440,7 @@ function CarveoutDiagram({
 
 /* ──────────────────────────────────────────────────────────────────────────
    4. FLOW — user → venue → recipient, with values drifting along the path.
-   Used for: compliance-fine, wash-trading.
+   Used for: wash-trading.
    ────────────────────────────────────────────────────────────────────────── */
 
 function FlowDiagram({
@@ -526,12 +515,9 @@ function FlowDiagram({
 const REGISTRY: Record<Mechanism, (p: ChartProps & { variant: Variant }) => React.ReactElement> = {
   'price-wick':         (p) => <WickDiagram {...p} kind="spike" />,
   'rug-cliff':          (p) => <WickDiagram {...p} kind="cliff" />,
-  'outage-cascade':     (p) => <WickDiagram {...p} kind="outage" />,
   'listing-dump':       (p) => <WickDiagram {...p} kind="dump" />,
   'insider-runup':      (p) => <WickDiagram {...p} kind="runup" />,
 
-  'hack-drain':         (p) => <DrainDiagram {...p} />,
-  'withdrawal-freeze':  (p) => <DrainDiagram {...p} />,
   'button-freeze':      (p) => <DrainDiagram {...p} />,
   'backdoor':           (p) => <DrainDiagram {...p} />,
 
@@ -541,7 +527,6 @@ const REGISTRY: Record<Mechanism, (p: ChartProps & { variant: Variant }) => Reac
   'socialized-loss':    (p) => <CarveoutDiagram {...p} />,
   'b-book-mirror':      (p) => <CarveoutDiagram {...p} />,
 
-  'compliance-fine':    (p) => <FlowDiagram {...p} />,
   'wash-trading':       (p) => <FlowDiagram {...p} />,
 }
 
