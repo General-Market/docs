@@ -52,9 +52,9 @@ function MechanismPill({ tag }: { tag: string }) {
   )
 }
 
-function EdgeBar({ row, max }: { row: EdgeRow; max: number }) {
-  const pct = Math.max((row.value / max) * 100, 2)
-  const gatedPctOfRow = row.value === 0 ? 0 : (row.gatedValue / row.value) * 100
+function EdgeBar({ row }: { row: EdgeRow }) {
+  const gatedPct = row.value === 0 ? 0 : Math.min((row.gatedValue / row.value) * 100, 100)
+  const gatedRounded = Math.round(gatedPct)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
@@ -92,25 +92,27 @@ function EdgeBar({ row, max }: { row: EdgeRow; max: number }) {
           overflow: 'hidden',
         }}
       >
+        {/* Faded bar — total edge, always full width */}
         <div
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             bottom: 0,
-            width: `${pct}%`,
+            width: '100%',
             background: ACCENT,
             opacity: 0.32,
             borderRadius: 4,
           }}
         />
+        {/* Solid bar — portion truly gated */}
         <div
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             bottom: 0,
-            width: `${pct * (gatedPctOfRow / 100)}%`,
+            width: `${gatedPct}%`,
             background: ACCENT,
             borderRadius: 4,
           }}
@@ -118,7 +120,7 @@ function EdgeBar({ row, max }: { row: EdgeRow; max: number }) {
       </div>
       <div
         style={{
-          flex: '0 0 132px',
+          flex: '0 0 148px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
           fontVariantNumeric: 'tabular-nums',
@@ -139,14 +141,14 @@ function EdgeBar({ row, max }: { row: EdgeRow; max: number }) {
             letterSpacing: '-0.005em',
           }}
         >
-          {formatNumber(row.gatedValue)} {row.unit} gated
+          {gatedRounded}% gated · {formatNumber(row.gatedValue)} {row.unit}
         </div>
       </div>
     </div>
   )
 }
 
-function GeneralMarketRow({ unit }: { unit: string }) {
+function GeneralMarketRow() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
@@ -179,7 +181,7 @@ function GeneralMarketRow({ unit }: { unit: string }) {
       />
       <div
         style={{
-          flex: '0 0 132px',
+          flex: '0 0 148px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
           fontVariantNumeric: 'tabular-nums',
@@ -188,7 +190,7 @@ function GeneralMarketRow({ unit }: { unit: string }) {
         }}
       >
         <div style={{ fontSize: 15, fontWeight: 600, color: TERTIARY }}>
-          0 {unit}
+          No edge
         </div>
         <div
           style={{
@@ -200,7 +202,7 @@ function GeneralMarketRow({ unit }: { unit: string }) {
             letterSpacing: '-0.005em',
           }}
         >
-          0 {unit} gated
+          0% gated · no inside lane
         </div>
       </div>
     </div>
@@ -208,10 +210,14 @@ function GeneralMarketRow({ unit }: { unit: string }) {
 }
 
 function CategoryBlock({ cat }: { cat: EdgeCategory }) {
-  const rows = rowsFor(cat).slice().sort((a, b) => b.value - a.value)
-  if (rows.length === 0) return null
-  const max = Math.max(...rows.map(r => r.value))
-  const gmUnit = rows[0].unit
+  const rows = rowsFor(cat)
+    .slice()
+    .sort((a, b) => {
+      const ga = a.value === 0 ? 0 : a.gatedValue / a.value
+      const gb = b.value === 0 ? 0 : b.gatedValue / b.value
+      if (gb !== ga) return gb - ga
+      return b.value - a.value
+    })
   return (
     <Reveal>
       <div
@@ -264,9 +270,9 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {rows.map(row => (
-            <EdgeBar key={row.slug} row={row} max={max} />
+            <EdgeBar key={row.slug} row={row} />
           ))}
-          <GeneralMarketRow unit={gmUnit} />
+          <GeneralMarketRow />
         </div>
 
         <div
@@ -279,7 +285,9 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
             gap: '14px 22px',
           }}
         >
-          {rows.map(row => (
+          {rows.map(row => {
+            const gPct = row.value === 0 ? 0 : Math.round((row.gatedValue / row.value) * 100)
+            return (
             <div
               key={row.slug}
               style={{
@@ -304,7 +312,7 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
                 </span>{' '}
                 ·{' '}
                 <span style={{ color: TERTIARY }}>
-                  {formatNumber(row.gatedValue)} gated
+                  {gPct}% gated
                 </span>
               </div>
               <div style={{ marginBottom: 4 }}>{row.lane}</div>
@@ -330,7 +338,8 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
                 ))}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </Reveal>
