@@ -3,6 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Reveal } from '@/components/ui/Reveal'
 import { IncidentCard } from './IncidentCard'
+import { ColocationSection } from './ColocationSection'
 import { binance } from './data-binance'
 import { coinbase, ftx, bybit } from './data-crypto-1'
 import { hyperliquid, bitmex, deribit, kraken } from './data-crypto-2'
@@ -312,6 +313,9 @@ export default function AntiCheatFlagsPage() {
               </div>
             </section>
           ))}
+
+          {/* COLOCATION EDGE — the receipts that aren't even illegal */}
+          <ColocationSection />
 
           {/* CLOSER */}
           <section
