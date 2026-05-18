@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAccount } from 'wagmi'
 import { formatUnits } from 'viem'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 
@@ -63,12 +64,24 @@ export function useAccountPnlHistory(
 
   const sseVaults = useSSEVisionVaults()
   const userPositions = useSSEUserVaultPositions()
+  const { address: connectedAddress } = useAccount()
+
+  // The SSE stream's userVaultPositions are scoped to the CONNECTED wallet.
+  // When the page address is a different wallet (visitor view), pairing the
+  // connected user's positions with the profile's cost basis produces a
+  // nonsense PnL like "+$901 on a $0 cost basis" — looks like a fake pump.
+  // Only enable the live tip when the two addresses match.
+  const isOwnProfile =
+    !!address &&
+    !!connectedAddress &&
+    address.toLowerCase() === connectedAddress.toLowerCase()
 
   // Live tip — compute current portfolio value from streaming NAVs and
   // pair it with the most recent server-side cost basis. Cost basis only
   // changes on deposit/withdraw events, so reusing the last bucket's cost
   // is exact, not an approximation.
   const liveTip = useMemo<AccountPnlPoint | null>(() => {
+    if (!isOwnProfile) return null
     const points = q.data?.points
     if (!points || points.length === 0) return null
     if (sseVaults.length === 0) return null
@@ -106,7 +119,7 @@ export function useAccountPnlHistory(
       pnl: liveValue - last.cost,
       realized_pnl: last.realized_pnl,
     }
-  }, [q.data, sseVaults, userPositions])
+  }, [isOwnProfile, q.data, sseVaults, userPositions])
 
   // Stitch the live tip onto the server history when it's strictly newer
   // than the last bucket. Pruning the duplicate (same ts) keeps recharts
