@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useReducedMotion } from 'framer-motion'
 import type { PnlPoint } from '@/hooks/usePlayerProfile'
 import { RollingNumber } from '@/components/ui/RollingNumber'
 
@@ -14,6 +15,11 @@ const RANGE_MS: Record<TimeRange, number | null> = {
   '1M': 30 * 24 * 60 * 60 * 1000,
   ALL: null,
 }
+
+// Playback sweep: ~6.5s per loop, with a brief pause at the end so the
+// final value is legible before the cursor resets.
+const PLAYBACK_DURATION_MS = 6500
+const PLAYBACK_HOLD_MS = 1200
 
 interface PnlChartProps {
   history: PnlPoint[]
@@ -33,6 +39,7 @@ export type { TimeRange as PnlTimeRange }
 export function PnlChart({ history, hero, currentPnlOverride, range: controlledRange, onRangeChange }: PnlChartProps) {
   const t = useTranslations('common')
   const locale = useLocale()
+  const reduced = useReducedMotion()
   const [internalRange, setInternalRange] = useState<TimeRange>('ALL')
   const range = controlledRange ?? internalRange
   const setRange = (r: TimeRange) => {
@@ -47,9 +54,6 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
   // "you went from zero to +X" without inventing a path.
   const baseHistory = useMemo<PnlPoint[]>(() => {
     const now = Date.now()
-    // Empty or single-point histories don't draw a line. Synthesize an
-    // honest 0 → current slope across the visible window so the chart
-    // shows movement until enough real samples accumulate.
     if (history.length < 2) {
       const tip = currentPnlOverride ?? (history[0]?.pnl ?? 0)
       const span = RANGE_MS[range] ?? 30 * 24 * 60 * 60 * 1000
@@ -74,24 +78,71 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
     const windowed = baseHistory.filter(
       (p) => now - new Date(p.timestamp).getTime() <= cutoff,
     )
-    // A window with too few points (sparse historical data, or a young
-    // vault) reads as a flat line. Fall back to the broadest set of points
-    // we *do* have so the user sees real variation.
     if (windowed.length >= 2) return windowed
     if (baseHistory.length >= 2) return baseHistory
     return baseHistory.slice(-2)
   }, [baseHistory, range])
 
-  const currentPnl =
+  // Playback: an integer index into `filtered`. `null` means "show the tip".
+  // The card auto-plays a sweep from the first point to the last, holds, and
+  // loops — same idea as the Polymarket card, ours just rolls digits.
+  const [playbackIdx, setPlaybackIdx] = useState<number | null>(null)
+  const [hovering, setHovering] = useState(false)
+  const playbackEnabled = hero && !reduced && !hovering && filtered.length >= 4
+  const rafRef = useRef<number | null>(null)
+  const startRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!playbackEnabled) {
+      setPlaybackIdx(null)
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+      startRef.current = null
+      return
+    }
+    const total = filtered.length
+    const cycle = PLAYBACK_DURATION_MS + PLAYBACK_HOLD_MS
+    const tick = (now: number) => {
+      if (startRef.current === null) startRef.current = now
+      const elapsed = (now - startRef.current) % cycle
+      if (elapsed <= PLAYBACK_DURATION_MS) {
+        const t = elapsed / PLAYBACK_DURATION_MS
+        // Ease-out so the cursor decelerates into the present.
+        const eased = 1 - Math.pow(1 - t, 2.2)
+        const idx = Math.min(total - 1, Math.floor(eased * (total - 1) + 0.0001))
+        setPlaybackIdx(idx)
+      } else {
+        setPlaybackIdx(total - 1)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+      startRef.current = null
+    }
+  }, [playbackEnabled, filtered.length])
+
+  const cursorPoint =
+    playbackIdx !== null && filtered[playbackIdx] !== undefined
+      ? filtered[playbackIdx]
+      : null
+
+  const tipPnl =
     currentPnlOverride !== undefined
       ? currentPnlOverride
       : filtered.length > 0
         ? filtered[filtered.length - 1].pnl
         : 0
-  const isPositive = currentPnl >= 0
-  // iOS HIG systemGreen / systemRed (light mode).
+  const displayedPnl = cursorPoint ? cursorPoint.pnl : tipPnl
+  // Headline color tracks the tip (the *current* P&L) rather than the
+  // cursor's value — otherwise the title flickers green/red across the
+  // sweep, which reads as noise.
+  const isPositive = tipPnl >= 0
   const strokeColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
   const fillColor = strokeColor
+  const pnlColor = strokeColor
   const chartHeight = hero ? 120 : 100
 
   const rangeLabel: Record<TimeRange, string> = {
@@ -107,12 +158,47 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
     return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  const pnlColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+  const formatCursorTimestamp = (iso: string) => {
+    const d = new Date(iso)
+    const cutoff = RANGE_MS[range]
+    // 1D: minute precision. 1W/1M: hour precision. ALL: day precision.
+    if (cutoff && cutoff <= 24 * 60 * 60 * 1000) {
+      return d.toLocaleString(locale, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    }
+    if (cutoff && cutoff <= 30 * 24 * 60 * 60 * 1000) {
+      return d.toLocaleString(locale, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+      })
+    }
+    return d.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  // Cursor x-offset as a percentage of the chart's plot area. Recharts'
+  // AreaChart with margin {top:4,...0,...,0} draws edge-to-edge, so a flat
+  // (idx / (n-1)) maps cleanly. Capped to avoid the line clipping the card
+  // border at the extremes.
+  const cursorPercent =
+    playbackIdx !== null && filtered.length > 1
+      ? Math.max(0.5, Math.min(99.5, (playbackIdx / (filtered.length - 1)) * 100))
+      : null
 
   return (
     <div
-      className={hero ? 'h-full flex flex-col' : 'border border-border-light rounded overflow-hidden'}
+      className={hero ? 'h-full flex flex-col relative' : 'border border-border-light rounded overflow-hidden'}
       style={hero ? { fontFamily: 'var(--apple-font-text)' } : undefined}
+      onMouseEnter={hero ? () => setHovering(true) : undefined}
+      onMouseLeave={hero ? () => setHovering(false) : undefined}
     >
       {/* Header */}
       <div className={`flex items-start justify-between ${hero ? 'px-6 pt-6 pb-2' : 'px-3 py-2'}`}>
@@ -149,49 +235,52 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
                 lineHeight: 1.0714,
               }}
             >
-              <RollingNumber value={currentPnl} format={formatPnl} />
+              <RollingNumber value={displayedPnl} format={formatPnl} duration={0.55} />
             </div>
             <div
-              className="mt-2"
+              className="mt-2 tabular-nums"
               style={{
                 color: 'var(--apple-text-tertiary)',
                 fontSize: 'var(--apple-fs-14)',
                 letterSpacing: 'var(--apple-track-mid)',
+                minHeight: '1.4em',
               }}
             >
-              {rangeLabel[range]}
+              {cursorPoint ? formatCursorTimestamp(cursorPoint.timestamp) : rangeLabel[range]}
             </div>
           </div>
         ) : (
           <div className={`text-subhead font-extrabold font-mono ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
-            {currentPnl >= 0 ? '+' : ''}${currentPnl.toFixed(2)}
+            {tipPnl >= 0 ? '+' : ''}${tipPnl.toFixed(2)}
           </div>
         )}
 
-        {/* Time range pills — Apple iOS systemBlue when active */}
-        {hero && (
-          <div className="flex items-center gap-1 shrink-0">
-            {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 'var(--apple-r-pill)',
-                  fontSize: 'var(--apple-fs-12)',
-                  fontWeight: 500,
-                  letterSpacing: 'var(--apple-track-mid)',
-                  background: range === r ? 'rgba(0,122,255,0.10)' : 'transparent',
-                  color: range === r ? '#007AFF' : 'var(--apple-text-secondary)',
-                  transition: 'background 240ms var(--apple-ease-default), color 240ms var(--apple-ease-default)',
-                }}
-              >
-                {r}
-              </button>
-            ))}
+        {/* Right cluster: range pills + brand lockup (hero only) */}
+        {hero ? (
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className="flex items-center gap-1">
+              {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--apple-r-pill)',
+                    fontSize: 'var(--apple-fs-12)',
+                    fontWeight: 500,
+                    letterSpacing: 'var(--apple-track-mid)',
+                    background: range === r ? 'rgba(0,122,255,0.10)' : 'transparent',
+                    color: range === r ? '#007AFF' : 'var(--apple-text-secondary)',
+                    transition: 'background 240ms var(--apple-ease-default), color 240ms var(--apple-ease-default)',
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <BrandLockup />
           </div>
-        )}
-        {!hero && (
+        ) : (
           <div className="flex items-center gap-1 shrink-0">
             {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
               <button
@@ -211,7 +300,7 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
       </div>
 
       {/* Chart */}
-      <div style={{ height: chartHeight }} className={hero ? 'px-2 mt-auto' : ''}>
+      <div style={{ height: chartHeight, position: 'relative' }} className={hero ? 'px-2 mt-auto' : ''}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={filtered} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>
@@ -224,7 +313,6 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
             <YAxis
               hide
               domain={([dataMin, dataMax]: [number, number]) => {
-                // Guarantee visible amplitude even on a flat line.
                 if (dataMin === dataMax) {
                   const pad = Math.max(1, Math.abs(dataMin) * 0.1)
                   return [dataMin - pad, dataMax + pad]
@@ -255,7 +343,63 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
             />
           </AreaChart>
         </ResponsiveContainer>
+
+        {/* Playback cursor — thin vertical line that tracks the current
+            playback index. Sits above the chart but below the tooltip layer. */}
+        {hero && cursorPercent !== null && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-0 bottom-0"
+            style={{
+              left: `${cursorPercent}%`,
+              width: 1,
+              background: 'rgba(29,29,31,0.45)',
+              transition: 'left 60ms linear',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: -2.5,
+                top: 0,
+                width: 6,
+                height: 6,
+                borderRadius: 999,
+                background: pnlColor,
+                boxShadow: `0 0 0 3px ${isPositive ? 'rgba(52,199,89,0.18)' : 'rgba(255,59,48,0.18)'}`,
+              }}
+            />
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+function BrandLockup() {
+  return (
+    <div className="flex items-center gap-1.5 opacity-70" aria-hidden="true">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 1024 1024"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect width="1024" height="1024" rx="232" ry="232" fill="var(--apple-text)" />
+        <rect x="256" y="462" width="512" height="100" rx="50" ry="50" fill="#FFFFFF" />
+      </svg>
+      <span
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'var(--apple-fs-12)',
+          fontWeight: 500,
+          letterSpacing: 'var(--apple-track-loose)',
+          color: 'var(--apple-text-secondary)',
+        }}
+      >
+        general
+      </span>
     </div>
   )
 }
