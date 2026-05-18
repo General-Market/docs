@@ -5229,3 +5229,10 @@ End-to-end ITP order test: **NOT ATTEMPTED**. L3 sequencer dead. Cost of attempt
 [DECISION] At current burn rate (~6 GM/hour on the heaviest fleet key, oracle-3), 10k GM is months of headroom. Mother lode dropped from 99.997M → 99.667M GM. ~0.33% of supply moved.
 [FAILED] Sonic-side not topped up. Mother lode on Sonic only holds ~104 S — not enough to call unlimited. Reported back; user will decide whether to faucet or handle separately. Bots/oracle main keys on Sonic range 4–10 S, curator at 0 S.
 [REFERENCE] Auto-funder still missing. Recommend a watchdog daemon that refills any fleet key below 1k GM from the mother lode every cron tick. Until then this is manual.
+
+## 20260518-1755-w9zk /oracle balance dashboard built
+[DECISION] Built `/oracle` page surfacing hourly L3+Sonic gas balances for the 9 oracle wallets (3 main keys + 6 fleet keys). Two ExplorerChartCard line panels (one per chain), Apple type stack, range picker (24h/7d/30d), roster legend below. Recharts LineChart.
+[DECISION] History semantics: poll-forward only, no retroactive eth_getBalance backfill. Sonic testnet archive is unreliable and L3 archive backfill would add fragility for a chart that will be useful within 24h anyway.
+[REFERENCE] Backend: `data-node/migrations/037_create_wallet_balance_snapshots.sql`, `data-node/src/wallet_balance_collector.rs`. NUMERIC(80,0) balance, 30-day retention, hourly poll. Public endpoint `GET /oracle/balances?range=24h|7d|30d`. Sonic RPC default in `config.rs` (`SONIC_RPC_URL=https://rpc.testnet.soniclabs.com`).
+[REFERENCE] Frontend: `frontend/app/[locale]/(app)/oracle/page.tsx` + `OracleBalancesClient.tsx`, proxy at `frontend/app/api/oracle/balances/route.ts`. No nav link yet — accessible only by direct URL until we decide where it belongs.
+[FAILED] First Dokploy rebuild failed: anticheat-flags/page.tsx imported FeeTierSection that wasn't committed. Two parallel agent commits (aa5f8a9ab + 741f0f37c) referenced files that lived only in the working tree. Resolved by waiting for the agent that owned the files to commit them. Lesson: when committing alongside other in-flight sessions, the build proves what the index is missing.
