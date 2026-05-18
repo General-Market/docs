@@ -241,26 +241,36 @@ export const Chart12: React.FC = () => {
           />
         </PlotArea>
 
-        {bars.map((b, i) => (
-          <div
-            key={`xt-${i}`}
-            style={{
-              position: "absolute",
-              left: PLOT.left + xPos(i),
-              top: PLOT.top + PLOT.height + 12,
-              transform: "translate(0, 0) rotate(-60deg)",
-              transformOrigin: "left top",
-              color: C.ink,
-              fontFamily: FONT_TEXT,
-              fontSize: 10.5,
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              letterSpacing: "0.02em",
-            }}
-          >
-            {b.label}
-          </div>
-        ))}
+        <svg
+          style={{
+            position: "absolute",
+            left: PLOT.left,
+            top: PLOT.top + PLOT.height + 6,
+            width: PLOT.width,
+            height: 120,
+            overflow: "visible",
+          }}
+        >
+          {bars.map((b, i) => {
+            const x = xPos(i);
+            return (
+              <text
+                key={`xt-${i}`}
+                x={x}
+                y={8}
+                transform={`rotate(-90 ${x} 8)`}
+                textAnchor="end"
+                fontFamily={FONT_TEXT}
+                fontSize={11}
+                fontWeight={500}
+                fill={C.white}
+                letterSpacing="0.04em"
+              >
+                {b.label}
+              </text>
+            );
+          })}
+        </svg>
 
         <AxisLabel
           text="PnL"

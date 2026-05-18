@@ -12,17 +12,17 @@ import { ChartFrame, Title, VerticalColorBar } from "../primitives";
 
 const SEED = 0x2b71c;
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const GRID = {
-  left: 200,
+  left: 260,
   top: 200,
-  width: 1320,
+  width: 1280,
   height: 660,
 };
 
-const GAP = 0.5;
+const GAP = 0;
 const CELL_W = (GRID.width - GAP * (HOURS.length - 1)) / HOURS.length;
 const CELL_H = (GRID.height - GAP * (DAYS.length - 1)) / DAYS.length;
 
@@ -102,7 +102,7 @@ export const Chart02: React.FC = () => {
             width={CELL_W}
             height={CELL_H}
             fill={C.bg}
-            stroke="rgba(0,0,0,0.55)"
+            stroke="rgba(0,0,0,0.85)"
             strokeWidth={1}
           />,
         );
@@ -117,7 +117,7 @@ export const Chart02: React.FC = () => {
           height={CELL_H}
           fill={colorForPnl(v)}
           fillOpacity={a}
-          stroke="rgba(0,0,0,0.55)"
+          stroke="rgba(0,0,0,0.85)"
           strokeWidth={1}
         />,
       );
@@ -192,7 +192,7 @@ export const Chart02: React.FC = () => {
             fontWeight: 500,
           }}
         >
-          UTC hour
+          UTC Hour
         </div>
         <div
           style={{

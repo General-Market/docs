@@ -57,39 +57,49 @@ const Panel: React.FC<{
       <div
         style={{
           flex: 1,
-          border: `1px solid ${C.grid}`,
-          borderRadius: 8,
-          overflow: "hidden",
-          background: "#070707",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        {errored ? (
-          <div
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 16,
-              color: C.inkFaint,
-              textAlign: "center",
-              padding: 24,
-              lineHeight: 1.5,
-            }}
-          >
-            {fallback}
-          </div>
-        ) : (
-          <Img
-            src={src}
-            onError={() => setErrored(true)}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
-            }}
-          />
-        )}
+        <div
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            border: `1px solid ${C.grid}`,
+            borderRadius: 8,
+            overflow: "hidden",
+            background: "#070707",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {errored ? (
+            <div
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 16,
+                color: C.inkFaint,
+                textAlign: "center",
+                padding: 24,
+                lineHeight: 1.5,
+              }}
+            >
+              {fallback}
+            </div>
+          ) : (
+            <Img
+              src={src}
+              onError={() => setErrored(true)}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
