@@ -119,7 +119,7 @@ export const Chart06: React.FC = () => {
 
           {points.slice(0, visibleCount).map((p, i) => {
             const ivT = (p.iv - IV_MIN) / (IV_MAX - IV_MIN);
-            const color = blueRedRamp(1 - ivT);
+            const color = blueRedRamp(ivT);
             return (
               <circle
                 key={i}

@@ -168,10 +168,7 @@ export const Chart08: React.FC = () => {
     [paths],
   );
 
-  const maxAbsPnl = Math.max(
-    ...paths.map((p) => Math.abs(p.pnl)),
-    PREMIUM,
-  );
+  const maxAbsPnl = PREMIUM * 3;
 
   return (
     <AbsoluteFill style={{ opacity }}>
@@ -459,8 +456,8 @@ export const Chart08: React.FC = () => {
                 key={i}
                 d={p.d}
                 stroke={pnlToColor(p.pnl, maxAbsPnl)}
-                strokeWidth={0.7}
-                strokeOpacity={0.42}
+                strokeWidth={1}
+                strokeOpacity={0.7}
                 fill="none"
               />
             ))}
