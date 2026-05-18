@@ -90,14 +90,25 @@ async fn sweep_all_accounts(
     only_account: Option<[u8; 20]>,
     max_lookback: Option<Duration>,
 ) -> Result<(), sqlx::Error> {
-    // Gather every account that has position activity. Cheap — the unique
-    // accounts list rarely exceeds a few thousand rows even at saturation.
+    // Gather every account that has either vault position activity OR ITP
+    // trade activity. The curve is now a unified vault+ITP series, so the
+    // sweep must reach both populations. Cheap — the union still totals
+    // a few thousand rows at saturation.
     let accounts: Vec<Vec<u8>> = if let Some(a) = only_account {
         vec![a.to_vec()]
     } else {
-        sqlx::query_scalar("SELECT DISTINCT account FROM account_vault_positions")
-            .fetch_all(pool)
-            .await?
+        sqlx::query_scalar(
+            "SELECT DISTINCT account FROM (
+                 SELECT account FROM account_vault_positions
+                 UNION
+                 SELECT decode(substring(user_address FROM 3), 'hex') AS account
+                 FROM trades
+                 WHERE user_address ~ '^0x[0-9a-fA-F]{40}$'
+                   AND status = 2
+             ) u",
+        )
+        .fetch_all(pool)
+        .await?
     };
 
     let now_bucket = floor_bucket(Utc::now(), bucket_secs);
@@ -137,8 +148,18 @@ async fn sweep_one_account(
     .fetch_optional(pool)
     .await?;
 
+    // Earliest activity for this account, across both ledgers. LEAST in
+    // Postgres ignores NULL inputs — so an account that only has vault rows
+    // (or only trades) gets the right answer.
     let earliest: Option<DateTime<Utc>> = sqlx::query_scalar(
-        "SELECT MIN(block_time) FROM account_vault_positions WHERE account = $1",
+        "SELECT LEAST(
+             (SELECT MIN(block_time) FROM account_vault_positions WHERE account = $1),
+             (SELECT MIN(order_timestamp) FROM trades
+              WHERE user_address = ('0x' || encode($1, 'hex'))
+                AND status = 2
+                AND fill_price IS NOT NULL
+                AND fill_amount IS NOT NULL)
+         )",
     )
     .bind(account.as_ref())
     .fetch_optional(pool)
@@ -224,7 +245,7 @@ async fn compute_bucket(
     // O(all_vaults) like the prior DISTINCT ON. With 324 vaults × millions
     // of snapshot rows the prior shape took 2-3s/query; this hits the
     // (vault_address, created_at DESC) index point-wise.
-    let row: (Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<i64>) = sqlx::query_as(
+    let vault_row: (Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<i64>) = sqlx::query_as(
         r#"
         WITH pos AS (
             SELECT DISTINCT ON (vault_address)
@@ -258,11 +279,66 @@ async fn compute_bucket(
     .fetch_one(pool)
     .await?;
 
-    let portfolio_value = row.0.unwrap_or_default();
-    let cost_basis = row.1.unwrap_or_default();
-    let realized_pnl = row.2.unwrap_or_default();
-    let contributing_vaults = row.3.unwrap_or(0) as i32;
+    // ITP leg. Sums fills up to bucket_ts per itp_id, holds the remaining
+    // share count against the latest NAV at-or-before bucket_ts, and
+    // accumulates total dollars bought (matches /portfolio/history's
+    // monotonic cost-basis definition — sells don't reduce). The
+    // (itp_id, valid_from DESC) index makes the LATERAL lookup point-wise.
+    let itp_row: (Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>, Option<i64>) = sqlx::query_as(
+        r#"
+        WITH itp_state AS (
+            SELECT
+                itp_id,
+                SUM(CASE WHEN side = 0 THEN fill_amount::numeric / 1e18 ELSE 0 END) AS bought_shares,
+                SUM(CASE WHEN side = 0 THEN (fill_amount::numeric / 1e18) * (fill_price::numeric / 1e18) ELSE 0 END) AS bought_usd,
+                SUM(CASE WHEN side = 1 THEN fill_amount::numeric / 1e18 ELSE 0 END) AS sold_shares
+            FROM trades
+            WHERE user_address = ('0x' || encode($1, 'hex'))
+              AND status = 2
+              AND fill_price IS NOT NULL
+              AND fill_amount IS NOT NULL
+              AND order_timestamp <= $2
+            GROUP BY itp_id
+        )
+        SELECT
+            COALESCE(SUM(GREATEST(s.bought_shares - s.sold_shares, 0) * COALESCE(nav.nav_per_share, 0))::numeric(38,18), 0) AS itp_value,
+            COALESCE(SUM(s.bought_usd)::numeric(38,18), 0)                                                                 AS itp_cost,
+            (COUNT(*) FILTER (WHERE s.bought_shares - s.sold_shares > 0))::bigint                                          AS itp_count
+        FROM itp_state s
+        LEFT JOIN LATERAL (
+            SELECT nav::numeric / 1e18 AS nav_per_share
+            FROM itp_snapshots
+            WHERE itp_id = s.itp_id
+              AND valid_from <= $2
+              AND nav::numeric > 1e15
+            ORDER BY valid_from DESC
+            LIMIT 1
+        ) nav ON TRUE
+        "#,
+    )
+    .bind(account)
+    .bind(bucket_ts)
+    .fetch_one(pool)
+    .await?;
+
+    let vault_value = vault_row.0.unwrap_or_default();
+    let vault_cost = vault_row.1.unwrap_or_default();
+    let vault_realized = vault_row.2.unwrap_or_default();
+    let vault_count = vault_row.3.unwrap_or(0) as i32;
+
+    let itp_value = itp_row.0.unwrap_or_default();
+    let itp_cost = itp_row.1.unwrap_or_default();
+    let itp_count = itp_row.2.unwrap_or(0) as i32;
+
+    let portfolio_value = vault_value + itp_value;
+    let cost_basis = vault_cost + itp_cost;
     let pnl = portfolio_value - cost_basis;
+    // ITP realized PnL stays implicit in the curve. Surfacing it requires
+    // pro-rata cost-basis accounting per fill, which conflicts with the
+    // monotonic cost basis above. The IndexTab handles its own per-position
+    // realized number from a different reader.
+    let realized_pnl = vault_realized;
+    let contributing_vaults = vault_count + itp_count;
 
     Ok(BucketRow {
         portfolio_value,

@@ -49,16 +49,19 @@ function ProfileContent({ address }: { address: string }) {
 
   // The account-level P&L curve is now precomputed by the data-node writer
   // and read in one indexed lookup — no per-vault fanout, no client merge,
-  // no "current shares × historical NAV" approximation.
+  // no "current shares × historical NAV" approximation. The curve covers
+  // both vault shares and ITP fills, so it drives the hero on every tab
+  // except 'vision' (parimutuel positions have a different shape and stay
+  // on the Vision profile feed).
   const [pnlRange, setPnlRange] = useState<PnlTimeRange>('ALL')
   const rangeParam: AccountPnlRange =
     pnlRange === '1D' ? '1d' : pnlRange === '1W' ? '1w' : pnlRange === '1M' ? '1m' : 'all'
-  const showingVaultsForCurve = tab === 'vaults' && isSelf
+  const showingUnifiedCurve = tab !== 'vision'
   const { history: pnlPoints, livePnl: pnlLive } = useAccountPnlHistory(
-    showingVaultsForCurve ? address : undefined,
+    showingUnifiedCurve ? address : undefined,
     rangeParam,
   )
-  const vaultsPortfolioHistory = useMemo(
+  const curveHistory = useMemo(
     () =>
       pnlPoints.map((p) => ({ timestamp: new Date(p.ts).toISOString(), pnl: p.pnl })),
     [pnlPoints],
@@ -68,21 +71,19 @@ function ProfileContent({ address }: { address: string }) {
     router.replace(`?tab=${newTab}`)
   }
 
-  // On the vaults tab we show the vault aggregate instead of the player's
-  // vision P&L — different accounting, same hero slot. Prefer the
-  // deposit-aware figure from the data-node curve (pnlLive) over the
-  // approximated totals when available.
+  // The unified curve drives PnL on vaults and index tabs. Vault SSE totals
+  // remain a fallback for the brief window after a fresh deposit before the
+  // curve writer's 60s sweep catches up. Vision tab keeps its own feed.
   const showingVaults = tab === 'vaults' && isSelf
   const vaultsPriced = !vaultTotals.pricingIncomplete
   const headlinePnl =
-    showingVaults && pnlLive !== null
+    showingUnifiedCurve && pnlLive !== null
       ? pnlLive
       : showingVaults && vaultsPriced
         ? vaultTotals.totalPnl
         : null
-  const displayPnl = showingVaults
-    ? headlinePnl ?? 0
-    : profile?.stats.pnl ?? 0
+  const displayPnl =
+    headlinePnl !== null ? headlinePnl : profile?.stats.pnl ?? 0
   const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   // Polymarket-parity derived metrics — positions value, biggest win,
@@ -134,8 +135,8 @@ function ProfileContent({ address }: { address: string }) {
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
         joined={joinedLabel}
         stats={stats}
-        pnlHistory={showingVaults ? vaultsPortfolioHistory : profile?.pnlHistory ?? []}
-        pnlOverride={showingVaults && headlinePnl !== null ? headlinePnl : undefined}
+        pnlHistory={showingUnifiedCurve ? curveHistory : profile?.pnlHistory ?? []}
+        pnlOverride={showingUnifiedCurve && headlinePnl !== null ? headlinePnl : undefined}
         pnlRange={pnlRange}
         onPnlRangeChange={setPnlRange}
       />

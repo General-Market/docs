@@ -96,7 +96,7 @@ export function Header() {
             <div className="max-w-site mx-auto flex items-center justify-between h-14 sm:h-16">
 
               {/* Logo */}
-              <Link href="/" className="shrink-0 flex items-center gap-2.5">
+              <Link href="/" className="shrink-0 flex items-center gap-2">
                 <img
                   src="/logo.svg"
                   alt=""
@@ -241,7 +241,7 @@ export function Header() {
                         </div>
 
                         {[
-                          { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord'), external: true },
+                          { href: 'https://discord.gg/QbasycShP', label: t('footer.discord'), external: true },
                           { href: '/docs', label: t('footer.docs'), external: false },
                           { href: '/privacy', label: t('footer.privacy_policy'), external: false },
                           { href: '/terms', label: t('footer.terms_of_service'), external: false },
