@@ -5,7 +5,7 @@ import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
 import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
-import { EDGE_ROWS } from './data-edge-matrix'
+import { EDGE_TOPICS } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
@@ -100,7 +100,8 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
-  const totalEdges = EDGE_ROWS.length
+  const totalEdges = EDGE_TOPICS.length
+  const totalVenuesAcrossEdges = EDGE_TOPICS.reduce((acc, t) => acc + t.rows.length, 0)
 
   return (
     <AppShell>
@@ -151,8 +152,8 @@ export default function AntiCheatFlagsPage() {
                   borderBottom: `1px solid ${LINE}`,
                 }}
               >
-                <HeroStat value={String(VENUES.length)} label="Venues flagged" />
                 <HeroStat value={String(totalEdges)} label="Structural edges" />
+                <HeroStat value={String(totalVenuesAcrossEdges)} label="Named venues compared" />
                 <HeroStat value={String(totalIncidents)} label="Receipts on file" />
                 <HeroStat value="2015–26" label="Years documented" />
               </div>

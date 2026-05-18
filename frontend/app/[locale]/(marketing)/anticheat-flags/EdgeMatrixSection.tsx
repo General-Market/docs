@@ -1,11 +1,10 @@
 import { Reveal } from '@/components/ui/Reveal'
 import {
-  EDGE_ROWS,
+  EDGE_TOPICS,
   CATEGORY_LABEL,
-  CATEGORY_HEADING,
-  CATEGORY_LEAD,
   type EdgeCategory,
-  type EdgeRow,
+  type EdgeTopic,
+  type CompanyRow,
 } from './data-edge-matrix'
 
 const TEXT = 'var(--apple-text)'
@@ -17,16 +16,12 @@ const SURFACE = 'var(--apple-surface)'
 
 const CATEGORY_ORDER: EdgeCategory[] = ['information', 'latency', 'execution', 'subsidy', 'risk']
 
-function rowsFor(cat: EdgeCategory): EdgeRow[] {
-  return EDGE_ROWS.filter(r => r.category === cat)
-}
-
 function formatNumber(value: number): string {
   const abs = Math.abs(value)
-  if (Number.isInteger(value) || abs >= 100) {
-    return value.toLocaleString('en-US', { maximumFractionDigits: 0 })
-  }
-  return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  if (abs === 0) return '0'
+  if (abs < 1) return value.toLocaleString('en-US', { maximumFractionDigits: 3 })
+  if (abs < 10) return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return value.toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
 function MechanismPill({ tag }: { tag: string }) {
@@ -52,14 +47,14 @@ function MechanismPill({ tag }: { tag: string }) {
   )
 }
 
-function EdgeBar({ row }: { row: EdgeRow }) {
+function CompanyBar({ row, max, unit }: { row: CompanyRow; max: number; unit: string }) {
+  const pct = max === 0 ? 0 : Math.max((row.value / max) * 100, row.value > 0 ? 1.5 : 0)
   const gatedPct = row.value === 0 ? 0 : Math.min((row.gatedValue / row.value) * 100, 100)
-  const gatedRounded = Math.round(gatedPct)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
         style={{
-          flex: '0 0 220px',
+          flex: '0 0 240px',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -69,7 +64,7 @@ function EdgeBar({ row }: { row: EdgeRow }) {
         <span
           style={{
             fontFamily: 'var(--apple-font-text)',
-            fontSize: 14,
+            fontSize: 13,
             color: TEXT,
             letterSpacing: '-0.011em',
             fontWeight: 500,
@@ -92,35 +87,37 @@ function EdgeBar({ row }: { row: EdgeRow }) {
           overflow: 'hidden',
         }}
       >
-        {/* Faded bar — total edge, always full width */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: '100%',
-            background: ACCENT,
-            opacity: 0.32,
-            borderRadius: 4,
-          }}
-        />
-        {/* Solid bar — portion truly gated */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: `${gatedPct}%`,
-            background: ACCENT,
-            borderRadius: 4,
-          }}
-        />
+        {pct > 0 && (
+          <>
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: `${pct}%`,
+                background: ACCENT,
+                opacity: 0.32,
+                borderRadius: 4,
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: `${pct * (gatedPct / 100)}%`,
+                background: ACCENT,
+                borderRadius: 4,
+              }}
+            />
+          </>
+        )}
       </div>
       <div
         style={{
-          flex: '0 0 148px',
+          flex: '0 0 132px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
           fontVariantNumeric: 'tabular-nums',
@@ -129,7 +126,7 @@ function EdgeBar({ row }: { row: EdgeRow }) {
         }}
       >
         <div style={{ fontSize: 15, fontWeight: 600, color: ACCENT }}>
-          {formatNumber(row.value)} {row.unit}
+          {formatNumber(row.value)} {unit.split(' ')[0]}
         </div>
         <div
           style={{
@@ -141,19 +138,19 @@ function EdgeBar({ row }: { row: EdgeRow }) {
             letterSpacing: '-0.005em',
           }}
         >
-          {gatedRounded}% gated · {formatNumber(row.gatedValue)} {row.unit}
+          {formatNumber(row.gatedValue)} gated
         </div>
       </div>
     </div>
   )
 }
 
-function GeneralMarketRow() {
+function GeneralMarketRow({ label }: { label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
       <div
         style={{
-          flex: '0 0 220px',
+          flex: '0 0 240px',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -162,7 +159,7 @@ function GeneralMarketRow() {
         <span
           style={{
             fontFamily: 'var(--apple-font-text)',
-            fontSize: 14,
+            fontSize: 13,
             color: TEXT,
             letterSpacing: '-0.011em',
             fontWeight: 600,
@@ -181,7 +178,7 @@ function GeneralMarketRow() {
       />
       <div
         style={{
-          flex: '0 0 148px',
+          flex: '0 0 132px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
           fontVariantNumeric: 'tabular-nums',
@@ -189,9 +186,7 @@ function GeneralMarketRow() {
           lineHeight: 1.05,
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 600, color: TERTIARY }}>
-          No edge
-        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: TERTIARY }}>0</div>
         <div
           style={{
             fontSize: 11,
@@ -200,33 +195,34 @@ function GeneralMarketRow() {
             marginTop: 2,
             fontFamily: 'var(--apple-font-text)',
             letterSpacing: '-0.005em',
+            maxWidth: 140,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
+          title={label}
         >
-          0% gated · no inside lane
+          {label}
         </div>
       </div>
     </div>
   )
 }
 
-function CategoryBlock({ cat }: { cat: EdgeCategory }) {
-  const rows = rowsFor(cat)
-    .slice()
-    .sort((a, b) => {
-      const ga = a.value === 0 ? 0 : a.gatedValue / a.value
-      const gb = b.value === 0 ? 0 : b.gatedValue / b.value
-      if (gb !== ga) return gb - ga
-      return b.value - a.value
-    })
+function TopicBlock({ topic }: { topic: EdgeTopic }) {
+  const sorted = topic.rows.slice().sort((a, b) => b.value - a.value)
+  const max = Math.max(...sorted.map(r => r.value), 0.0001)
   return (
     <Reveal>
       <div
+        id={topic.slug}
         style={{
           marginTop: 32,
           padding: '32px 28px',
           background: 'var(--apple-panel)',
           border: `1px solid ${LINE}`,
           borderRadius: 'var(--apple-r-md)',
+          scrollMarginTop: 80,
         }}
       >
         <div
@@ -240,7 +236,7 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
             marginBottom: 8,
           }}
         >
-          {CATEGORY_LABEL[cat]} · {rows.length} edge{rows.length === 1 ? '' : 's'}
+          {CATEGORY_LABEL[topic.category]} · {topic.rows.length} {topic.rows.length === 1 ? 'venue' : 'venues'} · unit {topic.unit}
         </div>
         <h3
           style={{
@@ -250,9 +246,10 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
             letterSpacing: 'var(--apple-track-tight)',
             color: TEXT,
             marginBottom: 8,
+            maxWidth: 820,
           }}
         >
-          {CATEGORY_HEADING[cat]}
+          {topic.heading}
         </h3>
         <p
           style={{
@@ -265,14 +262,14 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
             maxWidth: 760,
           }}
         >
-          {CATEGORY_LEAD[cat]}
+          {topic.lead}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {rows.map(row => (
-            <EdgeBar key={row.slug} row={row} />
+          {sorted.map(row => (
+            <CompanyBar key={row.slug} row={row} max={max} unit={topic.unit} />
           ))}
-          <GeneralMarketRow />
+          <GeneralMarketRow label={topic.generalMarketLabel} />
         </div>
 
         <div
@@ -281,13 +278,11 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
             paddingTop: 20,
             borderTop: `1px solid ${LINE}`,
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: '14px 22px',
           }}
         >
-          {rows.map(row => {
-            const gPct = row.value === 0 ? 0 : Math.round((row.gatedValue / row.value) * 100)
-            return (
+          {sorted.map(row => (
             <div
               key={row.slug}
               style={{
@@ -308,11 +303,11 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
               >
                 {row.name} ·{' '}
                 <span style={{ color: ACCENT }}>
-                  {formatNumber(row.value)} {row.unit}
+                  {formatNumber(row.value)} {topic.unit.split(' ')[0]}
                 </span>{' '}
                 ·{' '}
                 <span style={{ color: TERTIARY }}>
-                  {gPct}% gated
+                  {formatNumber(row.gatedValue)} gated
                 </span>
               </div>
               <div style={{ marginBottom: 4 }}>{row.lane}</div>
@@ -338,8 +333,34 @@ function CategoryBlock({ cat }: { cat: EdgeCategory }) {
                 ))}
               </div>
             </div>
-            )
-          })}
+          ))}
+        </div>
+      </div>
+    </Reveal>
+  )
+}
+
+function CategoryDivider({ cat, count }: { cat: EdgeCategory; count: number }) {
+  return (
+    <Reveal>
+      <div
+        style={{
+          marginTop: 64,
+          paddingBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            color: TERTIARY,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+            marginBottom: 6,
+          }}
+        >
+          {CATEGORY_LABEL[cat]} · {count} edge{count === 1 ? '' : 's'}
         </div>
       </div>
     </Reveal>
@@ -367,7 +388,7 @@ export function EdgeMatrixSection() {
             marginBottom: 10,
           }}
         >
-          Fifteen edges · five rulers · the part of each that retail cannot rent
+          Fifteen edges · {EDGE_TOPICS.reduce((acc, t) => acc + t.rows.length, 0)} named venues · every number cited
         </div>
       </Reveal>
       <Reveal mask delay={0.04}>
@@ -398,19 +419,28 @@ export function EdgeMatrixSection() {
             maxWidth: 780,
           }}
         >
-          Colocation is one ruler. Fees are another. Underneath sit thirteen more: the wire, the rebate pool, the matching algo, the cancel-first quote, the listing leak, the gamma map, the PFOF cheque, the API ceiling, the funding clock, the maker flip, the liquidator vault, the late block print, the mempool sandwich. Each one is published — in a regulator filing, a developer doc, a court complaint no retail user opens. We opened them.
+          Colocation is one ruler. Fees are another. Underneath sit fifteen more — the wire, the rebate pool, the matching algo, the cancel-first quote, the listing leak, the gamma map, the PFOF cheque, the API ceiling, the funding clock, the maker flip, the liquidator vault, the late block print, the mempool sandwich. Each chart names the room. Each row names the firm that lives in it.
         </p>
       </Reveal>
 
-      {CATEGORY_ORDER.map(cat => (
-        <CategoryBlock key={cat} cat={cat} />
-      ))}
+      {CATEGORY_ORDER.map(cat => {
+        const topics = EDGE_TOPICS.filter(t => t.category === cat)
+        if (topics.length === 0) return null
+        return (
+          <div key={cat}>
+            <CategoryDivider cat={cat} count={topics.length} />
+            {topics.map(topic => (
+              <TopicBlock key={topic.slug} topic={topic} />
+            ))}
+          </div>
+        )
+      })}
 
       {/* Closing block */}
       <Reveal delay={0.12}>
         <div
           style={{
-            marginTop: 32,
+            marginTop: 64,
             padding: '32px 28px',
             background: 'var(--apple-panel)',
             border: `1px solid ${LINE}`,
