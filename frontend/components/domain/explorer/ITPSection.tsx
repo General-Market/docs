@@ -87,8 +87,12 @@ export function ITPSection({ snapshots: _snapshots, latest: _latest, loading: _l
     return { total: navList.length, withSupply, totalAum }
   }, [navList])
 
-  // --- Fills chart: buy/sell/borrow/lend USD volume ---
-  // Buys/sells are L3-side fills (18 dec). Borrow/lend are WUSDC (6 dec) on L3.
+  // --- Fills chart: buy/sell/borrow/repay/lend/withdraw USD volume ---
+  // Buys/sells are L3-side fills (18 dec). All lending amounts also 18 dec
+  // (L3 USDC is 18, per CLAUDE.md — never 6 here). Borrow and Repay are the
+  // two sides of the debt ledger; Lend and Withdraw, the two sides of the
+  // supply ledger. Showing them separately lets the eye see net flow per
+  // bucket instead of inferring it.
   const fillsData = useMemo(
     () =>
       dtf.fills.map((b) => ({
@@ -96,12 +100,14 @@ export function ITPSection({ snapshots: _snapshots, latest: _latest, loading: _l
         buy: toUsd(b.buy_amount, 18),
         sell: toUsd(b.sell_amount, 18),
         borrow: toUsd(b.borrow_amount, 18),
+        repay: toUsd(b.repay_amount, 18),
         lend: toUsd(b.supply_amount, 18),
+        withdraw: toUsd(b.withdraw_amount, 18),
       })),
     [dtf.fills],
   )
   const fillsHasSignal = useMemo(
-    () => fillsData.some((d) => d.buy + d.sell + d.borrow + d.lend > 0),
+    () => fillsData.some((d) => d.buy + d.sell + d.borrow + d.repay + d.lend + d.withdraw > 0),
     [fillsData],
   )
 
@@ -166,7 +172,9 @@ export function ITPSection({ snapshots: _snapshots, latest: _latest, loading: _l
                 <Area type="monotone" dataKey="buy" stackId="1" stroke="#1F8F4D" fill="#1F8F4D" fillOpacity={0.25} name="Buy" />
                 <Area type="monotone" dataKey="sell" stackId="1" stroke="#D70015" fill="#D70015" fillOpacity={0.25} name="Sell" />
                 <Area type="monotone" dataKey="borrow" stackId="1" stroke="#0071E3" fill="#0071E3" fillOpacity={0.20} name="Borrow" />
+                <Area type="monotone" dataKey="repay" stackId="1" stroke="#5AC8FA" fill="#5AC8FA" fillOpacity={0.20} name="Repay" />
                 <Area type="monotone" dataKey="lend" stackId="1" stroke="#7B61FF" fill="#7B61FF" fillOpacity={0.20} name="Lend" />
+                <Area type="monotone" dataKey="withdraw" stackId="1" stroke="#BF5AF2" fill="#BF5AF2" fillOpacity={0.20} name="Withdraw" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
