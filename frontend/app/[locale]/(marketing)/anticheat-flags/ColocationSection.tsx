@@ -619,34 +619,44 @@ const INSIDE_LANE: AssumptionRow[] = [
 
 const OUTSIDE_LANE: AssumptionRow[] = [
   {
-    metric: 'Retail trades originating on a mobile device',
-    value: '>50%',
-    source: { label: 'Shift Markets', url: 'https://www.shiftmarkets.com/blog/why-modern-trading-platforms-have-gone-mobile-first' },
+    metric: 'Specialist forex / algo VPS — monthly rent',
+    value: '$15–100 / month',
+    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/best-vps-for-trading' },
   },
   {
-    metric: 'Robinhood funded accounts — mobile-first',
-    value: '25 million',
-    source: { label: 'Business of Apps', url: 'https://www.businessofapps.com/data/robinhood-statistics/' },
+    metric: 'Best-case retail VPS ping to broker matching engine (LD4 / NY4 tenant)',
+    value: '1–5 ms',
+    source: { label: 'QuantVPS · low latency', url: 'https://www.quantvps.com/blog/low-latency-trading' },
   },
   {
-    metric: 'Coinbase users — mobile primary interface',
-    value: '120 million',
-    source: { label: 'Business of Apps', url: 'https://www.businessofapps.com/data/stock-trading-app-market/' },
+    metric: 'Generic cloud VPS (Hetzner, DO, AWS general region)',
+    value: '10–50 ms',
+    source: { label: 'LuxAlgo · latency standards', url: 'https://www.luxalgo.com/blog/latency-standards-in-trading-systems/' },
   },
   {
-    metric: 'Residential fibre / 5G ping to broker edge',
-    value: '10–20 ms',
-    source: { label: 'EPB', url: 'https://epb.com/get-connected/tech-support/5g-low-latency-explained/' },
+    metric: 'Latency above which HFT strategies become unprofitable — retail ceiling',
+    value: '>10 ms',
+    source: { label: 'LuxAlgo · latency standards', url: 'https://www.luxalgo.com/blog/latency-standards-in-trading-systems/' },
   },
   {
-    metric: '4G cellular ping — the median mobile trader',
-    value: '50–100 ms',
-    source: { label: 'EPB', url: 'https://epb.com/get-connected/tech-support/5g-low-latency-explained/' },
+    metric: 'CPU tick-to-trade ceiling, even with optimised code (vs FPGA)',
+    value: '3–8 microseconds',
+    source: { label: 'QuantVPS · FPGA', url: 'https://www.quantvps.com/blog/high-frequency-trading-with-fpgas' },
   },
   {
-    metric: 'Browser / MetaTrader end-to-end execution from a home connection',
-    value: '50–300 ms (300–500 ms under congestion)',
-    source: { label: 'ECN Execution', url: 'https://ecnexecution.com/trading/trade-execution-speeds/' },
+    metric: 'Retail share of the algorithmic trading market, 2026',
+    value: '38.5%',
+    source: { label: 'Coherent Market Insights', url: 'https://www.coherentmarketinsights.com/market-insight/algorithmic-trading-market-2476' },
+  },
+  {
+    metric: 'Cloud-hosted execution share of retail algo trading',
+    value: '59.8%',
+    source: { label: 'Coherent Market Insights', url: 'https://www.coherentmarketinsights.com/market-insight/algorithmic-trading-market-2476' },
+  },
+  {
+    metric: 'Private microwave inter-city backbone',
+    value: 'None — fibre only',
+    source: { label: 'QuantVPS · HFT firms', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
   },
 ]
 
@@ -754,8 +764,8 @@ function AssumptionsBlock() {
           rows={INSIDE_LANE}
         />
         <AssumptionLane
-          title="Outside lane — average retail trader"
-          summary="Mobile app or browser, residential fibre or cellular ISP, no cross-connect, no colocation, no microwave link, no designated quote."
+          title="Outside lane — retail algo trader (already paying)"
+          summary="Not a phone clicker. An EA on MetaTrader, a Python bot on a VPS, sometimes the same building as the matching engine. Pays for infrastructure. Still arrives after the cabinet."
           rows={OUTSIDE_LANE}
         />
       </div>
