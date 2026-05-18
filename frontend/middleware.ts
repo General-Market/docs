@@ -75,5 +75,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|dn|rpc|_next|_vercel|docs|health|room|pitchdeck|case-studies|anticheat-flags|.*\\..*).*)',],
+  matcher: ['/((?!api|dn|rpc|_next|_vercel|docs|health|room|pitchdeck|case-studies|.*\\..*).*)',],
 }
