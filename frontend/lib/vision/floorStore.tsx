@@ -85,8 +85,12 @@ const FLOW_BUCKET_TAKE = 3
 const ONE_USDC = 10n ** 18n
 // Average bet size — used to size synthetic flow rows from TVL deltas
 const AVG_BET_USDC = ONE_USDC * 5n
-// Cap synth flow rows per single delta — keeps things smooth
-const MAX_SYNTH_FLOW_PER_DELTA = 24
+// Cap synth flow rows per single delta — kept tight so one busy source
+// can't dominate the feed with twenty identical-looking bursts.
+const MAX_SYNTH_FLOW_PER_DELTA = 4
+// First-poll soft seed is even tighter — we don't want the page to open
+// with a wall of synthetic rows for whichever pool has the deepest TVL.
+const MAX_SYNTH_FLOW_FIRST_POLL = 2
 // Ambient pulse cadence — fires regardless of TVL deltas so the page
 // never goes silent on a quiet chain. Picks 1–2 sources weighted by
 // pool size each tick.
@@ -275,7 +279,7 @@ export function FloorProvider({ children }: FloorProviderProps) {
           const delta = cur.tvl - synthBefore.tvl
           if (delta > 0n) {
             const n = Math.min(
-              MAX_SYNTH_FLOW_PER_DELTA,
+              MAX_SYNTH_FLOW_FIRST_POLL,
               Math.max(1, Number(delta / AVG_BET_USDC) || 1),
             )
             const perRow = delta / BigInt(n)

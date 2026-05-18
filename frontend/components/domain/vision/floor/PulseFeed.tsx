@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatUnits } from 'viem'
 import {
@@ -13,6 +13,10 @@ import { getAddressUrl } from '@/lib/utils/explorer'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 
 const LAYOUT_EASE: [number, number, number, number] = [0.25, 0.1, 0.3, 1]
+
+// One unit of L3 USDC (18 decimals). Used as a bigint multiplier for
+// bucketing TVL.
+const ONE_USDC_E18 = 10n ** 18n
 
 // Every floor row links to the Vision contract on the L3 explorer.
 // Blockscout's address page streams live txs — clicking a row is a
@@ -123,19 +127,6 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
   const widthPct = maxTvl > 0n ? Number((tvl * 1000n) / maxTvl) / 10 : 0
   const tvlStr = formatUSD(batch.tvlStr)
 
-  const prevTvlRef = useRef<string>(batch.tvlStr)
-  const lastGlintAtRef = useRef<number>(0)
-  const [tick, setTick] = useState(0)
-
-  useEffect(() => {
-    if (prevTvlRef.current === batch.tvlStr) return
-    prevTvlRef.current = batch.tvlStr
-    const now = Date.now()
-    if (now - lastGlintAtRef.current < 800) return
-    lastGlintAtRef.current = now
-    setTick(t => t + 1)
-  }, [batch.tvlStr])
-
   return (
     <a
       href={PROOF_URL}
@@ -172,26 +163,6 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
             transition: 'transform 900ms cubic-bezier(0.25,0.1,0.3,1)',
           }}
         />
-        {/* Tiny travelling glint — fires on every TVL update so the bar
-            visibly reacts even when the rounded dollar text doesn't budge.
-            Suppressed on first mount so the page doesn't shimmer on load. */}
-        {tick > 0 && (
-          <motion.span
-            key={tick}
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 w-[28px] rounded-full"
-            initial={{ opacity: 0, x: '-30%' }}
-            animate={{
-              opacity: [0, 0.55, 0],
-              x: `${Math.max(0, Math.min(100, widthPct)) - 8}%`,
-            }}
-            transition={{ duration: 0.7, ease: LAYOUT_EASE }}
-            style={{
-              background: `linear-gradient(90deg, transparent, ${batch.sourceBrandBg}, transparent)`,
-              mixBlendMode: 'screen',
-            }}
-          />
-        )}
       </div>
     </a>
   )
@@ -239,13 +210,19 @@ export function PulseFeed() {
   const hot = flow.slice(0, 6)
 
   // ── Top pools — bars ──
+  // Order by TVL bucketed to the nearest $50, then by sourceId for a
+  // stable tiebreaker. Without bucketing, two pools $4,612 and $4,618
+  // swap places every time a $1 ambient bet lands — and the whole
+  // section animates for nothing.
   const top = useMemo(() => {
+    const TVL_BUCKET = ONE_USDC_E18 * 50n
     return batches
       .slice()
       .sort((a, b) => {
-        const at = safeBigInt(a.tvlStr)
-        const bt = safeBigInt(b.tvlStr)
-        return at > bt ? -1 : at < bt ? 1 : 0
+        const aBucket = safeBigInt(a.tvlStr) / TVL_BUCKET
+        const bBucket = safeBigInt(b.tvlStr) / TVL_BUCKET
+        if (aBucket !== bBucket) return aBucket > bBucket ? -1 : 1
+        return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0
       })
       .slice(0, 10)
   }, [batches])
