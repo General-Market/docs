@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { formatUnits } from 'viem'
 import type { FloorBatch } from '@/hooks/vision/useFloorStream'
+import { getAddressUrl } from '@/lib/utils/explorer'
+import { VISION_ADDRESS } from '@/lib/vision/constants'
+
+const PROOF_URL = getAddressUrl(VISION_ADDRESS, 'l3')
 
 interface Props {
   batch: FloorBatch
@@ -107,14 +111,18 @@ export function SourceBatchCard({ batch }: Props) {
   const tint = statusTint(batch.status)
 
   return (
-    <div
-      className="group relative flex items-center gap-3 rounded-[14px] bg-white px-3 py-2.5"
+    <a
+      href={PROOF_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Verify on the L3 explorer"
+      className="group relative flex cursor-pointer items-center gap-3 rounded-[14px] bg-white px-3 py-2.5 no-underline hover:bg-[#fafafa]"
       style={{
         border: '1px solid var(--apple-border)',
         animation: pulsing ? `floorCardPulse ${pulseDuration} ease-in-out infinite` : undefined,
         boxShadow: 'var(--apple-shadow-card)',
         transition:
-          'transform 240ms cubic-bezier(0.25,0.1,0.3,1), box-shadow 240ms cubic-bezier(0.25,0.1,0.3,1)',
+          'transform 240ms cubic-bezier(0.25,0.1,0.3,1), box-shadow 240ms cubic-bezier(0.25,0.1,0.3,1), background-color 200ms ease',
       }}
     >
       <div className="relative h-11 w-11 shrink-0">
@@ -173,6 +181,6 @@ export function SourceBatchCard({ batch }: Props) {
           </span>
         </div>
       </div>
-    </div>
+    </a>
   )
 }

@@ -4,6 +4,10 @@ import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatUnits } from 'viem'
 import { useFloorFlow, useFloorBatches, type FlowRow } from '@/hooks/vision/useFloorStream'
+import { getAddressUrl } from '@/lib/utils/explorer'
+import { VISION_ADDRESS } from '@/lib/vision/constants'
+
+const PROOF_URL = getAddressUrl(VISION_ADDRESS, 'l3')
 
 function stripPrefix(assetId: string): string {
   if (!assetId || assetId === '·') return ''
@@ -58,11 +62,16 @@ function FlowRowView({ row, sourceName, sourceBrandBg }: FlowRowViewProps) {
   const assetLabel = stripPrefix(row.assetId)
 
   return (
-    <motion.div
+    <motion.a
+      href={PROOF_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Verify on the L3 explorer"
       initial={{ opacity: 0, x: 6 }}
       animate={{ opacity: 1, x: 0 }}
+      whileHover={{ backgroundColor: 'rgba(0,113,227,0.06)' }}
       transition={{ duration: 0.16, ease: [0.25, 0.1, 0.3, 1] }}
-      className="grid grid-cols-[10px_auto_1fr_56px] items-baseline gap-2 px-4 py-1.5"
+      className="grid cursor-pointer grid-cols-[10px_auto_1fr_56px] items-baseline gap-2 px-4 py-1.5 no-underline"
     >
       <span
         className="h-1.5 w-1.5 self-center justify-self-center rounded-full"
@@ -87,7 +96,7 @@ function FlowRowView({ row, sourceName, sourceBrandBg }: FlowRowViewProps) {
       <span className="justify-self-end tabular-nums text-[10px] text-[#86868b]">
         {formatTime(row.displayedAt)}
       </span>
-    </motion.div>
+    </motion.a>
   )
 }
 

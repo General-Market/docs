@@ -9,8 +9,15 @@ import {
   type FlowRow,
   type FloorBatch,
 } from '@/hooks/vision/useFloorStream'
+import { getAddressUrl } from '@/lib/utils/explorer'
+import { VISION_ADDRESS } from '@/lib/vision/constants'
 
 const LAYOUT_EASE: [number, number, number, number] = [0.25, 0.1, 0.3, 1]
+
+// Every floor row links to the Vision contract on the L3 explorer.
+// Blockscout's address page streams live txs — clicking a row is a
+// one-hop proof that what's on screen mirrors what's on chain.
+const PROOF_URL = getAddressUrl(VISION_ADDRESS, 'l3')
 
 function formatUSD(weiStr: string): string {
   try {
@@ -60,15 +67,20 @@ function HotRow({ row, sourceName, sourceBrandBg }: HotRowProps) {
   const dirGlyph = isUp ? '▲' : '▼'
 
   return (
-    <motion.div
+    <motion.a
+      href={PROOF_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Verify on the L3 explorer"
       initial={{ opacity: 0, y: -12, backgroundColor: `${dirColor}1f` }}
       animate={{ opacity: 1, y: 0, backgroundColor: 'rgba(255,255,255,0)' }}
+      whileHover={{ backgroundColor: 'rgba(0,113,227,0.05)' }}
       transition={{
         opacity: { duration: 0.22, ease: [0.25, 0.1, 0.3, 1] },
         y: { duration: 0.22, ease: [0.25, 0.1, 0.3, 1] },
         backgroundColor: { duration: 0.8, ease: [0.25, 0.1, 0.3, 1], delay: 0.05 },
       }}
-      className="flex items-baseline gap-4 px-8 py-3"
+      className="flex cursor-pointer items-baseline gap-4 px-8 py-3 no-underline"
       style={{ borderBottom: '1px solid var(--apple-border)' }}
     >
       <span
@@ -94,7 +106,7 @@ function HotRow({ row, sourceName, sourceBrandBg }: HotRowProps) {
       >
         {dirGlyph}
       </span>
-    </motion.div>
+    </motion.a>
   )
 }
 
@@ -125,7 +137,13 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
   }, [batch.tvlStr])
 
   return (
-    <div className="relative">
+    <a
+      href={PROOF_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Verify on the L3 explorer"
+      className="relative block cursor-pointer no-underline transition-opacity hover:opacity-90"
+    >
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <span
           className="flex min-w-0 items-center gap-2 text-[13px] tracking-[-0.014em] text-[#1d1d1f]"
@@ -175,7 +193,7 @@ const PoolBar = memo(function PoolBar({ batch, maxTvl }: PoolBarProps) {
           />
         )}
       </div>
-    </div>
+    </a>
   )
 })
 
@@ -316,17 +334,20 @@ export function PulseFeed() {
         </section>
 
         {/* ── Top pools ── */}
-        <section style={{ borderTop: '1px solid var(--apple-border)' }}>
+        <section
+          className="relative overflow-hidden"
+          style={{ borderTop: '1px solid var(--apple-border)' }}
+        >
           <div className="flex items-baseline justify-between px-8 pt-5 pb-3">
             <h3 className="floor-pane-header">Top pools</h3>
             <span className="tabular-nums text-[11px] text-[#86868b]">{top.length}</span>
           </div>
-          <div className="flex flex-col gap-2.5 px-8 pb-8">
+          <div className="relative flex flex-col gap-2.5 overflow-hidden px-8 pb-8">
             {top.map(b => (
               <motion.div
                 key={`${b.sourceId}-${b.batchId}`}
                 layout="position"
-                transition={{ layout: { duration: 0.55, ease: LAYOUT_EASE } }}
+                transition={{ layout: { duration: 0.32, ease: LAYOUT_EASE } }}
               >
                 <PoolBar batch={b} maxTvl={maxTopTvl} />
               </motion.div>
