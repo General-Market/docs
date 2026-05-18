@@ -88,10 +88,16 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        // Static-HTML case studies live under public/. Next.js doesn't serve
+        // a directory index for them by default — explicitly rewrite the
+        // canonical URL to the file. The locale rewrite below excludes
+        // these prefixes so the trailing-slash and .html forms also resolve.
+        { source: "/anticheat-flags", destination: "/anticheat-flags/index.html" },
+        { source: "/case-studies/:slug", destination: "/case-studies/:slug/index.html" },
         // Locale routing fallback
         { source: "/", destination: "/en" },
         {
-          source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health|room|pitchdeck)[^.]+)",
+          source: "/:path((?!en|ko|ja|zh|api|dn|rpc|_next|_vercel|docs|health|room|pitchdeck|case-studies|anticheat-flags)[^.]+)",
           destination: "/en/:path",
         },
       ],
