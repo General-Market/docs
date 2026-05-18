@@ -75,8 +75,19 @@ contract DeployMorphoE2E is DeployBLSHelper {
         console.log("ITPNAVOracle deployed:", address(oracle));
         console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(1:1 ITP/USDC, 36 decimal precision)");
 
-        // Authorize ITPNAVOracle for incrementMissedCounts on main registry
-        MirrorOracleRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+        // Authorize ITPNAVOracle for incrementMissedCounts on main registry.
+        // On a live testnet the registry admin is the issuer-2 key, not the deployer.
+        // If ADMIN_KEY is set, switch broadcast to it for this single call.
+        uint256 adminKey = vm.envOr("ADMIN_KEY", uint256(0));
+        if (adminKey != 0 && vm.addr(adminKey) != deployer) {
+            vm.stopBroadcast();
+            vm.startBroadcast(adminKey);
+            MirrorOracleRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+            vm.stopBroadcast();
+            vm.startBroadcast(anvilKey);
+        } else {
+            MirrorOracleRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+        }
         console.log("  ITPNAVOracle authorized for incrementMissedCounts");
 
         // Push initial BLS-signed price update so oracle is not stale
