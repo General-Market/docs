@@ -179,50 +179,33 @@ function FeeCard({ v, delay }: { v: FeeTierVenue; delay: number }) {
 
 function EdgeBarRow({
   label,
-  market,
   bps,
   pct,
   filled,
   note,
 }: {
   label: string
-  market: string
   bps: number
   pct: number
   filled: boolean
   note?: string
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <div
         style={{
-          flex: '0 0 188px',
-          minWidth: 0,
+          flex: '0 0 120px',
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 13,
+          color: TEXT,
+          letterSpacing: '-0.011em',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 14,
-            color: TEXT,
-            letterSpacing: '-0.011em',
-            fontWeight: 500,
-            lineHeight: 1.2,
-          }}
-        >
-          {label}
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 11,
-            color: TERTIARY,
-            letterSpacing: '-0.005em',
-            marginTop: 2,
-          }}
-        >
-          {market}
-        </div>
+        {label}
       </div>
       <div
         style={{
@@ -231,9 +214,20 @@ function EdgeBarRow({
           background: SURFACE,
           borderRadius: 4,
           position: 'relative',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
       >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: -3,
+            bottom: -3,
+            width: 0,
+            borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+          }}
+          aria-hidden
+        />
         {filled && pct > 0 && (
           <div
             style={{
@@ -250,17 +244,18 @@ function EdgeBarRow({
       </div>
       <div
         style={{
-          flex: '0 0 110px',
+          flex: '0 0 100px',
           textAlign: 'right',
           fontFamily: 'var(--apple-font-display)',
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: 600,
           color: filled ? ACCENT : TERTIARY,
           fontVariantNumeric: 'tabular-nums',
           letterSpacing: '-0.016em',
+          whiteSpace: 'nowrap',
         }}
       >
-        {note ?? `${bps} bps`}
+        {note ?? `+${bps} bps`}
       </div>
     </div>
   )
@@ -399,73 +394,142 @@ export function FeeTierSection() {
         >
           <div
             style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              color: TERTIARY,
-              letterSpacing: '-0.005em',
-              marginBottom: 4,
+              display: 'grid',
+              gridTemplateColumns: '320px 1fr',
+              gap: 32,
+              alignItems: 'start',
             }}
           >
-            The round-trip cost gap, sorted
-          </div>
-          <h3
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: 'var(--apple-track-tight)',
-              color: TEXT,
-              marginBottom: 28,
-            }}
-          >
-            How many basis points the inside lane keeps per fill.
-          </h3>
+            <div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  marginBottom: 10,
+                }}
+              >
+                Subsidy · {RANKED.length} sourced · bps round-trip
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: TEXT,
+                  marginBottom: 10,
+                }}
+              >
+                Unfair fee tier
+              </h3>
+              <p
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  color: SECONDARY,
+                  letterSpacing: '-0.011em',
+                  lineHeight: 1.55,
+                  marginBottom: 10,
+                }}
+              >
+                Retail baseline = 0. Bar = MM round-trip rebate over retail at this venue, in basis points.
+              </p>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                }}
+              >
+                {RANKED.length + UNDISCLOSED.length} venues
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {RANKED.map(v => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {RANKED.map(v => (
+                <EdgeBarRow
+                  key={v.slug}
+                  label={v.name}
+                  bps={v.edgeBps}
+                  pct={(v.edgeBps / MAX_EDGE) * 100}
+                  filled
+                />
+              ))}
+              {UNDISCLOSED.map(v => (
+                <EdgeBarRow
+                  key={v.slug}
+                  label={v.name}
+                  bps={0}
+                  pct={0}
+                  filled={false}
+                  note={v.edgeLabel}
+                />
+              ))}
               <EdgeBarRow
-                key={v.slug}
-                label={v.name}
-                market={v.market}
-                bps={v.edgeBps}
-                pct={(v.edgeBps / MAX_EDGE) * 100}
-                filled
-              />
-            ))}
-            {UNDISCLOSED.map(v => (
-              <EdgeBarRow
-                key={v.slug}
-                label={v.name}
-                market={v.market}
+                label="General Market"
                 bps={0}
                 pct={0}
                 filled={false}
-                note={v.edgeLabel}
+                note="0"
               />
-            ))}
-            <EdgeBarRow
-              label="General Market"
-              market="Sealed bets · parimutuel"
-              bps={0}
-              pct={0}
-              filled={false}
-              note="No inside lane"
-            />
+            </div>
           </div>
 
+          {/* Source footer cards — same format as edge matrix */}
           <div
             style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 11,
-              color: TERTIARY,
-              letterSpacing: '-0.005em',
-              lineHeight: 1.55,
-              marginTop: 24,
-              paddingTop: 16,
+              marginTop: 28,
+              paddingTop: 20,
               borderTop: `1px solid ${LINE}`,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '14px 22px',
             }}
           >
-            Bar length = round-trip gap between the retail taker fee and the market-maker net fee at the top tier, in basis points. Polymarket is reported in pp because the gap is a percentage of trade notional, not bps. Kalshi appears as undisclosed because its DMM rates are private and currently the subject of a federal class action. Robinhood&apos;s asymmetry is structural — wholesalers pay the broker for retail flow rather than receiving a fee tier. Pump.fun has no fee tier; the edge is execution latency. General Market: on-chain, sealed bets, parimutuel, BLS-verified — no fee tier to sell.
+            {FEE_TIER_VENUES.map(v => (
+              <div
+                key={v.slug}
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                  lineHeight: 1.5,
+                }}
+              >
+                <div
+                  style={{
+                    color: TEXT,
+                    fontWeight: 600,
+                    marginBottom: 3,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {v.name}{' '}
+                  <span style={{ color: TERTIARY, fontWeight: 400 }}>· {v.edgeLabel}</span>
+                </div>
+                <div style={{ marginBottom: 4, fontStyle: 'italic', color: SECONDARY }}>
+                  Retail: {v.retailLine} | MM: {v.mmLine}
+                </div>
+                <div style={{ marginBottom: 4, color: SECONDARY, fontStyle: 'italic' }}>
+                  Mechanism: {v.market}
+                </div>
+                <a
+                  href={v.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: ACCENT, fontSize: 11, fontWeight: 500 }}
+                  className="hover:underline"
+                >
+                  {v.sourceLabel} ›
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </Reveal>
@@ -483,13 +547,15 @@ export function FeeTierSection() {
           <div
             style={{
               fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
+              fontSize: 11,
               color: TERTIARY,
-              letterSpacing: '-0.005em',
-              marginBottom: 4,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+              marginBottom: 8,
             }}
           >
-            The cost of paying nothing · reference: Binance VIP 9, single venue, single region
+            Cost · {EXCHANGE_COSTS.length} venues · $/month
           </div>
           <h3
             style={{
@@ -501,7 +567,7 @@ export function FeeTierSection() {
               marginBottom: 8,
             }}
           >
-            What the inside lane actually pays to stay inside.
+            Cost of maxing out advantages
           </h3>
           <p
             style={{
@@ -510,135 +576,116 @@ export function FeeTierSection() {
               color: SECONDARY,
               lineHeight: 1.55,
               letterSpacing: '-0.011em',
-              marginBottom: 8,
+              marginBottom: 20,
               maxWidth: 780,
             }}
           >
-            Holding the top tier on one major venue costs a market-maker desk between <strong style={{ color: TEXT, fontWeight: 600 }}>$1.4M and $3.6M every month</strong>, before the P&amp;L on the flow itself. Most of it is invisible: BNB held against opportunity cost, working margin posted to keep quotes live, adverse-selection drag on tight markets, the colocation cabinet, the market-data feed, the six humans who keep the stack alive. The fee schedule is the part the public sees. The cost sheet is the part that decides who gets to be the market.
+            What a market-maker desk pays per month to stay at the top tier at each venue.
           </p>
 
-          <div style={{ marginTop: 20 }}>
-            <CostRow
-              label="BNB holding requirement"
-              value="$148K/mo"
-              note="5,500 BNB held continuously (~$3.55M locked at $645.81 on 2026-05-18), opportunity cost at 5% APR · datawallet.com VIP levels · metamask.io price feed"
-            />
-            <CostRow
-              label="Qualifying volume — exchange fees on $4B/30d"
-              value="$340K/mo"
-              note="$4B × 0.5 × 1.7 bps blended 50/50 maker/taker at VIP 9 futures · tradersunion.com / bitget.com academy"
-            />
-            <CostRow
-              label="Inventory carry on working capital"
-              value="$133K/mo"
-              note="0.5% × $4B notional held as inventory × 8% APR / 12 · FIA derivatives survey 2024 ratios"
-            />
-            <CostRow
-              label="Adverse-selection drag on tight quotes"
-              value="$170K–$760K/mo"
-              note="0.5% of taker flow hits informed flow at 9.6%–43% AS share of spread · Huang-Stoll 1997 lower bound · Stoll 1989 upper bound"
-            />
-            <CostRow
-              label="Headcount — six FTEs (2 quant · 2 dev · 1 SRE · 0.5 comp · 0.5 ops)"
-              value="$220K–$360K/mo"
-              note="$300K–$600K all-in × 6 / 12 × 1.4 loaded · QuantBlueprint salary guide · eFinancialCareers compensation report"
-            />
-            <CostRow
-              label="Working margin to keep quotes live"
-              value="$333K/mo"
-              note="$50M working margin × 8% APR / 12 · Binance futures margin model"
-            />
-            <CostRow
-              label="Market data — LSEG Direct / Pico RedlineFeed + Bloomberg seats"
-              value="$15K–$40K/mo"
-              note="Single-region low-latency feed plus $2,665/seat/mo Bloomberg · a-teaminsight feed comparison · costbench.com"
-            />
-            <CostRow
-              label="Colocation cabinet + cross-connects (Equinix NY5 tier)"
-              value="$3K–$4.4K/mo"
-              note="5kW cabinet $1.5–3K · four cross-connects at $341 avg each · Brightlio pricing · Equinix Americas pricing"
-            />
-            <CostRow
-              label="Compliance, audit, legal retainer"
-              value="$25K–$50K/mo"
-              note="Surgence Labs estimates 'six figures annualized' for active multi-venue MM coverage"
-            />
+          <div>
+            {EXCHANGE_COSTS.map(c => (
+              <CostRow
+                key={c.slug}
+                label={c.name}
+                value={c.monthly}
+                note={c.breakdown}
+              />
+            ))}
           </div>
 
-          <div
-            style={{
-              marginTop: 24,
-              paddingTop: 20,
-              borderTop: `1px solid ${LINE}`,
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              gap: 16,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: 18,
-                fontWeight: 600,
-                color: TEXT,
-                letterSpacing: '-0.016em',
-              }}
-            >
-              Monthly total — one venue, one region
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: 28,
-                fontWeight: 600,
-                color: ACCENT,
-                fontVariantNumeric: 'tabular-nums',
-                letterSpacing: 'var(--apple-track-tighter)',
-              }}
-            >
-              ~$2.4M
-            </div>
-          </div>
           <div
             style={{
               fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
+              fontSize: 11,
               color: TERTIARY,
               letterSpacing: '-0.005em',
-              marginTop: 8,
-              lineHeight: 1.55,
-              textAlign: 'right',
+              lineHeight: 1.6,
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: `1px solid ${LINE}`,
             }}
           >
-            Low / base / high: $1.4M / $2.4M / $3.6M · $29M–$43M per year
-          </div>
-
-          <div
-            style={{
-              marginTop: 28,
-              padding: '20px 22px',
-              background: SURFACE,
-              borderRadius: 'var(--apple-r-sm)',
-              borderLeft: `3px solid ${ACCENT}`,
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 15,
-                lineHeight: 1.55,
-                letterSpacing: '-0.011em',
-                color: TEXT,
-                fontStyle: 'italic',
-                margin: 0,
-              }}
-            >
-              The retail trader pays the published fee and feels robbed. The market maker pays nothing and bleeds two and a half million a month to keep paying nothing. The published schedule is the museum exhibit. The cost sheet is the venue.
-            </p>
+            Ranges are orders of magnitude defensible from public fee schedules and tier disclosures. Binance VIP 9 detail (datawallet.com VIP levels, Huang-Stoll AS-share bounds, FIA derivatives survey ratios, QuantBlueprint salary guide) cross-checked across five 2025–2026 sources; other venues anchor to their published MM-tier docs.
           </div>
         </div>
       </Reveal>
     </section>
   )
 }
+
+interface ExchangeCost {
+  slug: string
+  name: string
+  monthly: string
+  breakdown: string
+}
+
+const EXCHANGE_COSTS: ExchangeCost[] = [
+  {
+    slug: 'binance',
+    name: 'Binance',
+    monthly: '$1.4M–$3.6M/mo',
+    breakdown: 'VIP 9: $30B/30d futures + 5,500 BNB held + adverse-selection drag + six FTEs + Equinix cabinet · datawallet.com VIP levels, Huang-Stoll AS bounds, FIA survey, QuantBlueprint',
+  },
+  {
+    slug: 'bybit',
+    name: 'Bybit',
+    monthly: '$800K–$2.0M/mo',
+    breakdown: 'Supreme/MM tier: $500M/30d + bilateral institutional services contract + MMGW infra · bybit.com institutional services + MM Incentive Program docs',
+  },
+  {
+    slug: 'coinbase',
+    name: 'Coinbase',
+    monthly: '$400K–$1.2M/mo',
+    breakdown: 'Tier 8: $250M+ 30d volume or Fee Upgrade Program ($500K/mo proof) + LP program acceptance · coinbase.com/exchange/liquidity-program',
+  },
+  {
+    slug: 'hyperliquid',
+    name: 'Hyperliquid',
+    monthly: '$300K–$700K/mo',
+    breakdown: 'Tier 6: $7B+ 14-day rolling volume + >3% maker share + HLP capital lockup + HYPE for gossip priority · hyperliquid.gitbook.io/hyperliquid-docs/trading/fees',
+  },
+  {
+    slug: 'deribit',
+    name: 'Deribit',
+    monthly: '$300K–$900K/mo',
+    breakdown: 'VIP 6: $5B 30-day options volume + bilateral DMM agreement + LD4 cage cross-connect · support.deribit.com/hc fees',
+  },
+  {
+    slug: 'kalshi',
+    name: 'Kalshi',
+    monthly: '$150K–$500K/mo (est.)',
+    breakdown: 'LIP + DMM: 98% quote uptime across 80+ products + private DMM agreement (Susquehanna, Jump) — exact terms unpublished · help.kalshi.com MM program',
+  },
+  {
+    slug: 'polymarket',
+    name: 'Polymarket',
+    monthly: '$100K–$300K/mo (est.)',
+    breakdown: 'Maker Rebates: pool-dominant capital + latency + (Jump received equity for liquidity — terms undisclosed) · docs.polymarket.com maker rebates',
+  },
+  {
+    slug: 'etoro',
+    name: 'eToro',
+    monthly: '$50K–$200K/mo',
+    breakdown: 'Popular Investor Elite Pro: 2-2.5% of AUC subsidy from copy-trade flow (different model — no MM tier) · etoro.com Popular Investor tiers',
+  },
+  {
+    slug: 'robinhood',
+    name: 'Robinhood',
+    monthly: 'N/A',
+    breakdown: 'No tier-based MM program. Wholesalers (Citadel, Virtu, SIG) pay Robinhood for retail order flow rather than receiving a fee tier · SEC Rule 606 disclosures',
+  },
+  {
+    slug: 'ibkr',
+    name: 'IBKR',
+    monthly: 'N/A',
+    breakdown: 'No MM tier program after Timber Hill wound down 2017. Exchange rebates pass through to Pro clients · interactivebrokers.com commissions',
+  },
+  {
+    slug: 'pumpfun',
+    name: 'Pump.fun',
+    monthly: 'N/A',
+    breakdown: 'AMM, no MM tier. The cost is infrastructure: validator-adjacent RPC + Jito tips + sniper-bot stack · pump.fun/docs/fees',
+  },
+]
