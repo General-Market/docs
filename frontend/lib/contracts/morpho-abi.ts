@@ -391,5 +391,19 @@ export const METAMORPHO_VAULT_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
+
+  // ============ Curator Config (per-market cap) ============
+  // MetaMorpho.config(Id) returns MarketConfig { uint184 cap, bool enabled, uint64 removableAt }
+  {
+    inputs: [{ name: 'id', type: 'bytes32' }],
+    name: 'config',
+    outputs: [
+      { name: 'cap', type: 'uint184' },
+      { name: 'enabled', type: 'bool' },
+      { name: 'removableAt', type: 'uint64' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
 ] as const
 

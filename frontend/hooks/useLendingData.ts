@@ -16,7 +16,13 @@ export interface EnrichedMarket {
   itpId: string
   settlementAddress: string
   borrowApy: number
-  /** Available liquidity = totalSupply - totalBorrow (float, 18-dec formatted) */
+  /**
+   * Available liquidity under intent-based reallocation: `cap - totalBorrow`.
+   * The vault routes idle USDC to whichever market is borrowed against, so the
+   * meaningful ceiling is the per-market supply cap, not the current idle
+   * balance. Falls back to `totalSupply - totalBorrow` when the cap is zero
+   * (market not yet capped on the vault).
+   */
   available: number
   /** Loan-to-value ratio as percentage (e.g. 77 for 77%) */
   lltv: number
@@ -103,9 +109,15 @@ export function useLendingData(): LendingData {
       const market = getMorphoMarketForItp(collateralToken)
       if (!market) continue
 
-      const available = parseFloat(
-        formatUnits(mktData.totalSupplyAssets - mktData.totalBorrowAssets, 18)
-      )
+      // Intent-based liquidity: cap - totalBorrow.
+      // The vault reallocates to the target market on demand, so the meaningful
+      // headroom is the per-market cap. When cap is zero (uncapped or not
+      // registered) we fall back to the literal idle balance.
+      const ceiling = mktData.cap > 0n ? mktData.cap : mktData.totalSupplyAssets
+      const availableRaw = ceiling > mktData.totalBorrowAssets
+        ? ceiling - mktData.totalBorrowAssets
+        : 0n
+      const available = parseFloat(formatUnits(availableRaw, 18))
       const lltv = Number(mktData.lltv) / 1e16
 
       const pos = positions?.[mktData.marketId]

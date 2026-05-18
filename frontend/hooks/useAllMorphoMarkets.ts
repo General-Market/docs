@@ -1,8 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useReadContracts } from 'wagmi'
 import { useSSEMorphoMarkets, type MorphoMarketSSE } from './useSSE'
 import { mergeSSEMarket } from '@/lib/contracts/morpho-markets-registry'
+import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
+import { METAMORPHO_VAULT_ABI } from '@/lib/contracts/morpho-abi'
+import { indexL3 } from '@/lib/wagmi'
 
 const SECONDS_PER_YEAR = 365.25 * 86400
 
@@ -15,10 +19,49 @@ export interface AllMarketData {
   supplyApy: number
   lltv: bigint
   marketId: string
+  /**
+   * Vault supply cap for this market (18-dec USDC on L3).
+   * Under intent-based liquidity, the vault can route up to this many assets
+   * into the market on demand — the displayed "Liquidity" should reflect
+   * (cap − totalBorrow), not the literal idle balance.
+   */
+  cap: bigint
 }
 
 export function useAllMorphoMarkets() {
   const sseMarkets = useSSEMorphoMarkets()
+
+  // Stable list of marketIds for the batched cap read
+  const marketIds = useMemo(() => {
+    const ids = sseMarkets.map(m => m.market_id as `0x${string}`)
+    return Array.from(new Set(ids))
+  }, [sseMarkets])
+
+  const capCalls = useMemo(() => marketIds.map(id => ({
+    address: MORPHO_ADDRESSES.metaMorphoVault,
+    abi: METAMORPHO_VAULT_ABI,
+    functionName: 'config' as const,
+    args: [id] as const,
+    chainId: indexL3.id,
+  })), [marketIds])
+
+  const { data: capResults } = useReadContracts({
+    contracts: capCalls as any,
+    allowFailure: true,
+    query: { enabled: capCalls.length > 0, refetchInterval: 30000 },
+  })
+
+  const capByMarketId = useMemo(() => {
+    const m = new Map<string, bigint>()
+    if (!capResults) return m
+    capResults.forEach((res, i) => {
+      if (res.status !== 'success' || !res.result) return
+      // config returns [cap, enabled, removableAt]
+      const tuple = res.result as readonly [bigint, boolean, bigint]
+      m.set(marketIds[i].toLowerCase(), tuple[0])
+    })
+    return m
+  }, [capResults, marketIds])
 
   const marketsMap = useMemo(() => {
     const map = new Map<string, AllMarketData>()
@@ -39,14 +82,15 @@ export function useAllMorphoMarkets() {
 
       const supplyApy = utilization > 0 ? (borrowApy * utilization) / 100 : 0
       const lltv = BigInt(m.lltv || '770000000000000000')
+      const cap = capByMarketId.get(m.market_id.toLowerCase()) ?? 0n
 
       map.set(m.collateral_token.toLowerCase(), {
         totalSupplyAssets, totalBorrowAssets, totalBorrowShares, utilization,
-        borrowApy, supplyApy, lltv, marketId: m.market_id,
+        borrowApy, supplyApy, lltv, marketId: m.market_id, cap,
       })
     }
     return map
-  }, [sseMarkets])
+  }, [sseMarkets, capByMarketId])
 
   // Stop "loading" after 6 seconds even if SSE has not produced anything yet.
   // Otherwise an empty pool reads as a perpetual skeleton — the user cannot tell
