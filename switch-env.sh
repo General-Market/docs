@@ -33,8 +33,15 @@ echo "  .env → frontend/.env.local"
 # 2. Patch deployment.json from latest forge broadcasts, then copy to destinations
 "$REPO_ROOT/sync-deployment.sh" "$ENV_NAME" 2>/dev/null || true
 
-# Validate deployment.json before copying — prevent Anvil addresses from reaching testnet/mainnet
-DEPLOY_FILE="$ENV_DIR/deployment.json"
+# Validate deployment.json before copying — prevent Anvil addresses from reaching testnet/mainnet.
+# Prefer active-deployment.json when it exists: it carries sourceVaults/whitelistedVaults
+# (the merged 73-source map) that deployment.json lacks. The fast-joiner and frontend
+# both depend on those arrays — copying the smaller deployment.json strips them.
+if [[ -f "$ENV_DIR/active-deployment.json" ]]; then
+  DEPLOY_FILE="$ENV_DIR/active-deployment.json"
+else
+  DEPLOY_FILE="$ENV_DIR/deployment.json"
+fi
 if [[ -f "$DEPLOY_FILE" ]]; then
   DEPLOY_CHAIN_ID=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE')).get('chainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
   DEPLOY_SETTLEMENT_ID=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE')).get('settlementChainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
@@ -75,9 +82,9 @@ if [[ -f "$DEPLOY_FILE" ]]; then
   esac
 fi
 
-cp "$ENV_DIR/deployment.json" "$REPO_ROOT/deployments/active-deployment.json"
-cp "$ENV_DIR/deployment.json" "$REPO_ROOT/frontend/lib/contracts/deployment.json"
-echo "  deployment.json → deployments/active-deployment.json + frontend/lib/contracts/"
+cp "$DEPLOY_FILE" "$REPO_ROOT/deployments/active-deployment.json"
+cp "$DEPLOY_FILE" "$REPO_ROOT/frontend/lib/contracts/deployment.json"
+echo "  $(basename "$DEPLOY_FILE") → deployments/active-deployment.json + frontend/lib/contracts/"
 
 # 3. Copy morpho-deployment.json → two locations
 cp "$ENV_DIR/morpho-deployment.json" "$REPO_ROOT/deployments/morpho-e2e.json"

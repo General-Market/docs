@@ -158,15 +158,37 @@ for key, old, new, script in changes:
 print(f"\n  Updated {len(changes)} address(es) in {deployment_file}")
 PYEOF
 
-# ── Propagate to all destinations ──
-echo -e "${CYAN}Propagating...${NC}"
+# ── Merge into env-scoped active-deployment.json (preserves sourceVaults/whitelistedVaults) ──
+ACTIVE_FILE="envs/$ENV_NAME/active-deployment.json"
+if [[ -f "$ACTIVE_FILE" ]]; then
+  python3 - "$DEPLOYMENT_FILE" "$ACTIVE_FILE" <<'PYEOF'
+import json, sys
+src = json.load(open(sys.argv[1]))           # patched deployment.json (contracts only)
+dst = json.load(open(sys.argv[2]))           # active-deployment.json (has sourceVaults too)
+# Overlay contracts. Keep any keys that exist only in dst (e.g. Vision_v3, VisionReconciler).
+dst_contracts = dst.get("contracts", {})
+for k, v in src.get("contracts", {}).items():
+    dst_contracts[k] = v
+dst["contracts"] = dst_contracts
+# Carry forward top-level scalars from src (chainId, settlementChainId, timestamp, deployer).
+for k in ("chainId", "settlementChainId", "timestamp", "deployer", "deployBlock", "accounts"):
+    if k in src:
+        dst[k] = src[k]
+json.dump(dst, open(sys.argv[2], "w"), indent=2)
+print(f"  Merged contract patch into {sys.argv[2]}")
+PYEOF
+  PROPAGATE_FILE="$ACTIVE_FILE"
+else
+  PROPAGATE_FILE="$DEPLOYMENT_FILE"
+fi
 
-# Copy to deployments/active-deployment.json
-cp "$DEPLOYMENT_FILE" deployments/active-deployment.json
+# ── Propagate to all destinations ──
+echo -e "${CYAN}Propagating from $(basename "$PROPAGATE_FILE")...${NC}"
+
+cp "$PROPAGATE_FILE" deployments/active-deployment.json
 echo "  → deployments/active-deployment.json"
 
-# Copy to frontend
-cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+cp "$PROPAGATE_FILE" frontend/lib/contracts/deployment.json
 echo "  → frontend/lib/contracts/deployment.json"
 
 echo -e "${GREEN}Done.${NC}"

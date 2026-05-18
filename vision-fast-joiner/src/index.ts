@@ -48,8 +48,18 @@ if (!PK) {
 
 const deployment = JSON.parse(readFileSync(DEPLOYMENT_JSON, 'utf8')) as {
   contracts: { Vision: string; L3_WUSDC?: string; USDC?: string }
-  sourceVaults: Record<string, string[]>
+  sourceVaults?: Record<string, string[]>
   chainId: number
+}
+
+if (!deployment.sourceVaults || Object.keys(deployment.sourceVaults).length === 0) {
+  console.error(
+    `[fatal] ${DEPLOYMENT_JSON} has no sourceVaults map. ` +
+      `This file is the stripped envs/<env>/deployment.json instead of active-deployment.json. ` +
+      `Re-run ./switch-env.sh <env> from the repo root to repopulate it, ` +
+      `or point DEPLOYMENT_JSON at envs/<env>/active-deployment.json.`,
+  )
+  process.exit(1)
 }
 
 const VISION = getAddress(deployment.contracts.Vision)
