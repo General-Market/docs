@@ -1,4 +1,5 @@
 import { AssetCard } from './AssetCard'
+import { ComingSoonCard } from './ComingSoonCard'
 import { HeroCarousel } from './HeroCarousel'
 import { ScrollRow } from './ScrollRow'
 import { Reveal } from '@/components/ui/Reveal'
@@ -22,40 +23,45 @@ const TOP_MARKETS_IDS = [
   'polymarket',
 ] as const
 
-// Coming soon: four curated surfaces, rendered as a normal grid of cards.
-// Same visual language as Top markets — no fabricated sparklines.
-const SOON_FEEDS: SourceFeed[] = [
+// Coming soon: curated surfaces, rendered as teaser cards. Non-clickable,
+// placeholder sparklines — they don't route anywhere and don't lie about data.
+type SoonFeed = {
+  sourceId: string
+  displayName: string
+  meta: string
+  assetName: string
+}
+
+const SOON_FEEDS: SoonFeed[] = [
   {
     sourceId: '4chan',
     displayName: '4chan',
     meta: 'Boards · post velocity · thread heat',
     assetName: '/biz/ posts per hour',
-    coverage: 'soon',
-    series: [],
   },
   {
     sourceId: 'rust',
     displayName: 'Rust',
     meta: 'crates.io · downloads · releases',
     assetName: 'tokio downloads · 24h',
-    coverage: 'soon',
-    series: [],
   },
   {
     sourceId: 'binance-options',
     displayName: 'Binance Options',
     meta: 'BTC · ETH · open interest',
     assetName: 'BTC option open interest',
-    coverage: 'soon',
-    series: [],
+  },
+  {
+    sourceId: 'binance-funding',
+    displayName: 'Binance Funding',
+    meta: 'Perp funding rate · 8h',
+    assetName: 'BTC perp funding rate',
   },
   {
     sourceId: 'cloudflare',
     displayName: 'Cloudflare',
     meta: 'Radar · global traffic · outages',
     assetName: 'Worldwide traffic index',
-    coverage: 'soon',
-    series: [],
   },
 ]
 
@@ -187,20 +193,17 @@ export function HomeDashboard({
       {soonFeeds.length > 0 && (
         <section className="mt-6 mb-4">
           <SectionHeader title="Coming soon" href="/explorer" />
-          <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <ScrollRow>
             {soonFeeds.map((feed) => (
-              <AssetCard
+              <ComingSoonCard
                 key={feed.sourceId}
                 sourceId={feed.sourceId}
                 displayName={feed.displayName}
                 meta={feed.meta}
-                series={feed.series}
                 assetName={feed.assetName}
-                assetValue={feed.assetValue}
-                coverage={feed.coverage}
               />
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
     </div>

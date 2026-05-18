@@ -186,7 +186,7 @@ function Brand() {
         General
       </span>
       <span
-        className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold"
+        className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold whitespace-nowrap shrink-0"
         style={{
           fontSize: 10,
           letterSpacing: '0.04em',

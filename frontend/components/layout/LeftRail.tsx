@@ -128,7 +128,7 @@ export function LeftRail() {
       <div className="flex-1" />
 
       <div
-        className="px-3 py-2 text-[11px]"
+        className="px-3 py-2 text-[11px] whitespace-nowrap"
         style={{
           color: 'var(--apple-text-secondary)',
           letterSpacing: '0.04em',

@@ -138,6 +138,7 @@ export function IndexSidebar() {
           letterSpacing: '0.04em',
           color: 'var(--apple-text-secondary)',
           textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
         }}
       >
         Anti-Cheat · Beta
