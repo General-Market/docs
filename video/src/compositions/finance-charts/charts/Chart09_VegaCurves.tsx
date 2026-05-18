@@ -71,8 +71,8 @@ function buildSeries(): Series[] {
   for (let s = 0; s < SNAPSHOTS; s++) {
     // t in [0..1] where 1 = near expiry (narrower, higher peak)
     const t = s / (SNAPSHOTS - 1);
-    const width = 26_000 - 14_000 * t;
-    const peak = 50 + 18 * t;
+    const width = 22_000 - 13_000 * t;
+    const peak = 60 + 25 * t;
 
     const longVals = vegaCurve(longStrike, XS, width, peak);
     const shortVals = vegaCurve(shortStrike, XS, width, -peak);
@@ -88,10 +88,10 @@ function buildSeries(): Series[] {
   // Bold combo overlay — average snapshot.
   const boldCombo = {
     d: pathFromValues(
-      comboFamilyValuesAt(longStrike, shortStrike, 18_000, 60),
+      comboFamilyValuesAt(longStrike, shortStrike, 11_000, 95),
     ),
     opacity: 1,
-    strokeWidth: 2.2,
+    strokeWidth: 2.4,
   };
   comboFamily.push(boldCombo);
 
