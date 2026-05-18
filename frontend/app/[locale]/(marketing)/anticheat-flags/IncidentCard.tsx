@@ -6,7 +6,7 @@ const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
 const TERTIARY = 'var(--apple-text-tertiary)'
 
-export function IncidentCard({ incident, delay = 0 }: { incident: Incident; delay?: number }) {
+export function IncidentCard({ incident, delay = 0, loop = false }: { incident: Incident; delay?: number; loop?: boolean }) {
   const tone = incident.amountTone ?? 'loss'
   const amountColor =
     tone === 'loss' ? 'var(--apple-accent)' :
@@ -65,7 +65,7 @@ export function IncidentCard({ incident, delay = 0 }: { incident: Incident; dela
           {incident.headline}
         </h3>
 
-        <Diagram mechanism={incident.mechanism} {...incident.chart} />
+        <Diagram mechanism={incident.mechanism} loop={loop} {...incident.chart} />
 
         <p
           style={{

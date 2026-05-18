@@ -1,283 +1,529 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
 import type { ChartProps, Mechanism } from '../types'
+import './diagram.css'
 
-/*
-  Four diagram templates. One big idea per card, hairline strokes, generous
-  whitespace, single accent for the "loss" line. No looping animation.
-  Entrance fade is handled by the IncidentCard's Reveal wrapper.
-*/
+type Variant = 'loop' | 'reveal'
 
-const ACCENT = '#0071e3'
-const LINE = 'rgba(0,0,0,0.08)'
-const TEXT = '#1d1d1f'
-const SECONDARY = '#6e6e73'
-const TERTIARY = '#86868b'
-
-const FRAME: React.CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  aspectRatio: '16 / 9',
-  background: '#fbfbfd',
-  border: `1px solid ${LINE}`,
-  borderRadius: 12,
-  padding: 24,
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  overflow: 'hidden',
+function useInViewOnce<T extends Element>(): [React.RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setSeen(true)
+            io.disconnect()
+            break
+          }
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.18 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return [ref, seen]
 }
 
-const LABEL: React.CSSProperties = {
-  fontFamily: 'var(--apple-font-text)',
-  fontSize: 11,
-  letterSpacing: '0.011em',
-  fontWeight: 500,
-  color: TERTIARY,
-  textTransform: 'uppercase',
+function Frame({
+  variant,
+  children,
+}: {
+  variant: Variant
+  children: React.ReactNode
+}) {
+  const [ref, inView] = useInViewOnce<HTMLDivElement>()
+  const cls =
+    variant === 'loop' ? 'acd-frame is-loop' : `acd-frame ${inView ? 'is-in' : ''}`
+  return (
+    <div ref={ref} className={cls}>
+      {children}
+    </div>
+  )
 }
 
-const HEADLINE: React.CSSProperties = {
-  fontFamily: 'var(--apple-font-display)',
-  fontSize: 'clamp(28px, 5.5vw, 44px)',
-  letterSpacing: '-0.022em',
-  fontWeight: 600,
-  color: TEXT,
-  lineHeight: 1.05,
-  fontVariantNumeric: 'tabular-nums',
+/* Pointer callout — hairline + label, positioned in SVG user space. */
+function Callout({
+  x1, y1, x2, y2, label,
+  align = 'start',
+}: {
+  x1: number; y1: number; x2: number; y2: number
+  label: string
+  align?: 'start' | 'middle' | 'end'
+}) {
+  return (
+    <g className="acd-callout">
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(0,0,0,0.25)" strokeWidth="0.75" strokeDasharray="2 2" />
+      <circle cx={x1} cy={y1} r="1.5" fill="rgba(0,0,0,0.45)" />
+      <text
+        x={x2}
+        y={y2}
+        textAnchor={align}
+        dominantBaseline="middle"
+        fontFamily="var(--apple-font-text)"
+        fontSize="8.5"
+        fontWeight={600}
+        letterSpacing="0.01em"
+        fill="#1d1d1f"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {label}
+      </text>
+    </g>
+  )
 }
 
-const CAPTION: React.CSSProperties = {
-  fontFamily: 'var(--apple-font-text)',
-  fontSize: 12,
-  letterSpacing: '-0.005em',
-  color: SECONDARY,
-  lineHeight: 1.35,
+/* Grid: a single 16:9 chart viewport with subtle horizontal gridlines
+   and tick marks across the bottom. Used inside all line diagrams. */
+function GridBackdrop({ ticks }: { ticks?: string[] }) {
+  return (
+    <g className="acd-fade">
+      {/* horizontal gridlines */}
+      <line x1="0" y1="20" x2="400" y2="20" stroke="var(--acd-grid)" strokeWidth="0.75" />
+      <line x1="0" y1="55" x2="400" y2="55" stroke="var(--acd-grid)" strokeWidth="0.75" strokeDasharray="2 3" />
+      <line x1="0" y1="90" x2="400" y2="90" stroke="var(--acd-grid)" strokeWidth="0.75" />
+      {/* time ticks */}
+      {ticks && ticks.map((t, i) => {
+        const x = (i / (ticks.length - 1)) * 400
+        return (
+          <g key={i}>
+            <line x1={x} y1="90" x2={x} y2="93" stroke="var(--acd-grid-dash)" strokeWidth="0.75" />
+            <text
+              x={x}
+              y="100"
+              textAnchor={i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle'}
+              fontFamily="var(--apple-font-text)"
+              fontSize="7"
+              fill="var(--acd-text-tertiary)"
+              letterSpacing="0.04em"
+              style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
+            >
+              {t}
+            </text>
+          </g>
+        )
+      })}
+    </g>
+  )
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   1. WICK — single line that spikes, used for price-wick, rug-cliff,
-   outage-cascade, listing-dump, insider-runup.
+   1. WICK — smooth Bezier baseline + sharp accent anomaly + halo + callout.
+   Used for: spike, cliff, runup, outage, dump.
    ────────────────────────────────────────────────────────────────────────── */
-function WickDiagram({ loss, extracted, recipient, pctMove, kind }: ChartProps & { kind: 'spike' | 'cliff' | 'runup' | 'outage' | 'dump' }) {
-  // Each kind shapes the polyline differently. All share the same chrome.
-  let points: string
-  let accentIdx: number
-  let yAccent: number
-  let xAccent: number
-  switch (kind) {
-    case 'spike':
-      // Flat then sudden vertical wick down and back up
-      points = '0,60 60,60 120,62 180,60 220,60 230,58 240,28 245,90 252,28 260,60 320,60 400,60'
-      xAccent = 245; yAccent = 90
-      accentIdx = 4
-      break
-    case 'cliff':
-      // Parabolic up then vertical drop
-      points = '0,80 40,78 80,72 120,64 160,52 200,38 240,22 270,12 280,12 282,86 320,86 400,86'
-      xAccent = 282; yAccent = 86
-      accentIdx = 9
-      break
-    case 'runup':
-      // Quiet then ramp up before a marked event
-      points = '0,68 60,67 120,66 180,64 220,58 260,46 300,30 320,22 340,20 400,20'
-      xAccent = 320; yAccent = 22
-      accentIdx = 7
-      break
-    case 'outage':
-      // Plateau, gap (offline), step down on resume
-      points = '0,40 80,40 140,42 200,42 200,42 260,42 260,72 320,72 400,72'
-      xAccent = 260; yAccent = 72
-      accentIdx = 6
-      break
-    case 'dump':
-      // Spike up at listing, slow grind down
-      points = '0,84 30,82 60,30 90,28 120,34 160,44 220,56 280,68 340,76 400,82'
-      xAccent = 60; yAccent = 30
-      accentIdx = 2
-      break
-  }
-  void accentIdx
 
+type WickKind = 'spike' | 'cliff' | 'runup' | 'outage' | 'dump'
+
+interface WickGeometry {
+  baseline: string
+  baselineLen: number
+  accent: string
+  accentLen: number
+  accentPt: { x: number; y: number }
+  callout: { x1: number; y1: number; x2: number; y2: number; align?: 'start' | 'middle' | 'end' }
+  ticks: string[]
+}
+
+const WICK_GEOM: Record<WickKind, WickGeometry> = {
+  // Flat baseline, sudden vertical wick down and back up.
+  spike: {
+    baseline: 'M0 50 C 40 49, 80 51, 120 50 S 200 49, 240 50 L 248 50 M 268 50 C 300 50, 340 49, 400 50',
+    baselineLen: 460,
+    accent: 'M 248 50 L 256 84 L 264 50 L 268 50',
+    accentLen: 80,
+    accentPt: { x: 256, y: 84 },
+    callout: { x1: 256, y1: 84, x2: 300, y2: 84, align: 'start' },
+    ticks: ['10:42', '10:43', '10:44', '10:45'],
+  },
+  // Slow rise, then vertical drop, flat low.
+  cliff: {
+    baseline: 'M 0 80 C 40 78, 80 73, 120 65 S 200 42, 240 28 S 290 16, 300 14',
+    baselineLen: 360,
+    accent: 'M 300 14 L 300 86 L 400 86',
+    accentLen: 180,
+    accentPt: { x: 300, y: 50 },
+    callout: { x1: 320, y1: 86, x2: 360, y2: 78, align: 'end' },
+    ticks: ['DAY 1', 'DAY 60', 'DAY 90', 'DAY 91'],
+  },
+  // Long flat, ramp up before public event.
+  runup: {
+    baseline: 'M 0 70 C 60 70, 120 70, 180 70 S 220 69, 240 68',
+    baselineLen: 260,
+    accent: 'M 240 68 C 280 56, 320 32, 360 16 S 390 10, 400 9',
+    accentLen: 200,
+    accentPt: { x: 400, y: 9 },
+    callout: { x1: 320, y1: 32, x2: 280, y2: 18, align: 'end' },
+    ticks: ['T−14d', 'T−7d', 'T−1d', 'EVENT'],
+  },
+  // Plateau, gap (offline period dashed), step down on resume.
+  outage: {
+    baseline: 'M 0 36 C 60 36, 120 37, 180 36 L 190 36',
+    baselineLen: 200,
+    accent: 'M 210 80 L 400 80',
+    accentLen: 190,
+    accentPt: { x: 210, y: 80 },
+    callout: { x1: 200, y1: 58, x2: 235, y2: 50, align: 'start' },
+    ticks: ['ONLINE', 'STALL', 'RESUME', '+1h'],
+  },
+  // Spike up at listing, slow decay.
+  dump: {
+    baseline: 'M 0 86 L 30 84 L 50 30',
+    baselineLen: 130,
+    accent: 'M 50 30 C 90 42, 160 58, 240 70 S 360 80, 400 84',
+    accentLen: 380,
+    accentPt: { x: 50, y: 30 },
+    callout: { x1: 50, y1: 30, x2: 95, y2: 18, align: 'start' },
+    ticks: ['LIST', '+5m', '+1h', '+1d'],
+  },
+}
+
+function WickDiagram({
+  loss,
+  extracted,
+  recipient,
+  pctMove,
+  kind,
+  variant,
+}: ChartProps & { kind: WickKind; variant: Variant }) {
+  const g = WICK_GEOM[kind]
+  const calloutLabel = pctMove ?? extracted ?? loss ?? ''
   return (
-    <div style={FRAME}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={LABEL}>{recipient ?? 'price'}</div>
-        {pctMove && <div style={{ ...LABEL, color: TEXT }}>{pctMove}</div>}
+    <Frame variant={variant}>
+      <div className="acd-row">
+        <span className="acd-eyebrow">{kindLabel(kind)}</span>
+        {pctMove && <span className="acd-eyebrow is-emphasised">{pctMove}</span>}
       </div>
 
-      <div style={{ position: 'relative', flex: 1, marginTop: 8, marginBottom: 8 }}>
-        <svg viewBox="0 0 400 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }} aria-hidden>
-          {/* baseline */}
-          <line x1="0" y1="60" x2="400" y2="60" stroke={LINE} strokeWidth="1" strokeDasharray="2 4" />
-          {/* main trace */}
-          <polyline points={points} fill="none" stroke={SECONDARY} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <div className="acd-canvas">
+        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
+          <defs>
+            <radialGradient id={`halo-${kind}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="var(--acd-accent)" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="var(--acd-accent)" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          <GridBackdrop ticks={g.ticks} />
+
+          {/* baseline trace */}
+          <path
+            d={g.baseline}
+            fill="none"
+            stroke="var(--acd-stroke)"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="acd-draw"
+            style={{ ['--len' as never]: g.baselineLen }}
+          />
+
+          {/* accent halo */}
+          <circle
+            cx={g.accentPt.x}
+            cy={g.accentPt.y}
+            r="12"
+            fill={`url(#halo-${kind})`}
+            className="acd-halo"
+          />
+
+          {/* accent anomaly stroke */}
+          <path
+            d={g.accent}
+            fill="none"
+            stroke="var(--acd-accent)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="acd-accent-stroke"
+            style={{ ['--len' as never]: g.accentLen }}
+          />
+
           {/* accent point */}
-          <circle cx={xAccent} cy={yAccent} r="3" fill={ACCENT} />
+          <circle
+            cx={g.accentPt.x}
+            cy={g.accentPt.y}
+            r="2.5"
+            fill="var(--acd-accent)"
+            className="acd-accent-pt"
+            style={{ ['--ox' as never]: `${g.accentPt.x}px`, ['--oy' as never]: `${g.accentPt.y}px` }}
+          />
+
+          {/* callout */}
+          {calloutLabel && (
+            <Callout
+              x1={g.callout.x1}
+              y1={g.callout.y1}
+              x2={g.callout.x2}
+              y2={g.callout.y2}
+              align={g.callout.align}
+              label={calloutLabel}
+            />
+          )}
         </svg>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
-        <div>
-          <div style={HEADLINE}>{extracted ?? '—'}</div>
-          {loss && <div style={{ ...CAPTION, marginTop: 4 }}>{loss}</div>}
+      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
+        <div className="acd-fade">
+          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
+          {recipient && (
+            <div className="acd-caption" style={{ marginTop: 4 }}>
+              kept by {recipient}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </Frame>
   )
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   2. DRAIN — single big number with a bar that empties.
-   hack-drain, withdrawal-freeze, button-freeze, backdoor.
-   ────────────────────────────────────────────────────────────────────────── */
-function DrainDiagram({ loss, extracted, recipient }: ChartProps) {
-  return (
-    <div style={FRAME}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={LABEL}>balance</div>
-        <div style={{ ...LABEL, color: TEXT }}>{recipient ?? ''}</div>
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, margin: '8px 0' }}>
-        <div style={HEADLINE}>{extracted ?? '—'}</div>
-        <div style={{ position: 'relative', height: 4, width: '100%', background: LINE, borderRadius: 2, overflow: 'hidden' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              right: '92%',
-              background: ACCENT,
-              borderRadius: 2,
-            }}
-          />
-        </div>
-      </div>
-
-      {loss && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
-          <div style={CAPTION}>{loss}</div>
-          <div style={{ ...LABEL, color: TERTIARY }}>drained</div>
-        </div>
-      )}
-    </div>
-  )
+function kindLabel(k: WickKind): string {
+  switch (k) {
+    case 'spike': return 'price · stops cleared'
+    case 'cliff': return 'price · insiders out'
+    case 'runup': return 'price · ahead of public'
+    case 'outage': return 'price · engine offline'
+    case 'dump': return 'price · listing → grind'
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   3. CARVEOUT — before / after blocks, hairline divider, single accent
-   showing the truncated portion.
-   carveout, oracle-override, margin-doubled, socialized-loss, b-book-mirror.
+   2. DRAIN — stacked balance bars. Last bar collapses to a stub.
+   Used for: hack-drain, withdrawal-freeze, button-freeze, backdoor.
    ────────────────────────────────────────────────────────────────────────── */
-function CarveoutDiagram({ loss, extracted, recipient, pctMove }: ChartProps) {
+
+function DrainDiagram({
+  loss,
+  extracted,
+  recipient,
+  variant,
+}: ChartProps & { variant: Variant }) {
+  // Six bars: gentle decline then collapse on the last one.
+  // Heights are normalized to 0..100.
+  const bars = [88, 86, 84, 82, 80, 6]
+  const labels = ['T−5', 'T−4', 'T−3', 'T−2', 'T−1', 'NOW']
   return (
-    <div style={FRAME}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={LABEL}>payoff before</div>
-        <div style={LABEL}>after</div>
+    <Frame variant={variant}>
+      <div className="acd-row">
+        <span className="acd-eyebrow">hot wallet · balance</span>
+        {recipient && <span className="acd-eyebrow is-emphasised">→ {recipient}</span>}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16, margin: '12px 0' }}>
-        {/* before — full block */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          <svg viewBox="0 0 100 40" preserveAspectRatio="none" style={{ width: '100%', height: 60, display: 'block' }} aria-hidden>
-            <rect x="1" y="2" width="98" height="36" rx="2" fill="#fff" stroke={LINE} strokeWidth="1" />
-          </svg>
-          <div style={{ ...CAPTION, marginTop: 8, color: TEXT, fontWeight: 500 }}>
-            {pctMove ?? 'promise'}
+      <div className="acd-canvas">
+        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
+          <GridBackdrop ticks={labels} />
+          {/* the bars */}
+          {bars.map((h, i) => {
+            const x = 16 + i * 62
+            const w = 36
+            const yTop = 90 - h
+            const isLast = i === bars.length - 1
+            return (
+              <g key={i} className={`acd-bar ${isLast ? 'is-collapsed' : ''}`} style={{ transformBox: 'fill-box', transformOrigin: '50% 100%' }}>
+                <rect
+                  x={x}
+                  y={yTop}
+                  width={w}
+                  height={90 - yTop}
+                  rx="1.5"
+                  fill={isLast ? 'var(--acd-accent)' : 'var(--acd-stroke-soft)'}
+                  opacity={isLast ? 1 : 0.9}
+                />
+              </g>
+            )
+          })}
+          {/* callout pointing at the collapse */}
+          <g className="acd-callout">
+            <line x1="370" y1="86" x2="330" y2="60" stroke="rgba(0,0,0,0.25)" strokeWidth="0.75" strokeDasharray="2 2" />
+            <text
+              x="328"
+              y="56"
+              textAnchor="end"
+              fontFamily="var(--apple-font-text)"
+              fontSize="8.5"
+              fontWeight={600}
+              fill="#1d1d1f"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {loss ?? 'drained'}
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
+        <div className="acd-fade">
+          <div className="acd-headline acd-headline-accent">{extracted ?? loss ?? '—'}</div>
+          <div className="acd-caption" style={{ marginTop: 4 }}>
+            balance to zero in one block
           </div>
         </div>
-
-        {/* arrow */}
-        <div style={{ fontSize: 14, color: TERTIARY, fontFamily: 'var(--apple-font-text)' }}>→</div>
-
-        {/* after — truncated, accent showing the carved-off piece */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          <svg viewBox="0 0 100 40" preserveAspectRatio="none" style={{ width: '100%', height: 60, display: 'block' }} aria-hidden>
-            <rect x="1" y="2" width="34" height="36" rx="2" fill="#fff" stroke={LINE} strokeWidth="1" />
-            <rect x="36" y="2" width="63" height="36" rx="2" fill={ACCENT} fillOpacity="0.08" stroke={ACCENT} strokeWidth="1" strokeDasharray="2 3" />
-          </svg>
-          <div style={{ ...CAPTION, marginTop: 8, color: TEXT, fontWeight: 500 }}>
-            {extracted ?? loss ?? 'carved'}
-          </div>
-        </div>
       </div>
-
-      {recipient && (
-        <div style={{ ...LABEL, color: TERTIARY }}>kept by {recipient}</div>
-      )}
-    </div>
+    </Frame>
   )
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   4. FLOW — three nodes with arrows, showing value moving from user
-   to a recipient. compliance-fine, wash-trading.
+   3. CARVEOUT — promised payoff vs after-fineprint, accent shows the cut.
+   Used for: carveout, oracle-override, margin-doubled, socialized-loss, b-book-mirror.
    ────────────────────────────────────────────────────────────────────────── */
-function FlowDiagram({ loss, extracted, recipient }: ChartProps) {
-  return (
-    <div style={FRAME}>
-      <div style={LABEL}>flow</div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, margin: '12px 0', minHeight: 0 }}>
-        <Node title="user" subtitle={loss ?? '—'} tone="muted" />
-        <Arrow />
-        <Node title="venue" subtitle="" tone="muted" />
-        <Arrow />
-        <Node title={recipient ?? 'recipient'} subtitle={extracted ?? '—'} tone="accent" />
+function CarveoutDiagram({
+  loss,
+  extracted,
+  recipient,
+  pctMove,
+  variant,
+}: ChartProps & { variant: Variant }) {
+  // Two horizontal bars stacked. Top: promise (full). Bottom: actual + cut overlay.
+  return (
+    <Frame variant={variant}>
+      <div className="acd-row">
+        <span className="acd-eyebrow">payoff</span>
+        {pctMove && <span className="acd-eyebrow is-emphasised">{pctMove}</span>}
       </div>
 
-      <div style={{ ...LABEL, color: TERTIARY }}>{extracted ?? ''} → {recipient ?? ''}</div>
-    </div>
-  )
-}
+      <div className="acd-canvas">
+        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
+          <GridBackdrop />
 
-function Node({ title, subtitle, tone }: { title: string; subtitle: string; tone: 'muted' | 'accent' }) {
-  const borderColor = tone === 'accent' ? ACCENT : LINE
-  const titleColor = tone === 'accent' ? ACCENT : SECONDARY
-  return (
-    <div style={{
-      flex: 1,
-      minWidth: 0,
-      border: `1px solid ${borderColor}`,
-      borderRadius: 8,
-      padding: '8px 10px',
-      background: '#fff',
-      overflow: 'hidden',
-    }}>
-      <div style={{ ...LABEL, color: titleColor, fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {title}
+          {/* row labels */}
+          <text x="0" y="24" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>promised</text>
+          <text x="0" y="72" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>after</text>
+
+          {/* promised bar */}
+          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
+            <rect x="60" y="28" width="320" height="14" rx="2" fill="var(--acd-stroke-soft)" opacity="0.7" />
+          </g>
+
+          {/* after — kept portion */}
+          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
+            <rect x="60" y="60" width="96" height="14" rx="2" fill="var(--acd-stroke)" opacity="0.9" />
+          </g>
+
+          {/* after — carved portion (accent, hatched) */}
+          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
+            <defs>
+              <pattern id="carve-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--acd-accent)" strokeWidth="0.8" opacity="0.45" />
+              </pattern>
+            </defs>
+            <rect x="160" y="60" width="220" height="14" rx="2" fill="url(#carve-hatch)" stroke="var(--acd-accent)" strokeWidth="1" strokeDasharray="3 2" />
+          </g>
+
+          {/* tick from promised down to after-kept showing the cut */}
+          <g className="acd-callout">
+            <line x1="156" y1="42" x2="156" y2="60" stroke="var(--acd-accent)" strokeWidth="0.75" />
+            <line x1="380" y1="42" x2="380" y2="60" stroke="var(--acd-accent)" strokeWidth="0.75" />
+            <text
+              x="270"
+              y="54"
+              textAnchor="middle"
+              fontFamily="var(--apple-font-text)"
+              fontSize="8.5"
+              fontWeight={600}
+              fill="var(--acd-accent)"
+              style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+            >
+              carved by venue
+            </text>
+          </g>
+        </svg>
       </div>
-      {subtitle && (
-        <div style={{
-          fontFamily: 'var(--apple-font-display)',
-          fontSize: 14,
-          fontWeight: 600,
-          color: tone === 'accent' ? TEXT : SECONDARY,
-          letterSpacing: '-0.016em',
-          marginTop: 2,
-          fontVariantNumeric: 'tabular-nums',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {subtitle}
+
+      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
+        <div className="acd-fade">
+          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
+          {recipient && (
+            <div className="acd-caption" style={{ marginTop: 4 }}>
+              kept by {recipient}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </Frame>
   )
 }
 
-function Arrow() {
+/* ──────────────────────────────────────────────────────────────────────────
+   4. FLOW — user → venue → recipient, with values drifting along the path.
+   Used for: compliance-fine, wash-trading.
+   ────────────────────────────────────────────────────────────────────────── */
+
+function FlowDiagram({
+  loss,
+  extracted,
+  recipient,
+  variant,
+}: ChartProps & { variant: Variant }) {
   return (
-    <svg width="20" height="8" viewBox="0 0 20 8" style={{ flexShrink: 0 }} aria-hidden>
-      <line x1="0" y1="4" x2="16" y2="4" stroke={TERTIARY} strokeWidth="1" />
-      <path d="M14 1 L19 4 L14 7" fill="none" stroke={TERTIARY} strokeWidth="1" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <Frame variant={variant}>
+      <div className="acd-row">
+        <span className="acd-eyebrow">flow · user → recipient</span>
+        {extracted && <span className="acd-eyebrow is-emphasised">{extracted}</span>}
+      </div>
+
+      <div className="acd-canvas">
+        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
+          {/* spine */}
+          <line x1="40" y1="54" x2="360" y2="54" stroke="var(--acd-grid-dash)" strokeWidth="0.75" strokeDasharray="2 3" className="acd-fade" />
+
+          {/* user node */}
+          <g className="acd-fade">
+            <circle cx="40" cy="54" r="10" fill="#fff" stroke="var(--acd-stroke-soft)" strokeWidth="1" />
+            <text x="40" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={600} fill="var(--acd-text-secondary)" style={{ letterSpacing: '0.04em' }}>U</text>
+            <text x="40" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>user</text>
+            <text x="40" y="34" textAnchor="middle" fontFamily="var(--apple-font-display)" fontSize="10" fontWeight={600} fill="var(--acd-text)" style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.016em' }}>{loss ?? '—'}</text>
+          </g>
+
+          {/* venue node */}
+          <g className="acd-fade">
+            <rect x="180" y="42" width="40" height="24" rx="3" fill="#fff" stroke="var(--acd-stroke-soft)" strokeWidth="1" />
+            <text x="200" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={600} fill="var(--acd-text-secondary)" style={{ letterSpacing: '0.04em' }}>venue</text>
+            <text x="200" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>routing</text>
+          </g>
+
+          {/* recipient node */}
+          <g className="acd-fade">
+            <circle cx="360" cy="54" r="11" fill="var(--acd-accent-soft)" stroke="var(--acd-accent)" strokeWidth="1" />
+            <text x="360" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={700} fill="var(--acd-accent)" style={{ letterSpacing: '0.04em' }}>R</text>
+            <text x="360" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>{recipient ?? 'recipient'}</text>
+            <text x="360" y="34" textAnchor="middle" fontFamily="var(--apple-font-display)" fontSize="10" fontWeight={600} fill="var(--acd-accent)" style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.016em' }}>{extracted ?? '—'}</text>
+          </g>
+
+          {/* arrows: user → venue, venue → recipient */}
+          <g className="acd-accent-stroke" style={{ ['--len' as never]: 130 }}>
+            <line x1="52" y1="54" x2="174" y2="54" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M 170 51 L 178 54 L 170 57" fill="none" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+          <g className="acd-accent-stroke" style={{ ['--len' as never]: 130, animationDelay: '1.1s' }}>
+            <line x1="222" y1="54" x2="345" y2="54" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M 341 51 L 349 54 L 341 57" fill="none" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+        </svg>
+      </div>
+
+      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
+        <div className="acd-fade">
+          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
+          {recipient && (
+            <div className="acd-caption" style={{ marginTop: 4 }}>
+              to {recipient}
+            </div>
+          )}
+        </div>
+      </div>
+    </Frame>
   )
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
-const REGISTRY: Record<Mechanism, (p: ChartProps) => React.ReactElement> = {
+const REGISTRY: Record<Mechanism, (p: ChartProps & { variant: Variant }) => React.ReactElement> = {
   'price-wick':         (p) => <WickDiagram {...p} kind="spike" />,
   'rug-cliff':          (p) => <WickDiagram {...p} kind="cliff" />,
   'outage-cascade':     (p) => <WickDiagram {...p} kind="outage" />,
@@ -299,7 +545,11 @@ const REGISTRY: Record<Mechanism, (p: ChartProps) => React.ReactElement> = {
   'wash-trading':       (p) => <FlowDiagram {...p} />,
 }
 
-export function Diagram({ mechanism, ...props }: { mechanism: Mechanism } & ChartProps) {
+export function Diagram({
+  mechanism,
+  loop = false,
+  ...props
+}: { mechanism: Mechanism; loop?: boolean } & ChartProps) {
   const Component = REGISTRY[mechanism]
-  return Component(props)
+  return Component({ ...props, variant: loop ? 'loop' : 'reveal' })
 }
