@@ -2315,6 +2315,8 @@ impl BatchLifecycleManager {
                     "up_stake": up_stake.to_string(),
                     "down_stake": down_stake.to_string(),
                     "pct_change_bps": mr.pct_change_bps,
+                    "resolution_type": mr.resolution_type,
+                    "threshold_bps": mr.threshold_bps,
                 }),
             );
         }

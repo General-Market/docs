@@ -3285,6 +3285,8 @@ async fn asset_settlements(
             let up_stake = entry.get("up_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
             let down_stake = entry.get("down_stake").and_then(|v| v.as_str()).unwrap_or("0").to_string();
             let pct_change_bps = entry.get("pct_change_bps").and_then(|v| v.as_i64()).unwrap_or(0);
+            let threshold_bps = entry.get("threshold_bps").and_then(|v| v.as_i64()).unwrap_or(0);
+            let resolution_type = entry.get("resolution_type").and_then(|v| v.as_i64()).unwrap_or(0);
 
             // Per-player rollup: walk player_results.{player}.by_asset[*]
             // and emit only entries that match this asset.
@@ -3319,6 +3321,8 @@ async fn asset_settlements(
                 "upStake": up_stake,
                 "downStake": down_stake,
                 "pctChangeBps": pct_change_bps,
+                "thresholdBps": threshold_bps,
+                "resolutionType": resolution_type,
                 "players": players,
             })
         })

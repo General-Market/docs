@@ -138,6 +138,8 @@ mod tests {
                 start_price: 100.0,
                 end_price: 110.0,
                 pct_change_bps: 1000,
+                resolution_type: 0,
+                threshold_bps: 0,
                 player_results: vec![
                     PlayerMarketResult {
                         player: addr(1),
@@ -185,6 +187,8 @@ mod tests {
                 start_price: 100.0,
                 end_price: 110.0,
                 pct_change_bps: 1000,
+                resolution_type: 0,
+                threshold_bps: 0,
                 player_results: vec![
                     PlayerMarketResult {
                         player: addr(1),
@@ -290,6 +294,8 @@ mod tests {
                     start_price: 100.0,
                     end_price: 110.0,
                     pct_change_bps: 1000,
+                    resolution_type: 0,
+                    threshold_bps: 0,
                     player_results: vec![
                         PlayerMarketResult {
                             player: addr(1),
@@ -316,6 +322,8 @@ mod tests {
                     start_price: 100.0,
                     end_price: 90.0,
                     pct_change_bps: -1000,
+                    resolution_type: 0,
+                    threshold_bps: 0,
                     player_results: vec![
                         // P1: only player → all-same-side refund
                         PlayerMarketResult {
@@ -385,6 +393,8 @@ mod tests {
                 start_price: 100.0,
                 end_price: 110.0,
                 pct_change_bps: 1000,
+                resolution_type: 0,
+                threshold_bps: 0,
                 player_results: vec![
                     PlayerMarketResult {
                         player: addr(1),
@@ -450,6 +460,8 @@ mod tests {
                 start_price: 100.0,
                 end_price: 110.0,
                 pct_change_bps: 1000,
+                resolution_type: 0,
+                threshold_bps: 0,
                 player_results: vec![
                     // P1 UP: deposits 1 GM, matched 7_777_777 (the only opposing stake),
                     // wins 2x matched + remainder refund.

@@ -27,6 +27,11 @@ export interface AssetSettlement {
   upStake: string
   downStake: string
   pctChangeBps: number
+  /** Threshold in bps used to resolve this batch. Zero for binary up_0/down_0
+   *  markets, or for legacy rows from before the oracle persisted it. */
+  thresholdBps: number
+  /** 0 = unknown, 1 = up_x, 2 = down_x, 3 = flat_x, 4 = up_0, 5 = down_0, etc. */
+  resolutionType: number
   players: AssetSettlementPlayer[]
 }
 
@@ -57,6 +62,8 @@ export function useAssetSettlements(
         upStake: String(s.upStake ?? '0'),
         downStake: String(s.downStake ?? '0'),
         pctChangeBps: Number(s.pctChangeBps ?? 0),
+        thresholdBps: Number(s.thresholdBps ?? 0),
+        resolutionType: Number(s.resolutionType ?? 0),
         players: Array.isArray(s.players)
           ? s.players.map((p: any) => ({
               player: String(p.player ?? ''),

@@ -101,6 +101,11 @@ pub struct MarketResult {
     pub end_price: f64,
     /// Percent change in basis points (integer, deterministic).
     pub pct_change_bps: i64,
+    /// Resolution rule applied for this batch (e.g. up_x, down_x, flat_x, up_0).
+    /// 0 when the market was Cancelled with no config available.
+    pub resolution_type: u8,
+    /// Threshold (in bps) the resolver used for this batch. Reseeds per batch.
+    pub threshold_bps: u32,
     pub player_results: Vec<PlayerMarketResult>,
 }
 

@@ -161,6 +161,8 @@ impl TickResolver {
                         start_price: 0.0,
                         end_price: 0.0,
                         pct_change_bps: 0,
+                        resolution_type: mc.resolution_type,
+                        threshold_bps: mc.threshold_bps,
                         player_results: vec![],
                     });
                     continue;
@@ -186,6 +188,8 @@ impl TickResolver {
                     start_price: start_price as f64 / 1e8,
                     end_price: end_price as f64 / 1e8,
                     pct_change_bps: 0,
+                    resolution_type: mc.resolution_type,
+                    threshold_bps: mc.threshold_bps,
                     player_results: vec![],
                 });
                 continue;
@@ -339,6 +343,8 @@ impl TickResolver {
                 start_price: start_price as f64 / 1e8,
                 end_price: end_price as f64 / 1e8,
                 pct_change_bps,
+                resolution_type: mc.resolution_type,
+                threshold_bps: mc.threshold_bps,
                 player_results,
             });
         }

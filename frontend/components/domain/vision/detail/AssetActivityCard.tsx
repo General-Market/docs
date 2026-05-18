@@ -329,6 +329,16 @@ export function AssetActivityCard({
     return seriesValues.map(v => (v == null ? null : v / baseAsset))
   }, [seriesValues, baseAsset])
 
+  const maxBatchRatio = useMemo(() => {
+    let m = 0
+    for (const c of columns) {
+      const bps = c.batch.thresholdBps
+      if (bps > 0) m = Math.max(m, bps / 10000)
+    }
+    if (thresholdRatio != null) m = Math.max(m, thresholdRatio)
+    return m
+  }, [columns, thresholdRatio])
+
   const yMin = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
@@ -337,9 +347,9 @@ export function AssetActivityCard({
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
     const dataMin = all.length === 0 ? 0.95 : Math.min(...all, 1.0)
-    if (thresholdRatio == null) return dataMin
-    return Math.min(dataMin, 1.0 - thresholdRatio * 1.2)
-  }, [assetRatios, points, thresholdRatio])
+    if (maxBatchRatio <= 0) return dataMin
+    return Math.min(dataMin, 1.0 - maxBatchRatio * 1.2)
+  }, [assetRatios, points, maxBatchRatio])
   const yMax = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
@@ -348,9 +358,9 @@ export function AssetActivityCard({
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
     const dataMax = all.length === 0 ? 1.05 : Math.max(...all, 1.0)
-    if (thresholdRatio == null) return dataMax
-    return Math.max(dataMax, 1.0 + thresholdRatio * 1.2)
-  }, [assetRatios, points, thresholdRatio])
+    if (maxBatchRatio <= 0) return dataMax
+    return Math.max(dataMax, 1.0 + maxBatchRatio * 1.2)
+  }, [assetRatios, points, maxBatchRatio])
   const ySpan = Math.max(1e-12, yMax - yMin)
 
   const lineColor = useMemo(() => {
@@ -688,38 +698,47 @@ export function AssetActivityCard({
                   />
                 )
               })}
-              {/* Threshold tick on the *latest* settlement only. Older
-                  batches used their own thresholds — drawing one constant
-                  band across the chart would lie. Per-batch thresholds will
-                  land once the oracle payload carries them. */}
-              {thresholdRatio != null && columns.length > 0
-                ? (() => {
-                    const i = columns.length - 1
-                    const x = xForIdx(i)
-                    const yUp = yForRatio(1 + thresholdRatio)
-                    const yDn = yForRatio(1 - thresholdRatio)
-                    return (
-                      <g opacity={0.7}>
-                        <line
-                          x1={x - 7}
-                          x2={x + 7}
-                          y1={yUp}
-                          y2={yUp}
-                          stroke="rgba(52,199,89,0.75)"
-                          strokeWidth={1}
-                        />
-                        <line
-                          x1={x - 7}
-                          x2={x + 7}
-                          y1={yDn}
-                          y2={yDn}
-                          stroke="rgba(255,59,48,0.75)"
-                          strokeWidth={1}
-                        />
-                      </g>
-                    )
-                  })()
-                : null}
+              {/* Per-batch threshold ticks. Each batch carries its own band
+                  in the settlement payload — we draw both sides of the band
+                  as short ticks centered on the column. */}
+              {columns.map((c, i) => {
+                const bps = c.batch.thresholdBps
+                if (!bps || bps <= 0) return null
+                const ratio = bps / 10000
+                const x = xForIdx(i)
+                const yUp = yForRatio(1 + ratio)
+                const yDn = yForRatio(1 - ratio)
+                return (
+                  <g key={`tk-${c.batch.batchId}`}>
+                    <line
+                      x1={x - CELL_W / 2}
+                      x2={x + CELL_W / 2}
+                      y1={yUp}
+                      y2={yUp}
+                      stroke="rgb(52,199,89)"
+                      strokeOpacity={0.85}
+                      strokeWidth={1.25}
+                    />
+                    <line
+                      x1={x - CELL_W / 2}
+                      x2={x + CELL_W / 2}
+                      y1={yDn}
+                      y2={yDn}
+                      stroke="rgb(255,59,48)"
+                      strokeOpacity={0.85}
+                      strokeWidth={1.25}
+                    />
+                    <line
+                      x1={x}
+                      x2={x}
+                      y1={yUp}
+                      y2={yDn}
+                      stroke="rgba(0,0,0,0.10)"
+                      strokeDasharray="2 3"
+                    />
+                  </g>
+                )
+              })}
               {/* Baseline at ratio = 1.0 */}
               {baselineY != null ? (
                 <line
@@ -754,6 +773,13 @@ export function AssetActivityCard({
                     : c.batch.outcome === 'Down'
                     ? '#dc2626'
                     : '#94a3b8'
+                const bandLabel =
+                  c.batch.thresholdBps > 0
+                    ? `band ±${formatRulePct(c.batch.thresholdBps)}`
+                    : 'any move wins'
+                const moveLabel = `${
+                  c.batch.pctChangeBps >= 0 ? '+' : ''
+                }${(c.batch.pctChangeBps / 100).toFixed(2)}%`
                 return (
                   <circle
                     key={`dot-${c.batch.batchId}`}
@@ -767,7 +793,7 @@ export function AssetActivityCard({
                         isPrice ? '$' : ''
                       }${formatValue(v ?? 0, isPrice)}${
                         !isPrice && valueUnit ? ` ${valueUnit}` : ''
-                      }`}
+                      } · moved ${moveLabel} · ${bandLabel} → ${c.batch.outcome}`}
                     </title>
                   </circle>
                 )
@@ -1179,21 +1205,28 @@ function Header({
           display: 'flex',
           alignItems: 'center',
           gap: 14,
-          fontSize: 10,
-          color: 'var(--apple-text-tertiary)',
+          fontSize: 11,
+          color: 'var(--apple-text-secondary)',
           letterSpacing: 'var(--apple-track-loose)',
           textTransform: 'uppercase',
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         <LegendDot color="rgb(52,199,89)" label="price" />
         {thresholdLabel && !isBinary ? (
-          <span style={{ textTransform: 'none', letterSpacing: 0 }}>
-            Latest band <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>±{thresholdLabel}</span>
+          <span style={{ textTransform: 'none', letterSpacing: 0, color: 'var(--apple-text)' }}>
+            <span style={{ color: 'rgb(52,199,89)', fontWeight: 600 }}>━</span>
+            <span style={{ color: 'rgb(255,59,48)', fontWeight: 600 }}>━</span>{' '}
+            per-batch band
             <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
-            <span style={{ color: 'var(--apple-text-tertiary)' }}>reseeds each batch</span>
+            <span style={{ color: 'var(--apple-text-secondary)' }}>now ±{thresholdLabel}</span>
           </span>
         ) : null}
-        {showLegend ? <span>faded = lost · winner pays</span> : null}
+        {showLegend ? (
+          <span style={{ color: 'var(--apple-text-secondary)' }}>
+            faded = lost · winner pays
+          </span>
+        ) : null}
       </div>
     </header>
   )

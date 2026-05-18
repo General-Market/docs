@@ -127,52 +127,58 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
       <div
         style={{
           borderTop: '1px solid var(--apple-line)',
-          padding: '8px 16px',
+          padding: '10px 16px',
           display: 'flex',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 14,
+          gap: 18,
           fontFamily: 'var(--apple-font-text)',
-          fontSize: 'var(--apple-fs-12)',
-          letterSpacing: 0,
-          color: 'var(--apple-text-secondary)',
+          fontSize: 13,
+          lineHeight: 1.3,
+          letterSpacing: -0.005,
+          color: 'var(--apple-text)',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
           <span
             style={{
-              width: 5,
-              height: 5,
+              width: 6,
+              height: 6,
               borderRadius: 999,
               background: 'rgb(52,199,89)',
               display: 'inline-block',
+              boxShadow: '0 0 0 3px rgba(52,199,89,0.15)',
             }}
           />
-          <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>
+          <span style={{ fontWeight: 600 }}>
             {tickLabel ? `Settles every ${tickLabel}` : 'Settles in fixed batches'}
           </span>
         </span>
-        <span style={{ color: 'var(--apple-text-tertiary)' }}>
+        <span style={{ color: 'var(--apple-text-secondary)' }}>
           Each batch picks its own threshold — calibrated to recent volatility.
         </span>
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 14,
             marginLeft: 'auto',
-            color: 'var(--apple-text-tertiary)',
+            color: 'var(--apple-text)',
+            fontWeight: 500,
           }}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ color: 'rgb(52,199,89)' }}>▲</span> over the band
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'rgb(52,199,89)', fontSize: 14 }}>▲</span>
+            <span>over band</span>
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ color: 'rgb(255,59,48)' }}>▼</span> under it
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'rgb(255,59,48)', fontSize: 14 }}>▼</span>
+            <span>under band</span>
           </span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ opacity: 0.6 }}>─</span> inside it
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'var(--apple-text-secondary)', fontSize: 14 }}>─</span>
+            <span>inside band</span>
           </span>
         </span>
       </div>

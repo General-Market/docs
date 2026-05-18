@@ -229,32 +229,33 @@ function LatestBandPill({
     <div
       className="mt-3 inline-flex items-center"
       style={{
-        gap: 8,
-        padding: '5px 10px',
+        gap: 10,
+        padding: '6px 12px',
         borderRadius: 'var(--apple-r-sm)',
-        background: 'rgba(0,0,0,0.04)',
+        background: 'rgba(0,0,0,0.05)',
+        border: '1px solid rgba(0,0,0,0.06)',
         fontFamily: 'var(--apple-font-text)',
-        fontSize: 12,
+        fontSize: 13,
         letterSpacing: 0,
-        color: 'var(--apple-text-secondary)',
+        color: 'var(--apple-text)',
         fontVariantNumeric: 'tabular-nums',
       }}
     >
       <span
         style={{
           fontSize: 10,
-          fontWeight: 600,
+          fontWeight: 700,
           letterSpacing: 'var(--apple-track-loose)',
           textTransform: 'uppercase',
-          color: 'var(--apple-text-tertiary)',
+          color: 'var(--apple-text-secondary)',
         }}
       >
-        Last batch
+        Latest batch
       </span>
-      <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>
+      <span style={{ fontWeight: 600 }}>
         {binary ? 'any move wins' : `±${pctLabel} band`}
       </span>
-      <span style={{ color: 'var(--apple-text-tertiary)' }}>· reseeds next tick</span>
+      <span style={{ color: 'var(--apple-text-secondary)' }}>· reseeds next tick</span>
     </div>
   )
 }
