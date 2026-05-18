@@ -18,9 +18,13 @@ const MU = 0.76; // annualized drift
 const SIGMA = 0.44; // annualized vol
 const T_DAYS = 30;
 const T_YEARS = T_DAYS / 365;
-const STEPS = 30;
-const N_PATHS = 220;
+const STEPS = 60;
+const N_SIM = 3000;
 const PREMIUM = 2172;
+
+const PERCENTILES = [
+  0.005, 0.02, 0.05, 0.1, 0.18, 0.28, 0.4, 0.5, 0.6, 0.72, 0.82, 0.9, 0.95, 0.98, 0.995,
+];
 
 // ---- Layout ----
 const HUD = {
@@ -54,40 +58,80 @@ const yOfPrice = (p: number) =>
 
 const xOfStep = (s: number) => (s / STEPS) * VIZ.width;
 
-type Path = {
+type Band = {
   d: string;
-  terminal: number;
-  pnl: number;
+  midPrice: number;
+  // 0 at the outer edges, 1 at the central percentile pair — controls opacity
+  centrality: number;
 };
 
-function buildPaths(): Path[] {
+type Sim = {
+  bands: Band[];
+  median: string;
+  terminals: number[];
+};
+
+function buildSim(): Sim {
   const rng = mulberry32(SEED);
   const dt = T_YEARS / STEPS;
   const drift = (MU - 0.5 * SIGMA * SIGMA) * dt;
   const diff = SIGMA * Math.sqrt(dt);
-  const paths: Path[] = [];
-  for (let p = 0; p < N_PATHS; p++) {
+
+  const priceAtStep: number[][] = [];
+  for (let s = 0; s <= STEPS; s++) priceAtStep.push([]);
+  const terminals: number[] = [];
+
+  for (let p = 0; p < N_SIM; p++) {
     let price = SPOT;
-    let d = `M${xOfStep(0).toFixed(2)},${yOfPrice(price).toFixed(2)} `;
+    priceAtStep[0].push(price);
     for (let s = 1; s <= STEPS; s++) {
       price = price * Math.exp(drift + diff * gaussian(rng, 0, 1));
-      d += `L${xOfStep(s).toFixed(2)},${yOfPrice(price).toFixed(2)} `;
+      priceAtStep[s].push(price);
     }
-    const payoff = Math.max(0, price - STRIKE);
-    const pnl = payoff - PREMIUM;
-    paths.push({ d, terminal: price, pnl });
+    terminals.push(price);
   }
-  return paths;
+  for (let s = 0; s <= STEPS; s++) priceAtStep[s].sort((a, b) => a - b);
+
+  const lines: number[][] = PERCENTILES.map((pct) =>
+    priceAtStep.map((arr) => arr[Math.floor(pct * (arr.length - 1))]),
+  );
+
+  const bands: Band[] = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    const lo = lines[i];
+    const hi = lines[i + 1];
+    let d = "";
+    for (let s = 0; s <= STEPS; s++) {
+      d += `${s === 0 ? "M" : "L"}${xOfStep(s).toFixed(2)},${yOfPrice(lo[s]).toFixed(2)} `;
+    }
+    for (let s = STEPS; s >= 0; s--) {
+      d += `L${xOfStep(s).toFixed(2)},${yOfPrice(hi[s]).toFixed(2)} `;
+    }
+    d += "Z";
+    const midPrice = (lo[STEPS] + hi[STEPS]) / 2;
+    const midIdx = (lines.length - 1) / 2;
+    const centrality = 1 - Math.abs(i + 0.5 - midIdx) / midIdx;
+    bands.push({ d, midPrice, centrality });
+  }
+
+  // median line as its own thin path
+  const medianLine = lines[Math.floor(lines.length / 2)];
+  let med = "";
+  for (let s = 0; s <= STEPS; s++) {
+    med += `${s === 0 ? "M" : "L"}${xOfStep(s).toFixed(2)},${yOfPrice(medianLine[s]).toFixed(2)} `;
+  }
+
+  return { bands, median: med, terminals };
 }
 
 const N_BINS = 28;
 
-function buildHistogram(paths: Path[]) {
+function buildHistogram(terminals: number[]) {
   const bins = new Array(N_BINS).fill(0);
-  for (const p of paths) {
-    const t = (p.terminal - PRICE_MIN) / (PRICE_MAX - PRICE_MIN);
-    if (t < 0 || t > 1) continue;
-    const b = Math.min(N_BINS - 1, Math.floor(t * N_BINS));
+  for (const t of terminals) {
+    const tt = (t - PRICE_MIN) / (PRICE_MAX - PRICE_MIN);
+    if (tt < 0 || tt > 1) continue;
+    const b = Math.min(N_BINS - 1, Math.floor(tt * N_BINS));
     bins[b] += 1;
   }
   const max = Math.max(1, ...bins);
@@ -162,10 +206,10 @@ export const Chart08: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const paths = React.useMemo(buildPaths, []);
+  const sim = React.useMemo(buildSim, []);
   const { bins, max: binMax } = React.useMemo(
-    () => buildHistogram(paths),
-    [paths],
+    () => buildHistogram(sim.terminals),
+    [sim],
   );
 
   const maxAbsPnl = PREMIUM * 3;
@@ -451,16 +495,28 @@ export const Chart08: React.FC = () => {
           </defs>
 
           <g clipPath="url(#chart08-viz-clip)">
-            {paths.map((p, i) => (
-              <path
-                key={i}
-                d={p.d}
-                stroke={pnlToColor(p.pnl, maxAbsPnl)}
-                strokeWidth={1}
-                strokeOpacity={0.7}
-                fill="none"
-              />
-            ))}
+            {sim.bands.map((b, i) => {
+              const payoff = Math.max(0, b.midPrice - STRIKE);
+              const bandPnl = payoff - PREMIUM;
+              const color = pnlToColor(bandPnl, maxAbsPnl);
+              const alpha = 0.08 + 0.34 * b.centrality;
+              return (
+                <path
+                  key={i}
+                  d={b.d}
+                  fill={color}
+                  fillOpacity={alpha}
+                  stroke="none"
+                />
+              );
+            })}
+            <path
+              d={sim.median}
+              stroke={C.cream}
+              strokeOpacity={0.55}
+              strokeWidth={1.4}
+              fill="none"
+            />
           </g>
 
           {/* origin pin */}

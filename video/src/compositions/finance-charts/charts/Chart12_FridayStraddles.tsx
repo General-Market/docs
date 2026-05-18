@@ -248,13 +248,14 @@ export const Chart12: React.FC = () => {
               position: "absolute",
               left: PLOT.left + xPos(i),
               top: PLOT.top + PLOT.height + 12,
-              transform: "translate(-50%, 0) rotate(-65deg)",
+              transform: "translate(0, 0) rotate(-60deg)",
               transformOrigin: "left top",
-              color: C.inkDim,
+              color: C.ink,
               fontFamily: FONT_TEXT,
-              fontSize: 9.5,
+              fontSize: 10.5,
+              fontWeight: 500,
               whiteSpace: "nowrap",
-              letterSpacing: "0.01em",
+              letterSpacing: "0.02em",
             }}
           >
             {b.label}
@@ -274,10 +275,10 @@ export const Chart12: React.FC = () => {
         />
 
         <VerticalColorBar
-          x={1700}
-          y={PLOT.top + 60}
-          width={14}
-          height={PLOT.height - 140}
+          x={1720}
+          y={PLOT.top + 30}
+          width={9}
+          height={220}
           title="short_pnl"
           stops={cbStops}
           ticks={[

@@ -165,11 +165,11 @@ export const Chart01: React.FC = () => {
                 key={i}
                 cx={cx}
                 cy={cy}
-                r={2.5}
+                r={5}
                 fill={color}
-                fillOpacity={0.85 * a}
+                fillOpacity={0.9 * a}
                 stroke={C.bg}
-                strokeWidth={0.5}
+                strokeWidth={0.6}
               />
             );
           })}

@@ -82,10 +82,10 @@ function barColor(daily: number, isShock: boolean): string {
   if (isShock) return C.redDeep;
   if (daily > 0) {
     const t = Math.min(1, daily / 600);
-    return `rgba(91, 155, 213, ${0.25 + t * 0.35})`;
+    return `rgba(91, 155, 213, ${0.55 + t * 0.4})`;
   }
   const t = Math.min(1, Math.abs(daily) / 600);
-  return `rgba(216, 80, 80, ${0.3 + t * 0.4})`;
+  return `rgba(216, 80, 80, ${0.6 + t * 0.35})`;
 }
 
 export const Chart03: React.FC = () => {

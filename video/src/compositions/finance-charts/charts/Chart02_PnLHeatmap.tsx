@@ -22,7 +22,7 @@ const GRID = {
   height: 660,
 };
 
-const GAP = 2;
+const GAP = 0.5;
 const CELL_W = (GRID.width - GAP * (HOURS.length - 1)) / HOURS.length;
 const CELL_H = (GRID.height - GAP * (DAYS.length - 1)) / DAYS.length;
 
@@ -102,7 +102,7 @@ export const Chart02: React.FC = () => {
             width={CELL_W}
             height={CELL_H}
             fill={C.bg}
-            stroke="rgba(255,255,255,0.04)"
+            stroke="rgba(0,0,0,0.55)"
             strokeWidth={1}
           />,
         );
@@ -117,7 +117,7 @@ export const Chart02: React.FC = () => {
           height={CELL_H}
           fill={colorForPnl(v)}
           fillOpacity={a}
-          stroke="rgba(255,255,255,0.04)"
+          stroke="rgba(0,0,0,0.55)"
           strokeWidth={1}
         />,
       );
