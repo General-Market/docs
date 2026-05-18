@@ -1,5 +1,10 @@
 import type { Venue } from './types'
 
+// Cards document one thing: structural unfairness where market makers,
+// insiders, or the house extract value from retail. Before adding an incident,
+// read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
+// custodial hacks, exchange outages — none of these belong here.
+
 export const ibkr: Venue = {
   slug: 'ibkr',
   name: 'Interactive Brokers',
@@ -24,16 +29,6 @@ export const ibkr: Venue = {
       chart: { loss: '$10,000 long WTI', extracted: '$82.57M', recipient: 'customers (eventually)' },
     },
     {
-      date: '2020-08-10', amount: '$38M',
-      headline: 'SEC + FINRA + CFTC — 150 missing Suspicious Activity Reports',
-      knife: 'A trillion-dollar pipeline with the AML alarm unplugged. The customer base scaled; the surveillance team stayed where it was.',
-      summary: 'Over one year, IBKR failed to file more than 150 SARs flagging microcap manipulation. Customers wired hundreds of millions from high-risk jurisdictions unsupervised. SEC $11.5M, FINRA $15M, CFTC $11.5M.',
-      sourceLabel: 'SEC',
-      sourceUrl: 'https://www.sec.gov/newsroom/press-releases/2020-178',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'AML controls', extracted: '$38M', recipient: 'SEC + FINRA + CFTC' },
-    },
-    {
       date: '2021-01-28', amount: 'Restrictions',
       amountTone: 'muted',
       headline: 'IBKR forces GameStop, AMC, KOSS options into liquidation-only',
@@ -54,16 +49,6 @@ export const ibkr: Venue = {
       mechanism: 'oracle-override',
       chart: { loss: '$10,000 margin long', extracted: 'corridor breach', recipient: 'IBKR algo' },
     },
-    {
-      date: '2021-09-28', amount: '$475K',
-      headline: 'Nasdaq fines IBKR for short-sale and trading-system failures',
-      knife: 'Small fines arrive on schedule. They are the cost of doing business; the business is selling speed.',
-      summary: 'Nasdaq settled charges over short-sale compliance and order-handling system faults. $475K civil penalty, accepted without admitting findings.',
-      sourceLabel: 'Finance Magnates',
-      sourceUrl: 'https://www.financemagnates.com/forex/interactive-brokers-settles-nasdaq-charges-agrees-to-475000-fine/',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'order-handling', extracted: '$475K', recipient: 'Nasdaq' },
-    },
   ],
 }
 
@@ -81,16 +66,6 @@ export const etoro: Venue = {
     "Copy trading is the friendliest version of the b-book. The platform you imitate, the trader you imitate, the loss you actually take — three different parties, one disclaimer at the bottom that admits seventy-six out of a hundred of you will end up here.",
   incidents: [
     {
-      date: '2024-09-12', amount: '$1.5M',
-      headline: 'SEC settles unregistered broker + clearing agency charges',
-      knife: 'They ran a US securities marketplace and forgot to register as one. The fine arrived; the menu shrank to three coins.',
-      summary: 'Since at least 2020 eToro USA operated as an unregistered broker and clearing agency for crypto assets being offered as securities. Forced to delist all US crypto except BTC, BCH, ETH.',
-      sourceLabel: 'SEC',
-      sourceUrl: 'https://www.sec.gov/newsroom/press-releases/2024-125',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'US crypto menu', extracted: '$1.5M', recipient: 'SEC' },
-    },
-    {
       date: '2023-08-03', amount: 'ASIC suit',
       amountTone: 'muted',
       headline: 'ASIC sues eToro Australia — CFD screening "so lax anyone qualified"',
@@ -100,26 +75,6 @@ export const etoro: Venue = {
       sourceUrl: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/',
       mechanism: 'b-book-mirror',
       chart: { loss: 'retail CFD onboarding', extracted: 'lax screening', recipient: 'eToro book' },
-    },
-    {
-      date: '2018-03-15', amount: '$2.4M',
-      headline: 'Ontario settlement — operated in Canada unlicensed for nine years',
-      knife: 'They warned eToro in 2008. They warned them again. By 2017 the warnings had earned interest.',
-      summary: 'From 2008 to 2017 eToro served Ontario residents without securities registration despite OSC warnings. Paid CAD $550K fine + CAD $25K costs + disgorged ~USD $1.8M. Forced to close Ontario accounts and IP-block Canada.',
-      sourceLabel: 'Times of Israel',
-      sourceUrl: 'https://www.timesofisrael.com/ex-securities-regulator-now-works-for-fintech-firm-that-pushed-him-to-weaken-law/',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'Canadian access', extracted: '$2.4M total', recipient: 'OSC' },
-    },
-    {
-      date: '2013-09-30', amount: '€50K',
-      headline: 'CySEC settles with eToro Europe over structural weaknesses',
-      knife: "Their first regulator's first finding: the operational structure was not really a structure.",
-      summary: 'Cyprus Securities and Exchange Commission settled with eToro (Europe) Ltd for €50,000 over organisational and operational weaknesses dating to the firm\'s 2010 operations under the Investment Services and Activities and Regulated Markets Law of 2007.',
-      sourceLabel: 'Finance Magnates',
-      sourceUrl: 'https://www.financemagnates.com/forex/brokers/cysec-reaches-settlement-with-etoro-for-e50000-for-undisclosed-violations/',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'EU readiness', extracted: '€50K', recipient: 'CySEC' },
     },
     {
       date: 'Ongoing', amount: '76% retail lose',

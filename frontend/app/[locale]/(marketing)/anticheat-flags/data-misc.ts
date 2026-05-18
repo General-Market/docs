@@ -1,5 +1,10 @@
 import type { Venue } from './types'
 
+// Cards document one thing: structural unfairness where market makers,
+// insiders, or the house extract value from retail. Before adding an incident,
+// read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
+// custodial hacks, exchange outages — none of these belong here.
+
 export const pumpfun: Venue = {
   slug: 'pumpfun',
   name: 'pump.fun',
@@ -22,37 +27,6 @@ export const pumpfun: Venue = {
       sourceUrl: 'https://www.coindesk.com/business/2025/05/07/98-of-tokens-on-pump-fun-have-been-rug-pulls-or-an-act-of-fraud-new-report-says',
       mechanism: 'rug-cliff',
       chart: { loss: '$500 buy', extracted: 'pre-launch supply', recipient: 'one launcher' },
-    },
-    {
-      date: '2025-01-30', amount: 'SDNY class', amountTone: 'muted',
-      headline: 'Burwick Law sues pump.fun as unregistered securities exchange',
-      knife: 'A platform built to sell unregistered tokens called this a surprise.',
-      summary: 'Burwick Law and Wolf Popper filed in SDNY alleging every memecoin minted on pump.fun is an unregistered security under the 1933 Act.',
-      sourceLabel: 'CoinDesk',
-      sourceUrl: 'https://www.coindesk.com/policy/2025/01/30/pump-fun-hit-with-proposed-class-action-lawsuit-alleging-securities-violations',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'reg shield', extracted: 'one suit', recipient: 'SDNY' },
-    },
-    {
-      date: '2025-05', amount: '$5.5B',
-      headline: 'Amended complaint adds RICO, Solana, Jito as defendants',
-      knife: 'The casino, the dealer, the chip-maker, the doorman — all named, all surprised to be named.',
-      summary: 'Plaintiffs expanded to a racketeering enterprise — naming Solana Labs, Solana Foundation, Jito Labs. Treble damages math: $5.5B.',
-      sourceLabel: 'Hodder Law',
-      sourceUrl: 'https://hodder.law/pumpfun-solana-jito-lawsuit-2025/',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'plausible deniability', extracted: '$5.5B claim', recipient: 'class plaintiffs' },
-      tag: 'alleged',
-    },
-    {
-      date: '2024-12-03', amount: 'UK exit', amountTone: 'muted',
-      headline: 'UK FCA warning, pump.fun blocks UK users in three days',
-      knife: 'Three days to choose between a license and exile. They chose exile.',
-      summary: 'FCA published a Section 21 warning. Within 72 hours pump.fun geo-blocked the UK rather than register.',
-      sourceLabel: 'FCA',
-      sourceUrl: 'https://www.fca.org.uk/news/warnings/pumpfun',
-      mechanism: 'compliance-fine',
-      chart: { loss: 'UK access', extracted: 'one warning', recipient: 'FCA' },
     },
     {
       date: '2024-11', amount: '−33% rev',
