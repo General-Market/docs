@@ -70,7 +70,8 @@ interface LatencyRow {
   mechanism: Mechanism
   lane: string
   barrier: string       // one phrase: what costs more than a $50 VPS in the same AWS region
-  source?: { label: string; url: string }
+  source?: { label: string; url: string }         // primary source for the latency claim
+  barrierSource?: { label: string; url: string }  // primary source for the barrier claim
 }
 
 const MECH_LABEL: Record<Mechanism, string> = {
@@ -89,72 +90,84 @@ const LATENCY_ROWS: LatencyRow[] = [
     lane: 'Tokyo desk vs European desk',
     barrier: 'Foundation node — 10,000 HYPE staked + Tier-1 maker volume',
     source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
+    barrierSource: { label: 'Hyperliquid docs', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node' },
   },
   {
     slug: 'binance', name: 'Binance', edgeMs: 145, gatedMs: 5, mechanism: 'colo',
     lane: 'AWS Tokyo VIP colo vs global retail',
-    barrier: 'Dedicated FIX gateway · VIP tier 9 program',
+    barrier: 'VIP 9 — $4B spot or $30B futures 30d volume + 5,500 BNB',
     source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
+    barrierSource: { label: 'Binance · VIP program', url: 'https://www.binance.com/en/vip-institutional-services' },
   },
   {
     slug: 'bybit', name: 'Bybit', edgeMs: 140, gatedMs: 5, mechanism: 'colo',
     lane: 'AWS Singapore/Tokyo colo vs global retail',
-    barrier: 'Institutional Services agreement · dedicated FIX',
+    barrier: 'Institutional Services agreement · dedicated FIX gateway',
     source: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
+    barrierSource: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
   },
   {
     slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, gatedMs: 25, mechanism: 'region',
     lane: 'Solana validator-adjacent snipers vs default RPC',
-    barrier: 'Jito private mempool · staked-validator routing · paid Helius / QuickNode',
+    barrier: 'Jito bundles + tip auction · paid validator-adjacent RPC (Helius / QuickNode)',
     source: { label: 'Helius · Solana latency', url: 'https://www.helius.dev/blog/solana-rpc-latency' },
+    barrierSource: { label: 'Jito Labs · block engine', url: 'https://www.jito.wtf/' },
   },
   {
     slug: 'etoro', name: 'eToro', edgeMs: 100, gatedMs: 100, mechanism: 'b-book',
     lane: 'Internal CFD book — order never reaches a public market',
     barrier: 'Broker-only — the entire edge is structural; no retail equivalent at any price',
     source: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
+    barrierSource: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
   },
   {
     slug: 'polymarket', name: 'Polymarket', edgeMs: 78, gatedMs: 3, mechanism: 'colo',
     lane: 'KYC\'d London colo vs New York retail',
     barrier: 'KYC/KYB form approval · direct colocation in eu-west-2',
     source: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
+    barrierSource: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
   },
   {
     slug: 'deribit', name: 'Deribit', edgeMs: 75, gatedMs: 2, mechanism: 'colo',
     lane: 'London matching engine colo vs US retail',
     barrier: 'Pro institutional FIX gateway · MM agreement',
     source: { label: 'Deribit · institutional', url: 'https://www.deribit.com/kb/api-overview' },
+    barrierSource: { label: 'Deribit · FIX', url: 'https://docs.deribit.com/?javascript#fix-api' },
   },
   {
     slug: 'fxcfd', name: 'FX / CFD industry', edgeMs: 65, gatedMs: 40, mechanism: 'cross-connect',
     lane: 'NY4 (Equinix Secaucus) LP cross-connect vs retail home internet',
-    barrier: 'NY4 cabinet — $5k–15k/mo cabinet + ~$500/mo per cross-connect',
+    barrier: 'NY4 full cabinet $1.5–3k/mo + cross-connects $100–300/mo each + setup $500–1,500',
     source: { label: 'Equinix · NY4', url: 'https://www.equinix.com/data-centers/americas-colocation/united-states-colocation/new-york-data-centers/ny4' },
+    barrierSource: { label: 'UPSTACK · NY4 pricing', url: 'https://marketplace.upstack.com/data-centers/equinix-colocation-new-jersey' },
   },
   {
     slug: 'coinbase', name: 'Coinbase', edgeMs: 60, gatedMs: 5, mechanism: 'colo',
     lane: 'Coinbase Prime us-east-1 / Equinix LD4 vs Asian or EU retail',
     barrier: 'Coinbase Prime onboarding · institutional FIX endpoint',
     source: { label: 'Coinbase · Prime', url: 'https://prime.coinbase.com/' },
+    barrierSource: { label: 'Coinbase · Prime FIX', url: 'https://docs.cdp.coinbase.com/prime/docs/fix-api-overview' },
   },
   {
     slug: 'ibkr', name: 'Interactive Brokers', edgeMs: 50, gatedMs: 50, mechanism: 'cross-connect',
     lane: 'Direct Market Access pro vs retail SmartRouter',
     barrier: 'Pro / institutional account · capital + commercial agreement · no retail bypass',
     source: { label: 'IBKR · DMA', url: 'https://www.interactivebrokers.com/en/trading/orders/smartRouting.php' },
+    barrierSource: { label: 'IBKR · Pro DMA', url: 'https://www.interactivebrokers.com/en/general/finlearn/order-types-routing/ibkr-pro-direct-market-access.php' },
   },
   {
     slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 15, mechanism: 'designated',
     lane: 'Chicago designated MM vs retail browser',
     barrier: 'Designated MM contract — application, capital, reduced fees, adjusted position limits',
     source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
+    barrierSource: { label: 'Kalshi · MM program', url: 'https://help.kalshi.com/en/articles/13823819-market-maker-program' },
   },
   {
     slug: 'robinhood', name: 'Robinhood', edgeMs: 35, gatedMs: 35, mechanism: 'pfof',
     lane: 'Citadel PFOF info window vs lit-market execution',
     barrier: 'PFOF contract — Citadel only; not for sale at any retail price',
     source: { label: 'SEC · Robinhood PFOF', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
+    barrierSource: { label: 'SEC · Robinhood PFOF', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
   },
 ]
 
@@ -619,21 +632,38 @@ export function ColocationSection() {
                 <div style={{ marginBottom: 4, color: SECONDARY, fontStyle: 'italic' }}>
                   Barrier: {row.barrier}
                 </div>
-                {row.source && (
-                  <a
-                    href={row.source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: ACCENT,
-                      fontSize: 11,
-                      fontWeight: 500,
-                    }}
-                    className="hover:underline"
-                  >
-                    {row.source.label} ›
-                  </a>
-                )}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px' }}>
+                  {row.source && (
+                    <a
+                      href={row.source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: ACCENT,
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                      className="hover:underline"
+                    >
+                      Latency: {row.source.label} ›
+                    </a>
+                  )}
+                  {row.barrierSource && row.barrierSource.url !== row.source?.url && (
+                    <a
+                      href={row.barrierSource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: ACCENT,
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                      className="hover:underline"
+                    >
+                      Barrier: {row.barrierSource.label} ›
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>
