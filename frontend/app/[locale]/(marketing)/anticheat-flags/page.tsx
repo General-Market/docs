@@ -4,6 +4,8 @@ import { Reveal } from '@/components/ui/Reveal'
 import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
 import { FeeTierSection } from './FeeTierSection'
+import { EdgeMatrixSection } from './EdgeMatrixSection'
+import { EDGE_MATRIX } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
@@ -98,6 +100,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
+  const totalEdges = EDGE_MATRIX.length
 
   return (
     <AppShell>
@@ -149,7 +152,7 @@ export default function AntiCheatFlagsPage() {
                 }}
               >
                 <HeroStat value={String(VENUES.length)} label="Venues flagged" />
-                <HeroStat value="$60B+" label="Fines, hacks, losses" />
+                <HeroStat value={String(totalEdges)} label="Structural edges" />
                 <HeroStat value={String(totalIncidents)} label="Receipts on file" />
                 <HeroStat value="2015–26" label="Years documented" />
               </div>
@@ -318,6 +321,9 @@ export default function AntiCheatFlagsPage() {
 
           {/* FEE TIER EDGE — the spread in basis points + cost of staying inside */}
           <FeeTierSection />
+
+          {/* STRUCTURAL EDGE INVENTORY — fifteen mechanisms across five rulers */}
+          <EdgeMatrixSection />
 
           {/* CLOSER */}
           <section
