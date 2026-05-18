@@ -5,7 +5,7 @@ import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
 import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
-import { EDGE_MATRIX } from './data-edge-matrix'
+import { EDGE_ROWS } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
@@ -100,7 +100,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
-  const totalEdges = EDGE_MATRIX.length
+  const totalEdges = EDGE_ROWS.length
 
   return (
     <AppShell>
