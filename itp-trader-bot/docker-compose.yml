@@ -9,7 +9,12 @@ services:
       - HEALTH_PORT=8090
       - KEYS_PATH=/data/keys.json
       - KEYRING_SIZE=5
-      - EXTRA_MORPHO_MARKETS=0x736b6e07edd80ab0ce7e4657ea4bb1eafb4cb9523fccf38bb2bbd65bea143fc5
+      - EXTRA_MORPHO_MARKETS=0x0be1296ad72481cb0301eb3dd52fff9625795d1b7376f8ccabf93722acede141
+      # Live Morpho + MetaMorpho on L3. The hardcoded defaults in config.ts
+      # point at an older stack; without these overrides every borrow target
+      # the bot picks resolves to a non-deployed collateral token.
+      - MORPHO_ADDR=0x24c9B172B5BaC939Aa87dBadc478A2c9445BB48F
+      - METAMORPHO_ADDR=0xC86aEa4488D1b0eA202585CfbF15542e9d342933
       # Curator runs on the same host. Reach it via the docker bridge
       # gateway — extra_hosts maps host.docker.internal to the host on Linux.
       - CURATOR_API_URL=http://host.docker.internal:8080
