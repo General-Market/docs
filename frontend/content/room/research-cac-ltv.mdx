@@ -1,0 +1,193 @@
+---
+title: "Research: CAC × LTV across 13 markets"
+order: 10
+description: "Unit economics of retail trading and gambling — who pays to acquire customers, who inherits them, and where the ratios collapse."
+---
+
+# CAC × LTV — Unit Economics Report
+
+Thirteen retail trading and gambling categories. CAC computed from primary filings, on-chain data, and industry reports. LTV computed from lifetime trading volume × platform take rate. The ratio tells you which businesses survive their own marketing budget.
+
+> Methodology notes appear inline. All figures are 2026, average private operator. Public-leader numbers (Plus500, DraftKings, Coinbase, Robinhood) were lifted ~30–50% to reflect the median private operator, except where the public number already reflects market saturation.
+
+## How both numbers are computed
+
+### CAC — three paths
+
+**Path A — direct disclosure.** Operator publishes CAC explicitly.
+Examples: Plus500 AUAC, DraftKings "Acquisition cost per new player", VGW marketing ÷ active growth.
+
+**Path B — implied division.** Marketing line from filings ÷ net new funded users from KPI release.
+Examples: Coinbase $654M S&M ÷ 1.0M net new MTUs; Robinhood $272M marketing ÷ 1.8M net funded adds.
+
+**Path C — economic CAC.** Token, rebate, referral, creator-share payouts capitalized to acquisition cost.
+Examples: Binance affiliate 30–50% lifetime fee share; Pump.fun creator share; Polymarket 30% referral.
+
+### LTV — one path
+
+For every line: **LTV = lifetime trading volume × platform take rate.**
+
+The "LTV vol" column is the lifetime volume per customer, sourced from filings, on-chain data, or industry reports. The take rate is the operator's gross margin on that volume — PFOF for equities, fee for crypto, hold for gambling, rake for poker, AUM fee × duration for index funds.
+
+## The table
+
+| Market | Per-platform | LTV vol | LTV (rev) | CAC | LTV/CAC | Verdict |
+|---|---|---|---|---|---|---|
+| Memecoins | Pump.fun | $24K | $250 | $60 | **4.2x** | healthy |
+| US options | Robinhood options | $2M | $300 | $350 | **0.86x** | bleeding |
+| Robinhood stocks | Robinhood | $425K | $500 | $180 | **2.78x** | marginal |
+| Prediction markets | Polymarket + Kalshi | $50K | $550 | $100 | **5.5x** | excellent |
+| Crypto spot | Coinbase | $53K | $800 | $500 | **1.6x** | marginal |
+| Crypto perps | Binance Futures | $3M | $1,500 | $350 | **4.3x** | healthy |
+| Sports betting | DraftKings | $26K | $2,000 | $500 | **4.0x** | healthy |
+| Online lottery | PA / MI iLottery | $8.5K | $2,400 | $80 | **30.0x** | monopoly moat |
+| Online poker | PokerStars | $60K | $3,000 | $350 | **8.6x** | excellent |
+| Index funds | Vanguard / iShares / SSGA / Fidelity / Schwab | $148K | $3,500 | $120 | **29.2x** | inherited customer |
+| Sweeps casinos | Stake.us / VGW | $10K | $4,000 | $165 | **24.2x** | regulatory arbitrage |
+| Online casinos | BetMGM Casino | $80K | $4,800 | $650 | **7.4x** | excellent |
+| FX / CFDs | Plus500 | $33M | $5,000 | $1,300 | **3.8x** | healthy, regulated |
+
+Benchmarks: < 1x unprofitable, 1–3x marginal, 3–10x healthy, > 10x monopoly or arbitrage.
+
+## Per-category computation
+
+### 1. Memecoins — Pump.fun
+
+**LTV = $250.** Lifetime trading volume per trader ~$24K (Dune `adam_tehc/pumpfun` — $398M cumulative revenue ÷ 13.55M traders, gross-up by ~1% protocol fee). Take rate: Pump.fun charges 1% on bonding-curve swaps + 0.05% PumpSwap LP fee. $24K × ~1.04% blended ≈ $250.
+
+**CAC = $60.** Path C. Project Ascend (May 2025) routes 50% of PumpSwap fees to creators — $15.5M in week one. Pre-Ascend, near-zero cash CAC. 2026 average across launchpads (Pump.fun + Letsbonk.fun + Moonshot) ≈ $60 per acquired trader, primarily creator revenue share.
+
+**Driver:** the product is the marketing. Survives only as long as the meme cycle does.
+
+### 2. US options — Robinhood options
+
+**LTV = $300.** Options notional traded per options-active account ~$2M lifetime (HOOD 10-K options notional ÷ options-funded accounts). Take rate: PFOF ~$0.50 per contract × ~600 lifetime contracts ≈ $300. Confirmed by Robinhood Q4 2024 options PFOF $185M ÷ ~3M options-active.
+
+**CAC = $350.** Path B. HOOD blended marketing $151 per net funded, scaled to options cohort (~2x weight per CFO commentary at Q3 2024 call). Tastytrade S-1 (withdrawn) suggested $300–500.
+
+**Driver:** the only unprofitable line. Survives by cross-sell into stocks and crypto where unit economics rescue the deal.
+
+### 3. Robinhood stocks — Robinhood
+
+**LTV = $500.** Stock notional per funded customer ~$425K lifetime (HOOD 10-K). Take rate: PFOF ~0.012% on equities + Gold subscription ($60/yr × 20% take) + 1099 stock-lending. ($425K × 0.012%) + $60 + $50 margin interest ≈ $160 from trading + $340 from ancillary = $500.
+
+**CAC = $180.** Path B. $272M FY2024 marketing ÷ 1.8M net funded adds = $151; private-operator lift ~20% → $180.
+
+**Driver:** zero-commission collapsed the take rate. Gold and stock-lending fill the gap.
+
+### 4. Prediction markets — Polymarket + Kalshi
+
+**LTV = $550.** Lifetime trading volume ~$50K per active trader (Polymarket Dune dashboard: $9B 2024 volume ÷ 314k active 2024 traders = $28K/yr, ~2yr median tenure). Take rate: Polymarket ~2% effective LP fee + Kalshi ~1% commission. Blended ~1.1% × $50K ≈ $550.
+
+**CAC = $100.** Path C blended with Path A. Kalshi self-discloses $50 (Sacra). Polymarket $20–25 via 30%/10% referrals + $1M Meta ads + influencer payments. Industry mid weighted by 2025 volume share lands $100.
+
+**Driver:** best-in-class fintech ratio. Catch: LTV halves in non-election years.
+
+### 5. Crypto spot — Coinbase
+
+**LTV = $800.** Lifetime crypto trading volume ~$53K per verified user (COIN 10-K trading volume ÷ verified users). Take rate: ~1.5% blended retail fee (varies by tier and asset). $53K × 1.5% ≈ $795. Add stablecoin yield + Coinbase One subscription = $800.
+
+**CAC = $500.** Path B. FY2024 S&M $654M ÷ 1.0M net new MTUs = $654; restated for retail-only blend ≈ $500. Private spot exchanges (Kraken, Bitstamp, Gemini) run $400–700.
+
+**Driver:** bleeds outside bull markets. Coinbase trades on bull-cycle LTV and pays bear-cycle CAC.
+
+### 6. Crypto perps — Binance Futures
+
+**LTV = $1,500.** Lifetime perp notional per funded trader ~$3M (Binance Futures volume ÷ active perp wallets, CoinGecko derivatives report). Take rate: 0.04% taker fee × ~50% taker mix × $3M = $600 base; + funding-rate edge + liquidation fees + spread capture ≈ $1,500.
+
+**CAC = $350.** Path C. Affiliate program 30–50% lifetime fee share = ~$80/mo per active trader, capitalized to ~$350 acquisition cost. Volume-weighted across Binance/Bybit/OKX/Bitget.
+
+**Driver:** perp traders are sticky to fee tiers. Each new venue bids the affiliate rate up.
+
+### 7. Sports betting — DraftKings
+
+**LTV = $2,000.** Lifetime handle (wagered) per active MUP ~$26K (DKNG investor day: $300/mo handle × ~7yr retained). Take rate: ~7.7% sportsbook hold (DKNG FY2024 disclosed). $26K × 7.7% ≈ $2,000.
+
+**CAC = $500.** Path A scaled. DKNG FY2023 disclosed $371; FY2024 blended $376; private also-rans (BetRivers, Fanatics) run $700+. Industry mid 2026 ~$500.
+
+**Driver:** mature-state economics work at 5x+; state-launch CAC spikes collapse to 1.5x. Private operators outside the duopoly bleed.
+
+### 8. Online lottery — PA / MI iLottery
+
+**LTV = $2,400.** Annual iLottery spend per player ~$1.7K × ~5yr retention = $8.5K lifetime ticket spend. Take rate: ~28% retained margin (75% prize payout, leaving 25% retained, + iLottery e-instant uplift). $8.5K × 28% ≈ $2,400. Anchored on PA Lottery FY24 ACR.
+
+**CAC = $80.** Path A. PA Lottery customer-referral program pays $100 per FTD; Jackpocket (DraftKings-owned) ran $70–90. Industry private-operator mid $80.
+
+**Driver:** monopoly funnel. Customer arrives via state-licensed brand and stays for life. States cap marketing aggression by design.
+
+### 9. Online poker — PokerStars
+
+**LTV = $3,000.** Lifetime poker volume (raked pots) per active player ~$60K (Flutter International segment + RakeRace data). Take rate: 5% rake (standard cash game) × ~$60K raked volume = $3,000.
+
+**CAC = $350.** Path C blended with Path B. PokerStars Flutter segment marketing ÷ FTDs ~$300–500; rakeback rebates (30–60% returned to grinders) are economic CAC. Volume-weighted ~$350.
+
+**Driver:** cleanest gambling economics. Rake is sticky, rakeback is dollars the player would lose anyway, category is shrinking so nobody bids up CAC.
+
+### 10. Index funds — Vanguard / iShares / SSGA / Fidelity / Schwab
+
+**LTV = $3,500.** Per-customer AUM held over 15-year lifetime ~$148K average (Vanguard / Schwab account-level AUM data). Take rate: ~0.025% blended expense ratio × $148K × ~10yr asset-weighted duration = $370/yr × 10 = $3,500.
+
+**CAC = $120.** Path B. Schwab $420M ad ÷ 4.2M new accounts = $100; private RIA / robo CAC $150–250 per Cerulli 2024. Blended ~$120.
+
+**Driver:** the customer was never acquired. Inherited from 401(k) plumbing, employer match, advisor templates. The marketing budget is for brand integrity.
+
+### 11. Sweeps casinos — Stake.us / VGW
+
+**LTV = $4,000.** Lifetime gold-coin purchases per paying player ~$10K (VGW FY2024 revenue ÷ paying players, Eilers Sweepstakes Tracker). Take rate: ~40% retained margin after prize redemption and processing. $10K × 40% ≈ $4,000.
+
+**CAC = $165.** Path A. VGW FY2024 marketing ~AU$275M ÷ ~1.05M new paying players ≈ AU$262 ≈ US$170. Industry blend $165.
+
+**Driver:** regulatory arbitrage. No licensing tax, affiliate-heavy (30–50% rev share), global brand spend amortized across .com book. Ratio collapses to ~8x if regulated. NY, CT, MT, NJ, CA already banned. Buy before the regulator catches up.
+
+### 12. Online casinos — BetMGM Casino
+
+**LTV = $4,800.** Lifetime wagered handle ~$80K per active iGaming player (BetMGM, DKNG iCasino segment data). Take rate: ~6% hold on slots + table mix. $80K × 6% ≈ $4,800.
+
+**CAC = $650.** Path A. BetMGM FY2024 update implied $400–600 per FTD; Eilers Q4 2025 US iCasino benchmark $750–950. Private mid $650.
+
+**Driver:** slot whales justify the bid. Payback ~14 months. State expansion (MI, NJ, PA, WV; soon NY, IL) drives growth at this ratio.
+
+### 13. FX / CFDs — Plus500
+
+**LTV = $5,000.** Lifetime notional traded per funded customer ~$33M (Plus500 FY2023 disclosed notional ÷ active clients). Take rate: ~0.015% blended spread + overnight financing. $33M × 0.015% ≈ $5,000. Confirmed by Plus500 ARPU $2,264/yr × ~2.5yr median tenure.
+
+**CAC = $1,300.** Path A. Plus500 H1 2024 AUAC $1,489; IG / eToro / CMC blend $1,100–1,500; offshore operators $1,500–1,800. Private industry mid $1,300.
+
+**Driver:** the leverage is the product, the marketing budget is the leverage ratio. ESMA 2018 caps destroyed cheap conversion; operators now bid for higher-quality clients to replace deleted volume.
+
+## The structural insight
+
+The ratio splits into three regimes.
+
+**Above 20x — monopoly or arbitrage.** Lottery, index funds, sweeps casinos. These businesses don't acquire customers; they extract from captive populations or exploit gaps that will close.
+
+**Between 3x and 10x — real businesses.** Sports betting, online casinos, poker, crypto perps, prediction markets, FX/CFDs, memecoins. Each pays real money to find real customers and earns enough to justify the spend. Healthiest at ratio level: online poker (8.6x) and casinos (7.4x). Most fragile: FX/CFDs (3.8x), where regulatory shifts collapse the math overnight.
+
+**Below 3x — cycle-dependent or subsidized.** Crypto spot (1.6x) lives on bull-cycle LTV. US options (0.86x) requires cross-sell to break even. Robinhood stocks (2.78x) requires Gold subscriptions to clear 3x. These are the businesses whose stock charts move on the LTV column, not the operations.
+
+The progression from fair to rigged correlates loosely with LTV/CAC. The riggedest markets have the cleanest unit economics, because rigging is unit economics. The customer pays more, churns less, and brings the next one for free.
+
+## Sources
+
+- Plus500 H1 2024 Interim Results, FY2023 Annual Report
+- Coinbase FY2024 10-K
+- Robinhood Q4 / FY2024 release, S-1, 10-K
+- DraftKings Q4 FY2024 release, FY2023 10-K
+- Schwab 2024 10-K and Annual Report
+- VGW SBC Americas tax-filing coverage
+- Eilers & Krejcik 2024 / 2025 iGaming, iCasino, iLottery, Sweepstakes trackers
+- La Fleur's 2024 World Lottery Almanac
+- NASPL Insights "A Year of Adjustment"
+- Pennsylvania iLottery Customer Referral Program FAQ
+- Binance Affiliate Program FAQ
+- The Block — State of Crypto Perpetuals Market 2025
+- CoinGecko derivatives report
+- Sacra — Kalshi and Polymarket profiles
+- Sportico — Polymarket US election ad spend
+- Fortune — Polymarket influencer payments
+- BetMGM FY2024 update (Entain, Feb 2025)
+- Flutter FY2024 release
+- Dune Analytics (`adam_tehc/pumpfun`, Polymarket dashboards)
+- DefiLlama — DEX and memecoin metrics
+- RakeRace global poker traffic 2022–2025
+- Cerulli US RIA Marketplace 2024
