@@ -95,8 +95,8 @@ export function ITPSection({ snapshots: _snapshots, latest: _latest, loading: _l
         time: b.bucket,
         buy: toUsd(b.buy_amount, 18),
         sell: toUsd(b.sell_amount, 18),
-        borrow: toUsd(b.borrow_amount, 6),
-        lend: toUsd(b.supply_amount, 6),
+        borrow: toUsd(b.borrow_amount, 18),
+        lend: toUsd(b.supply_amount, 18),
       })),
     [dtf.fills],
   )
