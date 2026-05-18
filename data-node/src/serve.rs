@@ -2475,6 +2475,21 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         }
     }
 
+    // Oracle wallet balance collector — hourly snapshots on L3 + Sonic.
+    {
+        let pool_clone = pool.clone();
+        let l3_rpc = args.rpc_url.clone();
+        let sonic_rpc = args.sonic_rpc_url.clone();
+        let interval = args.wallet_balance_poll_interval;
+        tokio::spawn(async move {
+            crate::wallet_balance_collector::run_wallet_balance_collector(
+                pool_clone, l3_rpc, sonic_rpc, interval,
+            )
+            .await;
+        });
+        info!(poll_secs = args.wallet_balance_poll_interval, "Wallet balance collector spawned");
+    }
+
     // Create live ticker cache and start fast poller
     let live_cache = Arc::new(LiveTickerCache::new());
     {
@@ -2781,6 +2796,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
 
     // Clone pool for explorer API before app_state is moved into the main router
     let explorer_pool = app_state.pool.clone();
+    let balances_pool = app_state.pool.clone();
     let mut app = crate::api::router(app_state);
 
     // Merge admin routes (hot-reload, config inspection, health, log-level)
@@ -2791,6 +2807,9 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     if let Some(ref token) = args.explorer_token {
         app = app.merge(crate::explorer_api::explorer_routes(explorer_pool, token.clone()));
     }
+
+    // Oracle wallet balances — public read endpoint (on-chain data, no secrets).
+    app = app.merge(crate::wallet_balance_collector::balances_routes(balances_pool));
 
     // P2.9: Use configurable bind address
     let bind_ip: std::net::IpAddr = args.bind.parse().unwrap_or_else(|e| {

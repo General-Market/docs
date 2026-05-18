@@ -316,6 +316,14 @@ pub struct ServeArgs {
     #[arg(long, default_value = "300", env = "ORACLE_HEALTH_POLL_INTERVAL_SECS")]
     pub oracle_health_poll_interval: u64,
 
+    /// Sonic testnet RPC URL — used by wallet_balance_collector to read S balances.
+    #[arg(long, default_value = "https://rpc.testnet.soniclabs.com", env = "SONIC_RPC_URL")]
+    pub sonic_rpc_url: String,
+
+    /// Wallet balance polling interval in seconds (default: 3600 = 1 hour)
+    #[arg(long, default_value = "3600", env = "WALLET_BALANCE_POLL_INTERVAL_SECS")]
+    pub wallet_balance_poll_interval: u64,
+
     /// Shared secret token for authenticating explorer API requests (frontend-only access)
     #[arg(long, env = "EXPLORER_TOKEN")]
     pub explorer_token: Option<String>,

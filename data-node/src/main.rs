@@ -25,6 +25,7 @@ mod dl_collector;
 mod fng_client;
 mod fng_collector;
 mod oracle_health_collector;
+mod wallet_balance_collector;
 mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
