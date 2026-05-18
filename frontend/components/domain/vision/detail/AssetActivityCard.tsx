@@ -329,6 +329,8 @@ export function AssetActivityCard({
     return seriesValues.map(v => (v == null ? null : v / baseAsset))
   }, [seriesValues, baseAsset])
 
+  // The widest threshold in the visible window — used only to decide whether
+  // the band would crush the price line if we expanded Y to fit it.
   const maxBatchRatio = useMemo(() => {
     let m = 0
     for (const c of columns) {
@@ -339,6 +341,9 @@ export function AssetActivityCard({
     return m
   }, [columns, thresholdRatio])
 
+  // Y bounds follow the *price* range, with a minimum width so the line
+  // isn't a flat hair. We don't let the threshold pull the axis — when the
+  // band is wider than the data window, ticks clip to the edge with arrows.
   const yMin = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
@@ -346,9 +351,11 @@ export function AssetActivityCard({
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
-    const dataMin = all.length === 0 ? 0.95 : Math.min(...all, 1.0)
-    if (maxBatchRatio <= 0) return dataMin
-    return Math.min(dataMin, 1.0 - maxBatchRatio * 1.2)
+    const dataMin = all.length === 0 ? 0.99 : Math.min(...all, 1.0)
+    const span = (all.length === 0 ? 0.02 : Math.max(...all, 1.0) - dataMin)
+    const padded = dataMin - Math.max(0.005, span * 0.15)
+    if (maxBatchRatio <= 0) return padded
+    return Math.min(padded, 1.0 - Math.min(maxBatchRatio, span * 1.5))
   }, [assetRatios, points, maxBatchRatio])
   const yMax = useMemo(() => {
     const all: number[] = []
@@ -357,9 +364,11 @@ export function AssetActivityCard({
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
-    const dataMax = all.length === 0 ? 1.05 : Math.max(...all, 1.0)
-    if (maxBatchRatio <= 0) return dataMax
-    return Math.max(dataMax, 1.0 + maxBatchRatio * 1.2)
+    const dataMax = all.length === 0 ? 1.01 : Math.max(...all, 1.0)
+    const span = (all.length === 0 ? 0.02 : dataMax - Math.min(...all, 1.0))
+    const padded = dataMax + Math.max(0.005, span * 0.15)
+    if (maxBatchRatio <= 0) return padded
+    return Math.max(padded, 1.0 + Math.min(maxBatchRatio, span * 1.5))
   }, [assetRatios, points, maxBatchRatio])
   const ySpan = Math.max(1e-12, yMax - yMin)
 
@@ -379,6 +388,30 @@ export function AssetActivityCard({
 
   const hasMatrix = rows.length > 0
   const colCount = columns.length
+
+  // Did the band routinely outscale the move? Resolver calibration is
+  // suspect when the threshold dwarfs what the price actually does each
+  // batch — almost every outcome will be Flat.
+  const bandTooWide = useMemo(() => {
+    let moves = 0
+    let bands = 0
+    let counted = 0
+    for (const c of columns) {
+      const move = Math.abs(c.batch.pctChangeBps)
+      const band = c.batch.thresholdBps
+      if (band > 0 && move >= 0) {
+        moves += move
+        bands += band
+        counted += 1
+      }
+    }
+    if (counted < 4) return false
+    const avgMove = moves / counted
+    const avgBand = bands / counted
+    // band 5× the typical move and over 100 bps absolute → likely a
+    // calibration ceiling, not a fair line.
+    return avgBand > 100 && avgBand > avgMove * 5
+  }, [columns])
 
   // Chart inner width — scrolls with the matrix.
   const innerWidth = useMemo(() => {
@@ -497,6 +530,7 @@ export function AssetActivityCard({
       showLegend={hasMatrix && chartMode === 'settlement'}
       thresholdLabel={thresholdLabel}
       isBinary={isBinary}
+      bandTooWide={bandTooWide}
     />
   )
 
@@ -700,41 +734,43 @@ export function AssetActivityCard({
               })}
               {/* Per-batch threshold ticks. Each batch carries its own band
                   in the settlement payload — we draw both sides of the band
-                  as short ticks centered on the column. */}
+                  as short ticks centered on the column. When the band would
+                  fall outside the chart range, the tick clamps to the edge
+                  and gets an arrow marker so the off-scale fact is visible. */}
               {columns.map((c, i) => {
                 const bps = c.batch.thresholdBps
                 if (!bps || bps <= 0) return null
                 const ratio = bps / 10000
                 const x = xForIdx(i)
-                const yUp = yForRatio(1 + ratio)
-                const yDn = yForRatio(1 - ratio)
+                const padTop = 12
+                const padBot = CHART_HEIGHT - 12
+                const rawYUp = yForRatio(1 + ratio)
+                const rawYDn = yForRatio(1 - ratio)
+                const clampedYUp = Math.max(padTop, rawYUp)
+                const clampedYDn = Math.min(padBot, rawYDn)
+                const upOff = rawYUp < padTop
+                const dnOff = rawYDn > padBot
                 return (
                   <g key={`tk-${c.batch.batchId}`}>
                     <line
                       x1={x - CELL_W / 2}
                       x2={x + CELL_W / 2}
-                      y1={yUp}
-                      y2={yUp}
+                      y1={clampedYUp}
+                      y2={clampedYUp}
                       stroke="rgb(52,199,89)"
-                      strokeOpacity={0.85}
-                      strokeWidth={1.25}
+                      strokeOpacity={upOff ? 0.55 : 0.85}
+                      strokeWidth={upOff ? 1 : 1.25}
+                      strokeDasharray={upOff ? '2 2' : undefined}
                     />
                     <line
                       x1={x - CELL_W / 2}
                       x2={x + CELL_W / 2}
-                      y1={yDn}
-                      y2={yDn}
+                      y1={clampedYDn}
+                      y2={clampedYDn}
                       stroke="rgb(255,59,48)"
-                      strokeOpacity={0.85}
-                      strokeWidth={1.25}
-                    />
-                    <line
-                      x1={x}
-                      x2={x}
-                      y1={yUp}
-                      y2={yDn}
-                      stroke="rgba(0,0,0,0.10)"
-                      strokeDasharray="2 3"
+                      strokeOpacity={dnOff ? 0.55 : 0.85}
+                      strokeWidth={dnOff ? 1 : 1.25}
+                      strokeDasharray={dnOff ? '2 2' : undefined}
                     />
                   </g>
                 )
@@ -1130,6 +1166,7 @@ function Header({
   onChartModeChange,
   thresholdLabel,
   isBinary,
+  bandTooWide,
 }: {
   isPrice: boolean
   valueUnit: string
@@ -1143,6 +1180,7 @@ function Header({
   onChartModeChange: (m: ChartMode) => void
   thresholdLabel: string | null
   isBinary: boolean
+  bandTooWide: boolean
 }) {
   return (
     <header
@@ -1220,6 +1258,22 @@ function Header({
             per-batch band
             <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
             <span style={{ color: 'var(--apple-text-secondary)' }}>now ±{thresholdLabel}</span>
+          </span>
+        ) : null}
+        {bandTooWide ? (
+          <span
+            style={{
+              textTransform: 'none',
+              letterSpacing: 0,
+              padding: '2px 8px',
+              borderRadius: 'var(--apple-r-sm)',
+              background: 'rgba(255,149,0,0.10)',
+              color: 'rgb(180,98,4)',
+              border: '1px solid rgba(255,149,0,0.30)',
+              fontWeight: 500,
+            }}
+          >
+            Band wider than the actual move — most batches settle Flat.
           </span>
         ) : null}
         {showLegend ? (
