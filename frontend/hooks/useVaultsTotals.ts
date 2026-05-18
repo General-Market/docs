@@ -6,65 +6,82 @@ import { useAccount } from 'wagmi'
 import fundData from '@/data/fund-branding.json'
 import { useSSEVisionVaults, type VisionVaultSSE } from '@/hooks/useSSE'
 import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
+import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
 
 export interface VaultsTotals {
   count: number
   totalValue: number
   totalPending: number
   totalPnl: number
-  /** True while at least one held vault is missing its SSE NAV snapshot. */
+  /** True while at least one held vault is missing both wagmi and SSE pricing. */
   pricingIncomplete: boolean
 }
 
 function rowValues(
+  vaultInfo: VaultInfo | undefined,
   vault: VisionVaultSSE | undefined,
   shares: bigint,
   pending: bigint,
 ): { value: number; pending: number; pnl: number; vaultLoading: boolean } | null {
   if (shares === 0n && pending === 0n) return null
 
-  // SSE hasn't shipped this vault's NAV yet (or the data-node lost the registry).
-  // We can still surface pending USDC, but the share-side value is unknown —
-  // returning 0 here would have the aggregate footer claim "−$X all-time".
-  const vaultLoading = !vault || !vault.total_supply || vault.total_supply === '0'
+  // Prefer the wagmi on-chain read — SSE can go silent (data-node registry
+  // mis-path, restart). Fall back to SSE, then to a "pricing unknown" state.
+  let totalAssets = 0n
+  let totalSupply = 0n
+  let pricingKnown = false
 
-  const totalAssets = (() => { try { return BigInt(vault?.total_assets ?? '0') } catch { return 0n } })()
-  const totalSupply = (() => { try { return BigInt(vault?.total_supply ?? '0') } catch { return 0n } })()
+  if (vaultInfo && vaultInfo.totalSupply > 0n) {
+    totalAssets = vaultInfo.totalAssets
+    totalSupply = vaultInfo.totalSupply
+    pricingKnown = true
+  } else if (vault && vault.total_supply && vault.total_supply !== '0') {
+    try { totalAssets = BigInt(vault.total_assets) } catch {}
+    try { totalSupply = BigInt(vault.total_supply) } catch {}
+    pricingKnown = totalSupply > 0n
+  }
+
   const sharesFloat = parseFloat(formatUnits(shares, 18))
   const pendingFloat = parseFloat(formatUnits(pending, 18))
   const sharesValue =
-    !vaultLoading && totalSupply > 0n && shares > 0n
+    pricingKnown && shares > 0n
       ? (Number(shares) / Number(totalSupply)) * parseFloat(formatUnits(totalAssets, 18))
       : 0
 
   // Approximation: vaults start at NAV=1.0, so shares-as-float ≈ principal.
-  // Skipped while vaultLoading — otherwise we'd report PnL ≈ −principal.
-  const pnl = !vaultLoading && shares > 0n ? sharesValue - sharesFloat : 0
+  // Skipped when pricing is unknown — otherwise we'd report PnL ≈ −principal.
+  const pnl = pricingKnown && shares > 0n ? sharesValue - sharesFloat : 0
 
   return {
-    value: vaultLoading ? pendingFloat : sharesValue + pendingFloat,
+    value: pricingKnown ? sharesValue + pendingFloat : pendingFloat,
     pending: pendingFloat,
     pnl,
-    vaultLoading,
+    vaultLoading: !pricingKnown,
   }
 }
 
 /**
  * Aggregates the connected wallet's vault positions into running totals.
- * Reads positions directly on-chain via useOnChainVaultPositions; vault
- * metadata (NAV, TVL, total supply) still comes from SSE since that side of
- * the data-node stream is reliable.
+ * Prices positions with the wagmi multicall first, falling back to SSE so a
+ * silent data-node registry can't make the footer pretend the wallet is empty.
  */
 export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
   const { address } = useAccount()
   const visionVaults = useSSEVisionVaults()
   const { shares, pending } = useOnChainVaultPositions(enabled ? address : undefined)
+  const { vaults: allVaultInfos } = useVaults()
 
   const vaultByAddr = useMemo(() => {
     const map = new Map<string, VisionVaultSSE>()
     for (const v of visionVaults) map.set(v.address.toLowerCase(), v)
     return map
   }, [visionVaults])
+
+  const vaultInfoByAddr = useMemo(() => {
+    const map = new Map<string, VaultInfo>()
+    for (const v of allVaultInfos) map.set(v.address.toLowerCase(), v)
+    return map
+  }, [allVaultInfos])
 
   return useMemo<VaultsTotals>(() => {
     if (!enabled) {
@@ -80,7 +97,7 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
       const lower = (fund.vault as string).toLowerCase()
       const sharesBig = shares.get(lower) ?? 0n
       const pendingBig = pending.get(lower) ?? 0n
-      const r = rowValues(vaultByAddr.get(lower), sharesBig, pendingBig)
+      const r = rowValues(vaultInfoByAddr.get(lower), vaultByAddr.get(lower), sharesBig, pendingBig)
       if (!r) continue
       count += 1
       totalValue += r.value
@@ -89,5 +106,5 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
       if (r.vaultLoading) pricingIncomplete = true
     }
     return { count, totalValue, totalPending, totalPnl, pricingIncomplete }
-  }, [enabled, vaultByAddr, shares, pending])
+  }, [enabled, vaultByAddr, vaultInfoByAddr, shares, pending])
 }

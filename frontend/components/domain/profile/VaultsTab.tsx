@@ -89,26 +89,36 @@ function VaultBrandTile({ row }: { row: VaultRow }) {
 
 function computeRow(
   fund: { vault: string; name: string; symbol: string; source: string; strategy: string; color?: string },
+  vaultInfo: VaultInfo | undefined,
   vault: VisionVaultSSE | undefined,
   sharesBigInt: bigint,
   pendingBigInt: bigint,
 ): VaultRow | null {
   if (sharesBigInt === 0n && pendingBigInt === 0n) return null
 
-  // SSE hasn't delivered this vault's NAV/supply yet (or data-node lost the
-  // registry). Without it we cannot price the position. Render the row with
-  // share count intact, but flag value/pnl as unknown so the UI shows dashes
-  // instead of inventing $0 and -100%.
-  const vaultLoading = !vault || !vault.total_supply || vault.total_supply === '0'
+  // Prefer the wagmi on-chain read — SSE can go silent (data-node registry
+  // mis-path, restart). Fall back to SSE, then to the loading-dashes state.
+  let totalAssets = 0n
+  let totalSupply = 0n
+  let navPerShare = 1.0
+  let pricingKnown = false
 
-  const totalAssets = safeBigInt(vault?.total_assets)
-  const totalSupply = safeBigInt(vault?.total_supply)
-  const navPerShare = vault?.nav_per_share ?? 1.0
+  if (vaultInfo && vaultInfo.totalSupply > 0n) {
+    totalAssets = vaultInfo.totalAssets
+    totalSupply = vaultInfo.totalSupply
+    navPerShare = vaultInfo.navPerShare
+    pricingKnown = true
+  } else if (vault && vault.total_supply && vault.total_supply !== '0') {
+    totalAssets = safeBigInt(vault.total_assets)
+    totalSupply = safeBigInt(vault.total_supply)
+    navPerShare = vault.nav_per_share ?? 1.0
+    pricingKnown = totalSupply > 0n
+  }
 
   const sharesFloat = parseFloat(formatUnits(sharesBigInt, 18))
   const pendingFloat = parseFloat(formatUnits(pendingBigInt, 18))
   const sharesValue =
-    !vaultLoading && totalSupply > 0n && sharesBigInt > 0n
+    pricingKnown && sharesBigInt > 0n
       ? (Number(sharesBigInt) / Number(totalSupply)) * parseFloat(formatUnits(totalAssets, 18))
       : 0
 
@@ -120,11 +130,11 @@ function computeRow(
     strategy: fund.strategy,
     sharesBigInt,
     pendingBigInt,
-    value: vaultLoading ? Number.NaN : sharesValue + pendingFloat,
-    pnl: vaultLoading || sharesBigInt === 0n ? Number.NaN : sharesValue - sharesFloat,
+    value: pricingKnown ? sharesValue + pendingFloat : Number.NaN,
+    pnl: pricingKnown && sharesBigInt > 0n ? sharesValue - sharesFloat : Number.NaN,
     navPerShare,
     color: fund.color || '#1d1d1f',
-    vaultLoading,
+    vaultLoading: !pricingKnown,
   }
 }
 
@@ -143,6 +153,13 @@ export function VaultsTab({ address }: VaultsTabProps) {
     return map
   }, [visionVaults])
 
+  const { vaults: allVaultInfos } = useVaults()
+  const vaultInfoByAddr = useMemo(() => {
+    const map = new Map<string, VaultInfo>()
+    for (const v of allVaultInfos) map.set(v.address.toLowerCase(), v)
+    return map
+  }, [allVaultInfos])
+
   const rows = useMemo<VaultRow[]>(() => {
     if (!isSelf) return []
     const funds = (fundData as { funds: Array<{ vault?: string; name: string; symbol: string; source: string; strategy: string; color?: string }> })
@@ -150,24 +167,22 @@ export function VaultsTab({ address }: VaultsTabProps) {
     const result: VaultRow[] = []
     for (const fund of funds) {
       const lower = (fund.vault as string).toLowerCase()
-      const vault = vaultByAddr.get(lower)
       const sharesBig = onChainShares.get(lower) ?? 0n
       const pendingBig = onChainPending.get(lower) ?? 0n
-      const row = computeRow(fund as { vault: string; name: string; symbol: string; source: string; strategy: string; color?: string }, vault, sharesBig, pendingBig)
+      const row = computeRow(
+        fund as { vault: string; name: string; symbol: string; source: string; strategy: string; color?: string },
+        vaultInfoByAddr.get(lower),
+        vaultByAddr.get(lower),
+        sharesBig,
+        pendingBig,
+      )
       if (row) result.push(row)
     }
     result.sort((a, b) => b.value - a.value)
     return result
-  }, [isSelf, vaultByAddr, onChainShares, onChainPending])
+  }, [isSelf, vaultByAddr, vaultInfoByAddr, onChainShares, onChainPending])
 
   const totals = useVaultsTotals(isSelf)
-
-  const { vaults: allVaultInfos } = useVaults()
-  const vaultInfoByAddr = useMemo(() => {
-    const map = new Map<string, VaultInfo>()
-    for (const v of allVaultInfos) map.set(v.address.toLowerCase(), v)
-    return map
-  }, [allVaultInfos])
 
   const [selectedVault, setSelectedVault] = useState<{
     info: VaultInfo
