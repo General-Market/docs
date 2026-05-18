@@ -64,6 +64,7 @@ interface LatencyRow {
   slug: string
   name: string
   edgeMs: number
+  gatedMs: number      // portion behind a real barrier (colo contract, paid feed, designated MM, capital gate, B-book)
   lane: string         // Retail: X | MM: Y form
   barrier: string      // single mechanism noun phrase
   source?: { label: string; url: string }
@@ -72,77 +73,77 @@ interface LatencyRow {
 
 const LATENCY_ROWS: LatencyRow[] = [
   {
-    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197,
+    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197, gatedMs: 2,
     lane: 'Retail (European desk): +197ms | MM (Tokyo desk): ~3ms to validator cluster',
     barrier: 'AWS Tokyo proximity + Foundation node',
     source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
     barrierSource: { label: 'Hyperliquid docs', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node' },
   },
   {
-    slug: 'binance', name: 'Binance', edgeMs: 145,
+    slug: 'binance', name: 'Binance', edgeMs: 145, gatedMs: 5,
     lane: 'Retail (global): +145ms | MM (VIP 9): AWS Tokyo colo, ~5ms FIX',
     barrier: 'VIP 9 — $30B/30d futures + 5,500 BNB',
     source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
     barrierSource: { label: 'Binance · VIP program', url: 'https://www.binance.com/en/vip-institutional-services' },
   },
   {
-    slug: 'bybit', name: 'Bybit', edgeMs: 140,
+    slug: 'bybit', name: 'Bybit', edgeMs: 140, gatedMs: 5,
     lane: 'Retail (global): +140ms | MM (institutional): AWS SG/Tokyo colo + 2.5ms MMGW',
     barrier: 'Institutional Services agreement',
     source: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
     barrierSource: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
   },
   {
-    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130,
+    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, gatedMs: 25,
     lane: 'Retail (default RPC): +130ms | MM (sniper): validator-adjacent RPC + Jito bundles',
     barrier: 'Paid validator-adjacent RPC + Jito tips',
     source: { label: 'Helius · Solana latency', url: 'https://www.helius.dev/blog/solana-rpc-latency' },
     barrierSource: { label: 'Jito Labs · block engine', url: 'https://www.jito.wtf/' },
   },
   {
-    slug: 'etoro', name: 'eToro', edgeMs: 100,
+    slug: 'etoro', name: 'eToro', edgeMs: 100, gatedMs: 100,
     lane: 'Retail: order never reaches a public market | MM (eToro itself): is the book',
     barrier: 'B-book CFD counterparty',
     source: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
     barrierSource: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
   },
   {
-    slug: 'polymarket', name: 'Polymarket', edgeMs: 78,
+    slug: 'polymarket', name: 'Polymarket', edgeMs: 78, gatedMs: 3,
     lane: 'Retail (NY): +78ms | MM (KYC\'d London colo): ~3ms in eu-west-2',
     barrier: 'KYC/KYB approval + eu-west-2 colocation',
     source: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
     barrierSource: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
   },
   {
-    slug: 'deribit', name: 'Deribit', edgeMs: 75,
+    slug: 'deribit', name: 'Deribit', edgeMs: 75, gatedMs: 2,
     lane: 'Retail (US): +75ms | MM (LD4 colo): ~2ms FIX cage cross-connect',
     barrier: 'Pro institutional FIX gateway + MM agreement',
     source: { label: 'Deribit · institutional', url: 'https://www.deribit.com/kb/api-overview' },
     barrierSource: { label: 'Deribit · FIX', url: 'https://docs.deribit.com/?javascript#fix-api' },
   },
   {
-    slug: 'coinbase', name: 'Coinbase', edgeMs: 60,
+    slug: 'coinbase', name: 'Coinbase', edgeMs: 60, gatedMs: 5,
     lane: 'Retail (Asia/EU): +60ms | MM (Prime): us-east-1 / Equinix LD4 FIX',
     barrier: 'Coinbase Prime onboarding + institutional FIX',
     source: { label: 'Coinbase · Prime', url: 'https://prime.coinbase.com/' },
     barrierSource: { label: 'Coinbase · Prime FIX', url: 'https://docs.cdp.coinbase.com/prime/docs/fix-api-overview' },
   },
   {
-    slug: 'ibkr', name: 'IBKR', edgeMs: 50,
+    slug: 'ibkr', name: 'IBKR', edgeMs: 50, gatedMs: 50,
     lane: 'Retail (SmartRouter): +50ms | MM (Pro DMA): direct market access',
     barrier: 'Pro/institutional capital + commercial agreement',
     source: { label: 'IBKR · DMA', url: 'https://www.interactivebrokers.com/en/trading/orders/smartRouting.php' },
     barrierSource: { label: 'IBKR · Pro DMA', url: 'https://www.interactivebrokers.com/en/general/finlearn/order-types-routing/ibkr-pro-direct-market-access.php' },
   },
   {
-    slug: 'kalshi', name: 'Kalshi', edgeMs: 49,
+    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 15,
     lane: 'Retail (browser): +49ms | MM (Chicago designated): ~1ms cross-connect',
     barrier: 'Designated MM contract',
     source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
     barrierSource: { label: 'Kalshi · MM program', url: 'https://help.kalshi.com/en/articles/13823819-market-maker-program' },
   },
   {
-    slug: 'robinhood', name: 'Robinhood', edgeMs: 35,
+    slug: 'robinhood', name: 'Robinhood', edgeMs: 35, gatedMs: 35,
     lane: 'Retail: lit-market execution | MM (Citadel): PFOF info window before book',
     barrier: 'Wholesaler internalization',
     source: { label: 'SEC · Robinhood PFOF', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
@@ -269,7 +270,8 @@ function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
 }
 
 function LatencyBarRow({ row }: { row: LatencyRow }) {
-  const pct = Math.max((row.edgeMs / MAX_EDGE) * 100, row.edgeMs > 0 ? 2 : 0)
+  const edgePct = Math.max((row.edgeMs / MAX_EDGE) * 100, row.edgeMs > 0 ? 2 : 0)
+  const gatedPct = Math.max((row.gatedMs / MAX_EDGE) * 100, row.gatedMs > 0 ? 1.5 : 0)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <div
@@ -308,14 +310,28 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
           }}
           aria-hidden
         />
-        {pct > 0 && (
+        {edgePct > 0 && (
           <div
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               bottom: 0,
-              width: `${pct}%`,
+              width: `${edgePct}%`,
+              background: ACCENT,
+              opacity: 0.32,
+              borderRadius: 4,
+            }}
+          />
+        )}
+        {gatedPct > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: `${gatedPct}%`,
               background: ACCENT,
               borderRadius: 4,
             }}
@@ -326,16 +342,33 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
         style={{
           flex: '0 0 100px',
           textAlign: 'right',
-          fontFamily: 'var(--apple-font-display)',
-          fontVariantNumeric: 'tabular-nums',
-          letterSpacing: '-0.016em',
-          fontSize: 14,
-          fontWeight: 600,
-          color: ACCENT,
           whiteSpace: 'nowrap',
         }}
       >
-        +{row.edgeMs}ms
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: ACCENT,
+          }}
+        >
+          +{row.edgeMs}ms
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.005em',
+            fontSize: 12,
+            color: TERTIARY,
+            marginTop: 2,
+          }}
+        >
+          {row.gatedMs}ms gated
+        </div>
       </div>
     </div>
   )
@@ -568,7 +601,10 @@ export function ColocationSection() {
                   }}
                 >
                   {row.name}{' '}
-                  <span style={{ color: TERTIARY, fontWeight: 400 }}>· +{row.edgeMs}ms</span>
+                  <span style={{ color: TERTIARY, fontWeight: 400 }}>
+                    · +{row.edgeMs}ms{' '}
+                    <span style={{ opacity: 0.7 }}>· {row.gatedMs}ms gated</span>
+                  </span>
                 </div>
                 <div style={{ marginBottom: 4, fontStyle: 'italic', color: SECONDARY }}>
                   {row.lane}

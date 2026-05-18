@@ -8,12 +8,6 @@ const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
 const SURFACE = 'var(--apple-surface)'
 
-const PROGRAM_BADGE: Record<FeeTierVenue['publicProgram'], string> = {
-  open: 'Public schedule',
-  partial: 'Public retail · private MM',
-  private: 'MM terms private',
-}
-
 const RANKED = [...FEE_TIER_VENUES]
   .filter((v): v is FeeTierVenue & { edgeBps: number } => typeof v.edgeBps === 'number')
   .sort((a, b) => b.edgeBps - a.edgeBps)
@@ -21,161 +15,6 @@ const RANKED = [...FEE_TIER_VENUES]
 const MAX_EDGE = RANKED.length > 0 ? RANKED[0].edgeBps : 1
 
 const UNDISCLOSED = FEE_TIER_VENUES.filter(v => v.edgeBps === null)
-
-function FeeCard({ v, delay }: { v: FeeTierVenue; delay: number }) {
-  return (
-    <Reveal delay={delay}>
-      <article
-        className="flex flex-col h-full"
-        style={{
-          background: 'var(--apple-panel)',
-          border: `1px solid ${LINE}`,
-          borderRadius: 'var(--apple-r-md)',
-          padding: 22,
-          gap: 12,
-          minHeight: 360,
-        }}
-      >
-        <header className="flex items-baseline justify-between gap-3">
-          <h3
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 21,
-              fontWeight: 600,
-              letterSpacing: '-0.022em',
-              color: TEXT,
-            }}
-          >
-            {v.name}
-          </h3>
-          <span
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 17,
-              fontWeight: 600,
-              letterSpacing: '-0.016em',
-              color: ACCENT,
-              fontVariantNumeric: 'tabular-nums',
-              textAlign: 'right',
-            }}
-          >
-            {v.edgeLabel}
-          </span>
-        </header>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: TERTIARY,
-            letterSpacing: '-0.005em',
-          }}
-        >
-          {v.market} · {PROGRAM_BADGE[v.publicProgram]}
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            paddingTop: 6,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 13,
-              lineHeight: 1.45,
-              color: TEXT,
-              fontWeight: 500,
-              letterSpacing: '-0.011em',
-            }}
-          >
-            <span style={{ color: TERTIARY, fontWeight: 400 }}>Retail · </span>
-            {v.retailLine}
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 13,
-              lineHeight: 1.45,
-              color: TEXT,
-              fontWeight: 500,
-              letterSpacing: '-0.011em',
-            }}
-          >
-            <span style={{ color: TERTIARY, fontWeight: 400 }}>Inside · </span>
-            {v.mmLine}
-          </div>
-        </div>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: SECONDARY,
-            lineHeight: 1.5,
-            letterSpacing: '-0.005em',
-            paddingTop: 4,
-          }}
-        >
-          <span style={{ color: TERTIARY }}>Cost of staying inside · </span>
-          {v.qualification}
-        </div>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: SECONDARY,
-            lineHeight: 1.5,
-            letterSpacing: '-0.005em',
-          }}
-        >
-          <span style={{ color: TERTIARY }}>Quote obligations · </span>
-          {v.obligations}
-        </div>
-
-        {v.note && (
-          <div
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              color: SECONDARY,
-              lineHeight: 1.5,
-              letterSpacing: '-0.005em',
-              fontStyle: 'italic',
-            }}
-          >
-            {v.note}
-          </div>
-        )}
-
-        <footer
-          className="flex items-center justify-between gap-3 pt-3"
-          style={{ marginTop: 'auto', borderTop: `1px solid ${LINE}` }}
-        >
-          <a
-            href={v.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              fontWeight: 500,
-              color: ACCENT,
-              letterSpacing: '-0.005em',
-            }}
-            className="hover:underline"
-          >
-            {v.sourceLabel} ›
-          </a>
-        </footer>
-      </article>
-    </Reveal>
-  )
-}
 
 function EdgeBarRow({
   label,
@@ -357,31 +196,6 @@ export function FeeTierSection() {
           Unfair fee tier
         </h2>
       </Reveal>
-      <Reveal delay={0.1}>
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 17,
-            lineHeight: 1.47,
-            letterSpacing: 'var(--apple-track-tight)',
-            color: SECONDARY,
-            marginTop: 12,
-            maxWidth: 780,
-          }}
-        >
-          The retail trader pays a percentage of intent. The market maker is paid by the venue for being there. Between them sits the spread the platform extracts from anyone outside the room. Every venue publishes the first half. None of them publishes both.
-        </p>
-      </Reveal>
-
-      <div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        style={{ marginTop: 36 }}
-      >
-        {FEE_TIER_VENUES.map((v, i) => (
-          <FeeCard key={v.slug} v={v} delay={Math.min(i * 0.03, 0.24)} />
-        ))}
-      </div>
-
       <Reveal delay={0.12}>
         <div
           style={{
