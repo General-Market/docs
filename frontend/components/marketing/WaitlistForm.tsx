@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 import { DotGridBg } from '@/components/marketing/waitlist/DotGridBg'
 import { CaveatArrow } from '@/components/marketing/waitlist/CaveatArrow'
+import { posthog } from '@/lib/posthog'
 
 const ACCENT = '#0052FF'
 const FG = '#0A0A0A'
@@ -625,6 +626,13 @@ export default function WaitlistForm() {
   const [direction, setDirection] = useState<1 | -1>(1)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
+  const idxRef = useRef(0)
+  const lastStepIdRef = useRef<string>(STEPS[0].id)
+  const startedRef = useRef(false)
+  const startedAtRef = useRef<number | null>(null)
+  const submittedRef = useRef(false)
+  const abandonedRef = useRef(false)
+
   const step = STEPS[idx]
   const totalQuestions = STEPS.length - 1
   const visibleQuestionIndex = useMemo(() => {
@@ -636,6 +644,55 @@ export default function WaitlistForm() {
     }
     return n + 1
   }, [idx, answers])
+
+  // Fire `waitlist_step_viewed` on every navigation. Track first move past
+  // welcome as `waitlist_started` so we can separate landed-but-never-engaged
+  // from real drop-offs further in.
+  useEffect(() => {
+    const s = STEPS[idx]
+    idxRef.current = idx
+    lastStepIdRef.current = s.id
+    if (idx > 0 && !startedRef.current) {
+      startedRef.current = true
+      startedAtRef.current = Date.now()
+      posthog?.capture('waitlist_started')
+    }
+    posthog?.capture('waitlist_step_viewed', {
+      step_id: s.id,
+      step_index: idx,
+      visible_index: idx === 0 ? 0 : visibleQuestionIndex,
+      total_steps: totalQuestions,
+    })
+  }, [idx, visibleQuestionIndex, totalQuestions])
+
+  // Abandon detection. Fires once if the page is hidden/closed after the user
+  // engaged but before they submitted. `pagehide` + `visibilitychange` covers
+  // tab-close, navigation, and mobile background. Uses sendBeacon under the
+  // hood when posthog detects unload.
+  useEffect(() => {
+    function abandon(reason: 'pagehide' | 'hidden') {
+      if (abandonedRef.current) return
+      if (submittedRef.current) return
+      if (!startedRef.current) return
+      abandonedRef.current = true
+      posthog?.capture('waitlist_abandoned', {
+        last_step_id: lastStepIdRef.current,
+        last_step_index: idxRef.current,
+        elapsed_ms: startedAtRef.current ? Date.now() - startedAtRef.current : null,
+        reason,
+      })
+    }
+    const onPageHide = () => abandon('pagehide')
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') abandon('hidden')
+    }
+    window.addEventListener('pagehide', onPageHide)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', onPageHide)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
   const handle = useMemo(() => {
     const raw = typeof answers.twitter === 'string' ? answers.twitter : ''
@@ -666,17 +723,32 @@ export default function WaitlistForm() {
 
   async function submit(finalAnswers: Answers) {
     setSubmitting(true)
+    let ok = false
+    let whitelist = false
     try {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(finalAnswers),
       })
+      ok = res.ok
       const data = await res.json().catch(() => ({}))
-      if (data?.whitelisted) setWhitelisted(true)
+      whitelist = Boolean(data?.whitelisted)
+      if (whitelist) setWhitelisted(true)
     } catch {
       // user shouldn't pay for our backend
     } finally {
+      submittedRef.current = true
+      posthog?.capture('waitlist_submitted', {
+        ok,
+        whitelisted: whitelist,
+        affiliate: finalAnswers.affiliate === 'yes',
+        has_invite: finalAnswers.has_invite === 'yes',
+        protection_from: Array.isArray(finalAnswers.protection_from)
+          ? finalAnswers.protection_from
+          : [],
+        elapsed_ms: startedAtRef.current ? Date.now() - startedAtRef.current : null,
+      })
       setSubmitting(false)
       setSubmitted(true)
       chime()
@@ -686,6 +758,10 @@ export default function WaitlistForm() {
   async function advance(answersOverride?: Answers) {
     const ans = answersOverride ?? answers
     if (step.type === 'welcome') {
+      posthog?.capture('waitlist_step_completed', {
+        step_id: step.id,
+        step_index: idx,
+      })
       setDirection(1)
       setIdx(findNext(idx, 1, ans))
       return
@@ -693,10 +769,19 @@ export default function WaitlistForm() {
     const value = ans[step.id] ?? (step.type === 'choice' && step.multiple ? [] : '')
     const v = isValid(step, value)
     if (!v.ok) {
+      posthog?.capture('waitlist_validation_error', {
+        step_id: step.id,
+        step_index: idx,
+        reason: v.reason,
+      })
       setError(v.reason)
       return
     }
     setError(null)
+    posthog?.capture('waitlist_step_completed', {
+      step_id: step.id,
+      step_index: idx,
+    })
     const next = findNext(idx, 1, ans)
     if (next === idx) {
       await submit(ans)
@@ -709,6 +794,10 @@ export default function WaitlistForm() {
   function back() {
     if (idx === 0) return
     setError(null)
+    posthog?.capture('waitlist_step_back', {
+      from_step_id: step.id,
+      from_step_index: idx,
+    })
     setDirection(-1)
     setIdx(findNext(idx, -1, answers))
   }
