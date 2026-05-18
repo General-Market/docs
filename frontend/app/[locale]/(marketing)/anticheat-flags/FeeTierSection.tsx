@@ -359,7 +359,7 @@ export function FeeTierSection() {
             maxWidth: 880,
           }}
         >
-          The Fee Tier They Sell to Insiders.
+          Unfair fee tier
         </h2>
       </Reveal>
       <Reveal delay={0.1}>

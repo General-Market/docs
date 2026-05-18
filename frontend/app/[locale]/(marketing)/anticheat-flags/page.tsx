@@ -325,69 +325,6 @@ export default function AntiCheatFlagsPage() {
 
           {/* STRUCTURAL EDGE INVENTORY — fifteen mechanisms across five rulers */}
           <EdgeMatrixSection />
-
-          {/* CLOSER */}
-          <section
-            style={{
-              marginTop: 80,
-              marginBottom: 80,
-              paddingTop: 64,
-              paddingBottom: 64,
-              borderTop: `1px solid ${LINE}`,
-              borderBottom: `1px solid ${LINE}`,
-            }}
-          >
-            <Reveal mask>
-              <h2
-                className="font-semibold"
-                style={{
-                  fontFamily: 'var(--apple-font-display)',
-                  fontSize: 'clamp(28px, 3.6vw, 40px)',
-                  fontWeight: 600,
-                  letterSpacing: 'var(--apple-track-tighter)',
-                  lineHeight: 1.1,
-                  color: TEXT,
-                  maxWidth: 820,
-                }}
-              >
-                Eleven venues. The same handful of mechanisms. We built one without the room.
-              </h2>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <p
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 17,
-                  lineHeight: 1.47,
-                  letterSpacing: 'var(--apple-track-tight)',
-                  color: SECONDARY,
-                  marginTop: 16,
-                  maxWidth: 720,
-                }}
-              >
-                When the venue keeps the order book, the matching engine, the price feed, the listing decision, and the audit — the receipts arrive on schedule. General Market is on-chain. Sealed bets. Parimutuel pools. BLS-verified oracles. The house cannot front-run because there is no house.
-              </p>
-            </Reveal>
-            <Reveal delay={0.16}>
-              <a
-                href="/"
-                className="inline-flex items-center transition hover:opacity-90"
-                style={{
-                  marginTop: 28,
-                  background: 'var(--apple-accent)',
-                  color: '#fff',
-                  borderRadius: 'var(--apple-r-pill)',
-                  padding: '10px 22px',
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  letterSpacing: '-0.005em',
-                }}
-              >
-                Open General Market ›
-              </a>
-            </Reveal>
-          </section>
         </div>
       </div>
     </AppShell>

@@ -513,7 +513,7 @@ export function ColocationSection() {
             maxWidth: 820,
           }}
         >
-          The Edge They Sell to Insiders.
+          Unfair colocation
         </h2>
       </Reveal>
       <Reveal delay={0.1}>
