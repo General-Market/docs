@@ -1,107 +1,290 @@
 'use client'
 
 import { motion, useReducedMotion } from 'framer-motion'
-import { useMemo } from 'react'
 
-const COLS = 14
-const ROWS = 10
-const DOT_RADIUS = 3
-const GAP = 28
+type Market = {
+  name: string
+  category: string
+  yes: number
+}
+
+const MARKETS: Market[] = [
+  { name: 'BTC > $200k by 2027', category: 'Crypto', yes: 64 },
+  { name: 'US recession in 2026', category: 'Macro', yes: 38 },
+  { name: 'Trump approval > 50%', category: 'Politics', yes: 41 },
+  { name: 'Lakers win 2026 finals', category: 'Sports', yes: 18 },
+  { name: 'Apple ships AR glasses', category: 'Tech', yes: 72 },
+  { name: 'Fed cuts rates in Q1', category: 'Macro', yes: 56 },
+  { name: 'ETH > $8k by year-end', category: 'Crypto', yes: 47 },
+  { name: 'CPI < 3% next month', category: 'Macro', yes: 61 },
+]
 
 export function Card1Block({ active }: { active: boolean }) {
   const reduced = useReducedMotion()
 
-  const dots = useMemo(() => {
-    const out: { x: number; y: number; key: string; delay: number }[] = []
-    const cx = ((COLS - 1) * GAP) / 2
-    const cy = ((ROWS - 1) * GAP) / 2
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const x = c * GAP
-        const y = r * GAP
-        const d = Math.hypot(x - cx, y - cy)
-        out.push({ x, y, key: `${r}-${c}`, delay: 0.4 + d * 0.004 })
-      }
-    }
-    return out
-  }, [])
-
-  const width = (COLS - 1) * GAP
-  const height = (ROWS - 1) * GAP
-  const centerX = width / 2
-  const centerY = height / 2
-
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-6 py-12 md:px-12 md:py-16">
-      <div
-        className="relative"
-        style={{
-          width: '100%',
-          maxWidth: width,
-          aspectRatio: `${width} / ${height + 60}`,
-        }}
-      >
-        <svg
-          viewBox={`-20 -20 ${width + 40} ${height + 40}`}
-          className="w-full h-full"
-          aria-hidden
-        >
-          {dots.map((d) => (
-            <motion.circle
-              key={d.key}
-              cx={d.x}
-              cy={d.y}
-              r={DOT_RADIUS}
-              fill="#ffffff"
-              fillOpacity={0.32}
-              initial={{ cx: d.x, cy: d.y, opacity: 0.32, scale: 1 }}
-              animate={
-                active && !reduced
-                  ? {
-                      cx: centerX,
-                      cy: centerY,
-                      opacity: [0.32, 0.32, 0],
-                      scale: [1, 1, 0.4],
-                    }
-                  : { cx: d.x, cy: d.y, opacity: 0.32, scale: 1 }
-              }
-              transition={{
-                duration: 1.6,
-                delay: d.delay,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.6, 1],
-              }}
-            />
-          ))}
+    <div className="flex flex-col items-center gap-10 px-6 py-12 md:px-12 md:py-14">
+      <div className="w-full max-w-[760px]">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-6 md:gap-8">
 
-          <motion.rect
-            x={centerX - 64}
-            y={centerY - 24}
-            width={128}
-            height={48}
-            rx={12}
-            fill="#2997ff"
-            initial={{ opacity: 0, scale: 0.4 }}
-            animate={active && !reduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }}
-            transition={{ duration: 0.45, delay: 1.7, ease: [0.4, 0, 0.2, 1] }}
-          />
-          <motion.text
-            x={centerX}
-            y={centerY}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#ffffff"
-            fontFamily='"SF Pro Display", -apple-system, system-ui, sans-serif'
-            fontSize="15"
-            fontWeight="600"
-            letterSpacing="-0.022em"
+          <div className="flex flex-col gap-2">
+            <div
+              className="mb-1"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-12)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.45)',
+              }}
+            >
+              10,000 markets
+            </div>
+            {MARKETS.map((m, i) => (
+              <motion.div
+                key={m.name}
+                initial={{ opacity: 0, y: 8 }}
+                animate={
+                  active && !reduced
+                    ? { opacity: 1, y: 0 }
+                    : reduced
+                      ? { opacity: 1, y: 0 }
+                      : { opacity: 0, y: 8 }
+                }
+                transition={{
+                  duration: 0.4,
+                  delay: 0.15 + i * 0.06,
+                  ease: [0.25, 0.1, 0.3, 1],
+                }}
+                className="flex items-center gap-3"
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: '10px',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.45)',
+                    width: 56,
+                    flexShrink: 0,
+                  }}
+                >
+                  {m.category}
+                </span>
+                <span
+                  className="flex-1 truncate"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 'var(--apple-fs-12)',
+                    letterSpacing: 'var(--apple-track-tight)',
+                    color: 'rgba(255,255,255,0.85)',
+                  }}
+                >
+                  {m.name}
+                </span>
+                <span
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 'var(--apple-fs-12)',
+                    color: 'rgba(255,255,255,0.55)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {m.yes}¢
+                </span>
+              </motion.div>
+            ))}
+            <div
+              className="mt-1 text-center"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-12)',
+                color: 'rgba(255,255,255,0.4)',
+                fontStyle: 'italic',
+              }}
+            >
+              · · · 9,992 more
+            </div>
+          </div>
+
+          <motion.div
+            className="flex items-center justify-center"
             initial={{ opacity: 0 }}
-            animate={active && !reduced ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.3, delay: 1.85 }}
+            animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.4, delay: 0.95 }}
           >
-            ITP · 10,000
-          </motion.text>
-        </svg>
+            <svg
+              width="64"
+              height="44"
+              viewBox="0 0 64 44"
+              fill="none"
+              aria-hidden
+              className="hidden md:block"
+            >
+              <motion.path
+                d="M4 22 L52 22"
+                stroke="rgba(255,255,255,0.55)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
+                transition={{ duration: 0.6, delay: 1.0, ease: [0.4, 0, 0.2, 1] }}
+              />
+              <motion.path
+                d="M46 14 L56 22 L46 30"
+                stroke="rgba(255,255,255,0.55)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                initial={{ opacity: 0 }}
+                animate={active && !reduced ? { opacity: 1 } : { opacity: 1 }}
+                transition={{ duration: 0.3, delay: 1.4 }}
+              />
+            </svg>
+            <svg
+              width="44"
+              height="64"
+              viewBox="0 0 44 64"
+              fill="none"
+              aria-hidden
+              className="md:hidden"
+            >
+              <motion.path
+                d="M22 4 L22 52"
+                stroke="rgba(255,255,255,0.55)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
+                transition={{ duration: 0.6, delay: 1.0, ease: [0.4, 0, 0.2, 1] }}
+              />
+              <motion.path
+                d="M14 46 L22 56 L30 46"
+                stroke="rgba(255,255,255,0.55)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                initial={{ opacity: 0 }}
+                animate={active && !reduced ? { opacity: 1 } : { opacity: 1 }}
+                transition={{ duration: 0.3, delay: 1.4 }}
+              />
+            </svg>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={
+              active && !reduced
+                ? { opacity: 1, scale: 1, y: 0 }
+                : reduced
+                  ? { opacity: 1, scale: 1, y: 0 }
+                  : { opacity: 0, scale: 0.92, y: 8 }
+            }
+            transition={{ duration: 0.5, delay: 1.5, ease: [0.25, 0.1, 0.3, 1] }}
+            className="relative w-full"
+            style={{
+              padding: '20px 22px',
+              borderRadius: 16,
+              background: 'linear-gradient(180deg, rgba(41,151,255,0.18) 0%, rgba(41,151,255,0.06) 100%)',
+              border: '1px solid rgba(41,151,255,0.35)',
+              boxShadow: '0 12px 32px rgba(41,151,255,0.18)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: '10px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              Index
+            </div>
+            <div
+              className="mt-1"
+              style={{
+                fontFamily: 'var(--apple-font-display)',
+                fontSize: '24px',
+                fontWeight: 600,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#ffffff',
+                lineHeight: 1.1,
+              }}
+            >
+              General Index
+            </div>
+            <div
+              className="mt-2 flex items-baseline gap-2"
+              style={{ fontFamily: 'var(--apple-font-text)' }}
+            >
+              <span
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: '#ffffff',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                $1.00
+              </span>
+              <span
+                style={{
+                  fontSize: 'var(--apple-fs-12)',
+                  color: 'rgba(255,255,255,0.55)',
+                  letterSpacing: 'var(--apple-track-tight)',
+                }}
+              >
+                / share
+              </span>
+            </div>
+            <div
+              className="mt-3 pt-3"
+              style={{
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-12)',
+                color: 'rgba(255,255,255,0.65)',
+                lineHeight: 1.5,
+              }}
+            >
+              10,000 markets · equal weight
+              <br />
+              one click, one position
+            </div>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.3, delay: 2.0 }}
+              type="button"
+              className="mt-4 w-full"
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 'var(--apple-fs-14)',
+                fontWeight: 500,
+                letterSpacing: 'var(--apple-track-tight)',
+                color: '#ffffff',
+                background: '#2997ff',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: 999,
+                cursor: 'default',
+              }}
+            >
+              Buy
+            </motion.button>
+          </motion.div>
+        </div>
       </div>
 
       <div className="flex flex-col items-center text-center max-w-[640px]">
@@ -120,17 +303,17 @@ export function Card1Block({ active }: { active: boolean }) {
           className="mt-3"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(28px, 4vw, 40px)',
+            fontSize: 'clamp(26px, 3.8vw, 36px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
             color: '#ffffff',
             lineHeight: 1.1,
           }}
         >
-          One trade. Every market.
+          One click. Ten thousand markets.
         </h2>
         <p
-          className="mt-4"
+          className="mt-3"
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: '17px',
@@ -139,7 +322,7 @@ export function Card1Block({ active }: { active: boolean }) {
             lineHeight: 1.5,
           }}
         >
-          You stopped picking horses. You bought the racetrack.
+          Stop picking horses. Buy the racetrack.
         </p>
       </div>
     </div>
