@@ -10,9 +10,11 @@ import {
   Title,
 } from "../primitives";
 
-const N_POINTS = 800;
+const N_POINTS = 900;
 const PRICE_MIN = 64000;
 const PRICE_MAX = 82000;
+const PRICE_START = 66000;
+const PRICE_END = 81000;
 const IV_MIN = 0.358;
 const IV_MAX = 0.494;
 
@@ -46,27 +48,54 @@ export const Chart06: React.FC = () => {
   });
 
   const plotLeft = 130;
-  const plotTop = 220;
+  const plotTop = 210;
   const plotWidth = 1500;
   const plotHeight = 720;
 
   const points = React.useMemo<Pt[]>(() => {
     const rng = mulberry32(60614);
     const pts: Pt[] = [];
-    let price = 66000;
+
+    // Brownian-style walk with positive drift from PRICE_START to PRICE_END.
+    const drift = (PRICE_END - PRICE_START) / (N_POINTS - 1);
+    const sigma = 250;
+
+    let price = PRICE_START;
+    const raw: number[] = [];
     for (let i = 0; i < N_POINTS; i++) {
+      if (i > 0) {
+        price += drift + gaussian(rng, 0, sigma);
+      }
+      // Soft clamp inside the visible band.
+      price = Math.max(PRICE_MIN + 400, Math.min(PRICE_MAX - 400, price));
+      raw.push(price);
+    }
+
+    // Rescale so endpoints match the source exactly (66k -> 81k) without
+    // killing the local volatility — anchor start/end, distribute residual.
+    const targetStart = PRICE_START;
+    const targetEnd = PRICE_END;
+    const observedStart = raw[0];
+    const observedEnd = raw[N_POINTS - 1];
+    const slope =
+      (targetEnd - targetStart - (observedEnd - observedStart)) /
+      (N_POINTS - 1);
+
+    for (let i = 0; i < N_POINTS; i++) {
+      const adjusted =
+        raw[i] + slope * i + (targetStart - observedStart);
       const t = i / (N_POINTS - 1);
-      const drift = 14500 * t;
-      const wave = 1800 * Math.sin(t * Math.PI * 3.2);
-      const noise = gaussian(rng, 0, 600);
-      price = 66000 + drift + wave + noise;
-      price = Math.max(PRICE_MIN + 200, Math.min(PRICE_MAX - 200, price));
 
-      const ivBase = IV_MAX - (IV_MAX - IV_MIN) * t;
-      const ivNoise = gaussian(rng, 0, 0.015);
-      const iv = Math.max(IV_MIN, Math.min(IV_MAX, ivBase + ivNoise));
+      // IV inversely correlates with price: low price -> red (ivT high).
+      // blueRedRamp(0) = blue, blueRedRamp(1) = red.
+      const normalizedPrice =
+        (adjusted - PRICE_MIN) / (PRICE_MAX - PRICE_MIN);
+      const ivClean =
+        IV_MAX - (IV_MAX - IV_MIN) * normalizedPrice;
+      const ivNoise = gaussian(rng, 0, 0.008);
+      const iv = Math.max(IV_MIN, Math.min(IV_MAX, ivClean + ivNoise));
 
-      pts.push({ x: t, y: price, iv });
+      pts.push({ x: t, y: adjusted, iv });
     }
     return pts;
   }, []);
@@ -75,11 +104,11 @@ export const Chart06: React.FC = () => {
   const yAt = (p: number) =>
     plotHeight - ((p - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * plotHeight;
 
-  const yTicks = [];
+  const yTicks: { pos: number; label: string }[] = [];
   for (let v = PRICE_MIN; v <= PRICE_MAX; v += 2000) {
     yTicks.push({
       pos: yAt(v),
-      label: `$${(v / 1000).toFixed(0)}k`,
+      label: v.toLocaleString("en-US"),
     });
   }
 
@@ -96,7 +125,8 @@ export const Chart06: React.FC = () => {
         <Title
           text="BTC-29MAY26-STRADDLE"
           subtitle="27 Mar 26 08:00 - 05 May 26 15:00"
-          y={48}
+          y={44}
+          size={24}
         />
 
         <PlotArea
@@ -105,29 +135,21 @@ export const Chart06: React.FC = () => {
           width={plotWidth}
           height={plotHeight}
         >
-          {yTicks.map((t, i) => (
-            <line
-              key={`g-${i}`}
-              x1={0}
-              x2={plotWidth}
-              y1={t.pos}
-              y2={t.pos}
-              stroke={C.gridFaint}
-              strokeWidth={1}
-            />
-          ))}
-
           {points.slice(0, visibleCount).map((p, i) => {
-            const ivT = (p.iv - IV_MIN) / (IV_MAX - IV_MIN);
+            const normalizedPrice =
+              (p.y - PRICE_MIN) / (PRICE_MAX - PRICE_MIN);
+            const ivT = 1 - normalizedPrice;
             const color = blueRedRamp(ivT);
             return (
               <circle
                 key={i}
                 cx={xAt(p.x)}
                 cy={yAt(p.y)}
-                r={2.8}
+                r={4.0}
                 fill={color}
-                opacity={0.85}
+                stroke={C.bg}
+                strokeWidth={0.4}
+                opacity={0.9}
               />
             );
           })}
@@ -159,10 +181,10 @@ export const Chart06: React.FC = () => {
         />
 
         <HorizontalColorBar
-          x={1370}
-          y={130}
+          x={plotLeft + plotWidth - 280}
+          y={100}
           width={260}
-          height={10}
+          height={8}
           title="Implied volatility"
           leftLabel="35.8%"
           rightLabel="49.4%"

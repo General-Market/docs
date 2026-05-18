@@ -30,6 +30,9 @@ const X_MAX = 0.92;
 const Y_MIN = 0.18;
 const Y_MAX = 0.92;
 
+const DIFF_MIN = -0.4;
+const DIFF_MAX = 0.2;
+
 type Point = { iv: number; rv: number; diff: number };
 
 function buildPoints(): Point[] {
@@ -38,19 +41,36 @@ function buildPoints(): Point[] {
   for (let i = 0; i < 570; i++) {
     const cluster = rng();
     let iv: number;
-    if (cluster < 0.72) {
-      iv = 0.32 + gaussian(rng, 0, 0.07);
-    } else if (cluster < 0.92) {
-      iv = 0.5 + gaussian(rng, 0, 0.09);
+    if (cluster < 0.78) {
+      // Bulk cluster: IV 30–55%
+      iv = 0.42 + gaussian(rng, 0, 0.07);
+    } else if (cluster < 0.95) {
+      // Mid-high tail: IV 50–70%
+      iv = 0.58 + gaussian(rng, 0, 0.07);
     } else {
-      iv = 0.7 + gaussian(rng, 0, 0.08);
+      // Sparse high IV tail up to ~80%
+      iv = 0.72 + gaussian(rng, 0, 0.05);
     }
-    iv = Math.max(0.26, Math.min(0.88, iv));
+    iv = Math.max(0.26, Math.min(0.82, iv));
 
-    const expected = 0.85 * iv + 0.05;
-    const sigma = 0.07 + 0.05 * (iv - 0.3);
-    let rv = expected + gaussian(rng, 0, sigma);
-    rv = Math.max(0.2, Math.min(0.9, rv));
+    // Most points: RV slightly below IV (positive diff = blue, IV > RV)
+    // A small outlier set: RV well above IV (negative diff = red, top-left)
+    const isOutlier = rng() < 0.06;
+    let rv: number;
+    if (isOutlier) {
+      // Top-left outliers: low/medium IV, high RV
+      const ivOutlier = Math.min(iv, 0.55);
+      const lift = 0.18 + Math.abs(gaussian(rng, 0, 0.08));
+      rv = Math.min(0.9, ivOutlier + lift);
+      pts.push({ iv: ivOutlier, rv, diff: ivOutlier - rv });
+      continue;
+    }
+
+    // Bulk: RV concentrates slightly below IV, with mild noise.
+    const expected = iv - 0.04;
+    const sigma = 0.05 + 0.03 * (iv - 0.3);
+    rv = expected + gaussian(rng, 0, sigma);
+    rv = Math.max(0.2, Math.min(0.88, rv));
 
     pts.push({ iv, rv, diff: iv - rv });
   }
@@ -91,15 +111,18 @@ export const Chart01: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const diagX1 = xToPx(Math.max(X_MIN, Y_MIN));
-  const diagY1 = yToPx(Math.max(X_MIN, Y_MIN));
-  const diagX2 = xToPx(Math.min(X_MAX, Y_MAX));
-  const diagY2 = yToPx(Math.min(X_MAX, Y_MAX));
+  // IV = RV diagonal from (X_MIN, X_MIN) to (X_MAX, X_MAX), clipped to plot bounds.
+  const diagLo = Math.max(X_MIN, Y_MIN);
+  const diagHi = Math.min(X_MAX, Y_MAX);
+  const diagX1 = xToPx(diagLo);
+  const diagY1 = yToPx(diagLo);
+  const diagX2 = xToPx(diagHi);
+  const diagY2 = yToPx(diagHi);
   const diagDx = diagX2 - diagX1;
   const diagDy = diagY2 - diagY1;
 
   const cbStops = DIVERGING_BLUE_RED.map((s) => ({
-    t: (s.stop - -0.4) / (0.2 - -0.4),
+    t: (s.stop - DIFF_MIN) / (DIFF_MAX - DIFF_MIN),
     color: s.color,
   }));
 
@@ -109,7 +132,8 @@ export const Chart01: React.FC = () => {
         <Title
           text="BTCUSD 7-day ATM IV vs Forward RV"
           subtitle="Daily 8:00 UTC samples | 2024-10-08 to 2026-04-29"
-          y={56}
+          y={24}
+          size={18}
         />
 
         <PlotArea
@@ -125,7 +149,7 @@ export const Chart01: React.FC = () => {
               x2={PLOT.width}
               y1={t.pos}
               y2={t.pos}
-              stroke={C.grid}
+              stroke={C.gridFaint}
               strokeWidth={1}
             />
           ))}
@@ -136,7 +160,7 @@ export const Chart01: React.FC = () => {
               x2={t.pos}
               y1={0}
               y2={PLOT.height}
-              stroke={C.grid}
+              stroke={C.gridFaint}
               strokeWidth={1}
             />
           ))}
@@ -159,17 +183,18 @@ export const Chart01: React.FC = () => {
             if (a <= 0) return null;
             const cx = xToPx(p.iv);
             const cy = yToPx(p.rv);
-            const color = divergingColor(-p.diff, -0.4, 0.2);
+            // Positive diff (IV > RV) → blue (matches legend top).
+            const color = divergingColor(p.diff, DIFF_MIN, DIFF_MAX);
             return (
               <circle
                 key={i}
                 cx={cx}
                 cy={cy}
-                r={5}
+                r={3.5}
                 fill={color}
-                fillOpacity={0.9 * a}
+                fillOpacity={0.92 * a}
                 stroke={C.bg}
-                strokeWidth={0.6}
+                strokeWidth={0.4}
               />
             );
           })}
@@ -197,14 +222,14 @@ export const Chart01: React.FC = () => {
 
         <VerticalColorBar
           x={1620}
-          y={200}
-          width={14}
-          height={240}
+          y={180}
+          width={12}
+          height={180}
           stops={cbStops}
           ticks={[
             { t: 1, label: "+20%" },
-            { t: (0 - -0.4) / 0.6, label: "0%" },
-            { t: (-0.2 - -0.4) / 0.6, label: "-20%" },
+            { t: (0 - DIFF_MIN) / (DIFF_MAX - DIFF_MIN), label: "0%" },
+            { t: (-0.2 - DIFF_MIN) / (DIFF_MAX - DIFF_MIN), label: "-20%" },
             { t: 0, label: "-40%" },
           ]}
           title="IV − forward RV"

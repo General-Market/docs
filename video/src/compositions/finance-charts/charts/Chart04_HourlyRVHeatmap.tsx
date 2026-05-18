@@ -18,7 +18,7 @@ import {
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = 24;
 const VOL_MIN = 0.15;
-const VOL_MAX = 0.7;
+const VOL_MAX = 0.65;
 
 export const Chart04: React.FC = () => {
   const frame = useCurrentFrame();
@@ -45,24 +45,27 @@ export const Chart04: React.FC = () => {
       const row: number[] = [];
       const weekend = d >= 5;
       for (let h = 0; h < HOURS; h++) {
-        const base = 0.25;
+        const base = 0.22;
+        const hotAmp = weekend ? 0.12 : 0.3;
         const diurnal =
-          0.18 * Math.exp(-Math.pow((h - 14.5) / 3.2, 2)) +
-          0.04 * Math.exp(-Math.pow((h - 21) / 4.0, 2));
-        const weekly = weekend ? -0.06 : 0.02;
-        const noise = gaussian(rng, 0, 0.025);
+          hotAmp * Math.exp(-Math.pow((h - 14.5) / 2.0, 2)) +
+          0.05 * Math.exp(-Math.pow((h - 21) / 3.0, 2));
+        const weekly = weekend ? -0.04 : 0.04;
+        const noise = gaussian(rng, 0, 0.015);
         const v = base + diurnal + weekly + noise;
-        row.push(Math.max(0.1, Math.min(0.85, v)));
+        row.push(Math.max(0.16, Math.min(0.7, v)));
       }
       grid.push(row);
     }
     return grid;
   }, []);
 
+  // Source aspect: heatmap is wide, cells slightly wider than tall.
+  // 24 cols across ~1450px, 7 rows. Cells ~60w × ~70h works for the source feel.
   const plotLeft = 130;
-  const plotTop = 150;
-  const plotWidth = 1480;
-  const plotHeight = 780;
+  const plotTop = 170;
+  const plotWidth = 1450;
+  const plotHeight = 540;
   const cellWidth = plotWidth / HOURS;
   const cellHeight = plotHeight / DAYS.length;
 
@@ -98,26 +101,24 @@ export const Chart04: React.FC = () => {
           </div>
         ))}
 
-        {Array.from({ length: HOURS }).map((_, h) => {
-          if (h % 2 !== 0) return null;
-          return (
-            <div
-              key={h}
-              style={{
-                position: "absolute",
-                left: plotLeft + h * cellWidth + cellWidth / 2 - 14,
-                top: plotTop + plotHeight + 14,
-                color: C.inkDim,
-                fontFamily: FONT_TEXT,
-                fontSize: 11,
-                width: 28,
-                textAlign: "center",
-              }}
-            >
-              {String(h).padStart(2, "0")}
-            </div>
-          );
-        })}
+        {Array.from({ length: HOURS }).map((_, h) => (
+          <div
+            key={h}
+            style={{
+              position: "absolute",
+              left: plotLeft + h * cellWidth + cellWidth / 2,
+              top: plotTop + plotHeight + 14,
+              color: C.inkDim,
+              fontFamily: FONT_TEXT,
+              fontSize: 12,
+              transform: "translate(-50%, 0) rotate(-90deg)",
+              transformOrigin: "center top",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {h}
+          </div>
+        ))}
 
         <svg
           style={{
@@ -142,9 +143,11 @@ export const Chart04: React.FC = () => {
                   key={`${di}-${hi}`}
                   x={hi * cellWidth}
                   y={di * cellHeight}
-                  width={cellWidth + 0.5}
-                  height={cellHeight + 0.5}
+                  width={cellWidth}
+                  height={cellHeight}
                   fill={fill}
+                  stroke="#0A0A0A"
+                  strokeWidth={1.5}
                   opacity={cellReveal}
                 />
               );
@@ -155,14 +158,21 @@ export const Chart04: React.FC = () => {
         <AxisLabel
           text="Hour (UTC)"
           x={plotLeft + plotWidth / 2}
-          y={plotTop + plotHeight + 56}
+          y={plotTop + plotHeight + 90}
+        />
+
+        <AxisLabel
+          text="Day of Week"
+          x={42}
+          y={plotTop + plotHeight / 2}
+          rotate={-90}
         />
 
         <VerticalColorBar
-          x={1680}
-          y={plotTop + 40}
+          x={1660}
+          y={plotTop + 30}
           width={14}
-          height={plotHeight - 80}
+          height={plotHeight - 60}
           title="Avg Realized Vol (ann.)"
           stops={[
             { t: 0, color: SEQUENTIAL_RED[0] },
