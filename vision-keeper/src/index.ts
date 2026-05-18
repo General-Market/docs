@@ -32,11 +32,19 @@ interface KeeperState {
   rescuedTotal: number;
   knownVaults: Set<Address>;
   vaultsRefreshedAt: number;
+  lastScannedBlock: bigint | null;
+  seenBatches: Map<bigint, BatchRow>;
+  batchPlayers: Map<bigint, BatchPlayerState>;
 }
 
 interface BatchRow {
   batchId: bigint;
   createdBlock: bigint;
+}
+
+interface BatchPlayerState {
+  players: Set<Address>;
+  lastJoinScanBlock: bigint;
 }
 
 function lower(addr: string): Address {
@@ -90,9 +98,10 @@ async function filterStuckBatches(
   cfg: KeeperConfig,
   rows: BatchRow[],
   headTs: bigint,
-): Promise<BatchRow[]> {
+): Promise<{ stuck: BatchRow[]; settledIds: bigint[] }> {
   const CHUNK = 64;
   const stuck: BatchRow[] = [];
+  const settledIds: bigint[] = [];
   for (let i = 0; i < rows.length; i += CHUNK) {
     const slice = rows.slice(i, i + CHUNK);
     const reads = await Promise.allSettled(
@@ -119,27 +128,27 @@ async function filterStuckBatches(
       if (batchRes.status !== 'fulfilled' || expRes.status !== 'fulfilled') continue;
       const batch = batchRes.value as { settled: boolean };
       const expirationTime = expRes.value as bigint;
-      if (batch.settled) continue;
+      if (batch.settled) {
+        settledIds.push(row.batchId);
+        continue;
+      }
       if (headTs < expirationTime) continue;
       stuck.push(row);
     }
   }
-  return stuck;
+  return { stuck, settledIds };
 }
 
-async function findBatchCreatedRange(
+async function findAnchorBlock(
   client: PublicClient,
-  cfg: KeeperConfig,
   headBlock: bigint,
   headTimestamp: bigint,
-): Promise<BatchRow[]> {
-  // Walk blocks back until timestamp drops below now-lookback, or we hit 0.
-  // The chain has ~250ms blocks; but we only need a coarse anchor. Binary search by halving.
-  const lookback = BigInt(cfg.lookbackSeconds);
+  lookbackSeconds: number,
+): Promise<bigint> {
+  const lookback = BigInt(lookbackSeconds);
   const targetTs = headTimestamp > lookback ? headTimestamp - lookback : 0n;
   let lo = 0n;
   let hi = headBlock;
-  // 28 halvings is enough for any reasonable chain length.
   for (let i = 0; i < 32 && lo < hi; i++) {
     const mid = (lo + hi) / 2n;
     const block = await client.getBlock({ blockNumber: mid });
@@ -149,24 +158,27 @@ async function findBatchCreatedRange(
       hi = mid;
     }
   }
-  const fromBlock = lo;
+  return lo;
+}
 
-  const created = await fetchLogsChunked(
+async function scanBatchCreated(
+  client: PublicClient,
+  cfg: KeeperConfig,
+  fromBlock: bigint,
+  toBlock: bigint,
+): Promise<BatchRow[]> {
+  if (fromBlock > toBlock) return [];
+  const logs = await fetchLogsChunked(
     client,
     cfg.visionAddress,
     eventByName('BatchCreated'),
     fromBlock,
-    headBlock,
+    toBlock,
     cfg.logEventChunk,
   );
-
   const rows: BatchRow[] = [];
-  for (const log of created) {
-    const decoded = decodeEventLog({
-      abi: VISION_ABI,
-      data: log.data,
-      topics: log.topics,
-    });
+  for (const log of logs) {
+    const decoded = decodeEventLog({ abi: VISION_ABI, data: log.data, topics: log.topics });
     if (decoded.eventName !== 'BatchCreated') continue;
     const batchId = decoded.args.batchId as bigint;
     rows.push({ batchId, createdBlock: log.blockNumber ?? fromBlock });
@@ -320,73 +332,88 @@ async function tick(
     await refreshVaults(publicClient, cfg, state);
   }
 
-  const batches = await findBatchCreatedRange(publicClient, cfg, headBlock, headTs);
-  console.log(`[tick] head=${headBlock} ts=${headTs} candidates=${batches.length}`);
+  const scanFrom =
+    state.lastScannedBlock === null
+      ? await findAnchorBlock(publicClient, headBlock, headTs, cfg.lookbackSeconds)
+      : state.lastScannedBlock + 1n;
 
-  // Pre-filter in parallel. The serial version did 2 sequential reads per batch
-  // → with thousands of candidates each tick took minutes, refundable rounds
-  // languished. Parallel chunks of 64 reads each let us drain the queue in
-  // seconds without melting the RPC.
-  const filtered = await filterStuckBatches(publicClient, cfg, batches, headTs);
-  if (filtered.length === 0) {
+  const newRows = await scanBatchCreated(publicClient, cfg, scanFrom, headBlock);
+  for (const row of newRows) {
+    if (!state.seenBatches.has(row.batchId)) {
+      state.seenBatches.set(row.batchId, row);
+    }
+  }
+  console.log(
+    `[tick] head=${headBlock} ts=${headTs} new=${newRows.length} tracked=${state.seenBatches.size}`,
+  );
+
+  const candidates = Array.from(state.seenBatches.values());
+  const { stuck, settledIds } = await filterStuckBatches(publicClient, cfg, candidates, headTs);
+  for (const id of settledIds) {
+    state.seenBatches.delete(id);
+    state.batchPlayers.delete(id);
+  }
+
+  if (stuck.length === 0) {
+    state.lastScannedBlock = headBlock;
     state.lastTickAt = Math.floor(Date.now() / 1000);
     return;
   }
-  console.log(`[tick] stuck-candidates=${filtered.length}`);
+  console.log(`[tick] stuck-candidates=${stuck.length}`);
 
-  for (const row of filtered) {
-    // Stuck. Enumerate players who joined and subtract those already refunded.
-    // The two log scans are independent — fetch them concurrently.
-    const fromBlock = row.createdBlock;
-    const [joinedLogs, refundedLogs] = await Promise.all([
-      fetchLogsChunked(
-        publicClient,
-        cfg.visionAddress,
-        eventByName('PlayerJoined'),
-        fromBlock,
-        headBlock,
-        cfg.logEventChunk,
-        { batchId: row.batchId },
-      ),
-      fetchLogsChunked(
-        publicClient,
-        cfg.visionAddress,
-        eventByName('PlayerRefunded'),
-        fromBlock,
-        headBlock,
-        cfg.logEventChunk,
-        { batchId: row.batchId },
-      ),
-    ]);
+  for (const row of stuck) {
+    const playerState =
+      state.batchPlayers.get(row.batchId) ??
+      ({ players: new Set<Address>(), lastJoinScanBlock: row.createdBlock - 1n } as BatchPlayerState);
 
-    const refunded = new Set<Address>();
-    for (const log of refundedLogs) {
-      const decoded = decodeEventLog({ abi: VISION_ABI, data: log.data, topics: log.topics });
-      if (decoded.eventName === 'PlayerRefunded') {
-        refunded.add(lower(decoded.args.player as Address));
+    const joinFrom = playerState.lastJoinScanBlock + 1n;
+    if (joinFrom <= headBlock) {
+      const [joinedLogs, refundedLogs] = await Promise.all([
+        fetchLogsChunked(
+          publicClient,
+          cfg.visionAddress,
+          eventByName('PlayerJoined'),
+          joinFrom,
+          headBlock,
+          cfg.logEventChunk,
+          { batchId: row.batchId },
+        ),
+        fetchLogsChunked(
+          publicClient,
+          cfg.visionAddress,
+          eventByName('PlayerRefunded'),
+          joinFrom,
+          headBlock,
+          cfg.logEventChunk,
+          { batchId: row.batchId },
+        ),
+      ]);
+
+      for (const log of joinedLogs) {
+        const decoded = decodeEventLog({ abi: VISION_ABI, data: log.data, topics: log.topics });
+        if (decoded.eventName !== 'PlayerJoined') continue;
+        playerState.players.add(lower(decoded.args.player as Address));
       }
+      for (const log of refundedLogs) {
+        const decoded = decodeEventLog({ abi: VISION_ABI, data: log.data, topics: log.topics });
+        if (decoded.eventName !== 'PlayerRefunded') continue;
+        playerState.players.delete(lower(decoded.args.player as Address));
+      }
+      playerState.lastJoinScanBlock = headBlock;
     }
 
-    const players: Address[] = [];
-    const seen = new Set<Address>();
-    for (const log of joinedLogs) {
-      const decoded = decodeEventLog({ abi: VISION_ABI, data: log.data, topics: log.topics });
-      if (decoded.eventName !== 'PlayerJoined') continue;
-      const player = lower(decoded.args.player as Address);
-      if (refunded.has(player)) continue;
-      if (seen.has(player)) continue;
-      seen.add(player);
-      players.push(player);
-    }
-
+    state.batchPlayers.set(row.batchId, playerState);
+    const players = Array.from(playerState.players);
     if (players.length === 0) continue;
     console.log(`[stuck] batch=${row.batchId} players=${players.length}`);
 
     await rescueBatch(publicClient, walletClient, cfg, state, row.batchId, players);
   }
 
+  state.lastScannedBlock = headBlock;
   state.lastTickAt = Math.floor(Date.now() / 1000);
 }
+
 
 function startHealthServer(state: KeeperState, port: number): void {
   const server = createServer((req, res) => {
@@ -432,6 +459,9 @@ async function main(): Promise<void> {
     rescuedTotal: 0,
     knownVaults: new Set<Address>(),
     vaultsRefreshedAt: 0,
+    lastScannedBlock: null,
+    seenBatches: new Map<bigint, BatchRow>(),
+    batchPlayers: new Map<bigint, BatchPlayerState>(),
   };
 
   startHealthServer(state, cfg.healthPort);

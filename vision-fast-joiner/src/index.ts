@@ -74,8 +74,13 @@ const chain = {
 } as const
 
 const account = privateKeyToAccount(PK)
-const publicClient = createPublicClient({ chain, transport: http(L3_RPC, { timeout: 15_000 }) })
-const walletClient = createWalletClient({ chain, transport: http(L3_RPC, { timeout: 15_000 }), account })
+// Batch JSON-RPC collapses every per-source read fan-out (latestBatchForSource,
+// getBatch, getPosition, idleUSDC) into a handful of HTTP requests per tick
+// instead of hundreds. Without it this daemon opens ~73 sockets and burns
+// ~6% CPU re-handshaking against rpc.generalmarket.io every 3s.
+const transport = http(L3_RPC, { timeout: 15_000, batch: { batchSize: 200, wait: 10 } })
+const publicClient = createPublicClient({ chain, transport })
+const walletClient = createWalletClient({ chain, transport, account })
 
 const VISION_ABI = [
   {
