@@ -880,6 +880,10 @@ async fn vault_history(
     // start. Take the latest row per bucket (DISTINCT ON) so NAV is the
     // end-of-bucket value, which is what charts want (current state, not
     // retroactive averages).
+    // ORDER BY bucket DESC so LIMIT 500 captures the *newest* buckets — with
+    // ASC, a vault older than 500 buckets (~125 days at range=all) would
+    // silently freeze its chart at the first 500 buckets ever recorded. The
+    // outer Rust pass re-sorts by timestamp ascending for the client.
     let sql = format!(
         "SELECT DISTINCT ON (bucket) nav_per_share, tvl_usd, created_at
          FROM (
@@ -888,7 +892,7 @@ async fn vault_history(
             FROM vault_snapshots
             WHERE vault_address = $1 AND {interval}
          ) t
-         ORDER BY bucket ASC, created_at DESC
+         ORDER BY bucket DESC, created_at DESC
          LIMIT 500",
         bucket = bucket_secs,
         interval = interval_sql,
@@ -3546,6 +3550,9 @@ struct TieRateBucket {
 async fn tie_rate_history(
     State(state): State<Arc<VisionState>>,
 ) -> impl IntoResponse {
+    // Window to the last 60 days. The previous unbounded query with
+    // `ORDER BY hour ASC LIMIT 5000` truncated the *newest* rows once total
+    // hour×source buckets exceeded the cap, freezing the chart silently.
     let rows = sqlx::query_as::<_, TieRateBucket>(
         r#"
         SELECT
@@ -3560,9 +3567,9 @@ async fn tie_rate_history(
             HAVING COUNT(DISTINCT player) > 1
         ) sub
         JOIN vision_batch_lifecycle vbl ON sub.batch_id = vbl.on_chain_batch_id
+        WHERE vbl.created_at > NOW() - INTERVAL '60 days'
         GROUP BY 1, 2
         ORDER BY 1
-        LIMIT 5000
         "#,
     )
     .fetch_all(&state.pool)
