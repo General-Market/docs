@@ -1,134 +1,168 @@
 'use client'
 
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion'
-import { useEffect, useMemo } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { useMemo } from 'react'
 
-const GRID = 28
-const TARGET = 10000
+const COLS = 28
+const ROWS = 12
 
 export function Card3Liquidity({ active }: { active: boolean }) {
   const reduced = useReducedMotion()
 
   const cells = useMemo(() => {
-    const out: { x: number; y: number; side: 'yes' | 'no'; delay: number }[] = []
-    for (let r = 0; r < GRID; r++) {
-      for (let c = 0; c < GRID; c++) {
-        const dx = c - (GRID - 1) / 2
-        const dy = r - (GRID - 1) / 2
-        const d = Math.hypot(dx, dy)
-        const side: 'yes' | 'no' = (r + c) % 2 === 0 ? 'yes' : 'no'
-        out.push({ x: c, y: r, side, delay: d * 0.012 })
+    const out: { x: number; y: number; key: string; delay: number }[] = []
+    const cx = (COLS - 1) / 2
+    const cy = (ROWS - 1) / 2
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const d = Math.hypot(c - cx, r - cy)
+        out.push({ x: c, y: r, key: `${r}-${c}`, delay: 1.4 + d * 0.018 })
       }
     }
     return out
   }, [])
 
-  const cellSize = 12
-  const gap = 3
-  const totalWidth = GRID * cellSize + (GRID - 1) * gap
-
-  const count = useMotionValue(0)
-  const smooth = useSpring(count, { stiffness: 60, damping: 22, mass: 0.9 })
-  const display = useTransform(smooth, (v) => Math.round(v).toLocaleString())
-
-  useEffect(() => {
-    if (!active || reduced) {
-      count.set(active ? TARGET : 0)
-      return
-    }
-    const t = setTimeout(() => count.set(TARGET), 700)
-    return () => clearTimeout(t)
-  }, [active, count, reduced])
-
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-6 py-12 md:px-12 md:py-16">
-      <div className="relative flex items-center justify-center w-full" style={{ minHeight: 260 }}>
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-2 md:px-4 z-10">
-          <Trader side="left" color="#2997ff" label="Trader A" active={active} reduced={!!reduced} />
-          <Trader side="right" color="#ffffff" label="Trader B" active={active} reduced={!!reduced} />
-        </div>
+    <div className="flex flex-col items-center justify-center gap-8 px-6 py-10 md:px-12 md:py-12">
 
-        <motion.svg
-          width={totalWidth}
-          height={totalWidth}
-          viewBox={`0 0 ${totalWidth} ${totalWidth}`}
-          style={{ maxWidth: '100%', height: 'auto' }}
-          aria-hidden
-        >
-          <motion.line
-            x1={0}
-            y1={totalWidth / 2}
-            x2={totalWidth}
-            y2={totalWidth / 2}
-            stroke="#ffffff"
-            strokeOpacity={0.55}
-            strokeWidth={1.2}
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={active && !reduced ? { pathLength: 1, opacity: [0, 1, 1, 0] } : { opacity: 0 }}
-            transition={{
-              duration: 1.4,
-              delay: 0.25,
-              ease: [0.4, 0, 0.2, 1],
-              times: [0, 0.3, 0.65, 1],
-            }}
-          />
-
-          {cells.map((c, i) => {
-            const cx = c.x * (cellSize + gap) + cellSize / 2
-            const cy = c.y * (cellSize + gap) + cellSize / 2
-            const fill = c.side === 'yes' ? '#2997ff' : '#ffffff'
-            return (
-              <motion.rect
-                key={i}
-                x={cx - cellSize / 2}
-                y={cy - cellSize / 2}
-                width={cellSize}
-                height={cellSize}
-                rx={2}
-                fill={fill}
-                initial={{ opacity: 0, scale: 0.2 }}
-                animate={
-                  active && !reduced
-                    ? { opacity: c.side === 'yes' ? 0.9 : 0.55, scale: 1 }
-                    : reduced
-                      ? { opacity: 0.7, scale: 1 }
-                      : { opacity: 0, scale: 0.2 }
-                }
-                style={{ originX: `${cx}px`, originY: `${cy}px` }}
-                transition={{
-                  duration: 0.5,
-                  delay: 0.9 + c.delay,
-                  ease: [0.25, 0.1, 0.3, 1],
-                }}
-              />
-            )
-          })}
-        </motion.svg>
+      <div className="grid grid-cols-2 gap-4 w-full max-w-[640px]">
+        <TraderCard
+          name="Trader A"
+          color="#2997ff"
+          action="Buys the basket"
+          subtitle="$100 · 10,000 YES positions"
+          delay={0.3}
+          active={active}
+          reduced={!!reduced}
+        />
+        <TraderCard
+          name="Trader B"
+          color="#ffffff"
+          action="Sells the basket"
+          subtitle="$100 · 10,000 NO positions"
+          delay={0.55}
+          active={active}
+          reduced={!!reduced}
+        />
       </div>
 
-      <div className="flex items-baseline gap-3 tabular-nums">
-        <motion.span
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(40px, 6vw, 56px)',
-            fontWeight: 600,
-            letterSpacing: 'var(--apple-track-tight)',
-            color: '#ffffff',
-            lineHeight: 1,
-          }}
-        >
-          {display}
-        </motion.span>
-        <span
+      <motion.div
+        className="flex flex-col items-center gap-2"
+        initial={{ opacity: 0 }}
+        animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.4, delay: 0.95 }}
+      >
+        <svg width="220" height="48" viewBox="0 0 220 48" fill="none" aria-hidden>
+          <motion.path
+            d="M30 4 Q30 24 110 24"
+            stroke="rgba(41,151,255,0.55)"
+            strokeWidth="1.5"
+            fill="none"
+            initial={{ pathLength: 0 }}
+            animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
+            transition={{ duration: 0.6, delay: 0.95 }}
+          />
+          <motion.path
+            d="M190 4 Q190 24 110 24"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="1.5"
+            fill="none"
+            initial={{ pathLength: 0 }}
+            animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
+            transition={{ duration: 0.6, delay: 0.95 }}
+          />
+          <motion.path
+            d="M110 24 L110 42"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="1.5"
+            fill="none"
+            initial={{ pathLength: 0 }}
+            animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
+            transition={{ duration: 0.3, delay: 1.3 }}
+          />
+        </svg>
+        <div
+          className="text-center"
           style={{
             fontFamily: 'var(--apple-font-text)',
-            fontSize: 'var(--apple-fs-17)',
-            letterSpacing: 'var(--apple-track-tight)',
-            color: 'rgba(255,255,255,0.7)',
+            fontSize: '11px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.55)',
+            fontWeight: 600,
           }}
         >
-          markets, both sides covered
-        </span>
+          Two block trades · Every market matched
+        </div>
+      </motion.div>
+
+      <div className="w-full max-w-[640px]" style={{ aspectRatio: `${COLS} / ${ROWS}` }}>
+        <svg
+          viewBox={`-0.5 -0.5 ${COLS} ${ROWS}`}
+          width="100%"
+          height="100%"
+          aria-hidden
+        >
+          {cells.map((c) => (
+            <g key={c.key}>
+              <motion.rect
+                x={c.x}
+                y={c.y}
+                width={0.85}
+                height={0.4}
+                rx={0.08}
+                fill="#2997ff"
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={
+                  active && !reduced
+                    ? { opacity: 0.92, scale: 1 }
+                    : reduced
+                      ? { opacity: 0.85, scale: 1 }
+                      : { opacity: 0, scale: 0.3 }
+                }
+                style={{ originX: `${c.x + 0.425}px`, originY: `${c.y + 0.2}px` }}
+                transition={{ duration: 0.45, delay: c.delay, ease: [0.25, 0.1, 0.3, 1] }}
+              />
+              <motion.rect
+                x={c.x}
+                y={c.y + 0.45}
+                width={0.85}
+                height={0.4}
+                rx={0.08}
+                fill="#ffffff"
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={
+                  active && !reduced
+                    ? { opacity: 0.55, scale: 1 }
+                    : reduced
+                      ? { opacity: 0.5, scale: 1 }
+                      : { opacity: 0, scale: 0.3 }
+                }
+                style={{ originX: `${c.x + 0.425}px`, originY: `${c.y + 0.65}px` }}
+                transition={{ duration: 0.45, delay: c.delay + 0.06, ease: [0.25, 0.1, 0.3, 1] }}
+              />
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 w-full max-w-[640px]">
+        <StatTile
+          label="Markets liquid"
+          value="10,000"
+          accent="#2997ff"
+          active={active}
+          reduced={!!reduced}
+          delay={2.4}
+        />
+        <StatTile
+          label="Market makers needed"
+          value="0"
+          accent="#ffffff"
+          active={active}
+          reduced={!!reduced}
+          delay={2.55}
+        />
       </div>
 
       <div className="flex flex-col items-center text-center max-w-[640px]">
@@ -141,23 +175,23 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             textTransform: 'uppercase',
           }}
         >
-          Liquidity from nothing
+          Inherent liquidity
         </div>
         <h2
           className="mt-3"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(28px, 4vw, 40px)',
+            fontSize: 'clamp(26px, 3.8vw, 36px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
             color: '#ffffff',
-            lineHeight: 1.1,
+            lineHeight: 1.15,
           }}
         >
-          Two opinions. Ten thousand markets.
+          Two traders. Ten thousand liquid markets.
         </h2>
         <p
-          className="mt-4"
+          className="mt-3"
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: '17px',
@@ -166,54 +200,150 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             lineHeight: 1.5,
           }}
         >
-          The order book was a tax. We removed it.
+          Polymarket needs a market maker for every market.
+          <br className="hidden md:block" />
+          Block trading is its own market maker.
         </p>
       </div>
     </div>
   )
 }
 
-function Trader({
-  side,
+function TraderCard({
+  name,
   color,
-  label,
+  action,
+  subtitle,
+  delay,
   active,
   reduced,
 }: {
-  side: 'left' | 'right'
+  name: string
   color: string
-  label: string
+  action: string
+  subtitle: string
+  delay: number
   active: boolean
   reduced: boolean
 }) {
-  const dir = side === 'left' ? -1 : 1
+  const tinted = color === '#ffffff'
   return (
     <motion.div
-      className="flex flex-col items-center gap-2"
-      initial={{ opacity: 0, x: dir * 20 }}
-      animate={active && !reduced ? { opacity: 1, x: 0 } : reduced ? { opacity: 1, x: 0 } : { opacity: 0, x: dir * 20 }}
-      transition={{ duration: 0.4, delay: 0.05, ease: [0.25, 0.1, 0.3, 1] }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={active && !reduced ? { opacity: 1, y: 0 } : reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+      transition={{ duration: 0.4, delay, ease: [0.25, 0.1, 0.3, 1] }}
+      className="flex items-center gap-3"
+      style={{
+        padding: '12px 14px',
+        borderRadius: 12,
+        background: tinted ? 'rgba(255,255,255,0.06)' : 'rgba(41,151,255,0.08)',
+        border: `1px solid ${tinted ? 'rgba(255,255,255,0.14)' : 'rgba(41,151,255,0.3)'}`,
+      }}
     >
       <div
+        className="shrink-0"
         style={{
           width: 36,
           height: 36,
           borderRadius: 999,
           background: color,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
-          border: color === '#ffffff' ? '1px solid rgba(0,0,0,0.1)' : 'none',
+          boxShadow: tinted ? 'inset 0 0 0 1px rgba(0,0,0,0.06)' : '0 6px 16px rgba(41,151,255,0.3)',
         }}
+        aria-hidden
       />
+      <div className="flex-1 min-w-0">
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: tinted ? 'rgba(255,255,255,0.55)' : 'rgba(41,151,255,0.95)',
+            fontWeight: 600,
+          }}
+        >
+          {name}
+        </div>
+        <div
+          className="truncate"
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 'var(--apple-fs-14)',
+            color: '#ffffff',
+            fontWeight: 500,
+            letterSpacing: 'var(--apple-track-tight)',
+            lineHeight: 1.3,
+          }}
+        >
+          {action}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: '11.5px',
+            color: 'rgba(255,255,255,0.55)',
+            marginTop: 2,
+          }}
+        >
+          {subtitle}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function StatTile({
+  label,
+  value,
+  accent,
+  active,
+  reduced,
+  delay,
+}: {
+  label: string
+  value: string
+  accent: string
+  active: boolean
+  reduced: boolean
+  delay: number
+}) {
+  const isZero = value === '0'
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={active && !reduced ? { opacity: 1, y: 0 } : reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
+      transition={{ duration: 0.4, delay, ease: [0.25, 0.1, 0.3, 1] }}
+      className="flex flex-col gap-1"
+      style={{
+        padding: '12px 14px',
+        borderRadius: 12,
+        background: isZero ? 'rgba(255,255,255,0.04)' : 'rgba(41,151,255,0.08)',
+        border: `1px solid ${isZero ? 'rgba(255,255,255,0.1)' : 'rgba(41,151,255,0.3)'}`,
+      }}
+    >
       <span
         style={{
           fontFamily: 'var(--apple-font-text)',
-          fontSize: 'var(--apple-fs-12)',
-          letterSpacing: '0.04em',
+          fontSize: '11px',
+          letterSpacing: '0.1em',
           textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.6)',
+          color: 'rgba(255,255,255,0.55)',
         }}
       >
         {label}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'clamp(24px, 3vw, 28px)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: accent,
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.1,
+        }}
+      >
+        {value}
       </span>
     </motion.div>
   )

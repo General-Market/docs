@@ -1,289 +1,232 @@
 'use client'
 
 import { motion, useReducedMotion } from 'framer-motion'
+import { useMemo } from 'react'
 
-type Market = {
-  name: string
-  category: string
-  yes: number
-}
-
-const MARKETS: Market[] = [
-  { name: 'BTC > $200k by 2027', category: 'Crypto', yes: 64 },
-  { name: 'US recession in 2026', category: 'Macro', yes: 38 },
-  { name: 'Trump approval > 50%', category: 'Politics', yes: 41 },
-  { name: 'Lakers win 2026 finals', category: 'Sports', yes: 18 },
-  { name: 'Apple ships AR glasses', category: 'Tech', yes: 72 },
-  { name: 'Fed cuts rates in Q1', category: 'Macro', yes: 56 },
-  { name: 'ETH > $8k by year-end', category: 'Crypto', yes: 47 },
-  { name: 'CPI < 3% next month', category: 'Macro', yes: 61 },
-]
+const COLS = 30
+const ROWS = 14
 
 export function Card1Block({ active }: { active: boolean }) {
   const reduced = useReducedMotion()
 
+  const cells = useMemo(() => {
+    const out: { x: number; y: number; key: string; delay: number }[] = []
+    const cx = (COLS - 1) / 2
+    const cy = (ROWS - 1) / 2
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const d = Math.hypot(c - cx, r - cy)
+        out.push({ x: c, y: r, key: `${r}-${c}`, delay: 1.45 + d * 0.018 })
+      }
+    }
+    return out
+  }, [])
+
   return (
-    <div className="flex flex-col items-center gap-10 px-6 py-12 md:px-12 md:py-14">
-      <div className="w-full max-w-[760px]">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-6 md:gap-8">
+    <div className="flex flex-col items-center gap-8 px-6 py-10 md:px-12 md:py-12">
 
-          <div className="flex flex-col gap-2">
-            <div
-              className="mb-1"
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 'var(--apple-fs-12)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.45)',
-              }}
-            >
-              10,000 markets
-            </div>
-            {MARKETS.map((m, i) => (
-              <motion.div
-                key={m.name}
-                initial={{ opacity: 0, y: 8 }}
-                animate={
-                  active && !reduced
-                    ? { opacity: 1, y: 0 }
-                    : reduced
-                      ? { opacity: 1, y: 0 }
-                      : { opacity: 0, y: 8 }
-                }
-                transition={{
-                  duration: 0.4,
-                  delay: 0.15 + i * 0.06,
-                  ease: [0.25, 0.1, 0.3, 1],
-                }}
-                className="flex items-center gap-3"
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--apple-font-text)',
-                    fontSize: '10px',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.45)',
-                    width: 56,
-                    flexShrink: 0,
-                  }}
-                >
-                  {m.category}
-                </span>
-                <span
-                  className="flex-1 truncate"
-                  style={{
-                    fontFamily: 'var(--apple-font-text)',
-                    fontSize: 'var(--apple-fs-12)',
-                    letterSpacing: 'var(--apple-track-tight)',
-                    color: 'rgba(255,255,255,0.85)',
-                  }}
-                >
-                  {m.name}
-                </span>
-                <span
-                  className="tabular-nums"
-                  style={{
-                    fontFamily: 'var(--apple-font-text)',
-                    fontSize: 'var(--apple-fs-12)',
-                    color: 'rgba(255,255,255,0.55)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {m.yes}¢
-                </span>
-              </motion.div>
-            ))}
-            <div
-              className="mt-1 text-center"
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 'var(--apple-fs-12)',
-                color: 'rgba(255,255,255,0.4)',
-                fontStyle: 'italic',
-              }}
-            >
-              · · · 9,992 more
-            </div>
-          </div>
+      <div className="flex flex-col items-center gap-4">
+        <motion.button
+          type="button"
+          tabIndex={-1}
+          initial={{ scale: 1 }}
+          animate={
+            active && !reduced
+              ? { scale: [1, 1, 0.94, 1.02, 1] }
+              : { scale: 1 }
+          }
+          transition={{
+            duration: 1.4,
+            delay: 0.4,
+            times: [0, 0.55, 0.72, 0.82, 1],
+            ease: [0.4, 0, 0.2, 1],
+          }}
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: '17px',
+            fontWeight: 600,
+            letterSpacing: 'var(--apple-track-tight)',
+            color: '#ffffff',
+            background: '#2997ff',
+            border: 'none',
+            padding: '14px 36px',
+            borderRadius: 999,
+            cursor: 'default',
+            boxShadow: '0 12px 32px rgba(41,151,255,0.35), 0 0 0 0 rgba(41,151,255,0.4)',
+          }}
+        >
+          Buy the basket — $100
+        </motion.button>
 
-          <motion.div
-            className="flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.4, delay: 0.95 }}
-          >
-            <svg
-              width="64"
-              height="44"
-              viewBox="0 0 64 44"
-              fill="none"
-              aria-hidden
-              className="hidden md:block"
-            >
-              <motion.path
-                d="M4 22 L52 22"
-                stroke="rgba(255,255,255,0.55)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
-                transition={{ duration: 0.6, delay: 1.0, ease: [0.4, 0, 0.2, 1] }}
-              />
-              <motion.path
-                d="M46 14 L56 22 L46 30"
-                stroke="rgba(255,255,255,0.55)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-                initial={{ opacity: 0 }}
-                animate={active && !reduced ? { opacity: 1 } : { opacity: 1 }}
-                transition={{ duration: 0.3, delay: 1.4 }}
-              />
-            </svg>
-            <svg
-              width="44"
-              height="64"
-              viewBox="0 0 44 64"
-              fill="none"
-              aria-hidden
-              className="md:hidden"
-            >
-              <motion.path
-                d="M22 4 L22 52"
-                stroke="rgba(255,255,255,0.55)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={active && !reduced ? { pathLength: 1 } : { pathLength: 1 }}
-                transition={{ duration: 0.6, delay: 1.0, ease: [0.4, 0, 0.2, 1] }}
-              />
-              <motion.path
-                d="M14 46 L22 56 L30 46"
-                stroke="rgba(255,255,255,0.55)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-                initial={{ opacity: 0 }}
-                animate={active && !reduced ? { opacity: 1 } : { opacity: 1 }}
-                transition={{ duration: 0.3, delay: 1.4 }}
-              />
-            </svg>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 8 }}
-            animate={
-              active && !reduced
-                ? { opacity: 1, scale: 1, y: 0 }
-                : reduced
-                  ? { opacity: 1, scale: 1, y: 0 }
-                  : { opacity: 0, scale: 0.92, y: 8 }
-            }
-            transition={{ duration: 0.5, delay: 1.5, ease: [0.25, 0.1, 0.3, 1] }}
-            className="relative w-full"
+        <motion.div
+          className="flex items-center gap-2 tabular-nums"
+          initial={{ opacity: 0 }}
+          animate={active && !reduced ? { opacity: 1 } : { opacity: reduced ? 1 : 0 }}
+          transition={{ duration: 0.3, delay: 1.3 }}
+        >
+          <span
             style={{
-              padding: '20px 22px',
-              borderRadius: 16,
-              background: 'linear-gradient(180deg, rgba(41,151,255,0.18) 0%, rgba(41,151,255,0.06) 100%)',
-              border: '1px solid rgba(41,151,255,0.35)',
-              boxShadow: '0 12px 32px rgba(41,151,255,0.18)',
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.5)',
             }}
           >
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: '10px',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.6)',
+            1 click
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.35)' }}>·</span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            1 transaction
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.35)' }}>·</span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            <span style={{ color: 'rgba(41,151,255,0.95)', fontWeight: 600 }}>10,000</span> markets
+          </span>
+        </motion.div>
+      </div>
+
+      <div className="w-full max-w-[640px]" style={{ aspectRatio: `${COLS} / ${ROWS}` }}>
+        <svg
+          viewBox={`-1 -1 ${COLS + 1} ${ROWS + 1}`}
+          width="100%"
+          height="100%"
+          aria-hidden
+        >
+          {cells.map((c) => (
+            <motion.rect
+              key={c.key}
+              x={c.x}
+              y={c.y}
+              width={0.7}
+              height={0.7}
+              rx={0.12}
+              fill="#2997ff"
+              initial={{ opacity: 0.08, scale: 0.6 }}
+              animate={
+                active && !reduced
+                  ? { opacity: [0.08, 0.95, 0.55], scale: [0.6, 1.15, 1] }
+                  : reduced
+                    ? { opacity: 0.55, scale: 1 }
+                    : { opacity: 0.08, scale: 0.6 }
+              }
+              style={{ originX: `${c.x + 0.35}px`, originY: `${c.y + 0.35}px` }}
+              transition={{
+                duration: 0.55,
+                delay: c.delay,
+                ease: [0.25, 0.1, 0.3, 1],
+                times: [0, 0.45, 1],
               }}
-            >
-              Index
-            </div>
-            <div
-              className="mt-1"
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: '24px',
-                fontWeight: 600,
-                letterSpacing: 'var(--apple-track-tight)',
-                color: '#ffffff',
-                lineHeight: 1.1,
-              }}
-            >
-              General Index
-            </div>
-            <div
-              className="mt-2 flex items-baseline gap-2"
-              style={{ fontFamily: 'var(--apple-font-text)' }}
-            >
-              <span
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 600,
-                  letterSpacing: 'var(--apple-track-tight)',
-                  color: '#ffffff',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                $1.00
-              </span>
-              <span
-                style={{
-                  fontSize: 'var(--apple-fs-12)',
-                  color: 'rgba(255,255,255,0.55)',
-                  letterSpacing: 'var(--apple-track-tight)',
-                }}
-              >
-                / share
-              </span>
-            </div>
-            <div
-              className="mt-3 pt-3"
-              style={{
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 'var(--apple-fs-12)',
-                color: 'rgba(255,255,255,0.65)',
-                lineHeight: 1.5,
-              }}
-            >
-              10,000 markets · equal weight
-              <br />
-              one click, one position
-            </div>
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={active && !reduced ? { opacity: 1 } : reduced ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.3, delay: 2.0 }}
-              type="button"
-              className="mt-4 w-full"
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 'var(--apple-fs-14)',
-                fontWeight: 500,
-                letterSpacing: 'var(--apple-track-tight)',
-                color: '#ffffff',
-                background: '#2997ff',
-                border: 'none',
-                padding: '10px 16px',
-                borderRadius: 999,
-                cursor: 'default',
-              }}
-            >
-              Buy
-            </motion.button>
-          </motion.div>
+            />
+          ))}
+        </svg>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6 w-full max-w-[640px]">
+        <div
+          className="flex flex-col gap-1"
+          style={{
+            padding: '12px 14px',
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.025)',
+            opacity: 0.6,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.4)',
+            }}
+          >
+            Polymarket / Kalshi
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: '17px',
+              fontWeight: 500,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: 'rgba(255,255,255,0.85)',
+              lineHeight: 1.3,
+            }}
+          >
+            10,000 trades
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11.5px',
+              color: 'rgba(255,255,255,0.45)',
+              lineHeight: 1.5,
+            }}
+          >
+            One click per market. Hours of decisions.
+          </span>
+        </div>
+
+        <div
+          className="flex flex-col gap-1"
+          style={{
+            padding: '12px 14px',
+            borderRadius: 12,
+            border: '1px solid rgba(41,151,255,0.32)',
+            background: 'rgba(41,151,255,0.08)',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'rgba(41,151,255,0.9)',
+              fontWeight: 600,
+            }}
+          >
+            General Market
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: '17px',
+              fontWeight: 600,
+              letterSpacing: 'var(--apple-track-tight)',
+              color: '#ffffff',
+              lineHeight: 1.3,
+            }}
+          >
+            1 trade
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: '11.5px',
+              color: 'rgba(255,255,255,0.65)',
+              lineHeight: 1.5,
+            }}
+          >
+            Buy one ITP. Own all 10,000 markets.
+          </span>
         </div>
       </div>
 
@@ -310,7 +253,7 @@ export function Card1Block({ active }: { active: boolean }) {
             lineHeight: 1.1,
           }}
         >
-          One click. Ten thousand markets.
+          One transaction. Every market.
         </h2>
         <p
           className="mt-3"
@@ -322,7 +265,7 @@ export function Card1Block({ active }: { active: boolean }) {
             lineHeight: 1.5,
           }}
         >
-          Stop picking horses. Buy the racetrack.
+          Buy 10,000 prediction markets in a single click.
         </p>
       </div>
     </div>

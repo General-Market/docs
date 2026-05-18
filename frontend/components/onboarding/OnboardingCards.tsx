@@ -2,14 +2,25 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Card1Block } from './Card1Block'
 import { Card2Leak } from './Card2Leak'
 import { Card3Liquidity } from './Card3Liquidity'
 
 const TOTAL = 3
+const STORAGE_KEY = 'gm-onboarding-completed-v1'
+const LOCALES = ['en', 'ko', 'ja', 'zh']
+
+function isHomepage(pathname: string): boolean {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return true
+  if (segments.length === 1 && LOCALES.includes(segments[0])) return true
+  return false
+}
 
 export function OnboardingCards() {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -19,16 +30,29 @@ export function OnboardingCards() {
   useEffect(() => {
     setMounted(true)
     if (typeof window === 'undefined') return
+    if (!isHomepage(pathname)) return
+    try {
+      const completed = window.localStorage.getItem(STORAGE_KEY)
+      if (completed) return
+    } catch {
+      // localStorage unavailable — proceed to show the tour.
+    }
     const t = setTimeout(() => setOpen(true), 350)
     return () => clearTimeout(t)
-  }, [])
+  }, [pathname])
 
-  const dismiss = useCallback(() => {
+  const dismissTemporary = useCallback(() => {
     setOpen(false)
   }, [])
 
-  const dismissPermanent = dismiss
-  const dismissTemporary = dismiss
+  const completeAndDismiss = useCallback(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, new Date().toISOString())
+    } catch {
+      // ignore
+    }
+    setOpen(false)
+  }, [])
 
   const next = useCallback(() => {
     setDirection(1)
@@ -45,13 +69,13 @@ export function OnboardingCards() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') dismissTemporary()
       else if (e.key === 'ArrowRight') {
-        if (step === TOTAL - 1) dismissPermanent()
+        if (step === TOTAL - 1) completeAndDismiss()
         else next()
       } else if (e.key === 'ArrowLeft') prev()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, step, next, prev, dismissTemporary, dismissPermanent])
+  }, [open, step, next, prev, dismissTemporary, completeAndDismiss])
 
   useEffect(() => {
     if (!open) return
@@ -201,8 +225,8 @@ export function OnboardingCards() {
                 </div>
 
                 <button
-                  onClick={dismissPermanent}
-                  aria-label="Close onboarding and don't show again"
+                  onClick={dismissTemporary}
+                  aria-label="Close onboarding"
                   className="flex items-center justify-center transition-colors"
                   style={{
                     width: 36,
@@ -246,7 +270,7 @@ export function OnboardingCards() {
                     onDragEnd={(_, info) => {
                       const threshold = 80
                       if (info.offset.x < -threshold) {
-                        if (isLast) dismissPermanent()
+                        if (isLast) completeAndDismiss()
                         else next()
                       } else if (info.offset.x > threshold) prev()
                     }}
@@ -294,7 +318,7 @@ export function OnboardingCards() {
 
                 <button
                   onClick={() => {
-                    if (isLast) dismissPermanent()
+                    if (isLast) completeAndDismiss()
                     else next()
                   }}
                   style={{
