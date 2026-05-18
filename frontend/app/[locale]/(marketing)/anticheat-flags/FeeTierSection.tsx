@@ -396,6 +396,95 @@ const SORTED_COSTS = [...MAXING_COSTS].sort(
   (a, b) => b.infraMonthly + b.staffMonthly - (a.infraMonthly + a.staffMonthly),
 )
 
+function GeneralMarketRow({
+  caption,
+  labelWidth,
+  valueWidth,
+}: {
+  caption: string
+  labelWidth: number
+  valueWidth: number
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            flex: `0 0 ${labelWidth}px`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 600,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            width={14}
+            height={14}
+            style={{ borderRadius: 3, flexShrink: 0 }}
+          />
+          General Market
+        </div>
+        <div
+          style={{
+            flex: 1,
+            height: 14,
+            background: SURFACE,
+            borderRadius: 4,
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: -3,
+              bottom: -3,
+              width: 0,
+              borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+            }}
+            aria-hidden
+          />
+        </div>
+        <div
+          style={{
+            flex: `0 0 ${valueWidth}px`,
+            textAlign: 'right',
+            fontFamily: 'var(--apple-font-display)',
+            fontSize: 14,
+            fontWeight: 600,
+            color: TERTIARY,
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          0
+        </div>
+      </div>
+      <div
+        style={{
+          paddingLeft: labelWidth + 12,
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          color: SECONDARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.45,
+          fontStyle: 'italic',
+        }}
+      >
+        {caption}
+      </div>
+    </div>
+  )
+}
+
 function EdgeBarRow({
   label,
   bps,
@@ -608,12 +697,10 @@ export function FeeTierSection() {
                   note={v.edgeLabel}
                 />
               ))}
-              <EdgeBarRow
-                label="General Market"
-                bps={0}
-                pct={0}
-                filled={false}
-                note="0"
+              <GeneralMarketRow
+                caption="One fee, one tier. The VIP table is empty."
+                labelWidth={120}
+                valueWidth={100}
               />
             </div>
           </div>
@@ -744,6 +831,11 @@ export function FeeTierSection() {
               {SORTED_COSTS.map(row => (
                 <MaxingCostBar key={row.slug} row={row} />
               ))}
+              <GeneralMarketRow
+                caption="Nothing to max out. The advantage was never built."
+                labelWidth={180}
+                valueWidth={120}
+              />
             </div>
           </div>
 

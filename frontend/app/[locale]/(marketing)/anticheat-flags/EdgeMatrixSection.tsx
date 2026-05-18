@@ -153,55 +153,80 @@ function BarRow({
 
 function GeneralMarketRow({ label }: { label: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div
-        style={{
-          flex: '0 0 110px',
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 13,
-          color: TEXT,
-          letterSpacing: '-0.011em',
-          fontWeight: 600,
-        }}
-      >
-        General Market
-      </div>
-      <div
-        style={{
-          flex: 1,
-          height: 14,
-          background: SURFACE,
-          borderRadius: 4,
-          position: 'relative',
-        }}
-      >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div
           style={{
-            position: 'absolute',
-            left: 0,
-            top: -3,
-            bottom: -3,
-            width: 0,
-            borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+            flex: '0 0 110px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 600,
           }}
-          aria-hidden
-        />
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            width={14}
+            height={14}
+            style={{ borderRadius: 3, flexShrink: 0 }}
+          />
+          General Market
+        </div>
+        <div
+          style={{
+            flex: 1,
+            height: 14,
+            background: SURFACE,
+            borderRadius: 4,
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: -3,
+              bottom: -3,
+              width: 0,
+              borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+            }}
+            aria-hidden
+          />
+        </div>
+        <div
+          style={{
+            flex: '0 0 96px',
+            textAlign: 'right',
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: TERTIARY,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          0
+        </div>
       </div>
       <div
         style={{
-          flex: '0 0 96px',
-          textAlign: 'right',
-          fontFamily: 'var(--apple-font-display)',
-          fontVariantNumeric: 'tabular-nums',
-          letterSpacing: '-0.016em',
-          fontSize: 14,
-          fontWeight: 600,
-          color: TERTIARY,
-          whiteSpace: 'nowrap',
+          paddingLeft: 122,
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          color: SECONDARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.45,
+          fontStyle: 'italic',
         }}
-        title={label}
       >
-        0
+        {label}
       </div>
     </div>
   )

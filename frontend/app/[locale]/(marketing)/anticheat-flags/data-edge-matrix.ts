@@ -56,7 +56,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair listing front-running',
     lead: 'Retail baseline = 0. Bar = USD millions of insider profit on a documented pre-listing trade at this venue.',
     unit: '$M insider profit (documented)',
-    generalMarketLabel: 'Sealed bets — listings impossible to front-run',
+    generalMarketLabel: 'A leaked listing tells you nothing about the ninety-nine others sealed in the same block.',
     rows: [
       {
         slug: 'pumpfun-sniper-month',
@@ -140,7 +140,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair dealer flow visibility',
     lead: 'Retail baseline = 0. Bar = 0-10 score of how much of the order book the MM or affiliated desk sees. 10 = full book + named-MM access + B-book counterparty.',
     unit: 'score 0-10 (MM flow visibility)',
-    generalMarketLabel: 'On-chain CLOB — no operator, no internal dealer, no privileged read',
+    generalMarketLabel: 'Orders are hashed before reveal. Even the oracle nodes are blind until the batch closes.',
     rows: [
       {
         slug: 'etoro-principal-book',
@@ -285,7 +285,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair PFOF / order flow',
     lead: 'Retail baseline = 0. Bar = USD millions per year the wholesaler books from internalizing this venue\'s retail flow.',
     unit: '$M / yr internalization',
-    generalMarketLabel: 'No wholesalers, no PFOF, no flow to sell',
+    generalMarketLabel: 'Every order is public to every node. There is nothing left to sell.',
     rows: [
       {
         slug: 'robinhood-pfof',
@@ -349,7 +349,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair mempool access',
     lead: 'Retail baseline = 0. Bar = USD millions per year extracted from users at the venue\'s pre-confirmation lane — sandwich bots, sequencer privilege, gossip-priority auctions.',
     unit: '$M / yr extracted from retail',
-    generalMarketLabel: 'Sealed bets — pre-confirmation invisible',
+    generalMarketLabel: 'Blocks last a minute. The mempool race shrinks to a rounding error.',
     rows: [
       {
         slug: 'pumpfun-arsc-sandwich',
@@ -409,7 +409,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair feed latency (SIP vs direct)',
     lead: 'Retail baseline = 0. Bar = milliseconds of feed latency advantage a maxed-tier MM has over the retail feed at this venue.',
     unit: 'ms latency edge',
-    generalMarketLabel: 'On-chain — every quote in the public block',
+    generalMarketLabel: 'Trades resolve once a minute. A faster feed buys nothing.',
     rows: [
       {
         slug: 'ibkr-passthrough-feeds',
@@ -555,7 +555,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair matching engine priority',
     lead: 'Retail baseline = 0. Bar = bps queue-jump advantage a top-tier MM extracts from amend-keep, pro-rata, LMM allocation, or validator override. 0 = strict FIFO.',
     unit: 'bps queue-jump edge',
-    generalMarketLabel: 'Parimutuel — no queue, every taker fills the same pool',
+    generalMarketLabel: 'Large losses are capped per order. A whale cannot pick off the small taker.',
     rows: [
       {
         slug: 'pumpfun-jito-priority',
@@ -664,7 +664,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair cancellation priority',
     lead: 'Retail effective allowance ≈ 1. Bar = how many times more cancels per fill a top-tier MM is allowed than retail.',
     unit: '× retail cancel allowance',
-    generalMarketLabel: 'Sealed bets — orders cannot be cancelled at all',
+    generalMarketLabel: 'Orders cannot be cancelled. The seal is the cancellation.',
     rows: [
       {
         slug: 'binance-cancel-bucket',
@@ -759,7 +759,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair API rate limits',
     lead: 'Retail baseline = 1×. Bar = how many times faster the maxed-out MM tier can hit the API than the retail default.',
     unit: '× retail req/min',
-    generalMarketLabel: 'Public RPC — every node at the same rate',
+    generalMarketLabel: 'One block per minute. There is nothing for the HFT loop to spin against.',
     rows: [
       {
         slug: 'binance-futures-vip',
@@ -890,7 +890,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair funding-rate boundary',
     lead: 'Retail baseline = 0 (takes the funding payment as priced). Bar = annualized bps an MM extracts by fading the funding-rate boundary at this venue. Only perp venues apply.',
     unit: 'bps/yr boundary-arb edge',
-    generalMarketLabel: 'Parimutuel — no funding rate, no boundary clock',
+    generalMarketLabel: 'No perpetuals. No funding clock to bracket.',
     rows: [
       {
         slug: 'hyperliquid-cap',
@@ -963,7 +963,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'MM programs paying makers to quote',
     lead: 'Retail baseline = $0 subsidy. Bar = USD millions per year of explicit cash subsidy the venue (or retail flow) pays to named market makers.',
     unit: '$M / yr cash subsidy',
-    generalMarketLabel: 'Parimutuel — fees pool to the winning side, not a roster',
+    generalMarketLabel: 'Makers are paid for showing up, not for size. The whale rebate never existed.',
     rows: [
       {
         slug: 'kalshi-sportsbook-hedge',
@@ -1071,7 +1071,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair maker rebate tiers',
     lead: 'Retail baseline = 0 bps (often pays the maker fee). Bar = bps/side of maker rebate the top-tier MM receives at this venue.',
     unit: 'bps/side maker rebate',
-    generalMarketLabel: 'No tiers — every taker pays the same parimutuel cut',
+    generalMarketLabel: 'One fee. No tier table.',
     rows: [
       {
         slug: 'coinbase-advanced-top',
@@ -1163,130 +1163,6 @@ export const EDGE_TOPICS: EdgeTopic[] = [
       },
     ],
   },
-  {
-    slug: 'neutral-event-pnl-gap',
-    category: 'subsidy',
-    name: 'Neutral-event PnL gap',
-    heading: 'Retail vs MM PnL on a neutral event',
-    lead: 'Retail baseline = 0. Bar = bps round-trip PnL gap a max-tier MM nets over retail on a flat-tape event at the same venue.',
-    unit: 'bps round-trip PnL gap',
-    generalMarketLabel: 'Same fees, same view, same queue',
-    rows: [
-      {
-        slug: 'neutral-kalshi-sig',
-        name: 'Kalshi',
-        tag: 'Rulebook + LIP',
-        value: 200,
-        gatedValue: 200,
-        lane: 'Retail: 200 bps (1¢ taker on 50¢ contract) | MM: nets LIP pool against the same fee — round trip ~200 bps gap',
-        barrier: 'MM Program + LIP whitelist',
-        sources: [
-          { label: 'Kalshi · Trading Fees', url: 'https://help.kalshi.com/trading/trading-fees' },
-          { label: 'Kalshi · LIP', url: 'https://help.kalshi.com/incentive-programs/liquidity-incentive-program' },
-        ],
-      },
-      {
-        slug: 'neutral-polymarket-maker',
-        name: 'Polymarket',
-        tag: 'Maker Rebates',
-        value: 175,
-        gatedValue: 175,
-        lane: 'Retail: 875 bps round trip (7% taker on crypto) | MM: 25% rebate → ~175 bps net advantage on non-crypto',
-        barrier: 'Pool dominance + latency',
-        sources: [
-          { label: 'Polymarket Docs · Maker Rebates Program', url: 'https://docs.polymarket.com/market-makers/maker-rebates' },
-        ],
-      },
-      {
-        slug: 'neutral-etoro-popular',
-        name: 'eToro',
-        tag: 'AUC payouts',
-        value: 200,
-        gatedValue: 200,
-        lane: 'Retail: 10 bps spread + 0.011%/day overnight | MM (Popular Investor): 2-2.5% AUC nets retail spread back + salary',
-        barrier: 'Popular Investor classification',
-        sources: [
-          { label: 'eToro · Popular Investor tiers', url: 'https://www.etoro.com/copytrader/popular-investor/' },
-        ],
-      },
-      {
-        slug: 'neutral-robinhood-citadel',
-        name: 'Robinhood',
-        tag: 'SEC 605/606 + NBER',
-        value: 8,
-        gatedValue: 8,
-        lane: 'Retail: 5-8 bps effective spread, zero rebate | MM (Citadel): internalizes same flow at 1-2 bps capture',
-        barrier: 'PFOF wholesaler designation',
-        sources: [
-          { label: 'NBER w28929 · Eaton et al. on retail spread capture', url: 'https://www.nber.org/papers/w28929' },
-          { label: 'SEC · Rule 606 disclosures', url: 'https://www.sec.gov/rules/final/2018/34-84528.pdf' },
-        ],
-      },
-      {
-        slug: 'neutral-coinbase-tier8',
-        name: 'Coinbase',
-        tag: 'Advanced fee schedule',
-        value: 6,
-        gatedValue: 6,
-        lane: 'Retail: 40 maker / 60 taker | MM (Tier 8): 0 maker / 5 taker — ~6 bps gap before thin-pair multipliers',
-        barrier: '$250M 30-day volume',
-        sources: [
-          { label: 'Coinbase Exchange · Liquidity Program tiers', url: 'https://www.coinbase.com/exchange/liquidity-program' },
-        ],
-      },
-      {
-        slug: 'neutral-hyperliquid-tier6',
-        name: 'Hyperliquid',
-        tag: 'Maker share gate',
-        value: 4.5,
-        gatedValue: 4.5,
-        lane: 'Retail: 1.5 maker / 4.5 taker | MM (Tier 6): −3 maker / 2.4 taker — ~4.5 bps gap before HLP socialized PnL',
-        barrier: '>3% of 14-day maker volume',
-        sources: [
-          { label: 'Hyperliquid Docs · Fees', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/trading/fees' },
-        ],
-      },
-      {
-        slug: 'neutral-binance-vip9',
-        name: 'Binance',
-        tag: 'Spot + USDS-M LP',
-        value: 4,
-        gatedValue: 4,
-        lane: 'Retail: 10 maker / 10 taker | MM (VIP 9 + LP): −1 maker / 1.5 taker — ~4 bps gap',
-        barrier: 'VIP volume tier + LP program',
-        sources: [
-          { label: 'Binance · Spot Trading Fee tiers', url: 'https://www.binance.com/en/fee/trading' },
-          { label: 'Binance · Spot LP Program', url: 'https://www.binance.com/en/blog/markets/introducing-the-new-and-improved-spot-liquidity-provider-program-421499824684903432' },
-        ],
-      },
-      {
-        slug: 'neutral-deribit-vip6',
-        name: 'Deribit',
-        tag: 'Options fee discount',
-        value: 4,
-        gatedValue: 4,
-        lane: 'Retail: 3 maker / 3 taker | MM (VIP 6): −1 maker / 1 taker — ~4 bps round-trip gap',
-        barrier: '$5B 30-day options volume',
-        sources: [
-          { label: 'Deribit · Fees', url: 'https://www.deribit.com/kb/fees' },
-        ],
-      },
-      {
-        slug: 'neutral-bybit-vip-mm',
-        name: 'Bybit',
-        tag: 'Perps fee schedule',
-        value: 3,
-        gatedValue: 3,
-        lane: 'Retail: 2 maker / 5.5 taker | MM (Incentive): −1 maker / 4 taker — ~3 bps round-trip gap',
-        barrier: 'Institutional-services contract',
-        sources: [
-          { label: 'Bybit · Trading Fees', url: 'https://www.bybit.com/en/help-center/article/Trading-fee-Derivatives' },
-          { label: 'Bybit · MM Incentive Program', url: 'https://www.bybit.com/en/help-center/article/Introduction-to-the-Market-Maker-Incentive-Program' },
-        ],
-      },
-    ],
-  },
-
   // ─── RISK ───────────────────────────────────────────────────────────────
   {
     slug: 'liquidation-cascade-day',
@@ -1295,7 +1171,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     heading: 'Unfair liquidation engine quirks',
     lead: 'Retail baseline = 0 (takes the loss). Bar = USD billions notional liquidated in the named cascade day at this venue. Only leveraged venues apply.',
     unit: '$B liquidated in named cascade',
-    generalMarketLabel: 'Sealed parimutuel — no leverage, no auto-liquidator',
+    generalMarketLabel: 'Leverage runs entirely through parimutuel. The auto-liquidator never existed.',
     rows: [
       {
         slug: 'bybit-lazarus-feb-2025',
