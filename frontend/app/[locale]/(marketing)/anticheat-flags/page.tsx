@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
 import { IncidentCard } from './IncidentCard'
 import { binance } from './data-binance'
+import { coinbase, ftx, bybit } from './data-crypto-1'
+import { hyperliquid, bitmex, deribit, kraken } from './data-crypto-2'
+import { okx, polymarket, kalshi, robinhood } from './data-prediction'
+import { pumpfun, fxcfd } from './data-misc'
 import type { Venue } from './types'
 import './anticheat-flags.css'
 
@@ -14,28 +17,32 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 }
 
-const VENUES: Venue[] = [binance]
+const VENUES: Venue[] = [
+  binance, coinbase, ftx, bybit, hyperliquid,
+  bitmex, deribit, kraken, okx, polymarket,
+  kalshi, robinhood, pumpfun, fxcfd,
+]
 
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
+
   return (
-    <>
-      <Header />
-      <main className="acf-page">
+    <AppShell>
+      <div className="acf">
         {/* HERO */}
         <header className="acf-hero">
           <div className="acf-hero-inner">
-            <div className="acf-hero-eyebrow">Technical Review № 003</div>
-            <h1 className="acf-hero-title">
+            <div className="acf-eyebrow">Technical Review № 003</div>
+            <h1 className="acf-title">
               Anti-Cheat <em>Flags</em>
             </h1>
-            <p className="acf-hero-dek">
+            <p className="acf-dek">
               Fourteen venues. The iconic flag from each one. What retail lost, what the regulator
               wrote, what the executive eventually admitted.
             </p>
             <div className="acf-hero-stats">
               <div className="acf-hero-stat">
-                <div className="acf-hero-stat-fig">14</div>
+                <div className="acf-hero-stat-fig">{VENUES.length}</div>
                 <div className="acf-hero-stat-lbl">Venues flagged</div>
               </div>
               <div className="acf-hero-stat">
@@ -43,7 +50,7 @@ export default function AntiCheatFlagsPage() {
                 <div className="acf-hero-stat-lbl">Fines, hacks, losses</div>
               </div>
               <div className="acf-hero-stat">
-                <div className="acf-hero-stat-fig">214</div>
+                <div className="acf-hero-stat-fig">{totalIncidents}</div>
                 <div className="acf-hero-stat-lbl">Receipts on file</div>
               </div>
               <div className="acf-hero-stat">
@@ -54,32 +61,19 @@ export default function AntiCheatFlagsPage() {
           </div>
         </header>
 
-        {/* PILOT NOTE — remove once all venues land */}
-        <div className="acf-hero" style={{ paddingTop: 32, paddingBottom: 24, borderBottom: '1px solid var(--apple-divider)', background: 'var(--apple-surface)' }}>
-          <div className="acf-hero-inner">
-            <p style={{ fontFamily: 'var(--mono, monospace)', fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--apple-text-tertiary)', fontWeight: 700 }}>
-              Pilot · Binance · {totalIncidents} of 214 receipts shown
-            </p>
-            <p style={{ marginTop: 10, fontSize: 17, color: 'var(--apple-text-secondary)', maxWidth: 640 }}>
-              Each receipt below ships with an animated diagram of the mechanism — your position,
-              the cheat, the ghost line of what should have happened. Thirteen more venues land in the
-              next pass.
-            </p>
-          </div>
-        </div>
+        {/* VENUE NAV — small pill row, matches the homepage "See All" pattern */}
+        <nav className="acf-venue-nav" aria-label="Venues">
+          {VENUES.map(v => (
+            <a key={v.slug} href={`#${v.slug}`} className="acf-venue-pill">
+              {v.name}
+              <span className="count">{v.incidents.length}</span>
+            </a>
+          ))}
+        </nav>
 
-        {/* VENUES */}
+        {/* VENUE SECTIONS */}
         {VENUES.map(venue => (
           <section key={venue.slug} id={venue.slug} className="acf-venue">
-            <div className="acf-venue-band">
-              <div className="acf-venue-band-inner">
-                <span className="acf-venue-band-title">{venue.name}</span>
-                <span className="acf-venue-band-count">
-                  Founded {venue.founded} · {venue.incidents.length} receipts
-                </span>
-              </div>
-            </div>
-
             <div className="acf-venue-head">
               <div className="acf-venue-eyebrow">
                 Founded {venue.founded}
@@ -90,7 +84,7 @@ export default function AntiCheatFlagsPage() {
               <div className="acf-venue-ribbon">
                 {venue.ribbonStats.map((s, i) => (
                   <div key={i} className="acf-venue-ribbon-stat">
-                    <div className="acf-venue-ribbon-fig" data-tone={s.tone ?? 'default'}>
+                    <div className="acf-venue-ribbon-fig" style={s.tone === 'loss' ? { color: '#DC2626' } : undefined}>
                       {s.value}
                     </div>
                     <div className="acf-venue-ribbon-lbl">{s.label}</div>
@@ -115,21 +109,18 @@ export default function AntiCheatFlagsPage() {
               Cheating priced into every venue. We built one <em>without the room.</em>
             </h2>
             <p>
-              The list above is what happens when the venue keeps the order book, the matching engine,
-              the price feed, the listing decision, and the audit. Fourteen venues, the same handful of
-              mechanisms, a different fine each year.
+              Fourteen venues, the same handful of mechanisms, a different fine each year. When the venue
+              keeps the order book, the matching engine, the price feed, the listing decision, and the
+              audit — the receipts arrive on schedule.
             </p>
             <p>
-              General Market is on-chain. Sealed bets. Parimutuel pools. BLS-verified oracles. The
-              house cannot front-run because there is no house.
+              General Market is on-chain. Sealed bets. Parimutuel pools. BLS-verified oracles. The house
+              cannot front-run because there is no house.
             </p>
-            <a className="acf-closer-cta" href="/">
-              Open General Market →
-            </a>
+            <a className="acf-closer-cta" href="/">Open General Market ›</a>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+      </div>
+    </AppShell>
   )
 }
