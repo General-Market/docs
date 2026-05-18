@@ -59,13 +59,14 @@ export function useTransactionNotification({
   chain = 'l3',
   disabled = false,
 }: TransactionNotificationParams) {
-  const { showSuccess, showError } = useToast()
+  const { showCelebrate, showError } = useToast()
 
   // Track which hashes we've already fired toasts for, to avoid duplicates.
   const successFired = useRef<string | null>(null)
   const errorFired = useRef<string | null>(null)
 
-  // Success toast
+  // Success toast — Apple-style celebrate variant: bigger card, headline,
+  // pop entrance, system-green check. One per terminal user action.
   useEffect(() => {
     if (disabled || !isSuccess) return
     // Deduplicate by hash (or by label if no hash)
@@ -74,11 +75,12 @@ export function useTransactionNotification({
     successFired.current = key
 
     const explorerUrl = hash ? getTxUrl(hash, chain) : undefined
-    showSuccess(
-      `${label} confirmed`,
+    showCelebrate(
+      label,
+      'Transaction confirmed.',
       explorerUrl ? { url: explorerUrl, text: 'View transaction' } : undefined,
     )
-  }, [isSuccess, hash, label, chain, disabled, showSuccess])
+  }, [isSuccess, hash, label, chain, disabled, showCelebrate])
 
   // Error toast
   useEffect(() => {
