@@ -14,7 +14,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::chain_cache::{CachedItpState, ChainCache};
 use crate::db;
-use crate::evm_init::create_provider_and_address;
+use crate::evm_init::provider_and_address;
 
 // Permissionless `createITP` invites unrelated parties to flood the chain.
 // One bot ran our Deploy107ITPs script with its own key and minted ~5,960 of
@@ -307,13 +307,13 @@ async fn store_snapshot_from_cache(
 pub async fn run(
     pool: PgPool,
     state: Arc<ItpCollectorState>,
-    rpc_url: String,
+    l3_provider: Arc<Provider<Http>>,
     index_address: String,
     poll_interval_secs: u64,
     chain_cache: Arc<ChainCache>,
     symbol_map: Arc<HashMap<String, String>>,
 ) {
-    let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "itp_collector") {
+    let (provider, addr) = match provider_and_address(&l3_provider, &index_address, "itp_collector") {
         Some(pa) => pa,
         None => return,
     };

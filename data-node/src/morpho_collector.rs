@@ -17,7 +17,7 @@ use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 use crate::db;
-use crate::evm_init::create_provider_and_address;
+use crate::evm_init::provider_and_address;
 
 const CURSOR_NAME: &str = "morpho_collector";
 
@@ -180,12 +180,12 @@ async fn scan_range(
 pub async fn run(
     pool: PgPool,
     state: Arc<MorphoCollectorState>,
-    rpc_url: String,
+    l3_provider: Arc<Provider<Http>>,
     morpho_address: String,
     poll_interval_secs: u64,
     deploy_block: u64,
 ) {
-    let (provider_arc, addr) = match create_provider_and_address(&rpc_url, &morpho_address, "morpho_collector") {
+    let (provider_arc, addr) = match provider_and_address(&l3_provider, &morpho_address, "morpho_collector") {
         Some(pa) => pa,
         None => return,
     };

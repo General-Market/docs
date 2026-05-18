@@ -50,7 +50,14 @@ pub async fn run(
         std::process::exit(1);
     }
 
-    let provider = match Provider::<Http>::try_from(args.rpc.as_str()) {
+    let http_client = match crate::evm_init::pooled_http_client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to build pooled HTTP client: {e}");
+            std::process::exit(1);
+        }
+    };
+    let provider = match crate::evm_init::build_pooled_provider(args.rpc.as_str(), http_client) {
         Ok(p) => Arc::new(p),
         Err(e) => {
             eprintln!("RPC URL invalid: {e}");

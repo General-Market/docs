@@ -56,6 +56,12 @@ ethers.workspace = true
 # HTTP client (CoinGecko)
 reqwest = { version = "0.12", features = ["json"] }
 
+# Same reqwest version ethers 2.x uses internally — needed so we can hand
+# a pre-built, pooled `reqwest::Client` to `ethers::providers::Http::new_with_client`.
+# Without this, every Provider opens its own un-pooled client and the L3 RPC
+# fills up with hundreds of ESTABLISHED sockets.
+reqwest_011 = { package = "reqwest", version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+
 # Encoding
 hex = "0.4"
 base64 = "0.22"

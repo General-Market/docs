@@ -88,9 +88,10 @@ pub async fn run(args: BackfillArgs) -> Result<(), Box<dyn std::error::Error>> {
         );
         unique_symbols = syms;
     } else {
-    // Connect to chain
-    let provider = Provider::<Http>::try_from(&args.rpc)?;
-    let provider = Arc::new(provider);
+    // Connect to chain — pooled client even for one-shot backfill so the
+    // hundreds of get_logs calls below don't open hundreds of sockets.
+    let http_client = crate::evm_init::pooled_http_client()?;
+    let provider = Arc::new(crate::evm_init::build_pooled_provider(&args.rpc, http_client)?);
     let index_address: Address = args.index_address.parse()?;
     let contract = IndexReader::new(index_address, provider.clone());
 

@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 use crate::db;
-use crate::evm_init::create_provider_and_address;
+use crate::evm_init::provider_and_address;
 
 abigen!(
     TradeIndex,
@@ -141,13 +141,13 @@ async fn backfill_batch(
 pub async fn run(
     pool: PgPool,
     state: Arc<TradeCollectorState>,
-    rpc_url: String,
+    l3_provider: Arc<Provider<Http>>,
     index_address: String,
     poll_interval_secs: u64,
     chain_event_tx: Option<tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>>,
     deploy_block: u64,
 ) {
-    let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "trade_collector") {
+    let (provider, addr) = match provider_and_address(&l3_provider, &index_address, "trade_collector") {
         Some(pa) => pa,
         None => return,
     };

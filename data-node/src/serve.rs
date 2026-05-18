@@ -229,6 +229,25 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     // Wrap symbol_map in Arc for sharing across threads
     let symbol_map = Arc::new(symbol_map);
 
+    // One pooled reqwest::Client per RPC host, shared by every Provider<Http>
+    // that talks to that host. Without this, each `Provider::try_from(url)`
+    // call builds an un-pooled client and the L3 RPC ends up hoarding hundreds
+    // of ESTABLISHED TCP sockets across the collector tasks.
+    let l3_http_client = crate::evm_init::pooled_http_client()
+        .map_err(|e| format!("Failed to build L3 HTTP client: {e}"))?;
+    let settlement_http_client = crate::evm_init::pooled_http_client()
+        .map_err(|e| format!("Failed to build Settlement HTTP client: {e}"))?;
+
+    let l3_provider = Arc::new(
+        crate::evm_init::build_pooled_provider(&args.rpc_url, l3_http_client.clone())
+            .map_err(|e| format!("Failed to create L3 provider from {}: {}", args.rpc_url, e))?,
+    );
+    let settlement_provider = Arc::new(
+        crate::evm_init::build_pooled_provider(&args.settlement_rpc_url, settlement_http_client.clone())
+            .map_err(|e| format!("Failed to create Settlement provider from {}: {}", args.settlement_rpc_url, e))?,
+    );
+    info!(l3_rpc = %args.rpc_url, settlement_rpc = %args.settlement_rpc_url, "Pooled RPC providers created");
+
     // Start ITP collector in background (if index_address is configured)
     // Create chain-event broadcast channel early so trade_collector can use it
     let (early_chain_event_tx, _) = tokio::sync::broadcast::channel::<crate::chain_event_scanner::ChainEventEnvelope>(
@@ -237,7 +256,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
 
     if let Some(ref index_address) = args.index_address {
         let itp_pool = pool.clone();
-        let itp_rpc_url = args.rpc_url.clone();
+        let itp_provider = Arc::clone(&l3_provider);
         let itp_index_address = index_address.clone();
         let itp_poll_interval = args.itp_poll_interval;
         let itp_chain_cache = Arc::clone(&chain_cache_early);
@@ -247,7 +266,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
             crate::itp_collector::run(
                 itp_pool,
                 Arc::new(crate::itp_collector::ItpCollectorState::new()),
-                itp_rpc_url,
+                itp_provider,
                 itp_index_address,
                 itp_poll_interval,
                 itp_chain_cache,
@@ -260,7 +279,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
 
         // Start trade collector in background (same guard as ITP collector)
         let trade_pool = pool.clone();
-        let trade_rpc_url = args.rpc_url.clone();
+        let trade_provider = Arc::clone(&l3_provider);
         let trade_index_address = index_address.clone();
         let trade_poll_interval = args.itp_poll_interval;
         let trade_event_tx = early_chain_event_tx.clone();
@@ -280,7 +299,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
             crate::trade_collector::run(
                 trade_pool,
                 Arc::new(crate::trade_collector::TradeCollectorState::new()),
-                trade_rpc_url,
+                trade_provider,
                 trade_index_address,
                 trade_poll_interval,
                 Some(trade_event_tx),
@@ -2475,12 +2494,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!(fast_poll_secs = args.fast_poll_secs, "Fast poller started");
     }
 
-    // Create L3 + Settlement providers
-    let l3_provider = Arc::new(Provider::<Http>::try_from(&args.rpc_url)
-        .map_err(|e| format!("Failed to create L3 provider from {}: {}", args.rpc_url, e))?);
-    let settlement_provider = Arc::new(Provider::<Http>::try_from(&args.settlement_rpc_url)
-        .map_err(|e| format!("Failed to create Settlement provider from {}: {}", args.settlement_rpc_url, e))?);
-    info!(l3_rpc = %args.rpc_url, settlement_rpc = %args.settlement_rpc_url, "RPC providers created");
+    // L3 + Settlement providers already built earlier with shared pooled clients.
 
     // Load deployment JSONs
     let deployment: serde_json::Value = {
@@ -2527,7 +2541,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
             info!("Morpho collector skipped (no MORPHO address in deployment file)");
         } else {
             let morpho_pool = pool.clone();
-            let morpho_rpc_url = args.rpc_url.clone();
+            let morpho_provider = Arc::clone(&l3_provider);
             let morpho_address = morpho_addr_str.clone();
             let morpho_poll_interval = args.itp_poll_interval;
             let deploy_block: u64 = std::fs::read_to_string(&args.deployment_file)
@@ -2539,7 +2553,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                 crate::morpho_collector::run(
                     morpho_pool,
                     Arc::new(crate::morpho_collector::MorphoCollectorState::new()),
-                    morpho_rpc_url,
+                    morpho_provider,
                     morpho_address,
                     morpho_poll_interval,
                     deploy_block,
