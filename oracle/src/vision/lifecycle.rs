@@ -1446,6 +1446,17 @@ impl BatchLifecycleManager {
                     ).await {
                         return Ok((lifecycle_id, Some(on_chain_id)));
                     }
+                    // submit_create_batch already logged the underlying error
+                    // at error!. Rewind so the next 1s sweep retries instead
+                    // of waiting a full tick — for 24h-tick sources one drop
+                    // costs a day, which is how github stayed dead 20 hours.
+                    warn!(
+                        source = %source_name,
+                        lifecycle_id,
+                        tick_duration,
+                        "createBatch submission failed (single-oracle path) — rewinding heartbeat for fast retry",
+                    );
+                    self.schedule_retry_after_failure(source_name, tick_duration, lifecycle_id).await;
                     return Ok((lifecycle_id, None));
                 }
 
@@ -1647,13 +1658,23 @@ impl BatchLifecycleManager {
                         self.cosign_aggregator.forget(&proposal.source_id);
                     }
                     None => {
-                        // Terminal failure (BatchAlreadyExists, revert, gas) —
-                        // drop the entry. Next heartbeat re-registers fresh.
-                        debug!(
+                        // submit_create_batch already logged the underlying
+                        // chain error at error!. The original design dropped
+                        // the proposal and waited for the next heartbeat —
+                        // fine for 5min ticks, catastrophic for 24h ticks
+                        // (one dropped tx = one day of silence). Rewind so
+                        // the next 1s sweep retries in ~60s.
+                        warn!(
                             source = %proposal.source_name,
                             lifecycle_id = proposal.lifecycle_id,
-                            "Submitter: createBatch submission failed — dropping proposal"
+                            tick_duration = proposal.tick_duration,
+                            "Submitter: createBatch submission failed — rewinding heartbeat for fast retry",
                         );
+                        self.schedule_retry_after_failure(
+                            &proposal.source_name,
+                            proposal.tick_duration,
+                            proposal.lifecycle_id,
+                        ).await;
                         self.cosign_aggregator.forget(&proposal.source_id);
                     }
                 }
@@ -1743,6 +1764,48 @@ impl BatchLifecycleManager {
                 );
                 None
             }
+        }
+    }
+
+    /// Rewind `last_heartbeat_at` so the lifecycle's 1s sweep picks the
+    /// source up again in ~60s, instead of waiting a full `tick_duration`.
+    ///
+    /// The claim phase advances `last_heartbeat_at = NOW()` before the
+    /// async on-chain submission is attempted. If that submission fails
+    /// (BLS aggregation drift, Orbit nonce divergence, gas underestimate,
+    /// chain RPC hiccup), the row is left looking healthy and the next
+    /// attempt is one full tick away. For short ticks the loss hides; for
+    /// 24h+ ticks (github, rates, bls, worldbank, eia, ecb, boe, bchain,
+    /// fred, weather_alerts) one dropped tx burns a day. This restores
+    /// symmetry: failure costs ~60s, the chain error itself is in the
+    /// preceding `error!` line.
+    async fn schedule_retry_after_failure(
+        &self,
+        source_name: &str,
+        tick_duration_secs: u64,
+        lifecycle_id: u64,
+    ) {
+        const RETRY_IN_SECS: i64 = 60;
+        let rewind_secs: i64 = (tick_duration_secs as i64)
+            .saturating_sub(RETRY_IN_SECS)
+            .max(0);
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_source_state \
+             SET last_heartbeat_at = NOW() - make_interval(secs => $2::int), \
+                 updated_at = NOW() \
+             WHERE source_name = $1",
+        )
+        .bind(source_name)
+        .bind(rewind_secs)
+        .execute(&self.pool)
+        .await
+        {
+            warn!(
+                source = %source_name,
+                lifecycle_id,
+                error = %e,
+                "Failed to rewind heartbeat after createBatch failure",
+            );
         }
     }
 
