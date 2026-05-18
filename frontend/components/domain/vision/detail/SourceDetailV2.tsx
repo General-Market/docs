@@ -16,6 +16,8 @@ import { UpNextRail } from './UpNextRail'
 import { TrendingBotsRail } from './TrendingBotsRail'
 import { VaultShowcase } from './VaultShowcase'
 import { WalletSourceStats } from './shared'
+import { SettlementAnatomy } from './SettlementAnatomy'
+import { VelocityTicker } from './VelocityTicker'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
@@ -118,6 +120,15 @@ export function SourceDetailV2({ sourceId, initialSource, hideSidebar }: SourceD
           logo={source.logo}
           brandBg={source.brandBg}
         />
+
+        {/* Settlement anatomy — what happens at the next boundary. Hidden
+            if there is no active batch (new source, between cycles). */}
+        <SettlementAnatomy sourceId={sourceId} />
+
+        {/* Velocity ticker — top movers in the basket. The bet is sealed
+            for the day; the underlying metric is not. Hidden when nothing
+            is moving (rare but possible early in a tick). */}
+        <VelocityTicker sourceId={sourceId} />
 
         {/* Hero row: featured vault (2/3) + Up Next rail (1/3) */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
