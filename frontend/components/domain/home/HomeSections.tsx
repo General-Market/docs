@@ -148,7 +148,7 @@ export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
       {featured.length > 0 && (
         <section className="mt-6 mb-4">
           <SectionHeader title="More sources" href="/explorer" />
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 lg:gap-y-10">
             {featured.map((s) => {
               const live = feeds[s.id]
               return (

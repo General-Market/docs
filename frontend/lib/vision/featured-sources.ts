@@ -42,6 +42,24 @@ export const FEATURED_SOURCES: FeaturedSource[] = [
     meta: 'Radar · global traffic · outages',
     assetName: 'Worldwide traffic index',
   },
+  {
+    id: 'hackernews',
+    displayName: 'Hacker News',
+    meta: 'Front page · story velocity · decay',
+    assetName: 'Top story score · 1h',
+  },
+  {
+    id: 'zillow',
+    displayName: 'Zillow',
+    meta: 'Housing · list prices · cuts',
+    assetName: 'Median list price · USA',
+  },
+  {
+    id: 'congress',
+    displayName: 'Congress',
+    meta: 'Sessions · bills · votes',
+    assetName: 'Bills introduced · this week',
+  },
 ]
 
 /**
