@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import { redirect, notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -13,6 +13,7 @@ import { RoomShell } from '../RoomShell'
 
 interface Props {
   params: Promise<{ page: string }>
+  searchParams: Promise<{ k?: string }>
 }
 
 function hash(s: string | null | undefined): string | null {
@@ -20,8 +21,9 @@ function hash(s: string | null | undefined): string | null {
   return createHash('sha256').update(s).digest('hex').slice(0, 32)
 }
 
-export default async function RoomInnerPage({ params }: Props) {
+export default async function RoomInnerPage({ params, searchParams }: Props) {
   const { page } = await params
+  const sp = await searchParams
 
   const cookieStore = await cookies()
   const token = cookieStore.get(SESSION_COOKIE)?.value
@@ -29,13 +31,15 @@ export default async function RoomInnerPage({ params }: Props) {
   const room = await getRoom(ROOM_SLUG)
 
   if (!session || session.slug !== ROOM_SLUG || !room) {
-    redirect('/room')
+    redirect(sp.k ? `/room?k=${encodeURIComponent(sp.k)}` : '/room')
   }
 
   if (!roomExists()) notFound()
 
+  // Legacy slugs (e.g. /room/demo from the multi-tenant era) don't
+  // resolve to a page anymore. Bounce to the index rather than 404.
   const pageDoc = getRoomPage(page)
-  if (!pageDoc) notFound()
+  if (!pageDoc) redirect('/room')
 
   const pages = listRoomPages()
   const h = await headers()
