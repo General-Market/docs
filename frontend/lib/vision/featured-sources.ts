@@ -1,39 +1,37 @@
-// Sources we've announced on the homepage but haven't yet wired into the
-// data-node / vault stack. They render as normal cards on the home grid;
-// their /source route shows a quiet "we're building this" placeholder
-// instead of 404'ing.
+// The "More sources" row on the homepage. These IDs match the data-node
+// registry exactly (see frontend/data/sources-display.json). Each routes
+// to its real /source/<id> page — no placeholder, no fallback.
 //
-// When a source goes live (gets a vault entry in fund-branding.json and
-// a registry entry from the data-node), remove its ID from here.
+// To add a source: drop a new entry here. To retire one: delete the entry.
 
-export type EarlyAccessSource = {
+export type FeaturedSource = {
   id: string
   displayName: string
   meta: string
   assetName: string
 }
 
-export const EARLY_ACCESS_SOURCES: EarlyAccessSource[] = [
+export const FEATURED_SOURCES: FeaturedSource[] = [
   {
-    id: '4chan',
+    id: 'fourchan',
     displayName: '4chan',
     meta: 'Boards · post velocity · thread heat',
     assetName: '/biz/ posts per hour',
   },
   {
-    id: 'rust',
+    id: 'crates_io',
     displayName: 'Rust',
     meta: 'crates.io · downloads · releases',
     assetName: 'tokio downloads · 24h',
   },
   {
-    id: 'binance-options',
+    id: 'binance_options',
     displayName: 'Binance Options',
     meta: 'BTC · ETH · open interest',
     assetName: 'BTC option open interest',
   },
   {
-    id: 'binance-funding',
+    id: 'binance_futures_funding',
     displayName: 'Binance Funding',
     meta: 'Perp funding rate · 8h',
     assetName: 'BTC perp funding rate',
@@ -46,24 +44,10 @@ export const EARLY_ACCESS_SOURCES: EarlyAccessSource[] = [
   },
 ]
 
-const EARLY_ACCESS_MAP = new Map(EARLY_ACCESS_SOURCES.map((s) => [s.id, s]))
-
-export function isEarlyAccessSource(sourceId: string | undefined | null): boolean {
-  if (!sourceId) return false
-  return EARLY_ACCESS_MAP.has(sourceId)
-}
-
-export function getEarlyAccessSource(
-  sourceId: string | undefined | null,
-): EarlyAccessSource | undefined {
-  if (!sourceId) return undefined
-  return EARLY_ACCESS_MAP.get(sourceId)
-}
-
 /**
- * Deterministic, seeded sparkline shape for early-access sources.
- * Same input → same series, so SSR matches CSR and each card has its
- * own silhouette without storing one.
+ * Deterministic seeded sparkline. Same input → same series, so SSR and
+ * CSR agree and each card carries its own silhouette without us having
+ * to thread a real time series through the homepage SSR path.
  */
 export function seededSeries(seed: string, count = 24): number[] {
   let h = 0

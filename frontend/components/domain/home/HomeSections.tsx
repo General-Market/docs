@@ -4,9 +4,9 @@ import { ScrollRow } from './ScrollRow'
 import { Reveal } from '@/components/ui/Reveal'
 import type { SourceFeed } from '@/lib/vision/adapters'
 import {
-  EARLY_ACCESS_SOURCES,
+  FEATURED_SOURCES,
   seededSeries,
-} from '@/lib/vision/early-access-sources'
+} from '@/lib/vision/featured-sources'
 
 type FeedMap = Record<string, SourceFeed>
 
@@ -83,13 +83,9 @@ function SectionHeader({
   )
 }
 
-export function HomeDashboard({
-  feeds,
-  liveSourceIds,
-}: {
-  feeds: FeedMap
-  liveSourceIds?: ReadonlySet<string>
-}) {
+const TOP_MARKETS_SET: ReadonlySet<string> = new Set(TOP_MARKETS_IDS)
+
+export function HomeDashboard({ feeds }: { feeds: FeedMap }) {
   const heroRotation = HERO_ROTATION_IDS.map((id) => {
     const f = pick(feeds, id)
     return {
@@ -105,11 +101,9 @@ export function HomeDashboard({
   })
   const side = SIDE_RAIL_IDS.map((id) => pick(feeds, id))
   const topMarkets = TOP_MARKETS_IDS.map((id) => pick(feeds, id))
-  // Newer surfaces — they route to a placeholder until the data-node
-  // catches up. Hide any that quietly went live so we don't double-list.
-  const earlyAccess = liveSourceIds
-    ? EARLY_ACCESS_SOURCES.filter((s) => !liveSourceIds.has(s.id))
-    : EARLY_ACCESS_SOURCES
+  // Featured cards live alongside Top Markets — drop any that already
+  // appear there to avoid double-listing the same source.
+  const featured = FEATURED_SOURCES.filter((s) => !TOP_MARKETS_SET.has(s.id))
 
   return (
     <div className="px-6 py-6 md:px-8 lg:px-10 lg:py-7">
@@ -151,21 +145,25 @@ export function HomeDashboard({
         </ScrollRow>
       </section>
 
-      {earlyAccess.length > 0 && (
+      {featured.length > 0 && (
         <section className="mt-6 mb-4">
           <SectionHeader title="More sources" href="/explorer" />
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {earlyAccess.map((s) => (
-              <AssetCard
-                key={s.id}
-                sourceId={s.id}
-                displayName={s.displayName}
-                meta={s.meta}
-                series={seededSeries(s.id)}
-                assetName={s.assetName}
-                coverage="external"
-              />
-            ))}
+            {featured.map((s) => {
+              const live = feeds[s.id]
+              return (
+                <AssetCard
+                  key={s.id}
+                  sourceId={s.id}
+                  displayName={s.displayName}
+                  meta={s.meta}
+                  series={live?.series?.length ? live.series : seededSeries(s.id)}
+                  assetName={live?.assetName ?? s.assetName}
+                  assetValue={live?.assetValue}
+                  coverage={live?.coverage ?? 'anticheat'}
+                />
+              )
+            })}
           </div>
         </section>
       )}
