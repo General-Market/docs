@@ -14,6 +14,17 @@ export interface VaultStats {
   avgLoss: number | null
   totalPnl: number
   headBlock: number
+  // Trade-level risk — computed server-side from PlayerJoined/PlayerSettled
+  // pairs. All null below `minTradesForRisk` so the panel can render "—"
+  // honestly instead of annualising a six-trade sample.
+  sharpe: number | null
+  sortino: number | null
+  volatility: number | null
+  maxDrawdown: number | null
+  annualizedReturn: number | null
+  tradesPerYear: number
+  observationSecs: number
+  minTradesForRisk: number
 }
 
 /**

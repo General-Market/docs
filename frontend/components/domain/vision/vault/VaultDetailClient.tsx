@@ -104,75 +104,36 @@ function formatPerf(perf: number) {
   return `${sign}${(perf * 100).toFixed(2)}%`
 }
 
-// Annualisation matches the data-node cadence: ~4.5-min snapshots, so daily
-// trading-day √252 overstates Sharpe/Sortino by ~20×. Use sqrt(periods/year).
-const SNAPSHOT_INTERVAL_MIN = 4.5
-const PERIODS_PER_YEAR = (365 * 24 * 60) / SNAPSHOT_INTERVAL_MIN
-const ANNUALISE = Math.sqrt(PERIODS_PER_YEAR)
+// Mark-to-market NAV reads are noise between resolutions: outcome-token
+// prices wobble, orderbooks print thin trades, and one bad tick survives in
+// `vault_snapshots` forever. Risk metrics on that series describe the
+// spread, not the strategy. We compute them server-side from realized
+// trade returns instead — see `/api/vision/vault/[address]/stats`.
 
-function navsToReturns(navs: number[]): number[] {
-  const out: number[] = []
-  for (let i = 1; i < navs.length; i++) {
-    const prev = navs[i - 1]
-    if (prev === 0) continue
-    out.push((navs[i] - prev) / prev)
+// Median-of-3 spike filter for the chart line. Display only — the
+// underlying snapshots stay intact in the API and the database.
+function medianFilter(values: number[]): number[] {
+  if (values.length < 3) return values.slice()
+  const out = [values[0]!]
+  for (let i = 1; i < values.length - 1; i++) {
+    const a = values[i - 1]!
+    const b = values[i]!
+    const c = values[i + 1]!
+    // Sorting a tiny array beats a hand-rolled median ladder for clarity.
+    out.push([a, b, c].sort((x, y) => x - y)[1]!)
   }
+  out.push(values[values.length - 1]!)
   return out
-}
-
-function computeMaxDrawdown(navs: number[]): number | null {
-  if (navs.length < 2) return null
-  let peak = navs[0]
-  let maxDd = 0
-  for (const nav of navs) {
-    if (nav > peak) peak = nav
-    const dd = (peak - nav) / peak
-    if (dd > maxDd) maxDd = dd
-  }
-  return maxDd > 0 ? -maxDd : null
-}
-
-function computeVolatility(navs: number[]): number | null {
-  if (navs.length < 3) return null
-  const r = navsToReturns(navs)
-  if (r.length < 2) return null
-  const mean = r.reduce((a, b) => a + b, 0) / r.length
-  const variance = r.reduce((a, x) => a + (x - mean) ** 2, 0) / r.length
-  return Math.sqrt(variance) * ANNUALISE
-}
-
-function computeSharpe(navs: number[]): number | null {
-  if (navs.length < 3) return null
-  const r = navsToReturns(navs)
-  if (r.length < 2) return null
-  const mean = r.reduce((a, b) => a + b, 0) / r.length
-  const variance = r.reduce((a, x) => a + (x - mean) ** 2, 0) / r.length
-  const std = Math.sqrt(variance)
-  if (std === 0) return null
-  return (mean / std) * ANNUALISE
-}
-
-function computeSortino(navs: number[]): number | null {
-  if (navs.length < 3) return null
-  const r = navsToReturns(navs)
-  if (r.length < 2) return null
-  const mean = r.reduce((a, b) => a + b, 0) / r.length
-  const downside = r.filter(x => x < 0)
-  if (downside.length === 0) return mean > 0 ? 9.99 : null
-  const dStd = Math.sqrt(downside.reduce((a, x) => a + x * x, 0) / downside.length)
-  if (dStd === 0) return null
-  return (mean / dStd) * ANNUALISE
 }
 
 function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): number | null {
   if (snapshots.length < 2) return null
   const cutoff = Date.now() - hoursAgo * 3600 * 1000
   const last = snapshots[snapshots.length - 1]
-  if (snapshots[0].ts > cutoff) {
-    const base = snapshots[0].nav
-    if (base === 0) return null
-    return (last.nav - base) / base
-  }
+  // If the whole vault is younger than the requested window, the honest
+  // answer is "—". Falling back to inception made 24H/7D/30D all read the
+  // same +0.06% on a 9-hour-old vault.
+  if (snapshots[0].ts > cutoff) return null
   let closest = snapshots[0]
   let closestDist = Math.abs(closest.ts - cutoff)
   for (const s of snapshots) {
@@ -271,11 +232,17 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
     return [...rangeSnapshots, liveTick]
   }, [rangeSnapshots, liveTick])
 
-  const navData = useMemo(() => chartSnapshots.map((s) => s.nav), [chartSnapshots])
+  // Median-of-3 strips the lone-tick spikes (one bad mark-to-market read
+  // surrounded by clean ticks) from the chart line without rewriting any
+  // historical row. Endpoints pass through unchanged.
+  const navData = useMemo(
+    () => medianFilter(chartSnapshots.map(s => s.nav)),
+    [chartSnapshots],
+  )
 
-  // ---- inception-wide history for risk + period stats ----------------
-  // Stats need the full series even when the chart is on 1D — Max DD of "the
-  // last day" is meaningless; Max DD of "ever" is the number people want.
+  // ---- inception-wide history for period stats ----------------------
+  // Performance windows (24H/7D/30D) still walk the raw snapshot ledger —
+  // we want the actual NAV-then vs NAV-now, not a filtered approximation.
   const { snapshots: allSnapshots } = useVaultHistory(lower, 'all')
   const fullSnapshots = useMemo(() => {
     if (!liveTick) return allSnapshots
@@ -284,24 +251,22 @@ export function VaultDetailClient({ vaultAddress, sourceId, fund, fallbackName }
     if (liveTick.ts <= last.ts) return allSnapshots
     return [...allSnapshots, liveTick]
   }, [allSnapshots, liveTick])
-  const statsHistory = useMemo(
-    () => (fullSnapshots.length >= 2 ? fullSnapshots.map(s => s.nav) : null),
-    [fullSnapshots],
-  )
-  const sharpe = useMemo(() => statsHistory ? computeSharpe(statsHistory) : null, [statsHistory])
-  const sortino = useMemo(() => statsHistory ? computeSortino(statsHistory) : null, [statsHistory])
-  const vol = useMemo(() => statsHistory ? computeVolatility(statsHistory) : null, [statsHistory])
-  const maxDd = useMemo(() => statsHistory ? computeMaxDrawdown(statsHistory) : null, [statsHistory])
   const perf24h = useMemo(() => computePerfForPeriod(fullSnapshots, 24), [fullSnapshots])
   const perf7d = useMemo(() => computePerfForPeriod(fullSnapshots, 168), [fullSnapshots])
   const perf30d = useMemo(() => computePerfForPeriod(fullSnapshots, 720), [fullSnapshots])
 
-  // Trading stats — win rate, avg win/loss, trade count from settlement logs.
+  // Trading stats — win rate, avg win/loss, trade count, and the trade-level
+  // risk metrics (Sharpe/Sortino/Vol/MaxDD). The server emits null below
+  // `minTradesForRisk`; the panel renders "—" in that case.
   const { stats } = useVaultStats(lower)
   const winRatePct = stats?.winRate != null ? stats.winRate * 100 : null
   const avgWin = stats?.avgWin ?? null
   const avgLoss = stats?.avgLoss ?? null
   const trades = stats?.trades ?? 0
+  const sharpe = stats?.sharpe ?? null
+  const sortino = stats?.sortino ?? null
+  const vol = stats?.volatility ?? null
+  const maxDd = stats?.maxDrawdown ?? null
 
   // ---- identity ------------------------------------------------------
   const vaultName = fund?.name ?? fallbackName
