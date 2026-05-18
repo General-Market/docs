@@ -172,41 +172,64 @@ async fn sweep_one_account(
     };
     let from_lookback = max_lookback.map(|d| now_bucket - d);
 
+    // Start at the first bucket boundary that the user actually had a position
+    // in. floor_bucket(earliest) lands BEFORE earliest when the event is mid-
+    // interval, which used to produce a pre-position (0,0,0,0) row at the
+    // leading edge — that row then graphed as a vertical cliff from PnL=0
+    // down to the next bucket's real value. Round up when the event isn't
+    // already on a boundary.
     let mut t = match (cursor, from_lookback) {
         (Some(c), _) => c + Duration::seconds(bucket_secs),
-        (None, Some(lb)) => floor_bucket(earliest.max(lb), bucket_secs),
-        (None, None) => floor_bucket(earliest, bucket_secs),
+        (None, Some(lb)) => {
+            let effective = earliest.max(lb);
+            let start = floor_bucket(effective, bucket_secs);
+            if effective > start { start + Duration::seconds(bucket_secs) } else { start }
+        }
+        (None, None) => {
+            let start = floor_bucket(earliest, bucket_secs);
+            if earliest > start { start + Duration::seconds(bucket_secs) } else { start }
+        }
     };
 
     let mut written = 0u64;
     while t <= now_bucket {
         let row = compute_bucket(pool, &account, t).await?;
-        sqlx::query(
-            "INSERT INTO account_pnl_curve
-                (account, bucket_secs, bucket_ts, portfolio_value, cost_basis, pnl,
-                 realized_pnl, contributing_vaults, computed_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-             ON CONFLICT (account, bucket_secs, bucket_ts) DO UPDATE
-                SET portfolio_value = EXCLUDED.portfolio_value,
-                    cost_basis      = EXCLUDED.cost_basis,
-                    pnl             = EXCLUDED.pnl,
-                    realized_pnl    = EXCLUDED.realized_pnl,
-                    contributing_vaults = EXCLUDED.contributing_vaults,
-                    computed_at     = NOW()",
-        )
-        .bind(account.as_ref())
-        .bind(bucket_secs)
-        .bind(t)
-        .bind(row.portfolio_value)
-        .bind(row.cost_basis)
-        .bind(row.pnl)
-        .bind(row.realized_pnl)
-        .bind(row.contributing_vaults)
-        .execute(pool)
-        .await?;
+        // Defensive skip: never emit a fully-empty bucket. The cursor advance
+        // above prevents it for first-event boundary cases; this catches
+        // races where compute_bucket runs before fill_price/fill_amount land
+        // on the trades row, or any future bug that produces (0,0,0,0).
+        let is_empty = row.contributing_vaults == 0
+            && row.portfolio_value.is_zero()
+            && row.cost_basis.is_zero()
+            && row.realized_pnl.is_zero();
+        if !is_empty {
+            sqlx::query(
+                "INSERT INTO account_pnl_curve
+                    (account, bucket_secs, bucket_ts, portfolio_value, cost_basis, pnl,
+                     realized_pnl, contributing_vaults, computed_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                 ON CONFLICT (account, bucket_secs, bucket_ts) DO UPDATE
+                    SET portfolio_value = EXCLUDED.portfolio_value,
+                        cost_basis      = EXCLUDED.cost_basis,
+                        pnl             = EXCLUDED.pnl,
+                        realized_pnl    = EXCLUDED.realized_pnl,
+                        contributing_vaults = EXCLUDED.contributing_vaults,
+                        computed_at     = NOW()",
+            )
+            .bind(account.as_ref())
+            .bind(bucket_secs)
+            .bind(t)
+            .bind(row.portfolio_value)
+            .bind(row.cost_basis)
+            .bind(row.pnl)
+            .bind(row.realized_pnl)
+            .bind(row.contributing_vaults)
+            .execute(pool)
+            .await?;
+            written += 1;
+        }
 
         t += Duration::seconds(bucket_secs);
-        written += 1;
     }
 
     if written > 0 {
@@ -361,6 +384,44 @@ async fn enforce_retention(pool: &PgPool) -> Result<(), sqlx::Error> {
         .execute(pool)
         .await?;
     }
+
+    // Purge leading pre-position artifact rows. An older writer occasionally
+    // wrote a (portfolio=0, cost=0, realized=0, contributing=0) row at the
+    // bucket boundary preceding an account's first event. The chart then
+    // rendered the next bucket — already at a real PnL — as a vertical
+    // crash from 0. The writer no longer emits these; this DELETE scrubs
+    // historical residue and any future regression that lets one through.
+    //
+    // We bound the delete to rows strictly before each account's first
+    // non-empty bucket so a legitimate "fully exited, broke even" row
+    // (very rare; cost basis is monotonic, so even sells leave cost>0)
+    // is preserved.
+    let purged = sqlx::query(
+        "DELETE FROM account_pnl_curve a
+         USING (
+             SELECT account, bucket_secs, MIN(bucket_ts) AS first_real
+             FROM account_pnl_curve
+             WHERE NOT (portfolio_value = 0 AND cost_basis = 0
+                        AND realized_pnl = 0 AND contributing_vaults = 0)
+             GROUP BY account, bucket_secs
+         ) r
+         WHERE a.account = r.account
+           AND a.bucket_secs = r.bucket_secs
+           AND a.bucket_ts < r.first_real
+           AND a.portfolio_value = 0
+           AND a.cost_basis = 0
+           AND a.realized_pnl = 0
+           AND a.contributing_vaults = 0",
+    )
+    .execute(pool)
+    .await?;
+    if purged.rows_affected() > 0 {
+        info!(
+            rows = purged.rows_affected(),
+            "purged leading pre-position rows from account_pnl_curve"
+        );
+    }
+
     Ok(())
 }
 
