@@ -1,0 +1,1492 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2056302706562863409",
+  "screen_name": "blackjack_god",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Mon May 18 09:15:44 +0000 2026",
+  "text": "@minus1_12 Tail risk is the missing line. Weekend grids look clean until 1 gap move turns small cash flow into a position you cannot exit while the table is closed.",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    164
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2056044755344073204",
+  "retweets": 0,
+  "views": "3",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "blackjack_god",
+    "name": "BlackjackGod",
+    "created_at": "Sat Jan 10 01:13:39 +0000 2026",
+    "description": "Card counter. Risk calculator. The math the house doesn't want you knowing - applied to everything.",
+    "rest_id": "2009795613261737986",
+    "followers_count": 378,
+    "favourites_count": 788,
+    "avatar": "https://pbs.twimg.com/profile_images/2017437101151948800/wWiUZGQE_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/2009795613261737986/1769927538",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 381,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2056044755344073204",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/blackjack_god/status/2056302706562863409"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2056061423793606923",
+  "screen_name": "FvckYourHedge",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Sun May 17 17:16:57 +0000 2026",
+  "text": "@minus1_12 Very good way to short vol if we cant Short a straddle due margin constrains",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    87
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2056044755344073204",
+  "retweets": 0,
+  "views": "32",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "FvckYourHedge",
+    "name": "(Aladhi) 🕯️ 🕳️",
+    "created_at": "Fri Feb 28 04:04:50 +0000 2020",
+    "description": "Options trading📖 O.F & DOM °Volatility Risk P.° $NQ_F $ES_F $ZB_F $BTC $ETH \nhttps://t.co/UYnQTDEGDf Class ‘19 Retard algo MM Trader",
+    "rest_id": "1233241559212097539",
+    "followers_count": 1159,
+    "favourites_count": 69016,
+    "avatar": "https://pbs.twimg.com/profile_images/1988418663045853187/1gJUoyrF_normal.jpg",
+    "url": "http://oggregator.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1233241559212097539/1762904239",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 729,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2056044755344073204",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/FvckYourHedge/status/2056061423793606923"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054268055706882182",
+  "screen_name": "confinedape",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue May 12 18:30:45 +0000 2026",
+  "text": "@minus1_12 @ThalexGlobal It would be glorious, and the next big thing in defi probably! Either way, looking forward to how thalex develops.",
+  "lang": "en",
+  "display_text_range": [
+    25,
+    139
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2054211108949663888",
+  "retweets": 0,
+  "views": "56",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      },
+      {
+        "id_str": "1341481211315810305",
+        "indices": [
+          11,
+          24
+        ],
+        "name": "Thalex",
+        "screen_name": "ThalexGlobal"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "confinedape",
+    "name": "confinedape",
+    "created_at": "Sat Jan 31 16:51:34 +0000 2026",
+    "description": "risk connoisseur in love with markets and thinking machines",
+    "rest_id": "2017641861452591104",
+    "followers_count": 303,
+    "favourites_count": 1389,
+    "avatar": "https://pbs.twimg.com/profile_images/2054212218456100864/wyCDkxMn_normal.jpg",
+    "url": "http://confinia.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2017641861452591104/1777722098",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 106,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2054267488607609186",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/confinedape/status/2054268055706882182"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054224445909115289",
+  "screen_name": "confinedape",
+  "bookmarks": 1,
+  "favorites": 1,
+  "created_at": "Tue May 12 15:37:28 +0000 2026",
+  "text": "@minus1_12 @ThalexGlobal Is the issue solvable in your assessment? I find it highly relevant (options dex), but wrestle with HIP-4 since the latency and some other constraints make options quoting very hard.",
+  "lang": "en",
+  "display_text_range": [
+    25,
+    207
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2054211108949663888",
+  "retweets": 0,
+  "views": "49",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      },
+      {
+        "id_str": "1341481211315810305",
+        "indices": [
+          11,
+          24
+        ],
+        "name": "Thalex",
+        "screen_name": "ThalexGlobal"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "confinedape",
+    "name": "confinedape",
+    "created_at": "Sat Jan 31 16:51:34 +0000 2026",
+    "description": "risk connoisseur in love with markets and thinking machines",
+    "rest_id": "2017641861452591104",
+    "followers_count": 303,
+    "favourites_count": 1389,
+    "avatar": "https://pbs.twimg.com/profile_images/2054212218456100864/wyCDkxMn_normal.jpg",
+    "url": "http://confinia.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2017641861452591104/1777722098",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 106,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2054223761704943975",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/confinedape/status/2054224445909115289"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053864036912206123",
+  "screen_name": "LilQwantXBT",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon May 11 15:45:20 +0000 2026",
+  "text": "@minus1_12 Lmao it says in the post too UTC hahaha",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    50
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053423081603973539",
+  "retweets": 0,
+  "views": "26",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "LilQwantXBT",
+    "name": "lil qwant",
+    "created_at": "Sat Feb 18 11:28:00 +0000 2023",
+    "description": "implied vibes , highest frequency trader , never trade alone @whalepool ts , previously top 10 protoss player ,",
+    "rest_id": "1626906327208570881",
+    "followers_count": 3017,
+    "favourites_count": 55485,
+    "avatar": "https://pbs.twimg.com/profile_images/1928521723982340097/hJc8qV99_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1626906327208570881/1761558250",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1611,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2053861744552886524",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/LilQwantXBT/status/2053864036912206123"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053660929683054693",
+  "screen_name": "LilQwantXBT",
+  "bookmarks": 1,
+  "favorites": 2,
+  "created_at": "Mon May 11 02:18:15 +0000 2026",
+  "text": "@minus1_12 I would think that despite blue having a shorter holding period while trying to get theta, it escapes from vol creeping up during that window, something like that\n\nUtc? Pst? Maybe timezone variable? Idk",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    213
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2053423081603973539",
+  "retweets": 0,
+  "views": "113",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "LilQwantXBT",
+    "name": "lil qwant",
+    "created_at": "Sat Feb 18 11:28:00 +0000 2023",
+    "description": "implied vibes , highest frequency trader , never trade alone @whalepool ts , previously top 10 protoss player ,",
+    "rest_id": "1626906327208570881",
+    "followers_count": 3017,
+    "favourites_count": 55485,
+    "avatar": "https://pbs.twimg.com/profile_images/1928521723982340097/hJc8qV99_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1626906327208570881/1761558250",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1611,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2053423081603973539",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/LilQwantXBT/status/2053660929683054693"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053652653692146138",
+  "screen_name": "FvckYourHedge",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon May 11 01:45:22 +0000 2026",
+  "text": "@minus1_12 This is beautiful I’ll think how to add this from your tool to oggregegator\nSo we can backtest stuff like this and\nThe Greeks code I already have",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    156
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053423081603973539",
+  "retweets": 0,
+  "views": "31",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "FvckYourHedge",
+    "name": "(Aladhi) 🕯️ 🕳️",
+    "created_at": "Fri Feb 28 04:04:50 +0000 2020",
+    "description": "Options trading📖 O.F & DOM °Volatility Risk P.° $NQ_F $ES_F $ZB_F $BTC $ETH \nhttps://t.co/UYnQTDEGDf Class ‘19 Retard algo MM Trader",
+    "rest_id": "1233241559212097539",
+    "followers_count": 1159,
+    "favourites_count": 69016,
+    "avatar": "https://pbs.twimg.com/profile_images/1988418663045853187/1gJUoyrF_normal.jpg",
+    "url": "http://oggregator.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1233241559212097539/1762904239",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 729,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2053423081603973539",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/FvckYourHedge/status/2053652653692146138"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051661625913184677",
+  "screen_name": "FvckYourHedge",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue May 05 13:53:44 +0000 2026",
+  "text": "@minus1_12 Good catch the 30D are pretty low",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    44
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051655610848956728",
+  "retweets": 0,
+  "views": "32",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "FvckYourHedge",
+    "name": "(Aladhi) 🕯️ 🕳️",
+    "created_at": "Fri Feb 28 04:04:50 +0000 2020",
+    "description": "Options trading📖 O.F & DOM °Volatility Risk P.° $NQ_F $ES_F $ZB_F $BTC $ETH \nhttps://t.co/UYnQTDEGDf Class ‘19 Retard algo MM Trader",
+    "rest_id": "1233241559212097539",
+    "followers_count": 1159,
+    "favourites_count": 69016,
+    "avatar": "https://pbs.twimg.com/profile_images/1988418663045853187/1gJUoyrF_normal.jpg",
+    "url": "http://oggregator.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1233241559212097539/1762904239",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 729,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2051661439442493527",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/FvckYourHedge/status/2051661625913184677"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050261955433099772",
+  "screen_name": "Virtuvest6",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri May 01 17:11:56 +0000 2026",
+  "text": "@minus1_12 @Christo07291909 Hi Hendrik, is this code public atm? \nLooking to try some stuff out.",
+  "lang": "en",
+  "display_text_range": [
+    28,
+    96
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2035780924043120772",
+  "retweets": 0,
+  "views": "31",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      },
+      {
+        "id_str": "1504747845328461824",
+        "indices": [
+          11,
+          27
+        ],
+        "name": "Christopher",
+        "screen_name": "Christo07291909"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Virtuvest6",
+    "name": "Virtuvest",
+    "created_at": "Tue Oct 24 17:09:27 +0000 2023",
+    "description": "",
+    "rest_id": "1716864450966282240",
+    "followers_count": 18,
+    "favourites_count": 212,
+    "avatar": "https://pbs.twimg.com/profile_images/2051677704550785024/SrSoaY3s_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1716864450966282240/1698879515",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 121,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2035821836420702257",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/Virtuvest6/status/2050261955433099772"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2046945706951549192",
+  "screen_name": "FvckYourHedge",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Wed Apr 22 13:34:21 +0000 2026",
+  "text": "@minus1_12 @okx Noted @minus1_12 will do🫡",
+  "lang": "en",
+  "display_text_range": [
+    16,
+    41
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2046942622317511078",
+  "retweets": 0,
+  "views": "28",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      },
+      {
+        "id_str": "867617849208037377",
+        "indices": [
+          11,
+          15
+        ],
+        "name": "OKX",
+        "screen_name": "okx"
+      },
+      {
+        "id_str": "951866930",
+        "indices": [
+          22,
+          32
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "FvckYourHedge",
+    "name": "(Aladhi) 🕯️ 🕳️",
+    "created_at": "Fri Feb 28 04:04:50 +0000 2020",
+    "description": "Options trading📖 O.F & DOM °Volatility Risk P.° $NQ_F $ES_F $ZB_F $BTC $ETH \nhttps://t.co/UYnQTDEGDf Class ‘19 Retard algo MM Trader",
+    "rest_id": "1233241559212097539",
+    "followers_count": 1159,
+    "favourites_count": 69016,
+    "avatar": "https://pbs.twimg.com/profile_images/1988418663045853187/1gJUoyrF_normal.jpg",
+    "url": "http://oggregator.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1233241559212097539/1762904239",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 729,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2046944090646847826",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/FvckYourHedge/status/2046945706951549192"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2042306473313640848",
+  "screen_name": "Gravity5ucks",
+  "bookmarks": 4,
+  "favorites": 5,
+  "created_at": "Thu Apr 09 18:19:42 +0000 2026",
+  "text": "@minus1_12 1 contract (inverse instrument).\n\nHedging makes no sense in this case, since it’s daily at 8 utc. But I can simulate hedging with threshold or hourly too.",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    165
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2042241538726429049",
+  "retweets": 0,
+  "views": "2167",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Gravity5ucks",
+    "name": "GravitySucks",
+    "created_at": "Tue May 04 15:06:26 +0000 2010",
+    "description": "Freedom maximalist. \nSatoshi’s coins are just buried treasures. Fuck BIP-361.\n\nData alchemist @GenesisVol",
+    "rest_id": "140091501",
+    "followers_count": 9345,
+    "favourites_count": 16601,
+    "avatar": "https://pbs.twimg.com/profile_images/1407712172369645571/sISIMh0Y_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/140091501/1766160451",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1066,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2042298999512645918",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/Gravity5ucks/status/2042306473313640848"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2042159703715934714",
+  "screen_name": "options_matrix",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu Apr 09 08:36:29 +0000 2026",
+  "text": "The abs delta filter is the right call. Short-dated ITM options carry massive intrinsic value that distorts pure volatility signals. Delta-normalized skew strips out that noise and shows you what the market is actually pricing in for marginal moves. Short-dated skew can flip based on maturity choice alone, which is why term structure matters as much as strike shape.",
+  "lang": "en",
+  "display_text_range": [
+    28,
+    303
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2039367388454621515",
+  "retweets": 0,
+  "views": "1",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "options_matrix",
+    "name": "Options Matrix Pro",
+    "created_at": "Wed Feb 25 06:20:30 +0000 2026",
+    "description": "Trade on statistics, not hunches. OMP is the premier AI-powered platform for yield optimization & probability-based options trading. Trade smarter today. 📊",
+    "rest_id": "2026542768307478528",
+    "followers_count": 136,
+    "favourites_count": 1094,
+    "avatar": "https://pbs.twimg.com/profile_images/2046736963617890304/KENKvx8z_normal.jpg",
+    "url": "http://optionsmatrixpro.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2026542768307478528/1772016488",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 33,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2039419689437393372",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/options_matrix/status/2042159703715934714"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2042032203714937216",
+  "screen_name": "macrojellyfish",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Thu Apr 09 00:09:51 +0000 2026",
+  "text": "@minus1_12 This is not true, the real advantage is you can hold inventory risk",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    78
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2041863299520774218",
+  "retweets": 0,
+  "views": "31",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "macrojellyfish",
+    "name": "macrojellyfish",
+    "created_at": "Sat Mar 27 02:00:03 +0000 2021",
+    "description": "Jellyfish Capital",
+    "rest_id": "1375628622673874944",
+    "followers_count": 735,
+    "favourites_count": 1282,
+    "avatar": "https://pbs.twimg.com/profile_images/1905766749938835456/yNTJ4Ls4_normal.jpg",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 546,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2041863299520774218",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/macrojellyfish/status/2042032203714937216"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2041906194327974132",
+  "screen_name": "bas3dp0tat6",
+  "bookmarks": 0,
+  "favorites": 3,
+  "created_at": "Wed Apr 08 15:49:08 +0000 2026",
+  "text": "@minus1_12 any other trades you did / looked at last night?",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    59
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2041863299520774218",
+  "retweets": 0,
+  "views": "122",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "bas3dp0tat6",
+    "name": "basedpotato",
+    "created_at": "Mon May 31 02:56:07 +0000 2021",
+    "description": "Illiquid Strategies Analyst and Lender of Last Resort. @Neutrl",
+    "rest_id": "1399197923037126657",
+    "followers_count": 4124,
+    "favourites_count": 52895,
+    "avatar": "https://pbs.twimg.com/profile_images/1986642152865071104/e1PlayxU_normal.jpg",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 715,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2041863299520774218",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/bas3dp0tat6/status/2041906194327974132"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2041864089631125758",
+  "screen_name": "derivativemonky",
+  "bookmarks": 0,
+  "favorites": 4,
+  "created_at": "Wed Apr 08 13:01:49 +0000 2026",
+  "text": "@minus1_12 observed the similar behaviour on ETH whilst analyzing it earlier this month!\n\nSelling premium was the play for current environment on ETH😁",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    150
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2041863299520774218",
+  "retweets": 0,
+  "views": "105",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "derivativemonky",
+    "name": "Derivatives Monkey 衍生品猴子 ( locked-in era )",
+    "created_at": "Tue Apr 08 08:19:13 +0000 2025",
+    "description": "chilling with CSC | MouseBelt | @WeeklyWizdom | @pear_protocol | @deriveinsights |",
+    "rest_id": "1909521360327786497",
+    "followers_count": 3890,
+    "favourites_count": 10950,
+    "avatar": "https://pbs.twimg.com/profile_images/1931658889608531968/CTiBcqaJ_normal.jpg",
+    "url": "https://t.me/derivativesmonkey",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1909521360327786497/1749378376",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1022,
+    "location": "Cason Shrine Capital 卡神社"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2041863299520774218",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/derivativemonky/status/2041864089631125758"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2039422104534200400",
+  "screen_name": "derivativemonky",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Wed Apr 01 19:18:15 +0000 2026",
+  "text": "You are  right about the short-dated maturity // the skewness was only found on the 2nd of April Contract.\n\nI have analzyed of 24th April Contract & found the same flatness across the 75-80K & will post it in a while haha.\n\nThanks for suggestion , I'll integrate the the delta filter // check ur dms btw haha @minus1_12",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    295
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2039367388454621515",
+  "retweets": 0,
+  "views": "32",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          309,
+          319
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "derivativemonky",
+    "name": "Derivatives Monkey 衍生品猴子 ( locked-in era )",
+    "created_at": "Tue Apr 08 08:19:13 +0000 2025",
+    "description": "chilling with CSC | MouseBelt | @WeeklyWizdom | @pear_protocol | @deriveinsights |",
+    "rest_id": "1909521360327786497",
+    "followers_count": 3890,
+    "favourites_count": 10950,
+    "avatar": "https://pbs.twimg.com/profile_images/1931658889608531968/CTiBcqaJ_normal.jpg",
+    "url": "https://t.me/derivativesmonkey",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1909521360327786497/1749378376",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1022,
+    "location": "Cason Shrine Capital 卡神社"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2039419689437393372",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/derivativemonky/status/2039422104534200400"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2037375892092047783",
+  "screen_name": "biofeed",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Fri Mar 27 03:47:19 +0000 2026",
+  "text": "@minus1_12 Butterflies at each strike give you the implied PDE but this is all hinged on liquidity, otherwise it’s ridiculous",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    125
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2037131086514336010",
+  "retweets": 0,
+  "views": "141",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "biofeed",
+    "name": "☕️",
+    "created_at": "Thu Apr 18 02:08:14 +0000 2013",
+    "description": "feeling lucky",
+    "rest_id": "1360786974",
+    "followers_count": 1214,
+    "favourites_count": 60950,
+    "avatar": "https://pbs.twimg.com/profile_images/1986798576496701440/-Ia4a8_Y_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1360786974/1778265321",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 7177,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2037131086514336010",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/biofeed/status/2037375892092047783"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2037162959328190664",
+  "screen_name": "Bluedeerc",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Thu Mar 26 13:41:12 +0000 2026",
+  "text": "@minus1_12 Dm me",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    16
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2037131086514336010",
+  "retweets": 0,
+  "views": "138",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Bluedeerc",
+    "name": "Blue Deer",
+    "created_at": "Mon Jan 13 20:25:36 +0000 2020",
+    "description": "Options surface analysis. Dealer positioning. Market structure. Institutional-grade research for the people actually trading it. Equidamus Markets",
+    "rest_id": "1216818564952477697",
+    "followers_count": 15168,
+    "favourites_count": 2055,
+    "avatar": "https://pbs.twimg.com/profile_images/1988421577562624000/Ketr-lSK_normal.jpg",
+    "url": "http://Equidamusmarkets.com",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 144,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2037161292809609634",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/Bluedeerc/status/2037162959328190664"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2037154972983292222",
+  "screen_name": "Bluedeerc",
+  "bookmarks": 1,
+  "favorites": 2,
+  "created_at": "Thu Mar 26 13:09:28 +0000 2026",
+  "text": "@minus1_12 How would someone use this to find mispricing or you just think you have one. Really need to compare against the 3d surface to find best expression (easiest tool to make with naive assumptions) \n\nYou need to price options for this to work. Missing a few things",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    271
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2037131086514336010",
+  "retweets": 0,
+  "views": "665",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Bluedeerc",
+    "name": "Blue Deer",
+    "created_at": "Mon Jan 13 20:25:36 +0000 2020",
+    "description": "Options surface analysis. Dealer positioning. Market structure. Institutional-grade research for the people actually trading it. Equidamus Markets",
+    "rest_id": "1216818564952477697",
+    "followers_count": 15168,
+    "favourites_count": 2055,
+    "avatar": "https://pbs.twimg.com/profile_images/1988421577562624000/Ketr-lSK_normal.jpg",
+    "url": "http://Equidamusmarkets.com",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 144,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2037131086514336010",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/Bluedeerc/status/2037154972983292222"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036429093562925223",
+  "screen_name": "wvuprinceton18",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue Mar 24 13:05:05 +0000 2026",
+  "text": "@minus1_12 @genesisvol I haven't looked into specific aspects of that paper. But you're right on the money in terms of binary replication. I personally view Panoptions as being in the same neighborhood as range accruals/corridor variance swaps, which are replicated by strips of digital options.",
+  "lang": "en",
+  "display_text_range": [
+    23,
+    295
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2033588691671658924",
+  "retweets": 0,
+  "views": "67",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      },
+      {
+        "id_str": "1240340189089841153",
+        "indices": [
+          11,
+          22
+        ],
+        "name": "AD Derivatives (formerly GVol)",
+        "screen_name": "genesisvol"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "wvuprinceton18",
+    "name": "Nathan Burks",
+    "created_at": "Fri Apr 21 22:30:41 +0000 2023",
+    "description": "Research | @Panoptic_xyz",
+    "rest_id": "1649541102926458882",
+    "followers_count": 14,
+    "favourites_count": 172,
+    "avatar": "https://pbs.twimg.com/profile_images/1815456165234388992/1KrRti7n_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1649541102926458882/1729559254",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 19,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2036425593147760721",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/wvuprinceton18/status/2036429093562925223"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036423273022423438",
+  "screen_name": "burningpremium",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue Mar 24 12:41:57 +0000 2026",
+  "text": "@minus1_12 glad to hear. most people ship the first backtest and never know.",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    76
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2036353630622638541",
+  "retweets": 0,
+  "views": "18",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "burningpremium",
+    "name": "burningpremium",
+    "created_at": "Wed Jan 11 01:04:17 +0000 2012",
+    "description": "most trade ideas deserve to die. yours might too. - vol st.",
+    "rest_id": "460686463",
+    "followers_count": 367,
+    "favourites_count": 2020,
+    "avatar": "https://pbs.twimg.com/profile_images/2028879553901346816/lxE-BOzo_normal.jpg",
+    "url": "http://volatilitystreet.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/460686463/1774269971",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 202,
+    "location": "Istanbul, TR \\ SF Bay Area, CA"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2036422868502741017",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/burningpremium/status/2036423273022423438"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036417404868174067",
+  "screen_name": "burningpremium",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue Mar 24 12:18:38 +0000 2026",
+  "text": "@minus1_12 why daily at 8am? the hedge frequency and timing are as much a design choice as the strike. change the rebalance window and the feb drawdown and that mid-week whipsaw look completely different. the structure is a free parameter too",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    242
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2036353630622638541",
+  "retweets": 0,
+  "views": "56",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "burningpremium",
+    "name": "burningpremium",
+    "created_at": "Wed Jan 11 01:04:17 +0000 2012",
+    "description": "most trade ideas deserve to die. yours might too. - vol st.",
+    "rest_id": "460686463",
+    "followers_count": 367,
+    "favourites_count": 2020,
+    "avatar": "https://pbs.twimg.com/profile_images/2028879553901346816/lxE-BOzo_normal.jpg",
+    "url": "http://volatilitystreet.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/460686463/1774269971",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 202,
+    "location": "Istanbul, TR \\ SF Bay Area, CA"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2036353630622638541",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/burningpremium/status/2036417404868174067"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036409016486678694",
+  "screen_name": "Christo07291909",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue Mar 24 11:45:18 +0000 2026",
+  "text": "@minus1_12 Can you DM me. Have a couple questions before joining your platform",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    78
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2036353630622638541",
+  "retweets": 0,
+  "views": "17",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Christo07291909",
+    "name": "Christopher",
+    "created_at": "Fri Mar 18 09:13:46 +0000 2022",
+    "description": "Awards:\n\n- Peaked in 2008\n - Statistical average of midwits",
+    "rest_id": "1504747845328461824",
+    "followers_count": 307,
+    "favourites_count": 3410,
+    "avatar": "https://pbs.twimg.com/profile_images/1953804662131347457/bvC7D6-d_normal.jpg",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1458,
+    "location": "Dubai, United Arab Emirates"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2036353630622638541",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/Christo07291909/status/2036409016486678694"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036367912945029476",
+  "screen_name": "amlytor",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Tue Mar 24 09:01:58 +0000 2026",
+  "text": "@minus1_12 Sounds good, I will similar things at work myself",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    60
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2035780924043120772",
+  "retweets": 0,
+  "views": "12",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "amlytor",
+    "name": "AM",
+    "created_at": "Sun Aug 16 13:00:25 +0000 2020",
+    "description": "Current focus on Crypto/Stocks | @GalacticGeckoSG Immortal and @neukoai operative",
+    "rest_id": "1294982157715288066",
+    "followers_count": 768,
+    "favourites_count": 17262,
+    "avatar": "https://pbs.twimg.com/profile_images/2007289038768656385/vRH8VN2__normal.jpg",
+    "url": "http://amlytor.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1294982157715288066/1767011700",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 725,
+    "location": "London, England "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2036039938953662694",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/amlytor/status/2036367912945029476"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036028380328476985",
+  "screen_name": "amlytor",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Mon Mar 23 10:32:48 +0000 2026",
+  "text": "@minus1_12 Did you work at an options market making firm before?",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    64
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2035780924043120772",
+  "retweets": 0,
+  "views": "30",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "951866930",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Hendrik Ghys",
+        "screen_name": "minus1_12"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "amlytor",
+    "name": "AM",
+    "created_at": "Sun Aug 16 13:00:25 +0000 2020",
+    "description": "Current focus on Crypto/Stocks | @GalacticGeckoSG Immortal and @neukoai operative",
+    "rest_id": "1294982157715288066",
+    "followers_count": 768,
+    "favourites_count": 17262,
+    "avatar": "https://pbs.twimg.com/profile_images/2007289038768656385/vRH8VN2__normal.jpg",
+    "url": "http://amlytor.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1294982157715288066/1767011700",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 725,
+    "location": "London, England "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "minus1_12",
+  "in_reply_to_status_id_str": "2035959262476714082",
+  "in_reply_to_user_id_str": "951866930",
+  "url": "https://twitter.com/amlytor/status/2036028380328476985"
+}]

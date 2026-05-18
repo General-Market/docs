@@ -1,0 +1,141 @@
+score	followers	handle	name	bio	source	hits
+7	15168	Bluedeerc	Blue Deer	Options surface analysis. Dealer positioning. Market structure. Institutional-grade research for the people actually trading it. Equidamus M	B7,B7	\b(vol(atility)?\s*(surface|tr=+3,\b(options?\s+(trader|trading|=+3,\b(institutional[- ]grade|rese=+1
+7	582	spxudi	quantago	blissfully unemployed. prev. derivs quant at a hedge fund you’ve never heard of. it’s not a loss if you haven’t been liquidated.	B8,B8	\bquant(s|itative)?\b=+3,\b(derivs?|derivatives?)\b=+2,\b(hedge\s*fund)\b=+2
+6	9929	fabiocatalao_	Fabio Catalão	Physicist II Data Analyst II @paradex trader II                       Falo sobre estratégias de investimento, IA e hacks de vida.	B6,B6	\b(data\s*analyst|physicist|ri=+2,\b(paradex|thalex|deribit|laev=+2,\b(institutional[- ]grade|rese=+1,@\s*paradex|@\s*ThalexGlobal|@=+1
+4	61353	Han_Akamatsu	Han Akamatsu 赤松	Independent Technical Market Analyst | Focus on price structure | Gamma exposure | Dealer Positioning | & Asymmetric Equity Setups.	Q2	\b(vol(atility)?\s*(surface|tr=+3,\b(institutional[- ]grade|rese=+1
+3	183004	vooi_io	vooi	Trade perps cross-venue | Multi-DEX aggregator | Funding Arb | Backed by @YZiLabs | VOOI Ultra, Public Beta - LIVE	Q3	\b(MEV|searcher|arb(itrage)?\s=+3
+3	27513	options_insight	Imran Lakha | Options Insight	25y options trading veteran  I've helped hundreds grow and protect their portfolios  Free Masterclass 👉 https://t.co/xz95xdtdHE	B1	\b(options?\s+(trader|trading|=+3
+3	8235	Autonomous_Chad	Quant Chad	Crunching numbers in prediction markets. Betting against the herd. Quant @ZEITFinance	Q4	\bquant(s|itative)?\b=+3
+3	7076	D2_Finance	D2 Finance	Institutional-grade Derivatives Strategies for DeFi  | Stablecoin, BTC, ETH, tokenized derivative strategies since 2023   | Real Risk-adjust	B3	\b(derivs?|derivatives?)\b=+2,\b(institutional[- ]grade|rese=+1
+3	3749	fullvaluedan	FullValueDan.dime	Head of $DIME TV @paradex | Leading DimeTV streams & creators | Ex-Disney Janitor	B6,B6,B6	\b(paradex|thalex|deribit|laev=+2,@\s*paradex|@\s*ThalexGlobal|@=+1
+3	1159	FvckYourHedge	(Aladhi) 🕯️ 🕳️	Options trading📖 O.F & DOM °Volatility Risk P.° $NQ_F $ES_F $ZB_F $BTC $ETH  https://t.co/UYnQTDEGDf Class ‘19 Retard algo MM Trader	B1,B1,B7,B7,B7,B7	\b(options?\s+(trader|trading|=+3
+3	1090	TokensWolf	Rōga	mev extractoor, arb/mm, investing in stuff  @Magnus_fund	B1	\b(MEV|searcher|arb(itrage)?\s=+3
+3	430	cedeflow	Cede Flow	Perps Algo Trading, simplified. High-performance bots. Few clicks. Powered by @cedehub.  Join us on Discord: https://t.co/Q2I9ry9uJd	Q1	\b(bot\s*dev|algo\s*(trader|tr=+3
+3	367	burningpremium	burningpremium	most trade ideas deserve to die. yours might too. - vol st.	B7,B7	\b(vol(atility)?\s*(surface|tr=+3
+2	35042	ExitLiqCapital	nick (Big Wick Nick)	Calendar GCR   semi-retired derivatives trader   schizophrenic and retarded	B6	\b(derivs?|derivatives?)\b=+2
+2	16453	Outcomexyz	Outcome	Prediction Markets on Hyperliquid, Trade outcomes on crypto & more soon. https://t.co/wQPHkSHrLl	Q4	\b(paradex|thalex|deribit|laev=+2
+2	4793	hypingbull	HypingBull	Hyperliquid and cryptocurrency alpha.	Q1,Q1	\b(paradex|thalex|deribit|laev=+2
+2	943	ChaCha2xs	Cha Cha	la vendetta del signore è molto più potente di tutte le nostre spade - $hyperliquid maxi	B6	\b(paradex|thalex|deribit|laev=+2
+2	378	blackjack_god	BlackjackGod	Card counter. Risk calculator. The math the house doesn't want you knowing - applied to everything.	B7	\b(card\s*counter|card\s*count=+2
+2	253	trynormie	normie	a trading app for everyone and everyting.  hyperliquid, polymarket and memes all in one place	B4,B4,B4	\b(paradex|thalex|deribit|laev=+2
+1	49956	only1mrwhite	Mr White 🫶🏽	Meticulous crypto market analyst | Trader | Angel Investor 🏌️‍♂️ Finding/creating asymmetric opportunities	Q4	\b(institutional[- ]grade|rese=+1
+1	22163	PolymarketDevs	Polymarket Developers	Your official source for updates, news, & events for @Polymarket developers. Featuring the best community projects & resources to build on t	Q4	@\s*paradex|@\s*ThalexGlobal|@=+1
+1	19765	Andre_Dragosch	André Dragosch, PhD⚡	European Head of Research @ Bitwise - Author of https://t.co/b5W5oevDUN - #Bitcoin - Macro - Not investment advice - Views strictly mine - B	Q2	\b(institutional[- ]grade|rese=+1
+1	19362	adiix_official	AdiiX	vibe coding | ai & onchain research	Q4	\b(institutional[- ]grade|rese=+1
+1	13072	gaah_im	G a a h	▶️ Markets Analyses ▶️ on-chain Data #BTC #Crypto ▶️ Trading, AI, Macro Insights  ➡️ Analyst @investemais_net ➡️ Author @cryptoquant_com and	Q2	\b(institutional[- ]grade|rese=+1
+1	11599	jeg6322	EWL	🇰🇷 | vibe research on crypto, ai, hci, robotics | @xitdao	Q3	\b(institutional[- ]grade|rese=+1
+1	4838	mahera777	mahera	trust the process | @Polymarket researcher, trader  DMs open 🤝🏻	Q4	@\s*paradex|@\s*ThalexGlobal|@=+1
+1	4516	breezyjpg	Breezy 4L	McDonald's retiree trying to get rich on @Polymarket	Q4,Q4,Q4	@\s*paradex|@\s*ThalexGlobal|@=+1
+1	4124	bas3dp0tat6	basedpotato	Illiquid Strategies Analyst and Lender of Last Resort. @Neutrl	B7	\b(institutional[- ]grade|rese=+1
+1	2453	martynov014	Valentin	not bot, not smart trader, just only 4cking kazakh expert on @polymarket https://t.co/YlowCDUIB4	Q4	@\s*paradex|@\s*ThalexGlobal|@=+1
+0	394909	RealVision	Real Vision	The premier marketplace for crowdsourced investor intelligence. Click the link below to get free access 👇	Q2	
+0	327202	piitien1603i	Pii™Ducks	The Wise Monkey 🐕‍🦺🩵 In-depth information about crypto DeFi🩵  Not financial advice🩵 📩 @piitien1603i @CONTENTDAOAPP(560)	Q4	
+0	280620	hackapreneur	Justin Wu	Humble farm DeFi 🧑‍🌾 | Focused on #RWA, #DeFi #DeFAI   Prev: @PiCoreTeam $PONKE army https://t.co/SOmhzlNgAD	Q3	
+0	239231	Covalent_HQ	Covalent	The data infrastructure for the onchain economy. Verified data across 100+ chains - powering apps, institutions & AI agents. Secured by $CXT	Q4	
+0	157377	RNR_0	Romano	Blog: https://t.co/bQOgyIBcOz || Working on @buildonvia • https://t.co/NpR130JJba • https://t.co/5RpurZ7Mvd	B1	
+0	151686	top7ico	Top 7 Crypto | Analytics & Alpha	Daily analytics on what moves crypto – capital flows, trends, TGEs and airdrops, funding rounds, upcoming protocols, token unlocks. Built @C	Q3	
+0	123935	SharpeLabs	Sharpe AI	AI-powered Crypto Terminal | Backed by @animocabrands @gbvofficial @Morningstar_vc	Q3	
+0	83345	BlocksterCom	Blockster	Blockster covers what’s trending in Web3-featuring interviews, press releases, and crypto market insights.	Q2	
+0	79120	0x_Discover	Discover	Writing threads l Alpha researcher l Not financial advice	Q3	
+0	78698	reya_xyz	Reya	Trade on the only DEX where speed never compromises security. Backed by Framework, Coinbase, Selini Capital and more.	Q3	
+0	60803	kingfisher_btc	TheKingfisher	⚡ 85.8% of members turn volatility into opportunity 🛡️ Pioneer of the Liquidation Map 🌐 Trusted by 150K+ Traders | https://t.co/D0Npc8CAl6 🚨	Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2,Q2	
+0	59862	0xPhilanthrop	Philanthrop	Genius, billionaire, playboy, philanthropist.	Q4	
+0	48308	AsaabaCharlotte	Charlotte Asaaba	Lady after God's own  heart💚 | Computer Scientist | Web Designer| Mentor | DM for only business|  DON'T COME TO MY DM PREACHING LOVE🙏🙏 Pleas	B2	
+0	46009	Usoppu	Usopp	🇸🇬 entrepreneur | investor | full time onchain since 2017 | white hair unc married to an amazing wife	Q2	
+0	45970	0xBiZzy	bizzy	LP GCR. Post-Rich Gorillionaire.	Q1,Q1	
+0	44895	tradehotstuff	Hotstuff	DeFi layer 1 for Confidential Integrated Finance. Backed by @delphi_ventures @dialectic_group @StakeCapital & more	Q4	
+0	44613	wassielawyer	wassieloyer	Biglaw restructuring lolyer turned hentai penguin in suit.  Co-founder and Poltergeist @gvrn_ai  Philosophy, therapy, strategy and diplomacy	Q1	
+0	31831	FlashTrade	Flash.Trade | Perps on Solana	Trade crypto, stocks, commodities, and forex with zero slippage onchain.   Join the beasts at https://t.co/dDhjoFzXah	Q4	
+0	30356	liquidtrading	Liquid	trade whatever wherever whenever	Q1	
+0	29285	Yuyan_bnb	小芳	加密狂热者 ⚡｜链上侦探，领先市场的 Alpha 猎人｜从比特币减半到 DeFi 收益农场｜不吹不黑，只讲数据与信念｜关注加密趋势与未来金融｜ #BTC #BNB #ETH #SOL #AVAX #FTM #ADA #Crypto #NFTs #Metaverse #ALTCOI	B2,B2,B2	
+0	28987	shannholmberg	Shann³	I cover AI marketing & growth. Sharing every framework as I build it.   Founder @espressioai, @lunarstrategy	Q3	
+0	27260	Coincall_Global	Coincall	The Largest Altcoin Options Exchange 💬Telegram: https://t.co/FRUH3jFTVC  ✉️ Support: support@coincall.com	B4	
+0	25013	bored2boar	Oracle Boar	𝗢𝗻-𝗖𝗵𝗮𝗶𝗻 𝗜𝗻𝘃𝗲𝘀𝘁𝗶𝗴𝗮𝘁𝗶𝗼𝗻𝘀 / 𝗣𝗿𝗲𝗱𝗶𝗰𝘁𝗶𝗼𝗻 𝗺𝗮𝗿𝗸𝗲𝘁𝘀 / 𝗗𝗲𝗙𝗶 𝗺𝗼𝘃𝗲𝘀	Q3	
+0	21469	Clawnch_Bot	Clawnch 🪽	The economic layer for agents. 🪽   The world's most advanced Hermes Agent crypto plugin now live at https://t.co/DcnJaP0HSx  0xa1F72459dfA10	Q1,Q1	
+0	19988	EricCLFung	EricF	Opinion are my own • Architect @lostincodexyz • Art AI Crypto R&D • prev 0n1force qubicagi deficyan statscan • likesonepiece • 🇨🇦🇭🇰🇯🇵	Q3	
+0	18744	ajs6888	安叫兽|Bird🕊️ 🔶 BNB	token 中转站：https://t.co/TpSOi0k41X（安全的品质）不掺不假 交易所永久返佣 https://t.co/1YRGFH6pm3  撸毛五件套各类账号购买链接https://t.co/RrG63VDhFE	B6	
+0	17905	zhuren1992	主任	Newb社区将继续秉承共享、共赢、创新的精神，携手成员共同开创更加辉煌的明天 Endless𒀭 mod：@EndlessProtocol RuneHero mod：@playrunehero	B8,B8,B8,B8,B8,B8	
+0	15208	louisregis	Lou	Founder @ProprXYZ - CEO @XBorgHQ Prev. Credit Suisse, Rothschild  We are hiring: https://t.co/jrFTVOGKO6	Q1	
+0	12818	DextersSolab	Dexter's Lab	𝟐𝟎𝟎 𝐈𝐐 𝐃𝐞𝐠𝐞𝐧 • 𝗣𝗿𝗲𝗱𝗶𝗰𝘁𝗶𝗼𝗻 𝗠𝗮𝗿𝗸𝗲𝘁𝘀 𝗔𝗻𝗮𝗹𝘆𝘀𝘁 • 𝗕𝗹𝘂𝗲𝗰𝗵𝗶𝗽 𝗛𝗼𝗹𝗱𝗲𝗿  @zscdao 𝗺𝗲𝗺𝗯𝗲𝗿	Q3	
+0	12605	AviiWeb3	Avii	AI researcher | Deep insights on Crypto x AI 🦞 | Core Contributor @EndlessProtocol | Growth Strategist | Sharing my growth journey | Buildin	B8	
+0	12363	kieu20011	Kieu.eth	Crypto Creator NFT • Web3 • Alpha 📩 Telegram: https://t.co/9C1yF52iDt	B8	
+0	10897	strikeperps	Strike | Onchain Perps	Profit for traders. Yield for LPs. Income for holders. Strike V2 live on Cardano and Ethereum. Solana mainnet soon. Linktree: 🕹️ https://t.c	Q1,Q1	
+0	10531	Shtihmas11	Shtihmas (❖,❖)	The Oldest Creator in crypto!	B8	
+0	9842	hanakoxbt	Hanako	Building my name | ai & pm agent | dm is open	Q3	
+0	9421	browomo	Blaze	prediction market || dm always are open	Q4	
+0	9345	Gravity5ucks	GravitySucks	Freedom maximalist.  Satoshi’s coins are just buried treasures. Fuck BIP-361.  Data alchemist @GenesisVol	B7	
+0	8430	kshitizkapoor_	Kapoor Kshitiz	Everyone trades | Few manage risk | CMT Level 1	Q2	
+0	7208	itslirrato	Lirratø	chief prediction markets enjoyer	Q4	
+0	6791	jabosiswanto94	Jabo	Absurdly Handsome 🦍	Q3	
+0	6572	King_of__Wolves	Wolfie King🐺	♤ I'm WOLFIE 🐺 ♤ PATIENCE | DISCIPLINE | CONSISTENCY | EXECUTION | GRACE ♤Creator   @AisarLabs ♤ Partner @blueguardiancom @fundednext @atlas	B8	
+0	6460	slash1sol	slash1s	smoke cigs and post about crypto, ai, vibe coding, prediction markets..	Q3	
+0	5307	MaksimXBT	Maksim	building an app that grow your wealth by doing nothing	B1,B8,B8	
+0	5129	postedgo	PostedGo🔋	Bot It	Q2	
+0	5103	PredictParity	Parity	Balancing Prediction Markets @MovieTimeDev	Q4	
+0	5009	traidingfloor	Traiding Floor	A complete AI trading floor, running on your machine. No cloud. No middleman. No subscription to our servers.	Q3	
+0	4518	_web3boi_	King Luna	been around since 2018, builder 🟦 || Growth strategist 🌴	B1	
+0	4143	softwareduniyas	Software Duniyaas	Helping Freshers find real software jobs & off-campus updates Daily hiring alerts | Entry-level roles | India 🇮🇳 👉 Follow for verified openi	B2	
+0	4136	ProMint_X	ProMint	Real alpha no AI-slop | Web3 explorer | Aster trading tournament winner | Poly maxi	Q4	
+0	4120	cloudxdev	CloudAI-X	Coding Agents / CLI workflows cloudaixdev@gmail.com	B4	
+0	3890	derivativemonky	Derivatives Monkey 衍生品猴子 ( locked-in era	chilling with CSC | MouseBelt | @WeeklyWizdom | @pear_protocol | @deriveinsights |	B1,B7,B7	
+0	3731	LorisTools	Loris Tools	1-Click Pair Trades & Multi-Exchange Spreads | Free Perps Data on 40+ Exchanges	Q3,Q3	
+0	3521	otomate_trade	Otomate	The adaptive app for onchain finance.  Crypto, stocks, yield, AI automation.  https://t.co/3ypQP7YRqE	Q1,Q1	
+0	3435	BillyMcgrath24	Billy.BTC	📈 Narratives, catalysts & rotations ⚡ Don’t chase, anticipate.	B8	
+0	3166	dan_uptop	dan | up top	founder @uptopsearch	B3	
+0	3145	cryptslic35	DTN_Timbo 😂Ⓜ️🌊	💎Diamond Trencher Network owner💎 GOD FORBID🙏 Just a White Boy with a lil Ⓜ️🌊| Solana Trencher | God over Everything |Brand Development |	Q1	
+0	3017	LilQwantXBT	lil qwant	implied vibes , highest frequency trader , never trade alone @whalepool ts , previously top 10 protoss player ,	B1,B7,B7	
+0	2860	lunatik_corp	lunatik	prediction markets in my heart  building @poly_matches	Q4	
+0	2761	navin346	Naveen🫡	Product & Partnerships @aviciMoney  DeFi maxi. An Optimistic nihilist :)	B4	
+0	2759	mattdotfi	matt	Tokenizing Stonks @xStocksFi | Partnerships & 🥩🥩 @ETH_Milano | @castle__cap fam | My opinion is just mine and no one else’s.	B3	
+0	2164	GweiExchange	Gwei ⨀	Unified DeFi Interface built for @Monad, Your one stop dApp for Trading, Lending, and earning Yield 🏦 | Join the Community 👉 https://t.co/Of	B1	
+0	2124	0xMolodykh	Konstantin Molodykh🧩	Revenue systems for crypto & fintech founders | Fix your B2B pipeline in 90 days | Founder of full-cycle Web3 advisory firm @mezencrypto	B3	
+0	1957	Dimaweb3girl	Dima.🥹✨	i think alot, feel alot and write about it sometimes..🧘  | I'm Her💗 |  Biochemist in the morning |  Reply girll at night |	B2	
+0	1850	sz8ng	Shan Zhang	Progamming magic money on the internet @strikeperps	Q1	
+0	1663	0xMudaMuda	Muda	Ex poker player | Yields chaser | Occasionally onchain/CEX trader | Dev | Experimenting @forecasterslab	B8	
+0	1214	biofeed	☕️	feeling lucky	B7	
+0	997	arcxtrade	ArcX	The trading layer for all perp DEXs.  Trade across DEXs, build strategies, capture yield.	Q3,Q3	
+0	982	lizy_2009	Kalyanika	Movie Buff	B2	
+0	937	daiteskorosti	Leo Isakov ⭐️	🐋 CEO Founder at @htwtech_ 🐋 llll Fuel crasher llll	B3	
+0	882	EthweiX	Ethwei	A boring and simple blockchain is a good blockchain.	B6	
+0	837	AZverse_Global	AZverse	AZverse Official | AZX DEX & Financial Ecosystem by AZX TECH PTE. LIMITED Telegram:https://t.co/rsHwrcs6bD | Discord: https://t.co/lVgV5a53Y	Q1	
+0	785	max_otc	Max Otc (伟柜)	Forging the first anti-cheat to protect traders pnl from insider trading  @tryGeneral_	B6	
+0	768	amlytor	AM	Current focus on Crypto/Stocks | @GalacticGeckoSG Immortal and @neukoai operative	B7,B7	
+0	735	macrojellyfish	macrojellyfish	Jellyfish Capital	B7	
+0	704	0xElenchus	Elenchus -- e/acc	Sentient. A desire for truth, not popularity.	B8,B8,B8	
+0	628	crypto_nohak	Nohak_CryptoExploration	Exploring and Sharing Crypto projects  SEED on @StandX_Official (Perps)   5% bonus point + you take 5% of mine :   https://t.co/RlFz2peEFA	Q1	
+0	616	Void_of_Hype	Void of Hype	in a galaxy of hype only ethena liquidity can fuel the ethereal escape	B4	
+0	530	agentlayer_ai	AgentLayer	Crypto infrastructure for AI agents. Wallet rails for autonomous agents. @BagsHackathon winner	Q4	
+0	507	M1towoxie	𝕸1𝖙𝖔𝖜𝖔𝖝1𝖊	𝐀 𝐜𝐫𝐲𝐩𝐭𝐨 𝐚𝐫𝐭𝐢𝐬𝐭 𝐰𝐡𝐨 𝐜𝐫𝐞𝐚𝐭𝐞𝐬 𝐰𝐨𝐧𝐝𝐞𝐫𝐟𝐮𝐥 𝐚𝐫𝐭 𝐚𝐧𝐝 𝐚𝐧𝐢𝐦𝐚𝐭𝐢𝐨𝐧𝐬=D  💕😎📸 ------------- @FractionAI_xyz - Valkyries ❤️	B3	
+0	503	atachainatax	ATA CHAIN - ATAX	⚡️ Changing The World's Dominance 📍 ATA QUANTUM AI Chain Technologies LLC - CA/USA	Q1	
+0	413	Brunette_NFT	VikoliGlaz	Hey, don't come around. AI agents master	B6,B6,B6	
+0	376	tenorxyz	tenor.xyz	Best way to farm HIP-3.  You get 6x the points for the same cost.  Team backed by Multicoin, DBA, NIV, Road, TrueBridge	Q1	
+0	339	rgbstashlabs	Stash Labs	Stash Labs is an infrastructure service provider for the RGB protocol, focusing on RGB asset trading and protection.	Q3	
+0	307	Christo07291909	Christopher	Awards:  - Peaked in 2008  - Statistical average of midwits	B7	
+0	303	confinedape	confinedape	risk connoisseur in love with markets and thinking machines	B1,B7,B7	
+0	299	OmeyLad23	Omey S lad	geopolitics, crypto, Indian politics	B2	
+0	285	AndreasPletsch1	Andreas Pletscher	COO @Cardano_CF Turning vision into execution	B3	
+0	271	errmb786	Er Rubaan	WEB 3.0	B6	
+0	233	SybauXBT	sybau.hl	web3 enjoyer	B6	
+-1	144754	Langerius	LANGERIUS	founder @huntersofweb3 | degen, investor, trader, attorney, leading narratives	B4	\b(degen|aper?|rug|gem)\b=-1
+-1	5496	0xRicker	0xRicker	Researcher & Contributor | Polymarket Maxi | Dm open	Q3,Q3	\bDM\s*open\b=-1
+-1	565	mementoviv3re	Memento Vivere	Perpetual Learner | ADHD+OCD | Sober Arc	B6	\b(beginner|learner|hobby)\b=-1
+-2	9881	KyleDeWriter	Kyle the Writer	nothing feels better than success | @Polymarket agent | studying finances  all content here is sponsored or commissioned	Q4	@\s*paradex|@\s*ThalexGlobal|@=+1,\b(sponsored|commissioned|paid=-3
+-2	6581	0x_Samir	0xSamir	just a shitposter | polymarket farmer	Q4	\bshitposter\b=-2
+-3	95942	XRP_2026	XRP	Faith & Finance $XRP believer | ✝️	Q2	\b(faith\s*&\s*finance|believe=-3
+-3	8029	lorden_eth	Lorden	Head of Growth | Web3 & Fintech | User Acquisition & Affiliate Program expert | $7M+ FTDs in 6mo via organic growth | @Safaryclub & @zscdao	Q4	\b(creator\s*campaigns?|affili=-3
+-3	4465	noorhd_3	Radiant	Decoding Realities🔎| Building Privacy-First DeFi | Mindset x Execution in Crypto | Meme Lover |Nightforce Recruits @midnightNtwrk.	B6,B6,B6	\b(memecoin|memes?\s*lover|$\w=-3
+-3	739	kiitanEth	Kiitan.eth	Web3 Writer || Crypto Enthusiast || Community Manager|| Clipper 🎥 2Z8XJ	Q3	\b(community\s*manager|brand\s=-3
+-3	320	naz6rka	ril	🚀 TON believer  👑 Little Web3 expert	B1	\b(faith\s*&\s*finance|believe=-3
+-4	26068	LunarResearcher	Lunar	gamble on prediction markets | dms open...   all my content here is sponsored or commissioned | dyor	Q3	#?\bDYOR\b=-1,\b(sponsored|commissioned|paid=-3
+-4	16297	QwolfAi	QuantumWolf AI	AI-driven promotion network for future-ready companies We turn AI systems into real business growth 📈 DM for collaboration & Permotion  wolf	B2,B2	\bDM\s*(for|me|open|always)\s*=-4
+-4	9343	IamEmpressdee	Empress Dee	Content & Marketing Strategist | Web3 Educator Working with early-stage Web3 founders | Partner @BitMartExchange 📩 DM for Business	Q2	\bDM\s*(for|me|open|always)\s*=-4
+-4	3304	MariaElenaRuiz9	DeFi Maria	I fade the top, ape the bottom Meme believer | Rug survivor Still here, still coping, still bullish.	B8	\b(faith\s*&\s*finance|believe=-3,\b(degen|aper?|rug|gem)\b=-1
+-5	451133	DaCryptoLady_	Crypto Lady	Crypto lover💕| $SOL investor | WEB3 Creator | Growth 👩🏽‍💻 | DM for Marketing Inquiries & Business | #DYOR	B2	\bDM\s*(for|me|open|always)\s*=-4,#?\bDYOR\b=-1
+-7	16204	Web3Alex_	0xAlex	Marketing & KOL Manager | 150+ Successful clients | Building creator campaigns	B3	\b(KOL|kol)\b=-4,\b(creator\s*campaigns?|affili=-3
+-7	10837	Theaiq5	Thea 〽️	AI & Tech Content Creator| DM for promo, collab & creative projects|  premium+ content & partnerships only	B2	\bDM\s*(for|me|open|always)\s*=-4,\b(content\s*(creator|writer|m=-3
+-8	7440	WilcosX	WilcosX.eth	Daily insight crypto | Researcher  | Shitposter | Content Writer |  Marketing Manager.  TG: wilcosx89	B2	\b(growth\s*(strateg|manager|e=-3,\b(content\s*(creator|writer|m=-3,\bshitposter\b=-2
+-9	391351	pump_okLaly	Laly Pump☄️	Cypto Queen #memecoin lover 💖 | $SOL HOLDER #Web3 #CTO $BTC  | 🇸🇪🌐 | My routine? Sky then #DYOR selling candles 💹⛷️  DM open NOW | KOL Netwo	B1	\b(KOL|kol)\b=-4,#?\bDYOR\b=-1,\b(memecoin|memes?\s*lover|$\w=-3,\bDM\s*open\b=-1
+-10	16857	Maryamfatima07	Maryam Fatima		B2	
+-10	6215	ai_cao50120	Đại Cao		B2	
+-10	3673	DeFiNallyx	Nally X⚡☁️	Top Tier KOL 🎖️|| Content Writer || Marketer || Community Manager. Your voice Matters	Q3	\b(KOL|kol)\b=-4,\b(content\s*(creator|writer|m=-3,\b(community\s*manager|brand\s=-3
+-10	227	mont_py	Monty		B4	

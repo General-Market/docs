@@ -1,0 +1,2105 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2055808600434671676",
+  "screen_name": "ajs6888",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sun May 17 00:32:20 +0000 2026",
+  "text": "@paradex @FBChaiTrading let AI cook my dusty trades",
+  "lang": "en",
+  "display_text_range": [
+    24,
+    51
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2055663880622207029",
+  "retweets": 0,
+  "views": "33",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "1958307855775432704",
+        "indices": [
+          9,
+          23
+        ],
+        "name": "FueledByChai",
+        "screen_name": "FBChaiTrading"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "ajs6888",
+    "name": "安叫兽|Bird🕊️ 🔶 BNB",
+    "created_at": "Sun Apr 24 19:48:02 +0000 2022",
+    "description": "token 中转站：https://t.co/TpSOi0k41X（安全的品质）不掺不假\n交易所永久返佣 https://t.co/1YRGFH6pm3 \n撸毛五件套各类账号购买链接https://t.co/RrG63VDhFE",
+    "rest_id": "1518315606830829568",
+    "followers_count": 18744,
+    "favourites_count": 37783,
+    "avatar": "https://pbs.twimg.com/profile_images/1945793558621138944/xDA0aKm4_normal.png",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1518315606830829568/1751027429",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 3107,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2055663880622207029",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/ajs6888/status/2055808600434671676"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055266982975479888",
+  "screen_name": "ChaCha2xs",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri May 15 12:40:08 +0000 2026",
+  "text": "@paradex @dimetvhq I’m interested in this project",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    49
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2055266591445749804",
+  "retweets": 0,
+  "views": "37",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "1982697230479015936",
+        "indices": [
+          9,
+          18
+        ],
+        "name": "DimeTV",
+        "screen_name": "dimetvhq"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "ChaCha2xs",
+    "name": "Cha Cha",
+    "created_at": "Fri Oct 22 02:28:02 +0000 2021",
+    "description": "la vendetta del signore è molto più potente di tutte le nostre spade - $hyperliquid maxi",
+    "rest_id": "1451374709052952576",
+    "followers_count": 943,
+    "favourites_count": 24433,
+    "avatar": "https://pbs.twimg.com/profile_images/2049959936868704256/xHyhyAYb_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1451374709052952576/1775299628",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 583,
+    "location": "Sumwhere on the streets of nyc"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2055266591445749804",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/ChaCha2xs/status/2055266982975479888"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055266596550217733",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Fri May 15 12:38:36 +0000 2026",
+  "text": "explore VTFs now on\n\nhttps://t.co/a9SWHYD6xx",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    44
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2055266591445749804",
+  "retweets": 0,
+  "views": "709",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "app.paradex.trade/vaults",
+        "expanded_url": "http://app.paradex.trade/vaults",
+        "indices": [
+          21,
+          44
+        ],
+        "url": "https://t.co/a9SWHYD6xx"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2055266591445749804",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/paradex/status/2055266596550217733"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055245782677401626",
+  "screen_name": "ongkianho",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Fri May 15 11:15:53 +0000 2026",
+  "text": "@paradex Why your withdrawal pending problem not solve n CS no response?",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    72
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2055237654669844706",
+  "retweets": 0,
+  "views": "43",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "ongkianho",
+    "name": "Ong Kian Ho",
+    "created_at": "Sat Apr 16 09:01:58 +0000 2011",
+    "description": "",
+    "rest_id": "282963616",
+    "followers_count": 37,
+    "favourites_count": 288,
+    "avatar": "https://pbs.twimg.com/profile_images/1836668224940969985/SYCgtsVf_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/282963616/1726730803",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 408,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2055237654669844706",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/ongkianho/status/2055245782677401626"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055245280791179504",
+  "screen_name": "fullvaluedan",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Fri May 15 11:13:54 +0000 2026",
+  "text": "@paradex Launching a vault soon...\n\nHopefully a positive one",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    60
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2055237654669844706",
+  "retweets": 0,
+  "views": "47",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "fullvaluedan",
+    "name": "FullValueDan.dime",
+    "created_at": "Sat Nov 04 08:31:56 +0000 2017",
+    "description": "Head of $DIME TV @paradex | Leading DimeTV streams & creators | Ex-Disney Janitor",
+    "rest_id": "926728709888925697",
+    "followers_count": 3749,
+    "favourites_count": 25188,
+    "avatar": "https://pbs.twimg.com/profile_images/2019267394401890304/gLSZ7ZJW_normal.jpg",
+    "url": "https://www.youtube.com/@FullValueDan",
+    "cover_image": "https://pbs.twimg.com/profile_banners/926728709888925697/1770303758",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1079,
+    "location": "DIME Nation"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2055237654669844706",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/fullvaluedan/status/2055245280791179504"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055168903526096993",
+  "screen_name": "Brunette_NFT",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri May 15 06:10:24 +0000 2026",
+  "text": "@paradex Non pro in option can only lose a money",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    48
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2054940849759195598",
+  "retweets": 0,
+  "views": "11",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Brunette_NFT",
+    "name": "VikoliGlaz",
+    "created_at": "Thu Dec 02 15:07:53 +0000 2021",
+    "description": "Hey, don't come around. AI agents master",
+    "rest_id": "1466423822828064773",
+    "followers_count": 413,
+    "favourites_count": 6914,
+    "avatar": "https://pbs.twimg.com/profile_images/2018248647054626816/I9SkbcAt_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1466423822828064773/1770022952",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 469,
+    "location": "UAE"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2054940849759195598",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/Brunette_NFT/status/2055168903526096993"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055027618794066377",
+  "screen_name": "max_otc",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu May 14 20:48:59 +0000 2026",
+  "text": "@paradex but you pay a premium for that",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    39
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2054940849759195598",
+  "retweets": 0,
+  "views": "29",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "max_otc",
+    "name": "Max Otc (伟柜)",
+    "created_at": "Sun Nov 26 20:04:49 +0000 2023",
+    "description": "Forging the first anti-cheat to protect traders pnl from insider trading \n@tryGeneral_",
+    "rest_id": "1728867361766215680",
+    "followers_count": 785,
+    "favourites_count": 2131,
+    "avatar": "https://pbs.twimg.com/profile_images/2026706319114178560/EOcaQbVU_normal.jpg",
+    "url": "https://generalmarket.io/linktree",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1728867361766215680/1778945648",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 894,
+    "location": "NYC"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2054940849759195598",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/max_otc/status/2055027618794066377"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054796221458559421",
+  "screen_name": "mementoviv3re",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Thu May 14 05:29:30 +0000 2026",
+  "text": "@paradex Can you guys move DIME? \n\nMarketcap of 4.2m for a working perp dex is unprecedented.",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    93
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2054794623705608406",
+  "retweets": 0,
+  "views": "56",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "mementoviv3re",
+    "name": "Memento Vivere",
+    "created_at": "Sat May 29 17:24:42 +0000 2021",
+    "description": "Perpetual Learner | ADHD+OCD | Sober Arc",
+    "rest_id": "1398691574595215361",
+    "followers_count": 565,
+    "favourites_count": 146610,
+    "avatar": "https://pbs.twimg.com/profile_images/1894743249320886272/kaaJejTS_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1398691574595215361/1769249285",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 829,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2054794623705608406",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/mementoviv3re/status/2054796221458559421"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054220102367580377",
+  "screen_name": "Hojayszn",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Tue May 12 15:20:12 +0000 2026",
+  "text": "@paradex @cissora i think im starting to get a hang of it https://t.co/RGOpvsrhzu",
+  "lang": "en",
+  "display_text_range": [
+    18,
+    57
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2054215630820151675",
+  "retweets": 0,
+  "views": "23",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/RGOpvsrhzu",
+        "expanded_url": "https://x.com/Hojayszn/status/2054220102367580377/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2054220082633490432",
+        "indices": [
+          58,
+          81
+        ],
+        "media_key": "3_2054220082633490432",
+        "media_results": {
+          "result": {
+            "media_key": "3_2054220082633490432"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HIIOSAvXwAAM7nO.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 568,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 639,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 561,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 320,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 639,
+          "width": 1014
+        },
+        "sizes": {
+          "large": {
+            "h": 639,
+            "resize": "fit",
+            "w": 1014
+          },
+          "medium": {
+            "h": 639,
+            "resize": "fit",
+            "w": 1014
+          },
+          "small": {
+            "h": 429,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/RGOpvsrhzu"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "1461057752319463425",
+        "indices": [
+          9,
+          17
+        ],
+        "name": "Cissor",
+        "screen_name": "cissora"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Hojayszn",
+    "name": "hojay 2.0",
+    "created_at": "Sun Apr 12 09:38:12 +0000 2026",
+    "description": "Retarded arc",
+    "rest_id": "2043261876268679168",
+    "followers_count": 36,
+    "favourites_count": 558,
+    "avatar": "https://pbs.twimg.com/profile_images/2048145596037632000/GKZbgw4t_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/2043261876268679168/1775987053",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 140,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIIOSAvXwAAM7nO.jpg",
+        "id": "2054220082633490432",
+        "sizes": {
+          "h": 639,
+          "w": 1014
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2054215630820151675",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/Hojayszn/status/2054220102367580377"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053871685749629256",
+  "screen_name": "fabiocatalao_",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon May 11 16:15:43 +0000 2026",
+  "text": "@paradex VTF Bitcoin yield take over ETFs 👀",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    43
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053838720957399289",
+  "retweets": 0,
+  "views": "97",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "fabiocatalao_",
+    "name": "Fabio Catalão",
+    "created_at": "Fri Nov 29 16:13:34 +0000 2013",
+    "description": "Physicist II Data Analyst II @paradex trader II                      \nFalo sobre estratégias de investimento, IA e hacks de vida.",
+    "rest_id": "2221692650",
+    "followers_count": 9929,
+    "favourites_count": 36858,
+    "avatar": "https://pbs.twimg.com/profile_images/2019825718817898496/UPr-8GU7_normal.jpg",
+    "url": "https://youtube.com/@fabiocatalao_",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2221692650/1752326199",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 750,
+    "location": " "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2053838720957399289",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/fabiocatalao_/status/2053871685749629256"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053859202787942558",
+  "screen_name": "Hojayszn",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon May 11 15:26:07 +0000 2026",
+  "text": "@paradex @cissora what does he look like aquaman by the way...\n\n2hrs from now isnt far https://t.co/uwfLYe1P8R",
+  "lang": "en",
+  "display_text_range": [
+    18,
+    86
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2053853507120205961",
+  "retweets": 0,
+  "views": "31",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/uwfLYe1P8R",
+        "expanded_url": "https://x.com/Hojayszn/status/2053859202787942558/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 64,
+                "w": 64,
+                "x": 39,
+                "y": 544
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 64,
+                "w": 64,
+                "x": 39,
+                "y": 544
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 64,
+                "w": 64,
+                "x": 39,
+                "y": 544
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 42,
+                "w": 42,
+                "x": 26,
+                "y": 364
+              }
+            ]
+          }
+        },
+        "id_str": "2053858512011231232",
+        "indices": [
+          87,
+          110
+        ],
+        "media_key": "3_2053858512011231232",
+        "media_results": {
+          "result": {
+            "media_key": "3_2053858512011231232"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HIDFb1NXgAAeyGw.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 568,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 639,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 561,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 320,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 639,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 639,
+          "width": 1014
+        },
+        "sizes": {
+          "large": {
+            "h": 639,
+            "resize": "fit",
+            "w": 1014
+          },
+          "medium": {
+            "h": 639,
+            "resize": "fit",
+            "w": 1014
+          },
+          "small": {
+            "h": 429,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/uwfLYe1P8R"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "1461057752319463425",
+        "indices": [
+          9,
+          17
+        ],
+        "name": "Cissor",
+        "screen_name": "cissora"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Hojayszn",
+    "name": "hojay 2.0",
+    "created_at": "Sun Apr 12 09:38:12 +0000 2026",
+    "description": "Retarded arc",
+    "rest_id": "2043261876268679168",
+    "followers_count": 36,
+    "favourites_count": 558,
+    "avatar": "https://pbs.twimg.com/profile_images/2048145596037632000/GKZbgw4t_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/2043261876268679168/1775987053",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 140,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIDFb1NXgAAeyGw.jpg",
+        "id": "2053858512011231232",
+        "sizes": {
+          "h": 639,
+          "w": 1014
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2053853507120205961",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/Hojayszn/status/2053859202787942558"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053416102538220003",
+  "screen_name": "Brunette_NFT",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Sun May 10 10:05:24 +0000 2026",
+  "text": "@paradex guys, you started good, but you lost a trust of community. why people should support you if you did not reserve a trust?",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    129
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053376548661600438",
+  "retweets": 0,
+  "views": "58",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Brunette_NFT",
+    "name": "VikoliGlaz",
+    "created_at": "Thu Dec 02 15:07:53 +0000 2021",
+    "description": "Hey, don't come around. AI agents master",
+    "rest_id": "1466423822828064773",
+    "followers_count": 413,
+    "favourites_count": 6914,
+    "avatar": "https://pbs.twimg.com/profile_images/2018248647054626816/I9SkbcAt_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1466423822828064773/1770022952",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 469,
+    "location": "UAE"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2053376548661600438",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/Brunette_NFT/status/2053416102538220003"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053410674488016957",
+  "screen_name": "errmb786",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sun May 10 09:43:49 +0000 2026",
+  "text": "@paradex when you will buyback",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    30
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053376548661600438",
+  "retweets": 0,
+  "views": "55",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "errmb786",
+    "name": "Er Rubaan",
+    "created_at": "Fri Dec 19 15:40:33 +0000 2014",
+    "description": "WEB 3.0",
+    "rest_id": "2936221622",
+    "followers_count": 271,
+    "favourites_count": 3104,
+    "avatar": "https://pbs.twimg.com/profile_images/2033082693416792069/89TbjYzb_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/2936221622/1766241313",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 2185,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2053376548661600438",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/errmb786/status/2053410674488016957"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053377769745367254",
+  "screen_name": "SybauXBT",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Sun May 10 07:33:04 +0000 2026",
+  "text": "@paradex nobody uses you anymore &amp; your token is worth 0 lil bro",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    68
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053376548661600438",
+  "retweets": 0,
+  "views": "78",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "SybauXBT",
+    "name": "sybau.hl",
+    "created_at": "Sat Mar 02 14:00:25 +0000 2024",
+    "description": "web3 enjoyer",
+    "rest_id": "1763927312758951936",
+    "followers_count": 233,
+    "favourites_count": 12751,
+    "avatar": "https://pbs.twimg.com/profile_images/2049757438199660544/bupUPXkF_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1763927312758951936/1777520713",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 2077,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2053376548661600438",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/SybauXBT/status/2053377769745367254"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052421259548340639",
+  "screen_name": "ExitLiqCapital",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Thu May 07 16:12:15 +0000 2026",
+  "text": "@paradex @fiddybps1 @consensus2026 great work @fiddybps1",
+  "lang": "en",
+  "display_text_range": [
+    35,
+    56
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2051952522055782903",
+  "retweets": 0,
+  "views": "538",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          20,
+          34
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          46,
+          56
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "ExitLiqCapital",
+    "name": "nick (Big Wick Nick)",
+    "created_at": "Fri Apr 06 17:58:48 +0000 2012",
+    "description": "Calendar GCR \n\nsemi-retired derivatives trader \n\nschizophrenic and retarded",
+    "rest_id": "546991634",
+    "followers_count": 35042,
+    "favourites_count": 221028,
+    "avatar": "https://pbs.twimg.com/profile_images/1956043592147066882/sTspRe_R_normal.jpg",
+    "url": "https://whop.com/dontbeexitliquidity/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/546991634/1760191799",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1580,
+    "location": "Miami Beach, FL"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2051952522055782903",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/ExitLiqCapital/status/2052421259548340639"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052411827540181386",
+  "screen_name": "noorhd_3",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu May 07 15:34:46 +0000 2026",
+  "text": "Everyone talks about 'Bitcoin yield,' but few are building the high-fidelity infrastructure to make it sustainable at scale. Combining on-chain options with high-throughput derivatives is a massive leap forward. Finally moving past the 'four-year cycle' noise into real, productive assets.",
+  "lang": "en",
+  "display_text_range": [
+    35,
+    305
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051952522055782903",
+  "retweets": 0,
+  "views": "45",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "noorhd_3",
+    "name": "Radiant",
+    "created_at": "Sat Jan 18 00:53:11 +0000 2025",
+    "description": "Decoding Realities🔎| Building Privacy-First DeFi | Mindset x Execution in Crypto | Meme Lover |Nightforce Recruits @midnightNtwrk.",
+    "rest_id": "1880418073674489856",
+    "followers_count": 4465,
+    "favourites_count": 26211,
+    "avatar": "https://pbs.twimg.com/profile_images/2036488586787430406/a9jfBDoa_normal.jpg",
+    "url": "https://t.me/crypto_radiant",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1880418073674489856/1779024436",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 4106,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHuhq6EWcAQpHvo.jpg",
+        "id": "2052411813711474692",
+        "sizes": {
+          "h": 636,
+          "w": 1014
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2051952522055782903",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/noorhd_3/status/2052411827540181386"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052410585183092977",
+  "screen_name": "noorhd_3",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu May 07 15:29:50 +0000 2026",
+  "text": "@paradex On-chain perps usually have one major flaw: the lack of position confidentiality. Paradex solving for that while giving NFT holders an immediate VIP 1 leg-up is a massive UX win. High-stakes trading needs this level of discretion. https://t.co/DAPCVQD1hK",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    239
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052046514567184441",
+  "retweets": 0,
+  "views": "23",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/DAPCVQD1hK",
+        "expanded_url": "https://x.com/noorhd_3/status/2052410585183092977/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2052410579273359364",
+        "indices": [
+          240,
+          263
+        ],
+        "media_key": "3_2052410579273359364",
+        "media_results": {
+          "result": {
+            "media_key": "3_2052410579273359364"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHugjDbXoAQ5ob0.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 568,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 636,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 558,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 318,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 636,
+          "width": 1014
+        },
+        "sizes": {
+          "large": {
+            "h": 636,
+            "resize": "fit",
+            "w": 1014
+          },
+          "medium": {
+            "h": 636,
+            "resize": "fit",
+            "w": 1014
+          },
+          "small": {
+            "h": 427,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/DAPCVQD1hK"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "noorhd_3",
+    "name": "Radiant",
+    "created_at": "Sat Jan 18 00:53:11 +0000 2025",
+    "description": "Decoding Realities🔎| Building Privacy-First DeFi | Mindset x Execution in Crypto | Meme Lover |Nightforce Recruits @midnightNtwrk.",
+    "rest_id": "1880418073674489856",
+    "followers_count": 4465,
+    "favourites_count": 26211,
+    "avatar": "https://pbs.twimg.com/profile_images/2036488586787430406/a9jfBDoa_normal.jpg",
+    "url": "https://t.me/crypto_radiant",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1880418073674489856/1779024436",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 4106,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHugjDbXoAQ5ob0.jpg",
+        "id": "2052410579273359364",
+        "sizes": {
+          "h": 636,
+          "w": 1014
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052046514567184441",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/noorhd_3/status/2052410585183092977"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052409675010748839",
+  "screen_name": "noorhd_3",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu May 07 15:26:13 +0000 2026",
+  "text": "@paradex We’re moving past the era of 'static' tech. VTFs aren't just about making things look possible they’re about rewriting the efficiency of how we process and interact with complex data. The leap from theoretical to functional is where the real value is captured.\" https://t.co/d9OzlmQsUo",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    270
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052211389427765527",
+  "retweets": 0,
+  "views": "29",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/d9OzlmQsUo",
+        "expanded_url": "https://x.com/noorhd_3/status/2052409675010748839/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2052409666949242880",
+        "indices": [
+          271,
+          294
+        ],
+        "media_key": "3_2052409666949242880",
+        "media_results": {
+          "result": {
+            "media_key": "3_2052409666949242880"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHuft8wWYAAZ0IL.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 568,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 636,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 558,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 318,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 636,
+              "w": 1014,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 636,
+          "width": 1014
+        },
+        "sizes": {
+          "large": {
+            "h": 636,
+            "resize": "fit",
+            "w": 1014
+          },
+          "medium": {
+            "h": 636,
+            "resize": "fit",
+            "w": 1014
+          },
+          "small": {
+            "h": 427,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/d9OzlmQsUo"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "noorhd_3",
+    "name": "Radiant",
+    "created_at": "Sat Jan 18 00:53:11 +0000 2025",
+    "description": "Decoding Realities🔎| Building Privacy-First DeFi | Mindset x Execution in Crypto | Meme Lover |Nightforce Recruits @midnightNtwrk.",
+    "rest_id": "1880418073674489856",
+    "followers_count": 4465,
+    "favourites_count": 26211,
+    "avatar": "https://pbs.twimg.com/profile_images/2036488586787430406/a9jfBDoa_normal.jpg",
+    "url": "https://t.me/crypto_radiant",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1880418073674489856/1779024436",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 4106,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHuft8wWYAAZ0IL.jpg",
+        "id": "2052409666949242880",
+        "sizes": {
+          "h": 636,
+          "w": 1014
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052211389427765527",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/noorhd_3/status/2052409675010748839"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052166979285311766",
+  "screen_name": "jaboM1234",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Wed May 06 23:21:49 +0000 2026",
+  "text": "@paradex Has it started yet?",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    28
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052147709508030762",
+  "retweets": 0,
+  "views": "25",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "jaboM1234",
+    "name": "Jason Massey",
+    "created_at": "Thu Jan 20 10:25:23 +0000 2022",
+    "description": "",
+    "rest_id": "1484109682289659906",
+    "followers_count": 169,
+    "favourites_count": 12370,
+    "avatar": "https://pbs.twimg.com/profile_images/1484109795770650624/bisvOAbH_normal.png",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 678,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052147709508030762",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/jaboM1234/status/2052166979285311766"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052110578420695164",
+  "screen_name": "fabiocatalao_",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Wed May 06 19:37:42 +0000 2026",
+  "text": "@paradex @fiddybps1 @noncesensicalll @PioGerard Cheese  yield VTF sounds good",
+  "lang": "en",
+  "display_text_range": [
+    48,
+    77
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2052089252226482501",
+  "retweets": 0,
+  "views": "137",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "405725813",
+        "indices": [
+          20,
+          36
+        ],
+        "name": "Nonc3.dime",
+        "screen_name": "noncesensicalll"
+      },
+      {
+        "id_str": "1471990347060314118",
+        "indices": [
+          37,
+          47
+        ],
+        "name": "WaRdY.dime",
+        "screen_name": "PioGerard"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "fabiocatalao_",
+    "name": "Fabio Catalão",
+    "created_at": "Fri Nov 29 16:13:34 +0000 2013",
+    "description": "Physicist II Data Analyst II @paradex trader II                      \nFalo sobre estratégias de investimento, IA e hacks de vida.",
+    "rest_id": "2221692650",
+    "followers_count": 9929,
+    "favourites_count": 36858,
+    "avatar": "https://pbs.twimg.com/profile_images/2019825718817898496/UPr-8GU7_normal.jpg",
+    "url": "https://youtube.com/@fabiocatalao_",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2221692650/1752326199",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 750,
+    "location": " "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052089252226482501",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/fabiocatalao_/status/2052110578420695164"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052107790530007450",
+  "screen_name": "Brunette_NFT",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Wed May 06 19:26:38 +0000 2026",
+  "text": "@paradex @fiddybps1 @noncesensicalll @PioGerard scammers",
+  "lang": "en",
+  "display_text_range": [
+    48,
+    56
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052089252226482501",
+  "retweets": 0,
+  "views": "65",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "405725813",
+        "indices": [
+          20,
+          36
+        ],
+        "name": "Nonc3.dime",
+        "screen_name": "noncesensicalll"
+      },
+      {
+        "id_str": "1471990347060314118",
+        "indices": [
+          37,
+          47
+        ],
+        "name": "WaRdY.dime",
+        "screen_name": "PioGerard"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Brunette_NFT",
+    "name": "VikoliGlaz",
+    "created_at": "Thu Dec 02 15:07:53 +0000 2021",
+    "description": "Hey, don't come around. AI agents master",
+    "rest_id": "1466423822828064773",
+    "followers_count": 413,
+    "favourites_count": 6914,
+    "avatar": "https://pbs.twimg.com/profile_images/2018248647054626816/I9SkbcAt_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1466423822828064773/1770022952",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 469,
+    "location": "UAE"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052089252226482501",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/Brunette_NFT/status/2052107790530007450"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052090018328642024",
+  "screen_name": "fullvaluedan",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Wed May 06 18:16:01 +0000 2026",
+  "text": "@paradex @fiddybps1 @noncesensicalll @PioGerard if you ask them how it's going, they'll say\n\n\"It's gouda\"",
+  "lang": "en",
+  "display_text_range": [
+    48,
+    105
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052089252226482501",
+  "retweets": 0,
+  "views": "109",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "405725813",
+        "indices": [
+          20,
+          36
+        ],
+        "name": "Nonc3.dime",
+        "screen_name": "noncesensicalll"
+      },
+      {
+        "id_str": "1471990347060314118",
+        "indices": [
+          37,
+          47
+        ],
+        "name": "WaRdY.dime",
+        "screen_name": "PioGerard"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "fullvaluedan",
+    "name": "FullValueDan.dime",
+    "created_at": "Sat Nov 04 08:31:56 +0000 2017",
+    "description": "Head of $DIME TV @paradex | Leading DimeTV streams & creators | Ex-Disney Janitor",
+    "rest_id": "926728709888925697",
+    "followers_count": 3749,
+    "favourites_count": 25188,
+    "avatar": "https://pbs.twimg.com/profile_images/2019267394401890304/gLSZ7ZJW_normal.jpg",
+    "url": "https://www.youtube.com/@FullValueDan",
+    "cover_image": "https://pbs.twimg.com/profile_banners/926728709888925697/1770303758",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1079,
+    "location": "DIME Nation"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2052089252226482501",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/fullvaluedan/status/2052090018328642024"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052034804624085241",
+  "screen_name": "fullvaluedan",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Wed May 06 14:36:37 +0000 2026",
+  "text": "@paradex @fiddybps1 @consensus2026 Only possible on Paradex",
+  "lang": "en",
+  "display_text_range": [
+    35,
+    59
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051952522055782903",
+  "retweets": 0,
+  "views": "55",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          20,
+          34
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "fullvaluedan",
+    "name": "FullValueDan.dime",
+    "created_at": "Sat Nov 04 08:31:56 +0000 2017",
+    "description": "Head of $DIME TV @paradex | Leading DimeTV streams & creators | Ex-Disney Janitor",
+    "rest_id": "926728709888925697",
+    "followers_count": 3749,
+    "favourites_count": 25188,
+    "avatar": "https://pbs.twimg.com/profile_images/2019267394401890304/gLSZ7ZJW_normal.jpg",
+    "url": "https://www.youtube.com/@FullValueDan",
+    "cover_image": "https://pbs.twimg.com/profile_banners/926728709888925697/1770303758",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1079,
+    "location": "DIME Nation"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2051952522055782903",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/fullvaluedan/status/2052034804624085241"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051965861616030184",
+  "screen_name": "NElse53516",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Wed May 06 10:02:39 +0000 2026",
+  "text": "@paradex $Dime Token dead",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    25
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051922525752557904",
+  "retweets": 0,
+  "views": "71",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          9,
+          14
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "Dime"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "NElse53516",
+    "name": "Dr_XMan",
+    "created_at": "Fri Aug 08 07:23:18 +0000 2025",
+    "description": "Airdroopper, mentor, crypto analyst, Group owner.",
+    "rest_id": "1953718588201902080",
+    "followers_count": 54,
+    "favourites_count": 228,
+    "avatar": "https://pbs.twimg.com/profile_images/2031742064552280064/XWca2n96_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1953718588201902080/1773240032",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 774,
+    "location": "BD"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2051922525752557904",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/NElse53516/status/2051965861616030184"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051962661827748298",
+  "screen_name": "EthweiX",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Wed May 06 09:49:56 +0000 2026",
+  "text": "@paradex @fiddybps1 @consensus2026 Bro, shave the rest hair, a bold style is better for you.",
+  "lang": "en",
+  "display_text_range": [
+    35,
+    92
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051952522055782903",
+  "retweets": 0,
+  "views": "69",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1474812808671858690",
+        "indices": [
+          0,
+          8
+        ],
+        "name": "Paradex",
+        "screen_name": "paradex"
+      },
+      {
+        "id_str": "4260536128",
+        "indices": [
+          9,
+          19
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          20,
+          34
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "EthweiX",
+    "name": "Ethwei",
+    "created_at": "Sat Nov 22 14:35:47 +0000 2025",
+    "description": "A boring and simple blockchain is a good blockchain.",
+    "rest_id": "1992240291651428352",
+    "followers_count": 882,
+    "favourites_count": 821,
+    "avatar": "https://pbs.twimg.com/profile_images/1992257238875172864/P3k6r2pm_normal.jpg",
+    "url": "http://ethwei.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1992240291651428352/1763886153",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 870,
+    "location": "Decentralization"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "paradex",
+  "in_reply_to_status_id_str": "2051952522055782903",
+  "in_reply_to_user_id_str": "1474812808671858690",
+  "url": "https://twitter.com/EthweiX/status/2051962661827748298"
+}]

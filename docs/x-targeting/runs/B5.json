@@ -1,0 +1,3655 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2055663880622207029",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 10,
+  "created_at": "Sat May 16 14:57:16 +0000 2026",
+  "text": "What is your underrated trade?\n\n@FBChaiTrading might just turn it into a vault and leverage AI to trade it https://t.co/G9pglvPlGL",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    106
+  ],
+  "source": "<a href=\"https://www.opus.pro\" rel=\"nofollow\">opus.pro</a>",
+  "quotes": 0,
+  "replies": 49,
+  "conversation_id": "2055663880622207029",
+  "retweets": 1,
+  "views": "1735",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "display_url": "pic.x.com/G9pglvPlGL",
+        "expanded_url": "https://x.com/paradex/status/2055663880622207029/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2055663843380994048",
+        "indices": [
+          107,
+          130
+        ],
+        "media_key": "13_2055663843380994048",
+        "media_results": {
+          "result": {
+            "media_key": "13_2055663843380994048"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2055663843380994048/img/e21F5D7Rnanb4T_Z.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1920
+          },
+          "medium": {
+            "h": 675,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 383,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/G9pglvPlGL",
+        "video_info": {
+          "aspect_ratio": [
+            16,
+            9
+          ],
+          "duration_millis": 51033,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2055663843380994048/pl/BYFdNRlAkwBbqEoa.m3u8?tag=14&v=e5e"
+            },
+            {
+              "bitrate": 288000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/480x270/SRepoupg6avey0Bg.mp4?tag=14"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/640x360/1PbgiPbR1MIvGBLw.mp4?tag=14"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/1280x720/9d0iXneqZooJB-7f.mp4?tag=14"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1958307855775432704",
+        "indices": [
+          32,
+          46
+        ],
+        "name": "FueledByChai",
+        "screen_name": "FBChaiTrading"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2055663843380994048/img/e21F5D7Rnanb4T_Z.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2055663843380994048/pl/BYFdNRlAkwBbqEoa.m3u8?tag=14&v=e5e"
+          },
+          {
+            "bitrate": 288000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/480x270/SRepoupg6avey0Bg.mp4?tag=14"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/640x360/1PbgiPbR1MIvGBLw.mp4?tag=14"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055663843380994048/vid/avc1/1280x720/9d0iXneqZooJB-7f.mp4?tag=14"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 51033,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2055663843380994048"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2055663880622207029"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055266591445749804",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 16,
+  "created_at": "Fri May 15 12:38:35 +0000 2026",
+  "text": "VTFs are the next evolution of ETFs\n\nSr. Trader at Flowdesk on @dimetvhq:\n\n\"the key is getting the smaller investors, those guys who can't access the big private banks, but still want to invest their funds in some sort of managed system\"\n\n\"there is a lot of middle money out there that can't access the big structured products but they want some sort of structured mechanism\"\n\nVTFs make it possible. 24/7. fully on-chain.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 4,
+  "conversation_id": "2055266591445749804",
+  "retweets": 4,
+  "views": "2516",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1982697230479015936",
+        "indices": [
+          63,
+          72
+        ],
+        "name": "DimeTV",
+        "screen_name": "dimetvhq"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2055266308628049920/img/RV-AH5uIEl-LCKT9.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2055266308628049920/pl/7w8lMGljjxQANLPM.m3u8?tag=27"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055266308628049920/vid/avc1/480x270/fLxQq64kfJz4AVlY.mp4?tag=27"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055266308628049920/vid/avc1/640x360/uKl8KHAjob3svPiJ.mp4?tag=27"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055266308628049920/vid/avc1/1280x720/b8JR7MnddXKdnnKy.mp4?tag=27"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055266308628049920/vid/avc1/1920x1080/UkpBrP-NYZoouwFB.mp4?tag=27"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 66000,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2055266308628049920"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2055266591445749804"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055237654669844706",
+  "screen_name": "paradex",
+  "bookmarks": 2,
+  "favorites": 12,
+  "created_at": "Fri May 15 10:43:35 +0000 2026",
+  "text": "VTFs are the next-gen ETFs\n\n\"Anybody with a mobile phone and USDC should be able to one-click deposit and earn yield.\"\n\nThat's our mission with VTFs on-chain, permissionless portfolios that make complex financial strategies accessible globally. \n\nTimestamps:\n00:00 The rise of Options and VTFs on Chain\n01:32 VTF Definition & Concept\n03:21 Giga VTF & Bitcoin Volatility Strategy\n04:29 Permissionless Innovation\n05:53 The Mission Statement \n08:09 Risk Management Revolution \n13:01 TradFi vs. DeFi Efficiency \n13:38 Everything Going On-Chain \n14:44 Global Financial Access \n15:26 The Magic of DeFi\n16:31 Multi-Collateral Feature",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 3,
+  "conversation_id": "2055237654669844706",
+  "retweets": 0,
+  "views": "1057",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [
+      {
+        "indices": [
+          259,
+          264
+        ],
+        "seconds": 0,
+        "text": "00:00"
+      },
+      {
+        "indices": [
+          303,
+          308
+        ],
+        "seconds": 92,
+        "text": "01:32"
+      },
+      {
+        "indices": [
+          334,
+          339
+        ],
+        "seconds": 201,
+        "text": "03:21"
+      },
+      {
+        "indices": [
+          379,
+          384
+        ],
+        "seconds": 269,
+        "text": "04:29"
+      },
+      {
+        "indices": [
+          411,
+          416
+        ],
+        "seconds": 353,
+        "text": "05:53"
+      },
+      {
+        "indices": [
+          440,
+          445
+        ],
+        "seconds": 489,
+        "text": "08:09"
+      },
+      {
+        "indices": [
+          474,
+          479
+        ],
+        "seconds": 781,
+        "text": "13:01"
+      },
+      {
+        "indices": [
+          508,
+          513
+        ],
+        "seconds": 818,
+        "text": "13:38"
+      },
+      {
+        "indices": [
+          541,
+          546
+        ],
+        "seconds": 884,
+        "text": "14:44"
+      },
+      {
+        "indices": [
+          572,
+          577
+        ],
+        "seconds": 926,
+        "text": "15:26"
+      },
+      {
+        "indices": [
+          596,
+          601
+        ],
+        "seconds": 991,
+        "text": "16:31"
+      }
+    ],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2055234236731588608/img/Q68EL7AhR9GNxOs4.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2055234236731588608/pl/rbuCCow5F6w2FSwf.m3u8?tag=27"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055234236731588608/vid/avc1/480x270/BRLB2jcpFyOQQ1vN.mp4?tag=27"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055234236731588608/vid/avc1/640x360/8AA8dT06b9FHaCDP.mp4?tag=27"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055234236731588608/vid/avc1/1280x720/Y-RTwPbGwtTD67hT.mp4?tag=27"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2055234236731588608/vid/avc1/1920x1080/6fguuS_IYDUd8Rvv.mp4?tag=27"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 1065933,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2055234236731588608"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2055237654669844706"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054591552949731698",
+  "screen_name": "flowdesk_co",
+  "bookmarks": 4,
+  "favorites": 27,
+  "created_at": "Wed May 13 15:56:13 +0000 2026",
+  "text": "Following careful risk assessment and in continuation of our strategic partnership with @saturn_credit, we're launching a PT-USDat market in our @Morpho vault.\n\nIn light of growing refinancing demand for STRC-linked products, the Flowdesk vault will begin allocating to @pendle_fi’s PT-USDat market (27 Aug 2026 maturity).",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    269
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 3,
+  "conversation_id": "2054591552949731698",
+  "retweets": 4,
+  "views": "4035",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1986084943794212864",
+        "indices": [
+          88,
+          102
+        ],
+        "name": "Saturn Foundation",
+        "screen_name": "saturn_credit"
+      },
+      {
+        "id_str": "1420789685811650560",
+        "indices": [
+          145,
+          152
+        ],
+        "name": "Morpho 🦋",
+        "screen_name": "Morpho"
+      },
+      {
+        "id_str": "1377493693762969600",
+        "indices": [
+          270,
+          280
+        ],
+        "name": "Pendle",
+        "screen_name": "pendle_fi"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "flowdesk_co",
+    "name": "Flowdesk",
+    "created_at": "Mon Jun 15 15:33:20 +0000 2020",
+    "description": "Full-service digital asset trading and technology firm. Liquidity Solutions. OTC Trading. Disclaimer: https://t.co/KzdS53Zaga",
+    "rest_id": "1272552541306392576",
+    "followers_count": 10026,
+    "favourites_count": 385,
+    "avatar": "https://pbs.twimg.com/profile_images/2049134984649375744/C8NhRfJL_normal.jpg",
+    "url": "https://flowdesk.co",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1272552541306392576/1778852799",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 0,
+    "location": "Paris, France"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HINf78VXIAAKtkR.jpg",
+        "id": "2054591338423721984",
+        "sizes": {
+          "h": 1200,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/flowdesk_co/status/2054591552949731698"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053813641879683288",
+  "screen_name": "ThalexGlobal",
+  "bookmarks": 63,
+  "favorites": 68,
+  "created_at": "Mon May 11 12:25:04 +0000 2026",
+  "text": "Selling vol has two awesome features:\n1. You start from a well-defined edge\n2. You don't have to be smart to do it\n\nBeing smart is actually counter-productive.\n\nThe more intelligent you are, the more you can fool yourself. You might think that your discretion adds value. That you can manage complexity. That you can cleverly avoid drawdowns.\n\nStart from the assumption that you don't know anything, except:\n1. The variance risk premium exists\n2. The only way to harvest it, is systematically\n\nSo you need consistency, simplicity, and risk tolerance.\n\nConsistency because volatility trades are individually volatile. You need a large enough sample to beat randomness.\n\nSimplicity because your system needs to be measurable. For every decision rule, think about whether it complicates the feedback loop.\n\nRisk tolerance because you need to handle drawdowns. They're inevitable. Position size accordingly. Don't overwrite the rules to try to prevent a drawdown. Don't rewrite the rules every time a drawdown happens.\n\nIf you start treat volatility selling with humility and discipline, you will inevitably make money.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 5,
+  "conversation_id": "2053813641879683288",
+  "retweets": 8,
+  "views": "4462",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "ThalexGlobal",
+    "name": "Thalex",
+    "created_at": "Tue Dec 22 20:30:29 +0000 2020",
+    "description": "Trade futures, options & combos https://t.co/hVLtWQBzr2\nServices may not be available to all clients in all jurisdictions\nTG https://t.co/3SSzeDYXx9",
+    "rest_id": "1341481211315810305",
+    "followers_count": 2996,
+    "favourites_count": 12156,
+    "avatar": "https://pbs.twimg.com/profile_images/1736017201096740864/8tY0MJOE_normal.png",
+    "url": "https://thalex.com/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1341481211315810305/1763567018",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 785,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HICcHNPXkAAEBdO.jpg",
+        "id": "2053813077708083200",
+        "sizes": {
+          "h": 714,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/ThalexGlobal/status/2053813641879683288"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053376548661600438",
+  "screen_name": "paradex",
+  "bookmarks": 4,
+  "favorites": 20,
+  "created_at": "Sun May 10 07:28:13 +0000 2026",
+  "text": "What if you could make your own ETF that was accessible by anyone in the world? Start your VTF today on Paradex https://t.co/enOUdRyZB2",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    111
+  ],
+  "source": "<a href=\"https://www.opus.pro\" rel=\"nofollow\">opus.pro</a>",
+  "quotes": 1,
+  "replies": 6,
+  "conversation_id": "2053376548661600438",
+  "retweets": 3,
+  "views": "4653",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "display_url": "pic.x.com/enOUdRyZB2",
+        "expanded_url": "https://x.com/paradex/status/2053376548661600438/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2053376530647056393",
+        "indices": [
+          112,
+          135
+        ],
+        "media_key": "13_2053376530647056393",
+        "media_results": {
+          "result": {
+            "media_key": "13_2053376530647056393"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2053376530647056393/img/jEl-WjYWiHKBq7Vg.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1920,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 675
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 383
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/enOUdRyZB2",
+        "video_info": {
+          "aspect_ratio": [
+            9,
+            16
+          ],
+          "duration_millis": 11800,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2053376530647056393/pl/XKpXh6txyhUlwcox.m3u8?tag=14&v=846"
+            },
+            {
+              "bitrate": 632000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/320x568/9lOafWtFU3usOlD6.mp4?tag=14"
+            },
+            {
+              "bitrate": 950000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/480x852/0_Vp9krmqFiz_ub2.mp4?tag=14"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/720x1280/Cz3hJ-ziX1J2AJLf.mp4?tag=14"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2053376530647056393/img/jEl-WjYWiHKBq7Vg.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2053376530647056393/pl/XKpXh6txyhUlwcox.m3u8?tag=14&v=846"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/320x568/9lOafWtFU3usOlD6.mp4?tag=14"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/480x852/0_Vp9krmqFiz_ub2.mp4?tag=14"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2053376530647056393/vid/avc1/720x1280/Cz3hJ-ziX1J2AJLf.mp4?tag=14"
+          }
+        ],
+        "aspect_ratio": [
+          9,
+          16
+        ],
+        "duration": 11800,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+        },
+        "id": "2053376530647056393"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2053376548661600438"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052089252226482501",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 24,
+  "created_at": "Wed May 06 18:12:58 +0000 2026",
+  "text": "Find @fiddybps1 @noncesensicalll and @PioGerard in Miami until Friday\n\nAsk them about the Options, VTFs...or cheese.\n\nThey also like cheese. Like way too much. You can see it in their eyes. https://t.co/NXDNkz3Bco",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    189
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 0,
+  "replies": 5,
+  "conversation_id": "2052089252226482501",
+  "retweets": 0,
+  "views": "1582",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/NXDNkz3Bco",
+        "expanded_url": "https://x.com/paradex/status/2052089252226482501/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 60,
+                "w": 60,
+                "x": 337,
+                "y": 610
+              },
+              {
+                "h": 51,
+                "w": 51,
+                "x": 751,
+                "y": 670
+              },
+              {
+                "h": 56,
+                "w": 56,
+                "x": 525,
+                "y": 562
+              },
+              {
+                "h": 50,
+                "w": 50,
+                "x": 773,
+                "y": 963
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 56,
+                "w": 56,
+                "x": 315,
+                "y": 571
+              },
+              {
+                "h": 47,
+                "w": 47,
+                "x": 704,
+                "y": 628
+              },
+              {
+                "h": 52,
+                "w": 52,
+                "x": 492,
+                "y": 526
+              },
+              {
+                "h": 46,
+                "w": 46,
+                "x": 724,
+                "y": 902
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 60,
+                "w": 60,
+                "x": 337,
+                "y": 610
+              },
+              {
+                "h": 51,
+                "w": 51,
+                "x": 751,
+                "y": 670
+              },
+              {
+                "h": 56,
+                "w": 56,
+                "x": 525,
+                "y": 562
+              },
+              {
+                "h": 50,
+                "w": 50,
+                "x": 773,
+                "y": 963
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 31,
+                "w": 31,
+                "x": 179,
+                "y": 324
+              },
+              {
+                "h": 27,
+                "w": 27,
+                "x": 398,
+                "y": 355
+              },
+              {
+                "h": 29,
+                "w": 29,
+                "x": 278,
+                "y": 298
+              },
+              {
+                "h": 26,
+                "w": 26,
+                "x": 410,
+                "y": 511
+              }
+            ]
+          }
+        },
+        "id_str": "2052089249965731840",
+        "indices": [
+          190,
+          213
+        ],
+        "media_key": "3_2052089249965731840",
+        "media_results": {
+          "result": {
+            "media_key": "3_2052089249965731840"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHp8TOea8AAyV2a.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 538,
+              "w": 960,
+              "x": 0,
+              "y": 83
+            },
+            {
+              "h": 960,
+              "w": 960,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1094,
+              "w": 960,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1280,
+              "w": 640,
+              "x": 96,
+              "y": 0
+            },
+            {
+              "h": 1280,
+              "w": 960,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1280,
+          "width": 960
+        },
+        "sizes": {
+          "large": {
+            "h": 1280,
+            "resize": "fit",
+            "w": 960
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 900
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 510
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/NXDNkz3Bco"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          5,
+          15
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "405725813",
+        "indices": [
+          16,
+          32
+        ],
+        "name": "Nonc3.dime",
+        "screen_name": "noncesensicalll"
+      },
+      {
+        "id_str": "1471990347060314118",
+        "indices": [
+          37,
+          47
+        ],
+        "name": "WaRdY.dime",
+        "screen_name": "PioGerard"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHp8TOea8AAyV2a.jpg",
+        "id": "2052089249965731840",
+        "sizes": {
+          "h": 1200,
+          "w": 900
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2052089252226482501"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051952522055782903",
+  "screen_name": "paradex",
+  "bookmarks": 3,
+  "favorites": 35,
+  "created_at": "Wed May 06 09:09:39 +0000 2026",
+  "text": "\"this has fundamentally never been done before, at least at the scale that you see\"\n\nCEO @fiddybps1 on launching the first Bitcoin VTF at @consensus2026\n\nvaults earn yield by selling $BTC options. all on-chain, powered by high throughput derivatives trading. https://t.co/VH03QfYipT",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    258
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 2,
+  "replies": 13,
+  "conversation_id": "2051952522055782903",
+  "retweets": 12,
+  "views": "4605",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "display_url": "pic.x.com/VH03QfYipT",
+        "expanded_url": "https://x.com/paradex/status/2051952522055782903/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2051952420062892032",
+        "indices": [
+          259,
+          282
+        ],
+        "media_key": "13_2051952420062892032",
+        "media_results": {
+          "result": {
+            "media_key": "13_2051952420062892032"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2051952420062892032/img/FcZSCU_R4DNjGw0D.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1920
+          },
+          "medium": {
+            "h": 675,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 383,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/VH03QfYipT",
+        "video_info": {
+          "aspect_ratio": [
+            16,
+            9
+          ],
+          "duration_millis": 81034,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2051952420062892032/pl/-jvLQDwr8Ij8G0Q3.m3u8?tag=14&v=dc2"
+            },
+            {
+              "bitrate": 288000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/480x270/1u7v72kTWirATSX5.mp4?tag=14"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/640x360/qOqNeRrVDDTYcQ9B.mp4?tag=14"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/1280x720/CIdrPa4CkTq6HRoI.mp4?tag=14"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [
+      {
+        "indices": [
+          183,
+          187
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Bitcoin",
+              "ticker": "BTC"
+            }
+          }
+        },
+        "text": "BTC"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          89,
+          99
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          138,
+          152
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2051952420062892032/img/FcZSCU_R4DNjGw0D.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2051952420062892032/pl/-jvLQDwr8Ij8G0Q3.m3u8?tag=14&v=dc2"
+          },
+          {
+            "bitrate": 288000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/480x270/1u7v72kTWirATSX5.mp4?tag=14"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/640x360/qOqNeRrVDDTYcQ9B.mp4?tag=14"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051952420062892032/vid/avc1/1280x720/CIdrPa4CkTq6HRoI.mp4?tag=14"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 81034,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2051952420062892032"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2051952522055782903"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051922525752557904",
+  "screen_name": "paradex",
+  "bookmarks": 2,
+  "favorites": 25,
+  "created_at": "Wed May 06 07:10:27 +0000 2026",
+  "text": "just the beginning of paradex becoming the home for all options traders in crypto\n\ninstitutional grade liquidity powered by Paradigm &amp; lowest fees in crypto\n\ntrade options with full privacy 24/7\n\nhttps://t.co/yN7cYhOcHC https://t.co/WCs17ajw0p",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    223
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 21,
+  "conversation_id": "2051922525752557904",
+  "retweets": 2,
+  "views": "2448",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/WCs17ajw0p",
+        "expanded_url": "https://x.com/paradex/status/2051922525752557904/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2051922519972847616",
+        "indices": [
+          224,
+          247
+        ],
+        "media_key": "3_2051922519972847616",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051922519972847616"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHnkqQ2bIAAqhxP.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 2210,
+              "w": 3947,
+              "x": 0,
+              "y": 177
+            },
+            {
+              "h": 2652,
+              "w": 2652,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 2326,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 1326,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 3947,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 2652,
+          "width": 3947
+        },
+        "sizes": {
+          "large": {
+            "h": 1376,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 806,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 457,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/WCs17ajw0p"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "app.paradex.trade",
+        "expanded_url": "http://app.paradex.trade",
+        "indices": [
+          200,
+          223
+        ],
+        "url": "https://t.co/yN7cYhOcHC"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHnkqQ2bIAAqhxP.jpg",
+        "id": "2051922519972847616",
+        "sizes": {
+          "h": 806,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2051922525752557904"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051757249924857999",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 9,
+  "created_at": "Tue May 05 20:13:42 +0000 2026",
+  "text": "options, vaults, and @fiddybps1 live on @CoinDesk",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    49
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 10,
+  "conversation_id": "2051757249924857999",
+  "retweets": 1,
+  "views": "1320",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          21,
+          31
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "1333467482",
+        "indices": [
+          40,
+          49
+        ],
+        "name": "CoinDesk",
+        "screen_name": "CoinDesk"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2051650910158311773",
+    "bookmarks": 27,
+    "created_at": "Tue May 05 13:11:09 +0000 2026",
+    "favorites": 349,
+    "text": "CONSENSUS MIAMI IS HERE, presented by @moonpay.\n\nCoinDesk Live in conversation with Brad Garlinghouse, Adam Back, Arthur Hayes &amp; more on where crypto stands today.\n\nDon't miss a minute. https://t.co/qOojYxz0eY",
+    "lang": "en",
+    "views": "93825",
+    "quotes": 15,
+    "replies": 47,
+    "retweets": 67,
+    "conversation_id": "2051650910158311773",
+    "author": {
+      "rest_id": "1333467482",
+      "created_at": "Sun Apr 07 07:50:08 +0000 2013",
+      "name": "CoinDesk",
+      "screen_name": "CoinDesk",
+      "avatar": "https://pbs.twimg.com/profile_images/1840920544608165896/niPELF6e_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/paradex/status/2051757249924857999"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051716412490817886",
+  "screen_name": "paradex",
+  "bookmarks": 2,
+  "favorites": 23,
+  "created_at": "Tue May 05 17:31:26 +0000 2026",
+  "text": "Vaults will be the wealth creation engine of the world. \n1-Click deposit and earn yield\n\n@fiddybps1 this morning at Consensus Miami\n\nCatch his @CoinDesk interview at 4pm EST today https://t.co/SMx27pTiWh",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    179
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 3,
+  "conversation_id": "2051716412490817886",
+  "retweets": 2,
+  "views": "2027",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/SMx27pTiWh",
+        "expanded_url": "https://x.com/paradex/status/2051716412490817886/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2051713032750039040",
+        "indices": [
+          180,
+          203
+        ],
+        "media_key": "13_2051713032750039040",
+        "media_results": {
+          "result": {
+            "media_key": "13_2051713032750039040"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2051713032750039040/img/E4f57CBfw00kemCW.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1920
+          },
+          "medium": {
+            "h": 675,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 383,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/SMx27pTiWh",
+        "video_info": {
+          "aspect_ratio": [
+            16,
+            9
+          ],
+          "duration_millis": 32933,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2051713032750039040/pl/CLsI-F6RVExu9o5R.m3u8?tag=27&v=008"
+            },
+            {
+              "bitrate": 256000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/480x270/Rb1trRHCw8RkDvTV.mp4?tag=27"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/640x360/i8mbS0ECjqdY4VRW.mp4?tag=27"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/1280x720/Kp7zfAqN4TRz4WG4.mp4?tag=27"
+            },
+            {
+              "bitrate": 10368000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/1920x1080/X0xtUdl--gPwXowF.mp4?tag=27"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          89,
+          99
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "1333467482",
+        "indices": [
+          143,
+          152
+        ],
+        "name": "CoinDesk",
+        "screen_name": "CoinDesk"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2051713032750039040/img/E4f57CBfw00kemCW.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2051713032750039040/pl/CLsI-F6RVExu9o5R.m3u8?tag=27&v=008"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/480x270/Rb1trRHCw8RkDvTV.mp4?tag=27"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/640x360/i8mbS0ECjqdY4VRW.mp4?tag=27"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/1280x720/Kp7zfAqN4TRz4WG4.mp4?tag=27"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2051713032750039040/vid/avc1/1920x1080/X0xtUdl--gPwXowF.mp4?tag=27"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 32933,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2051713032750039040"
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2051716412490817886"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051688175857484051",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 23,
+  "created_at": "Tue May 05 15:39:14 +0000 2026",
+  "text": "CEO @fiddybps1 just dropped some major updates about VTFs on Paradex at @consensus2026 Miami. https://t.co/sxyArpNAsp",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    93
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 0,
+  "replies": 3,
+  "conversation_id": "2051688175857484051",
+  "retweets": 3,
+  "views": "2278",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/sxyArpNAsp",
+        "expanded_url": "https://x.com/paradex/status/2051688175857484051/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 73,
+                "w": 73,
+                "x": 685,
+                "y": 531
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 68,
+                "w": 68,
+                "x": 642,
+                "y": 497
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 73,
+                "w": 73,
+                "x": 685,
+                "y": 531
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 38,
+                "w": 38,
+                "x": 363,
+                "y": 282
+              }
+            ]
+          }
+        },
+        "id_str": "2051688173064069121",
+        "indices": [
+          94,
+          117
+        ],
+        "media_key": "3_2051688173064069121",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051688173064069121"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHkPhelaoAEjA0E.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 538,
+              "w": 960,
+              "x": 0,
+              "y": 659
+            },
+            {
+              "h": 960,
+              "w": 960,
+              "x": 0,
+              "y": 320
+            },
+            {
+              "h": 1094,
+              "w": 960,
+              "x": 0,
+              "y": 186
+            },
+            {
+              "h": 1280,
+              "w": 640,
+              "x": 224,
+              "y": 0
+            },
+            {
+              "h": 1280,
+              "w": 960,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1280,
+          "width": 960
+        },
+        "sizes": {
+          "large": {
+            "h": 1280,
+            "resize": "fit",
+            "w": 960
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 900
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 510
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/sxyArpNAsp"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          4,
+          14
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          72,
+          86
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHkPhelaoAEjA0E.jpg",
+        "id": "2051688173064069121",
+        "sizes": {
+          "h": 1200,
+          "w": 900
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2051333579616166123",
+    "bookmarks": 0,
+    "created_at": "Mon May 04 16:10:11 +0000 2026",
+    "favorites": 8,
+    "text": "The team is in Miami this week for Consensus\n\nCatch @fiddybps1 and @Grayscale on:\nThe Rise of Options and VTFs on Chain\n\nTuesday, May 5 | 11:05 - 11:25 EST\nMBCC: Frontier Stage",
+    "lang": "en",
+    "views": "4915",
+    "quotes": 2,
+    "replies": 1,
+    "retweets": 4,
+    "conversation_id": "2051333579616166123",
+    "author": {
+      "rest_id": "1084218164265844736",
+      "created_at": "Sat Jan 12 22:38:48 +0000 2019",
+      "name": "Paradigm",
+      "screen_name": "tradeparadigm",
+      "avatar": "https://pbs.twimg.com/profile_images/1513465487593811968/uUwfvplx_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/paradex/status/2051688175857484051"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051333858877181971",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 21,
+  "created_at": "Mon May 04 16:11:18 +0000 2026",
+  "text": "fireside chat with @fiddybps1 at @consensus2026 miami\nhe might or might not bring the physical vault with him https://t.co/NgnKNXi679",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    109
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 3,
+  "conversation_id": "2051333858877181971",
+  "retweets": 3,
+  "views": "1956",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/NgnKNXi679",
+        "expanded_url": "https://x.com/paradex/status/2051333858877181971/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2051333855995686912",
+        "indices": [
+          110,
+          133
+        ],
+        "media_key": "3_2051333855995686912",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051333855995686912"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHfNRgpa8AAqZuJ.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 1536,
+              "w": 2743,
+              "x": 9,
+              "y": 0
+            },
+            {
+              "h": 1536,
+              "w": 1536,
+              "x": 1216,
+              "y": 0
+            },
+            {
+              "h": 1536,
+              "w": 1347,
+              "x": 1405,
+              "y": 0
+            },
+            {
+              "h": 1536,
+              "w": 768,
+              "x": 1984,
+              "y": 0
+            },
+            {
+              "h": 1536,
+              "w": 2752,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1536,
+          "width": 2752
+        },
+        "sizes": {
+          "large": {
+            "h": 1143,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 670,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 380,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/NgnKNXi679"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "4260536128",
+        "indices": [
+          19,
+          29
+        ],
+        "name": "fiddy.dime - priv/acc 🦡",
+        "screen_name": "fiddybps1"
+      },
+      {
+        "id_str": "3956099421",
+        "indices": [
+          33,
+          47
+        ],
+        "name": "#Consensus2026 → Miami",
+        "screen_name": "consensus2026"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHfNRgpa8AAqZuJ.jpg",
+        "id": "2051333855995686912",
+        "sizes": {
+          "h": 670,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2051333579616166123",
+    "bookmarks": 0,
+    "created_at": "Mon May 04 16:10:11 +0000 2026",
+    "favorites": 8,
+    "text": "The team is in Miami this week for Consensus\n\nCatch @fiddybps1 and @Grayscale on:\nThe Rise of Options and VTFs on Chain\n\nTuesday, May 5 | 11:05 - 11:25 EST\nMBCC: Frontier Stage",
+    "lang": "en",
+    "views": "4915",
+    "quotes": 2,
+    "replies": 1,
+    "retweets": 4,
+    "conversation_id": "2051333579616166123",
+    "author": {
+      "rest_id": "1084218164265844736",
+      "created_at": "Sat Jan 12 22:38:48 +0000 2019",
+      "name": "Paradigm",
+      "screen_name": "tradeparadigm",
+      "avatar": "https://pbs.twimg.com/profile_images/1513465487593811968/uUwfvplx_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/paradex/status/2051333858877181971"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051173967797608496",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 34,
+  "created_at": "Mon May 04 05:35:57 +0000 2026",
+  "text": "Paradex Biweekly Recap\n\n+ Staking\n+ Buybacks\n+ Fee updates\n+ XP Distribution\n\n$DIME staking was introduced and 21M+ $DIME already staked. https://t.co/osertMWVyf",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    137
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 36,
+  "conversation_id": "2051173967797608496",
+  "retweets": 3,
+  "views": "2319",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/osertMWVyf",
+        "expanded_url": "https://x.com/paradex/status/2051173967797608496/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2051173965528518656",
+        "indices": [
+          138,
+          161
+        ],
+        "media_key": "3_2051173965528518656",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051173965528518656"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHc72qPbUAAXZfI.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 427
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 947,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 540,
+              "x": 135,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1080,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/osertMWVyf"
+      }
+    ],
+    "symbols": [
+      {
+        "indices": [
+          78,
+          83
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "DIME"
+      },
+      {
+        "indices": [
+          116,
+          121
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "DIME"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHc72qPbUAAXZfI.jpg",
+        "id": "2051173965528518656",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2051173967797608496"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051096251324862762",
+  "screen_name": "paradex",
+  "bookmarks": 3,
+  "favorites": 13,
+  "created_at": "Mon May 04 00:27:08 +0000 2026",
+  "text": "Live Quant Trading Workshop:\n\n• Read the tape (macro + sector)\n• Hunt setups with scanners\n• Frame trades w/ levels + bias\n• Confirm w/ L3 order flow\n• Peek under the hood (scripts + ML)\n\nHosted by: @cissora\n\nMay 4\n13:00 EST | 18:00 GMT | 01:00 SGT (next day) https://t.co/whiLYguDAN",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    259
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 51,
+  "conversation_id": "2051096251324862762",
+  "retweets": 1,
+  "views": "2504",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/whiLYguDAN",
+        "expanded_url": "https://x.com/paradex/status/2051096251324862762/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2051096247680000000",
+        "indices": [
+          260,
+          283
+        ],
+        "media_key": "3_2051096247680000000",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051096247680000000"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHb1K4saYAAYdHW.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 935,
+              "w": 1670,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 939,
+              "w": 939,
+              "x": 490,
+              "y": 0
+            },
+            {
+              "h": 939,
+              "w": 824,
+              "x": 547,
+              "y": 0
+            },
+            {
+              "h": 939,
+              "w": 470,
+              "x": 724,
+              "y": 0
+            },
+            {
+              "h": 939,
+              "w": 1670,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 939,
+          "width": 1670
+        },
+        "sizes": {
+          "large": {
+            "h": 939,
+            "resize": "fit",
+            "w": 1670
+          },
+          "medium": {
+            "h": 675,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 382,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/whiLYguDAN"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1461057752319463425",
+        "indices": [
+          199,
+          207
+        ],
+        "name": "Cissor",
+        "screen_name": "cissora"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHb1K4saYAAYdHW.jpg",
+        "id": "2051096247680000000",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2051096251324862762"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050493340723126281",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 32,
+  "created_at": "Sat May 02 08:31:23 +0000 2026",
+  "text": "paradex is becoming the home for all options traders in crypto\n\ninstitutional grade liquidity powered by Paradigm &amp; lowest fees in crypto\n\ntrade options with full privacy 24/7\n\nhttps://t.co/yN7cYhOcHC https://t.co/JZja5GsiTF",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    204
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 21,
+  "conversation_id": "2050493340723126281",
+  "retweets": 7,
+  "views": "4717",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/JZja5GsiTF",
+        "expanded_url": "https://x.com/paradex/status/2050493340723126281/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2050493335190822913",
+        "indices": [
+          205,
+          228
+        ],
+        "media_key": "3_2050493335190822913",
+        "media_results": {
+          "result": {
+            "media_key": "3_2050493335190822913"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHTQ0wpa4AE-9UY.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 2210,
+              "w": 3947,
+              "x": 0,
+              "y": 177
+            },
+            {
+              "h": 2652,
+              "w": 2652,
+              "x": 647,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 2326,
+              "x": 810,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 1326,
+              "x": 1310,
+              "y": 0
+            },
+            {
+              "h": 2652,
+              "w": 3947,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 2652,
+          "width": 3947
+        },
+        "sizes": {
+          "large": {
+            "h": 1376,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 806,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 457,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/JZja5GsiTF"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "app.paradex.trade",
+        "expanded_url": "http://app.paradex.trade",
+        "indices": [
+          181,
+          204
+        ],
+        "url": "https://t.co/yN7cYhOcHC"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHTQ0wpa4AE-9UY.jpg",
+        "id": "2050493335190822913",
+        "sizes": {
+          "h": 806,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2050493340723126281"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050444826852942134",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 20,
+  "created_at": "Sat May 02 05:18:36 +0000 2026",
+  "text": "big money is coming to paradex options",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    38
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 0,
+  "replies": 11,
+  "conversation_id": "2050444826852942134",
+  "retweets": 3,
+  "views": "2396",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2050193627100713222",
+    "bookmarks": 0,
+    "created_at": "Fri May 01 12:40:26 +0000 2026",
+    "favorites": 34,
+    "text": "first $5m+ day on @paradex for options 🔥 https://t.co/pGlticTNNd",
+    "lang": "en",
+    "views": "4373",
+    "quotes": 2,
+    "replies": 5,
+    "retweets": 10,
+    "conversation_id": "2050193627100713222",
+    "author": {
+      "rest_id": "4260536128",
+      "created_at": "Mon Nov 23 22:53:53 +0000 2015",
+      "name": "fiddy.dime - priv/acc 🦡",
+      "screen_name": "fiddybps1",
+      "avatar": "https://pbs.twimg.com/profile_images/2024376003158814720/XQd_j2gJ_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HHPALrga8AAMzyp.jpg",
+          "id": "2050193562273509376",
+          "sizes": {
+            "h": 434,
+            "w": 1074
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2050444826852942134"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050194904370884796",
+  "screen_name": "flowdesk_co",
+  "bookmarks": 6,
+  "favorites": 57,
+  "created_at": "Fri May 01 12:45:30 +0000 2026",
+  "text": "We're raising the sUSDat borrow cap to $25m on our @Morpho vault.\n\nAfter seeing meaningful refinancing demand for @saturn_credit’s sUSDat, we’re taking a deliberate, step-by-step approach to borrow cap increases, informed by observed utilization and market conditions.\n\nWe expect activity to pick up as the market matures.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 3,
+  "conversation_id": "2050194904370884796",
+  "retweets": 8,
+  "views": "7291",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1420789685811650560",
+        "indices": [
+          51,
+          58
+        ],
+        "name": "Morpho 🦋",
+        "screen_name": "Morpho"
+      },
+      {
+        "id_str": "1986084943794212864",
+        "indices": [
+          114,
+          128
+        ],
+        "name": "Saturn Foundation",
+        "screen_name": "saturn_credit"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "flowdesk_co",
+    "name": "Flowdesk",
+    "created_at": "Mon Jun 15 15:33:20 +0000 2020",
+    "description": "Full-service digital asset trading and technology firm. Liquidity Solutions. OTC Trading. Disclaimer: https://t.co/KzdS53Zaga",
+    "rest_id": "1272552541306392576",
+    "followers_count": 10026,
+    "favourites_count": 385,
+    "avatar": "https://pbs.twimg.com/profile_images/2049134984649375744/C8NhRfJL_normal.jpg",
+    "url": "https://flowdesk.co",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1272552541306392576/1778852799",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 0,
+    "location": "Paris, France"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHPAvKIX0AAfoDE.jpg",
+        "id": "2050194171789561856",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/flowdesk_co/status/2050194904370884796"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2049897238349185301",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 10,
+  "created_at": "Thu Apr 30 17:02:41 +0000 2026",
+  "text": "claude manages my portfolio https://t.co/DQsaPx1wo0",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    51
+  ],
+  "source": "<a href=\"http://erased8036141_052BSwz4Zo.com\" rel=\"nofollow\">erased8036141_052BSwz4Zo</a>",
+  "quotes": 0,
+  "replies": 7,
+  "conversation_id": "2049897238349185301",
+  "retweets": 1,
+  "views": "1017",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "x.com/i/broadcasts/1…",
+        "expanded_url": "https://x.com/i/broadcasts/1qxoNeWlaQAJv",
+        "indices": [
+          28,
+          51
+        ],
+        "url": "https://t.co/DQsaPx1wo0"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": [],
+  "url": "https://twitter.com/paradex/status/2049897238349185301"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2049543968132825483",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 10,
+  "created_at": "Wed Apr 29 17:38:55 +0000 2026",
+  "text": "find out why @RoboNetHQ has one of the best performing vaults on Paradex\n\ntomorrow:\n1am SGT | 5pm GMT | 1pm EST",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    111
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 14,
+  "conversation_id": "2049543968132825483",
+  "retweets": 1,
+  "views": "1682",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1648031103901396992",
+        "indices": [
+          13,
+          23
+        ],
+        "name": "Robonet",
+        "screen_name": "RoboNetHQ"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71311,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2049534240036205015",
+    "bookmarks": 0,
+    "created_at": "Wed Apr 29 17:00:15 +0000 2026",
+    "favorites": 17,
+    "text": "We will be hosting an AMA with @Paradex.\n\n@MichaelZski will be hosting\n\nWe will be covering our AI-driven automated vault that is currently deployed on Paradex. Which uses @AlloraNetwork inferences. As well as our upcoming integration\n\n1pm EST tomorrow link below https://t.co/fEb1Zgy9Le",
+    "lang": "en",
+    "views": "2711",
+    "quotes": 1,
+    "replies": 5,
+    "retweets": 4,
+    "conversation_id": "2049534240036205015",
+    "author": {
+      "rest_id": "1648031103901396992",
+      "created_at": "Mon Apr 17 18:30:23 +0000 2023",
+      "name": "Robonet",
+      "screen_name": "RoboNetHQ",
+      "avatar": "https://pbs.twimg.com/profile_images/2009666165090484224/1q2Uuw2e_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HHFoh0daMAAPLkj.jpg",
+          "id": "2049534235657252864",
+          "sizes": {
+            "h": 1080,
+            "w": 1920
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2049543968132825483"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2049353396587790372",
+  "screen_name": "paradex",
+  "bookmarks": 4,
+  "favorites": 16,
+  "created_at": "Wed Apr 29 05:01:39 +0000 2026",
+  "text": "Standard Fee Tiers Now Live\n\nAs of 1 PM SGT today, the transition period has ended. Standard volume-based fee tiers are now in effect for all Retail (VIP) and Pro users, based on your 14-day rolling trading volume.\n\nMaker fees remain 0% across the board. Retail fees are lower than Pro at every tier.\n\nMaximize your discounts (up to 70% off):\n\n+ Stake $DIME: up to 30% off taker fees. Lock more, save more.\n+ Pay fees in $DIME: 40% off, stacks with staking discounts.\n+ Hold an NFT: MoneyBadgers or ShizoPunks unlocks VIP 1 instantly.\n\nFull fee tier details: https://t.co/HiYsNLqcMK",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 0,
+  "replies": 37,
+  "conversation_id": "2049353396587790372",
+  "retweets": 3,
+  "views": "1706",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          352,
+          357
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "DIME"
+      },
+      {
+        "indices": [
+          421,
+          426
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "DIME"
+      }
+    ],
+    "urls": [
+      {
+        "display_url": "docs.paradex.trade/trading/tradin…",
+        "expanded_url": "https://docs.paradex.trade/trading/trading-fees",
+        "indices": [
+          559,
+          582
+        ],
+        "url": "https://t.co/HiYsNLqcMK"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHDEDdzasAAyj0-.jpg",
+        "id": "2049353394272514048",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/paradex/status/2049353396587790372"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2049184993516372384",
+  "screen_name": "paradex",
+  "bookmarks": 1,
+  "favorites": 14,
+  "created_at": "Tue Apr 28 17:52:29 +0000 2026",
+  "text": "All Retail users on Paradex are currently enjoying VIP 6 taker fees with Diamond Tier staking discount = 0.7 bps\n\nFee Transition Period ends soon.\n\nTrade anything with lowest fees &amp; full privacy 24/7: https://t.co/j5D3J0dV4C https://t.co/xbPHWcXUPx",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    228
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 9,
+  "conversation_id": "2049184993516372384",
+  "retweets": 1,
+  "views": "3130",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/xbPHWcXUPx",
+        "expanded_url": "https://x.com/paradex/status/2049184993516372384/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2049184991129862145",
+        "indices": [
+          229,
+          252
+        ],
+        "media_key": "3_2049184991129862145",
+        "media_results": {
+          "result": {
+            "media_key": "3_2049184991129862145"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHAq5HNbgAEKtdr.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 475
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 947,
+              "x": 67,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 540,
+              "x": 270,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1080,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/xbPHWcXUPx"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "app.paradex.trade/trade/BTC-USD-…",
+        "expanded_url": "https://app.paradex.trade/trade/BTC-USD-PERP",
+        "indices": [
+          205,
+          228
+        ],
+        "url": "https://t.co/j5D3J0dV4C"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHAq5HNbgAEKtdr.jpg",
+        "id": "2049184991129862145",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2046897359376846902",
+    "bookmarks": 6,
+    "created_at": "Wed Apr 22 10:22:14 +0000 2026",
+    "favorites": 54,
+    "text": "Introducing Fee Tiers, $DIME Utility, and NFT Boosts\n\nWe are rolling out volume-based fee tiers, $DIME staking discounts, and $DIME fee payments, while keeping maker fees at 0% across the board. Retail traders remain first-class citizens on Paradex. We believe retail should https://t.co/oAMt3LXUKS",
+    "lang": "en",
+    "views": "26449",
+    "quotes": 7,
+    "replies": 60,
+    "retweets": 7,
+    "conversation_id": "2046897359376846902",
+    "author": {
+      "rest_id": "1474812808671858690",
+      "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+      "name": "Paradex",
+      "screen_name": "paradex",
+      "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGgKSS6aIAApK87.jpg",
+          "id": "2046897340070633472",
+          "sizes": {
+            "h": 1080,
+            "w": 1080
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2049184993516372384"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2048995964825067738",
+  "screen_name": "paradex",
+  "bookmarks": 0,
+  "favorites": 19,
+  "created_at": "Tue Apr 28 05:21:21 +0000 2026",
+  "text": "MoneyBadgers &amp; ShizoPunk holders get upgraded\n\nFee discounts with zero volume required\n\nTrade with lowest fees &amp; full privacy 24/7\n\nhttps://t.co/yN7cYhOcHC https://t.co/Snk4iSdI72",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    163
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 34,
+  "conversation_id": "2048995964825067738",
+  "retweets": 0,
+  "views": "3478",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/Snk4iSdI72",
+        "expanded_url": "https://x.com/paradex/status/2048995964825067738/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2048995962329464833",
+        "indices": [
+          164,
+          187
+        ],
+        "media_key": "3_2048995962329464833",
+        "media_results": {
+          "result": {
+            "media_key": "3_2048995962329464833"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HG9--MDbgAEaZr8.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 947,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 540,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1080,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/Snk4iSdI72"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "app.paradex.trade",
+        "expanded_url": "http://app.paradex.trade",
+        "indices": [
+          140,
+          163
+        ],
+        "url": "https://t.co/yN7cYhOcHC"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HG9--MDbgAEaZr8.jpg",
+        "id": "2048995962329464833",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2046897359376846902",
+    "bookmarks": 6,
+    "created_at": "Wed Apr 22 10:22:14 +0000 2026",
+    "favorites": 54,
+    "text": "Introducing Fee Tiers, $DIME Utility, and NFT Boosts\n\nWe are rolling out volume-based fee tiers, $DIME staking discounts, and $DIME fee payments, while keeping maker fees at 0% across the board. Retail traders remain first-class citizens on Paradex. We believe retail should https://t.co/oAMt3LXUKS",
+    "lang": "en",
+    "views": "26449",
+    "quotes": 7,
+    "replies": 60,
+    "retweets": 7,
+    "conversation_id": "2046897359376846902",
+    "author": {
+      "rest_id": "1474812808671858690",
+      "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+      "name": "Paradex",
+      "screen_name": "paradex",
+      "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGgKSS6aIAApK87.jpg",
+          "id": "2046897340070633472",
+          "sizes": {
+            "h": 1080,
+            "w": 1080
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2048995964825067738"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2048814051539681528",
+  "screen_name": "paradex",
+  "bookmarks": 3,
+  "favorites": 22,
+  "created_at": "Mon Apr 27 17:18:29 +0000 2026",
+  "text": "you are paying up to 16x more on EVERY trade\n\ndrown in liquidity, not fees https://t.co/012Ur2bJSU",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    74
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 1,
+  "replies": 12,
+  "conversation_id": "2048814051539681528",
+  "retweets": 4,
+  "views": "3586",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/012Ur2bJSU",
+        "expanded_url": "https://x.com/paradex/status/2048814051539681528/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2048814049283231744",
+        "indices": [
+          75,
+          98
+        ],
+        "media_key": "3_2048814049283231744",
+        "media_results": {
+          "result": {
+            "media_key": "3_2048814049283231744"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HG7ZhdJbUAAjmGD.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 947,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 540,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1080,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1080,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1080,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/012Ur2bJSU"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HG7ZhdJbUAAjmGD.jpg",
+        "id": "2048814049283231744",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2046897359376846902",
+    "bookmarks": 6,
+    "created_at": "Wed Apr 22 10:22:14 +0000 2026",
+    "favorites": 54,
+    "text": "Introducing Fee Tiers, $DIME Utility, and NFT Boosts\n\nWe are rolling out volume-based fee tiers, $DIME staking discounts, and $DIME fee payments, while keeping maker fees at 0% across the board. Retail traders remain first-class citizens on Paradex. We believe retail should https://t.co/oAMt3LXUKS",
+    "lang": "en",
+    "views": "26449",
+    "quotes": 7,
+    "replies": 60,
+    "retweets": 7,
+    "conversation_id": "2046897359376846902",
+    "author": {
+      "rest_id": "1474812808671858690",
+      "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+      "name": "Paradex",
+      "screen_name": "paradex",
+      "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGgKSS6aIAApK87.jpg",
+          "id": "2046897340070633472",
+          "sizes": {
+            "h": 1080,
+            "w": 1080
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2048814051539681528"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047669666932531240",
+  "screen_name": "paradex",
+  "bookmarks": 3,
+  "favorites": 28,
+  "created_at": "Fri Apr 24 13:31:07 +0000 2026",
+  "text": "Transition Period (April 22 - April 29, 1PM SGT):\n\nEveryone gets 0.007% taker fees\n\nThat's VIP 6 rates + Diamond tier staking discount\n\nMinimum fee for the transition promo period: 0.003% (70% off) when paying fees in $DIME\n\nRetail Fee Discounts breakdown (after transition period ends) below:",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 22,
+  "conversation_id": "2047669666932531240",
+  "retweets": 4,
+  "views": "3690",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          218,
+          223
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "CoinShares Altcoins ETF",
+              "ticker": "DIME"
+            }
+          }
+        },
+        "text": "DIME"
+      }
+    ],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "paradex",
+    "name": "Paradex",
+    "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+    "description": "24/7 Futures and Options Trading with Privacy",
+    "rest_id": "1474812808671858690",
+    "followers_count": 71310,
+    "favourites_count": 9420,
+    "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+    "url": "https://app.paradex.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1474812808671858690/1766128418",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 1085,
+    "location": "Singapore"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HGrHuRuasAAPMkT.jpg",
+        "id": "2047668578439311360",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2046897359376846902",
+    "bookmarks": 6,
+    "created_at": "Wed Apr 22 10:22:14 +0000 2026",
+    "favorites": 54,
+    "text": "Introducing Fee Tiers, $DIME Utility, and NFT Boosts\n\nWe are rolling out volume-based fee tiers, $DIME staking discounts, and $DIME fee payments, while keeping maker fees at 0% across the board. Retail traders remain first-class citizens on Paradex. We believe retail should https://t.co/oAMt3LXUKS",
+    "lang": "en",
+    "views": "26449",
+    "quotes": 7,
+    "replies": 60,
+    "retweets": 7,
+    "conversation_id": "2046897359376846902",
+    "author": {
+      "rest_id": "1474812808671858690",
+      "created_at": "Sat Dec 25 18:43:01 +0000 2021",
+      "name": "Paradex",
+      "screen_name": "paradex",
+      "avatar": "https://pbs.twimg.com/profile_images/2001911524429041669/P9KQbeNz_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGgKSS6aIAApK87.jpg",
+          "id": "2046897340070633472",
+          "sizes": {
+            "h": 1080,
+            "w": 1080
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/paradex/status/2047669666932531240"
+}]

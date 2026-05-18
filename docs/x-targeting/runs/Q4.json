@@ -1,0 +1,2642 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2052079785573019711",
+  "screen_name": "ProMint_X",
+  "bookmarks": 10,
+  "favorites": 41,
+  "created_at": "Wed May 06 17:35:21 +0000 2026",
+  "text": "Polymarket Fee Update\n\nTrading fees for Crypto category markets have been revised. The maximum taker fee for an order of 100 shares has been reduced from $1.80 to $1.75.\n\nAs a result, the base fee rate for Polymarket’s crypto markets has seen a slight decrease across the board. \n\nSpecifically, the peak rate on the parabolic fee curve has been adjusted from 7.2% down to 7%.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 13,
+  "conversation_id": "2052079785573019711",
+  "retweets": 2,
+  "views": "6459",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "ProMint_X",
+    "name": "ProMint",
+    "created_at": "Wed Aug 25 12:41:09 +0000 2021",
+    "description": "Real alpha no AI-slop | Web3 explorer | Aster trading tournament winner | Poly maxi",
+    "rest_id": "1430510518985494532",
+    "followers_count": 4136,
+    "favourites_count": 8256,
+    "avatar": "https://pbs.twimg.com/profile_images/1952273379555201024/qTQjQwRZ_normal.jpg",
+    "url": "https://omni.variational.io/?ref=OMNIMINT",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1430510518985494532/1765665072",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 411,
+    "location": "15% point boost"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHpzjx3W0AAUq57.jpg",
+        "id": "2052079638738817024",
+        "sizes": {
+          "h": 657,
+          "w": 925
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/ProMint_X/status/2052079785573019711"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2049152611530731593",
+  "screen_name": "PolymarketDevs",
+  "bookmarks": 72,
+  "favorites": 131,
+  "created_at": "Tue Apr 28 15:43:48 +0000 2026",
+  "text": "You can now charge builder fees, and they're editable directly from builder settings.\n\nA few things to know:\n- Fee changes have a 72h effective period before going live\n- 168h cooldown between updates\n- Max maker fee: 0.50%\n- Max taker fee: 1.00%\n\nPass your builder code when posting orders to apply fees. \n\nLearn more: https://t.co/RaGsNhmg1d",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    275
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 5,
+  "conversation_id": "2049152611530731593",
+  "retweets": 9,
+  "views": "17423",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "docs.polymarket.com/builders/fees",
+        "expanded_url": "https://docs.polymarket.com/builders/fees",
+        "indices": [
+          320,
+          343
+        ],
+        "url": "https://t.co/RaGsNhmg1d"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "PolymarketDevs",
+    "name": "Polymarket Developers",
+    "created_at": "Wed Sep 10 14:16:14 +0000 2025",
+    "description": "Your official source for updates, news, & events for @Polymarket developers. Featuring the best community projects & resources to build on top of Polymarket.",
+    "rest_id": "1965781090573893632",
+    "followers_count": 22163,
+    "favourites_count": 1164,
+    "avatar": "https://pbs.twimg.com/profile_images/1965853271509073922/N4JUepCQ_normal.jpg",
+    "url": "https://polymarket.com/r/builders",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1965781090573893632/1757530937",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 229,
+    "location": ""
+  },
+  "media": [],
+  "url": "https://twitter.com/PolymarketDevs/status/2049152611530731593"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2040817653120393597",
+  "screen_name": "breezyjpg",
+  "bookmarks": 20,
+  "favorites": 103,
+  "created_at": "Sun Apr 05 15:43:39 +0000 2026",
+  "text": "I made $30.46 by providing liquidity on @Polymarket and ranked #11,400 (top 13%) in the 1st week\n\nBeing an LP rookie really pays off → just let your limit orders print LP rewards in low-volatility markets\n\nRight now, I just need to earn another $18 to finally make it into the top 10% of all LPs (8,833 users)\n\nNot too much but it's honest work",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 1,
+  "replies": 38,
+  "conversation_id": "2040817653120393597",
+  "retweets": 2,
+  "views": "16680",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1261335549215989760",
+        "indices": [
+          40,
+          51
+        ],
+        "name": "Polymarket",
+        "screen_name": "Polymarket"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "breezyjpg",
+    "name": "Breezy 4L",
+    "created_at": "Sun Apr 03 21:27:00 +0000 2022",
+    "description": "McDonald's retiree trying to get rich on @Polymarket",
+    "rest_id": "1510730287868751874",
+    "followers_count": 4516,
+    "favourites_count": 13526,
+    "avatar": "https://pbs.twimg.com/profile_images/1982920367422210048/Z_BGxVlE_normal.jpg",
+    "url": "http://poly.market/user/breezy",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1510730287868751874/1729030358",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 721,
+    "location": "My profile  →"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFJw1ZtaAAExGF9.jpg",
+        "id": "2040817643888967681",
+        "sizes": {
+          "h": 1097,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2039773721590628406",
+    "bookmarks": 5,
+    "created_at": "Thu Apr 02 18:35:27 +0000 2026",
+    "favorites": 50,
+    "text": "My first 5 days as an LP rookie on @Polymarket earned me &gt;$20 (5 free Big Macs)\n\nThat was enough to make it into the top 16% of liquidity providers (~87,660 in total)\n\nFind low-volatility markets, place limit orders, and let your money print free food\n\nNot too much but it's https://t.co/QnFBS4C2eE",
+    "lang": "en",
+    "views": "15615",
+    "quotes": 1,
+    "replies": 15,
+    "retweets": 1,
+    "conversation_id": "2039773721590628406",
+    "author": {
+      "rest_id": "1510730287868751874",
+      "created_at": "Sun Apr 03 21:27:00 +0000 2022",
+      "name": "Breezy 4L",
+      "screen_name": "breezyjpg",
+      "avatar": "https://pbs.twimg.com/profile_images/1982920367422210048/Z_BGxVlE_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HE6lzPSa0AA9yq_.jpg",
+          "id": "2039749980941111296",
+          "sizes": {
+            "h": 1873,
+            "w": 2048
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/breezyjpg/status/2040817653120393597"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2027420606904356955",
+  "screen_name": "0xPhilanthrop",
+  "bookmarks": 8,
+  "favorites": 22,
+  "created_at": "Fri Feb 27 16:28:34 +0000 2026",
+  "text": "Polymarket introduced a 3.15% taker fee on 5-minute crypto markets.\n\nprofile: https://t.co/n7ZCmem2dt\n\nCopytrade →https://t.co/ZFyHHogVrZ\n\n10 days later, a brand-new account — “vague-sourdough” (Feb 2026) — posted $124,835 in profit.\n\nHigh win rate.\nFocused only on BTC & SOL “Up or Down” markets.\n\nMost people assumed the new fee would kill latency arb bots.\n\nIt didn’t.\n\nMore likely: the bot adjusted its math.\n\nInstead of spamming tiny gaps, it now enters only when the latency spread is wide enough to clear the 3.15% fee — treating the tax as a cost of doing business.\n\nHigher fees don’t eliminate bots.\nThey just eliminate the slow ones.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    283
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 6,
+  "conversation_id": "2027420606904356955",
+  "retweets": 5,
+  "views": "1646",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "polymarket.com/@vague-sourdou…",
+        "expanded_url": "http://polymarket.com/@vague-sourdough",
+        "indices": [
+          78,
+          101
+        ],
+        "url": "https://t.co/n7ZCmem2dt"
+      },
+      {
+        "display_url": "t.me/PolyGunSniperB…",
+        "expanded_url": "https://t.me/PolyGunSniperBot?start=ref_Philanthrop",
+        "indices": [
+          114,
+          137
+        ],
+        "url": "https://t.co/ZFyHHogVrZ"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "0xPhilanthrop",
+    "name": "Philanthrop",
+    "created_at": "Thu Nov 01 09:50:10 +0000 2018",
+    "description": "Genius, billionaire, playboy, philanthropist.",
+    "rest_id": "1057932804493852672",
+    "followers_count": 59862,
+    "favourites_count": 9971,
+    "avatar": "https://pbs.twimg.com/profile_images/1743998891261825024/hhlJ8WjT_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1057932804493852672/1704636723",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 286,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2027420529251274752/img/hDQ_-R7F9zDqMvqe.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2027420529251274752/pl/QoGvmK7Q5rSK8lQl.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027420529251274752/vid/avc1/434x270/tT4qTG7LRz4RH-Z1.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027420529251274752/vid/avc1/580x360/D8CxAsiFxt1gfjwS.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027420529251274752/vid/avc1/1160x720/sKMTMMFMBldF8cPn.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027420529251274752/vid/avc1/2320x1440/uv0SurN0A8ez4KUc.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          29,
+          18
+        ],
+        "duration": 11400,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1440,
+          "width": 2320
+        },
+        "id": "2027420529251274752"
+      }
+    ]
+  },
+  "url": "https://twitter.com/0xPhilanthrop/status/2027420606904356955"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050580586704654506",
+  "screen_name": "breezyjpg",
+  "bookmarks": 12,
+  "favorites": 79,
+  "created_at": "Sat May 02 14:18:04 +0000 2026",
+  "text": "I made a record $164.50 in LP Rewards by providing liquidity on Polymarket in just 24 hours\n\nIt feels different wen you earn more in 1 day via limit orders than u did the whole time before\n\nOf course, it's a low 3-digit number, but for me as an LP rookie, this achievement means a lot",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 31,
+  "conversation_id": "2050580586704654506",
+  "retweets": 3,
+  "views": "8128",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "breezyjpg",
+    "name": "Breezy 4L",
+    "created_at": "Sun Apr 03 21:27:00 +0000 2022",
+    "description": "McDonald's retiree trying to get rich on @Polymarket",
+    "rest_id": "1510730287868751874",
+    "followers_count": 4516,
+    "favourites_count": 13526,
+    "avatar": "https://pbs.twimg.com/profile_images/1982920367422210048/Z_BGxVlE_normal.jpg",
+    "url": "http://poly.market/user/breezy",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1510730287868751874/1729030358",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 721,
+    "location": "My profile  →"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHUUC4ZXcAIXTls.jpg",
+        "id": "2050567245068201986",
+        "sizes": {
+          "h": 953,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2047664504582885799",
+    "bookmarks": 5,
+    "created_at": "Fri Apr 24 13:10:36 +0000 2026",
+    "favorites": 57,
+    "text": "I just surpassed $50 in LP Rewards and made it into the top ~9% of liquidity providers on Polymarket\n\nTbh I like being an LP rookie lol → you take minimal risks and gradually work your way into the top 1%\n\nFind low-volatility markets, place limit orders, and just let your money https://t.co/at9s3oZ3Pb",
+    "lang": "en",
+    "views": "8535",
+    "quotes": 1,
+    "replies": 21,
+    "retweets": 0,
+    "conversation_id": "2047664504582885799",
+    "author": {
+      "rest_id": "1510730287868751874",
+      "created_at": "Sun Apr 03 21:27:00 +0000 2022",
+      "name": "Breezy 4L",
+      "screen_name": "breezyjpg",
+      "avatar": "https://pbs.twimg.com/profile_images/1982920367422210048/Z_BGxVlE_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGqiofGXsAA__v6.jpg",
+          "id": "2047627797019996160",
+          "sizes": {
+            "h": 1873,
+            "w": 2048
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/breezyjpg/status/2050580586704654506"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054901149610766695",
+  "screen_name": "Autonomous_Chad",
+  "bookmarks": 2,
+  "favorites": 23,
+  "created_at": "Thu May 14 12:26:26 +0000 2026",
+  "text": "When just learned that staking $POLY will increase maker rebate and reduce fees\n\nBut what's more interesting to me is that it can be STAKED at all...\n\nThis strongly indicates that Polymarket is working on releasing its own chain.\n\nModern crypto platforms don't bother with staking when they just want to give benefits to token holders, it's enough that token be in the holder's wallet. \n\nIf they are talking about staking then it means that $POLY will likely be a governance/fuel token for a Proof of Stake chain.\n\nThis is reinforced by declarations from @devjoshstevens, VP of engineering, that announced a Chain Migration away from Polygon.\n\nThe two options are :\n\n1 - @Polymarket moves away from Polygon to settle on some other random chain, either L1 (too slow) or L2 (owned by a third party) that and $POLY becomes just a benefits token \n\n2 - They move away from Polygon to their own new chain, that they can make as fast as they want by centralizing all while retaining ultimate sovereignty over it. In that case $POLY will in addition to benefits be the lifefuel of the platform.\n\nOption 2 seem waaaaay more likely to me and way more bullish too.\n\n@mustafap0ly like if you confirm",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 1,
+  "replies": 9,
+  "conversation_id": "2054901149610766695",
+  "retweets": 3,
+  "views": "3867",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          31,
+          36
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      },
+      {
+        "indices": [
+          441,
+          446
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      },
+      {
+        "indices": [
+          806,
+          811
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      },
+      {
+        "indices": [
+          1019,
+          1024
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1399759826956214273",
+        "indices": [
+          555,
+          570
+        ],
+        "name": "Josh",
+        "screen_name": "devjoshstevens"
+      },
+      {
+        "id_str": "1261335549215989760",
+        "indices": [
+          671,
+          682
+        ],
+        "name": "Polymarket",
+        "screen_name": "Polymarket"
+      },
+      {
+        "id_str": "110955407",
+        "indices": [
+          1155,
+          1167
+        ],
+        "name": "Mustafa",
+        "screen_name": "mustafap0ly"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Autonomous_Chad",
+    "name": "Quant Chad",
+    "created_at": "Thu Apr 11 23:56:37 +0000 2024",
+    "description": "Crunching numbers in prediction markets. Betting against the herd.\nQuant @ZEITFinance",
+    "rest_id": "1778572745720111104",
+    "followers_count": 8235,
+    "favourites_count": 10126,
+    "avatar": "https://pbs.twimg.com/profile_images/1978104013603115008/gXvpg6Ne_normal.jpg",
+    "url": "https://polyguana.com/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1778572745720111104/1760451704",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 324,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIR5sxsXIAALCMq.jpg",
+        "id": "2054901140148396032",
+        "sizes": {
+          "h": 585,
+          "w": 526
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2054569265156477059",
+    "bookmarks": 106,
+    "created_at": "Wed May 13 14:27:39 +0000 2026",
+    "favorites": 1196,
+    "text": "🤔 https://t.co/mLD6g3Tf2S",
+    "lang": "qme",
+    "views": "506446",
+    "quotes": 364,
+    "replies": 343,
+    "retweets": 125,
+    "conversation_id": "2054569265156477059",
+    "author": {
+      "rest_id": "110955407",
+      "created_at": "Wed Feb 03 09:58:21 +0000 2010",
+      "name": "Mustafa",
+      "screen_name": "mustafap0ly",
+      "avatar": "https://pbs.twimg.com/profile_images/1985408389636087808/tu4qOOPK_normal.png",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HINLybuWoAAwCoK.jpg",
+          "id": "2054569184818798592",
+          "sizes": {
+            "h": 986,
+            "w": 1698
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/Autonomous_Chad/status/2054901149610766695"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2051277894895174008",
+  "screen_name": "breezyjpg",
+  "bookmarks": 9,
+  "favorites": 56,
+  "created_at": "Mon May 04 12:28:55 +0000 2026",
+  "text": "You're #1 on LP Rewards and have earned over $1 million by placing limit orders on Polymarket\n\nBut you accidentally broke your 290-day streak of earning at least $1 a day by providing liquidity\n\nHow disappointed would you be? https://t.co/qq4SyhWuGO",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    225
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 19,
+  "conversation_id": "2051277894895174008",
+  "retweets": 1,
+  "views": "2604",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/qq4SyhWuGO",
+        "expanded_url": "https://x.com/breezyjpg/status/2051277894895174008/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "all": {
+            "tags": [
+              {
+                "name": "Polymarket",
+                "screen_name": "Polymarket",
+                "type": "user",
+                "user_id": "1261335549215989760"
+              },
+              {
+                "name": "Polymarket Traders",
+                "screen_name": "PolymarketTrade",
+                "type": "user",
+                "user_id": "1965783030062022656"
+              },
+              {
+                "name": "PolyRewards",
+                "screen_name": "PolyReward",
+                "type": "user",
+                "user_id": "1438137793838977031"
+              },
+              {
+                "name": "Domer❤️‍🔥",
+                "screen_name": "Domahhhh",
+                "type": "user",
+                "user_id": "954085086160289792"
+              }
+            ]
+          },
+          "large": {
+            "faces": [
+              {
+                "h": 109,
+                "w": 109,
+                "x": 171,
+                "y": 151
+              },
+              {
+                "h": 333,
+                "w": 333,
+                "x": 305,
+                "y": 475
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 64,
+                "w": 64,
+                "x": 100,
+                "y": 88
+              },
+              {
+                "h": 195,
+                "w": 195,
+                "x": 179,
+                "y": 278
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 134,
+                "w": 134,
+                "x": 209,
+                "y": 185
+              },
+              {
+                "h": 407,
+                "w": 407,
+                "x": 373,
+                "y": 581
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 36,
+                "w": 36,
+                "x": 56,
+                "y": 50
+              },
+              {
+                "h": 110,
+                "w": 110,
+                "x": 101,
+                "y": 158
+              }
+            ]
+          }
+        },
+        "id_str": "2051273318976696320",
+        "indices": [
+          226,
+          249
+        ],
+        "media_key": "3_2051273318976696320",
+        "media_results": {
+          "result": {
+            "media_key": "3_2051273318976696320"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHeWNyrXsAAHLvZ.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 1400,
+              "w": 2500,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2092,
+              "w": 2092,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2092,
+              "w": 1835,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 2092,
+              "w": 1046,
+              "x": 39,
+              "y": 0
+            },
+            {
+              "h": 2092,
+              "w": 2500,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 2092,
+          "width": 2500
+        },
+        "sizes": {
+          "large": {
+            "h": 1714,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 1004,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 569,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/qq4SyhWuGO"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "breezyjpg",
+    "name": "Breezy 4L",
+    "created_at": "Sun Apr 03 21:27:00 +0000 2022",
+    "description": "McDonald's retiree trying to get rich on @Polymarket",
+    "rest_id": "1510730287868751874",
+    "followers_count": 4516,
+    "favourites_count": 13526,
+    "avatar": "https://pbs.twimg.com/profile_images/1982920367422210048/Z_BGxVlE_normal.jpg",
+    "url": "http://poly.market/user/breezy",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1510730287868751874/1729030358",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 721,
+    "location": "My profile  →"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHeWNyrXsAAHLvZ.jpg",
+        "id": "2051273318976696320",
+        "sizes": {
+          "h": 1004,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/breezyjpg/status/2051277894895174008"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2044105938878214224",
+  "screen_name": "Covalent_HQ",
+  "bookmarks": 1,
+  "favorites": 42,
+  "created_at": "Tue Apr 14 17:30:08 +0000 2026",
+  "text": "We just shipped the most complete Hyperliquid data dashboard out there.\n\nHIP-3 markets. Live order book depth. Funding rate history.\nFee economics. Order flow. Real time. All of it.\n\nNot a wrapper. Not a delayed feed.\nBuilt straight off the Hyperliquid node stream.\n\nThis is what trading with an edge looks like.\n\nhttps://t.co/fVWH26LnSc",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 2,
+  "replies": 1,
+  "conversation_id": "2044105938878214224",
+  "retweets": 7,
+  "views": "2422",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "hyperliquid.goldrush.dev",
+        "expanded_url": "http://hyperliquid.goldrush.dev",
+        "indices": [
+          314,
+          337
+        ],
+        "url": "https://t.co/fVWH26LnSc"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "Covalent_HQ",
+    "name": "Covalent",
+    "created_at": "Thu Apr 12 16:24:06 +0000 2018",
+    "description": "The data infrastructure for the onchain economy. Verified data across 100+ chains - powering apps, institutions & AI agents. Secured by $CXT. API → @goldrushdev",
+    "rest_id": "984467204828577792",
+    "followers_count": 239231,
+    "favourites_count": 11947,
+    "avatar": "https://pbs.twimg.com/profile_images/1970196037999697923/YayVFD_P_normal.jpg",
+    "url": "https://www.covalenthq.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/984467204828577792/1773421298",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 790,
+    "location": "Website → "
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2044098596723953833",
+    "bookmarks": 3,
+    "created_at": "Tue Apr 14 17:00:57 +0000 2026",
+    "favorites": 36,
+    "text": "The GoldRush Hyperliquid Dashboard just went live.\n\nHere's what's actually powering it.\n\nHyperliquid processes 125,000+ orders per second.\n\nThe REST API works well for most things\n- price checks\n- basic market data\n- simple queries\n\nBut when you need tick-level granularity.\nrate https://t.co/2Sbu0OKYmk",
+    "lang": "en",
+    "views": "4269",
+    "quotes": 3,
+    "replies": 13,
+    "retweets": 4,
+    "conversation_id": "2044098596723953833",
+    "author": {
+      "rest_id": "1802808514601222144",
+      "created_at": "Mon Jun 17 21:00:39 +0000 2024",
+      "name": "GoldRush - powered by Covalent",
+      "screen_name": "goldrushdev",
+      "avatar": "https://pbs.twimg.com/profile_images/1818750206114217984/d_R6X71c_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "video": [
+        {
+          "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2044098524825169920/img/NUeXXNEusqq2A1Ly.jpg",
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2044098524825169920/pl/23Z0k-CbbUd31FUp.m3u8?tag=14&v=cfc"
+            },
+            {
+              "bitrate": 288000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044098524825169920/vid/avc1/480x270/jScSGcaeXGot_RTE.mp4?tag=14"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044098524825169920/vid/avc1/640x360/wZpA3COZ2eppkzmZ.mp4?tag=14"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044098524825169920/vid/avc1/1280x720/MJ6gV9osuyFs_t63.mp4?tag=14"
+            }
+          ],
+          "aspect_ratio": [
+            16,
+            9
+          ],
+          "duration": 22041,
+          "original_info": {
+            "focus_rects": [],
+            "height": 1080,
+            "width": 1920
+          },
+          "id": "2044098524825169920"
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/Covalent_HQ/status/2044105938878214224"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2011414620121284624",
+  "screen_name": "browomo",
+  "bookmarks": 991,
+  "favorites": 458,
+  "created_at": "Wed Jan 14 12:26:30 +0000 2026",
+  "text": "A week ago Polymarket declared war on algorithms.\n\nThey introduced a draconian 3.15% commission on 15-minute markets called Taker Fee.\n\nThe goal was clear: kill latency arbitrageurs who take money faster than the site UI updates.\n\nThe math is simple: if your glitch gives a 2% edge and the platform takes 3.15% commission you're bankrupt.\n90% of bots shut down that same night.\n\nBut this bot didn't just stay. It increased its deposit.\n\n<> Profile hidden from everyone: https://t.co/pkDGusn4e1\n\nYesterday it closed the day with $27K profit. I looked at its logs to understand how it bypasses expected value.\n\nThe old method is dead\n\nPreviously bots simply compared BTC price on Binance and Polymarket. Saw the difference bought waited 30 seconds. This gave small profit that is now eaten by commission.\n\nNew mechanics\n\nThis bot stopped looking at price. It looks at pain.\nIt is connected to the Liquidation Stream of Bybit and OKX exchanges.\n\nPrice moves linearly. Liquidations are explosive.\n\nWhen a cascade of liquidations triggers on futures with margin calls of $50M+ per second the BTC price makes an impulse move that lasts 3-4 seconds before pulling back.\nThis movement exceeds 1-2%.\n\nThe essence\n\nThe bot sees stop triggers on derivatives -> calculates impulse strength -> if Impulse > 3.15% Commission -> Enters the trade.\nWhile other bots filter market noise this script eats the corpses of margin traders from external exchanges.\nIt doesn't care about direction. It cares about the amplitude of market pain.\n\nResult\n\n$205K net per month\n\nWhile you complain about commissions and unfair conditions the code adapted in 48 hours.\nNo predictions. No AI. Just parasitizing on volatility of other people's mistakes.\n\nRight now this is the only working vector on 15-minute markets. A 3% commission is not scary if you take a 6% move.\n\nThe nickname is a set of symbols. No avatar. It doesn't need fame it needs liquidity.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>",
+  "quotes": 5,
+  "replies": 22,
+  "conversation_id": "2011414620121284624",
+  "retweets": 19,
+  "views": "91677",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "polymarket.com/@k9Q2mX4L8A7ZP…",
+        "expanded_url": "http://polymarket.com/@k9Q2mX4L8A7ZP3R?via=roovxKu",
+        "indices": [
+          470,
+          493
+        ],
+        "url": "https://t.co/pkDGusn4e1"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "browomo",
+    "name": "Blaze",
+    "created_at": "Mon Oct 06 09:22:13 +0000 2025",
+    "description": "prediction market || dm always are open",
+    "rest_id": "1975129422026948608",
+    "followers_count": 9421,
+    "favourites_count": 276,
+    "avatar": "https://pbs.twimg.com/profile_images/2003902481777000449/i9XDeusi_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1975129422026948608/1766602558",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 132,
+    "location": "Pending"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2011159332881133568/img/duy_ueixwuYo8hWu.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/pl/z9gZE2CfemqJ33Hb.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/vid/avc1/320x364/J2VYotmjYAkjos8Z.mp4?tag=21"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/vid/avc1/480x548/KNlLNB-WEeA9VCXK.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/vid/avc1/720x822/TNhjmCSowa25FXC1.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/vid/avc1/1080x1234/Qy2w6BHPPfMX8C4i.mp4?tag=21"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2011159332881133568/vid/avc1/2160x2468/_Yf5amA7wOuIbmIS.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          540,
+          617
+        ],
+        "duration": 19969,
+        "original_info": {
+          "focus_rects": [],
+          "height": 2468,
+          "width": 2160
+        },
+        "id": "2011159332881133568"
+      }
+    ],
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G-kSwffWQAANxkO.jpg",
+        "id": "2011159332893638656",
+        "sizes": {
+          "h": 1200,
+          "w": 1050
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/browomo/status/2011414620121284624"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047265395329974643",
+  "screen_name": "adiix_official",
+  "bookmarks": 230,
+  "favorites": 196,
+  "created_at": "Thu Apr 23 10:44:41 +0000 2026",
+  "text": "SPORT BOT TURNED $84 → $7.4M ON POLYMARKET SPORT MARKETS\n\nso I built a bot to read their moves in real time. \n\nResult: \n\n$500 → $4,208 in 30 days. +741%. \n\nPrice lies. On-chain doesn't. \n\nEvery 3 minutes, Hermes reads 4 signals: \n\n▸ order book depth \n▸ on-chain wallet moves \n▸ news-to-price lag \n▸ position deltas \n\nFires alerts only when 3+ align. \n\nWhy humans lose: \n\nbetween news dropping and price repricing, \nthere's a 2-15 min window where edge exists. \n\nby the time you read the headline, it's gone. \n30% of Polymarket wallets already run AI. \n\nyou're not competing with humans anymore. \n\nFull build in the guide: \n\n> 4-layer framework \n> python code (all of it) \n> 9 github repos \n> deploy in 20 min \n\nbot was following this trader:https://t.co/CoLr1VBPrm\n\nalso, a good copy trading Telegram bot I use:https://t.co/FOVhhdVdXl\n\nno paywall. no course. ship it.\n\nFull guide in the article below",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 1,
+  "replies": 10,
+  "conversation_id": "2047265395329974643",
+  "retweets": 14,
+  "views": "40819",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "polymarket.com/@rn1?r=ecosyst…",
+        "expanded_url": "https://polymarket.com/@rn1?r=ecosystem",
+        "indices": [
+          741,
+          764
+        ],
+        "url": "https://t.co/CoLr1VBPrm"
+      },
+      {
+        "display_url": "t.me/AresProTrading…",
+        "expanded_url": "https://t.me/AresProTradingBot?start=r_wallet",
+        "indices": [
+          811,
+          834
+        ],
+        "url": "https://t.co/FOVhhdVdXl"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "adiix_official",
+    "name": "AdiiX",
+    "created_at": "Mon Sep 30 16:20:18 +0000 2024",
+    "description": "vibe coding | ai & onchain research",
+    "rest_id": "1840788730249961476",
+    "followers_count": 19362,
+    "favourites_count": 30487,
+    "avatar": "https://pbs.twimg.com/profile_images/2046762681714008064/6me8SrkX_normal.jpg",
+    "url": "https://t.me/AresProTradingBot?start=r_wallet",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1840788730249961476/1776795699",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 110,
+    "location": "alpha here"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2047265328162349056/img/miDBNs4T3MTOQpvd.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2047265328162349056/pl/gfm09Prfdiq9WAFx.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047265328162349056/vid/avc1/320x426/NT43RmpVT8M1_m1-.mp4?tag=21"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047265328162349056/vid/avc1/480x640/BJnA703kZ5d2_Vew.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047265328162349056/vid/avc1/720x962/o3-2Ggc8RLesMKj8.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047265328162349056/vid/avc1/886x1184/xkwWcvxqPp0mFxIv.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          443,
+          592
+        ],
+        "duration": 16428,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1184,
+          "width": 886
+        },
+        "id": "2047265328162349056"
+      }
+    ],
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HGlY-BSXEAATV4N.jpg",
+        "id": "2047265328137179136",
+        "sizes": {
+          "h": 1200,
+          "w": 743
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2047218648293442010",
+    "bookmarks": 678,
+    "created_at": "Thu Apr 23 07:38:55 +0000 2026",
+    "favorites": 204,
+    "text": "https://t.co/LPINuaCUPE",
+    "lang": "zxx",
+    "views": "407009",
+    "quotes": 10,
+    "replies": 14,
+    "retweets": 18,
+    "conversation_id": "2047218648293442010",
+    "author": {
+      "rest_id": "1840788730249961476",
+      "created_at": "Mon Sep 30 16:20:18 +0000 2024",
+      "name": "AdiiX",
+      "screen_name": "adiix_official",
+      "avatar": "https://pbs.twimg.com/profile_images/2046762681714008064/6me8SrkX_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/adiix_official/status/2047265395329974643"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2024027088919945712",
+  "screen_name": "itslirrato",
+  "bookmarks": 27,
+  "favorites": 98,
+  "created_at": "Wed Feb 18 07:43:57 +0000 2026",
+  "text": "You can market-buy $20,000,000 on Jesus returning with under 1¢ slippage\n\nTrader accidentally sponsored $70k in Liquidity Rewards for this specific market right after @Polymarket rolled out the feature\n\nThe order book depth went absolutely insane, everyone is rushing in to farm that $70k\n\nBut mark my words:\n\nSmart traders are going to start sponsoring rewards just to summon enough liquidity to dump their bags\n\nThe new exit liquidity meta is here, be careful what you farm",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 21,
+  "conversation_id": "2024027088919945712",
+  "retweets": 1,
+  "views": "33459",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1261335549215989760",
+        "indices": [
+          167,
+          178
+        ],
+        "name": "Polymarket",
+        "screen_name": "Polymarket"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "itslirrato",
+    "name": "Lirratø",
+    "created_at": "Tue Jul 16 14:23:27 +0000 2019",
+    "description": "chief prediction markets enjoyer",
+    "rest_id": "1151135257615187968",
+    "followers_count": 7208,
+    "favourites_count": 11629,
+    "avatar": "https://pbs.twimg.com/profile_images/1991039503901896704/-nUrZ_vT_normal.jpg",
+    "url": "https://polymarket.com/@otarril#Om23Rhg",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1151135257615187968/1778941539",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 657,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HBbHwshaEAAgmSv.jpg",
+        "id": "2024024721948545024",
+        "sizes": {
+          "h": 1200,
+          "w": 1059
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HBbHxXKXMAAIg01.jpg",
+        "id": "2024024733394612224",
+        "sizes": {
+          "h": 1200,
+          "w": 1059
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2023893768563249629",
+    "bookmarks": 21,
+    "created_at": "Tue Feb 17 22:54:11 +0000 2026",
+    "favorites": 296,
+    "text": "hello ive accidentally added 70k in rewards to the jesus market can anyone at @polymarket help ty and god bless",
+    "lang": "en",
+    "views": "98410",
+    "quotes": 30,
+    "replies": 97,
+    "retweets": 8,
+    "conversation_id": "2023893768563249629",
+    "author": {
+      "rest_id": "929906005806407680",
+      "created_at": "Mon Nov 13 02:57:23 +0000 2017",
+      "name": "🕯️",
+      "screen_name": "sixcart",
+      "avatar": "https://pbs.twimg.com/profile_images/1987893751155441664/aNjTU770_normal.jpg",
+      "blue_verified": null
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/itslirrato/status/2024027088919945712"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2025961715158884777",
+  "screen_name": "KyleDeWriter",
+  "bookmarks": 275,
+  "favorites": 194,
+  "created_at": "Mon Feb 23 15:51:28 +0000 2026",
+  "text": "I became a Polymarket Market Maker with only $100\n\nCheck the vid and take my sample.\n\nPolymarket has introduced sponsor rewards for providing liquidity.\n\nso now it makes sense to join with low sizes.\n\nbut traditional LPing has 1 crucial inefficiency: your orders get filled.\n\nyou have to check if limit orders still active and change them manually like hundred times a day.\n\nmeanwhile @factsdottrade automated it via Magic Panel:\n\n> click a market + drag it to magic panel\n> choose the spread\n> set the share size\n> set updating frequency\n> be rewarded daily\n\nfunds are kept in your wallet, you literally earn yield by existing.\n\ntook me minutes to find the market + seconds to set up.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 41,
+  "conversation_id": "2025961715158884777",
+  "retweets": 8,
+  "views": "39282",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1801402481169063936",
+        "indices": [
+          385,
+          399
+        ],
+        "name": "Facts",
+        "screen_name": "factsdottrade"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "KyleDeWriter",
+    "name": "Kyle the Writer",
+    "created_at": "Wed Nov 10 14:33:49 +0000 2021",
+    "description": "nothing feels better than success | @Polymarket agent | studying finances\n\nall content here is sponsored or commissioned",
+    "rest_id": "1458442711418261505",
+    "followers_count": 9881,
+    "favourites_count": 75276,
+    "avatar": "https://pbs.twimg.com/profile_images/1948513500654948352/-Kv67q0z_normal.jpg",
+    "url": "https://polymarket.com/?r=kyletw",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1458442711418261505/1764712032",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 587,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2025961117114142720/img/6Sl-aus7ai1VkBxb.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2025961117114142720/pl/BkXmsNkfcSeThUZ6.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025961117114142720/vid/avc1/480x270/qieu-dBbFxetBNl4.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025961117114142720/vid/avc1/640x360/X8f6l8EvlsJXTwZ5.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025961117114142720/vid/avc1/1280x720/1PvgfnMQkmRd9rsV.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025961117114142720/vid/avc1/1920x1080/Rr7daycupHTf-pp6.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 28300,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2025961117114142720"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2025568247462887580",
+    "bookmarks": 876,
+    "created_at": "Sun Feb 22 13:47:58 +0000 2026",
+    "favorites": 663,
+    "text": "How to make $103/day on Polymarket with zero trades:\n\n- Take $3,000\n- Place limit orders\n- Never get filled\n\nYesterday's results: $95 from sponsored rewards, $8 from regular ones https://t.co/04mmN1Vwpu",
+    "lang": "en",
+    "views": "216833",
+    "quotes": 5,
+    "replies": 76,
+    "retweets": 24,
+    "conversation_id": "2025568247462887580",
+    "author": {
+      "rest_id": "1151135257615187968",
+      "created_at": "Tue Jul 16 14:23:27 +0000 2019",
+      "name": "Lirratø",
+      "screen_name": "itslirrato",
+      "avatar": "https://pbs.twimg.com/profile_images/1991039503901896704/-nUrZ_vT_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HBxB98bXcAES5ul.png",
+          "id": "2025566464858615809",
+          "sizes": {
+            "h": 270,
+            "w": 762
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/KyleDeWriter/status/2025961715158884777"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2031802188725403694",
+  "screen_name": "PredictParity",
+  "bookmarks": 66,
+  "favorites": 104,
+  "created_at": "Wed Mar 11 18:39:25 +0000 2026",
+  "text": "92.7% of market making on Polymarket are profitable.\n\nOut of 711 maker makers who earned $100+ in rewards last month, 659 were net profitable.\n\nThis is looking at the net pnl from trading and rewards activities https://t.co/kQHx7vIFXu",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    210
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 16,
+  "conversation_id": "2031802188725403694",
+  "retweets": 6,
+  "views": "9631",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/kQHx7vIFXu",
+        "expanded_url": "https://x.com/PredictParity/status/2031802188725403694/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2031801552784986112",
+        "indices": [
+          211,
+          234
+        ],
+        "media_key": "3_2031801552784986112",
+        "media_results": {
+          "result": {
+            "media_key": "3_2031801552784986112"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HDJov0_WEAAlfo6.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 823,
+              "w": 1470,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1290,
+              "w": 1290,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1290,
+              "w": 1132,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1290,
+              "w": 645,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1290,
+              "w": 1470,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1290,
+          "width": 1470
+        },
+        "sizes": {
+          "large": {
+            "h": 1290,
+            "resize": "fit",
+            "w": 1470
+          },
+          "medium": {
+            "h": 1053,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 597,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/kQHx7vIFXu"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "PredictParity",
+    "name": "Parity",
+    "created_at": "Thu Sep 11 19:54:19 +0000 2025",
+    "description": "Balancing Prediction Markets\n@MovieTimeDev",
+    "rest_id": "1966228799940448257",
+    "followers_count": 5103,
+    "favourites_count": 543,
+    "avatar": "https://pbs.twimg.com/profile_images/1966228882769489921/AwBnaoa9_normal.jpg",
+    "url": "https://predictparity.com/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1966228799940448257/1757620705",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1,
+    "location": "New York, NY"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HDJov0_WEAAlfo6.jpg",
+        "id": "2031801552784986112",
+        "sizes": {
+          "h": 1053,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/PredictParity/status/2031802188725403694"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2056001513227419724",
+  "screen_name": "agentlayer_ai",
+  "bookmarks": 4,
+  "favorites": 46,
+  "created_at": "Sun May 17 13:18:54 +0000 2026",
+  "text": "Another side of perps. \nBesides leveraged trading opportunities, onchain perps also create something else important: liquidity pools\n\nThese pools open the door to yield from providing liquidity, often with higher APYs than average DeFi tools\n\nWhy does this matter for AgentLayer?\nOne of our key directions is building self-sustaining agents, that can support their own activity and cover part of their operating costs\n\nLiquidity pools are a strong instrument for that, and one of the building blocks that makes this kind of economic model for AI more realistic\nsoon \n$AGENTLAYER",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 2,
+  "replies": 6,
+  "conversation_id": "2056001513227419724",
+  "retweets": 14,
+  "views": "1682",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          567,
+          578
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "AGENTLAYER"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "agentlayer_ai",
+    "name": "AgentLayer",
+    "created_at": "Wed Feb 18 13:16:29 +0000 2026",
+    "description": "Crypto infrastructure for AI agents. Wallet rails for autonomous agents. @BagsHackathon winner",
+    "rest_id": "2024110459906101249",
+    "followers_count": 530,
+    "favourites_count": 2517,
+    "avatar": "https://pbs.twimg.com/profile_images/2024112901783433217/9j27Ydr8_normal.jpg",
+    "url": "http://agent-layer.tech",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2024110459906101249/1775545232",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 20,
+    "location": "AGI"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIhieghWcAAmbfw.jpg",
+        "id": "2056001506160046080",
+        "sizes": {
+          "h": 818,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/agentlayer_ai/status/2056001513227419724"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2037633634052816961",
+  "screen_name": "tradehotstuff",
+  "bookmarks": 14,
+  "favorites": 86,
+  "created_at": "Fri Mar 27 20:51:30 +0000 2026",
+  "text": "Now live on Hotstuff:\n\nGrowth Mode for $GOLD and $SILVER perps, with cross margin enabled\n\nBoth markets now have:\n-1 bps maker rebate\n1.5 bps taker fee\n\nAlso shipped:\n- support for all write txs via WebSockets, including order placement & cancels\n- interactive REST + WSS API docs\n- TP/SL\n- 50% lower withdrawal fees",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    284
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 6,
+  "replies": 25,
+  "conversation_id": "2037633634052816961",
+  "retweets": 11,
+  "views": "9388",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          39,
+          44
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Gold.com Inc",
+              "ticker": "GOLD"
+            }
+          }
+        },
+        "text": "GOLD"
+      },
+      {
+        "indices": [
+          49,
+          56
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "SILVER"
+      }
+    ],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "tradehotstuff",
+    "name": "Hotstuff",
+    "created_at": "Thu Jul 22 09:19:44 +0000 2021",
+    "description": "DeFi layer 1 for Confidential Integrated Finance. Backed by @delphi_ventures @dialectic_group @StakeCapital & more",
+    "rest_id": "1418138589620146176",
+    "followers_count": 44895,
+    "favourites_count": 3176,
+    "avatar": "https://pbs.twimg.com/profile_images/1989969985134104576/wrI1okZ5_normal.png",
+    "url": "http://hotstuff.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1418138589620146176/1769866740",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 3,
+    "location": "Ethereum"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HEcctYVasAAab43.jpg",
+        "id": "2037628922360410112",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/tradehotstuff/status/2037633634052816961"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053055937150402666",
+  "screen_name": "0x_Samir",
+  "bookmarks": 24,
+  "favorites": 116,
+  "created_at": "Sat May 09 10:14:14 +0000 2026",
+  "text": "hidden criteria for $POLY airdrop?\n\n@Polymarket airdrop could be way bigger than we think, too many whales and insiders farming rn\n\nso i think there may be some hidden criteria and possible one is “maker rebate”\n\nmaker rebates are earned when your limit orders add liquidity and get filled later\n\nif your order fills instantly, you become a taker and get no rebate\n\nalso you need at least $1 total rebate before polymarket sends payouts\n\nso if you're just providing LP without actual fills, it might be kinda useless\n\njust my view, but i hope they add more hard criteria to remove wash traders",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 1,
+  "replies": 49,
+  "conversation_id": "2053055937150402666",
+  "retweets": 3,
+  "views": "4856",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          20,
+          25
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1261335549215989760",
+        "indices": [
+          36,
+          47
+        ],
+        "name": "Polymarket",
+        "screen_name": "Polymarket"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "0x_Samir",
+    "name": "0xSamir",
+    "created_at": "Sat Feb 03 07:34:41 +0000 2024",
+    "description": "just a shitposter | polymarket farmer",
+    "rest_id": "1753683326379126784",
+    "followers_count": 6581,
+    "favourites_count": 101091,
+    "avatar": "https://pbs.twimg.com/profile_images/2021668099729371137/C90gjGHN_normal.jpg",
+    "url": "https://polymarket.com/?r=0xSamir",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1753683326379126784/1740132809",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 2995,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HH3rfqoakAARqV3.jpg",
+        "id": "2053055934403088384",
+        "sizes": {
+          "h": 1200,
+          "w": 918
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/0x_Samir/status/2053055937150402666"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2021082951652454491",
+  "screen_name": "coinbureau",
+  "bookmarks": 6,
+  "favorites": 123,
+  "created_at": "Tue Feb 10 04:45:00 +0000 2026",
+  "text": "🚨JUMP TRADING TO STAKE IN PREDICTION MARKETS\n\nJump Trading will receive equity stakes in Kalshi and Polymarket in exchange for providing liquidity.\n\nJump’s Kalshi stake is fixed, while its Polymarket stake scales up over time based on how much trading capacity it brings to U.S. markets.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>",
+  "quotes": 1,
+  "replies": 54,
+  "conversation_id": "2021082951652454491",
+  "retweets": 20,
+  "views": "14645",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "coinbureau",
+    "name": "Coin Bureau",
+    "created_at": "Fri Sep 08 19:00:15 +0000 2017",
+    "description": "Official Coin Bureau X account.",
+    "rest_id": "906230721513181184",
+    "followers_count": 1105568,
+    "favourites_count": 12042,
+    "avatar": "https://pbs.twimg.com/profile_images/1997605948463140864/tJDGMXZ0_normal.jpg",
+    "url": "https://coinbureau.com/deals",
+    "cover_image": "https://pbs.twimg.com/profile_banners/906230721513181184/1747195785",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 409,
+    "location": "Dubai"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HAwxMttaAAIpXCC.png",
+        "id": "2021044427280744450",
+        "sizes": {
+          "h": 322,
+          "w": 414
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HAwxO3WasAATMms.png",
+        "id": "2021044464228413440",
+        "sizes": {
+          "h": 512,
+          "w": 512
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HAwxQh8aAAQoCQ8.jpg",
+        "id": "2021044492841910276",
+        "sizes": {
+          "h": 1165,
+          "w": 1032
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/coinbureau/status/2021082951652454491"
+},
+{
+  "type": "tweet",
+  "tweet_id": "1994089082926891230",
+  "screen_name": "piitien1603i",
+  "bookmarks": 0,
+  "favorites": 120,
+  "created_at": "Thu Nov 27 17:01:00 +0000 2025",
+  "text": "gm  \nedgex 24h fees just topped hyperliquid—$4.9b volume, oi at $782m up 10%  \nv1 perp/spot q1 2025 live, web/mobile too  \nopen season snapshot in 8 days, 70% community no vc  \nthat 0.00069 maker rebate >50k pts? tg only, loops 15% apy silent  \norderbook's heating. trading?  \n@edgeX_exchange",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    277
+  ],
+  "source": "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>",
+  "quotes": 0,
+  "replies": 157,
+  "conversation_id": "1994089082926891230",
+  "retweets": 1,
+  "views": "4746",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1715689954070736896",
+        "indices": [
+          277,
+          292
+        ],
+        "name": "edgeX🦭",
+        "screen_name": "edgeX_exchange"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "piitien1603i",
+    "name": "Pii™Ducks",
+    "created_at": "Wed Feb 09 02:16:08 +0000 2022",
+    "description": "The Wise Monkey 🐕‍🦺🩵\nIn-depth information about crypto DeFi🩵 \nNot financial advice🩵 📩 @piitien1603i @CONTENTDAOAPP(560)",
+    "rest_id": "1491234315417812992",
+    "followers_count": 327202,
+    "favourites_count": 119826,
+    "avatar": "https://pbs.twimg.com/profile_images/2007159444841607170/ZSuJnTqo_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1491234315417812992/1767378872",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 9140,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/1993937394433970180/img/wT0q8FTRsrOjuQVC.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/1993937394433970180/pl/y1v6R6_VR65QcmNG.m3u8?tag=23"
+          },
+          {
+            "bitrate": 5184000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/1993937394433970180/vid/avc1/540x540/QUIcTdAipXsCe3Xi.mp4?tag=23"
+          }
+        ],
+        "aspect_ratio": [
+          1,
+          1
+        ],
+        "duration": 6041,
+        "original_info": {
+          "focus_rects": [],
+          "height": 560,
+          "width": 560
+        },
+        "id": "1993937394433970180"
+      }
+    ]
+  },
+  "url": "https://twitter.com/piitien1603i/status/1994089082926891230"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2021654747476873513",
+  "screen_name": "only1mrwhite",
+  "bookmarks": 1,
+  "favorites": 24,
+  "created_at": "Wed Feb 11 18:37:06 +0000 2026",
+  "text": "Earnings season is here. No more “fees ate my profit” complaints.\n\nCOIN. CRCL. NVIDIA.\nBig reports = big volatility.\n\nAnd volatility is where traders make money.\n\n@bitget just made it even better:\n\nFrom Feb 10 – April 30:\n\n• Stock perps: 0 maker fee\n• Taker fee: 0.0065% (industry low)\n• Precious metals perps: 0 maker + 70% off taker (min 0.0065%)\n\nLower fees = more profit kept.\n\nPlus, select pairs like NVDAUSDT, GOOGLUSDT, TSLAUSDT, XAUUSDT and XAGUSDT now support up to 100x leverage.\n\nAnd the best part?\nYou can trade stock futures 24/7, not just during U.S. market hours.\n\nIf you’re going to trade earnings volatility, at least do it where fees aren’t eating your gains.\n\nWould you trade earnings live or just watch the candles after?",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    270
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 32,
+  "conversation_id": "2021654747476873513",
+  "retweets": 2,
+  "views": "20629",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1098881129057112064",
+        "indices": [
+          163,
+          170
+        ],
+        "name": "Bitget",
+        "screen_name": "bitget"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "only1mrwhite",
+    "name": "Mr White 🫶🏽",
+    "created_at": "Mon Jul 26 12:32:41 +0000 2021",
+    "description": "Meticulous crypto market analyst | Trader | Angel Investor 🏌️‍♂️\nFinding/creating asymmetric opportunities",
+    "rest_id": "1419636729351344131",
+    "followers_count": 49956,
+    "favourites_count": 111553,
+    "avatar": "https://pbs.twimg.com/profile_images/2006667665469833217/_1beKYsI_normal.jpg",
+    "url": "https://t.me/only1whitehouse",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1419636729351344131/1773473213",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1638,
+    "location": "We₿ 3"
+  },
+  "media": [],
+  "url": "https://twitter.com/only1mrwhite/status/2021654747476873513"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052320942374670608",
+  "screen_name": "Outcomexyz",
+  "bookmarks": 4,
+  "favorites": 66,
+  "created_at": "Thu May 07 09:33:37 +0000 2026",
+  "text": "Prediction markets on Hyperliquid are going global. HIP4 is the talk of the timeline.\n\nBefore co-founding @outcomexyz, @IamGyomei was market making on @HyperliquidX . Now the team has 500k $HYPE of founder-owned coins staked.\n\nFind out why. 2pm UTC.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    249
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 3,
+  "replies": 11,
+  "conversation_id": "2052320942374670608",
+  "retweets": 6,
+  "views": "8491",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          189,
+          194
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Hyperliquid",
+              "ticker": "HYPE"
+            }
+          }
+        },
+        "text": "HYPE"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1864268679434682368",
+        "indices": [
+          106,
+          117
+        ],
+        "name": "Outcome",
+        "screen_name": "Outcomexyz"
+      },
+      {
+        "id_str": "1872679025925115905",
+        "indices": [
+          119,
+          129
+        ],
+        "name": "Gyomei",
+        "screen_name": "IamGyomei"
+      },
+      {
+        "id_str": "1527020295059648513",
+        "indices": [
+          151,
+          164
+        ],
+        "name": "Hyperliquid",
+        "screen_name": "HyperliquidX"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Outcomexyz",
+    "name": "Outcome",
+    "created_at": "Wed Dec 04 11:21:19 +0000 2024",
+    "description": "Prediction Markets on Hyperliquid, Trade outcomes on crypto & more soon. https://t.co/wQPHkSHrLl",
+    "rest_id": "1864268679434682368",
+    "followers_count": 16453,
+    "favourites_count": 7809,
+    "avatar": "https://pbs.twimg.com/profile_images/2050885690121146368/JU55Bmi1_normal.jpg",
+    "url": "http://outcome.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1864268679434682368/1777712503",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 49,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2052297468843311143",
+    "bookmarks": 3,
+    "created_at": "Thu May 07 08:00:21 +0000 2026",
+    "favorites": 51,
+    "text": "Prediction markets are growing fast.\n\nThis week, we’re talking AI, forecasting, and the future of trading. We’ll be welcoming @Outcomexyz and @CereBree to share their insights. \n\nMake sure to join us!\n\n🎙️ Hosted by @RikwijkV &amp; @leagueoftraders\n📅 May 7 | 2 PM UTC\n🔔 Join us: https://t.co/57egxu8zWQ",
+    "lang": "en",
+    "views": "27000",
+    "quotes": 3,
+    "replies": 35,
+    "retweets": 37,
+    "conversation_id": "2052297468843311143",
+    "author": {
+      "rest_id": "1298172050264080387",
+      "created_at": "Tue Aug 25 08:15:26 +0000 2020",
+      "name": "League of Traders",
+      "screen_name": "leagueoftraders",
+      "avatar": "https://pbs.twimg.com/profile_images/1583284859677523970/-ShO1lr8_normal.jpg",
+      "blue_verified": null
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HHszf1FasAAsmxe.jpg",
+          "id": "2052290677116153856",
+          "sizes": {
+            "h": 900,
+            "w": 1600
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/Outcomexyz/status/2052320942374670608"
+},
+{
+  "type": "tweet",
+  "tweet_id": "1982032678342795386",
+  "screen_name": "lorden_eth",
+  "bookmarks": 314,
+  "favorites": 243,
+  "created_at": "Sat Oct 25 10:33:09 +0000 2025",
+  "text": "Earn up to $1000 daily on Polymarket by providing liquidity\n\nIf you're in Polymarket you literally can get paid for providing liquidity\n\nHere is how much you can earn just by using limit orders on the platform (that’s the main idea behind liquidity rewards)👇 \n\nThe closer your order to the actual market price, the more you earn from that order\n\nHere are a few key factors:\n\n> Tight spread is key\nIf others are at $0.50 and you’re $0.49–$0.51, that’s perfect\n\n> Order size matters\nBuying 1000 shares gets attention, you actually move the market.\n\n> Both sides matters\nPolymarket rewards two-sided liquidity\n\n> For extreme prices \n(under $0.10 or over $0.90), you need both sides to qualify. it stops manipulation\n\nCompetition:\n> Always pay attention to competition\nThe less competition there is, the better it is for you to earn extra rewards\n\nFilters:\nYou can choose what interests you most, from Politics to Science, or everything at once\n\nRewards:\n\nYou can view the rewards for a given market in its Order Book\n\nIn the example below, because the max spread is 3c, every order within 3c of the midpoint is eligible for rewards\n\nIf the midpoint is < $0.10, you need to have orders on both sides to qualify\nRewards are distributed directly to wallets everyday at midnight UTC\n\nTop 3 markets with highest rewards today bellow👇",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 49,
+  "conversation_id": "1982032678342795386",
+  "retweets": 19,
+  "views": "18768",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "lorden_eth",
+    "name": "Lorden",
+    "created_at": "Wed Mar 06 06:45:22 +0000 2024",
+    "description": "Head of Growth | Web3 & Fintech | User Acquisition & Affiliate Program expert | $7M+ FTDs in 6mo via organic growth | @Safaryclub & @zscdao",
+    "rest_id": "1765267358942142464",
+    "followers_count": 8029,
+    "favourites_count": 90511,
+    "avatar": "https://pbs.twimg.com/profile_images/1962416869429620736/axmpuc-C_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1765267358942142464/1756711641",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 948,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G4GT-oSWUAA89gn.jpg",
+        "id": "1982028015195279360",
+        "sizes": {
+          "h": 632,
+          "w": 1200
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G4GUvQVXUAAmxxF.jpg",
+        "id": "1982028850579066880",
+        "sizes": {
+          "h": 244,
+          "w": 1048
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G4GVRlhXsAA--eI.jpg",
+        "id": "1982029440382119936",
+        "sizes": {
+          "h": 100,
+          "w": 1200
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G4GVm6WWMAEuCmi.jpg",
+        "id": "1982029806750281729",
+        "sizes": {
+          "h": 380,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/lorden_eth/status/1982032678342795386"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2025269280489500713",
+  "screen_name": "mahera777",
+  "bookmarks": 38,
+  "favorites": 107,
+  "created_at": "Sat Feb 21 17:59:58 +0000 2026",
+  "text": "Get rewarded for providing liquidity to prediction markets\n\nPolymarket has a Liquidity Rewards program. They pay for your liquidity, i.e. limit orders\n\nThe longer your orders are active, the more rewards you earn \n\nWhy @factsdottrade saves you time:\n\n- previously you had to manually update orders, because the price moves \n\n- now in Magic Panel you configure once:\n\nWhat spread do you want, how many shares, how often to update \n\nThe terminal itself monitors the mid-price, cancels old orders and places new ones \n\nThis is one of the most passive ways to earn on prediction markets right now",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 21,
+  "conversation_id": "2025269280489500713",
+  "retweets": 3,
+  "views": "4992",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1801402481169063936",
+        "indices": [
+          219,
+          233
+        ],
+        "name": "Facts",
+        "screen_name": "factsdottrade"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "mahera777",
+    "name": "mahera",
+    "created_at": "Tue Jan 31 16:41:22 +0000 2023",
+    "description": "trust the process | @Polymarket researcher, trader\n\nDMs open 🤝🏻",
+    "rest_id": "1620462165357371398",
+    "followers_count": 4838,
+    "favourites_count": 77719,
+    "avatar": "https://pbs.twimg.com/profile_images/1992224062706225152/l28GEmU__normal.jpg",
+    "url": "https://polymarket.com/@mahera777",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1620462165357371398/1773335502",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 570,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2025268992638595072/img/tiDkOQf9o9KIJ25o.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/pl/TID4_FzaDkwoP8bv.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/vid/avc1/534x270/qozcdhyVwXsSmI2d.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/vid/avc1/712x360/dKLTFiE6U4rL5CZI.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/vid/avc1/1426x720/Rnz7uSoHpp_btTiO.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/vid/avc1/2138x1080/_CdDlz-Ut58tIn4J.mp4?tag=21"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2025268992638595072/vid/avc1/3840x1938/enKwoOdwWUsksyRD.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          640,
+          323
+        ],
+        "duration": 31450,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1938,
+          "width": 3840
+        },
+        "id": "2025268992638595072"
+      }
+    ]
+  },
+  "url": "https://twitter.com/mahera777/status/2025269280489500713"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2000869510740381815",
+  "screen_name": "FlashTrade",
+  "bookmarks": 1,
+  "favorites": 34,
+  "created_at": "Tue Dec 16 10:04:00 +0000 2025",
+  "text": "we need your Fartcoin\n\nstart providing liquidity now https://t.co/nJHiUDOJNc",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    52
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 5,
+  "conversation_id": "2000869510740381815",
+  "retweets": 2,
+  "views": "1941",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/nJHiUDOJNc",
+        "expanded_url": "https://x.com/FlashTrade/status/2000869510740381815/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 44,
+                "w": 44,
+                "x": 53,
+                "y": 42
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 44,
+                "w": 44,
+                "x": 53,
+                "y": 42
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 44,
+                "w": 44,
+                "x": 53,
+                "y": 42
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 44,
+                "w": 44,
+                "x": 53,
+                "y": 42
+              }
+            ]
+          }
+        },
+        "id_str": "2000856941912829953",
+        "indices": [
+          53,
+          76
+        ],
+        "media_key": "3_2000856941912829953",
+        "media_results": {
+          "result": {
+            "media_key": "3_2000856941912829953"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/G8R4yaUWsAERyf2.png",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 328,
+              "w": 585,
+              "x": 0,
+              "y": 26
+            },
+            {
+              "h": 408,
+              "w": 408,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 408,
+              "w": 358,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 408,
+              "w": 204,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 408,
+              "w": 585,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 408,
+          "width": 585
+        },
+        "sizes": {
+          "large": {
+            "h": 408,
+            "resize": "fit",
+            "w": 585
+          },
+          "medium": {
+            "h": 408,
+            "resize": "fit",
+            "w": 585
+          },
+          "small": {
+            "h": 408,
+            "resize": "fit",
+            "w": 585
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/nJHiUDOJNc"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "FlashTrade",
+    "name": "Flash.Trade | Perps on Solana",
+    "created_at": "Fri Mar 24 15:45:17 +0000 2023",
+    "description": "Trade crypto, stocks, commodities, and forex with zero slippage onchain. \n\nJoin the beasts at https://t.co/dDhjoFzXah",
+    "rest_id": "1639292132119969792",
+    "followers_count": 31831,
+    "favourites_count": 19810,
+    "avatar": "https://pbs.twimg.com/profile_images/2000900863632793607/78n0VYOK_normal.jpg",
+    "url": "https://www.flash.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1639292132119969792/1770893026",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 558,
+    "location": "Solana"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G8R4yaUWsAERyf2.png",
+        "id": "2000856941912829953",
+        "sizes": {
+          "h": 408,
+          "w": 585
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/FlashTrade/status/2000869510740381815"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043013331796267395",
+  "screen_name": "martynov014",
+  "bookmarks": 11,
+  "favorites": 54,
+  "created_at": "Sat Apr 11 17:08:30 +0000 2026",
+  "text": "I GET CASHBACK FROM POLYMARKET EVERY DAY\n\nare you farming $POLY correctly? \n\ni used all functions on Polymarket, but right now i want to tell you about maker rebate\n\nit works by limit orders and every day you can get free money to your deposit\n\nlast week i got $48 for free and i used only 15 minute markets\n\nbut if you want to farm LP rewards too, you can choose definite markets with big reward pool\n\nfull info below in the post",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 10,
+  "conversation_id": "2043013331796267395",
+  "retweets": 1,
+  "views": "4139",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          58,
+          63
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "POLY"
+      }
+    ],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "martynov014",
+    "name": "Valentin",
+    "created_at": "Wed Mar 01 09:19:18 +0000 2023",
+    "description": "not bot, not smart trader, just only 4cking kazakh expert on @polymarket\nhttps://t.co/YlowCDUIB4",
+    "rest_id": "1630860219763884032",
+    "followers_count": 2453,
+    "favourites_count": 18957,
+    "avatar": "https://pbs.twimg.com/profile_images/2021986409771601920/ZWWcQsBt_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1630860219763884032/1770913892",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 469,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2043010298039111680/img/hTb8dBzhpuiH-Gm2.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2043010298039111680/pl/2BrW8LjmwBhlntNv.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2043010298039111680/vid/avc1/588x270/vCAoeBTRlpialioP.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2043010298039111680/vid/avc1/784x360/jX6SLFHMx2JnxUTx.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2043010298039111680/vid/avc1/1570x720/auQFVC2nJsmxzm07.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2043010298039111680/vid/avc1/1920x880/quO7pO8pdbsOQwXh.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          24,
+          11
+        ],
+        "duration": 29333,
+        "original_info": {
+          "focus_rects": [],
+          "height": 880,
+          "width": 1920
+        },
+        "id": "2043010298039111680"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2042241598193569906",
+    "bookmarks": 221,
+    "created_at": "Thu Apr 09 14:01:54 +0000 2026",
+    "favorites": 272,
+    "text": "just noticed Polymarket is paying me every day\n\nmaker rebates - the most underrated strategy right now\n\nhow it works:\n&gt; you place limit orders \n&gt; takers fill your orders \n&gt; Polymarket takes a small fee from takers \n&gt; 20-25% of those fees get redistributed back to you daily in https://t.co/FMVLSvChd5",
+    "lang": "en",
+    "views": "31417",
+    "quotes": 1,
+    "replies": 34,
+    "retweets": 24,
+    "conversation_id": "2042241598193569906",
+    "author": {
+      "rest_id": "741974201305845760",
+      "created_at": "Sun Jun 12 12:43:29 +0000 2016",
+      "name": "vlad",
+      "screen_name": "Vlad_Web3",
+      "avatar": "https://pbs.twimg.com/profile_images/1971520538007769088/K5PfbD58_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HFd_akibgAAqH75.jpg",
+          "id": "2042241050497220608",
+          "sizes": {
+            "h": 908,
+            "w": 844
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/martynov014/status/2043013331796267395"
+},
+{
+  "type": "tweet",
+  "tweet_id": "1985665170413178989",
+  "screen_name": "lunatik_corp",
+  "bookmarks": 779,
+  "favorites": 475,
+  "created_at": "Tue Nov 04 11:07:23 +0000 2025",
+  "text": "Best strategy for people with small deposit on Polymarket\n\nI tried farming rewards by providing liquidity on Polymarket. In just half an hour, I earned $6 on a $90 investment. That's 122,640% APY.\n\nHow It Works:\nIn the Rewards tab, you can see numerous markets where you can place limit orders with specific conditions to earn rewards.\n\nIt's important to respect the max spread and min shares. The less competition and higher rewards, the more you'll earn.\n\nMy case: today I captured 50% of the market with $150 in rewards. That's a lot.\n\nHow I Select Markets:\n– Sort all markets by reward amount. I look at the 'competition' scale. If there are only 1-2 bars, I study the market more carefully. It's important to me that there isn't too much liquidity in the price range I need. I skip 0 bars.\n\n– Skip markets with too much spread. Your order might fill at an unfavorable price, forcing you to sell at a loss.\n\n– Skip illiquid markets. If my order fills, I won't be able to sell the shares to anyone.\n\n– Markets with tight spreads (1-3) are good picks. I look for the right price to buy. I try to place my orders second or third in the order book so they don't fill first.\n\n– Place orders at existing price levels. If I see someone opened an order at $0.35 for $50, I'll place my order at that same price. I do this so if someone wants to sell at $0.35, their order fills faster and with higher probability than mine.\n\n– Open orders on 20-30 markets simultaneously to earn rewards from everywhere.\n\n– Check each order frequently to make sure it's not approaching the mid price and getting filled unexpectedly.\n\n– Always use only half my balance for orders. This ensures that if one order fills, the other orders don't get canceled and continue farming.\n\n– Check notifications constantly to see if any of my orders filled unexpectedly.\n\n– Always check market end dates. If a market ends in less than 24 hours, be careful—you could lose money.\n\n– Avoid highly volatile markets. You can also lose money on those.\n\nThese are my core principles that I use. Hope this was helpful!",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 8,
+  "replies": 53,
+  "conversation_id": "1985665170413178989",
+  "retweets": 35,
+  "views": "114357",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "lunatik_corp",
+    "name": "lunatik",
+    "created_at": "Mon Apr 17 07:55:58 +0000 2023",
+    "description": "prediction markets in my heart\n\nbuilding @poly_matches",
+    "rest_id": "1647871445266219008",
+    "followers_count": 2860,
+    "favourites_count": 20239,
+    "avatar": "https://pbs.twimg.com/profile_images/1949490109062975488/eJH_7yyJ_normal.jpg",
+    "url": "https://link3.to/lunatik",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1647871445266219008/1753630801",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 858,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G457sMJX0AAI-IF.jpg",
+        "id": "1985660484821962752",
+        "sizes": {
+          "h": 670,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/lunatik_corp/status/1985665170413178989"
+}]

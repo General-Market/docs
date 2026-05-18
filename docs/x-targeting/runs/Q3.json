@@ -1,0 +1,3274 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2021984128933966091",
+  "screen_name": "0xRicker",
+  "bookmarks": 26,
+  "favorites": 44,
+  "created_at": "Thu Feb 12 16:25:57 +0000 2026",
+  "text": "How to Trade Attention Markets on Polymarket: Quant Edges + Formulas\n\nWhy the edge persists: Polymarket UX priority → oracle delays 4–18s + thin books = arb windows stay open 45–180s\n\nShort, math-heavy breakdown:\n\n🔹 Latency Arb Still Printing Hard\nOracle/social refresh lag: 0.9–5.2s in ~75% of thin attention markets (<$250k liquidity)\nFix: <700ms latency stack (Twitter API v2 + RSS/news sentiment scraper + execution bot)\nReal numbers: 5–11% edge per trade at $80–200k depth, ~45–110 windows/day on top hype events\nEV calc: edge × liquidity × (1 – 2% fee) → $1.5k–$22k daily extractable with $60k rolling bankroll (no leverage)\n\n🔹 Attention Markets 101\nNoise kills pricing: real engagement vs manipulated spikes → typical early misprice 7–18%\nFix: network framing → cross-market correlations (e.g. token pump - event odds - social volume)\nEdge example: sentiment delta +45% in 60s, odds move only +11% → arb window ≈ 14–19% EV pre-fees\n\n🔹 Manipulation Filter (Game Theory + Stats)\nFake volume spikes: 250–600% organic in first 90–180s (bot farms)\nFix: dual thresholds\n1. Velocity check: Δimpressions / Δt > 3.1 × 7-day median → P(manipulation) > 81%\n2. Bayesian filter: prior P(organic) = 0.55 → update with likelihood ratio → posterior > 0.72 to enter\nResult: rug probability drops from ~38% → <9%, win-rate jumps to 64–71% on filtered trades\n\n@RohOnChain just dropped fire on attention/mindshare bets - viral cycles, hype pumps, celeb drama markets\n\nFor trading: https://t.co/RUkv59eqvK",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 29,
+  "conversation_id": "2021984128933966091",
+  "retweets": 0,
+  "views": "1273",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "polycule.trade/join/9f1xa9",
+        "expanded_url": "http://polycule.trade/join/9f1xa9",
+        "indices": [
+          1468,
+          1491
+        ],
+        "url": "https://t.co/RUkv59eqvK"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1970191005510180866",
+        "indices": [
+          1348,
+          1359
+        ],
+        "name": "Roan",
+        "screen_name": "RohOnChain"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "0xRicker",
+    "name": "0xRicker",
+    "created_at": "Thu Nov 20 16:44:49 +0000 2025",
+    "description": "Researcher & Contributor | Polymarket Maxi | Dm open",
+    "rest_id": "1991548234058330113",
+    "followers_count": 5496,
+    "favourites_count": 8048,
+    "avatar": "https://pbs.twimg.com/profile_images/2014389251580813312/ke_dI_-z_normal.jpg",
+    "url": "https://polymarket.com/?r=joinjoinjoin",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1991548234058330113/1769102799",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 327,
+    "location": "Bali, Indonesia"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2021984043407908866/img/wS5rh75yNzQC0yNC.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2021984043407908866/pl/KTKAz82Flbhp30qJ.m3u8?tag=21"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2021984043407908866/vid/avc1/320x426/Pq3cw6F8ZNpfGr8L.mp4?tag=21"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2021984043407908866/vid/avc1/480x640/oor3iq7FbrWf71fC.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2021984043407908866/vid/avc1/720x960/s4zq7uHfXS6KTcBI.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2021984043407908866/vid/avc1/960x1280/3AtrVrOessgy6PXN.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          3,
+          4
+        ],
+        "duration": 16800,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1280,
+          "width": 960
+        },
+        "id": "2021984043407908866"
+      }
+    ],
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HA-HxlRbsAM2UtZ.png",
+        "id": "2021984043601211395",
+        "sizes": {
+          "h": 1146,
+          "w": 898
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2021668766460129492",
+    "bookmarks": 794,
+    "created_at": "Wed Feb 11 19:32:49 +0000 2026",
+    "favorites": 305,
+    "text": "https://t.co/DybSmx68Yz",
+    "lang": "zxx",
+    "views": "200691",
+    "quotes": 6,
+    "replies": 16,
+    "retweets": 25,
+    "conversation_id": "2021668766460129492",
+    "author": {
+      "rest_id": "1970191005510180866",
+      "created_at": "Mon Sep 22 18:18:44 +0000 2025",
+      "name": "Roan",
+      "screen_name": "RohOnChain",
+      "avatar": "https://pbs.twimg.com/profile_images/2015696704448704512/IqwOwcRn_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/0xRicker/status/2021984128933966091"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2028884107703275660",
+  "screen_name": "slash1sol",
+  "bookmarks": 24,
+  "favorites": 69,
+  "created_at": "Tue Mar 03 17:24:00 +0000 2026",
+  "text": "elite Polymarket quant crew leaked their secret latency arb bot blueprint - pulled it down in 20 seconds\n\nI grabbed a screenshot just in time\n\nclaims steady $250-$1000/day by sniping tiny price lags in crypto bets\n\nShared it with a top-50 trader: \"how'd you get this? erase it!\"\n\nessence: prompt you plug into Claude to auto-generate the full bot. No code skills required, handles everything from API hooks to risk controls\n\ndug into the thread's strategy: bot scans fast feeds (TradingView, Binance) for 0.3%+ mismatches vs Polymarket's delayed oracles\n\nexecutes trades in <100ms, caps risks at 0.5% per bet, averages 0.3–0.8% edges\n\nruns locally, Rust-based for speed\n\nproof it's real? \n\nspotted one trader that I found crushing similar plays: joined Feb 2026, 13,357 predictions, $228,700 net profit\n\nsome his wins on 5-min crypto up/down:\n\n> xrp down: $5,070 profit (4,035%)\n\n> btc down: $1,850 profit (198%)\n\nmore micro-edges on xrp, btc, eth this is pure high-volume arb\n\nthis trader bot is printing on oracle lags\n\ncopy and track him with Kreo:[https://t.co/pfuVCBUXzx]\n\njust add his wallet to the https://t.co/54GBoFj2Eb in telegram: 0x70ec235a31eb35f243e2618d6ea3b5b8962bbb5d\n\nor build your own via Claude, before Polymarket clamps down, check simple guide below \n\nalways dyor and nfa   \n\nand bookmark so you don't lose it",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 16,
+  "conversation_id": "2028884107703275660",
+  "retweets": 1,
+  "views": "3916",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "t.me/KreoPolyBot?st…",
+        "expanded_url": "https://t.me/KreoPolyBot?start=ref-slash1sol",
+        "indices": [
+          1052,
+          1075
+        ],
+        "url": "https://t.co/pfuVCBUXzx"
+      },
+      {
+        "display_url": "kreo.app/@slash1sol",
+        "expanded_url": "http://kreo.app/@slash1sol",
+        "indices": [
+          1105,
+          1128
+        ],
+        "url": "https://t.co/54GBoFj2Eb"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "slash1sol",
+    "name": "slash1s",
+    "created_at": "Mon Oct 18 20:39:39 +0000 2021",
+    "description": "smoke cigs and post about crypto, ai, vibe coding, prediction markets..",
+    "rest_id": "1450199884053745669",
+    "followers_count": 6460,
+    "favourites_count": 36262,
+    "avatar": "https://pbs.twimg.com/profile_images/1979525426637672448/-H3r1kfe_normal.jpg",
+    "url": "https://polymarket.com/?r=post",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1450199884053745669/1770676057",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 400,
+    "location": "somewhere in web 3.0"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2028880922712367104/img/IVdEzfAYRESpfQlO.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2028880922712367104/pl/dOPbaFU8Ip-WDpda.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2028880922712367104/vid/avc1/390x270/sbeoKWJn3UCRiYge.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2028880922712367104/vid/avc1/522x360/1645DEMnHQe5KRZT.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2028880922712367104/vid/avc1/1044x720/9dxrTkL-lhQjzu2l.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2028880922712367104/vid/avc1/1800x1240/O9VkcAiIlD9CMWlZ.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          45,
+          31
+        ],
+        "duration": 44161,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1240,
+          "width": 1800
+        },
+        "id": "2028880922712367104"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2018453276279070952",
+    "bookmarks": 5945,
+    "created_at": "Mon Feb 02 22:35:36 +0000 2026",
+    "favorites": 1867,
+    "text": "https://t.co/NBd1QhtILj",
+    "lang": "zxx",
+    "views": "5145731",
+    "quotes": 28,
+    "replies": 74,
+    "retweets": 187,
+    "conversation_id": "2018453276279070952",
+    "author": {
+      "rest_id": "1745810932893179904",
+      "created_at": "Fri Jan 12 14:12:35 +0000 2024",
+      "name": "winkle.",
+      "screen_name": "w1nklerr",
+      "avatar": "https://pbs.twimg.com/profile_images/1745869476380217345/RoboNRGL_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/slash1sol/status/2028884107703275660"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2026323805170237619",
+  "screen_name": "0xRicker",
+  "bookmarks": 25,
+  "favorites": 48,
+  "created_at": "Tue Feb 24 15:50:17 +0000 2026",
+  "text": "Polymarket flipped the script on arb bots\n\nLatency arb edges and polling scripts - RIP\n\nWhat went live:\n\n> Fee math: fee = C × 0.25 × (p × (1−p))²\n> Taker fees on crypto markets → activated\n> 500ms delay → nuked\n> Peak pain: ~1.56% at p=0.50 - bot sweet spot for spreads\n\nThis crushed more than noobs\n\nTop bots lose 20-30% overnight on high-vol markets\n\nExample: Trump election arb bot - used to scalp 0.5% edges with delay buffer\nNow pays 1.2% taker on 40/60 odds, turning +EV to dust\n\nProof in the charts: volume dips 15% post-update, bots switching to maker rebates\n\nSurvivors? They're going full directional + spread overlays",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    288
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 12,
+  "conversation_id": "2026323805170237619",
+  "retweets": 2,
+  "views": "5004",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "0xRicker",
+    "name": "0xRicker",
+    "created_at": "Thu Nov 20 16:44:49 +0000 2025",
+    "description": "Researcher & Contributor | Polymarket Maxi | Dm open",
+    "rest_id": "1991548234058330113",
+    "followers_count": 5496,
+    "favourites_count": 8048,
+    "avatar": "https://pbs.twimg.com/profile_images/2014389251580813312/ke_dI_-z_normal.jpg",
+    "url": "https://polymarket.com/?r=joinjoinjoin",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1991548234058330113/1769102799",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 327,
+    "location": "Bali, Indonesia"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HB7yn8kXMAEJTMu.jpg",
+        "id": "2026323650450763777",
+        "sizes": {
+          "h": 1064,
+          "w": 812
+        }
+      }
+    ],
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2026323670793134080/img/Co1yQIHvV4V24Bst.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2026323670793134080/pl/JjXO5U-nKTPP1n-g.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2026323670793134080/vid/avc1/488x270/qQf_0oqq34xNUMqP.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2026323670793134080/vid/avc1/652x360/RkqTKrBAZoNXtT21.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2026323670793134080/vid/avc1/1306x720/9Jmdn0QQkPkht4s5.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2026323670793134080/vid/avc1/2464x1358/pf2a3R7oVWolx_qd.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          176,
+          97
+        ],
+        "duration": 11910,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1358,
+          "width": 2464
+        },
+        "id": "2026323670793134080"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2023354636380340657",
+    "bookmarks": 1525,
+    "created_at": "Mon Feb 16 11:11:52 +0000 2026",
+    "favorites": 621,
+    "text": "https://t.co/0zdZIhFQFn",
+    "lang": "zxx",
+    "views": "196454",
+    "quotes": 10,
+    "replies": 53,
+    "retweets": 48,
+    "conversation_id": "2023354636380340657",
+    "author": {
+      "rest_id": "1991548234058330113",
+      "created_at": "Thu Nov 20 16:44:49 +0000 2025",
+      "name": "0xRicker",
+      "screen_name": "0xRicker",
+      "avatar": "https://pbs.twimg.com/profile_images/2014389251580813312/ke_dI_-z_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/0xRicker/status/2026323805170237619"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2048860606309314936",
+  "screen_name": "LunarResearcher",
+  "bookmarks": 148,
+  "favorites": 108,
+  "created_at": "Mon Apr 27 20:23:29 +0000 2026",
+  "text": "A Chinese engineer from a Shenzhen HFT shop told me over hotpot that Wall Street is building the wrong half of the trade\n\nI met him through a founder I was helping in Futian. He hadn't slept in two days. His firm runs latency arb on Binance futures.\n\n\"Every desk in New York predicts where BTC goes. Up. Down. Wrong question. The real question is who is too slow to update\"\n\nI asked what he meant.\n\n\"Chainlink\"\n\nHe pulled up Polymarket on his phone.\n\n\"400 BTC windows a day. 5 minutes each. UP or DOWN. Resolves on the Chainlink feed. Chainlink lags Binance by 14 seconds on average. When Binance and Coinbase both move 50 bucks the same way, Chainlink follows within 2 minutes 94% of the time\"\n\nHe drew on a napkin soaked in chili oil.\n\n\"You don't have to guess direction. Binance already told you. You just buy the side Chainlink hasn't reached yet. 4 minute window. Free money until the feed catches up\"\n\nHis wallet: https://t.co/pAi6HVqIGj\n\n\"Wall Street builds $800M models to forecast BTC close. You just race a public oracle. Different equation. Different result\"\n\nI flew home. Opened Claude Code. Typed what he said.\n\n\"Build a 5-minute BTC engine on Polymarket. Enter 60-180 seconds after open when Binance and Coinbase both diverge from Chainlink by $50. Confirm with order book imbalance above 1.8. Exit at 75c. Stop at 35c\"\n\nhttps://t.co/klxt0tvrOd\n\n86M historical trades. Claude ranked every window by Chainlink lag. Wrote the combiner overnight.\n\nNERVE GRID. BTC. ETH. SOL. AVAX. 400+ windows a day.\n\nEdge table live:\nBinance+Coinbase $50 divergence vs Chainlink. 63% alone.\nBook imbalance 1.8+ in the 30-90s window. 63% alone.\nBoth signals agree. 71%.\n\nThe system kills 85% of setups. Enters 50-60 a day. Winners are 4.2x the losers.\n\nFill rate 96%. Avg latency 15ms. Early exit at 75c. Stop at 35c. Never trade the last 60 seconds.\n\n+$14,200 from $2,000 seed. 30 days. Sharpe 2.84.\n\nInfrastructure:\n$20 Claude. $5 Hetzner VPS. Four repos open source. $25/month.\n\nCopied the setup here: https://t.co/N2byLbMfwH\n\nTexted him two weeks later with a screenshot.\n\n\"You're racing the oracle\"\n\nClaude built it from one hotpot dinner.\n\n\"Good. Now try ETH during Tokyo hours. Chainlink updates slower on thinner pairs. Bigger window\"\n\nI already was. He could see it in the second tab.\n\nLong pause.\n\n\"You build faster than most quants at my firm. And you don't argue. That's the rare part\"\n\nI didn't argue. I just listened.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 10,
+  "conversation_id": "2048860606309314936",
+  "retweets": 12,
+  "views": "35408",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "polymarket.com/@purple-lamp-t…",
+        "expanded_url": "https://polymarket.com/@purple-lamp-tree?tab=positions&r=lunarlunar#ecEDHKq",
+        "indices": [
+          920,
+          943
+        ],
+        "url": "https://t.co/pAi6HVqIGj"
+      },
+      {
+        "display_url": "github.com/warproxxx/poly…",
+        "expanded_url": "http://github.com/warproxxx/poly_data",
+        "indices": [
+          1335,
+          1358
+        ],
+        "url": "https://t.co/klxt0tvrOd"
+      },
+      {
+        "display_url": "kreo.app/@lunar",
+        "expanded_url": "http://kreo.app/@lunar",
+        "indices": [
+          2000,
+          2023
+        ],
+        "url": "https://t.co/N2byLbMfwH"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "LunarResearcher",
+    "name": "Lunar",
+    "created_at": "Mon Dec 11 03:50:29 +0000 2023",
+    "description": "gamble on prediction markets | dms open... \n\nall my content here is sponsored or commissioned | dyor",
+    "rest_id": "1734057981975642113",
+    "followers_count": 26068,
+    "favourites_count": 19803,
+    "avatar": "https://pbs.twimg.com/profile_images/2035680801216475136/FRvLbYgF_normal.jpg",
+    "url": "https://t.me/lunarmoves",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1734057981975642113/1774179097",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 406,
+    "location": "alpha here "
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2048860253337575424/img/DypUsWTZ8qjyFUkM.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2048860253337575424/pl/FqAy3IZQtXnRvP3k.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2048860253337575424/vid/avc1/320x376/R2VRXV5Xn6TLaIy_.mp4?tag=21"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2048860253337575424/vid/avc1/480x564/7eIxyd32laauNCQI.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2048860253337575424/vid/avc1/720x846/vKc0PzXMQTXw91VX.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2048860253337575424/vid/avc1/1190x1400/yHTbn6JcyPlBG5wI.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          17,
+          20
+        ],
+        "duration": 19945,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1400,
+          "width": 1190
+        },
+        "id": "2048860253337575424"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2046243371002302972",
+    "bookmarks": 685,
+    "created_at": "Mon Apr 20 15:03:31 +0000 2026",
+    "favorites": 210,
+    "text": "https://t.co/BWqe3fkgBE",
+    "lang": "zxx",
+    "views": "1112568",
+    "quotes": 29,
+    "replies": 16,
+    "retweets": 21,
+    "conversation_id": "2046243371002302972",
+    "author": {
+      "rest_id": "1734057981975642113",
+      "created_at": "Mon Dec 11 03:50:29 +0000 2023",
+      "name": "Lunar",
+      "screen_name": "LunarResearcher",
+      "avatar": "https://pbs.twimg.com/profile_images/2035680801216475136/FRvLbYgF_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/LunarResearcher/status/2048860606309314936"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2026008475591999721",
+  "screen_name": "hanakoxbt",
+  "bookmarks": 352,
+  "favorites": 275,
+  "created_at": "Mon Feb 23 18:57:16 +0000 2026",
+  "text": "Polymarket killed the 500ms delay - half the bots died overnight\n\nNo announcement. No warning. Just broken PnL by morning.\n\nThe latency arb strategy? Dead. \nThe REST-polling bots? Dead. \n\nAnything built around that buffer is now actively losing money on every single trade.\n\nWhat actually changed:\n\n> 500ms taker delay → removed (Feb 18, 2026)\n> Taker fees on crypto markets → live (Jan 2026)\n> Fee formula: fee = C × 0.25 × (p × (1−p))²\n> Max hit: ~1.56% at p = 0.50 - exactly where arb bots operate\n\nThis didn't just hurt small bots. \n\nEven the most popular bot stopped working after this update.\n\nProof: https://t.co/hiplqbFO0y\n\nThe bots that survived switched sides entirely.\n\nIn this article dominatos made the full breakdown of what changed, why most bots are still broken\n\nAnd how the new generation of bots is being built right now.\n\nThe edge didn't disappear. It just moved.\n\nAdapt or die.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 28,
+  "conversation_id": "2026008475591999721",
+  "retweets": 24,
+  "views": "69379",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "polymarket.com/@gabagool22?vi…",
+        "expanded_url": "http://polymarket.com/@gabagool22?via=1743116",
+        "indices": [
+          607,
+          630
+        ],
+        "url": "https://t.co/hiplqbFO0y"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "hanakoxbt",
+    "name": "Hanako",
+    "created_at": "Wed Oct 02 19:25:47 +0000 2019",
+    "description": "Building my name | ai & pm agent | dm is open",
+    "rest_id": "1179477544439091201",
+    "followers_count": 9842,
+    "favourites_count": 18045,
+    "avatar": "https://pbs.twimg.com/profile_images/1942867829016911872/zDosF-7X_normal.jpg",
+    "url": "http://polymarket.com/?r=hanakox",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1179477544439091201/1751902434",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 354,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HB3SHdiWcAAzIV8.jpg",
+        "id": "2026006433016213504",
+        "sizes": {
+          "h": 1105,
+          "w": 1024
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HB3SH5MWgAECw6n.jpg",
+        "id": "2026006440440135681",
+        "sizes": {
+          "h": 820,
+          "w": 754
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2024871493809680410",
+    "bookmarks": 6190,
+    "created_at": "Fri Feb 20 15:39:19 +0000 2026",
+    "favorites": 2014,
+    "text": "https://t.co/jmn6rOtmUu",
+    "lang": "zxx",
+    "views": "1294119",
+    "quotes": 34,
+    "replies": 70,
+    "retweets": 152,
+    "conversation_id": "2024871493809680410",
+    "author": {
+      "rest_id": "1806631073838747648",
+      "created_at": "Fri Jun 28 10:10:02 +0000 2024",
+      "name": "dominatos",
+      "screen_name": "_dominatos",
+      "avatar": "https://pbs.twimg.com/profile_images/2023764315434872834/pD_7HZST_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/hanakoxbt/status/2026008475591999721"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2029219695430156745",
+  "screen_name": "0x_Discover",
+  "bookmarks": 85,
+  "favorites": 44,
+  "created_at": "Wed Mar 04 15:37:31 +0000 2026",
+  "text": "Elite Polymarket quant group allegedly leaked their latency arb bot blueprint — deleted 20 seconds later\n\nmanaged to grab a screenshot in time\n\nthey claim it pulls $250–$1,000 per day by sniping \n\ntiny price lags in crypto markets\n\nshared it with a top-50 trader\n\nhis reply: “where did you get this? delete it.”\n\nthe core idea: a Claude prompt that auto-generates the full bot\nno coding skills needed handles API integration, execution logic, and risk controls\n\ndug into the strategy thread:\nthe bot monitors fast external feeds (TradingView, Binance)\nlooks for 0.3%+ discrepancies vs Polymarket’s slower oracle updates\nwhen mismatch appears: executes in <100ms\n\nrisk capped at 0.5% per trade targets 0.3–0.8% micro-edges\nruns locally Rust-based for latency\nproof it’s not theory?\n\nfound a trader running a near-identical setup:\njoined Feb 2026 13,357 predictions $228,700 net profit\nsome 5-min crypto wins:\nXRP down: $5,070 profit (4,035%) BTC down: $1,850 profit (198%)\n\nmultiple micro-edges across XRP, BTC, ETH\npure high-volume arbitrage\n\nCopytrade:https://t.co/GNQBeFgIre\n\nwallet :0x70ec235a31eb35f243e2618d6ea3b5b8962bbb5d\n\nor build your own with Claude before the edge tightens\n\nalways DYOR\n\nnot financial advice\n\nbookmark this so you don’t lose it",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 7,
+  "conversation_id": "2029219695430156745",
+  "retweets": 6,
+  "views": "13135",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "t.me/PolyGunSniperB…",
+        "expanded_url": "https://t.me/PolyGunSniperBot?start=ref_discov",
+        "indices": [
+          1053,
+          1076
+        ],
+        "url": "https://t.co/GNQBeFgIre"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "0x_Discover",
+    "name": "Discover",
+    "created_at": "Sun May 01 11:41:51 +0000 2022",
+    "description": "Writing threads l Alpha researcher l Not financial advice",
+    "rest_id": "1520730091684311041",
+    "followers_count": 79120,
+    "favourites_count": 14015,
+    "avatar": "https://pbs.twimg.com/profile_images/1745900649911296000/8eJ36xjp_normal.jpg",
+    "url": "https://t.me/Discover_0x",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1520730091684311041/1705090138",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 85,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2029219558347644928/img/oa7BPXaorhKPXOuf.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2029219558347644928/pl/86RB3nQa2TF3XXjN.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2029219558347644928/vid/avc1/390x270/ukR6dqE6AGnJwn2G.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2029219558347644928/vid/avc1/522x360/1SGRCWEqhHDYxwmJ.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2029219558347644928/vid/avc1/1044x720/eiPz24yhc0L4NjiG.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2029219558347644928/vid/avc1/1800x1240/HPRMJUvt-1qNBun_.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          45,
+          31
+        ],
+        "duration": 43858,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1240,
+          "width": 1800
+        },
+        "id": "2029219558347644928"
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2019501495717102014",
+    "bookmarks": 498,
+    "created_at": "Thu Feb 05 20:00:51 +0000 2026",
+    "favorites": 173,
+    "text": "https://t.co/L7cry5EWDg",
+    "lang": "zxx",
+    "views": "354730",
+    "quotes": 1,
+    "replies": 5,
+    "retweets": 17,
+    "conversation_id": "2019501495717102014",
+    "author": {
+      "rest_id": "1520730091684311041",
+      "created_at": "Sun May 01 11:41:51 +0000 2022",
+      "name": "Discover",
+      "screen_name": "0x_Discover",
+      "avatar": "https://pbs.twimg.com/profile_images/1745900649911296000/8eJ36xjp_normal.jpg",
+      "blue_verified": true
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/0x_Discover/status/2029219695430156745"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2034612529578512663",
+  "screen_name": "vooi_io",
+  "bookmarks": 35,
+  "favorites": 223,
+  "created_at": "Thu Mar 19 12:46:42 +0000 2026",
+  "text": "What do you think of a nice APR strategy? No 🧢\n\nMeet VOOI Funding Radar - where @HyperliquidX, @Lighter_xyz and @Aster_DEX perps are scanned to capture imbalances automatically 👇🏻\n\n→ Select asset and size\n→ Check the funding arb rates and ~APR\n→ Place Hedge orders in a couple of click\n\nChoose the Strategy → Execute, all in one app\nNo manual calculations and research\n\n🔗: https://t.co/1FKGSVnNGZ",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 12,
+  "replies": 34,
+  "conversation_id": "2034612529578512663",
+  "retweets": 73,
+  "views": "58008",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "ultra.vooi.io/funding-radar",
+        "expanded_url": "http://ultra.vooi.io/funding-radar",
+        "indices": [
+          373,
+          396
+        ],
+        "url": "https://t.co/1FKGSVnNGZ"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1527020295059648513",
+        "indices": [
+          80,
+          93
+        ],
+        "name": "Hyperliquid",
+        "screen_name": "HyperliquidX"
+      },
+      {
+        "id_str": "1604942990417580032",
+        "indices": [
+          95,
+          107
+        ],
+        "name": "Lighter",
+        "screen_name": "Lighter_xyz"
+      },
+      {
+        "id_str": "1789908971953799168",
+        "indices": [
+          112,
+          122
+        ],
+        "name": "Aster 🥷",
+        "screen_name": "Aster_DEX"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "vooi_io",
+    "name": "vooi",
+    "created_at": "Mon Jul 10 21:17:24 +0000 2023",
+    "description": "Trade perps cross-venue | Multi-DEX aggregator | Funding Arb | Backed by @YZiLabs | VOOI Ultra, Public Beta - LIVE",
+    "rest_id": "1678513621264142336",
+    "followers_count": 183004,
+    "favourites_count": 3717,
+    "avatar": "https://pbs.twimg.com/profile_images/1938271243876155393/fXAC9P_h_normal.jpg",
+    "url": "https://linktr.ee/vooi_app",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1678513621264142336/1751286723",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 123,
+    "location": "Trading App 👉🏻"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2034603394216710144/img/k1EwWsdx5x9Tqevw.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2034603394216710144/pl/m4DOtk-GNmPYJZRB.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2034603394216710144/vid/avc1/438x270/t5nTqXfV4ef3Mk8N.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2034603394216710144/vid/avc1/584x360/5_i9TIjCcBzb7kFD.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2034603394216710144/vid/avc1/1170x720/7JFJKlN7MuRS5j-M.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2034603394216710144/vid/avc1/1756x1080/P7vhO9SZ8D0qq6vU.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          439,
+          270
+        ],
+        "duration": 14900,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1756
+        },
+        "id": "2034603394216710144"
+      }
+    ]
+  },
+  "url": "https://twitter.com/vooi_io/status/2034612529578512663"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047474303344509072",
+  "screen_name": "kiitanEth",
+  "bookmarks": 2,
+  "favorites": 25,
+  "created_at": "Fri Apr 24 00:34:48 +0000 2026",
+  "text": "From bedroom DeFi bot farmer running latency arb desks to building verifiable ML models for protocols like Uniswap V4.\n\nThat’s how @OpenGradient was born. \n\nFt. @0xDeltaHedged @BlueTigerX_ https://t.co/el68uu8W43",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    188
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 1,
+  "replies": 3,
+  "conversation_id": "2047474303344509072",
+  "retweets": 7,
+  "views": "1194",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/el68uu8W43",
+        "expanded_url": "https://x.com/kiitanEth/status/2047474303344509072/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2047474110368722944",
+        "indices": [
+          189,
+          212
+        ],
+        "media_key": "13_2047474110368722944",
+        "media_results": {
+          "result": {
+            "media_key": "13_2047474110368722944"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2047474110368722944/img/zzu_bApqkk6M1d5T.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 1920,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 675
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 383
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/el68uu8W43",
+        "video_info": {
+          "aspect_ratio": [
+            9,
+            16
+          ],
+          "duration_millis": 84266,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2047474110368722944/pl/LtMV144QtpME884o.m3u8?tag=21"
+            },
+            {
+              "bitrate": 632000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/320x568/8Pxm9Mpe93ya0pvI.mp4?tag=21"
+            },
+            {
+              "bitrate": 950000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/480x852/Ayt-q07_LIxjThPw.mp4?tag=21"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/720x1280/SJHmrl_0trL5jOje.mp4?tag=21"
+            },
+            {
+              "bitrate": 10368000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/1080x1920/5ZMQTJ6JZzZzvQlE.mp4?tag=21"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1679140656126541828",
+        "indices": [
+          131,
+          144
+        ],
+        "name": "OpenGradient (∇, ∇)",
+        "screen_name": "OpenGradient"
+      },
+      {
+        "id_str": "1674510160767643651",
+        "indices": [
+          161,
+          175
+        ],
+        "name": "Matthew (∇, ∇)",
+        "screen_name": "0xDeltaHedged"
+      },
+      {
+        "id_str": "1383349219130363915",
+        "indices": [
+          176,
+          188
+        ],
+        "name": "BlueTiger",
+        "screen_name": "BlueTigerX_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "kiitanEth",
+    "name": "Kiitan.eth",
+    "created_at": "Mon Jun 10 12:24:09 +0000 2024",
+    "description": "Web3 Writer || Crypto Enthusiast || Community Manager|| Clipper 🎥 2Z8XJ",
+    "rest_id": "1800141860867854337",
+    "followers_count": 739,
+    "favourites_count": 21942,
+    "avatar": "https://pbs.twimg.com/profile_images/1800141982687268864/JcOkvWnM_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1800141860867854337/1769022030",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 546,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2047474110368722944/img/zzu_bApqkk6M1d5T.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2047474110368722944/pl/LtMV144QtpME884o.m3u8?tag=21"
+          },
+          {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/320x568/8Pxm9Mpe93ya0pvI.mp4?tag=21"
+          },
+          {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/480x852/Ayt-q07_LIxjThPw.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/720x1280/SJHmrl_0trL5jOje.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2047474110368722944/vid/avc1/1080x1920/5ZMQTJ6JZzZzvQlE.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          9,
+          16
+        ],
+        "duration": 84266,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+        },
+        "id": "2047474110368722944"
+      }
+    ]
+  },
+  "url": "https://twitter.com/kiitanEth/status/2047474303344509072"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2023272631697547294",
+  "screen_name": "SharpeLabs",
+  "bookmarks": 4,
+  "favorites": 20,
+  "created_at": "Mon Feb 16 05:46:00 +0000 2026",
+  "text": "3,285% APY 💀\n\nMarket’s bleeding but funding desks are printing.\n\nTop funding arb opportunities right now:\n$CHESS — 3285% APY\n$VANA — 1590% APY\n$NKN — 1350% APY\n$AXS — 1311% APY\n$MYX — 1107% APY\n$PLAY — 972% APY\n$BERA — 851% APY\n$LSK — 815% APY\n$STG — 719% APY\n$KERNEL — 665% APY\n\nYou fading this or farming it? 👀",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 4,
+  "conversation_id": "2023272631697547294",
+  "retweets": 26,
+  "views": "19663",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          106,
+          112
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "CHESS"
+      },
+      {
+        "indices": [
+          125,
+          130
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Vana",
+              "ticker": "VANA"
+            }
+          }
+        },
+        "text": "VANA"
+      },
+      {
+        "indices": [
+          143,
+          147
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "NKN"
+      },
+      {
+        "indices": [
+          160,
+          164
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Axie Infinity",
+              "ticker": "AXS"
+            }
+          }
+        },
+        "text": "AXS"
+      },
+      {
+        "indices": [
+          177,
+          181
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "MYX"
+      },
+      {
+        "indices": [
+          194,
+          199
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Dave and Buster's Entertainment, Inc",
+              "ticker": "PLAY"
+            }
+          }
+        },
+        "text": "PLAY"
+      },
+      {
+        "indices": [
+          211,
+          216
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Berachain",
+              "ticker": "BERA"
+            }
+          }
+        },
+        "text": "BERA"
+      },
+      {
+        "indices": [
+          228,
+          232
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "LSK"
+      },
+      {
+        "indices": [
+          244,
+          248
+        ],
+        "tag": {
+          "info": {
+            "info": {
+              "name": "Sunlands Technology Group",
+              "ticker": "STG"
+            }
+          }
+        },
+        "text": "STG"
+      },
+      {
+        "indices": [
+          260,
+          267
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "KERNEL"
+      }
+    ],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "SharpeLabs",
+    "name": "Sharpe AI",
+    "created_at": "Mon Jan 24 14:00:05 +0000 2022",
+    "description": "AI-powered Crypto Terminal | Backed by @animocabrands @gbvofficial @Morningstar_vc",
+    "rest_id": "1485613296023932929",
+    "followers_count": 123935,
+    "favourites_count": 3128,
+    "avatar": "https://pbs.twimg.com/profile_images/1800587222313238529/LN_jbGZ1_normal.jpg",
+    "url": "https://sharpe.ai",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1485613296023932929/1755597609",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 0,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HBQbuw-acAEuiV2.jpg",
+        "id": "2023272622830809089",
+        "sizes": {
+          "h": 679,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/SharpeLabs/status/2023272631697547294"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2036075589040578889",
+  "screen_name": "jeg6322",
+  "bookmarks": 4,
+  "favorites": 63,
+  "created_at": "Mon Mar 23 13:40:23 +0000 2026",
+  "text": "this is how i remember backpack\n\n1. 1057 days from first airdrop hint to tge. longest timeline, most seasons\n2. fees and affiliate structure worse than any dex or cex. their only edge\n3. team didn’t even understand arb or funding arb. called delta neutral across exchanges \"sybil\"\n4. BP fdv around $240m, ~70% of madlads ath ($350m)\n\npeople who burned fees here probably did the same on opensea\n\nsaid it before but crypto is all about team stance\ndo they actually want you to make money\ndo they have any sense\n\nif you can’t read that, you won’t make money here as a player, unless you’re a producer",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 9,
+  "conversation_id": "2036075589040578889",
+  "retweets": 2,
+  "views": "19312",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "jeg6322",
+    "name": "EWL",
+    "created_at": "Sun May 13 12:49:23 +0000 2018",
+    "description": "🇰🇷 | vibe research on crypto, ai, hci, robotics | @xitdao",
+    "rest_id": "995647190155460608",
+    "followers_count": 11599,
+    "favourites_count": 47866,
+    "avatar": "https://pbs.twimg.com/profile_images/1966537767040733184/e4zHJaML_normal.jpg",
+    "url": "http://t.me/ewlreads",
+    "cover_image": "https://pbs.twimg.com/profile_banners/995647190155460608/1768683044",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 4307,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HEGWbIkbsAAMz1N.jpg",
+        "id": "2036073899449102336",
+        "sizes": {
+          "h": 798,
+          "w": 1133
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/jeg6322/status/2036075589040578889"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2037595441131372925",
+  "screen_name": "DextersSolab",
+  "bookmarks": 6,
+  "favorites": 27,
+  "created_at": "Fri Mar 27 18:19:44 +0000 2026",
+  "text": "It’s been just a week, and my arb bot has printed over $1.2k in profit.\n\nPASSIVELY.\n\nStarted with $100 to test it, but now I’m scaling up my entries.\n\nWill keep you posted.\n\nIf anything changes after increasing size, i’ll let you know.\n\nStay tuned. https://t.co/OC3fR4EGXK",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    248
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 12,
+  "conversation_id": "2037595441131372925",
+  "retweets": 1,
+  "views": "2342",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/OC3fR4EGXK",
+        "expanded_url": "https://x.com/DextersSolab/status/2037595441131372925/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2037595431350288384",
+        "indices": [
+          249,
+          272
+        ],
+        "media_key": "3_2037595431350288384",
+        "media_results": {
+          "result": {
+            "media_key": "3_2037595431350288384"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HEb-P8mXwAAAhp7.png",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 262,
+              "w": 468,
+              "x": 155,
+              "y": 0
+            },
+            {
+              "h": 262,
+              "w": 262,
+              "x": 258,
+              "y": 0
+            },
+            {
+              "h": 262,
+              "w": 230,
+              "x": 274,
+              "y": 0
+            },
+            {
+              "h": 262,
+              "w": 131,
+              "x": 324,
+              "y": 0
+            },
+            {
+              "h": 262,
+              "w": 1200,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 262,
+          "width": 1200
+        },
+        "sizes": {
+          "large": {
+            "h": 262,
+            "resize": "fit",
+            "w": 1200
+          },
+          "medium": {
+            "h": 262,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 148,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/OC3fR4EGXK"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "DextersSolab",
+    "name": "Dexter's Lab",
+    "created_at": "Mon Oct 14 21:14:55 +0000 2024",
+    "description": "𝟐𝟎𝟎 𝐈𝐐 𝐃𝐞𝐠𝐞𝐧 • 𝗣𝗿𝗲𝗱𝗶𝗰𝘁𝗶𝗼𝗻 𝗠𝗮𝗿𝗸𝗲𝘁𝘀 𝗔𝗻𝗮𝗹𝘆𝘀𝘁 • 𝗕𝗹𝘂𝗲𝗰𝗵𝗶𝗽 𝗛𝗼𝗹𝗱𝗲𝗿\n\n@zscdao 𝗺𝗲𝗺𝗯𝗲𝗿",
+    "rest_id": "1845936128794185729",
+    "followers_count": 12818,
+    "favourites_count": 5158,
+    "avatar": "https://pbs.twimg.com/profile_images/1874601538506629120/uNZ-uSmG_normal.jpg",
+    "url": "https://t.me/+NhJOyd-5hPQwNzQ0",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1845936128794185729/1761334781",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 440,
+    "location": "Alpha TG chan"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HEb-P8mXwAAAhp7.png",
+        "id": "2037595431350288384",
+        "sizes": {
+          "h": 262,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2037258030874505679",
+    "bookmarks": 53,
+    "created_at": "Thu Mar 26 19:58:59 +0000 2026",
+    "favorites": 58,
+    "text": "Devs spend months building Polymarket bots\n\nI built my own in one week thanks to one tool\n\nTested it for 7 days and made +$658 PASSIVELY\n\nHere’s my step-by-step strategy:\n\n1. Go to this bot: [https://t.co/XP7mIj6HgC]\n\n2. Click on Trading Strategies\n\n3. Add both strategies one by https://t.co/eNWzULG8c4",
+    "lang": "en",
+    "views": "6037",
+    "quotes": 1,
+    "replies": 15,
+    "retweets": 6,
+    "conversation_id": "2037258030874505679",
+    "author": {
+      "rest_id": "1845936128794185729",
+      "created_at": "Mon Oct 14 21:14:55 +0000 2024",
+      "name": "Dexter's Lab",
+      "screen_name": "DextersSolab",
+      "avatar": "https://pbs.twimg.com/profile_images/1874601538506629120/uNZ-uSmG_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HEXLJ-abcAADJW4.png",
+          "id": "2037257778688126976",
+          "sizes": {
+            "h": 1339,
+            "w": 1200
+          }
+        }
+      ],
+      "video": [
+        {
+          "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2037257807473631233/img/R_3aCu3ZwBzlVCp1.jpg",
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2037257807473631233/pl/23I5lSPcyX8ZYqWZ.m3u8?tag=21"
+            },
+            {
+              "bitrate": 632000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2037257807473631233/vid/avc1/320x376/Hb5mkCaMHlheHYy2.mp4?tag=21"
+            },
+            {
+              "bitrate": 950000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2037257807473631233/vid/avc1/480x566/lYuNPSpaFzSKXS7e.mp4?tag=21"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2037257807473631233/vid/avc1/720x848/v97NFK5pky-3tsQu.mp4?tag=21"
+            },
+            {
+              "bitrate": 10368000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2037257807473631233/vid/avc1/934x1102/dbl8yLMKFhNC4z9b.mp4?tag=21"
+            }
+          ],
+          "aspect_ratio": [
+            467,
+            551
+          ],
+          "duration": 32868,
+          "original_info": {
+            "focus_rects": [],
+            "height": 1102,
+            "width": 934
+          },
+          "id": "2037257807473631233"
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/DextersSolab/status/2037595441131372925"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2032031762935689602",
+  "screen_name": "bored2boar",
+  "bookmarks": 160,
+  "favorites": 98,
+  "created_at": "Thu Mar 12 09:51:40 +0000 2026",
+  "text": "Built my arb bot with Grok today thanks to this paper.\n\nTook 10 mins to write a decent code + 10 mins to set it up.\n\nThis algorithm is literally all you need.\n\nFull doc: https://t.co/x6VpPnWtAm https://t.co/W9cjb22dn5",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    193
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 4,
+  "conversation_id": "2032031762935689602",
+  "retweets": 8,
+  "views": "6650",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/W9cjb22dn5",
+        "expanded_url": "https://x.com/bored2boar/status/2032031762935689602/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2032031692530077696",
+        "indices": [
+          194,
+          217
+        ],
+        "media_key": "3_2032031692530077696",
+        "media_results": {
+          "result": {
+            "media_key": "3_2032031692530077696"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HDM6DuWXUAAh3vY.png",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 347,
+              "w": 619,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 619,
+              "w": 619,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 596,
+              "x": 23,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 340,
+              "x": 279,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 619,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 680,
+          "width": 619
+        },
+        "sizes": {
+          "large": {
+            "h": 680,
+            "resize": "fit",
+            "w": 619
+          },
+          "medium": {
+            "h": 680,
+            "resize": "fit",
+            "w": 619
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 619
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/W9cjb22dn5"
+      },
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/W9cjb22dn5",
+        "expanded_url": "https://x.com/bored2boar/status/2032031762935689602/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2032031707705069569",
+        "indices": [
+          194,
+          217
+        ],
+        "media_key": "3_2032031707705069569",
+        "media_results": {
+          "result": {
+            "media_key": "3_2032031707705069569"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HDM6Em4XUAE77-i.png",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 343,
+              "w": 613,
+              "x": 0,
+              "y": 118
+            },
+            {
+              "h": 613,
+              "w": 613,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 596,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 340,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 680,
+              "w": 613,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 680,
+          "width": 613
+        },
+        "sizes": {
+          "large": {
+            "h": 680,
+            "resize": "fit",
+            "w": 613
+          },
+          "medium": {
+            "h": 680,
+            "resize": "fit",
+            "w": 613
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 613
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/W9cjb22dn5"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "arxiv.org/pdf/1606.02825",
+        "expanded_url": "https://arxiv.org/pdf/1606.02825",
+        "indices": [
+          170,
+          193
+        ],
+        "url": "https://t.co/x6VpPnWtAm"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "bored2boar",
+    "name": "Oracle Boar",
+    "created_at": "Sun Apr 21 17:58:37 +0000 2024",
+    "description": "𝗢𝗻-𝗖𝗵𝗮𝗶𝗻 𝗜𝗻𝘃𝗲𝘀𝘁𝗶𝗴𝗮𝘁𝗶𝗼𝗻𝘀 / 𝗣𝗿𝗲𝗱𝗶𝗰𝘁𝗶𝗼𝗻 𝗺𝗮𝗿𝗸𝗲𝘁𝘀 / 𝗗𝗲𝗙𝗶 𝗺𝗼𝘃𝗲𝘀",
+    "rest_id": "1782106553291591680",
+    "followers_count": 25013,
+    "favourites_count": 13668,
+    "avatar": "https://pbs.twimg.com/profile_images/1846496344120180736/ChaiJ1TD_normal.jpg",
+    "url": "https://t.me/+gGA6iFNsC3E1YzI8",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1782106553291591680/1729077737",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 544,
+    "location": "More alpha →"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HDM6DuWXUAAh3vY.png",
+        "id": "2032031692530077696",
+        "sizes": {
+          "h": 680,
+          "w": 619
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HDM6Em4XUAE77-i.png",
+        "id": "2032031707705069569",
+        "sizes": {
+          "h": 680,
+          "w": 613
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/bored2boar/status/2032031762935689602"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2019805162676826501",
+  "screen_name": "arcxtrade",
+  "bookmarks": 1,
+  "favorites": 18,
+  "created_at": "Fri Feb 06 16:07:31 +0000 2026",
+  "text": "Funding arb on low OI pairs has always meant bad spreads and slippage.\n\nArcX just integrated @HyperliquidX .\nNow arb funding rates with the deepest orderbooks of them all.\n\nhyperliquid. https://t.co/HFEEwZLz0l",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    185
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 4,
+  "conversation_id": "2019805162676826501",
+  "retweets": 4,
+  "views": "1096",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "additional_media_info": {
+          "monetizable": true
+        },
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/HFEEwZLz0l",
+        "expanded_url": "https://x.com/arcxtrade/status/2019805162676826501/video/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "id_str": "2019803942792896512",
+        "indices": [
+          186,
+          209
+        ],
+        "media_key": "13_2019803942792896512",
+        "media_results": {
+          "result": {
+            "media_key": "13_2019803942792896512"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2019803942792896512/img/visb56gV-CMpk6Cc.jpg",
+        "original_info": {
+          "focus_rects": [],
+          "height": 1964,
+          "width": 2924
+        },
+        "sizes": {
+          "large": {
+            "h": 1376,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 806,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 457,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "video",
+        "url": "https://t.co/HFEEwZLz0l",
+        "video_info": {
+          "aspect_ratio": [
+            731,
+            491
+          ],
+          "duration_millis": 22950,
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/pl/0pX_MJOCM_XspiYa.m3u8?tag=21"
+            },
+            {
+              "bitrate": 256000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/400x270/uva4TSlpJLHWPHZG.mp4?tag=21"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/534x360/s6RO161puV8PZqWN.mp4?tag=21"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/1070x720/MoMa6lqXQmHVZH14.mp4?tag=21"
+            },
+            {
+              "bitrate": 10368000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/1606x1080/CuikX4eMqM3YqP-D.mp4?tag=21"
+            },
+            {
+              "bitrate": 25128000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/2924x1964/1V5n7FaH_-LKQTkT.mp4?tag=21"
+            }
+          ]
+        }
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1527020295059648513",
+        "indices": [
+          93,
+          106
+        ],
+        "name": "Hyperliquid",
+        "screen_name": "HyperliquidX"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "arcxtrade",
+    "name": "ArcX",
+    "created_at": "Thu Dec 11 07:24:23 +0000 2025",
+    "description": "The trading layer for all perp DEXs. \nTrade across DEXs, build strategies, capture yield.",
+    "rest_id": "1999017368769671168",
+    "followers_count": 997,
+    "favourites_count": 652,
+    "avatar": "https://pbs.twimg.com/profile_images/1999023701363453953/I9js-8JU_normal.png",
+    "url": "https://app.arcx.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1999017368769671168/1765439953",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 26,
+    "location": ""
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2019803942792896512/img/visb56gV-CMpk6Cc.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/pl/0pX_MJOCM_XspiYa.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/400x270/uva4TSlpJLHWPHZG.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/534x360/s6RO161puV8PZqWN.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/1070x720/MoMa6lqXQmHVZH14.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/1606x1080/CuikX4eMqM3YqP-D.mp4?tag=21"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2019803942792896512/vid/avc1/2924x1964/1V5n7FaH_-LKQTkT.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          731,
+          491
+        ],
+        "duration": 22950,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1964,
+          "width": 2924
+        },
+        "id": "2019803942792896512"
+      }
+    ]
+  },
+  "url": "https://twitter.com/arcxtrade/status/2019805162676826501"
+},
+{
+  "type": "tweet",
+  "tweet_id": "1996968288270585885",
+  "screen_name": "DeFiNallyx",
+  "bookmarks": 0,
+  "favorites": 57,
+  "created_at": "Fri Dec 05 15:41:56 +0000 2025",
+  "text": "The vision of a single chain acting as your universal hub for every DeFi opportunity is now materializing faster than expected  and Arbitrum is rapidly becoming that hub. \n\nWith @FolksFinance’s Just-in-Time (JIT) Liquidity, chasing yield across chains is no longer a clunky, multi-step ordeal. It’s instant. \n\nHere’s how it changes everything: \n\nA juicy yield opportunity pops up on Base. Your capital is resting safely on Arbitrum. In the old world, you’d lose the window waiting for a bridge.\n\n JIT Liquidity fixes that in seconds: \n- Your collateral never leaves Arbitrum (maximum security) \n- You instantly borrow fresh capital directly on the target chain \n- You capture the yield before it vanishes Arbitrum’s blazing speed and massive liquidity pool make it the ideal settlement layer for this real-time magic. \n\nBottom line: You’re no longer slowly bridging assets. You’re teleporting capital exactly where it needs to be instantly, securely, globally. One chain to rule them all? Arbitrum is making it real.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 1,
+  "replies": 80,
+  "conversation_id": "1996968288270585885",
+  "retweets": 0,
+  "views": "373",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1395705821019922435",
+        "indices": [
+          178,
+          191
+        ],
+        "name": "Folks Finance",
+        "screen_name": "FolksFinance"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "DeFiNallyx",
+    "name": "Nally X⚡☁️",
+    "created_at": "Sun Mar 03 13:15:19 +0000 2024",
+    "description": "Top Tier KOL 🎖️|| Content Writer || Marketer || Community Manager. Your voice Matters",
+    "rest_id": "1764278336220450816",
+    "followers_count": 3673,
+    "favourites_count": 46509,
+    "avatar": "https://pbs.twimg.com/profile_images/1952752837450166272/V0-YAVVe_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1764278336220450816/1754407493",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 3533,
+    "location": "web3"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G7aoEfQWEAAExHN.jpg",
+        "id": "1996968279848390656",
+        "sizes": {
+          "h": 871,
+          "w": 900
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/DeFiNallyx/status/1996968288270585885"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050249661823303919",
+  "screen_name": "LorisTools",
+  "bookmarks": 19,
+  "favorites": 37,
+  "created_at": "Fri May 01 16:23:05 +0000 2026",
+  "text": "New on @LorisTools: Pairs Trading\n\n• One click, multi-leg TWAP execution.\n• Same- or Cross-venue: HL, HIP-3s, Binance & Extended\n• Live Correlation, Beta, rolling Z-Score, Coint p-value\n• Live Funding Spread & Portfolio Net Delta\n• Funding Arb, Basis, Market-Neutral, Pairs - Now All in One Place\n\nCheck it out 👉 https://t.co/cvbngQd1pB",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    283
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 4,
+  "conversation_id": "2050249661823303919",
+  "retweets": 4,
+  "views": "10326",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "loris.tools/trade",
+        "expanded_url": "http://loris.tools/trade",
+        "indices": [
+          313,
+          336
+        ],
+        "url": "https://t.co/cvbngQd1pB"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1970485439355330562",
+        "indices": [
+          7,
+          18
+        ],
+        "name": "Loris Tools",
+        "screen_name": "LorisTools"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "LorisTools",
+    "name": "Loris Tools",
+    "created_at": "Tue Sep 23 13:48:54 +0000 2025",
+    "description": "1-Click Pair Trades & Multi-Exchange Spreads | Free Perps Data on 40+ Exchanges",
+    "rest_id": "1970485439355330562",
+    "followers_count": 3731,
+    "favourites_count": 781,
+    "avatar": "https://pbs.twimg.com/profile_images/2027801616561410049/bbwN2hlJ_normal.jpg",
+    "url": "http://loris.tools",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1970485439355330562/1772226640",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 3,
+    "location": "Trade Funding Arbs 👉"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2050245994873253888/img/qbaDM8eSSP0oeRIW.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/pl/S52pq0bZTIrjfSBC.m3u8?tag=27&v=cfc"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/vid/avc1/428x270/on8NWKPDqj3empcY.mp4?tag=27"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/vid/avc1/570x360/COB7PFKKSYxnaA4Z.mp4?tag=27"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/vid/avc1/1140x720/Hux6NHhA4R0nijAf.mp4?tag=27"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/vid/avc1/1712x1080/-XtJNSnK4PZdw2t7.mp4?tag=27"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2050245994873253888/vid/avc1/3424x2160/bPsxanQkoQ-HT2KC.mp4?tag=27"
+          }
+        ],
+        "aspect_ratio": [
+          214,
+          135
+        ],
+        "duration": 38452,
+        "original_info": {
+          "focus_rects": [],
+          "height": 2160,
+          "width": 3424
+        },
+        "id": "2050245994873253888"
+      }
+    ]
+  },
+  "url": "https://twitter.com/LorisTools/status/2050249661823303919"
+},
+{
+  "type": "tweet",
+  "tweet_id": "1970188066645295369",
+  "screen_name": "reya_xyz",
+  "bookmarks": 3,
+  "favorites": 41,
+  "created_at": "Mon Sep 22 18:06:54 +0000 2025",
+  "text": "Find your next funding  arb opportunity on Reya with @FundingLighter community bot.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    83
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 2,
+  "conversation_id": "1970188066645295369",
+  "retweets": 4,
+  "views": "5627",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1853287538087297024",
+        "indices": [
+          53,
+          68
+        ],
+        "name": "YOUR PERPS FUNDING BOT.🕯️",
+        "screen_name": "FundingLighter"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "reya_xyz",
+    "name": "Reya",
+    "created_at": "Mon Sep 13 09:33:13 +0000 2021",
+    "description": "Trade on the only DEX where speed never compromises security.\nBacked by Framework, Coinbase, Selini Capital and more.",
+    "rest_id": "1437348567576875012",
+    "followers_count": 78698,
+    "favourites_count": 5551,
+    "avatar": "https://pbs.twimg.com/profile_images/1969675819510374400/V-ldI5xq_normal.png",
+    "url": "https://reya.xyz/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1437348567576875012/1758126961",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 12,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "1970161579686821963",
+    "bookmarks": 16,
+    "created_at": "Mon Sep 22 16:21:39 +0000 2025",
+    "favorites": 28,
+    "text": "🚨 New Update 🚨\n\nFunding arb just got wilder — we’ve added @reya_xyz into the mix ⚡\n\nNow you can spot opps like:\n•MKR: Short on Reya, Long on Binance → projected $129 on 10k 🔥\n\nZero fee + multi-exchange = best way to farm points and extract pure alpha. https://t.co/aqOYbwifcs",
+    "lang": "en",
+    "views": "8225",
+    "quotes": 2,
+    "replies": 2,
+    "retweets": 4,
+    "conversation_id": "1970161579686821963",
+    "author": {
+      "rest_id": "1853287538087297024",
+      "created_at": "Mon Nov 04 04:06:08 +0000 2024",
+      "name": "YOUR PERPS FUNDING BOT.🕯️",
+      "screen_name": "FundingLighter",
+      "avatar": "https://pbs.twimg.com/profile_images/1969223352461271040/tKnn8i5Y_normal.jpg",
+      "blue_verified": null
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/G1drgqZbEAARMt9.jpg",
+          "id": "1970161570878787584",
+          "sizes": {
+            "h": 730,
+            "w": 1400
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/reya_xyz/status/1970188066645295369"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2001697969201098771",
+  "screen_name": "hackapreneur",
+  "bookmarks": 0,
+  "favorites": 31,
+  "created_at": "Thu Dec 18 16:56:00 +0000 2025",
+  "text": "Things flying under the radar about @alturax 👀\n\n➜ Vault targets ~20% base APY post-launch\n\n→ powered by market-neutral funding + arb no directional bets\n\n➜ Execution isn’t fully on-chain\n\n→ strategies run off-chain for speed\n\n→ everything tracked on-chain for transparency + scale\n\n➜ Early phase matters\n\n→ higher-tier deposits = better cost-per-box efficiency\n\n➜ Nest Points don’t reset\n\n→ they convert 1:1 into Altura Points at vault launch\n\n➜ TVL is still thin\n\n→ each dollar earns a larger slice of points (this compresses fast)\n\nKey dates\n\nDec 21 → positioning cutoff\n\nDec 23 → vault will live and yield will begins\n\nPosition early boys.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>",
+  "quotes": 0,
+  "replies": 12,
+  "conversation_id": "2001697969201098771",
+  "retweets": 3,
+  "views": "10149",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1311986670435282944",
+        "indices": [
+          36,
+          44
+        ],
+        "name": "Altura",
+        "screen_name": "alturax"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "hackapreneur",
+    "name": "Justin Wu",
+    "created_at": "Mon Apr 30 06:42:36 +0000 2012",
+    "description": "Humble farm DeFi 🧑‍🌾 | Focused on #RWA, #DeFi #DeFAI \n\nPrev: @PiCoreTeam $PONKE army https://t.co/SOmhzlNgAD",
+    "rest_id": "567059880",
+    "followers_count": 280620,
+    "favourites_count": 151548,
+    "avatar": "https://pbs.twimg.com/profile_images/1957040658851700736/FR9SuEN-_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/567059880/1732417616",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 42174,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2001306512942358629",
+    "bookmarks": 0,
+    "created_at": "Wed Dec 17 15:00:29 +0000 2025",
+    "favorites": 37,
+    "text": "Capital in the multi-strategy vault doesn't just earn the best yield.\n\nAltura Points will be distributed every week to all depositors.\n\nPre-deposits give you a head start to stacking points, on top of 20% base APY, immediately the main vault goes live.",
+    "lang": "en",
+    "views": "5318",
+    "quotes": 6,
+    "replies": 5,
+    "retweets": 2,
+    "conversation_id": "2001306475499790708",
+    "author": {
+      "rest_id": "1311986670435282944",
+      "created_at": "Fri Oct 02 11:12:02 +0000 2020",
+      "name": "Altura",
+      "screen_name": "alturax",
+      "avatar": "https://pbs.twimg.com/profile_images/2006788453904580609/dJa19EKp_normal.jpg",
+      "blue_verified": null
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/hackapreneur/status/2001697969201098771"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2055523366648635706",
+  "screen_name": "jabosiswanto94",
+  "bookmarks": 0,
+  "favorites": 83,
+  "created_at": "Sat May 16 05:38:55 +0000 2026",
+  "text": "one thing that separates well-designed vaults from the rest is how composable they are over time.\n\na vault that only does one thing hits a ceiling.\n\n@alturax was already delivering real yield from institutional strategies. market making, funding arb, RWA. returns that don't depend on token emissions to stay alive.\n\nnow AVLT works as collateral on morpho.\n\nthat's a real unlock because your capital isn't sitting in one place doing one job anymore.\n\nthe yield position becomes the starting point, not the end state.\n\nborrow USDT0 against it, redeploy, keep the vault yield running underneath.\n\n91.5% utilization. the market for this already exists.\n\n$416K available for anyone who wants to use it right now.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 75,
+  "conversation_id": "2055523366648635706",
+  "retweets": 3,
+  "views": "2679",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1311986670435282944",
+        "indices": [
+          149,
+          157
+        ],
+        "name": "Altura",
+        "screen_name": "alturax"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "jabosiswanto94",
+    "name": "Jabo",
+    "created_at": "Sun Dec 29 16:19:27 +0000 2019",
+    "description": "Absurdly Handsome 🦍",
+    "rest_id": "1211320789430988806",
+    "followers_count": 6791,
+    "favourites_count": 176753,
+    "avatar": "https://pbs.twimg.com/profile_images/2048734668502286336/-pQmjcIf_normal.jpg",
+    "url": "http://t.me/jabo94",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1211320789430988806/1777292728",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 5265,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2054924746232680734",
+    "bookmarks": 8,
+    "created_at": "Thu May 14 14:00:12 +0000 2026",
+    "favorites": 86,
+    "text": "AVLT unlocks stablecoin credit on @Morpho.\n\nToday, our lending market holds over $400K in available liquidity that you can borrow against Altura positions, while stacking real yield.\n\nBorrow USDT0 at great rates and earn 2x YieldRun points per dollar. https://t.co/j8lMua2PsU",
+    "lang": "en",
+    "views": "33652",
+    "quotes": 51,
+    "replies": 23,
+    "retweets": 2,
+    "conversation_id": "2054924746232680734",
+    "author": {
+      "rest_id": "1311986670435282944",
+      "created_at": "Fri Oct 02 11:12:02 +0000 2020",
+      "name": "Altura",
+      "screen_name": "alturax",
+      "avatar": "https://pbs.twimg.com/profile_images/2006788453904580609/dJa19EKp_normal.jpg",
+      "blue_verified": null
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HISPKsEb0AAg-_G.jpg",
+          "id": "2054924743779012608",
+          "sizes": {
+            "h": 568,
+            "w": 1008
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/jabosiswanto94/status/2055523366648635706"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2056118586390016242",
+  "screen_name": "traidingfloor",
+  "bookmarks": 0,
+  "favorites": 8,
+  "created_at": "Sun May 17 21:04:06 +0000 2026",
+  "text": "Think of it as a Rubik's cube of strategy:\n\nHead Trader: allocates capital across the floor every cycle\nRisk & Delta Officers: veto trades outside the envelope, hedge net exposure\nMarket Analyst: feeds compact regime context to every strategy\nEight executors: funding arb, maker rebate, liquidation hunt, basis, grid, momentum, mean reversion, smart DCA\n\nEach agent has its own brain. The cube reasons as one.\n\n→ https://t.co/VM2ABGBveq",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    282
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 2,
+  "conversation_id": "2056118586390016242",
+  "retweets": 6,
+  "views": "186",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "traidingfloor.com",
+        "expanded_url": "http://traidingfloor.com",
+        "indices": [
+          413,
+          436
+        ],
+        "url": "https://t.co/VM2ABGBveq"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "traidingfloor",
+    "name": "Traiding Floor",
+    "created_at": "Thu Apr 25 16:40:22 +0000 2024",
+    "description": "A complete AI trading floor, running on your machine.\nNo cloud. No middleman.\nNo subscription to our servers.",
+    "rest_id": "1783536487734116352",
+    "followers_count": 5009,
+    "favourites_count": 1114,
+    "avatar": "https://pbs.twimg.com/profile_images/2054122539966992384/H5nVuody_normal.jpg",
+    "url": "http://traidingfloor.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1783536487734116352/1778576213",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 23,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIjM2o8bMAEaa2w.jpg",
+        "id": "2056118468970491905",
+        "sizes": {
+          "h": 1080,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/traidingfloor/status/2056118586390016242"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2030253444099965048",
+  "screen_name": "top7ico",
+  "bookmarks": 7,
+  "favorites": 26,
+  "created_at": "Sat Mar 07 12:05:16 +0000 2026",
+  "text": "New narratives, same old problem – data is everywhere and nowhere. Tired of checking 15 tabs and building spreadsheets to compare platforms every time.\n\nSo we built our own thing – analytics, comparison tools, funding arb scanner, whale tracker. Starting with perps and prediction markets – and more to come.\n\nSharing with you https://t.co/T4oJwYLPx8 🧵👇",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 5,
+  "conversation_id": "2030253444099965048",
+  "retweets": 3,
+  "views": "2568",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "top7markets.xyz",
+        "expanded_url": "http://top7markets.xyz",
+        "indices": [
+          327,
+          350
+        ],
+        "url": "https://t.co/T4oJwYLPx8"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "top7ico",
+    "name": "Top 7 Crypto | Analytics & Alpha",
+    "created_at": "Tue Dec 26 18:02:44 +0000 2017",
+    "description": "Daily analytics on what moves crypto – capital flows, trends, TGEs and airdrops, funding rounds, upcoming protocols, token unlocks. Built @CrudeAlpha",
+    "rest_id": "945716524836409345",
+    "followers_count": 151686,
+    "favourites_count": 6531,
+    "avatar": "https://pbs.twimg.com/profile_images/1928127819059482624/yYOE_tLx_normal.png",
+    "url": "http://top7crypto.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/945716524836409345/1748536471",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1932,
+    "location": "TOP 7 ICO TG ▶️"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2030251629333602304/img/V7fjonQ2oB9IciKi.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/pl/rAjJnhqArL_TJviF.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/vid/avc1/524x270/fwG5KOf6tgZQqi0J.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/vid/avc1/700x360/rG9Tus_elESbm3rp.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/vid/avc1/1402x720/fsA_b72Q-SchU-Kc.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/vid/avc1/2102x1080/bXCNvZCsSFG8YX_P.mp4?tag=21"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2030251629333602304/vid/avc1/3840x1972/K0j2QXUF8q6_pzvm.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          960,
+          493
+        ],
+        "duration": 31811,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1972,
+          "width": 3840
+        },
+        "id": "2030251629333602304"
+      }
+    ]
+  },
+  "url": "https://twitter.com/top7ico/status/2030253444099965048"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2027537156701335705",
+  "screen_name": "LorisTools",
+  "bookmarks": 27,
+  "favorites": 49,
+  "created_at": "Sat Feb 28 00:11:42 +0000 2026",
+  "text": "Trade is Now Live in Private Beta on @LorisTools \n\n• 1-Click Cross-Exchange Funding Arb - Live on Hyperliquid and Extended, more venues coming soon\n\n• Randomized Hidden TWAPs - Amounts and intervals randomized with offchain execution logic\n\n• Cost Protection - TWAP slice skipping on unfavorable spreads and slippage\n\n• Non-Custodial - Trade from your own wallet. We never touch your private keys.\n\nSign up for early access 👉 https://t.co/0JeJeG15vj",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    271
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 8,
+  "conversation_id": "2027537156701335705",
+  "retweets": 5,
+  "views": "6389",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "loris.tools/waitlist",
+        "expanded_url": "http://loris.tools/waitlist",
+        "indices": [
+          426,
+          449
+        ],
+        "url": "https://t.co/0JeJeG15vj"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1970485439355330562",
+        "indices": [
+          37,
+          48
+        ],
+        "name": "Loris Tools",
+        "screen_name": "LorisTools"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "LorisTools",
+    "name": "Loris Tools",
+    "created_at": "Tue Sep 23 13:48:54 +0000 2025",
+    "description": "1-Click Pair Trades & Multi-Exchange Spreads | Free Perps Data on 40+ Exchanges",
+    "rest_id": "1970485439355330562",
+    "followers_count": 3731,
+    "favourites_count": 781,
+    "avatar": "https://pbs.twimg.com/profile_images/2027801616561410049/bbwN2hlJ_normal.jpg",
+    "url": "http://loris.tools",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1970485439355330562/1772226640",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 3,
+    "location": "Trade Funding Arbs 👉"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2027536676185141248/img/YT8QqC7PQuygagyD.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/pl/EfWa86n0EtNqJ8UY.m3u8?tag=21&v=cfc"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/vid/avc1/392x270/lLWPBwjnuXw2ygOg.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/vid/avc1/524x360/UygktO_iCdGJnQOl.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/vid/avc1/1048x720/hwRS9CbYcaHoKZma.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/vid/avc1/1574x1080/ZLRuDD-WBchrKXSn.mp4?tag=21"
+          },
+          {
+            "bitrate": 25128000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2027536676185141248/vid/avc1/3148x2160/qj1V1H495yOgXYHg.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          787,
+          540
+        ],
+        "duration": 70077,
+        "original_info": {
+          "focus_rects": [],
+          "height": 2160,
+          "width": 3148
+        },
+        "id": "2027536676185141248"
+      }
+    ]
+  },
+  "url": "https://twitter.com/LorisTools/status/2027537156701335705"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052755861878288638",
+  "screen_name": "rgbstashlabs",
+  "bookmarks": 0,
+  "favorites": 14,
+  "created_at": "Fri May 08 14:21:50 +0000 2026",
+  "text": "Why JIT Liquidity + Splice Are Critical for https://t.co/wbBpe7HUch Atomic Swaps\n\n@BitlightLabs has released the latest update on staying in sync with Lightning development progress, while also introducing several new features planned for future support.\n\n@rgbstashlabs provides an in-depth explanation of two key features from this roadmap, along with further context on their significance for Stash Labs products such as https://t.co/wbBpe7HUch, RLSP, and Flash Dex.\n\n🔥 Two Core Capabilities Explained:\n\n• JIT liquidity for RGB: just-in-time RGB asset channel opening\n• Splice for RGB: dynamic capacity adjustment of RGB asset channels\n\nBuilding on our RLSP + Atomic Swap capabilities, https://t.co/wbBpe7HUch is about to launch native asset swap trading. However, the current RGB Lightning Network pipeline has key pain points:\n\nWhen a user completes a $RGB buy order via RLN and RLSP, two channels must be opened sequentially:\n\n✅ User opens a BTC channel to pay BTC to the RLSP\n✅ RLSP opens a BTC/RGB composite channel to deliver $RGB to the user\n\nThree Major Drawbacks of the Current Model:\n\n1⃣ Dual channel opening requires waiting for Bitcoin mainnet block confirmations — typically 6 confirmations — resulting in extremely high transaction latency.\n2⃣ Channel capacity is fixed. Once the balance is insufficient for the next transaction, the old channel must be closed and a new one rebuilt — a costly process with high fees and a fragmented user experience.\n3⃣ The current model is completely unable to support high-frequency continuous trading scenarios like FlashDex perpetual contracts, severely limiting the RGB ecosystem's trading experience.\n\n🚀 JIT Liquidity | On-Demand RGB Channel Opening\nJIT (Just-In-Time) liquidity — the core principle is to create on demand, with no pre-lockup required:\n▸ Users don't need to pre-fund or manually create RGB asset channels;\n\n▸ When initiating a $RGB receive/swap request, the RLSP instantly generates a virtual off-chain channel — no immediate on-chain settlement needed;\n▸ After the first transaction is completed, it is automatically anchored on-chain and converted into an official RGB Lightning channel.\n\n💡 Core Value:\n\n• Zero-barrier entry to RGB asset swaps — no idle capital lockup.\n• Dramatically reduced transaction wait times, eliminating mainnet block confirmation delays.\n• Enables users to complete $RGB transactions as seamlessly as Lightning BTC, while maximizing RLSP capital efficiency.\n🛠 Splice for RGB | Dynamic Capacity Adjustment for RGB Asset Channels\n\nBuilt on the Lightning Network's native Channel Splicing technology, allowing RGB asset channels to be resized without closing or rebuilding:\n▸ Splice-in (expand): Add BTC/RGB assets directly to an existing channel;\n\n▸ Splice-out (shrink): Withdraw idle funds from the channel as needed;\n▸ The channel remains uninterrupted throughout — no trading pauses required. Only the funding transaction is updated via signatures, requiring a single on-chain confirmation.\n\n💡 Core Value:\n\n• Permanently eliminates the old pattern of \"close and reopen a channel when the balance runs out\".\n\n• Seamlessly supports high-frequency continuous trading, enabling FlashDex perpetual contract scenarios.\n• Significantly reduces on-chain fees from repeatedly opening/closing channels, improving capital turnover and utilization.\n🔗 Synergy of Three — Redefining the https://t.co/wbBpe7HUch Atomic Swap Experience\n• RLSP + Atomic Swap: Powers the underlying asset swap logic.\n\n• JIT: Solves the \"0 to 1\" problem — no pre-built channels, instant trade initiation.\n\n• Splice: Solves the \"1 to N\" problem — dynamic channel scaling to support high-frequency continuous trading.\n\nWith JIT + Splice landing together, the current pain points of RGB channels — high latency, cumbersome workflows, and the inability to support high-frequency trading — will be fully resolved. This lays a solid infrastructure foundation — high performance, low barriers, and high liquidity — for https://t.co/wbBpe7HUch's upcoming Atomic Swap and ecosystem derivatives trading. 🚀\n\nIt is worth noting that these two features will not affect the https://t.co/wbBpe7HUch launch timeline — they serve purely as a leap forward in user experience.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 4,
+  "conversation_id": "2052755861878288638",
+  "retweets": 5,
+  "views": "3246",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          856,
+          860
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "RGB"
+      },
+      {
+        "indices": [
+          1034,
+          1038
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "RGB"
+      },
+      {
+        "indices": [
+          1900,
+          1904
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "RGB"
+      },
+      {
+        "indices": [
+          2367,
+          2371
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "RGB"
+      }
+    ],
+    "urls": [
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          44,
+          67
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      },
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          423,
+          446
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      },
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          688,
+          711
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      },
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          3375,
+          3398
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      },
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          3978,
+          4001
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      },
+      {
+        "display_url": "RGBS.FUN",
+        "expanded_url": "http://RGBS.FUN",
+        "indices": [
+          4126,
+          4149
+        ],
+        "url": "https://t.co/wbBpe7HUch"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1455850496774709256",
+        "indices": [
+          82,
+          95
+        ],
+        "name": "Bitlight Labs⚡️",
+        "screen_name": "BitlightLabs"
+      },
+      {
+        "id_str": "1879209830013128712",
+        "indices": [
+          256,
+          269
+        ],
+        "name": "Stash Labs",
+        "screen_name": "rgbstashlabs"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "rgbstashlabs",
+    "name": "Stash Labs",
+    "created_at": "Tue Jan 14 16:52:04 +0000 2025",
+    "description": "Stash Labs is an infrastructure service provider for the RGB protocol, focusing on RGB asset trading and protection.",
+    "rest_id": "1879209830013128712",
+    "followers_count": 339,
+    "favourites_count": 25,
+    "avatar": "https://pbs.twimg.com/profile_images/1999817624658841601/UvDHd2WL_normal.jpg",
+    "url": "https://stashlabs.io",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1879209830013128712/1765628607",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 37,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2052741450744705249",
+    "bookmarks": 1,
+    "created_at": "Fri May 08 13:24:34 +0000 2026",
+    "favorites": 77,
+    "text": "RGB super-compatibility is not a promise but an engineering discipline enforced with zero tolerance for regression.\n\nRGB on Lightning: Walking with Upstream\nhttps://t.co/fSYYFW90kr\n\nWhile the previous release proved that RGB could connect to Lightning through full LDK state",
+    "lang": "en",
+    "views": "16059",
+    "quotes": 6,
+    "replies": 29,
+    "retweets": 15,
+    "conversation_id": "2052741450744705249",
+    "author": {
+      "rest_id": "1455850496774709256",
+      "created_at": "Wed Nov 03 10:53:20 +0000 2021",
+      "name": "Bitlight Labs⚡️",
+      "screen_name": "BitlightLabs",
+      "avatar": "https://pbs.twimg.com/profile_images/1810593682414051328/7tIU7Nxr_normal.jpg",
+      "blue_verified": null
+    },
+    "media": []
+  },
+  "url": "https://twitter.com/rgbstashlabs/status/2052755861878288638"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2016514257005990075",
+  "screen_name": "arcxtrade",
+  "bookmarks": 2,
+  "favorites": 20,
+  "created_at": "Wed Jan 28 14:10:38 +0000 2026",
+  "text": "a new funding arb venue is coming to arcx.\n\none click. delta neutral. farm everything. https://t.co/BHgIUbqfVm",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    86
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 2,
+  "replies": 2,
+  "conversation_id": "2016514257005990075",
+  "retweets": 1,
+  "views": "1247",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/BHgIUbqfVm",
+        "expanded_url": "https://x.com/arcxtrade/status/2016514257005990075/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2016514235724095490",
+        "indices": [
+          87,
+          110
+        ],
+        "media_key": "3_2016514235724095490",
+        "media_results": {
+          "result": {
+            "media_key": "3_2016514235724095490"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/G_wZA3DaYAIb7eZ.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 1147,
+              "w": 2048,
+              "x": 0,
+              "y": 5
+            },
+            {
+              "h": 1152,
+              "w": 1152,
+              "x": 192,
+              "y": 0
+            },
+            {
+              "h": 1152,
+              "w": 1011,
+              "x": 263,
+              "y": 0
+            },
+            {
+              "h": 1152,
+              "w": 576,
+              "x": 480,
+              "y": 0
+            },
+            {
+              "h": 1152,
+              "w": 2048,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1152,
+          "width": 2048
+        },
+        "sizes": {
+          "large": {
+            "h": 1152,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 675,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 383,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/BHgIUbqfVm"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "arcxtrade",
+    "name": "ArcX",
+    "created_at": "Thu Dec 11 07:24:23 +0000 2025",
+    "description": "The trading layer for all perp DEXs. \nTrade across DEXs, build strategies, capture yield.",
+    "rest_id": "1999017368769671168",
+    "followers_count": 997,
+    "favourites_count": 652,
+    "avatar": "https://pbs.twimg.com/profile_images/1999023701363453953/I9js-8JU_normal.png",
+    "url": "https://app.arcx.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1999017368769671168/1765439953",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 26,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G_wZA3DaYAIb7eZ.jpg",
+        "id": "2016514235724095490",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/arcxtrade/status/2016514257005990075"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2038974354617229596",
+  "screen_name": "EricCLFung",
+  "bookmarks": 0,
+  "favorites": 11,
+  "created_at": "Tue Mar 31 13:39:03 +0000 2026",
+  "text": "degen opportunity check:\n@alturax running 5 reward layers simultaneously on single deposit\nbase yield: market making, funding arb, gold trading (real money, not emissions)\n\npre-TGE $ALTU\n~$10K/day Merkl drops\nYieldRun Epoch 2 (ending soon) → Epoch 3\n\nPendle LP co-incentives rnnn\nPendle LP position = max stack Merkl + pre-TGE + Pendle boosts + boosted YieldRun + base yield\n\nbase yield alone > most protocols' total yield campaigns could vanish tomorrow, you're still earning\nAVLT on Messari now. OneKey supported.\nthis is where the smart money is parking...",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 3,
+  "conversation_id": "2038974354617229596",
+  "retweets": 0,
+  "views": "286",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          181,
+          186
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "ALTU"
+      }
+    ],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1311986670435282944",
+        "indices": [
+          25,
+          33
+        ],
+        "name": "Altura",
+        "screen_name": "alturax"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "EricCLFung",
+    "name": "EricF",
+    "created_at": "Tue May 05 15:27:06 +0000 2009",
+    "description": "Opinion are my own • Architect @lostincodexyz • Art AI Crypto R&D • prev 0n1force qubicagi deficyan statscan • likesonepiece • 🇨🇦🇭🇰🇯🇵",
+    "rest_id": "37945701",
+    "followers_count": 19988,
+    "favourites_count": 167656,
+    "avatar": "https://pbs.twimg.com/profile_images/2052802833263755264/ui97rObF_normal.jpg",
+    "url": "https://opensea.io/collection/lostincodemanga",
+    "cover_image": "https://pbs.twimg.com/profile_banners/37945701/1760273637",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 9194,
+    "location": "Hong Kong"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HEvkEFcbgAAdEIl.png",
+        "id": "2038974015147311104",
+        "sizes": {
+          "h": 576,
+          "w": 810
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/EricCLFung/status/2038974354617229596"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2011447101809680811",
+  "screen_name": "shannholmberg",
+  "bookmarks": 0,
+  "favorites": 59,
+  "created_at": "Wed Jan 14 14:35:34 +0000 2026",
+  "text": "Gm,\n\n&gt; Working on a InfoFi tracking tool for creators &amp; projects\n&gt; Finalizing new iniatives for clients InfoFi campaign\n&gt; Learning more about funding arb on Perp exchanges\n&gt; Improving the UX on Blixt https://t.co/VZWAxWeNmx",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    215
+  ],
+  "source": "<a href=\"https://typefully.com/\" rel=\"nofollow\">Typefully</a>",
+  "quotes": 0,
+  "replies": 41,
+  "conversation_id": "2011447101809680811",
+  "retweets": 1,
+  "views": "944",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/VZWAxWeNmx",
+        "expanded_url": "https://x.com/shannholmberg/status/2011447101809680811/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2011447091080617984",
+        "indices": [
+          216,
+          239
+        ],
+        "media_key": "3_2011447091080617984",
+        "media_results": {
+          "result": {
+            "media_key": "3_2011447091080617984"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/G-oYeORaYAAWcrQ.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 2399,
+              "w": 4284,
+              "x": 0,
+              "y": 3313
+            },
+            {
+              "h": 4284,
+              "w": 4284,
+              "x": 0,
+              "y": 1428
+            },
+            {
+              "h": 4884,
+              "w": 4284,
+              "x": 0,
+              "y": 828
+            },
+            {
+              "h": 5712,
+              "w": 2856,
+              "x": 428,
+              "y": 0
+            },
+            {
+              "h": 5712,
+              "w": 4284,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 5712,
+          "width": 4284
+        },
+        "sizes": {
+          "large": {
+            "h": 2048,
+            "resize": "fit",
+            "w": 1536
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 900
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 510
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/VZWAxWeNmx"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "shannholmberg",
+    "name": "Shann³",
+    "created_at": "Wed Nov 03 20:44:36 +0000 2021",
+    "description": "I cover AI marketing & growth. Sharing every framework as I build it. \n\nFounder @espressioai, @lunarstrategy",
+    "rest_id": "1455999313453195265",
+    "followers_count": 28987,
+    "favourites_count": 20780,
+    "avatar": "https://pbs.twimg.com/profile_images/2018272759122440192/JJPUdPDs_normal.jpg",
+    "url": "http://t.me/lunarshann",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1455999313453195265/1772543025",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 12733,
+    "location": "Lisbon, Portugal"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/G-oYeORaYAAWcrQ.jpg",
+        "id": "2011447091080617984",
+        "sizes": {
+          "h": 1200,
+          "w": 900
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/shannholmberg/status/2011447101809680811"
+}]

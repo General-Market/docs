@@ -1,0 +1,2175 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2033713976983392694",
+  "screen_name": "tenorxyz",
+  "bookmarks": 0,
+  "favorites": 3,
+  "created_at": "Tue Mar 17 01:16:11 +0000 2026",
+  "text": "@0x_Broly if you farm tradexyz, our market making bot is 6x more efficient than tread\n\nbest in the market",
+  "lang": "en",
+  "display_text_range": [
+    10,
+    105
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2033583001104441720",
+  "retweets": 0,
+  "views": "97",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1442518042869600256",
+        "indices": [
+          0,
+          9
+        ],
+        "name": "Broly",
+        "screen_name": "0x_Broly"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "tenorxyz",
+    "name": "tenor.xyz",
+    "created_at": "Mon Jan 26 21:01:42 +0000 2026",
+    "description": "Best way to farm HIP-3.\n\nYou get 6x the points for the same cost.\n\nTeam backed by Multicoin, DBA, NIV, Road, TrueBridge",
+    "rest_id": "2015892893899091968",
+    "followers_count": 376,
+    "favourites_count": 415,
+    "avatar": "https://pbs.twimg.com/profile_images/2038979660520779776/3upZeaqA_normal.jpg",
+    "url": "http://tenor.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2015892893899091968/1774973421",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 5,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "0x_Broly",
+  "in_reply_to_status_id_str": "2033583001104441720",
+  "in_reply_to_user_id_str": "1442518042869600256",
+  "url": "https://twitter.com/tenorxyz/status/2033713976983392694"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2032064311229837553",
+  "screen_name": "hypingbull",
+  "bookmarks": 8,
+  "favorites": 32,
+  "created_at": "Thu Mar 12 12:01:00 +0000 2026",
+  "text": "01 DEX: POINTS FARMING ALPHA\n\nNow it’s clear that the 01 DEX @01Exchange shows more love to traders with small and average portfolio sizes. Whales are sidelined. I saw that many people with ~100k weekly volume received more points than me with my MM bot and 1M volume...\n\nThis means you can use your favorite DN strategies on 01 and earn quite a lot of points compared to people with huge volumes.\n\nWhat I recommend is having several accounts and trading different coins there. My experience with 01 and my research show that it's better to have 2 accounts with 200K volume on each rather than 1 account with 400K volume. Just don't refer yourself.\n\nIf you can hold your position for 24 hours or longer, do it. The platform rewards not only volume, but also OI.\n\nPay attention that the points formula changes every week. That's why it's a good idea to have several accounts with different strategies. I have 2 accounts: one for the MM bot and the other for long-term trades. Thus, I cover formula variance.\n\nThe platform is in the invite-only mode. Here is the invite: https://t.co/0pgVLk5WZw. Don't sleep on this chance if you like early farming.\n\n#perpdex",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>",
+  "quotes": 1,
+  "replies": 7,
+  "conversation_id": "2032064311229837553",
+  "retweets": 0,
+  "views": "4682",
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          1149,
+          1157
+        ],
+        "text": "perpdex"
+      }
+    ],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "01.xyz/ref/bull",
+        "expanded_url": "https://01.xyz/ref/bull",
+        "indices": [
+          1069,
+          1092
+        ],
+        "url": "https://t.co/0pgVLk5WZw"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1418050025523978245",
+        "indices": [
+          61,
+          72
+        ],
+        "name": "01.xyz",
+        "screen_name": "01Exchange"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "hypingbull",
+    "name": "HypingBull",
+    "created_at": "Mon May 01 12:16:43 +0000 2023",
+    "description": "Hyperliquid and cryptocurrency alpha.",
+    "rest_id": "1653010097382072321",
+    "followers_count": 4793,
+    "favourites_count": 15243,
+    "avatar": "https://pbs.twimg.com/profile_images/1937868750872608768/60F-uRqZ_normal.png",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1653010097382072321/1750859215",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1575,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HDNAWx5W8AA-jjP.jpg",
+        "id": "2032038616969441280",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2022279838808346828",
+    "bookmarks": 11,
+    "created_at": "Fri Feb 13 12:01:00 +0000 2026",
+    "favorites": 33,
+    "text": "I received several DMs asking why I decided to farm 01 exchange @01Exchange. The answer is simple: it’s the only DEX on the N1 chain, and it’s super early.\n\nThis farm is mostly about potential, taking risk and being early. Early opportunities are always attractive in terms of https://t.co/4IAG3Zongd",
+    "lang": "en",
+    "views": "6176",
+    "quotes": 1,
+    "replies": 9,
+    "retweets": 0,
+    "conversation_id": "2022279838808346828",
+    "author": {
+      "rest_id": "1653010097382072321",
+      "created_at": "Mon May 01 12:16:43 +0000 2023",
+      "name": "HypingBull",
+      "screen_name": "hypingbull",
+      "avatar": "https://pbs.twimg.com/profile_images/1937868750872608768/60F-uRqZ_normal.png",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HBCJ766acAAdkpf.jpg",
+          "id": "2022267895208898560",
+          "sizes": {
+            "h": 1080,
+            "w": 1920
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/hypingbull/status/2032064311229837553"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2027100007380226354",
+  "screen_name": "cryptslic35",
+  "bookmarks": 0,
+  "favorites": 11,
+  "created_at": "Thu Feb 26 19:14:38 +0000 2026",
+  "text": "#19 on DEX \n\n@AxiomExchange and @WheresBroox are heading up our R&amp;D department moving forward\n\nIf you have any questions/concerns about our path moving -DM them \n\n@JaneStreetGroup will now be handling all of our Market Making/Listings as well\n\n—LMAO enjoyer https://t.co/tftZLgCpuR",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    261
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2027100007380226354",
+  "retweets": 3,
+  "views": "159",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/tftZLgCpuR",
+        "expanded_url": "https://x.com/cryptslic35/status/2027100007380226354/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 89,
+                "w": 89,
+                "x": 243,
+                "y": 1016
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 83,
+                "w": 83,
+                "x": 226,
+                "y": 948
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 89,
+                "w": 89,
+                "x": 243,
+                "y": 1016
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 47,
+                "w": 47,
+                "x": 128,
+                "y": 537
+              }
+            ]
+          }
+        },
+        "id_str": "2027100001311272960",
+        "indices": [
+          262,
+          285
+        ],
+        "media_key": "3_2027100001311272960",
+        "media_results": {
+          "result": {
+            "media_key": "3_2027100001311272960"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HCG0tg5aMAAf6VM.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 660,
+              "w": 1178,
+              "x": 0,
+              "y": 601
+            },
+            {
+              "h": 1178,
+              "w": 1178,
+              "x": 0,
+              "y": 107
+            },
+            {
+              "h": 1285,
+              "w": 1127,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1285,
+              "w": 643,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 1285,
+              "w": 1178,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1285,
+          "width": 1178
+        },
+        "sizes": {
+          "large": {
+            "h": 1285,
+            "resize": "fit",
+            "w": 1178
+          },
+          "medium": {
+            "h": 1200,
+            "resize": "fit",
+            "w": 1100
+          },
+          "small": {
+            "h": 680,
+            "resize": "fit",
+            "w": 623
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/tftZLgCpuR"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1780361403855183872",
+        "indices": [
+          13,
+          27
+        ],
+        "name": "Axiom",
+        "screen_name": "AxiomExchange"
+      },
+      {
+        "id_str": "1156037558863912960",
+        "indices": [
+          32,
+          44
+        ],
+        "name": "BROOX",
+        "screen_name": "WheresBroox"
+      },
+      {
+        "id_str": "1005108749491752960",
+        "indices": [
+          167,
+          183
+        ],
+        "name": "Jane Street",
+        "screen_name": "JaneStreetGroup"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "cryptslic35",
+    "name": "DTN_Timbo 😂Ⓜ️🌊",
+    "created_at": "Wed Jan 01 02:14:19 +0000 2025",
+    "description": "💎Diamond Trencher Network owner💎 GOD FORBID🙏 Just a White Boy with a lil Ⓜ️🌊| Solana Trencher | God over Everything |Brand Development |",
+    "rest_id": "1874277902650372096",
+    "followers_count": 3145,
+    "favourites_count": 33117,
+    "avatar": "https://pbs.twimg.com/profile_images/2054290202550480896/uZk406bt_normal.jpg",
+    "url": "https://t.me/+8FrDP4-BQdJlMjEx",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1874277902650372096/1752530946",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 2180,
+    "location": "Web3 TRENCHES🙈"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HCG0tg5aMAAf6VM.jpg",
+        "id": "2027100001311272960",
+        "sizes": {
+          "h": 1200,
+          "w": 1100
+        }
+      }
+    ]
+  },
+  "community_id": "1999491787765735564",
+  "url": "https://twitter.com/cryptslic35/status/2027100007380226354"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052099102322692269",
+  "screen_name": "strikeperps",
+  "bookmarks": 3,
+  "favorites": 121,
+  "created_at": "Wed May 06 18:52:06 +0000 2026",
+  "text": "This marks a huge step for our V2 liquidity vaults.\n\nIt’s not just about trading, but also building a real yield product via our market making.\n\nLarge firms, whales, and now projects are supplying liquidity with us.\n\nGoal is to bring in banks &amp; pension funds down the line 🫡",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    278
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 3,
+  "conversation_id": "2052099102322692269",
+  "retweets": 23,
+  "views": "1902",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "strikeperps",
+    "name": "Strike | Onchain Perps",
+    "created_at": "Fri May 31 05:06:35 +0000 2024",
+    "description": "Profit for traders. Yield for LPs. Income for holders. Strike V2 live on Cardano and Ethereum. Solana mainnet soon. Linktree: 🕹️ https://t.co/f7gZPEgYlz",
+    "rest_id": "1796407872877940737",
+    "followers_count": 10897,
+    "favourites_count": 3890,
+    "avatar": "https://pbs.twimg.com/profile_images/2047026778942631936/DHp2TpGK_normal.jpg",
+    "url": "http://www.strikefinance.org",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1796407872877940737/1741025894",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 486,
+    "location": ""
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2052093525878251774",
+    "bookmarks": 2,
+    "created_at": "Wed May 06 18:29:57 +0000 2026",
+    "favorites": 90,
+    "text": "We’ve officially supplied part of our treasury to the Strike Liquidity Vaults 🔥\n\nWe’re proud to be the 1st project to publicly allocate treasury funds to Strike as a way to responsibly manage capital while earning yield through reputable protocols ⚡️\n\nWhy we made this move: 👇 https://t.co/E05VvEpM1r",
+    "lang": "en",
+    "views": "5848",
+    "quotes": 2,
+    "replies": 7,
+    "retweets": 26,
+    "conversation_id": "2052093525878251774",
+    "author": {
+      "rest_id": "1964880897112408064",
+      "created_at": "Mon Sep 08 02:38:23 +0000 2025",
+      "name": "Pulse | Midnight’s Privacy DEX",
+      "screen_name": "pulseonmidnight",
+      "avatar": "https://pbs.twimg.com/profile_images/2031784553082155009/VccvusV4_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HHqAL7dXQAEkOnp.jpg",
+          "id": "2052093522648449025",
+          "sizes": {
+            "h": 853,
+            "w": 1280
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/strikeperps/status/2052099102322692269"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2034194151068270959",
+  "screen_name": "hypingbull",
+  "bookmarks": 0,
+  "favorites": 20,
+  "created_at": "Wed Mar 18 09:04:13 +0000 2026",
+  "text": "01 Exchange @01Exchange distributed points yesterday. My strategy worked out nicely in general. My MM bot was active during the previous week and received a good bag of points.\n\nMy DN funding farming wallet didn't get that many points. I was greedy, and I overleveraged. I paid fees for cutting positions before going to bed, and my average OI wasn't high enough. I will adjust my size this week. \n\nHowever, multiple people report receiving many points for holding DN positions on the low OI markets, and I think that's the play. You need to focus on low OI coins and ignore BTC/ETH.\n\nMy plan for this week: I will continue running the MM bot + continue to farm funding. For funding farming, I will concentrate on low OI markets ONLY. I hope this strategy will show good results. \n\nIf you are not farming, join. It's still an early opportunity. You can farm many points in a passive mode by arbitrage funding. Here is the invite: https://t.co/0pgVLk5WZw. \n\n#perpdex",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    277
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 2,
+  "conversation_id": "2034194151068270959",
+  "retweets": 1,
+  "views": "4155",
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          957,
+          965
+        ],
+        "text": "perpdex"
+      }
+    ],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "01.xyz/ref/bull",
+        "expanded_url": "https://01.xyz/ref/bull",
+        "indices": [
+          930,
+          953
+        ],
+        "url": "https://t.co/0pgVLk5WZw"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1418050025523978245",
+        "indices": [
+          12,
+          23
+        ],
+        "name": "01.xyz",
+        "screen_name": "01Exchange"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "hypingbull",
+    "name": "HypingBull",
+    "created_at": "Mon May 01 12:16:43 +0000 2023",
+    "description": "Hyperliquid and cryptocurrency alpha.",
+    "rest_id": "1653010097382072321",
+    "followers_count": 4793,
+    "favourites_count": 15243,
+    "avatar": "https://pbs.twimg.com/profile_images/1937868750872608768/60F-uRqZ_normal.png",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1653010097382072321/1750859215",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1575,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HDrnD-6bIAA2-xo.jpg",
+        "id": "2034192237324869632",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "quoted": {
+    "tweet_id": "2032064311229837553",
+    "bookmarks": 8,
+    "created_at": "Thu Mar 12 12:01:00 +0000 2026",
+    "favorites": 32,
+    "text": "01 DEX: POINTS FARMING ALPHA\n\nNow it’s clear that the 01 DEX @01Exchange shows more love to traders with small and average portfolio sizes. Whales are sidelined. I saw that many people with ~100k weekly volume received more points than me with my MM bot and 1M volume...\n\nThis https://t.co/AwyTio0s0l",
+    "lang": "en",
+    "views": "4682",
+    "quotes": 1,
+    "replies": 7,
+    "retweets": 0,
+    "conversation_id": "2032064311229837553",
+    "author": {
+      "rest_id": "1653010097382072321",
+      "created_at": "Mon May 01 12:16:43 +0000 2023",
+      "name": "HypingBull",
+      "screen_name": "hypingbull",
+      "avatar": "https://pbs.twimg.com/profile_images/1937868750872608768/60F-uRqZ_normal.png",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HDNAWx5W8AA-jjP.jpg",
+          "id": "2032038616969441280",
+          "sizes": {
+            "h": 1080,
+            "w": 1920
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/hypingbull/status/2034194151068270959"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2054553393704603838",
+  "screen_name": "flowdesk_co",
+  "bookmarks": 0,
+  "favorites": 13,
+  "created_at": "Wed May 13 13:24:35 +0000 2026",
+  "text": "Since 2020, our role at Flowdesk has been clear. Bring liquidity, transparency, and control to digital asset markets.\n\nWe started as a market maker, pioneering our market making as a service (MMaaS) business model.\n\nAs digital asset markets matured, so did the demands of the participants operating in them.\n\nSo we expanded from MMaaS to a full-stack liquidity solutions partner for crypto-native issuers and financial institutions.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    275
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 2,
+  "conversation_id": "2054553393704603838",
+  "retweets": 2,
+  "views": "1144",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "flowdesk_co",
+    "name": "Flowdesk",
+    "created_at": "Mon Jun 15 15:33:20 +0000 2020",
+    "description": "Full-service digital asset trading and technology firm. Liquidity Solutions. OTC Trading. Disclaimer: https://t.co/KzdS53Zaga",
+    "rest_id": "1272552541306392576",
+    "followers_count": 10026,
+    "favourites_count": 385,
+    "avatar": "https://pbs.twimg.com/profile_images/2049134984649375744/C8NhRfJL_normal.jpg",
+    "url": "https://flowdesk.co",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1272552541306392576/1778852799",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 0,
+    "location": "Paris, France"
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HIM8Pg4W0AEFgK9.jpg",
+        "id": "2054552092233093121",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/flowdesk_co/status/2054553393704603838"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2039759049613255043",
+  "screen_name": "otomate_trade",
+  "bookmarks": 1,
+  "favorites": 14,
+  "created_at": "Thu Apr 02 17:37:08 +0000 2026",
+  "text": "US index perps are live on @nadoHQ.\n\nOur MM bot is live on top of it.\n\nYou can now automate your trading on SPY and QQQ, stay market active, and start farming the 4x points opportunity before it gets crowded 👀\n\nNo manual babysitting.\nJust deploy, run, and let it work.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    268
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 1,
+  "replies": 2,
+  "conversation_id": "2039759049613255043",
+  "retweets": 0,
+  "views": "783",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1947417601333989377",
+        "indices": [
+          27,
+          34
+        ],
+        "name": "Nado",
+        "screen_name": "nadoHQ"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "otomate_trade",
+    "name": "Otomate",
+    "created_at": "Tue Dec 02 18:26:37 +0000 2025",
+    "description": "The adaptive app for onchain finance.\n\nCrypto, stocks, yield, AI automation.\n\nhttps://t.co/3ypQP7YRqE",
+    "rest_id": "1995922496248578050",
+    "followers_count": 3521,
+    "favourites_count": 265,
+    "avatar": "https://pbs.twimg.com/profile_images/2046595601626763264/L6CMEpEJ_normal.jpg",
+    "url": "https://otomate.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1995922496248578050/1776780843",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 21,
+    "location": "Ink"
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2039731989830308196",
+    "bookmarks": 19,
+    "created_at": "Thu Apr 02 15:49:37 +0000 2026",
+    "favorites": 237,
+    "text": "1/ US Index perpetuals are live on Nado.\n\nSPY and QQQ are now tradable - up to 20x leverage. https://t.co/VAM9hqPEZU",
+    "lang": "en",
+    "views": "40000",
+    "quotes": 12,
+    "replies": 60,
+    "retweets": 39,
+    "conversation_id": "2039731989830308196",
+    "author": {
+      "rest_id": "1947417601333989377",
+      "created_at": "Mon Jul 21 22:05:53 +0000 2025",
+      "name": "Nado",
+      "screen_name": "nadoHQ",
+      "avatar": "https://pbs.twimg.com/profile_images/2010908038514032641/5E7RkPLF_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "video": [
+        {
+          "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2039731904614666240/img/VunQYXaRnlVrA6lj.jpg",
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2039731904614666240/pl/wIAzR0efbLLM9G-2.m3u8?tag=21&v=cfc"
+            },
+            {
+              "bitrate": 256000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2039731904614666240/vid/avc1/480x270/PHT4MIu_K0-l9ZdX.mp4?tag=21"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2039731904614666240/vid/avc1/640x360/AKuxISMKjyz3XrhC.mp4?tag=21"
+            },
+            {
+              "bitrate": 2176000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2039731904614666240/vid/avc1/1280x720/AYVB5uYk5Y1isSMa.mp4?tag=21"
+            },
+            {
+              "bitrate": 10368000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2039731904614666240/vid/avc1/1920x1080/8oa0TDUR84F29i9O.mp4?tag=21"
+            }
+          ],
+          "aspect_ratio": [
+            16,
+            9
+          ],
+          "duration": 18200,
+          "original_info": {
+            "focus_rects": [],
+            "height": 1080,
+            "width": 1920
+          },
+          "id": "2039731904614666240"
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/otomate_trade/status/2039759049613255043"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2031028441177329912",
+  "screen_name": "crypto_nohak",
+  "bookmarks": 0,
+  "favorites": 5,
+  "created_at": "Mon Mar 09 15:24:49 +0000 2026",
+  "text": "My MM bot on @StandX_Official is working well; here is a short video. It handles positions by closing them instantly and then repositioning new orders within the chosen range/Bps.\n\nIt scans the market every 3 to 5 seconds while running.\n\nNo software needed, just a bit of code directly in Google Apps Script. Anyone can do this! :) Try to build your own too",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2031028441177329912",
+  "retweets": 0,
+  "views": "128",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1872172851828244481",
+        "indices": [
+          13,
+          29
+        ],
+        "name": "StandX",
+        "screen_name": "StandX_Official"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "crypto_nohak",
+    "name": "Nohak_CryptoExploration",
+    "created_at": "Mon Nov 14 14:07:30 +0000 2022",
+    "description": "Exploring and Sharing Crypto projects\n\nSEED on @StandX_Official (Perps)\n\n 5% bonus point + you take 5% of mine :\n\n https://t.co/RlFz2peEFA",
+    "rest_id": "1592157216869588993",
+    "followers_count": 628,
+    "favourites_count": 15754,
+    "avatar": "https://pbs.twimg.com/profile_images/2026279569733324800/lBQufbht_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1592157216869588993/1775990287",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 985,
+    "location": "Lyon"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2031027707727822848/img/KFtsidlA09uVL-8K.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2031027707727822848/pl/TN_AWeL1n_ZaGsVD.m3u8?tag=21"
+          },
+          {
+            "bitrate": 256000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2031027707727822848/vid/avc1/480x270/yjxLTG0coeCyGNVC.mp4?tag=21"
+          },
+          {
+            "bitrate": 832000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2031027707727822848/vid/avc1/640x360/9DRRdfNlj6-yPW1u.mp4?tag=21"
+          },
+          {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2031027707727822848/vid/avc1/1280x720/bCZswRmg6cv06hHL.mp4?tag=21"
+          },
+          {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2031027707727822848/vid/avc1/1920x1080/AzcBmoOBgs3ZsqsB.mp4?tag=21"
+          }
+        ],
+        "aspect_ratio": [
+          16,
+          9
+        ],
+        "duration": 26666,
+        "original_info": {
+          "focus_rects": [],
+          "height": 1080,
+          "width": 1920
+        },
+        "id": "2031027707727822848"
+      }
+    ]
+  },
+  "url": "https://twitter.com/crypto_nohak/status/2031028441177329912"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2033611747571949733",
+  "screen_name": "liquidtrading",
+  "bookmarks": 0,
+  "favorites": 12,
+  "created_at": "Mon Mar 16 18:29:57 +0000 2026",
+  "text": "@ByzGeneral What do our market making overlords know?",
+  "lang": "en",
+  "display_text_range": [
+    12,
+    53
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2033609541393301898",
+  "retweets": 0,
+  "views": "1356",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1098266607594455041",
+        "indices": [
+          0,
+          11
+        ],
+        "name": "Byzantine General",
+        "screen_name": "ByzGeneral"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "liquidtrading",
+    "name": "Liquid",
+    "created_at": "Mon Mar 24 19:34:09 +0000 2025",
+    "description": "trade whatever wherever whenever",
+    "rest_id": "1904255366223069184",
+    "followers_count": 30356,
+    "favourites_count": 17363,
+    "avatar": "https://pbs.twimg.com/profile_images/1980705287322357760/HhxSRvbc_normal.jpg",
+    "url": "http://liquid.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1904255366223069184/1776126455",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 1000,
+    "location": "orderbooks"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "ByzGeneral",
+  "in_reply_to_status_id_str": "2033609541393301898",
+  "in_reply_to_user_id_str": "1098266607594455041",
+  "url": "https://twitter.com/liquidtrading/status/2033611747571949733"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2040811964062966019",
+  "screen_name": "strikeperps",
+  "bookmarks": 2,
+  "favorites": 173,
+  "created_at": "Sun Apr 05 15:21:03 +0000 2026",
+  "text": "We’ll be launching our market making bot within the next 12 hours where users will be able to provide stablecoin liquidity to the protocol.\n\nThe protocol accepts native USDC and USDM with a current APR around 85%. https://t.co/71PNN35Ix2",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    213
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 2,
+  "replies": 8,
+  "conversation_id": "2040811964062966019",
+  "retweets": 45,
+  "views": "3318",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/71PNN35Ix2",
+        "expanded_url": "https://x.com/strikeperps/status/2040811964062966019/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2040811959277244416",
+        "indices": [
+          214,
+          237
+        ],
+        "media_key": "3_2040811959277244416",
+        "media_results": {
+          "result": {
+            "media_key": "3_2040811959277244416"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HFJrqg4W0AAgNtQ.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 1143,
+              "w": 2041,
+              "x": 4,
+              "y": 0
+            },
+            {
+              "h": 1143,
+              "w": 1143,
+              "x": 453,
+              "y": 0
+            },
+            {
+              "h": 1143,
+              "w": 1003,
+              "x": 523,
+              "y": 0
+            },
+            {
+              "h": 1143,
+              "w": 572,
+              "x": 738,
+              "y": 0
+            },
+            {
+              "h": 1143,
+              "w": 2048,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 1143,
+          "width": 2048
+        },
+        "sizes": {
+          "large": {
+            "h": 1143,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 670,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 380,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/71PNN35Ix2"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "strikeperps",
+    "name": "Strike | Onchain Perps",
+    "created_at": "Fri May 31 05:06:35 +0000 2024",
+    "description": "Profit for traders. Yield for LPs. Income for holders. Strike V2 live on Cardano and Ethereum. Solana mainnet soon. Linktree: 🕹️ https://t.co/f7gZPEgYlz",
+    "rest_id": "1796407872877940737",
+    "followers_count": 10897,
+    "favourites_count": 3890,
+    "avatar": "https://pbs.twimg.com/profile_images/2047026778942631936/DHp2TpGK_normal.jpg",
+    "url": "http://www.strikefinance.org",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1796407872877940737/1741025894",
+    "verified_type": "Business",
+    "verified": true,
+    "friends_count": 486,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFJrqg4W0AAgNtQ.jpg",
+        "id": "2040811959277244416",
+        "sizes": {
+          "h": 670,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/strikeperps/status/2040811964062966019"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2041913885867848111",
+  "screen_name": "cedeflow",
+  "bookmarks": 1,
+  "favorites": 33,
+  "created_at": "Wed Apr 08 16:19:41 +0000 2026",
+  "text": "Trade on @hibachi_xyz with our market making bots and earn +50% points boost.\n\nLive until April 30th.\n\nGo get your points. https://t.co/iYGXO4YAKT",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    122
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 4,
+  "replies": 10,
+  "conversation_id": "2041913885867848111",
+  "retweets": 5,
+  "views": "5073",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/iYGXO4YAKT",
+        "expanded_url": "https://x.com/cedeflow/status/2041913885867848111/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 130,
+                "w": 130,
+                "x": 612,
+                "y": 1020
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 76,
+                "w": 76,
+                "x": 358,
+                "y": 597
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 260,
+                "w": 260,
+                "x": 1224,
+                "y": 2040
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 43,
+                "w": 43,
+                "x": 203,
+                "y": 338
+              }
+            ]
+          }
+        },
+        "id_str": "2041913654421958657",
+        "indices": [
+          123,
+          146
+        ],
+        "media_key": "3_2041913654421958657",
+        "media_results": {
+          "result": {
+            "media_key": "3_2041913654421958657"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HFZVpnHXMAEH1EN.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 2294,
+              "w": 4096,
+              "x": 0,
+              "y": 271
+            },
+            {
+              "h": 2565,
+              "w": 2565,
+              "x": 766,
+              "y": 0
+            },
+            {
+              "h": 2565,
+              "w": 2250,
+              "x": 923,
+              "y": 0
+            },
+            {
+              "h": 2565,
+              "w": 1283,
+              "x": 1407,
+              "y": 0
+            },
+            {
+              "h": 2565,
+              "w": 4096,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 2565,
+          "width": 4096
+        },
+        "sizes": {
+          "large": {
+            "h": 1283,
+            "resize": "fit",
+            "w": 2048
+          },
+          "medium": {
+            "h": 751,
+            "resize": "fit",
+            "w": 1200
+          },
+          "small": {
+            "h": 426,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/iYGXO4YAKT"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1746958749032665088",
+        "indices": [
+          9,
+          21
+        ],
+        "name": "Hibachi",
+        "screen_name": "hibachi_xyz"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "cedeflow",
+    "name": "Cede Flow",
+    "created_at": "Wed Mar 18 17:30:55 +0000 2026",
+    "description": "Perps Algo Trading, simplified. High-performance bots. Few clicks.\nPowered by @cedehub.\n\nJoin us on Discord: https://t.co/Q2I9ry9uJd",
+    "rest_id": "2034321614037524480",
+    "followers_count": 430,
+    "favourites_count": 701,
+    "avatar": "https://pbs.twimg.com/profile_images/2038916701392396288/3p713iZ1_normal.jpg",
+    "url": "https://www.cedeflow.io",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2034321614037524480/1775046066",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 13,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFZVpnHXMAEH1EN.jpg",
+        "id": "2041913654421958657",
+        "sizes": {
+          "h": 751,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/cedeflow/status/2041913885867848111"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2030839136387797253",
+  "screen_name": "AZverse_Global",
+  "bookmarks": 0,
+  "favorites": 6,
+  "created_at": "Mon Mar 09 02:52:35 +0000 2026",
+  "text": "🔧 System Upgrade: Selected Perpetual Contracts – Trading Paused ⏸️\n\nWe're upgrading our market making system to improve liquidity & trading experience. The following pairs will be temporarily unavailable:\n\n🕒 (UTC)\n• HYPE/USDT: Mar 9, 6:30–7:30\n• MNT/USDT: Mar 9, 7:45–8:45\n\nPlease adjust positions in advance. Questions? Drop a comment! 🙏\n\n#AZX #PerpDEX #PerpetualContracts #SystemUpgrade #DEX #Crypto #Liquidity #MarketMaking",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    276
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 2,
+  "conversation_id": "2030839136387797253",
+  "retweets": 2,
+  "views": "230",
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          340,
+          344
+        ],
+        "text": "AZX"
+      },
+      {
+        "indices": [
+          345,
+          353
+        ],
+        "text": "PerpDEX"
+      },
+      {
+        "indices": [
+          354,
+          373
+        ],
+        "text": "PerpetualContracts"
+      },
+      {
+        "indices": [
+          374,
+          388
+        ],
+        "text": "SystemUpgrade"
+      },
+      {
+        "indices": [
+          389,
+          393
+        ],
+        "text": "DEX"
+      },
+      {
+        "indices": [
+          394,
+          401
+        ],
+        "text": "Crypto"
+      },
+      {
+        "indices": [
+          402,
+          412
+        ],
+        "text": "Liquidity"
+      },
+      {
+        "indices": [
+          413,
+          426
+        ],
+        "text": "MarketMaking"
+      }
+    ],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "AZverse_Global",
+    "name": "AZverse",
+    "created_at": "Mon Oct 20 03:30:33 +0000 2025",
+    "description": "AZverse Official | AZX DEX & Financial Ecosystem\nby AZX TECH PTE. LIMITED\nTelegram:https://t.co/rsHwrcs6bD | Discord: https://t.co/lVgV5a53YG",
+    "rest_id": "1980114356500344832",
+    "followers_count": 837,
+    "favourites_count": 51,
+    "avatar": "https://pbs.twimg.com/profile_images/2036381656488259584/3uBLJ1sp_normal.jpg",
+    "url": "https://www.azverse.xyz",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1980114356500344832/1777701719",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 17,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HC79ZE3a0AE6M5K.jpg",
+        "id": "2030839089235415041",
+        "sizes": {
+          "h": 675,
+          "w": 1200
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/AZverse_Global/status/2030839136387797253"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2038229352878322075",
+  "screen_name": "0xBiZzy",
+  "bookmarks": 10,
+  "favorites": 108,
+  "created_at": "Sun Mar 29 12:18:40 +0000 2026",
+  "text": "I've been working on my MM bot tool a lot but its extremely hard to work on sometimes because it requires lots of brain power so on weekends I've been challenging myself to try to build something simple from top to bottom. \n\nSo far its mostly been failed attempts however I think today I will be able to deploy the app I've been working on this weekend(at least to a test group for now). \n\nWhat I made is a tool to reward people raiding for your community. How it works is the admin can create a campaign with a start/end date, a token reward pool(can put any tokens or multiple tokens into the pool) and rules like min token holdings to qualify. They can also assign raid leaders to add tweets to the campaign. Then raiders can register by signing in with their wallet and connecting their twitter.\n\nThe app will scan tweet from the campaign for registered usernames that meet all the criteria for that raid(keywords, min characters, etc) and give them points(there are multipliers that admins can set for things like hold time/balance). At the end of the campaign all users receive their share of the pool based on the points they accumulated for that campaign. \n\nThe idea came from me trying to come up with a way to reward people that work for their bags so they don't have to flip new tokens everyday lol.. \n\n(Blurred the name so no one can make a token 😂)",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 42,
+  "conversation_id": "2038229352878322075",
+  "retweets": 8,
+  "views": "4901",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "0xBiZzy",
+    "name": "bizzy",
+    "created_at": "Sat Jan 13 02:35:27 +0000 2018",
+    "description": "LP GCR. Post-Rich Gorillionaire.",
+    "rest_id": "952006146268782592",
+    "followers_count": 45970,
+    "favourites_count": 144243,
+    "avatar": "https://pbs.twimg.com/profile_images/1956487273496666112/QYtzgNcj_normal.png",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/952006146268782592/1755300547",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 3789,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HEk-JZ2bsAEZuGC.jpg",
+        "id": "2038228637640798209",
+        "sizes": {
+          "h": 914,
+          "w": 1174
+        }
+      }
+    ]
+  },
+  "url": "https://twitter.com/0xBiZzy/status/2038229352878322075"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2044087179756925015",
+  "screen_name": "otomate_trade",
+  "bookmarks": 0,
+  "favorites": 12,
+  "created_at": "Tue Apr 14 16:15:35 +0000 2026",
+  "text": "New stock perps. x4 bonus points.\n\nBest time to turn on our MM bot on @nadoHQ .\n\nFarm Nado incentives automatically and stack Otomate points at the same time.\n\nDouble farm. No babysitting.\n\nlink bellow 👇",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    203
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 3,
+  "conversation_id": "2044087179756925015",
+  "retweets": 0,
+  "views": "705",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1947417601333989377",
+        "indices": [
+          70,
+          77
+        ],
+        "name": "Nado",
+        "screen_name": "nadoHQ"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "otomate_trade",
+    "name": "Otomate",
+    "created_at": "Tue Dec 02 18:26:37 +0000 2025",
+    "description": "The adaptive app for onchain finance.\n\nCrypto, stocks, yield, AI automation.\n\nhttps://t.co/3ypQP7YRqE",
+    "rest_id": "1995922496248578050",
+    "followers_count": 3521,
+    "favourites_count": 265,
+    "avatar": "https://pbs.twimg.com/profile_images/2046595601626763264/L6CMEpEJ_normal.jpg",
+    "url": "https://otomate.trade/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1995922496248578050/1776780843",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 21,
+    "location": "Ink"
+  },
+  "media": [],
+  "quoted": {
+    "tweet_id": "2044070883728162920",
+    "bookmarks": 23,
+    "created_at": "Tue Apr 14 15:10:50 +0000 2026",
+    "favorites": 239,
+    "text": "1/ AMZN, MSFT, and AAPL perps are live on Nado. \n\nUp to 20x leverage. Use BTC, ETH, USDT0 or NLP as collateral.\n\nAdd META, GOOGL, NVDA, and TSLA (already live) and that's the full US megacap tech sweep, now tradeable as perps on-chain. https://t.co/ZHGwqWa30q",
+    "lang": "en",
+    "views": "51622",
+    "quotes": 5,
+    "replies": 71,
+    "retweets": 34,
+    "conversation_id": "2044070883728162920",
+    "author": {
+      "rest_id": "1947417601333989377",
+      "created_at": "Mon Jul 21 22:05:53 +0000 2025",
+      "name": "Nado",
+      "screen_name": "nadoHQ",
+      "avatar": "https://pbs.twimg.com/profile_images/2010908038514032641/5E7RkPLF_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "video": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HF3_3h2WcAA4iX_.jpg",
+          "variants": [
+            {
+              "content_type": "application/x-mpegURL",
+              "url": "https://video.twimg.com/amplify_video/2044048760276406272/pl/RCQWMXrjW2k6Cdn2.m3u8?tag=21"
+            },
+            {
+              "bitrate": 432000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044048760276406272/vid/avc1/320x320/_arK0jJjjcAuZDw4.mp4?tag=21"
+            },
+            {
+              "bitrate": 832000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044048760276406272/vid/avc1/540x540/fFgvGkK9Tn1-aqXJ.mp4?tag=21"
+            },
+            {
+              "bitrate": 1280000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044048760276406272/vid/avc1/720x720/uUXAKhI8wylFD3aY.mp4?tag=21"
+            },
+            {
+              "bitrate": 8768000,
+              "content_type": "video/mp4",
+              "url": "https://video.twimg.com/amplify_video/2044048760276406272/vid/avc1/1080x1080/gE0_gmLpH1sGVnXb.mp4?tag=21"
+            }
+          ],
+          "aspect_ratio": [
+            1,
+            1
+          ],
+          "duration": 8016,
+          "original_info": {
+            "focus_rects": [],
+            "height": 1080,
+            "width": 1080
+          },
+          "id": "2044048760276406272"
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/otomate_trade/status/2044087179756925015"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2029936283372376382",
+  "screen_name": "odapplman",
+  "bookmarks": 0,
+  "favorites": 6,
+  "created_at": "Fri Mar 06 15:04:59 +0000 2026",
+  "text": "@_Tarrraaa In Barbados it’s actually law that all fx shud be turned into the banks or Central bank. Someone facilitating the request is at their discretion. It’s also problematic the increase in quoting prices in USD in our market making people think everyone will make change in USD",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    283
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2029885043217232032",
+  "retweets": 1,
+  "views": "570",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "764498791198105600",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Doña .∞.",
+        "screen_name": "_Tarrraaa"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "odapplman",
+    "name": "Gentleman Rogue",
+    "created_at": "Thu Feb 03 19:29:42 +0000 2022",
+    "description": "Ethically Non-Monogamous.🍍",
+    "rest_id": "1489320064461463559",
+    "followers_count": 63,
+    "favourites_count": 42093,
+    "avatar": "https://pbs.twimg.com/profile_images/1607837479490523142/ZoPuJzAD_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1489320064461463559/1761758036",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 88,
+    "location": "your woman 🇧🇧"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "_Tarrraaa",
+  "in_reply_to_status_id_str": "2029885043217232032",
+  "in_reply_to_user_id_str": "764498791198105600",
+  "url": "https://twitter.com/odapplman/status/2029936283372376382"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052102349867385201",
+  "screen_name": "ArdorBG",
+  "bookmarks": 0,
+  "favorites": 3,
+  "created_at": "Wed May 06 19:05:01 +0000 2026",
+  "text": "We have been upgrading our market making system in recent weeks. This has led to a drop in $Mony volume, but the strategy is almost in full sync. Enjoy to volume!\nhttps://t.co/BePnMuir3y",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    186
+  ],
+  "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052102349867385201",
+  "retweets": 4,
+  "views": "79",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          91,
+          96
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "Mony"
+      }
+    ],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "ardorbg.eu/p/mony.html",
+        "expanded_url": "https://www.ardorbg.eu/p/mony.html",
+        "indices": [
+          163,
+          186
+        ],
+        "url": "https://t.co/BePnMuir3y"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "ArdorBG",
+    "name": "ArdorBG",
+    "created_at": "Tue Dec 07 18:15:03 +0000 2021",
+    "description": "ArdorBG provides a market making system. Asset #ArdorBG ID 14181059775676150956 on $Ardr,\n$Mony 0xddb3594baab6564f723fb0ec4073420b8ccf3606 on #BSC",
+    "rest_id": "1468282883328647173",
+    "followers_count": 194,
+    "favourites_count": 3823,
+    "avatar": "https://pbs.twimg.com/profile_images/1994296017127084032/yzB7hVwl_normal.jpg",
+    "url": "http://www.ardorbg.eu",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1468282883328647173/1772571622",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 52,
+    "location": "Ardor and BSC"
+  },
+  "media": [],
+  "url": "https://twitter.com/ArdorBG/status/2052102349867385201"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2022215147192795186",
+  "screen_name": "atachainatax",
+  "bookmarks": 1,
+  "favorites": 18,
+  "created_at": "Fri Feb 13 07:43:56 +0000 2026",
+  "text": "We are proud to announce our strategic partnership with DBIT Trading.\n\nAs ATA Chain & ATAX, we have officially started a long-term collaboration with DBIT Trading to support our market making, liquidity management and exchange operations.\n\nWith DBIT’s professional market making infrastructure, our upcoming listings and trading environment will be managed with deeper liquidity, healthier order books and long-term stability.\n\nA strong step forward for the ATAX ecosystem.\n\n🌐 https://t.co/lLDuA46zay\n\n#ATAChain #ATAX #DBITTrading #CryptoPartnership\n#MarketMaking #Liquidity #ExchangeSupport #Web3\n#Blockchain #CryptoProject #DigitalAssets #DeFi",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    282
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 5,
+  "conversation_id": "2022215147192795186",
+  "retweets": 10,
+  "views": "260",
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          502,
+          511
+        ],
+        "text": "ATAChain"
+      },
+      {
+        "indices": [
+          512,
+          517
+        ],
+        "text": "ATAX"
+      },
+      {
+        "indices": [
+          518,
+          530
+        ],
+        "text": "DBITTrading"
+      },
+      {
+        "indices": [
+          531,
+          549
+        ],
+        "text": "CryptoPartnership"
+      },
+      {
+        "indices": [
+          550,
+          563
+        ],
+        "text": "MarketMaking"
+      },
+      {
+        "indices": [
+          564,
+          574
+        ],
+        "text": "Liquidity"
+      },
+      {
+        "indices": [
+          575,
+          591
+        ],
+        "text": "ExchangeSupport"
+      },
+      {
+        "indices": [
+          592,
+          597
+        ],
+        "text": "Web3"
+      },
+      {
+        "indices": [
+          598,
+          609
+        ],
+        "text": "Blockchain"
+      },
+      {
+        "indices": [
+          610,
+          624
+        ],
+        "text": "CryptoProject"
+      },
+      {
+        "indices": [
+          625,
+          639
+        ],
+        "text": "DigitalAssets"
+      },
+      {
+        "indices": [
+          640,
+          645
+        ],
+        "text": "DeFi"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "atachain.com",
+        "expanded_url": "http://www.atachain.com",
+        "indices": [
+          477,
+          500
+        ],
+        "url": "https://t.co/lLDuA46zay"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "atachainatax",
+    "name": "ATA CHAIN - ATAX",
+    "created_at": "Mon Sep 09 11:08:27 +0000 2024",
+    "description": "⚡️ Changing The World's Dominance 📍 ATA QUANTUM AI Chain Technologies LLC - CA/USA",
+    "rest_id": "1833100039364734976",
+    "followers_count": 503,
+    "favourites_count": 69,
+    "avatar": "https://pbs.twimg.com/profile_images/2009612942992437249/s0D879J1_normal.jpg",
+    "url": "https://atachain.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1833100039364734976/1731860068",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 4,
+    "location": "California, USA"
+  },
+  "media": {
+    "video": [
+      {
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2022215086979383296/img/HpK3sCTnk8B9SnJA.jpg",
+        "variants": [
+          {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2022215086979383296/pl/NuylLccc_4HSiUoN.m3u8?tag=24"
+          },
+          {
+            "bitrate": 800000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2022215086979383296/vid/avc1/320x474/4e5CcSZojU234zOo.mp4?tag=24"
+          },
+          {
+            "bitrate": 5184000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2022215086979383296/vid/avc1/464x688/OoS88ZzBT4C1sZgA.mp4?tag=24"
+          }
+        ],
+        "aspect_ratio": [
+          29,
+          43
+        ],
+        "duration": 6041,
+        "original_info": {
+          "focus_rects": [],
+          "height": 688,
+          "width": 464
+        },
+        "id": "2022215086979383296"
+      }
+    ]
+  },
+  "url": "https://twitter.com/atachainatax/status/2022215147192795186"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2025802151612776808",
+  "screen_name": "sz8ng",
+  "bookmarks": 2,
+  "favorites": 130,
+  "created_at": "Mon Feb 23 05:17:25 +0000 2026",
+  "text": "One of the last big tasks for our mm bot has just been completed. It was to hedge on external platforms. \n\nWe are now testing internally. We should be looking at mainnet launch very very soon.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    192
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 2,
+  "replies": 5,
+  "conversation_id": "2025802151612776808",
+  "retweets": 23,
+  "views": "5252",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "sz8ng",
+    "name": "Shan Zhang",
+    "created_at": "Tue Jul 19 21:54:40 +0000 2022",
+    "description": "Progamming magic money on the internet @strikeperps",
+    "rest_id": "1549513021357162497",
+    "followers_count": 1850,
+    "favourites_count": 3251,
+    "avatar": "https://pbs.twimg.com/profile_images/1840709367769047040/Ltm4vowa_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1549513021357162497/1727694298",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 791,
+    "location": "New York, USA"
+  },
+  "media": [],
+  "url": "https://twitter.com/sz8ng/status/2025802151612776808"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2020216862668128538",
+  "screen_name": "0xBiZzy",
+  "bookmarks": 0,
+  "favorites": 6,
+  "created_at": "Sat Feb 07 19:23:28 +0000 2026",
+  "text": "@gamblergeist that’s my mm bot lol. Im just fucking around with it but each of those are either a buy or sell",
+  "lang": "en",
+  "display_text_range": [
+    14,
+    109
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2020214571823140898",
+  "retweets": 0,
+  "views": "206",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1449834648117391367",
+        "indices": [
+          0,
+          13
+        ],
+        "name": "geist",
+        "screen_name": "gamblergeist"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "0xBiZzy",
+    "name": "bizzy",
+    "created_at": "Sat Jan 13 02:35:27 +0000 2018",
+    "description": "LP GCR. Post-Rich Gorillionaire.",
+    "rest_id": "952006146268782592",
+    "followers_count": 45970,
+    "favourites_count": 144243,
+    "avatar": "https://pbs.twimg.com/profile_images/1956487273496666112/QYtzgNcj_normal.png",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/952006146268782592/1755300547",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 3789,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "gamblergeist",
+  "in_reply_to_status_id_str": "2020216412216627681",
+  "in_reply_to_user_id_str": "1449834648117391367",
+  "url": "https://twitter.com/0xBiZzy/status/2020216862668128538"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2026294636554449176",
+  "screen_name": "louisregis",
+  "bookmarks": 0,
+  "favorites": 39,
+  "created_at": "Tue Feb 24 13:54:22 +0000 2026",
+  "text": "Some stats on our arbitrage bot for $XBG: https://t.co/TkMid6vujq\n\nWe've also added support on our market making bot to Bybit, Kucoin, Hypercore and others.  One day, we might try to make market making fair too",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    210
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 7,
+  "replies": 12,
+  "conversation_id": "2026294636554449176",
+  "retweets": 8,
+  "views": "1234",
+  "entities": {
+    "hashtags": [],
+    "symbols": [
+      {
+        "indices": [
+          36,
+          40
+        ],
+        "tag": {
+          "info": []
+        },
+        "text": "XBG"
+      }
+    ],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "mm.propr.xyz/coins/xbg",
+        "expanded_url": "https://mm.propr.xyz/coins/xbg",
+        "indices": [
+          42,
+          65
+        ],
+        "url": "https://t.co/TkMid6vujq"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "louisregis",
+    "name": "Lou",
+    "created_at": "Mon Nov 08 07:50:02 +0000 2021",
+    "description": "Founder @ProprXYZ - CEO @XBorgHQ Prev. Credit Suisse, Rothschild\n\nWe are hiring: https://t.co/jrFTVOGKO6",
+    "rest_id": "1457616338655092737",
+    "followers_count": 15208,
+    "favourites_count": 4336,
+    "avatar": "https://pbs.twimg.com/profile_images/2046462179579514880/OG44mRqW_normal.jpg",
+    "url": "https://louis.xborg.com/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1457616338655092737/1776749582",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1329,
+    "location": ""
+  },
+  "media": [],
+  "url": "https://twitter.com/louisregis/status/2026294636554449176"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2025323194417037462",
+  "screen_name": "Clawnch_Bot",
+  "bookmarks": 1,
+  "favorites": 28,
+  "created_at": "Sat Feb 21 21:34:12 +0000 2026",
+  "text": "Most agent platforms bolt on a Uniswap wrapper and call it done — the agent can swap, but it doesn't know anything about what it's swapping or why.\n\nWe improve on the underlying tools before we integrate them: our quoter reads pool data directly from Clawnch's on-chain contracts to get accurate prices that generic wrappers can't, our swap system automatically compares two price sources and picks the better deal, and every trade feeds into portfolio tracking, conditional orders, and risk management without extra configuration.\n\nThe result isn't a bot that executes a fixed script — it's an agent that understands its own financial position and acts on it. We're building compounding infrastructure where each new capability makes every previous one more useful, because that's what it takes for agents to operate as real economic participants.\n\nhttps://t.co/CoLIXAOjhr",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    288
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 1,
+  "replies": 0,
+  "conversation_id": "2025319172725440627",
+  "retweets": 3,
+  "views": "1714",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "x.com/KienNguyen/sta…",
+        "expanded_url": "https://x.com/KienNguyen/status/2025319583721423291",
+        "indices": [
+          850,
+          873
+        ],
+        "url": "https://t.co/CoLIXAOjhr"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "Clawnch_Bot",
+    "name": "Clawnch 🪽",
+    "created_at": "Sat Jan 31 00:05:18 +0000 2026",
+    "description": "The economic layer for agents. 🪽 \n\nThe world's most advanced Hermes Agent crypto plugin now live at https://t.co/DcnJaP0HSx\n\n0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be",
+    "rest_id": "2017388656017756160",
+    "followers_count": 21469,
+    "favourites_count": 6641,
+    "avatar": "https://pbs.twimg.com/profile_images/2017424343857266688/FNlVdapE_normal.jpg",
+    "url": "http://clawn.ch",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2017388656017756160/1770238948",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 109,
+    "location": "Give this URL to your agent:"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "Clawnch_Bot",
+  "in_reply_to_status_id_str": "2025319172725440627",
+  "in_reply_to_user_id_str": "2017388656017756160",
+  "url": "https://twitter.com/Clawnch_Bot/status/2025323194417037462"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2025323182442365194",
+  "screen_name": "Clawnch_Bot",
+  "bookmarks": 1,
+  "favorites": 22,
+  "created_at": "Sat Feb 21 21:34:10 +0000 2026",
+  "text": "Most agent platforms bolt on a Uniswap wrapper and call it done — the agent can swap, but it doesn't know anything about what it's swapping or why.\n\nWe improve on the underlying tools before we integrate them: our quoter reads pool data directly from Clawnch's on-chain contracts to get accurate prices that generic wrappers can't, our swap system automatically compares two price sources and picks the better deal, and every trade feeds into portfolio tracking, conditional orders, and risk management without extra configuration.\n\nThe result isn't a bot that executes a fixed script — it's an agent that understands its own financial position and acts on it. We're building compounding infrastructure where each new capability makes every previous one more useful, because that's what it takes for agents to operate as real economic participants.\n\nhttps://t.co/CoLIXAOjhr",
+  "lang": "en",
+  "display_text_range": [
+    9,
+    288
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2025319172725440627",
+  "retweets": 4,
+  "views": "1097",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [
+      {
+        "display_url": "x.com/KienNguyen/sta…",
+        "expanded_url": "https://x.com/KienNguyen/status/2025319583721423291",
+        "indices": [
+          850,
+          873
+        ],
+        "url": "https://t.co/CoLIXAOjhr"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "Clawnch_Bot",
+    "name": "Clawnch 🪽",
+    "created_at": "Sat Jan 31 00:05:18 +0000 2026",
+    "description": "The economic layer for agents. 🪽 \n\nThe world's most advanced Hermes Agent crypto plugin now live at https://t.co/DcnJaP0HSx\n\n0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be",
+    "rest_id": "2017388656017756160",
+    "followers_count": 21469,
+    "favourites_count": 6641,
+    "avatar": "https://pbs.twimg.com/profile_images/2017424343857266688/FNlVdapE_normal.jpg",
+    "url": "http://clawn.ch",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2017388656017756160/1770238948",
+    "verified_type": "Business",
+    "verified": false,
+    "friends_count": 109,
+    "location": "Give this URL to your agent:"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "Clawnch_Bot",
+  "in_reply_to_status_id_str": "2025319172725440627",
+  "in_reply_to_user_id_str": "2017388656017756160",
+  "url": "https://twitter.com/Clawnch_Bot/status/2025323182442365194"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2015776336447779214",
+  "screen_name": "wassielawyer",
+  "bookmarks": 5,
+  "favorites": 156,
+  "created_at": "Mon Jan 26 13:18:24 +0000 2026",
+  "text": "Minor PSA re @JupiterExchange and JUP so there’s no FUD.\n\nWe are moving 35M JUP and 6M USD from treasury to exchange to bridge over renewal of our market making contracts which expire on 31 Jan. \n\nWe expect return of an equivalent amount of JUP from our existing MMs in early Feb.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    280
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 1,
+  "replies": 24,
+  "conversation_id": "2015776336447779214",
+  "retweets": 8,
+  "views": "12303",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1446489618208067586",
+        "indices": [
+          13,
+          29
+        ],
+        "name": "Jupiter",
+        "screen_name": "JupiterExchange"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "wassielawyer",
+    "name": "wassieloyer",
+    "created_at": "Wed Mar 07 00:15:45 +0000 2018",
+    "description": "Biglaw restructuring lolyer turned hentai penguin in suit.\n\nCo-founder and Poltergeist @gvrn_ai\n\nPhilosophy, therapy, strategy and diplomacy @JupiterExchange",
+    "rest_id": "971177546317524993",
+    "followers_count": 44613,
+    "favourites_count": 15833,
+    "avatar": "https://pbs.twimg.com/profile_images/1785039883897372672/joSX2to0_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/971177546317524993/1520395185",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1663,
+    "location": "Singapore"
+  },
+  "media": [],
+  "url": "https://twitter.com/wassielawyer/status/2015776336447779214"
+}]

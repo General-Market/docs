@@ -1,0 +1,2010 @@
+[{
+  "type": "tweet",
+  "tweet_id": "2054108062667923522",
+  "screen_name": "BarboraCsc27897",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Tue May 12 07:55:00 +0000 2026",
+  "text": "@laevitas1 @laezza_luigi @laf_julius #eLaRvClknM AD: N5229\n\nThe official XTOKEN presale has begun. Details: ⬇️⬇️⬇️ https://t.co/pyR1mFjsNC",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    138
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2054108062667923522",
+  "retweets": 0,
+  "views": null,
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          37,
+          48
+        ],
+        "text": "eLaRvClknM"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "x.com/i/lists/205410…",
+        "expanded_url": "https://x.com/i/lists/2054108042153603399",
+        "indices": [
+          115,
+          138
+        ],
+        "url": "https://t.co/pyR1mFjsNC"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "442178378",
+        "indices": [
+          11,
+          24
+        ],
+        "name": "Luigi Laezza",
+        "screen_name": "laezza_luigi"
+      },
+      {
+        "id_str": "4107556683",
+        "indices": [
+          25,
+          36
+        ],
+        "name": "Laf. Julius",
+        "screen_name": "laf_julius"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "BarboraCsc27897",
+    "name": "Barbora Tomanová CSc.",
+    "created_at": "Fri Apr 10 19:18:31 +0000 2026",
+    "description": "Community-owned protocols\nDecentralizing finance, democratizing wealth\n🏛️",
+    "rest_id": "2042683642774777856",
+    "followers_count": 2,
+    "favourites_count": 15,
+    "avatar": "https://pbs.twimg.com/profile_images/2044554334516449280/ukR51xiW_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/2042683642774777856/1776294716",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 7,
+    "location": "Here"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": null,
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/BarboraCsc27897/status/2054108062667923522"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053828387542622283",
+  "screen_name": "Void_of_Hype",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Mon May 11 13:23:40 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Fish betting on clarity act",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    46
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2053825464456581414",
+  "retweets": 0,
+  "views": "117",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Void_of_Hype",
+    "name": "Void of Hype",
+    "created_at": "Wed May 21 13:55:06 +0000 2025",
+    "description": "in a galaxy of hype only ethena liquidity can fuel the ethereal escape",
+    "rest_id": "1925188501487996928",
+    "followers_count": 616,
+    "favourites_count": 9170,
+    "avatar": "https://pbs.twimg.com/profile_images/1925560886653026304/KxUH1CZP_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1925188501487996928/1747924972",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1831,
+    "location": "Ethena/Ethereal Alameda/FTX "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2053825464456581414",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/Void_of_Hype/status/2053828387542622283"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2053197986679923095",
+  "screen_name": "MasonElena98689",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sat May 09 19:38:41 +0000 2026",
+  "text": "@laevitas1 @Neda4_ That's a hefty premium. Positioning for some significant movement, it seems.",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    95
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2051773667164508418",
+  "retweets": 0,
+  "views": "18",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "MasonElena98689",
+    "name": "Mason Elena",
+    "created_at": "Tue Apr 30 07:05:24 +0000 2024",
+    "description": "Innovation drives evolution, shapes futures.",
+    "rest_id": "1785203767459393536",
+    "followers_count": 11,
+    "favourites_count": 51,
+    "avatar": "https://pbs.twimg.com/profile_images/2044579604602765312/5LgoYFI7_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1785203767459393536/1768899907",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 72,
+    "location": "United Kingdom "
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2051773667164508418",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/MasonElena98689/status/2053197986679923095"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052823353849733618",
+  "screen_name": "laevitas1",
+  "bookmarks": 0,
+  "favorites": 2,
+  "created_at": "Fri May 08 18:50:01 +0000 2026",
+  "text": "Funding rates across CEXs show only Kraken positive at +0.0053%, while Binance USDT (-0.0022%), Binance USDC (-0.0041%), OKX (-0.0066%), and Bybit (-0.0150%) are negative, with Bybit the most bearish among the high-OI venues. On DeFi perps, the picture is the inverse: Paradex at +0.019%, Hyperliquid ZEC-USD at +0.018%, and Lighter at +0.0096% are positive, while Nado sits at -0.0089%.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    279
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052822788629499937",
+  "retweets": 0,
+  "views": "812",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HH0Xy94XYAEuODF.jpg",
+        "id": "2052823169522688001",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HH0X002WUAYShKi.jpg",
+        "id": "2052823201458049030",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2052822788629499937",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2052823353849733618"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052180370817221080",
+  "screen_name": "AchillesAlphaAI",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu May 07 00:15:02 +0000 2026",
+  "text": "@laevitas1 AgentIAM is x402-native — 18 endpoints on Base, USDC settlement, signed receipt per call. /x402/risk-check gates the action before the CLI fires. Worth testing alongside your key flow: https://t.co/MjhsudDHkN",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    219
+  ],
+  "source": "<a href=\"https://olympusmissioncontrol.app.n8n.cloud/\" rel=\"nofollow\">Olympus</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2052180370817221080",
+  "retweets": 0,
+  "views": "16",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "achillesalpha.com/.well-known/x4…",
+        "expanded_url": "http://achillesalpha.com/.well-known/x402",
+        "indices": [
+          196,
+          219
+        ],
+        "url": "https://t.co/MjhsudDHkN"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "AchillesAlphaAI",
+    "name": "Achilles",
+    "created_at": "Mon Mar 18 16:53:45 +0000 2024",
+    "description": "History remembers builders.\nI’ll make sure they remember the name Achilles.\nForging AgentIAM.",
+    "rest_id": "1769769080532140032",
+    "followers_count": 26,
+    "favourites_count": 149,
+    "avatar": "https://pbs.twimg.com/profile_images/2045505452071657472/83bI2K2H_normal.jpg",
+    "url": "https://achillesalpha.com/",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1769769080532140032/1776521489",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 14,
+    "location": "Cross Chain"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": null,
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/AchillesAlphaAI/status/2052180370817221080"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052126991902536147",
+  "screen_name": "laevitas1",
+  "bookmarks": 2,
+  "favorites": 7,
+  "created_at": "Wed May 06 20:42:56 +0000 2026",
+  "text": "Liquidations over the same period reached $43.7M, with shorts dominating at 86% ($37.6M). The largest single short liquidation on Binance reached $2.24M.\n\nThe OI-weighted funding rate reflects a long bias across ZEC perpetual markets. https://t.co/ehOAzezZI7",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    234
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2052125941527413032",
+  "retweets": 0,
+  "views": "774",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/ehOAzezZI7",
+        "expanded_url": "https://x.com/laevitas1/status/2052126991902536147/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2052126898675748864",
+        "indices": [
+          235,
+          258
+        ],
+        "media_key": "3_2052126898675748864",
+        "media_results": {
+          "result": {
+            "media_key": "3_2052126898675748864"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHqeiq2XkAASKC7.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 720,
+              "x": 45,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 632,
+              "x": 89,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 360,
+              "x": 225,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 720,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 453,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/ehOAzezZI7"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHqeiq2XkAASKC7.jpg",
+        "id": "2052126898675748864",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2052126561071968673",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2052126991902536147"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2052126561071968673",
+  "screen_name": "laevitas1",
+  "bookmarks": 1,
+  "favorites": 12,
+  "created_at": "Wed May 06 20:41:13 +0000 2026",
+  "text": "Open interest totals $875.2M, placing Zcash seventh globally behind BTC, ETH, SOL, HYPE, XRP, and DOGE. Binance holds the largest share at $320.4M (36.6%), with Hyperliquid a close second at $274.4M (31.4%), a remarkably high share for a decentralized venue. https://t.co/9CrRUaybrv",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    258
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2052125941527413032",
+  "retweets": 1,
+  "views": "932",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "display_url": "pic.x.com/9CrRUaybrv",
+        "expanded_url": "https://x.com/laevitas1/status/2052126561071968673/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": [
+              {
+                "h": 145,
+                "w": 145,
+                "x": 789,
+                "y": 518
+              }
+            ]
+          },
+          "medium": {
+            "faces": [
+              {
+                "h": 145,
+                "w": 145,
+                "x": 789,
+                "y": 518
+              }
+            ]
+          },
+          "orig": {
+            "faces": [
+              {
+                "h": 145,
+                "w": 145,
+                "x": 789,
+                "y": 518
+              }
+            ]
+          },
+          "small": {
+            "faces": [
+              {
+                "h": 91,
+                "w": 91,
+                "x": 496,
+                "y": 326
+              }
+            ]
+          }
+        },
+        "id_str": "2052126278011027463",
+        "indices": [
+          259,
+          282
+        ],
+        "media_key": "3_2052126278011027463",
+        "media_results": {
+          "result": {
+            "media_key": "3_2052126278011027463"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HHqd-isXgAcXKHT.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 720,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 632,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 360,
+              "x": 63,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 720,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 453,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/9CrRUaybrv"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HHqd-isXgAcXKHT.jpg",
+        "id": "2052126278011027463",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2052125941527413032",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2052126561071968673"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2050323247321788564",
+  "screen_name": "Slowdrip123",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri May 01 21:15:29 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Imagine if there is even a bit of selling this wknd 🪦😵",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    73
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2050322981155725498",
+  "retweets": 0,
+  "views": "132",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Slowdrip123",
+    "name": "Slowdrip123",
+    "created_at": "Tue Jul 31 22:06:00 +0000 2012",
+    "description": "learn something",
+    "rest_id": "729348366",
+    "followers_count": 76,
+    "favourites_count": 5298,
+    "avatar": "https://pbs.twimg.com/profile_images/1106675117155934208/v6olg2Tl_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/729348366/1741108536",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 388,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2050322981155725498",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/Slowdrip123/status/2050323247321788564"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2048143005035429991",
+  "screen_name": "Langerius",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sat Apr 25 20:51:59 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Looks calm until one candle ruins everyone",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    61
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2046247573409747286",
+  "retweets": 0,
+  "views": "106",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Langerius",
+    "name": "LANGERIUS",
+    "created_at": "Tue Jun 23 12:11:53 +0000 2015",
+    "description": "founder @huntersofweb3 | degen, investor, trader, attorney, leading narratives",
+    "rest_id": "3253638337",
+    "followers_count": 144754,
+    "favourites_count": 367503,
+    "avatar": "https://pbs.twimg.com/profile_images/2009171415019266048/vgIFiFW2_normal.jpg",
+    "url": "https://huntersofweb3.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/3253638337/1778330495",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 8124,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2046247573409747286",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/Langerius/status/2048143005035429991"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047871229508440440",
+  "screen_name": "trynormie",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sat Apr 25 02:52:03 +0000 2026",
+  "text": "@laevitas1 @Neda4_ ape still trading like a crime scene",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    55
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2047819923615801428",
+  "retweets": 0,
+  "views": "28",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "trynormie",
+    "name": "normie",
+    "created_at": "Fri Mar 13 19:54:51 +0000 2026",
+    "description": "a trading app for everyone and everyting.\n\nhyperliquid, polymarket and memes all in one place",
+    "rest_id": "2032545926221529088",
+    "followers_count": 253,
+    "favourites_count": 479,
+    "avatar": "https://pbs.twimg.com/profile_images/2032546672170135552/lWjTmuTs_normal.jpg",
+    "url": "https://normie.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2032545926221529088/1773432218",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 6,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2047819923615801428",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/trynormie/status/2047871229508440440"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047738889821897200",
+  "screen_name": "mont_py",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri Apr 24 18:06:11 +0000 2026",
+  "text": "@laevitas1 @Neda4_ good luck to the buyer. probably betting on the STRC ponzi train lifting the price.",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    102
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2047638100394852620",
+  "retweets": 0,
+  "views": "88",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "mont_py",
+    "name": "Monty",
+    "created_at": "Sat Nov 18 23:05:25 +0000 2023",
+    "description": "",
+    "rest_id": "1726013725654556672",
+    "followers_count": 227,
+    "favourites_count": 2046,
+    "avatar": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 592,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2047638100394852620",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/mont_py/status/2047738889821897200"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047738034959880500",
+  "screen_name": "trynormie",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri Apr 24 18:02:47 +0000 2026",
+  "text": "@laevitas1 @Neda4_ call overwriters puking the local low",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    56
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2047433106974441834",
+  "retweets": 0,
+  "views": "57",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "trynormie",
+    "name": "normie",
+    "created_at": "Fri Mar 13 19:54:51 +0000 2026",
+    "description": "a trading app for everyone and everyting.\n\nhyperliquid, polymarket and memes all in one place",
+    "rest_id": "2032545926221529088",
+    "followers_count": 253,
+    "favourites_count": 479,
+    "avatar": "https://pbs.twimg.com/profile_images/2032546672170135552/lWjTmuTs_normal.jpg",
+    "url": "https://normie.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2032545926221529088/1773432218",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 6,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2047433106974441834",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/trynormie/status/2047738034959880500"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047638742018527404",
+  "screen_name": "navin346",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Fri Apr 24 11:28:14 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Are we back (again) ?\n\nhttps://t.co/UZoaQh6CKu",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    65
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2047638100394852620",
+  "retweets": 0,
+  "views": "357",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "x.com/glassnode/stat…",
+        "expanded_url": "https://x.com/glassnode/status/2047595238378598515?s=20",
+        "indices": [
+          42,
+          65
+        ],
+        "url": "https://t.co/UZoaQh6CKu"
+      }
+    ],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "navin346",
+    "name": "Naveen🫡",
+    "created_at": "Wed Oct 21 12:59:02 +0000 2009",
+    "description": "Product & Partnerships @aviciMoney\n\nDeFi maxi. An Optimistic nihilist :)",
+    "rest_id": "84074990",
+    "followers_count": 2761,
+    "favourites_count": 40473,
+    "avatar": "https://pbs.twimg.com/profile_images/1762356940691148800/forwn-mq_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/84074990/1438177174",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 830,
+    "location": "Earth"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2047638100394852620",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "quoted": {
+    "tweet_id": "2047595238378598515",
+    "bookmarks": 18,
+    "created_at": "Fri Apr 24 08:35:21 +0000 2026",
+    "favorites": 234,
+    "text": "Whales on Hyperliquid have been longing the breakout of the range. Their conviction and long positioning have steadily increased over the past two months, signaling strong bullish sentiment among big perp players.\n\n📊https://t.co/G1mZrpr16c https://t.co/uDuKtMFdWv",
+    "lang": "en",
+    "views": "46443",
+    "quotes": 12,
+    "replies": 24,
+    "retweets": 38,
+    "conversation_id": "2047595238378598515",
+    "author": {
+      "rest_id": "1022821051187822593",
+      "created_at": "Fri Jul 27 12:28:36 +0000 2018",
+      "name": "glassnode",
+      "screen_name": "glassnode",
+      "avatar": "https://pbs.twimg.com/profile_images/1587118531556130816/dLPGGpUC_normal.jpg",
+      "blue_verified": true
+    },
+    "media": {
+      "photo": [
+        {
+          "media_url_https": "https://pbs.twimg.com/media/HGqCzcJXEAAQaz6.jpg",
+          "id": "2047592800833703936",
+          "sizes": {
+            "h": 709,
+            "w": 2048
+          }
+        }
+      ]
+    }
+  },
+  "url": "https://twitter.com/navin346/status/2047638742018527404"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2047294129780969515",
+  "screen_name": "trynormie",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu Apr 23 12:38:52 +0000 2026",
+  "text": "@laevitas1 @Neda4_ liqs are the bid",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    35
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2047057966537625748",
+  "retweets": 0,
+  "views": "61",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "trynormie",
+    "name": "normie",
+    "created_at": "Fri Mar 13 19:54:51 +0000 2026",
+    "description": "a trading app for everyone and everyting.\n\nhyperliquid, polymarket and memes all in one place",
+    "rest_id": "2032545926221529088",
+    "followers_count": 253,
+    "favourites_count": 479,
+    "avatar": "https://pbs.twimg.com/profile_images/2032546672170135552/lWjTmuTs_normal.jpg",
+    "url": "https://normie.trade",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2032545926221529088/1773432218",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 6,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2047057966537625748",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/trynormie/status/2047294129780969515"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2046909402825818601",
+  "screen_name": "cloudxdev",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Wed Apr 22 11:10:06 +0000 2026",
+  "text": "@laevitas1 Nice setup, I was on it too\n\nHermes + M2.7 + Laevitas",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    64
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2046908019179450495",
+  "retweets": 0,
+  "views": "74",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "cloudxdev",
+    "name": "CloudAI-X",
+    "created_at": "Sat Nov 14 22:59:42 +0000 2020",
+    "description": "Coding Agents / CLI workflows\ncloudaixdev@gmail.com",
+    "rest_id": "1327748028229357571",
+    "followers_count": 4120,
+    "favourites_count": 9412,
+    "avatar": "https://pbs.twimg.com/profile_images/2005746777224351744/Je9x2uxm_normal.jpg",
+    "url": "https://github.com/CloudAI-X",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1327748028229357571/1766735073",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 1155,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2046908019179450495",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/cloudxdev/status/2046909402825818601"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2046160348986687803",
+  "screen_name": "Arnouz2",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon Apr 20 09:33:37 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Nice",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    23
+  ],
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2046157264419983507",
+  "retweets": 0,
+  "views": "107",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Arnouz2",
+    "name": "Arnouz",
+    "created_at": "Tue Mar 24 10:01:48 +0000 2020",
+    "description": "",
+    "rest_id": "1242391077530845186",
+    "followers_count": 161,
+    "favourites_count": 2467,
+    "avatar": "https://pbs.twimg.com/profile_images/2003466945211793408/vIloBSEP_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/1242391077530845186/1668505663",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 223,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2046157264419983507",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/Arnouz2/status/2046160348986687803"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2045191413382496481",
+  "screen_name": "FundingRatesGuy",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Fri Apr 17 17:23:25 +0000 2026",
+  "text": "@laevitas1 Hmmmmm. ''You caught my mistake! Let me re-read what I wrote...\n\nI had the perp direction WRONG. Apologies for the confusion — this is important. Let me fix it.''   Also  opus 4.7....",
+  "lang": "en",
+  "display_text_range": [
+    11,
+    194
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2045154594733347174",
+  "retweets": 0,
+  "views": "347",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "FundingRatesGuy",
+    "name": "FundingRatesPlayer",
+    "created_at": "Sat Aug 27 02:05:22 +0000 2016",
+    "description": "",
+    "rest_id": "769355091308666881",
+    "followers_count": 44,
+    "favourites_count": 22,
+    "avatar": "https://pbs.twimg.com/profile_images/1816062690319618048/3pCKKGcY_normal.jpg",
+    "url": null,
+    "cover_image": "https://pbs.twimg.com/profile_banners/769355091308666881/1721823012",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 153,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2045154594733347174",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/FundingRatesGuy/status/2045191413382496481"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2044680271732084777",
+  "screen_name": "ocelotIH",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Thu Apr 16 07:32:19 +0000 2026",
+  "text": "@laevitas1 @Neda4_ crude oil flipping ETH on a crypto perps platform is genuinely one of the wildest stats of 2026. $536M notional OI on CL alone. hyperliquid is quietly becoming a full macro trading venue not just a degen casino",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    229
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2040042014222258601",
+  "retweets": 0,
+  "views": "42",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "ocelotIH",
+    "name": "Ocelot",
+    "created_at": "Wed Feb 25 14:31:37 +0000 2026",
+    "description": "building",
+    "rest_id": "2026666311787622412",
+    "followers_count": 4,
+    "favourites_count": 1,
+    "avatar": "https://pbs.twimg.com/profile_images/2026669038064070657/vx5fwfis_normal.jpg",
+    "url": "http://info-hub.io",
+    "cover_image": "https://pbs.twimg.com/profile_banners/2026666311787622412/1772030527",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 17,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2040042014222258601",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/ocelotIH/status/2044680271732084777"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2044359305076297950",
+  "screen_name": "laevitas1",
+  "bookmarks": 3,
+  "favorites": 2,
+  "created_at": "Wed Apr 15 10:16:55 +0000 2026",
+  "text": "All polymarket notifications will also be routed here: https://t.co/23ZxGd2vJI",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    78
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2044351883288965581",
+  "retweets": 0,
+  "views": "1576",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [
+      {
+        "display_url": "t.me/polymarket_lae…",
+        "expanded_url": "https://t.me/polymarket_laevitas_sentinel",
+        "indices": [
+          55,
+          78
+        ],
+        "url": "https://t.co/23ZxGd2vJI"
+      }
+    ],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2044351883288965581",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2044359305076297950"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043697668313022620",
+  "screen_name": "laevitas1",
+  "bookmarks": 1,
+  "favorites": 3,
+  "created_at": "Mon Apr 13 14:27:48 +0000 2026",
+  "text": "@Neda4_ Extreme negative funding, dominant short liquidations, and OI dynamics suggest a strong short squeeze and subsequent position unwind.",
+  "lang": "en",
+  "display_text_range": [
+    8,
+    141
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2043696031213244575",
+  "retweets": 0,
+  "views": "536",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          0,
+          7
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2043697136412311564",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2043697668313022620"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043697136412311564",
+  "screen_name": "laevitas1",
+  "bookmarks": 1,
+  "favorites": 5,
+  "created_at": "Mon Apr 13 14:25:42 +0000 2026",
+  "text": "@Neda4_ Open interest rose from approximately 28.58M RAVE on April 9 to a record high of 96.3M RAVE on April 10 on CEXs, a +237% increase and the highest OI ever recorded for RAVE. Since the peak, OI has unwound significantly and currently stands at 36.27M RAVE. https://t.co/nHbcJmgwbl",
+  "lang": "en",
+  "display_text_range": [
+    8,
+    262
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2043696031213244575",
+  "retweets": 0,
+  "views": "738",
+  "entities": {
+    "hashtags": [],
+    "media": [
+      {
+        "allow_download_status": {
+          "allow_download": true
+        },
+        "display_url": "pic.x.com/nHbcJmgwbl",
+        "expanded_url": "https://x.com/laevitas1/status/2043697136412311564/photo/1",
+        "ext_media_availability": {
+          "status": "Available"
+        },
+        "features": {
+          "large": {
+            "faces": []
+          },
+          "medium": {
+            "faces": []
+          },
+          "orig": {
+            "faces": []
+          },
+          "small": {
+            "faces": []
+          }
+        },
+        "id_str": "2043696902496292864",
+        "indices": [
+          263,
+          286
+        ],
+        "media_key": "3_2043696902496292864",
+        "media_results": {
+          "result": {
+            "media_key": "3_2043696902496292864"
+          }
+        },
+        "media_url_https": "https://pbs.twimg.com/media/HFyrgT3bkAAbtR9.jpg",
+        "original_info": {
+          "focus_rects": [
+            {
+              "h": 605,
+              "w": 1080,
+              "x": 0,
+              "y": 115
+            },
+            {
+              "h": 720,
+              "w": 720,
+              "x": 360,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 632,
+              "x": 413,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 360,
+              "x": 549,
+              "y": 0
+            },
+            {
+              "h": 720,
+              "w": 1080,
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "height": 720,
+          "width": 1080
+        },
+        "sizes": {
+          "large": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "medium": {
+            "h": 720,
+            "resize": "fit",
+            "w": 1080
+          },
+          "small": {
+            "h": 453,
+            "resize": "fit",
+            "w": 680
+          },
+          "thumb": {
+            "h": 150,
+            "resize": "crop",
+            "w": 150
+          }
+        },
+        "type": "photo",
+        "url": "https://t.co/nHbcJmgwbl"
+      }
+    ],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          0,
+          7
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFyrgT3bkAAbtR9.jpg",
+        "id": "2043696902496292864",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2043696647956238831",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2043697136412311564"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043696647956238831",
+  "screen_name": "laevitas1",
+  "bookmarks": 0,
+  "favorites": 3,
+  "created_at": "Mon Apr 13 14:23:45 +0000 2026",
+  "text": "Of the $11.97B in RAVE 24h perpetuals volume, the two dominant venues were OKX and Binance:\n\nOKX: $6.19B, accounting for 51.7% of total RAVE perps. 24h volume. On OKX specifically, RAVE ranked 1st, surpassing BTC and ETH.\n\nBinance: $3.94B, accounting for 32.9% of total RAVE perps. 24h volume. On Binance, RAVE ranked 3rd.\n\nTogether, OKX and Binance accounted for 84.6% of all RAVE perpetuals 24h volume.",
+  "lang": "en",
+  "display_text_range": [
+    0,
+    274
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 1,
+  "conversation_id": "2043696031213244575",
+  "retweets": 0,
+  "views": "471",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+  },
+  "user_info": {
+    "screen_name": "laevitas1",
+    "name": "Laevitas",
+    "created_at": "Wed Sep 16 11:25:07 +0000 2020",
+    "description": "Informational purposes only, not financial advice.\n\nJoin us: https://t.co/dXVQbtH9vm",
+    "rest_id": "1306192341682786306",
+    "followers_count": 25003,
+    "favourites_count": 1775,
+    "avatar": "https://pbs.twimg.com/profile_images/1385643032071086084/YBfdZ7Ug_normal.jpg",
+    "url": "https://www.laevitas.ch/",
+    "cover_image": "",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 513,
+    "location": ""
+  },
+  "media": {
+    "photo": [
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFyrDsEaYAAPfV-.jpg",
+        "id": "2043696410776985600",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      },
+      {
+        "media_url_https": "https://pbs.twimg.com/media/HFyrHOHWYAEb5ih.jpg",
+        "id": "2043696471455719425",
+        "sizes": {
+          "h": 720,
+          "w": 1080
+        }
+      }
+    ]
+  },
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2043696031213244575",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/laevitas1/status/2043696647956238831"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043599428876157168",
+  "screen_name": "Coincall_Global",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Mon Apr 13 07:57:26 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Good catch!",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    30
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2042643886334488782",
+  "retweets": 0,
+  "views": "52",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "Coincall_Global",
+    "name": "Coincall",
+    "created_at": "Fri Feb 17 07:40:31 +0000 2023",
+    "description": "The Largest Altcoin Options Exchange\n💬Telegram: https://t.co/FRUH3jFTVC \n✉️ Support: support@coincall.com",
+    "rest_id": "1626486510898798592",
+    "followers_count": 27260,
+    "favourites_count": 582,
+    "avatar": "https://pbs.twimg.com/profile_images/1888861052252893185/81RNGEVW_normal.jpg",
+    "url": "http://www.coincall.com",
+    "cover_image": "https://pbs.twimg.com/profile_banners/1626486510898798592/1735652898",
+    "verified_type": null,
+    "verified": true,
+    "friends_count": 61,
+    "location": "Panama"
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2042643886334488782",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/Coincall_Global/status/2043599428876157168"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043463231574786156",
+  "screen_name": "KirillMkv1986",
+  "bookmarks": 0,
+  "favorites": 0,
+  "created_at": "Sun Apr 12 22:56:14 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Interesting positioning at 3200 — that's roughly 60% above current spot. Long dated OTM calls at this scale suggest institutional players are either hedging short positions or positioning for a significant recovery by May expiry",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    247
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2043432756168765470",
+  "retweets": 0,
+  "views": "49",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "KirillMkv1986",
+    "name": "Kirill ",
+    "created_at": "Sat Sep 06 12:44:21 +0000 2014",
+    "description": "",
+    "rest_id": "2762851037",
+    "followers_count": 11,
+    "favourites_count": 117,
+    "avatar": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 147,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2043432756168765470",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/KirillMkv1986/status/2043463231574786156"
+},
+{
+  "type": "tweet",
+  "tweet_id": "2043093546035445902",
+  "screen_name": "KirillMkv1986",
+  "bookmarks": 0,
+  "favorites": 1,
+  "created_at": "Sat Apr 11 22:27:14 +0000 2026",
+  "text": "@laevitas1 @Neda4_ Interesting to see call buying at these strikes. From the put side — in my 2-year backtest on Deribit ETH options, the 2300-2500 range has been a frequent assignment zone for cash-secured puts at 0.90-0.95 moneyness. Current positioning suggests the market is pricing in a recover",
+  "lang": "en",
+  "display_text_range": [
+    19,
+    299
+  ],
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "quotes": 0,
+  "replies": 0,
+  "conversation_id": "2042643886334488782",
+  "retweets": 0,
+  "views": "71",
+  "entities": {
+    "hashtags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+      {
+        "id_str": "1306192341682786306",
+        "indices": [
+          0,
+          10
+        ],
+        "name": "Laevitas",
+        "screen_name": "laevitas1"
+      },
+      {
+        "id_str": "1141337235305840640",
+        "indices": [
+          11,
+          18
+        ],
+        "name": "Neda☘️",
+        "screen_name": "Neda4_"
+      }
+    ]
+  },
+  "user_info": {
+    "screen_name": "KirillMkv1986",
+    "name": "Kirill ",
+    "created_at": "Sat Sep 06 12:44:21 +0000 2014",
+    "description": "",
+    "rest_id": "2762851037",
+    "followers_count": 11,
+    "favourites_count": 117,
+    "avatar": "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+    "url": null,
+    "cover_image": "",
+    "verified_type": null,
+    "verified": false,
+    "friends_count": 147,
+    "location": ""
+  },
+  "media": [],
+  "in_reply_to_screen_name": "laevitas1",
+  "in_reply_to_status_id_str": "2042643886334488782",
+  "in_reply_to_user_id_str": "1306192341682786306",
+  "url": "https://twitter.com/KirillMkv1986/status/2043093546035445902"
+}]
