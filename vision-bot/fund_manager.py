@@ -782,11 +782,46 @@ def log_nav_table(funds, vault_info_cache=None):
 # ── Vault snapshots ───────────────────────────────────────────
 
 
+# Reject any new NAV snapshot whose value deviates more than this fraction
+# from the previous row, when total_supply has not moved meaningfully. A
+# real PnL move never appears as a single isolated tick; an outcome-token
+# orderbook print or a mid-trade mark-to-market read does. Tunable via env
+# so a strategy that legitimately swings hard can loosen the bound.
+VAULT_NAV_SPIKE_FRAC = float(os.environ.get("VAULT_NAV_SPIKE_FRAC", "0.02"))
+# Allow a few percent of supply movement before we treat the NAV jump as
+# explainable by deposits/withdrawals (which leave NAV-per-share alone if
+# pricing is consistent, but in practice can carry small numerical drift).
+VAULT_SUPPLY_MOVE_FRAC = float(os.environ.get("VAULT_SUPPLY_MOVE_FRAC", "0.05"))
+
+
+def _is_spike(prev_nav: float, prev_supply: int, new_nav: float, new_supply: int) -> bool:
+    """Decide whether a new NAV reading looks like a transient anomaly.
+
+    Spike = NAV moved by more than VAULT_NAV_SPIKE_FRAC while total_supply
+    barely moved. A deposit/withdraw shifts supply meaningfully and the
+    guard relaxes; a one-tick mark-to-market wobble doesn't.
+    """
+    if prev_nav <= 0 or new_nav <= 0:
+        return False
+    nav_change = abs(new_nav - prev_nav) / prev_nav
+    if nav_change <= VAULT_NAV_SPIKE_FRAC:
+        return False
+    if prev_supply <= 0:
+        return False
+    supply_change = abs(new_supply - prev_supply) / prev_supply
+    return supply_change <= VAULT_SUPPLY_MOVE_FRAC
+
+
 def write_vault_snapshots(funds, vault_info_cache=None):
     """Write NAV snapshots to oracle postgres for historical charts.
 
     Uses the per-cycle cache when available so 183 funds × 9 RPC reads
     don't fire a second time just to write a row to postgres.
+
+    Outlier guard: read the most recent row per vault and skip the insert
+    when the new NAV jumps more than VAULT_NAV_SPIKE_FRAC with no matching
+    supply movement. The chain still has the underlying state; we just
+    refuse to immortalise a transient print in `vault_snapshots`.
     """
     if not VISION_DB_URL:
         return
@@ -795,10 +830,35 @@ def write_vault_snapshots(funds, vault_info_cache=None):
     except Exception as e:
         log.warning("psycopg2 import failed: %s", e)
         return
+
+    addrs = [f.vault_addr.lower() for f in funds]
+    prev_by_vault: dict[str, tuple[float, int]] = {}
+
     try:
         with psycopg2.connect(VISION_DB_URL) as conn:
             with conn.cursor() as cur:
+                # One round trip to pull each vault's last (nav, supply). The
+                # alternative — per-vault SELECT — would be 183 round trips
+                # per cycle and dominate the snapshot work.
+                if addrs:
+                    cur.execute(
+                        "SELECT DISTINCT ON (vault_address) "
+                        "       vault_address, nav_per_share, total_supply "
+                        "FROM vault_snapshots "
+                        "WHERE vault_address = ANY(%s) "
+                        "ORDER BY vault_address, created_at DESC",
+                        (addrs,),
+                    )
+                    for row in cur.fetchall():
+                        addr, prev_nav, prev_supply_str = row
+                        try:
+                            prev_supply = int(prev_supply_str)
+                        except (TypeError, ValueError):
+                            prev_supply = 0
+                        prev_by_vault[addr] = (float(prev_nav or 0), prev_supply)
+
                 rows = 0
+                skipped = 0
                 for fund in funds:
                     info = None
                     if vault_info_cache is not None:
@@ -821,12 +881,28 @@ def write_vault_snapshots(funds, vault_info_cache=None):
                         else:
                             nav = 1.0
                         tvl = total_assets / 1e18
+
+                        addr = fund.vault_addr.lower()
+                        prev = prev_by_vault.get(addr)
+                        if prev is not None:
+                            prev_nav, prev_supply = prev
+                            if _is_spike(prev_nav, prev_supply, nav, total_supply):
+                                log.warning(
+                                    "Skipping spike snapshot for %s: nav %.6f → %.6f "
+                                    "(Δ=%.2f%%) supply %d → %d",
+                                    fund.name, prev_nav, nav,
+                                    100.0 * abs(nav - prev_nav) / max(prev_nav, 1e-12),
+                                    prev_supply, total_supply,
+                                )
+                                skipped += 1
+                                continue
+
                         cur.execute(
                             "INSERT INTO vault_snapshots "
                             "(vault_address, total_assets, total_supply, nav_per_share, tvl_usd) "
                             "VALUES (%s, %s, %s, %s, %s)",
                             (
-                                fund.vault_addr.lower(),
+                                addr,
                                 str(total_assets),
                                 str(total_supply),
                                 nav,
@@ -834,9 +910,10 @@ def write_vault_snapshots(funds, vault_info_cache=None):
                             ),
                         )
                         rows += 1
+                        prev_by_vault[addr] = (nav, total_supply)
                     except Exception:
                         continue
-                log.info("Vault snapshots: %d rows written", rows)
+                log.info("Vault snapshots: %d rows written, %d spikes filtered", rows, skipped)
     except Exception as e:
         log.warning("Vault snapshot write failed: %s", e)
 
