@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { AppShell } from '@/components/layout/AppShell'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { IncidentCard } from './IncidentCard'
 import { binance } from './data-binance'
 import { coinbase, ftx, bybit } from './data-crypto-1'
@@ -27,8 +28,9 @@ export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
 
   return (
-    <AppShell>
-      <div className="acf">
+    <>
+      <Header />
+      <main className="acf">
         {/* HERO */}
         <header className="acf-hero">
           <div className="acf-hero-inner">
@@ -120,7 +122,8 @@ export default function AntiCheatFlagsPage() {
             <a className="acf-closer-cta" href="/">Open General Market ›</a>
           </div>
         </section>
-      </div>
-    </AppShell>
+      </main>
+      <Footer />
+    </>
   )
 }
