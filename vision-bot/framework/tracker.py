@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Set
 
 import requests
 
-from framework.chain import BitmapSubmitError
+from framework.chain import AlreadyJoinedError, BitmapSubmitError
 
 log = logging.getLogger("vision-bot")
 
@@ -220,6 +220,29 @@ class Tracker:
                     self._join_round(round_info, strategy=strategy)
                     joined += 1
                     # Success — forgive past sins.
+                    self._skip_retries.pop(bid, None)
+                except AlreadyJoinedError:
+                    # Chain says we already joined this batch. Trust it,
+                    # reconcile the tracker, and stop re-trying. The pre-check
+                    # above can miss this if get_position raised, if the bot
+                    # restarted mid-cycle, or if a sibling process joined first.
+                    log.info("Batch %d: AlreadyJoined — reconciling tracker with chain", bid)
+                    try:
+                        pos = self._executor.get_position(bid)
+                        if pos["joinTimestamp"] > 0:
+                            self._positions[bid] = {
+                                "batch_id": bid,
+                                "deposited": pos["totalDeposited"],
+                                "balance": pos["totalDeposited"],
+                                "pnl": 0,
+                                "bitmap": None,
+                                "bitmap_hash": pos.get("bitmapHash"),
+                                "bets": [],
+                                "joined_at": pos["joinTimestamp"],
+                                "last_claimed_tick": 0,
+                            }
+                    except Exception as e:
+                        log.warning("Batch %d: AlreadyJoined but get_position failed: %s", bid, e)
                     self._skip_retries.pop(bid, None)
                 except BitmapSubmitError as e:
                     log.warning("Batch %d: bitmap quorum not reached: %s", bid, e)
