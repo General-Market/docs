@@ -465,7 +465,7 @@ export function FeeTierSection() {
               borderTop: `1px solid ${LINE}`,
             }}
           >
-            Bar length = round-trip gap between the retail taker fee and the market-maker net fee at the top tier, in basis points. Polymarket is reported in pp because the gap is a percentage of trade notional, not bps. Kalshi appears as undisclosed because its DMM rates are private and currently the subject of a federal class action. Robinhood&apos;s asymmetry is structural — wholesalers pay the broker for retail flow rather than receiving a fee tier. Pump.fun has no fee tier; the edge is execution latency. FX/CFD asymmetry is 5–17× spread, gated by prime-brokerage minimums. General Market: on-chain, sealed bets, parimutuel, BLS-verified — no fee tier to sell.
+            Bar length = round-trip gap between the retail taker fee and the market-maker net fee at the top tier, in basis points. Polymarket is reported in pp because the gap is a percentage of trade notional, not bps. Kalshi appears as undisclosed because its DMM rates are private and currently the subject of a federal class action. Robinhood&apos;s asymmetry is structural — wholesalers pay the broker for retail flow rather than receiving a fee tier. Pump.fun has no fee tier; the edge is execution latency. General Market: on-chain, sealed bets, parimutuel, BLS-verified — no fee tier to sell.
           </div>
         </div>
       </Reveal>

@@ -135,13 +135,6 @@ const LATENCY_ROWS: LatencyRow[] = [
     barrierSource: { label: 'Deribit · FIX', url: 'https://docs.deribit.com/?javascript#fix-api' },
   },
   {
-    slug: 'fxcfd', name: 'FX / CFD industry', edgeMs: 65, gatedMs: 40, mechanism: 'cross-connect',
-    lane: 'NY4 (Equinix Secaucus) LP cross-connect vs retail home internet',
-    barrier: 'NY4 full cabinet $1.5–3k/mo + cross-connects $100–300/mo each + setup $500–1,500',
-    source: { label: 'Equinix · NY4', url: 'https://www.equinix.com/data-centers/americas-colocation/united-states-colocation/new-york-data-centers/ny4' },
-    barrierSource: { label: 'UPSTACK · NY4 pricing', url: 'https://marketplace.upstack.com/data-centers/equinix-colocation-new-jersey' },
-  },
-  {
     slug: 'coinbase', name: 'Coinbase', edgeMs: 60, gatedMs: 5, mechanism: 'colo',
     lane: 'Coinbase Prime us-east-1 / Equinix LD4 vs Asian or EU retail',
     barrier: 'Coinbase Prime onboarding · institutional FIX endpoint',
@@ -680,7 +673,7 @@ export function ColocationSection() {
               borderTop: `1px solid ${LINE}`,
             }}
           >
-            Accent bar = total geographic + structural edge. Faded portion = what a $50/mo VPS in the same AWS region already gives anyone — no contract, no application, no KYC. Solid portion (and the grey "gated" number) = the part that genuinely costs more than $100/month to access: colocated cabinet, dedicated FIX gateway, designated-MM contract, capital-gated DMA, Citadel PFOF deal, or an internal CFD book retail can never bypass. For Hyperliquid, Binance, Bybit, Polymarket, Deribit, Coinbase: most of the visible edge is permissionless AWS-region proximity; the real barrier is a small marginal improvement on top. For eToro, Robinhood, IBKR, FX/CFD, Kalshi: every millisecond is gated — there is no public-market lane to rent. General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no permissionless seat, no door.
+            Accent bar = total geographic + structural edge. Faded portion = what a $50/mo VPS in the same AWS region already gives anyone — no contract, no application, no KYC. Solid portion (and the grey "gated" number) = the part that genuinely costs more than $100/month to access: colocated cabinet, dedicated FIX gateway, designated-MM contract, capital-gated DMA, Citadel PFOF deal, or an internal CFD book retail can never bypass. For Hyperliquid, Binance, Bybit, Polymarket, Deribit, Coinbase: most of the visible edge is permissionless AWS-region proximity; the real barrier is a small marginal improvement on top. For eToro, Robinhood, IBKR, Kalshi: every millisecond is gated — there is no public-market lane to rent. General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no permissionless seat, no door.
           </div>
 
           <AssumptionsBlock />

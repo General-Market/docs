@@ -11,13 +11,13 @@ import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
 import { polymarket, kalshi, robinhood } from './data-prediction'
 import { ibkr, etoro } from './data-brokers'
-import { pumpfun, fxcfd } from './data-misc'
+import { pumpfun } from './data-misc'
 import type { Venue } from './types'
 
 export const metadata: Metadata = {
   title: 'Anti-Cheat Flags — General Market',
   description:
-    'Twelve venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
+    'Eleven venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
   alternates: { canonical: '/anticheat-flags' },
   robots: { index: true, follow: true },
 }
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 const VENUES: Venue[] = [
   binance, coinbase, bybit, hyperliquid, deribit,
   polymarket, kalshi, robinhood, ibkr, etoro,
-  pumpfun, fxcfd,
+  pumpfun,
 ]
 
 const TEXT = 'var(--apple-text)'
@@ -137,7 +137,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 680,
                 }}
               >
-                Twelve venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.
+                Eleven venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.
               </p>
             </Reveal>
 
@@ -350,7 +350,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 820,
                 }}
               >
-                Twelve venues. The same handful of mechanisms. We built one without the room.
+                Eleven venues. The same handful of mechanisms. We built one without the room.
               </h2>
             </Reveal>
             <Reveal delay={0.08}>
