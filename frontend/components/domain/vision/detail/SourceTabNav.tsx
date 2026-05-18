@@ -135,7 +135,7 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
           fontFamily: 'var(--apple-font-text)',
           fontSize: 13,
           lineHeight: 1.3,
-          letterSpacing: -0.005,
+          letterSpacing: '-0.005em',
           color: 'var(--apple-text)',
           fontVariantNumeric: 'tabular-nums',
         }}
