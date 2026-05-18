@@ -204,12 +204,13 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
   const markets = await listMorphoMarkets()
   if (markets.length === 0) return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: 'no morpho markets' }
 
-  // Bias toward markets the wallet can actually borrow against. Scan up to
-  // 16 random markets and look for one where the wallet either already has
-  // a Morpho collateral position OR holds the underlying collateral ERC20.
-  // Falls back to a single random pick so the original "no collateral"
-  // skip path still surfaces during cold-start.
-  const candidates = [...markets].sort(() => Math.random() - 0.5).slice(0, Math.min(16, markets.length))
+  // Bias toward markets the wallet can actually borrow against. Scan every
+  // market and look for one where the wallet either already has a Morpho
+  // collateral position OR holds the underlying collateral ERC20. Shuffle
+  // so successive borrow ticks don't keep racing the same market.
+  // Falls back to a single random pick so the deeper skip path still
+  // surfaces during cold-start.
+  const candidates = [...markets].sort(() => Math.random() - 0.5)
   let m: MorphoMarket | undefined
   let collBal = 0n
   for (const candidate of candidates) {
