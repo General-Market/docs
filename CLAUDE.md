@@ -16,7 +16,7 @@ This finds root causes that sequential debugging misses — one agent finds the 
 
 **Every agent, every sub-agent, every session MUST commit AND push after completing work.**
 
-The pipeline: commit → `git push mono main` → post-commit hook pings the Dokploy webhook on **VPS 3** (`159.195.77.160`, alias `vps3` or `index-maker/prod/fe`) → Dokploy clones `General-Market/mono` over SSH (deploy key wired in Dokploy's `ssh-key` table), builds from `/frontend` or `/nsgame` via nixpacks, replaces the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io` and `nsgame.org`. Public mirrors (`gm-frontend`, `gm-nsgame`) are gone — the only source of truth is mono. Skipping the push breaks the deploy chain. Work that isn't pushed doesn't exist.
+The pipeline: commit → `git push mono main` → post-commit hook pings the Dokploy webhook on **VPS 3** (`159.195.77.160`, alias `vps3` or `index-maker/prod/fe`) → Dokploy clones `General-Market/mono` over SSH (deploy key wired in Dokploy's `ssh-key` table), builds from `/frontend` via nixpacks, replaces the container, Traefik (port 8080) serves it, nginx terminates HTTPS for `generalmarket.io`. The `gm-frontend` public mirror is gone — the only source of truth is mono. Skipping the push breaks the deploy chain. Work that isn't pushed doesn't exist.
 
 **Rules:**
 1. After completing any task/feature: stage changed files, commit, `git push mono main`
@@ -29,14 +29,14 @@ The pipeline: commit → `git push mono main` → post-commit hook pings the Dok
 
 ### Dokploy Source: mono via SSH (no public mirrors)
 
-Both production apps — `frontend/` (generalmarket.io) and `nsgame/` (nsgame.org) — are sub-paths of the private `General-Market/mono` repo. Dokploy clones mono over SSH using a read-only deploy key (entry `mono-readonly` in Dokploy's `ssh-key` table; public key registered as a deploy key on the GitHub repo). Build paths are `/frontend` and `/nsgame`. The post-commit hook (`scripts/notify-dokploy.sh`) just pings the per-app webhook after each push to mono — Dokploy then re-clones mono and rebuilds.
+The frontend (generalmarket.io) is a sub-path of the private `General-Market/mono` repo. Dokploy clones mono over SSH using a read-only deploy key (entry `mono-readonly` in Dokploy's `ssh-key` table; public key registered as a deploy key on the GitHub repo). Build path is `/frontend`. The post-commit hook (`scripts/notify-dokploy.sh`) just pings the webhook after each push to mono — Dokploy then re-clones mono and rebuilds.
 
-The old public mirrors (`gm-frontend`, `gm-nsgame`) and their `sync-*.sh` scripts have been removed. Don't recreate them.
+The old `gm-frontend` public mirror and its `sync-*.sh` script have been removed. Don't recreate them. The `nsgame/` subpath stays in mono as code only — nsgame production was killed on 2026-05-18 (see `nsgame-production-killed.md` memory).
 
 **NEVER:**
-- Run `git init` inside `frontend/` or `nsgame/`
-- Run `git pull` or `git fetch` from inside those directories
-- Recreate the `gm-frontend` / `gm-nsgame` remotes
+- Run `git init` inside `frontend/`
+- Run `git pull` or `git fetch` from inside that directory
+- Recreate the `gm-frontend` remote
 - Use Vercel CLI — the project is gone
 
 **Inspecting prod deploys:**
@@ -175,24 +175,15 @@ Not a concern. Break interfaces, change function signatures, remove deprecated s
 
 Oracles **only run on VPS** — never locally. Don't create local oracle startup scripts, don't test oracles on localhost.
 
-**Two oracle stacks, two homes — do not mix.**
-
-### Ethereum L3 BLS oracles (existing)
+### Ethereum L3 BLS oracles
 All EVM-side oracle infrastructure lives in `docker/testnet/oracle/` and runs via Docker Compose on **VPS 1**.
 - SSH: `ssh index-maker/prod/be`
 - Logs: `docker logs oracle-1 --tail 100` (oracle-1, oracle-2, oracle-3)
 - Restart: `cd /home/max/index && docker compose -f docker/testnet/oracle/docker-compose.yml restart`
 
-### Solana oracle + indexer + Postgres — **VPS 3 only**
-The full Solana stack (oracle daemon, event indexer, its Postgres) runs on **VPS 3 exclusively**. No Solana component runs on VPS 1 or VPS 2 — ever. If you catch a deploy targeting either, stop and re-target.
-- SSH: `ssh vps3` (direct, no bastion; user `root`, port 3189) or `ssh index-maker/prod/fe`
-- Oracle daemon logs: `journalctl -u prediction-oracle -f`
-- Indexer logs: `journalctl -u prediction-indexer -f`
-- Postgres: `psql -h 127.0.0.1 -U indexer prediction_market_indexer`
-- Binaries built on VPS 3 from `/home/max/index/oracle-daemon/` and `/home/max/index/event-indexer/` (clone or git-pull the mono repo on VPS 3)
-- Devnet program: `DQwMnwQGYuLDvciSFZNgUvcHkA3Buyhk3ejgbACvSydA`
+The Solana oracle/indexer stack that used to run on VPS 3 was wiped on 2026-05-18. Code remains under `nsgame/` in mono. If it comes back, the scripts under `nsgame/scripts/` describe the old VPS 3 setup; treat them as historical until reverified.
 
-Full inventory, env vars, and deploy paths are in `vps.md` under the "VPS 3" section.
+Full inventory in `vps.md` under "VPS 3".
 
 ## Contracts
 
