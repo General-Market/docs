@@ -365,6 +365,14 @@ export function PnlChart({ history, hero, currentPnlOverride, range: controlledR
               stroke={strokeColor}
               strokeWidth={hero ? 2 : 1.5}
               fill="url(#pnlGradient)"
+              // baseValue="dataMin" anchors the fill to the visible data's
+              // minimum rather than 0 or the Y-domain bottom. Without it, an
+              // expanded domain (Y clamped to ~25% of cost basis to keep small
+              // dips visually small) forces recharts to close the area with a
+              // huge vertical edge at the right side of the chart — reads as
+              // a portfolio crash. With it, the fill is a thin ribbon under
+              // the line, scaling with actual variation.
+              baseValue="dataMin"
             />
           </AreaChart>
         </ResponsiveContainer>
