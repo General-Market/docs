@@ -126,6 +126,7 @@ import { blockTradingExileMeta } from "./compositions/block-trading/BlockTrading
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
+import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -847,6 +848,14 @@ export const RemotionRoot: React.FC = () => {
           fps={financeChartsReelMeta.fps}
           width={financeChartsReelMeta.width}
           height={financeChartsReelMeta.height}
+        />
+        <Composition
+          id={financeChartsCompareMeta.id}
+          component={financeChartsCompareMeta.component}
+          durationInFrames={financeChartsCompareMeta.durationInFrames}
+          fps={financeChartsCompareMeta.fps}
+          width={financeChartsCompareMeta.width}
+          height={financeChartsCompareMeta.height}
         />
       </Folder>
 
