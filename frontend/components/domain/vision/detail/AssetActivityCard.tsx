@@ -10,6 +10,15 @@ interface Props {
   assetId: string
   isPrice: boolean
   valueUnit: string
+  thresholdBps?: number | null
+  resolutionType?: string | null
+}
+
+function formatRulePct(bps: number): string {
+  const pct = bps / 100
+  if (pct >= 10) return `${pct.toFixed(0)}%`
+  if (pct >= 1) return `${pct.toFixed(1).replace(/\.0$/, '')}%`
+  return `${pct.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`
 }
 
 interface PricePoint {
@@ -209,7 +218,15 @@ export function AssetActivityCard({
   assetId,
   isPrice,
   valueUnit,
+  thresholdBps,
+  resolutionType,
 }: Props) {
+  const thresholdRatio =
+    thresholdBps != null && thresholdBps > 0 ? thresholdBps / 10000 : null
+  const thresholdLabel =
+    thresholdBps != null && thresholdBps > 0 ? formatRulePct(thresholdBps) : null
+  const isBinary =
+    thresholdBps === 0 || (resolutionType ?? '').endsWith('_0')
   const [windowHours, setWindowHours] = useState<WindowHours>(12)
   const [chartMode, setChartMode] = useState<ChartMode>('settlement')
   const [leftIdx, setLeftIdx] = useState(0)
@@ -319,9 +336,10 @@ export function AssetActivityCard({
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
-    if (all.length === 0) return 0.95
-    return Math.min(...all, 1.0)
-  }, [assetRatios, points])
+    const dataMin = all.length === 0 ? 0.95 : Math.min(...all, 1.0)
+    if (thresholdRatio == null) return dataMin
+    return Math.min(dataMin, 1.0 - thresholdRatio * 1.2)
+  }, [assetRatios, points, thresholdRatio])
   const yMax = useMemo(() => {
     const all: number[] = []
     for (const r of assetRatios) if (r != null) all.push(r)
@@ -329,9 +347,10 @@ export function AssetActivityCard({
       const v0 = points[0].value
       if (v0 !== 0) for (const p of points) all.push(p.value / v0)
     }
-    if (all.length === 0) return 1.05
-    return Math.max(...all, 1.0)
-  }, [assetRatios, points])
+    const dataMax = all.length === 0 ? 1.05 : Math.max(...all, 1.0)
+    if (thresholdRatio == null) return dataMax
+    return Math.max(dataMax, 1.0 + thresholdRatio * 1.2)
+  }, [assetRatios, points, thresholdRatio])
   const ySpan = Math.max(1e-12, yMax - yMin)
 
   const lineColor = useMemo(() => {
@@ -466,6 +485,8 @@ export function AssetActivityCard({
       chartMode={chartMode}
       onChartModeChange={setChartMode}
       showLegend={hasMatrix && chartMode === 'settlement'}
+      thresholdLabel={thresholdLabel}
+      isBinary={isBinary}
     />
   )
 
@@ -519,6 +540,7 @@ export function AssetActivityCard({
               yMax={yMax}
               ySpan={ySpan}
               lineColor={lineColor}
+              thresholdRatio={thresholdRatio}
             />
           </div>
         </div>
@@ -667,6 +689,40 @@ export function AssetActivityCard({
                   />
                 )
               })}
+              {/* Flat-zone band: |move| < threshold settles Flat. */}
+              {thresholdRatio != null && baselineY != null
+                ? (() => {
+                    const yUp = yForRatio(1 + thresholdRatio)
+                    const yDn = yForRatio(1 - thresholdRatio)
+                    return (
+                      <>
+                        <rect
+                          x={0}
+                          y={yUp}
+                          width={innerWidth}
+                          height={Math.max(0, yDn - yUp)}
+                          fill="rgba(148,163,184,0.10)"
+                        />
+                        <line
+                          x1={0}
+                          x2={innerWidth}
+                          y1={yUp}
+                          y2={yUp}
+                          stroke="rgba(52,199,89,0.30)"
+                          strokeDasharray="4 4"
+                        />
+                        <line
+                          x1={0}
+                          x2={innerWidth}
+                          y1={yDn}
+                          y2={yDn}
+                          stroke="rgba(255,59,48,0.30)"
+                          strokeDasharray="4 4"
+                        />
+                      </>
+                    )
+                  })()
+                : null}
               {/* Baseline at ratio = 1.0 */}
               {baselineY != null ? (
                 <line
@@ -804,6 +860,7 @@ function TimeChart({
   yMax,
   ySpan,
   lineColor,
+  thresholdRatio,
 }: {
   points: PricePoint[]
   baseAsset: number | null | undefined
@@ -811,6 +868,7 @@ function TimeChart({
   yMax: number
   ySpan: number
   lineColor: string
+  thresholdRatio: number | null
 }) {
   // Use a viewBox so the SVG stretches to container width.
   const W = 1000
@@ -864,6 +922,41 @@ function TimeChart({
       height={H}
       style={{ display: 'block' }}
     >
+      {thresholdRatio != null && isFinite(baselineY)
+        ? (() => {
+            const yUp = yForRatio(1 + thresholdRatio)
+            const yDn = yForRatio(1 - thresholdRatio)
+            return (
+              <>
+                <rect
+                  x={0}
+                  y={yUp}
+                  width={W}
+                  height={Math.max(0, yDn - yUp)}
+                  fill="rgba(148,163,184,0.10)"
+                />
+                <line
+                  x1={0}
+                  x2={W}
+                  y1={yUp}
+                  y2={yUp}
+                  stroke="rgba(52,199,89,0.30)"
+                  strokeDasharray="4 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <line
+                  x1={0}
+                  x2={W}
+                  y1={yDn}
+                  y2={yDn}
+                  stroke="rgba(255,59,48,0.30)"
+                  strokeDasharray="4 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </>
+            )
+          })()
+        : null}
       {isFinite(baselineY) ? (
         <line
           x1={0}
@@ -872,6 +965,7 @@ function TimeChart({
           y2={baselineY}
           stroke="rgba(0,0,0,0.08)"
           strokeDasharray="3 3"
+          vectorEffect="non-scaling-stroke"
         />
       ) : null}
       <path d={assetPath} stroke={lineColor} strokeWidth={1.5} fill="none" vectorEffect="non-scaling-stroke" />
@@ -1048,6 +1142,8 @@ function Header({
   onWindowChange,
   chartMode,
   onChartModeChange,
+  thresholdLabel,
+  isBinary,
 }: {
   isPrice: boolean
   valueUnit: string
@@ -1059,6 +1155,8 @@ function Header({
   onWindowChange: (h: WindowHours) => void
   chartMode: ChartMode
   onChartModeChange: (m: ChartMode) => void
+  thresholdLabel: string | null
+  isBinary: boolean
 }) {
   return (
     <header
@@ -1128,7 +1226,16 @@ function Header({
         }}
       >
         <LegendDot color="rgb(52,199,89)" label="price" />
-        {showLegend ? <span>▲ ▼ · faded = lost · winner pays</span> : null}
+        {thresholdLabel && !isBinary ? (
+          <span style={{ textTransform: 'none', letterSpacing: 0 }}>
+            <span style={{ color: 'rgb(52,199,89)' }}>▲ ≥ +{thresholdLabel}</span>
+            <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
+            <span style={{ color: 'rgb(255,59,48)' }}>▼ ≤ −{thresholdLabel}</span>
+            <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
+            <span style={{ color: 'var(--apple-text-tertiary)' }}>flat band ±{thresholdLabel}</span>
+          </span>
+        ) : null}
+        {showLegend ? <span>faded = lost · winner pays</span> : null}
       </div>
     </header>
   )
