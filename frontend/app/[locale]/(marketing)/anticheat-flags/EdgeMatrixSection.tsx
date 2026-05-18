@@ -12,9 +12,32 @@ const SECONDARY = 'var(--apple-text-secondary)'
 const TERTIARY = 'var(--apple-text-tertiary)'
 const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
+const ACCENT_MID = 'color-mix(in srgb, var(--apple-accent) 75%, white)'
+const ACCENT_LIGHT = 'color-mix(in srgb, var(--apple-accent) 55%, white)'
 const SURFACE = 'var(--apple-surface)'
 
 const CATEGORY_ORDER: EdgeCategory[] = ['information', 'latency', 'execution', 'subsidy', 'risk']
+
+function computeBarColors(rows: CompanyRow[]): Map<string, string> {
+  const groupBuckets = new Map<string, CompanyRow[]>()
+  for (const r of rows) {
+    if (!r.group) continue
+    const arr = groupBuckets.get(r.group) ?? []
+    arr.push(r)
+    groupBuckets.set(r.group, arr)
+  }
+  const colorBySlug = new Map<string, string>()
+  for (const r of rows) {
+    const siblings = r.group ? groupBuckets.get(r.group) : undefined
+    if (!siblings || siblings.length < 2) {
+      colorBySlug.set(r.slug, ACCENT)
+      continue
+    }
+    const idx = siblings.findIndex(s => s.slug === r.slug)
+    colorBySlug.set(r.slug, idx === 0 ? ACCENT : idx === 1 ? ACCENT_LIGHT : ACCENT_MID)
+  }
+  return colorBySlug
+}
 
 function formatNumber(value: number): string {
   const abs = Math.abs(value)
@@ -47,7 +70,7 @@ function MechanismPill({ tag }: { tag: string }) {
   )
 }
 
-function CompanyBar({ row, max, unit }: { row: CompanyRow; max: number; unit: string }) {
+function CompanyBar({ row, max, unit, color }: { row: CompanyRow; max: number; unit: string; color: string }) {
   const pct = max === 0 ? 0 : Math.max((row.value / max) * 100, row.value > 0 ? 1.5 : 0)
   const gatedPct = row.value === 0 ? 0 : Math.min((row.gatedValue / row.value) * 100, 100)
   return (
@@ -96,7 +119,7 @@ function CompanyBar({ row, max, unit }: { row: CompanyRow; max: number; unit: st
                 left: 0,
                 bottom: 0,
                 width: `${pct}%`,
-                background: ACCENT,
+                background: color,
                 opacity: 0.32,
                 borderRadius: 4,
               }}
@@ -108,7 +131,7 @@ function CompanyBar({ row, max, unit }: { row: CompanyRow; max: number; unit: st
                 left: 0,
                 bottom: 0,
                 width: `${pct * (gatedPct / 100)}%`,
-                background: ACCENT,
+                background: color,
                 borderRadius: 4,
               }}
             />
@@ -125,7 +148,7 @@ function CompanyBar({ row, max, unit }: { row: CompanyRow; max: number; unit: st
           lineHeight: 1.05,
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 600, color: ACCENT }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color }}>
           {formatNumber(row.value)} {unit.split(' ')[0]}
         </div>
         <div
@@ -210,8 +233,27 @@ function GeneralMarketRow({ label }: { label: string }) {
 }
 
 function TopicBlock({ topic }: { topic: EdgeTopic }) {
-  const sorted = topic.rows.slice().sort((a, b) => b.value - a.value)
+  const valueSorted = topic.rows.slice().sort((a, b) => b.value - a.value)
+  // Pull same-group rows adjacent. Preserve the value ordering for the group's
+  // first row; siblings follow immediately after.
+  const seen = new Set<string>()
+  const sorted: CompanyRow[] = []
+  for (const r of valueSorted) {
+    if (seen.has(r.slug)) continue
+    sorted.push(r)
+    seen.add(r.slug)
+    if (r.group) {
+      for (const sib of valueSorted) {
+        if (sib.slug === r.slug) continue
+        if (sib.group === r.group && !seen.has(sib.slug)) {
+          sorted.push(sib)
+          seen.add(sib.slug)
+        }
+      }
+    }
+  }
   const max = Math.max(...sorted.map(r => r.value), 0.0001)
+  const colorBySlug = computeBarColors(sorted)
   return (
     <Reveal>
       <div
@@ -267,7 +309,13 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {sorted.map(row => (
-            <CompanyBar key={row.slug} row={row} max={max} unit={topic.unit} />
+            <CompanyBar
+              key={row.slug}
+              row={row}
+              max={max}
+              unit={topic.unit}
+              color={colorBySlug.get(row.slug) ?? ACCENT}
+            />
           ))}
           <GeneralMarketRow label={topic.generalMarketLabel} />
         </div>
@@ -282,58 +330,61 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
             gap: '14px 22px',
           }}
         >
-          {sorted.map(row => (
-            <div
-              key={row.slug}
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 11,
-                color: TERTIARY,
-                letterSpacing: '-0.005em',
-                lineHeight: 1.5,
-              }}
-            >
+          {sorted.map(row => {
+            const rowColor = colorBySlug.get(row.slug) ?? ACCENT
+            return (
               <div
+                key={row.slug}
                 style={{
-                  color: TEXT,
-                  fontWeight: 500,
-                  marginBottom: 3,
-                  fontVariantNumeric: 'tabular-nums',
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                  lineHeight: 1.5,
                 }}
               >
-                {row.name} ·{' '}
-                <span style={{ color: ACCENT }}>
-                  {formatNumber(row.value)} {topic.unit.split(' ')[0]}
-                </span>{' '}
-                ·{' '}
-                <span style={{ color: TERTIARY }}>
-                  {formatNumber(row.gatedValue)} gated
-                </span>
+                <div
+                  style={{
+                    color: TEXT,
+                    fontWeight: 500,
+                    marginBottom: 3,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {row.name} ·{' '}
+                  <span style={{ color: rowColor }}>
+                    {formatNumber(row.value)} {topic.unit.split(' ')[0]}
+                  </span>{' '}
+                  ·{' '}
+                  <span style={{ color: TERTIARY }}>
+                    {formatNumber(row.gatedValue)} gated
+                  </span>
+                </div>
+                <div style={{ marginBottom: 4 }}>{row.lane}</div>
+                <div style={{ marginBottom: 6, color: SECONDARY, fontStyle: 'italic' }}>
+                  Barrier: {row.barrier}
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {row.sources.map((s, i) => (
+                    <a
+                      key={i}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: rowColor,
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                      className="hover:underline"
+                    >
+                      {s.label} ›
+                    </a>
+                  ))}
+                </div>
               </div>
-              <div style={{ marginBottom: 4 }}>{row.lane}</div>
-              <div style={{ marginBottom: 6, color: SECONDARY, fontStyle: 'italic' }}>
-                Barrier: {row.barrier}
-              </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {row.sources.map((s, i) => (
-                  <a
-                    key={i}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: ACCENT,
-                      fontSize: 11,
-                      fontWeight: 500,
-                    }}
-                    className="hover:underline"
-                  >
-                    {s.label} ›
-                  </a>
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </Reveal>
