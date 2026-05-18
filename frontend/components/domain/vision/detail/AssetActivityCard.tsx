@@ -540,7 +540,6 @@ export function AssetActivityCard({
               yMax={yMax}
               ySpan={ySpan}
               lineColor={lineColor}
-              thresholdRatio={thresholdRatio}
             />
           </div>
         </div>
@@ -689,37 +688,35 @@ export function AssetActivityCard({
                   />
                 )
               })}
-              {/* Flat-zone band: |move| < threshold settles Flat. */}
-              {thresholdRatio != null && baselineY != null
+              {/* Threshold tick on the *latest* settlement only. Older
+                  batches used their own thresholds — drawing one constant
+                  band across the chart would lie. Per-batch thresholds will
+                  land once the oracle payload carries them. */}
+              {thresholdRatio != null && columns.length > 0
                 ? (() => {
+                    const i = columns.length - 1
+                    const x = xForIdx(i)
                     const yUp = yForRatio(1 + thresholdRatio)
                     const yDn = yForRatio(1 - thresholdRatio)
                     return (
-                      <>
-                        <rect
-                          x={0}
-                          y={yUp}
-                          width={innerWidth}
-                          height={Math.max(0, yDn - yUp)}
-                          fill="rgba(148,163,184,0.10)"
-                        />
+                      <g opacity={0.7}>
                         <line
-                          x1={0}
-                          x2={innerWidth}
+                          x1={x - 7}
+                          x2={x + 7}
                           y1={yUp}
                           y2={yUp}
-                          stroke="rgba(52,199,89,0.30)"
-                          strokeDasharray="4 4"
+                          stroke="rgba(52,199,89,0.75)"
+                          strokeWidth={1}
                         />
                         <line
-                          x1={0}
-                          x2={innerWidth}
+                          x1={x - 7}
+                          x2={x + 7}
                           y1={yDn}
                           y2={yDn}
-                          stroke="rgba(255,59,48,0.30)"
-                          strokeDasharray="4 4"
+                          stroke="rgba(255,59,48,0.75)"
+                          strokeWidth={1}
                         />
-                      </>
+                      </g>
                     )
                   })()
                 : null}
@@ -860,7 +857,6 @@ function TimeChart({
   yMax,
   ySpan,
   lineColor,
-  thresholdRatio,
 }: {
   points: PricePoint[]
   baseAsset: number | null | undefined
@@ -868,7 +864,6 @@ function TimeChart({
   yMax: number
   ySpan: number
   lineColor: string
-  thresholdRatio: number | null
 }) {
   // Use a viewBox so the SVG stretches to container width.
   const W = 1000
@@ -922,41 +917,6 @@ function TimeChart({
       height={H}
       style={{ display: 'block' }}
     >
-      {thresholdRatio != null && isFinite(baselineY)
-        ? (() => {
-            const yUp = yForRatio(1 + thresholdRatio)
-            const yDn = yForRatio(1 - thresholdRatio)
-            return (
-              <>
-                <rect
-                  x={0}
-                  y={yUp}
-                  width={W}
-                  height={Math.max(0, yDn - yUp)}
-                  fill="rgba(148,163,184,0.10)"
-                />
-                <line
-                  x1={0}
-                  x2={W}
-                  y1={yUp}
-                  y2={yUp}
-                  stroke="rgba(52,199,89,0.30)"
-                  strokeDasharray="4 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-                <line
-                  x1={0}
-                  x2={W}
-                  y1={yDn}
-                  y2={yDn}
-                  stroke="rgba(255,59,48,0.30)"
-                  strokeDasharray="4 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </>
-            )
-          })()
-        : null}
       {isFinite(baselineY) ? (
         <line
           x1={0}
@@ -1228,11 +1188,9 @@ function Header({
         <LegendDot color="rgb(52,199,89)" label="price" />
         {thresholdLabel && !isBinary ? (
           <span style={{ textTransform: 'none', letterSpacing: 0 }}>
-            <span style={{ color: 'rgb(52,199,89)' }}>▲ ≥ +{thresholdLabel}</span>
+            Latest band <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>±{thresholdLabel}</span>
             <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
-            <span style={{ color: 'rgb(255,59,48)' }}>▼ ≤ −{thresholdLabel}</span>
-            <span style={{ margin: '0 6px', color: 'var(--apple-text-tertiary)' }}>·</span>
-            <span style={{ color: 'var(--apple-text-tertiary)' }}>flat band ±{thresholdLabel}</span>
+            <span style={{ color: 'var(--apple-text-tertiary)' }}>reseeds each batch</span>
           </span>
         ) : null}
         {showLegend ? <span>faded = lost · winner pays</span> : null}

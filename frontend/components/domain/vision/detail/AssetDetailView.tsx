@@ -27,13 +27,6 @@ function formatPct(bps: number): string {
   return `${pct.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`
 }
 
-function formatTick(secs: number): string {
-  if (secs >= 86_400) return `${Math.round(secs / 86_400)}d`
-  if (secs >= 3_600) return `${Math.round(secs / 3_600)}h`
-  if (secs >= 60) return `${Math.round(secs / 60)}m`
-  return `${secs}s`
-}
-
 function formatValue(v: number, isPrice: boolean, unit: string | undefined): string {
   if (!isFinite(v)) return '--'
   if (Math.abs(v) >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
@@ -103,7 +96,6 @@ export function AssetDetailView({
     return {
       resolutionType: (entry.resolutionType ?? '').toLowerCase(),
       thresholdBps: entry.thresholdBps ?? 0,
-      tickDurationSecs: batchConfig?.tickDurationSecs ?? 0,
     }
   }, [batchConfig, assetId])
 
@@ -202,10 +194,9 @@ export function AssetDetailView({
             </div>
           )}
           {rule && (
-            <RuleRow
+            <LatestBandPill
               thresholdBps={rule.thresholdBps}
               resolutionType={rule.resolutionType}
-              tickDurationSecs={rule.tickDurationSecs}
             />
           )}
         </div>
@@ -224,62 +215,46 @@ export function AssetDetailView({
   )
 }
 
-function RuleRow({
+function LatestBandPill({
   thresholdBps,
   resolutionType,
-  tickDurationSecs,
 }: {
   thresholdBps: number
   resolutionType: string
-  tickDurationSecs: number
 }) {
-  const tickLabel = tickDurationSecs > 0 ? formatTick(tickDurationSecs) : null
   const pctLabel = thresholdBps > 0 ? formatPct(thresholdBps) : null
   const binary = thresholdBps === 0 || resolutionType.endsWith('_0')
 
   return (
     <div
-      className="mt-3 flex flex-wrap items-center"
+      className="mt-3 inline-flex items-center"
       style={{
-        gap: 14,
+        gap: 8,
+        padding: '5px 10px',
+        borderRadius: 'var(--apple-r-sm)',
+        background: 'rgba(0,0,0,0.04)',
         fontFamily: 'var(--apple-font-text)',
         fontSize: 12,
+        letterSpacing: 0,
         color: 'var(--apple-text-secondary)',
         fontVariantNumeric: 'tabular-nums',
-        letterSpacing: 'var(--apple-track-tight)',
       }}
     >
       <span
         style={{
-          fontSize: 9,
-          fontWeight: 700,
+          fontSize: 10,
+          fontWeight: 600,
           letterSpacing: 'var(--apple-track-loose)',
           textTransform: 'uppercase',
           color: 'var(--apple-text-tertiary)',
-          padding: '2px 6px',
-          borderRadius: 4,
-          background: 'rgba(0,0,0,0.04)',
         }}
       >
-        Resolves
+        Last batch
       </span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ color: 'rgb(52,199,89)', fontWeight: 700 }}>▲</span>
-        <span>{binary ? 'any rise' : `≥ +${pctLabel}`}</span>
+      <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>
+        {binary ? 'any move wins' : `±${pctLabel} band`}
       </span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ color: 'rgb(255,59,48)', fontWeight: 700 }}>▼</span>
-        <span>{binary ? 'any fall' : `≤ −${pctLabel}`}</span>
-      </span>
-      {!binary && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ color: 'var(--apple-text-tertiary)', fontWeight: 700 }}>─</span>
-          <span>flat within ±{pctLabel}</span>
-        </span>
-      )}
-      {tickLabel && (
-        <span style={{ color: 'var(--apple-text-tertiary)' }}>· every {tickLabel}</span>
-      )}
+      <span style={{ color: 'var(--apple-text-tertiary)' }}>· reseeds next tick</span>
     </div>
   )
 }

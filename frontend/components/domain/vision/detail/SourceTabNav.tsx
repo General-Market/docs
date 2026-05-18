@@ -1,8 +1,20 @@
 'use client'
 
+import { useQuery } from '@tanstack/react-query'
 import { Link, usePathname } from '@/i18n/routing'
 
 export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard' | 'compare'
+
+interface SourceBatchMeta {
+  tickDurationSecs?: number
+}
+
+function formatTickDuration(secs: number): string {
+  if (secs >= 86_400) return `${Math.round(secs / 86_400)} d`
+  if (secs >= 3_600) return `${Math.round(secs / 3_600)} h`
+  if (secs >= 60) return `${Math.round(secs / 60)} min`
+  return `${secs} s`
+}
 
 interface Tab {
   id: SourceTab
@@ -46,6 +58,22 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
   const pathname = usePathname()
   const active = activeTabProp ?? deriveActiveTab(pathname, sourceId)
   const tabs = buildTabs(sourceId)
+
+  const { data: meta } = useQuery<SourceBatchMeta>({
+    queryKey: ['source-batch-meta', sourceId],
+    queryFn: async () => {
+      const res = await fetch(`/api/vision/config/${encodeURIComponent(sourceId)}`)
+      if (!res.ok) return {}
+      return res.json()
+    },
+    staleTime: 300_000,
+    retry: 1,
+  })
+
+  const tickLabel =
+    meta?.tickDurationSecs && meta.tickDurationSecs > 0
+      ? formatTickDuration(meta.tickDurationSecs)
+      : null
 
   return (
     <nav
@@ -94,6 +122,59 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
             </Link>
           )
         })}
+      </div>
+
+      <div
+        style={{
+          borderTop: '1px solid var(--apple-line)',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 14,
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 'var(--apple-fs-12)',
+          letterSpacing: 0,
+          color: 'var(--apple-text-secondary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: 999,
+              background: 'rgb(52,199,89)',
+              display: 'inline-block',
+            }}
+          />
+          <span style={{ color: 'var(--apple-text)', fontWeight: 500 }}>
+            {tickLabel ? `Settles every ${tickLabel}` : 'Settles in fixed batches'}
+          </span>
+        </span>
+        <span style={{ color: 'var(--apple-text-tertiary)' }}>
+          Each batch picks its own threshold — calibrated to recent volatility.
+        </span>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            marginLeft: 'auto',
+            color: 'var(--apple-text-tertiary)',
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: 'rgb(52,199,89)' }}>▲</span> over the band
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: 'rgb(255,59,48)' }}>▼</span> under it
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ opacity: 0.6 }}>─</span> inside it
+          </span>
+        </span>
       </div>
 
       <style>{`
