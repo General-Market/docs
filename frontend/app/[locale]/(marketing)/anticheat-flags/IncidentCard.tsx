@@ -6,7 +6,7 @@ const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
 const TERTIARY = 'var(--apple-text-tertiary)'
 
-export function IncidentCard({ incident, delay = 0, loop = false }: { incident: Incident; delay?: number; loop?: boolean }) {
+export function IncidentCard({ incident, delay = 0 }: { incident: Incident; delay?: number }) {
   const tone = incident.amountTone ?? 'loss'
   const amountColor =
     tone === 'loss' ? 'var(--apple-accent)' :
@@ -16,14 +16,21 @@ export function IncidentCard({ incident, delay = 0, loop = false }: { incident: 
 
   return (
     <Reveal delay={delay}>
-      <article
-        className="flex flex-col h-full"
+      <a
+        href={incident.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${incident.headline} — open source at ${incident.sourceLabel}`}
+        className="acf-card flex flex-col h-full no-underline"
         style={{
           background: 'var(--apple-panel)',
           border: '1px solid var(--apple-line)',
           borderRadius: 'var(--apple-r-md)',
           padding: 20,
           gap: 14,
+          color: TEXT,
+          textDecoration: 'none',
+          transition: 'transform 280ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 280ms cubic-bezier(0.32, 0.72, 0, 1), border-color 280ms cubic-bezier(0.32, 0.72, 0, 1)',
         }}
       >
         <header className="flex items-baseline justify-between gap-3">
@@ -65,7 +72,7 @@ export function IncidentCard({ incident, delay = 0, loop = false }: { incident: 
           {incident.headline}
         </h3>
 
-        <Diagram mechanism={incident.mechanism} loop={loop} {...incident.chart} />
+        <Diagram mechanism={incident.mechanism} {...incident.chart} />
 
         <p
           style={{
@@ -96,10 +103,8 @@ export function IncidentCard({ incident, delay = 0, loop = false }: { incident: 
           className="flex items-center justify-between gap-3 mt-auto pt-3"
           style={{ borderTop: '1px solid var(--apple-line)' }}
         >
-          <a
-            href={incident.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <span
+            className="acf-card-source"
             style={{
               fontFamily: 'var(--apple-font-text)',
               fontSize: 12,
@@ -107,10 +112,9 @@ export function IncidentCard({ incident, delay = 0, loop = false }: { incident: 
               color: 'var(--apple-accent)',
               letterSpacing: '-0.005em',
             }}
-            className="hover:underline"
           >
-            {incident.sourceLabel} ›
-          </a>
+            {incident.sourceLabel} <span className="acf-card-arrow">›</span>
+          </span>
           {incident.tag && (
             <span
               style={{
@@ -131,7 +135,7 @@ export function IncidentCard({ incident, delay = 0, loop = false }: { incident: 
             </span>
           )}
         </footer>
-      </article>
+      </a>
     </Reveal>
   )
 }

@@ -315,7 +315,6 @@ export default function AntiCheatFlagsPage() {
                     key={`${venue.slug}-${i}`}
                     incident={incident}
                     delay={Math.min(i * 0.04, 0.24)}
-                    loop={i === 0}
                   />
                 ))}
               </div>

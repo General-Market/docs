@@ -1,540 +1,419 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import type { ChartProps, Mechanism } from '../types'
 import './diagram.css'
 
-type Variant = 'loop' | 'reveal'
+/* ──────────────────────────────────────────────────────────────────────────
+   Mini candle chart per incident. Always looping. The accent colour is
+   red — the predator role — and the user appears as a horizontal price
+   line that breaks at the predator candle. The Girardian frame:
+   the market scapegoats one participant in order to keep moving.
+   ────────────────────────────────────────────────────────────────────────── */
 
-function useInViewOnce<T extends Element>(): [React.RefObject<T | null>, boolean] {
-  const ref = useRef<T | null>(null)
-  const [seen, setSeen] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            setSeen(true)
-            io.disconnect()
-            break
-          }
-        }
-      },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.18 }
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-  return [ref, seen]
+const APPLE_RED = '#FF3B30'
+const STROKE = '#4a4a4f'
+const STROKE_SOFT = '#b8b8bd'
+const GRID = 'rgba(0, 0, 0, 0.07)'
+const GRID_SOFT = 'rgba(0, 0, 0, 0.04)'
+const TEXT_TERT = '#6e6e73'
+
+const N = 12
+const VW = 400
+const VH = 108
+const PAD_X = 20
+const SLOT = (VW - PAD_X * 2) / N
+const BODY_W = SLOT * 0.48
+const CHART_TOP = 14
+const CHART_BOTTOM = 84
+
+function cx(i: number): number {
+  return PAD_X + SLOT * (i + 0.5)
 }
 
-function Frame({
-  variant,
-  children,
-}: {
-  variant: Variant
-  children: React.ReactNode
-}) {
-  const [ref, inView] = useInViewOnce<HTMLDivElement>()
-  const cls =
-    variant === 'loop' ? 'acd-frame is-loop' : `acd-frame ${inView ? 'is-in' : ''}`
+function py(p: number): number {
+  // p: 0..100, 0=bottom, 100=top
+  return CHART_BOTTOM - (p / 100) * (CHART_BOTTOM - CHART_TOP)
+}
+
+type Role = 'up' | 'down' | 'predator' | 'frozen' | 'carved'
+
+interface Candle {
+  o: number
+  h: number
+  l: number
+  c: number
+  role?: Role
+}
+
+interface Scene {
+  candles: Candle[]
+  ticks: [string, string, string, string]
+  victim: {
+    y: number              // price level (0..100)
+    label: string          // e.g. "U LONG"
+    breakIdx: number       // -1 = no break (line continues all the way)
+    liqLabel?: string      // shown at the break point
+  }
+  predator: {
+    label: string          // e.g. "SCAM WICK"
+    idx: number            // candle index to highlight (-1 = none)
+  }
+}
+
+type SceneKind = 'spike' | 'cliff' | 'runup' | 'dump' | 'drain' | 'freeze' | 'carve' | 'wash'
+
+function getKind(m: Mechanism): SceneKind {
+  switch (m) {
+    case 'price-wick':       return 'spike'
+    case 'rug-cliff':        return 'cliff'
+    case 'insider-runup':    return 'runup'
+    case 'listing-dump':     return 'dump'
+    case 'backdoor':         return 'drain'
+    case 'button-freeze':    return 'freeze'
+    case 'carveout':
+    case 'oracle-override':
+    case 'margin-doubled':
+    case 'socialized-loss':
+    case 'b-book-mirror':    return 'carve'
+    case 'wash-trading':     return 'wash'
+  }
+}
+
+/* ── Candle generators ────────────────────────────────────────────────── */
+
+function flat(n: number, mid: number, jitter = 2): Candle[] {
+  return Array.from({ length: n }, (_, k) => {
+    const o = mid + Math.sin(k * 1.7) * jitter
+    const c = mid + Math.cos(k * 2.3) * jitter
+    const h = Math.max(o, c) + jitter * 0.6
+    const l = Math.min(o, c) - jitter * 0.6
+    return { o, h, l, c, role: c >= o ? 'up' : 'down' }
+  })
+}
+
+function ramp(n: number, from: number, to: number, role: Role = 'up'): Candle[] {
+  const step = (to - from) / n
+  return Array.from({ length: n }, (_, k) => {
+    const o = from + step * k
+    const c = from + step * (k + 1)
+    const h = Math.max(o, c) + Math.abs(step) * 0.4 + 0.6
+    const l = Math.min(o, c) - Math.abs(step) * 0.4 - 0.6
+    return { o, h, l, c, role }
+  })
+}
+
+function frozen(n: number, mid: number): Candle[] {
+  return Array.from({ length: n }, () => ({
+    o: mid, h: mid + 0.6, l: mid - 0.6, c: mid, role: 'frozen' as Role,
+  }))
+}
+
+/* ── Scene builders ───────────────────────────────────────────────────── */
+
+function buildScene(kind: SceneKind, p: ChartProps): Scene {
+  const lossTxt = p.loss ?? ''
+  const moveTxt = p.pctMove ?? ''
+  const exTxt = p.extracted ?? ''
+
+  switch (kind) {
+    case 'spike': {
+      // Quiet long, sudden wick, recovery.
+      const base = flat(8, 52, 2)
+      const wick: Candle = { o: 52, h: 53, l: 8, c: 50, role: 'predator' }
+      const after = flat(3, 50, 1.5)
+      return {
+        candles: [...base, wick, ...after],
+        ticks: ['10:42', '10:43', '10:44', '10:45'],
+        victim: { y: 42, label: 'U STOP', breakIdx: 8, liqLabel: `LIQ ${lossTxt}` },
+        predator: { label: `SCAM WICK${moveTxt ? ' · ' + moveTxt : ''}`, idx: 8 },
+      }
+    }
+
+    case 'cliff': {
+      const climb = ramp(10, 30, 80, 'up')
+      const drop: Candle = { o: 80, h: 81, l: 8, c: 10, role: 'predator' }
+      const dead = flat(1, 9, 0.5)
+      return {
+        candles: [...climb, drop, ...dead],
+        ticks: ['DAY 1', 'DAY 30', 'DAY 60', 'DAY 91'],
+        victim: { y: 76, label: 'U HOLDS', breakIdx: 10, liqLabel: `WIPED ${lossTxt}` },
+        predator: { label: 'INSIDERS EXIT', idx: 10 },
+      }
+    }
+
+    case 'runup': {
+      // Flat then ramp before announcement — insider buying ahead.
+      const sleep = flat(6, 32, 1.5)
+      const climb = ramp(5, 32, 82, 'predator')
+      const peak: Candle = { o: 82, h: 90, l: 81, c: 88, role: 'predator' }
+      return {
+        candles: [...sleep, ...climb, peak],
+        ticks: ['T−14d', 'T−7d', 'T−1d', 'EVENT'],
+        victim: { y: 88, label: 'U BUYS', breakIdx: 11, liqLabel: `LATE ${lossTxt}` },
+        predator: { label: 'INSIDERS BUY EARLY', idx: 10 },
+      }
+    }
+
+    case 'dump': {
+      const initial: Candle = { o: 32, h: 92, l: 30, c: 58, role: 'predator' }
+      const grind = ramp(11, 58, 14, 'down')
+      return {
+        candles: [initial, ...grind],
+        ticks: ['LIST', '+5m', '+1h', '+1d'],
+        victim: { y: 78, label: 'U BUYS LIST', breakIdx: 0, liqLabel: `DOWN ${lossTxt}` },
+        predator: { label: 'MM DUMPS LISTING', idx: 0 },
+      }
+    }
+
+    case 'drain': {
+      // Balance candles. Stable then a collapse.
+      const stable = flat(9, 78, 1.2)
+      const drained: Candle = { o: 78, h: 79, l: 4, c: 6, role: 'predator' }
+      const zero = flat(2, 6, 0.8)
+      return {
+        candles: [...stable, drained, ...zero],
+        ticks: ['T−9', 'T−6', 'T−3', 'NOW'],
+        victim: { y: 74, label: 'USER BAL', breakIdx: 9, liqLabel: `DRAINED ${lossTxt}` },
+        predator: { label: 'HOT WALLET → 0', idx: 9 },
+      }
+    }
+
+    case 'freeze': {
+      const ok = flat(3, 76, 1.2)
+      const lock = frozen(6, 76)
+      const collapse: Candle = { o: 76, h: 76, l: 18, c: 20, role: 'predator' }
+      const after = flat(2, 20, 1)
+      return {
+        candles: [...ok, ...lock, collapse, ...after],
+        ticks: ['BUY OK', 'BTN OFF', 'CRASH', '+1d'],
+        victim: { y: 73, label: 'U LOCKED', breakIdx: 9, liqLabel: `LOCKED IN ${lossTxt}` },
+        predator: { label: 'EXIT DENIED', idx: 9 },
+      }
+    }
+
+    case 'carve': {
+      // Rising bodies — but every candle has an oversized red upper wick
+      // (the upside the venue carved off for itself).
+      const candles = ramp(12, 30, 60, 'carved').map((c, i) => ({
+        ...c,
+        h: c.h + 12 + Math.abs(Math.sin(i * 0.9)) * 6,
+      }))
+      return {
+        candles,
+        ticks: ['T0', 'T3', 'T6', 'T9'],
+        victim: { y: 50, label: 'U KEEPS', breakIdx: -1 },
+        predator: { label: `VENUE TAKES UPSIDE${exTxt ? ' · ' + exTxt : ''}`, idx: -1 },
+      }
+    }
+
+    case 'wash': {
+      // Doji-like bodies in tight range — fake volume, no net movement.
+      const candles: Candle[] = Array.from({ length: 12 }, (_, k) => {
+        const dir = k % 2 === 0 ? 1 : -1
+        return {
+          o: 50 - dir * 1.5,
+          c: 50 + dir * 1.5,
+          h: 50 + 6,
+          l: 50 - 6,
+          role: 'predator',
+        }
+      })
+      return {
+        candles,
+        ticks: ['00:00', '00:15', '00:30', '00:45'],
+        victim: { y: 50, label: 'NET 0', breakIdx: -1 },
+        predator: { label: `MM WASHES VOLUME${exTxt ? ' · ' + exTxt : ''}`, idx: -1 },
+      }
+    }
+
+  }
+}
+
+/* ── Rendering ────────────────────────────────────────────────────────── */
+
+function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
+  const x = cx(idx)
+  const role: Role = cd.role ?? (cd.c >= cd.o ? 'up' : 'down')
+  const top = py(cd.h)
+  const bot = py(cd.l)
+  const bodyTop = py(Math.max(cd.o, cd.c))
+  const bodyBot = py(Math.min(cd.o, cd.c))
+  const bodyH = Math.max(2, bodyBot - bodyTop)
+  const cls = `acd-candle acd-c-${idx}`
+
+  if (role === 'frozen') {
+    return (
+      <g className={cls}>
+        <line x1={x} y1={py(cd.h)} x2={x} y2={py(cd.l)} stroke={STROKE_SOFT} strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+        <rect x={x - BODY_W / 2} y={bodyTop - 1} width={BODY_W} height={3} fill="#fff" stroke={STROKE_SOFT} strokeWidth="0.75" strokeDasharray="2 2" opacity="0.55" rx="0.5" />
+      </g>
+    )
+  }
+
+  if (role === 'carved') {
+    // Upper wick rendered in red (carved upside), body kept neutral.
+    return (
+      <g className={cls}>
+        {/* red carved upper wick */}
+        <line x1={x} y1={top} x2={x} y2={bodyTop} stroke={APPLE_RED} strokeWidth="1.2" strokeLinecap="round" />
+        {/* lower wick */}
+        <line x1={x} y1={bodyBot} x2={x} y2={bot} stroke={STROKE_SOFT} strokeWidth="0.9" />
+        {/* body (kept) */}
+        <rect x={x - BODY_W / 2} y={bodyTop} width={BODY_W} height={bodyH} fill={STROKE} opacity="0.85" rx="0.5" />
+      </g>
+    )
+  }
+
+  const isPred = role === 'predator'
+  const isUp = role === 'up'
+  const bodyFill = isPred ? APPLE_RED : isUp ? '#ffffff' : STROKE
+  const bodyStroke = isPred ? APPLE_RED : STROKE
+  const wickStroke = isPred ? APPLE_RED : STROKE
+  const wickWidth = isPred ? 1.2 : 0.9
+
   return (
-    <div ref={ref} className={cls}>
-      {children}
+    <g className={cls}>
+      <line x1={x} y1={top} x2={x} y2={bot} stroke={wickStroke} strokeWidth={wickWidth} strokeLinecap="round" />
+      <rect
+        x={x - BODY_W / 2}
+        y={bodyTop}
+        width={BODY_W}
+        height={bodyH}
+        fill={bodyFill}
+        stroke={bodyStroke}
+        strokeWidth={isUp ? 1 : 0.5}
+        rx="0.5"
+      />
+    </g>
+  )
+}
+
+function CandleChart({ scene }: { scene: Scene }) {
+  const victimY = py(scene.victim.y)
+  const victimBreakX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : VW - PAD_X / 2
+  const liqX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : 0
+  const predatorX = scene.predator.idx >= 0 ? cx(scene.predator.idx) : 0
+  // Predator marker sits above the highest point of the highlighted candle.
+  const predatorY = scene.predator.idx >= 0
+    ? py(scene.candles[scene.predator.idx]?.h ?? 80) - 6
+    : 0
+
+  return (
+    <div className="acd-frame">
+      <div className="acd-head">
+        <span className="acd-eyebrow predator">{scene.predator.label}</span>
+        <span className="acd-eyebrow victim">{scene.victim.label}</span>
+      </div>
+
+      <div className="acd-canvas">
+        <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
+          {/* gridlines */}
+          <g className="acd-chrome">
+            <line x1="0" y1={CHART_TOP} x2={VW} y2={CHART_TOP} stroke={GRID_SOFT} strokeWidth="0.75" />
+            <line x1="0" y1={(CHART_TOP + CHART_BOTTOM) / 2} x2={VW} y2={(CHART_TOP + CHART_BOTTOM) / 2} stroke={GRID_SOFT} strokeWidth="0.75" strokeDasharray="2 3" />
+            <line x1="0" y1={CHART_BOTTOM} x2={VW} y2={CHART_BOTTOM} stroke={GRID} strokeWidth="0.75" />
+            {/* time ticks */}
+            {scene.ticks.map((t, i) => {
+              const tx = (i / (scene.ticks.length - 1)) * VW
+              return (
+                <g key={i}>
+                  <line x1={tx} y1={CHART_BOTTOM} x2={tx} y2={CHART_BOTTOM + 3} stroke={GRID} strokeWidth="0.75" />
+                  <text
+                    x={tx}
+                    y={CHART_BOTTOM + 13}
+                    textAnchor={i === 0 ? 'start' : i === scene.ticks.length - 1 ? 'end' : 'middle'}
+                    fontFamily="var(--apple-font-text)"
+                    fontSize="9"
+                    fontWeight={500}
+                    fill={TEXT_TERT}
+                    letterSpacing="0.08em"
+                    style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    {t}
+                  </text>
+                </g>
+              )
+            })}
+          </g>
+
+          {/* candles */}
+          {scene.candles.map((c, i) => (
+            <CandleEl key={i} idx={i} c={c} />
+          ))}
+
+          {/* predator pulse — soft halo above the predator candle */}
+          {scene.predator.idx >= 0 && (
+            <g className="acd-pred-mark" style={{ ['--ox' as never]: `${predatorX}px`, ['--oy' as never]: `${predatorY}px` }}>
+              <circle cx={predatorX} cy={predatorY} r="14" fill={APPLE_RED} opacity="0.10" />
+              <circle cx={predatorX} cy={predatorY} r="3.5" fill={APPLE_RED} />
+              <path d={`M ${predatorX - 4} ${predatorY - 4} L ${predatorX} ${predatorY - 9} L ${predatorX + 4} ${predatorY - 4} Z`} fill={APPLE_RED} />
+            </g>
+          )}
+
+          {/* victim position line (red dashed) */}
+          <line
+            className="acd-victim-line"
+            x1={PAD_X / 2}
+            y1={victimY}
+            x2={victimBreakX}
+            y2={victimY}
+            stroke={APPLE_RED}
+            strokeWidth="1"
+            strokeDasharray="3 2"
+            opacity="0.85"
+          />
+
+          {/* victim tag — small chip at left */}
+          <g className="acd-victim-tag">
+            <rect x={PAD_X / 2 + 2} y={victimY - 11} width={48} height={13} rx="2" fill="#fff" stroke={APPLE_RED} strokeWidth="0.75" />
+            <text
+              x={PAD_X / 2 + 6}
+              y={victimY - 1}
+              fontFamily="var(--apple-font-text)"
+              fontSize="9"
+              fontWeight={700}
+              fill={APPLE_RED}
+              letterSpacing="0.06em"
+              style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
+            >
+              {scene.victim.label}
+            </text>
+          </g>
+
+          {/* break / liquidation marker */}
+          {scene.victim.breakIdx >= 0 && (
+            <>
+              <g className="acd-liq-mark">
+                <line x1={liqX} y1={victimY - 6} x2={liqX} y2={victimY + 6} stroke={APPLE_RED} strokeWidth="1.4" />
+                <line x1={liqX - 4} y1={victimY - 4} x2={liqX + 4} y2={victimY + 4} stroke={APPLE_RED} strokeWidth="1.4" />
+                <line x1={liqX - 4} y1={victimY + 4} x2={liqX + 4} y2={victimY - 4} stroke={APPLE_RED} strokeWidth="1.4" />
+              </g>
+              {scene.victim.liqLabel && (
+                <g className="acd-liq-label">
+                  <text
+                    x={liqX + 8}
+                    y={victimY + 14}
+                    fontFamily="var(--apple-font-text)"
+                    fontSize="10.5"
+                    fontWeight={700}
+                    fill={APPLE_RED}
+                    letterSpacing="0.04em"
+                    style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    {scene.victim.liqLabel}
+                  </text>
+                </g>
+              )}
+            </>
+          )}
+        </svg>
+      </div>
     </div>
   )
 }
 
-/* Pointer callout — hairline + label, positioned in SVG user space. */
-function Callout({
-  x1, y1, x2, y2, label,
-  align = 'start',
-}: {
-  x1: number; y1: number; x2: number; y2: number
-  label: string
-  align?: 'start' | 'middle' | 'end'
-}) {
-  return (
-    <g className="acd-callout">
-      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(0,0,0,0.25)" strokeWidth="0.75" strokeDasharray="2 2" />
-      <circle cx={x1} cy={y1} r="1.5" fill="rgba(0,0,0,0.45)" />
-      <text
-        x={x2}
-        y={y2}
-        textAnchor={align}
-        dominantBaseline="middle"
-        fontFamily="var(--apple-font-text)"
-        fontSize="8.5"
-        fontWeight={600}
-        letterSpacing="0.01em"
-        fill="#1d1d1f"
-        style={{ fontVariantNumeric: 'tabular-nums' }}
-      >
-        {label}
-      </text>
-    </g>
-  )
-}
-
-/* Grid: a single 16:9 chart viewport with subtle horizontal gridlines
-   and tick marks across the bottom. Used inside all line diagrams. */
-function GridBackdrop({ ticks }: { ticks?: string[] }) {
-  return (
-    <g className="acd-fade">
-      {/* horizontal gridlines */}
-      <line x1="0" y1="20" x2="400" y2="20" stroke="var(--acd-grid)" strokeWidth="0.75" />
-      <line x1="0" y1="55" x2="400" y2="55" stroke="var(--acd-grid)" strokeWidth="0.75" strokeDasharray="2 3" />
-      <line x1="0" y1="90" x2="400" y2="90" stroke="var(--acd-grid)" strokeWidth="0.75" />
-      {/* time ticks */}
-      {ticks && ticks.map((t, i) => {
-        const x = (i / (ticks.length - 1)) * 400
-        return (
-          <g key={i}>
-            <line x1={x} y1="90" x2={x} y2="93" stroke="var(--acd-grid-dash)" strokeWidth="0.75" />
-            <text
-              x={x}
-              y="100"
-              textAnchor={i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle'}
-              fontFamily="var(--apple-font-text)"
-              fontSize="7"
-              fill="var(--acd-text-tertiary)"
-              letterSpacing="0.04em"
-              style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
-            >
-              {t}
-            </text>
-          </g>
-        )
-      })}
-    </g>
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   1. WICK — smooth Bezier baseline + sharp accent anomaly + halo + callout.
-   Used for: spike, cliff, runup, dump.
-   ────────────────────────────────────────────────────────────────────────── */
-
-type WickKind = 'spike' | 'cliff' | 'runup' | 'dump'
-
-interface WickGeometry {
-  baseline: string
-  baselineLen: number
-  accent: string
-  accentLen: number
-  accentPt: { x: number; y: number }
-  callout: { x1: number; y1: number; x2: number; y2: number; align?: 'start' | 'middle' | 'end' }
-  ticks: string[]
-}
-
-const WICK_GEOM: Record<WickKind, WickGeometry> = {
-  // Flat baseline, sudden vertical wick down and back up.
-  spike: {
-    baseline: 'M0 50 C 40 49, 80 51, 120 50 S 200 49, 240 50 L 248 50 M 268 50 C 300 50, 340 49, 400 50',
-    baselineLen: 460,
-    accent: 'M 248 50 L 256 84 L 264 50 L 268 50',
-    accentLen: 80,
-    accentPt: { x: 256, y: 84 },
-    callout: { x1: 256, y1: 84, x2: 300, y2: 84, align: 'start' },
-    ticks: ['10:42', '10:43', '10:44', '10:45'],
-  },
-  // Slow rise, then vertical drop, flat low.
-  cliff: {
-    baseline: 'M 0 80 C 40 78, 80 73, 120 65 S 200 42, 240 28 S 290 16, 300 14',
-    baselineLen: 360,
-    accent: 'M 300 14 L 300 86 L 400 86',
-    accentLen: 180,
-    accentPt: { x: 300, y: 50 },
-    callout: { x1: 320, y1: 86, x2: 360, y2: 78, align: 'end' },
-    ticks: ['DAY 1', 'DAY 60', 'DAY 90', 'DAY 91'],
-  },
-  // Long flat, ramp up before public event.
-  runup: {
-    baseline: 'M 0 70 C 60 70, 120 70, 180 70 S 220 69, 240 68',
-    baselineLen: 260,
-    accent: 'M 240 68 C 280 56, 320 32, 360 16 S 390 10, 400 9',
-    accentLen: 200,
-    accentPt: { x: 400, y: 9 },
-    callout: { x1: 320, y1: 32, x2: 280, y2: 18, align: 'end' },
-    ticks: ['T−14d', 'T−7d', 'T−1d', 'EVENT'],
-  },
-  // Spike up at listing, slow decay.
-  dump: {
-    baseline: 'M 0 86 L 30 84 L 50 30',
-    baselineLen: 130,
-    accent: 'M 50 30 C 90 42, 160 58, 240 70 S 360 80, 400 84',
-    accentLen: 380,
-    accentPt: { x: 50, y: 30 },
-    callout: { x1: 50, y1: 30, x2: 95, y2: 18, align: 'start' },
-    ticks: ['LIST', '+5m', '+1h', '+1d'],
-  },
-}
-
-function WickDiagram({
-  loss,
-  extracted,
-  recipient,
-  pctMove,
-  kind,
-  variant,
-}: ChartProps & { kind: WickKind; variant: Variant }) {
-  const g = WICK_GEOM[kind]
-  const calloutLabel = pctMove ?? extracted ?? loss ?? ''
-  return (
-    <Frame variant={variant}>
-      <div className="acd-row">
-        <span className="acd-eyebrow">{kindLabel(kind)}</span>
-        {pctMove && <span className="acd-eyebrow is-emphasised">{pctMove}</span>}
-      </div>
-
-      <div className="acd-canvas">
-        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
-          <defs>
-            <radialGradient id={`halo-${kind}`} cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="var(--acd-accent)" stopOpacity="0.32" />
-              <stop offset="100%" stopColor="var(--acd-accent)" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          <GridBackdrop ticks={g.ticks} />
-
-          {/* baseline trace */}
-          <path
-            d={g.baseline}
-            fill="none"
-            stroke="var(--acd-stroke)"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="acd-draw"
-            style={{ ['--len' as never]: g.baselineLen }}
-          />
-
-          {/* accent halo */}
-          <circle
-            cx={g.accentPt.x}
-            cy={g.accentPt.y}
-            r="12"
-            fill={`url(#halo-${kind})`}
-            className="acd-halo"
-          />
-
-          {/* accent anomaly stroke */}
-          <path
-            d={g.accent}
-            fill="none"
-            stroke="var(--acd-accent)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="acd-accent-stroke"
-            style={{ ['--len' as never]: g.accentLen }}
-          />
-
-          {/* accent point */}
-          <circle
-            cx={g.accentPt.x}
-            cy={g.accentPt.y}
-            r="2.5"
-            fill="var(--acd-accent)"
-            className="acd-accent-pt"
-            style={{ ['--ox' as never]: `${g.accentPt.x}px`, ['--oy' as never]: `${g.accentPt.y}px` }}
-          />
-
-          {/* callout */}
-          {calloutLabel && (
-            <Callout
-              x1={g.callout.x1}
-              y1={g.callout.y1}
-              x2={g.callout.x2}
-              y2={g.callout.y2}
-              align={g.callout.align}
-              label={calloutLabel}
-            />
-          )}
-        </svg>
-      </div>
-
-      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
-        <div className="acd-fade">
-          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
-          {recipient && (
-            <div className="acd-caption" style={{ marginTop: 4 }}>
-              kept by {recipient}
-            </div>
-          )}
-        </div>
-      </div>
-    </Frame>
-  )
-}
-
-function kindLabel(k: WickKind): string {
-  switch (k) {
-    case 'spike': return 'price · stops cleared'
-    case 'cliff': return 'price · insiders out'
-    case 'runup': return 'price · ahead of public'
-    case 'dump': return 'price · listing → grind'
-  }
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   2. DRAIN — stacked balance bars. Last bar collapses to a stub.
-   Used for: button-freeze, backdoor.
-   ────────────────────────────────────────────────────────────────────────── */
-
-function DrainDiagram({
-  loss,
-  extracted,
-  recipient,
-  variant,
-}: ChartProps & { variant: Variant }) {
-  // Six bars: gentle decline then collapse on the last one.
-  // Heights are normalized to 0..100.
-  const bars = [88, 86, 84, 82, 80, 6]
-  const labels = ['T−5', 'T−4', 'T−3', 'T−2', 'T−1', 'NOW']
-  return (
-    <Frame variant={variant}>
-      <div className="acd-row">
-        <span className="acd-eyebrow">hot wallet · balance</span>
-        {recipient && <span className="acd-eyebrow is-emphasised">→ {recipient}</span>}
-      </div>
-
-      <div className="acd-canvas">
-        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
-          <GridBackdrop ticks={labels} />
-          {/* the bars */}
-          {bars.map((h, i) => {
-            const x = 16 + i * 62
-            const w = 36
-            const yTop = 90 - h
-            const isLast = i === bars.length - 1
-            return (
-              <g key={i} className={`acd-bar ${isLast ? 'is-collapsed' : ''}`} style={{ transformBox: 'fill-box', transformOrigin: '50% 100%' }}>
-                <rect
-                  x={x}
-                  y={yTop}
-                  width={w}
-                  height={90 - yTop}
-                  rx="1.5"
-                  fill={isLast ? 'var(--acd-accent)' : 'var(--acd-stroke-soft)'}
-                  opacity={isLast ? 1 : 0.9}
-                />
-              </g>
-            )
-          })}
-          {/* callout pointing at the collapse */}
-          <g className="acd-callout">
-            <line x1="370" y1="86" x2="330" y2="60" stroke="rgba(0,0,0,0.25)" strokeWidth="0.75" strokeDasharray="2 2" />
-            <text
-              x="328"
-              y="56"
-              textAnchor="end"
-              fontFamily="var(--apple-font-text)"
-              fontSize="8.5"
-              fontWeight={600}
-              fill="#1d1d1f"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
-              {loss ?? 'drained'}
-            </text>
-          </g>
-        </svg>
-      </div>
-
-      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
-        <div className="acd-fade">
-          <div className="acd-headline acd-headline-accent">{extracted ?? loss ?? '—'}</div>
-          <div className="acd-caption" style={{ marginTop: 4 }}>
-            balance to zero in one block
-          </div>
-        </div>
-      </div>
-    </Frame>
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   3. CARVEOUT — promised payoff vs after-fineprint, accent shows the cut.
-   Used for: carveout, oracle-override, margin-doubled, socialized-loss, b-book-mirror.
-   ────────────────────────────────────────────────────────────────────────── */
-
-function CarveoutDiagram({
-  loss,
-  extracted,
-  recipient,
-  pctMove,
-  variant,
-}: ChartProps & { variant: Variant }) {
-  // Two horizontal bars stacked. Top: promise (full). Bottom: actual + cut overlay.
-  return (
-    <Frame variant={variant}>
-      <div className="acd-row">
-        <span className="acd-eyebrow">payoff</span>
-        {pctMove && <span className="acd-eyebrow is-emphasised">{pctMove}</span>}
-      </div>
-
-      <div className="acd-canvas">
-        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
-          <GridBackdrop />
-
-          {/* row labels */}
-          <text x="0" y="24" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>promised</text>
-          <text x="0" y="72" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>after</text>
-
-          {/* promised bar */}
-          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
-            <rect x="60" y="28" width="320" height="14" rx="2" fill="var(--acd-stroke-soft)" opacity="0.7" />
-          </g>
-
-          {/* after — kept portion */}
-          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
-            <rect x="60" y="60" width="96" height="14" rx="2" fill="var(--acd-stroke)" opacity="0.9" />
-          </g>
-
-          {/* after — carved portion (accent, hatched) */}
-          <g className="acd-bar" style={{ transformBox: 'fill-box', transformOrigin: '0 50%' }}>
-            <defs>
-              <pattern id="carve-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--acd-accent)" strokeWidth="0.8" opacity="0.45" />
-              </pattern>
-            </defs>
-            <rect x="160" y="60" width="220" height="14" rx="2" fill="url(#carve-hatch)" stroke="var(--acd-accent)" strokeWidth="1" strokeDasharray="3 2" />
-          </g>
-
-          {/* tick from promised down to after-kept showing the cut */}
-          <g className="acd-callout">
-            <line x1="156" y1="42" x2="156" y2="60" stroke="var(--acd-accent)" strokeWidth="0.75" />
-            <line x1="380" y1="42" x2="380" y2="60" stroke="var(--acd-accent)" strokeWidth="0.75" />
-            <text
-              x="270"
-              y="54"
-              textAnchor="middle"
-              fontFamily="var(--apple-font-text)"
-              fontSize="8.5"
-              fontWeight={600}
-              fill="var(--acd-accent)"
-              style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em', textTransform: 'uppercase' }}
-            >
-              carved by venue
-            </text>
-          </g>
-        </svg>
-      </div>
-
-      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
-        <div className="acd-fade">
-          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
-          {recipient && (
-            <div className="acd-caption" style={{ marginTop: 4 }}>
-              kept by {recipient}
-            </div>
-          )}
-        </div>
-      </div>
-    </Frame>
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   4. FLOW — user → venue → recipient, with values drifting along the path.
-   Used for: wash-trading.
-   ────────────────────────────────────────────────────────────────────────── */
-
-function FlowDiagram({
-  loss,
-  extracted,
-  recipient,
-  variant,
-}: ChartProps & { variant: Variant }) {
-  return (
-    <Frame variant={variant}>
-      <div className="acd-row">
-        <span className="acd-eyebrow">flow · user → recipient</span>
-        {extracted && <span className="acd-eyebrow is-emphasised">{extracted}</span>}
-      </div>
-
-      <div className="acd-canvas">
-        <svg viewBox="0 0 400 108" preserveAspectRatio="xMidYMid meet" aria-hidden>
-          {/* spine */}
-          <line x1="40" y1="54" x2="360" y2="54" stroke="var(--acd-grid-dash)" strokeWidth="0.75" strokeDasharray="2 3" className="acd-fade" />
-
-          {/* user node */}
-          <g className="acd-fade">
-            <circle cx="40" cy="54" r="10" fill="#fff" stroke="var(--acd-stroke-soft)" strokeWidth="1" />
-            <text x="40" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={600} fill="var(--acd-text-secondary)" style={{ letterSpacing: '0.04em' }}>U</text>
-            <text x="40" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>user</text>
-            <text x="40" y="34" textAnchor="middle" fontFamily="var(--apple-font-display)" fontSize="10" fontWeight={600} fill="var(--acd-text)" style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.016em' }}>{loss ?? '—'}</text>
-          </g>
-
-          {/* venue node */}
-          <g className="acd-fade">
-            <rect x="180" y="42" width="40" height="24" rx="3" fill="#fff" stroke="var(--acd-stroke-soft)" strokeWidth="1" />
-            <text x="200" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={600} fill="var(--acd-text-secondary)" style={{ letterSpacing: '0.04em' }}>venue</text>
-            <text x="200" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>routing</text>
-          </g>
-
-          {/* recipient node */}
-          <g className="acd-fade">
-            <circle cx="360" cy="54" r="11" fill="var(--acd-accent-soft)" stroke="var(--acd-accent)" strokeWidth="1" />
-            <text x="360" y="57" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fontWeight={700} fill="var(--acd-accent)" style={{ letterSpacing: '0.04em' }}>R</text>
-            <text x="360" y="78" textAnchor="middle" fontFamily="var(--apple-font-text)" fontSize="8" fill="var(--acd-text-tertiary)" letterSpacing="0.08em" style={{ textTransform: 'uppercase' }}>{recipient ?? 'recipient'}</text>
-            <text x="360" y="34" textAnchor="middle" fontFamily="var(--apple-font-display)" fontSize="10" fontWeight={600} fill="var(--acd-accent)" style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.016em' }}>{extracted ?? '—'}</text>
-          </g>
-
-          {/* arrows: user → venue, venue → recipient */}
-          <g className="acd-accent-stroke" style={{ ['--len' as never]: 130 }}>
-            <line x1="52" y1="54" x2="174" y2="54" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinecap="round" />
-            <path d="M 170 51 L 178 54 L 170 57" fill="none" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" />
-          </g>
-          <g className="acd-accent-stroke" style={{ ['--len' as never]: 130, animationDelay: '1.1s' }}>
-            <line x1="222" y1="54" x2="345" y2="54" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinecap="round" />
-            <path d="M 341 51 L 349 54 L 341 57" fill="none" stroke="var(--acd-accent)" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" />
-          </g>
-        </svg>
-      </div>
-
-      <div className="acd-row" style={{ alignItems: 'flex-end' }}>
-        <div className="acd-fade">
-          <div className="acd-headline">{extracted ?? loss ?? '—'}</div>
-          {recipient && (
-            <div className="acd-caption" style={{ marginTop: 4 }}>
-              to {recipient}
-            </div>
-          )}
-        </div>
-      </div>
-    </Frame>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-
-const REGISTRY: Record<Mechanism, (p: ChartProps & { variant: Variant }) => React.ReactElement> = {
-  'price-wick':         (p) => <WickDiagram {...p} kind="spike" />,
-  'rug-cliff':          (p) => <WickDiagram {...p} kind="cliff" />,
-  'listing-dump':       (p) => <WickDiagram {...p} kind="dump" />,
-  'insider-runup':      (p) => <WickDiagram {...p} kind="runup" />,
-
-  'button-freeze':      (p) => <DrainDiagram {...p} />,
-  'backdoor':           (p) => <DrainDiagram {...p} />,
-
-  'carveout':           (p) => <CarveoutDiagram {...p} />,
-  'oracle-override':    (p) => <CarveoutDiagram {...p} />,
-  'margin-doubled':     (p) => <CarveoutDiagram {...p} />,
-  'socialized-loss':    (p) => <CarveoutDiagram {...p} />,
-  'b-book-mirror':      (p) => <CarveoutDiagram {...p} />,
-
-  'wash-trading':       (p) => <FlowDiagram {...p} />,
-}
-
-export function Diagram({
-  mechanism,
-  loop = false,
-  ...props
-}: { mechanism: Mechanism; loop?: boolean } & ChartProps) {
-  const Component = REGISTRY[mechanism]
-  return Component({ ...props, variant: loop ? 'loop' : 'reveal' })
+export function Diagram({ mechanism, ...props }: { mechanism: Mechanism } & ChartProps) {
+  const kind = getKind(mechanism)
+  const scene = buildScene(kind, props)
+  return <CandleChart scene={scene} />
 }

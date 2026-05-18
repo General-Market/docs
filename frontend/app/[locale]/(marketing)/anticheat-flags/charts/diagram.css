@@ -1,16 +1,46 @@
-/* anticheat-flags diagram primitives — Apple-grade chrome + motion */
+/* anticheat-flags — candle-chart diagrams + card surface. Always looping. */
+
+.acf-card {
+  cursor: pointer;
+  position: relative;
+}
+
+.acf-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.18) !important;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 6px 22px rgba(0, 0, 0, 0.07),
+    0 18px 60px rgba(0, 0, 0, 0.05);
+}
+
+.acf-card:focus-visible {
+  outline: 2px solid var(--apple-accent);
+  outline-offset: 3px;
+}
+
+.acf-card-arrow {
+  display: inline-block;
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.acf-card:hover .acf-card-arrow {
+  transform: translateX(4px);
+}
+
 
 :root {
-  --acd-frame-bg: #fbfbfd;
-  --acd-grid: rgba(0, 0, 0, 0.045);
-  --acd-grid-dash: rgba(0, 0, 0, 0.07);
-  --acd-stroke: #6e6e73;
-  --acd-stroke-soft: #c7c7cc;
-  --acd-accent: #0071e3;
-  --acd-accent-soft: rgba(0, 113, 227, 0.12);
+  --acd-frame-bg-top: #fcfcfd;
+  --acd-frame-bg-bot: #f6f6f9;
+  --acd-grid: rgba(0, 0, 0, 0.07);
+  --acd-grid-soft: rgba(0, 0, 0, 0.04);
+  --acd-stroke: #4a4a4f;
+  --acd-stroke-soft: #b8b8bd;
+  --acd-stroke-hairline: rgba(0, 0, 0, 0.18);
   --acd-text: #1d1d1f;
-  --acd-text-secondary: #6e6e73;
-  --acd-text-tertiary: #86868b;
+  --acd-text-tertiary: #6e6e73;
+  --acd-predator: #ff3b30;
+  --acd-predator-soft: rgba(255, 59, 48, 0.12);
   --acd-ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -18,10 +48,10 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(180deg, #fcfcfd 0%, #f7f7fa 100%);
-  border: 1px solid var(--acd-grid);
+  background: linear-gradient(180deg, var(--acd-frame-bg-top) 0%, var(--acd-frame-bg-bot) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
-  padding: 18px 22px 16px;
+  padding: 16px 20px 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -32,61 +62,56 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 75% 20%, rgba(0, 113, 227, 0.04), transparent 50%);
+  background: radial-gradient(circle at 85% 0%, rgba(255, 59, 48, 0.04), transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
 
-.acd-row {
+.acd-head {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  min-height: 14px;
+  margin-bottom: 8px;
 }
 
 .acd-eyebrow {
   font-family: var(--apple-font-text);
-  font-size: 10px;
-  letter-spacing: 0.11em;
-  font-weight: 600;
-  color: var(--acd-text-tertiary);
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  font-weight: 700;
   text-transform: uppercase;
-}
-
-.acd-eyebrow.is-emphasised {
-  color: var(--acd-text);
-  letter-spacing: 0.04em;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.acd-headline {
-  font-family: var(--apple-font-display);
-  font-size: clamp(26px, 4.4vw, 38px);
-  letter-spacing: -0.022em;
+.acd-eyebrow.predator {
+  color: var(--acd-predator);
+}
+
+.acd-eyebrow.predator::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--acd-predator);
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: 1px;
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15);
+}
+
+.acd-eyebrow.victim {
+  color: var(--acd-text-tertiary);
   font-weight: 600;
-  color: var(--acd-text);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.acd-headline-accent { color: var(--acd-accent); }
-
-.acd-caption {
-  font-family: var(--apple-font-text);
-  font-size: 12px;
-  letter-spacing: -0.005em;
-  color: var(--acd-text-secondary);
-  line-height: 1.4;
 }
 
 .acd-canvas {
   position: relative;
   z-index: 1;
   flex: 1;
-  margin: 8px 0;
   min-height: 0;
 }
 
@@ -97,177 +122,103 @@
   overflow: visible;
 }
 
-/* ── Reveal-once animation states ─────────────────────────────────────── */
-.acd-draw,
-.acd-accent-stroke {
-  stroke-dasharray: var(--len, 800);
-  stroke-dashoffset: var(--len, 800);
-  opacity: 0;
-}
+/* ── Candle wave-in keyframes ───────────────────────────────────────────
+   Each candle gets its own keyframe so all 12 sync at the end of the cycle
+   (hold from 88%, fade together 96–100%). Appear order is staggered 3%
+   per slot starting at 4%. Cycle = 8.5s. */
 
-.acd-accent-pt {
-  transform-origin: var(--ox, 50%) var(--oy, 50%);
+.acd-candle {
+  transform-origin: 50% 100%;
   transform-box: fill-box;
   opacity: 0;
 }
 
-.acd-callout,
-.acd-fade {
-  opacity: 0;
+@keyframes acd-cand-0  { 0%, 4%  { opacity: 0; transform: translateY(5px) scaleY(0.35); } 7%  { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-1  { 0%, 7%  { opacity: 0; transform: translateY(5px) scaleY(0.35); } 10% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-2  { 0%, 10% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 13% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-3  { 0%, 13% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 16% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-4  { 0%, 16% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 19% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-5  { 0%, 19% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 22% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-6  { 0%, 22% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 25% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-7  { 0%, 25% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 28% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-8  { 0%, 28% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 31% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-9  { 0%, 31% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 34% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-10 { 0%, 34% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 37% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-11 { 0%, 37% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 40% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+
+.acd-c-0  { animation: acd-cand-0  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-1  { animation: acd-cand-1  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-2  { animation: acd-cand-2  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-3  { animation: acd-cand-3  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-4  { animation: acd-cand-4  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-5  { animation: acd-cand-5  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-6  { animation: acd-cand-6  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-7  { animation: acd-cand-7  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-8  { animation: acd-cand-8  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-9  { animation: acd-cand-9  8.5s var(--acd-ease-apple) infinite; }
+.acd-c-10 { animation: acd-cand-10 8.5s var(--acd-ease-apple) infinite; }
+.acd-c-11 { animation: acd-cand-11 8.5s var(--acd-ease-apple) infinite; }
+
+/* gridlines + axis ticks come in immediately, fade with the cycle */
+.acd-chrome { opacity: 0; }
+
+@keyframes acd-chrome {
+  0%, 2%   { opacity: 0; }
+  6%, 92%  { opacity: 1; }
+  98%, 100% { opacity: 0; }
 }
 
-.acd-bar {
-  transform: scaleY(0);
-  transform-origin: bottom;
+.acd-chrome { animation: acd-chrome 8.5s var(--acd-ease-apple) infinite; }
+
+/* Victim position line — establishes early, breaks at the predator candle */
+.acd-victim-line,
+.acd-victim-tag { opacity: 0; }
+
+@keyframes acd-victim {
+  0%, 13%   { opacity: 0; }
+  18%, 92%  { opacity: 1; }
+  98%, 100% { opacity: 0; }
 }
 
-.acd-bar.is-collapsed {
-  transform-origin: top;
-}
+.acd-victim-line { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
+.acd-victim-tag  { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
 
-@keyframes acd-draw {
-  to { stroke-dashoffset: 0; }
-}
+/* Predator highlight — pulses around the predator candle's arrival */
+.acd-pred-mark { opacity: 0; transform-origin: center; transform-box: fill-box; }
 
-@keyframes acd-fade {
-  to { opacity: 1; }
-}
-
-@keyframes acd-pop {
-  0%   { opacity: 0; transform: scale(0); }
-  60%  { opacity: 1; transform: scale(1.5); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes acd-bar {
-  to { transform: scaleY(1); }
-}
-
-@keyframes acd-bar-collapse {
-  0%   { transform: scaleY(1); transform-origin: bottom; }
-  100% { transform: scaleY(0.05); transform-origin: bottom; }
-}
-
-/* one-shot when card enters viewport */
-.is-in .acd-draw {
-  animation: acd-draw 1.05s var(--acd-ease-apple) 0.05s both,
-             acd-fade 0.4s var(--acd-ease-apple) 0.05s both;
-}
-.is-in .acd-accent-stroke {
-  animation: acd-draw 0.65s var(--acd-ease-apple) 0.85s both,
-             acd-fade 0.3s var(--acd-ease-apple) 0.85s both;
-}
-.is-in .acd-accent-pt {
-  animation: acd-pop 0.5s var(--acd-ease-apple) 1.35s both;
-}
-.is-in .acd-callout {
-  animation: acd-fade 0.5s var(--acd-ease-apple) 1.55s both;
-}
-.is-in .acd-fade {
-  animation: acd-fade 0.5s var(--acd-ease-apple) 0.2s both;
-}
-.is-in .acd-bar {
-  animation: acd-bar 0.7s var(--acd-ease-apple) var(--d, 0s) both;
-}
-.is-in .acd-bar.is-collapsed {
-  animation: acd-bar 0.5s var(--acd-ease-apple) var(--d, 0s) both,
-             acd-bar-collapse 0.45s var(--acd-ease-apple) calc(var(--d, 0s) + 0.55s) both;
-}
-
-/* ── Looping hero animations ──────────────────────────────────────────── */
-@keyframes acd-loop-draw {
-  0%, 3%   { stroke-dashoffset: var(--len, 800); opacity: 0; }
-  6%       { opacity: 1; }
-  17%, 90% { stroke-dashoffset: 0; opacity: 1; }
-  96%, 100% { stroke-dashoffset: 0; opacity: 0; }
-}
-
-@keyframes acd-loop-accent {
-  0%, 22%  { stroke-dashoffset: var(--len, 200); opacity: 0; }
-  24%      { opacity: 1; }
-  32%, 90% { stroke-dashoffset: 0; opacity: 1; }
-  96%, 100% { stroke-dashoffset: 0; opacity: 0; }
-}
-
-@keyframes acd-loop-pop {
-  0%, 30%  { opacity: 0; transform: scale(0); }
-  34%      { opacity: 1; transform: scale(1.6); }
-  38%, 90% { opacity: 1; transform: scale(1); }
+@keyframes acd-pred {
+  0%, 40%  { opacity: 0; transform: scale(0); }
+  46%      { opacity: 1; transform: scale(1.5); }
+  52%, 88% { opacity: 1; transform: scale(1); }
   96%, 100% { opacity: 0; }
 }
 
-@keyframes acd-loop-callout {
-  0%, 40%  { opacity: 0; }
-  48%, 90% { opacity: 1; }
+.acd-pred-mark { animation: acd-pred 8.5s var(--acd-ease-apple) infinite; }
+
+/* Liquidation marker — same beat as predator pulse */
+.acd-liq-mark,
+.acd-liq-label { opacity: 0; }
+
+@keyframes acd-liq {
+  0%, 44%  { opacity: 0; }
+  50%      { opacity: 1; }
+  88%      { opacity: 1; }
   96%, 100% { opacity: 0; }
 }
 
-@keyframes acd-loop-fade {
-  0%, 5%   { opacity: 0; }
-  10%, 90% { opacity: 1; }
-  96%, 100% { opacity: 0; }
-}
-
-@keyframes acd-loop-bar {
-  0%, 8%   { transform: scaleY(0); }
-  20%, 90% { transform: scaleY(1); }
-  96%, 100% { transform: scaleY(0); }
-}
-
-@keyframes acd-loop-bar-collapse {
-  0%, 8%   { transform: scaleY(0); transform-origin: bottom; }
-  20%, 50% { transform: scaleY(1); transform-origin: bottom; }
-  62%, 90% { transform: scaleY(0.05); transform-origin: bottom; }
-  96%, 100% { transform: scaleY(0); transform-origin: bottom; }
-}
-
-.is-loop .acd-draw         { animation: acd-loop-draw   8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-accent-stroke{ animation: acd-loop-accent 8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-accent-pt    { animation: acd-loop-pop    8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-callout      { animation: acd-loop-callout 8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-fade         { animation: acd-loop-fade   8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-bar          { animation: acd-loop-bar    8.5s var(--acd-ease-apple) infinite; }
-.is-loop .acd-bar.is-collapsed { animation: acd-loop-bar-collapse 8.5s var(--acd-ease-apple) infinite; }
-
-/* the looping pulse halo behind the accent point */
-@keyframes acd-loop-halo {
-  0%, 30%  { opacity: 0; transform: scale(0.6); }
-  36%      { opacity: 0.5; transform: scale(1); }
-  60%      { opacity: 0; transform: scale(2.2); }
-  100%     { opacity: 0; transform: scale(2.2); }
-}
-
-.is-loop .acd-halo {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: acd-loop-halo 8.5s var(--acd-ease-apple) infinite;
-}
-
-.acd-halo { opacity: 0; }
-
-.is-in .acd-halo {
-  animation: acd-pop 0.6s var(--acd-ease-apple) 1.3s both;
-}
-
-/* stagger bars within a chart */
-.acd-bar:nth-child(1) { --d: 0.10s; }
-.acd-bar:nth-child(2) { --d: 0.20s; }
-.acd-bar:nth-child(3) { --d: 0.30s; }
-.acd-bar:nth-child(4) { --d: 0.40s; }
-.acd-bar:nth-child(5) { --d: 0.50s; }
-.acd-bar:nth-child(6) { --d: 0.60s; }
+.acd-liq-mark  { animation: acd-liq 8.5s var(--acd-ease-apple) infinite; }
+.acd-liq-label { animation: acd-liq 8.5s var(--acd-ease-apple) infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .acd-draw,
-  .acd-accent-stroke,
-  .acd-accent-pt,
-  .acd-callout,
-  .acd-fade,
-  .acd-halo {
+  .acd-candle,
+  .acd-chrome,
+  .acd-victim-line,
+  .acd-victim-tag,
+  .acd-pred-mark,
+  .acd-liq-mark,
+  .acd-liq-label {
     opacity: 1;
-    stroke-dashoffset: 0;
     transform: none;
     animation: none !important;
   }
-  .acd-bar { transform: scaleY(1); animation: none !important; }
 }
