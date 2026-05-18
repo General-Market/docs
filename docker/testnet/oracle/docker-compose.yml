@@ -20,11 +20,14 @@ x-oracle-base: &oracle-base
       max-file: "5"
 
 services:
+  # /health is the runtime liveness endpoint. /ready is a deploy-ceremony gate
+  # (pinned to 503 in steady state when registry_sync isn't fully caught up).
+  # Using /ready here turns every oracle into a permanent false-positive.
   oracle-1:
     <<: *oracle-base
     container_name: testnet-oracle-1
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10001/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10001/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -34,7 +37,7 @@ services:
     <<: *oracle-base
     container_name: testnet-oracle-2
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10002/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10002/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -44,7 +47,7 @@ services:
     <<: *oracle-base
     container_name: testnet-oracle-3
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10003/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10003/health"]
       interval: 30s
       timeout: 5s
       retries: 3
