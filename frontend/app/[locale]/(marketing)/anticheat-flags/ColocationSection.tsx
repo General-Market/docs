@@ -570,8 +570,195 @@ export function ColocationSection() {
           >
             Bar length = round-trip latency edge between the insider seat and the outside trader, in milliseconds. Numbers reflect the dominant axis at each venue: same-region AWS proximity (Hyperliquid validator cluster, Binance/Bybit VIP colo, Pump.fun Solana sniper, Coinbase Prime, Deribit, Polymarket), Chicago cross-connect for designated MMs (Kalshi), DMA cross-connect or LP fibre for traditional brokers (IBKR, FX/CFD), payment-for-order-flow holding window (Robinhood/Citadel), and the internal CFD book where the order never reaches a public market (eToro). General Market: on-chain, sealed bets, parimutuel pools, BLS-verified oracles. No insider seat, no published price, no door.
           </div>
+
+          <AssumptionsBlock />
         </div>
       </Reveal>
     </section>
+  )
+}
+
+interface AssumptionRow {
+  metric: string
+  value: string
+  source: { label: string; url: string }
+}
+
+const INSIDE_LANE: AssumptionRow[] = [
+  {
+    metric: 'Citadel Securities — execution at the matching engine',
+    value: '~10 microseconds',
+    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
+  },
+  {
+    metric: 'Citadel Securities — share of US retail equity order flow',
+    value: '~40%',
+    source: { label: 'Trade Ideas', url: 'https://www.trade-ideas.com/2025/05/10/citadel-securities-the-invisible-hand-behind-retail-trading/' },
+  },
+  {
+    metric: 'Top 3 wholesalers (Citadel, Virtu, G1) — share of retail orders',
+    value: '>80%',
+    source: { label: 'Global Trading', url: 'https://www.globaltrading.net/payment-for-us-retail-flow-reaches-record-high-led-by-citadel-securities-imc/' },
+  },
+  {
+    metric: 'Jump Trading — private microwave backbone, inter-city',
+    value: '~90 microseconds',
+    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
+  },
+  {
+    metric: 'FPGA tick-to-trade at the colocated cabinet',
+    value: '100–500 nanoseconds',
+    source: { label: 'QuantVPS · FPGA', url: 'https://www.quantvps.com/blog/high-frequency-trading-with-fpgas' },
+  },
+  {
+    metric: 'CME Aurora colocation rack — monthly rent + setup + cross-connect',
+    value: '$12,000/mo + $2,000 + $350–550',
+    source: { label: 'Lime Trading', url: 'https://lime.co/how-to-maximize-the-roi-of-colocation/' },
+  },
+]
+
+const OUTSIDE_LANE: AssumptionRow[] = [
+  {
+    metric: 'Retail trades originating on a mobile device',
+    value: '>50%',
+    source: { label: 'Shift Markets', url: 'https://www.shiftmarkets.com/blog/why-modern-trading-platforms-have-gone-mobile-first' },
+  },
+  {
+    metric: 'Robinhood funded accounts — mobile-first',
+    value: '25 million',
+    source: { label: 'Business of Apps', url: 'https://www.businessofapps.com/data/robinhood-statistics/' },
+  },
+  {
+    metric: 'Coinbase users — mobile primary interface',
+    value: '120 million',
+    source: { label: 'Business of Apps', url: 'https://www.businessofapps.com/data/stock-trading-app-market/' },
+  },
+  {
+    metric: 'Residential fibre / 5G ping to broker edge',
+    value: '10–20 ms',
+    source: { label: 'EPB', url: 'https://epb.com/get-connected/tech-support/5g-low-latency-explained/' },
+  },
+  {
+    metric: '4G cellular ping — the median mobile trader',
+    value: '50–100 ms',
+    source: { label: 'EPB', url: 'https://epb.com/get-connected/tech-support/5g-low-latency-explained/' },
+  },
+  {
+    metric: 'Browser / MetaTrader end-to-end execution from a home connection',
+    value: '50–300 ms (300–500 ms under congestion)',
+    source: { label: 'ECN Execution', url: 'https://ecnexecution.com/trading/trade-execution-speeds/' },
+  },
+]
+
+function AssumptionLane({ title, summary, rows }: { title: string; summary: string; rows: AssumptionRow[] }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 11,
+          fontWeight: 600,
+          color: TEXT,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          marginBottom: 6,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 11,
+          color: TERTIARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.55,
+          marginBottom: 12,
+        }}
+      >
+        {summary}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rows.map((r, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 11,
+              color: TERTIARY,
+              letterSpacing: '-0.005em',
+              lineHeight: 1.5,
+            }}
+          >
+            <div style={{ color: TEXT }}>
+              {r.metric} —{' '}
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: ACCENT }}>{r.value}</span>
+            </div>
+            <a
+              href={r.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: ACCENT, fontSize: 10, fontWeight: 500 }}
+              className="hover:underline"
+            >
+              {r.source.label} ›
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AssumptionsBlock() {
+  return (
+    <div
+      style={{
+        marginTop: 20,
+        paddingTop: 16,
+        borderTop: `1px solid ${LINE}`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 11,
+          fontWeight: 600,
+          color: TEXT,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          marginBottom: 10,
+        }}
+      >
+        Assumptions
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 11,
+          color: TERTIARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.6,
+          marginBottom: 18,
+        }}
+      >
+        Two endpoints. The lane that pays for everything, against the one that pays for nothing. Each number is sourced; the gap between them is what the bars above measure.
+      </div>
+      <div
+        className="grid grid-cols-1 md:grid-cols-2"
+        style={{ gap: 24 }}
+      >
+        <AssumptionLane
+          title="Inside lane — maxed-out market maker"
+          summary="Colocated cabinet, FPGA at the cable, microwave between cities, designated-MM contract, retail order flow auctioned before it touches a public book."
+          rows={INSIDE_LANE}
+        />
+        <AssumptionLane
+          title="Outside lane — average retail trader"
+          summary="Mobile app or browser, residential fibre or cellular ISP, no cross-connect, no colocation, no microwave link, no designated quote."
+          rows={OUTSIDE_LANE}
+        />
+      </div>
+    </div>
   )
 }
