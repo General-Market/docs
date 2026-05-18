@@ -83,8 +83,12 @@ const SELECTOR_SUPPLY_QUEUE_LENGTH: [u8; 4] = [0xa1, 0x7b, 0x31, 0x30];
 const SELECTOR_SUPPLY_QUEUE: [u8; 4] = [0xf7, 0xd1, 0x85, 0x21];
 
 /// Selector for vault.reallocate(MarketAllocation[])
-/// keccak256("reallocate((address,address,address,address,uint256,uint256)[])")[:4]
-const SELECTOR_REALLOCATE: [u8; 4] = [0xf6, 0x89, 0xc7, 0x4f];
+/// keccak256("reallocate(((address,address,address,address,uint256),uint256)[])")[:4]
+/// MarketAllocation is a struct of (MarketParams, uint256), and MarketParams
+/// is itself a struct — Solidity emits the nested-tuple signature, not the
+/// flat one. The previous value (0xf689c74f) was the flat-signature hash
+/// and matched no function on the vault; every reallocate silently reverted.
+const SELECTOR_REALLOCATE: [u8; 4] = [0x72, 0x99, 0xaa, 0x31];
 
 // ============================================================================
 // Types
