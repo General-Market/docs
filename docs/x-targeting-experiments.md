@@ -181,3 +181,41 @@ Default 14 days. Profile data ages slowly (followers change weekly at most for a
 - Paying twice for `replies to @ThalexGlobal` if I forget I already ran it.
 - Manually grepping 14 JSONs to find one handle.
 - Re-deriving the candidate list from scratch every session.
+
+### Discipline rule — filter handle lists before *every* paid query
+
+`cache.py fetch` only deduplicates by exact-params hash. It does **not** know that a query like `usersFromUsers: [@Bluedeerc, @Han_Akamatsu, ...]` partially overlaps with handles we've already paid to see in other queries. Without this rule, any new "fetch tweets from these handles" call quietly re-pays for accounts already in the profile cache.
+
+**Always run target handle lists through `cache.py needs` first.**
+
+```bash
+# Returns only the handles that aren't cached or are stale > 14d
+python3 cache.py needs Bluedeerc spxudi wintermute_t Han_Akamatsu
+#  wintermute_t   no-profile
+
+# With --tweets, also require recent captured tweet for each
+python3 cache.py needs --tweets Bluedeerc Han_Akamatsu spxudi
+#  Bluedeerc       tweets-stale-52d
+#  Han_Akamatsu    tweets-stale-91d
+```
+
+The output is `\t`-separated `handle\treason`. Pipe it into the input of the next Apify run:
+
+```bash
+# Build a usersFromUsers input from the *needed* subset only
+HANDLES=$(python3 cache.py needs --tweets Bluedeerc Han_Akamatsu burningpremium 2>/dev/null | cut -f1)
+jq -n --argjson h "$(printf '%s\n' $HANDLES | jq -R . | jq -s .)" \
+  '{usersFromUsers: $h, search_type: "Latest", numberOfTweets: 25}' > /tmp/input.json
+
+APIFY_TOKEN=$(cat /tmp/.apify_token) python3 cache.py fetch \
+  api-ninja/x-twitter-advanced-search /tmp/input.json
+```
+
+**The rule, restated as a checklist:**
+
+1. Have a list of target handles? → `cache.py needs ...` first.
+2. About to call `usersFromUsers` / `twitterHandles` / `startUrls`? → run through `needs` first.
+3. About to re-run a discovery query (`usersToUsers`, keyword search)? → check whether the same `params_hash` is already in `queries.jsonl` via `cache.py fetch` (auto).
+4. Never type a handle into an Apify input that hasn't passed through one of the above filters.
+
+The cost of forgetting is ~$0.0004 to $0.015 per redundant handle. Small per error, large per session.

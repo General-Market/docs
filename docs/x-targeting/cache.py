@@ -10,10 +10,17 @@ Three append-only JSONL stores, keyed for dedup:
 Why JSONL not SQLite: easier to grep, easier to commit to git, no schema migrations.
 
 Usage:
-  cache.py backfill           Rebuild profiles + tweets from runs/*.json
-  cache.py status             Show cache stats
-  cache.py have HANDLE        Check if we have profile data for HANDLE
-  cache.py fetch ACTOR INPUT  Cache-aware fetch (skip if same params fetched <TTL ago)
+  cache.py backfill                    Rebuild profiles + tweets from runs/*.json
+  cache.py status                      Show cache stats
+  cache.py have HANDLE                 Check if we have profile data for HANDLE
+  cache.py needs HANDLE [HANDLE ...]   Print handles NOT cached or stale (use to filter input lists)
+  cache.py needs --tweets HANDLE ...   Same but also requires recent captured tweet
+  cache.py fresh HANDLE                Show freshness of one handle in detail
+  cache.py fetch ACTOR INPUT           Cache-aware fetch (skip if same params fetched <TTL ago)
+
+DISCIPLINE: any query targeting specific handles (`usersFromUsers`,
+`twitterHandles`, `startUrls`) MUST first filter through `cache.py needs`.
+Otherwise you are paying twice for accounts we already have.
 """
 from __future__ import annotations
 import json
@@ -157,6 +164,88 @@ def cmd_have(handle: str):
     }, indent=2))
 
 
+def _latest_tweet_age_days(handle: str) -> int | None:
+    """Days since the most recent tweet we have for this handle, or None."""
+    if not TWEETS.exists():
+        return None
+    newest = None
+    handle_l = handle.lower()
+    for row in load_jsonl(TWEETS):
+        if (row.get("screen_name") or "").lower() != handle_l:
+            continue
+        try:
+            t = datetime.strptime(row.get("created_at", ""), "%a %b %d %H:%M:%S %z %Y")
+        except Exception:
+            continue
+        if newest is None or t > newest:
+            newest = t
+    if newest is None:
+        return None
+    return (datetime.now(timezone.utc) - newest).days
+
+
+def _profile_age_days(handle: str) -> int | None:
+    """Days since we last touched this handle's profile data, or None."""
+    r = latest_profile(handle)
+    if not r:
+        return None
+    try:
+        t = datetime.fromisoformat(r["last_seen"])
+        return (datetime.now(timezone.utc) - t).days
+    except Exception:
+        return None
+
+
+def cmd_needs(args: list[str]):
+    """Print handles that would need fetching. Use to filter API inputs."""
+    require_tweets = False
+    ttl_days = 14
+    handles = []
+    for a in args:
+        if a == "--tweets":
+            require_tweets = True
+        elif a.startswith("--ttl="):
+            ttl_days = int(a.split("=", 1)[1])
+        else:
+            handles.append(a.lstrip("@"))
+    needed = []
+    for h in handles:
+        p_age = _profile_age_days(h)
+        t_age = _latest_tweet_age_days(h)
+        if p_age is None:
+            needed.append((h, "no-profile"))
+            continue
+        if p_age > ttl_days:
+            needed.append((h, f"profile-stale-{p_age}d"))
+            continue
+        if require_tweets:
+            if t_age is None:
+                needed.append((h, "no-tweets"))
+                continue
+            if t_age > ttl_days:
+                needed.append((h, f"tweets-stale-{t_age}d"))
+                continue
+        # Cached + fresh = skip
+    if not needed:
+        print(f"# all {len(handles)} handles cached fresh — no fetch needed", file=sys.stderr)
+        return
+    for h, reason in needed:
+        print(f"{h}\t{reason}")
+    print(f"# {len(needed)}/{len(handles)} handles need fetching", file=sys.stderr)
+
+
+def cmd_fresh(handle: str):
+    p_age = _profile_age_days(handle)
+    t_age = _latest_tweet_age_days(handle)
+    print(json.dumps({
+        "handle": handle,
+        "profile_age_days": p_age,
+        "latest_tweet_age_days": t_age,
+        "profile_fresh_14d": p_age is not None and p_age <= 14,
+        "tweets_fresh_14d": t_age is not None and t_age <= 14,
+    }, indent=2))
+
+
 def _get_query_record(actor: str, params: dict) -> dict | None:
     h = params_hash(actor, params)
     for row in load_jsonl(QUERIES):
@@ -229,6 +318,10 @@ def main():
         cmd_status()
     elif cmd == "have":
         cmd_have(sys.argv[2])
+    elif cmd == "needs":
+        cmd_needs(sys.argv[2:])
+    elif cmd == "fresh":
+        cmd_fresh(sys.argv[2])
     elif cmd == "fetch":
         cmd_fetch(sys.argv[2], sys.argv[3])
     else:
