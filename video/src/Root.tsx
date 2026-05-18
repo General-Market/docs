@@ -79,21 +79,8 @@ import {
 } from "./compositions/tutorial/theme";
 import { Launch30 } from "./compositions/launch/Launch30";
 import { OgCardGM } from "./compositions/launch/OgCardGM";
-import { OgBannerGM } from "./compositions/launch/OgBannerGM";
-import { OgBannerGMSeal } from "./compositions/launch/OgBannerGMSeal";
-import { OgBannerGMRedacted } from "./compositions/launch/OgBannerGMRedacted";
-import { OgBannerGMVault } from "./compositions/launch/OgBannerGMVault";
-import { OgBannerGMVaultRing } from "./compositions/launch/OgBannerGMVaultRing";
-import { OgBannerGMVaultMonolith } from "./compositions/launch/OgBannerGMVaultMonolith";
-import { OgBannerGMVaultOrb } from "./compositions/launch/OgBannerGMVaultOrb";
-import { OgBannerGMVaultBeam } from "./compositions/launch/OgBannerGMVaultBeam";
-import { OgBannerGMType } from "./compositions/launch/OgBannerGMType";
-import { OgBannerGMMottoType } from "./compositions/launch/OgBannerGMMottoType";
 import { OgBannerGMMottoSplit } from "./compositions/launch/OgBannerGMMottoSplit";
 import { OgBannerGMMottoGlass } from "./compositions/launch/OgBannerGMMottoGlass";
-import { OgBannerGMMottoDark } from "./compositions/launch/OgBannerGMMottoDark";
-import { OgBannerGMMottoApple } from "./compositions/launch/OgBannerGMMottoApple";
-import { OgBannerNS } from "./compositions/launch/OgBannerNS";
 import { OgBannerNSMottoDark } from "./compositions/launch/OgBannerNSMottoDark";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
@@ -103,7 +90,6 @@ import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 import { EndCard } from "./compositions/endcard/EndCard";
 import { HexPixelate } from "./compositions/effects/HexPixelate";
 import { VIDEO_SRC as LOFI_BROLL_SRC } from "./compositions/endcard/LofiDots";
-import { LofiDotsTitled } from "./compositions/endcard/LofiDotsTitled";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
@@ -121,9 +107,9 @@ import {
   pitchSceneMetas,
 } from "./compositions/pitch/PitchComposition";
 import {
-  ycPitchMeta,
-  ycPitchSceneMetas,
-} from "./compositions/yc-pitch/YCPitchComposition";
+  pitchTenMeta,
+  pitchTenSceneMetas,
+} from "./compositions/pitch-ten/PitchTenComposition";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 import {
   antiCheatStatMeta,
@@ -136,15 +122,10 @@ import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassur
 import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
-import { tradingScreenPortraitMeta } from "./compositions/anticheat/TradingScreenPortrait";
-import { proposal01ColdOpenMeta } from "./compositions/anticheat/proposals/Proposal01ColdOpen";
-import { proposal02PhoneMeta } from "./compositions/anticheat/proposals/Proposal02Phone";
-import { proposal03CourseMeta } from "./compositions/anticheat/proposals/Proposal03Course";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
-import { marketAnatomyMeta } from "./compositions/market-anatomy/MarketAnatomy";
-import { icebergDataMeta } from "./compositions/iceberg-data/IcebergData";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
+import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -180,10 +161,6 @@ export const RemotionRoot: React.FC = () => {
           antiCheatReassureMeta,
           antiCheatBridgeMeta,
           antiCheatEndCardMeta,
-          tradingScreenPortraitMeta,
-          proposal01ColdOpenMeta,
-          proposal02PhoneMeta,
-          proposal03CourseMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
@@ -197,16 +174,6 @@ export const RemotionRoot: React.FC = () => {
         ))}
       </Folder>
 
-      {/* ═══ ICEBERG DATA — standalone "why traders really lost" ═══ */}
-      <Composition
-        id={icebergDataMeta.id}
-        component={icebergDataMeta.component}
-        durationInFrames={icebergDataMeta.durationInFrames}
-        fps={icebergDataMeta.fps}
-        width={icebergDataMeta.width}
-        height={icebergDataMeta.height}
-      />
-
       {/* ═══ BLOCK TRADING — single-slide kill-list explainer ═══ */}
       <Composition
         id={blockTradingExileMeta.id}
@@ -215,16 +182,6 @@ export const RemotionRoot: React.FC = () => {
         fps={blockTradingExileMeta.fps}
         width={blockTradingExileMeta.width}
         height={blockTradingExileMeta.height}
-      />
-
-      {/* ═══ MARKET ANATOMY — eight strategy-pool tables over broll ═══ */}
-      <Composition
-        id={marketAnatomyMeta.id}
-        component={marketAnatomyMeta.component}
-        durationInFrames={marketAnatomyMeta.durationInFrames}
-        fps={marketAnatomyMeta.fps}
-        width={marketAnatomyMeta.width}
-        height={marketAnatomyMeta.height}
       />
 
       {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
@@ -267,17 +224,17 @@ export const RemotionRoot: React.FC = () => {
         ))}
       </Folder>
 
-      {/* ═══ YC PITCH — blank Apple-style YC deck, 12 slides ═══ */}
+      {/* ═══ PITCH TEN — the ten questions every investor asks ═══ */}
       <Composition
-        id={ycPitchMeta.id}
-        component={ycPitchMeta.component}
-        durationInFrames={ycPitchMeta.durationInFrames}
-        fps={ycPitchMeta.fps}
-        width={ycPitchMeta.width}
-        height={ycPitchMeta.height}
+        id={pitchTenMeta.id}
+        component={pitchTenMeta.component}
+        durationInFrames={pitchTenMeta.durationInFrames}
+        fps={pitchTenMeta.fps}
+        width={pitchTenMeta.width}
+        height={pitchTenMeta.height}
       />
-      <Folder name="YCPitch-Slides">
-        {ycPitchSceneMetas.map((meta) => (
+      <Folder name="PitchTen-Slides">
+        {pitchTenSceneMetas.map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
@@ -299,45 +256,6 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
       />
-
-      {/* ═══ LOFI DOTS TITLED — same broll, but the titles are the broll ═══ */}
-      <Composition
-        id="LofiDotsTitled"
-        component={LofiDotsTitled}
-        durationInFrames={Math.round(311 * ENDCARD_FPS)}
-        fps={ENDCARD_FPS}
-        width={1920}
-        height={1080}
-      />
-
-      {/* ═══ RAINBOWS PITCH — Flashblocks-Replicate clone, awaiting copy adaptation ═══ */}
-      <Composition
-        id={rainbowsPitchMeta.id}
-        component={rainbowsPitchMeta.component}
-        durationInFrames={rainbowsPitchMeta.durationInFrames}
-        fps={rainbowsPitchMeta.fps}
-        width={rainbowsPitchMeta.width}
-        height={rainbowsPitchMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="Rainbows-Pitch-Scenes">
-          {[
-            ...rainbowsPitchSceneA,
-            ...rainbowsPitchSceneB,
-            ...rainbowsPitchSceneC,
-          ].map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={rainbowsPitchMeta.fps}
-              width={rainbowsPitchMeta.width}
-              height={rainbowsPitchMeta.height}
-            />
-          ))}
-        </Folder>
-      )}
 
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
@@ -711,85 +629,32 @@ export const RemotionRoot: React.FC = () => {
           height={630}
         />
         <Composition
-          id="OgBannerGM"
-          component={OgBannerGM}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
+          id={rainbowsPitchMeta.id}
+          component={rainbowsPitchMeta.component}
+          durationInFrames={rainbowsPitchMeta.durationInFrames}
+          fps={rainbowsPitchMeta.fps}
+          width={rainbowsPitchMeta.width}
+          height={rainbowsPitchMeta.height}
         />
-        <Composition
-          id="OgBannerGMSeal"
-          component={OgBannerGMSeal}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMRedacted"
-          component={OgBannerGMRedacted}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMVault"
-          component={OgBannerGMVault}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMVaultRing"
-          component={OgBannerGMVaultRing}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMVaultMonolith"
-          component={OgBannerGMVaultMonolith}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMVaultOrb"
-          component={OgBannerGMVaultOrb}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMVaultBeam"
-          component={OgBannerGMVaultBeam}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMType"
-          component={OgBannerGMType}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerGMMottoType"
-          component={OgBannerGMMottoType}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
+        {SHOW_SCENES && (
+          <Folder name="Rainbows-Pitch-Scenes">
+            {[
+              ...rainbowsPitchSceneA,
+              ...rainbowsPitchSceneB,
+              ...rainbowsPitchSceneC,
+            ].map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={rainbowsPitchMeta.fps}
+                width={rainbowsPitchMeta.width}
+                height={rainbowsPitchMeta.height}
+              />
+            ))}
+          </Folder>
+        )}
         <Composition
           id="OgBannerGMMottoSplit"
           component={OgBannerGMMottoSplit}
@@ -805,30 +670,16 @@ export const RemotionRoot: React.FC = () => {
           fps={30}
           width={1500}
           height={500}
+          defaultProps={{ noun: "Trader" }}
         />
         <Composition
-          id="OgBannerGMMottoDark"
-          component={OgBannerGMMottoDark}
+          id="OgBannerGMMottoGlassTrading"
+          component={OgBannerGMMottoGlass}
           durationInFrames={1}
           fps={30}
           width={1500}
           height={500}
-        />
-        <Composition
-          id="OgBannerGMMottoApple"
-          component={OgBannerGMMottoApple}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
-        />
-        <Composition
-          id="OgBannerNS"
-          component={OgBannerNS}
-          durationInFrames={1}
-          fps={30}
-          width={1500}
-          height={500}
+          defaultProps={{ noun: "Trading" }}
         />
         <Composition
           id="OgBannerNSMottoDark"
@@ -988,6 +839,14 @@ export const RemotionRoot: React.FC = () => {
           fps={visionVsMeta.fps}
           width={visionVsMeta.width}
           height={visionVsMeta.height}
+        />
+        <Composition
+          id={financeChartsReelMeta.id}
+          component={financeChartsReelMeta.component}
+          durationInFrames={financeChartsReelMeta.durationInFrames}
+          fps={financeChartsReelMeta.fps}
+          width={financeChartsReelMeta.width}
+          height={financeChartsReelMeta.height}
         />
       </Folder>
 
