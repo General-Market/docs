@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# Ping Dokploy on VPS 3 to redeploy when frontend/ or nsgame/ changes
-# on mono/main.
+# Ping Dokploy on VPS 3 to redeploy when frontend/ changes on mono/main.
 #
-# Both apps now pull directly from General-Market/mono via SSH (deploy
-# key in Dokploy's ssh-key table, build paths /frontend and /nsgame).
-# The public mirrors (gm-frontend, gm-nsgame) are gone. This hook
-# replaces the per-app sync scripts with a single webhook ping.
+# Frontend pulls directly from General-Market/mono via SSH (deploy key
+# in Dokploy's ssh-key table, build path /frontend). The public mirror
+# (gm-frontend) is gone. This hook replaces the old per-app sync script
+# with a single webhook ping. nsgame is no longer deployed — its
+# subpath remains in mono as code only.
 
 set -e
 
@@ -14,7 +14,6 @@ ROUTE="$1"
 NAME="$2"
 case "$ROUTE" in
   frontend) HOOK="https://generalmarket.io/_dokploy/api/deploy/hDH6dhH6bGa-P0sbD684_" ;;
-  nsgame)   HOOK="https://generalmarket.io/_dokploy/api/deploy/sbIOAWK7EU0hkMneh7skz" ;;
   *)
     echo "[notify-dokploy] unknown route: $ROUTE" >&2
     exit 2
