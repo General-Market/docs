@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Rap Sheet — General Market</title>
+<meta name="description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
+<meta property="og:title" content="The Rap Sheet — General Market">
+<meta property="og:description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://generalmarket.io/case-studies/rap-sheet/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Rap Sheet — General Market">
+<meta name="twitter:description" content="Ten exchanges. One hundred seventy-six receipts. Sixty billion dollars in fines, frozen funds, and confessed fraud.">
+<style>
+:root {
+  --ink: #1D1D1F;
+  --ink-2: #424245;
+  --ink-3: #6E6E73;
+  --ink-4: #86868B;
+  --paper: #FFFFFF;
+  --paper-2: #FBFBFD;
+  --paper-3: #F5F5F7;
+  --rule: #D2D2D7;
+  --rule-soft: #E8E8ED;
+  --blue: #0071E3;
+  --blue-deep: #0058B0;
+  --blue-tint: #B5D4F5;
+  --blue-soft: #E8F2FE;
+  --red: #DD0426;
+  --red-deep: #A50319;
+  --red-soft: #FCEAEC;
+  --night: #0B0C0E;
+  --display: "SF Pro Display", "Inter", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --text: "SF Pro Text", "Inter", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
+  --serif: "New York", "Times New Roman", Georgia, serif;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--text);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 22px; }
+.wrap-wide { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+
+.brand-mark { display: inline-flex; align-items: center; gap: 9px; --logo-bg: var(--ink); --logo-pill: #FFF; --name-color: var(--ink); }
+.brand-mark .lg { display: block; flex-shrink: 0; }
+.brand-mark .nm { font-family: var(--display); font-weight: 800; letter-spacing: -0.022em; color: var(--name-color); line-height: 1; }
+.on-dark .brand-mark { --logo-bg: #FFF; --logo-pill: var(--ink); --name-color: #FFF; }
+
+/* HERO */
+.page-hero { position: relative; background: var(--night); color: #FFF; padding: 48px 22px 72px; overflow: hidden; border-bottom: 1px solid var(--ink); }
+.page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 25% 20%, rgba(221,4,38,0.18) 0%, transparent 55%), radial-gradient(ellipse at 78% 80%, rgba(0,113,227,0.12) 0%, transparent 55%); z-index: 0; }
+.page-hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--red); z-index: 1; }
+.page-hero-inner { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; }
+
+.brand-row { margin-bottom: 64px; display: flex; justify-content: space-between; align-items: center; }
+.brand-row .nm { font-size: 22px; }
+.brand-row .meta { font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--red); font-weight: 700; }
+
+.page-hero h1 { font-family: var(--display); font-size: clamp(56px, 11vw, 156px); font-weight: 800; letter-spacing: -0.052em; line-height: 0.9; color: #FFF; margin-bottom: 28px; }
+.page-hero h1 em { font-style: italic; font-family: var(--serif); font-weight: 500; letter-spacing: -0.03em; color: var(--red); }
+.page-hero .dek { font-family: var(--display); font-size: clamp(20px, 2.6vw, 28px); font-weight: 500; color: rgba(255,255,255,0.78); letter-spacing: -0.014em; line-height: 1.32; max-width: 700px; margin-bottom: 56px; }
+
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid rgba(255,255,255,0.18); border-bottom: 1px solid rgba(255,255,255,0.18); padding: 28px 0; }
+.hero-stat { padding: 0 22px; border-right: 1px solid rgba(255,255,255,0.10); }
+.hero-stat:first-child { padding-left: 0; }
+.hero-stat:last-child { border-right: none; padding-right: 0; }
+.hero-stat-fig { font-family: var(--display); font-size: clamp(32px, 4.4vw, 48px); font-weight: 800; letter-spacing: -0.032em; color: #FFF; line-height: 1; }
+.hero-stat-fig em { font-family: var(--serif); font-style: italic; font-weight: 500; color: var(--red); }
+.hero-stat-lbl { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: 12px; font-weight: 600; }
+@media (max-width: 720px) {
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: 0; }
+  .hero-stat { padding: 18px 14px; border-right: 1px solid rgba(255,255,255,0.10); border-bottom: 1px solid rgba(255,255,255,0.10); }
+  .hero-stat:nth-child(2n) { border-right: none; }
+  .hero-stat:nth-child(n+3) { border-bottom: none; }
+}
+
+/* TAB NAVIGATION */
+.tabs-wrap { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.92); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--rule); }
+.tabs-inner { max-width: 1180px; margin: 0 auto; padding: 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.tabs-inner::-webkit-scrollbar { display: none; }
+.tabs { display: flex; gap: 4px; padding: 12px 0; min-width: max-content; }
+.tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; border: none; cursor: pointer;
+  font-family: var(--display); font-size: 14px; font-weight: 600;
+  color: var(--ink-3); letter-spacing: -0.012em;
+  padding: 9px 14px; border-radius: 980px;
+  transition: color 120ms ease, background 120ms ease;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--ink); background: var(--paper-3); }
+.tab.active { color: #FFF; background: var(--ink); }
+.tab .count { font-family: var(--mono); font-size: 11px; font-weight: 700; opacity: 0.7; letter-spacing: 0.02em; }
+.tab.active .count { opacity: 0.85; }
+
+/* EXCHANGE SECTION */
+main { background: var(--paper); }
+.exchange { display: none; padding: 80px 0 120px; }
+.exchange.active { display: block; }
+
+.exch-head { max-width: 760px; margin: 0 auto 56px; padding: 0 22px; }
+.exch-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--red); font-weight: 700; margin-bottom: 18px; }
+.exch-name { font-family: var(--display); font-size: clamp(64px, 9vw, 108px); font-weight: 800; letter-spacing: -0.04em; line-height: 0.92; color: var(--ink); margin-bottom: 22px; }
+.exch-name em { font-family: var(--serif); font-style: italic; font-weight: 500; letter-spacing: -0.02em; color: var(--ink-2); }
+
+.exch-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); padding: 22px 0; margin: 32px 0 28px; }
+.exch-stat { padding: 0 18px; border-right: 1px solid var(--rule-soft); }
+.exch-stat:first-child { padding-left: 0; }
+.exch-stat:last-child { border-right: none; padding-right: 0; }
+.exch-stat-fig { font-family: var(--display); font-size: clamp(22px, 2.8vw, 30px); font-weight: 800; letter-spacing: -0.024em; color: var(--red); line-height: 1; }
+.exch-stat-fig.ink { color: var(--ink); }
+.exch-stat-lbl { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-top: 10px; font-weight: 700; }
+@media (max-width: 600px) {
+  .exch-stat-fig { font-size: 19px; }
+}
+
+.exch-indictment { font-family: var(--display); font-size: clamp(20px, 2.2vw, 24px); font-weight: 500; letter-spacing: -0.014em; line-height: 1.35; color: var(--ink); margin-top: 4px; }
+.exch-indictment em { font-family: var(--serif); font-style: italic; font-weight: 500; color: var(--ink-2); }
+
+/* INCIDENT LIST — the rap sheet itself */
+.docket { max-width: 760px; margin: 0 auto; padding: 0 22px; }
+.incident { padding: 32px 0; border-bottom: 1px solid var(--rule-soft); }
+.incident:first-child { padding-top: 24px; border-top: 2px solid var(--ink); }
+.incident:last-child { border-bottom: 2px solid var(--ink); }
+
+.incident-head { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: baseline; margin-bottom: 14px; }
+.incident-date { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; color: var(--ink-3); font-weight: 600; text-transform: uppercase; }
+.incident-amount { font-family: var(--display); font-size: clamp(20px, 2.4vw, 26px); font-weight: 800; letter-spacing: -0.022em; color: var(--red); text-align: right; line-height: 1; white-space: nowrap; }
+.incident-amount.muted { color: var(--ink-3); font-size: 13px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.incident-amount.alleged { color: var(--ink-3); font-size: 13px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.incident-title { font-family: var(--display); font-size: clamp(20px, 2.4vw, 24px); font-weight: 700; letter-spacing: -0.018em; line-height: 1.18; color: var(--ink); margin-bottom: 14px; }
+
+.incident-knife { font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.4; letter-spacing: -0.012em; color: var(--blue-deep); margin-bottom: 12px; padding-left: 16px; border-left: 2px solid var(--red); }
+
+.incident-summary { font-size: 15px; line-height: 1.5; color: var(--ink-2); letter-spacing: -0.008em; margin-bottom: 14px; }
+
+.incident-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.incident-source { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--blue); text-decoration: none; text-transform: uppercase; }
+.incident-source:hover { color: var(--blue-deep); }
+.incident-source::after { content: " →"; }
+.incident-tag { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-4); padding: 3px 8px; border: 1px solid var(--rule); border-radius: 4px; }
+.incident-tag.alleged { color: var(--red-deep); border-color: rgba(221,4,38,0.3); }
+
+@media (max-width: 540px) {
+  .incident-head { grid-template-columns: 1fr; gap: 6px; }
+  .incident-amount { text-align: left; font-size: 19px; }
+  .incident-title { font-size: 19px; }
+  .incident-knife { font-size: 17px; padding-left: 12px; }
+}
+
+/* CLOSER */
+.closer { background: var(--night); color: #FFF; padding: 96px 22px 112px; text-align: center; position: relative; overflow: hidden; }
+.closer::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(0,113,227,0.20) 0%, transparent 60%), radial-gradient(ellipse at 50% 80%, rgba(221,4,38,0.10) 0%, transparent 55%); z-index: 0; }
+.closer-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+.closer-eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--red); font-weight: 700; margin-bottom: 28px; }
+.closer h2 { font-family: var(--display); font-size: clamp(36px, 5.6vw, 60px); font-weight: 800; letter-spacing: -0.034em; line-height: 1.02; color: #FFF; margin-bottom: 28px; }
+.closer h2 em { font-family: var(--serif); font-style: italic; font-weight: 500; color: var(--blue-tint); }
+.closer p { font-family: var(--display); font-size: clamp(18px, 2vw, 22px); font-weight: 500; color: rgba(255,255,255,0.78); letter-spacing: -0.014em; line-height: 1.4; margin-bottom: 16px; }
+.closer p:last-of-type { margin-bottom: 40px; }
+.closer .cta { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; background: var(--blue); color: #FFF; text-decoration: none; border-radius: 980px; font-family: var(--display); font-size: 17px; font-weight: 600; letter-spacing: -0.012em; transition: background 160ms ease; }
+.closer .cta:hover { background: var(--blue-deep); }
+
+/* FOOTER */
+footer.foot { padding: 60px 22px 84px; text-align: center; background: var(--paper); border-top: 1px solid var(--rule); }
+footer.foot .brand-mark { display: inline-flex; }
+footer.foot .brand-mark .nm { font-size: 20px; }
+footer.foot .tagline { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--ink-2); margin-top: 16px; letter-spacing: -0.012em; }
+footer.foot .meta { margin-top: 32px; font-size: 12px; color: var(--ink-3); letter-spacing: 0.06em; font-family: var(--mono); }
+footer.foot .meta a { color: var(--blue); text-decoration: none; }
+footer.foot .meta a:hover { text-decoration: underline; }
+
+/* PRINT */
+@media print {
+  .tabs-wrap, .closer, footer.foot { display: none; }
+  .exchange { display: block !important; page-break-before: always; }
+  .page-hero { background: #fff; color: var(--ink); border-bottom: 2px solid var(--ink); }
+  .page-hero h1, .page-hero .dek, .hero-stat-fig { color: var(--ink); }
+  .incident-knife { color: var(--ink); }
+}
+
+@media (max-width: 600px) {
+  .page-hero { padding: 36px 22px 52px; }
+  .brand-row { margin-bottom: 40px; }
+  .exchange { padding: 56px 0 80px; }
+  .exch-head { margin-bottom: 40px; }
+  .incident { padding: 26px 0; }
+  .closer { padding: 64px 22px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="page-hero on-dark">
+  <div class="page-hero-inner">
+    <div class="brand-row">
+      <span class="brand-mark">
+        <svg class="lg" width="34" height="34" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg>
+        <span class="nm">General</span>
+      </span>
+      <span class="meta">TECHNICAL REVIEW № 003</span>
+    </div>
+    <h1>The Rap <em>Sheet</em></h1>
+    <p class="dek">Ten exchanges. One hundred seventy-six receipts. The losses retail filed, the fines regulators wrote, the confessions the executives signed.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-fig">176</div>
+        <div class="hero-stat-lbl">Incidents</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-fig">$60B<em>+</em></div>
+        <div class="hero-stat-lbl">Fines, hacks, losses</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-fig">11</div>
+        <div class="hero-stat-lbl">Venues</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-fig">2017<em>—26</em></div>
+        <div class="hero-stat-lbl">Years documented</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- TAB NAV -->
+<nav class="tabs-wrap" aria-label="Exchanges">
+  <div class="tabs-inner">
+    <div class="tabs" role="tablist">
+      <button class="tab active" role="tab" data-target="binance">Binance <span class="count">23</span></button>
+      <button class="tab" role="tab" data-target="coinbase">Coinbase <span class="count">21</span></button>
+      <button class="tab" role="tab" data-target="ftx">FTX <span class="count">20</span></button>
+      <button class="tab" role="tab" data-target="bybit">Bybit <span class="count">12</span></button>
+      <button class="tab" role="tab" data-target="hyperliquid">Hyperliquid <span class="count">12</span></button>
+      <button class="tab" role="tab" data-target="bitmex">BitMEX <span class="count">18</span></button>
+      <button class="tab" role="tab" data-target="deribit">Deribit <span class="count">12</span></button>
+      <button class="tab" role="tab" data-target="kraken">Kraken <span class="count">18</span></button>
+      <button class="tab" role="tab" data-target="okx">OKX <span class="count">13</span></button>
+      <button class="tab" role="tab" data-target="polymarket">Polymarket <span class="count">14</span></button>
+      <button class="tab" role="tab" data-target="kalshi">Kalshi <span class="count">13</span></button>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<!-- EXCHANGE-SECTIONS-START -->
+
+<section class="exchange active" data-exchange="binance">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2017 · 23 INCIDENTS</div>
+    <h2 class="exch-name">Binance</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$4.3B</div><div class="exch-stat-lbl">Largest DOJ fine</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">1.67M</div><div class="exch-stat-lbl">OFAC violations</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">4 mo</div><div class="exch-stat-lbl">CZ prison term</div></div>
+    </div>
+    <p class="exch-indictment">The largest corporate crime resolution in DOJ history was a line item. The man who signed it served less time than a sublet, then was pardoned. The customers stayed where they were left.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11-21</time><span class="incident-amount">$4.316B</span></div>
+      <h3 class="incident-title">CZ guilty plea — largest corporate crime resolution in DOJ history</h3>
+      <p class="incident-knife">The largest corporate crime fine in American history. He served four months.</p>
+      <p class="incident-summary">Binance pleaded guilty to BSA conspiracy, unregistered money transmission, and IEEPA sanctions violations. CZ resigned, paid $50M personally, served four months.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/archives/opa/pr/binance-and-ceo-plead-guilty-federal-charges-4b-resolution">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11-21</time><span class="incident-amount">$968M</span></div>
+      <h3 class="incident-title">OFAC settlement — 1,667,153 apparent sanctions violations</h3>
+      <p class="incident-knife">A million violations is no longer carelessness. It is a business model with bookkeeping.</p>
+      <p class="incident-summary">Trades matched between U.S. users and counterparties in Iran, Syria, North Korea, Cuba, Crimea, Donetsk, and Luhansk between 2017 and 2022. Senior management knew. Compliance was a paper costume.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://ofac.treasury.gov/recent-actions/20231121">OFAC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11-21</time><span class="incident-amount">$3.4B</span></div>
+      <h3 class="incident-title">FinCEN settlement — 100,000+ unfiled suspicious activity reports</h3>
+      <p class="incident-knife">They wrote no reports because there was nothing to report. There was only everything.</p>
+      <p class="incident-summary">Operated as an unregistered MSB. Failed to report 100,000+ suspicious transactions tied to terrorist financing, ransomware, child sexual abuse material, dark net markets, scams. Five-year independent monitor imposed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://home.treasury.gov/news/press-releases/jy1925">Treasury</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-12-18</time><span class="incident-amount">$2.85B</span></div>
+      <h3 class="incident-title">CFTC enforcement — willful evasion of U.S. derivatives law</h3>
+      <p class="incident-knife">Compliance staff joked about terrorist accounts in writing. They closed two eyes and kept the chat logs.</p>
+      <p class="incident-summary">CFTC alleged Binance, CZ, and ex-CCO Samuel Lim willfully ran an unregistered derivatives exchange for U.S. customers, coaching VIPs to use VPNs. Internal Slack: "we see the bad, but we close 2 eyes."</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8825-23">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-06-05</time><span class="incident-amount">$190M</span></div>
+      <h3 class="incident-title">SEC alleges Sigma Chain wash-traded 48 of 51 Binance.US listings</h3>
+      <p class="incident-knife">Forty-eight of fifty-one new listings traded mostly against themselves. The yacht was real.</p>
+      <p class="incident-summary">SEC complaint described a CZ-owned trading firm wash-trading 48 of 51 newly listed tokens — self-trading up to 99% of volume on some — and spending $11M of customer-derived money on a yacht. Case dismissed 2025-05-29 without adjudication.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2023-101-sec-files-13-charges-against-binance-entities-founder-changpeng-zhao">SEC</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-10-10</time><span class="incident-amount">$19.25B</span></div>
+      <h3 class="incident-title">10/10/2025 cascade — largest liquidation event in crypto history</h3>
+      <p class="incident-knife">ATOM printed near zero on the world's largest exchange. The bots that did it were never named.</p>
+      <p class="incident-summary">A tariff announcement triggered selling. API lagged, ATOM and ENJ briefly traded near $0 on Binance as collateral was force-sold, 1.62M accounts liquidated. Binance covered $188M in bad debt and called it macro.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coingecko.com/learn/october-10-crypto-crash-explained">CoinGecko</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-07</time><span class="incident-amount">60 seconds</span></div>
+      <h3 class="incident-title">"Year of the Yellow Fruit" — employee front-runs official Futures tweet</h3>
+      <p class="incident-knife">Sixty seconds from token creation to the official tweet. They didn't even pretend.</p>
+      <p class="incident-summary">A meme token was created on BNB Chain at 05:29 UTC. Under a minute later, @BinanceFutures posted the same imagery. Employee suspended. No criminal referral.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://bravenewcoin.com/insights/binance-suspends-employee-over-insider-trading-scandal-involving-meme-token">BraveNewCoin</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-05-07</time><span class="incident-amount">$40.8M</span></div>
+      <h3 class="incident-title">2019 hot wallet hack — 7,000 BTC drained in one withdrawal</h3>
+      <p class="incident-knife">The CEO publicly considered rewriting Bitcoin to undo his own breach. The keys did not improve.</p>
+      <p class="incident-summary">Attackers obtained API keys and 2FA codes via phishing and malware, executed a single coordinated withdrawal. SAFU covered losses. CZ briefly floated rolling back the Bitcoin chain.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2019/05/07/hackers-steal-407-million-in-bitcoin-from-crypto-exchange-binance">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-07-26</time><span class="incident-amount">$1.14B</span></div>
+      <h3 class="incident-title">July 2021 scam wick — BTC perp prints $48,168 vs $40k spot</h3>
+      <p class="incident-knife">Eight thousand dollars of spread, a single user, no name. The shorts paid the bill.</p>
+      <p class="incident-summary">BTCUSDT perpetual printed 20% above spot in seconds. Binance attributed to "a user" placing large buy orders. Researchers documented offer-side spoofing in the minutes before. ~$950M of shorts liquidated.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blog.bitmex.com/scamwicks-and-stop-cascades/">BitMEX Blog</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-05-19</time><span class="incident-amount">$500B</span></div>
+      <h3 class="incident-title">May 19 crash — withdrawals frozen, trade data backfilled</h3>
+      <p class="incident-knife">The data they sent later did not obey arithmetic. Their insurance fund obeyed everything.</p>
+      <p class="incident-summary">Binance stopped serving retail data during the worst hours. Academic analysis found backfilled trade data failed Benford's Law; futures-spot gap was 7× the reference period — consistent with protecting the insurance fund at users' expense.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.iwh-halle.de/en/publications/detail/bitcoin-flash-crash-on-may-19-2021-what-did-really-happen-on-binance">IWH-Halle</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11 / 2025-11</time><span class="incident-amount">~190 accts</span></div>
+      <h3 class="incident-title">Hamas, Hezbollah, ISIS — funds moved on Binance</h3>
+      <p class="incident-knife">They pleaded guilty in November and let the same wallets keep moving. Compliance, on paper, again.</p>
+      <p class="incident-summary">DOJ and Treasury documented Al-Qassam Brigades using Binance from at least 2019. Israel seized ~190 accounts tied to Hamas, ISIS, and other designated groups. 535 Oct. 7 victims sued under the Anti-Terrorism Act after CZ's pardon.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.timesofisrael.com/hundreds-of-oct-7-victims-sue-worlds-biggest-crypto-exchange-for-hamas-money-laundering/">Times of Israel</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-02 / 2024-10</time><span class="incident-amount">8 months</span></div>
+      <h3 class="incident-title">Tigran Gambaryan detained 8 months in Nigeria</h3>
+      <p class="incident-knife">They sent the compliance chief into the country negotiating with them. He came back in a wheelchair.</p>
+      <p class="incident-summary">Binance flew its head of financial crime compliance — a former IRS agent — into Nigeria to negotiate. He was detained, charged, contracted malaria and pneumonia. Charges dropped after 8 months. He resigned in June 2025.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.npr.org/2025/02/12/1230862333/tigran-gambarian-crypto-binance-nigeria-prison">NPR</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-10</time><span class="incident-amount">$38M</span></div>
+      <h3 class="incident-title">MOVE market maker dumps 66M tokens with no buys</h3>
+      <p class="incident-knife">They listed the token, watched the dump, kept the fees, named the culprit three months later.</p>
+      <p class="incident-summary">A listing market maker sold 66M MOVE with no offsetting buys, extracting $38M USDT. Binance offboarded the firm in March 2025 — well after the cash had left.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/347931/binance-move-market-maker-movement-38-million-usdt-buyback-program">The Block</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-12-16</time><span class="incident-amount">Audit pulled</span></div>
+      <h3 class="incident-title">Mazars walks away from the proof-of-reserves report</h3>
+      <p class="incident-knife">The auditor signed, then erased the page from its own website. The reserves they certified were never recertified.</p>
+      <p class="incident-summary">Mazars published an agreed-upon-procedures report December 7, 2022 claiming Binance BTC reserves were "101% collateralized." Within nine days Mazars paused all crypto work and deleted the report.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2022/12/16/binance-proof-of-reserves-auditor-mazars-pauses-all-work-for-crypto-clients">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-2023</time><span class="incident-amount">€3.3M+</span></div>
+      <h3 class="incident-title">Italy, Netherlands, UK, Germany — regulators close the doors</h3>
+      <p class="incident-knife">Every regulator in Europe asked them to leave. They called it geographic optimization.</p>
+      <p class="incident-summary">Italy's Consob declared Binance entities unauthorized. UK FCA barred regulated activity. Netherlands fined €3.3M for unregistered operation; Binance exited 2023. Futures withdrawn from Germany, Italy, Netherlands.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.trtworld.com/magazine/crypto-exchange-binance-is-unauthorised-in-italy-as-crackdown-widens-48434">TRT</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-03+</time><span class="incident-amount">77% share</span></div>
+      <h3 class="incident-title">Russia ruble corridor after the invasion</h3>
+      <p class="incident-knife">The world sanctioned a country. The exchange noticed the volume and stayed open.</p>
+      <p class="incident-summary">After EU sanctions, Binance briefly restricted Visa/Mastercard ruble deposits, then walked it back. WSJ and Reuters documented Binance's dominant role as a sanctions-evasion corridor — estimated 77% of CIS crypto-fiat in March 2022.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.themoscowtimes.com/2023/08/28/binance-restricts-russian-clients-to-ruble-transactions-a82263">Moscow Times</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-03</time><span class="incident-amount">$1B+</span></div>
+      <h3 class="incident-title">Iran corridor — VIP accounts moved $1B+ to Iran-linked entities</h3>
+      <p class="incident-knife">The VIP team had a 79-year-old gold smuggler on file. They knew. They kept it open.</p>
+      <p class="incident-summary">Internal Binance investigators reportedly flagged a 79-year-old Chinese VIP and a suspected Iranian gold smuggler. Senate inquiry references $1.7B aggregate tied to Iran proxies and Russia's shadow fleet.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/2026/03/12/binance-accounts-iranian-entities-sanctions-chinese-vips-gold-smuggler/">Fortune</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-10-23</time><span class="incident-amount">$2B</span></div>
+      <h3 class="incident-title">Trump pardons CZ — with $2B Emirati capital arriving in a Trump-family stablecoin</h3>
+      <p class="incident-knife">Two billion in Emirati capital, eight hundred thousand in lobbying, a presidential pardon. He didn't even know him.</p>
+      <p class="incident-summary">Trump pardoned CZ after a Trump-family crypto venture announced a $2B Emirati investment in Binance settled in WLF's USD1. Binance spent ~$800k on lobbying, $450k to a firm connected to Donald Trump Jr.'s circle. Trump told 60 Minutes he had "no idea" who CZ was.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2025/10/23/trump-pardons-binance-founder-cz-zhao.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-2022</time><span class="incident-amount">$190M</span></div>
+      <h3 class="incident-title">Sigma Chain — CZ's "market maker" pocketed $190M from Binance.US</h3>
+      <p class="incident-knife">The market maker for the exchange he owned bought a yacht with the spread. The customers paid for both halves of the trade.</p>
+      <p class="incident-summary">Per SEC: Sigma Chain, beneficially owned by CZ, was the undisclosed primary market maker on Binance.US. Traded against itself, employee-linked accounts, and inflated volumes shown to equity investors.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/files/litigation/complaints/2023/comp-pr2023-101.pdf">SEC Complaint</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Two insider trading suspensions in one calendar year</h3>
+      <p class="incident-knife">Two insider scandals in one year, none referred to prosecutors. They handle their own discipline.</p>
+      <p class="incident-summary">The December 2024 meme-token incident was the second time Binance suspended an employee for trading-on-listings activity in 2024. No names, no totals, no referrals to law enforcement.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://airdropalert.com/blogs/binance-is-pumping-memes-again/">AirdropAlert</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-05-12</time><span class="incident-amount">99% drop</span></div>
+      <h3 class="incident-title">LUNA/UST — withdrawals frozen as the chain ate itself</h3>
+      <p class="incident-knife">The early backer suspended withdrawals while the chain ate itself. The retail bagholder went last.</p>
+      <p class="incident-summary">Binance suspended LUNA/UST trading and withdrawals "due to high volume." Users were trapped on a dying chain. Binance had been an early backer through Binance Labs; its $1.6B stake fell below $3,000.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://techcrunch.com/2022/05/12/binance-halts-luna-and-ust-trading-across-most-of-its-spot-pairs-following-meltdown/">TechCrunch</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-ongoing</time><span class="incident-amount">$tens of M</span></div>
+      <h3 class="incident-title">Listings-as-extraction — admitted market-maker collusion pattern</h3>
+      <p class="incident-knife">They listed it, the market maker dumped it, the retail bid for it. New rules arrived after the cash did.</p>
+      <p class="incident-summary">Following MOVE, Binance disclosed a multi-token pattern of profit-sharing arrangements with market makers pumping then dumping new listings. SIREN fell 71% in 72 hours. New market-maker disclosure rules adopted in 2026.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2026/03/25/binance-tightens-market-maker-rules-tells-token-issuers-they-must-disclose-partners">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-10-25</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Withdrawals halted October 2023 — "technical issues"</h3>
+      <p class="incident-knife">Withdrawals fail on the days you need them. The technical issues are seasonal.</p>
+      <p class="incident-summary">Binance paused crypto withdrawals during volatile Bitcoin price action, citing technical issues. Pattern repeats: stop trading or withdrawals when conditions become unfavorable to the exchange's risk book.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2023/10/25/binance-crypto-withdrawals-temporarily-unavailable-due-to-technical-issues">CoinDesk</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="coinbase">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2012 · 21 INCIDENTS</div>
+    <h2 class="exch-name">Coinbase</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$400M</div><div class="exch-stat-lbl">May 2025 breach</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$2.9B</div><div class="exch-stat-lbl">IPO insider sale</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">11k+</div><div class="exch-stat-lbl">FTC/CFPB complaints</div></div>
+    </div>
+    <p class="exch-indictment">The regulated one. Approved by the SEC for IPO, then sued by the SEC for what it filed. The product manager tipped his brother. The support center photographed the customer file. The chart broke on Tuesdays and the dashboard, eventually, was scaled.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-07-21</time><span class="incident-amount">$1.1M</span></div>
+      <h3 class="incident-title">Ishan Wahi — first U.S. crypto insider trading conviction</h3>
+      <p class="incident-knife">The product manager for new listings told his brother. The brother told a friend. The first prosecution was inevitable.</p>
+      <p class="incident-summary">Coinbase listings product manager tipped his brother and a friend 14 times between June 2021 and April 2022, covering 25 assets. Ishan: 24 months. Nikhil: 10 months. Ramani: still at large.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/usao-sdny/pr/former-coinbase-insider-sentenced-first-ever-cryptocurrency-insider-trading-case">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017-12-19</time><span class="incident-amount">$9,500 BCH</span></div>
+      <h3 class="incident-title">Bitcoin Cash listing — the original front-running scandal</h3>
+      <p class="incident-knife">The first listing pump. The first internal investigation that found nothing. The template was set.</p>
+      <p class="incident-summary">BCH ran from $1,900 to over $3,000 in the hours before Coinbase's listing announcement. After listing, it hit $9,500 on Coinbase vs $3,600 on Kraken. Internal investigation found no wrongdoing.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://money.cnn.com/2017/12/20/investing/coinbase-bitcoin-cash/index.html">CNN</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05-15</time><span class="incident-amount">$180–400M</span></div>
+      <h3 class="incident-title">May 2025 breach — overseas support agents bribed to leak customer data</h3>
+      <p class="incident-knife">Two hundred dollars a photograph. Two hundred photographs a day. Six months before anyone noticed.</p>
+      <p class="incident-summary">Cyber criminals bribed Coinbase's outsourced Indian support agents to photograph customer records — 70,000 customers exposed. One agent photographed ~200 records per day at $200 each. Activity began September 2024; not detected until May 2025.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coinbase.com/blog/protecting-our-customers-standing-up-to-extortionists">Coinbase</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-01-04</time><span class="incident-amount">$100M</span></div>
+      <h3 class="incident-title">NYDFS — 100,000 unreviewed transaction monitoring alerts</h3>
+      <p class="incident-knife">A hundred thousand alerts queued and unread. The customer service line was answered the same way.</p>
+      <p class="incident-summary">$50M penalty + $50M required remediation. NYDFS found BSA/AML, KYC, transaction monitoring, and sanctions controls inadequate. Backlog reached 100,000 alerts. Suspected CSAM-related activity flagged.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.dfs.ny.gov/reports_and_publications/press_releases/pr202301041">NYDFS</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-06 → 2025-02</time><span class="incident-amount">Dismissed</span></div>
+      <h3 class="incident-title">SEC v. Coinbase — filed, then withdrawn under Trump administration</h3>
+      <p class="incident-knife">The agency sued, then thought better of it. The customers who lost on listed garbage waited for neither.</p>
+      <p class="incident-summary">SEC alleged Coinbase made billions facilitating unregistered securities trading since 2019 and ran unregistered staking. Trump SEC dismissed the case February 2025. No adjudication, no penalty.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2025-47">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-04-14</time><span class="incident-amount">$2.9B</span></div>
+      <h3 class="incident-title">Direct listing — Armstrong and board sold $2.9B on opening day</h3>
+      <p class="incident-knife">No lockup, no insider tax, just a Tuesday and a billion dollars. The shares fell after.</p>
+      <p class="incident-summary">Coinbase chose a direct listing with no lockup. Insiders, including Armstrong ($291.8M) and Andreessen ($118.7M), sold $2.9B. Stock fell 37% within five weeks. Delaware suit alleging insider trading allowed to proceed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2021/04/17/coinbase-ceo-sold-2918m-in-shares-on-opening-day">CoinDesk</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-05-19</time><span class="incident-amount">$500B</span></div>
+      <h3 class="incident-title">May 19 outage — Coinbase and Coinbase Pro down during 30% BTC crash</h3>
+      <p class="incident-knife">The app froze the morning the chart broke. They scaled the database later. The chart did not scale.</p>
+      <p class="incident-summary">Between 5:50am and 7:38am PT, users could not access coinbase.com, the mobile app, or Coinbase Pro. Nginx limits, GraphQL autoscaling, and Coinbase Pro DB latency failed simultaneously during the worst hours.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coinbase.com/blog/incident-post-mortem-may-19-2021">Coinbase Post-mortem</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-2023</time><span class="incident-amount">$1.5M</span></div>
+      <h3 class="incident-title">UTS academic study — run-ups before 10–25% of Coinbase listings</h3>
+      <p class="incident-knife">Ten to twenty-five percent of new Coinbase listings had run-ups statisticians could not explain politely.</p>
+      <p class="incident-summary">Felez-Vinas, Putnins, Johnson (UTS) examined 146 Coinbase listings September 2018 – May 2022. Tokens available on DEXs before announcement showed abnormal returns consistent with stock-market insider patterns.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://news.bloomberglaw.com/white-collar-and-criminal-law/coinbase-insider-trading-may-be-wider-than-us-case-study-says">Bloomberg Law</a> <span class="incident-tag alleged">Academic</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-06-06</time><span class="incident-amount">$110M</span></div>
+      <h3 class="incident-title">California staking ban — $110M+ in lost rewards for residents</h3>
+      <p class="incident-knife">The product was legal in some states on Monday and illegal in others on Tuesday. The yield curve did not care.</p>
+      <p class="incident-summary">10-state task force moved against Coinbase staking. SEC dropped its parallel claim. CA, NJ, MD, WI did not. 644,470 California users with $1.28B in staking holdings paused.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://dfpi.ca.gov/press_release/dfpi-issues-action-against-coinbase-citing-staking-rewards-program-violates-securities-law/">DFPI</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-08-03</time><span class="incident-amount">11k+ complaints</span></div>
+      <h3 class="incident-title">Class action — accounts locked for months, no human</h3>
+      <p class="incident-knife">Eleven thousand complaints, one customer service line. The hold music outlasted some accounts.</p>
+      <p class="incident-summary">Nationwide class alleged Coinbase locks users out indefinitely under "review" flags. Plaintiffs reported months of inaccessibility. Since 2016, >11,000 complaints filed with FTC and CFPB.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.classaction.org/news/class-action-claims-coinbase-locked-users-out-of-accounts-blocked-access-to-funds">ClassAction.org</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-08-24</time><span class="incident-amount muted">Tens of thousands per user</span></div>
+      <h3 class="incident-title">Customer service collapse — drained accounts, no human reachable</h3>
+      <p class="incident-knife">The customer service line was answered, eventually, after the money was gone.</p>
+      <p class="incident-summary">CNBC documented a pattern: SIM-swap and credential-stuffing attacks drained accounts; customer service did not respond for weeks. Users described bouncing email addresses.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2021/08/24/coinbase-slammed-for-terrible-customer-service-after-hackers-drain-user-accounts.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">SEC investigation — was the "100M+ verified users" figure inflated?</h3>
+      <p class="incident-knife">A hundred million verified users, allegedly. The agency wanted to see the verification.</p>
+      <p class="incident-summary">NYT reported the SEC was investigating whether Coinbase's "more than 100 million verified users" claim in S-1 marketing was a misstatement. Coinbase called it a holdover.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2025/05/15/coinbase-shares-dive-on-new-york-times-report-of-sec-investigation.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-04-21</time><span class="incident-amount">Treble damages</span></div>
+      <h3 class="incident-title">NY AG sues Coinbase Financial Markets as illegal gambling</h3>
+      <p class="incident-knife">They built a sportsbook and called it a derivatives venue. The state called it a sportsbook.</p>
+      <p class="incident-summary">Letitia James sued CFM and Gemini Titan for unlicensed gambling. Allegations: underage access (18–20 vs NY's 21+), betting on NY college teams, tax evasion (licensed sportsbooks pay 51%). Largest state-level prediction-market enforcement to date.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://ag.ny.gov/press-release/2026/attorney-general-james-sues-coinbase-and-gemini-running-illegal-gambling">NYAG</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-03-12</time><span class="incident-amount">50% drop</span></div>
+      <h3 class="incident-title">March 2020 Black Thursday — locked out at the bottom, again</h3>
+      <p class="incident-knife">Every fifty-percent move, the same outage. They optimize the dashboards, not the database.</p>
+      <p class="incident-summary">During the COVID crash, Coinbase and Coinbase Pro experienced repeated connectivity failures as Bitcoin halved. Users unable to log in, deposit, or close positions. No regulator action.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://status.coinbase.com/history">Status History</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-09 → 2025</time><span class="incident-amount muted">Linked to breach</span></div>
+      <h3 class="incident-title">Account takeovers from 2024–25 breach data</h3>
+      <p class="incident-knife">The data left through Mumbai. The funds left through phishing. The reimbursement, eventually.</p>
+      <p class="incident-summary">Attackers used stolen support-center data to impersonate Coinbase staff, walking customers through "security verification" flows that handed over seed phrases and 2FA codes.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coinbase.com/blog/protecting-our-customers-standing-up-to-extortionists">Coinbase</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-03-22</time><span class="incident-amount">Wells notice</span></div>
+      <h3 class="incident-title">SEC Wells notice — warned before the dismissed lawsuit</h3>
+      <p class="incident-knife">The same agency that approved the IPO sued the IPO. Two years of legal fees later, a press release.</p>
+      <p class="incident-summary">SEC issued Wells notice covering Coinbase's spot market and ancillary products. Coinbase's response noted the SEC had reviewed its S-1 with 57 references to staking. The lawsuit followed in June; dismissed February 2025.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2023/03/22/sec-warns-coinbase-its-pursuing-enforcement-action-over-securities-violations">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-06+</time><span class="incident-amount">$90M+</span></div>
+      <h3 class="incident-title">Four-state staking limbo — $90M+ in residents' lost rewards (rolling)</h3>
+      <p class="incident-knife">Federal court closed the file. Four states left it open. The yield curve waits for neither.</p>
+      <p class="incident-summary">Even after SEC's federal case died, four state actions persisted. Users in CA, NJ, MD, WI could not stake. Coinbase says forgone rewards exceed $90M.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://x.com/coinbase/status/1915783133368291515">Coinbase</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-04 → 2022-Q2</time><span class="incident-amount">−70%</span></div>
+      <h3 class="incident-title">The S-1 risk factor that came true — listings-driven revenue</h3>
+      <p class="incident-knife">The risk factor was disclosed. The insiders sold before the risk factor showed up. Disclosure is not symmetry.</p>
+      <p class="incident-summary">S-1 disclosed revenue depended on volatile trading volumes and listings. Insider sales (#6) happened against that disclosed risk. Retail bought at $381; saw $50 within 18 months.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2021/04/15/coinbase-coin-climbs-11percent-in-premarket-after-nasdaq-debut.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-09 / 2022</time><span class="incident-amount muted">Process revision</span></div>
+      <h3 class="incident-title">Listing policy revision — admitting the leak</h3>
+      <p class="incident-knife">They redesigned the listing process to stop the leak. The leak was a person, and he stayed for another four years.</p>
+      <p class="incident-summary">Coinbase publicly revised its listing process — more concurrent announcements, broader disclosure. The Wahi indictment landed despite the 2018 reforms.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coinbase.com/blog/an-update-on-our-asset-listing-processes">Coinbase</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017–2025</time><span class="incident-amount muted">Chronic</span></div>
+      <h3 class="incident-title">Operational outages — documented pattern on every volatility spike</h3>
+      <p class="incident-knife">The platform works on calm days. The market does not need it on calm days.</p>
+      <p class="incident-summary">Incident archive on status.coinbase.com documents a multi-year pattern: high-volatility days produce platform degradation. Users have repeatedly been unable to act at exactly the moment they most needed to.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://status.coinbase.com/history">Status History</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-07+</time><span class="incident-amount">Fugitive</span></div>
+      <h3 class="incident-title">Sameer Ramani — third Wahi defendant still at large</h3>
+      <p class="incident-knife">Two went to prison. The third went elsewhere. The first crypto insider trading case is still missing a defendant.</p>
+      <p class="incident-summary">Two of three Wahi defendants pleaded guilty and served time. Ramani fled. SEC obtained default judgment. DOJ has not announced apprehension.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/enforcement-litigation/litigation-releases/lr-25751">SEC</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="ftx">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2019 · COLLAPSED 2022 · 20 INCIDENTS</div>
+    <h2 class="exch-name">FTX</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$8B</div><div class="exch-stat-lbl">Customer money taken</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$12.7B</div><div class="exch-stat-lbl">CFTC judgment</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">25 yr</div><div class="exch-stat-lbl">SBF sentence</div></div>
+    </div>
+    <p class="exch-indictment">The corpse the industry orbits. One Boolean flag, eight billion dollars, three plea-bargained lieutenants, a courtroom in lower Manhattan. Two cooperators received no prison. The customer received cents on November-2022 dollars, while the assets they owned ran six-fold without them.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11-02</time><span class="incident-amount">$8B</span></div>
+      <h3 class="incident-title">SBF convicted on seven federal fraud counts</h3>
+      <p class="incident-knife">A jury of twelve needed five hours to do what his investors couldn't in four years.</p>
+      <p class="incident-summary">Two counts wire fraud, two conspiracy, plus securities fraud, commodities fraud, and money-laundering conspiracy. Five weeks of testimony from his three closest lieutenants.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/usao-sdny/pr/samuel-bankman-fried-sentenced-25-years-prison">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-03-28</time><span class="incident-amount">25 yrs · $11B</span></div>
+      <h3 class="incident-title">Sam Bankman-Fried sentenced to 25 years in federal prison</h3>
+      <p class="incident-knife">He optimized for the greater good and was last seen optimizing prison commissary.</p>
+      <p class="incident-summary">Judge Kaplan sentenced SBF to 25 years and ordered $11B forfeiture. Noted he showed no remorse. Effective altruism, in the end, was effective only for the man at the center.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/archives/opa/pr/samuel-bankman-fried-sentenced-25-years-his-orchestration-multiple-fraudulent-schemes">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-07+</time><span class="incident-amount">$8B+</span></div>
+      <h3 class="incident-title">The "allow_negative" backdoor in FTX code</h3>
+      <p class="incident-knife">The fraud was not in the marketing. It was one line of Python.</p>
+      <p class="incident-summary">Co-founder Gary Wang testified he inserted a single Boolean flag into FTX's matching engine that let Alameda run an unlimited negative balance. Customers were told publicly their funds were never touched.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theregister.com/2023/10/10/ftx_python_code/">The Register</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11</time><span class="incident-amount">$8B / $65B line</span></div>
+      <h3 class="incident-title">Alameda received $8B+ in customer deposits via secret credit line</h3>
+      <p class="incident-knife">He didn't steal the money. He simply borrowed it from people who never agreed to lend.</p>
+      <p class="incident-summary">At SBF's direction, Wang configured a $65 billion line of credit from FTX to Alameda. Used to fund venture bets, real estate, political donations, personal loans. The customers funding it never knew they were lenders.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/alameda-research-had-a-65b-secret-line-of-credit-with-ftx-report">Cointelegraph</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-12-21</time><span class="incident-amount">2 yrs</span></div>
+      <h3 class="incident-title">Caroline Ellison pleads guilty, becomes star witness</h3>
+      <p class="incident-knife">The girlfriend testified. The CTO testified. The director of engineering testified. Loyalty is a function of the sentence length.</p>
+      <p class="incident-summary">Alameda CEO pled to seven counts including wire fraud and money laundering conspiracy. Sentenced 2024-09-24 to 2 years; released January 2026 after 11 months.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2024/09/24/sam-bankman-fried-caroline-ellison-sentenced-ftx-.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-11-20</time><span class="incident-amount">0 yrs</span></div>
+      <h3 class="incident-title">Gary Wang — the CTO who wrote the backdoor — sentenced to zero prison</h3>
+      <p class="incident-knife">He wrote the line of code that incinerated eight billion dollars and slept in his own bed that night.</p>
+      <p class="incident-summary">Prosecutors called him the "easiest cooperator" they had ever worked with. The architect of the theft pays nothing while his customers wait for cents on the dollar.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/327421/ftx-co-founder-gary-wang-receives-no-prison-time-following-fallout-of-crypto-exchange-reports">The Block</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-05-28</time><span class="incident-amount">7.5 yrs</span></div>
+      <h3 class="incident-title">Ryan Salame — 7.5 years for campaign-finance and money-transmitting</h3>
+      <p class="incident-knife">They bought both parties with money that belonged to neither.</p>
+      <p class="incident-summary">FTX Digital Markets CEO pled guilty September 2023. Largest campaign-finance scheme in American history: dark money to Republicans while SBF routed to Democrats.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.aljazeera.com/economy/2024/5/28/former-ftx-executive-salame-sentenced-to-7-5-years-in-us-prison">Al Jazeera</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022 cycle</time><span class="incident-amount">$70M</span></div>
+      <h3 class="incident-title">SBF and inner circle made $70M+ in illegal political donations</h3>
+      <p class="incident-knife">Customer deposits became regulatory capture. The mark didn't even know he was a donor.</p>
+      <p class="incident-summary">DOJ charged SBF with funding 300+ political contributions through conduits to evade FEC limits, using FTX customer money. Self-described seventh-largest donor to 2022 midterms.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2023/10/20/sam-bankman-fried-ftx-allies-donated-millions-in-dark-money.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-11</time><span class="incident-amount">$40M</span></div>
+      <h3 class="incident-title">$40M crypto bribe to Chinese officials to unfreeze Alameda accounts</h3>
+      <p class="incident-knife">When the legal route failed, he discovered the older one. Cash, then crypto, then officials, then "happens to be unfrozen."</p>
+      <p class="incident-summary">DOJ superseding indictment (2023-03-28) alleged SBF directed a $40M crypto payment to at least one Chinese official after lawyers and lobbying failed. ~$1B in frozen Alameda accounts came back online days later.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2023/03/28/sam-bankman-fried-paid-over-40-million-to-bribe-at-least-one-chinese-official-doj-alleges-in-new-indictment.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11-11</time><span class="incident-amount">$477M</span></div>
+      <h3 class="incident-title">FTX hack as bankruptcy filed — $477M drained in hours</h3>
+      <p class="incident-knife">The exchange's last act of customer service was draining the safe before locking the door.</p>
+      <p class="incident-summary">As FTX filed Chapter 11, attackers — widely speculated to be insiders — moved 9,500 ETH and hundreds of other tokens out of hot wallets. Three suspects later charged by US prosecutors.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2022/11/21/ftx-theft-hackers-start-to-launder-477-million-of-stolen-crypto.html">CNBC</a> <span class="incident-tag alleged">Insider alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-12-13</time><span class="incident-amount">$12.7B</span></div>
+      <h3 class="incident-title">CFTC files record $12.7B fraud judgment against FTX/Alameda</h3>
+      <p class="incident-knife">The largest fraud judgment in commodity-futures history, attached to a man who once printed his face on stadium walls.</p>
+      <p class="incident-summary">CFTC complaint detailed the "allow_negative" flag, the secret line of credit, and the $8B+ in misappropriated customer deposits. Final judgment August 2024 — largest in CFTC history.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8938-24">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-12-13</time><span class="incident-amount">$1.8B</span></div>
+      <h3 class="incident-title">SEC charges SBF with defrauding equity investors of $1.8B</h3>
+      <p class="incident-knife">The diligence was done by the same firms that taught us diligence wasn't optional.</p>
+      <p class="incident-summary">SEC alleged FTX raised $1.8B in equity while concealing the secret credit line and undisclosed risk. Sequoia, BlackRock, Tiger Global all wrote stakes to zero.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2022-219">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11</time><span class="incident-amount">$46B</span></div>
+      <h3 class="incident-title">Voyager, BlockFi, Celsius, Genesis contagion</h3>
+      <p class="incident-knife">The rescuer was the arsonist. Industry insiders learned this on the way down.</p>
+      <p class="incident-summary">BlockFi accepted a $400M revolving credit from FTX US, was term-sheet committed to be acquired. Voyager held $3M with FTX. Celsius $1.3M plus $13M of loans to Alameda. All followed FTX into Chapter 11.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/231022/ftx-celsius-voyager-blockfi-genesis-collapse-fed-report-charts">The Block</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-08</time><span class="incident-amount">$70M settled</span></div>
+      <h3 class="incident-title">Sam Trabucco resigned, bought a $2.5M yacht — settled $70M with estate</h3>
+      <p class="incident-knife">He bought the boat with the customer deposits and called it a sabbatical.</p>
+      <p class="incident-summary">Alameda co-CEO resigned three months before collapse, said he was "spending more time with the boat." Surrendered yacht, two SF apartments worth $8.7M, $70M in claims. Never charged.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2024/11/11/former-alameda-co-ceo-sam-trabucco-agrees-to-forfeit-70m-yacht-apartments-to-ftx-creditors">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-12</time><span class="incident-amount">$3.5B</span></div>
+      <h3 class="incident-title">Bahamas regulator seized $3.5B in FTX assets</h3>
+      <p class="incident-knife">Two regulators raced for the corpse. The customers learned which jurisdiction loved them less.</p>
+      <p class="incident-summary">Securities Commission of The Bahamas, tipped by Salame, raided FTX Digital Markets' wallets November 10 — one day before US Chapter 11. Cross-jurisdictional dispute over funds followed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2022/12/30/bahamas-regulator-seized-3point5-billion-of-ftx-crypto-assets.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-2025</time><span class="incident-amount">500–1000% denied</span></div>
+      <h3 class="incident-title">FTX creditors repaid at November 2022 prices</h3>
+      <p class="incident-knife">Their coins were returned as memory. The memory had appreciated. They got the cost basis.</p>
+      <p class="incident-summary">US bankruptcy law required claims valued at the petition date. Creditors got dollar payments while BTC ran to $110K and SOL to $190. Called "120% recovery" while denying gains on assets they owned.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.nbcnews.com/business/business-news/ftx-customers-may-get-money-back-no-gains-crypto-price-increases-rcna151211">NBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021</time><span class="incident-amount">$1.76B</span></div>
+      <h3 class="incident-title">$1B+ in FTX customer funds used to repurchase Binance's stake</h3>
+      <p class="incident-knife">He paid twenty-two times what the shares cost, using money that wasn't his, to a man who would later destroy him in one tweet.</p>
+      <p class="incident-summary">SBF used commingled FTX/Alameda funds to buy back Binance's early equity stake for $1.76B. FTX estate sued Binance and CZ in 2024 as fraudulent conveyance. Binance denies.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://protos.com/ftx-sues-binance-and-cz-for-fraudulent-tweets-and-1-8b-clawback/">Protos</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11</time><span class="incident-amount">$6B FTT</span></div>
+      <h3 class="incident-title">FTT inflated-collateral scheme — Alameda posted its own token to itself</h3>
+      <p class="incident-knife">He printed his own collateral, posted it to himself, and called the loan repaid.</p>
+      <p class="incident-summary">Alameda was FTX's primary market maker and largest customer. FTT, an illiquid token Alameda+FTX held ~90% of, was posted as collateral for billions in borrowing. CoinDesk's leaked balance sheet triggered the run.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://crypto.news/alameda-researchs-market-manipulation-and-insider-trading-took-down-ftx/">crypto.news</a> <span class="incident-tag alleged">Manipulation alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11-16</time><span class="incident-amount">$11B class</span></div>
+      <h3 class="incident-title">Class action against Brady, Gisele, Curry, Shaq, O'Leary</h3>
+      <p class="incident-knife">The athletes endorsed the man. The man endorsed the fraud. Only the man was honest about what he was selling.</p>
+      <p class="incident-summary">Florida federal class action accused endorsers of promoting unregistered securities. Most claims dismissed May 2025 — plaintiffs failed to prove the celebrities knew of fraud. Shaq settled $1.8M.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2025/05/08/ftx-claims-steph-curry-tom-brady-celebrities.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-10-30</time><span class="incident-amount">0 yrs</span></div>
+      <h3 class="incident-title">Nishad Singh sentenced to zero prison time</h3>
+      <p class="incident-knife">Cooperation, in white-collar fraud, is the only collateral that holds value.</p>
+      <p class="incident-summary">Former director of engineering helped maintain the backdoor and made straw-donor political contributions. No prison after cooperating. Kept his freedom by remembering exactly who told him what.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blockworks.co/news/former-ftx-execs-sentenced-this-fall">Blockworks</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="bybit">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2018 · 12 INCIDENTS</div>
+    <h2 class="exch-name">Bybit</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$1.5B</div><div class="exch-stat-lbl">Lazarus heist</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">5 yrs</div><div class="exch-stat-lbl">Japan warnings</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">Largest</div><div class="exch-stat-lbl">Heist in history</div></div>
+    </div>
+    <p class="exch-indictment">A single compromised interface, four hundred thousand ETH, a Safe{Wallet} signing flow read aloud and trusted. The largest theft in the history of money. Solvency was restored by loan; the trust was not on the balance sheet.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02-21</time><span class="incident-amount">$1.5B</span></div>
+      <h3 class="incident-title">$1.5B Lazarus Group hack — largest crypto heist in history</h3>
+      <p class="incident-knife">The signature was real. The transaction was real. Only the interface lied — and that was enough.</p>
+      <p class="incident-summary">North Korea's Lazarus Group compromised a Safe{Wallet} developer, injected malicious JS into the multisig UI, tricked signers into approving a delegatecall that rewrote contract storage. 401,346 ETH gone. FBI attribution five days later. Per Guinness, largest bank heist ever.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.ic3.gov/psa/2025/psa250226">FBI IC3</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02</time><span class="incident-amount">$1.4B loan</span></div>
+      <h3 class="incident-title">Bybit's CEO commits to 1:1 backing via $1.4B emergency loans</h3>
+      <p class="incident-knife">The hole was real. The solvency was a loan from people who can call it back.</p>
+      <p class="incident-summary">Ben Zhou announced honoring withdrawals through emergency loans from counterparties (rumored Bitget, Galaxy, others). The hot-wallet hole was patched with debt before retail noticed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.chainalysis.com/blog/bybit-exchange-hack-february-2025-crypto-security-dprk/">Chainalysis</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-10</time><span class="incident-amount">UK exit</span></div>
+      <h3 class="incident-title">UK FCA bans Bybit from operating with British customers</h3>
+      <p class="incident-knife">The British learned what "unauthorised" meant the same way most regulators teach: by closing the door.</p>
+      <p class="incident-summary">FCA placed Bybit on public warning list. Bybit phased out new UK accounts October 1, halted deposits October 8, force-settled remaining positions by January 8, 2024.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.fca.org.uk/news/warnings/bybit">FCA</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-05 → 2025-02</time><span class="incident-amount">3 yrs blacklist</span></div>
+      <h3 class="incident-title">Bybit blacklisted in France by AMF for unregistered services</h3>
+      <p class="incident-knife">Three years on a regulator's blacklist is, in crypto, a marketing accomplishment.</p>
+      <p class="incident-summary">AMF added Bybit to public blacklist May 2022 for providing digital-asset services without registration. Removed February 2025 after Bybit suspended French services and began MiCA process.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.amf-france.org/en/news-publications/news-releases/amf-news-releases/amf-reminds-public-cryptoasset-trading-platform-bybit-blacklisted">AMF</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-06 / 2023-05</time><span class="incident-amount">$2.4M</span></div>
+      <h3 class="incident-title">OSC settlement, then Canadian exit</h3>
+      <p class="incident-knife">They promised to comply, then withdrew the promise. Compliance, in retrospect, was always optional.</p>
+      <p class="incident-summary">Settled with Ontario Securities Commission for US$2.4M and committed to register, then withdrew from registration entirely. Canadians blocked May 31, 2023; existing accounts force-closed by September.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blockworks.com/news/bybit-flees-canada">Blockworks</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025</time><span class="incident-amount">App-store delist</span></div>
+      <h3 class="incident-title">Japan FSA escalates to Apple/Google app removal</h3>
+      <p class="incident-knife">Five years of warnings ended not with a fine but with an app-store request.</p>
+      <p class="incident-summary">FSA had warned Bybit since 2021. In 2025, the regulator requested Apple and Google delist Bybit, Bitget, MEXC, LBank, KuCoin. Bybit announced December 22 it would phase out Japanese services from 2026.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2023/04/03/japan-regulator-flags-four-crypto-exchanges-including-bybit-for-operating-without-registration">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02-21</time><span class="incident-amount">PII + keys</span></div>
+      <h3 class="incident-title">User PII and wallet keys exposed in associated breach</h3>
+      <p class="incident-knife">They lost the ether and the database. The customers paid in both currencies.</p>
+      <p class="incident-summary">Huntress catalogued a data exposure containing names, emails, phone numbers, financial details, and unencrypted cryptocurrency wallet keys.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.huntress.com/threat-library/data-breach/bybit-cryptocurrency-exchange-data-breach">Huntress</a> <span class="incident-tag alleged">Third-party report</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-2025</time><span class="incident-amount">$7.1M+</span></div>
+      <h3 class="incident-title">Bybit listings linked to ZachXBT pump-and-dump investigations</h3>
+      <p class="incident-knife">The exchange listed the perp. The perp listed the exit. The retail trader supplied both.</p>
+      <p class="incident-summary">ZachXBT traced coordinated wallet networks (RAVE, LAB, SIREN, ALT) accumulating illiquid tokens then dumping after Bybit perp listings. Futures-to-spot ratios up to 40x suggested perp markets were the extraction venue.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/400465/zachxbt-accuses-projects-like-lab-of-highly-questionable-price-action-posts-10000-bounty-for-info-on-alleged-market-manipulation">The Block</a> <span class="incident-tag alleged">Manipulation alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-06</time><span class="incident-amount">$2.4M</span></div>
+      <h3 class="incident-title">OSC: operating unregistered in Ontario</h3>
+      <p class="incident-knife">They paid the fine, kept the customers, then left the customers. Economics of exit.</p>
+      <p class="incident-summary">Ontario Securities Commission held Bybit accountable for offering products to Canadians without registration. Bybit agreed to pay and pursue registration — then exited instead.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.osc.ca/en/news-events/news/osc-holds-global-crypto-asset-trading-platforms-accountable">OSC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02-22</time><span class="incident-amount muted">Opsec opaque</span></div>
+      <h3 class="incident-title">Bybit declines to disclose internal opsec failure scope</h3>
+      <p class="incident-knife">The hackers compromised a vendor. The exchange compromised the rest by signing what it could not read.</p>
+      <p class="incident-summary">Sygnia's investigation reported the attackers compromised a Safe{Wallet} developer's machine. Bybit's own signer environment that approved the malicious transaction remains opaquely documented.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sygnia.co/blog/sygnia-investigation-bybit-hack/">Sygnia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Ongoing</time><span class="incident-amount">$1.5B laundered</span></div>
+      <h3 class="incident-title">DPRK conversion of Bybit ETH via THORChain, eXch, Chainflip</h3>
+      <p class="incident-knife">The money was stolen on one chain and resurrected on seven. Censorship resistance, examined honestly.</p>
+      <p class="incident-summary">Chainalysis and Elliptic documented the assets fanning out across thousands of addresses. THORChain processed hundreds of millions in DPRK-linked swaps.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.chainalysis.com/blog/bybit-exchange-hack-february-2025-crypto-security-dprk/">Chainalysis</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">DPRK uses Bybit perpetuals to launder via on-platform trading</h3>
+      <p class="incident-knife">The thieves came back as customers. The KYC did not notice.</p>
+      <p class="incident-summary">Multiple analysts documented Lazarus-tagged addresses moving into derivatives venues — including the exchange they had just drained — to obscure flows through legitimate trading PnL.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://therecord.media/lazarus-hackers-behind-bybit-crypto-heist">The Record</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="hyperliquid">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2023 · 12 INCIDENTS</div>
+    <h2 class="exch-name">Hyperliquid</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$13M+</div><div class="exch-stat-lbl">HLP losses, 3 attacks</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">31%</div><div class="exch-stat-lbl">Of supply airdropped</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">0</div><div class="exch-stat-lbl">Tokens to US users</div></div>
+    </div>
+    <p class="exch-indictment">The transparent venue. Every position visible, every liquidation price addressable. They published the marketing called "Hyperliquidity Provider" and the depositors learned it was absorber. Three attacks in eight months, one oracle override, one validator vote that rewrote the tape.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-22</time><span class="incident-amount">$223K</span></div>
+      <h3 class="incident-title">Former-employee insider shorting of HYPE confirmed</h3>
+      <p class="incident-knife">The leak was an alumnus. The exchange's policy fired him; the chain forgot to.</p>
+      <p class="incident-summary">Co-founder Iliensinc confirmed a wallet aggressively shorting HYPE belonged to an employee terminated Q1 2024 for insider trading. $180K HYPE short at 10x, $43K BTC short at 40x. He had kept the capital and the knowledge.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/hyperliquid-hype-shorting-address-former-employee">Cointelegraph</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12-23</time><span class="incident-amount">$700K+</span></div>
+      <h3 class="incident-title">North Korean Lazarus addresses traded on Hyperliquid</h3>
+      <p class="incident-knife">Sanctions, on a decentralized exchange, are a dropdown. The DPRK declined to select their country.</p>
+      <p class="incident-summary">MetaMask security lead Taylor Monahan flagged sanctioned wallets actively trading perps on Hyperliquid. Permissionless onboarding means OFAC compliance reduces to whether the front-end geofences.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://bitcoinist.com/hyperliquid-hype-threatened-north-korean-hackers/">Bitcoinist</a> <span class="incident-tag alleged">Sanctions exposure</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03-12</time><span class="incident-amount">$4M</span></div>
+      <h3 class="incident-title">ETH whale liquidation cost HLP $4M (the "great whale slap")</h3>
+      <p class="incident-knife">He didn't lose the trade. He gifted it. To a vault that couldn't refuse.</p>
+      <p class="incident-summary">Wallet 0xf3f4 opened a 50x ETH long of $340M notional, watched it move favorably, then withdrew margin to force liquidation. HLP inherited the position at $1,915 and unwound at a $4M loss.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2025/03/12/hyperliquid-loses-usd4m-after-whale-s-over-usd200m-ether-trade-unwinds">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03-26</time><span class="incident-amount">$13M at risk</span></div>
+      <h3 class="incident-title">JELLYJELLY squeeze, oracle override, and forced delisting</h3>
+      <p class="incident-knife">When the trade went wrong, the validators changed the price. Decentralization is whatever a quorum says.</p>
+      <p class="incident-summary">Trader deposited $7M across three accounts, opened offsetting long and short positions on illiquid JELLY, pumped spot on Bybit to manipulate the oracle, forced self-liquidation. HLP inherited the short. Validators voted to override the oracle to $0.0095 and delist the perp.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/timeline-jelly-token-exploit-hyperliquid">Cointelegraph</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-11-12</time><span class="incident-amount">$4.9M</span></div>
+      <h3 class="incident-title">POPCAT coordinated manipulation — third HLP attack of the year</h3>
+      <p class="incident-knife">They spent three million to make five. Hyperliquid called it bad debt. They called it tuition.</p>
+      <p class="incident-summary">Attacker withdrew $3M from OKX, fanned across 19 wallets, opened $26M in leveraged POPCAT longs, placed a $20M spoof buy wall, canceled it. Cascade liquidations dumped onto HLP.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2025/11/13/peak-degen-warfare-alleged-popcat-manipulation-hits-hyperliquid-with-usd4-9m-loss">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-05</time><span class="incident-amount">Pre-enforcement</span></div>
+      <h3 class="incident-title">CME and ICE press CFTC to scrutinize Hyperliquid</h3>
+      <p class="incident-knife">The two firms accused of manipulating oil futures asked the regulator to investigate someone else. Civic duty as competitive moat.</p>
+      <p class="incident-summary">Bloomberg reported May 2026 that CME and ICE executives pressed CFTC and Capitol Hill, alleging Hyperliquid enables market manipulation, insider trading, and sanctions evasion in oil and other commodities perps.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2026/05/15/cme-ice-push-u-s-regulators-to-scrutinize-hyperliquid-over-manipulation-risks-bloomberg">CoinDesk</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-11</time><span class="incident-amount">US blocked</span></div>
+      <h3 class="incident-title">HYPE airdrop excluded US persons via geofence</h3>
+      <p class="incident-knife">They built it with American liquidity and gave the tokens to everyone else. The most honest geofence in crypto.</p>
+      <p class="incident-summary">Hyperliquid's airdrop blocked US IPs at the distribution stage. Americans who had used the protocol received nothing. The platform took US volume and returned US exclusion.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.datawallet.com/crypto/hyperliquid-supported-and-restricted-countries">DataWallet</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-Q1</time><span class="incident-amount muted">Trust-cost</span></div>
+      <h3 class="incident-title">Validator set centralization revealed by JELLY override</h3>
+      <p class="incident-knife">They can see every trade. They can also unmake one.</p>
+      <p class="incident-summary">The JELLY incident exposed that a small validator set could reverse a market outcome by vote. "Transparent on-chain perps" collided with the operational reality: a quorum can rewrite the tape.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.arringtoncapital.com/blog/hyperliquids-tipping-point-three-things-they-must-do-now/">Arrington Capital</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Ongoing</time><span class="incident-amount muted">Structural</span></div>
+      <h3 class="incident-title">Public liquidation map weaponized for whale-hunting</h3>
+      <p class="incident-knife">The chain shows your liquidation price. The bots show up before you do.</p>
+      <p class="incident-summary">HyperStats, HyperTracker, Coinglass publish every Hyperliquid wallet's position and liquidation price in real time. A 50x long with public margin is a target with an address.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coinglass.com/hyperliquid-liquidation-map">Coinglass</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03-26</time><span class="incident-amount muted">— Unverified total</span></div>
+      <h3 class="incident-title">Hyper Foundation chose who got reimbursed after JELLY</h3>
+      <p class="incident-knife">They decided who got reimbursed by deciding who deserved to be a victim.</p>
+      <p class="incident-summary">After JELLY override, foundation promised to "make all non-flagged users whole." Who counted as flagged was decided by the foundation. The exchange chose its victims and non-victims in the same statement.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.fxstreet.com/cryptocurrencies/news/hyperliquid-escapes-liquidity-crisis-following-jellyjelly-short-squeeze-delists-token-202503262225">FXStreet</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025</time><span class="incident-amount">$13M+</span></div>
+      <h3 class="incident-title">Three HLP manipulation attacks in eight months</h3>
+      <p class="incident-knife">They called it "Hyperliquidity Provider." The depositors learned it was hyperliquidity absorber.</p>
+      <p class="incident-summary">A pattern, not an incident. HLP is the residual counterparty for every liquidation Hyperliquid cannot otherwise close. Three documented attacks weaponized this property: ETH whale ($4M), JELLY ($13M peak), POPCAT ($4.9M).</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.ccn.com/news/crypto/hyperliquid-attack-popcat-again-5million/">CCN</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-11+</time><span class="incident-amount">~24%</span></div>
+      <h3 class="incident-title">HYPE token insider allocation accusations</h3>
+      <p class="incident-knife">The insiders denied it. Then one of them shorted from a wallet they forgot to obscure.</p>
+      <p class="incident-summary">Critics noted ~24% of HYPE supply sat with founders/foundation, with vesting opacity. Combined with the December insider-shorting confirmation, accusations of pre-launch information asymmetry have not died.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://beincrypto.com/hyperliquid-hype-burn-vote-insider-trading/">BeInCrypto</a> <span class="incident-tag alleged">Team denies</span></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="bitmex">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2014 · 18 INCIDENTS</div>
+    <h2 class="exch-name">BitMEX</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$130M</div><div class="exch-stat-lbl">Total fines</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$702M</div><div class="exch-stat-lbl">One Black Thursday</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">36,493 BTC</div><div class="exch-stat-lbl">Insurance fund peak</div></div>
+    </div>
+    <p class="exch-indictment">The original perpetual exchange and its original sin. A money-laundering platform with leverage, an insider trading desk admitted by blog post, a class action that survived dismissal, and a presidential pardon for all of it. The engine paused precisely when there were no longs left to eat.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-10-01</time><span class="incident-amount">$100M</span></div>
+      <h3 class="incident-title">DOJ and CFTC indict three co-founders — money-laundering platform</h3>
+      <p class="incident-knife">They built the laundromat, then asked which jurisdiction was rude enough to notice.</p>
+      <p class="incident-summary">BitMEX operated as an FCM without registration, no AML, no KYC, from September 2015 to September 2020. DOJ called it "in effect, a money-laundering platform." $100M CFTC+FinCEN penalty. $30M consent order separately from founders.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8412-21">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-02-24</time><span class="incident-amount">$10M each</span></div>
+      <h3 class="incident-title">Hayes and Delo plead guilty to BSA violations</h3>
+      <p class="incident-knife">Five years of laundering, six months of inconvenience. The punishment matched the crime in nothing but rhyme.</p>
+      <p class="incident-summary">All three admitted willful failure to implement AML. No prison. Hayes: 6 months home detention + 2 years probation. Delo: 30 months probation. Reed: 18 months probation. Hayes returned to writing newsletters before the ink dried.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2022/05/20/former-bitmex-ceo-arthur-hayes-sentenced-to-2-years-probation">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-08-16</time><span class="incident-amount">$150K</span></div>
+      <h3 class="incident-title">Greg Dwyer (Head of Business Development) pleads guilty</h3>
+      <p class="incident-knife">The fourth man pleaded, the courts shrugged, the spreadsheet stayed.</p>
+      <p class="incident-summary">Fourth BitMEX executive admitted aiding BSA violations. Maximum penalty was five years; he got none of it.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/usao-sdny/pr/high-ranking-employee-cryptocurrency-exchange-pleads-guilty-bank-secrecy-act-violations">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03-28</time><span class="incident-amount">Pardoned</span></div>
+      <h3 class="incident-title">Trump pardons all four founders and HDR Global itself</h3>
+      <p class="incident-knife">First they took your stops. Then they took the conviction. Justice is a contract that expires.</p>
+      <p class="incident-summary">First corporate pardon of Trump's second term. The company that ran the money-laundering platform was forgiven by the state that prosecuted it.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2025/03/28/president-trump-pardons-arthur-hayes-2-other-bitmex-co-founders-cnbc">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-03-12</time><span class="incident-amount">$702M</span></div>
+      <h3 class="incident-title">Black Thursday — outage during 50% bitcoin crash</h3>
+      <p class="incident-knife">The engine that ate longs took a nap precisely when there were no longs left to eat.</p>
+      <p class="incident-summary">BTC fell from $7,200 to $3,800. BitMEX went offline ("DDoS"). Price snapped back from $3,800 to $5,300 the instant the engine stopped liquidating. $702M in BTC perpetuals liquidated; ~60,000 BTC drained from the platform within weeks.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://unchainedcrypto.com/what-happened-on-bitmex-during-black-thursday/">Unchained</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-04-30</time><span class="incident-amount">$427M alleged</span></div>
+      <h3 class="incident-title">BitMEX admits its in-house "Insider Trading Desk" with God Access</h3>
+      <p class="incident-knife">The house plays against you. They wrote it down so you couldn't say they hadn't told you.</p>
+      <p class="incident-summary">After two years of denial, BitMEX confessed via blog post that a for-profit trading desk staffed by employees with "God Access" to customer accounts traded on its own platform. General counsel and outside counsel resigned. The desk did not.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://medium.com/@mattcollburner/bitmex-insiders-caught-in-a-web-of-lies-6d9b90baa693">Medium</a> <span class="incident-tag alleged">$427M alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-04</time><span class="incident-amount">$427M alleged</span></div>
+      <h3 class="incident-title">Messieh v. HDR Global class action denied dismissal</h3>
+      <p class="incident-knife">The court will not say they did it. It will say the accusation is too well-formed to ignore.</p>
+      <p class="incident-summary">Plaintiffs allege founders used customer information to engineer liquidation cascades and weaponized "system overload" lockouts during volatility. Judge Carter ruled April 2024 there is sufficient evidence to proceed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blockchain.bakermckenzie.com/2024/04/11/us-court-refuses-to-dismiss-proposed-class-action-against-bitmex-founders/">Baker McKenzie</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-11-01</time><span class="incident-amount">23k–30k addresses</span></div>
+      <h3 class="incident-title">Customer email leak — concatenated "To:" field exposes address book</h3>
+      <p class="incident-knife">They built fortresses around the funds and forgot the envelopes.</p>
+      <p class="incident-summary">A mass email about an index change used a literal concatenated "To:" field, exposing the address book of one of the most secretive trading venues on earth. Twitter account got hijacked the same week.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://bitcoinist.com/bitmex-email-leak-23000-emails-and-counting/">Bitcoinist</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-04-02</time><span class="incident-amount">$500M+</span></div>
+      <h3 class="incident-title">Auto-deleveraging on XBTU19 and ETHM19</h3>
+      <p class="incident-knife">The fund that exists to protect winners exists, in practice, to introduce them to the losers.</p>
+      <p class="incident-summary">When liquidations exceeded the insurance cushion, BitMEX deleveraged winning traders to pay for the losers. The fund existed precisely to prevent this; it did not prevent it.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blog.bitmex.com/xbtu19-and-ethm19-auto-deleveraging-events-2-april-2019/">BitMEX</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-02</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">XRP scam wick — $0.32 to $0.14 in one five-minute candle</h3>
+      <p class="incident-knife">The candle was five minutes long. The investigation was shorter.</p>
+      <p class="incident-summary">The XRP/USD Perpetual Quanto Swap lost half its value in a blink. Stop losses failed. BitMEX investigated itself, found nothing, refunded nothing.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.ccn.com/liquidated-traders-furious-xrp-dumps-on-bitmex/">CCN</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-05-16</time><span class="incident-amount">$250M</span></div>
+      <h3 class="incident-title">Bitstamp $5,000 BTC sell prints into BitMEX index</h3>
+      <p class="incident-knife">A thin index is a confession dressed as a formula.</p>
+      <p class="incident-summary">A 5,000 BTC dump on Bitstamp — one of only three venues BitMEX averaged into its index — cascaded into a quarter-billion in liquidations. A trade that size belonged on OTC desks.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://bravenewcoin.com/insights/the-bitstamp-flash-crash-why-robust-indices-matter">BraveNewCoin</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-08</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">BitMEX downtime + simultaneous Bitfinex pump liquidates shorts</h3>
+      <p class="incident-knife">The maintenance window opened, the shorts closed, the world kept turning.</p>
+      <p class="incident-summary">The instant BitMEX went down for "maintenance," BTC ripped from $6,450 to $7,100 on Bitfinex. When BitMEX returned, shorts had been liquidated at the high. The pump fully retraced the same day.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.trustnodes.com/2018/09/14/bitmex-seemingly-trading-against-its-own-customers-price-manipulation-in-plain-sight">Trustnodes</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-05-19</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Trading engine outage during volatility</h3>
+      <p class="incident-knife">Engines that pause for everyone except liquidations are not engines. They are editorials.</p>
+      <p class="incident-summary">BitMEX's matching engine restarted abruptly twice in one session. Users locked out for 100 minutes. BitMEX insisted no liquidations occurred. Traders on Twitter insisted otherwise.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cryptopotato.com/all-funds-are-safu-bitmex-outage-on-tuesday-due-to-server-restart/">CryptoPotato</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-08</time><span class="incident-amount muted">US geofence theater</span></div>
+      <h3 class="incident-title">BitMEX restricts US, Quebec, Hong Kong — VPN use an "open secret"</h3>
+      <p class="incident-knife">The geofence was for the lawyers, not the customers.</p>
+      <p class="incident-summary">BitMEX put up an IP blocker, told American traders to leave, and kept their fees. The DOJ later said the blocker was theatre — VPN use was an "open secret."</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/2020/10/01/giant-cryptocurrency-exchange-bitmex-hit-with-criminal-and-civil-money-laundering-charges/">Fortune</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-2022</time><span class="incident-amount">$427M alleged</span></div>
+      <h3 class="incident-title">Bitcoin Manipulation Abatement civil RICO suits</h3>
+      <p class="incident-knife">A man can sue an exchange ten times and still be less persistent than its order book.</p>
+      <p class="incident-summary">Pavel Pogodin's serial filings accused BitMEX of racketeering, wire fraud, interstate transport of stolen property, and market manipulation. Most dismissed procedurally. The Messieh class survived.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://coingeek.com/crypto-crime-cartel-the-many-lawsuits-against-bitmex/">CoinGeek</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-12</time><span class="incident-amount">$1B+</span></div>
+      <h3 class="incident-title">Ben Delo becomes UK's first bitcoin billionaire</h3>
+      <p class="incident-knife">A billion dollars in fees is a verdict the regulators only confirmed.</p>
+      <p class="incident-summary">The same year BitMEX denied having a proprietary trading desk, Delo crossed ten figures. Wealth this fast either means a product or a tax.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.bbc.com/news/business-46298936">BBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-2025</time><span class="incident-amount">$3.5B</span></div>
+      <h3 class="incident-title">Insurance fund accumulates 36,493 BTC at peak</h3>
+      <p class="incident-knife">The fund grows because they liquidate efficiently. Or because they liquidate eagerly. The accounting cannot tell.</p>
+      <p class="incident-summary">BitMEX's fund grows when traders are closed at prices worse than bankruptcy. Architecture rewards aggressive liquidation. Critics asked why the fund only grew. BitMEX said competition.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blog.bitmex.com/the-bitmex-insurance-fund/">BitMEX</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-10-01+</time><span class="incident-amount muted">Withdraw friction</span></div>
+      <h3 class="incident-title">US persons blocked from withdrawals on existing accounts</h3>
+      <p class="incident-knife">The doors that were never closed slammed shut the moment they were named.</p>
+      <p class="incident-summary">After the indictment, all unverified accounts were locked from trading or withdrawing. The exchange that courted Americans froze them out the day the charges arrived.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/2020/10/01/giant-cryptocurrency-exchange-bitmex-hit-with-criminal-and-civil-money-laundering-charges/">Fortune</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="deribit">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2016 · 12 INCIDENTS</div>
+    <h2 class="exch-name">Deribit</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$28M</div><div class="exch-stat-lbl">Hot wallet hack</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$2.9B</div><div class="exch-stat-lbl">Coinbase acquisition</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">3</div><div class="exch-stat-lbl">Jurisdictions in 5 yrs</div></div>
+    </div>
+    <p class="exch-indictment">The crypto-options monopoly. Forty-two market makers, five of them load-bearing, retail filing complaints about adverse fills near expiry. Headquartered in the Netherlands until the AML directive arrived, in Panama until the bank found out, in Dubai until the next thing. Now an asset on Coinbase's balance sheet.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11-01</time><span class="incident-amount">$28M</span></div>
+      <h3 class="incident-title">Hot wallet hack drains $28M across BTC, ETH, USDC</h3>
+      <p class="incident-knife">A decade of silence ended with a single hot wallet. Silence was always the product.</p>
+      <p class="incident-summary">Compromised hot wallet across three asset classes. Withdrawals halted. Deribit said 99% of funds were in cold storage and would cover the loss. First publicly disclosed breach since their 2016 founding.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2022/11/02/crypto-exchange-deribit-loses-28m-in-hot-wallet-hack">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-06-15</time><span class="incident-amount">$801M claim</span></div>
+      <h3 class="incident-title">Deribit forces 3AC liquidation, files BVI insolvency petition</h3>
+      <p class="incident-knife">When the borrowers became insolvent, the lenders discovered urgency. Until then, urgency was bad manners.</p>
+      <p class="incident-summary">3AC breached its minimum balance agreement June 11. Deribit liquidated June 15, then joined Blockchain.com in seeking court-ordered insolvency in the BVI. 1,300 BTC + 15,000 ETH loan.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2022/07/01/blockchaincom-deribit-among-creditors-that-pushed-for-3ac-liquidation-report">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-01-11</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Margin rules doubled mid-session — IM 1%→2%, MM 0.525%→1%</h3>
+      <p class="incident-knife">The rules changed under their feet. The feet were leveraged.</p>
+      <p class="incident-summary">Deribit doubled margin requirements. The exchange said the IM hike would not trigger liquidations, but the MM hike could — and did — for the most leveraged longs the moment the rule changed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://support.deribit.com/hc/en-us/articles/25944826427293-11-January-2022">Deribit</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05-08</time><span class="incident-amount">$2.9B</span></div>
+      <h3 class="incident-title">Coinbase acquires Deribit for $2.9B</h3>
+      <p class="incident-knife">They survived the SEC by being acquired by the one exchange that didn't.</p>
+      <p class="incident-summary">$700M cash + 11M COIN shares. The largest crypto options venue handed itself to the largest US-listed exchange. Retail concentration in derivatives now sits behind one Nasdaq ticker.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2025/05/08/coinbase-buys-deribit-for-usd2-9b">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-2025</time><span class="incident-amount">Dubai HQ</span></div>
+      <h3 class="incident-title">HQ migrated from Panama to Dubai under conditional VARA license</h3>
+      <p class="incident-knife">When Panama no longer rhymed with secrecy, Dubai did.</p>
+      <p class="incident-summary">Retail clients pushed to broker subsidiary DRB Panama; institutional accounts moved to Deribit FZE in Dubai. Same book, friendlier postcode.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://insights.deribit.com/exchange-updates/deribit-to-launch-1-jan-2025-as-a-fully-licensed-spot-and-derivatives-exchange-in-dubai-uae/">Deribit</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-09</time><span class="incident-amount">Panama exit</span></div>
+      <h3 class="incident-title">Deribit moves from Netherlands to Panama to escape EU 5AMLD</h3>
+      <p class="incident-knife">They didn't oppose the regulation. They moved away from it.</p>
+      <p class="incident-summary">Hours before the Netherlands' Fifth Anti-Money Laundering Directive took effect, Deribit reincorporated in Panama. Existing customers grandfathered without new KYC. The compliance regime was the country.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.financemagnates.com/cryptocurrency/news/deribit-moves-headquarters-to-panama-amid-new-eu-regulations/">FinanceMagnates</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Pre-2018</time><span class="incident-amount">FCA warning</span></div>
+      <h3 class="incident-title">FCA warning list — unauthorised firm in the UK</h3>
+      <p class="incident-knife">The regulator's warning is the trader's autopsy in advance.</p>
+      <p class="incident-summary">The UK's FCA added Deribit to its warning list of unauthorised firms — clients had no FSCS recourse if anything went wrong.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.fca.org.uk/news/warnings/deribit-deribitcom">FCA</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">3AC's stake in Deribit becomes contested bankruptcy asset</h3>
+      <p class="incident-knife">The whale ate the exchange. Then the whale died. Then the exchange ate the whale's estate.</p>
+      <p class="incident-summary">3AC held an undisclosed equity position in Deribit. When 3AC collapsed, liquidators tried to claw it back; Deribit's structure made it difficult to value or distribute.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2022/07/19/stake-in-crypto-exchange-deribit-becomes-disputed-asset-in-three-arrows-bankruptcy">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Ongoing</time><span class="incident-amount muted">Structural</span></div>
+      <h3 class="incident-title">Market-maker concentration on illiquid option strikes</h3>
+      <p class="incident-knife">When five firms make the market, the market is a small room with three doors locked.</p>
+      <p class="incident-summary">Deribit dominates BTC and ETH options (~$1.2T 2024 volume). Liquidity on far-OTM strikes supplied by a handful of professional market makers. Retail traders who write or buy at thin strikes routinely report adverse fills near expiry.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://insights.deribit.com/exchange-updates/deribit-reports-q4-and-2024-year-end-volumes-provides-operational-update/">Deribit</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-2022</time><span class="incident-amount muted">Leverage cut</span></div>
+      <h3 class="incident-title">Reduced max leverage on perpetuals from 100x to 50x and lower</h3>
+      <p class="incident-knife">They sold you the rope, then shortened it before you finished tying.</p>
+      <p class="incident-summary">Deribit progressively cut max leverage on BTC and ETH perpetuals. Users with maximally-leveraged positions had to deleverage or face partial liquidation when rules tightened.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://support.deribit.com/hc/en-us/articles/25944782257949-18-August-2022">Deribit</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-2022</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Tax residency and corporate opacity in Panama</h3>
+      <p class="incident-knife">Trust came in Merkle trees because it could not come in court papers.</p>
+      <p class="incident-summary">After EU exit, Deribit operated from Panama City with no derivatives oversight regime. Retail traders had no defined recourse. Company published reserve attestations but never a license.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.bloomberglinea.com/english/bitcoin-exchange-deribit-looks-to-relocate-to-dubai-from-panama-hq/">Bloomberg</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11</time><span class="incident-amount muted">PoR snapshot</span></div>
+      <h3 class="incident-title">Post-FTX proof-of-reserves attestation, not audit</h3>
+      <p class="incident-knife">A snapshot is not a balance sheet. It is a photograph of a balance sheet, taken by the person who owes you money.</p>
+      <p class="incident-summary">Deribit joined nine exchanges issuing post-FTX reserve proofs. The attestations were Merkle-tree snapshots, not audits. The market accepted them because the alternative was worse.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2022/11/09/crypto-exchanges-scramble-to-compile-proof-of-reserves-as-ftx-contagion-grips-markets">CoinDesk</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="kraken">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2011 · 18 INCIDENTS</div>
+    <h2 class="exch-name">Kraken</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$30M</div><div class="exch-stat-lbl">SEC staking settlement</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">42,000+</div><div class="exch-stat-lbl">Accounts to IRS</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">$3M</div><div class="exch-stat-lbl">CertiK extortion drama</div></div>
+    </div>
+    <p class="exch-indictment">The senior statesman of survival. SEC settled, OFAC settled, CFTC settled, NY AG noted noncompliance, IRS got 42,000 names. The flash crashes repeat four years apart. The CEO published the philosophy, then resigned three months later. Reason, when it bills by the hour, is called noncompliance.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-02-09</time><span class="incident-amount">$30M</span></div>
+      <h3 class="incident-title">SEC staking-as-a-service settlement — US program shut down</h3>
+      <p class="incident-knife">They sold yield by promise. The promise was a security. The yield, eventually, was a fine.</p>
+      <p class="incident-summary">SEC charged Kraken with offering unregistered crypto staking yielding up to 21% APR. Kraken neither admitted nor denied. The product was killed in the United States the same day.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2023-25">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-11-20</time><span class="incident-amount">$30.8M + $33.6M</span></div>
+      <h3 class="incident-title">SEC charges Kraken with operating as unregistered exchange + commingling</h3>
+      <p class="incident-knife">They commingled the cash and were saved by an administration that commingled the law.</p>
+      <p class="incident-summary">SEC alleged Kraken paid operating expenses from accounts holding customer cash. The complaint named the audit risk Kraken's own auditor had flagged as "significant." Suit dropped post-Trump SEC reset, not on merits.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.sec.gov/newsroom/press-releases/2023-237">SEC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-06</time><span class="incident-amount">$3M</span></div>
+      <h3 class="incident-title">CertiK / Kraken extortion dispute over undisclosed bug</h3>
+      <p class="incident-knife">White-hat, black-hat, no-hat — when the money moves first, the philosophy comes after.</p>
+      <p class="incident-summary">A bug let users inflate balances. CertiK researchers withdrew $3M, said it was testing. Kraken's security chief publicly accused them of "extortion." CertiK said Kraken threatened them. Both survived. The bug did not.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2024/06/19/kraken-says-hackers-turned-to-extortion-after-exploiting-bug-for-3m">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-09-28</time><span class="incident-amount">$1.25M</span></div>
+      <h3 class="incident-title">CFTC fines Kraken $1.25M for illegal off-exchange margin trades</h3>
+      <p class="incident-knife">The territory was uncharted because no one had bothered to look at what was already there.</p>
+      <p class="incident-summary">From June 2020 to July 2021, Kraken offered retail margin trading to non-eligible US customers without registering as a Futures Commission Merchant.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8433-21">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-11-28</time><span class="incident-amount">$362K</span></div>
+      <h3 class="incident-title">OFAC settles Iranian sanctions case for $362,158.70</h3>
+      <p class="incident-knife">The compliance program existed at onboarding. After that, it was on vacation.</p>
+      <p class="incident-summary">Kraken processed 826 transactions worth ~$1.68M for Iranian users between October 2015 and June 2019. They checked location at signup, never again. IP-blocking was for marketing pages, not order flow. Max possible penalty was $272M.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://ofac.treasury.gov/recent-actions/20221128">OFAC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-02-22</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">ETH flash crash on Kraken — $1,940 to ~$700 in minutes</h3>
+      <p class="incident-knife">The market crashed on every exchange. It crashed harder on theirs. They called this coincidence.</p>
+      <p class="incident-summary">Ethereum collapsed 64% on Kraken while only falling ~$400 on Coinbase. Leveraged longs liquidated. Kraken denied responsibility, then quietly offered varied compensation. No public class action; case-by-case settlements.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/kraken-users-demand-refunds-over-flash-crash-liquidations">Cointelegraph</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017-05-07</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">DDoS + ETH flash crash — users locked out, leveraged liquidated</h3>
+      <p class="incident-knife">The platform stayed open because the platform always stays open when you're losing.</p>
+      <p class="incident-summary">Ether crashed during a DDoS attack. Many users couldn't reach the exchange. Lawsuit argued trading should have been halted; Kraken let it run.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.expertinstitute.com/resources/insights/flash-crash-of-cryptocurrency-exchange-yields-lawsuits-how-experts-might-be-used/">Expert Institute</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-11-15</time><span class="incident-amount muted">Alleged</span></div>
+      <h3 class="incident-title">Bitcoin Cash hard fork — UnitedCorp sues Kraken for "hijack" collusion</h3>
+      <p class="incident-knife">The case was dismissed for the courtroom, not the conduct.</p>
+      <p class="incident-summary">UnitedCorp claimed Kraken, Bitmain, Bitcoin.com, and Roger Ver colluded to favor BCH ABC over BCH SV. Kraken's margin policies during the fork concentrated risk on short-side BAB positions. Dismissed for jurisdiction, not merits.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/bitmain-roger-ver-kraken-sued-for-alleged-bitcoin-cash-hard-fork-manipulation">Cointelegraph</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-06-30</time><span class="incident-amount">42,000+ accts</span></div>
+      <h3 class="incident-title">Court orders Kraken to disclose 42,000+ user accounts to IRS</h3>
+      <p class="incident-knife">Privacy is a feature until a federal judge unchecks the box.</p>
+      <p class="incident-summary">John Doe summons compelled names, DOBs, taxpayer IDs, addresses, phone, email, and transaction records for tens of thousands of customers transacting ≥$20,000/year from 2016 through 2020. Began transmitting November 2023.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/archives/opa/pr/court-authorizes-service-john-doe-summons-seeking-identities-us-taxpayers-who-have-used-1">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-09</time><span class="incident-amount">Referred to DFS</span></div>
+      <h3 class="incident-title">NY AG refers Kraken to NYDFS for potential virtual currency regulation violation</h3>
+      <p class="incident-knife">Reason, when it bills by the hour, is called noncompliance.</p>
+      <p class="incident-summary">Kraken refused to answer the NY Attorney General's Virtual Markets Integrity Initiative. The OAG called the refusal "alarming" and referred Kraken to NYDFS. Kraken's response was a blog post saying it was the voice of reason.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://ag.ny.gov/press-release/2018/ag-underwood-issues-virtual-markets-integrity-report-finding-many-platforms-vulnerable-to-abusive-trading-conflicts-of-interest-and-other-consumer-risks">NYAG</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2019-12</time><span class="incident-amount">"Millions short"</span></div>
+      <h3 class="incident-title">Nathan Runyon whistleblower lawsuit — finance employee alleges shortfall</h3>
+      <p class="incident-knife">A whistleblower is just a former employee with a memory.</p>
+      <p class="incident-summary">Former Marine and Kraken finance employee alleged sanctions violations, disappearing customer funds, fake officer addresses, stock option misconduct, retaliatory firing. Judge Chesney dismissed Kraken's counter-claims and let Runyon's case proceed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://davidgerard.co.uk/blockchain/2019/12/17/kraken-exchange-sued-by-whistleblowing-ex-employee-allegations/">David Gerard</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-06</time><span class="incident-amount muted">Cultural cost</span></div>
+      <h3 class="incident-title">Jesse Powell's "take the cash" memo + 4,000-word culture document</h3>
+      <p class="incident-knife">A man can publish his philosophy or run an exchange. Doing both is a confession.</p>
+      <p class="incident-summary">Powell told staff to sign the values document or leave with four months pay. Document equated diversity-of-thought with diversity-of-people, banned employees from calling speech "racist," floated firearms training at retreats. Backlash. Powell stepped down as CEO three months later.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.thedailybeast.com/kraken-ceo-jesse-powell-says-hell-manage-out-any-woke-employees-the-hard-way/">Daily Beast</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-03</time><span class="incident-amount muted">Dozens of devices</span></div>
+      <h3 class="incident-title">FBI raids Powell's home — cyberstalking case eventually dropped</h3>
+      <p class="incident-knife">The art nonprofit ate three years of his life. The exchange continued without him.</p>
+      <p class="incident-summary">Agents took Powell's laptops over claims he blocked email and Slack access at a Sacramento nonprofit he co-founded in 2008. No crypto charges. No criminal evidence found. Devices returned. Case formally dropped July 2025.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/crypto/2025/07/22/kraken-jesse-powell-fbi/">Fortune</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-05-12</time><span class="incident-amount muted">— Unverified</span></div>
+      <h3 class="incident-title">Derivatives platform forced into post-only mode during crash</h3>
+      <p class="incident-knife">They froze the engine to protect the engine. Customers froze with it.</p>
+      <p class="incident-summary">Kraken's derivatives venue suffered API and UI failures as BTC fell from $58k to $36k that week. Post-only mode meant no fills, no liquidations — and no exits.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://support.kraken.com/articles/360022837571-derivatives-platform-outage-options">Kraken</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-06-09</time><span class="incident-amount muted">Margin restricted</span></div>
+      <h3 class="incident-title">Margin trading removed for retail US clients post-CFTC</h3>
+      <p class="incident-knife">The product they were fined for was the product they kept selling, just to fewer people.</p>
+      <p class="incident-summary">Following the CFTC settlement, Kraken restricted margin to "certain qualifying" US customers. Retail traders who relied on Kraken margin had to leave or close.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2021/06/09/kraken-to-no-longer-offer-margin-trading-for-us-investors-who-dont-meet-certain-requirements">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018</time><span class="incident-amount">NY violation</span></div>
+      <h3 class="incident-title">Kraken's flat refusal of NY OAG while still serving NY users</h3>
+      <p class="incident-knife">A press release is not a geofence.</p>
+      <p class="incident-summary">Kraken announced it had stopped serving NY users in 2015 to avoid BitLicense. The OAG found NY trades were still being accepted in 2018. The withdrawal was rhetorical.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://ag.ny.gov/sites/default/files/vmii_report.pdf">NYAG Report</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2017</time><span class="incident-amount muted">Alleged</span></div>
+      <h3 class="incident-title">Margin call lawsuit (Silver Miller / Kraken trader class)</h3>
+      <p class="incident-knife">The same wound, four years apart. Engines do not learn; only lawyers do.</p>
+      <p class="incident-summary">Margin traders alleged Kraken's liquidation engine and DDoS-vulnerable infrastructure caused improper forced sales during May 2017 ETH flash crash. The action set the template for the 2021 ETH repeat.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.expertinstitute.com/resources/insights/flash-crash-of-cryptocurrency-exchange-yields-lawsuits-how-experts-might-be-used/">Expert Institute</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-05 / 2025</time><span class="incident-amount">No fine</span></div>
+      <h3 class="incident-title">SEC drops Kraken case in 2025 under new leadership</h3>
+      <p class="incident-knife">A lawsuit dropped is not a lawsuit lost. It is a lawsuit that the next administration declined to inherit.</p>
+      <p class="incident-summary">Kraken filed motion arguing the SEC's reading of "investment contract" would re-order US finance. The 2024 dismissal motion failed; the 2025 administration change resolved it without ruling.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.americanbanker.com/news/sec-drops-enforcement-action-against-crypto-exchange-kraken">American Banker</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="okx">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2017 · 13 INCIDENTS</div>
+    <h2 class="exch-name">OKX</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$505M</div><div class="exch-stat-lbl">DOJ guilty plea</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$1T+</div><div class="exch-stat-lbl">US transactions handled</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">42 days</div><div class="exch-stat-lbl">Founder detained</div></div>
+    </div>
+    <p class="exch-indictment">A trillion dollars of US activity at a venue that told American customers to put a random country in the form. Two episodes of socialized losses on the same product. Forty-two days when the founder held the keys and the State held the founder. The customers, in both cases, held nothing.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-07-31</time><span class="incident-amount">$9M clawback</span></div>
+      <h3 class="incident-title">$400M BTC futures forced liquidation — losses socialized on winners</h3>
+      <p class="incident-knife">One whale beached the market; OKX taxed the survivors to bury him.</p>
+      <p class="incident-summary">A whale held 4.16M BTC futures contracts long ($416M notional). Forced liquidation when client refused to reduce. After $18M insurance fund injection, ~1,200 BTC ($8.8M) clawed back from profitable counterparties at a 17% rate.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://fortune.com/crypto/2018/08/03/okex-losses-among-counter-parties/">Fortune</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2018-11-14</time><span class="incident-amount">$700K+</span></div>
+      <h3 class="incident-title">Early BCH hard fork settlement strands traders mid-position</h3>
+      <p class="incident-knife">They closed the door early, then asked the people still inside to pay rent.</p>
+      <p class="incident-summary">OKEx force-settled BCH futures hours before the hard fork at a price that did not reflect live markets. Consensus Technologies founder publicly accused the exchange of manipulation. Socialized claw-back invoked again.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2018/08/03/okex-confirms-9-million-clawback-after-enormous-bitcoin-future-fails">CoinDesk</a> <span class="incident-tag alleged">Manipulation alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2020-10-16</time><span class="incident-amount">42-day freeze</span></div>
+      <h3 class="incident-title">Founder Star Xu held by Chinese police — withdrawals frozen 42 days</h3>
+      <p class="incident-knife">One man held the keys; the State held the man; the customers held nothing.</p>
+      <p class="incident-summary">An unnamed private-key holder — later confirmed as founder Star Xu — was detained by police. All withdrawals halted. OKB token fell ~30% on the news. Mining pool hash power fell ~99%.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2020/10/16/okex-founder-star-xu-held-in-police-custody-report">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2021-10</time><span class="incident-amount muted">Migration cost</span></div>
+      <h3 class="incident-title">OKX exits Mainland China amid Beijing crypto ban</h3>
+      <p class="incident-knife">A Chinese exchange ran away from China twice; the State, like a creditor, remembers.</p>
+      <p class="incident-summary">Forced exit after Beijing's May 2021 crackdown. The company born in China retreated offshore for the second time, after an initial 2017 ICO-era retreat.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://en.wikipedia.org/wiki/OKX">Wikipedia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-01-23</time><span class="incident-amount">$6.5B notional</span></div>
+      <h3 class="incident-title">OKB token flash-crashes 50% in three minutes</h3>
+      <p class="incident-knife">A native token, an internal cascade — the exchange traded against itself and called it volatility.</p>
+      <p class="incident-summary">Cross-collateral cascade liquidated multiple large positions, dragging OKB from $50.69 to $25.10. OKX pledged to compensate users for "abnormal liquidations" across pledge lending, margin, and cross-currency.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2024/01/23/crypto-exchange-okxs-token-suffers-50-flash-crash-amid-liquidation-cascade">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-05-24</time><span class="incident-amount">HK exit</span></div>
+      <h3 class="incident-title">OKX withdraws Hong Kong VASP licence application</h3>
+      <p class="incident-knife">They asked for a licence, then asked for the door.</p>
+      <p class="incident-summary">Hong Kong service ended May 31, 2024. Users given until August 31 to withdraw. Joined Gate.io HK and Huobi HK in retreat from SFC's licensing regime.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/business/2024/05/24/crypto-exchange-okx-withdraws-hong-kong-license-application">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02</time><span class="incident-amount">$100M</span></div>
+      <h3 class="incident-title">OKX dragged into $1.5B Bybit hack — DEX aggregator launders $100M</h3>
+      <p class="incident-knife">Pyongyang's hackers found the open door first; OKX closed it second; the press release was third.</p>
+      <p class="incident-summary">Lazarus Group (DPRK) routed Bybit-heist proceeds through OKX's DEX aggregator. OKX suspended the aggregator after consultation with regulators and shipped a real-time hacker-detection system.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cryptopolitan.com/okx-suspends-service-launder-1-5b-bybit-hack/">Cryptopolitan</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02-24</time><span class="incident-amount">$505M</span></div>
+      <h3 class="incident-title">OKX pleads guilty — operating unregistered US money transmitter</h3>
+      <p class="incident-knife">One trillion dollars, five billion suspicious, one employee telling Americans to lie — the half-billion fine was the tip.</p>
+      <p class="incident-summary">Aux Cayes FinTech (Seychelles parent) entered guilty plea in SDNY. From 2018 to early 2024, OKX served US retail and institutions handling >$1T in transactions and facilitated >$5B in suspicious transactions. One employee literally said "just put a random country." No transaction-monitoring software until May 2023.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/usao-sdny/pr/okx-pleads-guilty-violating-us-anti-money-laundering-laws-and-agrees-pay-penalties">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-04-05</time><span class="incident-amount">$1.155M</span></div>
+      <h3 class="incident-title">Malta FIAU fines OKX €1.054M ($1.155M) for AML failures</h3>
+      <p class="incident-knife">The US wrote a $505M ticket; Malta wrote a $1.1M postcard for the same address.</p>
+      <p class="incident-summary">Malta's Financial Intelligence Analysis Unit cited failure to adequately assess ML/TF risks. Came weeks after the Bybit-hack laundering exposure and the US guilty plea — the European receipt for the same disease.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://dailyhodl.com/2025/04/05/malta-slaps-okx-crypto-exchange-with-1155000-fine-over-anti-money-laundering-violations/">DailyHodl</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-04-13</time><span class="incident-amount">$5B</span></div>
+      <h3 class="incident-title">Mantra OM token crashes 99% — OKX blamed for forced liquidations</h3>
+      <p class="incident-knife">Five billion vanished in an hour; the exchange and the issuer each pointed at the other; the holders applauded politely.</p>
+      <p class="incident-summary">Mantra co-founder accused OKX of "reckless liquidations" without warning. OKX countered Mantra team borrowed USDT against OM collateral to inflate price. Large investors filed suit.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2025/04/14/mantra-s-om-crashes-90-in-bizarre-selloff-as-team-alleges-forced-liquidations">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05-30</time><span class="incident-amount">Thai criminal</span></div>
+      <h3 class="incident-title">Thai SEC files criminal complaint; blocks OKX from June 28</h3>
+      <p class="incident-knife">A licence in Thailand costs less than the criminal complaint; OKX chose the complaint.</p>
+      <p class="incident-summary">Thailand's SEC filed criminal complaints against OKX plus nine promoters for unlicensed operation since October 2021. Bybit, CoinEx, 1000X, and XT.com swept in the same crackdown.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://kapronasia.com/insight/blogs/blockchain-research/asia-blockchain-research/thai-sec-takes-legal-action-against-okx-over-unlicensed-operations">Kapronasia</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025</time><span class="incident-amount muted">Damages TBD</span></div>
+      <h3 class="incident-title">Class action accuses OKX of laundering stolen crypto since 2021</h3>
+      <p class="incident-knife">Plead guilty in February; get sued by the victims in April; the bill arrives in order.</p>
+      <p class="incident-summary">SDNY class action alleges OKX failed to register as MTB, failed to implement adequate AML, disregarded KYC, and processed stolen funds from theft victims.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://blocktribune.com/class-action-suit-accuses-okx-of-helping-bad-actors-launder-stolen-crypto/">Block Tribune</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Ongoing</time><span class="incident-amount">$100M+</span></div>
+      <h3 class="incident-title">North Korea's Lazarus laundered $100M+ via OKX tools</h3>
+      <p class="incident-knife">They built the rails; Pyongyang rode them; the patch comes after the journey.</p>
+      <p class="incident-summary">OKX's DeFi tooling repeatedly surfaces as a Lazarus laundering rail. Exchange has shut down individual tools after detection — reactive, not preventive. Chainalysis: DPRK stole $1.34B across 47 incidents in 2024 alone.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://therecord.media/crypto-okx-shuts-down-exchange">The Record</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="polymarket">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2020 · 14 INCIDENTS</div>
+    <h2 class="exch-name">Polymarket</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">25%</div><div class="exch-stat-lbl">Wash trading (Columbia)</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">$2.4M</div><div class="exch-stat-lbl">Iran-war insider ring</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">$237M</div><div class="exch-stat-lbl">"Zelenskyy suit" dispute</div></div>
+    </div>
+    <p class="exch-indictment">The prediction-market category leader and the most-documented venue for insider information arbitrage in the asset class. A US soldier indicted before the Maduro raid. An Israeli Air Force major indicted before dawn strikes. Eighty users showing classified-information signatures across thirty markets. The chainalysis was hired the month after the New York Times called.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2022-01-03</time><span class="incident-amount">$1.4M</span></div>
+      <h3 class="incident-title">CFTC fines Polymarket $1.4M for illegal binary options</h3>
+      <p class="incident-knife">They built the casino first, asked permission second, paid the receipt last.</p>
+      <p class="incident-summary">Blockratize Inc., d/b/a Polymarket, ran an unregistered swap execution facility from June 2020. Settled charges; ordered to wind down all non-compliant markets.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8478-22">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-06</time><span class="incident-amount">$1M+ refunded</span></div>
+      <h3 class="incident-title">UMA oracle overturns "Barron Trump DJT" market against majority bettors</h3>
+      <p class="incident-knife">The decentralized oracle voted; the centralized founder vetoed; decentralization, then, is a marketing term.</p>
+      <p class="incident-summary">Polymarket publicly contradicted its own decentralized oracle UMA on whether Barron Trump was involved with the DJT memecoin. UMA tokenholders voted "no," Polymarket insisted "yes," refunded the "yes" side, admitted its resolution methodology required improvement.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/302171/polymarket-contradicts-umas-resolution-on-barron-trumps-involvement-with-djt-token">The Block</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-10</time><span class="incident-amount">$30M / $85M</span></div>
+      <h3 class="incident-title">"Trump whale" Théo runs four accounts, allegedly tilts election odds</h3>
+      <p class="incident-knife">One man, four accounts, seventy-one bets per minute — Polymarket called it a directional view.</p>
+      <p class="incident-summary">French ex-bank trader under Fredi9999, PrincessCaro, Theo4, Michie placed 2,500 Trump bets in 24 hours. Theo4 alone at 71 wagers per minute. Trump's popular-vote odds moved from 26% to 39% in hours. Polymarket investigated and concluded "no manipulation."</p>
+      <div class="incident-foot"><a class="incident-source" href="https://cointelegraph.com/news/polymarket-whale-trump-odds-manipulation">Cointelegraph</a> <span class="incident-tag alleged">Manipulation alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-11-13</time><span class="incident-amount muted">Devices seized</span></div>
+      <h3 class="incident-title">FBI raids CEO Shayne Coplan's Manhattan apartment</h3>
+      <p class="incident-knife">They predicted the President correctly, then the President's predecessor knocked on their door.</p>
+      <p class="incident-summary">Federal agents woke Coplan at 6am, seized phone and electronics. Probe centered on whether US users had been trading on the geoblocked platform via VPN. Polymarket called it political retribution.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.nbcnews.com/tech/tech-news/fbi-raids-polymarket-ceo-shayne-coplans-apartment-seizes-phone-source-rcna180180">NBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2024-12</time><span class="incident-amount">France blocked</span></div>
+      <h3 class="incident-title">French regulator ANJ blocks Polymarket after $80M whale story</h3>
+      <p class="incident-knife">France welcomes online poker and horse racing; predicting the future is what unsettles them.</p>
+      <p class="incident-summary">ANJ deemed Polymarket illegal gambling under French law. IP geoblock followed. ANJ reiterated in February 2026 that all prediction markets are illegal in France — lack spending limits, KYC, self-exclusion.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.theblock.co/post/327864/polymarket-blocks-french-users-amid-regulatory-scrutiny-over-80-million-trump-election-bet">The Block</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-07</time><span class="incident-amount">$237M</span></div>
+      <h3 class="incident-title">"Zelenskyy suit" market reversed mid-resolution</h3>
+      <p class="incident-knife">A $237M question settled by a $95M oracle — the tail negotiating the dog's truth.</p>
+      <p class="incident-summary">Market on whether Zelenskyy would wear a suit before July. Initial resolution "yes" (forty media headlines called it a suit). After nine days of UMA disputes, flipped to "no." UMA's $95M market cap was dwarfed by the market it adjudicated.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2025/07/07/polymarket-embroiled-in-usd160m-controversy-over-whether-zelensky-wore-a-suit-at-nato">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-11-07</time><span class="incident-amount">~25%</span></div>
+      <h3 class="incident-title">Columbia study: ~25% of Polymarket volume is wash trading</h3>
+      <p class="incident-knife">A quarter of the volume was the house playing itself. In sports weeks, nine in ten.</p>
+      <p class="incident-summary">Two years of on-chain data. Suspected wash share peaked at ~60% weekly in December 2024. Sports and election markets above 90% in some weeks. One cluster of 43,000 wallets generated ~$1M in artificial volume.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/markets/2025/11/07/polymarket-s-trading-volume-may-be-25-fake-columbia-study-finds">CoinDesk</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-02</time><span class="incident-amount">$600K+</span></div>
+      <h3 class="incident-title">Israeli Air Force major indicted for Iran-strike insider bets</h3>
+      <p class="incident-knife">A war began at dawn; the bets were in by dusk the night before.</p>
+      <p class="incident-summary">A reservist passed timing intelligence about Israel's June 2025 Iran strikes and September 2025 Yemen action to civilian Omer Ziv, who placed wagers across newly minted Polymarket accounts. Charged with espionage-level offenses plus bribery and obstruction.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.timesofisrael.com/israeli-air-force-major-charged-with-using-classified-info-to-place-bets-on-polymarket/">Times of Israel</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-02-28</time><span class="incident-amount">$553K</span></div>
+      <h3 class="incident-title">"Magamyman" turns $87K into $553K hours before Israeli strike on Khamenei</h3>
+      <p class="incident-knife">At 17% odds, a $32,000 bet looks like courage. Hours later it looks like a phone call.</p>
+      <p class="incident-summary">$32,000 wager placed when "Khamenei out" odds sat at 17%, hours before Israeli strikes. Identity hidden behind VPN. Federal prosecutors examining whether prediction-market bets can trip insider trading law.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.npr.org/2026/03/01/nx-s1-5731568/polymarket-trade-iran-supreme-leader-killing">NPR</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-04</time><span class="incident-amount">$2.4M</span></div>
+      <h3 class="incident-title">Nine connected accounts net $2.4M with 98% win rate on Iran-war markets</h3>
+      <p class="incident-knife">Ninety-eight percent in markets that mostly priced fifty — luck, or a subscription to the briefing.</p>
+      <p class="incident-summary">Anonymous accounts placed 80+ winning bets on specific dates of US strikes, Khamenei's removal, and ceasefire announcement. Senator Blumenthal demanded explanations.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cbsnews.com/news/betting-on-iran-war-insider-trading-concerns-prediction-markets-60-minutes/">CBS</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-04-04</time><span class="incident-amount muted">Removed</span></div>
+      <h3 class="incident-title">Polymarket apologizes for "rescue of downed US pilot" market</h3>
+      <p class="incident-knife">The integrity standards held; they simply forgot to apply them to a missing pilot.</p>
+      <p class="incident-summary">Live market on when two US F-15E pilots, one missing in Iran, would be rescued. Marine veteran Rep. Seth Moulton called it "DISGUSTING." Polymarket removed the market; Moulton noted 219 other war bets remained active.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.nbcnews.com/news/us-news/polymarket-apologizes-allowing-wagers-fate-us-pilots-downed-iran-rcna266715">NBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-04-23</time><span class="incident-amount">$409K</span></div>
+      <h3 class="incident-title">US Army Special Forces sergeant indicted for $410K Maduro-raid bets</h3>
+      <p class="incident-knife">He signed the NDA, then signed in to Polymarket, then asked support to delete the account.</p>
+      <p class="incident-summary">Master Sergeant Gannon Van Dyke, involved in planning Operation Absolute Resolve, placed 13 Polymarket bets between Dec 27 and Jan 2 — eve of the raid that captured Maduro and his wife. Charged with commodities fraud, wire fraud, theft of nonpublic government information.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.justice.gov/opa/pr/us-soldier-charged-using-classified-information-profit-prediction-market-bets">DOJ</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-05</time><span class="incident-amount">80+ users</span></div>
+      <h3 class="incident-title">NYT investigation — 80+ users show insider-trading signatures across ~30 markets</h3>
+      <p class="incident-knife">Eighty users, thirty topics, two years — they hired Chainalysis the month after the Times called.</p>
+      <p class="incident-summary">New York Times audit traces suspicious bet patterns since at least 2024 across Israel-Iran, crypto regulation, and other categories. Polymarket announced Chainalysis partnership in April 2026 to police market integrity ahead of US relaunch.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://dnyuz.com/2026/05/13/dozens-of-polymarket-bets-show-signs-of-insider-trading-the-times-finds/">NYT</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">Ongoing</time><span class="incident-amount muted">Case-by-case</span></div>
+      <h3 class="incident-title">US users trading via VPN risk indefinite fund freeze on KYC</h3>
+      <p class="incident-knife">The trap is elegant — they fund you, you trade, you win, the geofence remembers.</p>
+      <p class="incident-summary">Polymarket's geoblock requires US users to use VPNs; withdrawal triggers KYC; KYC reveals US identity; funds get frozen "while investigating." No legal recourse because the user violated CFTC-mandated terms.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.coindesk.com/policy/2024/11/14/polymarkets-probe-highlights-challenges-of-blocking-us-users-and-their-vpns">CoinDesk</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<section class="exchange" data-exchange="kalshi">
+  <div class="exch-head">
+    <div class="exch-eyebrow">FOUNDED 2018 · 13 INCIDENTS</div>
+    <h2 class="exch-name">Kalshi</h2>
+    <div class="exch-stats">
+      <div class="exch-stat"><div class="exch-stat-fig">$54M</div><div class="exch-stat-lbl">Death-carveout suit</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig">6 states</div><div class="exch-stat-lbl">Class action coalition</div></div>
+      <div class="exch-stat"><div class="exch-stat-fig ink">21+ → 18</div><div class="exch-stat-lbl">MD age gap noted by judge</div></div>
+    </div>
+    <p class="exch-indictment">The regulated alternative. CFTC-registered, lawyered into every state, sued by attorneys general, defended in federal court, reversed in November. The market-maker is a wholly-owned affiliate. The death carveout was written in. An 18-year-old can trade what a Nevada sportsbook reserves for 21.</p>
+  </div>
+  <ol class="docket">
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2023-09-22</time><span class="incident-amount">Contract blocked</span></div>
+      <h3 class="incident-title">CFTC prohibits Kalshi's congressional-control election contracts</h3>
+      <p class="incident-knife">A regulator born to bless contracts decided some questions belong to ballots, not to bids.</p>
+      <p class="incident-summary">CFTC commissioners voted that political event contracts were akin to gambling and could harm election integrity. Kalshi sued in DC district court November 2023.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/8780-23">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02</time><span class="incident-amount">$500M / $258M</span></div>
+      <h3 class="incident-title">Robinhood pulls Super Bowl contracts after federal pressure</h3>
+      <p class="incident-knife">The Super Bowl came; the regulator wrote; one partner stayed for the kickoff.</p>
+      <p class="incident-summary">Days from kickoff, CFTC sent a letter; Robinhood folded. Kalshi proceeded alone, reported $500M in Super Bowl volume; Robinhood later managed $258M for the game once it relaunched. NFL banned prediction-market ads for the season.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://frontofficesports.com/nfl-wont-allow-prediction-market-super-bowl-commercials/">Front Office Sports</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-02-28</time><span class="incident-amount">$54M</span></div>
+      <h3 class="incident-title">Kalshi sued over $54M Khamenei "death carveout"</h3>
+      <p class="incident-knife">The market resolved exactly as written; the lawyers had simply written the door shut.</p>
+      <p class="incident-summary">When Israel's Operation Epic Fury killed Ayatollah Khamenei, Kalshi invoked a "death carveout" clause resolving the market at last-traded price rather than paying winning "yes" holders the full theoretical value. Class action filed.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.foxbusiness.com/technology/prediction-market-kalshi-sued-54m-iran-leader-bets-death-carveout-invoked">Fox Business</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03</time><span class="incident-amount">NV revenue</span></div>
+      <h3 class="incident-title">Nevada Gaming Control Board cease-and-desist; Kalshi sues</h3>
+      <p class="incident-knife">Nevada has spent a century writing gambling law; Kalshi spent a year explaining it was different.</p>
+      <p class="incident-summary">Ordered to halt sports event contracts by March 14. Kalshi refused, filed federal suit. April preliminary injunction granted; in November 2025 Judge Andrew Gordon reversed himself and dissolved the injunction.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://thenevadaindependent.com/article/federal-judge-rules-that-kalshi-must-stop-offering-prediction-contracts-in-nevada">Nevada Independent</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-03-27</time><span class="incident-amount">NJ revenue</span></div>
+      <h3 class="incident-title">New Jersey cease-and-desist — Robinhood complies, Kalshi sues</h3>
+      <p class="incident-knife">Two companies, one letter — one read the law, one read the press release.</p>
+      <p class="incident-summary">NJ Division of Gaming Enforcement gave both companies 48 hours. Robinhood pulled. Kalshi sued. Third Circuit Judge Roth later wrote Kalshi's sports contracts are "virtually indistinguishable" from sports bets.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://igamingbusiness.com/legal-compliance/sportsbooks-or-commodity-exchanges-the-rising-legal-tensions-between-sports-betting-and-prediction-markets/">iGaming Business</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05</time><span class="incident-amount">MA injunction</span></div>
+      <h3 class="incident-title">Massachusetts AG secures injunction blocking Kalshi sports contracts</h3>
+      <p class="incident-knife">They called it an exchange; the Commonwealth called it a sportsbook; the judge called the next case.</p>
+      <p class="incident-summary">AG Campbell sued, alleging Kalshi runs unlicensed sports gambling under the "event contract" euphemism. Preliminary injunction granted; Kalshi ordered to pull sports markets from MA within 30 days.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.mass.gov/news/ag-campbell-secures-court-order-that-will-block-kalshi-from-offering-unlawful-sports-wagers-in-massachusetts">Mass AG</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-05</time><span class="incident-amount">$2,246</span></div>
+      <h3 class="incident-title">Political candidate caught trading on his own candidacy</h3>
+      <p class="incident-knife">He bet on himself, then filmed it. The penalty: less than a campaign mailer.</p>
+      <p class="incident-summary">Social media posts showed an unnamed candidate trading the market about himself. Kalshi imposed a $2,246.36 penalty and barred him for five years. The fine is what the platform charges for someone willing to publicly admit insider trading.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://news.kalshi.com/p/kalshi-trading-violation-enforcement-cases">Kalshi</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-08</time><span class="incident-amount">$20,397</span></div>
+      <h3 class="incident-title">MrBeast editor Artem Kaptur fined for insider trading on MrBeast markets</h3>
+      <p class="incident-knife">He edited the videos and the markets; only one was supposed to be fiction.</p>
+      <p class="incident-summary">Kaptur's "near-perfect" record on low-odds MrBeast markets triggered surveillance. He had access to unreleased video content. Disgorgement $5,397.58 + $15,000 fine; 2-year ban. Beast Industries fired him.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://techcrunch.com/2026/02/25/kalshi-fined-a-mrbeast-editor-for-insider-trading-on-markets-related-to-the-youtube-star/">TechCrunch</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-11</time><span class="incident-amount">NV reversed</span></div>
+      <h3 class="incident-title">Federal judge reverses Kalshi's preliminary injunction win in Nevada</h3>
+      <p class="incident-knife">A federal judge changed his mind; Kalshi changed its lawyers; Nevada changed nothing.</p>
+      <p class="incident-summary">Judge Andrew Gordon dissolved his own seven-month-old injunction, finding the state's enforcement claim stronger than initially weighed. Kalshi forced to halt sports event contracts in Nevada.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://frontofficesports.com/judge-erases-kalshis-early-win-in-legal-fight-with-nevada/">Front Office Sports</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2025-11-28</time><span class="incident-amount">6-state class</span></div>
+      <h3 class="incident-title">Class action: Kalshi market-maker affiliate bets against customers</h3>
+      <p class="incident-knife">A peer-to-peer exchange where one peer wrote the protocol and another peer is its subsidiary.</p>
+      <p class="incident-summary">Plaintiffs claim Kalshi Trading (a wholly-owned affiliate) and partnered hedge funds including Susquehanna trade against retail when retail strays from internal odds. Cite "unique contractual and technological integration" giving affiliates reduced fees, differing position limits, and superior market access.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges">Bloomberg</a> <span class="incident-tag alleged">Alleged</span></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-02</time><span class="incident-amount muted">Warning</span></div>
+      <h3 class="incident-title">New York AG warns consumers before Super Bowl 60</h3>
+      <p class="incident-knife">The AG's letter is the polite knock; the door splinters in the second act.</p>
+      <p class="incident-summary">AG Letitia James issued consumer-protection statement ahead of kickoff: "New Yorkers need to know the significant risks with unregulated prediction markets." Public-warning genre normally precedes enforcement.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cnbc.com/2026/02/02/new-york-ag-prediction-markets-super-bowl-warning.html">CNBC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-02</time><span class="incident-amount">Regulatory</span></div>
+      <h3 class="incident-title">CFTC Enforcement issues Prediction Markets Advisory</h3>
+      <p class="incident-knife">They won the right to list contracts; the right to police them stayed with the regulator.</p>
+      <p class="incident-summary">Following the Kaptur and self-candidate cases, CFTC asserted "full authority to police illegal trading practices" on DCMs including prediction markets. March 2026 advance NPRM published; comment window opened.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.cftc.gov/PressRoom/PressReleases/9185-26">CFTC</a></div>
+    </li>
+
+    <li class="incident">
+      <div class="incident-head"><time class="incident-date">2026-05</time><span class="incident-amount">MD denied</span></div>
+      <h3 class="incident-title">Maryland federal court denies Kalshi's preliminary injunction</h3>
+      <p class="incident-knife">Maryland's licence is twenty-one and up; Kalshi's exchange is eighteen and willing; the judge noticed.</p>
+      <p class="incident-summary">Judge Adam Abelson refused to block Maryland's cease-and-desist. Noted Kalshi had no special right to bypass the state sports-betting licence regime. 18-year-olds could trade Kalshi while MD requires 21 for sports betting.</p>
+      <div class="incident-foot"><a class="incident-source" href="https://www.baltimoresun.com/2026/05/07/maryland-kalshi-orioles-ravens/">Baltimore Sun</a></div>
+    </li>
+
+  </ol>
+</section>
+
+<!-- EXCHANGE-SECTIONS-END -->
+
+</main>
+
+<!-- CLOSER -->
+<section class="closer">
+  <div class="closer-inner">
+    <div class="closer-eyebrow">THE FIX</div>
+    <h2>Cheating priced into every venue. We built one <em>without the room.</em></h2>
+    <p>The list above is what happens when the venue keeps the order book, the matching engine, the price feed, the listing decision, and the audit. Eleven exchanges, the same five conflicts, a different fine each year.</p>
+    <p>General Market is on-chain. Sealed bets. Parimutuel pools. BLS-verified oracles. The house cannot front-run because there is no house.</p>
+    <a class="cta" href="https://generalmarket.io">Open General Market →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <span class="brand-mark">
+    <svg class="lg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" style="fill: var(--logo-bg)"/><rect x="6.5" y="14" width="19" height="4" rx="2" style="fill: var(--logo-pill)"/></svg>
+    <span class="nm">General</span>
+  </span>
+  <div class="tagline">Markets without the room.</div>
+  <div class="meta">
+    Technical Review № 003 · Compiled May 2026 · <a href="https://generalmarket.io">generalmarket.io</a>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var tabs = document.querySelectorAll('.tab');
+  var sections = document.querySelectorAll('.exchange');
+
+  function activate(target) {
+    tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.target === target); });
+    sections.forEach(function(s) { s.classList.toggle('active', s.dataset.exchange === target); });
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', '#' + target);
+    }
+    window.scrollTo({ top: document.querySelector('.tabs-wrap').offsetTop, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() { activate(tab.dataset.target); });
+  });
+
+  var initial = (window.location.hash || '#binance').replace('#', '');
+  var valid = Array.from(tabs).some(function(t) { return t.dataset.target === initial; });
+  activate(valid ? initial : 'binance');
+})();
+</script>
+
+</body>
+</html>
