@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useSwitchChain, usePublicClient } from 'wagmi'
+import { formatUnits } from 'viem'
 import { useChainWriteContract, ensureCorrectChain } from '@/hooks/useChainWrite'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/explorer'
@@ -44,9 +45,17 @@ export interface UseVaultDepositReturn {
   /**
    * Amount (USDC wei, 18 dec on L3) just deposited via a successful flow.
    * Stays non-zero for ~10s post-success so the UI can render an optimistic
-   * position row while on-chain reads propagate.
+   * position row while on-chain reads propagate. Accumulates across rapid
+   * successive deposits — a second deposit in the optimistic window adds to
+   * the prior amount rather than wiping it.
    */
   justDepositedAmount: bigint
+  /**
+   * Amount currently in flight (busy steps only). Non-zero from click until
+   * either `done` or `error`. UI uses this to subtract from the displayed
+   * wallet balance the moment the user clicks Deposit.
+   */
+  pendingAmount: bigint
 }
 
 function parseError(err: unknown): string {
@@ -83,33 +92,29 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   const publicClient = usePublicClient({ chainId: indexL3.id })
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
-  const { showSuccess, showError } = useToast()
+  const { showCelebrate, showError } = useToast()
 
   const [step, setStep] = useState<Step>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const [justDepositedAmount, setJustDepositedAmount] = useState<bigint>(0n)
+  const [pendingAmount, setPendingAmount] = useState<bigint>(0n)
 
   const { writeContractAsync: writeApprove } = useChainWriteContract()
   const { writeContractAsync: writeDeposit } = useChainWriteContract()
   const { writeContractAsync: writeClaim } = useChainWriteContract()
-
-  const toastSuccess = useCallback(
-    (label: string, hash?: `0x${string}`) => {
-      const url = hash ? getTxUrl(hash, 'l3') : undefined
-      showSuccess(`${label} confirmed`, url ? { url, text: 'View transaction' } : undefined)
-    },
-    [showSuccess],
-  )
 
   const deposit = useCallback(
     async (vaultAddress: `0x${string}`, amount: bigint) => {
       if (!address || !publicClient) return
 
       setErrorMsg(null)
-      setJustDepositedAmount(0n)
+      // Do NOT wipe justDepositedAmount here. A second deposit launched while
+      // the prior optimistic row is still visible should accumulate, not
+      // erase. The row decays on its own 10s timer per deposit.
       setIsConfirming(false)
+      setPendingAmount(amount)
       // Flip to a busy state synchronously so the button reacts the moment
       // the user clicks, before chain-switch + allowance-read (~500ms) have
       // had a chance to decide which real step comes next.
@@ -139,9 +144,11 @@ export function useVaultDeposit(): UseVaultDepositReturn {
         setErrorMsg(parseError(err))
         setStep('error')
         setIsPending(false)
+        setPendingAmount(0n)
         return
       }
 
+      let finalHash: `0x${string}` | undefined
       try {
         // ─── 1. Approve (skipped if allowance already sufficient) ───
         if (currentAllowance < amount) {
@@ -157,7 +164,8 @@ export function useVaultDeposit(): UseVaultDepositReturn {
           setIsConfirming(true)
           await publicClient.waitForTransactionReceipt({ hash: approveHash })
           setIsConfirming(false)
-          toastSuccess('USDC approval', approveHash)
+          // Intermediate step — no toast. Three "X confirmed" pops in a row
+          // is noise. The single celebrate toast at the end carries weight.
         }
 
         // ─── 2. Request deposit ───
@@ -173,7 +181,6 @@ export function useVaultDeposit(): UseVaultDepositReturn {
         setIsConfirming(true)
         await publicClient.waitForTransactionReceipt({ hash: depositHash })
         setIsConfirming(false)
-        toastSuccess('Deposit request', depositHash)
 
         // ─── 3. Claim deposit (mints shares) ───
         setStep('claiming')
@@ -184,15 +191,26 @@ export function useVaultDeposit(): UseVaultDepositReturn {
           functionName: 'claimDeposit',
           args: [address, address],
         })
+        finalHash = claimHash
         setIsPending(false)
         setIsConfirming(true)
         await publicClient.waitForTransactionReceipt({ hash: claimHash })
         setIsConfirming(false)
-        toastSuccess('Shares minted', claimHash)
 
         // ─── Done ───
         setStep('done')
-        setJustDepositedAmount(amount)
+        setJustDepositedAmount(prev => prev + amount)
+        setPendingAmount(0n)
+        const human = parseFloat(formatUnits(amount, 18))
+        const url = finalHash ? getTxUrl(finalHash, 'l3') : undefined
+        showCelebrate(
+          `Deposited $${human.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+          'Shares minted.',
+          url ? { url, text: 'View transaction' } : undefined,
+        )
         // Broadcast to any cross-component listeners (onboarding guide,
         // portfolio widgets, etc.) so they refetch without waiting for
         // their own poll cadence.
@@ -209,6 +227,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
         setStep('error')
         setIsPending(false)
         setIsConfirming(false)
+        setPendingAmount(0n)
         showError(parsed)
       }
     },
@@ -221,7 +240,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
       writeApprove,
       writeDeposit,
       writeClaim,
-      toastSuccess,
+      showCelebrate,
       showError,
     ],
   )
@@ -247,6 +266,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     setStep('idle')
     setErrorMsg(null)
     setJustDepositedAmount(0n)
+    setPendingAmount(0n)
     setIsPending(false)
     setIsConfirming(false)
   }, [])
@@ -259,5 +279,6 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     error: errorMsg,
     reset,
     justDepositedAmount,
+    pendingAmount,
   }
 }

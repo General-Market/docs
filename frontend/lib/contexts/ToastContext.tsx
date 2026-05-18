@@ -9,6 +9,16 @@ interface ToastContextValue {
   showSuccess: (message: string, link?: { url: string; text: string }) => void
   showError: (message: string) => void
   showInfo: (message: string) => void
+  /**
+   * Celebrate toast — bigger card, animated pop, headline above message.
+   * Use sparingly. One per terminal user action (deposit complete,
+   * withdrawal claimed). Not for intermediate steps.
+   */
+  showCelebrate: (
+    headline: string,
+    message: string,
+    link?: { url: string; text: string },
+  ) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -47,11 +57,27 @@ export function ToastProvider({ children }: ToastProviderProps) {
         type,
         message,
         link,
-        duration: type === 'error' ? 8000 : 5000
+        duration: type === 'error' ? 8000 : type === 'celebrate' ? 6500 : 5000
       }
       setToasts((prev) => [...prev, newToast])
     },
     []
+  )
+
+  const showCelebrate = useCallback(
+    (headline: string, message: string, link?: { url: string; text: string }) => {
+      const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const newToast: ToastData = {
+        id,
+        type: 'celebrate',
+        headline,
+        message,
+        link,
+        duration: 6500,
+      }
+      setToasts((prev) => [...prev, newToast])
+    },
+    [],
   )
 
   const showSuccess = useCallback(
@@ -77,7 +103,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
   )
 
   return (
-    <ToastContext.Provider value={{ showToast, showSuccess, showError, showInfo }}>
+    <ToastContext.Provider value={{ showToast, showSuccess, showError, showInfo, showCelebrate }}>
       {children}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </ToastContext.Provider>

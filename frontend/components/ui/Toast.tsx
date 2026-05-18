@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning'
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'celebrate'
 
 export interface ToastData {
   id: string
   type: ToastType
   message: string
+  /** Larger headline rendered above the message. Used by celebrate toasts. */
+  headline?: string
   link?: {
     url: string
     text: string
@@ -55,6 +57,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     error: 'border-l-color-down',
     warning: 'border-l-color-warning',
     info: 'border-l-zinc-400',
+    celebrate: 'border-l-color-up',
   }[toast.type]
 
   const iconColor = {
@@ -62,35 +65,79 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     error: 'text-color-down',
     warning: 'text-color-warning',
     info: 'text-zinc-500',
+    celebrate: 'text-color-up',
   }[toast.type]
+
+  const isCelebrate = toast.type === 'celebrate'
 
   return (
     <div
       className={`
-        bg-card border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-xl shadow-card
-        transition-all duration-300 ease-in-out
-        ${isExiting ? 'opacity-0 translate-x-4 scale-[0.97]' : isVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-6 scale-[0.97]'}
+        bg-card border border-border-light ${accentBar} text-text-primary rounded-xl shadow-card
+        transition-all duration-300 ease-out
+        ${isCelebrate ? 'border-l-[6px] p-[18px] shadow-lg' : 'border-l-4 p-4'}
+        ${isExiting
+          ? 'opacity-0 translate-x-4 scale-[0.97]'
+          : isVisible
+            ? `opacity-100 translate-x-0 scale-100 ${isCelebrate ? 'animate-toast-pop' : ''}`
+            : 'opacity-0 translate-x-6 scale-[0.97]'}
       `}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <p className={toast.type === 'error' ? 'text-color-down' : 'text-text-primary'}>
-            {toast.message}
-          </p>
-          {toast.link && (
-            <a
-              href={toast.link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`mt-1 inline-block text-sm ${iconColor} underline hover:opacity-80`}
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          {isCelebrate ? (
+            <span
+              className={`${iconColor} flex-shrink-0 mt-[2px]`}
+              aria-hidden="true"
             >
-              {toast.link.text}
-            </a>
-          )}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </span>
+          ) : null}
+          <div className="flex-1 min-w-0">
+            {toast.headline ? (
+              <p
+                className={`${isCelebrate ? 'text-[17px] font-semibold tracking-tight' : 'text-[15px] font-semibold'} text-text-primary`}
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {toast.headline}
+              </p>
+            ) : null}
+            <p
+              className={`
+                ${toast.type === 'error' ? 'text-color-down' : 'text-text-primary'}
+                ${isCelebrate ? 'text-[13px] text-text-secondary mt-0.5' : ''}
+              `}
+            >
+              {toast.message}
+            </p>
+            {toast.link && (
+              <a
+                href={toast.link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`mt-1 inline-block text-sm ${iconColor} underline hover:opacity-80`}
+              >
+                {toast.link.text}
+              </a>
+            )}
+          </div>
         </div>
         <button
           onClick={handleDismiss}
-          className="text-text-muted hover:text-text-primary transition-colors"
+          className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
           aria-label={t('aria.dismiss')}
         >
           <svg

@@ -54,7 +54,7 @@ export function VaultActionsPanel({
 
   const {
     deposit, step: depositStep, isConfirming: depositConfirming,
-    error: depositError, reset: resetDeposit, justDepositedAmount,
+    error: depositError, reset: resetDeposit, justDepositedAmount, pendingAmount,
   } = useVaultDeposit()
 
   const {
@@ -75,7 +75,13 @@ export function VaultActionsPanel({
     },
   })
   const usdcBalance = (usdcBalanceRaw as bigint | undefined) ?? 0n
-  const usdcBalanceFloat = parseFloat(formatUnits(usdcBalance, 18))
+  // Optimistic balance: the moment the user clicks Deposit, we subtract the
+  // in-flight amount so the wallet line moves with the intent, not with the
+  // chain. The on-chain read catches up via the post-success refetch burst.
+  const optimisticBalance =
+    usdcBalance > pendingAmount ? usdcBalance - pendingAmount : 0n
+  const usdcBalanceFloat = parseFloat(formatUnits(optimisticBalance, 18))
+  const pendingAmountFloat = parseFloat(formatUnits(pendingAmount, 18))
 
   const { data: onChainShares, refetch: refetchShares } = useReadContract({
     address: vaultAddress,
@@ -136,7 +142,10 @@ export function VaultActionsPanel({
       ? (Number(shares) / Number(totalSupply)) * parseFloat(formatUnits(totalAssets, 18))
       : 0
   const userPnl = shares > 0n ? userValue - sharesFloat : 0
-  const hasPosition = shares > 0n || pendingAssets > 0n
+  // Surface the position card during in-flight deposits too, so a brand-new
+  // user gets immediate feedback that something is happening.
+  const hasPosition = shares > 0n || pendingAssets > 0n || pendingAmount > 0n
+  const showAwaiting = isOptimistic || pendingAmount > 0n
   const feePercent = Number(performanceFeeRate) / 1e16
 
   const depositBusy =
@@ -245,8 +254,8 @@ export function VaultActionsPanel({
             userAddress ? (
               <button
                 type="button"
-                onClick={() => setDepositInput(formatUnits(usdcBalance, 18))}
-                disabled={usdcBalance === 0n}
+                onClick={() => setDepositInput(formatUnits(optimisticBalance, 18))}
+                disabled={optimisticBalance === 0n}
                 style={maxButtonStyle}
               >
                 Max
@@ -260,6 +269,14 @@ export function VaultActionsPanel({
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })} USDC
+                {pendingAmount > 0n ? (
+                  <>
+                    {' '}·{' '}
+                    <span style={{ color: 'rgb(52,199,89)' }}>
+                      ${pendingAmountFloat.toFixed(2)} sending…
+                    </span>
+                  </>
+                ) : null}
               </span>
             ) : (
               <span style={subtleStyle}>Connect a wallet to see your USDC balance.</span>
@@ -336,6 +353,11 @@ export function VaultActionsPanel({
             ? depositBusy || depositConfirming || !depositInput
             : redeemBusy || redeemConfirming || !withdrawInput
         }
+        busy={
+          tab === 'deposit'
+            ? depositBusy || depositConfirming
+            : redeemBusy || redeemConfirming
+        }
         depositLabel={depositLabel}
         withdrawLabel={withdrawLabel}
       />
@@ -359,7 +381,7 @@ export function VaultActionsPanel({
         >
           <div style={positionHeaderStyle}>
             <span>Your position</span>
-            {isOptimistic ? <span style={{ color: 'rgb(52,199,89)' }}>awaiting confirmation…</span> : null}
+            {showAwaiting ? <span style={{ color: 'rgb(52,199,89)' }}>awaiting confirmation…</span> : null}
           </div>
 
           {shares > 0n ? (
@@ -384,6 +406,14 @@ export function VaultActionsPanel({
               tone="up"
             />
           ) : null}
+
+          {pendingAmount > 0n ? (
+            <PositionRow
+              label="Adding"
+              value={`$${pendingAmountFloat.toFixed(2)}…`}
+              tone="up"
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -398,12 +428,13 @@ export function VaultActionsPanel({
 // registered, but the visual disabled state desynced. Plain Tailwind here.
 
 function ActionButton({
-  tab, onDeposit, onWithdraw, disabled, depositLabel, withdrawLabel,
+  tab, onDeposit, onWithdraw, disabled, busy, depositLabel, withdrawLabel,
 }: {
   tab: 'deposit' | 'withdraw'
   onDeposit: () => void
   onWithdraw: () => void
   disabled: boolean
+  busy: boolean
   depositLabel: string
   withdrawLabel: string
 }) {
@@ -416,10 +447,36 @@ function ActionButton({
       onClick={handleClick}
       disabled={disabled}
       dataAttrs={tab === 'deposit' ? { 'data-onboarding-target': 'vault-action' } : undefined}
-      className="w-full px-[18px] py-3 rounded-full bg-[#0071e3] text-white text-[17px] font-medium tracking-tight transition-colors hover:bg-[#0066cc] disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full px-[18px] py-3 rounded-full bg-[#0071e3] text-white text-[17px] font-medium tracking-tight transition-colors hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-60 inline-flex items-center justify-center gap-2"
     >
-      {tab === 'deposit' ? depositLabel : withdrawLabel}
+      {busy ? <ButtonSpinner /> : null}
+      <span>{tab === 'deposit' ? depositLabel : withdrawLabel}</span>
     </WalletActionButton>
+  )
+}
+
+function ButtonSpinner() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      style={{
+        animation: 'spin 0.9s linear infinite',
+        flexShrink: 0,
+      }}
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </svg>
   )
 }
 

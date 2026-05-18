@@ -90,9 +90,15 @@ module.exports = {
           '0%': { transform: 'translateX(-100%)' },
           '40%, 100%': { transform: 'translateX(150%)' },
         },
+        'toast-pop': {
+          '0%': { transform: 'translateX(24px) scale(0.92)', opacity: '0' },
+          '55%': { transform: 'translateX(-4px) scale(1.03)', opacity: '1' },
+          '100%': { transform: 'translateX(0) scale(1)', opacity: '1' },
+        },
       },
       animation: {
         shimmer: 'shimmer 3s ease infinite',
+        'toast-pop': 'toast-pop 480ms cubic-bezier(0.25, 0.1, 0.3, 1)',
       },
     },
   },
