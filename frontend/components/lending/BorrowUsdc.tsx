@@ -12,6 +12,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/explorer'
+import { preparePosition, QuoteApiError } from '@/lib/api/curator-api'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface BorrowUsdcProps {
@@ -31,7 +32,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
-  const [step, setStep] = useState<'input' | 'borrowing' | 'success'>('input')
+  const [step, setStep] = useState<'input' | 'preparing' | 'borrowing' | 'success'>('input')
 
   const lltv = market?.lltv ?? BigInt('770000000000000000')
 
@@ -116,18 +117,49 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     }
   }, [actionError, resetAction])
 
-  const handleBorrow = useCallback(() => {
-    if (!amount || parsedAmount === 0n || !canBorrow) return
+  const handleBorrow = useCallback(async () => {
+    if (!amount || parsedAmount === 0n || !canBorrow || !market?.marketId) return
     capture('lend_borrow_submitted', { itp_id: market?.collateralToken, amount: amount })
     successHandled.current = false
     setTxError(null)
+
+    // Step 1: ask the curator to route enough vault liquidity into this
+    // market for the borrow. Reverts here are fatal — the borrow tx would
+    // revert too if we skipped it.
+    setStep('preparing')
+    try {
+      const prep = await preparePosition({
+        marketId: market.marketId,
+        borrowAmount: parsedAmount.toString(),
+      })
+      capture('lend_prepare_done', {
+        itp_id: market.collateralToken,
+        already_funded: prep.alreadyFunded,
+        tx_hash: prep.txHash,
+      })
+    } catch (err) {
+      const apiErr = err as QuoteApiError
+      const msg = apiErr?.isCuratorUnreachable
+        ? 'Curator unavailable — try again in a minute'
+        : apiErr?.isPrepareTimeout
+        ? 'Liquidity routing timed out — retry'
+        : apiErr?.message ?? 'Failed to route liquidity'
+      setTxError(msg)
+      capture('lend_prepare_failed', { itp_id: market?.collateralToken, error_message: msg })
+      setStep('input')
+      return
+    }
+
+    // Step 2: fire the actual borrow tx now that the target has liquidity.
     setStep('borrowing')
     borrow(parsedAmount)
-  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken])
+  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken, market?.marketId])
 
-  const isProcessing = isPending || isConfirming
+  const isProcessing = step === 'preparing' || isPending || isConfirming
 
-  const buttonText = isPending
+  const buttonText = step === 'preparing'
+    ? 'Routing liquidity…'
+    : isPending
     ? t('borrow_usdc.button.confirm_wallet')
     : isConfirming
     ? t('borrow_usdc.button.borrowing')

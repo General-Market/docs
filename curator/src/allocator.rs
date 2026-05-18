@@ -201,6 +201,30 @@ pub struct AllocationReport {
 // Errors
 // ============================================================================
 
+// ============================================================================
+// Bot Command Channel (for synchronous prepare requests from the quote server)
+// ============================================================================
+
+/// Out-of-band command sent to the allocation loop.
+///
+/// The periodic loop owns the AllocationBot. To avoid two signers racing
+/// on the same allocator nonce, the quote server's prepare endpoint sends a
+/// command instead of holding its own bot. The loop drains the channel
+/// before each periodic cycle.
+#[derive(Debug)]
+pub enum BotCommand {
+    /// Make `target_market` borrowable for at least `borrow_amount` USDC
+    /// by reallocating idle liquidity. Reply on `response`.
+    Prepare {
+        target_market: [u8; 32],
+        borrow_amount: U256,
+        response: tokio::sync::oneshot::Sender<Result<Option<H256>, AllocatorError>>,
+    },
+}
+
+pub type BotCommandSender = tokio::sync::mpsc::Sender<BotCommand>;
+pub type BotCommandReceiver = tokio::sync::mpsc::Receiver<BotCommand>;
+
 /// Errors from the allocation bot
 #[derive(Debug, Error)]
 pub enum AllocatorError {
@@ -1358,6 +1382,134 @@ impl AllocationBot {
         }
 
         Ok(new_count)
+    }
+
+    // ========================================================================
+    // Intent-Based Prepare (Phase 2)
+    // ========================================================================
+
+    /// Make `target_market` borrowable for at least `borrow_amount` by pulling
+    /// idle liquidity from other markets via `vault.reallocate()`.
+    ///
+    /// Returns Ok(None) if the market already has sufficient liquidity (no tx
+    /// needed), or Ok(Some(tx_hash)) after a successful reallocate.
+    ///
+    /// Caller (the quote_server's prepare endpoint) is expected to hold the
+    /// allocator role for the vault. The periodic allocation loop also holds
+    /// it; serialize via the BotCommand channel so both can't fire at once.
+    pub async fn prepare_market_borrow(
+        &mut self,
+        target_market: [u8; 32],
+        borrow_amount: U256,
+    ) -> Result<Option<H256>, AllocatorError> {
+        if !self.market_ids.contains(&target_market) {
+            return Err(AllocatorError::InvalidMarket(format!(
+                "Target market not tracked: 0x{}",
+                hex::encode(target_market)
+            )));
+        }
+
+        // Read state for the target market and all other tracked markets.
+        let metrics = self.read_all_market_metrics().await?;
+        let target = metrics
+            .iter()
+            .find(|m| m.market_id == target_market)
+            .ok_or_else(|| {
+                AllocatorError::ReadError(format!(
+                    "Target market not in metrics: 0x{}",
+                    hex::encode(target_market)
+                ))
+            })?
+            .clone();
+
+        // Current liquidity in the target market.
+        let target_liquidity = target.total_supply.saturating_sub(target.total_borrow);
+        if target_liquidity >= borrow_amount {
+            info!(
+                market_id = %hex::encode(target_market),
+                target_liquidity = %target_liquidity,
+                borrow_amount = %borrow_amount,
+                "Prepare: market already has sufficient liquidity, skipping reallocate"
+            );
+            return Ok(None);
+        }
+
+        let deficit = borrow_amount - target_liquidity;
+
+        // Donor markets: tracked markets other than the target that hold
+        // unborrowed vault supply. Sorted by idle assets descending so we
+        // drain the largest pots first and minimize the number of touched
+        // markets.
+        let mut donors: Vec<&MarketMetrics> = metrics
+            .iter()
+            .filter(|m| {
+                m.market_id != target_market
+                    && m.vault_supply > U256::zero()
+                    && m.total_borrow.is_zero()
+            })
+            .collect();
+        donors.sort_by(|a, b| b.vault_supply.cmp(&a.vault_supply));
+
+        // Pull just enough idle assets to cover the deficit.
+        let mut withdraw_decisions: Vec<AllocationDecision> = Vec::new();
+        let mut gathered = U256::zero();
+        for donor in donors {
+            if gathered >= deficit {
+                break;
+            }
+            // Withdraw the donor's entire vault supply (assets=0 in
+            // reallocate means "leave nothing"). Adequate for our needs and
+            // avoids the per-market share-conversion edge case.
+            withdraw_decisions.push(AllocationDecision {
+                market_id: donor.market_id,
+                action: AllocationAction::Withdraw,
+                amount: donor.vault_supply,
+                reason: format!(
+                    "Drain idle donor for target 0x{}",
+                    hex::encode(target_market)
+                ),
+                priority: 200,
+            });
+            gathered = gathered.saturating_add(donor.vault_supply);
+        }
+
+        if gathered == U256::zero() {
+            return Err(AllocatorError::InsufficientLiquidity {
+                requested: deficit,
+                available: U256::zero(),
+            });
+        }
+
+        // Supply decision for the target: MarketAllocation builder sets
+        // assets=U256::MAX for the last supply, which MetaMorpho interprets
+        // as "absorb everything still idle in the vault".
+        let supply_decision = AllocationDecision {
+            market_id: target_market,
+            action: AllocationAction::Supply,
+            amount: gathered, // ignored when last; kept for log clarity
+            reason: format!(
+                "Cover {} USDC borrow deficit",
+                deficit
+            ),
+            priority: 200,
+        };
+
+        let mut decisions = withdraw_decisions;
+        decisions.push(supply_decision);
+
+        let allocations = self.build_reallocation_calldata(&decisions, &metrics)?;
+        let tx_hash = self.execute_reallocate(allocations).await?;
+
+        info!(
+            tx_hash = ?tx_hash,
+            market_id = %hex::encode(target_market),
+            deficit = %deficit,
+            gathered = %gathered,
+            donors = decisions.len() - 1,
+            "Prepare: reallocate completed"
+        );
+
+        Ok(Some(tx_hash))
     }
 }
 

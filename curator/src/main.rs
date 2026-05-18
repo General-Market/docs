@@ -16,7 +16,7 @@ use clap::Parser;
 use common::runtime::config::{RuntimeConfig, shared};
 use common::runtime::watcher::DeploymentWatcher;
 use curator::alerting::{AlertDispatcher, LogAlerter, TelegramAlerter};
-use curator::allocator::AllocationBot;
+use curator::allocator::{AllocationBot, BotCommand, BotCommandReceiver};
 use curator::collector::{NavCollector, OraclePusher};
 use curator::config::{
     AlertingConfig, AllocationConfig, CuratorArgs, CuratorConfig, HealthMonitorConfig,
@@ -171,6 +171,18 @@ async fn run_allocation_loop(
     config: AllocationConfig,
     shutdown: Arc<AtomicBool>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    run_allocation_loop_with_commands(config, shutdown, None).await
+}
+
+/// Allocation loop variant that also drains prepare commands from the
+/// quote server. When `cmd_rx` is `Some`, between periodic cycles we
+/// service any queued prepare requests so the same wallet signs every
+/// reallocate (no nonce races).
+async fn run_allocation_loop_with_commands(
+    config: AllocationConfig,
+    shutdown: Arc<AtomicBool>,
+    mut cmd_rx: Option<BotCommandReceiver>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut bot = AllocationBot::new(
         &config.rpc_url,
         &config.private_key,
@@ -185,6 +197,7 @@ async fn run_allocation_loop(
         vault = ?config.vault_address,
         initial_markets = config.market_ids.len(),
         interval_secs = config.allocation_interval.as_secs(),
+        commands_enabled = cmd_rx.is_some(),
         "Curator allocation bot starting"
     );
 
@@ -194,6 +207,30 @@ async fn run_allocation_loop(
         if shutdown.load(Ordering::Relaxed) {
             info!("Shutdown requested, exiting allocation loop");
             break;
+        }
+
+        // Drain any queued prepare commands before doing the periodic cycle.
+        // Non-blocking — we only handle what's already in the queue.
+        if let Some(rx) = cmd_rx.as_mut() {
+            loop {
+                match rx.try_recv() {
+                    Ok(BotCommand::Prepare { target_market, borrow_amount, response }) => {
+                        info!(
+                            market_id = %hex::encode(target_market),
+                            borrow_amount = %borrow_amount,
+                            "Servicing prepare command"
+                        );
+                        let result = bot.prepare_market_borrow(target_market, borrow_amount).await;
+                        let _ = response.send(result);
+                    }
+                    Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                    Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                        warn!("Prepare command channel disconnected");
+                        cmd_rx = None;
+                        break;
+                    }
+                }
+            }
         }
 
         cycle_count += 1;
@@ -255,7 +292,33 @@ async fn run_allocation_loop(
             }
         }
 
-        tokio::time::sleep(config.allocation_interval).await;
+        // Sleep until the next periodic cycle, but wake immediately if a
+        // prepare command lands. The interactive borrow path can't wait the
+        // full allocation_interval.
+        if let Some(rx) = cmd_rx.as_mut() {
+            tokio::select! {
+                _ = tokio::time::sleep(config.allocation_interval) => {}
+                maybe_cmd = rx.recv() => {
+                    match maybe_cmd {
+                        Some(BotCommand::Prepare { target_market, borrow_amount, response }) => {
+                            info!(
+                                market_id = %hex::encode(target_market),
+                                borrow_amount = %borrow_amount,
+                                "Servicing prepare command (interrupted sleep)"
+                            );
+                            let result = bot.prepare_market_borrow(target_market, borrow_amount).await;
+                            let _ = response.send(result);
+                        }
+                        None => {
+                            warn!("Prepare command channel closed");
+                            cmd_rx = None;
+                        }
+                    }
+                }
+            }
+        } else {
+            tokio::time::sleep(config.allocation_interval).await;
+        }
     }
 
     info!("Curator allocation bot stopped");
@@ -536,7 +599,12 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
             "Skipping collector task — incomplete config. Curator will run without oracle data."),
     }
 
-    // Task 2: Allocation Bot (if config is valid)
+    // Task 2: Allocation Bot (if config is valid).
+    // The allocator is the sole signer for vault.reallocate(). The quote
+    // server's prepare endpoint shares it through a command channel rather
+    // than holding its own bot — two wallets writing the same nonce would
+    // collide.
+    let mut prepare_tx: Option<curator::allocator::BotCommandSender> = None;
     let alloc_args = args.clone();
     match AllocationConfig::from_args(alloc_args) {
         Ok(config) => {
@@ -544,12 +612,16 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
             // at deployed bytecode. Better to crash once than warn forever.
             require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
             let sd = shutdown.clone();
+            // Bounded channel so a stuck loop can't grow the queue without
+            // bound; a slow allocator is observable when borrowers see 503.
+            let (tx, rx) = tokio::sync::mpsc::channel::<BotCommand>(64);
+            prepare_tx = Some(tx);
             handles.push(tokio::spawn(async move {
-                if let Err(e) = run_allocation_loop(config, sd).await {
+                if let Err(e) = run_allocation_loop_with_commands(config, sd, Some(rx)).await {
                     error!(error = %e, "Allocation task failed");
                 }
             }));
-            info!("Spawned: Allocation bot task");
+            info!("Spawned: Allocation bot task (with prepare channel)");
         }
         Err(e) => warn!(code = "INFRA-013", reason = %e,
             "Skipping allocation task — incomplete config. No vault rebalancing will run."),
@@ -617,6 +689,7 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
         let sd = shutdown.clone();
         let sc = Some(shared_config.clone());
         let at = admin_token.clone();
+        let prep_tx = prepare_tx.clone();
         handles.push(tokio::spawn(async move {
             if let Err(e) = curator::quote_server::run_quote_api_server(
                 &listen_addr,
@@ -627,6 +700,7 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
                 sd,
                 sc,
                 at,
+                prep_tx,
             )
             .await
             {

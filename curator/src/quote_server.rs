@@ -6,6 +6,7 @@
 //! Rate limiting per API key (10 req/min default).
 //! Before returning a quote, computes SERM rate and pushes to CuratorRateIRM if changed.
 
+use crate::allocator::{BotCommand, BotCommandSender};
 use crate::market_config::MarketRegistry;
 use crate::quote::{parse_quote_request, QuoteEngine, QuoteError, QuoteRequest, RateLimiter};
 use crate::rate_pusher::RatePusher;
@@ -21,12 +22,13 @@ use axum::{
 };
 use common::runtime::config::SharedConfig;
 use ethers::types::{Address, U256};
+use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::RwLock;
+use tokio::sync::{oneshot, RwLock};
 use tracing::{info, warn};
 
 /// Configuration for rate pushing (optional)
@@ -44,6 +46,9 @@ struct QuoteApiState {
     shared_state: SharedCuratorState,
     serm: SermEngine,
     rate_pusher: Option<RatePusher>,
+    /// Channel to the AllocationBot for synchronous prepare requests.
+    /// None when the allocator task didn't spin up (incomplete config).
+    prepare_tx: Option<BotCommandSender>,
 }
 
 /// Run the Quote API HTTP server
@@ -56,6 +61,7 @@ pub async fn run_quote_api_server(
     shutdown: Arc<AtomicBool>,
     shared_config: Option<SharedConfig>,
     admin_token: Option<String>,
+    prepare_tx: Option<BotCommandSender>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Load market registry
     let registry = if let Some(path) = market_configs_path {
@@ -92,10 +98,12 @@ pub async fn run_quote_api_server(
         shared_state,
         serm: SermEngine::with_defaults(),
         rate_pusher,
+        prepare_tx,
     });
 
     let mut app = Router::new()
         .route("/api/lending/quote", post(handle_quote))
+        .route("/api/lending/prepare", post(handle_prepare))
         .route("/health", get(handle_health))
         .route("/health/live", get(handle_live))
         .route("/health/ready", get(handle_ready))
@@ -381,4 +389,204 @@ async fn compute_and_push_rate(
     }
 
     computed_rate
+}
+
+// ============================================================================
+// Prepare endpoint — synchronous reallocate-on-borrow
+// ============================================================================
+
+/// Request body for POST /api/lending/prepare
+#[derive(Debug, Deserialize)]
+pub struct PrepareRequest {
+    /// Hex-encoded bytes32 market id (with or without 0x prefix)
+    #[serde(rename = "marketId")]
+    pub market_id: String,
+    /// Borrow amount in USDC base units (decimal string)
+    #[serde(rename = "borrowAmount")]
+    pub borrow_amount: String,
+}
+
+fn parse_market_id(s: &str) -> Option<[u8; 32]> {
+    let h = s.strip_prefix("0x").unwrap_or(s);
+    let bytes = hex::decode(h).ok()?;
+    if bytes.len() != 32 {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&bytes);
+    Some(out)
+}
+
+/// POST /api/lending/prepare
+///
+/// Asks the allocator to reallocate enough idle vault liquidity into
+/// `marketId` to cover a pending borrow of `borrowAmount`. Returns once
+/// the reallocate transaction has been confirmed (or immediately if no
+/// reallocation was necessary).
+async fn handle_prepare(
+    State(state): State<Arc<QuoteApiState>>,
+    headers: HeaderMap,
+    Json(request): Json<PrepareRequest>,
+) -> impl IntoResponse {
+    // API key authentication (same gate as /quote).
+    if !state.api_keys.is_empty() {
+        let api_key = headers
+            .get("x-api-key")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        if !state.api_keys.contains(&api_key.to_string()) {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({
+                    "error": "Invalid or missing API key",
+                    "code": "UNAUTHORIZED"
+                })),
+            );
+        }
+    }
+
+    // Rate limit — share the same bucket as /quote so a misbehaving client
+    // can't drain the reallocate signer with prepare spam either.
+    let rate_key = headers
+        .get("x-api-key")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("anonymous")
+        .to_string();
+    {
+        let mut limiter = state.rate_limiter.write().await;
+        if let Err(e) = limiter.check(&rate_key) {
+            let retry_after = match &e {
+                QuoteError::RateLimited { retry_after } => *retry_after,
+                _ => 60,
+            };
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(json!({
+                    "error": e.to_string(),
+                    "code": "RATE_LIMITED",
+                    "retryAfter": retry_after
+                })),
+            );
+        }
+    }
+
+    // Allocator must be running.
+    let tx = match &state.prepare_tx {
+        Some(t) => t.clone(),
+        None => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({
+                    "error": "Allocator task not running; prepare unavailable",
+                    "code": "ALLOCATOR_UNAVAILABLE"
+                })),
+            );
+        }
+    };
+
+    let market_id = match parse_market_id(&request.market_id) {
+        Some(id) => id,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": format!("Invalid marketId: {}", request.market_id),
+                    "code": "INVALID_MARKET_ID"
+                })),
+            );
+        }
+    };
+
+    let borrow_amount = match U256::from_dec_str(&request.borrow_amount) {
+        Ok(v) if !v.is_zero() => v,
+        Ok(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": "borrowAmount must be > 0",
+                    "code": "INVALID_BORROW_AMOUNT"
+                })),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": format!("Invalid borrowAmount: {}", request.borrow_amount),
+                    "code": "INVALID_BORROW_AMOUNT"
+                })),
+            );
+        }
+    };
+
+    let (resp_tx, resp_rx) = oneshot::channel();
+    let cmd = BotCommand::Prepare {
+        target_market: market_id,
+        borrow_amount,
+        response: resp_tx,
+    };
+
+    if let Err(e) = tx.send(cmd).await {
+        warn!(error = %e, "Failed to enqueue prepare command");
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({
+                "error": "Allocator command channel closed",
+                "code": "ALLOCATOR_UNAVAILABLE"
+            })),
+        );
+    }
+
+    // Wait for the allocator to reply. Worst case: a periodic cycle is
+    // already in flight, so allow up to ~90s before timing out.
+    let result = match tokio::time::timeout(Duration::from_secs(90), resp_rx).await {
+        Ok(Ok(r)) => r,
+        Ok(Err(_)) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "error": "Allocator dropped prepare response",
+                    "code": "ALLOCATOR_INTERNAL"
+                })),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::GATEWAY_TIMEOUT,
+                Json(json!({
+                    "error": "Prepare timed out waiting for allocator",
+                    "code": "PREPARE_TIMEOUT"
+                })),
+            );
+        }
+    };
+
+    match result {
+        Ok(None) => (
+            StatusCode::OK,
+            Json(json!({
+                "alreadyFunded": true,
+                "txHash": null,
+                "blockNumber": null
+            })),
+        ),
+        Ok(Some(tx_hash)) => (
+            StatusCode::OK,
+            Json(json!({
+                "alreadyFunded": false,
+                "txHash": format!("{:?}", tx_hash),
+                "blockNumber": null
+            })),
+        ),
+        Err(e) => {
+            warn!(error = %e, market = %request.market_id, "Prepare failed");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "error": e.to_string(),
+                    "code": "PREPARE_FAILED"
+                })),
+            )
+        }
+    }
 }

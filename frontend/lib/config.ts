@@ -60,6 +60,17 @@ export function getL3RpcServer(): string {
   return process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
 }
 
+// Curator quote API (server-only). Not exposed via NEXT_PUBLIC because the
+// curator binds to localhost on its host VPS — browsers reach it through the
+// /api/lending/* proxies, not directly.
+export function getCuratorServer(): string {
+  return process.env['CURATOR_API_URL'] || 'http://localhost:8080'
+}
+
+export function getCuratorApiKey(): string {
+  return process.env['CURATOR_API_KEY'] || ''
+}
+
 // Backward-compat aliases — kept for any remaining import sites.
 // These read at module load but use bracket access so webpack won't inline them.
 export const AA_DATA_NODE_URL = process.env['AA_DATA_NODE_URL'] || 'http://localhost:8200'
