@@ -60,6 +60,11 @@ function buildChain(cfg: KeeperConfig) {
   });
 }
 
+function isPrunedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /pebble: not found|could not be found|missing trie node/i.test(msg);
+}
+
 async function fetchLogsChunked(
   client: PublicClient,
   address: Address,
@@ -74,14 +79,21 @@ async function fetchLogsChunked(
   while (cursor <= toBlock) {
     const end = cursor + chunk - 1n > toBlock ? toBlock : cursor + chunk - 1n;
     const args = topics?.batchId !== undefined ? { batchId: topics.batchId } : {};
-    const logs = await client.getLogs({
-      address,
-      event,
-      args,
-      fromBlock: cursor,
-      toBlock: end,
-    });
-    out.push(...logs);
+    try {
+      const logs = await client.getLogs({
+        address,
+        event,
+        args,
+        fromBlock: cursor,
+        toBlock: end,
+      });
+      out.push(...logs);
+    } catch (err) {
+      if (!isPrunedError(err)) throw err;
+      // Pruned window. Skip the chunk and keep walking — the alternative
+      // is to refuse forever. Old refunds beyond the prune horizon are lost.
+      console.warn(`[scan] pruned ${cursor}..${end} — skipping`);
+    }
     cursor = end + 1n;
   }
   return out;
@@ -145,20 +157,26 @@ async function findAnchorBlock(
   headTimestamp: bigint,
   lookbackSeconds: number,
 ): Promise<bigint> {
-  const lookback = BigInt(lookbackSeconds);
-  const targetTs = headTimestamp > lookback ? headTimestamp - lookback : 0n;
-  let lo = 0n;
-  let hi = headBlock;
-  for (let i = 0; i < 32 && lo < hi; i++) {
-    const mid = (lo + hi) / 2n;
-    const block = await client.getBlock({ blockNumber: mid });
-    if (block.timestamp < targetTs) {
-      lo = mid + 1n;
-    } else {
-      hi = mid;
+  // Estimate cadence from a recent sample. We can't binary-search across the
+  // chain because the L3 node prunes mid-range blocks; probing a missing
+  // block throws. So we sample near the head (always live) and project back.
+  const sampleOffset = headBlock > 1000n ? 1000n : headBlock;
+  const sampleBlockNumber = headBlock - sampleOffset;
+  let blockTimeSecs = 2; // conservative default: 2s/block
+  try {
+    const sample = await client.getBlock({ blockNumber: sampleBlockNumber });
+    const dt = Number(headTimestamp - sample.timestamp);
+    if (dt > 0) {
+      blockTimeSecs = dt / Number(sampleOffset);
     }
+  } catch {
+    // Sample unavailable. Stick with the default.
   }
-  return lo;
+  // Pad by 25% so the anchor lands a bit deeper than strictly needed —
+  // cheaper than missing a stuck batch on the edge.
+  const lookbackBlocks = BigInt(Math.ceil((lookbackSeconds / blockTimeSecs) * 1.25));
+  if (lookbackBlocks >= headBlock) return 0n;
+  return headBlock - lookbackBlocks;
 }
 
 async function scanBatchCreated(

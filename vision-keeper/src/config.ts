@@ -82,7 +82,9 @@ export function loadConfig(): KeeperConfig {
     vaultFactoryAddress,
     privateKey,
     pollIntervalMs: Number(process.env.POLL_INTERVAL_SECS ?? '60') * 1000,
-    lookbackSeconds: Number(process.env.LOOKBACK_SECONDS ?? `${7 * 24 * 60 * 60}`),
+    // 6h: the L3 node prunes deeper history, so a wider default would only
+    // produce pebble: not found on every cold boot.
+    lookbackSeconds: Number(process.env.LOOKBACK_SECONDS ?? `${6 * 60 * 60}`),
     healthPort: Number(process.env.KEEPER_HEALTH_PORT ?? '9201'),
     vaultRefreshMs: Number(process.env.VAULT_REFRESH_SECS ?? '900') * 1000,
     logEventChunk: BigInt(process.env.LOG_EVENT_CHUNK ?? '5000'),
