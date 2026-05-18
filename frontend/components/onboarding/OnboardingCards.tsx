@@ -132,34 +132,72 @@ export function OnboardingCards() {
               }}
             >
               <header
-                className="flex items-center justify-between px-5 py-4 md:px-6"
+                className="flex items-center justify-between gap-4 px-5 py-4 md:px-6"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: TOTAL }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setDirection(i > step ? 1 : -1)
-                        setStep(i)
-                      }}
-                      aria-label={`Go to card ${i + 1}`}
-                      className="transition-all"
+                <div className="flex flex-col gap-2 min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden
                       style={{
-                        width: i === step ? 22 : 6,
-                        height: 6,
+                        width: 8,
+                        height: 8,
                         borderRadius: 999,
-                        background:
-                          i === step
-                            ? 'rgba(255,255,255,0.95)'
-                            : i < step
-                              ? 'rgba(255,255,255,0.45)'
-                              : 'rgba(255,255,255,0.18)',
-                        border: 'none',
-                        cursor: 'pointer',
+                        background: '#2997ff',
+                        boxShadow: '0 0 12px rgba(41,151,255,0.6)',
+                        flexShrink: 0,
                       }}
                     />
-                  ))}
+                    <span
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: '11px',
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(255,255,255,0.85)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Welcome to General Market
+                    </span>
+                    <span
+                      className="hidden sm:inline"
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: '11px',
+                        letterSpacing: '0.04em',
+                        color: 'rgba(255,255,255,0.45)',
+                      }}
+                    >
+                      · 60-second tour
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: TOTAL }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setDirection(i > step ? 1 : -1)
+                          setStep(i)
+                        }}
+                        aria-label={`Go to card ${i + 1}`}
+                        className="transition-all"
+                        style={{
+                          width: i === step ? 22 : 6,
+                          height: 6,
+                          borderRadius: 999,
+                          background:
+                            i === step
+                              ? 'rgba(255,255,255,0.95)'
+                              : i < step
+                                ? 'rgba(255,255,255,0.45)'
+                                : 'rgba(255,255,255,0.18)',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <button
