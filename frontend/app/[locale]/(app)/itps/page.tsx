@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { ItpBrowserGrid } from '@/components/domain/itp-browser/ItpBrowserGrid'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -25,11 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default function ItpsPage() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+    <AppShell search={<SourceSearch />}>
       <ItpBrowserGrid />
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

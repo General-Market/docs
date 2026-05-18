@@ -1,5 +1,5 @@
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { FirstTradeGuide } from '@/components/domain/vision/FirstTradeGuide'
 
 export const metadata = {
@@ -9,11 +9,8 @@ export const metadata = {
 
 export default function FirstTradePage() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+    <AppShell search={<SourceSearch />}>
       <FirstTradeGuide />
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

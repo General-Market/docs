@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -116,16 +116,14 @@ export default async function SourceV2Page({ params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <main className="min-h-screen bg-page flex flex-col">
-        <Header />
+      <AppShell search={<SourceSearch />}>
         {jsonLd.map((ld, i) => (
           <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
         ))}
-        <div className="flex-1 overflow-x-clip">
+        <div className="overflow-x-clip">
           <SourceDetailV2 sourceId={sourceId} initialSource={source} />
         </div>
-        <Footer />
-      </main>
+      </AppShell>
     </HydrationBoundary>
   )
 }

@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
 import { HeroBand } from '@/components/ui/HeroBand'
 import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
@@ -88,9 +87,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   }
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-
+    <AppShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -292,9 +289,6 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         </div>
       </div>
       </div>
-
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

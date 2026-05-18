@@ -1,6 +1,5 @@
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
 import { WelcomeHero, HeroLeaderboard } from '@/components/domain/vision/WelcomeHero'
 
@@ -17,15 +16,13 @@ export default async function WelcomeLegacyPage() {
   const t = await getTranslations('seo.sr_only')
 
   return (
-    <main className="min-h-screen bg-page flex flex-col overflow-x-clip">
-      <Header />
+    <AppShell>
       <WelcomeHero />
       <HeroLeaderboard />
-      <div className="flex-1 overflow-x-clip">
+      <div className="overflow-x-clip">
         <h1 className="sr-only">{t('h1')}</h1>
         <SourcesGrid />
       </div>
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

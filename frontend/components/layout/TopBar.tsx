@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ReactNode, useState, useEffect } from 'react'
 import { Link } from '@/i18n/routing'
+import { useWeb3Available } from '@/lib/contexts/Web3Context'
 import { MobileDrawer } from './MobileDrawer'
 
 const WalletControls = dynamic(
@@ -34,6 +35,7 @@ type TopBarProps = {
 
 export function TopBar({ search }: TopBarProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const hasWeb3 = useWeb3Available()
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -100,9 +102,11 @@ export function TopBar({ search }: TopBarProps) {
           </div>
         )}
 
-        <div className="shrink-0">
-          <WalletControls isDark={false} />
-        </div>
+        {hasWeb3 && (
+          <div className="shrink-0">
+            <WalletControls isDark={false} />
+          </div>
+        )}
       </header>
 
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

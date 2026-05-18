@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
@@ -57,13 +57,11 @@ export default async function LegacySourcePage({ params }: Props) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <main className="min-h-screen bg-page flex flex-col">
-        <Header />
-        <div className="flex-1 overflow-x-clip">
+      <AppShell search={<SourceSearch />}>
+        <div className="overflow-x-clip">
           <SourceDetail sourceId={sourceId} initialSource={source} />
         </div>
-        <Footer />
-      </main>
+      </AppShell>
     </HydrationBoundary>
   )
 }

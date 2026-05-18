@@ -5,8 +5,8 @@ import { useAccount, useConnect } from 'wagmi'
 import { useTranslations } from 'next-intl'
 import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 import { usePoints, usePointsLeaderboard } from '@/hooks/usePoints'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 
 function formatPoints(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`
@@ -85,10 +85,8 @@ export default function PointsPageClient() {
   const maxPoolValue = Math.max(points.vision, points.indexCreator, points.indexHolder, 1)
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-
-      <div className="flex-1">
+    <AppShell search={<SourceSearch />}>
+      <div>
         {/* HERO */}
         <section className="bg-black text-white">
           <div className="px-6 lg:px-12">
@@ -329,8 +327,6 @@ export default function PointsPageClient() {
           </div>
         </section>
       </div>
-
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

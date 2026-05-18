@@ -79,13 +79,17 @@ type Props = {
   onClose: () => void
 }
 
+function PortfolioRow({ active, onClose }: { active: boolean; onClose: () => void }) {
+  const { address } = useAccount()
+  const href = address ? `/profile/${address}` : '/profile'
+  return <Row href={href} label="Portfolio" Icon={UserIcon} active={active} onClose={onClose} />
+}
+
 export function MobileDrawer({ open, onClose }: Props) {
   const pathname = usePathname()
   const hasWeb3 = useWeb3Available()
-  const { address } = useAccount()
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const portfolioHref = address ? `/profile/${address}` : '/profile'
   const portfolioActive = pathname.startsWith('/profile')
 
   // Close on Escape
@@ -163,13 +167,7 @@ export function MobileDrawer({ open, onClose }: Props) {
             />
           ))}
           {hasWeb3 && (
-            <Row
-              href={portfolioHref}
-              label="Portfolio"
-              Icon={UserIcon}
-              active={portfolioActive}
-              onClose={onClose}
-            />
+            <PortfolioRow active={portfolioActive} onClose={onClose} />
           )}
         </div>
 

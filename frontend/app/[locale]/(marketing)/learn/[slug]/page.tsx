@@ -4,8 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppShell } from "@/components/layout/AppShell";
 import { mdxComponents } from "@/components/mdx";
 import { getArticle, getArticleSlugs } from "@/lib/learn/articles";
 import { ArticleHeader } from "@/components/learn/ArticleHeader";
@@ -109,9 +108,7 @@ export default async function LearnArticlePage({ params }: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-
+    <AppShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
@@ -145,8 +142,6 @@ export default async function LearnArticlePage({ params }: Props) {
           </article>
         </div>
       </div>
-
-      <Footer />
-    </main>
+    </AppShell>
   );
 }

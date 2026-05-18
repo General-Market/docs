@@ -2,8 +2,8 @@
 
 import { use } from 'react'
 import { useTranslations } from 'next-intl'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 import { HeroBand } from '@/components/ui/HeroBand'
 import { SectionBar } from '@/components/ui/SectionBar'
 import { PerformanceGraphMini } from '@/components/domain/PerformanceGraphMini'
@@ -33,9 +33,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
   const pnlColor = (agent?.pnl ?? 0) >= 0 ? 'text-color-up' : 'text-color-down'
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-
+    <AppShell search={<SourceSearch />}>
       <HeroBand
         eyebrow={t('rank', { rank: String(agent?.rank ?? '\u2014') })}
         title={displayName}
@@ -161,8 +159,6 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
       </div>
       </div>
 
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

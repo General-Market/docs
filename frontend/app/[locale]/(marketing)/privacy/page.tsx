@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
 import { Link } from '@/i18n/routing'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -25,8 +24,7 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
   const t = await getTranslations({ locale, namespace: 'pages.privacy' })
 
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
+    <AppShell>
       <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
@@ -103,8 +101,6 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
           </div>
         </section>
       </div>
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    </AppShell>
   )
 }
