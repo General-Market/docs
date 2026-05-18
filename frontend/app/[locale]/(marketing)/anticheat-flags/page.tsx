@@ -6,6 +6,7 @@ import { ColocationSection } from './ColocationSection'
 import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
 import { EdgeWaysSection } from './EdgeWaysSection'
+import { VenueBleedSection } from './VenueBleedSection'
 import { EDGE_TOPICS } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
@@ -161,11 +162,23 @@ export default function AntiCheatFlagsPage() {
             </Reveal>
           </section>
 
+          {/* PER-VENUE TRIPLE-BAR — cumulative bleed at 100 / 1K / 100K trades */}
+          <VenueBleedSection />
+
           {/* FOURTEEN MECHANISMS — the page thesis as a chart */}
           <EdgeWaysSection />
 
+          {/* COLOCATION EDGE — the receipts that aren't even illegal */}
+          <ColocationSection />
+
+          {/* FEE TIER EDGE — the spread in basis points + cost of staying inside */}
+          <FeeTierSection />
+
+          {/* STRUCTURAL EDGE INVENTORY — fifteen mechanisms across five rulers */}
+          <EdgeMatrixSection />
+
           {/* VENUE PILLS — matches the homepage See All pattern */}
-          <section style={{ paddingBottom: 16 }}>
+          <section style={{ paddingTop: 64, paddingBottom: 16, borderTop: `1px solid ${LINE}` }}>
             <Reveal>
               <nav
                 className="flex flex-wrap gap-2"
@@ -320,15 +333,6 @@ export default function AntiCheatFlagsPage() {
               </div>
             </section>
           ))}
-
-          {/* COLOCATION EDGE — the receipts that aren't even illegal */}
-          <ColocationSection />
-
-          {/* FEE TIER EDGE — the spread in basis points + cost of staying inside */}
-          <FeeTierSection />
-
-          {/* STRUCTURAL EDGE INVENTORY — fifteen mechanisms across five rulers */}
-          <EdgeMatrixSection />
         </div>
       </div>
     </AppShell>
