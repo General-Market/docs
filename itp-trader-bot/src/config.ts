@@ -26,6 +26,13 @@ export const ADDR = {
 // can override via DATA_NODE_URL=https://api.generalmarket.io/data-node.
 export const DATA_NODE_URL = process.env.DATA_NODE_URL ?? 'https://generalmarket.io/api/dn'
 
+// Curator base URL — the bot calls /api/lending/prepare before borrowing so
+// the allocator routes idle liquidity into the target market. VPS-1-internal
+// bots can override to http://localhost:8080; the public default goes through
+// the same Next.js proxy that the dapp uses.
+export const CURATOR_API_URL = process.env.CURATOR_API_URL ?? 'https://generalmarket.io'
+export const CURATOR_API_KEY = process.env.CURATOR_API_KEY ?? ''
+
 export const TICK_INTERVAL_MS = 4 * 60 * 1000
 export const TICK_JITTER_MS = 60 * 1000
 

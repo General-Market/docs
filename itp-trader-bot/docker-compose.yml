@@ -10,6 +10,11 @@ services:
       - KEYS_PATH=/data/keys.json
       - KEYRING_SIZE=5
       - EXTRA_MORPHO_MARKETS=0x736b6e07edd80ab0ce7e4657ea4bb1eafb4cb9523fccf38bb2bbd65bea143fc5
+      # Curator runs on the same host. Reach it via the docker bridge
+      # gateway — extra_hosts maps host.docker.internal to the host on Linux.
+      - CURATOR_API_URL=http://host.docker.internal:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /opt/itp-trader-bot/data:/data
     ports:

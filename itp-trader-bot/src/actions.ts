@@ -1,10 +1,27 @@
 import { parseUnits, formatUnits, maxUint256, type Hex, type PublicClient } from 'viem'
-import { ADDR, BUY_USDC_MAX, BUY_USDC_MIN, DRY_RUN, LEND_USDC_MAX, LEND_USDC_MIN } from './config.js'
+import { ADDR, BUY_USDC_MAX, BUY_USDC_MIN, CURATOR_API_KEY, CURATOR_API_URL, DRY_RUN, LEND_USDC_MAX, LEND_USDC_MIN } from './config.js'
 import { ERC20_ABI, INDEX_ABI, METAMORPHO_ABI, MORPHO_ABI } from './abis.js'
 import { listItps, listMorphoMarkets, pickOne, type Itp, type MorphoMarket } from './state.js'
 import { makePublic, makeWallet } from './clients.js'
 import { log } from './log.js'
 import type { Keyring } from './keys.js'
+
+// ── Curator prepare (intent-based reallocate before borrow) ─────────────────
+async function preparePosition(marketId: `0x${string}`, borrowAmount: bigint): Promise<void> {
+  const url = `${CURATOR_API_URL.replace(/\/$/, '')}/api/lending/prepare`
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (CURATOR_API_KEY) headers['x-api-key'] = CURATOR_API_KEY
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ marketId, borrowAmount: borrowAmount.toString() }),
+    signal: AbortSignal.timeout(95_000),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`curator prepare ${res.status}: ${body.slice(0, 200)}`)
+  }
+}
 
 const USDC_DEC = 18 // L3 USDC is 18 decimals (NOT 6 — see CLAUDE.md)
 const SLIPPAGE_TIER = 2n
@@ -304,6 +321,16 @@ export async function actBorrow(ring: Keyring[number]): Promise<ActionResult> {
   if (DRY_RUN) {
     return { kind: 'borrow', status: 'ok', wallet: ring.account.address, tx: '0xdry' as Hex, note: `would borrow ${formatUnits(borrowAmt, USDC_DEC)} USDC` }
   }
+
+  // Intent-based step: ask the curator to route enough vault liquidity into
+  // this market for the borrow. Without this the borrow tx reverts whenever
+  // the allocator hasn't recently concentrated assets into this market.
+  try {
+    await preparePosition(m.marketId, borrowAmt)
+  } catch (e) {
+    return { kind: 'borrow', status: 'skip', wallet: ring.account.address, note: `prepare failed: ${String(e).slice(0, 80)}` }
+  }
+
   try {
     const tx = await wallet.writeContract({
       chain: wallet.chain,
