@@ -4,7 +4,6 @@ import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } fro
 import { useEffect, useMemo } from 'react'
 
 const GRID = 28
-const TOTAL = GRID * GRID
 const TARGET = 10000
 
 export function Card3Liquidity({ active }: { active: boolean }) {
@@ -42,11 +41,11 @@ export function Card3Liquidity({ active }: { active: boolean }) {
   }, [active, count, reduced])
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-6 py-10 md:px-12 md:py-14">
+    <div className="flex flex-col items-center justify-center gap-10 px-6 py-12 md:px-12 md:py-16">
       <div className="relative flex items-center justify-center w-full" style={{ minHeight: 260 }}>
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-2 md:px-4 z-10">
-          <Trader side="left" color="#0071e3" label="Trader A" active={active} reduced={!!reduced} />
-          <Trader side="right" color="#1d1d1f" label="Trader B" active={active} reduced={!!reduced} />
+          <Trader side="left" color="#2997ff" label="Trader A" active={active} reduced={!!reduced} />
+          <Trader side="right" color="#ffffff" label="Trader B" active={active} reduced={!!reduced} />
         </div>
 
         <motion.svg
@@ -61,8 +60,8 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             y1={totalWidth / 2}
             x2={totalWidth}
             y2={totalWidth / 2}
-            stroke="#1d1d1f"
-            strokeOpacity={0.35}
+            stroke="#ffffff"
+            strokeOpacity={0.55}
             strokeWidth={1.2}
             initial={{ pathLength: 0, opacity: 0 }}
             animate={active && !reduced ? { pathLength: 1, opacity: [0, 1, 1, 0] } : { opacity: 0 }}
@@ -77,7 +76,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
           {cells.map((c, i) => {
             const cx = c.x * (cellSize + gap) + cellSize / 2
             const cy = c.y * (cellSize + gap) + cellSize / 2
-            const fill = c.side === 'yes' ? '#0071e3' : '#1d1d1f'
+            const fill = c.side === 'yes' ? '#2997ff' : '#ffffff'
             return (
               <motion.rect
                 key={i}
@@ -90,7 +89,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
                 initial={{ opacity: 0, scale: 0.2 }}
                 animate={
                   active && !reduced
-                    ? { opacity: c.side === 'yes' ? 0.85 : 0.7, scale: 1 }
+                    ? { opacity: c.side === 'yes' ? 0.9 : 0.55, scale: 1 }
                     : reduced
                       ? { opacity: 0.7, scale: 1 }
                       : { opacity: 0, scale: 0.2 }
@@ -114,7 +113,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             fontSize: 'clamp(40px, 6vw, 56px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text)',
+            color: '#ffffff',
             lineHeight: 1,
           }}
         >
@@ -125,7 +124,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-17)',
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.7)',
           }}
         >
           markets, both sides covered
@@ -138,7 +137,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-display)',
             fontSize: 'var(--apple-fs-12)',
             letterSpacing: '0.08em',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.55)',
             textTransform: 'uppercase',
           }}
         >
@@ -151,7 +150,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             fontSize: 'clamp(28px, 4vw, 40px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text)',
+            color: '#ffffff',
             lineHeight: 1.1,
           }}
         >
@@ -163,7 +162,7 @@ export function Card3Liquidity({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-text)',
             fontSize: '17px',
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.7)',
             lineHeight: 1.5,
           }}
         >
@@ -201,7 +200,8 @@ function Trader({
           height: 36,
           borderRadius: 999,
           background: color,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+          border: color === '#ffffff' ? '1px solid rgba(0,0,0,0.1)' : 'none',
         }}
       />
       <span
@@ -210,7 +210,7 @@ function Trader({
           fontSize: 'var(--apple-fs-12)',
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          color: 'var(--apple-text-secondary)',
+          color: 'rgba(255,255,255,0.6)',
         }}
       >
         {label}

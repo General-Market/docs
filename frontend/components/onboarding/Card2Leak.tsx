@@ -20,22 +20,22 @@ export function Card2Leak({ active }: { active: boolean }) {
   const reduced = useReducedMotion()
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-6 py-10 md:px-12 md:py-14">
+    <div className="flex flex-col items-center justify-center gap-10 px-6 py-12 md:px-12 md:py-16">
       <div className="w-full max-w-[640px]">
         <div
           className="flex items-center justify-between mb-5"
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-12)',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.55)',
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
           }}
         >
           <span>Where every $100 actually goes</span>
           <div className="hidden md:flex items-center gap-4">
-            <Legend color="#1d1d1f" label="Extractors" />
-            <Legend color="#0071e3" label="You" />
+            <Legend color="rgba(255,255,255,0.85)" label="Extractors" />
+            <Legend color="#2997ff" label="You" />
           </div>
         </div>
 
@@ -56,7 +56,7 @@ export function Card2Leak({ active }: { active: boolean }) {
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-12)',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.5)',
             lineHeight: 1.5,
             fontStyle: 'italic',
           }}
@@ -72,7 +72,7 @@ export function Card2Leak({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-display)',
             fontSize: 'var(--apple-fs-12)',
             letterSpacing: '0.08em',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.55)',
             textTransform: 'uppercase',
           }}
         >
@@ -82,10 +82,10 @@ export function Card2Leak({ active }: { active: boolean }) {
           className="mt-3"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(26px, 3.6vw, 36px)',
+            fontSize: 'clamp(24px, 3.4vw, 34px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text)',
+            color: '#ffffff',
             lineHeight: 1.15,
           }}
         >
@@ -119,7 +119,7 @@ function BarRow({
           fontFamily: 'var(--apple-font-text)',
           fontSize: 'var(--apple-fs-14)',
           letterSpacing: 'var(--apple-track-tight)',
-          color: row.highlight ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
+          color: row.highlight ? '#ffffff' : 'rgba(255,255,255,0.7)',
           fontWeight: row.highlight ? 600 : 400,
         }}
       >
@@ -131,14 +131,14 @@ function BarRow({
         style={{
           height: 28,
           borderRadius: 6,
-          background: 'rgba(0,0,0,0.04)',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.05)',
         }}
       >
         <motion.div
           className="absolute inset-y-0 left-0"
           style={{
-            background: '#1d1d1f',
-            opacity: row.highlight ? 0.25 : 0.92,
+            background: row.highlight ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.88)',
           }}
           initial={{ width: 0 }}
           animate={active && !reduced ? { width: `${row.extracted}%` } : { width: reduced ? `${row.extracted}%` : 0 }}
@@ -147,7 +147,7 @@ function BarRow({
         <motion.div
           className="absolute inset-y-0"
           style={{
-            background: '#0071e3',
+            background: '#2997ff',
             left: `${row.extracted}%`,
             width: `${row.trader}%`,
           }}
@@ -161,7 +161,7 @@ function BarRow({
         <motion.span
           className="absolute top-1/2 -translate-y-1/2 left-3"
           style={{
-            color: '#fff',
+            color: row.highlight ? 'rgba(255,255,255,0.85)' : '#1d1d1f',
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-12)',
             fontWeight: 600,
@@ -178,7 +178,7 @@ function BarRow({
           className="absolute top-1/2 -translate-y-1/2"
           style={{
             right: 10,
-            color: '#fff',
+            color: '#ffffff',
             fontFamily: 'var(--apple-font-text)',
             fontSize: 'var(--apple-fs-12)',
             fontWeight: 600,

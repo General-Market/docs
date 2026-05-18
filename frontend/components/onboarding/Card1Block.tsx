@@ -32,7 +32,7 @@ export function Card1Block({ active }: { active: boolean }) {
   const centerY = height / 2
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-6 py-10 md:px-12 md:py-14">
+    <div className="flex flex-col items-center justify-center gap-10 px-6 py-12 md:px-12 md:py-16">
       <div
         className="relative"
         style={{
@@ -52,18 +52,18 @@ export function Card1Block({ active }: { active: boolean }) {
               cx={d.x}
               cy={d.y}
               r={DOT_RADIUS}
-              fill="#1d1d1f"
-              fillOpacity={0.18}
-              initial={{ cx: d.x, cy: d.y, opacity: 0.18, scale: 1 }}
+              fill="#ffffff"
+              fillOpacity={0.32}
+              initial={{ cx: d.x, cy: d.y, opacity: 0.32, scale: 1 }}
               animate={
                 active && !reduced
                   ? {
                       cx: centerX,
                       cy: centerY,
-                      opacity: [0.18, 0.18, 0],
+                      opacity: [0.32, 0.32, 0],
                       scale: [1, 1, 0.4],
                     }
-                  : { cx: d.x, cy: d.y, opacity: 0.18, scale: 1 }
+                  : { cx: d.x, cy: d.y, opacity: 0.32, scale: 1 }
               }
               transition={{
                 duration: 1.6,
@@ -75,12 +75,12 @@ export function Card1Block({ active }: { active: boolean }) {
           ))}
 
           <motion.rect
-            x={centerX - 56}
-            y={centerY - 22}
-            width={112}
-            height={44}
-            rx={10}
-            fill="#0071e3"
+            x={centerX - 64}
+            y={centerY - 24}
+            width={128}
+            height={48}
+            rx={12}
+            fill="#2997ff"
             initial={{ opacity: 0, scale: 0.4 }}
             animate={active && !reduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }}
             transition={{ duration: 0.45, delay: 1.7, ease: [0.4, 0, 0.2, 1] }}
@@ -92,7 +92,7 @@ export function Card1Block({ active }: { active: boolean }) {
             dominantBaseline="central"
             fill="#ffffff"
             fontFamily='"SF Pro Display", -apple-system, system-ui, sans-serif'
-            fontSize="14"
+            fontSize="15"
             fontWeight="600"
             letterSpacing="-0.022em"
             initial={{ opacity: 0 }}
@@ -110,7 +110,7 @@ export function Card1Block({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-display)',
             fontSize: 'var(--apple-fs-12)',
             letterSpacing: '0.08em',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.55)',
             textTransform: 'uppercase',
           }}
         >
@@ -123,7 +123,7 @@ export function Card1Block({ active }: { active: boolean }) {
             fontSize: 'clamp(28px, 4vw, 40px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text)',
+            color: '#ffffff',
             lineHeight: 1.1,
           }}
         >
@@ -135,7 +135,7 @@ export function Card1Block({ active }: { active: boolean }) {
             fontFamily: 'var(--apple-font-text)',
             fontSize: '17px',
             letterSpacing: 'var(--apple-track-tight)',
-            color: 'var(--apple-text-secondary)',
+            color: 'rgba(255,255,255,0.7)',
             lineHeight: 1.5,
           }}
         >
