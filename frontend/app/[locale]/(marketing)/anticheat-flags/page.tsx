@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
 import { Reveal } from '@/components/ui/Reveal'
 import { IncidentCard } from './IncidentCard'
 import { ColocationSection } from './ColocationSection'
@@ -101,10 +100,8 @@ export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
 
   return (
-    <main className="min-h-screen bg-page flex flex-col" style={{ background: 'var(--apple-panel)' }}>
-      <Header />
-
-      <div className="flex-1 w-full">
+    <AppShell>
+      <div className="w-full">
         <div className="mx-auto w-full" style={{ maxWidth: 1280, padding: '0 24px' }}>
           {/* HERO */}
           <section style={{ padding: '64px 0 40px' }}>
@@ -386,8 +383,6 @@ export default function AntiCheatFlagsPage() {
           </section>
         </div>
       </div>
-
-      <Footer />
-    </main>
+    </AppShell>
   )
 }

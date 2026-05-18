@@ -1,12 +1,10 @@
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppShell } from '@/components/layout/AppShell'
+import { SourceSearch } from '@/components/layout/SourceSearch'
 
 export default function VaultsRoute() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
-      <Header />
-      <div className="flex-1" />
-      <Footer />
-    </main>
+    <AppShell search={<SourceSearch />}>
+      <></>
+    </AppShell>
   )
 }
