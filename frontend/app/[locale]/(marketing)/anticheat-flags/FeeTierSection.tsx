@@ -666,7 +666,7 @@ export function FeeTierSection() {
                   marginBottom: 10,
                 }}
               >
-                Retail baseline = 0. Bar = MM round-trip rebate over retail at this venue, in basis points.
+                Bar = MM round-trip rebate over retail at this venue, in basis points. Single shade — no gating sub-portion, this is the full disclosed fee delta. Retail baseline = 0.
               </p>
               <div
                 style={{
@@ -809,7 +809,7 @@ export function FeeTierSection() {
                   marginBottom: 10,
                 }}
               >
-                Solid bar = infrastructure cost to maintain the maxed-out tier (fees, capital lockup, colocation, feeds, drag). Faded portion adds a 4–6 person desk at loaded comp. Retail baseline = 0.
+                Bar = monthly burn to keep the maxed-out MM seat at this venue, in USD. Solid inner = infrastructure cost (fees, capital lockup, colocation, market data feeds, opportunity drag). Faded extension = adds a 4–6 person desk at loaded comp. Retail baseline = 0.
               </p>
               <div
                 style={{

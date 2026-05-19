@@ -574,7 +574,7 @@ export function ColocationSection() {
                   marginBottom: 10,
                 }}
               >
-                Retail baseline = 0. Bar = MM latency edge over retail at this venue, in milliseconds.
+                Bar = MM latency edge over retail, in milliseconds. Faded extension = total gap. Solid inner = portion gated behind paid colocation, designated-MM contracts, or KYC — the milliseconds retail cannot buy at any price. Retail baseline = 0.
               </p>
               <div
                 style={{

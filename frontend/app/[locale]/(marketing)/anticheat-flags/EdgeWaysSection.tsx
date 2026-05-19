@@ -79,7 +79,7 @@ export function EdgeWaysSection() {
                   marginBottom: 10,
                 }}
               >
-                Bar width = effective bps per round-trip = peak bps × frequency. Dark portion = frequency, the share of trades the mechanism actually fires on. Light = the rest of the bar that fires only occasionally.
+                Bar = effective bps per round-trip = peak bps × frequency. Solid inner = how reliably the mechanism fires (full bar = every trade, sliver = tail event). Faded extension = the rest. Retail baseline = 0.
               </p>
               <div
                 style={{
