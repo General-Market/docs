@@ -83,6 +83,14 @@ export function WalletControls({ isDark }: WalletControlsProps) {
       return
     }
 
+    // Desktop browser without injected provider → send them to the install
+    // page. Calling connect() with no provider silently no-ops and looks like
+    // the button is dead.
+    if (!isMobile && !hasInjectedProvider) {
+      window.open('https://metamask.io/download/', '_blank', 'noopener,noreferrer')
+      return
+    }
+
     if (injectedConnector) {
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
