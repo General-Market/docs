@@ -164,8 +164,13 @@ def _write_jsonl(p: Path, rows: list[dict]) -> None:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 
-def upsert_profile(twapi_user: dict) -> None:
-    """Merge a TwitterAPI.io profile into cache/profiles.jsonl."""
+def upsert_profile(twapi_user: dict, followed_by: str | None = None) -> None:
+    """Merge a TwitterAPI.io profile into cache/profiles.jsonl.
+
+    If followed_by is set, record that the named account follows this profile.
+    Stored as a set in the profile under 'followed_by' so we know the graph edges
+    without needing to refetch.
+    """
     sn = twapi_user.get("userName")
     if not sn:
         return
@@ -210,6 +215,10 @@ def upsert_profile(twapi_user: dict) -> None:
             sources = r.setdefault("sources", [])
             if "twapi" not in sources:
                 sources.append("twapi")
+            if followed_by:
+                fb = set(r.get("followed_by", []))
+                fb.add(followed_by)
+                r["followed_by"] = sorted(fb)
             rows[i] = r
             found = True
             break
@@ -217,6 +226,8 @@ def upsert_profile(twapi_user: dict) -> None:
         new["first_seen"] = now_iso()
         new["last_seen"] = now_iso()
         new["sources"] = ["twapi"]
+        if followed_by:
+            new["followed_by"] = [followed_by]
         rows.append(new)
     _write_jsonl(PROFILES, rows)
 

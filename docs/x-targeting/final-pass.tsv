@@ -1,4 +1,6 @@
-handle	followers	tier_pass_pct	engage_pct	niche_per10	bio
-ThalexGlobal	3001	70	3.12	9	Institutional crypto-options exchange (empty bio, content carries it)
-RoboNetHQ	6330	60	3.30	5	"world's first prompt to quant execution engine. Build, test, and deploy strategies"
-NeutraFinance	17131	80	3.04	8	Institutional vault / structured products niche brand
+handle	followers	tier_pass_pct	engage_pct	niche_per10	bio	source
+ThalexGlobal	3001	70	3.12	9	Institutional crypto-options exchange	original seed
+RoboNetHQ	6330	60	3.30	5	"world's first prompt to quant execution engine"	jargon search
+NeutraFinance	17131	80	3.04	8	Verified niche brand on-topic	reply harvest
+quantymacro	35740	70	1.60	5	"self taught hedge fund quantitative macro tradooor"	Armv7lFx follows
+0xLoris	14051	40	1.53	4	"Founder @ Crypto HFT MM // Founder @LorisTools"	Armv7lFx follows
