@@ -1,0 +1,18 @@
+[Unit]
+Description=Jarvis — waitlist + Discord + Gmail → Telegram bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/jarvis
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/jarvis/.venv/bin/python -m jarvis.main
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

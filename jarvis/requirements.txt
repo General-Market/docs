@@ -1,0 +1,4 @@
+aiohttp>=3.9
+asyncpg>=0.29
+discord.py>=2.3
+IMAPClient>=3.0

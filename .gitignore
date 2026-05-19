@@ -137,3 +137,9 @@ waitlist-codes.sql
 # Keeper progress files — large local audit trails, not source of truth
 deployments/reconcile-phantom-*.json
 deployments/refund-progress-*.json
+
+# Jarvis runtime
+jarvis/.venv/
+jarvis/state/*.json
+jarvis/__pycache__/
+jarvis/**/__pycache__/
