@@ -1,0 +1,264 @@
+/* Mobile pass for /the-gap.
+   Mirrors the anticheat-flags + alpha-shrinking mobile.css behavior.
+   Class prefix: tg- (the gap).
+   Below 768px: collapse two-column grids, tighten padding, wrap table
+   rows so values sit below labels. */
+
+.tg-shell {
+  /* Top-level container. Desktop padding is set inline. */
+}
+
+.tg-hero {
+  /* Top-level hero. Desktop padding is set inline. */
+}
+
+.tg-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.tg-cohort-table {
+  display: grid;
+  /* Company | KPI | Cumulative | Active | Gap | Source */
+  grid-template-columns: 1.4fr 2.4fr 1fr 1fr 1fr 1.2fr;
+  gap: 0;
+}
+
+.tg-cohort-row {
+  display: contents;
+}
+
+.tg-cohort-cell {
+  padding: 18px 14px;
+  border-top: 1px solid var(--apple-line);
+  font-family: var(--apple-font-text);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.011em;
+  color: var(--apple-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.tg-cohort-cell-company {
+  font-family: var(--apple-font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+.tg-cohort-cell-ticker {
+  font-family: var(--apple-font-text);
+  font-size: 11px;
+  color: var(--apple-text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.tg-cohort-cell-secondary {
+  color: var(--apple-text-secondary);
+  font-size: 13px;
+}
+
+.tg-cohort-cell-numeric {
+  font-family: var(--apple-font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+}
+
+.tg-cohort-cell-gap {
+  color: var(--apple-accent);
+}
+
+.tg-cohort-cell-obfuscated {
+  color: var(--apple-text-tertiary);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Mobile-only label that sits above each cell value. */
+.tg-cell-label {
+  display: none;
+  font-family: var(--apple-font-text);
+  font-size: 10px;
+  color: var(--apple-text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.tg-cohort-growth {
+  grid-column: 1 / -1;
+  padding: 4px 14px 18px;
+  font-family: var(--apple-font-text);
+  font-size: 13px;
+  color: var(--apple-text-secondary);
+  letter-spacing: -0.011em;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Disclosure wall — same anatomy, fewer columns. */
+.tg-disclosure-table {
+  display: grid;
+  /* Product | Source | Loss rate | Sample | Year */
+  grid-template-columns: 1.4fr 1.6fr 1.2fr 2fr 0.7fr;
+  gap: 0;
+}
+
+.tg-disclosure-row {
+  display: contents;
+}
+
+.tg-disclosure-cell {
+  padding: 14px;
+  border-top: 1px solid var(--apple-line);
+  font-family: var(--apple-font-text);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.011em;
+  color: var(--apple-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.tg-disclosure-loss {
+  font-family: var(--apple-font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+  color: var(--apple-accent);
+}
+
+.tg-disclosure-kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--apple-r-pill);
+  background: var(--apple-surface);
+  color: var(--apple-text-tertiary);
+  font-family: var(--apple-font-text);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.tg-card {
+  background: var(--apple-panel);
+  border: 1px solid var(--apple-line);
+  border-radius: var(--apple-r-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  text-decoration: none;
+  transition:
+    transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 280ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tg-card:hover {
+  border-color: color-mix(in srgb, var(--apple-accent) 30%, var(--apple-line));
+}
+
+.tg-card-arrow {
+  display: inline-block;
+  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tg-card:hover .tg-card-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 1024px) {
+  .tg-cohort-table {
+    grid-template-columns: 1.2fr 1.8fr 0.9fr 0.9fr 0.9fr 1fr;
+  }
+
+  .tg-disclosure-table {
+    grid-template-columns: 1.2fr 1.4fr 1.1fr 1.6fr 0.6fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .tg-shell {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .tg-hero {
+    padding-top: 80px !important;
+    padding-bottom: 48px !important;
+  }
+
+  .tg-stat-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Stack the cohort table into per-row cards. */
+  .tg-cohort-table,
+  .tg-disclosure-table {
+    grid-template-columns: 1fr;
+  }
+
+  .tg-cohort-cell,
+  .tg-disclosure-cell {
+    padding: 4px 0;
+    border-top: none;
+  }
+
+  .tg-cohort-row,
+  .tg-disclosure-row {
+    display: block;
+    padding: 16px 0;
+    border-top: 1px solid var(--apple-line);
+  }
+
+  .tg-cell-label {
+    display: block;
+  }
+
+  .tg-cohort-cell-company {
+    font-size: 19px;
+    padding-top: 4px;
+  }
+
+  .tg-cohort-cell-numeric {
+    font-size: 22px;
+  }
+
+  .tg-disclosure-loss {
+    font-size: 20px;
+  }
+
+  .tg-cohort-growth {
+    grid-column: auto;
+    padding: 6px 0 0;
+  }
+
+  /* The cohort cells stack into a 2-column grid for the numbers. */
+  .tg-cohort-numbers {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .tg-disclosure-numbers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+}
