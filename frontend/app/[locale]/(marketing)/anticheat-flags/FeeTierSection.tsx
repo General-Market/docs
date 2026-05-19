@@ -632,19 +632,6 @@ export function FeeTierSection() {
         >
           <div className="acf-chart-grid">
             <div>
-              <div
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 11,
-                  color: TERTIARY,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 10,
-                }}
-              >
-                Subsidy · {RANKED.length} sourced · bps round-trip
-              </div>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',
@@ -763,19 +750,6 @@ export function FeeTierSection() {
         >
           <div className="acf-chart-grid">
             <div>
-              <div
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 11,
-                  color: TERTIARY,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 10,
-                }}
-              >
-                {MAXING_COSTS.length} venues · USD/month
-              </div>
               <h3
                 style={{
                   fontFamily: 'var(--apple-font-display)',

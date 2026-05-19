@@ -525,19 +525,6 @@ export function ColocationSection() {
         >
           <div className="acf-chart-grid">
             <div>
-              <div
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 11,
-                  color: TERTIARY,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 10,
-                }}
-              >
-                Latency · {LATENCY_ROWS.length} sourced · ms
-              </div>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',

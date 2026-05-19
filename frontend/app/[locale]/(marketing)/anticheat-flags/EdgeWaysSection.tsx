@@ -45,19 +45,6 @@ export function EdgeWaysSection() {
         >
           <div className="acf-chart-grid">
             <div>
-              <div
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 11,
-                  color: TERTIARY,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 10,
-                }}
-              >
-                Mechanisms · {EDGE_WAYS.length} sourced · bps
-              </div>
               <h2
                 style={{
                   fontFamily: 'var(--apple-font-display)',

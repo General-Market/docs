@@ -305,19 +305,6 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
       >
         <div className="acf-chart-grid">
           <div>
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 11,
-                color: TERTIARY,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                fontWeight: 600,
-                marginBottom: 10,
-              }}
-            >
-              {topic.rows.length} venues · {topic.unit}
-            </div>
             <h3
               style={{
                 fontFamily: 'var(--apple-font-display)',
