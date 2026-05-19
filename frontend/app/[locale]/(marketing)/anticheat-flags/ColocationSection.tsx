@@ -499,7 +499,7 @@ export function ColocationSection() {
             maxWidth: 780,
           }}
         >
-          Geography is for sale. A retail bot can rent a Tokyo VPS for fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives the rental is the gated one: the MMGW cross-connect, the FIX cage at LD4, the Foundation-node gossip feed, the bilateral KYC. Each venue says the door is open. None of them publishes the price.
+          Geographic latency is buyable — a retail bot can rent a Tokyo VPS for around fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives that rental is the gated one: the MMGW cross-connect inside AWS Tokyo, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, the bilateral KYC at Polymarket. Each venue says the door is open, but none of them publishes the price of walking through it.
         </p>
       </Reveal>
 
@@ -537,18 +537,6 @@ export function ColocationSection() {
               >
                 Latency · {LATENCY_ROWS.length} sourced · ms
               </div>
-              <h3
-                style={{
-                  fontFamily: 'var(--apple-font-display)',
-                  fontSize: 22,
-                  fontWeight: 600,
-                  letterSpacing: 'var(--apple-track-tight)',
-                  color: TEXT,
-                  marginBottom: 10,
-                }}
-              >
-                Unfair colocation
-              </h3>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',
@@ -559,7 +547,7 @@ export function ColocationSection() {
                   marginBottom: 10,
                 }}
               >
-                Bar = the gap that survives a retail VPS in the right AWS region. Solid inner = the portion gated behind a colocation contract, a designated-MM agreement, or a KYC approval — the milliseconds no rental cures. Geography is buyable. The contract is not.
+                Bar = the latency gap that remains after a retail VPS is already running in the right AWS region. Solid inner = the portion gated behind a colocation contract, a designated-MM agreement, or KYC approval, which no rental can buy.
               </p>
               <div
                 style={{
@@ -832,7 +820,7 @@ function AssumptionsBlock() {
           marginBottom: 18,
         }}
       >
-        Two endpoints. The lane that pays for everything, against the one that pays for nothing. Each number is sourced; the gap between them is what the bars above measure.
+        Two endpoints: the lane that has paid for everything against the lane that has not. Each number below is sourced, and the gap between them is what the bars above are actually measuring.
       </div>
       <div
         className="grid grid-cols-1 md:grid-cols-2"
@@ -845,7 +833,7 @@ function AssumptionsBlock() {
         />
         <AssumptionLane
           title="Outside lane. Retail algo trader (already paying)"
-          summary="A Python bot on a Tokyo VPS, a node in eu-west-2, a tenant inside Equinix LD4. Already paying for proximity. The remaining gap is what no rental cures: the cross-connect, the FIX cage, the Foundation-node gossip, the bilateral contract."
+          summary="A Python bot running on a Tokyo VPS, a node already in eu-west-2, or a tenant inside Equinix LD4 — retail that has already paid for proximity. The gap that remains is what no rental can buy: the cross-connect, the FIX cage, the Foundation-node gossip, the bilateral contract."
           rows={OUTSIDE_LANE}
         />
       </div>

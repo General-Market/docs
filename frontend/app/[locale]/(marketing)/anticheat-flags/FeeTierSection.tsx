@@ -644,18 +644,6 @@ export function FeeTierSection() {
               >
                 Subsidy · {RANKED.length} sourced · bps round-trip
               </div>
-              <h3
-                style={{
-                  fontFamily: 'var(--apple-font-display)',
-                  fontSize: 22,
-                  fontWeight: 600,
-                  letterSpacing: 'var(--apple-track-tight)',
-                  color: TEXT,
-                  marginBottom: 10,
-                }}
-              >
-                Unfair fee tier
-              </h3>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',

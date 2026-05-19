@@ -83,7 +83,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Helius MEV Report documents 1.55M sandwich txs in 30 days on Solana, 88.9% success rate, 16 of top 20 sandwiched tokens on pump.fun. Per-swap incidence is inferred — 15% is the mid-band of community estimates, not a measured constant.',
     'Helius · Solana MEV Report',
     'https://www.helius.dev/blog/solana-mev-report',
-    'Sealed bets. No mempool to sandwich. No validator with a side bet.',
+    'Sealed bets, with no mempool to sandwich and no validator running a side bet.',
   ),
   make(
     'pfof', 2, 'PFOF wholesaler markup',
@@ -113,7 +113,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Binance VIP 0 pays 10 bps taker; VIP 9 pays 2.3 bps. Per-side gap is ~7.7 bps; round-trip gap ~15.4. The 11 bps figure sits inside that envelope and below the full round-trip differential.',
     'Binance VIP fee schedule',
     'https://www.binance.com/en/fee/schedule',
-    'Flat fee. One tier.',
+    'A single flat fee, one tier for everyone.',
   ),
   make(
     'order-flow-vis', 5, 'Order-flow visibility',
@@ -143,7 +143,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Felez-Viñas, Johnson, Putniņš (2022) document insider patterns on 10–25% of Coinbase listings, with abnormal returns of +10% to +40% on affected trades. Per-trade incidence across the full retail tape is ~0.2%.',
     'Felez-Viñas, Johnson, Putniņš (SSRN 2022)',
     'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4184367',
-    'Sealed bets resolved by BLS oracle. No listing pipeline to leak.',
+    'Sealed bets resolved by a BLS oracle, with no listing pipeline to leak.',
   ),
   make(
     'maker-rebate', 8, 'Maker rebate / inverted fees',
@@ -173,7 +173,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Aquilina–Budish–O’Neill (QJE 2022) measured the global latency-arbitrage tax at ~0.5 bps of trading volume — about $5B/year on world equities. The page anchors directly to that figure.',
     'Aquilina–Budish–O’Neill (QJE 2022)',
     'https://academic.oup.com/qje/article/137/1/493/6368348',
-    'No matching engine. Parimutuel pool.',
+    'A parimutuel pool with no matching engine to game.',
   ),
   make(
     'api-rate-ceiling', 11, 'API rate ceiling',
@@ -183,7 +183,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Binance publishes one global ceiling — 6,000 weight/min per IP, 100 orders / 10 s — and refuses to disclose institutional tiers. Whatever asymmetry exists is private; 0.5 bps is a placeholder, not a measurement.',
     'Binance API limits',
     'https://www.binance.com/en/support/faq/360004492232',
-    'One rate, everyone. Pool resolves once per round.',
+    'One rate for everyone, with the pool resolving once per round.',
   ),
   make(
     'last-look', 12, 'Last-look quote rejection',
@@ -193,7 +193,7 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Oomen (Quantitative Finance 2017) models reject rates of 8–28% on the adverse side with sub-pip asymmetric cost. The GFXC Execution Principles report on Last Look corroborates 5–15% rejection in industry practice.',
     'Oomen, "Last look", Quantitative Finance 2017',
     'https://eprints.lse.ac.uk/68811/1/Oomen_Last%20look_2017.pdf',
-    'Sealed-bid auction. No rejection step.',
+    'A sealed-bid auction with no last-look rejection step.',
   ),
   make(
     'adl-visibility', 13, 'ADL / liquidation visibility',
@@ -203,6 +203,6 @@ export const EDGE_WAYS: EdgeWay[] = [
     'Forced-liquidation cascades are tail events. The Hyperliquid JELLY incident (March 2025, ~$13M at risk) shows what happens when liquidation logic and oracle inputs are visible enough to be gamed. The mechanism is real; the per-trade tax is small.',
     'Hyperliquid JELLY post-mortem (Halborn)',
     'https://www.halborn.com/blog/post/explained-the-hyperliquid-hack-march-2025',
-    'No leverage. No forced liquidation.',
+    'No leverage on the protocol means there is no forced-liquidation pathway to exploit.',
   ),
 ]
