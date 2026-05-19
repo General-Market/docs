@@ -5,7 +5,7 @@ import './diagram.css'
 
 /* ──────────────────────────────────────────────────────────────────────────
    Mini candle chart per incident. Always looping. The accent colour is
-   red — the predator role — and the user appears as a horizontal price
+   red. The predator role. And the user appears as a horizontal price
    line that breaks at the predator candle. The Girardian frame:
    the market scapegoats one participant in order to keep moving.
    ────────────────────────────────────────────────────────────────────────── */
@@ -142,7 +142,7 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'runup': {
-      // Flat then ramp before announcement — insider buying ahead.
+      // Flat then ramp before announcement. Insider buying ahead.
       const sleep = flat(6, 32, 1.5)
       const climb = ramp(5, 32, 82, 'predator')
       const peak: Candle = { o: 82, h: 90, l: 81, c: 88, role: 'predator' }
@@ -192,7 +192,7 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'carve': {
-      // Rising bodies — but every candle has an oversized red upper wick
+      // Rising bodies. But every candle has an oversized red upper wick
       // (the upside the venue carved off for itself).
       const candles = ramp(12, 30, 60, 'carved').map((c, i) => ({
         ...c,
@@ -207,7 +207,7 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'wash': {
-      // Doji-like bodies in tight range — fake volume, no net movement.
+      // Doji-like bodies in tight range. Fake volume, no net movement.
       const candles: Candle[] = Array.from({ length: 12 }, (_, k) => {
         const dir = k % 2 === 0 ? 1 : -1
         return {
@@ -341,7 +341,7 @@ function CandleChart({ scene }: { scene: Scene }) {
             <CandleEl key={i} idx={i} c={c} />
           ))}
 
-          {/* predator pulse — soft halo above the predator candle */}
+          {/* predator pulse. Soft halo above the predator candle */}
           {scene.predator.idx >= 0 && (
             <g className="acd-pred-mark" style={{ ['--ox' as never]: `${predatorX}px`, ['--oy' as never]: `${predatorY}px` }}>
               <circle cx={predatorX} cy={predatorY} r="14" fill={APPLE_RED} opacity="0.10" />
@@ -363,7 +363,7 @@ function CandleChart({ scene }: { scene: Scene }) {
             opacity="0.85"
           />
 
-          {/* victim tag — small chip at left */}
+          {/* victim tag. Small chip at left */}
           <g className="acd-victim-tag">
             <rect x={PAD_X / 2 + 2} y={victimY - 11} width={48} height={13} rx="2" fill="#fff" stroke={APPLE_RED} strokeWidth="0.75" />
             <text

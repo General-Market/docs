@@ -20,7 +20,7 @@ export function IncidentCard({ incident, delay = 0 }: { incident: Incident; dela
         href={incident.sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`${incident.headline} — open source at ${incident.sourceLabel}`}
+        aria-label={`${incident.headline}. Open source at ${incident.sourceLabel}`}
         className="acf-card flex flex-col h-full no-underline"
         style={{
           background: 'var(--apple-panel)',

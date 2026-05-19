@@ -3,7 +3,7 @@ import type { Venue } from './types'
 // Cards document one thing: structural unfairness where market makers,
 // insiders, or the house extract value from retail. Before adding an incident,
 // read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
-// custodial hacks, exchange outages — none of these belong here.
+// custodial hacks, exchange outages. None of these belong here.
 
 export const coinbase: Venue = {
   slug: 'coinbase',
@@ -20,7 +20,7 @@ export const coinbase: Venue = {
   incidents: [
     {
       date: '2022-07-21', amount: '$1.1M',
-      headline: 'Ishan Wahi — first U.S. crypto insider trading conviction',
+      headline: 'Ishan Wahi. First U.S. crypto insider trading conviction',
       knife: 'The product manager for new listings told his brother. The brother told a friend. The first prosecution was inevitable.',
       summary: 'Coinbase listings PM tipped his brother and a friend 14 times between June 2021 and April 2022, covering 25 assets. Ishan: 24 months. Nikhil: 10 months. Ramani: still at large.',
       sourceLabel: 'DOJ',
@@ -30,7 +30,7 @@ export const coinbase: Venue = {
     },
     {
       date: '2017-12-19', amount: '$9,500 BCH',
-      headline: 'Bitcoin Cash listing — the original front-running scandal',
+      headline: 'Bitcoin Cash listing. The original front-running scandal',
       knife: 'The first listing pump. The first internal investigation that found nothing. The template was set.',
       summary: 'BCH ran from $1,900 to over $3,000 in the hours before the announcement. After listing, it hit $9,500 on Coinbase vs $3,600 on Kraken. Internal investigation found no wrongdoing.',
       sourceLabel: 'CNN',
@@ -40,7 +40,7 @@ export const coinbase: Venue = {
     },
     {
       date: '2021-04-14', amount: '$2.9B',
-      headline: 'Direct listing — Armstrong and board sold $2.9B on opening day',
+      headline: 'Direct listing. Armstrong and board sold $2.9B on opening day',
       knife: 'No lockup, no insider tax, just a Tuesday and a billion dollars. The shares fell after.',
       summary: 'Coinbase chose a direct listing with no lockup. Insiders sold $2.9B (Armstrong $291.8M, Andreessen $118.7M). Stock fell 37% within five weeks. Delaware suit allowed to proceed.',
       sourceLabel: 'CoinDesk',
@@ -51,7 +51,7 @@ export const coinbase: Venue = {
     },
     {
       date: '2022-2023', amount: '$1.5M',
-      headline: 'UTS study — run-ups before 10–25% of Coinbase listings',
+      headline: 'UTS study. Run-ups before 10–25% of Coinbase listings',
       knife: 'Ten to twenty-five percent of new Coinbase listings had run-ups statisticians could not explain politely.',
       summary: 'Felez-Vinas, Putnins, Johnson (UTS) examined 146 listings Sept 2018 – May 2022. Tokens available on DEXs before announcement showed run-up patterns consistent with stock-market insider trading.',
       sourceLabel: 'Bloomberg Law',
@@ -62,7 +62,7 @@ export const coinbase: Venue = {
     },
     {
       date: '2021-04 → 2022-Q2', amount: '−70%',
-      headline: 'The S-1 risk factor that came true — listings-driven revenue',
+      headline: 'The S-1 risk factor that came true. Listings-driven revenue',
       knife: 'The risk factor was disclosed. The insiders sold before the risk factor showed up. Disclosure is not symmetry.',
       summary: 'S-1 disclosed revenue depended on volatile trading and listings. Insider sales happened against that disclosed risk. Retail bought at $381; saw $50 within 18 months.',
       sourceLabel: 'CNBC',
@@ -72,9 +72,9 @@ export const coinbase: Venue = {
     },
     {
       date: '2018-09 / 2022', amount: 'Process revision', amountTone: 'muted',
-      headline: 'Listing policy revision — admitting the leak',
+      headline: 'Listing policy revision. Admitting the leak',
       knife: 'They redesigned the listing process to stop the leak. The leak was a person, and he stayed for another four years.',
-      summary: 'Coinbase publicly revised its listing process — more concurrent announcements, broader disclosure. The Wahi indictment landed despite the 2018 reforms.',
+      summary: 'Coinbase publicly revised its listing process. More concurrent announcements, broader disclosure. The Wahi indictment landed despite the 2018 reforms.',
       sourceLabel: 'Coinbase',
       sourceUrl: 'https://www.coinbase.com/blog/an-update-on-our-asset-listing-processes',
       mechanism: 'insider-runup',
@@ -82,7 +82,7 @@ export const coinbase: Venue = {
     },
     {
       date: '2022-07+', amount: 'Fugitive', amountTone: 'muted',
-      headline: 'Sameer Ramani — third Wahi defendant still at large',
+      headline: 'Sameer Ramani. Third Wahi defendant still at large',
       knife: 'Two went to prison. The third went elsewhere. The first crypto insider trading case is still missing a defendant.',
       summary: 'Two of three Wahi defendants pleaded guilty and served time. Ramani fled. SEC obtained default judgment. DOJ has not announced apprehension.',
       sourceLabel: 'SEC',
@@ -131,7 +131,7 @@ export const bybit: Venue = {
       date: '2025-03', amount: 'Unverified', amountTone: 'muted',
       headline: 'DPRK uses Bybit perpetuals to launder via on-platform trading',
       knife: 'The thieves came back as customers. The KYC did not notice.',
-      summary: 'Multiple analysts documented Lazarus-tagged addresses moving into derivatives venues — including the exchange they had just drained.',
+      summary: 'Multiple analysts documented Lazarus-tagged addresses moving into derivatives venues. Including the exchange they had just drained.',
       sourceLabel: 'The Record',
       sourceUrl: 'https://therecord.media/lazarus-hackers-behind-bybit-crypto-heist',
       mechanism: 'wash-trading',

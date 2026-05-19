@@ -17,7 +17,7 @@ import { pumpfun } from './data-misc'
 import type { Venue } from './types'
 
 export const metadata: Metadata = {
-  title: 'Anti-Cheat Flags — General Market',
+  title: 'Anti-Cheat Flags. General Market',
   description:
     'Eleven venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
   alternates: { canonical: '/anticheat-flags' },
@@ -162,22 +162,22 @@ export default function AntiCheatFlagsPage() {
             </Reveal>
           </section>
 
-          {/* PER-VENUE TRIPLE-BAR — cumulative bleed at 100 / 1K / 100K trades */}
+          {/* PER-VENUE TRIPLE-BAR. Cumulative bleed at 100 / 1K / 100K trades */}
           <VenueBleedSection />
 
-          {/* FOURTEEN MECHANISMS — the page thesis as a chart */}
+          {/* FOURTEEN MECHANISMS. The page thesis as a chart */}
           <EdgeWaysSection />
 
-          {/* COLOCATION EDGE — the receipts that aren't even illegal */}
+          {/* COLOCATION EDGE. The receipts that aren't even illegal */}
           <ColocationSection />
 
-          {/* FEE TIER EDGE — the spread in basis points + cost of staying inside */}
+          {/* FEE TIER EDGE. The spread in basis points + cost of staying inside */}
           <FeeTierSection />
 
-          {/* STRUCTURAL EDGE INVENTORY — fifteen mechanisms across five rulers */}
+          {/* STRUCTURAL EDGE INVENTORY. Fifteen mechanisms across five rulers */}
           <EdgeMatrixSection />
 
-          {/* VENUE PILLS — matches the homepage See All pattern */}
+          {/* VENUE PILLS. Matches the homepage See All pattern */}
           <section style={{ paddingTop: 64, paddingBottom: 16, borderTop: `1px solid ${LINE}` }}>
             <Reveal>
               <nav

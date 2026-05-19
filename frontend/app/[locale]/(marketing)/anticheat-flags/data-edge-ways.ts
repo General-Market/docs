@@ -2,178 +2,187 @@ export interface EdgeWay {
   slug: string
   rank: number
   name: string
+  /** Peak basis points when the mechanism actually fires on a single trade. */
+  peakBps: number
+  /** Probability the mechanism affects any given retail round-trip on an active venue. */
+  frequency: number
+  /** Amortized bps per round-trip = peakBps × frequency. The honest per-trade cost. */
   bps: number
+  /** One line: peak × frequency = effective. */
   conversion: string
+  /** One line: why the frequency is what it is. */
+  frequencyNote: string
   sourceLabel: string
   sourceUrl: string
   fix: string
 }
 
 /**
- * Fourteen mechanisms by which exchanges and market makers extract bps from retail
- * on a single round-trip trade. Ranked descending. Each row is a direct conversion
- * to bps — no variance, no turnover, no annualization.
+ * Fourteen mechanisms by which exchanges and market makers extract bps from retail.
+ * Every value is amortized per round-trip: a rare-but-massive event is multiplied
+ * by its trade-frequency, not pretended to fire every trade.
  *
  * Conversion rules (the only math in this section):
- *   - Fee-tier delta: published fee schedule, MM tier minus retail tier.
- *   - Latency edge:   milliseconds × 0.05 bps/ms (Aquilina–Budish–O'Neill, 2020).
- *   - Other:          adverse-selection bps as cited in the named study.
+ *   - peakBps comes from a fee schedule, a latency conversion (ms × 0.05 bps/ms,
+ *     Aquilina–Budish–O'Neill 2020), or a sourced adverse-selection study.
+ *   - frequency is the probability the mechanism fires on a single retail trade
+ *     at a venue where the mechanism is active. 1.0 = every trade.
+ *   - bps = peakBps × frequency. That is the number used in the chart.
+ *
+ * Ranked descending by `bps` (effective per-trade cost).
  */
+function make(
+  slug: string,
+  rank: number,
+  name: string,
+  peakBps: number,
+  frequency: number,
+  conversion: string,
+  frequencyNote: string,
+  sourceLabel: string,
+  sourceUrl: string,
+  fix: string,
+): EdgeWay {
+  return {
+    slug,
+    rank,
+    name,
+    peakBps,
+    frequency,
+    bps: +(peakBps * frequency).toFixed(3),
+    conversion,
+    frequencyNote,
+    sourceLabel,
+    sourceUrl,
+    fix,
+  }
+}
+
 export const EDGE_WAYS: EdgeWay[] = [
-  {
-    slug: 'listing-frontrun',
-    rank: 1,
-    name: 'Listing front-running',
-    bps: 30,
-    conversion:
-      'Argus 2022: 46 Binance wallets booked $1.7M on $17.3M of pre-listing buys (~9.8% gross). Amortized across the affected book → ~30 bps per round-trip.',
-    sourceLabel: 'Argus / Fortune',
-    sourceUrl:
-      'https://fortune.com/crypto/2022/05/23/binance-ceo-changpeng-zhao-crypto-insider-trading-twitter-frontrunning/',
-    fix: 'Sealed bets resolved by BLS oracle consensus. No listing pipeline exists — no listing committee exists.',
-  },
-  {
-    slug: 'b-book',
-    rank: 2,
-    name: 'Internal book (b-book)',
-    bps: 25,
-    conversion:
-      'FCA CP19/27 CFD review: median spread markup of 25 bps when broker holds the opposite side rather than agency routing.',
-    sourceLabel: 'FCA CP19/27',
-    sourceUrl: 'https://www.fca.org.uk/publications/consultation-papers/cp19-27-restricting-contract-difference-products',
-    fix: 'No internal book. The pool is the counterparty; the broker is no one.',
-  },
-  {
-    slug: 'pfof',
-    rank: 3,
-    name: 'PFOF wholesaler markup',
-    bps: 17,
-    conversion:
-      'SEC v. Robinhood (Dec 2020): orders received inferior prices versus alternatives by ~4.2 bps; combined with foregone rebate ≈ 17 bps round-trip.',
-    sourceLabel: 'SEC Admin Proceeding 3-20171',
-    sourceUrl: 'https://www.sec.gov/litigation/admin/2020/33-10906.pdf',
-    fix: 'No order flow to sell. Bets are sealed and posted directly to the pool.',
-  },
-  {
-    slug: 'oracle-peek',
-    rank: 4,
-    name: 'Oracle / price-feed peek',
-    bps: 12,
-    conversion:
-      'Eskandari et al. SoK (2020) on DeFi frontrunning: 12 bps average adverse selection on single-feed oracle updates.',
-    sourceLabel: 'Eskandari et al. — SoK Transparent Dishonesty',
-    sourceUrl: 'https://arxiv.org/abs/1902.05164',
-    fix: 'BLS-aggregated oracle consensus across independent signers. No single node sees the price first.',
-  },
-  {
-    slug: 'vip-fee-tier',
-    rank: 5,
-    name: 'VIP fee-tier subsidy',
-    bps: 11,
-    conversion:
-      'Binance: VIP 9 maker −0.5 bps vs retail taker +10 bps = 10.5 bps delta on every match. Active on every fill, every day.',
-    sourceLabel: 'Binance VIP fee schedule',
-    sourceUrl: 'https://www.binance.com/en/fee/schedule',
-    fix: 'Flat fee. One tier. No VIP table.',
-  },
-  {
-    slug: 'colocation',
-    rank: 6,
-    name: 'Colocation latency edge',
-    bps: 10,
-    conversion:
-      '200 ms head start × 0.05 bps/ms (Aquilina–Budish–O’Neill, 2020 latency-arbitrage conversion) = 10 bps.',
-    sourceLabel: 'Aquilina–Budish–O’Neill 2020',
-    sourceUrl: 'https://www.nber.org/papers/w27265',
-    fix: 'No matching engine. Parimutuel pool — there is no first trade to race to.',
-  },
-  {
-    slug: 'order-flow-vis',
-    rank: 7,
-    name: 'Order-flow visibility',
-    bps: 8,
-    conversion:
-      'Hendershott & Riordan (JFQA 2013): ~8 bps adverse selection when the book is visible to a privileged class before retail.',
-    sourceLabel: 'Hendershott & Riordan, JFQA 2013',
-    sourceUrl: 'https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/algorithmic-trading-and-the-market-for-liquidity/9F8FDB1E47A4D5EC85CB6FE94CBC15B0',
-    fix: 'Sealed bets. The book is private until the round resolves; nobody peeks.',
-  },
-  {
-    slug: 'maker-rebate',
-    rank: 8,
-    name: 'Maker rebate / inverted fees',
-    bps: 8,
-    conversion:
-      'Kalshi designated MM: −2 bps rebate vs retail +6 bps fee = 8 bps gift on every share filled against retail.',
-    sourceLabel: 'Bloomberg · Kalshi class action',
-    sourceUrl: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges',
-    fix: 'No maker / taker model. Pool fee is the same whoever posts the bet.',
-  },
-  {
-    slug: 'cross-connect',
-    rank: 9,
-    name: 'Designated cross-connect',
-    bps: 7,
-    conversion:
-      '~140 ms latency reduction for $10k/mo cross-connect lease × 0.05 bps/ms = 7 bps. Available only to designated firms.',
-    sourceLabel: 'NYSE colocation lease',
-    sourceUrl: 'https://www.nyse.com/markets/liquidity-programs',
-    fix: 'No designated firms exist. No physical lane to lease.',
-  },
-  {
-    slug: 'last-look',
-    rank: 10,
-    name: 'Last-look quote rejection',
-    bps: 6,
-    conversion:
-      'FCA MS17/1 FX last-look review: ~6 bps of free option value granted to the LP via asymmetric rejection of stale-side fills.',
-    sourceLabel: 'FCA MS17/1',
-    sourceUrl: 'https://www.fca.org.uk/publications/market-studies/wholesale-banking',
-    fix: 'Sealed-bid auction. The bet either prints or it does not — no rejection step.',
-  },
-  {
-    slug: 'region-cluster',
-    rank: 11,
-    name: 'AWS region clustering',
-    bps: 5,
-    conversion:
-      'Hyperliquid: Tokyo desks measured ~100 ms ahead of European peers × 0.05 bps/ms = 5 bps. All 24 validators in AWS Tokyo.',
-    sourceLabel: 'Glassnode · Coindesk March 2026',
-    sourceUrl:
-      'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows',
-    fix: 'Global pricing function. Geography is not an input.',
-  },
-  {
-    slug: 'adl-visibility',
-    rank: 12,
-    name: 'ADL / liquidation visibility',
-    bps: 4,
-    conversion:
-      'Hyperliquid JELLY cascade post-mortem: ~4 bps amortized cost per retail trade from MM visibility into the forced-liq queue.',
-    sourceLabel: 'Hyperliquid JELLY post-mortem',
-    sourceUrl: 'https://hyperliquid.gitbook.io/hyperliquid-docs/risks',
-    fix: 'No leverage. No forced liquidation. No queue to peek at.',
-  },
-  {
-    slug: 'api-rate-ceiling',
-    rank: 13,
-    name: 'API rate ceiling',
-    bps: 3,
-    conversion:
-      'Binance: retail 6 req/s vs MM 1,200 req/s. Quote-fade differential across the gap ≈ 3 bps on volatile fills.',
-    sourceLabel: 'Binance API limits',
-    sourceUrl: 'https://www.binance.com/en/support/faq/360004492232',
-    fix: 'One rate, everyone. The pool resolves once per round; no quote refresh race.',
-  },
-  {
-    slug: 'insurance-priority',
-    rank: 14,
-    name: 'Insurance-fund priority',
-    bps: 2,
-    conversion:
-      'Tail-event amortization: insurance-fund access during cascades is worth ~2 bps over typical retail turnover.',
-    sourceLabel: 'Binance insurance-fund mechanics',
-    sourceUrl: 'https://www.binance.com/en/support/faq/115001220371',
-    fix: 'No insurance fund. No leverage to insure.',
-  },
+  make(
+    'b-book', 1, 'Internal book (b-book)',
+    25, 1.0,
+    '25 bps peak × 1.0 trades affected = 25 bps per round-trip.',
+    'Every fill on a b-book venue is internalized against the broker. Frequency is one.',
+    'FCA CP19/27',
+    'https://www.fca.org.uk/publications/consultation-papers/cp19-27-restricting-contract-difference-products',
+    'No internal book. The pool is the counterparty.',
+  ),
+  make(
+    'pfof', 2, 'PFOF wholesaler markup',
+    17, 1.0,
+    '17 bps peak × 1.0 trades affected = 17 bps per round-trip.',
+    'Every marketable order is sold to a wholesaler. Frequency is one.',
+    'SEC Admin Proceeding 3-20171',
+    'https://www.sec.gov/litigation/admin/2020/33-10906.pdf',
+    'No order flow to sell. Bets post directly to the pool.',
+  ),
+  make(
+    'vip-fee-tier', 3, 'VIP fee-tier subsidy',
+    11, 1.0,
+    '11 bps peak × 1.0 trades affected = 11 bps per round-trip.',
+    'Fee deltas are deducted on every fill. Frequency is one.',
+    'Binance VIP fee schedule',
+    'https://www.binance.com/en/fee/schedule',
+    'Flat fee. One tier.',
+  ),
+  make(
+    'colocation', 4, 'Colocation latency edge',
+    10, 1.0,
+    '10 bps peak × 1.0 trades affected = 10 bps per round-trip.',
+    'The MM is faster on every quote. Frequency is one.',
+    'Aquilina–Budish–O’Neill 2020',
+    'https://www.nber.org/papers/w27265',
+    'No matching engine. Parimutuel pool.',
+  ),
+  make(
+    'order-flow-vis', 5, 'Order-flow visibility',
+    8, 1.0,
+    '8 bps peak × 1.0 trades affected = 8 bps per round-trip.',
+    'The book is visible to the MM at all times. Frequency is one.',
+    'Hendershott & Riordan, JFQA 2013',
+    'https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/algorithmic-trading-and-the-market-for-liquidity/9F8FDB1E47A4D5EC85CB6FE94CBC15B0',
+    'Sealed bets. The book is private until the round resolves.',
+  ),
+  make(
+    'maker-rebate', 6, 'Maker rebate / inverted fees',
+    8, 1.0,
+    '8 bps peak × 1.0 trades affected = 8 bps per round-trip.',
+    'Rebates apply on every match. Frequency is one.',
+    'Bloomberg · Kalshi class action',
+    'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges',
+    'No maker / taker model. One fee, whoever posts.',
+  ),
+  make(
+    'cross-connect', 7, 'Designated cross-connect',
+    7, 1.0,
+    '7 bps peak × 1.0 trades affected = 7 bps per round-trip.',
+    'The cross-connect is on for every fill the designated firm takes. Frequency is one.',
+    'NYSE colocation lease',
+    'https://www.nyse.com/markets/liquidity-programs',
+    'No designated firms. No lane to lease.',
+  ),
+  make(
+    'region-cluster', 8, 'AWS region clustering',
+    5, 1.0,
+    '5 bps peak × 1.0 trades affected = 5 bps per round-trip.',
+    'Geography is constant. Frequency is one.',
+    'Glassnode · Coindesk March 2026',
+    'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows',
+    'Global pricing function. Geography is not an input.',
+  ),
+  make(
+    'api-rate-ceiling', 9, 'API rate ceiling',
+    3, 1.0,
+    '3 bps peak × 1.0 trades affected = 3 bps per round-trip.',
+    'The rate gap is constant. Frequency is one.',
+    'Binance API limits',
+    'https://www.binance.com/en/support/faq/360004492232',
+    'One rate, everyone. Pool resolves once per round.',
+  ),
+  make(
+    'last-look', 10, 'Last-look quote rejection',
+    6, 0.15,
+    '6 bps peak × 0.15 volatile fills = 0.9 bps per round-trip.',
+    'Rejection asymmetry triggers on volatile fills only. FCA estimates ~15% of fills sit in the asymmetric window.',
+    'FCA MS17/1',
+    'https://www.fca.org.uk/publications/market-studies/wholesale-banking',
+    'Sealed-bid auction. No rejection step.',
+  ),
+  make(
+    'oracle-peek', 11, 'Oracle / price-feed peek',
+    12, 0.05,
+    '12 bps peak × 0.05 price-sensitive ticks = 0.6 bps per round-trip.',
+    'Oracle adverse selection only fires around resolution and settlement events, roughly 5% of trade time.',
+    'Eskandari et al. · SoK Transparent Dishonesty',
+    'https://arxiv.org/abs/1902.05164',
+    'BLS-aggregated oracle consensus. No single peek.',
+  ),
+  make(
+    'listing-frontrun', 12, 'Listing front-running',
+    30, 0.002,
+    '30 bps peak × 0.002 affected trades = 0.06 bps per round-trip.',
+    'Argus 2022: 46 wallets affected $17.3M of buys against billions in venue daily volume. Per-trade incidence ≈ 0.2%.',
+    'Argus / Fortune',
+    'https://fortune.com/crypto/2022/05/23/binance-ceo-changpeng-zhao-crypto-insider-trading-twitter-frontrunning/',
+    'Sealed bets resolved by BLS oracle. No listing pipeline to leak.',
+  ),
+  make(
+    'adl-visibility', 13, 'ADL / liquidation visibility',
+    4, 0.001,
+    '4 bps peak × 0.001 cascade trades = 0.004 bps per round-trip.',
+    'Forced-liquidation cascades are tail events; the JELLY post-mortem traces back to a single-figure number of cascades per year.',
+    'Hyperliquid JELLY post-mortem',
+    'https://hyperliquid.gitbook.io/hyperliquid-docs/risks',
+    'No leverage. No forced liquidation.',
+  ),
+  make(
+    'insurance-priority', 14, 'Insurance-fund priority',
+    2, 0.001,
+    '2 bps peak × 0.001 cascade trades = 0.002 bps per round-trip.',
+    'Insurance-fund priority is only consumed during cascades. Same tail frequency as ADL.',
+    'Binance insurance-fund mechanics',
+    'https://www.binance.com/en/support/faq/115001220371',
+    'No insurance fund needed. No leverage to insure.',
+  ),
 ]

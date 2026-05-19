@@ -429,7 +429,7 @@ function GeneralMarketRow({
             height={14}
             style={{ borderRadius: 3, flexShrink: 0 }}
           />
-          General Market
+          General
         </div>
         <div
           style={{
@@ -705,7 +705,7 @@ export function FeeTierSection() {
             </div>
           </div>
 
-          {/* Source footer cards — same format as edge matrix */}
+          {/* Source footer cards. Same format as edge matrix */}
           <div
             style={{
               marginTop: 28,
@@ -915,7 +915,7 @@ export function FeeTierSection() {
               borderTop: `1px solid ${LINE}`,
             }}
           >
-            Infra midpoints from sourced reports (Binance VIP 9, Bybit Supreme + MMIP, Coinbase Tier 8, Deribit VIP 6, Hyperliquid Mkr Tier 3, Kalshi DMM, Polymarket LP, Robinhood composite wholesaler + RH-side margin, IBKR institutional DMA, eToro Elite Pro, Pump.fun sniper). Staff midpoints use loaded-comp benchmarks per FIA Derivatives Market Structure 2024 and venue-specific desk-size reporting (efinancialcareers, hedgefundcompensationreport). Robinhood is the composite extractor seat: wholesaler PFOF, internal margin spread, securities lending — costs only, before $115M/mo revenue netting back to +$1.85M. eToro pays the operator.
+            Infra midpoints from sourced reports (Binance VIP 9, Bybit Supreme + MMIP, Coinbase Tier 8, Deribit VIP 6, Hyperliquid Mkr Tier 3, Kalshi DMM, Polymarket LP, Robinhood composite wholesaler + RH-side margin, IBKR institutional DMA, eToro Elite Pro, Pump.fun sniper). Staff midpoints use loaded-comp benchmarks per FIA Derivatives Market Structure 2024 and venue-specific desk-size reporting (efinancialcareers, hedgefundcompensationreport). Robinhood is the composite extractor seat: wholesaler PFOF, internal margin spread, securities lending. Costs only, before $115M/mo revenue netting back to +$1.85M. eToro pays the operator.
           </div>
         </div>
       </Reveal>

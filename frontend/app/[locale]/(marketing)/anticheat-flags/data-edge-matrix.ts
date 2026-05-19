@@ -7,9 +7,9 @@ export interface EdgeSource {
 
 export interface CompanyRow {
   slug: string
-  /** Venue display name only — no suffix, no incident title, no year. */
+  /** Venue display name only. No suffix, no incident title, no year. */
   name: string
-  /** Short uppercase pill — keep under ~22 chars. */
+  /** Short uppercase pill. Keep under ~22 chars. */
   tag: string
   /** Magnitude of the MM advantage over retail in the topic's shared unit. Retail = 0 baseline. */
   value: number
@@ -28,9 +28,9 @@ export interface EdgeTopic {
   slug: string
   category: EdgeCategory
   name: string
-  /** H3 above the chart — the knife sentence. */
+  /** H3 above the chart. The knife sentence. */
   heading: string
-  /** Lead paragraph below the heading — explains the unit and the MM-vs-retail gap. */
+  /** Lead paragraph below the heading. Explains the unit and the MM-vs-retail gap. */
   lead: string
   /** Shared unit string. Every row's value is in this unit. */
   unit: string
@@ -80,7 +80,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: 0 | MM: $2.45M (PM Ishan Wahi tipped ≥9 forthcoming listings; Ramani twice-the-proceeds judgment)',
         barrier: 'PM-level access to the listing pipeline',
         sources: [
-          { label: 'SEC v. Wahi — Litigation Release LR-25947', url: 'https://www.sec.gov/enforcement-litigation/litigation-releases/lr-25947' },
+          { label: 'SEC v. Wahi. Litigation Release LR-25947', url: 'https://www.sec.gov/enforcement-litigation/litigation-releases/lr-25947' },
         ],
       },
       {
@@ -148,7 +148,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Principal CFD book',
         value: 10,
         gatedValue: 10,
-        lane: 'Retail: 0 | MM: 10/10 ("conducts trading predominantly as principal" — every CFD position is a liability on its book)',
+        lane: 'Retail: 0 | MM: 10/10 ("conducts trading predominantly as principal". Every CFD position is a liability on its book)',
         barrier: 'Broker is the dealer',
         sources: [
           { label: 'eToro Group Ltd · Form 20-F FY2024', url: 'https://www.stocktitan.net/sec-filings/ETOR/20-f-e-toro-group-ltd-files-annual-report-foreign-issuer-d3aa075c81bc.html' },
@@ -161,10 +161,10 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'SEC complaint 2023',
         value: 9,
         gatedValue: 9,
-        lane: 'Retail: 0 | MM: 9/10 (Zhao-owned Sigma Chain — internal "main MM"; Merit Peak received >$22B commingled flow)',
+        lane: 'Retail: 0 | MM: 9/10 (Zhao-owned Sigma Chain. Internal "main MM"; Merit Peak received >$22B commingled flow)',
         barrier: 'Co-owned exchange + prop desk',
         sources: [
-          { label: 'SEC v. Binance — Complaint', url: 'https://www.sec.gov/files/litigation/complaints/2023/comp-pr2023-101.pdf' },
+          { label: 'SEC v. Binance. Complaint', url: 'https://www.sec.gov/files/litigation/complaints/2023/comp-pr2023-101.pdf' },
         ],
       },
       {
@@ -185,7 +185,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'CTF Exchange operator',
         value: 8,
         gatedValue: 8,
-        lane: 'Retail: 0 | MM: 8/10 (single operator address has exclusive matchOrders authority — sees the queue first)',
+        lane: 'Retail: 0 | MM: 8/10 (single operator address has exclusive matchOrders authority. Sees the queue first)',
         barrier: 'Operator role on CTF Exchange',
         sources: [
           { label: 'CFTC Press Release 8478-22 · Blockratize/Polymarket settlement', url: 'https://www.cftc.gov/PressRoom/PressReleases/8478-22' },
@@ -258,7 +258,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Block RFQ whitelist',
         value: 4,
         gatedValue: 4,
-        lane: 'Retail: 0 | MM: 4/10 (Block RFQ — taker selects which MMs see the inquiry; only whitelisted MMs read it)',
+        lane: 'Retail: 0 | MM: 4/10 (Block RFQ. Taker selects which MMs see the inquiry; only whitelisted MMs read it)',
         barrier: 'MM whitelist',
         sources: [
           { label: 'CoinDesk · Deribit launches Block RFQ', url: 'https://www.coindesk.com/markets/2025/03/06/deribit-launches-block-rfq-system-to-improve-liquidity-for-large-over-the-counter-trades' },
@@ -271,7 +271,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         value: 2,
         gatedValue: 2,
         lane: 'Retail: 0 | MM: 2/10 (in-house MM Timber Hill wound down 2017; SmartRouter still reads client routing data)',
-        barrier: 'Self-imposed — affiliated dealer is gone',
+        barrier: 'Self-imposed. Affiliated dealer is gone',
         sources: [
           { label: 'Bloomberg · Timber Hill wind-down', url: 'https://www.bloomberg.com/news/articles/2017-05-16/interactive-brokers-says-it-s-shutting-its-market-making-unit' },
         ],
@@ -347,7 +347,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     category: 'latency',
     name: 'Mempool / pre-confirmation access',
     heading: 'Unfair mempool access',
-    lead: 'Retail baseline = 0. Bar = USD millions per year extracted from users at the venue\'s pre-confirmation lane — sandwich bots, sequencer privilege, gossip-priority auctions.',
+    lead: 'Retail baseline = 0. Bar = USD millions per year extracted from users at the venue\'s pre-confirmation lane. Sandwich bots, sequencer privilege, gossip-priority auctions.',
     unit: '$M / yr extracted from retail',
     generalMarketLabel: 'Blocks last a minute. The mempool race shrinks to a rounding error.',
     rows: [
@@ -394,7 +394,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Base single sequencer',
         value: 1,
         gatedValue: 1,
-        lane: 'Retail: 0 | MM: $1M/yr (Base has one sequencer — Coinbase — every pending tx passes through Coinbase first)',
+        lane: 'Retail: 0 | MM: $1M/yr (Base has one sequencer. Coinbase. Every pending tx passes through Coinbase first)',
         barrier: 'Sequencer operator role',
         sources: [
           { label: 'Base docs · network information', url: 'https://docs.base.org/base-chain/network-information/base-network' },
@@ -454,7 +454,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'AWS PrivateLink FIX',
         value: 100,
         gatedValue: 100,
-        lane: 'Retail: REST 50-200ms | MM: FIX 4.4 over AWS PrivateLink — institutional traffic skips public internet',
+        lane: 'Retail: REST 50-200ms | MM: FIX 4.4 over AWS PrivateLink. Institutional traffic skips public internet',
         barrier: 'PrivateLink onboarding + FIX credentials',
         sources: [
           { label: 'Kalshi · FIX Connectivity (PrivateLink)', url: 'https://docs.kalshi.com/fix/connectivity' },
@@ -466,7 +466,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'SIP vs direct feeds',
         value: 50,
         gatedValue: 50,
-        lane: 'Retail: SIP-quoted | MM: direct exchange feeds — SEC found $34.1M customer harm (~$8.5M/yr)',
+        lane: 'Retail: SIP-quoted | MM: direct exchange feeds. SEC found $34.1M customer harm (~$8.5M/yr)',
         barrier: 'Direct exchange feeds institution-only',
         sources: [
           { label: 'SEC Order 33-10906 · Robinhood Financial', url: 'https://www.sec.gov/files/litigation/admin/2020/33-10906.pdf' },
@@ -538,8 +538,8 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'WebSocket only',
         value: 10,
         gatedValue: 10,
-        lane: 'Retail: WebSocket on far edge | MM: WebSocket near Cloudflare edge — geography is the gap',
-        barrier: 'Edge geography — no equal-access mandate',
+        lane: 'Retail: WebSocket on far edge | MM: WebSocket near Cloudflare edge. Geography is the gap',
+        barrier: 'Edge geography. No equal-access mandate',
         sources: [
           { label: 'Polymarket Docs · WebSocket Overview', url: 'https://docs.polymarket.com/market-data/websocket/overview' },
         ],
@@ -601,7 +601,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Order Amend Keep Priority',
         value: 3,
         gatedValue: 3,
-        lane: 'Retail: 0 | MM: ~3 bps (shrink order without losing queue position — rewards whoever modifies fastest)',
+        lane: 'Retail: 0 | MM: ~3 bps (shrink order without losing queue position. Rewards whoever modifies fastest)',
         barrier: 'API-level access',
         sources: [
           { label: 'Binance Developer · matching algorithm thread', url: 'https://dev.binance.vision/t/which-algorithm-does-binance-matching-engine-use/5351' },
@@ -637,7 +637,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Price-then-time',
         value: 0,
         gatedValue: 0,
-        lane: 'Retail: 0 | MM: 0 (textbook FIFO — price then time; identical prices fill in arrival order)',
+        lane: 'Retail: 0 | MM: 0 (textbook FIFO. Price then time; identical prices fill in arrival order)',
         barrier: 'Strict FIFO',
         sources: [
           { label: 'Kalshi · Limit Orders', url: 'https://help.kalshi.com/trading/order-types/limit-orders' },
@@ -863,7 +863,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: '50 msg/s TWS',
         value: 1,
         gatedValue: 1,
-        lane: 'Retail: 50 msg/s | MM: 50 msg/s — uniform TWS ceiling = 1× retail',
+        lane: 'Retail: 50 msg/s | MM: 50 msg/s. Uniform TWS ceiling = 1× retail',
         barrier: 'TWS architecture',
         sources: [
           { label: 'IBKR TWS API · Historical Data Limitations', url: 'https://interactivebrokers.github.io/tws-api/historical_limitations.html' },
@@ -875,7 +875,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: '60 reads/min select',
         value: 1,
         gatedValue: 1,
-        lane: 'Retail: 60 reads/min | MM: 60 reads/min — single uniform tier = 1× retail',
+        lane: 'Retail: 60 reads/min | MM: 60 reads/min. Single uniform tier = 1× retail',
         barrier: 'Select-user rollout (Oct 2025)',
         sources: [
           { label: 'eToro API Portal · Rate Limits', url: 'https://api-portal.etoro.com/getting-started/rate-limits' },
@@ -910,7 +910,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: '±5%/8h USDC linear',
         value: 5475,
         gatedValue: 5475,
-        lane: 'Retail: 0 | MM: ~5,475 bps/yr (±5%/8h USDC linear cap with ±0.025% dead-zone — sub-second flip fade)',
+        lane: 'Retail: 0 | MM: ~5,475 bps/yr (±5%/8h USDC linear cap with ±0.025% dead-zone. Sub-second flip fade)',
         barrier: 'Cap formula',
         sources: [
           { label: 'Deribit Insights · Perpetual Swap Funding', url: 'https://insights.deribit.com/education/perpetual-swap-funding/' },
@@ -934,7 +934,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: '1h, no clamp',
         value: 600,
         gatedValue: 600,
-        lane: 'Retail: 0 | MM: ~600 bps/yr (hourly TWAP, no base interest, no clamp — rate moves freely with the premium index)',
+        lane: 'Retail: 0 | MM: ~600 bps/yr (hourly TWAP, no base interest, no clamp. Rate moves freely with the premium index)',
         barrier: 'No cap',
         sources: [
           { label: 'Coinbase International · Funding rate mechanics', url: 'https://help.coinbase.com/en/international-exchange/funding/what-is-the-funding-rate' },
@@ -983,7 +983,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Tier 8 0% maker',
         value: 50,
         gatedValue: 50,
-        lane: 'Retail: 0 | MM: ~$50M/yr (Tier 8 0% maker + 15× thin-pair multipliers — Wintermute, Cumberland, Jump in top three)',
+        lane: 'Retail: 0 | MM: ~$50M/yr (Tier 8 0% maker + 15× thin-pair multipliers. Wintermute, Cumberland, Jump in top three)',
         barrier: '$250M 30-day volume + program acceptance',
         sources: [
           { label: 'Coinbase Exchange · Liquidity Program', url: 'https://www.coinbase.com/exchange/liquidity-program' },
@@ -1019,7 +1019,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'VIP 6 options 66.66%',
         value: 20,
         gatedValue: 20,
-        lane: 'Retail: 0 | MM: ~$20M/yr (VIP 6 — 66.66% options + 55% futures fee discount at ≥$5B 30-day volume)',
+        lane: 'Retail: 0 | MM: ~$20M/yr (VIP 6. 66.66% options + 55% futures fee discount at ≥$5B 30-day volume)',
         barrier: '$5B 30-day volume',
         sources: [
           { label: 'Phemex News · Deribit VIP fee system', url: 'https://phemex.com/news/article/deribit-to-launch-automated-vip-fee-system-solana-targets-260-27184' },
@@ -1154,8 +1154,8 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'Pool-based, not per-fill',
         value: 0,
         gatedValue: 0,
-        lane: 'Retail: pays taker fee | MM: 20–25% of pooled taker fees redistributed pro-rata — not a per-fill rebate',
-        barrier: 'Pool dominance — share of total maker fee-equivalent volume',
+        lane: 'Retail: pays taker fee | MM: 20–25% of pooled taker fees redistributed pro-rata. Not a per-fill rebate',
+        barrier: 'Pool dominance. Share of total maker fee-equivalent volume',
         sources: [
           { label: 'Polymarket Docs · trading fees', url: 'https://docs.polymarket.com/trading/fees' },
           { label: 'Polymarket Help · trading fees', url: 'https://help.polymarket.com/en/articles/13364478-trading-fees' },
@@ -1203,7 +1203,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'GME buy-button halt',
         value: 1.4,
         gatedValue: 1.4,
-        lane: 'Retail: 0 | MM: $1.4B NSCC deposit (up from $125M) — firm barred GME long positions while permitting only sells',
+        lane: 'Retail: 0 | MM: $1.4B NSCC deposit (up from $125M). Firm barred GME long positions while permitting only sells',
         barrier: 'Margin agreement discretion + NSCC capital call',
         sources: [
           { label: 'Robinhood Margin Disclosure Statement', url: 'https://cdn.robinhood.com/assets/robinhood/legal/RHF%20and%20RHS%20Margin%20Disclosure%20Statement.pdf' },
@@ -1228,7 +1228,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         value: 0.0135,
         gatedValue: 0.0135,
         lane: 'Retail: 0 | MM: $13.5M (validators voted JELLY closed at $0.0095, bypassing book and oracle; Foundation made non-flagged users whole)',
-        barrier: 'Validator-set vote — manual engine override',
+        barrier: 'Validator-set vote. Manual engine override',
         sources: [
           { label: 'CoinDesk · Hyperliquid delists JELLY', url: 'https://www.coindesk.com/markets/2025/03/26/hyperliquid-delists-jellyjelly-after-vault-squeezed-in-usd13m-tussle' },
         ],
@@ -1263,7 +1263,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'ESMA 50% auto-close',
         value: 0.0005,
         gatedValue: 0.0005,
-        lane: 'Retail: 0 | MM: $0.5M (ESMA 2018 — retail CFDs auto-close at 50% min margin with negative-balance protection; EU/UK clients only)',
+        lane: 'Retail: 0 | MM: $0.5M (ESMA 2018. Retail CFDs auto-close at 50% min margin with negative-balance protection; EU/UK clients only)',
         barrier: 'EU/UK onboarding',
         sources: [
           { label: 'ESMA · Final product intervention measures', url: 'https://www.esma.europa.eu/press-news/esma-news/esma-adopts-final-product-intervention-measures-cfds-and-binary-options' },

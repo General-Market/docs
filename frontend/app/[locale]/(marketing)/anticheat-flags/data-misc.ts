@@ -3,7 +3,7 @@ import type { Venue } from './types'
 // Cards document one thing: structural unfairness where market makers,
 // insiders, or the house extract value from retail. Before adding an incident,
 // read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
-// custodial hacks, exchange outages — none of these belong here.
+// custodial hacks, exchange outages. None of these belong here.
 
 export const pumpfun: Venue = {
   slug: 'pumpfun',
@@ -30,7 +30,7 @@ export const pumpfun: Venue = {
     },
     {
       date: '2024-11', amount: '−33% rev',
-      headline: 'Livestream chaos — 13-year-old streams rug, guns, prison stunts',
+      headline: 'Livestream chaos. 13-year-old streams rug, guns, prison stunts',
       knife: 'They built a Twitch for fraud and were startled when fraud arrived.',
       summary: 'A 13-year-old launched "Gen Z Quant," livestreamed dumping 5% of supply, walked away with ~$50K. Goldfish at gunpoint, prison streams, suicide threats. Livestreams killed.',
       sourceLabel: 'Wikipedia',
@@ -80,7 +80,7 @@ export const pumpfun: Venue = {
     },
     {
       date: '2025-01-17', amount: '$4.3B',
-      headline: 'TRUMP memecoin — $4.3B retail losses, $600M insider take',
+      headline: 'TRUMP memecoin. $4.3B retail losses, $600M insider take',
       knife: 'A president as launchpad, a populace as exit liquidity.',
       summary: 'Days before inauguration, TRUMP launched. FDV peaked at $8.7B; down 90%+. For every $1 insiders earned, retail lost ~$20.',
       sourceLabel: 'DL News',

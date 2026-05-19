@@ -3,7 +3,7 @@ import type { Venue } from './types'
 // Cards document one thing: structural unfairness where market makers,
 // insiders, or the house extract value from retail. Before adding an incident,
 // read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
-// custodial hacks, exchange outages — none of these belong here.
+// custodial hacks, exchange outages. None of these belong here.
 
 export const polymarket: Venue = {
   slug: 'polymarket',
@@ -31,7 +31,7 @@ export const polymarket: Venue = {
     {
       date: '2024-10', amount: '$30M / $85M',
       headline: '"Trump whale" Théo runs four accounts, allegedly tilts election odds',
-      knife: 'One man, four accounts, seventy-one bets per minute — Polymarket called it a directional view.',
+      knife: 'One man, four accounts, seventy-one bets per minute. Polymarket called it a directional view.',
       summary: 'French ex-bank trader placed 2,500 Trump bets in 24 hours. Theo4 alone at 71 wagers/minute. Trump\'s popular-vote odds moved from 26% to 39%.',
       sourceLabel: 'Cointelegraph',
       sourceUrl: 'https://cointelegraph.com/news/polymarket-whale-trump-odds-manipulation',
@@ -42,7 +42,7 @@ export const polymarket: Venue = {
     {
       date: '2025-07', amount: '$237M',
       headline: '"Zelenskyy suit" market reversed mid-resolution',
-      knife: 'A $237M question settled by a $95M oracle — the tail negotiating the dog\'s truth.',
+      knife: 'A $237M question settled by a $95M oracle. The tail negotiating the dog\'s truth.',
       summary: 'Initial resolution "yes" (forty media headlines called it a suit). After nine days of UMA disputes, flipped to "no." UMA\'s $95M market cap was dwarfed by the market it adjudicated.',
       sourceLabel: 'CoinDesk',
       sourceUrl: 'https://www.coindesk.com/markets/2025/07/07/polymarket-embroiled-in-usd160m-controversy-over-whether-zelensky-wore-a-suit-at-nato',
@@ -83,7 +83,7 @@ export const polymarket: Venue = {
     {
       date: '2026-04', amount: '$2.4M',
       headline: 'Nine connected accounts net $2.4M with 98% win rate on Iran-war markets',
-      knife: 'Ninety-eight percent in markets that priced fifty — luck, or a subscription to the briefing.',
+      knife: 'Ninety-eight percent in markets that priced fifty. Luck, or a subscription to the briefing.',
       summary: 'Anonymous accounts placed 80+ winning bets on specific dates of US strikes, Khamenei\'s removal, ceasefire. Senator Blumenthal demanded explanations.',
       sourceLabel: 'CBS',
       sourceUrl: 'https://www.cbsnews.com/news/betting-on-iran-war-insider-trading-concerns-prediction-markets-60-minutes/',
@@ -103,8 +103,8 @@ export const polymarket: Venue = {
     },
     {
       date: '2026-05', amount: '80+ users',
-      headline: 'NYT investigation — 80+ users show insider-trading signatures across ~30 markets',
-      knife: 'Eighty users, thirty topics, two years — they hired Chainalysis the month after the Times called.',
+      headline: 'NYT investigation. 80+ users show insider-trading signatures across ~30 markets',
+      knife: 'Eighty users, thirty topics, two years. They hired Chainalysis the month after the Times called.',
       summary: 'NYT audit traces suspicious bet patterns since at least 2024. Polymarket announced Chainalysis partnership April 2026.',
       sourceLabel: 'NYT',
       sourceUrl: 'https://dnyuz.com/2026/05/13/dozens-of-polymarket-bets-show-signs-of-insider-trading-the-times-finds/',
@@ -177,7 +177,7 @@ export const robinhood: Venue = {
   founded: 2013,
   heroStat: { value: '$70M', label: 'FINRA · largest at the time' },
   ribbonStats: [
-    { value: '$70M', label: 'FINRA — largest', tone: 'loss' },
+    { value: '$70M', label: 'FINRA. Largest', tone: 'loss' },
     { value: '$1B+/yr', label: 'Citadel PFOF' },
     { value: '7M', label: 'Records exfiltrated' },
   ],

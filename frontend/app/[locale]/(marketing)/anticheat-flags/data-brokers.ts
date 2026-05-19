@@ -3,7 +3,7 @@ import type { Venue } from './types'
 // Cards document one thing: structural unfairness where market makers,
 // insiders, or the house extract value from retail. Before adding an incident,
 // read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
-// custodial hacks, exchange outages — none of these belong here.
+// custodial hacks, exchange outages. None of these belong here.
 
 export const ibkr: Venue = {
   slug: 'ibkr',
@@ -43,7 +43,7 @@ export const ibkr: Venue = {
       date: '2025-07-14', amount: '$5M class settlement',
       headline: 'Auto-liquidation algo sold positions outside its own pricing corridor',
       knife: 'The machine had rules for itself. The machine did not follow them. The settlement covered twelve years of customers who learned it after the fact.',
-      summary: 'Batchelar v. Interactive Brokers — class certified for margin accounts where the auto-liquidation algorithm executed trades at prices outside the corridor defined by IBKR\'s own software. $5M settlement covering Dec 18, 2013 through Jul 14, 2025.',
+      summary: 'Batchelar v. Interactive Brokers. Class certified for margin accounts where the auto-liquidation algorithm executed trades at prices outside the corridor defined by IBKR\'s own software. $5M settlement covering Dec 18, 2013 through Jul 14, 2025.',
       sourceLabel: 'Class admin',
       sourceUrl: 'https://interactivebrokerssettlement.com/',
       mechanism: 'oracle-override',
@@ -58,17 +58,17 @@ export const etoro: Venue = {
   founded: 2007,
   heroStat: { value: '76%', label: 'of retail CFD clients lose money' },
   ribbonStats: [
-    { value: '76%', label: 'CFD clients losing — disclosed', tone: 'loss' },
+    { value: '76%', label: 'CFD clients losing. Disclosed', tone: 'loss' },
     { value: '$1.5M', label: 'SEC settlement (2024)' },
     { value: '4 jurisdictions', label: 'Regulators on file' },
   ],
   indictment:
-    "Copy trading is the friendliest version of the b-book. The platform you imitate, the trader you imitate, the loss you actually take — three different parties, one disclaimer at the bottom that admits seventy-six out of a hundred of you will end up here.",
+    "Copy trading is the friendliest version of the b-book. The platform you imitate, the trader you imitate, the loss you actually take. Three different parties, one disclaimer at the bottom that admits seventy-six out of a hundred of you will end up here.",
   incidents: [
     {
       date: '2023-08-03', amount: 'ASIC suit',
       amountTone: 'muted',
-      headline: 'ASIC sues eToro Australia — CFD screening "so lax anyone qualified"',
+      headline: 'ASIC sues eToro Australia. CFD screening "so lax anyone qualified"',
       knife: 'A high-risk product needs a wide target market. They simply made the door wide.',
       summary: 'Australian Securities and Investments Commission filed Federal Court action: eToro Aus Capital Ltd\'s design-and-distribution screening test for CFDs was so weak that almost any retail applicant passed.',
       sourceLabel: 'ASIC',

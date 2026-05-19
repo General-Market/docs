@@ -24,7 +24,7 @@ const COLO_VENUES: ColoVenue[] = [
   {
     slug: 'polymarket-colo',
     name: 'Polymarket',
-    region: 'AWS eu-west-2 — London',
+    region: 'AWS eu-west-2. London',
     proof: 'Direct co-location available. Users who complete the KYC/KYB form can get access to co-locate directly in eu-west-2.',
     attribution: 'Polymarket trading documentation',
     sourceLabel: 'docs.polymarket.com',
@@ -37,8 +37,8 @@ const COLO_VENUES: ColoVenue[] = [
   {
     slug: 'hyperliquid-colo',
     name: 'Hyperliquid',
-    region: 'AWS ap-northeast-1 — Tokyo',
-    proof: 'All 24 validators clustered in AWS Tokyo. Glassnode measured the asymmetry — local desks reach the matching engine ~200ms ahead of every other geography.',
+    region: 'AWS ap-northeast-1. Tokyo',
+    proof: 'All 24 validators clustered in AWS Tokyo. Glassnode measured the asymmetry. Local desks reach the matching engine ~200ms ahead of every other geography.',
     attribution: 'Glassnode measurement, March 2026',
     sourceLabel: 'Coindesk · Glassnode',
     sourceUrl: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows',
@@ -49,7 +49,7 @@ const COLO_VENUES: ColoVenue[] = [
   {
     slug: 'kalshi-colo',
     name: 'Kalshi',
-    region: 'Chicago — designated MM',
+    region: 'Chicago. Designated MM',
     proof: 'Susquehanna onboarded April 2024 as the first dedicated institutional market maker. The November 2025 class action names the privilege directly: unique contractual and technological integration.',
     attribution: 'Federal complaint, six states',
     sourceLabel: 'Bloomberg',
@@ -82,7 +82,7 @@ const LATENCY_ROWS: LatencyRow[] = [
   {
     slug: 'binance', name: 'Binance', edgeMs: 145, gatedMs: 5,
     lane: 'Retail (global): +145ms | MM (VIP 9): AWS Tokyo colo, ~5ms FIX',
-    barrier: 'VIP 9 — $30B/30d futures + 5,500 BNB',
+    barrier: 'VIP 9. $30B/30d futures + 5,500 BNB',
     source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
     barrierSource: { label: 'Binance · VIP program', url: 'https://www.binance.com/en/vip-institutional-services' },
   },
@@ -228,7 +228,7 @@ function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
             letterSpacing: '-0.005em',
           }}
         >
-          — {v.attribution}
+         . {v.attribution}
         </div>
 
         <div
@@ -399,7 +399,7 @@ function GeneralMarketRow() {
             height={14}
             style={{ borderRadius: 3, flexShrink: 0 }}
           />
-          General Market
+          General
         </div>
         <div
           style={{
@@ -596,7 +596,7 @@ export function ColocationSection() {
             </div>
           </div>
 
-          {/* Source footer cards — same format as edge matrix */}
+          {/* Source footer cards. Same format as edge matrix */}
           <div
             style={{
               marginTop: 28,
@@ -681,22 +681,22 @@ interface AssumptionRow {
 
 const INSIDE_LANE: AssumptionRow[] = [
   {
-    metric: 'Citadel Securities — execution at the matching engine',
+    metric: 'Citadel Securities. Execution at the matching engine',
     value: '~10 microseconds',
     source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
   },
   {
-    metric: 'Citadel Securities — share of US retail equity order flow',
+    metric: 'Citadel Securities. Share of US retail equity order flow',
     value: '~40%',
     source: { label: 'Trade Ideas', url: 'https://www.trade-ideas.com/2025/05/10/citadel-securities-the-invisible-hand-behind-retail-trading/' },
   },
   {
-    metric: 'Top 3 wholesalers (Citadel, Virtu, G1) — share of retail orders',
+    metric: 'Top 3 wholesalers (Citadel, Virtu, G1). Share of retail orders',
     value: '>80%',
     source: { label: 'Global Trading', url: 'https://www.globaltrading.net/payment-for-us-retail-flow-reaches-record-high-led-by-citadel-securities-imc/' },
   },
   {
-    metric: 'Jump Trading — private microwave backbone, inter-city',
+    metric: 'Jump Trading. Private microwave backbone, inter-city',
     value: '~90 microseconds',
     source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
   },
@@ -706,7 +706,7 @@ const INSIDE_LANE: AssumptionRow[] = [
     source: { label: 'QuantVPS · FPGA', url: 'https://www.quantvps.com/blog/high-frequency-trading-with-fpgas' },
   },
   {
-    metric: 'CME Aurora colocation rack — monthly rent + setup + cross-connect',
+    metric: 'CME Aurora colocation rack. Monthly rent + setup + cross-connect',
     value: '$12,000/mo + $2,000 + $350–550',
     source: { label: 'Lime Trading', url: 'https://lime.co/how-to-maximize-the-roi-of-colocation/' },
   },
@@ -714,7 +714,7 @@ const INSIDE_LANE: AssumptionRow[] = [
 
 const OUTSIDE_LANE: AssumptionRow[] = [
   {
-    metric: 'Specialist forex / algo VPS — monthly rent',
+    metric: 'Specialist forex / algo VPS. Monthly rent',
     value: '$15–100 / month',
     source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/best-vps-for-trading' },
   },
@@ -729,7 +729,7 @@ const OUTSIDE_LANE: AssumptionRow[] = [
     source: { label: 'LuxAlgo · latency standards', url: 'https://www.luxalgo.com/blog/latency-standards-in-trading-systems/' },
   },
   {
-    metric: 'Latency above which HFT strategies become unprofitable — retail ceiling',
+    metric: 'Latency above which HFT strategies become unprofitable. Retail ceiling',
     value: '>10 ms',
     source: { label: 'LuxAlgo · latency standards', url: 'https://www.luxalgo.com/blog/latency-standards-in-trading-systems/' },
   },
@@ -750,7 +750,7 @@ const OUTSIDE_LANE: AssumptionRow[] = [
   },
   {
     metric: 'Private microwave inter-city backbone',
-    value: 'None — fibre only',
+    value: 'None. Fibre only',
     source: { label: 'QuantVPS · HFT firms', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
   },
 ]
@@ -796,7 +796,7 @@ function AssumptionLane({ title, summary, rows }: { title: string; summary: stri
             }}
           >
             <div style={{ color: TEXT }}>
-              {r.metric} —{' '}
+              {r.metric}:{' '}
               <span style={{ fontVariantNumeric: 'tabular-nums', color: ACCENT }}>{r.value}</span>
             </div>
             <a
@@ -854,12 +854,12 @@ function AssumptionsBlock() {
         style={{ gap: 24 }}
       >
         <AssumptionLane
-          title="Inside lane — maxed-out market maker"
+          title="Inside lane. Maxed-out market maker"
           summary="Colocated cabinet, FPGA at the cable, microwave between cities, designated-MM contract, retail order flow auctioned before it touches a public book."
           rows={INSIDE_LANE}
         />
         <AssumptionLane
-          title="Outside lane — retail algo trader (already paying)"
+          title="Outside lane. Retail algo trader (already paying)"
           summary="Not a phone clicker. An EA on MetaTrader, a Python bot on a VPS, sometimes the same building as the matching engine. Pays for infrastructure. Still arrives after the cabinet."
           rows={OUTSIDE_LANE}
         />

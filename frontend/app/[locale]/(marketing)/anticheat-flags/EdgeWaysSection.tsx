@@ -8,16 +8,20 @@ const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
 const SURFACE = 'var(--apple-surface)'
 
-const CHART_HEIGHT = 280
-const BAR_AREA = 240
-
 function pad2(n: number) {
   return n < 10 ? `0${n}` : String(n)
 }
 
+function fmtBps(bps: number): string {
+  if (bps >= 10) return `${bps.toFixed(0)} bps`
+  if (bps >= 1) return `${bps.toFixed(1).replace(/\.0$/, '')} bps`
+  if (bps >= 0.01) return `${bps.toFixed(2)} bps`
+  return `${bps.toFixed(3)} bps`
+}
+
 export function EdgeWaysSection() {
   const max = Math.max(...EDGE_WAYS.map(w => w.bps))
-  const total = EDGE_WAYS.reduce((acc, w) => acc + w.bps, 0)
+  const total = +EDGE_WAYS.reduce((acc, w) => acc + w.bps, 0).toFixed(2)
 
   return (
     <section
@@ -56,7 +60,7 @@ export function EdgeWaysSection() {
             maxWidth: 980,
           }}
         >
-          14 Ways Exchanges &amp; MMs Steal Your Money — and How to Fix It.
+          14 Ways Exchanges &amp; MMs Steal Your Money. And How to Fix It.
         </h2>
       </Reveal>
 
@@ -72,13 +76,12 @@ export function EdgeWaysSection() {
             maxWidth: 780,
           }}
         >
-          One bar per mechanism. Height is basis points the maxed-out market maker books over retail
-          on a single round-trip. No variance, no turnover, no annualization. Add the bars that
-          apply at a venue — that is the venue&rsquo;s edge gap.
+          One bar per mechanism. Width is basis points the maxed-out market maker books over retail
+          per round-trip, amortized by how often the mechanism actually fires. Rare-but-massive
+          events are not pretended to fire every trade.
         </p>
       </Reveal>
 
-      {/* Methodology — the only math */}
       <Reveal delay={0.16}>
         <div
           style={{
@@ -96,125 +99,112 @@ export function EdgeWaysSection() {
           }}
         >
           <span style={{ color: TEXT, fontWeight: 600 }}>How each mechanism becomes bps.</span>{' '}
-          Fee-tier delta → published fee schedule, MM tier minus retail tier. Latency edge →
-          milliseconds × 0.05 bps/ms (Aquilina–Budish–O&rsquo;Neill, 2020). Information and
-          execution edges → adverse-selection bps as cited in the named study. Per-venue total =
-          sum of active mechanisms. That is all the math.
+          Peak bps from a fee schedule, a latency conversion (ms × 0.05 bps/ms,
+          Aquilina–Budish–O&rsquo;Neill 2020), or a sourced adverse-selection study. Frequency is
+          the probability the mechanism fires on a single retail round-trip at a venue where it is
+          active. Per-trade bps = peak × frequency. Per-venue total = sum across active mechanisms.
+          That is all the math.
         </div>
       </Reveal>
 
-      {/* Vertical bar chart */}
+      {/* Horizontal bar chart */}
       <Reveal delay={0.2}>
         <div
           role="img"
           aria-label="Fourteen mechanisms ranked by basis-point cost per round-trip trade"
           style={{
-            marginTop: 36,
-            padding: '24px 12px 16px',
+            marginTop: 32,
+            padding: '20px 20px 16px',
             background: 'var(--apple-panel)',
             border: `1px solid ${LINE}`,
             borderRadius: 'var(--apple-r-md)',
-            overflowX: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
           }}
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${EDGE_WAYS.length}, minmax(48px, 1fr))`,
-              columnGap: 10,
-              minWidth: EDGE_WAYS.length * 56,
-              alignItems: 'end',
-            }}
-          >
-            {EDGE_WAYS.map(w => {
-              const h = Math.max(2, (w.bps / max) * BAR_AREA)
-              return (
-                <a
-                  key={w.slug}
-                  href={`#way-${w.slug}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textDecoration: 'none',
-                  }}
-                >
-                  {/* bps label */}
-                  <div
+          {EDGE_WAYS.map(w => {
+            const pct = (w.bps / max) * 100
+            return (
+              <a
+                key={w.slug}
+                href={`#way-${w.slug}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
+                  columnGap: 14,
+                  alignItems: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span
                     style={{
-                      fontFamily: 'var(--apple-font-display)',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      letterSpacing: 'var(--apple-track-tighter)',
-                      color: ACCENT,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {w.bps}
-                  </div>
-                  {/* bar */}
-                  <div
-                    style={{
-                      width: '70%',
-                      height: CHART_HEIGHT - 60,
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: h,
-                        background: ACCENT,
-                        borderRadius: '3px 3px 0 0',
-                      }}
-                    />
-                  </div>
-                  {/* baseline */}
-                  <div
-                    style={{
-                      width: '100%',
-                      height: 1,
-                      background: LINE,
-                      marginTop: 0,
-                    }}
-                  />
-                  {/* rank + name */}
-                  <div
-                    style={{
-                      marginTop: 8,
-                      textAlign: 'center',
                       fontFamily: 'var(--apple-font-text)',
-                      fontSize: 10,
+                      fontSize: 11,
                       color: TERTIARY,
                       letterSpacing: '0.04em',
                       fontWeight: 600,
+                      fontVariantNumeric: 'tabular-nums',
+                      flex: '0 0 22px',
                     }}
                   >
                     {pad2(w.rank)}
-                  </div>
-                  <div
+                  </span>
+                  <span
                     style={{
-                      marginTop: 4,
-                      textAlign: 'center',
                       fontFamily: 'var(--apple-font-text)',
-                      fontSize: 11,
+                      fontSize: 13,
                       color: TEXT,
-                      letterSpacing: '-0.005em',
-                      lineHeight: 1.25,
-                      hyphens: 'auto',
+                      fontWeight: 600,
+                      letterSpacing: '-0.011em',
+                      lineHeight: 1.3,
+                      flex: 1,
+                      minWidth: 0,
                     }}
                   >
                     {w.name}
-                  </div>
-                </a>
-              )
-            })}
-          </div>
+                  </span>
+                </div>
+                <div
+                  style={{
+                    position: 'relative',
+                    height: 14,
+                    background: SURFACE,
+                    borderRadius: 3,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: `${Math.max(0.5, pct)}%`,
+                      background: ACCENT,
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    textAlign: 'right',
+                    fontFamily: 'var(--apple-font-display)',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    letterSpacing: 'var(--apple-track-tighter)',
+                    color: ACCENT,
+                  }}
+                >
+                  {fmtBps(w.bps)}
+                </div>
+              </a>
+            )
+          })}
           <div
             style={{
-              marginTop: 18,
+              marginTop: 8,
               paddingTop: 12,
               borderTop: `1px solid ${LINE}`,
               fontFamily: 'var(--apple-font-text)',
@@ -224,7 +214,7 @@ export function EdgeWaysSection() {
               textAlign: 'right',
             }}
           >
-            bps per round-trip · retail = 0
+            bps per round-trip, frequency-adjusted · retail = 0
           </div>
         </div>
       </Reveal>
@@ -286,7 +276,18 @@ export function EdgeWaysSection() {
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {w.bps} bps
+                  {fmtBps(w.bps)}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--apple-font-text)',
+                    fontSize: 12,
+                    color: TERTIARY,
+                    letterSpacing: '-0.005em',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  peak {w.peakBps} bps · fires {(w.frequency * 100).toFixed(w.frequency < 0.01 ? 2 : 0)}% of trades
                 </span>
               </div>
               <p
@@ -300,7 +301,7 @@ export function EdgeWaysSection() {
                   marginTop: 4,
                 }}
               >
-                {w.conversion}{' '}
+                {w.conversion} {w.frequencyNote}{' '}
                 <a
                   href={w.sourceUrl}
                   target="_blank"

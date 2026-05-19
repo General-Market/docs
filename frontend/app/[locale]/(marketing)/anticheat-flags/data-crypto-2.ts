@@ -3,7 +3,7 @@ import type { Venue } from './types'
 // Cards document one thing: structural unfairness where market makers,
 // insiders, or the house extract value from retail. Before adding an incident,
 // read the editorial rule at the top of ./types.ts. AML, KYC, sanctions,
-// custodial hacks, exchange outages — none of these belong here.
+// custodial hacks, exchange outages. None of these belong here.
 
 export const hyperliquid: Venue = {
   slug: 'hyperliquid',
@@ -50,7 +50,7 @@ export const hyperliquid: Venue = {
     },
     {
       date: '2025-11-12', amount: '$4.9M',
-      headline: 'POPCAT coordinated manipulation — third HLP attack of the year',
+      headline: 'POPCAT coordinated manipulation. Third HLP attack of the year',
       knife: 'They spent three million to make five. Hyperliquid called it bad debt. They called it tuition.',
       summary: 'Attacker withdrew $3M from OKX, fanned across 19 wallets, opened $26M in leveraged POPCAT longs, placed a $20M spoof buy wall, canceled it. Cascade liquidations dumped onto HLP.',
       sourceLabel: 'CoinDesk',
@@ -127,7 +127,7 @@ export const deribit: Venue = {
   incidents: [
     {
       date: '2022-01-11', amount: 'Unverified', amountTone: 'muted',
-      headline: 'Margin rules doubled mid-session — IM 1%→2%, MM 0.525%→1%',
+      headline: 'Margin rules doubled mid-session. IM 1%→2%, MM 0.525%→1%',
       knife: 'The rules changed under their feet. The feet were leveraged.',
       summary: 'Deribit doubled margin requirements. The MM hike triggered liquidations on the most leveraged longs.',
       sourceLabel: 'Deribit',

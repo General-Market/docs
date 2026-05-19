@@ -13,7 +13,7 @@ export interface VenueBleed {
  * Per-venue mapping of which mechanisms from EDGE_WAYS are documented as active
  * at that venue. Total per-trade bps = sum of EDGE_WAYS[slug].bps for slugs in `active`.
  *
- * Conservative selection — only mechanisms with sourced receipts on this venue
+ * Conservative selection. Only mechanisms with sourced receipts on this venue
  * in the matrix below. Where a venue could in principle run more (e.g. all spot
  * exchanges have some PFOF-adjacent behaviour), we only list what's documented.
  */
@@ -87,7 +87,7 @@ export const VENUE_BLEEDS: VenueBleed[] = [
 ]
 
 export interface VenueBleedComputed extends VenueBleed {
-  /** Sum of bps from active mechanisms — what the MM books per round-trip. */
+  /** Sum of bps from active mechanisms. What the MM books per round-trip. */
   bpsPerTrade: number
   /** Triple-bar values: cumulative bps you'd need to break even at N trades. */
   cumulative: {

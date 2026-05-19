@@ -58,7 +58,7 @@ function formatValueWithUnit(value: number, unit: string): string {
     return body
   }
 
-  // bps / score / count / ms — numeric + first word
+  // bps / score / count / ms. Numeric + first word
   const firstWord = unit.split(' ')[0]
   const abs = Math.abs(value)
   let num: string
@@ -106,7 +106,7 @@ function BarRow({
           overflow: 'visible',
         }}
       >
-        {/* Dashed baseline at left edge — the retail 0 mark */}
+        {/* Dashed baseline at left edge. The retail 0 mark */}
         <div
           style={{
             position: 'absolute',
@@ -176,7 +176,7 @@ function GeneralMarketRow({ label }: { label: string }) {
             height={14}
             style={{ borderRadius: 3, flexShrink: 0 }}
           />
-          General Market
+          General
         </div>
         <div
           style={{
@@ -432,7 +432,7 @@ export function EdgeMatrixSection() {
             maxWidth: 780,
           }}
         >
-          One ruler per chart. Retail sits at zero — implied, not drawn. The blue bar is what the maxed-out market maker books over you at the same venue. Each chart names the room. Each row names the firm that lives in it.
+          One ruler per chart. Retail sits at zero. Implied, not drawn. The blue bar is what the maxed-out market maker books over you at the same venue. Each chart names the room. Each row names the firm that lives in it.
         </p>
       </Reveal>
 
