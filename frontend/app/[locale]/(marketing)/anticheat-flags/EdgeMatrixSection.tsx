@@ -80,8 +80,9 @@ function BarRow({
 }) {
   const pct = max === 0 ? 0 : Math.max((row.value / max) * 100, row.value > 0 ? 2 : 0)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="acf-bar-row">
       <div
+        className="acf-bar-label"
         style={{
           flex: '0 0 110px',
           fontFamily: 'var(--apple-font-text)',
@@ -97,6 +98,7 @@ function BarRow({
         {row.name}
       </div>
       <div
+        className="acf-bar-track"
         style={{
           flex: 1,
           height: 14,
@@ -133,6 +135,7 @@ function BarRow({
         )}
       </div>
       <div
+        className="acf-bar-value"
         style={{
           flex: '0 0 96px',
           textAlign: 'right',
@@ -154,8 +157,9 @@ function BarRow({
 function GeneralMarketRow({ label }: { label: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="acf-bar-row">
         <div
+          className="acf-bar-label"
           style={{
             flex: '0 0 110px',
             display: 'flex',
@@ -179,6 +183,7 @@ function GeneralMarketRow({ label }: { label: string }) {
           General
         </div>
         <div
+          className="acf-bar-track"
           style={{
             flex: 1,
             height: 14,
@@ -200,6 +205,7 @@ function GeneralMarketRow({ label }: { label: string }) {
           />
         </div>
         <div
+          className="acf-bar-value"
           style={{
             flex: '0 0 96px',
             textAlign: 'right',
@@ -216,6 +222,7 @@ function GeneralMarketRow({ label }: { label: string }) {
         </div>
       </div>
       <div
+        className="acf-bar-caption"
         style={{
           paddingLeft: 122,
           fontFamily: 'var(--apple-font-text)',
@@ -286,23 +293,16 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
     <Reveal>
       <div
         id={topic.slug}
+        className="acf-chart-panel"
         style={{
           marginTop: 32,
-          padding: '32px 28px',
           background: 'var(--apple-panel)',
           border: `1px solid ${LINE}`,
           borderRadius: 'var(--apple-r-md)',
           scrollMarginTop: 80,
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '320px 1fr',
-            gap: 32,
-            alignItems: 'start',
-          }}
-        >
+        <div className="acf-chart-grid">
           <div>
             <div
               style={{

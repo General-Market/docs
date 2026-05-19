@@ -35,21 +35,14 @@ export function EdgeWaysSection() {
     >
       <Reveal delay={0.04}>
         <div
+          className="acf-chart-panel"
           style={{
-            padding: '32px 28px',
             background: 'var(--apple-panel)',
             border: `1px solid ${LINE}`,
             borderRadius: 'var(--apple-r-md)',
           }}
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '320px 1fr',
-              gap: 32,
-              alignItems: 'start',
-            }}
-          >
+          <div className="acf-chart-grid">
             <div>
               <div
                 style={{
@@ -208,14 +201,13 @@ function MechanismRow({
   return (
     <a
       href={`#way-${slug}`}
+      className="acf-bar-row"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
         textDecoration: 'none',
       }}
     >
       <div
+        className="acf-bar-label"
         style={{
           flex: '0 0 160px',
           display: 'flex',
@@ -255,6 +247,7 @@ function MechanismRow({
         </span>
       </div>
       <div
+        className="acf-bar-track"
         style={{
           flex: 1,
           height: 14,
@@ -300,6 +293,7 @@ function MechanismRow({
         />
       </div>
       <div
+        className="acf-bar-value"
         style={{
           flex: '0 0 120px',
           textAlign: 'right',
@@ -338,8 +332,9 @@ function MechanismRow({
 function GeneralBaselineRow() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="acf-bar-row">
         <div
+          className="acf-bar-label"
           style={{
             flex: '0 0 160px',
             display: 'flex',
@@ -364,6 +359,7 @@ function GeneralBaselineRow() {
           General
         </div>
         <div
+          className="acf-bar-track"
           style={{
             flex: 1,
             height: 14,
@@ -385,6 +381,7 @@ function GeneralBaselineRow() {
           />
         </div>
         <div
+          className="acf-bar-value"
           style={{
             flex: '0 0 120px',
             textAlign: 'right',
@@ -401,6 +398,7 @@ function GeneralBaselineRow() {
         </div>
       </div>
       <div
+        className="acf-bar-caption"
         style={{
           paddingLeft: 172,
           fontFamily: 'var(--apple-font-text)',

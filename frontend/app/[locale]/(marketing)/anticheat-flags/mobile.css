@@ -1,0 +1,132 @@
+/* Mobile pass for the anticheat-flags page.
+   Desktop selectors match the inline styles already in place.
+   Mobile rules below 768px collapse the two-column chart grids,
+   tighten panel padding, and wrap bar rows so the track sits
+   below the label/value pair instead of competing with them. */
+
+.acf-chart-panel {
+  padding: 32px 28px;
+}
+
+.acf-chart-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.acf-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.acf-bar-label {
+  min-width: 0;
+}
+
+.acf-bar-track {
+  flex: 1;
+}
+
+.acf-bar-value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.acf-bar-caption {
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .acf-chart-panel {
+    padding: 18px 14px;
+  }
+
+  .acf-chart-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Tighten the inter-row gap inside the bar list. The grid's second column
+     is the bar list — pull it together. */
+  .acf-chart-grid > div:last-child {
+    gap: 8px !important;
+  }
+
+  /* Apple-style dense list: label + value inline, hairline bar tucked below.
+     Each row stays close to two lines of text high. */
+  .acf-bar-row {
+    flex-wrap: wrap;
+    column-gap: 10px;
+    row-gap: 3px;
+    padding: 2px 0;
+  }
+
+  .acf-bar-label {
+    flex: 1 1 auto !important;
+    order: 1;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+
+  .acf-bar-value {
+    flex: 0 0 auto !important;
+    order: 2;
+    line-height: 1.2 !important;
+  }
+
+  /* Bar value blocks tend to carry a small subtitle ("peak X · Y%").
+     Halve its size and pull it inline-tight. */
+  .acf-bar-value > div + div {
+    font-size: 10px !important;
+    margin-top: 0 !important;
+    line-height: 1.25 !important;
+  }
+
+  .acf-bar-value > div:first-child {
+    font-size: 13px !important;
+  }
+
+  .acf-bar-track {
+    flex: 0 0 100% !important;
+    order: 3;
+    height: 6px !important;
+    border-radius: 3px !important;
+  }
+
+  .acf-bar-track > div {
+    border-radius: 3px !important;
+  }
+
+  .acf-bar-caption {
+    padding-left: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    margin-top: 2px;
+  }
+
+  /* Hero shrinks for thumb-height viewports. */
+  .acf-hero {
+    padding-top: 80px !important;
+    padding-bottom: 48px !important;
+  }
+
+  /* Tighter container side-padding inside marketing pages. */
+  .acf-shell {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* The colocation cards are square on desktop. On mobile, square + min-height
+     forces width via aspect-ratio and breaks the viewport. Let them auto-size. */
+  .acf-colo-card {
+    aspect-ratio: auto !important;
+    min-height: 0 !important;
+    padding: 16px !important;
+    gap: 8px !important;
+  }
+}

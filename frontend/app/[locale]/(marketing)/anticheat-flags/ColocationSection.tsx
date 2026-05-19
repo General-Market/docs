@@ -158,7 +158,7 @@ function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
   return (
     <Reveal delay={delay}>
       <article
-        className="flex flex-col h-full"
+        className="acf-colo-card flex flex-col h-full"
         style={{
           background: 'var(--apple-panel)',
           border: `1px solid ${LINE}`,
@@ -273,8 +273,9 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
   const edgePct = Math.max((row.edgeMs / MAX_EDGE) * 100, row.edgeMs > 0 ? 2 : 0)
   const gatedPct = Math.max((row.gatedMs / MAX_EDGE) * 100, row.gatedMs > 0 ? 1.5 : 0)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="acf-bar-row">
       <div
+        className="acf-bar-label"
         style={{
           flex: '0 0 120px',
           fontFamily: 'var(--apple-font-text)',
@@ -290,6 +291,7 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
         {row.name}
       </div>
       <div
+        className="acf-bar-track"
         style={{
           flex: 1,
           height: 14,
@@ -339,6 +341,7 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
         )}
       </div>
       <div
+        className="acf-bar-value"
         style={{
           flex: '0 0 100px',
           textAlign: 'right',
@@ -377,8 +380,9 @@ function LatencyBarRow({ row }: { row: LatencyRow }) {
 function GeneralMarketRow() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="acf-bar-row">
         <div
+          className="acf-bar-label"
           style={{
             flex: '0 0 120px',
             display: 'flex',
@@ -402,6 +406,7 @@ function GeneralMarketRow() {
           General
         </div>
         <div
+          className="acf-bar-track"
           style={{
             flex: 1,
             height: 14,
@@ -423,6 +428,7 @@ function GeneralMarketRow() {
           />
         </div>
         <div
+          className="acf-bar-value"
           style={{
             flex: '0 0 100px',
             textAlign: 'right',
@@ -439,6 +445,7 @@ function GeneralMarketRow() {
         </div>
       </div>
       <div
+        className="acf-bar-caption"
         style={{
           paddingLeft: 132,
           fontFamily: 'var(--apple-font-text)',
@@ -522,22 +529,15 @@ export function ColocationSection() {
 
       <Reveal delay={0.24}>
         <div
+          className="acf-chart-panel"
           style={{
             marginTop: 48,
-            padding: '32px 28px',
             background: 'var(--apple-panel)',
             border: `1px solid ${LINE}`,
             borderRadius: 'var(--apple-r-md)',
           }}
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '320px 1fr',
-              gap: 32,
-              alignItems: 'start',
-            }}
-          >
+          <div className="acf-chart-grid">
             <div>
               <div
                 style={{
