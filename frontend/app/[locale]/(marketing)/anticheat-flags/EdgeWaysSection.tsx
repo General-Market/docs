@@ -74,7 +74,7 @@ export function EdgeWaysSection() {
                   marginBottom: 10,
                 }}
               >
-                Fourteen ways the venue takes a bite
+                Thirteen ways the venue takes a bite
               </h2>
               <p
                 style={{
@@ -411,7 +411,7 @@ function GeneralBaselineRow() {
           fontStyle: 'italic',
         }}
       >
-        Sealed bets, parimutuel, BLS-verified oracles. None of the fourteen mechanisms can fire.
+        Sealed bets, parimutuel, BLS-verified oracles. None of the thirteen mechanisms can fire.
       </div>
     </div>
   )

@@ -22,7 +22,7 @@ export const VENUE_BLEEDS: VenueBleed[] = [
     slug: 'polymarket',
     name: 'Polymarket',
     mm: 'Susquehanna desk',
-    active: ['listing-frontrun', 'oracle-peek', 'colocation', 'cross-connect', 'order-flow-vis', 'maker-rebate'],
+    active: ['listing-frontrun', 'oracle-peek', 'colocation', 'order-flow-vis', 'maker-rebate'],
   },
   {
     slug: 'hyperliquid',
@@ -34,13 +34,13 @@ export const VENUE_BLEEDS: VenueBleed[] = [
     slug: 'binance',
     name: 'Binance',
     mm: 'Wintermute / Sigma Chain',
-    active: ['listing-frontrun', 'vip-fee-tier', 'colocation', 'region-cluster', 'order-flow-vis', 'api-rate-ceiling', 'adl-visibility', 'insurance-priority'],
+    active: ['listing-frontrun', 'vip-fee-tier', 'colocation', 'region-cluster', 'order-flow-vis', 'api-rate-ceiling', 'adl-visibility'],
   },
   {
     slug: 'kalshi',
     name: 'Kalshi',
     mm: 'Susquehanna (designated)',
-    active: ['maker-rebate', 'cross-connect', 'b-book', 'order-flow-vis'],
+    active: ['maker-rebate', 'b-book', 'order-flow-vis'],
   },
   {
     slug: 'coinbase',
@@ -52,19 +52,19 @@ export const VENUE_BLEEDS: VenueBleed[] = [
     slug: 'bybit',
     name: 'Bybit',
     mm: 'Tier-1 listing partners',
-    active: ['listing-frontrun', 'vip-fee-tier', 'colocation', 'order-flow-vis', 'adl-visibility', 'insurance-priority'],
+    active: ['listing-frontrun', 'vip-fee-tier', 'colocation', 'order-flow-vis', 'adl-visibility'],
   },
   {
     slug: 'pumpfun',
     name: 'Pump.fun',
     mm: 'Jito-bundle sniper bots',
-    active: ['order-flow-vis', 'oracle-peek', 'colocation', 'api-rate-ceiling'],
+    active: ['jito-mev', 'order-flow-vis', 'oracle-peek'],
   },
   {
     slug: 'deribit',
     name: 'Deribit',
     mm: 'Institutional options desks',
-    active: ['vip-fee-tier', 'colocation', 'order-flow-vis', 'last-look', 'insurance-priority'],
+    active: ['vip-fee-tier', 'colocation', 'order-flow-vis', 'last-look'],
   },
   {
     slug: 'robinhood',

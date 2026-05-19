@@ -15,6 +15,7 @@ import { polymarket, kalshi, robinhood } from './data-prediction'
 import { ibkr, etoro } from './data-brokers'
 import { pumpfun } from './data-misc'
 import type { Venue } from './types'
+import './mobile.css'
 
 export const metadata: Metadata = {
   title: 'Anti-Cheat Flags. General Market',
@@ -110,9 +111,9 @@ export default function AntiCheatFlagsPage() {
   return (
     <AppShell>
       <div className="w-full">
-        <div className="mx-auto w-full" style={{ maxWidth: 1068, padding: '0 24px' }}>
+        <div className="acf-shell mx-auto w-full" style={{ maxWidth: 1068, padding: '0 24px' }}>
           {/* HERO */}
-          <section style={{ padding: '120px 0 80px' }}>
+          <section className="acf-hero" style={{ padding: '120px 0 80px' }}>
             <Reveal>
               <div
                 style={{
@@ -181,7 +182,7 @@ export default function AntiCheatFlagsPage() {
           {/* PER-VENUE TRIPLE-BAR. Cumulative bleed at 100 / 1K / 100K trades */}
           <VenueBleedSection />
 
-          {/* FOURTEEN MECHANISMS. The page thesis as a chart */}
+          {/* THIRTEEN MECHANISMS. The page thesis as a chart */}
           <EdgeWaysSection />
 
           {/* COLOCATION EDGE. The receipts that aren't even illegal */}
@@ -190,7 +191,7 @@ export default function AntiCheatFlagsPage() {
           {/* FEE TIER EDGE. The spread in basis points + cost of staying inside */}
           <FeeTierSection />
 
-          {/* STRUCTURAL EDGE INVENTORY. Fifteen mechanisms across five rulers */}
+          {/* STRUCTURAL EDGE INVENTORY. Twelve mechanisms across five rulers */}
           <EdgeMatrixSection />
 
           {/* VENUE PILLS. Matches the homepage See All pattern */}
