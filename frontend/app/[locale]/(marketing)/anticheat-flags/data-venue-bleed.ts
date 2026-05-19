@@ -22,13 +22,13 @@ export const VENUE_BLEEDS: VenueBleed[] = [
     slug: 'polymarket',
     name: 'Polymarket',
     mm: 'Susquehanna desk',
-    active: ['oracle-peek', 'order-flow-vis', 'maker-rebate'],
+    active: ['listing-frontrun', 'oracle-peek', 'colocation', 'order-flow-vis', 'maker-rebate', 'b-book'],
   },
   {
     slug: 'hyperliquid',
     name: 'Hyperliquid',
     mm: 'Tokyo arbitrage desk',
-    active: ['region-cluster', 'order-flow-vis', 'maker-rebate', 'adl-visibility'],
+    active: ['region-cluster', 'colocation', 'order-flow-vis', 'maker-rebate', 'adl-visibility'],
   },
   {
     slug: 'binance',
@@ -76,7 +76,7 @@ export const VENUE_BLEEDS: VenueBleed[] = [
     slug: 'ibkr',
     name: 'IBKR',
     mm: 'IBKR Lite wholesalers',
-    active: ['pfof', 'api-rate-ceiling'],
+    active: ['pfof', 'vip-fee-tier', 'api-rate-ceiling'],
   },
   {
     slug: 'etoro',
