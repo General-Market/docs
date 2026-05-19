@@ -20,6 +20,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { NavChart, generateNavHistory } from './NavChart'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
+import { medianFilter } from '@/lib/utils/median-filter'
 
 const USDC_BALANCE_ABI = [{
   inputs: [{ name: 'account', type: 'address' }],
@@ -58,21 +59,6 @@ function formatTvlCompact(tvl: number) {
 // MaxDD are emitted by `/api/vision/vault/[address]/stats`, computed from
 // realized PlayerJoined/PlayerSettled returns. The panel reads them off
 // `useVaultStats` and the snapshot series only feeds the chart line.
-
-// Median-of-3 spike filter for the chart. Display only — the underlying
-// `vault_snapshots` rows stay intact.
-function medianFilter(values: number[]): number[] {
-  if (values.length < 3) return values.slice()
-  const out = [values[0]!]
-  for (let i = 1; i < values.length - 1; i++) {
-    const a = values[i - 1]!
-    const b = values[i]!
-    const c = values[i + 1]!
-    out.push([a, b, c].sort((x, y) => x - y)[1]!)
-  }
-  out.push(values[values.length - 1]!)
-  return out
-}
 
 function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): number | null {
   if (snapshots.length < 2) return null
@@ -154,7 +140,7 @@ function VaultSidebarRow({
 }) {
   const { snapshots } = useVaultHistory(entry.vault.address)
   const sparkData = useMemo(() => {
-    if (snapshots.length >= 2) return snapshots.map(s => s.nav).slice(-24)
+    if (snapshots.length >= 2) return medianFilter(snapshots.map(s => s.nav)).slice(-24)
     // Deterministic fallback so cold-loaded rows aren't blank, but only
     // when the NAV has actually moved off $1.
     if (Math.abs(display.nav - 1.0) > 0.0005) {

@@ -11,6 +11,7 @@ import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultsByAddresses, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { Sparkline } from '@/components/domain/home/Sparkline'
 import { cn } from '@/lib/utils/cn'
+import { medianFilter } from '@/lib/utils/median-filter'
 
 const STRATEGY_META: Record<string, { label: string; color: string }> = {
   momentum:           { label: 'MOMENTUM',   color: '#10b981' },
@@ -179,8 +180,14 @@ function VaultTiltCard({ fund, vault, index, userPosition, href }: {
   // Match the vault detail page's '1d' default so the source-card sparkline
   // and the deep-page chart trace the same curve. The 'all' range returns a
   // handful of sparse points the spline rounds into a synthetic shape.
+  // Apply the same median-of-3 spike strip the detail page uses — a lone bad
+  // mark-to-market reading otherwise dominates the Y range and pancakes the
+  // rest of the curve into a flat line.
   const { snapshots } = useVaultHistory(vault.address, '1d')
-  const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
+  const navData = useMemo(
+    () => medianFilter(snapshots.map(s => s.nav)),
+    [snapshots],
+  )
   // Perf-driven hue. Apple system green for up, system red for down.
   // Black-on-everything was the previous default — three identical strokes
   // read as templated. Honest colour reads as alive.

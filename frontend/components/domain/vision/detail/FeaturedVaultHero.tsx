@@ -29,6 +29,7 @@ import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { Sparkline } from '@/components/domain/home/Sparkline'
+import { medianFilter } from '@/lib/utils/median-filter'
 
 /* ─── helpers ─────────────────────────────────────────────────── */
 
@@ -373,8 +374,14 @@ export function FeaturedVaultHero({ sourceId }: FeaturedVaultHeroProps) {
   // History for sparkline. Use the same '1d' default as the vault detail page so
   // both surfaces draw the same dense curve through real points — 'all' returns
   // a handful of sparse snapshots that the spline smears into a synthetic look.
+  // Apply the same median-of-3 spike strip the detail page uses — without it,
+  // a lone bad mark-to-market reading dominates the Y range and flattens
+  // every other point into a line.
   const { snapshots } = useVaultHistory(vaultAddress ?? '', '1d')
-  const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
+  const navData = useMemo(
+    () => medianFilter(snapshots.map(s => s.nav)),
+    [snapshots],
+  )
 
   // User position: does the wallet hold shares in the featured vault?
   const userPosition = useMemo(() => {

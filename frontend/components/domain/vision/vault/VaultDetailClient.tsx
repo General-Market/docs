@@ -24,6 +24,7 @@ import { NavChart } from '@/components/domain/vaults/NavChart'
 import { VaultActionsPanel } from './VaultActionsPanel'
 import { VaultRoundHistory } from './VaultRoundHistory'
 import sourcesDisplay from '@/data/sources-display.json'
+import { medianFilter } from '@/lib/utils/median-filter'
 
 type FundEntry = {
   name: string
@@ -109,22 +110,6 @@ function formatPerf(perf: number) {
 // `vault_snapshots` forever. Risk metrics on that series describe the
 // spread, not the strategy. We compute them server-side from realized
 // trade returns instead — see `/api/vision/vault/[address]/stats`.
-
-// Median-of-3 spike filter for the chart line. Display only — the
-// underlying snapshots stay intact in the API and the database.
-function medianFilter(values: number[]): number[] {
-  if (values.length < 3) return values.slice()
-  const out = [values[0]!]
-  for (let i = 1; i < values.length - 1; i++) {
-    const a = values[i - 1]!
-    const b = values[i]!
-    const c = values[i + 1]!
-    // Sorting a tiny array beats a hand-rolled median ladder for clarity.
-    out.push([a, b, c].sort((x, y) => x - y)[1]!)
-  }
-  out.push(values[values.length - 1]!)
-  return out
-}
 
 function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): number | null {
   if (snapshots.length < 2) return null
