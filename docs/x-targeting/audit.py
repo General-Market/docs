@@ -33,7 +33,7 @@ KEEP = [
     (r"\b(derivs?|derivatives?)\b", 2),
     (r"\b(options?\s+(trader|trading|analyst|surface|flow|veteran))\b", 3),
     (r"\b(MEV|searcher|arb(itrage)?\s*bot|funding\s*arb|perp\s*basis|latency\s*arb|JIT\s*liquidity)\b", 3),
-    (r"\b(bot\s*dev|algo\s*(trader|trading|dev)|trading\s*bot)\b", 3),
+    (r"\b(bot\s*dev|algo\s*(trader|trading|dev)|trading\s*bots?|build.{0,15}bots?|build.{0,15}trading)\b", 3),
     (r"\b(data\s*analyst|physicist|risk\s*analyst|illiquid\s*strateg|risk\s*calc)\b", 2),
     (r"\b(paradex|thalex|deribit|laevitas|flowdesk|hyperliquid|GSR|wintermute|jane\s*street|jump|cumberland)\b", 2),
     (r"\b(prediction\s*market(s)?\s*(quant|trader|analyst|researcher))\b", 3),
