@@ -20,7 +20,7 @@ import './mobile.css'
 export const metadata: Metadata = {
   title: 'Anti-Cheat Flags. General Market',
   description:
-    'Eleven venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.',
+    'The first exchange to publish how rigged this industry is. And the first to fix it. Eleven venues, the receipts on file.',
   alternates: { canonical: '/anticheat-flags' },
   robots: { index: true, follow: true },
 }
@@ -158,7 +158,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 734,
                 }}
               >
-                The iconic flag from each. What retail lost, what the regulator wrote, what the executive eventually admitted.
+                The first exchange to publish how rigged this industry is. And the first to fix it.
               </p>
             </Reveal>
 
