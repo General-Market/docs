@@ -1,6 +1,6 @@
 import type { Incident } from './types'
-import { Diagram } from './charts/Diagram'
 import { Reveal } from '@/components/ui/Reveal'
+import './charts/diagram.css'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
@@ -71,8 +71,6 @@ export function IncidentCard({ incident, delay = 0 }: { incident: Incident; dela
         >
           {incident.headline}
         </h3>
-
-        <Diagram mechanism={incident.mechanism} {...incident.chart} />
 
         <p
           style={{
