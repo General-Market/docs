@@ -1,4 +1,4 @@
-/* anticheat-flags — candle-chart diagrams + card surface. Always looping. */
+/* anticheat-flags — candle-chart diagrams + card surface. Conveyor scroll. */
 
 .acf-card {
   cursor: pointer;
@@ -83,9 +83,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.acd-eyebrow.predator {
-  color: var(--acd-predator);
-}
+.acd-eyebrow.predator { color: var(--acd-predator); }
 
 .acd-eyebrow.predator::before {
   content: '';
@@ -117,102 +115,21 @@
   overflow: visible;
 }
 
-/* ── Candle wave-in keyframes ───────────────────────────────────────────
-   12 candles, 2.5% slot, instant 1% snap-out at the end of cycle so
-   the loop never lingers in a half-faded state. */
+/* ── Conveyor scroll ──────────────────────────────────────────────────
+   The strip holds 2× the visible candles. We translate by exactly one
+   visible width per cycle. Because the data repeats, the strip wraps
+   without a visible seam. */
 
-.acd-candle {
-  transform-origin: 50% 100%;
-  transform-box: fill-box;
-  opacity: 0;
+.acd-strip {
+  animation: acd-strip-scroll 10s linear infinite;
+  will-change: transform;
 }
 
-@keyframes acd-cand-0  { 0%, 2%   { opacity: 0; transform: translateY(6px) scaleY(0.2); } 5%   { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-1  { 0%, 4.5% { opacity: 0; transform: translateY(6px) scaleY(0.2); } 7.5% { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-2  { 0%, 7%   { opacity: 0; transform: translateY(6px) scaleY(0.2); } 10%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-3  { 0%, 9.5% { opacity: 0; transform: translateY(6px) scaleY(0.2); } 12.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-4  { 0%, 12%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 15%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-5  { 0%, 14.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 17.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-6  { 0%, 17%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 20%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-7  { 0%, 19.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 22.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-8  { 0%, 22%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 25%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-9  { 0%, 24.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 27.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-10 { 0%, 27%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 30%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-@keyframes acd-cand-11 { 0%, 29.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 32.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
-
-.acd-c-0  { animation: acd-cand-0  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-1  { animation: acd-cand-1  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-2  { animation: acd-cand-2  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-3  { animation: acd-cand-3  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-4  { animation: acd-cand-4  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-5  { animation: acd-cand-5  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-6  { animation: acd-cand-6  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-7  { animation: acd-cand-7  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-8  { animation: acd-cand-8  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-9  { animation: acd-cand-9  8.5s var(--acd-ease-apple) infinite; }
-.acd-c-10 { animation: acd-cand-10 8.5s var(--acd-ease-apple) infinite; }
-.acd-c-11 { animation: acd-cand-11 8.5s var(--acd-ease-apple) infinite; }
-
-/* chrome (gridlines + ticks) — stays up for the entire visible window */
-.acd-chrome { opacity: 0; }
-
-@keyframes acd-chrome {
-  0%, 1%   { opacity: 0; }
-  4%, 93%  { opacity: 1; }
-  94%, 100% { opacity: 0; }
+@keyframes acd-strip-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-360px); }
 }
-
-.acd-chrome { animation: acd-chrome 8.5s var(--acd-ease-apple) infinite; }
-
-/* victim position line — appears after the first few candles */
-.acd-victim-line,
-.acd-victim-tag { opacity: 0; }
-
-@keyframes acd-victim {
-  0%, 10%   { opacity: 0; }
-  14%, 93%  { opacity: 1; }
-  94%, 100% { opacity: 0; }
-}
-
-.acd-victim-line { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
-.acd-victim-tag  { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
-
-/* predator pulse — pops as the predator candle arrives */
-.acd-pred-mark { opacity: 0; transform-origin: center; transform-box: fill-box; }
-
-@keyframes acd-pred {
-  0%, 35%  { opacity: 0; transform: scale(0); }
-  40%      { opacity: 1; transform: scale(1.4); }
-  44%, 93% { opacity: 1; transform: scale(1); }
-  94%, 100% { opacity: 0; }
-}
-
-.acd-pred-mark { animation: acd-pred 8.5s var(--acd-ease-apple) infinite; }
-
-/* break X + liq label — same beat as predator */
-.acd-liq-mark,
-.acd-liq-label { opacity: 0; }
-
-@keyframes acd-liq {
-  0%, 38%  { opacity: 0; }
-  42%      { opacity: 1; }
-  93%      { opacity: 1; }
-  94%, 100% { opacity: 0; }
-}
-
-.acd-liq-mark  { animation: acd-liq 8.5s var(--acd-ease-apple) infinite; }
-.acd-liq-label { animation: acd-liq 8.5s var(--acd-ease-apple) infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .acd-candle,
-  .acd-chrome,
-  .acd-victim-line,
-  .acd-victim-tag,
-  .acd-pred-mark,
-  .acd-liq-mark,
-  .acd-liq-label {
-    opacity: 1;
-    transform: none;
-    animation: none !important;
-  }
+  .acd-strip { animation: none !important; transform: translateX(0); }
 }

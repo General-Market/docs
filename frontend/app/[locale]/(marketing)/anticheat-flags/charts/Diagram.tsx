@@ -4,36 +4,38 @@ import type { ChartProps, Mechanism } from '../types'
 import './diagram.css'
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Mini candle chart per incident. Always looping. The accent colour is
-   red. The predator role. And the user appears as a horizontal price
-   line that breaks at the predator candle. The Girardian frame:
-   the market scapegoats one participant in order to keep moving.
+   Mini candle chart per incident. Always-on conveyor: 12 candles visible,
+   sliding left while new ones enter on the right. Every candle's open is
+   the previous candle's close — gapless. The accent is red — the predator
+   role. The user is a horizontal price line. When the predator candle
+   crosses it, the line breaks. The market scapegoats one participant in
+   order to keep moving.
    ────────────────────────────────────────────────────────────────────────── */
 
 const APPLE_RED = '#FF3B30'
-const STROKE = '#4a4a4f'
-const STROKE_SOFT = '#b8b8bd'
-const GRID = 'rgba(0, 0, 0, 0.07)'
-const GRID_SOFT = 'rgba(0, 0, 0, 0.04)'
+const STROKE = '#2c2c2e'
+const STROKE_SOFT = '#c7c7cc'
+const GRID = 'rgba(0, 0, 0, 0.09)'
 const TEXT_TERT = '#6e6e73'
 
 const N = 12
 const VW = 400
 const VH = 260
-const PAD_X = 14
-const SLOT = (VW - PAD_X * 2) / N
-const BODY_W = SLOT - 1            // touching neighbours: 1px hairline gap
+const PAD_X = 20
+const SLOT = (VW - PAD_X * 2) / N        // 30
+const BODY_W = SLOT - 2                   // 28 — bodies practically touch
 const CHART_TOP = 32
 const CHART_BOTTOM = 222
 const TICK_Y = 244
-const MIN_BODY_H = 14              // forced minimum so flat candles still have presence
+const MIN_BODY_H = 14
+const STRIP_W = N * SLOT                  // 360 = the visible scroll width
 
-function cx(i: number): number {
-  return PAD_X + SLOT * (i + 0.5)
+function cx(stripIdx: number): number {
+  return PAD_X + SLOT * (stripIdx + 0.5)
 }
 
 function py(p: number): number {
-  // p: 0..100, 0=bottom, 100=top
+  // p: 0..100, 0 = bottom, 100 = top
   return CHART_BOTTOM - (p / 100) * (CHART_BOTTOM - CHART_TOP)
 }
 
@@ -44,21 +46,21 @@ interface Candle {
   h: number
   l: number
   c: number
-  role?: Role
+  role: Role
 }
 
 interface Scene {
-  candles: Candle[]
+  candles: Candle[]            // exactly N, cyclic: C[N-1] === O[0]
   ticks: [string, string, string, string]
   victim: {
-    y: number              // price level (0..100)
-    label: string          // e.g. "U LONG"
-    breakIdx: number       // -1 = no break (line continues all the way)
-    liqLabel?: string      // shown at the break point
+    y: number
+    label: string
+    breakIdx: number           // -1 = no break
+    liqLabel?: string
   }
   predator: {
-    label: string          // e.g. "SCAM WICK"
-    idx: number            // candle index to highlight (-1 = none)
+    label: string
+    idx: number                // -1 = no predator marker
   }
 }
 
@@ -81,42 +83,58 @@ function getKind(m: Mechanism): SceneKind {
   }
 }
 
-/* ── Candle generators ────────────────────────────────────────────────── */
+/* ── Walker ─────────────────────────────────────────────────────────────
+   Deterministic random-walk segment. Each candle's open is set by the
+   caller (= previous candle's close), so the chain stays gapless. */
 
-function flat(n: number, mid: number, jitter = 6): Candle[] {
-  // Random walk around `mid` — bodies span 6–10 price units, visible at small sizes.
-  return Array.from({ length: n }, (_, k) => {
-    const drift = Math.sin(k * 1.7) * jitter + Math.cos(k * 0.9) * jitter * 0.4
-    const o = mid + drift
-    const c = mid + Math.cos(k * 2.3) * jitter + Math.sin(k * 1.1) * jitter * 0.3
-    const h = Math.max(o, c) + jitter * 0.8
-    const l = Math.min(o, c) - jitter * 0.8
-    return { o, h, l, c, role: c >= o ? 'up' : 'down' }
-  })
+function walkSegment(opts: {
+  startOpen: number
+  targetClose: number
+  steps: number
+  noise: number
+  role?: Role
+  seed?: number
+}): Candle[] {
+  const { startOpen, targetClose, steps, noise, role, seed = 0 } = opts
+  const drift = (targetClose - startOpen) / steps
+  const out: Candle[] = []
+  let open = startOpen
+  for (let k = 0; k < steps; k++) {
+    const wave = Math.sin((k + seed) * 1.7 + 0.3) * noise + Math.cos((k + seed) * 2.4 + 1.1) * noise * 0.6
+    let close = open + drift + wave
+    if (k === steps - 1) close = targetClose // pin exact close for seamless join
+    const swing = Math.abs(close - open)
+    const wickHi = Math.abs(Math.cos((k + seed) * 0.8 + 0.4)) * noise * 0.7 + 1.5
+    const wickLo = Math.abs(Math.sin((k + seed) * 1.3 + 0.7)) * noise * 0.7 + 1.5
+    const h = Math.max(open, close) + wickHi + swing * 0.2
+    const l = Math.min(open, close) - wickLo - swing * 0.2
+    const detected: Role = close >= open ? 'up' : 'down'
+    out.push({ o: open, h, l, c: close, role: role ?? detected })
+    open = close
+  }
+  return out
 }
 
-function ramp(n: number, from: number, to: number, role: Role = 'up'): Candle[] {
-  // Stepped move with body height proportional to step.
-  const step = (to - from) / n
-  return Array.from({ length: n }, (_, k) => {
-    const o = from + step * k
-    const c = from + step * (k + 1)
-    const wickPad = Math.abs(step) * 0.45 + 1.2
-    const h = Math.max(o, c) + wickPad
-    const l = Math.min(o, c) - wickPad
-    return { o, h, l, c, role }
-  })
+function predatorCandle({
+  open, close, lowExtra = 0, highExtra = 0, role = 'predator' as Role,
+}: { open: number; close: number; lowExtra?: number; highExtra?: number; role?: Role }): Candle {
+  const isDown = close < open
+  const baseLow = Math.min(open, close) - 1
+  const baseHi = Math.max(open, close) + 1
+  return {
+    o: open,
+    c: close,
+    h: baseHi + (isDown ? highExtra : highExtra + 4),
+    l: baseLow - (isDown ? lowExtra + 4 : lowExtra),
+    role,
+  }
 }
 
-function frozen(n: number, mid: number): Candle[] {
-  // Frozen candles are short bars at mid — the render layer will floor them
-  // to MIN_BODY_H so they still register visually.
-  return Array.from({ length: n }, () => ({
-    o: mid, h: mid + 1, l: mid - 1, c: mid, role: 'frozen' as Role,
-  }))
+function frozenCandle(mid: number): Candle {
+  return { o: mid, c: mid, h: mid + 1, l: mid - 1, role: 'frozen' }
 }
 
-/* ── Scene builders ───────────────────────────────────────────────────── */
+/* ── Scenes — every series cycles: C[11] === O[0] ───────────────────── */
 
 function buildScene(kind: SceneKind, p: ChartProps): Scene {
   const lossTxt = p.loss ?? ''
@@ -125,12 +143,14 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
 
   switch (kind) {
     case 'spike': {
-      // Quiet long, sudden wick, recovery.
-      const base = flat(8, 56, 6)
-      const wick: Candle = { o: 56, h: 60, l: 6, c: 52, role: 'predator' }
-      const after = flat(3, 52, 5)
+      // Stable trading, sudden wick to the low, recovery. Cycle: 56 → 56.
+      const a = walkSegment({ startOpen: 56, targetClose: 54, steps: 4, noise: 5 })
+      const b = walkSegment({ startOpen: 54, targetClose: 56, steps: 4, noise: 4, seed: 4 })
+      const wick = predatorCandle({ open: 56, close: 54, lowExtra: 48 }) // l ≈ 5
+      const c = walkSegment({ startOpen: 54, targetClose: 56, steps: 3, noise: 4, seed: 8 })
+      const candles = [...a, ...b, wick, ...c]
       return {
-        candles: [...base, wick, ...after],
+        candles,
         ticks: ['10:42', '10:43', '10:44', '10:45'],
         victim: { y: 46, label: 'U STOP', breakIdx: 8, liqLabel: `LIQ ${lossTxt}` },
         predator: { label: `SCAM WICK${moveTxt ? ' · ' + moveTxt : ''}`, idx: 8 },
@@ -138,48 +158,60 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'cliff': {
-      const climb = ramp(10, 22, 84, 'up')
-      const drop: Candle = { o: 84, h: 86, l: 6, c: 10, role: 'predator' }
-      const dead = flat(1, 8, 2)
+      // 22 → climb to 80 → predator drop → 8 → 22. Cycle.
+      const climb = walkSegment({ startOpen: 22, targetClose: 80, steps: 8, noise: 5 })
+      const drop = predatorCandle({ open: 80, close: 12, lowExtra: 4 })
+      const dead = walkSegment({ startOpen: 12, targetClose: 10, steps: 1, noise: 1 })
+      const restart = walkSegment({ startOpen: 10, targetClose: 22, steps: 2, noise: 3, seed: 10 })
+      const candles = [...climb, drop, ...dead, ...restart]
       return {
-        candles: [...climb, drop, ...dead],
+        candles,
         ticks: ['DAY 1', 'DAY 30', 'DAY 60', 'DAY 91'],
-        victim: { y: 80, label: 'U HOLDS', breakIdx: 10, liqLabel: `WIPED ${lossTxt}` },
-        predator: { label: 'INSIDERS EXIT', idx: 10 },
+        victim: { y: 78, label: 'U HOLDS', breakIdx: 8, liqLabel: `WIPED ${lossTxt}` },
+        predator: { label: 'INSIDERS EXIT', idx: 8 },
       }
     }
 
     case 'runup': {
-      // Flat then ramp before announcement. Insider buying ahead.
-      const sleep = flat(6, 22, 5)
-      const climb = ramp(5, 22, 80, 'predator')
-      const peak: Candle = { o: 80, h: 92, l: 78, c: 90, role: 'predator' }
+      // Flat 32 → predator buys 32→80 → dump back to 32. Cycle.
+      const sleep = walkSegment({ startOpen: 32, targetClose: 32, steps: 5, noise: 4 })
+      const climb = walkSegment({ startOpen: 32, targetClose: 80, steps: 4, noise: 4, role: 'predator', seed: 5 })
+      const peak = predatorCandle({ open: 80, close: 88, highExtra: 4 })
+      const dump = walkSegment({ startOpen: 88, targetClose: 60, steps: 1, noise: 2 })
+      const back = walkSegment({ startOpen: 60, targetClose: 32, steps: 1, noise: 2, seed: 11 })
+      const candles = [...sleep, ...climb, peak, ...dump, ...back]
       return {
-        candles: [...sleep, ...climb, peak],
+        candles,
         ticks: ['T−14d', 'T−7d', 'T−1d', 'EVENT'],
-        victim: { y: 88, label: 'U BUYS', breakIdx: 11, liqLabel: `LATE ${lossTxt}` },
-        predator: { label: 'INSIDERS BUY EARLY', idx: 10 },
+        victim: { y: 86, label: 'U BUYS', breakIdx: 9, liqLabel: `LATE ${lossTxt}` },
+        predator: { label: 'INSIDERS BUY EARLY', idx: 9 },
       }
     }
 
     case 'dump': {
-      const initial: Candle = { o: 28, h: 94, l: 24, c: 56, role: 'predator' }
-      const grind = ramp(11, 56, 8, 'down')
+      // Pump at listing → grind down → recover to start. Cycle: 22 → 22.
+      const pump = predatorCandle({ open: 22, close: 60, highExtra: 30 })
+      const grind = walkSegment({ startOpen: 60, targetClose: 14, steps: 9, noise: 4, role: 'down', seed: 3 })
+      const recover = walkSegment({ startOpen: 14, targetClose: 22, steps: 2, noise: 3, seed: 12 })
+      const candles = [pump, ...grind, ...recover]
       return {
-        candles: [initial, ...grind],
+        candles,
         ticks: ['LIST', '+5m', '+1h', '+1d'],
-        victim: { y: 82, label: 'U BUYS LIST', breakIdx: 0, liqLabel: `DOWN ${lossTxt}` },
+        victim: { y: 78, label: 'U BUYS LIST', breakIdx: 0, liqLabel: `DOWN ${lossTxt}` },
         predator: { label: 'MM DUMPS LISTING', idx: 0 },
       }
     }
 
     case 'drain': {
-      // Balance candles. Stable then a collapse.
-      const stable = flat(9, 78, 5)
-      const drained: Candle = { o: 78, h: 82, l: 4, c: 8, role: 'predator' }
-      const zero = flat(2, 8, 3)
+      // Lifecycle: drained at 12 → user refills to 78 → stable → drained → drained.
+      const wreck = walkSegment({ startOpen: 12, targetClose: 12, steps: 3, noise: 2 })
+      const refill = walkSegment({ startOpen: 12, targetClose: 78, steps: 2, noise: 4, seed: 3 })
+      const stable = walkSegment({ startOpen: 78, targetClose: 78, steps: 4, noise: 5, seed: 5 })
+      const drained = predatorCandle({ open: 78, close: 14, lowExtra: 6 })
+      const aftermath = walkSegment({ startOpen: 14, targetClose: 12, steps: 2, noise: 2, seed: 10 })
+      const candles = [...wreck, ...refill, ...stable, drained, ...aftermath]
       return {
-        candles: [...stable, drained, ...zero],
+        candles,
         ticks: ['T−9', 'T−6', 'T−3', 'NOW'],
         victim: { y: 72, label: 'USER BAL', breakIdx: 9, liqLabel: `DRAINED ${lossTxt}` },
         predator: { label: 'HOT WALLET → 0', idx: 9 },
@@ -187,24 +219,28 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'freeze': {
-      const ok = flat(3, 76, 5)
-      const lock = frozen(6, 76)
-      const collapse: Candle = { o: 76, h: 78, l: 16, c: 20, role: 'predator' }
-      const after = flat(2, 18, 3)
+      // Trading ok → frozen → crash → recover. Cycle: 76 → 76.
+      const ok = walkSegment({ startOpen: 76, targetClose: 76, steps: 2, noise: 4 })
+      const lock = Array.from({ length: 4 }, () => frozenCandle(76))
+      const collapse = predatorCandle({ open: 76, close: 20, lowExtra: 4 })
+      const aftermath = walkSegment({ startOpen: 20, targetClose: 22, steps: 2, noise: 3, seed: 7 })
+      const recover = walkSegment({ startOpen: 22, targetClose: 76, steps: 3, noise: 4, seed: 11 })
+      const candles = [...ok, ...lock, collapse, ...aftermath, ...recover]
       return {
-        candles: [...ok, ...lock, collapse, ...after],
+        candles,
         ticks: ['BUY OK', 'BTN OFF', 'CRASH', '+1d'],
-        victim: { y: 72, label: 'U LOCKED', breakIdx: 9, liqLabel: `LOCKED IN ${lossTxt}` },
-        predator: { label: 'EXIT DENIED', idx: 9 },
+        victim: { y: 72, label: 'U LOCKED', breakIdx: 6, liqLabel: `LOCKED IN ${lossTxt}` },
+        predator: { label: 'EXIT DENIED', idx: 6 },
       }
     }
 
     case 'carve': {
-      // Rising bodies. But every candle has an oversized red upper wick
-      // (the upside the venue carved off for itself).
-      const candles = ramp(12, 18, 60, 'carved').map((c, i) => ({
-        ...c,
-        h: c.h + 16 + Math.abs(Math.sin(i * 0.9)) * 8,
+      // Bodies walk slowly around 50; every candle has a tall red upper wick.
+      const base = walkSegment({ startOpen: 50, targetClose: 50, steps: 12, noise: 5 })
+      const candles = base.map<Candle>((cd, i) => ({
+        ...cd,
+        role: 'carved',
+        h: cd.h + 14 + Math.abs(Math.sin(i * 0.9)) * 8,
       }))
       return {
         candles,
@@ -215,18 +251,14 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
     }
 
     case 'wash': {
-      // Bodies in a tight band but with random walk so they look like trading.
-      const candles: Candle[] = Array.from({ length: 12 }, (_, k) => {
-        const dir = k % 2 === 0 ? 1 : -1
-        const drift = Math.sin(k * 1.4) * 4
-        return {
-          o: 48 + drift - dir * 3,
-          c: 52 + drift + dir * 3,
-          h: 60 + drift,
-          l: 38 + drift,
-          role: 'predator',
-        }
-      })
+      // Doji-like bodies in tight band — fake volume, no net movement.
+      const base = walkSegment({ startOpen: 50, targetClose: 50, steps: 12, noise: 5, role: 'predator' })
+      // Stretch wicks so the volume looks pumped.
+      const candles = base.map<Candle>((cd, i) => ({
+        ...cd,
+        h: cd.h + 4 + Math.abs(Math.sin(i * 1.1)) * 4,
+        l: cd.l - 4 - Math.abs(Math.cos(i * 0.9)) * 4,
+      }))
       return {
         candles,
         ticks: ['00:00', '00:15', '00:30', '00:45'],
@@ -234,22 +266,20 @@ function buildScene(kind: SceneKind, p: ChartProps): Scene {
         predator: { label: `MM WASHES VOLUME${exTxt ? ' · ' + exTxt : ''}`, idx: -1 },
       }
     }
-
   }
 }
 
 /* ── Rendering ────────────────────────────────────────────────────────── */
 
-function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
-  const x = cx(idx)
-  const role: Role = cd.role ?? (cd.c >= cd.o ? 'up' : 'down')
+function CandleEl({ stripIdx, c: cd }: { stripIdx: number; c: Candle }) {
+  const x = cx(stripIdx)
+  const role = cd.role
   const top = py(cd.h)
   const bot = py(cd.l)
   const rawTop = py(Math.max(cd.o, cd.c))
   const rawBot = py(Math.min(cd.o, cd.c))
   const rawH = rawBot - rawTop
 
-  // Enforce a minimum body height. Centre the floor around the original body.
   let bodyTop = rawTop
   let bodyH = rawH
   if (rawH < MIN_BODY_H) {
@@ -258,17 +288,15 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
     bodyH = MIN_BODY_H
   }
 
-  const cls = `acd-candle acd-c-${idx}`
-
   if (role === 'frozen') {
     return (
-      <g className={cls}>
-        <line x1={x} y1={py(cd.h)} x2={x} y2={py(cd.l)} stroke={STROKE_SOFT} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.6" />
+      <g>
+        <line x1={x} y1={top} x2={x} y2={bot} stroke={STROKE_SOFT} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.6" />
         <rect
           x={x - BODY_W / 2}
           y={bodyTop}
           width={BODY_W}
-          height={Math.max(MIN_BODY_H, bodyH)}
+          height={bodyH}
           fill="#fff"
           stroke={STROKE_SOFT}
           strokeWidth="1"
@@ -281,9 +309,8 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
   }
 
   if (role === 'carved') {
-    // Upper wick rendered in red (carved upside), body kept neutral.
     return (
-      <g className={cls}>
+      <g>
         <line x1={x} y1={top} x2={x} y2={bodyTop} stroke={APPLE_RED} strokeWidth="2" strokeLinecap="round" />
         <line x1={x} y1={bodyTop + bodyH} x2={x} y2={bot} stroke={STROKE} strokeWidth="1.4" />
         <rect
@@ -300,13 +327,13 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
 
   const isPred = role === 'predator'
   const isUp = role === 'up'
-  const fill = isPred ? `url(#acd-grad-pred)` : isUp ? `url(#acd-grad-up)` : `url(#acd-grad-down)`
+  const fill = isPred ? 'url(#acd-grad-pred)' : isUp ? 'url(#acd-grad-up)' : 'url(#acd-grad-down)'
   const stroke = isPred ? '#e02a20' : isUp ? STROKE_SOFT : STROKE
   const wickStroke = isPred ? APPLE_RED : STROKE
   const wickWidth = isPred ? 2 : 1.4
 
   return (
-    <g className={cls}>
+    <g>
       <line x1={x} y1={top} x2={x} y2={bot} stroke={wickStroke} strokeWidth={wickWidth} strokeLinecap="round" />
       <rect
         x={x - BODY_W / 2}
@@ -322,21 +349,50 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
   )
 }
 
-function CandleChart({ scene }: { scene: Scene }) {
-  const victimY = py(scene.victim.y)
-  const victimBreakX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : VW - PAD_X
-  const liqX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : 0
-  const predatorX = scene.predator.idx >= 0 ? cx(scene.predator.idx) : 0
-  // Predator marker sits above the highest point of the highlighted candle.
-  // Clamp to the chart top so it never escapes the canvas on near-top peaks.
-  const predatorY = scene.predator.idx >= 0
-    ? Math.max(CHART_TOP + 14, py(scene.candles[scene.predator.idx]?.h ?? 80) - 18)
-    : 0
+function PredatorMarker({ x, y }: { x: number; y: number }) {
+  return (
+    <g>
+      <circle cx={x} cy={y} r="28" fill="url(#acd-grad-halo)" />
+      <circle cx={x} cy={y} r="6" fill={APPLE_RED} />
+      <circle cx={x} cy={y} r="6" fill="none" stroke="#fff" strokeWidth="1.5" />
+      <path d={`M ${x - 6} ${y + 8} L ${x} ${y + 16} L ${x + 6} ${y + 8} Z`} fill={APPLE_RED} />
+    </g>
+  )
+}
 
-  // Estimate liq label width so a right-side break still fits inside the frame
-  const liqLabelW = (scene.victim.liqLabel?.length ?? 0) * 7.5
-  const liqLabelX = liqX + liqLabelW + 14 > VW - 4 ? liqX - 14 : liqX + 14
-  const liqLabelAnchor = liqX + liqLabelW + 14 > VW - 4 ? 'end' : 'start'
+function BreakMarker({ x, y, label, flipLabel }: { x: number; y: number; label?: string; flipLabel: boolean }) {
+  return (
+    <g>
+      <circle cx={x} cy={y} r="12" fill="#fff" stroke={APPLE_RED} strokeWidth="1.6" />
+      <line x1={x - 5} y1={y - 5} x2={x + 5} y2={y + 5} stroke={APPLE_RED} strokeWidth="2.4" strokeLinecap="round" />
+      <line x1={x - 5} y1={y + 5} x2={x + 5} y2={y - 5} stroke={APPLE_RED} strokeWidth="2.4" strokeLinecap="round" />
+      {label && (
+        <text
+          x={flipLabel ? x - 18 : x + 18}
+          y={y + 5}
+          textAnchor={flipLabel ? 'end' : 'start'}
+          fontFamily="var(--apple-font-text)"
+          fontSize="15"
+          fontWeight={700}
+          fill={APPLE_RED}
+          letterSpacing="0.04em"
+          style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
+        >
+          {label}
+        </text>
+      )}
+    </g>
+  )
+}
+
+function CandleChart({ scene }: { scene: Scene }) {
+  const dup = [...scene.candles, ...scene.candles]
+  const victimY = py(scene.victim.y)
+  const predIdx = scene.predator.idx
+  const breakIdx = scene.victim.breakIdx
+  // Flip the liq label when the break is in the right half — keeps text in-frame.
+  const liqLabelLen = (scene.victim.liqLabel?.length ?? 0) * 8.5
+  const flipForRight = breakIdx >= 0 && cx(breakIdx) + liqLabelLen + 24 > VW - PAD_X
 
   return (
     <div className="acd-frame">
@@ -366,13 +422,16 @@ function CandleChart({ scene }: { scene: Scene }) {
               <stop offset="60%"  stopColor="#FF3B30" stopOpacity="0.10" />
               <stop offset="100%" stopColor="#FF3B30" stopOpacity="0" />
             </radialGradient>
+            <clipPath id="acd-clip">
+              <rect x={PAD_X - 1} y={0} width={VW - PAD_X * 2 + 2} height={CHART_BOTTOM + 6} />
+            </clipPath>
           </defs>
 
-          {/* baseline + ticks. Minimal chrome — one strong hairline + 4 labels. */}
-          <g className="acd-chrome">
-            <line x1={PAD_X / 2} y1={CHART_BOTTOM} x2={VW - PAD_X / 2} y2={CHART_BOTTOM} stroke={GRID} strokeWidth="1" />
+          {/* baseline + axis ticks (static) */}
+          <g>
+            <line x1={PAD_X} y1={CHART_BOTTOM} x2={VW - PAD_X} y2={CHART_BOTTOM} stroke={GRID} strokeWidth="1" />
             {scene.ticks.map((t, i) => {
-              const tx = PAD_X / 2 + (i / (scene.ticks.length - 1)) * (VW - PAD_X)
+              const tx = PAD_X + (i / (scene.ticks.length - 1)) * (VW - PAD_X * 2)
               return (
                 <g key={i}>
                   <line x1={tx} y1={CHART_BOTTOM} x2={tx} y2={CHART_BOTTOM + 5} stroke={GRID} strokeWidth="1" />
@@ -394,27 +453,11 @@ function CandleChart({ scene }: { scene: Scene }) {
             })}
           </g>
 
-          {/* candles */}
-          {scene.candles.map((c, i) => (
-            <CandleEl key={i} idx={i} c={c} />
-          ))}
-
-          {/* predator pulse. Soft halo + dot + downward arrow above the predator candle */}
-          {scene.predator.idx >= 0 && (
-            <g className="acd-pred-mark">
-              <circle cx={predatorX} cy={predatorY} r="30" fill="url(#acd-grad-halo)" />
-              <circle cx={predatorX} cy={predatorY} r="6" fill={APPLE_RED} />
-              <circle cx={predatorX} cy={predatorY} r="6" fill="none" stroke="#fff" strokeWidth="1.5" />
-              <path d={`M ${predatorX - 6} ${predatorY + 8} L ${predatorX} ${predatorY + 16} L ${predatorX + 6} ${predatorY + 8} Z`} fill={APPLE_RED} />
-            </g>
-          )}
-
-          {/* victim position line (red dashed) */}
+          {/* victim line (static, across the chart) */}
           <line
-            className="acd-victim-line"
-            x1={PAD_X / 2}
+            x1={PAD_X}
             y1={victimY}
-            x2={victimBreakX}
+            x2={VW - PAD_X}
             y2={victimY}
             stroke={APPLE_RED}
             strokeWidth="1.6"
@@ -422,10 +465,33 @@ function CandleChart({ scene }: { scene: Scene }) {
             opacity="0.9"
           />
 
-          {/* victim tag. Pill chip at left */}
-          <g className="acd-victim-tag">
+          {/* candle conveyor — clipped to chart area, sliding left */}
+          <g clipPath="url(#acd-clip)">
+            <g className="acd-strip">
+              {dup.map((c, i) => (
+                <CandleEl key={i} stripIdx={i} c={c} />
+              ))}
+              {/* predator markers — one per copy, travel with their candles */}
+              {predIdx >= 0 && (
+                <>
+                  <PredatorMarker x={cx(predIdx)} y={Math.max(CHART_TOP + 14, py(scene.candles[predIdx].h) - 18)} />
+                  <PredatorMarker x={cx(predIdx + N)} y={Math.max(CHART_TOP + 14, py(scene.candles[predIdx].h) - 18)} />
+                </>
+              )}
+              {/* break markers + liq labels — anchored to predator candle */}
+              {breakIdx >= 0 && (
+                <>
+                  <BreakMarker x={cx(breakIdx)} y={victimY} label={scene.victim.liqLabel} flipLabel={flipForRight} />
+                  <BreakMarker x={cx(breakIdx + N)} y={victimY} label={scene.victim.liqLabel} flipLabel={flipForRight} />
+                </>
+              )}
+            </g>
+          </g>
+
+          {/* victim pill chip — static, anchored to left edge */}
+          <g>
             <rect
-              x={PAD_X / 2 + 1}
+              x={PAD_X + 1}
               y={victimY - 14}
               width={scene.victim.label.length * 8.2 + 18}
               height={26}
@@ -435,7 +501,7 @@ function CandleChart({ scene }: { scene: Scene }) {
               strokeWidth="1.2"
             />
             <text
-              x={PAD_X / 2 + 10}
+              x={PAD_X + 10}
               y={victimY + 4}
               fontFamily="var(--apple-font-text)"
               fontSize="13"
@@ -447,34 +513,6 @@ function CandleChart({ scene }: { scene: Scene }) {
               {scene.victim.label}
             </text>
           </g>
-
-          {/* break / liquidation marker */}
-          {scene.victim.breakIdx >= 0 && (
-            <>
-              <g className="acd-liq-mark">
-                <circle cx={liqX} cy={victimY} r="12" fill="#fff" stroke={APPLE_RED} strokeWidth="1.6" />
-                <line x1={liqX - 5} y1={victimY - 5} x2={liqX + 5} y2={victimY + 5} stroke={APPLE_RED} strokeWidth="2.4" strokeLinecap="round" />
-                <line x1={liqX - 5} y1={victimY + 5} x2={liqX + 5} y2={victimY - 5} stroke={APPLE_RED} strokeWidth="2.4" strokeLinecap="round" />
-              </g>
-              {scene.victim.liqLabel && (
-                <g className="acd-liq-label">
-                  <text
-                    x={liqLabelX}
-                    y={victimY + 5}
-                    textAnchor={liqLabelAnchor}
-                    fontFamily="var(--apple-font-text)"
-                    fontSize="15"
-                    fontWeight={700}
-                    fill={APPLE_RED}
-                    letterSpacing="0.04em"
-                    style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
-                  >
-                    {scene.victim.liqLabel}
-                  </text>
-                </g>
-              )}
-            </>
-          )}
         </svg>
       </div>
     </div>
