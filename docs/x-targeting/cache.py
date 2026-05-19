@@ -197,15 +197,25 @@ def _profile_age_days(handle: str) -> int | None:
 
 
 def cmd_needs(args: list[str]):
-    """Print handles that would need fetching. Use to filter API inputs."""
+    """Print handles that would need fetching. Use to filter API inputs.
+
+    Two separate TTLs because they age differently:
+      profile_ttl  — bio/follower count, default 14d (slow-changing)
+      tweet_ttl    — proves recent activity, default 7d (activity needs to be fresh)
+    """
     require_tweets = False
-    ttl_days = 14
+    profile_ttl = 14
+    tweet_ttl = 7
     handles = []
     for a in args:
         if a == "--tweets":
             require_tweets = True
         elif a.startswith("--ttl="):
-            ttl_days = int(a.split("=", 1)[1])
+            profile_ttl = tweet_ttl = int(a.split("=", 1)[1])
+        elif a.startswith("--profile-ttl="):
+            profile_ttl = int(a.split("=", 1)[1])
+        elif a.startswith("--tweet-ttl="):
+            tweet_ttl = int(a.split("=", 1)[1])
         else:
             handles.append(a.lstrip("@"))
     needed = []
@@ -215,14 +225,14 @@ def cmd_needs(args: list[str]):
         if p_age is None:
             needed.append((h, "no-profile"))
             continue
-        if p_age > ttl_days:
+        if p_age > profile_ttl:
             needed.append((h, f"profile-stale-{p_age}d"))
             continue
         if require_tweets:
             if t_age is None:
                 needed.append((h, "no-tweets"))
                 continue
-            if t_age > ttl_days:
+            if t_age > tweet_ttl:
                 needed.append((h, f"tweets-stale-{t_age}d"))
                 continue
         # Cached + fresh = skip
@@ -231,7 +241,8 @@ def cmd_needs(args: list[str]):
         return
     for h, reason in needed:
         print(f"{h}\t{reason}")
-    print(f"# {len(needed)}/{len(handles)} handles need fetching", file=sys.stderr)
+    print(f"# {len(needed)}/{len(handles)} handles need fetching "
+          f"(profile_ttl={profile_ttl}d, tweet_ttl={tweet_ttl}d)", file=sys.stderr)
 
 
 def cmd_fresh(handle: str):
