@@ -41,21 +41,14 @@ export function VenueBleedSection() {
     >
       <Reveal delay={0.04}>
         <div
+          className="acf-chart-panel"
           style={{
-            padding: '32px 28px',
             background: 'var(--apple-panel)',
             border: `1px solid ${LINE}`,
             borderRadius: 'var(--apple-r-md)',
           }}
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '320px 1fr',
-              gap: 32,
-              alignItems: 'start',
-            }}
-          >
+          <div className="acf-chart-grid">
             <div>
               <div
                 style={{
@@ -109,15 +102,12 @@ export function VenueBleedSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {rows.map(v => {
                 const cum1k = v.bpsPerTrade * TRADES
-                const cum100 = v.bpsPerTrade * 100
-                const lightPct = Math.max(1, (cum1k / max) * 100)
-                const darkPct = Math.max(0.8, (cum100 / max) * 100)
+                const pct = Math.max(1, (cum1k / max) * 100)
                 return (
                   <BleedRow
                     key={v.slug}
                     name={v.name}
-                    lightPct={lightPct}
-                    darkPct={darkPct}
+                    pct={pct}
                     value={fmtPct(cum1k)}
                     sub={`${fmtBps(v.bpsPerTrade)}/trade`}
                   />
@@ -180,20 +170,19 @@ export function VenueBleedSection() {
 
 function BleedRow({
   name,
-  lightPct,
-  darkPct,
+  pct,
   value,
   sub,
 }: {
   name: string
-  lightPct: number
-  darkPct: number
+  pct: number
   value: string
   sub: string
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="acf-bar-row">
       <div
+        className="acf-bar-label"
         style={{
           flex: '0 0 140px',
           fontFamily: 'var(--apple-font-text)',
@@ -209,6 +198,7 @@ function BleedRow({
         {name}
       </div>
       <div
+        className="acf-bar-track"
         style={{
           flex: 1,
           height: 14,
@@ -235,25 +225,14 @@ function BleedRow({
             top: 0,
             left: 0,
             bottom: 0,
-            width: `${lightPct}%`,
-            background: ACCENT,
-            opacity: 0.32,
-            borderRadius: 4,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: `${darkPct}%`,
+            width: `${pct}%`,
             background: ACCENT,
             borderRadius: 4,
           }}
         />
       </div>
       <div
+        className="acf-bar-value"
         style={{
           flex: '0 0 120px',
           textAlign: 'right',
@@ -292,8 +271,9 @@ function BleedRow({
 function GeneralBaselineRow() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="acf-bar-row">
         <div
+          className="acf-bar-label"
           style={{
             flex: '0 0 140px',
             display: 'flex',
@@ -317,6 +297,7 @@ function GeneralBaselineRow() {
           General
         </div>
         <div
+          className="acf-bar-track"
           style={{
             flex: 1,
             height: 14,
@@ -338,6 +319,7 @@ function GeneralBaselineRow() {
           />
         </div>
         <div
+          className="acf-bar-value"
           style={{
             flex: '0 0 120px',
             textAlign: 'right',
@@ -354,6 +336,7 @@ function GeneralBaselineRow() {
         </div>
       </div>
       <div
+        className="acf-bar-caption"
         style={{
           paddingLeft: 152,
           fontFamily: 'var(--apple-font-text)',
