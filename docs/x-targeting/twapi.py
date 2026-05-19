@@ -74,19 +74,29 @@ def append_ledger(row: dict) -> None:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+SESSION_START_FILE = CACHE / ".session_start_balance"
+
+
 def session_spent_credits() -> int:
-    """Sum delta of every ledger row in this session (or all-time if no session file)."""
-    if not LEDGER.exists():
-        return 0
-    total = 0
-    for line in LEDGER.read_text().split("\n"):
-        if not line.strip():
-            continue
+    """Compute spend as (start_balance - current_balance). The per-call delta in the
+    ledger is unreliable because TwitterAPI.io's /oapi/my/info endpoint lags — many
+    calls show delta=0 when they actually cost credits. Absolute balance delta is the
+    truth.
+    """
+    if not SESSION_START_FILE.exists():
+        # First call this session — record the current balance as the baseline.
         try:
-            total += json.loads(line).get("delta_credits", 0)
+            r, b = balance()
+            SESSION_START_FILE.write_text(str(r + b))
+            return 0
         except Exception:
-            continue
-    return total
+            return 0
+    try:
+        start = int(SESSION_START_FILE.read_text().strip())
+        r, b = balance()
+        return max(0, start - (r + b))
+    except Exception:
+        return 0
 
 
 def check_budget(estimate_credits: int = 0) -> None:
