@@ -38,12 +38,14 @@ export function EdgeWaysSection() {
           style={{
             fontFamily: 'var(--apple-font-text)',
             fontSize: 12,
+            fontWeight: 600,
             color: TERTIARY,
-            letterSpacing: '-0.005em',
-            marginBottom: 10,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: 14,
           }}
         >
-          {EDGE_WAYS.length} mechanisms · {total} bps if a single venue runs every play
+          14 mechanisms · {total} bps stacked
         </div>
       </Reveal>
 
@@ -52,15 +54,15 @@ export function EdgeWaysSection() {
           className="font-semibold"
           style={{
             fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(28px, 3.6vw, 40px)',
+            fontSize: 'clamp(32px, 4.2vw, 48px)',
             fontWeight: 600,
             letterSpacing: 'var(--apple-track-tighter)',
-            lineHeight: 1.1,
+            lineHeight: 1.0833,
             color: TEXT,
-            maxWidth: 980,
+            maxWidth: 820,
           }}
         >
-          14 Ways Exchanges &amp; MMs Steal Your Money. And How to Fix It.
+          Fourteen ways the venue takes a bite. Each named, each weighed.
         </h2>
       </Reveal>
 
@@ -68,155 +70,218 @@ export function EdgeWaysSection() {
         <p
           style={{
             fontFamily: 'var(--apple-font-text)',
-            fontSize: 17,
-            lineHeight: 1.47,
+            fontSize: 19,
+            lineHeight: 1.42,
             letterSpacing: 'var(--apple-track-tight)',
             color: SECONDARY,
-            marginTop: 12,
-            maxWidth: 780,
+            marginTop: 16,
+            maxWidth: 734,
           }}
         >
           One bar per mechanism. Width is basis points the maxed-out market maker books over retail
-          per round-trip, amortized by how often the mechanism actually fires. Rare-but-massive
-          events are not pretended to fire every trade.
+          per round-trip, amortized by how often it actually fires. Rare-but-massive events are not
+          pretended to fire every trade.
         </p>
-      </Reveal>
-
-      <Reveal delay={0.16}>
-        <div
-          style={{
-            marginTop: 24,
-            padding: '14px 18px',
-            background: SURFACE,
-            border: `1px solid ${LINE}`,
-            borderRadius: 'var(--apple-r-sm)',
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: SECONDARY,
-            letterSpacing: '-0.011em',
-            maxWidth: 780,
-          }}
-        >
-          <span style={{ color: TEXT, fontWeight: 600 }}>How each mechanism becomes bps.</span>{' '}
-          Peak bps from a fee schedule, a latency conversion (ms × 0.05 bps/ms,
-          Aquilina–Budish–O&rsquo;Neill 2020), or a sourced adverse-selection study. Frequency is
-          the probability the mechanism fires on a single retail round-trip at a venue where it is
-          active. Per-trade bps = peak × frequency. Per-venue total = sum across active mechanisms.
-          That is all the math.
-        </div>
       </Reveal>
 
       {/* Horizontal bar chart */}
       <Reveal delay={0.2}>
-        <div
+        <figure
           role="img"
           aria-label="Fourteen mechanisms ranked by basis-point cost per round-trip trade"
-          style={{
-            marginTop: 32,
-            padding: '20px 20px 16px',
-            background: 'var(--apple-panel)',
-            border: `1px solid ${LINE}`,
-            borderRadius: 'var(--apple-r-md)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
+          style={{ marginTop: 36, marginBottom: 0 }}
         >
-          {EDGE_WAYS.map(w => {
-            const pct = (w.bps / max) * 100
-            return (
-              <a
-                key={w.slug}
-                href={`#way-${w.slug}`}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
-                  columnGap: 14,
-                  alignItems: 'center',
-                  textDecoration: 'none',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                  <span
+          <div
+            style={{
+              padding: '28px 28px 20px',
+              background: 'var(--apple-panel)',
+              border: `1px solid ${LINE}`,
+              borderRadius: 'var(--apple-r-md)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--apple-font-text)',
+                fontSize: 12,
+                fontWeight: 600,
+                color: TERTIARY,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+              }}
+            >
+              Per-trade cost · bps, frequency-adjusted
+            </div>
+
+            {EDGE_WAYS.map(w => {
+              const pct = (w.bps / max) * 100
+              return (
+                <a
+                  key={w.slug}
+                  href={`#way-${w.slug}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
+                    columnGap: 18,
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: 11,
+                        color: TERTIARY,
+                        letterSpacing: '+0.011em',
+                        fontWeight: 600,
+                        fontVariantNumeric: 'tabular-nums',
+                        flex: '0 0 22px',
+                      }}
+                    >
+                      {pad2(w.rank)}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--apple-font-text)',
+                        fontSize: 14,
+                        color: TEXT,
+                        fontWeight: 600,
+                        letterSpacing: '-0.016em',
+                        lineHeight: 1.3,
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      {w.name}
+                    </span>
+                  </div>
+                  <div
                     style={{
+                      position: 'relative',
+                      height: 22,
+                      background: SURFACE,
+                      borderRadius: 'var(--apple-r-pill)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${Math.max(0.5, pct)}%`,
+                        background: `linear-gradient(90deg, ${ACCENT}, #2997FF)`,
+                        borderRadius: 'var(--apple-r-pill)',
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      fontFamily: 'var(--apple-font-display)',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      letterSpacing: 'var(--apple-track-tighter)',
+                      color: ACCENT,
+                    }}
+                  >
+                    {fmtBps(w.bps)}
+                  </div>
+                </a>
+              )
+            })}
+
+            {/* Axis */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
+                columnGap: 18,
+                marginTop: 6,
+              }}
+            >
+              <div />
+              <div style={{ position: 'relative', height: 16 }}>
+                {[0, 0.25, 0.5, 1].map((t, i) => (
+                  <span
+                    key={t}
+                    style={{
+                      position: 'absolute',
+                      left: `${t * 100}%`,
+                      transform:
+                        i === 0
+                          ? 'translateX(0)'
+                          : i === 3
+                          ? 'translateX(-100%)'
+                          : 'translateX(-50%)',
                       fontFamily: 'var(--apple-font-text)',
                       fontSize: 11,
                       color: TERTIARY,
-                      letterSpacing: '0.04em',
-                      fontWeight: 600,
+                      letterSpacing: '+0.011em',
                       fontVariantNumeric: 'tabular-nums',
-                      flex: '0 0 22px',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {pad2(w.rank)}
+                    {fmtBps(max * t)}
                   </span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--apple-font-text)',
-                      fontSize: 13,
-                      color: TEXT,
-                      fontWeight: 600,
-                      letterSpacing: '-0.011em',
-                      lineHeight: 1.3,
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    {w.name}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    position: 'relative',
-                    height: 14,
-                    background: SURFACE,
-                    borderRadius: 3,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: `${Math.max(0.5, pct)}%`,
-                      background: ACCENT,
-                      borderRadius: 3,
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    textAlign: 'right',
-                    fontFamily: 'var(--apple-font-display)',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    letterSpacing: 'var(--apple-track-tighter)',
-                    color: ACCENT,
-                  }}
-                >
-                  {fmtBps(w.bps)}
-                </div>
-              </a>
-            )
-          })}
-          <div
+                ))}
+              </div>
+              <div />
+            </div>
+          </div>
+          <figcaption
             style={{
-              marginTop: 8,
-              paddingTop: 12,
-              borderTop: `1px solid ${LINE}`,
+              marginTop: 14,
               fontFamily: 'var(--apple-font-text)',
-              fontSize: 11,
+              fontSize: 12,
               color: TERTIARY,
-              letterSpacing: '-0.005em',
+              letterSpacing: '+0.011em',
               textAlign: 'right',
             }}
           >
-            bps per round-trip, frequency-adjusted · retail = 0
-          </div>
-        </div>
+            Frequency-adjusted · retail baseline = 0
+          </figcaption>
+        </figure>
+      </Reveal>
+
+      {/* Methodology — demoted from a hero card to a quiet collapsible */}
+      <Reveal delay={0.24}>
+        <details
+          style={{
+            marginTop: 20,
+            maxWidth: 734,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 14,
+            lineHeight: 1.55,
+            color: SECONDARY,
+            letterSpacing: '-0.011em',
+          }}
+        >
+          <summary
+            style={{
+              cursor: 'pointer',
+              color: TEXT,
+              fontWeight: 600,
+              fontSize: 13,
+              letterSpacing: '-0.011em',
+            }}
+          >
+            How each mechanism becomes bps
+          </summary>
+          <p style={{ marginTop: 8 }}>
+            Peak bps from a fee schedule, a latency conversion (ms × 0.05 bps/ms,
+            Aquilina–Budish–O&rsquo;Neill 2020), or a sourced adverse-selection study. Frequency is
+            the probability the mechanism fires on a single retail round-trip at a venue where it
+            is active. Per-trade bps = peak × frequency. Per-venue total = sum across active
+            mechanisms. That is all the math.
+          </p>
+        </details>
       </Reveal>
 
       {/* Per-mechanism prose */}

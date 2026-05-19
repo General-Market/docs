@@ -72,15 +72,16 @@ function SectionHeader({ title, meta }: { title: string; meta?: string }) {
 
 function HeroStat({ value, label }: { value: string; label: string }) {
   return (
-    <div style={{ padding: '0 4px' }}>
+    <div>
       <div
         style={{
           fontFamily: 'var(--apple-font-display)',
-          fontSize: 'clamp(22px, 2.4vw, 28px)',
+          fontSize: 'clamp(40px, 5vw, 56px)',
           fontWeight: 600,
           letterSpacing: 'var(--apple-track-tighter)',
           color: TEXT,
           lineHeight: 1,
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {value}
@@ -90,8 +91,10 @@ function HeroStat({ value, label }: { value: string; label: string }) {
           fontFamily: 'var(--apple-font-text)',
           fontSize: 12,
           color: TERTIARY,
-          letterSpacing: '-0.005em',
-          marginTop: 8,
+          letterSpacing: '+0.011em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+          marginTop: 12,
         }}
       >
         {label}
@@ -103,31 +106,46 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
   const totalEdges = EDGE_TOPICS.length
-  const totalVenuesAcrossEdges = EDGE_TOPICS.reduce((acc, t) => acc + t.rows.length, 0)
 
   return (
     <AppShell>
       <div className="w-full">
-        <div className="mx-auto w-full" style={{ maxWidth: 1280, padding: '0 24px' }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 1068, padding: '0 24px' }}>
           {/* HERO */}
-          <section style={{ padding: '64px 0 40px' }}>
-            <Reveal mask>
+          <section style={{ padding: '120px 0 80px' }}>
+            <Reveal>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: TERTIARY,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  marginBottom: 20,
+                }}
+              >
+                Anti-Cheat · Case file
+              </div>
+            </Reveal>
+            <Reveal mask delay={0.04}>
               <h1
                 className="font-semibold"
                 style={{
                   fontFamily: 'var(--apple-font-display)',
-                  fontSize: 'clamp(40px, 5.6vw, 56px)',
+                  fontSize: 'clamp(56px, 8vw, 96px)',
                   fontWeight: 600,
                   letterSpacing: 'var(--apple-track-tighter)',
-                  lineHeight: 1.07,
+                  lineHeight: 1.0714,
                   color: TEXT,
                   maxWidth: 920,
+                  fontFeatureSettings: '"ss01"',
                 }}
               >
-                Anti-Cheat Flags.
+                Eleven venues. One ledger.
               </h1>
             </Reveal>
-            <Reveal delay={0.08}>
+            <Reveal delay={0.12}>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',
@@ -135,29 +153,27 @@ export default function AntiCheatFlagsPage() {
                   lineHeight: 1.38,
                   letterSpacing: 'var(--apple-track-tight)',
                   color: SECONDARY,
-                  marginTop: 16,
-                  maxWidth: 680,
+                  marginTop: 20,
+                  maxWidth: 734,
                 }}
               >
-                Eleven venues. The iconic flag from each one. What retail lost, what the regulator wrote, what the executive eventually admitted.
+                The iconic flag from each. What retail lost, what the regulator wrote, what the executive eventually admitted.
               </p>
             </Reveal>
 
-            <Reveal delay={0.16}>
+            <Reveal delay={0.2}>
               <div
-                className="grid grid-cols-2 md:grid-cols-4"
+                className="grid grid-cols-3"
                 style={{
-                  marginTop: 40,
-                  paddingTop: 20,
-                  paddingBottom: 20,
+                  marginTop: 64,
+                  paddingTop: 28,
                   borderTop: `1px solid ${LINE}`,
-                  borderBottom: `1px solid ${LINE}`,
+                  columnGap: 24,
                 }}
               >
-                <HeroStat value={String(totalEdges)} label="Structural edges" />
-                <HeroStat value={String(totalVenuesAcrossEdges)} label="Named venues compared" />
+                <HeroStat value={String(totalEdges)} label="Mechanisms" />
+                <HeroStat value={String(VENUES.length)} label="Venues" />
                 <HeroStat value={String(totalIncidents)} label="Receipts on file" />
-                <HeroStat value="2015–26" label="Years documented" />
               </div>
             </Reveal>
           </section>
