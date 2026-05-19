@@ -137,6 +137,11 @@ class Tracker:
 
         for bid in to_remove:
             pos = self._positions.pop(bid)
+            # Strip dead weight before parking the position in history.
+            # Settled batches never need their bitmap or bets again; keeping
+            # them in memory just to fsync them every cycle is theatre.
+            for k in self._HISTORY_DROP_KEYS:
+                pos.pop(k, None)
             self._history.append(pos)
         # Trim history — bookkeeping that grows without bound becomes a corpse.
         if len(self._history) > self.MAX_HISTORY:
@@ -625,15 +630,25 @@ class Tracker:
 
         return poisoned
 
+    # Settled positions don't need the bitmap, its hash, or the bets list —
+    # those mattered while the batch was open. After settlement they are
+    # kilobytes of dead weight that get re-fsynced every cycle. Active
+    # positions keep them; history strips them.
+    _HISTORY_DROP_KEYS = {"bitmap", "bitmap_hash", "bets", "bitmap_hex", "bitmap_hash_hex"}
+
     @staticmethod
-    def _serialize_pos(pos: dict) -> dict:
+    def _serialize_pos(pos: dict, *, for_history: bool = False) -> dict:
         """Convert a position dict into a JSON-safe shape.
 
         bytes values become hex strings under suffixed keys, so the original
         position object is never mutated and reload symmetry is preserved.
+        For history entries, large fields the closed batch no longer needs
+        are dropped to keep the on-disk file from ballooning.
         """
         out = {}
         for k, v in pos.items():
+            if for_history and k in Tracker._HISTORY_DROP_KEYS:
+                continue
             if isinstance(v, (bytes, bytearray)):
                 if k == "bitmap":
                     out["bitmap_hex"] = bytes(v).hex()
@@ -738,7 +753,7 @@ class Tracker:
             # the first settled position became a no-op. State loss on the
             # next restart followed inevitably.
             active = [self._serialize_pos(p) for p in self._positions.values()]
-            history = [self._serialize_pos(p) if isinstance(p, dict) else p
+            history = [self._serialize_pos(p, for_history=True) if isinstance(p, dict) else p
                        for p in self._history]
             data = {
                 "active": active,
@@ -759,7 +774,8 @@ class Tracker:
             log.warning("Failed to save history to %s: %s", path, e, exc_info=True)
 
     def save_vault_state(self, vault_info: dict):
-        """Cache vault state for persistence."""
+        """Cache vault state. The next check_all() flushes it to disk —
+        firing fsync here meant every per-vault tick rewrote the file."""
         self._vault_state = {
             "address": vault_info.get("address", ""),
             "total_assets": vault_info.get("total_assets", 0),
@@ -768,4 +784,3 @@ class Tracker:
             "manager_shares": vault_info.get("manager_shares", 0),
             "perf_fee_rate": vault_info.get("perf_fee_rate", 0),
         }
-        self._save_history()
