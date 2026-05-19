@@ -36,6 +36,13 @@ const COLUMNS: Col[] = [
     ],
   },
   {
+    heading: 'Writing',
+    links: [
+      { label: 'Alpha is shrinking', href: '/alpha-shrinking' },
+      { label: 'Anti-Cheat Flags', href: '/anticheat-flags' },
+    ],
+  },
+  {
     heading: 'Build',
     links: [
       { label: 'Docs', href: '/docs' },
@@ -171,7 +178,10 @@ export function AppleFooter() {
           .apple-footer-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (min-width: 1024px) {
-          .apple-footer-grid { grid-template-columns: repeat(5, 1fr); gap: 40px 40px; }
+          .apple-footer-grid { grid-template-columns: repeat(3, 1fr); gap: 40px 40px; }
+        }
+        @media (min-width: 1280px) {
+          .apple-footer-grid { grid-template-columns: repeat(6, 1fr); gap: 40px 32px; }
         }
         .apple-footer-bottom {
           display: flex;

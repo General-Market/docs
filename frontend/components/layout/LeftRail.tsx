@@ -12,6 +12,7 @@ import {
   TrophyIcon,
 } from './apple-icons'
 import { Watchlist } from './Watchlist'
+import { Writing } from './Writing'
 
 type NavItem = {
   id: string
@@ -118,6 +119,8 @@ export function LeftRail() {
       </div>
 
       <Watchlist />
+
+      <Writing />
 
       <div className="flex-1" />
 
