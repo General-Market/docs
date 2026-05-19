@@ -558,11 +558,43 @@ def audit(handle: str) -> dict:
     hard_pass = all(v for _, v in hard)
     soft_pass_count = sum(1 for _, v in soft if v)
 
-    # With 8 hard + 6 soft gates: hard must all pass, soft >= 4 of 6 for PASS
+    # MIDDLE TIER: relaxed gates for quiet operators verified by cohort signal.
+    # Requires: bio_not_kol, pinned_not_kol, tweets_not_kol, follower_band, no_spam_flood
+    # Relaxed: niche_recent >= 1, active <= 30d, cadence 0.1 to 30, NO engage_consistent
+    # Plus: cohort_signal — how many of our PASS / Tier-2 accounts follow this one.
+    pass_seeds = {'thalexglobal','robonethq','neutrafinance','quantymacro','0xloris','chameleon_jeff','rf_extended'}
+    tier2 = {'drdavidsimic','bookdepth','annanay','artursepp','quantaraum','gametheorizing','anthdm',
+             'grantstenger','mikevanrossum','cardosofede','drjstrategy','extendedapp',
+             'mr_plumpkin','0xshittrader','soskakyle','ltrd_','0xfdf','littlevolswan',
+             'hftgod','formuladeltaone','systematicls','__paleologo','vivekvrao1',
+             'agustinlebron3','christinaqi','vnovakovski','kevinxpang','armv7lfx',
+             'galois_capital','systemicstrathl'}
+    # Cohort signal: count of seed/tier2 accounts that follow this handle (from cache)
+    cohort_signal = 0
+    followed_by = set(s.lower() for s in (p.get('followed_by') or []))
+    for s in pass_seeds | tier2:
+        if s in followed_by:
+            cohort_signal += 1
+
+    middle_hard = [
+        bio_not_kol := not bio_hard_reject,
+        not pinned_kol,
+        kol_tweet_hits <= 2,
+        1000 <= followers <= 200_000,
+        age_days >= 180,                    # relaxed from 365
+        0 <= latest_age <= 30,              # relaxed from 14
+        0.1 <= posts_per_day <= 30,         # relaxed from 0.5
+        spam_hits <= 2,
+        niche_hits >= 1,                    # relaxed from 3
+    ]
+    middle_hard_pass = all(middle_hard)
+
     if hard_pass and soft_pass_count >= 4:
         verdict = "PASS"
     elif hard_pass and soft_pass_count >= 3:
         verdict = "CONDITIONAL"
+    elif middle_hard_pass and cohort_signal >= 2:
+        verdict = "MIDDLE"
     else:
         verdict = "FAIL"
 
@@ -592,6 +624,7 @@ def audit(handle: str) -> dict:
         "niche_engagement_sum": niche_engagement_sum,
         "spam_hits_last10": spam_hits,
         "kol_tweet_hits_last10": kol_tweet_hits,
+        "cohort_signal": cohort_signal,
         "pinned_kol": pinned_kol,
         "pinned_reason": pinned_reason,
         "reply_behavior": has_reply_behavior,

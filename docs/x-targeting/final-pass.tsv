@@ -1,8 +1,18 @@
-handle	followers	tier_pass	engage	niche/10	bio	source
-ThalexGlobal	3001	70	3.12	9	Institutional crypto-options exchange	original seed
-RoboNetHQ	6330	60	3.30	5	"world's first prompt to quant execution engine"	jargon search
-NeutraFinance	17131	80	3.04	8	Verified niche brand on-topic	reply harvest
-quantymacro	35740	70	1.60	5	"self taught hedge fund quantitative macro tradooor"	Armv7lFx follows
-0xLoris	14051	40	1.53	4	"Founder @ Crypto HFT MM // Founder @LorisTools"	Armv7lFx follows
-chameleon_jeff	126030	100	0.85	10	Hyperliquid CEO Jeff Yan — "building a pretty good house for all finance"	Armv7lFx regex-miss recovery
-rf_extended	5009	100	1.48	5	"Founder @extendedapp, formerly @revolut"	Armv7lFx regex-miss recovery
+handle	verdict	followers	cohort_signal	engage	niche/10	bio
+ThalexGlobal	PASS	3001	—	3.12	9	Institutional crypto-options exchange
+chameleon_jeff	PASS	126030	—	0.85	10	Hyperliquid CEO Jeff Yan
+NeutraFinance	PASS	17131	—	3.04	8	Onchain vault niche brand
+RoboNetHQ	PASS	6330	—	3.30	5	prompt-to-quant execution engine
+quantymacro	PASS	35740	—	1.60	5	self-taught hedge fund quant macro
+rf_extended	PASS	5009	—	1.48	5	extendedapp founder ex-Revolut
+0xLoris	PASS	14051	—	1.53	4	Crypto HFT MM founder
+ltrd_	MIDDLE	37674	12	0.62	3	"I just think deeply about simple things" (operator camouflage)
+annanay	MIDDLE	8549	11	0.71	5	Founder/CEO @QFEX (HFT firm)
+0xfdf	MIDDLE	13569	8	0.69	1	"Wir müssen wissen, wir werden wissen" (Hilbert) — 0.17 posts/day
+mr_plumpkin	MIDDLE	3787	7	1.40	2	Variational founder ex-quant
+DrDavidSimic	MIDDLE	1631	5	1.23	9	Crypto MM ex-Citadel building @botfedai
+ArturSepp	MIDDLE	10332	3	0.65	3	Risk Magazine Quant of the Year
+SystemicStratHL	MIDDLE	4439	3	0.97	1	Hyperliquid vault builder
+anthdm	CONDITIONAL	27982	4	1.74	3	Ex-exchange engineer & MM CEO @MMT_Official_
+DrJStrategy	CONDITIONAL	98744	0	1.57	4	Wellington Altus Chief Strategist PhD Econ
+extendedapp	CONDITIONAL	29048	5	1.20	5	Perp Dex built by ex-@Revolut team
