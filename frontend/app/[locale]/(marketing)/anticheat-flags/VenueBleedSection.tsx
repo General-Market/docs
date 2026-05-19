@@ -72,7 +72,7 @@ export function VenueBleedSection() {
                   marginBottom: 10,
                 }}
               >
-                Retail baseline = 0. Bar = central estimate of cumulative % bleed over 1,000 round-trips. Whisker = defensible range, low to high, from peer-reviewed sources. These are estimates, not measurements — see{' '}
+                Retail baseline = 0. Bar = central estimate of cumulative % bleed over 1,000 round-trips. Whisker = defensible range, low to high, from peer-reviewed sources. These are estimates, not measurements. See{' '}
                 <a
                   href="#edge-ways"
                   style={{ color: ACCENT, fontWeight: 500 }}
