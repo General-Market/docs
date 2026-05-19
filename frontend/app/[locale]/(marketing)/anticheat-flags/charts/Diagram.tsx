@@ -19,12 +19,12 @@ const TEXT_TERT = '#6e6e73'
 
 const N = 12
 const VW = 400
-const VH = 108
-const PAD_X = 20
+const VH = 200
+const PAD_X = 22
 const SLOT = (VW - PAD_X * 2) / N
-const BODY_W = SLOT * 0.48
-const CHART_TOP = 14
-const CHART_BOTTOM = 84
+const BODY_W = 12
+const CHART_TOP = 26
+const CHART_BOTTOM = 168
 
 function cx(i: number): number {
   return PAD_X + SLOT * (i + 0.5)
@@ -244,8 +244,8 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
   if (role === 'frozen') {
     return (
       <g className={cls}>
-        <line x1={x} y1={py(cd.h)} x2={x} y2={py(cd.l)} stroke={STROKE_SOFT} strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
-        <rect x={x - BODY_W / 2} y={bodyTop - 1} width={BODY_W} height={3} fill="#fff" stroke={STROKE_SOFT} strokeWidth="0.75" strokeDasharray="2 2" opacity="0.55" rx="0.5" />
+        <line x1={x} y1={py(cd.h)} x2={x} y2={py(cd.l)} stroke={STROKE_SOFT} strokeWidth="1.2" strokeDasharray="2 2" opacity="0.55" />
+        <rect x={x - BODY_W / 2} y={bodyTop - 1.5} width={BODY_W} height={4} fill="#fff" stroke={STROKE_SOFT} strokeWidth="1" strokeDasharray="2 2" opacity="0.6" rx="1" />
       </g>
     )
   }
@@ -255,11 +255,11 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
     return (
       <g className={cls}>
         {/* red carved upper wick */}
-        <line x1={x} y1={top} x2={x} y2={bodyTop} stroke={APPLE_RED} strokeWidth="1.2" strokeLinecap="round" />
+        <line x1={x} y1={top} x2={x} y2={bodyTop} stroke={APPLE_RED} strokeWidth="1.8" strokeLinecap="round" />
         {/* lower wick */}
-        <line x1={x} y1={bodyBot} x2={x} y2={bot} stroke={STROKE_SOFT} strokeWidth="0.9" />
+        <line x1={x} y1={bodyBot} x2={x} y2={bot} stroke={STROKE} strokeWidth="1.2" />
         {/* body (kept) */}
-        <rect x={x - BODY_W / 2} y={bodyTop} width={BODY_W} height={bodyH} fill={STROKE} opacity="0.85" rx="0.5" />
+        <rect x={x - BODY_W / 2} y={bodyTop} width={BODY_W} height={bodyH} fill={STROKE} opacity="0.9" rx="1" />
       </g>
     )
   }
@@ -269,7 +269,7 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
   const bodyFill = isPred ? APPLE_RED : isUp ? '#ffffff' : STROKE
   const bodyStroke = isPred ? APPLE_RED : STROKE
   const wickStroke = isPred ? APPLE_RED : STROKE
-  const wickWidth = isPred ? 1.2 : 0.9
+  const wickWidth = isPred ? 1.8 : 1.4
 
   return (
     <g className={cls}>
@@ -281,8 +281,8 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
         height={bodyH}
         fill={bodyFill}
         stroke={bodyStroke}
-        strokeWidth={isUp ? 1 : 0.5}
-        rx="0.5"
+        strokeWidth={isUp ? 1.4 : 0.8}
+        rx="1"
       />
     </g>
   )
@@ -290,13 +290,18 @@ function CandleEl({ idx, c: cd }: { idx: number; c: Candle }) {
 
 function CandleChart({ scene }: { scene: Scene }) {
   const victimY = py(scene.victim.y)
-  const victimBreakX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : VW - PAD_X / 2
+  const victimBreakX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : VW - PAD_X
   const liqX = scene.victim.breakIdx >= 0 ? cx(scene.victim.breakIdx) : 0
   const predatorX = scene.predator.idx >= 0 ? cx(scene.predator.idx) : 0
   // Predator marker sits above the highest point of the highlighted candle.
   const predatorY = scene.predator.idx >= 0
-    ? py(scene.candles[scene.predator.idx]?.h ?? 80) - 6
+    ? py(scene.candles[scene.predator.idx]?.h ?? 80) - 12
     : 0
+
+  // Estimate liq label width so a right-side break still fits inside the frame
+  const liqLabelW = (scene.victim.liqLabel?.length ?? 0) * 7.5
+  const liqLabelX = liqX + liqLabelW + 14 > VW - 4 ? liqX - 14 : liqX + 14
+  const liqLabelAnchor = liqX + liqLabelW + 14 > VW - 4 ? 'end' : 'start'
 
   return (
     <div className="acd-frame">
@@ -309,24 +314,25 @@ function CandleChart({ scene }: { scene: Scene }) {
         <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
           {/* gridlines */}
           <g className="acd-chrome">
-            <line x1="0" y1={CHART_TOP} x2={VW} y2={CHART_TOP} stroke={GRID_SOFT} strokeWidth="0.75" />
-            <line x1="0" y1={(CHART_TOP + CHART_BOTTOM) / 2} x2={VW} y2={(CHART_TOP + CHART_BOTTOM) / 2} stroke={GRID_SOFT} strokeWidth="0.75" strokeDasharray="2 3" />
-            <line x1="0" y1={CHART_BOTTOM} x2={VW} y2={CHART_BOTTOM} stroke={GRID} strokeWidth="0.75" />
+            <line x1={PAD_X / 2} y1={CHART_TOP} x2={VW - PAD_X / 2} y2={CHART_TOP} stroke={GRID_SOFT} strokeWidth="0.9" />
+            <line x1={PAD_X / 2} y1={CHART_TOP + (CHART_BOTTOM - CHART_TOP) / 3} x2={VW - PAD_X / 2} y2={CHART_TOP + (CHART_BOTTOM - CHART_TOP) / 3} stroke={GRID_SOFT} strokeWidth="0.75" strokeDasharray="2 4" />
+            <line x1={PAD_X / 2} y1={CHART_TOP + 2 * (CHART_BOTTOM - CHART_TOP) / 3} x2={VW - PAD_X / 2} y2={CHART_TOP + 2 * (CHART_BOTTOM - CHART_TOP) / 3} stroke={GRID_SOFT} strokeWidth="0.75" strokeDasharray="2 4" />
+            <line x1={PAD_X / 2} y1={CHART_BOTTOM} x2={VW - PAD_X / 2} y2={CHART_BOTTOM} stroke={GRID} strokeWidth="1" />
             {/* time ticks */}
             {scene.ticks.map((t, i) => {
-              const tx = (i / (scene.ticks.length - 1)) * VW
+              const tx = PAD_X / 2 + (i / (scene.ticks.length - 1)) * (VW - PAD_X)
               return (
                 <g key={i}>
-                  <line x1={tx} y1={CHART_BOTTOM} x2={tx} y2={CHART_BOTTOM + 3} stroke={GRID} strokeWidth="0.75" />
+                  <line x1={tx} y1={CHART_BOTTOM} x2={tx} y2={CHART_BOTTOM + 4} stroke={GRID} strokeWidth="1" />
                   <text
                     x={tx}
-                    y={CHART_BOTTOM + 13}
+                    y={CHART_BOTTOM + 18}
                     textAnchor={i === 0 ? 'start' : i === scene.ticks.length - 1 ? 'end' : 'middle'}
                     fontFamily="var(--apple-font-text)"
-                    fontSize="9"
-                    fontWeight={500}
+                    fontSize="11"
+                    fontWeight={600}
                     fill={TEXT_TERT}
-                    letterSpacing="0.08em"
+                    letterSpacing="0.1em"
                     style={{ textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}
                   >
                     {t}
@@ -341,12 +347,13 @@ function CandleChart({ scene }: { scene: Scene }) {
             <CandleEl key={i} idx={i} c={c} />
           ))}
 
-          {/* predator pulse. Soft halo above the predator candle */}
+          {/* predator pulse. Soft halo + dot + downward arrow above the predator candle */}
           {scene.predator.idx >= 0 && (
-            <g className="acd-pred-mark" style={{ ['--ox' as never]: `${predatorX}px`, ['--oy' as never]: `${predatorY}px` }}>
-              <circle cx={predatorX} cy={predatorY} r="14" fill={APPLE_RED} opacity="0.10" />
-              <circle cx={predatorX} cy={predatorY} r="3.5" fill={APPLE_RED} />
-              <path d={`M ${predatorX - 4} ${predatorY - 4} L ${predatorX} ${predatorY - 9} L ${predatorX + 4} ${predatorY - 4} Z`} fill={APPLE_RED} />
+            <g className="acd-pred-mark">
+              <circle cx={predatorX} cy={predatorY} r="22" fill={APPLE_RED} opacity="0.10" />
+              <circle cx={predatorX} cy={predatorY} r="10" fill={APPLE_RED} opacity="0.18" />
+              <circle cx={predatorX} cy={predatorY} r="4.5" fill={APPLE_RED} />
+              <path d={`M ${predatorX - 5} ${predatorY + 7} L ${predatorX} ${predatorY + 14} L ${predatorX + 5} ${predatorY + 7} Z`} fill={APPLE_RED} />
             </g>
           )}
 
@@ -358,19 +365,28 @@ function CandleChart({ scene }: { scene: Scene }) {
             x2={victimBreakX}
             y2={victimY}
             stroke={APPLE_RED}
-            strokeWidth="1"
-            strokeDasharray="3 2"
-            opacity="0.85"
+            strokeWidth="1.4"
+            strokeDasharray="4 3"
+            opacity="0.9"
           />
 
-          {/* victim tag. Small chip at left */}
+          {/* victim tag. Pill chip at left */}
           <g className="acd-victim-tag">
-            <rect x={PAD_X / 2 + 2} y={victimY - 11} width={48} height={13} rx="2" fill="#fff" stroke={APPLE_RED} strokeWidth="0.75" />
+            <rect
+              x={PAD_X / 2 + 1}
+              y={victimY - 11}
+              width={scene.victim.label.length * 7.2 + 14}
+              height={20}
+              rx="4"
+              fill="#fff"
+              stroke={APPLE_RED}
+              strokeWidth="1"
+            />
             <text
-              x={PAD_X / 2 + 6}
-              y={victimY - 1}
+              x={PAD_X / 2 + 8}
+              y={victimY + 3}
               fontFamily="var(--apple-font-text)"
-              fontSize="9"
+              fontSize="11"
               fontWeight={700}
               fill={APPLE_RED}
               letterSpacing="0.06em"
@@ -384,17 +400,18 @@ function CandleChart({ scene }: { scene: Scene }) {
           {scene.victim.breakIdx >= 0 && (
             <>
               <g className="acd-liq-mark">
-                <line x1={liqX} y1={victimY - 6} x2={liqX} y2={victimY + 6} stroke={APPLE_RED} strokeWidth="1.4" />
-                <line x1={liqX - 4} y1={victimY - 4} x2={liqX + 4} y2={victimY + 4} stroke={APPLE_RED} strokeWidth="1.4" />
-                <line x1={liqX - 4} y1={victimY + 4} x2={liqX + 4} y2={victimY - 4} stroke={APPLE_RED} strokeWidth="1.4" />
+                <circle cx={liqX} cy={victimY} r="9" fill="#fff" stroke={APPLE_RED} strokeWidth="1.2" />
+                <line x1={liqX - 4} y1={victimY - 4} x2={liqX + 4} y2={victimY + 4} stroke={APPLE_RED} strokeWidth="2" strokeLinecap="round" />
+                <line x1={liqX - 4} y1={victimY + 4} x2={liqX + 4} y2={victimY - 4} stroke={APPLE_RED} strokeWidth="2" strokeLinecap="round" />
               </g>
               {scene.victim.liqLabel && (
                 <g className="acd-liq-label">
                   <text
-                    x={liqX + 8}
-                    y={victimY + 14}
+                    x={liqLabelX}
+                    y={victimY + 4}
+                    textAnchor={liqLabelAnchor}
                     fontFamily="var(--apple-font-text)"
-                    fontSize="10.5"
+                    fontSize="13"
                     fontWeight={700}
                     fill={APPLE_RED}
                     letterSpacing="0.04em"

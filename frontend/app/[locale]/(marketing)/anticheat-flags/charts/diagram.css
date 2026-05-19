@@ -28,15 +28,13 @@
   transform: translateX(4px);
 }
 
-
 :root {
   --acd-frame-bg-top: #fcfcfd;
   --acd-frame-bg-bot: #f6f6f9;
-  --acd-grid: rgba(0, 0, 0, 0.07);
-  --acd-grid-soft: rgba(0, 0, 0, 0.04);
-  --acd-stroke: #4a4a4f;
-  --acd-stroke-soft: #b8b8bd;
-  --acd-stroke-hairline: rgba(0, 0, 0, 0.18);
+  --acd-grid: rgba(0, 0, 0, 0.09);
+  --acd-grid-soft: rgba(0, 0, 0, 0.05);
+  --acd-stroke: #2c2c2e;
+  --acd-stroke-soft: #c7c7cc;
   --acd-text: #1d1d1f;
   --acd-text-tertiary: #6e6e73;
   --acd-predator: #ff3b30;
@@ -46,12 +44,10 @@
 
 .acd-frame {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
   background: linear-gradient(180deg, var(--acd-frame-bg-top) 0%, var(--acd-frame-bg-bot) 100%);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
-  padding: 16px 20px 12px;
+  padding: 16px 20px 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -62,7 +58,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 85% 0%, rgba(255, 59, 48, 0.04), transparent 60%);
+  background: radial-gradient(circle at 88% 6%, rgba(255, 59, 48, 0.05), transparent 55%);
   pointer-events: none;
   z-index: 0;
 }
@@ -74,12 +70,12 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .acd-eyebrow {
   font-family: var(--apple-font-text);
-  font-size: 11.5px;
+  font-size: 12.5px;
   letter-spacing: 0.09em;
   font-weight: 700;
   text-transform: uppercase;
@@ -94,13 +90,13 @@
 .acd-eyebrow.predator::before {
   content: '';
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background: var(--acd-predator);
   border-radius: 50%;
-  margin-right: 7px;
+  margin-right: 8px;
   vertical-align: 1px;
-  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.18);
 }
 
 .acd-eyebrow.victim {
@@ -111,21 +107,19 @@
 .acd-canvas {
   position: relative;
   z-index: 1;
-  flex: 1;
-  min-height: 0;
+  display: block;
 }
 
 .acd-canvas svg {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
   overflow: visible;
 }
 
 /* ── Candle wave-in keyframes ───────────────────────────────────────────
-   Each candle gets its own keyframe so all 12 sync at the end of the cycle
-   (hold from 88%, fade together 96–100%). Appear order is staggered 3%
-   per slot starting at 4%. Cycle = 8.5s. */
+   12 candles, 2.5% slot, instant 1% snap-out at the end of cycle so
+   the loop never lingers in a half-faded state. */
 
 .acd-candle {
   transform-origin: 50% 100%;
@@ -133,18 +127,18 @@
   opacity: 0;
 }
 
-@keyframes acd-cand-0  { 0%, 4%  { opacity: 0; transform: translateY(5px) scaleY(0.35); } 7%  { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-1  { 0%, 7%  { opacity: 0; transform: translateY(5px) scaleY(0.35); } 10% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-2  { 0%, 10% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 13% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-3  { 0%, 13% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 16% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-4  { 0%, 16% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 19% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-5  { 0%, 19% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 22% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-6  { 0%, 22% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 25% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-7  { 0%, 25% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 28% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-8  { 0%, 28% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 31% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-9  { 0%, 31% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 34% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-10 { 0%, 34% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 37% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
-@keyframes acd-cand-11 { 0%, 37% { opacity: 0; transform: translateY(5px) scaleY(0.35); } 40% { opacity: 1; transform: none; } 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes acd-cand-0  { 0%, 2%   { opacity: 0; transform: translateY(6px) scaleY(0.2); } 5%   { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-1  { 0%, 4.5% { opacity: 0; transform: translateY(6px) scaleY(0.2); } 7.5% { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-2  { 0%, 7%   { opacity: 0; transform: translateY(6px) scaleY(0.2); } 10%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-3  { 0%, 9.5% { opacity: 0; transform: translateY(6px) scaleY(0.2); } 12.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-4  { 0%, 12%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 15%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-5  { 0%, 14.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 17.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-6  { 0%, 17%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 20%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-7  { 0%, 19.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 22.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-8  { 0%, 22%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 25%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-9  { 0%, 24.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 27.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-10 { 0%, 27%  { opacity: 0; transform: translateY(6px) scaleY(0.2); } 30%  { opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
+@keyframes acd-cand-11 { 0%, 29.5%{ opacity: 0; transform: translateY(6px) scaleY(0.2); } 32.5%{ opacity: 1; transform: none; } 93% { opacity: 1; } 94%, 100% { opacity: 0; transform: translateY(6px) scaleY(0.2); } }
 
 .acd-c-0  { animation: acd-cand-0  8.5s var(--acd-ease-apple) infinite; }
 .acd-c-1  { animation: acd-cand-1  8.5s var(--acd-ease-apple) infinite; }
@@ -159,51 +153,51 @@
 .acd-c-10 { animation: acd-cand-10 8.5s var(--acd-ease-apple) infinite; }
 .acd-c-11 { animation: acd-cand-11 8.5s var(--acd-ease-apple) infinite; }
 
-/* gridlines + axis ticks come in immediately, fade with the cycle */
+/* chrome (gridlines + ticks) — stays up for the entire visible window */
 .acd-chrome { opacity: 0; }
 
 @keyframes acd-chrome {
-  0%, 2%   { opacity: 0; }
-  6%, 92%  { opacity: 1; }
-  98%, 100% { opacity: 0; }
+  0%, 1%   { opacity: 0; }
+  4%, 93%  { opacity: 1; }
+  94%, 100% { opacity: 0; }
 }
 
 .acd-chrome { animation: acd-chrome 8.5s var(--acd-ease-apple) infinite; }
 
-/* Victim position line — establishes early, breaks at the predator candle */
+/* victim position line — appears after the first few candles */
 .acd-victim-line,
 .acd-victim-tag { opacity: 0; }
 
 @keyframes acd-victim {
-  0%, 13%   { opacity: 0; }
-  18%, 92%  { opacity: 1; }
-  98%, 100% { opacity: 0; }
+  0%, 10%   { opacity: 0; }
+  14%, 93%  { opacity: 1; }
+  94%, 100% { opacity: 0; }
 }
 
 .acd-victim-line { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
 .acd-victim-tag  { animation: acd-victim 8.5s var(--acd-ease-apple) infinite; }
 
-/* Predator highlight — pulses around the predator candle's arrival */
+/* predator pulse — pops as the predator candle arrives */
 .acd-pred-mark { opacity: 0; transform-origin: center; transform-box: fill-box; }
 
 @keyframes acd-pred {
-  0%, 40%  { opacity: 0; transform: scale(0); }
-  46%      { opacity: 1; transform: scale(1.5); }
-  52%, 88% { opacity: 1; transform: scale(1); }
-  96%, 100% { opacity: 0; }
+  0%, 35%  { opacity: 0; transform: scale(0); }
+  40%      { opacity: 1; transform: scale(1.4); }
+  44%, 93% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; }
 }
 
 .acd-pred-mark { animation: acd-pred 8.5s var(--acd-ease-apple) infinite; }
 
-/* Liquidation marker — same beat as predator pulse */
+/* break X + liq label — same beat as predator */
 .acd-liq-mark,
 .acd-liq-label { opacity: 0; }
 
 @keyframes acd-liq {
-  0%, 44%  { opacity: 0; }
-  50%      { opacity: 1; }
-  88%      { opacity: 1; }
-  96%, 100% { opacity: 0; }
+  0%, 38%  { opacity: 0; }
+  42%      { opacity: 1; }
+  93%      { opacity: 1; }
+  94%, 100% { opacity: 0; }
 }
 
 .acd-liq-mark  { animation: acd-liq 8.5s var(--acd-ease-apple) infinite; }
