@@ -30,21 +30,21 @@ const COLO_VENUES: ColoVenue[] = [
     sourceLabel: 'docs.polymarket.com',
     sourceUrl: 'https://docs.polymarket.com/trading/overview',
     insiderMs: 2,
-    outsiderMs: 80,
-    outsiderOrigin: 'New York retail',
+    outsiderMs: 7,
+    outsiderOrigin: 'Retail eu-west-2 VPS',
     quote: true,
   },
   {
     slug: 'hyperliquid-colo',
     name: 'Hyperliquid',
     region: 'AWS ap-northeast-1. Tokyo',
-    proof: 'All 24 validators clustered in AWS Tokyo. Glassnode measured the asymmetry. Local desks reach the matching engine ~200ms ahead of every other geography.',
-    attribution: 'Glassnode measurement, March 2026',
-    sourceLabel: 'Coindesk · Glassnode',
-    sourceUrl: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows',
+    proof: 'All 24 validators clustered in AWS Tokyo. Anyone can rent a Tokyo VPS. What they cannot rent is the Foundation Non-Validating Node — gated by 10K HYPE staked, Tier 1 maker rebate, and 98% uptime. The gossip feed arrives ahead of the public RPC.',
+    attribution: 'Hyperliquid foundation node docs',
+    sourceLabel: 'Hyperliquid docs',
+    sourceUrl: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node',
     insiderMs: 3,
-    outsiderMs: 200,
-    outsiderOrigin: 'European desk',
+    outsiderMs: 28,
+    outsiderOrigin: 'Retail Tokyo VPS, public RPC',
   },
   {
     slug: 'kalshi-colo',
@@ -73,31 +73,31 @@ interface LatencyRow {
 
 const LATENCY_ROWS: LatencyRow[] = [
   {
-    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 197, gatedMs: 2,
-    lane: 'Retail (European desk): +197ms | MM (Tokyo desk): ~3ms to validator cluster',
-    barrier: 'AWS Tokyo proximity + Foundation node',
+    slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 25, gatedMs: 25,
+    lane: 'Retail (Tokyo VPS): public RPC | MM: Foundation-node gossip ahead of public RPC',
+    barrier: 'Foundation node — 10K HYPE staked + Tier 1 maker rebate + 98% uptime',
     source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
     barrierSource: { label: 'Hyperliquid docs', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node' },
   },
   {
-    slug: 'binance', name: 'Binance', edgeMs: 145, gatedMs: 5,
-    lane: 'Retail (global): +145ms | MM (VIP 9): AWS Tokyo colo, ~5ms FIX',
+    slug: 'binance', name: 'Binance', edgeMs: 20, gatedMs: 5,
+    lane: 'Retail (Tokyo VPS): ~25ms public API | MM (VIP 9): MMGW cross-connect ~5ms',
     barrier: 'VIP 9. $30B/30d futures + 5,500 BNB',
-    source: { label: 'NYC Servers · Tokyo VPS', url: 'https://newyorkcityservers.com/binance-vps' },
+    source: { label: 'Binance · VIP eligibility', url: 'https://www.prnewswire.com/news-releases/binance-expands-vip-access-to-recognize-and-support-high-value-users-earlier-302716770.html' },
     barrierSource: { label: 'Binance · VIP program', url: 'https://www.binance.com/en/vip-institutional-services' },
   },
   {
-    slug: 'bybit', name: 'Bybit', edgeMs: 140, gatedMs: 5,
-    lane: 'Retail (global): +140ms | MM (institutional): AWS SG/Tokyo colo + 2.5ms MMGW',
+    slug: 'bybit', name: 'Bybit', edgeMs: 15, gatedMs: 5,
+    lane: 'Retail (Singapore VPS): ~20ms public API | MM (institutional): co-tenant in AWS Singapore',
     barrier: 'Institutional Services agreement',
     source: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
     barrierSource: { label: 'Bybit · institutional', url: 'https://www.bybit.com/en/help-center/article/Bybit-Institutional-Services' },
   },
   {
-    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 130, gatedMs: 25,
-    lane: 'Retail (default RPC): +130ms | MM (sniper): validator-adjacent RPC + Jito bundles',
-    barrier: 'Paid validator-adjacent RPC + Jito tips',
-    source: { label: 'Helius · Solana latency', url: 'https://www.helius.dev/blog/solana-rpc-latency' },
+    slug: 'pumpfun', name: 'Pump.fun', edgeMs: 50, gatedMs: 50,
+    lane: 'Retail (free RPC): standard slot landing | MM: staked-connection + Jito bundle priority',
+    barrier: 'Paid staked-connection RPC + Jito tip stack',
+    source: { label: 'Helius · staked connections', url: 'https://www.helius.dev/staked-connections' },
     barrierSource: { label: 'Jito Labs · block engine', url: 'https://www.jito.wtf/' },
   },
   {
@@ -108,22 +108,22 @@ const LATENCY_ROWS: LatencyRow[] = [
     barrierSource: { label: 'ASIC v eToro', url: 'https://asic.gov.au/about-asic/news-centre/find-a-media-release/2023-releases/23-209mr-asic-sues-etoro-for-design-and-distribution-failings-and-misleading-conduct-relating-to-its-cfd-product/' },
   },
   {
-    slug: 'polymarket', name: 'Polymarket', edgeMs: 78, gatedMs: 3,
-    lane: 'Retail (NY): +78ms | MM (KYC\'d London colo): ~3ms in eu-west-2',
+    slug: 'polymarket', name: 'Polymarket', edgeMs: 5, gatedMs: 5,
+    lane: 'Retail (eu-west-2 VPS): public WS | MM (KYC\'d): direct colo cross-connect',
     barrier: 'KYC/KYB approval + eu-west-2 colocation',
     source: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
     barrierSource: { label: 'docs.polymarket.com', url: 'https://docs.polymarket.com/trading/overview' },
   },
   {
-    slug: 'deribit', name: 'Deribit', edgeMs: 75, gatedMs: 2,
-    lane: 'Retail (US): +75ms | MM (LD4 colo): ~2ms FIX cage cross-connect',
+    slug: 'deribit', name: 'Deribit', edgeMs: 5, gatedMs: 5,
+    lane: 'Retail (LD4-tenant VPS): public REST/WS | MM (institutional FIX): cage cross-connect',
     barrier: 'Pro institutional FIX gateway + MM agreement',
     source: { label: 'Deribit · institutional', url: 'https://www.deribit.com/kb/api-overview' },
     barrierSource: { label: 'Deribit · FIX', url: 'https://docs.deribit.com/?javascript#fix-api' },
   },
   {
-    slug: 'coinbase', name: 'Coinbase', edgeMs: 60, gatedMs: 5,
-    lane: 'Retail (Asia/EU): +60ms | MM (Prime): us-east-1 / Equinix LD4 FIX',
+    slug: 'coinbase', name: 'Coinbase', edgeMs: 5, gatedMs: 5,
+    lane: 'Retail (us-east-1 VPS): public WS | MM (Prime): institutional FIX',
     barrier: 'Coinbase Prime onboarding + institutional FIX',
     source: { label: 'Coinbase · Prime', url: 'https://prime.coinbase.com/' },
     barrierSource: { label: 'Coinbase · Prime FIX', url: 'https://docs.cdp.coinbase.com/prime/docs/fix-api-overview' },
@@ -136,9 +136,9 @@ const LATENCY_ROWS: LatencyRow[] = [
     barrierSource: { label: 'IBKR · Pro DMA', url: 'https://www.interactivebrokers.com/en/general/finlearn/order-types-routing/ibkr-pro-direct-market-access.php' },
   },
   {
-    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 15,
-    lane: 'Retail (browser): +49ms | MM (Chicago designated): ~1ms cross-connect',
-    barrier: 'Designated MM contract',
+    slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 0,
+    lane: 'Retail (browser): +49ms | MM (designated): fee + position-limit privileges, infra unpublished',
+    barrier: 'Designated MM contract — fee + position-limit privileges',
     source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
     barrierSource: { label: 'Kalshi · MM program', url: 'https://help.kalshi.com/en/articles/13823819-market-maker-program' },
   },
@@ -514,7 +514,7 @@ export function ColocationSection() {
             maxWidth: 780,
           }}
         >
-          Every venue sells the same product: proximity. A cabinet next to the matching engine, a validator in the right AWS region, the cross-connect the institutional desk already paid for, the order flow auctioned before it touches a public book. Each foundation insists the door is open. None of them publishes the price.
+          Geography is for sale. A retail bot can rent a Tokyo VPS for fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives the rental is the gated one: the MMGW cross-connect, the FIX cage at LD4, the Foundation-node gossip feed, the bilateral KYC. Each venue says the door is open. None of them publishes the price.
         </p>
       </Reveal>
 
@@ -574,7 +574,7 @@ export function ColocationSection() {
                   marginBottom: 10,
                 }}
               >
-                Bar = MM latency edge over retail, in milliseconds. Faded extension = total gap. Solid inner = portion gated behind paid colocation, designated-MM contracts, or KYC — the milliseconds retail cannot buy at any price. Retail baseline = 0.
+                Bar = the gap that survives a retail VPS in the right AWS region. Solid inner = the portion gated behind a colocation contract, a designated-MM agreement, or a KYC approval — the milliseconds no rental cures. Geography is buyable. The contract is not.
               </p>
               <div
                 style={{
@@ -681,47 +681,47 @@ interface AssumptionRow {
 
 const INSIDE_LANE: AssumptionRow[] = [
   {
-    metric: 'Citadel Securities. Execution at the matching engine',
+    metric: 'Software trading firm. Tick-to-trade at the colocated cabinet',
     value: '~10 microseconds',
-    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
+    source: { label: 'Solarflare/LDA · STAC-T0 benchmark', url: 'https://www.tradersmagazine.com/departments/technology/solarflare-and-lda-hit-120ns-cme-tick-to-trade-latency/' },
   },
   {
     metric: 'Citadel Securities. Share of US retail equity order flow',
     value: '~40%',
-    source: { label: 'Trade Ideas', url: 'https://www.trade-ideas.com/2025/05/10/citadel-securities-the-invisible-hand-behind-retail-trading/' },
+    source: { label: 'Schwab · 2022 order routing whitepaper', url: 'https://content.schwab.com/web/retail/public/about-schwab/Schwab-2022-order-routing-whitepaper.pdf' },
   },
   {
     metric: 'Top 3 wholesalers (Citadel, Virtu, G1). Share of retail orders',
     value: '>80%',
-    source: { label: 'Global Trading', url: 'https://www.globaltrading.net/payment-for-us-retail-flow-reaches-record-high-led-by-citadel-securities-imc/' },
+    source: { label: 'Federal Reserve · order routing study', url: 'https://www.federalreserve.gov/econres/feds/files/2024080pap.pdf' },
   },
   {
-    metric: 'Jump Trading. Private microwave backbone, inter-city',
-    value: '~90 microseconds',
-    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
+    metric: 'McKay Brothers private microwave. Aurora ↔ Carteret RTT',
+    value: '~7.96 ms',
+    source: { label: 'McKay Brothers · public latency', url: 'https://www.mckay-brothers.com/our-network/' },
   },
   {
     metric: 'FPGA tick-to-trade at the colocated cabinet',
-    value: '100–500 nanoseconds',
-    source: { label: 'QuantVPS · FPGA', url: 'https://www.quantvps.com/blog/high-frequency-trading-with-fpgas' },
+    value: '96–500 nanoseconds',
+    source: { label: 'Solarflare/LDA/Penguin · STAC-T0', url: 'https://www.tradersmagazine.com/departments/technology/solarflare-lda-and-penguin-slash-tick-to-trade-latency-to-96-nanoseconds/' },
   },
   {
     metric: 'CME Aurora colocation rack. Monthly rent + setup + cross-connect',
-    value: '$12,000/mo + $2,000 + $350–550',
-    source: { label: 'Lime Trading', url: 'https://lime.co/how-to-maximize-the-roi-of-colocation/' },
+    value: 'Five-figure/mo + setup + cross-connect',
+    source: { label: 'CME · co-location facility update', url: 'https://www.cmegroup.com/trading/files/co-location-facility-update.pdf' },
   },
 ]
 
 const OUTSIDE_LANE: AssumptionRow[] = [
   {
-    metric: 'Specialist forex / algo VPS. Monthly rent',
-    value: '$15–100 / month',
-    source: { label: 'QuantVPS', url: 'https://www.quantvps.com/blog/best-vps-for-trading' },
+    metric: 'Commodity cloud VPS. Monthly rent',
+    value: '~$5–100 / month',
+    source: { label: 'Hetzner Cloud · pricing', url: 'https://www.hetzner.com/cloud' },
   },
   {
     metric: 'Best-case retail VPS ping to broker matching engine (LD4 / NY4 tenant)',
     value: '1–5 ms',
-    source: { label: 'QuantVPS · low latency', url: 'https://www.quantvps.com/blog/low-latency-trading' },
+    source: { label: 'Equinix · NY4 facility', url: 'https://www.equinix.com/data-centers/americas-colocation/united-states-colocation/new-york-data-centers/ny4' },
   },
   {
     metric: 'Generic cloud VPS (Hetzner, DO, AWS general region)',
@@ -735,8 +735,8 @@ const OUTSIDE_LANE: AssumptionRow[] = [
   },
   {
     metric: 'CPU tick-to-trade ceiling, even with optimised code (vs FPGA)',
-    value: '3–8 microseconds',
-    source: { label: 'QuantVPS · FPGA', url: 'https://www.quantvps.com/blog/high-frequency-trading-with-fpgas' },
+    value: '~2–8 microseconds',
+    source: { label: 'Databento · microstructure', url: 'https://databento.com/microstructure/tick-to-trade' },
   },
   {
     metric: 'Retail share of the algorithmic trading market, 2026',
@@ -751,7 +751,7 @@ const OUTSIDE_LANE: AssumptionRow[] = [
   {
     metric: 'Private microwave inter-city backbone',
     value: 'None. Fibre only',
-    source: { label: 'QuantVPS · HFT firms', url: 'https://www.quantvps.com/blog/top-10-high-frequency-trading-firms-dominating-global-markets' },
+    source: { label: 'McKay Brothers · network', url: 'https://www.mckay-brothers.com/our-network/' },
   },
 ]
 
@@ -860,7 +860,7 @@ function AssumptionsBlock() {
         />
         <AssumptionLane
           title="Outside lane. Retail algo trader (already paying)"
-          summary="Not a phone clicker. An EA on MetaTrader, a Python bot on a VPS, sometimes the same building as the matching engine. Pays for infrastructure. Still arrives after the cabinet."
+          summary="A Python bot on a Tokyo VPS, a node in eu-west-2, a tenant inside Equinix LD4. Already paying for proximity. The remaining gap is what no rental cures: the cross-connect, the FIX cage, the Foundation-node gossip, the bilateral contract."
           rows={OUTSIDE_LANE}
         />
       </div>

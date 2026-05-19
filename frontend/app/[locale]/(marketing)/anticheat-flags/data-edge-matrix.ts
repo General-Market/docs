@@ -95,42 +95,6 @@ export const EDGE_TOPICS: EdgeTopic[] = [
           { label: 'Fortune · CZ on zero-tolerance leaks', url: 'https://fortune.com/crypto/2022/05/23/binance-ceo-changpeng-zhao-crypto-insider-trading-twitter-frontrunning/' },
         ],
       },
-      {
-        slug: 'bybit-pump-leak',
-        name: 'Bybit',
-        tag: 'Decrypt 2025',
-        value: 0.5,
-        gatedValue: 0.5,
-        lane: 'Retail: 0 | MM: $0.5M (Bybit Ukraine Telegram leaked PUMP token-sale terms three days early, then deleted)',
-        barrier: 'Official channel access',
-        sources: [
-          { label: 'Decrypt · Pump.fun July 12 leak via Bybit', url: 'https://decrypt.co/329281/pump-fun-token-sale-july-12-bybit' },
-        ],
-      },
-      {
-        slug: 'robinhood-hyperliquid-kaiko',
-        name: 'Robinhood',
-        tag: 'Kaiko 2026',
-        value: 0.3,
-        gatedValue: 0.3,
-        lane: 'Retail: 0 | MM: $0.3M (LIT long 67min before announcement; ZEC, SNX, NEAR pattern; HOOD short before Q1 miss)',
-        barrier: 'Pipeline access or a model that always wins',
-        sources: [
-          { label: 'Cointelegraph · Kaiko on Robinhood listing front-running', url: 'https://cointelegraph.com/news/crypto-perps-volume-points-to-traders-front-running-robinhood-listings-kaiko' },
-        ],
-      },
-      {
-        slug: 'hyperliquid-paired-kaiko',
-        name: 'Hyperliquid',
-        tag: 'Kaiko 2026',
-        value: 0.3,
-        gatedValue: 0.3,
-        lane: 'Retail: 0 | MM: $0.3M (wallet 0xa1E rode LIT/ZEC/SNX/NEAR perps minutes before Robinhood listings)',
-        barrier: 'Anonymous wallet, validator-fast settlement',
-        sources: [
-          { label: 'Cointelegraph · Kaiko on Hyperliquid pre-listing flow', url: 'https://cointelegraph.com/news/crypto-perps-volume-points-to-traders-front-running-robinhood-listings-kaiko' },
-        ],
-      },
     ],
   },
   {
@@ -296,9 +260,9 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: pays $1.4B in spread | MM: collects it via internalization (Citadel, Virtu, SIG)',
         barrier: 'Wholesaler internalization',
         sources: [
+          { label: 'Robinhood · Q4 + full-year 2024 results', url: 'https://investors.robinhood.com/news-releases/news-release-details/robinhood-reports-fourth-quarter-and-full-year-2024-results' },
           { label: 'SEC press release 2020-321 · Robinhood $65M PFOF settlement', url: 'https://www.sec.gov/newsroom/press-releases/2020-321' },
           { label: 'Robinhood Financial · Q4 2024 Rule 606 report', url: 'https://www.sec.gov/Archives/edgar/data/0001783879/000178387925000035/a606_nmsx2024xq4xhood1.htm' },
-          { label: 'Wharton · PFOF working paper', url: 'https://wifpr.wharton.upenn.edu/wp-content/uploads/2023/10/Payment-for-Order-Flow.pdf' },
         ],
       },
       {
@@ -352,15 +316,15 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     generalMarketLabel: 'Blocks last a minute. The mempool race shrinks to a rounding error.',
     rows: [
       {
-        slug: 'pumpfun-arsc-sandwich',
-        name: 'Pump.fun',
-        tag: 'arsc bot, 2 months',
-        value: 31.4,
-        gatedValue: 31.4,
-        lane: 'Retail: $31.4M/yr siphoned by sniper bots | MM: 0-slot RPC + Jito bundles (arsc drained 209,500 SOL in two months)',
+        slug: 'solana-jito-tips',
+        name: 'Pump.fun / Solana',
+        tag: 'Jito tip volume',
+        value: 483,
+        gatedValue: 483,
+        lane: 'Retail: pays for inclusion | MM: collects tips + sandwich. DL News measured ~$9.3M/week ($483M/yr annualized) flowing through Jito tips',
         barrier: 'Validator staking + Jito bundle access',
         sources: [
-          { label: 'DL News · arsc / Jito sandwich coverage', url: 'https://www.dlnews.com/articles/defi/solana-users-use-jito-to-stop-sandwich-attacks-and-mev/' },
+          { label: 'DL News · Solana users use Jito to stop sandwich attacks and MEV', url: 'https://www.dlnews.com/articles/defi/solana-users-use-jito-to-stop-sandwich-attacks-and-mev/' },
           { label: 'Solana Foundation · Gulf Stream protocol', url: 'https://solana.com/news/gulf-stream--solana-s-mempool-less-transaction-forwarding-protocol' },
         ],
       },
@@ -558,41 +522,15 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     generalMarketLabel: 'Large losses are capped per order. A whale cannot pick off the small taker.',
     rows: [
       {
-        slug: 'pumpfun-jito-priority',
-        name: 'Pump.fun',
-        tag: 'Jito 200ms tip auction',
-        value: 8,
-        gatedValue: 8,
-        lane: 'Retail: 0 | MM: ~8 bps (Jito off-chain tip auction orders bundles by tip; ~95% of Solana stake honors)',
-        barrier: 'Jito-Solana validator client + tip stack',
-        sources: [
-          { label: 'Eclipse Labs · How Jito Works deep dive', url: 'https://www.eclipselabs.io/blogs/how-jito-works---a-deep-dive' },
-          { label: 'QuickNode · Jito Bundles guide', url: 'https://www.quicknode.com/guides/solana-development/transactions/jito-bundles' },
-        ],
-      },
-      {
         slug: 'polymarket-operator-fifo',
         name: 'Polymarket',
         tag: 'Operator-mediated',
         value: 5,
         gatedValue: 5,
-        lane: 'Retail: 0 | MM: ~5 bps (matching off-chain by single Polymarket operator; exclusive matchOrders authority)',
+        lane: 'Retail: 0 | MM: ~5 bps (matching off-chain by Polymarket-controlled operator set; exclusive matchOrders authority)',
         barrier: 'Operator role',
         sources: [
           { label: 'Polymarket CTF Exchange · Overview.md', url: 'https://github.com/Polymarket/ctf-exchange/blob/main/docs/Overview.md' },
-        ],
-      },
-      {
-        slug: 'hyperliquid-validator-vote',
-        name: 'Hyperliquid',
-        tag: 'Validator override',
-        value: 4,
-        gatedValue: 4,
-        lane: 'Retail: 0 | MM: ~4 bps (validator set voted JELLY closed at $0.0095, bypassing book and oracle)',
-        barrier: 'Validator-set discretion',
-        sources: [
-          { label: 'Hyperliquid Docs · Order Book', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/trading/order-book' },
-          { label: 'CoinDesk · Hyperliquid delists JELLY', url: 'https://www.coindesk.com/markets/2025/03/26/hyperliquid-delists-jellyjelly-after-vault-squeezed-in-usd13m-tussle' },
         ],
       },
       {
@@ -604,7 +542,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: 0 | MM: ~3 bps (shrink order without losing queue position. Rewards whoever modifies fastest)',
         barrier: 'API-level access',
         sources: [
-          { label: 'Binance Developer · matching algorithm thread', url: 'https://dev.binance.vision/t/which-algorithm-does-binance-matching-engine-use/5351' },
+          { label: 'Binance Developer · Order Amend Keep Priority', url: 'https://developers.binance.com/docs/binance-spot-api-docs/faqs/order_amend_keep_priority' },
         ],
       },
       {
@@ -640,7 +578,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: 0 | MM: 0 (textbook FIFO. Price then time; identical prices fill in arrival order)',
         barrier: 'Strict FIFO',
         sources: [
-          { label: 'Kalshi · Limit Orders', url: 'https://help.kalshi.com/trading/order-types/limit-orders' },
+          { label: 'Kalshi · API orders reference', url: 'https://docs.kalshi.com/api-reference/orders' },
         ],
       },
       {
@@ -687,6 +625,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: ~1 cancel/fill | MM: 200/s (separate batch-cancel budget, 100/s on each lane)',
         barrier: 'API-tier classification',
         sources: [
+          { label: 'Bybit · v5 rate limits', url: 'https://bybit-exchange.github.io/docs/v5/rate-limit' },
           { label: 'Bybit · Cancel All Orders', url: 'https://bybit-exchange.github.io/docs/v5/order/cancel-all' },
         ],
       },
@@ -723,6 +662,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         lane: 'Retail: ~1 cancel/fill | MM: ~20 (Self-Match Prevention across sub-accounts via FIX tag 7928)',
         barrier: 'FIX-tier connectivity',
         sources: [
+          { label: 'Coinbase · FIX NewOrderSingle spec', url: 'https://docs.cdp.coinbase.com/exchange/docs/fix-msg-newordersingle' },
           { label: 'Coinbase Derivatives · Self-Match Prevention', url: 'https://help.coinbase.com/en/derivatives/risk-management/self-match-prevention' },
         ],
       },

@@ -7,6 +7,7 @@ import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
 import { EdgeWaysSection } from './EdgeWaysSection'
 import { VenueBleedSection } from './VenueBleedSection'
+import { ObjectionsSection } from './ObjectionsSection'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
@@ -125,6 +126,9 @@ export default function AntiCheatFlagsPage() {
 
           {/* STRUCTURAL EDGE INVENTORY. Twelve mechanisms across five rulers */}
           <EdgeMatrixSection />
+
+          {/* OBJECTIONS, PRESHOT. Concede what is true, hold the line on what is not */}
+          <ObjectionsSection />
 
           {/* VENUE PILLS. Matches the homepage See All pattern */}
           <section style={{ paddingTop: 64, paddingBottom: 16, borderTop: `1px solid ${LINE}` }}>
