@@ -86,8 +86,11 @@ function buildPath(
   w: number,
   h: number,
 ): { line: string; area: string; lastPt: readonly [number, number] } | null {
-  // 12px breathing room top + bottom — Apple never lets curves hit the SVG edge
-  const padY = 12
+  // Breathing room top + bottom — Apple never lets curves hit the SVG edge.
+  // Scale to height so a tight 24px rail sparkline still has draw area;
+  // hardcoding 12 collapsed `h - padY*2` to zero for the NewestVault card
+  // and rendered every point onto a single flat line.
+  const padY = Math.min(12, Math.floor(h / 4))
 
   // Real or absent. No flat-line stub, no synthesized shape — if upstream
   // doesn't give us at least two points, we render nothing.

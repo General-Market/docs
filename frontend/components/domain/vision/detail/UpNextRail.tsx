@@ -24,6 +24,7 @@ import { useTrendingBots } from '@/hooks/vision/useTrendingBots'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useSSEVisionVaults } from '@/hooks/useSSE'
 import { Sparkline } from '@/components/domain/home/Sparkline'
+import { medianFilter } from '@/lib/utils/median-filter'
 
 function safeBigInt(v: string | undefined): bigint {
   if (!v) return 0n
@@ -207,9 +208,15 @@ function NewestVaultCard({ sourceId }: { sourceId: string }) {
 
   // Real NAV history. The card showed no chart for months — the comment in
   // this file admitted "performance data is a follow-up". Now it isn't.
+  // Apply the same median-of-3 spike strip the rest of the app uses — a
+  // single bad mark-to-market read otherwise pancakes the curve into a flat
+  // line with a triangle at the end.
   const vaultAddress = (fund?.vault as string | undefined) ?? ''
   const { snapshots } = useVaultHistory(vaultAddress)
-  const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
+  const navData = useMemo(
+    () => medianFilter(snapshots.map(s => s.nav)),
+    [snapshots],
+  )
   const isPositive = navData.length < 2 ? true : navData[navData.length - 1] >= navData[0]
   const sparkColor = isPositive ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
 
