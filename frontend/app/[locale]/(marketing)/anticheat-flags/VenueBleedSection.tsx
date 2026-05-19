@@ -1,5 +1,6 @@
 import { Reveal } from '@/components/ui/Reveal'
 import { computeVenueBleeds } from './data-venue-bleed'
+import { EDGE_WAYS } from './data-edge-ways'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
@@ -26,252 +27,345 @@ function fmtBps(bps: number): string {
 
 export function VenueBleedSection() {
   const rows = computeVenueBleeds()
-  const values = rows.map(r => r.bpsPerTrade * TRADES)
-  const max = Math.max(...values)
-  const worst = rows[0]
+  const max = Math.max(...rows.map(r => r.bpsPerTrade * TRADES))
+  const mechanismName = new Map(EDGE_WAYS.map(w => [w.slug, w.name]))
 
   return (
     <section
       id="venue-bleed"
       style={{
-        paddingTop: 48,
-        paddingBottom: 48,
+        paddingTop: 80,
+        paddingBottom: 24,
         scrollMarginTop: 80,
       }}
     >
-      <Reveal>
+      <Reveal delay={0.04}>
         <div
           style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            fontWeight: 600,
-            color: TERTIARY,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 14,
+            padding: '32px 28px',
+            background: 'var(--apple-panel)',
+            border: `1px solid ${LINE}`,
+            borderRadius: 'var(--apple-r-md)',
           }}
-        >
-          Bleed · 1,000 trades
-        </div>
-      </Reveal>
-
-      <Reveal mask delay={0.04}>
-        <h2
-          className="font-semibold"
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(32px, 4.2vw, 48px)',
-            fontWeight: 600,
-            letterSpacing: 'var(--apple-track-tighter)',
-            lineHeight: 1.0833,
-            color: TEXT,
-            maxWidth: 820,
-          }}
-        >
-          The minimum edge to finish flat at 1,000 trades.
-        </h2>
-      </Reveal>
-
-      <Reveal delay={0.1}>
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 17,
-            lineHeight: 1.47,
-            letterSpacing: 'var(--apple-track-tight)',
-            color: SECONDARY,
-            marginTop: 12,
-            maxWidth: 780,
-          }}
-        >
-          Per venue, sum the mechanisms that apply. Each is already amortized by how often it
-          fires. Multiply by 1,000 trades. That is the favourable edge a retail trader would need
-          cumulatively, just to finish flat against the maxed-out market maker on the other side.
-          On {worst.name} it is {fmtPct(worst.bpsPerTrade * TRADES)}.
-        </p>
-      </Reveal>
-
-      <Reveal delay={0.18}>
-        <figure
-          role="img"
-          aria-label={`Cumulative bleed in percent at 1000 trades, ${rows.length} venues`}
-          style={{ marginTop: 36, marginBottom: 0 }}
         >
           <div
             style={{
-              padding: '28px 28px 20px',
-              background: 'var(--apple-panel)',
-              border: `1px solid ${LINE}`,
-              borderRadius: 'var(--apple-r-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 18,
+              display: 'grid',
+              gridTemplateColumns: '320px 1fr',
+              gap: 32,
+              alignItems: 'start',
             }}
           >
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 12,
-                fontWeight: 600,
-                color: TERTIARY,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Cumulative bleed · % over 1,000 round-trips
+            <div>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  marginBottom: 10,
+                }}
+              >
+                Bleed · {rows.length} sourced · %
+              </div>
+              <h2
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: TEXT,
+                  marginBottom: 10,
+                }}
+              >
+                Minimum edge to break even at 1,000 trades
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 13,
+                  color: SECONDARY,
+                  letterSpacing: '-0.011em',
+                  lineHeight: 1.55,
+                  marginBottom: 10,
+                }}
+              >
+                Retail baseline = 0. Bar = cumulative % bleed over 1,000 round-trips, summed across every mechanism active at the venue, each weighted by how often it fires.
+              </p>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                }}
+              >
+                {rows.length} sourced
+              </div>
             </div>
 
-            {rows.map(v => {
-              const cum = v.bpsPerTrade * TRADES
-              const pct = (cum / max) * 100
-              return (
-                <div
-                  key={v.slug}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(180px, 220px) 1fr minmax(96px, 112px)',
-                    columnGap: 18,
-                    alignItems: 'center',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <div
-                      style={{
-                        fontFamily: 'var(--apple-font-text)',
-                        fontSize: 15,
-                        color: TEXT,
-                        fontWeight: 600,
-                        letterSpacing: '-0.016em',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {v.name}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: 'var(--apple-font-text)',
-                        fontSize: 12,
-                        color: SECONDARY,
-                        letterSpacing: '-0.005em',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {v.mm} · {fmtBps(v.bpsPerTrade)}/trade
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      position: 'relative',
-                      height: 24,
-                      background: SURFACE,
-                      borderRadius: 'var(--apple-r-pill)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: `${Math.max(1, pct)}%`,
-                        background: `linear-gradient(90deg, ${ACCENT}, #2997FF)`,
-                        borderRadius: 'var(--apple-r-pill)',
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      textAlign: 'right',
-                      fontFamily: 'var(--apple-font-display)',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: 17,
-                      fontWeight: 600,
-                      letterSpacing: 'var(--apple-track-tighter)',
-                      color: ACCENT,
-                    }}
-                  >
-                    {fmtPct(cum)}
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Axis */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(180px, 220px) 1fr minmax(96px, 112px)',
-                columnGap: 18,
-                marginTop: 4,
-              }}
-            >
-              <div />
-              <div style={{ position: 'relative', height: 16 }}>
-                {[0, 0.25, 0.5, 1].map((t, i) => (
-                  <span
-                    key={t}
-                    style={{
-                      position: 'absolute',
-                      left: `${t * 100}%`,
-                      transform:
-                        i === 0
-                          ? 'translateX(0)'
-                          : i === 3
-                          ? 'translateX(-100%)'
-                          : 'translateX(-50%)',
-                      fontFamily: 'var(--apple-font-text)',
-                      fontSize: 11,
-                      color: TERTIARY,
-                      letterSpacing: '+0.011em',
-                      fontVariantNumeric: 'tabular-nums',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {fmtPct(max * t)}
-                  </span>
-                ))}
-              </div>
-              <div />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {rows.map(v => {
+                const cum1k = v.bpsPerTrade * TRADES
+                const cum100 = v.bpsPerTrade * 100
+                const lightPct = Math.max(1, (cum1k / max) * 100)
+                const darkPct = Math.max(0.8, (cum100 / max) * 100)
+                return (
+                  <BleedRow
+                    key={v.slug}
+                    name={v.name}
+                    lightPct={lightPct}
+                    darkPct={darkPct}
+                    value={fmtPct(cum1k)}
+                    sub={`${fmtBps(v.bpsPerTrade)}/trade`}
+                  />
+                )
+              })}
+              <GeneralBaselineRow />
             </div>
           </div>
-          <figcaption
+
+          {/* Source footer cards. Same format as Colocation */}
+          <div
             style={{
-              marginTop: 14,
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              color: TERTIARY,
-              letterSpacing: '+0.011em',
-              textAlign: 'right',
+              marginTop: 28,
+              paddingTop: 20,
+              borderTop: `1px solid ${LINE}`,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '14px 22px',
             }}
           >
-            Frequency-adjusted · retail baseline = 0
-          </figcaption>
-        </figure>
-      </Reveal>
-
-      <Reveal delay={0.22}>
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: TERTIARY,
-            letterSpacing: '-0.005em',
-            marginTop: 16,
-            maxWidth: 780,
-          }}
-        >
-          Per-trade bps come from the fourteen mechanisms below, each weighted by how often it
-          actually fires. Listing front-running is massive when it lands but rare per trade, so it
-          contributes little to the per-venue total. Fees and PFOF fire every trade, so they
-          dominate.
-        </p>
+            {rows.map(v => (
+              <div
+                key={v.slug}
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                  lineHeight: 1.5,
+                }}
+              >
+                <div
+                  style={{
+                    color: TEXT,
+                    fontWeight: 600,
+                    marginBottom: 3,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {v.name}{' '}
+                  <span style={{ color: TERTIARY, fontWeight: 400 }}>
+                    · {fmtPct(v.bpsPerTrade * TRADES)}{' '}
+                    <span style={{ opacity: 0.7 }}>· {fmtBps(v.bpsPerTrade)}/trade</span>
+                  </span>
+                </div>
+                <div style={{ marginBottom: 4, fontStyle: 'italic', color: SECONDARY }}>
+                  Maxed-out MM: {v.mm}
+                </div>
+                <div style={{ color: SECONDARY, fontStyle: 'italic' }}>
+                  Active: {v.active.map(s => mechanismName.get(s) ?? s).join(', ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </Reveal>
     </section>
+  )
+}
+
+function BleedRow({
+  name,
+  lightPct,
+  darkPct,
+  value,
+  sub,
+}: {
+  name: string
+  lightPct: number
+  darkPct: number
+  value: string
+  sub: string
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        style={{
+          flex: '0 0 140px',
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 13,
+          color: TEXT,
+          letterSpacing: '-0.011em',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {name}
+      </div>
+      <div
+        style={{
+          flex: 1,
+          height: 14,
+          background: SURFACE,
+          borderRadius: 4,
+          position: 'relative',
+          overflow: 'visible',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: -3,
+            bottom: -3,
+            width: 0,
+            borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+          }}
+          aria-hidden
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${lightPct}%`,
+            background: ACCENT,
+            opacity: 0.32,
+            borderRadius: 4,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${darkPct}%`,
+            background: ACCENT,
+            borderRadius: 4,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          flex: '0 0 120px',
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: ACCENT,
+          }}
+        >
+          {value}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.005em',
+            fontSize: 12,
+            color: TERTIARY,
+            marginTop: 2,
+          }}
+        >
+          {sub}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GeneralBaselineRow() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            flex: '0 0 140px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 600,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            width={14}
+            height={14}
+            style={{ borderRadius: 3, flexShrink: 0 }}
+          />
+          General
+        </div>
+        <div
+          style={{
+            flex: 1,
+            height: 14,
+            background: SURFACE,
+            borderRadius: 4,
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: -3,
+              bottom: -3,
+              width: 0,
+              borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+            }}
+            aria-hidden
+          />
+        </div>
+        <div
+          style={{
+            flex: '0 0 120px',
+            textAlign: 'right',
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: TERTIARY,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          0
+        </div>
+      </div>
+      <div
+        style={{
+          paddingLeft: 152,
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          color: SECONDARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.45,
+          fontStyle: 'italic',
+        }}
+      >
+        Sealed bets, parimutuel, BLS-verified oracles. No mechanism left to fire.
+      </div>
+    </div>
   )
 }

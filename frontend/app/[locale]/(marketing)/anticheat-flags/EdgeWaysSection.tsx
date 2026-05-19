@@ -28,372 +28,391 @@ export function EdgeWaysSection() {
       id="edge-ways"
       style={{
         paddingTop: 80,
-        paddingBottom: 48,
+        paddingBottom: 24,
         borderTop: `1px solid ${LINE}`,
         scrollMarginTop: 80,
       }}
     >
-      <Reveal>
+      <Reveal delay={0.04}>
         <div
           style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            fontWeight: 600,
-            color: TERTIARY,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 14,
+            padding: '32px 28px',
+            background: 'var(--apple-panel)',
+            border: `1px solid ${LINE}`,
+            borderRadius: 'var(--apple-r-md)',
           }}
-        >
-          14 mechanisms · {total} bps stacked
-        </div>
-      </Reveal>
-
-      <Reveal mask delay={0.04}>
-        <h2
-          className="font-semibold"
-          style={{
-            fontFamily: 'var(--apple-font-display)',
-            fontSize: 'clamp(32px, 4.2vw, 48px)',
-            fontWeight: 600,
-            letterSpacing: 'var(--apple-track-tighter)',
-            lineHeight: 1.0833,
-            color: TEXT,
-            maxWidth: 820,
-          }}
-        >
-          Fourteen ways the venue takes a bite. Each named, each weighed.
-        </h2>
-      </Reveal>
-
-      <Reveal delay={0.1}>
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 19,
-            lineHeight: 1.42,
-            letterSpacing: 'var(--apple-track-tight)',
-            color: SECONDARY,
-            marginTop: 16,
-            maxWidth: 734,
-          }}
-        >
-          One bar per mechanism. Width is basis points the maxed-out market maker books over retail
-          per round-trip, amortized by how often it actually fires. Rare-but-massive events are not
-          pretended to fire every trade.
-        </p>
-      </Reveal>
-
-      {/* Horizontal bar chart */}
-      <Reveal delay={0.2}>
-        <figure
-          role="img"
-          aria-label="Fourteen mechanisms ranked by basis-point cost per round-trip trade"
-          style={{ marginTop: 36, marginBottom: 0 }}
         >
           <div
             style={{
-              padding: '28px 28px 20px',
-              background: 'var(--apple-panel)',
-              border: `1px solid ${LINE}`,
-              borderRadius: 'var(--apple-r-md)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
+              display: 'grid',
+              gridTemplateColumns: '320px 1fr',
+              gap: 32,
+              alignItems: 'start',
             }}
           >
-            <div
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 12,
-                fontWeight: 600,
-                color: TERTIARY,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-              }}
-            >
-              Per-trade cost · bps, frequency-adjusted
-            </div>
-
-            {EDGE_WAYS.map(w => {
-              const pct = (w.bps / max) * 100
-              return (
-                <a
-                  key={w.slug}
-                  href={`#way-${w.slug}`}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
-                    columnGap: 18,
-                    alignItems: 'center',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--apple-font-text)',
-                        fontSize: 11,
-                        color: TERTIARY,
-                        letterSpacing: '+0.011em',
-                        fontWeight: 600,
-                        fontVariantNumeric: 'tabular-nums',
-                        flex: '0 0 22px',
-                      }}
-                    >
-                      {pad2(w.rank)}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--apple-font-text)',
-                        fontSize: 14,
-                        color: TEXT,
-                        fontWeight: 600,
-                        letterSpacing: '-0.016em',
-                        lineHeight: 1.3,
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      {w.name}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      position: 'relative',
-                      height: 22,
-                      background: SURFACE,
-                      borderRadius: 'var(--apple-r-pill)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: `${Math.max(0.5, pct)}%`,
-                        background: `linear-gradient(90deg, ${ACCENT}, #2997FF)`,
-                        borderRadius: 'var(--apple-r-pill)',
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      textAlign: 'right',
-                      fontFamily: 'var(--apple-font-display)',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: 15,
-                      fontWeight: 600,
-                      letterSpacing: 'var(--apple-track-tighter)',
-                      color: ACCENT,
-                    }}
-                  >
-                    {fmtBps(w.bps)}
-                  </div>
-                </a>
-              )
-            })}
-
-            {/* Axis */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(190px, 220px) 1fr minmax(80px, 96px)',
-                columnGap: 18,
-                marginTop: 6,
-              }}
-            >
-              <div />
-              <div style={{ position: 'relative', height: 16 }}>
-                {[0, 0.25, 0.5, 1].map((t, i) => (
-                  <span
-                    key={t}
-                    style={{
-                      position: 'absolute',
-                      left: `${t * 100}%`,
-                      transform:
-                        i === 0
-                          ? 'translateX(0)'
-                          : i === 3
-                          ? 'translateX(-100%)'
-                          : 'translateX(-50%)',
-                      fontFamily: 'var(--apple-font-text)',
-                      fontSize: 11,
-                      color: TERTIARY,
-                      letterSpacing: '+0.011em',
-                      fontVariantNumeric: 'tabular-nums',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {fmtBps(max * t)}
-                  </span>
-                ))}
-              </div>
-              <div />
-            </div>
-          </div>
-          <figcaption
-            style={{
-              marginTop: 14,
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              color: TERTIARY,
-              letterSpacing: '+0.011em',
-              textAlign: 'right',
-            }}
-          >
-            Frequency-adjusted · retail baseline = 0
-          </figcaption>
-        </figure>
-      </Reveal>
-
-      {/* Methodology — demoted from a hero card to a quiet collapsible */}
-      <Reveal delay={0.24}>
-        <details
-          style={{
-            marginTop: 20,
-            maxWidth: 734,
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 14,
-            lineHeight: 1.55,
-            color: SECONDARY,
-            letterSpacing: '-0.011em',
-          }}
-        >
-          <summary
-            style={{
-              cursor: 'pointer',
-              color: TEXT,
-              fontWeight: 600,
-              fontSize: 13,
-              letterSpacing: '-0.011em',
-            }}
-          >
-            How each mechanism becomes bps
-          </summary>
-          <p style={{ marginTop: 8 }}>
-            Peak bps from a fee schedule, a latency conversion (ms × 0.05 bps/ms,
-            Aquilina–Budish–O&rsquo;Neill 2020), or a sourced adverse-selection study. Frequency is
-            the probability the mechanism fires on a single retail round-trip at a venue where it
-            is active. Per-trade bps = peak × frequency. Per-venue total = sum across active
-            mechanisms. That is all the math.
-          </p>
-        </details>
-      </Reveal>
-
-      {/* Per-mechanism prose */}
-      <div style={{ marginTop: 48 }}>
-        {EDGE_WAYS.map((w, i) => (
-          <Reveal key={w.slug} delay={Math.min(i * 0.02, 0.2)}>
-            <article
-              id={`way-${w.slug}`}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr)',
-                gap: 6,
-                padding: '20px 0',
-                borderTop: i === 0 ? 'none' : `1px solid ${LINE}`,
-                scrollMarginTop: 80,
-              }}
-            >
+            <div>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 12,
-                  flexWrap: 'wrap',
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  marginBottom: 10,
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: 'var(--apple-font-text)',
-                    fontSize: 11,
-                    color: TERTIARY,
-                    letterSpacing: '0.04em',
-                    fontWeight: 600,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {pad2(w.rank)}
-                </span>
-                <h3
-                  style={{
-                    fontFamily: 'var(--apple-font-display)',
-                    fontSize: 19,
-                    fontWeight: 600,
-                    letterSpacing: '-0.022em',
-                    color: TEXT,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {w.name}
-                </h3>
-                <span
-                  style={{
-                    fontFamily: 'var(--apple-font-display)',
-                    fontSize: 15,
-                    fontWeight: 600,
-                    letterSpacing: 'var(--apple-track-tighter)',
-                    color: ACCENT,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {fmtBps(w.bps)}
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--apple-font-text)',
-                    fontSize: 12,
-                    color: TERTIARY,
-                    letterSpacing: '-0.005em',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  peak {w.peakBps} bps · fires {(w.frequency * 100).toFixed(w.frequency < 0.01 ? 2 : 0)}% of trades
-                </span>
+                Mechanisms · {EDGE_WAYS.length} sourced · bps
               </div>
+              <h2
+                style={{
+                  fontFamily: 'var(--apple-font-display)',
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: 'var(--apple-track-tight)',
+                  color: TEXT,
+                  marginBottom: 10,
+                }}
+              >
+                Fourteen ways the venue takes a bite
+              </h2>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  letterSpacing: '-0.011em',
+                  fontSize: 13,
                   color: SECONDARY,
-                  maxWidth: 780,
-                  marginTop: 4,
+                  letterSpacing: '-0.011em',
+                  lineHeight: 1.55,
+                  marginBottom: 10,
                 }}
               >
-                {w.conversion} {w.frequencyNote}{' '}
+                Bar width = effective bps per round-trip = peak bps × frequency. Dark portion = frequency, the share of trades the mechanism actually fires on. Light = the rest of the bar that fires only occasionally.
+              </p>
+              <div
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                }}
+              >
+                {total} bps if a single venue runs every play
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {EDGE_WAYS.map(w => {
+                const lightPct = Math.max(1, (w.bps / max) * 100)
+                const darkPct = Math.max(0.5, lightPct * w.frequency)
+                return (
+                  <MechanismRow
+                    key={w.slug}
+                    rank={w.rank}
+                    name={w.name}
+                    slug={w.slug}
+                    lightPct={lightPct}
+                    darkPct={darkPct}
+                    bps={w.bps}
+                    peakBps={w.peakBps}
+                    frequency={w.frequency}
+                  />
+                )
+              })}
+              <GeneralBaselineRow />
+            </div>
+          </div>
+
+          {/* Source footer cards */}
+          <div
+            style={{
+              marginTop: 28,
+              paddingTop: 20,
+              borderTop: `1px solid ${LINE}`,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '14px 22px',
+            }}
+          >
+            {EDGE_WAYS.map(w => (
+              <div
+                key={w.slug}
+                id={`way-${w.slug}`}
+                style={{
+                  fontFamily: 'var(--apple-font-text)',
+                  fontSize: 11,
+                  color: TERTIARY,
+                  letterSpacing: '-0.005em',
+                  lineHeight: 1.5,
+                  scrollMarginTop: 80,
+                }}
+              >
+                <div
+                  style={{
+                    color: TEXT,
+                    fontWeight: 600,
+                    marginBottom: 3,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {pad2(w.rank)} · {w.name}{' '}
+                  <span style={{ color: TERTIARY, fontWeight: 400 }}>
+                    · {fmtBps(w.bps)}{' '}
+                    <span style={{ opacity: 0.7 }}>
+                      · peak {w.peakBps} bps · fires {(w.frequency * 100).toFixed(w.frequency < 0.01 ? 2 : 0)}%
+                    </span>
+                  </span>
+                </div>
+                <div style={{ marginBottom: 4, fontStyle: 'italic', color: SECONDARY }}>
+                  {w.conversion} {w.frequencyNote}
+                </div>
+                <div style={{ marginBottom: 4, color: SECONDARY, fontStyle: 'italic' }}>
+                  Fix: {w.fix}
+                </div>
                 <a
                   href={w.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: ACCENT, fontWeight: 500 }}
+                  style={{ color: ACCENT, fontSize: 11, fontWeight: 500 }}
                   className="hover:underline"
                 >
                   {w.sourceLabel} ›
                 </a>
-              </p>
-              <p
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  letterSpacing: '-0.011em',
-                  color: TEXT,
-                  maxWidth: 780,
-                  marginTop: 2,
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>The fix.</span> {w.fix}
-              </p>
-            </article>
-          </Reveal>
-        ))}
-      </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Reveal>
     </section>
+  )
+}
+
+function MechanismRow({
+  rank,
+  name,
+  slug,
+  lightPct,
+  darkPct,
+  bps,
+  peakBps,
+  frequency,
+}: {
+  rank: number
+  name: string
+  slug: string
+  lightPct: number
+  darkPct: number
+  bps: number
+  peakBps: number
+  frequency: number
+}) {
+  return (
+    <a
+      href={`#way-${slug}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        textDecoration: 'none',
+      }}
+    >
+      <div
+        style={{
+          flex: '0 0 160px',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 8,
+          minWidth: 0,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 11,
+            color: TERTIARY,
+            letterSpacing: '+0.011em',
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+            flex: '0 0 22px',
+          }}
+        >
+          {pad2(rank)}
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {name}
+        </span>
+      </div>
+      <div
+        style={{
+          flex: 1,
+          height: 14,
+          background: SURFACE,
+          borderRadius: 4,
+          position: 'relative',
+          overflow: 'visible',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: -3,
+            bottom: -3,
+            width: 0,
+            borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+          }}
+          aria-hidden
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${lightPct}%`,
+            background: ACCENT,
+            opacity: 0.32,
+            borderRadius: 4,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${darkPct}%`,
+            background: ACCENT,
+            borderRadius: 4,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          flex: '0 0 120px',
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: ACCENT,
+          }}
+        >
+          {fmtBps(bps)}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.005em',
+            fontSize: 12,
+            color: TERTIARY,
+            marginTop: 2,
+          }}
+        >
+          peak {peakBps} · {(frequency * 100).toFixed(frequency < 0.01 ? 2 : 0)}%
+        </div>
+      </div>
+    </a>
+  )
+}
+
+function GeneralBaselineRow() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            flex: '0 0 160px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 13,
+            color: TEXT,
+            letterSpacing: '-0.011em',
+            fontWeight: 600,
+            paddingLeft: 30,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            width={14}
+            height={14}
+            style={{ borderRadius: 3, flexShrink: 0 }}
+          />
+          General
+        </div>
+        <div
+          style={{
+            flex: 1,
+            height: 14,
+            background: SURFACE,
+            borderRadius: 4,
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: -3,
+              bottom: -3,
+              width: 0,
+              borderLeft: `1px dashed color-mix(in srgb, ${TERTIARY} 50%, transparent)`,
+            }}
+            aria-hidden
+          />
+        </div>
+        <div
+          style={{
+            flex: '0 0 120px',
+            textAlign: 'right',
+            fontFamily: 'var(--apple-font-display)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '-0.016em',
+            fontSize: 14,
+            fontWeight: 600,
+            color: TERTIARY,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          0
+        </div>
+      </div>
+      <div
+        style={{
+          paddingLeft: 172,
+          fontFamily: 'var(--apple-font-text)',
+          fontSize: 12,
+          color: SECONDARY,
+          letterSpacing: '-0.005em',
+          lineHeight: 1.45,
+          fontStyle: 'italic',
+        }}
+      >
+        Sealed bets, parimutuel, BLS-verified oracles. None of the fourteen mechanisms can fire.
+      </div>
+    </div>
   )
 }
