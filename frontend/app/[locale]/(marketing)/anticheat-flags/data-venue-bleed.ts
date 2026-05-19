@@ -87,8 +87,12 @@ export const VENUE_BLEEDS: VenueBleed[] = [
 ]
 
 export interface VenueBleedComputed extends VenueBleed {
-  /** Sum of bps from active mechanisms. What the MM books per round-trip. */
+  /** Central estimate: sum of `bps` from active mechanisms. */
   bpsPerTrade: number
+  /** Lower edge of the defensible range. Sum of `bpsLow` across active mechanisms. */
+  bpsLow: number
+  /** Upper edge of the defensible range. Sum of `bpsHigh` across active mechanisms. */
+  bpsHigh: number
   /** Triple-bar values: cumulative bps you'd need to break even at N trades. */
   cumulative: {
     n100: number
@@ -98,12 +102,23 @@ export interface VenueBleedComputed extends VenueBleed {
 }
 
 export function computeVenueBleeds(): VenueBleedComputed[] {
-  const bpsBySlug = new Map(EDGE_WAYS.map(w => [w.slug, w.bps]))
+  const bySlug = new Map(EDGE_WAYS.map(w => [w.slug, w]))
   return VENUE_BLEEDS.map(v => {
-    const bpsPerTrade = v.active.reduce((acc, slug) => acc + (bpsBySlug.get(slug) ?? 0), 0)
+    let bpsPerTrade = 0
+    let bpsLow = 0
+    let bpsHigh = 0
+    for (const slug of v.active) {
+      const w = bySlug.get(slug)
+      if (!w) continue
+      bpsPerTrade += w.bps
+      bpsLow += w.bpsLow
+      bpsHigh += w.bpsHigh
+    }
     return {
       ...v,
       bpsPerTrade,
+      bpsLow,
+      bpsHigh,
       cumulative: {
         n100: bpsPerTrade * 100,
         n1k: bpsPerTrade * 1_000,

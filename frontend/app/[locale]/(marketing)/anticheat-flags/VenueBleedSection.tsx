@@ -27,7 +27,7 @@ function fmtBps(bps: number): string {
 
 export function VenueBleedSection() {
   const rows = computeVenueBleeds()
-  const max = Math.max(...rows.map(r => r.bpsPerTrade * TRADES))
+  const max = Math.max(...rows.map(r => r.bpsHigh * TRADES))
   const mechanismName = new Map(EDGE_WAYS.map(w => [w.slug, w.name]))
 
   return (
@@ -85,7 +85,15 @@ export function VenueBleedSection() {
                   marginBottom: 10,
                 }}
               >
-                Retail baseline = 0. Bar = cumulative % bleed over 1,000 round-trips, summed across every mechanism active at the venue, each weighted by how often it fires.
+                Retail baseline = 0. Bar = central estimate of cumulative % bleed over 1,000 round-trips. Whisker = defensible range, low to high, from peer-reviewed sources. These are estimates, not measurements — see{' '}
+                <a
+                  href="#edge-ways"
+                  style={{ color: ACCENT, fontWeight: 500 }}
+                  className="hover:underline"
+                >
+                  Thirteen ways the venue takes a bite
+                </a>
+                {' '}for every per-mechanism citation and range.
               </p>
               <div
                 style={{
@@ -99,17 +107,23 @@ export function VenueBleedSection() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {rows.map(v => {
                 const cum1k = v.bpsPerTrade * TRADES
+                const cumLow = v.bpsLow * TRADES
+                const cumHigh = v.bpsHigh * TRADES
                 const pct = Math.max(1, (cum1k / max) * 100)
+                const lowPct = Math.max(0, (cumLow / max) * 100)
+                const highPct = Math.min(100, Math.max(lowPct + 0.5, (cumHigh / max) * 100))
                 return (
                   <BleedRow
                     key={v.slug}
                     name={v.name}
                     pct={pct}
+                    lowPct={lowPct}
+                    highPct={highPct}
                     value={fmtPct(cum1k)}
-                    sub={`${fmtBps(v.bpsPerTrade)}/trade`}
+                    sub={`${fmtPct(cumLow)}–${fmtPct(cumHigh)}`}
                   />
                 )
               })}
@@ -171,14 +185,19 @@ export function VenueBleedSection() {
 function BleedRow({
   name,
   pct,
+  lowPct,
+  highPct,
   value,
   sub,
 }: {
   name: string
   pct: number
+  lowPct: number
+  highPct: number
   value: string
   sub: string
 }) {
+  const WHISKER = `color-mix(in srgb, ${ACCENT} 65%, transparent)`
   return (
     <div className="acf-bar-row">
       <div
@@ -228,6 +247,42 @@ function BleedRow({
             width: `${pct}%`,
             background: ACCENT,
             borderRadius: 4,
+          }}
+        />
+        {/* Whisker: low–high range, sitting above the bar */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: `${lowPct}%`,
+            width: `${highPct - lowPct}%`,
+            top: -7,
+            height: 1,
+            background: WHISKER,
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: `${lowPct}%`,
+            top: -10,
+            width: 1,
+            height: 7,
+            transform: 'translateX(-0.5px)',
+            background: WHISKER,
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: `${highPct}%`,
+            top: -10,
+            width: 1,
+            height: 7,
+            transform: 'translateX(-0.5px)',
+            background: WHISKER,
           }}
         />
       </div>
