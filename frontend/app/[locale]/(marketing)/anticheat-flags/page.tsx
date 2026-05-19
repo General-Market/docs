@@ -7,7 +7,6 @@ import { FeeTierSection } from './FeeTierSection'
 import { EdgeMatrixSection } from './EdgeMatrixSection'
 import { EdgeWaysSection } from './EdgeWaysSection'
 import { VenueBleedSection } from './VenueBleedSection'
-import { EDGE_TOPICS } from './data-edge-matrix'
 import { binance } from './data-binance'
 import { coinbase, bybit } from './data-crypto-1'
 import { hyperliquid, deribit } from './data-crypto-2'
@@ -72,9 +71,6 @@ function SectionHeader({ title, meta }: { title: string; meta?: string }) {
 }
 
 export default function AntiCheatFlagsPage() {
-  const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
-  const totalEdges = EDGE_TOPICS.length
-
   return (
     <AppShell>
       <div className="w-full">
@@ -110,7 +106,7 @@ export default function AntiCheatFlagsPage() {
                   maxWidth: 820,
                 }}
               >
-                We pulled the receipts on {VENUES.length} venues and {totalIncidents} documented incidents, catalogued {totalEdges} distinct mechanisms — colocation cabinets, payment for order flow, VIP fee tiers, b-book counterparties, validator clustering, sniper RPC — and found that the cumulative tax on a retail trader doing a thousand round-trips ranges from 137% to 626% depending on which exchange takes the order, never disclosed on the public page, never priced, never refunded.
+                Markets get harder each year for retail and small firms to win. Predatory actors reinvest the billions they extract, and extract more. Like the dead internet theory, this is proof of the dead financial market theory. General Market builds products to return markets to what they were ten years ago.
               </p>
             </Reveal>
           </section>
