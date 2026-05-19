@@ -157,13 +157,14 @@ const NHL_STATS: &[StatField] = &[
     StatField { name: "penaltyMinutes", label: "penaltyMinutes", parse: StatParse::Number },
 ];
 
+/// MLB exposes nothing useful in `boxscore.teams[].statistics` — that's just
+/// section headers. The real cumulative numbers live in the per-inning
+/// linescore on the header. `extract_summary` sums them into synthetic stat
+/// names so this catalog can address them uniformly.
 const MLB_STATS: &[StatField] = &[
-    StatField { name: "hits", label: "hits", parse: StatParse::Number },
-    StatField { name: "runs", label: "runs", parse: StatParse::Number },
-    StatField { name: "errors", label: "errors", parse: StatParse::Number },
-    StatField { name: "leftOnBase", label: "leftOnBase", parse: StatParse::Number },
-    StatField { name: "strikeouts", label: "strikeouts", parse: StatParse::Number },
-    StatField { name: "walks", label: "walks", parse: StatParse::Number },
+    StatField { name: "linescoreRuns", label: "runs", parse: StatParse::Number },
+    StatField { name: "linescoreHits", label: "hits", parse: StatParse::Number },
+    StatField { name: "linescoreErrors", label: "errors", parse: StatParse::Number },
 ];
 
 fn stat_catalog(league_code: &str) -> &'static [StatField] {
@@ -243,6 +244,43 @@ struct StatusType {
 struct SummaryResponse {
     #[serde(default)]
     boxscore: Option<Boxscore>,
+    /// Used for MLB-style sports whose cumulative team stats live in the
+    /// per-period linescore instead of the boxscore statistics array.
+    #[serde(default)]
+    header: Option<SummaryHeader>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SummaryHeader {
+    #[serde(default)]
+    competitions: Vec<HeaderCompetition>,
+}
+
+#[derive(Debug, Deserialize)]
+struct HeaderCompetition {
+    #[serde(default)]
+    competitors: Vec<HeaderCompetitor>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HeaderCompetitor {
+    #[serde(default)]
+    home_away: Option<String>,
+    #[serde(default)]
+    linescores: Vec<LinescoreEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LinescoreEntry {
+    /// String form of the period's score (runs for MLB).
+    #[serde(default)]
+    display_value: Option<String>,
+    #[serde(default)]
+    hits: Option<i64>,
+    #[serde(default)]
+    errors: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -990,22 +1028,60 @@ fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
 fn extract_summary(resp: &SummaryResponse) -> EventSummary {
     let mut stats: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
 
-    let teams = match resp.boxscore.as_ref() {
-        Some(b) => &b.teams,
-        None => return EventSummary { stats },
-    };
-
-    for team in teams {
-        let is_home = team.home_away.as_deref() == Some("home");
-        for s in &team.statistics {
-            if s.name.is_empty() || s.display_value.is_empty() {
-                continue;
+    // Box-score path — soccer, NBA, NFL, NHL: per-team statistics array
+    // is the source of truth.
+    if let Some(boxscore) = resp.boxscore.as_ref() {
+        for team in &boxscore.teams {
+            let is_home = team.home_away.as_deref() == Some("home");
+            for s in &team.statistics {
+                if s.name.is_empty() || s.display_value.is_empty() {
+                    continue;
+                }
+                let entry = stats.entry(s.name.clone()).or_default();
+                if is_home {
+                    entry.0 = Some(s.display_value.clone());
+                } else {
+                    entry.1 = Some(s.display_value.clone());
+                }
             }
-            let entry = stats.entry(s.name.clone()).or_default();
-            if is_home {
-                entry.0 = Some(s.display_value.clone());
-            } else {
-                entry.1 = Some(s.display_value.clone());
+        }
+    }
+
+    // Linescore path — MLB and any other sport whose per-team scalar totals
+    // live in `header.competitions[].competitors[].linescores[]`. Sum across
+    // periods/innings and stash under synthetic stat names that the per-sport
+    // catalog can address. Inert for sports whose linescore is empty.
+    if let Some(header) = resp.header.as_ref() {
+        if let Some(comp) = header.competitions.first() {
+            for c in &comp.competitors {
+                if c.linescores.is_empty() {
+                    continue;
+                }
+                let is_home = c.home_away.as_deref() == Some("home");
+                let mut runs: i64 = 0;
+                let mut hits: i64 = 0;
+                let mut errors: i64 = 0;
+                for ls in &c.linescores {
+                    runs += ls
+                        .display_value
+                        .as_deref()
+                        .and_then(|v| v.parse::<i64>().ok())
+                        .unwrap_or(0);
+                    hits += ls.hits.unwrap_or(0);
+                    errors += ls.errors.unwrap_or(0);
+                }
+                for (name, val) in [
+                    ("linescoreRuns", runs),
+                    ("linescoreHits", hits),
+                    ("linescoreErrors", errors),
+                ] {
+                    let entry = stats.entry(name.to_string()).or_default();
+                    if is_home {
+                        entry.0 = Some(val.to_string());
+                    } else {
+                        entry.1 = Some(val.to_string());
+                    }
+                }
             }
         }
     }
@@ -1448,6 +1524,7 @@ mod tests {
     #[test]
     fn test_extract_summary_indexes_both_sides() {
         let resp = SummaryResponse {
+            header: None,
             boxscore: Some(Boxscore {
                 teams: vec![
                     BoxscoreTeamEntry {
@@ -1491,9 +1568,88 @@ mod tests {
 
     #[test]
     fn test_extract_summary_missing_boxscore() {
-        let resp = SummaryResponse { boxscore: None };
+        let resp = SummaryResponse {
+            boxscore: None,
+            header: None,
+        };
         let summary = extract_summary(&resp);
         assert!(summary.stats.is_empty());
+    }
+
+    #[test]
+    fn test_extract_summary_linescore_mlb() {
+        // 4 innings; home: 1+0+0+2 runs, 1+1+0+3 hits, 0+0+1+0 errors
+        // away: 1+0+0+0 runs, 2+0+1+0 hits, 0+0+0+0 errors
+        let resp = SummaryResponse {
+            boxscore: Some(Boxscore { teams: vec![] }),
+            header: Some(SummaryHeader {
+                competitions: vec![HeaderCompetition {
+                    competitors: vec![
+                        HeaderCompetitor {
+                            home_away: Some("home".to_string()),
+                            linescores: vec![
+                                LinescoreEntry {
+                                    display_value: Some("1".to_string()),
+                                    hits: Some(1),
+                                    errors: Some(0),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("0".to_string()),
+                                    hits: Some(1),
+                                    errors: Some(0),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("0".to_string()),
+                                    hits: Some(0),
+                                    errors: Some(1),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("2".to_string()),
+                                    hits: Some(3),
+                                    errors: Some(0),
+                                },
+                            ],
+                        },
+                        HeaderCompetitor {
+                            home_away: Some("away".to_string()),
+                            linescores: vec![
+                                LinescoreEntry {
+                                    display_value: Some("1".to_string()),
+                                    hits: Some(2),
+                                    errors: Some(0),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("0".to_string()),
+                                    hits: Some(0),
+                                    errors: Some(0),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("0".to_string()),
+                                    hits: Some(1),
+                                    errors: Some(0),
+                                },
+                                LinescoreEntry {
+                                    display_value: Some("0".to_string()),
+                                    hits: Some(0),
+                                    errors: Some(0),
+                                },
+                            ],
+                        },
+                    ],
+                }],
+            }),
+        };
+
+        let summary = extract_summary(&resp);
+        let runs = summary.stats.get("linescoreRuns").unwrap();
+        assert_eq!(runs.0.as_deref(), Some("3"));
+        assert_eq!(runs.1.as_deref(), Some("1"));
+        let hits = summary.stats.get("linescoreHits").unwrap();
+        assert_eq!(hits.0.as_deref(), Some("5"));
+        assert_eq!(hits.1.as_deref(), Some("3"));
+        let errors = summary.stats.get("linescoreErrors").unwrap();
+        assert_eq!(errors.0.as_deref(), Some("1"));
+        assert_eq!(errors.1.as_deref(), Some("0"));
     }
 
     // ------------------------------------------------------------------
