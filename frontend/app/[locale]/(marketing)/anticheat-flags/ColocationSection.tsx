@@ -7,56 +7,6 @@ const TERTIARY = 'var(--apple-text-tertiary)'
 const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
 
-interface ColoVenue {
-  slug: string
-  name: string
-  region: string
-  proof: string
-  sourceLabel: string
-  sourceUrl: string
-  insiderMs: number
-  outsiderMs: number
-  outsiderOrigin: string
-  quote?: boolean
-}
-
-const COLO_VENUES: ColoVenue[] = [
-  {
-    slug: 'polymarket-colo',
-    name: 'Polymarket',
-    region: 'AWS eu-west-2. London',
-    proof: 'Direct co-location available. Users who complete the KYC/KYB form can get access to co-locate directly in eu-west-2.',
-    sourceLabel: 'docs.polymarket.com',
-    sourceUrl: 'https://docs.polymarket.com/trading/overview',
-    insiderMs: 2,
-    outsiderMs: 7,
-    outsiderOrigin: 'Retail eu-west-2 VPS',
-    quote: true,
-  },
-  {
-    slug: 'hyperliquid-colo',
-    name: 'Hyperliquid',
-    region: 'AWS ap-northeast-1. Tokyo',
-    proof: 'All 24 validators clustered in AWS Tokyo. Anyone can rent a Tokyo VPS. What they cannot rent is the Foundation Non-Validating Node — gated by 10K HYPE staked, Tier 1 maker rebate, and 98% uptime. The gossip feed arrives ahead of the public RPC.',
-    sourceLabel: 'Hyperliquid docs',
-    sourceUrl: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node',
-    insiderMs: 3,
-    outsiderMs: 28,
-    outsiderOrigin: 'Retail Tokyo VPS, public RPC',
-  },
-  {
-    slug: 'kalshi-colo',
-    name: 'Kalshi',
-    region: 'Chicago. Designated MM',
-    proof: 'Susquehanna onboarded April 2024 as the first dedicated institutional market maker. The November 2025 class action names the privilege directly: unique contractual and technological integration.',
-    sourceLabel: 'Bloomberg',
-    sourceUrl: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges',
-    insiderMs: 1,
-    outsiderMs: 50,
-    outsiderOrigin: 'Retail browser',
-  },
-]
-
 interface LatencyRow {
   slug: string
   name: string
@@ -149,111 +99,6 @@ const LATENCY_ROWS: LatencyRow[] = [
 ]
 
 const MAX_EDGE = Math.max(...LATENCY_ROWS.map(r => r.edgeMs))
-
-function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
-  const gap = v.outsiderMs - v.insiderMs
-  return (
-    <Reveal delay={delay}>
-      <article
-        className="acf-colo-card flex flex-col h-full"
-        style={{
-          background: 'var(--apple-panel)',
-          border: `1px solid ${LINE}`,
-          borderRadius: 'var(--apple-r-md)',
-          padding: 22,
-          gap: 12,
-          aspectRatio: '1 / 1',
-          minHeight: 360,
-        }}
-      >
-        <header className="flex items-baseline justify-between gap-3">
-          <h3
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 21,
-              fontWeight: 600,
-              letterSpacing: '-0.022em',
-              color: TEXT,
-            }}
-          >
-            {v.name}
-          </h3>
-          <span
-            style={{
-              fontFamily: 'var(--apple-font-display)',
-              fontSize: 19,
-              fontWeight: 600,
-              letterSpacing: '-0.016em',
-              color: ACCENT,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            +{gap}ms
-          </span>
-        </header>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: TERTIARY,
-            letterSpacing: '-0.005em',
-          }}
-        >
-          {v.region}
-        </div>
-
-        <p
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 14,
-            lineHeight: 1.45,
-            letterSpacing: '-0.011em',
-            color: TEXT,
-            fontWeight: 500,
-            fontStyle: v.quote ? 'italic' : 'normal',
-          }}
-        >
-          {v.quote ? `"${v.proof}"` : v.proof}
-        </p>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: TERTIARY,
-            letterSpacing: '-0.005em',
-            marginTop: 'auto',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          Inside lane {v.insiderMs}ms · {v.outsiderOrigin} {v.outsiderMs}ms
-        </div>
-
-        <footer
-          className="flex items-center justify-between gap-3 pt-3"
-          style={{ borderTop: `1px solid ${LINE}` }}
-        >
-          <a
-            href={v.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontFamily: 'var(--apple-font-text)',
-              fontSize: 12,
-              fontWeight: 500,
-              color: ACCENT,
-              letterSpacing: '-0.005em',
-            }}
-            className="hover:underline"
-          >
-            {v.sourceLabel} ›
-          </a>
-        </footer>
-      </article>
-    </Reveal>
-  )
-}
 
 function LatencyBarRow({ row }: { row: LatencyRow }) {
   const edgePct = Math.max((row.edgeMs / MAX_EDGE) * 100, row.edgeMs > 0 ? 2 : 0)
@@ -503,15 +348,6 @@ export function ColocationSection() {
           Geographic latency is buyable — a retail bot can rent a Tokyo VPS for around fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives that rental is the gated one: the MMGW cross-connect inside AWS Tokyo, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, the bilateral KYC at Polymarket. Each venue says the door is open, but none of them publishes the price of walking through it.
         </p>
       </Reveal>
-
-      <div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        style={{ marginTop: 36 }}
-      >
-        {COLO_VENUES.map((v, i) => (
-          <ColoCard key={v.slug} v={v} delay={Math.min(i * 0.06, 0.2)} />
-        ))}
-      </div>
 
       <Reveal delay={0.24}>
         <div
