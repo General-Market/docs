@@ -1,18 +1,27 @@
 //! ESPN Live Scores client implementing MarketDataSource
 //!
-//! Dynamically discovers active/scheduled/completed games across 12 leagues.
-//! Each game produces 3 assets: home score, away score, and total score.
-//! When games fall off the scoreboard, assets become inactive automatically.
+//! Discovers in-progress games across 12 leagues. Each live game emits a 3-asset
+//! score block (home / away / total) plus a per-sport catalog of high-frequency
+//! boxscore stats (possession %, passes, shots, rebounds, assists, etc.) pulled
+//! from ESPN's `summary` endpoint.
+//!
+//! Pre-game and post-game events are not registered. The first cycle in which an
+//! event flips from "in" to "post" still emits its assets one last time so the
+//! closing score and final stats get published; the cycle after that drops them
+//! and the sync engine marks them inactive.
 //!
 //! API: https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard
+//! API: https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/summary?event={id}
 //! Auth: None
-//! Rate limit: 30 req/min (be polite, undocumented API)
+//! Rate limit: 30 req/min self-imposed (undocumented public API; be polite)
 
 use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use std::str::FromStr;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -29,11 +38,15 @@ const ASSET_JSON: &str = include_str!("../../../config/sports.json");
 /// ESPN API base URL
 const API_BASE: &str = "https://site.api.espn.com/apis/site/v2/sports";
 
-/// Delay between sequential league fetches (ms)
+/// Delay between league scoreboard fetches (ms)
 const INTER_REQUEST_DELAY_MS: u64 = 2000;
 
+/// Delay between summary fetches within one league (ms). Smaller than the
+/// inter-league delay because summary calls don't share a bottleneck and we
+/// want to fit a full weekend's live games inside one sync cycle.
+const SUMMARY_DELAY_MS: u64 = 750;
+
 /// All leagues to poll. Each entry is (sport_path, league_code, display_name).
-/// sport_path is used in the ESPN URL, league_code is used in asset IDs.
 const LEAGUES: &[(&str, &str, &str)] = &[
     ("basketball/nba", "nba", "NBA"),
     ("football/nfl", "nfl", "NFL"),
@@ -50,17 +63,130 @@ const LEAGUES: &[(&str, &str, &str)] = &[
 ];
 
 // ============================================================================
+// STAT CATALOGS — per-sport boxscore fields we publish.
+//
+// Selection rule: each entry is expected to change ≥ ~1× per 5-minute window
+// during live play. Slow stats (red cards, penalty kicks, blocks) are dropped
+// on purpose so the registry stays full of moving markets.
+//
+// `name` is the ESPN boxscore `name` field. `label` is the asset-ID suffix
+// (camelCase, no underscores or dashes). `parse` decides how to interpret the
+// `displayValue` string.
+// ============================================================================
+
+#[derive(Clone, Copy)]
+struct StatField {
+    name: &'static str,
+    label: &'static str,
+    parse: StatParse,
+}
+
+#[derive(Clone, Copy)]
+enum StatParse {
+    /// Plain decimal: "16", "45.1"
+    Number,
+    /// Fraction-of-1 percentage: "0.8" -> 80.0
+    FractionPct,
+    /// "MM:SS" -> seconds. "32:14" -> 1934
+    TimeMmSs,
+    /// "X-Y" -> X. "23-50" -> 23, "4-12" -> 4
+    DashFirst,
+}
+
+const SOCCER_STATS: &[StatField] = &[
+    StatField { name: "possessionPct", label: "possessionPct", parse: StatParse::Number },
+    StatField { name: "accuratePasses", label: "accuratePasses", parse: StatParse::Number },
+    StatField { name: "totalPasses", label: "totalPasses", parse: StatParse::Number },
+    StatField { name: "passPct", label: "passPct", parse: StatParse::FractionPct },
+    StatField { name: "accurateLongBalls", label: "accurateLongBalls", parse: StatParse::Number },
+    StatField { name: "totalLongBalls", label: "totalLongBalls", parse: StatParse::Number },
+    StatField { name: "accurateCrosses", label: "accurateCrosses", parse: StatParse::Number },
+    StatField { name: "totalCrosses", label: "totalCrosses", parse: StatParse::Number },
+    StatField { name: "effectiveClearance", label: "effectiveClearance", parse: StatParse::Number },
+    StatField { name: "totalClearance", label: "totalClearance", parse: StatParse::Number },
+    StatField { name: "effectiveTackles", label: "effectiveTackles", parse: StatParse::Number },
+    StatField { name: "totalTackles", label: "totalTackles", parse: StatParse::Number },
+    StatField { name: "interceptions", label: "interceptions", parse: StatParse::Number },
+];
+
+const NBA_STATS: &[StatField] = &[
+    StatField {
+        name: "fieldGoalsMade-fieldGoalsAttempted",
+        label: "fieldGoalsMade",
+        parse: StatParse::DashFirst,
+    },
+    StatField {
+        name: "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+        label: "threePointFieldGoalsMade",
+        parse: StatParse::DashFirst,
+    },
+    StatField {
+        name: "freeThrowsMade-freeThrowsAttempted",
+        label: "freeThrowsMade",
+        parse: StatParse::DashFirst,
+    },
+    StatField { name: "rebounds", label: "rebounds", parse: StatParse::Number },
+    StatField { name: "assists", label: "assists", parse: StatParse::Number },
+    StatField { name: "steals", label: "steals", parse: StatParse::Number },
+    StatField { name: "blocks", label: "blocks", parse: StatParse::Number },
+    StatField { name: "turnovers", label: "turnovers", parse: StatParse::Number },
+    StatField { name: "fouls", label: "fouls", parse: StatParse::Number },
+];
+
+const NFL_STATS: &[StatField] = &[
+    StatField { name: "totalYards", label: "totalYards", parse: StatParse::Number },
+    StatField { name: "netPassingYards", label: "netPassingYards", parse: StatParse::Number },
+    StatField { name: "rushingYards", label: "rushingYards", parse: StatParse::Number },
+    StatField { name: "firstDowns", label: "firstDowns", parse: StatParse::Number },
+    StatField { name: "thirdDownEff", label: "thirdDownConversions", parse: StatParse::DashFirst },
+    StatField { name: "turnovers", label: "turnovers", parse: StatParse::Number },
+    StatField { name: "sacksYardsLost", label: "sacks", parse: StatParse::DashFirst },
+    StatField { name: "possessionTime", label: "possessionSeconds", parse: StatParse::TimeMmSs },
+];
+
+const NHL_STATS: &[StatField] = &[
+    StatField { name: "shotsTotal", label: "shotsTotal", parse: StatParse::Number },
+    StatField { name: "hits", label: "hits", parse: StatParse::Number },
+    StatField { name: "faceoffsWon", label: "faceoffsWon", parse: StatParse::Number },
+    StatField { name: "powerPlayGoals", label: "powerPlayGoals", parse: StatParse::Number },
+    StatField {
+        name: "powerPlayOpportunities",
+        label: "powerPlayOpportunities",
+        parse: StatParse::Number,
+    },
+    StatField { name: "penaltyMinutes", label: "penaltyMinutes", parse: StatParse::Number },
+];
+
+const MLB_STATS: &[StatField] = &[
+    StatField { name: "hits", label: "hits", parse: StatParse::Number },
+    StatField { name: "runs", label: "runs", parse: StatParse::Number },
+    StatField { name: "errors", label: "errors", parse: StatParse::Number },
+    StatField { name: "leftOnBase", label: "leftOnBase", parse: StatParse::Number },
+    StatField { name: "strikeouts", label: "strikeouts", parse: StatParse::Number },
+    StatField { name: "walks", label: "walks", parse: StatParse::Number },
+];
+
+fn stat_catalog(league_code: &str) -> &'static [StatField] {
+    match league_code {
+        "epl" | "laliga" | "bundesliga" | "seriea" | "ligue1" | "mls" | "ucl" => SOCCER_STATS,
+        "nba" | "wnba" => NBA_STATS,
+        "nfl" => NFL_STATS,
+        "nhl" => NHL_STATS,
+        "mlb" => MLB_STATS,
+        _ => &[],
+    }
+}
+
+// ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 
-/// Top-level scoreboard response
 #[derive(Debug, Deserialize)]
 struct ScoreboardResponse {
     #[serde(default)]
     events: Vec<Event>,
 }
 
-/// A single event (game)
 #[derive(Debug, Deserialize)]
 struct Event {
     #[serde(default)]
@@ -69,7 +195,6 @@ struct Event {
     competitions: Vec<Competition>,
 }
 
-/// A competition within an event
 #[derive(Debug, Deserialize)]
 struct Competition {
     #[serde(default)]
@@ -78,7 +203,6 @@ struct Competition {
     status: Option<CompetitionStatus>,
 }
 
-/// A competitor (team) in a competition
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Competitor {
@@ -94,7 +218,6 @@ struct Competitor {
     winner: Option<bool>,
 }
 
-/// Team info within a competitor
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TeamInfo {
@@ -102,14 +225,12 @@ struct TeamInfo {
     display_name: String,
 }
 
-/// Competition status
 #[derive(Debug, Deserialize)]
 struct CompetitionStatus {
     #[serde(default, rename = "type")]
     status_type: Option<StatusType>,
 }
 
-/// Status type details
 #[derive(Debug, Deserialize)]
 struct StatusType {
     #[serde(default)]
@@ -118,7 +239,40 @@ struct StatusType {
     state: Option<String>,
 }
 
-/// Parsed game info extracted from a scoreboard event
+#[derive(Debug, Deserialize)]
+struct SummaryResponse {
+    #[serde(default)]
+    boxscore: Option<Boxscore>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Boxscore {
+    #[serde(default)]
+    teams: Vec<BoxscoreTeamEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BoxscoreTeamEntry {
+    #[serde(default)]
+    statistics: Vec<Statistic>,
+    #[serde(default)]
+    home_away: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Statistic {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    display_value: String,
+}
+
+// ============================================================================
+// INTERNAL TYPES
+// ============================================================================
+
 #[derive(Debug, Clone)]
 struct GameInfo {
     game_id: String,
@@ -126,19 +280,45 @@ struct GameInfo {
     away_team: String,
     home_score: Option<Decimal>,
     away_score: Option<Decimal>,
-    state: String, // "pre", "in", "post"
+    state: String,
+}
+
+#[derive(Debug, Default, Clone)]
+struct EventSummary {
+    /// stat-name -> (home displayValue, away displayValue). Missing sides are None.
+    stats: HashMap<String, (Option<String>, Option<String>)>,
+}
+
+#[derive(Debug, Clone)]
+enum AssetKind {
+    Score { side: String },
+    Stat { stat: String, side: String },
+}
+
+#[derive(Debug, Clone)]
+struct ParsedAssetId {
+    original_id: String,
+    league_code: String,
+    game_id: String,
+    kind: AssetKind,
 }
 
 // ============================================================================
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
-/// ESPN live scores market data source.
-///
-/// Dynamically discovers games across 12 leagues and tracks scores.
-/// Source ID is `"sports"`.
+/// ESPN live scores market data source. Source ID is `"sports"`.
 pub struct SportsMarketSource {
     http: SourceHttpClient,
+    /// `format!("{league}/{game_id}")` keys for events that were live in the
+    /// previous fetch_assets cycle. Drives the one-tick-after-final emission
+    /// so closing scores and final boxscore stats get published before the
+    /// asset deactivates.
+    events_live_last_cycle: Mutex<HashSet<String>>,
+    /// Per-cycle cache: same `league/game_id` key -> parsed summary. Populated by
+    /// fetch_assets, consumed by fetch_prices within the same sync cycle. Cleared
+    /// at the start of every fetch_assets call.
+    summary_cache: Mutex<HashMap<String, EventSummary>>,
 }
 
 impl SportsMarketSource {
@@ -152,20 +332,32 @@ impl SportsMarketSource {
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         info!(
-            "Sports source initialized (ESPN, {} leagues)",
+            "Sports source initialized (ESPN, {} leagues, 5-min ticks, boxscore expansion)",
             LEAGUES.len()
         );
 
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            events_live_last_cycle: Mutex::new(HashSet::new()),
+            summary_cache: Mutex::new(HashMap::new()),
+        })
     }
 
-    /// Fetch scoreboard for a league
     async fn fetch_scoreboard(
         &self,
         sport_league: &str,
     ) -> Result<ScoreboardResponse, SourceError> {
         let url = format!("{}/{}/scoreboard", API_BASE, sport_league);
         self.http.get_json::<ScoreboardResponse>(&url).await
+    }
+
+    async fn fetch_summary(
+        &self,
+        sport_league: &str,
+        event_id: &str,
+    ) -> Result<SummaryResponse, SourceError> {
+        let url = format!("{}/{}/summary?event={}", API_BASE, sport_league, event_id);
+        self.http.get_json::<SummaryResponse>(&url).await
     }
 }
 
@@ -184,7 +376,10 @@ impl MarketDataSource for SportsMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(120) // 2 minutes — live scores change rapidly
+        // 5-minute ticks. Score and boxscore stats advance fast enough during
+        // live play to fill several batches per cycle; tighter polling would
+        // spend rate-limit budget for marginal gain.
+        Duration::from_secs(300)
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
@@ -201,127 +396,199 @@ impl MarketDataSource for SportsMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        // If config JSON has static entries, use them (defensive fallback)
         let static_assets = load_assets_from_json(ASSET_JSON)?;
         if !static_assets.is_empty() {
             return Ok(static_assets);
         }
 
-        // Dynamic discovery from live scoreboards
+        // Reset per-cycle summary cache and grab the previous-cycle live set.
+        let prev_live: HashSet<String> = {
+            let mut cache = self.summary_cache.lock().expect("summary_cache poisoned");
+            cache.clear();
+            self.events_live_last_cycle
+                .lock()
+                .expect("events_live_last_cycle poisoned")
+                .clone()
+        };
+
         let mut assets = Vec::new();
+        let mut next_live: HashSet<String> = HashSet::new();
+        let mut new_cache: HashMap<String, EventSummary> = HashMap::new();
         let mut total_events = 0u32;
+        let mut live_events = 0u32;
+        let mut final_tick_events = 0u32;
         let mut league_errors = 0u32;
 
         for (idx, &(sport_path, league_code, display_name)) in LEAGUES.iter().enumerate() {
-            // Delay between requests (skip delay before first request)
             if idx > 0 {
                 tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
             }
 
-            match self.fetch_scoreboard(sport_path).await {
-                Ok(scoreboard) => {
-                    let games = extract_games(&scoreboard);
-                    debug!(
-                        "Sports {}: {} games on scoreboard",
-                        league_code,
-                        games.len()
-                    );
-                    total_events += games.len() as u32;
-
-                    let subcategory = league_code.to_string();
-
-                    for game in &games {
-                        let matchup = format!("{} vs {}", game.away_team, game.home_team);
-
-                        // Home score asset
-                        assets.push(AssetUpdate {
-                            asset_id: format!("sport_{}_{}_home", league_code, game.game_id),
-                            symbol: format!("{}/{}", league_code.to_uppercase(), game.game_id),
-                            name: format!("{} (home) [{}]", matchup, display_name),
-                            category: Some("sports".to_string()),
-                            metadata: serde_json::json!({
-                                "api_ref": format!("{}:{}", sport_path, game.game_id),
-                                "subcategory": subcategory,
-                                "active": true,
-                                "extra": {
-                                    "metric": "home",
-                                    "game_id": game.game_id,
-                                    "league": league_code,
-                                    "home_team": game.home_team,
-                                    "away_team": game.away_team,
-                                    "state": game.state,
-                                },
-                            }),
-                        });
-
-                        // Away score asset
-                        assets.push(AssetUpdate {
-                            asset_id: format!("sport_{}_{}_away", league_code, game.game_id),
-                            symbol: format!("{}/{}", league_code.to_uppercase(), game.game_id),
-                            name: format!("{} (away) [{}]", matchup, display_name),
-                            category: Some("sports".to_string()),
-                            metadata: serde_json::json!({
-                                "api_ref": format!("{}:{}", sport_path, game.game_id),
-                                "subcategory": subcategory,
-                                "active": true,
-                                "extra": {
-                                    "metric": "away",
-                                    "game_id": game.game_id,
-                                    "league": league_code,
-                                    "home_team": game.home_team,
-                                    "away_team": game.away_team,
-                                    "state": game.state,
-                                },
-                            }),
-                        });
-
-                        // Total score asset
-                        assets.push(AssetUpdate {
-                            asset_id: format!("sport_{}_{}_total", league_code, game.game_id),
-                            symbol: format!("{}/{}", league_code.to_uppercase(), game.game_id),
-                            name: format!("{} (total) [{}]", matchup, display_name),
-                            category: Some("sports".to_string()),
-                            metadata: serde_json::json!({
-                                "api_ref": format!("{}:{}", sport_path, game.game_id),
-                                "subcategory": subcategory,
-                                "active": true,
-                                "extra": {
-                                    "metric": "total",
-                                    "game_id": game.game_id,
-                                    "league": league_code,
-                                    "home_team": game.home_team,
-                                    "away_team": game.away_team,
-                                    "state": game.state,
-                                },
-                            }),
-                        });
-                    }
-                }
+            let scoreboard = match self.fetch_scoreboard(sport_path).await {
+                Ok(s) => s,
                 Err(e) => {
                     warn!(
                         "Error fetching ESPN scoreboard for {} ({}): {:?}",
                         display_name, sport_path, e
                     );
                     league_errors += 1;
+                    continue;
                 }
+            };
+
+            let games = extract_games(&scoreboard);
+            debug!(
+                "Sports {}: {} games on scoreboard",
+                league_code,
+                games.len()
+            );
+            total_events += games.len() as u32;
+
+            for game in &games {
+                let key = format!("{}/{}", league_code, game.game_id);
+                let is_live = is_live_state(&game.state);
+                let is_final_tick = !is_live && game.state == "post" && prev_live.contains(&key);
+
+                if !is_live && !is_final_tick {
+                    continue;
+                }
+
+                if is_live {
+                    live_events += 1;
+                    next_live.insert(key.clone());
+                } else {
+                    final_tick_events += 1;
+                }
+
+                let matchup = format!("{} vs {}", game.away_team, game.home_team);
+                let subcategory = league_code.to_string();
+
+                // Score assets: home, away, total.
+                for side in ["home", "away", "total"] {
+                    assets.push(AssetUpdate {
+                        asset_id: format!("sport_{}_{}_{}", league_code, game.game_id, side),
+                        symbol: format!("{}/{}", league_code.to_uppercase(), game.game_id),
+                        name: format!("{} ({}) [{}]", matchup, side, display_name),
+                        category: Some("sports".to_string()),
+                        metadata: serde_json::json!({
+                            "api_ref": format!("{}:{}", sport_path, game.game_id),
+                            "subcategory": subcategory,
+                            "active": true,
+                            "extra": {
+                                "kind": "score",
+                                "metric": side,
+                                "game_id": game.game_id,
+                                "league": league_code,
+                                "home_team": game.home_team,
+                                "away_team": game.away_team,
+                                "state": game.state,
+                                "final_tick": is_final_tick,
+                            },
+                        }),
+                    });
+                }
+
+                // Boxscore stat assets — only for sports with a catalog.
+                let catalog = stat_catalog(league_code);
+                if catalog.is_empty() {
+                    continue;
+                }
+
+                // Fetch summary (whether live or final tick — final tick needs it
+                // to publish closing boxscore values).
+                tokio::time::sleep(Duration::from_millis(SUMMARY_DELAY_MS)).await;
+                let summary = match self.fetch_summary(sport_path, &game.game_id).await {
+                    Ok(s) => extract_summary(&s),
+                    Err(e) => {
+                        warn!(
+                            "Error fetching ESPN summary for {} event {}: {:?}",
+                            display_name, game.game_id, e
+                        );
+                        continue;
+                    }
+                };
+
+                for field in catalog {
+                    let (home_raw, away_raw) = summary
+                        .stats
+                        .get(field.name)
+                        .cloned()
+                        .unwrap_or((None, None));
+
+                    for (side, raw) in [("home", &home_raw), ("away", &away_raw)] {
+                        // Only register an asset if the value actually parses.
+                        // Otherwise we'd publish a phantom market that no
+                        // fetch_prices call can fill.
+                        if raw.as_deref().and_then(|s| parse_stat_value(s, field.parse)).is_none() {
+                            continue;
+                        }
+
+                        assets.push(AssetUpdate {
+                            asset_id: format!(
+                                "sport_{}_{}_{}_{}",
+                                league_code, game.game_id, field.label, side
+                            ),
+                            symbol: format!(
+                                "{}/{}",
+                                league_code.to_uppercase(),
+                                game.game_id
+                            ),
+                            name: format!(
+                                "{} ({} · {}) [{}]",
+                                matchup, field.label, side, display_name
+                            ),
+                            category: Some("sports".to_string()),
+                            metadata: serde_json::json!({
+                                "api_ref": format!("{}:{}", sport_path, game.game_id),
+                                "subcategory": subcategory,
+                                "active": true,
+                                "extra": {
+                                    "kind": "stat",
+                                    "stat": field.label,
+                                    "espn_field": field.name,
+                                    "metric": side,
+                                    "game_id": game.game_id,
+                                    "league": league_code,
+                                    "home_team": game.home_team,
+                                    "away_team": game.away_team,
+                                    "state": game.state,
+                                    "final_tick": is_final_tick,
+                                },
+                            }),
+                        });
+                    }
+                }
+
+                new_cache.insert(key, summary);
             }
         }
 
+        // Swap state for next cycle.
+        {
+            let mut cache = self.summary_cache.lock().expect("summary_cache poisoned");
+            *cache = new_cache;
+        }
+        {
+            let mut live = self
+                .events_live_last_cycle
+                .lock()
+                .expect("events_live_last_cycle poisoned");
+            *live = next_live;
+        }
+
         info!(
-            "Sports fetch_assets: {} leagues ({} errors) -> {} events -> {} assets",
+            "Sports fetch_assets: {} leagues ({} errors) -> {} events ({} live, {} final-tick) -> {} assets",
             LEAGUES.len(),
             league_errors,
             total_events,
+            live_events,
+            final_tick_events,
             assets.len()
         );
 
         Ok(assets)
     }
 
-    /// Sports scores should always be written on every sync cycle.
-    /// A score of 3-2 staying at 3-2 is meaningful data (game still in progress).
-    /// Without this, the change detection in SyncEngine skips unchanged values,
-    /// causing 86% of sports assets to have only 1 price row.
     fn skips_when_unchanged(&self) -> bool {
         true
     }
@@ -334,99 +601,227 @@ impl MarketDataSource for SportsMarketSource {
         let now = Utc::now();
         let mut results = Vec::new();
 
-        // Parse asset IDs and group by league
-        // Format: sport_{league_code}_{game_id}_{metric}
-        let mut league_requests: HashMap<String, Vec<ParsedAssetId>> = HashMap::new();
-        let mut requested_ids: HashSet<String> = HashSet::new();
+        // Split incoming asset IDs into score and stat buckets.
+        // Score IDs are grouped by league for one scoreboard fetch per league.
+        // Stat IDs are grouped by (league, event) — we serve them from the
+        // per-cycle summary cache populated by fetch_assets, falling back to
+        // a fresh fetch if the cache misses.
+        let mut score_by_league: HashMap<String, Vec<ParsedAssetId>> = HashMap::new();
+        let mut stat_by_event: HashMap<(String, String), Vec<ParsedAssetId>> = HashMap::new();
+        let mut parsed_total = 0usize;
 
         for asset_id in asset_ids {
-            requested_ids.insert(asset_id.clone());
-            if let Some(parsed) = parse_asset_id(asset_id) {
-                league_requests
-                    .entry(parsed.league_code.clone())
-                    .or_default()
-                    .push(parsed);
+            let parsed = match parse_asset_id(asset_id) {
+                Some(p) => p,
+                None => continue,
+            };
+            parsed_total += 1;
+            match &parsed.kind {
+                AssetKind::Score { .. } => {
+                    score_by_league
+                        .entry(parsed.league_code.clone())
+                        .or_default()
+                        .push(parsed);
+                }
+                AssetKind::Stat { .. } => {
+                    stat_by_event
+                        .entry((parsed.league_code.clone(), parsed.game_id.clone()))
+                        .or_default()
+                        .push(parsed);
+                }
             }
         }
 
         debug!(
-            "Sports fetch_prices: {} asset_ids -> {} unique leagues",
+            "Sports fetch_prices: {} asset_ids ({} parsed) -> {} score-leagues, {} stat-events",
             asset_ids.len(),
-            league_requests.len()
+            parsed_total,
+            score_by_league.len(),
+            stat_by_event.len()
         );
 
-        // Fetch each needed league's scoreboard
+        // -----------------------------------------------------------------
+        // Score path: one scoreboard call per league, same as the original
+        // implementation but with the parser updated.
+        // -----------------------------------------------------------------
         let mut first = true;
-        for (league_code, parsed_assets) in &league_requests {
+        for (league_code, parsed_assets) in &score_by_league {
             if !first {
                 tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
             }
             first = false;
 
-            // Look up the sport_path for this league_code
             let sport_path = match league_code_to_sport_path(league_code) {
-                Some(path) => path,
+                Some(p) => p,
                 None => {
                     warn!("Unknown league code '{}', skipping", league_code);
                     continue;
                 }
             };
 
-            match self.fetch_scoreboard(sport_path).await {
-                Ok(scoreboard) => {
-                    // Build game_id -> GameInfo map
-                    let games = extract_games(&scoreboard);
-                    let game_map: HashMap<&str, &GameInfo> =
-                        games.iter().map(|g| (g.game_id.as_str(), g)).collect();
-
-                    for parsed in parsed_assets {
-                        let game = match game_map.get(parsed.game_id.as_str()) {
-                            Some(g) => g,
-                            None => {
-                                // Game no longer on scoreboard — skip, don't emit fake zero
-                                debug!("Sports: game {} no longer on scoreboard, skipping", parsed.game_id);
-                                continue;
-                            }
-                        };
-
-                        // Use 0 for pre-game assets (score not yet available).
-                        // This ensures every asset gets a price row on every sync cycle,
-                        // not just when the score first appears.
-                        let value = match parsed.metric.as_str() {
-                            "home" => game.home_score.unwrap_or(Decimal::ZERO),
-                            "away" => game.away_score.unwrap_or(Decimal::ZERO),
-                            "total" => {
-                                let h = game.home_score.unwrap_or(Decimal::ZERO);
-                                let a = game.away_score.unwrap_or(Decimal::ZERO);
-                                h + a
-                            }
-                            _ => continue,
-                        };
-
-                        results.push(PriceUpdate {
-                            asset_id: parsed.original_id.clone(),
-                            symbol: format!(
-                                "{}/{}",
-                                league_code.to_uppercase(),
-                                parsed.game_id
-                            ),
-                            value,
-                            prev_close: None,
-                            change_pct: None,
-                            volume_24h: None,
-                            market_cap: None,
-                            fetched_at: now,
-                        });
-                    }
-                }
+            let scoreboard = match self.fetch_scoreboard(sport_path).await {
+                Ok(s) => s,
                 Err(e) => {
                     warn!(
                         "Error fetching ESPN scoreboard for league '{}': {:?} — skipping league",
                         league_code, e
                     );
-                    // Skip this league entirely; do not emit fake zeros
                     continue;
                 }
+            };
+
+            let games = extract_games(&scoreboard);
+            let game_map: HashMap<&str, &GameInfo> =
+                games.iter().map(|g| (g.game_id.as_str(), g)).collect();
+
+            for parsed in parsed_assets {
+                let game = match game_map.get(parsed.game_id.as_str()) {
+                    Some(g) => g,
+                    None => {
+                        // Event off the scoreboard — don't publish a fake zero.
+                        // fetch_assets handles deactivation cleanly.
+                        debug!(
+                            "Sports: game {} no longer on scoreboard, skipping",
+                            parsed.game_id
+                        );
+                        continue;
+                    }
+                };
+
+                let side = match &parsed.kind {
+                    AssetKind::Score { side } => side.as_str(),
+                    _ => continue,
+                };
+
+                let value = match side {
+                    "home" => game.home_score.unwrap_or(Decimal::ZERO),
+                    "away" => game.away_score.unwrap_or(Decimal::ZERO),
+                    "total" => {
+                        let h = game.home_score.unwrap_or(Decimal::ZERO);
+                        let a = game.away_score.unwrap_or(Decimal::ZERO);
+                        h + a
+                    }
+                    _ => continue,
+                };
+
+                results.push(PriceUpdate {
+                    asset_id: parsed.original_id.clone(),
+                    symbol: format!(
+                        "{}/{}",
+                        league_code.to_uppercase(),
+                        parsed.game_id
+                    ),
+                    value,
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Stat path: serve from per-cycle summary cache, fall back to a
+        // fresh summary fetch if missing (e.g. registry has an asset that
+        // wasn't repopulated this cycle).
+        // -----------------------------------------------------------------
+        for ((league_code, event_id), parsed_assets) in &stat_by_event {
+            let key = format!("{}/{}", league_code, event_id);
+
+            // Snapshot of the cache entry, if any. Holding the lock across an
+            // await is unsound, so we clone out and drop.
+            let cached: Option<EventSummary> = {
+                self.summary_cache
+                    .lock()
+                    .expect("summary_cache poisoned")
+                    .get(&key)
+                    .cloned()
+            };
+
+            let summary = match cached {
+                Some(s) => s,
+                None => {
+                    let sport_path = match league_code_to_sport_path(league_code) {
+                        Some(p) => p,
+                        None => {
+                            warn!("Unknown league code '{}', skipping stats", league_code);
+                            continue;
+                        }
+                    };
+                    tokio::time::sleep(Duration::from_millis(SUMMARY_DELAY_MS)).await;
+                    match self.fetch_summary(sport_path, event_id).await {
+                        Ok(s) => {
+                            let extracted = extract_summary(&s);
+                            self.summary_cache
+                                .lock()
+                                .expect("summary_cache poisoned")
+                                .insert(key.clone(), extracted.clone());
+                            extracted
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Error fetching ESPN summary for {} event {}: {:?} — skipping stats",
+                                league_code, event_id, e
+                            );
+                            continue;
+                        }
+                    }
+                }
+            };
+
+            let catalog = stat_catalog(league_code);
+            // Build a quick lookup from label -> StatField for this catalog.
+            let by_label: HashMap<&'static str, &StatField> =
+                catalog.iter().map(|f| (f.label, f)).collect();
+
+            for parsed in parsed_assets {
+                let (stat_label, side) = match &parsed.kind {
+                    AssetKind::Stat { stat, side } => (stat.as_str(), side.as_str()),
+                    _ => continue,
+                };
+
+                let field = match by_label.get(stat_label) {
+                    Some(f) => f,
+                    None => {
+                        debug!(
+                            "Sports: stat '{}' not in catalog for league '{}', skipping",
+                            stat_label, league_code
+                        );
+                        continue;
+                    }
+                };
+
+                let (home_raw, away_raw) = match summary.stats.get(field.name) {
+                    Some(pair) => pair.clone(),
+                    None => continue,
+                };
+
+                let raw = match side {
+                    "home" => home_raw,
+                    "away" => away_raw,
+                    _ => continue,
+                };
+
+                let value = match raw.as_deref().and_then(|s| parse_stat_value(s, field.parse)) {
+                    Some(v) => v,
+                    None => continue,
+                };
+
+                results.push(PriceUpdate {
+                    asset_id: parsed.original_id.clone(),
+                    symbol: format!(
+                        "{}/{}",
+                        league_code.to_uppercase(),
+                        parsed.game_id
+                    ),
+                    value,
+                    prev_close: None,
+                    change_pct: None,
+                    volume_24h: None,
+                    market_cap: None,
+                    fetched_at: now,
+                });
             }
         }
 
@@ -444,62 +839,77 @@ impl MarketDataSource for SportsMarketSource {
 // HELPERS
 // ============================================================================
 
-/// Parsed components of a sports asset ID
-#[derive(Debug, Clone)]
-struct ParsedAssetId {
-    original_id: String,
-    league_code: String,
-    game_id: String,
-    metric: String, // "home", "away", "total"
+/// Live states keep markets active. ESPN reports halftime as `state == "in"`
+/// in observed payloads but `halftime` is included defensively in case the
+/// upstream schema ever changes.
+fn is_live_state(state: &str) -> bool {
+    matches!(state, "in" | "halftime")
 }
 
-/// Parse asset ID like "sport_nba_401656789_home" into components.
+/// Parse a sports asset ID.
 ///
-/// Format: sport_{league_code}_{game_id}_{metric}
-/// The league_code and game_id parts can contain digits only (game_id)
-/// or letters/digits (league_code), but metric is always the last segment
-/// and is one of: home, away, total.
+/// Two valid shapes after the `sport_` prefix:
+/// - Score: `{league}_{event_id}_{home|away|total}`
+/// - Stat:  `{league}_{event_id}_{statName}_{home|away}`
+///
+/// `event_id` is purely numeric (ESPN convention). `league` is alphanumeric
+/// with no underscores. `statName` is camelCase with no underscores.
 fn parse_asset_id(asset_id: &str) -> Option<ParsedAssetId> {
     let rest = asset_id.strip_prefix("sport_")?;
+    let tokens: Vec<&str> = rest.split('_').collect();
 
-    // Find the metric suffix (last segment after final '_')
-    let last_underscore = rest.rfind('_')?;
-    let metric = &rest[last_underscore + 1..];
-
-    // Validate metric
-    if metric != "home" && metric != "away" && metric != "total" {
+    if tokens.len() < 3 || tokens.len() > 4 {
         return None;
     }
 
-    let before_metric = &rest[..last_underscore];
-
-    // Find the game_id (second-to-last segment) — everything after the first '_'
-    // league_code is everything before the first '_' in before_metric
-    // BUT league_code could itself be multi-word like "laliga", "bundesliga"
-    // The game_id is always numeric (ESPN event IDs are numeric)
-    // So we split on last '_' in before_metric to separate league_code from game_id
-    let game_underscore = before_metric.rfind('_')?;
-    let league_code = &before_metric[..game_underscore];
-    let game_id = &before_metric[game_underscore + 1..];
-
-    // Game ID should be numeric
-    if game_id.is_empty() || !game_id.chars().all(|c| c.is_ascii_digit()) {
-        return None;
-    }
-
+    let league_code = tokens[0];
     if league_code.is_empty() {
         return None;
     }
 
-    Some(ParsedAssetId {
-        original_id: asset_id.to_string(),
-        league_code: league_code.to_string(),
-        game_id: game_id.to_string(),
-        metric: metric.to_string(),
-    })
+    let event_id = tokens[1];
+    if event_id.is_empty() || !event_id.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+
+    match tokens.len() {
+        3 => {
+            let side = tokens[2];
+            if !matches!(side, "home" | "away" | "total") {
+                return None;
+            }
+            Some(ParsedAssetId {
+                original_id: asset_id.to_string(),
+                league_code: league_code.to_string(),
+                game_id: event_id.to_string(),
+                kind: AssetKind::Score {
+                    side: side.to_string(),
+                },
+            })
+        }
+        4 => {
+            let stat = tokens[2];
+            let side = tokens[3];
+            if stat.is_empty() {
+                return None;
+            }
+            if !matches!(side, "home" | "away") {
+                return None;
+            }
+            Some(ParsedAssetId {
+                original_id: asset_id.to_string(),
+                league_code: league_code.to_string(),
+                game_id: event_id.to_string(),
+                kind: AssetKind::Stat {
+                    stat: stat.to_string(),
+                    side: side.to_string(),
+                },
+            })
+        }
+        _ => None,
+    }
 }
 
-/// Map league_code back to ESPN sport_path
 fn league_code_to_sport_path(league_code: &str) -> Option<&'static str> {
     for &(sport_path, code, _) in LEAGUES {
         if code == league_code {
@@ -509,7 +919,6 @@ fn league_code_to_sport_path(league_code: &str) -> Option<&'static str> {
     None
 }
 
-/// Extract game info from a scoreboard response.
 fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
     let mut games = Vec::new();
 
@@ -559,7 +968,6 @@ fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
                 .and_then(|st| st.state.clone())
                 .unwrap_or_else(|| "pre".to_string());
 
-            // Only include if we have at least one team identified
             if !home_team.is_empty() || !away_team.is_empty() {
                 games.push(GameInfo {
                     game_id: event.id.clone(),
@@ -574,6 +982,68 @@ fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
     }
 
     games
+}
+
+/// Pull the per-team statistics dict out of a summary response and index it
+/// by ESPN's stat `name`. Missing sides become None so downstream code can
+/// publish whichever side ESPN actually reported.
+fn extract_summary(resp: &SummaryResponse) -> EventSummary {
+    let mut stats: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
+
+    let teams = match resp.boxscore.as_ref() {
+        Some(b) => &b.teams,
+        None => return EventSummary { stats },
+    };
+
+    for team in teams {
+        let is_home = team.home_away.as_deref() == Some("home");
+        for s in &team.statistics {
+            if s.name.is_empty() || s.display_value.is_empty() {
+                continue;
+            }
+            let entry = stats.entry(s.name.clone()).or_default();
+            if is_home {
+                entry.0 = Some(s.display_value.clone());
+            } else {
+                entry.1 = Some(s.display_value.clone());
+            }
+        }
+    }
+
+    EventSummary { stats }
+}
+
+/// Convert an ESPN `displayValue` string into a Decimal using the rule
+/// declared in the catalog. Returns None for missing, malformed, or
+/// otherwise non-numeric inputs — caller skips the price update.
+fn parse_stat_value(raw: &str, rule: StatParse) -> Option<Decimal> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    match rule {
+        StatParse::Number => Decimal::from_str(raw).ok(),
+        StatParse::FractionPct => {
+            let v = Decimal::from_str(raw).ok()?;
+            // If ESPN ever switches to whole-number percentages (e.g. "80"
+            // instead of "0.8"), avoid double-multiplying.
+            if v > Decimal::ONE {
+                Some(v)
+            } else {
+                Some(v * Decimal::from(100))
+            }
+        }
+        StatParse::TimeMmSs => {
+            let (mm, ss) = raw.split_once(':')?;
+            let m: i64 = mm.parse().ok()?;
+            let s: i64 = ss.parse().ok()?;
+            Some(Decimal::from(m * 60 + s))
+        }
+        StatParse::DashFirst => {
+            let head = raw.split('-').next()?;
+            Decimal::from_str(head.trim()).ok()
+        }
+    }
 }
 
 // ============================================================================
@@ -605,140 +1075,108 @@ mod tests {
         assert!(assets.is_empty());
     }
 
-    // ========================================================================
-    // Asset ID parsing tests
-    // ========================================================================
+    // ------------------------------------------------------------------
+    // Asset ID parsing
+    // ------------------------------------------------------------------
 
-    #[test]
-    fn test_parse_asset_id_home() {
-        let parsed = parse_asset_id("sport_nba_401656789_home").unwrap();
-        assert_eq!(parsed.league_code, "nba");
-        assert_eq!(parsed.game_id, "401656789");
-        assert_eq!(parsed.metric, "home");
+    fn score_side(p: &ParsedAssetId) -> Option<&str> {
+        match &p.kind {
+            AssetKind::Score { side } => Some(side.as_str()),
+            _ => None,
+        }
+    }
+
+    fn stat_parts(p: &ParsedAssetId) -> Option<(&str, &str)> {
+        match &p.kind {
+            AssetKind::Stat { stat, side } => Some((stat.as_str(), side.as_str())),
+            _ => None,
+        }
     }
 
     #[test]
-    fn test_parse_asset_id_away() {
-        let parsed = parse_asset_id("sport_nfl_401547123_away").unwrap();
-        assert_eq!(parsed.league_code, "nfl");
-        assert_eq!(parsed.game_id, "401547123");
-        assert_eq!(parsed.metric, "away");
+    fn test_parse_score_home() {
+        let p = parse_asset_id("sport_nba_401656789_home").unwrap();
+        assert_eq!(p.league_code, "nba");
+        assert_eq!(p.game_id, "401656789");
+        assert_eq!(score_side(&p), Some("home"));
     }
 
     #[test]
-    fn test_parse_asset_id_total() {
-        let parsed = parse_asset_id("sport_epl_694302_total").unwrap();
-        assert_eq!(parsed.league_code, "epl");
-        assert_eq!(parsed.game_id, "694302");
-        assert_eq!(parsed.metric, "total");
+    fn test_parse_score_away() {
+        let p = parse_asset_id("sport_nfl_401547123_away").unwrap();
+        assert_eq!(p.league_code, "nfl");
+        assert_eq!(score_side(&p), Some("away"));
     }
 
     #[test]
-    fn test_parse_asset_id_new_leagues() {
-        let parsed = parse_asset_id("sport_laliga_694500_home").unwrap();
-        assert_eq!(parsed.league_code, "laliga");
-        assert_eq!(parsed.game_id, "694500");
-        assert_eq!(parsed.metric, "home");
-
-        let parsed = parse_asset_id("sport_bundesliga_694501_away").unwrap();
-        assert_eq!(parsed.league_code, "bundesliga");
-        assert_eq!(parsed.game_id, "694501");
-        assert_eq!(parsed.metric, "away");
-
-        let parsed = parse_asset_id("sport_seriea_694502_total").unwrap();
-        assert_eq!(parsed.league_code, "seriea");
-        assert_eq!(parsed.game_id, "694502");
-        assert_eq!(parsed.metric, "total");
-
-        let parsed = parse_asset_id("sport_ligue1_694503_home").unwrap();
-        assert_eq!(parsed.league_code, "ligue1");
-        assert_eq!(parsed.game_id, "694503");
-        assert_eq!(parsed.metric, "home");
-
-        let parsed = parse_asset_id("sport_mls_694504_away").unwrap();
-        assert_eq!(parsed.league_code, "mls");
-        assert_eq!(parsed.game_id, "694504");
-        assert_eq!(parsed.metric, "away");
-
-        let parsed = parse_asset_id("sport_wnba_401656790_home").unwrap();
-        assert_eq!(parsed.league_code, "wnba");
-        assert_eq!(parsed.game_id, "401656790");
-        assert_eq!(parsed.metric, "home");
-
-        let parsed = parse_asset_id("sport_ucl_694505_total").unwrap();
-        assert_eq!(parsed.league_code, "ucl");
-        assert_eq!(parsed.game_id, "694505");
-        assert_eq!(parsed.metric, "total");
+    fn test_parse_score_total() {
+        let p = parse_asset_id("sport_epl_694302_total").unwrap();
+        assert_eq!(p.league_code, "epl");
+        assert_eq!(score_side(&p), Some("total"));
     }
 
     #[test]
-    fn test_parse_asset_id_invalid() {
+    fn test_parse_stat_home() {
+        let p = parse_asset_id("sport_bundesliga_747019_possessionPct_home").unwrap();
+        assert_eq!(p.league_code, "bundesliga");
+        assert_eq!(p.game_id, "747019");
+        assert_eq!(stat_parts(&p), Some(("possessionPct", "home")));
+    }
+
+    #[test]
+    fn test_parse_stat_away() {
+        let p = parse_asset_id("sport_nba_401873341_threePointFieldGoalsMade_away").unwrap();
+        assert_eq!(p.league_code, "nba");
+        assert_eq!(p.game_id, "401873341");
+        assert_eq!(stat_parts(&p), Some(("threePointFieldGoalsMade", "away")));
+    }
+
+    #[test]
+    fn test_parse_rejects_stat_with_total_side() {
+        // Stats only have home/away; total is score-only.
+        assert!(parse_asset_id("sport_epl_694302_possessionPct_total").is_none());
+    }
+
+    #[test]
+    fn test_parse_rejects_invalid() {
         assert!(parse_asset_id("invalid").is_none());
         assert!(parse_asset_id("sport_").is_none());
         assert!(parse_asset_id("sport_nba_").is_none());
-        assert!(parse_asset_id("sport_nba_abc_home").is_none()); // non-numeric game ID
+        assert!(parse_asset_id("sport_nba_abc_home").is_none());
         assert!(parse_asset_id("").is_none());
-        assert!(parse_asset_id("hn_12345_score").is_none()); // wrong prefix
-        assert!(parse_asset_id("sport_nba_123_invalid").is_none()); // invalid metric
+        assert!(parse_asset_id("hn_12345_score").is_none());
+        assert!(parse_asset_id("sport_nba_123_invalid").is_none());
+        // Too many tokens.
+        assert!(parse_asset_id("sport_nba_123_stat_extra_home").is_none());
     }
 
     #[test]
-    fn test_parse_asset_id_preserves_original() {
+    fn test_parse_preserves_original() {
         let original = "sport_nhl_401656999_away";
-        let parsed = parse_asset_id(original).unwrap();
-        assert_eq!(parsed.original_id, original);
+        let p = parse_asset_id(original).unwrap();
+        assert_eq!(p.original_id, original);
     }
 
-    // ========================================================================
-    // League code mapping tests
-    // ========================================================================
+    // ------------------------------------------------------------------
+    // League mapping
+    // ------------------------------------------------------------------
 
     #[test]
     fn test_league_code_to_sport_path() {
-        assert_eq!(
-            league_code_to_sport_path("nba"),
-            Some("basketball/nba")
-        );
-        assert_eq!(
-            league_code_to_sport_path("nfl"),
-            Some("football/nfl")
-        );
-        assert_eq!(
-            league_code_to_sport_path("epl"),
-            Some("soccer/eng.1")
-        );
-        assert_eq!(
-            league_code_to_sport_path("mlb"),
-            Some("baseball/mlb")
-        );
-        assert_eq!(
-            league_code_to_sport_path("nhl"),
-            Some("hockey/nhl")
-        );
-        assert_eq!(
-            league_code_to_sport_path("laliga"),
-            Some("soccer/esp.1")
-        );
+        assert_eq!(league_code_to_sport_path("nba"), Some("basketball/nba"));
+        assert_eq!(league_code_to_sport_path("nfl"), Some("football/nfl"));
+        assert_eq!(league_code_to_sport_path("epl"), Some("soccer/eng.1"));
+        assert_eq!(league_code_to_sport_path("mlb"), Some("baseball/mlb"));
+        assert_eq!(league_code_to_sport_path("nhl"), Some("hockey/nhl"));
+        assert_eq!(league_code_to_sport_path("laliga"), Some("soccer/esp.1"));
         assert_eq!(
             league_code_to_sport_path("bundesliga"),
             Some("soccer/ger.1")
         );
-        assert_eq!(
-            league_code_to_sport_path("seriea"),
-            Some("soccer/ita.1")
-        );
-        assert_eq!(
-            league_code_to_sport_path("ligue1"),
-            Some("soccer/fra.1")
-        );
-        assert_eq!(
-            league_code_to_sport_path("mls"),
-            Some("soccer/usa.1")
-        );
-        assert_eq!(
-            league_code_to_sport_path("wnba"),
-            Some("basketball/wnba")
-        );
+        assert_eq!(league_code_to_sport_path("seriea"), Some("soccer/ita.1"));
+        assert_eq!(league_code_to_sport_path("ligue1"), Some("soccer/fra.1"));
+        assert_eq!(league_code_to_sport_path("mls"), Some("soccer/usa.1"));
+        assert_eq!(league_code_to_sport_path("wnba"), Some("basketball/wnba"));
         assert_eq!(
             league_code_to_sport_path("ucl"),
             Some("soccer/uefa.champions")
@@ -755,17 +1193,131 @@ mod tests {
     fn test_league_codes_unique() {
         let mut codes: HashSet<&str> = HashSet::new();
         for &(_, code, _) in LEAGUES {
-            assert!(
-                codes.insert(code),
-                "Duplicate league code: {}",
-                code
-            );
+            assert!(codes.insert(code), "Duplicate league code: {}", code);
         }
     }
 
-    // ========================================================================
-    // Scoreboard extraction tests
-    // ========================================================================
+    // ------------------------------------------------------------------
+    // Stat catalogs
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_stat_catalog_routing() {
+        assert!(!stat_catalog("epl").is_empty());
+        assert!(!stat_catalog("bundesliga").is_empty());
+        assert!(!stat_catalog("nba").is_empty());
+        assert!(!stat_catalog("wnba").is_empty());
+        assert!(!stat_catalog("nfl").is_empty());
+        assert!(!stat_catalog("nhl").is_empty());
+        assert!(!stat_catalog("mlb").is_empty());
+        assert!(stat_catalog("unknown").is_empty());
+    }
+
+    #[test]
+    fn test_stat_labels_are_camel_case_no_underscores() {
+        // Asset IDs use `_` as separator. Stat labels must therefore not
+        // contain underscores or dashes.
+        for catalog in [
+            SOCCER_STATS,
+            NBA_STATS,
+            NFL_STATS,
+            NHL_STATS,
+            MLB_STATS,
+        ] {
+            for f in catalog {
+                assert!(
+                    !f.label.contains('_') && !f.label.contains('-'),
+                    "stat label {} contains separator",
+                    f.label
+                );
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Stat value parsing
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_stat_number() {
+        assert_eq!(
+            parse_stat_value("16", StatParse::Number),
+            Some(Decimal::from(16))
+        );
+        assert_eq!(
+            parse_stat_value("45.1", StatParse::Number),
+            Some(Decimal::from_str("45.1").unwrap())
+        );
+        assert_eq!(parse_stat_value("", StatParse::Number), None);
+        assert_eq!(parse_stat_value("abc", StatParse::Number), None);
+    }
+
+    #[test]
+    fn test_parse_stat_fraction_pct() {
+        // ESPN soccer passPct often arrives as "0.8" meaning 80%.
+        assert_eq!(
+            parse_stat_value("0.8", StatParse::FractionPct),
+            Some(Decimal::from_str("80.0").unwrap())
+        );
+        assert_eq!(
+            parse_stat_value("0.451", StatParse::FractionPct),
+            Some(Decimal::from_str("45.1").unwrap())
+        );
+        // If ESPN ever returns "80" instead, don't double-multiply.
+        assert_eq!(
+            parse_stat_value("80", StatParse::FractionPct),
+            Some(Decimal::from(80))
+        );
+    }
+
+    #[test]
+    fn test_parse_stat_time_mmss() {
+        assert_eq!(
+            parse_stat_value("32:14", StatParse::TimeMmSs),
+            Some(Decimal::from(32 * 60 + 14))
+        );
+        assert_eq!(
+            parse_stat_value("0:45", StatParse::TimeMmSs),
+            Some(Decimal::from(45))
+        );
+        assert_eq!(parse_stat_value("32", StatParse::TimeMmSs), None);
+        assert_eq!(parse_stat_value("abc:def", StatParse::TimeMmSs), None);
+    }
+
+    #[test]
+    fn test_parse_stat_dash_first() {
+        assert_eq!(
+            parse_stat_value("4-12", StatParse::DashFirst),
+            Some(Decimal::from(4))
+        );
+        assert_eq!(
+            parse_stat_value("23-50", StatParse::DashFirst),
+            Some(Decimal::from(23))
+        );
+        assert_eq!(
+            parse_stat_value("7", StatParse::DashFirst),
+            Some(Decimal::from(7))
+        );
+        assert_eq!(parse_stat_value("", StatParse::DashFirst), None);
+    }
+
+    // ------------------------------------------------------------------
+    // Live-state classifier
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_is_live_state() {
+        assert!(is_live_state("in"));
+        assert!(is_live_state("halftime"));
+        assert!(!is_live_state("pre"));
+        assert!(!is_live_state("post"));
+        assert!(!is_live_state(""));
+        assert!(!is_live_state("unknown"));
+    }
+
+    // ------------------------------------------------------------------
+    // Scoreboard extraction
+    // ------------------------------------------------------------------
 
     #[test]
     fn test_extract_games_empty() {
@@ -823,7 +1375,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_games_pre_game_no_scores() {
+    fn test_extract_games_pre_no_scores() {
         let scoreboard = ScoreboardResponse {
             events: vec![Event {
                 id: "401656790".to_string(),
@@ -860,89 +1412,9 @@ mod tests {
 
         let games = extract_games(&scoreboard);
         assert_eq!(games.len(), 1);
-
-        let game = &games[0];
-        assert_eq!(game.game_id, "401656790");
-        assert_eq!(game.home_team, "Golden State Warriors");
-        assert_eq!(game.away_team, "Miami Heat");
-        assert_eq!(game.home_score, None);
-        assert_eq!(game.away_score, None);
-        assert_eq!(game.state, "pre");
-    }
-
-    #[test]
-    fn test_extract_games_multiple_events() {
-        let scoreboard = ScoreboardResponse {
-            events: vec![
-                Event {
-                    id: "100".to_string(),
-                    competitions: vec![Competition {
-                        competitors: vec![
-                            Competitor {
-                                id: "1".to_string(),
-                                team: Some(TeamInfo {
-                                    display_name: "Team A".to_string(),
-                                }),
-                                score: Some("3".to_string()),
-                                home_away: Some("home".to_string()),
-                                winner: None,
-                            },
-                            Competitor {
-                                id: "2".to_string(),
-                                team: Some(TeamInfo {
-                                    display_name: "Team B".to_string(),
-                                }),
-                                score: Some("1".to_string()),
-                                home_away: Some("away".to_string()),
-                                winner: None,
-                            },
-                        ],
-                        status: Some(CompetitionStatus {
-                            status_type: Some(StatusType {
-                                completed: false,
-                                state: Some("in".to_string()),
-                            }),
-                        }),
-                    }],
-                },
-                Event {
-                    id: "200".to_string(),
-                    competitions: vec![Competition {
-                        competitors: vec![
-                            Competitor {
-                                id: "3".to_string(),
-                                team: Some(TeamInfo {
-                                    display_name: "Team C".to_string(),
-                                }),
-                                score: Some("0".to_string()),
-                                home_away: Some("home".to_string()),
-                                winner: None,
-                            },
-                            Competitor {
-                                id: "4".to_string(),
-                                team: Some(TeamInfo {
-                                    display_name: "Team D".to_string(),
-                                }),
-                                score: Some("2".to_string()),
-                                home_away: Some("away".to_string()),
-                                winner: None,
-                            },
-                        ],
-                        status: Some(CompetitionStatus {
-                            status_type: Some(StatusType {
-                                completed: false,
-                                state: Some("in".to_string()),
-                            }),
-                        }),
-                    }],
-                },
-            ],
-        };
-
-        let games = extract_games(&scoreboard);
-        assert_eq!(games.len(), 2);
-        assert_eq!(games[0].game_id, "100");
-        assert_eq!(games[1].game_id, "200");
+        assert_eq!(games[0].state, "pre");
+        assert_eq!(games[0].home_score, None);
+        assert_eq!(games[0].away_score, None);
     }
 
     #[test]
@@ -969,64 +1441,106 @@ mod tests {
         assert!(games.is_empty());
     }
 
-    // ========================================================================
-    // Dedupe tests
-    // ========================================================================
+    // ------------------------------------------------------------------
+    // Summary extraction
+    // ------------------------------------------------------------------
 
     #[test]
-    fn test_dedupe_by_league() {
+    fn test_extract_summary_indexes_both_sides() {
+        let resp = SummaryResponse {
+            boxscore: Some(Boxscore {
+                teams: vec![
+                    BoxscoreTeamEntry {
+                        statistics: vec![
+                            Statistic {
+                                name: "possessionPct".to_string(),
+                                display_value: "54.9".to_string(),
+                            },
+                            Statistic {
+                                name: "totalShots".to_string(),
+                                display_value: "12".to_string(),
+                            },
+                        ],
+                        home_away: Some("home".to_string()),
+                    },
+                    BoxscoreTeamEntry {
+                        statistics: vec![
+                            Statistic {
+                                name: "possessionPct".to_string(),
+                                display_value: "45.1".to_string(),
+                            },
+                            Statistic {
+                                name: "totalShots".to_string(),
+                                display_value: "10".to_string(),
+                            },
+                        ],
+                        home_away: Some("away".to_string()),
+                    },
+                ],
+            }),
+        };
+
+        let summary = extract_summary(&resp);
+        let poss = summary.stats.get("possessionPct").unwrap();
+        assert_eq!(poss.0.as_deref(), Some("54.9"));
+        assert_eq!(poss.1.as_deref(), Some("45.1"));
+        let shots = summary.stats.get("totalShots").unwrap();
+        assert_eq!(shots.0.as_deref(), Some("12"));
+        assert_eq!(shots.1.as_deref(), Some("10"));
+    }
+
+    #[test]
+    fn test_extract_summary_missing_boxscore() {
+        let resp = SummaryResponse { boxscore: None };
+        let summary = extract_summary(&resp);
+        assert!(summary.stats.is_empty());
+    }
+
+    // ------------------------------------------------------------------
+    // Bucketing in fetch_prices (parser exercised via map-building)
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_bucketing_score_vs_stat() {
         let asset_ids = vec![
             "sport_nba_100_home".to_string(),
             "sport_nba_100_away".to_string(),
             "sport_nba_100_total".to_string(),
-            "sport_nba_200_home".to_string(),
-            "sport_nfl_300_home".to_string(),
+            "sport_epl_200_possessionPct_home".to_string(),
+            "sport_epl_200_possessionPct_away".to_string(),
+            "sport_epl_200_totalPasses_home".to_string(),
         ];
 
-        let mut league_requests: HashMap<String, Vec<ParsedAssetId>> = HashMap::new();
+        let mut score_by_league: HashMap<String, Vec<ParsedAssetId>> = HashMap::new();
+        let mut stat_by_event: HashMap<(String, String), Vec<ParsedAssetId>> = HashMap::new();
+
         for aid in &asset_ids {
-            if let Some(parsed) = parse_asset_id(aid) {
-                league_requests
-                    .entry(parsed.league_code.clone())
-                    .or_default()
-                    .push(parsed);
+            let parsed = parse_asset_id(aid).unwrap();
+            match &parsed.kind {
+                AssetKind::Score { .. } => {
+                    score_by_league
+                        .entry(parsed.league_code.clone())
+                        .or_default()
+                        .push(parsed);
+                }
+                AssetKind::Stat { .. } => {
+                    stat_by_event
+                        .entry((parsed.league_code.clone(), parsed.game_id.clone()))
+                        .or_default()
+                        .push(parsed);
+                }
             }
         }
 
-        // 2 unique leagues: nba and nfl
-        assert_eq!(league_requests.len(), 2);
-        // nba has 4 assets (3 for game 100, 1 for game 200)
-        assert_eq!(league_requests.get("nba").unwrap().len(), 4);
-        // nfl has 1 asset
-        assert_eq!(league_requests.get("nfl").unwrap().len(), 1);
-    }
-
-    // ========================================================================
-    // Score computation tests
-    // ========================================================================
-
-    #[test]
-    fn test_total_score_computation() {
-        let home = Decimal::from(105);
-        let away = Decimal::from(110);
-        assert_eq!(home + away, Decimal::from(215));
-    }
-
-    #[test]
-    fn test_zero_score_for_pre_game() {
-        let game = GameInfo {
-            game_id: "123".to_string(),
-            home_team: "A".to_string(),
-            away_team: "B".to_string(),
-            home_score: None,
-            away_score: None,
-            state: "pre".to_string(),
-        };
-
-        let home_val = game.home_score.unwrap_or(Decimal::ZERO);
-        let away_val = game.away_score.unwrap_or(Decimal::ZERO);
-        assert_eq!(home_val, Decimal::ZERO);
-        assert_eq!(away_val, Decimal::ZERO);
-        assert_eq!(home_val + away_val, Decimal::ZERO);
+        assert_eq!(score_by_league.len(), 1);
+        assert_eq!(score_by_league.get("nba").unwrap().len(), 3);
+        assert_eq!(stat_by_event.len(), 1);
+        assert_eq!(
+            stat_by_event
+                .get(&("epl".to_string(), "200".to_string()))
+                .unwrap()
+                .len(),
+            3
+        );
     }
 }
