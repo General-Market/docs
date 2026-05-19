@@ -45,16 +45,18 @@ def key():
     return KEY_FILE.read_text().strip()
 
 
-def _get(path: str, params: dict | None = None):
+def _get(path: str, params: dict | None = None, timeout: int = 30):
     url = BASE + path
     if params:
         url += "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"X-API-Key": key()})
     try:
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
         return e.code, json.load(e) if e.fp else {"error": e.reason}
+    except (TimeoutError, OSError) as e:
+        return 408, {"error": f"timeout/network: {e}"}
 
 
 def balance() -> tuple[int, int]:
@@ -284,11 +286,75 @@ def cmd_balance():
     }, indent=2))
 
 
-def cmd_userinfo(handle: str):
+PROFILE_TTL_DAYS = 14
+TWEET_TTL_DAYS = 7
+
+
+def _cached_profile_fresh(handle: str) -> dict | None:
+    """If profile is cached fresh (<14d), return it. Else None."""
+    handle_l = handle.lstrip("@").lower()
+    rows = _load_jsonl(PROFILES)
+    for r in rows:
+        if (r.get("screen_name") or "").lower() != handle_l:
+            continue
+        # Need statusesCount populated AND last_seen recent
+        if r.get("statuses_count") in (None, 0):
+            return None
+        try:
+            t = datetime.fromisoformat(r.get("last_seen", ""))
+            age = (datetime.now(timezone.utc) - t).days
+            if age <= PROFILE_TTL_DAYS:
+                return r
+        except Exception:
+            continue
+    return None
+
+
+def _cached_tweets_fresh(handle: str, min_count: int = 5) -> list[dict] | None:
+    """If we have >=min_count tweets from twapi-lasttweets source, and latest is <7d, return them.
+    Else None."""
+    handle_l = handle.lstrip("@").lower()
+    mine = [t for t in _load_jsonl(TWEETS)
+            if (t.get("screen_name") or "").lower() == handle_l
+            and (t.get("source_run") or "").startswith("twapi-lasttweets")]
+    if len(mine) < min_count:
+        return None
+    newest = None
+    for t in mine:
+        try:
+            d = datetime.strptime(t.get("created_at") or "", "%a %b %d %H:%M:%S %z %Y")
+            if not newest or d > newest:
+                newest = d
+        except Exception:
+            continue
+    if not newest:
+        return None
+    age = (datetime.now(timezone.utc) - newest).days
+    if age <= TWEET_TTL_DAYS:
+        return mine
+    return None
+
+
+def cmd_userinfo(handle: str, force: bool = False):
+    if not force:
+        cached = _cached_profile_fresh(handle)
+        if cached:
+            age = (datetime.now(timezone.utc) - datetime.fromisoformat(cached["last_seen"])).days
+            print(f"  ↳ CACHE HIT userinfo:{handle}  age={age}d (TTL {PROFILE_TTL_DAYS}d)", file=sys.stderr)
+            print(json.dumps({
+                "handle": cached.get("screen_name"),
+                "followers": cached.get("followers_count"),
+                "following": cached.get("friends_count"),
+                "statuses": cached.get("statuses_count"),
+                "verified_blue": cached.get("verified"),
+                "bio": (cached.get("description") or "")[:140],
+                "cache": "hit",
+            }, indent=2))
+            return
     body = metered_call(
         f"userinfo:{handle}", "/twitter/user/info",
         {"userName": handle.lstrip("@")},
-        estimate=18,  # ~$0.00018 per profile = 18 credits
+        estimate=18,
     )
     if body.get("status") == "success" and body.get("data"):
         upsert_profile(body["data"])
@@ -308,11 +374,27 @@ def cmd_userinfo(handle: str):
         print(json.dumps(body, indent=2))
 
 
-def cmd_lasttweets(handle: str, count: int = 10):
+def cmd_lasttweets(handle: str, count: int = 10, force: bool = False):
+    if not force:
+        cached = _cached_tweets_fresh(handle, min_count=5)
+        if cached is not None:
+            latest = None
+            for t in cached:
+                try:
+                    d = datetime.strptime(t.get("created_at") or "", "%a %b %d %H:%M:%S %z %Y")
+                    if not latest or d > latest:
+                        latest = d
+                except Exception:
+                    continue
+            age = (datetime.now(timezone.utc) - latest).days if latest else "?"
+            print(f"  ↳ CACHE HIT lasttweets:{handle}  {len(cached)} cached, latest {age}d old (TTL {TWEET_TTL_DAYS}d)",
+                  file=sys.stderr)
+            print(f"got {len(cached)} tweets (cache), 0 new")
+            return
     body = metered_call(
         f"lasttweets:{handle}", "/twitter/user/last_tweets",
         {"userName": handle.lstrip("@")},
-        estimate=15 * min(count, 20),  # ~$0.00015 per tweet = 15c
+        estimate=15 * min(count, 20),
     )
     if body.get("status") == "success":
         data = body.get("data", {})
@@ -320,7 +402,6 @@ def cmd_lasttweets(handle: str, count: int = 10):
         if isinstance(tweets, list):
             n_new = upsert_tweets(tweets, source=f"twapi-lasttweets-{handle}")
             print(f"got {len(tweets)} tweets, {n_new} new to cache")
-            # Show summary: dates + engagement
             for t in tweets[:10]:
                 print(f"  {t.get('createdAt', '?')[:10]}  ♥{t.get('likeCount',0)} ↻{t.get('retweetCount',0)} 💬{t.get('replyCount',0)}  {(t.get('text') or '')[:100]}")
         else:
