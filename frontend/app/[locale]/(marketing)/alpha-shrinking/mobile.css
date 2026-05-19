@@ -1,0 +1,144 @@
+/* Mobile pass for /alpha-shrinking.
+   Mirrors the anticheat-flags mobile.css responsive behavior.
+   Class prefix: ash- (alpha shrinking).
+   Below 768px: collapse two-column chart grids, tighten panel padding,
+   wrap bar rows so the track sits below the label/value pair. */
+
+.ash-chart-panel {
+  padding: 32px 28px;
+}
+
+.ash-chart-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.ash-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ash-bar-label {
+  min-width: 0;
+}
+
+.ash-bar-track {
+  flex: 1;
+}
+
+.ash-bar-value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ash-bar-caption {
+  font-style: italic;
+}
+
+/* Two-cohort comparison: each row shows a metric, then two stacked bars (before/after). */
+.ash-cohort-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+/* Timeline: years across the top, anomalies as rows down the side. */
+.ash-timeline {
+  display: grid;
+  /* 1 column for the label, then one column per year — set via inline style. */
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .ash-chart-panel {
+    padding: 18px 14px;
+  }
+
+  .ash-chart-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .ash-chart-grid > div:last-child {
+    gap: 8px !important;
+  }
+
+  .ash-bar-row {
+    flex-wrap: wrap;
+    column-gap: 10px;
+    row-gap: 3px;
+    padding: 2px 0;
+  }
+
+  .ash-bar-label {
+    flex: 1 1 auto !important;
+    order: 1;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+
+  .ash-bar-value {
+    flex: 0 0 auto !important;
+    order: 2;
+    line-height: 1.2 !important;
+  }
+
+  .ash-bar-value > div + div {
+    font-size: 10px !important;
+    margin-top: 0 !important;
+    line-height: 1.25 !important;
+  }
+
+  .ash-bar-value > div:first-child {
+    font-size: 13px !important;
+  }
+
+  .ash-bar-track {
+    flex: 0 0 100% !important;
+    order: 3;
+    height: 6px !important;
+    border-radius: 3px !important;
+  }
+
+  .ash-bar-track > div {
+    border-radius: 3px !important;
+  }
+
+  .ash-bar-caption {
+    padding-left: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+    margin-top: 2px;
+  }
+
+  .ash-hero {
+    padding-top: 80px !important;
+    padding-bottom: 48px !important;
+  }
+
+  .ash-shell {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .ash-cohort-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Mobile: scroll timeline horizontally rather than crushing it. */
+  .ash-timeline-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ash-timeline {
+    min-width: 720px;
+  }
+}
