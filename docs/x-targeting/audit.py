@@ -49,10 +49,160 @@ DROP = [
     (r"\b(community\s*manager|brand\s*ambassador)\b", -3),
     (r"\b(creator\s*campaigns?|affiliate\s*program)\b", -3),
     (r"\b(memecoin|memes?\s*lover|$SOL\s*HOLDER|$XRP)\b", -3),
-    (r"\b(daily\s*alpha|alpha\s*hunter|narrative)\b", -2),
+    (r"\b(daily\s*alpha|alpha\s*(hunter|caller)|narrative)\b", -3),
     (r"\b(faith\s*&\s*finance|believer)\b", -3),
     (r"\b(sponsored|commissioned|paid\s*promotion)\b", -3),
+    (r"\b(maxi|polymarket\s*maxi)\b", -3),
 ]
+
+
+# ---------------------------------------------------------------------------
+# NICHE KEYWORDS — broad-spectrum operator/builder vocabulary.
+# Each group is a named bucket of multi-word phrases (single words only when unambiguous).
+# Run `python3 audit.py --keywords` to print the full list.
+# ---------------------------------------------------------------------------
+NICHE_GROUPS: dict[str, list[str]] = {
+    "MM operator language": [
+        r"market[\s-]?mak(ing|er)", r"MM[\s-](bot|firm|trader|desk|operator|game)",
+        r"\bmake\s*market(s)?\b", r"\bprovide\s*liquidity\b",
+        r"\binventory\s*risk\b", r"\badverse\s*selection\b", r"\btoxic\s*flow\b",
+        r"\binternaliz(e|ation)\b",  # "internalize flow"
+        r"\bquot(e|ing)\s*(engine|spread|surface)\b",
+        r"\btwo[\s-]sided\s*(quote|market)\b",
+    ],
+    "HFT / latency": [
+        r"\bHFT\b", r"\bhigh[\s-]frequency\b", r"\blow[\s-]latency\b",
+        r"\bco[\s-]location|colo\b", r"\btick[\s-]to[\s-]trade\b",
+        r"\bnanosecond|microsecond\b",
+    ],
+    "Quant / research": [
+        r"\bquant(s|itative)?\b", r"\bquant\s*(research|trader|dev|firm|fund|desk)\b",
+        r"\bsystematic\s*(trading|strategy)\b", r"\bsignal\s*generation\b",
+        r"\balpha\s*(signal|decay|capture|factor|model|gen(eration)?)\b",
+        r"\bfactor\s*model\b", r"\bSharpe(\s*ratio)?\b", r"\bmax\s*drawdown\b",
+        r"\bKelly\s*criterion\b", r"\binformation\s*ratio\b", r"\bSortino\b",
+        r"\bmean\s*reversion\b", r"\bmomentum\s*(strategy|signal)\b",
+        r"\bcointegrat(ion|ed)\b", r"\bregime\s*(switching|change)\b",
+    ],
+    "Bot dev / engineering": [
+        r"\b(trading|MM|arb|execution|sniper|copy|grid)\s*bot\b",
+        r"\bbot\s*dev(eloper)?\b", r"\balgo[\s-](trader|trading|dev|bot|engine|stack)\b",
+        r"\bexecution\s*(algo|engine|venue)\b",
+        r"\bsmart\s*order\s*router|SOR\b",
+        r"\b(TWAP|VWAP|POV)\s*(execution|algo|order)\b",
+        r"\bbacktest(ing|er)?\b", r"\bwalk[\s-]forward\s*(test|optim)\b",
+        r"\b(tick|level\s*2|L2|orderbook)\s*data\b",
+        # Frameworks/libs
+        r"\bccxt\b", r"\bhummingbot\b", r"\bfreqtrade\b", r"\bjesse\s*trade\b",
+        r"\bnautilus[\s-]?trader\b", r"\bbacktrader\b", r"\bzipline\b", r"\bvectorbt\b",
+        r"\b(Rust|Python|Go|C\+\+)\s*(trading|MM|HFT|algo)\b",
+    ],
+    "Options trading": [
+        r"\boptions?\s+(trading|trader|vol|flow|surface|veteran|premium|seller|buyer|expir(y|ation)|chain|writer|maker)\b",
+        r"\bcall\s*(spread|option|side|wing)\b", r"\bput\s*(spread|option|side|wing)\b",
+        r"\bcovered\s*call|cash[\s-]secured\s*put|wheel\s*strategy\b",
+        r"\b(straddle|strangle|butterfly|iron\s*condor|calendar\s*spread|ratio\s*spread|risk\s*reversal)\b",
+        r"\b0DTE\b", r"\bweeklies\b",
+    ],
+    "Volatility": [
+        r"\b(implied|realized|forward|short[\s-]dated|long[\s-]dated)\s*vol(atility)?\b",
+        r"\bvol\s*(arb|crush|surface|trader|st|seller|selling|buying|buyer|targeting|cone|smile|premium)\b",
+        r"\b(sell|sold|selling|buy|bought|buying|trade|trading|hedge|hedging|short|shorting|long)\s+vol\b",  # verb-vol order
+        r"\bvariance\s*swap\b", r"\bVIX\s*(term|curve|future|level)\b",
+        r"\bbasis\s*trade|cash[\s-]and[\s-]carry\b",
+    ],
+    "Greeks / hedging": [
+        r"\bdelta\s*(hedg|neutral|one|exposure)\b",
+        r"\bgamma\s*(exposure|positioning|scalping|squeeze|flip|hedge)\b",
+        r"\b(short|long)\s*(gamma|vega|theta|delta)\b",
+        r"\bdealer\s*positioning\b", r"\bGEX\b", r"\bcharm\s*flow\b",
+        r"\bvanna(\s|$)\b", r"\bskew\s*(term|surface|smile|curve)\b",
+        r"\bpin\s*risk\b", r"\bcrowded\s*greek\b",
+    ],
+    "MEV / arb / DEX mechanics": [
+        r"\bMEV\b", r"\b(MEV\s*)?searcher\b",
+        r"\b(arb|arbitrage)\s*(bot|opportunit|edge)\b",
+        r"\b(funding|cross[\s-]exchange|basis|stat|triangular|atomic|latency|swap|cyclic)\s*arb\b",
+        r"\bperp\s*(basis|funding|spread)\b",
+        r"\bJIT\s*liquidity\b", r"\bsandwich\s*(attack|bot)\b",
+        r"\bdex[\s-]cex\s*arb\b", r"\bback[\s-]running\b",
+        r"\bflash\s*loan\b", r"\bbundle\s*(submit|building)\b",
+        r"\b(jito|jitoSOL|flashbots|bloXroute|propeller\s*heads|merkle\.io|relay)\b",
+    ],
+    "Order book / microstructure": [
+        r"\border\s*book\s*(depth|imbalance|reconstruction)\b",
+        r"\bbid[\s-]ask\s*spread\b", r"\bmaker\s*rebate\b", r"\btaker\s*fee\b",
+        r"\bLOB\b", r"\blimit\s*order\s*book\b",
+        r"\bmarket\s*microstructure\b", r"\border\s*flow\b",
+        r"\bsweep[\s-]to[\s-]fill\b", r"\biceberg\s*order\b", r"\bhidden\s*liquidity\b",
+        r"\b(tight|wide)\s*spreads?\b", r"\bfill\s*(rate|quality)\b",
+        r"\bsmart\s*order\s*routing\b", r"\bdark\s*pool\b",
+    ],
+    "Perp / futures mechanics": [
+        r"\bperp(etual)?\s*(DEX|swap|future|funding|basis)\b",
+        r"\bopen\s*interest|\bOI\s*(spike|change|build)\b",
+        r"\bmark\s*price|index\s*price\b",
+        r"\bfunding\s*(rate|payment|skew)\b",
+        r"\bauto[\s-]deleverag(ing|e)|ADL\b",
+        r"\binsurance\s*fund\b",
+    ],
+    "Liquidation analytics": [
+        r"\bliquidation\s*(map|level|cascade|heatmap|cluster)\b",
+        r"\bauction\s*(price|engine)\b",
+    ],
+    "DeFi MM specifics": [
+        r"\b(Uniswap\s*V[23]|concentrated\s*liquidity|CLMM|CFMM)\b",
+        r"\bLP\s*(position|range|fee|reward)\b", r"\bliquidity\s*provider\b",
+        r"\bAMM|constant\s*product\b", r"\bDEX\s*aggregator\b",
+        r"\brebalanc(e|ing)\b", r"\bjust[\s-]in[\s-]time\s*liquidity\b",
+        r"\bimpermanent\s*loss|IL\s*hedge\b",
+    ],
+    "Trading venues (institutional)": [
+        r"\b(paradex|thalex|deribit|laevitas|flowdesk|hyperliquid)\b",
+        r"\b(dydx|drift\.trade|lighter\.xyz|aevo|gmx|aster|jupiter\s*perps)\b",
+        r"\b(paradigm|wintermute|GSR|jane\s*street|cumberland|jump\s*trading|optiver|akuna|tower\s*research)\b",
+        r"\b(coincall|deribit|bit\.com|ledgerx)\b",
+    ],
+    "Prediction markets (multi-word, not bare 'polymarket')": [
+        r"\bprediction\s*market\s*(maker|making|MM|quant|trader|liquidity)\b",
+        r"\bsealed\s*bet\b", r"\bparimutuel\s*pool\b", r"\bvision\s*batch\b",
+    ],
+    "Risk / PnL": [
+        r"\bPn?L\b", r"\bP&L\b", r"\brisk[\s-](adjusted|parity|reward)\b",
+        r"\b(VaR|value[\s-]at[\s-]risk|CVaR|expected\s*shortfall)\b",
+        r"\bportfolio\s*(rebalanc|optim|construct|alloc)\b",
+        r"\bdrawdown\b", r"\bedge\s*(decay|capture)\b",
+    ],
+    "TA charting (require pairing)": [
+        r"\b(HMA|EMA|SMA|VWAP|RSI|MACD|Bollinger|ATR|ADX)\s*(ribbon|cross|chart|signal|envelope|band|crossover|divergence)\b",
+        r"\bR\s*/\s*R\b", r"\brisk[\s-]reward\b",
+        r"\btrade\s*(setup|entry|exit|plan)\b",
+        r"\bswing\s*(long|short|trade|entry|setup)\b",
+        r"\bbreakout\s*(level|trade|setup)\b",
+    ],
+    "Execution language": [
+        r"\bstop[\s-]loss\b", r"\btake[\s-]profit\b",
+        r"\bscalp(ing|er)?\b", r"\bsniper?(ing)?\s*bot\b",
+        r"\b(GTC|IOC|FOK|post[\s-]only)\b",
+    ],
+}
+
+# Build the master pattern: flatten all groups, alternate with |
+_ALL_NICHE_PATTERNS = [p for patterns in NICHE_GROUPS.values() for p in patterns]
+NICHE_PATTERN = "(?i)" + "|".join(f"(?:{p})" for p in _ALL_NICHE_PATTERNS)
+
+
+# HARD REJECT — these markers in bio = automatic FAIL. KOL ecosystem signals.
+BIO_HARD_REJECT = re.compile(
+    r"\b("
+    r"polymarket"            # too KOL-saturated; real Polymarket operators don't badge themselves
+    r"|zscdao|zcdao"         # KOL/farmer community
+    r"|alpha\s*caller"
+    r"|polymarket\s*maxi"
+    r"|DM\s*for\s*(promo|collab|business|marketing)"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 def score_bio(bio: str) -> tuple[int, list[str]]:
@@ -163,6 +313,7 @@ def audit(handle: str) -> dict:
 
     bio = p.get("description") or ""
     bio_score, bio_hits = score_bio(bio)
+    bio_hard_reject = bool(BIO_HARD_REJECT.search(bio))
     followers = p.get("followers_count") or 0
     friends = p.get("friends_count") or 0
     statuses = p.get("statuses_count") or 0
@@ -218,44 +369,9 @@ def audit(handle: str) -> dict:
     median_vf_ratio = vf_ratios[len(vf_ratios)//2] if vf_ratios else 0
     median_deep_share = deep_shares[len(deep_shares)//2] if deep_shares else 0
 
-    # Niche regex — STRICT. Multi-word jargon only. No bare "long" / "market" / "vol" / "trader"
-    # because those false-positive on lifestyle tweets ("long day", "housing market", "Paris is unmatched", etc).
-    niche_re = re.compile(
-        r"(?ix)"
-        # MM/HFT/quant operator language
-        r"\b(market[\s-]?mak(ing|er)|MM[\s-](bot|firm|trader|desk)|HFT|high[\s-]frequency)\b"
-        r"|\b(quant(s|itative)?|algo[\s-](trader|trading|dev|bot))\b"
-        # Options trading specifics
-        r"|\b(options?\s+(trading|trader|vol|flow|surface|veteran|premium|seller|buyer|expiry))\b"
-        r"|\b(call\s*(spread|option|side)|put\s*(spread|option|side)|"
-        r"   covered\s*call|cash[\s-]secured\s*put)\b"
-        r"|\b(straddle|strangle|butterfly|iron\s*condor)\b"
-        # Vol vocabulary — multi-word
-        r"|\b((implied|realized|forward)\s*vol(atility)?|vol\s*(arb|crush|surface|trader|st|seller|selling|targeting))\b"
-        r"|\b(variance\s*swap|VIX\s*term)\b"
-        # Delta / gamma hedging — must be paired with a hedging word
-        r"|\b(delta\s*(hedg|neutral|one)|gamma\s*(exposure|positioning|scalping|squeeze|flip))\b"
-        r"|\b(short\s*gamma|long\s*gamma|short\s*vega|long\s*vega|short\s*theta|long\s*theta)\b"
-        r"|\b(dealer\s*positioning|GEX|charm\s*flow|vanna|skew\s*(term|surface|smile))\b"
-        # Arb / MEV / DEX mechanics
-        r"|\b(MEV|searcher|arb(itrage)?\s*bot|funding\s*(arb|rate)|perp\s*(basis|funding))\b"
-        r"|\b(JIT\s*liquidity|latency\s*arb|atomic\s*arb|stat\s*arb|triangular\s*arb)\b"
-        # Order book mechanics
-        r"|\b(order\s*book\s*(depth|imbalance)|bid[\s-]ask\s*spread|maker\s*rebate|taker\s*fee|LOB)\b"
-        # Liquidation analytics
-        r"|\b(liquidation\s*(map|level|cascade|heatmap))\b"
-        # Protocols & venues (niche only — no generic "binance")
-        r"|\b(paradex|thalex|deribit|laevitas|flowdesk|hyperliquid|polymarket|kalshi|"
-        r"   dydx|drift\.trade|lighter|aevo|gmx|aster|paradigm|wintermute|GSR|jane\s*street|cumberland|jump\s*trading)\b"
-        # Prediction markets specific
-        r"|\b(prediction\s*market|sealed\s*bet|parimutuel)\b"
-        # Chart / TA jargon — only with charting context, not bare letters
-        r"|\b((HMA|EMA|SMA|VWAP|RSI|MACD|Bollinger)\s*(ribbon|cross|chart|signal|envelope|band|crossover))\b"
-        r"|\b(R\s*/\s*R|risk[\s-]reward|trade\s*setup|swing\s*(long|short|trade|entry|setup))\b"
-        # Backend operator language
-        r"|\b(make\s*market(s)?|provide\s*liquidity|inventory\s*risk|adverse\s*selection|toxic\s*flow|"
-        r"   sweep[\s-]to[\s-]fill|iceberg\s*order|hidden\s*liquidity)\b"
-    )
+    # Niche regex — structured keyword groups. Multi-word jargon required for ambiguous terms.
+    # Each group below is documented and grep-able. Print with `python3 audit.py --keywords`.
+    niche_re = re.compile(NICHE_PATTERN)
     spam_re = re.compile(r"\b(DM\s*for|promo|kol|airdrop|giveaway|whitelist|join\s*the\s*tg|telegram\s*group|"
                           r"buy\s*\$\w+|pumping|moonshot)\b", re.IGNORECASE)
     niche_hits = sum(1 for t in recent if niche_re.search(t.get("text") or ""))
@@ -272,15 +388,17 @@ def audit(handle: str) -> dict:
 
     # Gates
     hard = []
+    # HARD REJECT on bio: polymarket / zscdao / alpha caller — KOL ecosystem markers
+    hard.append(("bio_not_kol",     not bio_hard_reject))
     hard.append(("bio_signal",      bio_score >= 1 or len(p.get("sources", [])) >= 2))
     hard.append(("follower_band",   1000 <= followers <= 200_000))
     hard.append(("age>=1y",         age_days >= 365))
     hard.append(("active<=14d",     0 <= latest_age <= 14))
     hard.append(("cadence_0.5_30",  0.5 <= posts_per_day <= 30))
     hard.append(("no_spam_flood",   spam_hits <= 2))
-    # NEW HARD: engagement rate floor — user's explicit "<3% is too bad"
-    hard.append(("engage_rate>=3%", median_engage_rate >= 0.03))
-    # NEW HARD: niche fit on RECENT content (bio alone doesn't carry; the account must
+    # Engagement rate floor — relaxed from 3% to 2.5%
+    hard.append(("engage_rate>=2.5%", median_engage_rate >= 0.025))
+    # Niche fit on RECENT content (bio alone doesn't carry; account must
     # currently be posting about our space, not baguettes in Paris)
     hard.append(("niche_recent>=3", niche_hits >= 3))
 
@@ -335,9 +453,25 @@ def audit(handle: str) -> dict:
     }
 
 
+def cmd_keywords():
+    """Print all niche keywords grouped by category."""
+    total = 0
+    for group, patterns in NICHE_GROUPS.items():
+        print(f"\n### {group} ({len(patterns)} patterns) ###")
+        for p in patterns:
+            print(f"  {p}")
+            total += 1
+    print(f"\n--- Total: {total} patterns across {len(NICHE_GROUPS)} groups ---")
+    print("\nBio HARD-REJECT terms (automatic FAIL):")
+    for line in BIO_HARD_REJECT.pattern.split("|"):
+        print(f"  {line.strip()}")
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(1)
+    if sys.argv[1] == "--keywords":
+        cmd_keywords(); return
     if sys.argv[1] == "--list":
         handles = [l.strip().lstrip("@") for l in open(sys.argv[2]) if l.strip() and not l.startswith("#")]
     elif sys.argv[1] == "--inner":
