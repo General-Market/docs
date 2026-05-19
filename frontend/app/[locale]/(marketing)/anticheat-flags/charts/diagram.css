@@ -1,4 +1,4 @@
-/* anticheat-flags — candle-chart diagrams + card surface. Conveyor scroll. */
+/* anticheat-flags — diagram chrome + card surface. */
 
 .acf-card {
   cursor: pointer;
@@ -32,13 +32,9 @@
   --acd-frame-bg-top: #fcfcfd;
   --acd-frame-bg-bot: #f6f6f9;
   --acd-grid: rgba(0, 0, 0, 0.09);
-  --acd-grid-soft: rgba(0, 0, 0, 0.05);
-  --acd-stroke: #2c2c2e;
-  --acd-stroke-soft: #c7c7cc;
   --acd-text: #1d1d1f;
   --acd-text-tertiary: #6e6e73;
   --acd-predator: #ff3b30;
-  --acd-predator-soft: rgba(255, 59, 48, 0.12);
   --acd-ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -115,21 +111,18 @@
   overflow: visible;
 }
 
-/* ── Conveyor scroll ──────────────────────────────────────────────────
-   The strip holds 2× the visible candles. We translate by exactly one
-   visible width per cycle. Because the data repeats, the strip wraps
-   without a visible seam. */
-
-.acd-strip {
-  animation: acd-strip-scroll 10s linear infinite;
-  will-change: transform;
+/* Quiet pulse on the predator halo — the only motion left. */
+.acd-pred-halo {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: acd-pulse 2.4s ease-in-out infinite;
 }
 
-@keyframes acd-strip-scroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-360px); }
+@keyframes acd-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.12); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .acd-strip { animation: none !important; transform: translateX(0); }
+  .acd-pred-halo { animation: none; opacity: 0.7; transform: none; }
 }
