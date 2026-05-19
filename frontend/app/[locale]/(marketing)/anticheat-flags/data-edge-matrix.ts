@@ -517,10 +517,34 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     category: 'execution',
     name: 'Matching-priority privileges',
     heading: 'Unfair matching engine priority',
-    lead: 'Retail baseline = 0. Bar = bps queue-jump advantage a top-tier MM extracts from amend-keep, pro-rata, LMM allocation, or validator override. 0 = strict FIFO.',
-    unit: 'bps queue-jump edge',
+    lead: 'Retail baseline = 0. Bar = bps priority advantage a top-tier MM extracts from amend-keep, operator authority, or — on AMMs and L1s where there is no orderbook queue — MEV: Jito bundle ordering and gossip-priority auctions that decide which tx lands in the same slot. Different surface, same privilege. 0 = strict FIFO with no edit rights.',
+    unit: 'bps priority edge',
     generalMarketLabel: 'Large losses are capped per order. A whale cannot pick off the small taker.',
     rows: [
+      {
+        slug: 'pumpfun-jito-priority',
+        name: 'Pump.fun',
+        tag: 'Jito MEV bundle priority',
+        value: 8,
+        gatedValue: 8,
+        lane: 'Retail: 0 | MM: ~8 bps (no orderbook on an AMM, but Jito off-chain tip auction orders txs within a Solana slot. ~95% of stake honors. Whoever tips highest lands first)',
+        barrier: 'Jito-Solana validator client + tip stack',
+        sources: [
+          { label: 'QuickNode · Jito Bundles guide', url: 'https://www.quicknode.com/guides/solana-development/transactions/jito-bundles' },
+        ],
+      },
+      {
+        slug: 'hyperliquid-gossip-mev',
+        name: 'Hyperliquid',
+        tag: 'HYPE gossip-priority auction',
+        value: 4,
+        gatedValue: 4,
+        lane: 'Retail: 0 | MM: ~4 bps (HYPE-denominated Dutch auction sells gossip-priority slots ~25ms ahead of regular L1 traffic. MEV in the validator gossip layer, not the orderbook)',
+        barrier: 'HYPE bid for priority slot',
+        sources: [
+          { label: 'Hyperliquid Docs · Priority Fees', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/priority-fees' },
+        ],
+      },
       {
         slug: 'polymarket-operator-fifo',
         name: 'Polymarket',

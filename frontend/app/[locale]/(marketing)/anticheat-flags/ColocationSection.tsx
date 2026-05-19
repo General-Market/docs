@@ -11,7 +11,6 @@ interface ColoVenue {
   name: string
   region: string
   proof: string
-  attribution: string
   sourceLabel: string
   sourceUrl: string
   insiderMs: number
@@ -26,7 +25,6 @@ const COLO_VENUES: ColoVenue[] = [
     name: 'Polymarket',
     region: 'AWS eu-west-2. London',
     proof: 'Direct co-location available. Users who complete the KYC/KYB form can get access to co-locate directly in eu-west-2.',
-    attribution: 'Polymarket trading documentation',
     sourceLabel: 'docs.polymarket.com',
     sourceUrl: 'https://docs.polymarket.com/trading/overview',
     insiderMs: 2,
@@ -39,7 +37,6 @@ const COLO_VENUES: ColoVenue[] = [
     name: 'Hyperliquid',
     region: 'AWS ap-northeast-1. Tokyo',
     proof: 'All 24 validators clustered in AWS Tokyo. Anyone can rent a Tokyo VPS. What they cannot rent is the Foundation Non-Validating Node — gated by 10K HYPE staked, Tier 1 maker rebate, and 98% uptime. The gossip feed arrives ahead of the public RPC.',
-    attribution: 'Hyperliquid foundation node docs',
     sourceLabel: 'Hyperliquid docs',
     sourceUrl: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node',
     insiderMs: 3,
@@ -51,7 +48,6 @@ const COLO_VENUES: ColoVenue[] = [
     name: 'Kalshi',
     region: 'Chicago. Designated MM',
     proof: 'Susquehanna onboarded April 2024 as the first dedicated institutional market maker. The November 2025 class action names the privilege directly: unique contractual and technological integration.',
-    attribution: 'Federal complaint, six states',
     sourceLabel: 'Bloomberg',
     sourceUrl: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges',
     insiderMs: 1,
@@ -219,17 +215,6 @@ function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
         >
           {v.quote ? `"${v.proof}"` : v.proof}
         </p>
-
-        <div
-          style={{
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 12,
-            color: SECONDARY,
-            letterSpacing: '-0.005em',
-          }}
-        >
-         . {v.attribution}
-        </div>
 
         <div
           style={{
