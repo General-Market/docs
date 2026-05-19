@@ -4,6 +4,7 @@ import {
   type EdgeTopic,
   type CompanyRow,
 } from './data-edge-matrix'
+import { InlineObjection } from './InlineObjection'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
@@ -375,6 +376,14 @@ function TopicBlock({ topic }: { topic: EdgeTopic }) {
             <SourceCard key={row.slug} row={row} unit={topic.unit} />
           ))}
         </div>
+
+        {topic.slug === 'matching-algo' && (
+          <InlineObjection
+            shot="Binance is pure FIFO. So is Hyperliquid. Queue-jumping is fiction."
+            reply='The book is FIFO, but Binance publishes a feature called "Order Amend Keep Priority" that lets a maker shrink an order without losing its place in the queue. Deribit ships the same feature, and Hyperliquid sequences cancels before takers — a different mechanism in the same family. Strict FIFO with privileged edit rights stops being strict FIFO for the desks that know how to use the edits.'
+            marginTop={28}
+          />
+        )}
       </div>
     </Reveal>
   )

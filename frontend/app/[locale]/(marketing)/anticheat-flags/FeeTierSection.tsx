@@ -1,5 +1,6 @@
 import { Reveal } from '@/components/ui/Reveal'
 import { FEE_TIER_VENUES, type FeeTierVenue } from './data-fee-tiers'
+import { InlineObjection } from './InlineObjection'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
@@ -903,6 +904,11 @@ export function FeeTierSection() {
           </div>
         </div>
       </Reveal>
+
+      <InlineObjection
+        shot="General Market charges 5 bps on the pot. That is also a fee."
+        reply="It is, and the schedule is open about it. Parimutuel has no per-trade break-even — you either win the round or you do not — so the 5 bps is a flat cut on the pool that scales with the prize, not with leverage or trade frequency. There is no VIP tier above it. Whether that single fee is worth the absence of the other twelve edges documented on this page is the only honest question."
+      />
     </section>
   )
 }

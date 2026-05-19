@@ -1,4 +1,5 @@
 import { Reveal } from '@/components/ui/Reveal'
+import { InlineObjection } from './InlineObjection'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
@@ -642,6 +643,11 @@ export function ColocationSection() {
           <AssumptionsBlock />
         </div>
       </Reveal>
+
+      <InlineObjection
+        shot="Anyone can rent a Tokyo VPS at 3–5 ms. The 145 ms gap is geography, not gating."
+        reply="Correct, which is why the Binance and Bybit rows on this chart now show only the gated delta — roughly 20 ms inside AWS Tokyo, not 145 ms across the Pacific. What a rental cannot buy is the MMGW cross-connect inside that same region, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, or the bilateral KYC at Polymarket. Those are the milliseconds that remain after retail has already paid for proximity."
+      />
     </section>
   )
 }
