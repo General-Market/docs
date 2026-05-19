@@ -642,7 +642,7 @@ export function FeeTierSection() {
                   marginBottom: 10,
                 }}
               >
-                Bar = MM round-trip rebate over retail at this venue, in basis points. Single shade, since there is no gating sub-portion: this is the full disclosed fee delta. Retail baseline = 0.
+                Bar = MM round-trip rebate over retail at this venue, in basis points. Single shade — no gating sub-portion, this is the full disclosed fee delta. Retail baseline = 0.
               </p>
               <div
                 style={{
@@ -881,7 +881,7 @@ export function FeeTierSection() {
 
       <InlineObjection
         shot="General Market charges 5 bps on the pot. That is also a fee."
-        reply="It is, and the schedule is open about it. Parimutuel has no per-trade break-even (you either win the round or you do not), so the 5 bps is a flat cut on the pool that scales with the prize, not with leverage or trade frequency. There is no VIP tier above it. Whether that single fee is worth the absence of the other twelve edges documented on this page is the only honest question."
+        reply="It is, and the schedule is open about it. Parimutuel has no per-trade break-even — you either win the round or you do not — so the 5 bps is a flat cut on the pool that scales with the prize, not with leverage or trade frequency. There is no VIP tier above it. Whether that single fee is worth the absence of the other twelve edges documented on this page is the only honest question."
       />
     </section>
   )

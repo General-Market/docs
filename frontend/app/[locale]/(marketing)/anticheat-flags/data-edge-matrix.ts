@@ -457,7 +457,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     category: 'execution',
     name: 'Matching-priority privileges',
     heading: 'Unfair matching engine priority',
-    lead: 'The matching engine is whatever decides which order fills first. On a classical CLOB that means the FIFO book and whatever edit rights the venue grants: amend-keep, pro-rata, operator authority. On an AMM there is no book; the matching engine is the mempool, and whoever bundles or tips highest lands ahead of whoever does not. On an L1 with a public mempool, retail orders are visible before they confirm, and the venue\'s pending traffic is sequenced by validators, by Jito tip auctions, by gossip-priority auctions, by a single sequencer in the case of Base. Same privilege, different layer. Retail baseline = 0. Bar = bps priority a top-tier MM extracts. 0 = strict FIFO with no edit rights and no public mempool to read.',
+    lead: 'The matching engine is whatever decides which order fills first. On a classical CLOB that means the FIFO book and whatever edit rights the venue grants — amend-keep, pro-rata, operator authority. On an AMM there is no book; the matching engine is the mempool, and whoever bundles or tips highest lands ahead of whoever does not. On an L1 with a public mempool, retail orders are visible before they confirm, and the venue\'s pending traffic is sequenced by validators, by Jito tip auctions, by gossip-priority auctions, by a single sequencer in the case of Base. Same privilege, different layer. Retail baseline = 0. Bar = bps priority a top-tier MM extracts. 0 = strict FIFO with no edit rights and no public mempool to read.',
     unit: 'bps priority edge',
     generalMarketLabel: 'Large losses are capped per order. A whale cannot pick off the small taker.',
     rows: [
@@ -528,7 +528,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
         tag: 'FIFO book · single sequencer on Base',
         value: 1,
         gatedValue: 1,
-        lane: 'Retail: 0 | MM: ~1 bps (Coinbase Exchange is strict FIFO at 500k orders/s; on Base, Coinbase runs the only sequencer, so every pending tx passes through Coinbase before it lands)',
+        lane: 'Retail: 0 | MM: ~1 bps (Coinbase Exchange is strict FIFO at 500k orders/s; on Base, Coinbase runs the only sequencer — every pending tx passes through Coinbase before it lands)',
         barrier: 'Sequencer operator role on Base',
         sources: [
           { label: 'Base docs · network information', url: 'https://docs.base.org/base-chain/network-information/base-network' },

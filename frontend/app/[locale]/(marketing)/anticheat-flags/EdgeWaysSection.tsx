@@ -166,7 +166,7 @@ export function EdgeWaysSection() {
 
       <InlineObjection
         shot="Retail loses regardless. Edge or no edge."
-        reply="Often, yes. The question this page tries to answer is whether retail loses to roughly two hundred basis points of structural extraction (PFOF, tiered fees, colocation tax, listing leaks, sandwich attacks) or to their own trading decisions. We measure the structural floor. What a trader does on top of that floor is their own choice, and their own responsibility."
+        reply="Often, yes. The question this page tries to answer is whether retail loses to roughly two hundred basis points of structural extraction — PFOF, tiered fees, colocation tax, listing leaks, sandwich attacks — or to their own trading decisions. We measure the structural floor. What a trader does on top of that floor is their own choice, and their own responsibility."
       />
     </section>
   )

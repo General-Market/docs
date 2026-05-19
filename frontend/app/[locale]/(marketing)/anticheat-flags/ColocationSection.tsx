@@ -1,10 +1,61 @@
 import { Reveal } from '@/components/ui/Reveal'
+import { InlineObjection } from './InlineObjection'
 
 const TEXT = 'var(--apple-text)'
 const SECONDARY = 'var(--apple-text-secondary)'
 const TERTIARY = 'var(--apple-text-tertiary)'
 const LINE = 'var(--apple-line)'
 const ACCENT = 'var(--apple-accent)'
+
+interface ColoVenue {
+  slug: string
+  name: string
+  region: string
+  proof: string
+  sourceLabel: string
+  sourceUrl: string
+  insiderMs: number
+  outsiderMs: number
+  outsiderOrigin: string
+  quote?: boolean
+}
+
+const COLO_VENUES: ColoVenue[] = [
+  {
+    slug: 'polymarket-colo',
+    name: 'Polymarket',
+    region: 'AWS eu-west-2. London',
+    proof: 'Direct co-location available. Users who complete the KYC/KYB form can get access to co-locate directly in eu-west-2.',
+    sourceLabel: 'docs.polymarket.com',
+    sourceUrl: 'https://docs.polymarket.com/trading/overview',
+    insiderMs: 2,
+    outsiderMs: 7,
+    outsiderOrigin: 'Retail eu-west-2 VPS',
+    quote: true,
+  },
+  {
+    slug: 'hyperliquid-colo',
+    name: 'Hyperliquid',
+    region: 'AWS ap-northeast-1. Tokyo',
+    proof: 'All 24 validators clustered in AWS Tokyo. Anyone can rent a Tokyo VPS. What they cannot rent is the Foundation Non-Validating Node — gated by 10K HYPE staked, Tier 1 maker rebate, and 98% uptime. The gossip feed arrives ahead of the public RPC.',
+    sourceLabel: 'Hyperliquid docs',
+    sourceUrl: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node',
+    insiderMs: 3,
+    outsiderMs: 28,
+    outsiderOrigin: 'Retail Tokyo VPS, public RPC',
+  },
+  {
+    slug: 'kalshi-colo',
+    name: 'Kalshi',
+    region: 'Chicago. Designated MM',
+    proof: 'Susquehanna onboarded April 2024 as the first dedicated institutional market maker. The November 2025 class action names the privilege directly: unique contractual and technological integration.',
+    sourceLabel: 'Bloomberg',
+    sourceUrl: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges',
+    insiderMs: 1,
+    outsiderMs: 50,
+    outsiderOrigin: 'Retail browser',
+  },
+]
 
 interface LatencyRow {
   slug: string
@@ -21,7 +72,7 @@ const LATENCY_ROWS: LatencyRow[] = [
   {
     slug: 'hyperliquid', name: 'Hyperliquid', edgeMs: 25, gatedMs: 25,
     lane: 'Retail (Tokyo VPS): public RPC | MM: Foundation-node gossip ahead of public RPC',
-    barrier: 'Foundation node (10K HYPE staked, Tier 1 maker rebate, 98% uptime)',
+    barrier: 'Foundation node — 10K HYPE staked + Tier 1 maker rebate + 98% uptime',
     source: { label: 'Coindesk · Glassnode', url: 'https://www.coindesk.com/markets/2026/03/30/hyperliquid-traders-in-tokyo-get-200-millisecond-edge-glassnode-research-shows' },
     barrierSource: { label: 'Hyperliquid docs', url: 'https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/nodes/foundation-non-validating-node' },
   },
@@ -84,7 +135,7 @@ const LATENCY_ROWS: LatencyRow[] = [
   {
     slug: 'kalshi', name: 'Kalshi', edgeMs: 49, gatedMs: 0,
     lane: 'Retail (browser): +49ms | MM (designated): fee + position-limit privileges, infra unpublished',
-    barrier: 'Designated MM contract (fee + position-limit privileges)',
+    barrier: 'Designated MM contract — fee + position-limit privileges',
     source: { label: 'Bloomberg · class action', url: 'https://www.bloomberg.com/news/articles/2025-11-28/kalshi-market-maker-bets-against-consumers-lawsuit-alleges' },
     barrierSource: { label: 'Kalshi · MM program', url: 'https://help.kalshi.com/en/articles/13823819-market-maker-program' },
   },
@@ -98,6 +149,111 @@ const LATENCY_ROWS: LatencyRow[] = [
 ]
 
 const MAX_EDGE = Math.max(...LATENCY_ROWS.map(r => r.edgeMs))
+
+function ColoCard({ v, delay }: { v: ColoVenue; delay: number }) {
+  const gap = v.outsiderMs - v.insiderMs
+  return (
+    <Reveal delay={delay}>
+      <article
+        className="acf-colo-card flex flex-col h-full"
+        style={{
+          background: 'var(--apple-panel)',
+          border: `1px solid ${LINE}`,
+          borderRadius: 'var(--apple-r-md)',
+          padding: 22,
+          gap: 12,
+          aspectRatio: '1 / 1',
+          minHeight: 360,
+        }}
+      >
+        <header className="flex items-baseline justify-between gap-3">
+          <h3
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 21,
+              fontWeight: 600,
+              letterSpacing: '-0.022em',
+              color: TEXT,
+            }}
+          >
+            {v.name}
+          </h3>
+          <span
+            style={{
+              fontFamily: 'var(--apple-font-display)',
+              fontSize: 19,
+              fontWeight: 600,
+              letterSpacing: '-0.016em',
+              color: ACCENT,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            +{gap}ms
+          </span>
+        </header>
+
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 12,
+            color: TERTIARY,
+            letterSpacing: '-0.005em',
+          }}
+        >
+          {v.region}
+        </div>
+
+        <p
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 14,
+            lineHeight: 1.45,
+            letterSpacing: '-0.011em',
+            color: TEXT,
+            fontWeight: 500,
+            fontStyle: v.quote ? 'italic' : 'normal',
+          }}
+        >
+          {v.quote ? `"${v.proof}"` : v.proof}
+        </p>
+
+        <div
+          style={{
+            fontFamily: 'var(--apple-font-text)',
+            fontSize: 12,
+            color: TERTIARY,
+            letterSpacing: '-0.005em',
+            marginTop: 'auto',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          Inside lane {v.insiderMs}ms · {v.outsiderOrigin} {v.outsiderMs}ms
+        </div>
+
+        <footer
+          className="flex items-center justify-between gap-3 pt-3"
+          style={{ borderTop: `1px solid ${LINE}` }}
+        >
+          <a
+            href={v.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: 'var(--apple-font-text)',
+              fontSize: 12,
+              fontWeight: 500,
+              color: ACCENT,
+              letterSpacing: '-0.005em',
+            }}
+            className="hover:underline"
+          >
+            {v.sourceLabel} ›
+          </a>
+        </footer>
+      </article>
+    </Reveal>
+  )
+}
 
 function LatencyBarRow({ row }: { row: LatencyRow }) {
   const edgePct = Math.max((row.edgeMs / MAX_EDGE) * 100, row.edgeMs > 0 ? 2 : 0)
@@ -344,9 +500,18 @@ export function ColocationSection() {
             maxWidth: 780,
           }}
         >
-          Geographic latency is buyable. A retail bot can rent a Tokyo VPS for around fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives that rental is the gated one: the MMGW cross-connect inside AWS Tokyo, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, the bilateral KYC at Polymarket. Each venue says the door is open, but none of them publishes the price of walking through it.
+          Geographic latency is buyable — a retail bot can rent a Tokyo VPS for around fifteen dollars a month and reach Binance public API in five milliseconds. The gap that survives that rental is the gated one: the MMGW cross-connect inside AWS Tokyo, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, the bilateral KYC at Polymarket. Each venue says the door is open, but none of them publishes the price of walking through it.
         </p>
       </Reveal>
+
+      <div
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        style={{ marginTop: 36 }}
+      >
+        {COLO_VENUES.map((v, i) => (
+          <ColoCard key={v.slug} v={v} delay={Math.min(i * 0.06, 0.2)} />
+        ))}
+      </div>
 
       <Reveal delay={0.24}>
         <div
@@ -465,6 +630,11 @@ export function ColocationSection() {
           <AssumptionsBlock />
         </div>
       </Reveal>
+
+      <InlineObjection
+        shot="Anyone can rent a Tokyo VPS at 3–5 ms. The 145 ms gap is geography, not gating."
+        reply="Correct, which is why the Binance and Bybit rows on this chart now show only the gated delta — roughly 20 ms inside AWS Tokyo, not 145 ms across the Pacific. What a rental cannot buy is the MMGW cross-connect inside that same region, the FIX cage at LD4, the Foundation-node gossip feed on Hyperliquid, or the bilateral KYC at Polymarket. Those are the milliseconds that remain after retail has already paid for proximity."
+      />
     </section>
   )
 }
@@ -656,7 +826,7 @@ function AssumptionsBlock() {
         />
         <AssumptionLane
           title="Outside lane. Retail algo trader (already paying)"
-          summary="A Python bot running on a Tokyo VPS, a node already in eu-west-2, or a tenant inside Equinix LD4. Retail that has already paid for proximity. The gap that remains is what no rental can buy: the cross-connect, the FIX cage, the Foundation-node gossip, the bilateral contract."
+          summary="A Python bot running on a Tokyo VPS, a node already in eu-west-2, or a tenant inside Equinix LD4 — retail that has already paid for proximity. The gap that remains is what no rental can buy: the cross-connect, the FIX cage, the Foundation-node gossip, the bilateral contract."
           rows={OUTSIDE_LANE}
         />
       </div>
