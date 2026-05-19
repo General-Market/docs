@@ -85,17 +85,56 @@ NICHE_GROUPS: dict[str, list[str]] = {
         r"\bcointegrat(ion|ed)\b", r"\bregime\s*(switching|change)\b",
     ],
     "Bot dev / engineering": [
-        r"\b(trading|MM|arb|execution|sniper|copy|grid)\s*bot\b",
-        r"\bbot\s*dev(eloper)?\b", r"\balgo[\s-](trader|trading|dev|bot|engine|stack)\b",
-        r"\bexecution\s*(algo|engine|venue)\b",
-        r"\bsmart\s*order\s*router|SOR\b",
-        r"\b(TWAP|VWAP|POV)\s*(execution|algo|order)\b",
-        r"\bbacktest(ing|er)?\b", r"\bwalk[\s-]forward\s*(test|optim)\b",
-        r"\b(tick|level\s*2|L2|orderbook)\s*data\b",
-        # Frameworks/libs
+        r"\b(trading|MM|arb|execution|sniper|grid|DCA|sandwich|MEV|liquidation)\s*bot\b",
+        r"\bbot\s*(dev(eloper)?|builder|operator|maker)\b",
+        r"\balgo[\s-](trader|trading|dev|bot|engine|stack|book)\b",
+        r"\bexecution\s*(algo|engine|venue|trader|model)\b",
+        r"\bsmart\s*order\s*router|SOR\b", r"\bOMS\b|\border\s*management\b",
+        r"\bFIX\s*(engine|protocol|connectivity)\b",
+        r"\b(REST|WebSocket|gRPC)\s*(API|feed|stream)\b",
+        r"\bexchange\s*(API|connectivity|adapter)\b",
+        r"\b(TWAP|VWAP|POV|Iceberg|peg)\s*(execution|algo|order|strategy)\b",
+        r"\bbacktest(ing|er|s)?\b", r"\bwalk[\s-]forward\s*(test|optim)\b",
+        r"\b(tick|level\s*[12]|L[12]|orderbook|trade\s*tape)\s*(data|feed)\b",
+        # Frameworks/libs/platforms
         r"\bccxt\b", r"\bhummingbot\b", r"\bfreqtrade\b", r"\bjesse\s*trade\b",
         r"\bnautilus[\s-]?trader\b", r"\bbacktrader\b", r"\bzipline\b", r"\bvectorbt\b",
-        r"\b(Rust|Python|Go|C\+\+)\s*(trading|MM|HFT|algo)\b",
+        r"\bquant(connect|opian|lib|lopian)\b", r"\blean\s*engine\b",
+        r"\bMetaTrader|MT[45]\b", r"\bNinjaTrader\b", r"\bSierraChart\b", r"\bBookmap\b",
+        r"\bamibroker\b", r"\bTradingView\s*(strategy|script|pine)\b",
+        r"\b(Rust|Python|Go|C\+\+|Cython|Julia)\s*(trading|MM|HFT|algo|quant)\b",
+        # Crypto-specific bot devs
+        r"\b(solana|EVM|Ethereum|Aptos|Sui)\s*(bot|trader|dev|searcher)\b",
+        r"\b(jito|flashbots|MEV-share|propeller|merkle\.io|builder0x69)\b",
+    ],
+    "Quant statistics / models": [
+        r"\b(Bayesian|frequentist|MLE|MAP)\s*(estimat|inference|model)\b",
+        r"\bMonte\s*Carlo\b", r"\bMarkov\s*(chain|model)\b", r"\bKalman\s*filter\b",
+        r"\bBlack[\s-]Scholes\b", r"\bMerton\s*model\b", r"\bHeston\s*model\b",
+        r"\bSABR\s*model\b", r"\bjump[\s-]diffusion\b",
+        r"\b(GARCH|EGARCH|ARIMA|HMM|GBM|SDE|PDE)\b",
+        r"\bstochastic\s*(vol|process|diff)\b", r"\bBrownian\s*motion\b",
+        r"\b(cointegrat|Granger)\b", r"\b(ARMA|VAR|GMM)\s*model\b",
+        r"\b(pairs|stat)\s*arb\b", r"\bmarket\s*neutral\b", r"\bcarry\s*trade\b",
+    ],
+    "Trading desk language": [
+        r"\b(prop|proprietary)\s*(trader|trading|desk|shop|firm)\b",
+        r"\bbuy[\s-]side|sell[\s-]side\b",
+        r"\bRFQ\s*(desk|flow|trading)?\b", r"\bOTC\s*(desk|trader|trading|flow)\b",
+        r"\bblock\s*(trade|trader|trading|liquidity)\b",
+        r"\bdelta[\s-]one\s*(desk|trader|trading)\b",
+        r"\b(equity|options|futures|FX|rates|credit|commodities)\s*(trader|desk|MM)\b",
+        r"\b(principal|agency)\s*(trader|trading)\b",
+        r"\binternaliz(e|ation)\s*(order|flow)?\b", r"\bPFOF\b",
+    ],
+    "Risk / position management": [
+        r"\bposition\s*(sizing|management|limit)\b",
+        r"\bleverage\b", r"\bde[\s-]?leverag(e|ing)\b",
+        r"\btail\s*(risk|hedge|exposure)\b",
+        r"\bcrash\s*hedg(e|ing)\b",
+        r"\bstress\s*test(ing)?\b", r"\bscenario\s*analysis\b",
+        r"\b(EaR|VaR|CVaR|expected\s*shortfall|ETL)\b",
+        r"\bcorrelation\s*(matrix|breakdown|regime)\b",
     ],
     "Options trading": [
         r"\boptions?\s+(trading|trader|vol|flow|surface|veteran|premium|seller|buyer|expir(y|ation)|chain|writer|maker)\b",
@@ -192,17 +231,89 @@ _ALL_NICHE_PATTERNS = [p for patterns in NICHE_GROUPS.values() for p in patterns
 NICHE_PATTERN = "(?i)" + "|".join(f"(?:{p})" for p in _ALL_NICHE_PATTERNS)
 
 
-# HARD REJECT — these markers in bio = automatic FAIL. KOL ecosystem signals.
+# HARD REJECT — bio markers that = automatic FAIL. KOL ecosystem signals.
 BIO_HARD_REJECT = re.compile(
     r"\b("
     r"polymarket"            # too KOL-saturated; real Polymarket operators don't badge themselves
     r"|zscdao|zcdao"         # KOL/farmer community
-    r"|alpha\s*caller"
-    r"|polymarket\s*maxi"
-    r"|DM\s*for\s*(promo|collab|business|marketing)"
+    r"|jup_?predict|jupredict|poly_?matches|polymatches"   # paid-promo platforms
+    r"|alpha\s*caller|alpha\s*hunter"
+    r"|maxi\b"               # "polymarket maxi", "BTC maxi" etc
+    r"|DM\s*for\s*(promo|collab|business|marketing|inquir)"
+    r"|sponsored|commissioned"
     r")\b",
     re.IGNORECASE,
 )
+
+
+# TWEET-LEVEL KOL signal — count occurrences across last 10 tweets.
+# If >=3 of 10 tweets show these patterns, the account is a KOL/affiliate, not an operator.
+TWEET_KOL_PATTERNS = re.compile(
+    r"("
+    # Money-story clickbait
+    r"\$\d+\s*into\s*\$[\d,]+"
+    r"|turn(ed|s)?\s*\$\d+\s*into"
+    r"|made\s*\$[\d,]+(k|K|m|M)?\s*(in|from|on|with|off)"
+    r"|earned\s*\$[\d,]+"
+    # Copy-trading / affiliate calls
+    r"|\bcopy\s*(him|her|this|that|the)\b"
+    r"|\bcopy\s*trading|copy\s*trade\b"
+    r"|\bfollow\s*(him|her|this\s*account)\b"
+    # Leak / exposed / secret clickbait
+    r"|\bleaked\s+(blueprint|strategy|secret|playbook)\b|exposed\s+(by|the)\b"
+    r"|\bthe\s+secret\s+(to|of|behind)\b"
+    r"|\bnobody\s+(talks\s*about|knows|notices)\b"
+    r"|\byou\s+won'?t\s+believe\b"
+    # Affiliation platforms (tweet-level, not bio)
+    r"|@jup_?predict|@poly_?matches|@polymarket|@kalshi"
+    r"|\b(jup_?predict|poly_?matches|polymatches)\b"
+    # Bare polymarket/kalshi mentions — if multiple in last 10 → KOL pattern
+    r"|\b(polymarket|kalshi)\b"
+    # Storytelling intros (a [profession] who...; At [age] he/she...; This [noun] [verb-ed])
+    r"|\bA\s+(math|computer|hedge\s*fund|wall\s*street|former|young|retired|legendary)\s+\w+\s+(who|that|figured|turned|made|cracked|built|got)"
+    r"|\bAt\s+\d+\s+(he|she|they)\s+(became|made|built|earned|turned)"
+    r"|\bthis\s+(trader|guy|girl|kid|teen|professor|coder|hacker)\s+(turned|made|figured|cracked|built|earned)"
+    r"|\bclaims\s+(to|that)\s+\w+\s+(made|earned|turned)"
+    r"|grabbed\s+a\s+screenshot"
+    # Thread bait
+    r"|🧵|thread\s*👇|👇\s*thread"
+    # Copy-trading affiliate platforms (tweet-level)
+    r"|\bKreo\b|auto[\s-]mirror|track/copy|copy[\s-]trade\s*platform"
+    r"|add\s+his\s+wallet\s*[:\[]|\beffortless\s+gains\b"
+    r"|\bmind\s+blown\b"  # specific clickbait opener (slash1sol used this)
+    r")",
+    re.IGNORECASE,
+)
+
+
+def fetch_pinned_tweet(handle: str, pinned_id: str) -> dict | None:
+    """Fetch a single tweet by ID via twapi. Cheap (~15 credits)."""
+    import subprocess
+    import urllib.request
+    token = open("/tmp/.twapi_key").read().strip()
+    url = f"https://api.twitterapi.io/twitter/tweets?tweet_ids={pinned_id}"
+    req = urllib.request.Request(url, headers={"X-API-Key": token})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            body = json.load(r)
+    except Exception:
+        return None
+    tweets = body.get("tweets", [])
+    return tweets[0] if tweets else None
+
+
+def pinned_is_kol(handle: str, pinned_ids: list) -> tuple[bool, str]:
+    """Check if pinned tweet shows KOL/affiliate pattern. Returns (is_kol, reason)."""
+    if not pinned_ids:
+        return False, "no-pinned"
+    pinned = fetch_pinned_tweet(handle, pinned_ids[0])
+    if not pinned:
+        return False, "fetch-failed"
+    text = pinned.get("text") or ""
+    if TWEET_KOL_PATTERNS.search(text):
+        m = TWEET_KOL_PATTERNS.search(text)
+        return True, f"pinned-kol: '{m.group(0)[:40]}'"
+    return False, "ok"
 
 
 def score_bio(bio: str) -> tuple[int, list[str]]:
@@ -376,6 +487,8 @@ def audit(handle: str) -> dict:
                           r"buy\s*\$\w+|pumping|moonshot)\b", re.IGNORECASE)
     niche_hits = sum(1 for t in recent if niche_re.search(t.get("text") or ""))
     spam_hits = sum(1 for t in recent if spam_re.search(t.get("text") or ""))
+    # Tweet-level KOL/affiliate detection (counts tweets with KOL pattern in last 10)
+    kol_tweet_hits = sum(1 for t in recent if TWEET_KOL_PATTERNS.search(t.get("text") or ""))
 
     # Niche engagement quality: do their NICHE tweets get any engagement?
     # Off-niche viral tweets shouldn't carry an account that doesn't post about our space.
@@ -386,10 +499,18 @@ def audit(handle: str) -> dict:
     ]
     niche_engagement_sum = sum(niche_engagements)
 
+    # Pinned-tweet check — KOLs pin their best paid-promo tweet
+    pinned_ids = p.get("pinned_tweet_ids") or []
+    pinned_kol, pinned_reason = pinned_is_kol(handle, pinned_ids)
+
     # Gates
     hard = []
-    # HARD REJECT on bio: polymarket / zscdao / alpha caller — KOL ecosystem markers
+    # HARD REJECT on bio: polymarket / zscdao / alpha caller / jup_predict — KOL ecosystem markers
     hard.append(("bio_not_kol",     not bio_hard_reject))
+    # HARD REJECT on pinned tweet (affiliate / copy-trading / clickbait)
+    hard.append(("pinned_not_kol",  not pinned_kol))
+    # HARD REJECT on tweets: too many KOL/affiliate patterns in last 10 = paid promoter
+    hard.append(("tweets_not_kol",  kol_tweet_hits <= 2))
     hard.append(("bio_signal",      bio_score >= 1 or len(p.get("sources", [])) >= 2))
     hard.append(("follower_band",   1000 <= followers <= 200_000))
     hard.append(("age>=1y",         age_days >= 365))
@@ -443,6 +564,9 @@ def audit(handle: str) -> dict:
         "niche_hits_last10": niche_hits,
         "niche_engagement_sum": niche_engagement_sum,
         "spam_hits_last10": spam_hits,
+        "kol_tweet_hits_last10": kol_tweet_hits,
+        "pinned_kol": pinned_kol,
+        "pinned_reason": pinned_reason,
         "reply_behavior": has_reply_behavior,
         "hard_gates": {k: v for k, v in hard},
         "soft_gates": {k: v for k, v in soft},
