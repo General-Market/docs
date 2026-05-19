@@ -71,39 +71,6 @@ function SectionHeader({ title, meta }: { title: string; meta?: string }) {
   )
 }
 
-function HeroStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div>
-      <div
-        style={{
-          fontFamily: 'var(--apple-font-display)',
-          fontSize: 'clamp(40px, 5vw, 56px)',
-          fontWeight: 600,
-          letterSpacing: 'var(--apple-track-tighter)',
-          color: TEXT,
-          lineHeight: 1,
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 12,
-          color: TERTIARY,
-          letterSpacing: '+0.011em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-          marginTop: 12,
-        }}
-      >
-        {label}
-      </div>
-    </div>
-  )
-}
-
 export default function AntiCheatFlagsPage() {
   const totalIncidents = VENUES.reduce((acc, v) => acc + v.incidents.length, 0)
   const totalEdges = EDGE_TOPICS.length
@@ -134,48 +101,32 @@ export default function AntiCheatFlagsPage() {
                 className="font-semibold"
                 style={{
                   fontFamily: 'var(--apple-font-display)',
-                  fontSize: 'clamp(56px, 8vw, 96px)',
+                  fontSize: 'clamp(40px, 6.4vw, 80px)',
                   fontWeight: 600,
                   letterSpacing: 'var(--apple-track-tighter)',
-                  lineHeight: 1.0714,
+                  lineHeight: 1.05,
                   color: TEXT,
-                  maxWidth: 920,
+                  maxWidth: 980,
                   fontFeatureSettings: '"ss01"',
                 }}
               >
-                Eleven venues. One ledger.
+                The first exchange to publish how rigged this industry is. And the first to fix it.
               </h1>
             </Reveal>
             <Reveal delay={0.12}>
               <p
                 style={{
                   fontFamily: 'var(--apple-font-text)',
-                  fontSize: 21,
-                  lineHeight: 1.38,
+                  fontSize: 19,
+                  lineHeight: 1.5,
                   letterSpacing: 'var(--apple-track-tight)',
                   color: SECONDARY,
-                  marginTop: 20,
-                  maxWidth: 734,
+                  marginTop: 24,
+                  maxWidth: 820,
                 }}
               >
-                The first exchange to publish how rigged this industry is. And the first to fix it.
+                We pulled the receipts on {VENUES.length} venues and {totalIncidents} documented incidents, catalogued {totalEdges} distinct mechanisms — colocation cabinets, payment for order flow, VIP fee tiers, b-book counterparties, validator clustering, sniper RPC — and found that the cumulative tax on a retail trader doing a thousand round-trips ranges from 137% to 626% depending on which exchange takes the order, never disclosed on the public page, never priced, never refunded.
               </p>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <div
-                className="grid grid-cols-3"
-                style={{
-                  marginTop: 64,
-                  paddingTop: 28,
-                  borderTop: `1px solid ${LINE}`,
-                  columnGap: 24,
-                }}
-              >
-                <HeroStat value={String(totalEdges)} label="Mechanisms" />
-                <HeroStat value={String(VENUES.length)} label="Venues" />
-                <HeroStat value={String(totalIncidents)} label="Receipts on file" />
-              </div>
             </Reveal>
           </section>
 
