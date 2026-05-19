@@ -79,7 +79,7 @@ def session_spent_credits() -> int:
     if not LEDGER.exists():
         return 0
     total = 0
-    for line in LEDGER.read_text().splitlines():
+    for line in LEDGER.read_text().split("\n"):
         if not line.strip():
             continue
         try:
@@ -144,7 +144,7 @@ def metered_call(label: str, path: str, params: dict | None,
 def _load_jsonl(p: Path) -> list[dict]:
     if not p.exists():
         return []
-    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    return [json.loads(l) for l in p.read_text().split("\n") if l.strip()]
 
 
 def _write_jsonl(p: Path, rows: list[dict]) -> None:
@@ -190,7 +190,12 @@ def upsert_profile(twapi_user: dict) -> None:
     found = False
     for i, r in enumerate(rows):
         if (r.get("screen_name") or "").lower() == sn.lower():
-            r.update(new)
+            # Merge: only overwrite a field if the new value is non-empty.
+            # The followers endpoint returns thin author objects with empty bios,
+            # which used to clobber rich data from userinfo.
+            for k, v in new.items():
+                if v not in (None, "", [], {}):
+                    r[k] = v
             r["last_seen"] = now_iso()
             sources = r.setdefault("sources", [])
             if "twapi" not in sources:

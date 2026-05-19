@@ -231,56 +231,36 @@ _ALL_NICHE_PATTERNS = [p for patterns in NICHE_GROUPS.values() for p in patterns
 NICHE_PATTERN = "(?i)" + "|".join(f"(?:{p})" for p in _ALL_NICHE_PATTERNS)
 
 
-# HARD REJECT — bio markers that = automatic FAIL. KOL ecosystem signals.
+# HARD REJECT — only the three platforms whose KOL ecosystems are off-target.
+# Affiliates / promo codes / clickbait on OTHER platforms are fine.
 BIO_HARD_REJECT = re.compile(
     r"\b("
-    r"polymarket"            # too KOL-saturated; real Polymarket operators don't badge themselves
-    r"|zscdao|zcdao"         # KOL/farmer community
-    r"|jup_?predict|jupredict|poly_?matches|polymatches"   # paid-promo platforms
-    r"|alpha\s*caller|alpha\s*hunter"
-    r"|maxi\b"               # "polymarket maxi", "BTC maxi" etc
-    r"|DM\s*for\s*(promo|collab|business|marketing|inquir)"
-    r"|sponsored|commissioned"
+    r"polymarket"
+    r"|kalshi"
+    r"|meteora"
+    r"|jupiterexchange|jupiter\s*perps|jupiter\s*predict|jup\.ag"
+    r"|jup_?predict|jupredict|poly_?matches|polymatches"   # Polymarket/Jupiter-adjacent affiliate platforms
+    r"|zscdao|zcdao"         # Polymarket/Kalshi KOL community
     r")\b",
     re.IGNORECASE,
 )
 
 
-# TWEET-LEVEL KOL signal — count occurrences across last 10 tweets.
-# If >=3 of 10 tweets show these patterns, the account is a KOL/affiliate, not an operator.
+# TWEET-LEVEL KOL signal — count occurrences in last 10 tweets.
+# Focus narrowly on Polymarket / Kalshi / Meteora affiliate behavior. >=3 hits = KOL.
 TWEET_KOL_PATTERNS = re.compile(
     r"("
-    # Money-story clickbait
-    r"\$\d+\s*into\s*\$[\d,]+"
-    r"|turn(ed|s)?\s*\$\d+\s*into"
-    r"|made\s*\$[\d,]+(k|K|m|M)?\s*(in|from|on|with|off)"
-    r"|earned\s*\$[\d,]+"
-    # Copy-trading / affiliate calls
-    r"|\bcopy\s*(him|her|this|that|the)\b"
-    r"|\bcopy\s*trading|copy\s*trade\b"
-    r"|\bfollow\s*(him|her|this\s*account)\b"
-    # Leak / exposed / secret clickbait
-    r"|\bleaked\s+(blueprint|strategy|secret|playbook)\b|exposed\s+(by|the)\b"
-    r"|\bthe\s+secret\s+(to|of|behind)\b"
-    r"|\bnobody\s+(talks\s*about|knows|notices)\b"
-    r"|\byou\s+won'?t\s+believe\b"
-    # Affiliation platforms (tweet-level, not bio)
-    r"|@jup_?predict|@poly_?matches|@polymarket|@kalshi"
+    # @-mentions of disqualifying platforms
+    r"@polymarket\b|@kalshi\b|@meteora\b|@jupiterexchange\b"
+    r"|@jup_?predict|@poly_?matches"
+    # Bare platform names — if recurring in last 10 = KOL audience
+    r"|\b(polymarket|kalshi|meteora)\b"
+    r"|\b(jupiterexchange|jupiter\s*perps|jupiter\s*predict)\b"
     r"|\b(jup_?predict|poly_?matches|polymatches)\b"
-    # Bare polymarket/kalshi mentions — if multiple in last 10 → KOL pattern
-    r"|\b(polymarket|kalshi)\b"
-    # Storytelling intros (a [profession] who...; At [age] he/she...; This [noun] [verb-ed])
-    r"|\bA\s+(math|computer|hedge\s*fund|wall\s*street|former|young|retired|legendary)\s+\w+\s+(who|that|figured|turned|made|cracked|built|got)"
-    r"|\bAt\s+\d+\s+(he|she|they)\s+(became|made|built|earned|turned)"
-    r"|\bthis\s+(trader|guy|girl|kid|teen|professor|coder|hacker)\s+(turned|made|figured|cracked|built|earned)"
-    r"|\bclaims\s+(to|that)\s+\w+\s+(made|earned|turned)"
-    r"|grabbed\s+a\s+screenshot"
-    # Thread bait
-    r"|🧵|thread\s*👇|👇\s*thread"
-    # Copy-trading affiliate platforms (tweet-level)
-    r"|\bKreo\b|auto[\s-]mirror|track/copy|copy[\s-]trade\s*platform"
-    r"|add\s+his\s+wallet\s*[:\[]|\beffortless\s+gains\b"
-    r"|\bmind\s+blown\b"  # specific clickbait opener (slash1sol used this)
+    # Direct affiliate signals tied to these platforms
+    r"|add\s+his\s+wallet\s*[:\[].*?(polymarket|kalshi|jupiter|meteora)"
+    r"|track/copy.*?(polymarket|kalshi|jupiter|meteora)"
+    r"|auto[\s-]mirror.*?(polymarket|kalshi|jupiter|meteora)"
     r")",
     re.IGNORECASE,
 )
@@ -333,7 +313,7 @@ def score_bio(bio: str) -> tuple[int, list[str]]:
 def load_jsonl(p):
     if not p.exists():
         return []
-    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    return [json.loads(l) for l in p.read_text().split("\n") if l.strip()]
 
 
 def latest_profile(handle):
@@ -479,6 +459,34 @@ def audit(handle: str) -> dict:
     median_engage_rate = rates[len(rates)//2] if rates else 0
     median_vf_ratio = vf_ratios[len(vf_ratios)//2] if vf_ratios else 0
     median_deep_share = deep_shares[len(deep_shares)//2] if deep_shares else 0
+    # Outlier-resistant stats — drop top 2 (reply farm / viral) + bottom 1 from the engage list,
+    # average the rest. This kills single-tweet inflation.
+    if len(rates) >= 5:
+        trimmed_engage_rate = sum(rates[1:-2]) / len(rates[1:-2])
+    else:
+        trimmed_engage_rate = median_engage_rate
+    # Fraction of tweets above flat 2.5% (for diagnostic only)
+    frac_above_25 = (sum(1 for r in rates if r >= 0.025) / len(rates)) if rates else 0
+
+    # VIEW-SCALED engagement: a tweet at 3k views gets a higher bar than one at 1M views.
+    # Engagement rate falls naturally with reach — algorithmic distribution to non-engaged users.
+    # Each tweet is graded against the bar for its own view tier.
+    def required_rate(views: int) -> float:
+        if views < 1000:    return 0.025   # <1k views: 2.5%
+        if views < 5000:    return 0.020   # 1k-5k:    2.0%
+        if views < 20000:   return 0.012   # 5k-20k:   1.2%
+        if views < 100000:  return 0.007   # 20k-100k: 0.7%
+        if views < 500000:  return 0.004   # 100k-500k: 0.4%
+        return 0.002                        # 500k+:    0.2%
+    per_tweet_pass = []
+    for t in recent:
+        v = int(t.get("views") or 0)
+        if v <= 0:
+            continue
+        e = int(t.get("favorites", 0) or 0) + int(t.get("retweets", 0) or 0) \
+            + int(t.get("quotes", 0) or 0) + int(t.get("replies", 0) or 0)
+        per_tweet_pass.append(1 if (e / v) >= required_rate(v) else 0)
+    frac_tier_pass = (sum(per_tweet_pass) / len(per_tweet_pass)) if per_tweet_pass else 0
 
     # Niche regex — structured keyword groups. Multi-word jargon required for ambiguous terms.
     # Each group below is documented and grep-able. Print with `python3 audit.py --keywords`.
@@ -511,14 +519,17 @@ def audit(handle: str) -> dict:
     hard.append(("pinned_not_kol",  not pinned_kol))
     # HARD REJECT on tweets: too many KOL/affiliate patterns in last 10 = paid promoter
     hard.append(("tweets_not_kol",  kol_tweet_hits <= 2))
-    hard.append(("bio_signal",      bio_score >= 1 or len(p.get("sources", [])) >= 2))
+    # bio_signal: passes if bio matches niche OR cross-source confirmed OR strong recent content
+    # (institutional brands often have minimal bios — content carries the signal)
+    hard.append(("bio_signal",      bio_score >= 1 or len(p.get("sources", [])) >= 2 or niche_hits >= 5))
     hard.append(("follower_band",   1000 <= followers <= 200_000))
     hard.append(("age>=1y",         age_days >= 365))
     hard.append(("active<=14d",     0 <= latest_age <= 14))
     hard.append(("cadence_0.5_30",  0.5 <= posts_per_day <= 30))
     hard.append(("no_spam_flood",   spam_hits <= 2))
-    # Engagement rate floor — relaxed from 3% to 2.5%
-    hard.append(("engage_rate>=2.5%", median_engage_rate >= 0.025))
+    # Engagement consistency — at least 40% of tweets must clear the bar for their own view tier.
+    # This is outlier-resistant AND view-scaled (a tweet at 3k views vs 1M views = different bars).
+    hard.append(("engage_consistent", frac_tier_pass >= 0.4))
     # Niche fit on RECENT content (bio alone doesn't carry; account must
     # currently be posting about our space, not baguettes in Paris)
     hard.append(("niche_recent>=3", niche_hits >= 3))
@@ -560,6 +571,9 @@ def audit(handle: str) -> dict:
         "median_views_last10": median_views,
         "median_vf_ratio": round(median_vf_ratio, 3),
         "median_engage_rate_pct": round(median_engage_rate * 100, 3),
+        "trimmed_engage_rate_pct": round(trimmed_engage_rate * 100, 3),
+        "frac_above_2.5_pct": round(frac_above_25 * 100, 1),
+        "frac_tier_pass_pct": round(frac_tier_pass * 100, 1),
         "median_deep_share_pct": round(median_deep_share * 100, 1),
         "niche_hits_last10": niche_hits,
         "niche_engagement_sum": niche_engagement_sum,
