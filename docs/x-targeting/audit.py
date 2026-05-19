@@ -64,16 +64,29 @@ DROP = [
 NICHE_GROUPS: dict[str, list[str]] = {
     "MM operator language": [
         r"market[\s-]?mak(ing|er)", r"MM[\s-](bot|firm|trader|desk|operator|game)",
-        r"\bmake\s*market(s)?\b", r"\bprovide\s*liquidity\b",
+        r"\bmake\s*market(s)?\b", r"\bmaking\s*markets\b", r"\bmade\s*markets\b",
+        r"\bused\s+to\s+make\s+markets\b",
+        r"\bprovide\s*liquidity\b",
         r"\binventory\s*risk\b", r"\badverse\s*selection\b", r"\btoxic\s*flow\b",
         r"\binternaliz(e|ation)\b",  # "internalize flow"
         r"\bquot(e|ing)\s*(engine|spread|surface)\b",
         r"\btwo[\s-]sided\s*(quote|market)\b",
+        r"\bOTC\b", r"\bone[\s-]stop\s*shop\b",   # OTC desks
+        r"\b(wintermute|GSR|cumberland|flowdesk|amber|kairon|caladan|QCP|auros|optiver|akuna|tower|jane\s*street)\b",
+        r"\b(cyclos|cyclosresearch|QFEX|hyperliquid|hyperliquidx|hyperliquidX|knmlabs|Presto|presto_labs)\b",
+        r"\badversely\s+selected\b",   # @bookdepth signal
+        r"\bconvexity\b",  # @oxbquant signal
     ],
     "HFT / latency": [
         r"\bHFT\b", r"\bhigh[\s-]frequency\b", r"\blow[\s-]latency\b",
         r"\bco[\s-]location|colo\b", r"\btick[\s-]to[\s-]trade\b",
         r"\bnanosecond|microsecond\b",
+        r"\blatency\s*(nerd|trader|game|wars|engineer)\b",
+        r"\bsub[\s-]micro\b", r"\bmillisecond\s*dream\b",
+        r"\bFPGA\b", r"\bperformance\s*engineer\b",
+        r"\b(QD|QR|QT)\b\s+@",  # @ChrisName QR / QD shorthand
+        r"\bquant\s*(dev|researcher|trader)\b",
+        r"\bGreek\s+letter\b|δ\s*γ\s*θ|γ\s*θ|δ\s*γ",  # Greek letter clusters in bio
     ],
     "Quant / research": [
         r"\bquant(s|itative)?\b", r"\bquant\s*(research|trader|dev|firm|fund|desk)\b",
