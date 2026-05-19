@@ -81,32 +81,17 @@ export default function AntiCheatFlagsPage() {
         <div className="acf-shell mx-auto w-full" style={{ maxWidth: 1068, padding: '0 24px' }}>
           {/* HERO */}
           <section className="acf-hero" style={{ padding: '120px 0 80px' }}>
-            <Reveal>
-              <div
-                style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: TERTIARY,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 20,
-                }}
-              >
-                Anti-Cheat · Case file
-              </div>
-            </Reveal>
             <Reveal mask delay={0.04}>
               <h1
                 className="font-semibold"
                 style={{
                   fontFamily: 'var(--apple-font-display)',
-                  fontSize: 'clamp(40px, 6.4vw, 80px)',
+                  fontSize: 'clamp(32px, 4.6vw, 56px)',
                   fontWeight: 600,
                   letterSpacing: 'var(--apple-track-tighter)',
-                  lineHeight: 1.05,
+                  lineHeight: 1.1,
                   color: TEXT,
-                  maxWidth: 980,
+                  maxWidth: 880,
                   fontFeatureSettings: '"ss01"',
                 }}
               >
