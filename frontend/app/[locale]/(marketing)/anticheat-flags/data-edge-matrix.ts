@@ -307,66 +307,6 @@ export const EDGE_TOPICS: EdgeTopic[] = [
 
   // ─── LATENCY ────────────────────────────────────────────────────────────
   {
-    slug: 'mev-mempool',
-    category: 'latency',
-    name: 'Mempool / pre-confirmation access',
-    heading: 'Unfair mempool access',
-    lead: 'Retail baseline = 0. Bar = USD millions per year extracted from users at the venue\'s pre-confirmation lane. Sandwich bots, sequencer privilege, gossip-priority auctions.',
-    unit: '$M / yr extracted from retail',
-    generalMarketLabel: 'Blocks last a minute. The mempool race shrinks to a rounding error.',
-    rows: [
-      {
-        slug: 'solana-jito-tips',
-        name: 'Pump.fun / Solana',
-        tag: 'Jito tip volume',
-        value: 483,
-        gatedValue: 483,
-        lane: 'Retail: pays for inclusion | MM: collects tips + sandwich. DL News measured ~$9.3M/week ($483M/yr annualized) flowing through Jito tips',
-        barrier: 'Validator staking + Jito bundle access',
-        sources: [
-          { label: 'DL News · Solana users use Jito to stop sandwich attacks and MEV', url: 'https://www.dlnews.com/articles/defi/solana-users-use-jito-to-stop-sandwich-attacks-and-mev/' },
-          { label: 'Solana Foundation · Gulf Stream protocol', url: 'https://solana.com/news/gulf-stream--solana-s-mempool-less-transaction-forwarding-protocol' },
-        ],
-      },
-      {
-        slug: 'hyperliquid-gossip-priority',
-        name: 'Hyperliquid',
-        tag: 'HYPE gossip auction',
-        value: 5,
-        gatedValue: 5,
-        lane: 'Retail: 0 | MM: $5M/yr (HYPE-denominated Dutch auction sells gossip priority ~25ms ahead of L1 each 3-min slot)',
-        barrier: 'HYPE bid for priority slot',
-        sources: [
-          { label: 'Dwellir · Hyperliquid Priority Fees Guide', url: 'https://www.dwellir.com/blog/hyperliquid-priority-fees' },
-        ],
-      },
-      {
-        slug: 'polymarket-polygon-mempool',
-        name: 'Polymarket',
-        tag: 'Polygon private mempool',
-        value: 2,
-        gatedValue: 2,
-        lane: 'Retail: 0 | MM: $2M/yr (Polygon shipped private mempool RPC April 2026 citing Polymarket frontrunning; opt-in only)',
-        barrier: 'Private RPC subscription',
-        sources: [
-          { label: 'Polygon · Private Mempool launch', url: 'https://polygon.technology/blog/polygon-launches-private-mempool-mev-protection-is-now-a-one-line-integration' },
-        ],
-      },
-      {
-        slug: 'coinbase-base-sequencer',
-        name: 'Coinbase',
-        tag: 'Base single sequencer',
-        value: 1,
-        gatedValue: 1,
-        lane: 'Retail: 0 | MM: $1M/yr (Base has one sequencer. Coinbase. Every pending tx passes through Coinbase first)',
-        barrier: 'Sequencer operator role',
-        sources: [
-          { label: 'Base docs · network information', url: 'https://docs.base.org/base-chain/network-information/base-network' },
-        ],
-      },
-    ],
-  },
-  {
     slug: 'sip-vs-direct-feeds',
     category: 'latency',
     name: 'Premium vs public market data',
@@ -517,7 +457,7 @@ export const EDGE_TOPICS: EdgeTopic[] = [
     category: 'execution',
     name: 'Matching-priority privileges',
     heading: 'Unfair matching engine priority',
-    lead: 'Retail baseline = 0. Bar = bps priority advantage a top-tier MM extracts from amend-keep, operator authority, or — on AMMs and L1s where there is no orderbook queue — MEV: Jito bundle ordering and gossip-priority auctions that decide which tx lands in the same slot. Different surface, same privilege. 0 = strict FIFO with no edit rights.',
+    lead: 'The matching engine is whatever decides which order fills first. On a classical CLOB that means the FIFO book and whatever edit rights the venue grants — amend-keep, pro-rata, operator authority. On an AMM there is no book; the matching engine is the mempool, and whoever bundles or tips highest lands ahead of whoever does not. On an L1 with a public mempool, retail orders are visible before they confirm, and the venue\'s pending traffic is sequenced by validators, by Jito tip auctions, by gossip-priority auctions, by a single sequencer in the case of Base. Same privilege, different layer. Retail baseline = 0. Bar = bps priority a top-tier MM extracts. 0 = strict FIFO with no edit rights and no public mempool to read.',
     unit: 'bps priority edge',
     generalMarketLabel: 'Large losses are capped per order. A whale cannot pick off the small taker.',
     rows: [
@@ -548,13 +488,14 @@ export const EDGE_TOPICS: EdgeTopic[] = [
       {
         slug: 'polymarket-operator-fifo',
         name: 'Polymarket',
-        tag: 'Operator-mediated',
+        tag: 'Operator + Polygon mempool',
         value: 5,
         gatedValue: 5,
-        lane: 'Retail: 0 | MM: ~5 bps (matching off-chain by Polymarket-controlled operator set; exclusive matchOrders authority)',
-        barrier: 'Operator role',
+        lane: 'Retail: 0 | MM: ~5 bps (matching off-chain by Polymarket-controlled operator set with exclusive matchOrders authority; settlement on Polygon\'s public mempool, which shipped a private-mempool RPC in April 2026 citing Polymarket front-running)',
+        barrier: 'Operator role + public-mempool exposure',
         sources: [
           { label: 'Polymarket CTF Exchange · Overview.md', url: 'https://github.com/Polymarket/ctf-exchange/blob/main/docs/Overview.md' },
+          { label: 'Polygon · Private Mempool launch', url: 'https://polygon.technology/blog/polygon-launches-private-mempool-mev-protection-is-now-a-one-line-integration' },
         ],
       },
       {
@@ -584,13 +525,13 @@ export const EDGE_TOPICS: EdgeTopic[] = [
       {
         slug: 'coinbase-fifo',
         name: 'Coinbase',
-        tag: 'Strict FIFO 500k/s',
-        value: 0,
-        gatedValue: 0,
-        lane: 'Retail: 0 | MM: 0 (continuous price-time priority; engine rated up to 500k orders/second)',
-        barrier: 'Strict FIFO',
+        tag: 'FIFO book · single sequencer on Base',
+        value: 1,
+        gatedValue: 1,
+        lane: 'Retail: 0 | MM: ~1 bps (Coinbase Exchange is strict FIFO at 500k orders/s; on Base, Coinbase runs the only sequencer — every pending tx passes through Coinbase before it lands)',
+        barrier: 'Sequencer operator role on Base',
         sources: [
-          { label: 'Coinbase Markets Trading Rules', url: 'https://www.coinbase.com/legal/trading_rules' },
+          { label: 'Base docs · network information', url: 'https://docs.base.org/base-chain/network-information/base-network' },
         ],
       },
       {
