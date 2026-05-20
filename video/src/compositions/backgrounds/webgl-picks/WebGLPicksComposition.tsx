@@ -48,6 +48,7 @@ import { ClayFlow } from "./ClayFlow";
 import { WorldCup2026 } from "./WorldCup2026";
 import { LiquidMetalButton } from "./LiquidMetalButton";
 import { Projection } from "./Projection";
+import { PremierLeague } from "./PremierLeague";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -103,7 +104,10 @@ const ALL_SCENES = [
   { id: "WP-WorldCup2026", component: WorldCup2026 },
   { id: "WP-LiquidMetalButton", component: LiquidMetalButton },
   { id: "WP-Projection", component: Projection },
-];
+  // reelOnly: appears in the WebGLPicks reel but does not get its own
+  // top-level composition URL.
+  { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
+] as { id: string; component: React.FC; reelOnly?: boolean }[];
 
 export const WebGLPicksComposition: React.FC = () => {
   return (
@@ -130,11 +134,13 @@ export const webglPicksMeta = {
   durationInFrames: SCENE_DURATION * ALL_SCENES.length,
 };
 
-export const webglSceneMetas = ALL_SCENES.map((scene) => ({
-  id: scene.id,
-  component: scene.component,
-  width: W,
-  height: H,
-  fps: FPS,
-  durationInFrames: SCENE_DURATION,
-}));
+export const webglSceneMetas = ALL_SCENES
+  .filter((scene) => !scene.reelOnly)
+  .map((scene) => ({
+    id: scene.id,
+    component: scene.component,
+    width: W,
+    height: H,
+    fps: FPS,
+    durationInFrames: SCENE_DURATION,
+  }));

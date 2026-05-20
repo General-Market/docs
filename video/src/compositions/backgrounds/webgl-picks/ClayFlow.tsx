@@ -170,10 +170,12 @@ export const ClayFlow: React.FC = () => {
 
   // Per-element pop-in: fires when the element's screen X enters the trigger
   // zone. Source used "left right-=150" — so trigger ≈ viewportRight - 150.
+  // Input is negated so the range stays monotonically increasing as required
+  // by Remotion's interpolate; sx decreases as the canvas pans left.
   const screenX = (canvasX: number) => canvasX + panX;
   const popProgress = (canvasX: number) => {
     const sx = screenX(canvasX);
-    return interpolate(sx, [VIEW_W - 150, VIEW_W - 350], [0, 1], {
+    return interpolate(-sx, [-(VIEW_W - 150), -(VIEW_W - 350)], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: Easing.bezier(0.34, 1.56, 0.64, 1), // back.out
@@ -181,13 +183,12 @@ export const ClayFlow: React.FC = () => {
   };
 
   // Per-path draw progress: the source used "left right-=200" → "right center".
-  // We map a path's left edge entering the right-200 column to draw=0, and
-  // its right edge crossing center to draw=1. Simplified to a single window
-  // anchored on the left edge.
+  // Same negation trick — sx falling from VIEW_W-200 to VIEW_W*0.5-200
+  // becomes -sx rising from -(VIEW_W-200) to -(VIEW_W*0.5-200).
   const drawProgress = (d: string) => {
     const lx = leftXOfPath(d);
     const sx = lx + panX;
-    return interpolate(sx, [VIEW_W - 200, VIEW_W * 0.5 - 200], [0, 1], {
+    return interpolate(-sx, [-(VIEW_W - 200), -(VIEW_W * 0.5 - 200)], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: Easing.inOut(Easing.quad),
