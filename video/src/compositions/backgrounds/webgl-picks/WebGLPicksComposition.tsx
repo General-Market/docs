@@ -50,6 +50,13 @@ import { LiquidMetalButton } from "./LiquidMetalButton";
 import { Projection } from "./Projection";
 import { PremierLeague } from "./PremierLeague";
 import { GsapGrid } from "./GsapGrid";
+import { MediaTypeRings } from "./MediaTypeRings";
+import { InitialsRotate } from "./InitialsRotate";
+import { IPhoneWidgets } from "./iPhoneWidgets";
+import { UnderwaterDive } from "./UnderwaterDive";
+import { DudeWalk } from "./DudeWalk";
+import { DashboardReveal } from "./DashboardReveal";
+import { BongoCat } from "./BongoCat";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -106,6 +113,13 @@ const ALL_SCENES = [
   { id: "WP-LiquidMetalButton", component: LiquidMetalButton },
   { id: "WP-Projection", component: Projection },
   { id: "WP-GsapGrid", component: GsapGrid },
+  { id: "WP-MediaTypeRings", component: MediaTypeRings },
+  { id: "WP-InitialsRotate", component: InitialsRotate },
+  { id: "WP-iPhoneWidgets", component: IPhoneWidgets },
+  { id: "WP-UnderwaterDive", component: UnderwaterDive },
+  { id: "WP-DudeWalk", component: DudeWalk },
+  { id: "WP-DashboardReveal", component: DashboardReveal },
+  { id: "WP-BongoCat", component: BongoCat },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
