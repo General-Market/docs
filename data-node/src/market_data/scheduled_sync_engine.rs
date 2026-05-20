@@ -411,12 +411,23 @@ impl ScheduledSyncEngine {
         // Reduces connection hold time from O(N) queries to O(1).
         for chunk in assets.chunks(ASSET_BATCH_SIZE) {
             let mut qb = sqlx::QueryBuilder::new(
-                "INSERT INTO market_assets (asset_id, source, symbol, name, category, is_active, metadata, updated_at) ",
+                "INSERT INTO market_assets (asset_id, source, symbol, name, category, is_active, metadata, tradable_in_ui, ui_rank, updated_at) ",
             );
             qb.push_values(chunk, |mut b, asset| {
                 let name_trunc: String = asset.name.chars().take(200).collect();
                 let symbol_trunc: String = asset.symbol.chars().take(100).collect();
                 let cat_trunc: String = asset.category.as_deref().map(|c| c.chars().take(100).collect()).unwrap_or_default();
+                // Lift curation hints out of metadata into dedicated columns.
+                let tradable = asset
+                    .metadata
+                    .get("tradable_in_ui")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                let ui_rank: Option<i32> = asset
+                    .metadata
+                    .get("ui_rank")
+                    .and_then(|v| v.as_i64())
+                    .and_then(|v| i32::try_from(v).ok());
                 b.push_bind(&asset.asset_id)
                     .push_bind(source_id)
                     .push_bind(symbol_trunc)
@@ -424,6 +435,8 @@ impl ScheduledSyncEngine {
                     .push_bind(cat_trunc)
                     .push_bind(true)
                     .push_bind(&asset.metadata)
+                    .push_bind(tradable)
+                    .push_bind(ui_rank)
                     .push_bind(now);
             });
             qb.push(
@@ -433,6 +446,8 @@ impl ScheduledSyncEngine {
                   category = EXCLUDED.category, \
                   is_active = true, \
                   metadata = EXCLUDED.metadata, \
+                  tradable_in_ui = EXCLUDED.tradable_in_ui, \
+                  ui_rank = EXCLUDED.ui_rank, \
                   updated_at = EXCLUDED.updated_at",
             );
 

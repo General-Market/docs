@@ -9,6 +9,8 @@ use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -19,6 +21,10 @@ use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataS
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/defi.json");
 
+/// Curated DefiLlama whitelist (Phase 1 of the source split).
+/// Maps display source slug → ordered protocol/chain slugs (1-based rank).
+const CURATED_JSON: &str = include_str!("../../../config/dl-curated.json");
+
 /// DefiLlama API base URL (free, no auth required)
 const DEFILLAMA_API_URL: &str = "https://api.llama.fi";
 
@@ -27,6 +33,51 @@ const DEFILLAMA_DEX_URL: &str = "https://api.llama.fi";
 
 /// Request timeout in seconds
 const REQUEST_TIMEOUT_SECS: u64 = 60;
+
+/// Categories from /api/protocols whose TVL=0 rows we keep anyway.
+/// Wallets, bots, trading apps — DefiLlama reports them with no custody, but
+/// we still want them in the catalogue.
+const KEEP_ZERO_TVL_CATEGORIES: &[&str] = &[
+    "wallets",
+    "telegram bot",
+    "trading app",
+    "interface",
+    "ai agents",
+];
+
+/// Reverse index: asset_id → ui_rank (1-based). Built once from CURATED_JSON.
+fn curated_rank_map() -> &'static HashMap<String, i32> {
+    static MAP: OnceLock<HashMap<String, i32>> = OnceLock::new();
+    MAP.get_or_init(|| {
+        let parsed: HashMap<String, Vec<String>> =
+            serde_json::from_str(CURATED_JSON).expect("dl-curated.json must parse");
+        let mut out: HashMap<String, i32> = HashMap::new();
+        for (_source, slugs) in parsed {
+            for (idx, slug) in slugs.iter().enumerate() {
+                let rank = (idx as i32) + 1;
+                let asset_id = if slug.starts_with("chain_") {
+                    slug.clone()
+                } else {
+                    format!("protocol_{}", slug)
+                };
+                // Whichever curated page lists a slug first wins. The 18 pages
+                // are mutually exclusive in practice, so this is just defensive.
+                out.entry(asset_id).or_insert(rank);
+            }
+        }
+        out
+    })
+}
+
+/// Inject `tradable_in_ui` and `ui_rank` into the asset's metadata if curated.
+fn apply_curation(asset: &mut AssetUpdate) {
+    if let Some(&rank) = curated_rank_map().get(&asset.asset_id) {
+        if let Some(obj) = asset.metadata.as_object_mut() {
+            obj.insert("tradable_in_ui".into(), serde_json::Value::Bool(true));
+            obj.insert("ui_rank".into(), serde_json::json!(rank));
+        }
+    }
+}
 
 // ============================================================================
 // Deserialization Helpers
@@ -211,6 +262,54 @@ impl DefiLlamaMarketSource {
         Ok(protocols)
     }
 
+    /// Fetch protocol fees (/overview/fees)
+    async fn fetch_fees(&self) -> Result<Vec<DexProtocol>> {
+        let url = format!(
+            "{}/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true",
+            DEFILLAMA_DEX_URL
+        );
+        let overview: DexOverview = self.http.get_json(&url).await?;
+        let protocols = overview.protocols.unwrap_or_default();
+        info!("Fetched {} fee protocols from DefiLlama", protocols.len());
+        Ok(protocols)
+    }
+
+    /// Fetch protocol daily revenue (/overview/fees?dataType=dailyRevenue)
+    async fn fetch_revenue(&self) -> Result<Vec<DexProtocol>> {
+        let url = format!(
+            "{}/overview/fees?dataType=dailyRevenue&excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true",
+            DEFILLAMA_DEX_URL
+        );
+        let overview: DexOverview = self.http.get_json(&url).await?;
+        let protocols = overview.protocols.unwrap_or_default();
+        info!("Fetched {} revenue protocols from DefiLlama", protocols.len());
+        Ok(protocols)
+    }
+
+    /// Fetch perp DEX volumes (/overview/derivatives)
+    async fn fetch_perp_volumes(&self) -> Result<Vec<DexProtocol>> {
+        let url = format!(
+            "{}/overview/derivatives?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true",
+            DEFILLAMA_DEX_URL
+        );
+        let overview: DexOverview = self.http.get_json(&url).await?;
+        let protocols = overview.protocols.unwrap_or_default();
+        info!("Fetched {} perp protocols from DefiLlama", protocols.len());
+        Ok(protocols)
+    }
+
+    /// Fetch options volumes (/overview/options)
+    async fn fetch_option_volumes(&self) -> Result<Vec<DexProtocol>> {
+        let url = format!(
+            "{}/overview/options?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true",
+            DEFILLAMA_DEX_URL
+        );
+        let overview: DexOverview = self.http.get_json(&url).await?;
+        let protocols = overview.protocols.unwrap_or_default();
+        info!("Fetched {} option protocols from DefiLlama", protocols.len());
+        Ok(protocols)
+    }
+
     /// Get category based on TVL tier
     fn get_tvl_category(tvl: f64) -> String {
         if tvl >= 10_000_000_000.0 {
@@ -293,28 +392,37 @@ impl MarketDataSource for DefiLlamaMarketSource {
             Ok(protocols) => {
                 let count = protocols.len();
                 for protocol in protocols {
-                    if let Some(tvl) = protocol.tvl {
-                        if tvl <= 0.0 { continue; }
-                        let asset_id = format!("protocol_{}", protocol.slug);
-                        let subcategory = protocol.category.as_deref().unwrap_or("protocol").to_lowercase();
-                        let symbol = protocol
-                            .symbol
-                            .clone()
-                            .unwrap_or_else(|| protocol.slug.to_uppercase());
-                        assets.push(AssetUpdate {
-                            asset_id: asset_id.clone(),
-                            symbol: symbol.clone(),
-                            name: protocol.name.clone(),
-                            category: Some("defi".to_string()),
-                            metadata: serde_json::json!({
-                                "api_ref": format!("protocol:{}", protocol.slug),
-                                "subcategory": subcategory,
-                                "active": true,
-                            }),
-                        });
+                    let subcategory = protocol.category.as_deref().unwrap_or("protocol").to_lowercase();
+                    let raw_tvl = protocol.tvl.unwrap_or(0.0);
 
-                        // Companion asset: 24h TVL change %. Moves on its own,
-                        // independent of the slow TVL snapshot.
+                    // Custody-less categories (wallets, bots, trading apps, etc.)
+                    // legitimately report TVL=0. Keep them; drop everyone else.
+                    let keep_zero = KEEP_ZERO_TVL_CATEGORIES.contains(&subcategory.as_str());
+                    if raw_tvl <= 0.0 && !keep_zero {
+                        continue;
+                    }
+
+                    let asset_id = format!("protocol_{}", protocol.slug);
+                    let symbol = protocol
+                        .symbol
+                        .clone()
+                        .unwrap_or_else(|| protocol.slug.to_uppercase());
+                    assets.push(AssetUpdate {
+                        asset_id: asset_id.clone(),
+                        symbol: symbol.clone(),
+                        name: protocol.name.clone(),
+                        category: Some("defi".to_string()),
+                        metadata: serde_json::json!({
+                            "api_ref": format!("protocol:{}", protocol.slug),
+                            "subcategory": subcategory,
+                            "active": true,
+                        }),
+                    });
+
+                    // Companion asset: 24h TVL change %. Moves on its own,
+                    // independent of the slow TVL snapshot. Only meaningful
+                    // when the protocol actually has TVL.
+                    if raw_tvl > 0.0 {
                         assets.push(AssetUpdate {
                             asset_id: format!("{}_change_24h", asset_id),
                             symbol: format!("{}_24H", symbol),
@@ -359,6 +467,49 @@ impl MarketDataSource for DefiLlamaMarketSource {
             Err(e) => warn!("Failed to discover DEXes: {:?}", e),
         }
 
+        // 4. Phase 2 firehose endpoints: fees / revenue / perps / options.
+        // Same schema as /overview/dexs, different prefixes.
+        for (label, prefix, subcategory, fetch_result) in [
+            ("fees", "fees_", "protocol_fees", self.fetch_fees().await),
+            ("revenue", "rev_", "protocol_revenue", self.fetch_revenue().await),
+            ("perps", "perp_24h_", "perp_volume", self.fetch_perp_volumes().await),
+            ("options", "opt_24h_", "option_volume", self.fetch_option_volumes().await),
+        ] {
+            match fetch_result {
+                Ok(rows) => {
+                    let count = rows.len();
+                    for row in &rows {
+                        let slug = row.name.to_lowercase().replace(' ', "_");
+                        if row.total_24h.map_or(false, |v| v > 0.0) {
+                            assets.push(AssetUpdate {
+                                asset_id: format!("{}{}", prefix, slug),
+                                symbol: format!("{}_24H", slug.to_uppercase()),
+                                name: format!(
+                                    "{} 24h {}",
+                                    row.display_name.as_deref().unwrap_or(&row.name),
+                                    label
+                                ),
+                                category: Some("defi".to_string()),
+                                metadata: serde_json::json!({
+                                    "api_ref": format!("{}:{}", subcategory, row.name),
+                                    "subcategory": subcategory,
+                                    "active": true,
+                                }),
+                            });
+                        }
+                    }
+                    info!("Discovered {} {} protocols from DefiLlama", count, label);
+                }
+                Err(e) => warn!("Failed to discover {}: {:?}", label, e),
+            }
+        }
+
+        // Apply curated whitelist last so every asset (including the new
+        // firehose entries) gets a chance to be flagged.
+        for asset in assets.iter_mut() {
+            apply_curation(asset);
+        }
+
         info!("Total DefiLlama discovery: {} assets", assets.len());
         Ok(assets)
     }
@@ -391,6 +542,22 @@ impl MarketDataSource for DefiLlamaMarketSource {
         let dex_30d_ids: Vec<&String> = asset_ids
             .iter()
             .filter(|id| id.starts_with("dex_30d_"))
+            .collect();
+        let fees_ids: Vec<&String> = asset_ids
+            .iter()
+            .filter(|id| id.starts_with("fees_"))
+            .collect();
+        let rev_ids: Vec<&String> = asset_ids
+            .iter()
+            .filter(|id| id.starts_with("rev_"))
+            .collect();
+        let perp_ids: Vec<&String> = asset_ids
+            .iter()
+            .filter(|id| id.starts_with("perp_24h_"))
+            .collect();
+        let opt_ids: Vec<&String> = asset_ids
+            .iter()
+            .filter(|id| id.starts_with("opt_24h_"))
             .collect();
 
         // 1. Fetch chain TVLs if needed
@@ -532,6 +699,75 @@ impl MarketDataSource for DefiLlamaMarketSource {
             }
         }
 
+        // 4. Phase 2: fees / revenue / perps / options.
+        // Each endpoint returns the same DexProtocol shape; route by prefix.
+        struct Firehose<'a> {
+            label: &'a str,
+            prefix: &'a str,
+            wanted: &'a [&'a String],
+            rows: Result<Vec<DexProtocol>>,
+        }
+
+        let firehoses = vec![
+            Firehose {
+                label: "fees",
+                prefix: "fees_",
+                wanted: &fees_ids,
+                rows: if fees_ids.is_empty() { Ok(Vec::new()) } else { self.fetch_fees().await },
+            },
+            Firehose {
+                label: "revenue",
+                prefix: "rev_",
+                wanted: &rev_ids,
+                rows: if rev_ids.is_empty() { Ok(Vec::new()) } else { self.fetch_revenue().await },
+            },
+            Firehose {
+                label: "perps",
+                prefix: "perp_24h_",
+                wanted: &perp_ids,
+                rows: if perp_ids.is_empty() { Ok(Vec::new()) } else { self.fetch_perp_volumes().await },
+            },
+            Firehose {
+                label: "options",
+                prefix: "opt_24h_",
+                wanted: &opt_ids,
+                rows: if opt_ids.is_empty() { Ok(Vec::new()) } else { self.fetch_option_volumes().await },
+            },
+        ];
+
+        for fh in firehoses {
+            if fh.wanted.is_empty() {
+                continue;
+            }
+            match fh.rows {
+                Ok(rows) => {
+                    for row in rows {
+                        let slug = row.name.to_lowercase().replace(' ', "_");
+                        let asset_id = format!("{}{}", fh.prefix, slug);
+                        if fh.wanted.contains(&&asset_id) {
+                            if let Some(vol) = row.total_24h {
+                                let change_pct =
+                                    row.change_1d.and_then(|v| Decimal::try_from(v).ok());
+                                results.push(PriceUpdate {
+                                    asset_id,
+                                    symbol: format!("{}_24H", slug.to_uppercase()),
+                                    value: Decimal::try_from(vol).unwrap_or_default(),
+                                    prev_close: None,
+                                    change_pct,
+                                    volume_24h: row
+                                        .total_24h
+                                        .and_then(|v| Decimal::try_from(v).ok()),
+                                    market_cap: None,
+                                    fetched_at: now,
+                                });
+                            }
+                        }
+                    }
+                }
+                Err(e) => warn!("Failed to fetch {} for prices: {:?}", fh.label, e),
+            }
+        }
+
         debug!(
             "Fetched {}/{} DeFi prices from DefiLlama",
             results.len(),
@@ -606,5 +842,45 @@ mod tests {
         let slug = "aave-v3";
         let asset_id = format!("protocol_{}", slug);
         assert_eq!(asset_id, "protocol_aave-v3");
+    }
+
+    #[test]
+    fn test_curated_map_parses() {
+        let map = curated_rank_map();
+        // chain entries keep their "chain_" prefix verbatim
+        assert_eq!(map.get("chain_ethereum"), Some(&1));
+        // protocol entries get the "protocol_" prefix prepended
+        assert_eq!(map.get("protocol_aave-v3"), Some(&1));
+        assert_eq!(map.get("protocol_uniswap-v3"), Some(&2));
+        // unknown slug → absent
+        assert!(map.get("protocol_does-not-exist").is_none());
+    }
+
+    #[test]
+    fn test_apply_curation_writes_flags() {
+        let mut asset = AssetUpdate {
+            asset_id: "protocol_lido".to_string(),
+            symbol: "LDO".into(),
+            name: "Lido".into(),
+            category: Some("defi".to_string()),
+            metadata: serde_json::json!({"subcategory": "liquid staking"}),
+        };
+        apply_curation(&mut asset);
+        assert_eq!(asset.metadata.get("tradable_in_ui").and_then(|v| v.as_bool()), Some(true));
+        assert_eq!(asset.metadata.get("ui_rank").and_then(|v| v.as_i64()), Some(1));
+    }
+
+    #[test]
+    fn test_apply_curation_skips_uncurated() {
+        let mut asset = AssetUpdate {
+            asset_id: "protocol_random-thing".to_string(),
+            symbol: "RND".into(),
+            name: "Random".into(),
+            category: Some("defi".to_string()),
+            metadata: serde_json::json!({"subcategory": "misc"}),
+        };
+        apply_curation(&mut asset);
+        assert!(asset.metadata.get("tradable_in_ui").is_none());
+        assert!(asset.metadata.get("ui_rank").is_none());
     }
 }

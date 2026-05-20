@@ -1,0 +1,19 @@
+{
+  "defillama-derivatives": ["jupiter-perpetual-exchange","hyperliquid-hlp","gmx-v2-perps","extended","derive-v2","dydx-v4","ostium","avantis","decibel","gmtrade"],
+  "defillama-dexs": ["pancakeswap-amm","uniswap-v3","curve-dex","raydium-amm","uniswap-v2","uniswap-v4","quickswap-dex","pancakeswap-amm-v3","orca-dex","pumpswap"],
+  "defillama-launchpad": ["pinksale","aerodrome-ignition","dxsale","juicebox-v1","bio-protocol","four.meme","sunpump","rise.rich","deeplock","flaunch"],
+  "defillama-prediction-market": ["polymarket-international","predict-fun","opinion","sport.fun","rain","gnosis-protocol-v1","augur","seer","overtime","liquidity-house"],
+  "defillama-rwa": ["tether-gold","blackrock-buidl","circle-usyc","ondo-yield-assets","paxos-gold","centrifuge-protocol","spiko","ethena-usdtb","ondo-global-markets","anemoy-capital"],
+  "defillama-liquid-staking": ["lido","binance-staked-eth","sanctum-validator-lsts","binance-staked-sol","kinetiq-khype","rocket-pool","jito-liquid-staking","jupiter-staked-sol","stakewise-v2","liquid-collective"],
+  "defillama-lending": ["aave-v3","morpho-blue","justlend","sparklend","maple","kamino-lend","jupiter-lend","compound-v3","venus-core-pool","fluid-lending"],
+  "defillama-onchain-capital-allocator": ["grove-finance","spark-liquidity-layer","veda","concrete","upshift","ether.fi-liquid","mellow-core","lagoon","ember-protocol","aera-v3"],
+  "defillama-bridges": ["wbtc","coinbase-bridge","binance-bitcoin","hyperliquid-bridge","usdt0","arbitrum-bridge","base-bridge","justcryptos","portal","function-fbtc"],
+  "defillama-risk-curators": ["steakhouse-financial","sentora","gauntlet","k3-capital","kpk","sky-money","telos-consilium","vault-bridge","rockawayx","clearstar"],
+  "defillama-ai-agents": ["morpheusai","giza","capx-ai","agentfi","infinite-trading-protocol","gud.tech","mind-network","yield-ai","calculus","glorb"],
+  "defillama-privacy": ["tornado-cash","railgun","zama","privacy-pools","aztec-connect","privacy-cash","namada-shielded-pools","hinkal","zkbob","0x0.ai"],
+  "defillama-telegram-bot": ["banana-gun","maestro","unibot","bonkbot","trojan","bullx","sigma","pepe-boost","magnum","ton-pump"],
+  "defillama-trading-app": ["photon","axiom","bullx","gmgn","trojan","padre","okx-web3","vector","defined","birdeye"],
+  "defillama-interface": ["ventuals","dflow-prediction-market","jupiter-prediction","desk-clob","raydium-perps","binance-dex","binance-alpha","backpack-exchange","pacific-exchange","one-trading"],
+  "defillama-wallets": ["metamask-wallet","phantom-wallet","rabby-wallet","coinbase-wallet","trust-wallet","rainbow-wallet","backpack-wallet","argent-wallet","zerion-wallet","ambire-wallet"],
+  "defillama-top-chains": ["chain_ethereum","chain_solana","chain_bsc","chain_bitcoin","chain_tron","chain_base","chain_hyperliquid_l1","chain_arbitrum","chain_provenance","chain_polygon"]
+}
