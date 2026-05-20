@@ -1,665 +1,924 @@
-// A ScrollTrigger dive through a 2500px hand-drawn sea — moon up top, octopus
-// at the bottom, a fishing line dropped through the middle. The CodePen lived
-// or died on the user's scroll wheel. Here the wheel is gone; the frame clock
-// pulls the camera under for us, whether we want it or not.
+// A 2512-unit dive from a moonlit ship down to a brown sea floor. The source
+// CodePen leaned on ScrollTrigger to scrub the camera; the wheel has retired.
+// The frame clock now drags the lens under, the rope draws itself as the dive
+// deepens, and the creatures keep wiggling whether anyone is watching or not.
 
-import React, { useMemo } from "react";
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-} from "remotion";
+import React from "react";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
-const VIEW_H = 1080;
-const STAGE_W = 1920;
-const STAGE_H = 4500;
+const STAGE_H = 4500; // outer composition height in px
+const VIEW_H = 1080; // viewport height (16:9 1920)
+const SVG_W = 800; // inner SVG viewBox width
+const SVG_H = 2512; // inner SVG viewBox height (original CodePen height)
 
-// ── Palette ────────────────────────────────────────────────────────────────
+// ── Palette — pulled from the source ───────────────────────────────────────
 const NIGHT = "#0a4e5f";
-const WATER_TOP = "#226670";
-const WATER_MID = "#266e7e";
-const WATER_DEEP = "#0c3c48";
-const FLOOR = "#277081";
-const ROCK_LIGHT = "#56a8be";
-const ROCK_DARK = "#3d8aa0";
-const ROCK_HIGHLIGHT = "#b9d4da";
-const FISH = "#1f5b6a";
+const SURFACE = "#236570";
+const MID = "#1c5664";
+const DEEP = "#0c3c48";
+const FLOOR = "#2b2410";
+const HILL = "#063945";
+const ROCK = "#34616e";
+const ROCK_HI = "#4a7c89";
+const FISH_DARK = "#143847";
+const FISH_TEAL = "#1d4d5c";
 const YELLOW = "#f1c46b";
-const STAR_YELLOW = "#ffd479";
-const WHITE = "#ffffff";
+const YELLOW_HI = "#f6d691";
+const YELLOW_LO = "#d8a04a";
 const ORANGE = "#e89446";
+const ORANGE_LO = "#c47030";
+const WHITE = "#ffffff";
+const INK = "#1a1a1a";
 const ROPE = "#f4e0a8";
-const ANCHOR = "#7c4a2a";
+const ANCHOR = "#c79548";
+const BROWN = "#7a4e2a";
+const BROWN_DARK = "#5a371d";
+const SEAWEED = "#1e5e5a";
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 const TAU = Math.PI * 2;
+const sway = (frame: number, period: number, amp: number, phase = 0): number =>
+  Math.sin((frame / Math.max(1, period)) * TAU + phase) * amp;
 
-const sway = (frame: number, period: number, amp: number, phase = 0) =>
-  Math.sin(((frame / period) * TAU) + phase) * amp;
+// ── Moon + halos ───────────────────────────────────────────────────────────
+const Moon: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const breath = 1 + sway(frame, fps * 4, 0.04);
+  return (
+    <g transform="translate(610 130)">
+      <circle r={90 * breath} fill={WHITE} opacity={0.12} />
+      <circle r={70 * breath} fill={WHITE} opacity={0.22} />
+      <circle r={52 * breath} fill={WHITE} opacity={0.4} />
+      <circle r={38} fill={WHITE} />
+      <circle cx={-12} cy={-8} r={5} fill="#e6ecee" opacity={0.7} />
+      <circle cx={8} cy={10} r={3} fill="#dbe5e8" opacity={0.6} />
+    </g>
+  );
+};
+
+// ── Hill silhouette behind the ship ────────────────────────────────────────
+const Hill: React.FC = () => (
+  <g>
+    <polygon points="430,310 540,200 600,250 660,310" fill={HILL} />
+    <polygon points="520,212 540,200 562,220 540,232" fill={WHITE} />
+    <polygon points="100,310 180,240 250,310" fill={HILL} opacity={0.85} />
+  </g>
+);
+
+// ── Steamship — centered at translate(400 232) ─────────────────────────────
+const Ship: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const t = frame / fps;
+  const puff = (offset: number) => {
+    const cycle = ((t + offset) % 2) / 2;
+    return {
+      scale: 0.3 + cycle * 1.2,
+      opacity: Math.max(0, 1 - cycle * 1.05),
+    };
+  };
+  const a = puff(0);
+  const b = puff(1);
+  return (
+    <g transform="translate(400 232)">
+      {/* hull */}
+      <rect x={-46} y={-4} width={92} height={20} rx={2} fill={WHITE} />
+      <path
+        d="M -46 16 Q -38 28 -28 30 L 28 30 Q 38 28 46 16 Z"
+        fill={WHITE}
+      />
+      {/* deck rails — two horizontal lines under the body */}
+      <line x1={-44} y1={20} x2={44} y2={20} stroke="#cfd8db" strokeWidth={1.2} />
+      <line x1={-44} y1={24} x2={44} y2={24} stroke="#cfd8db" strokeWidth={1.2} />
+      {/* portholes */}
+      <circle cx={-18} cy={6} r={3.4} fill={NIGHT} />
+      <circle cx={18} cy={6} r={3.4} fill={NIGHT} />
+      {/* chimney — yellow */}
+      <rect x={-4} y={-22} width={10} height={18} fill={YELLOW} />
+      <rect x={-4} y={-22} width={10} height={3} fill={ORANGE_LO} />
+      {/* mast + flag */}
+      <line x1={-26} y1={-22} x2={-26} y2={-4} stroke="#cfd8db" strokeWidth={1.5} />
+      <polygon points="-26,-22 -14,-17 -26,-12" fill={WHITE} />
+      {/* smoke ovals */}
+      <g transform={`translate(1 -32)`}>
+        <ellipse
+          rx={9}
+          ry={6}
+          fill={WHITE}
+          opacity={a.opacity}
+          transform={`scale(${a.scale})`}
+        />
+        <ellipse
+          rx={9}
+          ry={6}
+          fill={WHITE}
+          opacity={b.opacity}
+          transform={`scale(${b.scale})`}
+        />
+      </g>
+    </g>
+  );
+};
+
+// ── Water surface band with foam pills ─────────────────────────────────────
+const WaterSurface: React.FC<{ frame: number; fps: number }> = ({
+  frame,
+  fps,
+}) => {
+  const driftA = sway(frame, fps * 6, 30);
+  const driftB = sway(frame, fps * 7, 22, Math.PI / 2);
+  return (
+    <g>
+      <rect x={0} y={270} width={SVG_W} height={70} fill={SURFACE} />
+      <rect x={0} y={330} width={SVG_W} height={40} fill={MID} opacity={0.7} />
+      <g transform={`translate(${driftA} 0)`}>
+        <rect x={80} y={280} width={140} height={6} rx={3} fill="#3a8090" />
+        <rect x={520} y={290} width={170} height={6} rx={3} fill="#3a8090" />
+      </g>
+      <g transform={`translate(${driftB} 0)`}>
+        <rect x={260} y={296} width={120} height={5} rx={2.5} fill="#347b8a" />
+        <rect x={400} y={282} width={90} height={5} rx={2.5} fill="#347b8a" />
+      </g>
+    </g>
+  );
+};
+
+// ── Mid-water rocks (with embedded yellow star on the right) ───────────────
+const Rocks: React.FC = () => (
+  <g>
+    {/* Left outcrop */}
+    <polygon
+      points="0,400 0,1100 110,1100 130,940 90,820 140,720 100,600 50,520 0,460"
+      fill={ROCK}
+    />
+    <polygon
+      points="0,400 50,520 100,600 140,720 110,700 60,580 20,500"
+      fill={ROCK_HI}
+      opacity={0.6}
+    />
+    {/* Right outcrop */}
+    <polygon
+      points="800,420 800,1100 700,1100 680,960 720,820 670,700 730,580 770,500 800,460"
+      fill={ROCK}
+    />
+    <polygon
+      points="800,420 770,500 730,580 670,700 710,690 750,580 790,490"
+      fill={ROCK_HI}
+      opacity={0.6}
+    />
+    {/* Embedded yellow star on the right rock */}
+    <g transform="translate(740 740)">
+      <polygon
+        points="0,-12 3.7,-3.7 12,-3.7 5.3,2.3 7.4,11 0,6 -7.4,11 -5.3,2.3 -12,-3.7 -3.7,-3.7"
+        fill={YELLOW}
+      />
+    </g>
+  </g>
+);
+
+// ── A single fish shoal row ────────────────────────────────────────────────
+const FishShoal: React.FC<{
+  frame: number;
+  fps: number;
+  y: number;
+  count: number;
+  baseX: number;
+  dir: 1 | -1;
+  phase: number;
+  color: string;
+}> = ({ frame, fps, y, count, baseX, dir, phase, color }) => {
+  const drift = sway(frame, fps * 5, 28, phase) * dir;
+  return (
+    <g transform={`translate(${drift} 0)`}>
+      {Array.from({ length: count }).map((_, j) => {
+        const x = baseX + j * 42;
+        const dy = sway(frame, fps * 2.5, 3, j * 0.5 + phase);
+        const flip = dir === -1 ? -1 : 1;
+        return (
+          <g key={j} transform={`translate(${x} ${y + dy}) scale(${flip} 1)`}>
+            <ellipse rx={7} ry={2.6} fill={color} />
+            <polygon points="-7,0 -12,-3 -12,3" fill={color} />
+            <circle cx={3} cy={-0.7} r={0.8} fill={WHITE} />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+// ── Tako (octopus) — orange-yellow, 4 wavy legs, two eyes, big smile ───────
+const Tako: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const bob = sway(frame, fps * 6, 8);
+  return (
+    <g transform={`translate(${x} ${y + bob})`}>
+      {/* Four wavy legs — under the body */}
+      {[-1, -0.5, 0.5, 1].map((side, i) => {
+        const wig = sway(frame, fps * 3, 8, i * 0.7);
+        const baseX = side * 32;
+        const tipX = side * 70 + wig;
+        const midX = side * 50 + wig * 1.2;
+        return (
+          <path
+            key={i}
+            d={`M ${baseX} 30 Q ${midX} 60 ${tipX} 92 Q ${tipX + wig} 110 ${tipX - wig} 130`}
+            stroke={YELLOW}
+            strokeWidth={11}
+            fill="none"
+            strokeLinecap="round"
+            opacity={0.95}
+          />
+        );
+      })}
+      {/* Body */}
+      <circle r={42} fill={YELLOW} />
+      <ellipse cy={-10} rx={32} ry={20} fill={YELLOW_HI} opacity={0.55} />
+      {/* Eyes */}
+      <circle cx={-13} cy={-4} r={7} fill={WHITE} />
+      <circle cx={13} cy={-4} r={7} fill={WHITE} />
+      <circle cx={-12} cy={-3} r={3} fill={INK} />
+      <circle cx={14} cy={-3} r={3} fill={INK} />
+      {/* Wide smile */}
+      <path
+        d="M -16 12 Q 0 26 16 12"
+        stroke={INK}
+        strokeWidth={2.4}
+        fill={WHITE}
+        strokeLinecap="round"
+      />
+      {/* Cheeks */}
+      <circle cx={-26} cy={10} r={4.5} fill={ORANGE} opacity={0.55} />
+      <circle cx={26} cy={10} r={4.5} fill={ORANGE} opacity={0.55} />
+    </g>
+  );
+};
+
+// ── TakoHi — a small "Hi!" speech bubble cluster ───────────────────────────
+const TakoHi: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <g transform={`translate(${x} ${y})`}>
+    <ellipse rx={22} ry={14} fill={WHITE} />
+    <polygon points="-14,12 -20,22 -4,14" fill={WHITE} />
+    <text
+      x={0}
+      y={4}
+      textAnchor="middle"
+      fontFamily="sans-serif"
+      fontSize={14}
+      fontWeight={700}
+      fill={ORANGE_LO}
+    >
+      Hi!
+    </text>
+  </g>
+);
+
+// ── Kurage (jellyfish) — orange bell, 5 wavy tentacles ─────────────────────
+const Kurage: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const drift = sway(frame, fps * 5, 25);
+  return (
+    <g transform={`translate(${x} ${y + drift})`}>
+      {/* Bell — semicircle with flat bottom */}
+      <path d="M -50 0 A 50 50 0 0 1 50 0 Z" fill={ORANGE} />
+      <path d="M -36 -6 A 36 32 0 0 1 36 -6" fill={YELLOW_HI} opacity={0.5} />
+      {/* Lip ruffle */}
+      <path
+        d="M -50 0 Q -40 6 -30 0 Q -20 6 -10 0 Q 0 6 10 0 Q 20 6 30 0 Q 40 6 50 0"
+        fill={ORANGE_LO}
+      />
+      {/* Tentacles */}
+      {[-32, -16, 0, 16, 32].map((tx, i) => {
+        const w = sway(frame, fps * 3, 5, i * 0.7);
+        return (
+          <path
+            key={i}
+            d={`M ${tx} 2 Q ${tx + w} 18 ${tx - w} 36 Q ${tx + w} 52 ${tx - w / 2} 70 Q ${tx} 84 ${tx - w / 2} 96`}
+            stroke={ORANGE}
+            strokeWidth={2}
+            fill="none"
+            strokeLinecap="round"
+            opacity={0.85}
+          />
+        );
+      })}
+      {/* Face on bell */}
+      <circle cx={-10} cy={-14} r={2.4} fill={INK} />
+      <circle cx={10} cy={-14} r={2.4} fill={INK} />
+      <path
+        d="M -5 -4 Q 0 -1 5 -4"
+        stroke={INK}
+        strokeWidth={1.4}
+        fill="none"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+};
+
+// ── Fugu (puffer) — round yellow, side fin, eye, pucker mouth ──────────────
+const Fugu: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const hover = sway(frame, fps * 4, 6, Math.PI / 4);
+  return (
+    <g transform={`translate(${x} ${y + hover})`}>
+      <circle r={28} fill={YELLOW} />
+      <circle r={28} fill={YELLOW_HI} opacity={0.3} />
+      {/* Side fin sticking out to the side */}
+      <polygon points="-30,-4 -50,-18 -50,8" fill={YELLOW_LO} />
+      {/* Tail */}
+      <polygon points="28,0 46,-14 46,14" fill={YELLOW_LO} />
+      {/* Dorsal */}
+      <polygon points="-4,-28 6,-44 14,-28" fill={YELLOW_LO} />
+      {/* Eye */}
+      <circle cx={10} cy={-6} r={5} fill={WHITE} />
+      <circle cx={11} cy={-6} r={2.4} fill={INK} />
+      {/* Pucker mouth */}
+      <circle cx={22} cy={4} r={3} fill={WHITE} />
+      <circle cx={22} cy={4} r={1.6} fill={ORANGE_LO} />
+      {/* A few dots for texture */}
+      <circle cx={-6} cy={6} r={1.2} fill={YELLOW_LO} />
+      <circle cx={4} cy={12} r={1.2} fill={YELLOW_LO} />
+      <circle cx={-12} cy={-8} r={1.2} fill={YELLOW_LO} />
+    </g>
+  );
+};
+
+// ── Ika (squid) — yellow triangular head pointing up, 6 tentacles ──────────
+const Ika: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const hover = sway(frame, fps * 5, 8);
+  return (
+    <g transform={`translate(${x} ${y + hover})`}>
+      {/* Head — triangle pointing up */}
+      <polygon points="0,-44 -26,18 26,18" fill={YELLOW} />
+      <polygon points="0,-38 -18,12 18,12" fill={YELLOW_HI} opacity={0.55} />
+      {/* Side fins */}
+      <polygon points="-26,18 -38,4 -32,22" fill={YELLOW_LO} />
+      <polygon points="26,18 38,4 32,22" fill={YELLOW_LO} />
+      {/* Six tentacles */}
+      {[-20, -12, -4, 4, 12, 20].map((tx, i) => {
+        const w = sway(frame, fps * 3, 5, i * 0.6);
+        return (
+          <path
+            key={i}
+            d={`M ${tx} 18 Q ${tx + w} 38 ${tx - w} 58 Q ${tx + w} 74 ${tx} 88`}
+            stroke={YELLOW}
+            strokeWidth={2.2}
+            fill="none"
+            strokeLinecap="round"
+          />
+        );
+      })}
+      {/* Big white eyes with pupils */}
+      <circle cx={-10} cy={-6} r={6} fill={WHITE} />
+      <circle cx={10} cy={-6} r={6} fill={WHITE} />
+      <circle cx={-9} cy={-5} r={2.6} fill={INK} />
+      <circle cx={11} cy={-5} r={2.6} fill={INK} />
+    </g>
+  );
+};
+
+// ── Submarine — torpedo body, porthole with a frog inside, periscope ───────
+const Sub: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const drift = sway(frame, fps * 9, 16);
+  const bob = sway(frame, fps * 6, 4);
+  return (
+    <g transform={`translate(${x + drift} ${y + bob})`}>
+      {/* Torpedo body */}
+      <ellipse rx={58} ry={22} fill={YELLOW} />
+      <ellipse rx={54} ry={18} fill={YELLOW_HI} opacity={0.4} />
+      {/* Nose cone tip */}
+      <polygon points="58,0 76,-8 76,8" fill={YELLOW_LO} />
+      {/* Propeller at the back */}
+      <line x1={-58} y1={-2} x2={-72} y2={-10} stroke={BROWN_DARK} strokeWidth={1.6} />
+      <line x1={-58} y1={2} x2={-72} y2={10} stroke={BROWN_DARK} strokeWidth={1.6} />
+      <polygon points="-72,-12 -80,0 -72,12" fill={BROWN} />
+      {/* Tower */}
+      <rect x={-8} y={-32} width={16} height={14} rx={3} fill={YELLOW_LO} />
+      {/* Periscope tube on top */}
+      <line x1={0} y1={-32} x2={0} y2={-44} stroke={YELLOW_LO} strokeWidth={3} />
+      <rect x={-3} y={-48} width={10} height={4} fill={YELLOW_LO} />
+      {/* Porthole — outer ring + glass */}
+      <circle r={20} fill={BROWN_DARK} />
+      <circle r={17} fill="#7fbfd6" />
+      {/* Frog face inside the porthole — kaeru */}
+      <g>
+        {/* head */}
+        <ellipse rx={14} ry={11} fill="#6fb04a" />
+        {/* belly highlight */}
+        <ellipse cy={3} rx={9} ry={4} fill="#c5e08a" opacity={0.7} />
+        {/* eye bumps */}
+        <circle cx={-7} cy={-7} r={4} fill="#6fb04a" />
+        <circle cx={7} cy={-7} r={4} fill="#6fb04a" />
+        {/* eye whites + pupils */}
+        <circle cx={-7} cy={-7} r={3} fill={WHITE} />
+        <circle cx={7} cy={-7} r={3} fill={WHITE} />
+        <circle cx={-7} cy={-6} r={1.4} fill={INK} />
+        <circle cx={7} cy={-6} r={1.4} fill={INK} />
+        {/* smile */}
+        <path
+          d="M -5 3 Q 0 7 5 3"
+          stroke={INK}
+          strokeWidth={1.2}
+          fill="none"
+          strokeLinecap="round"
+        />
+      </g>
+    </g>
+  );
+};
+
+// ── Yellow fish — small, eye, tail ─────────────────────────────────────────
+const YFish: React.FC<{
+  frame: number;
+  fps: number;
+  x: number;
+  y: number;
+  phase: number;
+  flip?: 1 | -1;
+}> = ({ frame, fps, x, y, phase, flip = 1 }) => {
+  const drift = sway(frame, fps * 4, 18, phase);
+  const dy = sway(frame, fps * 2.5, 3, phase + 1);
+  return (
+    <g transform={`translate(${x + drift} ${y + dy}) scale(${flip} 1)`}>
+      <ellipse rx={12} ry={5.5} fill={YELLOW} />
+      <ellipse cy={-1} rx={10} ry={3} fill={YELLOW_HI} opacity={0.5} />
+      <polygon points="-12,0 -20,-6 -20,6" fill={YELLOW_LO} />
+      <polygon points="-2,-5 2,-12 6,-5" fill={YELLOW_LO} />
+      <circle cx={5} cy={-1} r={1.6} fill={WHITE} />
+      <circle cx={5.3} cy={-1} r={0.8} fill={INK} />
+    </g>
+  );
+};
+
+// ── Chin — 4 small jellyfish-shaped beings, blinking eyes ──────────────────
+const Chin: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  // Eye blink cycle — open most of the time, snap shut briefly
+  const t = (frame / Math.max(1, fps * 3)) % 1;
+  const open = t > 0.93 ? 0.1 : 1;
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {[0, 1, 2, 3].map((i) => {
+        const cx = i * 22 - 33;
+        const bob = sway(frame, fps * 3, 2, i * 0.6);
+        return (
+          <g key={i} transform={`translate(${cx} ${bob})`}>
+            {/* arc body */}
+            <path
+              d="M -10 0 A 10 10 0 0 1 10 0 Z"
+              fill="#9fcfd8"
+              opacity={0.85}
+            />
+            {/* skirt */}
+            <path
+              d="M -10 0 Q -7 4 -4 0 Q 0 4 4 0 Q 7 4 10 0"
+              fill="#9fcfd8"
+              opacity={0.85}
+            />
+            {/* eye */}
+            <ellipse cx={0} cy={-4} rx={2} ry={2 * open} fill={WHITE} />
+            <ellipse cx={0} cy={-4} rx={1} ry={1 * open} fill={INK} />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+// ── Sea turtle (Kame) ──────────────────────────────────────────────────────
+const Kame: React.FC<{ frame: number; fps: number; x: number; y: number }> = ({
+  frame,
+  fps,
+  x,
+  y,
+}) => {
+  const crawl = sway(frame, fps * 12, 30);
+  return (
+    <g transform={`translate(${x + crawl} ${y})`}>
+      {/* Body — oval brown */}
+      <ellipse rx={32} ry={22} fill={BROWN} />
+      {/* Shell — darker rounded rectangle on top */}
+      <rect x={-28} y={-20} width={56} height={28} rx={14} fill={BROWN_DARK} />
+      {/* Hexagonal pattern on shell */}
+      <path
+        d="M -16 -10 L -8 -16 L 0 -10 L 0 -2 L -8 4 L -16 -2 Z"
+        fill="none"
+        stroke={BROWN}
+        strokeWidth={1.2}
+      />
+      <path
+        d="M 0 -10 L 8 -16 L 16 -10 L 16 -2 L 8 4 L 0 -2 Z"
+        fill="none"
+        stroke={BROWN}
+        strokeWidth={1.2}
+      />
+      {/* Head */}
+      <ellipse cx={34} cy={-2} rx={10} ry={7} fill={BROWN} />
+      <circle cx={37} cy={-3} r={1.2} fill={WHITE} />
+      <circle cx={37} cy={-3} r={0.6} fill={INK} />
+      {/* Legs */}
+      <ellipse cx={-22} cy={16} rx={10} ry={4} fill={BROWN} transform="rotate(20 -22 16)" />
+      <ellipse cx={22} cy={16} rx={10} ry={4} fill={BROWN} transform="rotate(-20 22 16)" />
+      <ellipse cx={-26} cy={-10} rx={8} ry={3.5} fill={BROWN} transform="rotate(-20 -26 -10)" />
+      <ellipse cx={26} cy={-10} rx={8} ry={3.5} fill={BROWN} transform="rotate(20 26 -10)" />
+    </g>
+  );
+};
+
+// ── Anchor ─────────────────────────────────────────────────────────────────
+const Anc: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <g transform={`translate(${x} ${y})`} stroke={ANCHOR} strokeWidth={3.5} fill="none">
+    {/* Ring at top */}
+    <circle r={9} />
+    {/* Shaft */}
+    <line x1={0} y1={9} x2={0} y2={70} strokeLinecap="round" />
+    {/* Crossbar */}
+    <line x1={-20} y1={22} x2={20} y2={22} strokeLinecap="round" />
+    {/* Curved flukes at the bottom */}
+    <path d="M 0 70 Q -28 70 -32 44" strokeLinecap="round" />
+    <path d="M 0 70 Q 28 70 32 44" strokeLinecap="round" />
+    {/* Fluke tips — filled triangles */}
+    <polygon points="-32,44 -38,50 -26,52" fill={ANCHOR} stroke="none" />
+    <polygon points="32,44 38,50 26,52" fill={ANCHOR} stroke="none" />
+  </g>
+);
+
+// ── Skeleton key ───────────────────────────────────────────────────────────
+const Kai: React.FC<{ x: number; y: number; rotate?: number }> = ({
+  x,
+  y,
+  rotate = 0,
+}) => (
+  <g transform={`translate(${x} ${y}) rotate(${rotate})`} fill={YELLOW}>
+    {/* Head ring */}
+    <circle cx={-12} cy={0} r={7} fill="none" stroke={YELLOW} strokeWidth={2.4} />
+    <circle cx={-12} cy={0} r={1.6} fill={DEEP} />
+    {/* Shaft */}
+    <rect x={-6} y={-1.5} width={20} height={3} />
+    {/* Teeth */}
+    <rect x={11} y={2} width={3} height={5} />
+    <rect x={6} y={2} width={2.4} height={4} />
+  </g>
+);
+
+// ── Starfish ───────────────────────────────────────────────────────────────
+const Star: React.FC<{ frame: number; fps: number; x: number; y: number; dark?: boolean }> = ({
+  frame,
+  fps,
+  x,
+  y,
+  dark = false,
+}) => {
+  const rot = (frame / fps) * 8 + (dark ? 30 : 0);
+  return (
+    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
+      <polygon
+        points="0,-18 5.5,-5.5 18,-5.5 8,3.5 11,17 0,9 -11,17 -8,3.5 -18,-5.5 -5.5,-5.5"
+        fill={dark ? BROWN_DARK : YELLOW}
+      />
+      {!dark && <circle r={3} fill={YELLOW_LO} />}
+    </g>
+  );
+};
+
+// ── Seaweed stalk — wavy vertical line with lobes ──────────────────────────
+const Leaf: React.FC<{
+  frame: number;
+  fps: number;
+  x: number;
+  baseY: number;
+  height: number;
+  phase: number;
+  color?: string;
+}> = ({ frame, fps, x, baseY, height, phase, color = SEAWEED }) => {
+  const segments = 8;
+  const points: string[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const py = baseY - t * height;
+    const w = sway(frame, fps * 4, 6 + t * 4, phase + t * 2);
+    points.push(`${x + w},${py}`);
+  }
+  // Render as a polyline of small circles for the lobed look
+  return (
+    <g>
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth={5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {points.map((p, i) => {
+        const [px, py] = p.split(",").map(Number);
+        return <circle key={i} cx={px} cy={py} r={4.5} fill={color} />;
+      })}
+    </g>
+  );
+};
+
+// ── Sea floor contour ──────────────────────────────────────────────────────
+const SeaFloor: React.FC = () => (
+  <g>
+    <rect x={0} y={2300} width={SVG_W} height={SVG_H - 2300} fill={FLOOR} />
+    <path
+      d="M 0 2300 Q 100 2270 200 2300 Q 300 2330 400 2300 Q 500 2270 600 2300 Q 700 2330 800 2300 L 800 2330 L 0 2330 Z"
+      fill={BROWN_DARK}
+    />
+    {/* Stones */}
+    <ellipse cx={120} cy={2326} rx={32} ry={10} fill={BROWN} />
+    <ellipse cx={300} cy={2330} rx={22} ry={7} fill={BROWN} />
+    <ellipse cx={520} cy={2326} rx={28} ry={9} fill={BROWN} />
+    <ellipse cx={690} cy={2330} rx={36} ry={11} fill={BROWN} />
+  </g>
+);
+
+// ── Bubbles — rise from the bottom in 3 streams ────────────────────────────
+const Bubbles: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const t = frame / fps;
+  // 3 streams, ~5 bubbles each
+  const streams = [
+    { x: 160, hue: "#bce4ec" },
+    { x: 420, hue: "#a8d4dc" },
+    { x: 680, hue: "#bce4ec" },
+  ];
+  return (
+    <g>
+      {streams.map((s, si) => {
+        return (
+          <g key={si}>
+            {Array.from({ length: 6 }).map((_, i) => {
+              const speed = 3.2 + (i % 3) * 0.6; // seconds per cycle
+              const cycle = ((t + si * 0.7 + i * 0.4) % speed) / speed;
+              const startY = 2300;
+              const endY = 380;
+              const y = startY - cycle * (startY - endY);
+              const x = s.x + Math.sin(cycle * TAU + i + si) * 12;
+              const r = 2 + cycle * 5;
+              const opacity = Math.max(0, 1 - cycle * 1.05) * 0.85;
+              return (
+                <circle
+                  key={i}
+                  cx={x}
+                  cy={y}
+                  r={r}
+                  fill="none"
+                  stroke={s.hue}
+                  strokeWidth={1.2}
+                  opacity={opacity}
+                />
+              );
+            })}
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+// ── Rope + bait ────────────────────────────────────────────────────────────
+const RopeAndEsa: React.FC<{
+  progress: number;
+  frame: number;
+  fps: number;
+}> = ({ progress, frame, fps }) => {
+  const ropeTopY = 262; // just under the ship hull
+  // Bait descends with the dive
+  const esaY = 280 + progress * 1980;
+  const esaX = 400 + sway(frame, fps * 4, 3);
+  const len = Math.max(1, esaY - ropeTopY);
+  const dashOffset = len * (1 - Math.min(1, progress / 0.95));
+  return (
+    <g>
+      <line
+        x1={esaX}
+        y1={ropeTopY}
+        x2={esaX}
+        y2={esaY}
+        stroke={ROPE}
+        strokeWidth={1.2}
+        strokeDasharray={len}
+        strokeDashoffset={dashOffset}
+        opacity={0.85}
+      />
+      <g transform={`translate(${esaX} ${esaY})`}>
+        {/* Hook */}
+        <path
+          d="M 0 -4 Q 0 8 -5 10 Q -10 8 -9 4"
+          stroke={ROPE}
+          strokeWidth={1.6}
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* Lure */}
+        <ellipse cx={2} cy={-1} rx={4} ry={5} fill={YELLOW} />
+        <circle cx={3} cy={-2} r={1} fill={ORANGE_LO} />
+        {/* Tail filament on lure */}
+        <line x1={2} y1={4} x2={2} y2={9} stroke={YELLOW_LO} strokeWidth={1} />
+      </g>
+    </g>
+  );
+};
 
 // ── Composition ────────────────────────────────────────────────────────────
 export const UnderwaterDive: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames, fps } = useVideoConfig();
 
-  // Linear scroll — the source GSAP used scrub:true, a raw remap.
-  const progress = interpolate(frame, [0, durationInFrames - 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const panY = -(STAGE_H - VIEW_H) * progress;
-
-  const t = frame / fps; // seconds — for the idle loops
-
-  // Bait descends with the dive.
-  const esaY = interpolate(progress, [0, 1], [232, 2200]);
-  const esaX = STAGE_W * 0.5 + sway(frame, fps * 4, 6);
-
-  // Fishing rope: dasharray draw — fully drawn when the bait has fully fallen.
-  const ropeLen = esaY - 232;
-  const ropeDraw = interpolate(progress, [0, 0.95], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  // Pre-computed idle phases the renderer reuses.
-  const phases = useMemo(() => {
-    return {
-      smokeA: 0,
-      smokeB: 1,
-      fishRows: Array.from({ length: 8 }, (_, i) => ({
-        y: 1300 + i * 110,
-        dir: i % 2 === 0 ? 1 : -1,
-        phase: i * 0.6,
-        count: 6 + (i % 3),
-        baseX: 200 + (i * 113) % 600,
-      })),
-      bubbles: Array.from({ length: 14 }, (_, i) => ({
-        x: 120 + (i * 137) % (STAGE_W - 200),
-        startY: 2400 + (i * 31) % 200,
-        speed: 90 + (i % 5) * 18,
-        size: 4 + (i % 4) * 2,
-        phase: (i * 0.41) % 1,
-      })),
-    };
-  }, []);
-
-  // Moon halos breathe slowly.
-  const moonBreath = 1 + sway(frame, fps * 4, 0.04);
-
-  // Smoke ovals — scale 0→1.5, fade out, loop every 2s with two staggered puffs.
-  const smokePuff = (offsetSec: number) => {
-    const cycle = ((t + offsetSec) % 2) / 2; // 0→1
-    return {
-      scale: 0.2 + cycle * 1.3,
-      opacity: Math.max(0, 1 - cycle * 1.1),
-    };
-  };
-  const smokeA = smokePuff(phases.smokeA);
-  const smokeB = smokePuff(phases.smokeB);
-
-  // Water bands sway laterally — yoyo sin.
-  const waterTopX = sway(frame, fps * 6, 20);
-  const waterMidX = sway(frame, fps * 7, 30, Math.PI / 3);
-  const waterDeepX = sway(frame, fps * 8, 22, Math.PI);
-
-  // Star rotation across the scene.
-  const starRot = (frame / fps) * 12;
-
-  // Tako (octopus) bob + leg sway.
-  const takoY = 2050 + sway(frame, fps * 4, 12);
-  const takoLegSwing = (i: number) =>
-    sway(frame, fps * 3, 10, i * (Math.PI / 2));
-
-  // Kurage (jellyfish) drift.
-  const kurageY = 1500 + sway(frame, fps * 5, 25);
-
-  // Fugu (puffer) gentle hover.
-  const fuguY = 1820 + sway(frame, fps * 4, 10, Math.PI / 4);
-
-  // Ika (squid) hover and tentacle sway.
-  const ikaY = 2480 + sway(frame, fps * 5, 14);
-
-  // Submarine — slow drift across.
-  const subX = 1280 + sway(frame, fps * 9, 30);
-  const subY = 2700 + sway(frame, fps * 6, 8);
-
-  // Kame (turtle) crawl across the floor.
-  const kameX = 350 + sway(frame, fps * 12, 40);
+  const progress = frame / Math.max(1, durationInFrames - 1);
+  const panY = -progress * (STAGE_H - VIEW_H);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: WATER_DEEP, overflow: "hidden" }}>
-      <svg
-        viewBox={`0 0 ${STAGE_W} ${STAGE_H}`}
-        width={STAGE_W}
-        height={STAGE_H}
+    <AbsoluteFill style={{ backgroundColor: DEEP, overflow: "hidden" }}>
+      <div
         style={{
           position: "absolute",
           top: 0,
           left: 0,
+          width: "100%",
+          height: STAGE_H,
           transform: `translateY(${panY}px)`,
           willChange: "transform",
         }}
       >
-        {/* ── Depth gradient ──────────────────────────────────────────── */}
-        <defs>
-          <linearGradient id="depth" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={NIGHT} />
-            <stop offset="14%" stopColor={NIGHT} />
-            <stop offset="22%" stopColor={WATER_TOP} />
-            <stop offset="45%" stopColor={WATER_MID} />
-            <stop offset="80%" stopColor={WATER_DEEP} />
-            <stop offset="100%" stopColor="#062831" />
-          </linearGradient>
-          <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
+        <svg
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          preserveAspectRatio="xMidYMin meet"
+          width="100%"
+          height={STAGE_H}
+          style={{ display: "block" }}
+        >
+          {/* ── Depth gradient ─────────────────────────────────────────── */}
+          <defs>
+            <linearGradient id="depth" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={NIGHT} />
+              <stop offset="11%" stopColor={NIGHT} />
+              <stop offset="14%" stopColor={SURFACE} />
+              <stop offset="32%" stopColor={SURFACE} />
+              <stop offset="60%" stopColor={MID} />
+              <stop offset="86%" stopColor={DEEP} />
+              <stop offset="92%" stopColor={FLOOR} />
+              <stop offset="100%" stopColor={FLOOR} />
+            </linearGradient>
+          </defs>
+          <rect width={SVG_W} height={SVG_H} fill="url(#depth)" />
 
-        <rect width={STAGE_W} height={STAGE_H} fill="url(#depth)" />
+          {/* ── 1. Night sky ───────────────────────────────────────────── */}
+          <Moon frame={frame} fps={fps} />
+          {/* faint stars */}
+          <circle cx={120} cy={80} r={1.6} fill={WHITE} opacity={0.7} />
+          <circle cx={210} cy={140} r={1} fill={WHITE} opacity={0.6} />
+          <circle cx={300} cy={60} r={1.4} fill={WHITE} opacity={0.7} />
+          <circle cx={490} cy={110} r={1} fill={WHITE} opacity={0.5} />
+          <circle cx={720} cy={200} r={1.2} fill={WHITE} opacity={0.6} />
+          <Hill />
+          <Ship frame={frame} fps={fps} />
 
-        {/* ── 1. Sky + moon ───────────────────────────────────────────── */}
-        <g transform={`translate(1480 280)`}>
-          {/* halo rings */}
-          <circle r={170 * moonBreath} fill={WHITE} opacity={0.06} />
-          <circle r={130 * moonBreath} fill={WHITE} opacity={0.1} />
-          <circle r={95 * moonBreath} fill={WHITE} opacity={0.18} />
-          <circle r={70} fill={WHITE} />
-          <circle cx={-22} cy={-14} r={10} fill="#e8eef0" opacity={0.7} />
-          <circle cx={14} cy={18} r={6} fill="#dbe5e8" opacity={0.6} />
-        </g>
+          {/* ── 2. Water surface ───────────────────────────────────────── */}
+          <WaterSurface frame={frame} fps={fps} />
 
-        {/* ── 2. Stars ────────────────────────────────────────────────── */}
-        <g transform={`translate(360 200) rotate(${starRot})`}>
-          <polygon
-            points="0,-14 4,-4 14,-4 6,3 9,13 0,7 -9,13 -6,3 -14,-4 -4,-4"
-            fill={STAR_YELLOW}
+          {/* ── 3. Mid-water: rocks + shoals ───────────────────────────── */}
+          <Rocks />
+          <FishShoal
+            frame={frame}
+            fps={fps}
+            y={520}
+            count={8}
+            baseX={140}
+            dir={1}
+            phase={0}
+            color={FISH_TEAL}
           />
-        </g>
-        <circle cx={620} cy={120} r={3} fill={STAR_YELLOW} />
-        <circle cx={920} cy={300} r={2.5} fill={STAR_YELLOW} />
-        <circle cx={1180} cy={150} r={3.5} fill={STAR_YELLOW} />
-
-        {/* ── 3. Top hill silhouette (right) ──────────────────────────── */}
-        <polygon
-          points="1620,560 1820,360 1900,420 1990,560"
-          fill="#063945"
-        />
-        <polygon points="1780,400 1820,360 1860,402 1830,420" fill={WHITE} />
-        {/* Smaller left hill */}
-        <polygon points="40,560 160,440 250,560" fill="#063945" />
-
-        {/* ── 4. Ship ─────────────────────────────────────────────────── */}
-        <g transform="translate(720 470)">
-          {/* hull */}
-          <path
-            d="M -60 0 Q -55 24 -40 30 L 40 30 Q 55 24 60 0 Z"
-            fill={WHITE}
-          />
-          {/* deck strip */}
-          <rect x={-46} y={-10} width={92} height={10} fill="#e7eef1" />
-          {/* chimney */}
-          <rect x={6} y={-34} width={14} height={24} fill={WHITE} />
-          <rect x={6} y={-34} width={14} height={5} fill="#cf6a40" />
-          {/* mast */}
-          <line x1={-22} y1={-32} x2={-22} y2={-2} stroke={WHITE} strokeWidth={2} />
-          <polygon points="-22,-32 -2,-22 -22,-12" fill={WHITE} />
-          {/* smoke puffs */}
-          <ellipse
-            cx={14}
-            cy={-50}
-            rx={12}
-            ry={8}
-            fill={WHITE}
-            opacity={smokeA.opacity}
-            transform={`scale(${smokeA.scale})`}
-            style={{ transformOrigin: "14px -50px" }}
-          />
-          <ellipse
-            cx={14}
-            cy={-50}
-            rx={12}
-            ry={8}
-            fill={WHITE}
-            opacity={smokeB.opacity}
-            transform={`scale(${smokeB.scale})`}
-            style={{ transformOrigin: "14px -50px" }}
-          />
-        </g>
-
-        {/* ── 5. Fishing rope + esa ───────────────────────────────────── */}
-        {(() => {
-          // The rope is the dotted line from sky to bait. We draw it as one
-          // long dashed line that progressively reveals.
-          const len = Math.max(1, ropeLen);
-          const dashOffset = len * (1 - ropeDraw);
-          return (
-            <g>
-              <line
-                x1={esaX}
-                y1={232}
-                x2={esaX}
-                y2={esaY}
-                stroke={ROPE}
-                strokeWidth={1.5}
-                strokeDasharray={len}
-                strokeDashoffset={dashOffset}
-                opacity={0.8}
-              />
-              {/* Bait — hook + lure */}
-              <g transform={`translate(${esaX} ${esaY})`}>
-                <path
-                  d="M 0 -6 Q 0 14 -8 16 Q -16 14 -14 6"
-                  stroke={ROPE}
-                  strokeWidth={2}
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <ellipse cx={4} cy={-2} rx={6} ry={8} fill={YELLOW} />
-                <circle cx={6} cy={-3} r={1.6} fill="#b54a2a" />
-              </g>
-            </g>
-          );
-        })()}
-
-        {/* ── 6. Water surface band ───────────────────────────────────── */}
-        <g transform={`translate(${waterTopX} 0)`}>
-          <rect
-            x={-100}
-            y={560}
-            width={STAGE_W + 200}
-            height={80}
-            fill={WATER_TOP}
-          />
-          {/* foam caps */}
-          <ellipse cx={200} cy={570} rx={120} ry={10} fill="#3a8090" />
-          <ellipse cx={620} cy={580} rx={140} ry={9} fill="#3a8090" />
-          <ellipse cx={1080} cy={572} rx={100} ry={10} fill="#3a8090" />
-          <ellipse cx={1480} cy={585} rx={150} ry={9} fill="#3a8090" />
-        </g>
-        <g transform={`translate(${waterMidX} 0)`}>
-          <rect
-            x={-100}
+          <FishShoal
+            frame={frame}
+            fps={fps}
             y={640}
-            width={STAGE_W + 200}
-            height={200}
-            fill={WATER_MID}
-            opacity={0.85}
+            count={9}
+            baseX={120}
+            dir={-1}
+            phase={0.8}
+            color={FISH_DARK}
           />
-        </g>
+          <FishShoal
+            frame={frame}
+            fps={fps}
+            y={760}
+            count={7}
+            baseX={200}
+            dir={1}
+            phase={1.6}
+            color={FISH_TEAL}
+          />
+          <FishShoal
+            frame={frame}
+            fps={fps}
+            y={880}
+            count={9}
+            baseX={140}
+            dir={-1}
+            phase={2.4}
+            color={FISH_DARK}
+          />
 
-        {/* ── 7. Big rocks left/right ─────────────────────────────────── */}
-        {/* Left rock */}
-        <g>
-          <polygon
-            points="0,1100 0,2400 240,2400 280,2150 220,1900 320,1700 260,1500 180,1320 90,1180"
-            fill={ROCK_DARK}
-          />
-          <polygon
-            points="0,1100 90,1180 180,1320 260,1500 200,1480 130,1340 60,1240 0,1190"
-            fill={ROCK_LIGHT}
-          />
-          <polygon
-            points="180,1320 220,1280 260,1310 240,1360 200,1340"
-            fill={ROCK_HIGHLIGHT}
-            opacity={0.55}
-          />
-        </g>
-        {/* Right rock */}
-        <g>
-          <polygon
-            points="1920,1080 1920,2400 1700,2400 1660,2100 1740,1860 1660,1620 1740,1400 1820,1240 1900,1140"
-            fill={ROCK_DARK}
-          />
-          <polygon
-            points="1920,1080 1900,1140 1820,1240 1740,1400 1810,1380 1870,1240 1920,1180"
-            fill={ROCK_LIGHT}
-          />
-          <polygon
-            points="1740,1400 1780,1370 1820,1390 1800,1440 1760,1430"
-            fill={ROCK_HIGHLIGHT}
-            opacity={0.55}
-          />
-        </g>
+          {/* ── 4. Mid-depth creatures ─────────────────────────────────── */}
+          <YFish frame={frame} fps={fps} x={200} y={1050} phase={0.2} />
+          <YFish frame={frame} fps={fps} x={620} y={1080} phase={1.1} flip={-1} />
+          <YFish frame={frame} fps={fps} x={500} y={1180} phase={0.6} />
 
-        {/* ── 8. Fish shoals ──────────────────────────────────────────── */}
-        {phases.fishRows.map((row, i) => {
-          const drift = sway(frame, fps * 4, 50, row.phase) * row.dir;
-          return (
-            <g key={i} transform={`translate(${drift} 0)`}>
-              {Array.from({ length: row.count }).map((_, j) => {
-                const x = row.baseX + j * 90;
-                const y = row.y + sway(frame, fps * 3, 4, j * 0.4 + i);
-                return (
-                  <g key={j} transform={`translate(${x} ${y})`}>
-                    <ellipse rx={14} ry={5} fill={FISH} />
-                    <polygon
-                      points="-14,0 -22,-5 -22,5"
-                      fill={FISH}
-                    />
-                    <circle cx={6} cy={-1} r={1.2} fill={WHITE} />
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
+          {/* Tako (octopus) */}
+          <Tako frame={frame} fps={fps} x={400} y={1240} />
+          <TakoHi x={490} y={1200} />
 
-        {/* ── 9. Tako (octopus) ───────────────────────────────────────── */}
-        <g transform={`translate(960 ${takoY})`}>
-          {/* legs — drawn first so they sit under the body */}
-          {[0, 1, 2, 3].map((i) => {
-            const sw = takoLegSwing(i);
-            const baseAngle = -60 + i * 40;
-            const rad = (baseAngle * Math.PI) / 180;
-            const x1 = Math.cos(rad) * 50;
-            const y1 = 60 + Math.sin(rad) * 20;
-            const x2 = Math.cos(rad) * 130 + sw;
-            const y2 = 180 + Math.sin(rad) * 40;
-            const cx1 = (x1 + x2) / 2 + sw * 1.2;
-            const cy1 = (y1 + y2) / 2;
-            return (
-              <path
-                key={i}
-                d={`M ${x1} ${y1} Q ${cx1} ${cy1} ${x2} ${y2}`}
-                stroke={YELLOW}
-                strokeWidth={20}
-                fill="none"
-                strokeLinecap="round"
-                opacity={0.92}
-              />
-            );
-          })}
-          {/* body */}
-          <ellipse rx={110} ry={95} fill={YELLOW} />
-          <ellipse cy={-20} rx={90} ry={45} fill="#f4d18a" opacity={0.6} />
-          {/* eyes */}
-          <circle cx={-32} cy={-8} r={14} fill={WHITE} />
-          <circle cx={32} cy={-8} r={14} fill={WHITE} />
-          <circle cx={-30} cy={-6} r={6} fill="#1f1f1f" />
-          <circle cx={34} cy={-6} r={6} fill="#1f1f1f" />
-          {/* smile */}
-          <path
-            d="M -22 30 Q 0 50 22 30"
-            stroke="#1f1f1f"
-            strokeWidth={3}
-            fill="none"
-            strokeLinecap="round"
+          {/* Kurage (jellyfish) */}
+          <Kurage frame={frame} fps={fps} x={210} y={1380} />
+
+          {/* Fugu (pufferfish) */}
+          <Fugu frame={frame} fps={fps} x={600} y={1420} />
+
+          {/* Ika (squid) */}
+          <Ika frame={frame} fps={fps} x={300} y={1560} />
+
+          {/* Submarine + frog */}
+          <Sub frame={frame} fps={fps} x={560} y={1620} />
+
+          {/* Y-fish scattered */}
+          <YFish frame={frame} fps={fps} x={140} y={1640} phase={2.2} />
+          <YFish frame={frame} fps={fps} x={460} y={1740} phase={0.4} flip={-1} />
+          <YFish frame={frame} fps={fps} x={680} y={1780} phase={1.8} />
+
+          {/* Chin — 4 small jellies blinking */}
+          <Chin frame={frame} fps={fps} x={420} y={1840} />
+
+          {/* ── 5. Deeper ──────────────────────────────────────────────── */}
+          <Kame frame={frame} fps={fps} x={220} y={2050} />
+          <Star frame={frame} fps={fps} x={600} y={2080} />
+          <Star frame={frame} fps={fps} x={680} y={2160} dark />
+
+          {/* Seaweed stalks growing up from the sea floor */}
+          <Leaf frame={frame} fps={fps} x={90} baseY={2300} height={210} phase={0} />
+          <Leaf
+            frame={frame}
+            fps={fps}
+            x={150}
+            baseY={2300}
+            height={160}
+            phase={1.4}
+            color="#2a7068"
           />
-          {/* cheek */}
-          <circle cx={-55} cy={20} r={9} fill={ORANGE} opacity={0.6} />
-          <circle cx={55} cy={20} r={9} fill={ORANGE} opacity={0.6} />
-        </g>
-
-        {/* ── 10. Kurage (jellyfish) ──────────────────────────────────── */}
-        <g transform={`translate(420 ${kurageY})`}>
-          {/* dome */}
-          <path
-            d="M -70 0 Q -70 -70 0 -70 Q 70 -70 70 0 Z"
-            fill={ORANGE}
+          <Leaf
+            frame={frame}
+            fps={fps}
+            x={550}
+            baseY={2300}
+            height={230}
+            phase={2.1}
           />
-          <path
-            d="M -50 -10 Q -50 -55 0 -55 Q 50 -55 50 -10"
-            fill="#f1a866"
+          <Leaf
+            frame={frame}
+            fps={fps}
+            x={620}
+            baseY={2300}
+            height={180}
+            phase={0.7}
+            color="#2a7068"
           />
-          {/* skirt */}
-          <path
-            d="M -70 0 Q -60 12 -50 0 Q -40 12 -30 0 Q -20 12 -10 0 Q 0 12 10 0 Q 20 12 30 0 Q 40 12 50 0 Q 60 12 70 0"
-            fill={ORANGE}
-          />
-          {/* tentacles — wavy */}
-          {[-50, -25, 0, 25, 50].map((tx, i) => {
-            const offset = sway(frame, fps * 3, 8, i * 0.5);
-            return (
-              <path
-                key={i}
-                d={`M ${tx} 6 Q ${tx + offset} 40 ${tx - offset} 80 Q ${tx + offset} 120 ${tx - offset / 2} 170`}
-                stroke={ORANGE}
-                strokeWidth={2.5}
-                fill="none"
-                strokeLinecap="round"
-                opacity={0.75}
-              />
-            );
-          })}
-          {/* face */}
-          <circle cx={-18} cy={-22} r={4} fill="#3b1d05" />
-          <circle cx={18} cy={-22} r={4} fill="#3b1d05" />
-          <path
-            d="M -8 -8 Q 0 -2 8 -8"
-            stroke="#3b1d05"
-            strokeWidth={2}
-            fill="none"
-            strokeLinecap="round"
-          />
-        </g>
 
-        {/* ── 11. Fugu (puffer) ───────────────────────────────────────── */}
-        <g transform={`translate(1500 ${fuguY})`}>
-          <circle r={48} fill={YELLOW} />
-          <circle r={48} fill="#e8b252" opacity={0.4} />
-          {/* fin */}
-          <polygon points="-50,-10 -78,-30 -78,10" fill={YELLOW} />
-          {/* tail */}
-          <polygon points="48,0 78,-22 78,22" fill={YELLOW} />
-          {/* spikes */}
-          {Array.from({ length: 10 }).map((_, i) => {
-            const a = (i / 10) * TAU;
-            const x1 = Math.cos(a) * 44;
-            const y1 = Math.sin(a) * 44;
-            const x2 = Math.cos(a) * 56;
-            const y2 = Math.sin(a) * 56;
-            return (
-              <line
-                key={i}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="#d8a04a"
-                strokeWidth={2}
-                strokeLinecap="round"
-              />
-            );
-          })}
-          {/* eye */}
-          <circle cx={16} cy={-10} r={8} fill={WHITE} />
-          <circle cx={18} cy={-10} r={4} fill="#1f1f1f" />
-          {/* mouth */}
-          <path
-            d="M 28 8 Q 36 12 36 18"
-            stroke="#1f1f1f"
-            strokeWidth={2}
-            fill="none"
-            strokeLinecap="round"
-          />
-        </g>
+          {/* ── 6. Sea floor + anchor + keys ───────────────────────────── */}
+          <SeaFloor />
+          <Anc x={400} y={2330} />
+          <Kai x={210} y={2370} rotate={-20} />
+          <Kai x={520} y={2380} rotate={14} />
+          <Kai x={660} y={2360} rotate={-6} />
 
-        {/* ── 12. Ika (squid) ─────────────────────────────────────────── */}
-        <g transform={`translate(540 ${ikaY})`}>
-          {/* head — triangle */}
-          <polygon points="0,-80 -45,30 45,30" fill={YELLOW} />
-          <polygon points="0,-70 -32,18 32,18" fill="#f4d18a" opacity={0.6} />
-          {/* fins */}
-          <polygon points="-45,30 -65,10 -55,38" fill={YELLOW} />
-          <polygon points="45,30 65,10 55,38" fill={YELLOW} />
-          {/* tentacles — 6 */}
-          {[-30, -18, -6, 6, 18, 30].map((tx, i) => {
-            const wave = sway(frame, fps * 3, 6, i * 0.7);
-            return (
-              <path
-                key={i}
-                d={`M ${tx} 30 Q ${tx + wave} 55 ${tx - wave} 80 Q ${tx + wave} 100 ${tx} 120`}
-                stroke={YELLOW}
-                strokeWidth={3}
-                fill="none"
-                strokeLinecap="round"
-              />
-            );
-          })}
-          {/* eyes */}
-          <circle cx={-14} cy={-20} r={5} fill="#1f1f1f" />
-          <circle cx={14} cy={-20} r={5} fill="#1f1f1f" />
-        </g>
-
-        {/* ── 13. Submarine ───────────────────────────────────────────── */}
-        <g transform={`translate(${subX} ${subY})`}>
-          {/* body */}
-          <ellipse rx={90} ry={42} fill={YELLOW} />
-          <ellipse rx={84} ry={36} fill="#e8b252" opacity={0.3} />
-          {/* propeller */}
-          <line x1={-90} y1={0} x2={-110} y2={-10} stroke="#704020" strokeWidth={2} />
-          <line x1={-90} y1={0} x2={-110} y2={10} stroke="#704020" strokeWidth={2} />
-          <polygon points="-110,-14 -118,0 -110,14" fill="#a86840" />
-          {/* tower */}
-          <rect x={-12} y={-58} width={24} height={20} rx={4} fill={YELLOW} />
-          {/* periscope */}
-          <line x1={0} y1={-58} x2={0} y2={-78} stroke={YELLOW} strokeWidth={4} />
-          <rect x={-4} y={-82} width={14} height={6} fill={YELLOW} />
-          {/* porthole + frog face */}
-          <circle r={28} fill="#0c3c48" />
-          <circle r={25} fill="#1e6b58" />
-          {/* frog eyes */}
-          <circle cx={-9} cy={-7} r={8} fill={WHITE} />
-          <circle cx={9} cy={-7} r={8} fill={WHITE} />
-          <circle cx={-9} cy={-6} r={4} fill="#1f1f1f" />
-          <circle cx={9} cy={-6} r={4} fill="#1f1f1f" />
-          <path
-            d="M -10 8 Q 0 14 10 8"
-            stroke="#1f1f1f"
-            strokeWidth={2}
-            fill="none"
-            strokeLinecap="round"
-          />
-          {/* fin top */}
-          <polygon points="40,-30 70,-50 70,-25" fill="#d8a04a" />
-        </g>
-
-        {/* ── 14. Sea floor ───────────────────────────────────────────── */}
-        <g transform={`translate(${waterDeepX} 0)`}>
-          <rect x={-100} y={3700} width={STAGE_W + 200} height={STAGE_H - 3700} fill={FLOOR} />
-          {/* dunes */}
-          <path
-            d="M 0 3700 Q 300 3640 600 3700 Q 900 3760 1200 3700 Q 1500 3640 1920 3700 L 1920 3760 L 0 3760 Z"
-            fill="#1e5e6a"
-          />
-        </g>
-
-        {/* ── 15. Anchor ──────────────────────────────────────────────── */}
-        <g transform="translate(280 3850)">
-          {/* ring */}
-          <circle r={18} fill="none" stroke={ANCHOR} strokeWidth={5} />
-          {/* shaft */}
-          <line x1={0} y1={18} x2={0} y2={130} stroke={ANCHOR} strokeWidth={6} />
-          {/* crossbar */}
-          <rect x={-38} y={36} width={76} height={8} fill={ANCHOR} />
-          {/* hooks */}
-          <path
-            d="M 0 130 Q -50 130 -60 80"
-            stroke={ANCHOR}
-            strokeWidth={6}
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 0 130 Q 50 130 60 80"
-            stroke={ANCHOR}
-            strokeWidth={6}
-            fill="none"
-            strokeLinecap="round"
-          />
-          {/* tips */}
-          <polygon points="-60,80 -72,90 -50,95" fill={ANCHOR} />
-          <polygon points="60,80 72,90 50,95" fill={ANCHOR} />
-        </g>
-
-        {/* ── 16. Sea turtle (kame) ───────────────────────────────────── */}
-        <g transform={`translate(${kameX} 3940)`}>
-          {/* shell */}
-          <ellipse rx={56} ry={36} fill="#7d4d2c" />
-          <ellipse rx={50} ry={30} fill="#a06840" opacity={0.6} />
-          {/* shell pattern */}
-          <path d="M -30 -10 L -10 -22 L 10 -22 L 30 -10 L 20 14 L -20 14 Z" fill="none" stroke="#5c361c" strokeWidth={2} />
-          <line x1={-10} y1={-22} x2={-20} y2={14} stroke="#5c361c" strokeWidth={1.5} />
-          <line x1={10} y1={-22} x2={20} y2={14} stroke="#5c361c" strokeWidth={1.5} />
-          {/* head */}
-          <ellipse cx={58} cy={-2} rx={16} ry={12} fill="#7d4d2c" />
-          <circle cx={62} cy={-4} r={2} fill={WHITE} />
-          {/* flippers */}
-          <ellipse cx={-32} cy={20} rx={20} ry={8} fill="#7d4d2c" transform="rotate(20 -32 20)" />
-          <ellipse cx={32} cy={20} rx={20} ry={8} fill="#7d4d2c" transform="rotate(-20 32 20)" />
-          <ellipse cx={-44} cy={-14} rx={16} ry={6} fill="#7d4d2c" transform="rotate(-20 -44 -14)" />
-        </g>
-
-        {/* ── 17. Starfish ────────────────────────────────────────────── */}
-        <g transform={`translate(820 4080) rotate(${starRot * 0.4})`}>
-          <polygon
-            points="0,-30 9,-9 30,-9 13,6 19,28 0,15 -19,28 -13,6 -30,-9 -9,-9"
-            fill={STAR_YELLOW}
-          />
-          <circle r={6} fill="#cf9e3a" />
-        </g>
-
-        {/* ── 18. Sea leaves ──────────────────────────────────────────── */}
-        {[
-          { x: 1100, h: 320, hue: "#1e5e5a" },
-          { x: 1200, h: 260, hue: "#2a7068" },
-          { x: 1320, h: 380, hue: "#1e5e5a" },
-          { x: 1620, h: 300, hue: "#2a7068" },
-        ].map((leaf, i) => {
-          const w = sway(frame, fps * 4, 12, i);
-          return (
-            <path
-              key={i}
-              d={`M ${leaf.x} 4400 Q ${leaf.x + w} ${4400 - leaf.h / 2} ${leaf.x - w} ${4400 - leaf.h}`}
-              stroke={leaf.hue}
-              strokeWidth={10}
-              fill="none"
-              strokeLinecap="round"
-            />
-          );
-        })}
-
-        {/* ── 19. Treasure key ────────────────────────────────────────── */}
-        <g transform="translate(1500 4100)">
-          <circle r={16} fill="none" stroke={STAR_YELLOW} strokeWidth={5} />
-          <rect x={14} y={-3} width={36} height={6} fill={STAR_YELLOW} />
-          <rect x={42} y={3} width={6} height={10} fill={STAR_YELLOW} />
-          <rect x={32} y={3} width={6} height={8} fill={STAR_YELLOW} />
-        </g>
-
-        {/* ── 20. Bubbles ─────────────────────────────────────────────── */}
-        {phases.bubbles.map((b, i) => {
-          const cycle = ((t * b.speed) / 600 + b.phase) % 1;
-          const by = b.startY - cycle * 1800;
-          const bx = b.x + Math.sin(cycle * TAU + i) * 12;
-          const opacity = 1 - cycle * 0.6;
-          return (
-            <circle
-              key={i}
-              cx={bx}
-              cy={by}
-              r={b.size}
-              fill="none"
-              stroke="#a8d4dc"
-              strokeWidth={1}
-              opacity={opacity * 0.7}
-            />
-          );
-        })}
-
-        {/* ── 21. A faint final-depth vignette ────────────────────────── */}
-        <rect
-          x={0}
-          y={4200}
-          width={STAGE_W}
-          height={300}
-          fill="url(#depth)"
-          opacity={0.3}
-        />
-      </svg>
+          {/* ── 7. Bubbles + Rope (drawn on top) ───────────────────────── */}
+          <Bubbles frame={frame} fps={fps} />
+          <RopeAndEsa progress={progress} frame={frame} fps={fps} />
+        </svg>
+      </div>
     </AbsoluteFill>
   );
 };
