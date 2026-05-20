@@ -39,6 +39,7 @@ import { VortexGallery } from "./VortexGallery";
 import { WaveTide } from "./WaveTide";
 import { NoiseBloom } from "./NoiseBloom";
 import { InkPour } from "./InkPour";
+import { FoldingCircleLoop } from "./FoldingCircleLoop";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -85,6 +86,7 @@ const ALL_SCENES = [
   { id: "WP-WaveTide", component: WaveTide },
   { id: "WP-NoiseBloom", component: NoiseBloom },
   { id: "WP-InkPour", component: InkPour },
+  { id: "WP-FoldingCircleLoop", component: FoldingCircleLoop },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
