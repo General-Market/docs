@@ -56,7 +56,16 @@ def params_hash(actor: str, params: dict) -> str:
 def load_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    # split on real \n only — tweet text contains U+2028/U+2029 which splitlines() breaks on
+    rows = []
+    for line in path.read_text().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:

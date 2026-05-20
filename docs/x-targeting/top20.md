@@ -33,7 +33,21 @@ Session total: ~$1.51 spend across Apify + TwitterAPI.io. Cache: 2,223 profiles,
 | 19 | @GrantStenger | BIO-MATCH | — | A1 intersection | Kinetic CEO, ex-Jane Street |
 | 20 | @mikevanrossum | BIO-MATCH | 7,594 | A1 intersection | HFT @folkvangtrading |
 
-## Honorable mentions (#21-30)
+## DeFi data cohort (TVL / 24h vol shillers — niche check relaxed by request)
+
+These accounts shill DefiLlama-style data — TVL, yields, funding, stablecoins, on-chain metrics. Discovery: tweet mentions of "defillama" + @defillama / @0xngmi official followings. The strict quant-niche regex was relaxed for this cohort; engagement and activity gates still apply. Verdict label `DATA`.
+
+| # | Handle | Verdict | Followers | Discovery | One-line bio |
+|---|---|---|---|---|---|
+| 21 | **@DeFi_Dad** | DATA | 179,745 | defillama follow | DeFi super-user, educator, angel — daily DeFi feed, biggest reach |
+| 22 | **@phtevenstrong** | DATA | 118,154 | defillama follow | "Calculator Guy" Founder DeFi Dojo — daily yield/TVL commentary |
+| 23 | **@LefterisJP** | DATA | 72,508 | defillama follow | Founder @rotki portfolio tracker — daily DeFi posting |
+| 24 | **@Vu_Benson** | DATA | 21,835 | defillama follow | CEO @AleaResearch — institutional crypto research for decision-makers |
+| 25 | **@zerototom** | DATA | 17,500 | defillama follow | Builds perprates — Hyperliquid funding-rate aggregator |
+| 26 | **@notnotstorm** | DATA | 16,267 | defillama follow | data @paradigm — V/F 2.47, 5,733 niche-engagement sum |
+| 27 | **@eking0x** | DATA | 4,463 | defillama mention ×3 + follow | EIC @DLNews (DefiLlama News) — orbit weight 10 |
+
+## Honorable mentions (#28-37)
 
 - @KrisAbdelmessih (vol veteran), @littleVolSwan (gamma seller), @finn_hulse (vol idiom), @0xSnarks (Onyx founder), @variational_lvs/@mr_plumpkin (Variational founders), @TheSpeculator0 (options veteran), @Alice_comfy (Shinoji Research), @G3ni3sWish (HFT MM), @0xLightcycle (crypto quant), @hftgod (ex-Cambridge HFT)
 
@@ -43,3 +57,4 @@ Session total: ~$1.51 spend across Apify + TwitterAPI.io. Cache: 2,223 profiles,
 - **Worst discovery primitive**: X communities (BTC-maxi heavy) and pinned-tweet mentions (product launches, not peer salutes).
 - **The audit rubric is now the bottleneck**, not discovery. Real operators (Hummingbot CTO, ex-Citadel devs, Wintermute leadership, Selini Capital founder) keep surfacing and failing on `engage_consistent` (audience too quiet for view tier) or `niche_recent` (sparse posting).
 - **The forbidden affiliations** (Polymarket, Kalshi, Meteora, Jupiter) reliably gated out KOLs. Zero false negatives reported.
+- **The defillama cohort needs its own rubric**. The quant-niche regex catches market-maker jargon, not DeFi-data jargon (TVL, yields, stablecoins, oracle, bridge). For data-shillers, follow-graph proximity to @defillama / @0xngmi is the strongest signal — every viable candidate in this cohort was in their following list.
