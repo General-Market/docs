@@ -1,6 +1,8 @@
 import { getAaDataNodeUrl } from '@/lib/config'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 import { toDisplayId, allInternalIds } from '@/lib/vision/source-ids'
+import { isHiddenSourceId } from '@/lib/vision/hidden-sources'
+import { hasVaultForSource } from '@/lib/vision/sources-vaults'
 import sourcesDisplay from '@/data/sources-display.json'
 
 export const runtime = 'nodejs'
@@ -94,6 +96,13 @@ async function buildIndex(): Promise<SearchIndex> {
 
       const rawSource = (s.source || '') as string
       const displaySource = toDisplayId(rawSource)
+
+      // No false hopes: results must point at a live source with a vault.
+      // The snapshot endpoint may still emit hidden or unvaulted sources;
+      // we drop them here so search never surfaces a result that 404s.
+      if (isHiddenSourceId(rawSource) || isHiddenSourceId(displaySource)) continue
+      if (!hasVaultForSource(displaySource)) continue
+
       const imageUrl = resolveImage(displaySource, aid, (s.imageUrl as string) ?? null)
 
       let baseScore = 0
