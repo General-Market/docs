@@ -51,38 +51,56 @@ float fbm(vec2 p) {
   return v;
 }
 
+// Rainbow spectrum for iridescent edge bleed
+vec3 iridescent(float t) {
+  return 0.5 + 0.5 * cos(6.28318 * (vec3(1.0, 0.85, 0.7) * t + vec3(0.0, 0.33, 0.67)));
+}
+
 void main() {
   vec2 uv = vUv;
-  vec2 p = (uv - 0.5) * 2.5;
-  float t = uTime * 0.22;
+  vec2 p = (uv - 0.5) * 2.0;
+  float r = length(p);
+  float t = uTime * 0.18;
 
-  vec2 flow = vec2(t, t * 0.7);
-  float a = fbm(p + flow);
-  vec2 q = vec2(fbm(p + a + 4.0), fbm(p + a - 2.0));
-  float r = fbm(p + 0.7 * q + flow * 0.5);
-  float g = fbm(p + 0.7 * q);
-  float b = fbm(p + 0.7 * q - flow * 0.5);
+  // Two octaves of domain warp — gives the slow "molten" drift
+  vec2 q1 = vec2(fbm(p * 1.4 + t), fbm(p * 1.4 - t * 0.7 + 17.0));
+  vec2 q2 = vec2(fbm(p + q1 + t * 0.5), fbm(p + q1 - t * 0.4 + 9.0));
+  vec2 wp = p + q2 * 0.6;
 
-  // Pour the three channels into a single luminance, then drape a metallic
-  // gradient over it for the polished-chrome quality
-  float lum = clamp(0.33 * (r + g + b), 0.0, 1.0);
-  lum = smoothstep(0.15, 0.85, lum);
+  // Sample the field three times with a small lateral offset per channel —
+  // that's where the chromatic split lives.
+  float cr = fbm(wp * 1.8 + vec2(0.18, 0.0) + t);
+  float cg = fbm(wp * 1.8 + t);
+  float cb = fbm(wp * 1.8 - vec2(0.18, 0.0) + t);
 
-  vec3 dark = vec3(0.08, 0.08, 0.11);
+  float lum = (cr + cg + cb) * 0.333;
+
+  // Chrome gradient: dark → mid → near-white. Mapped to lum, but
+  // contrast-boosted so the rolloff feels like polished metal, not paper.
+  vec3 dark = vec3(0.04, 0.04, 0.07);
   vec3 mid = vec3(0.55, 0.56, 0.6);
-  vec3 hi = vec3(0.98, 0.99, 1.02);
+  vec3 hi = vec3(1.0, 0.98, 0.96);
+  vec3 metal = mix(dark, mid, smoothstep(0.05, 0.55, lum));
+  metal = mix(metal, hi, smoothstep(0.55, 0.92, lum));
 
-  vec3 metal = mix(dark, mid, smoothstep(0.0, 0.5, lum));
-  metal = mix(metal, hi, smoothstep(0.55, 0.95, lum));
+  // Iridescent rainbow injected through channel divergence — paper-design's
+  // signature. Strong enough to read, not so strong it looks like a decal.
+  vec3 chroma = vec3(cr - lum, cg - lum, cb - lum) * 2.4;
+  metal += chroma * vec3(0.55, 0.5, 0.85);
 
-  // Faint chromatic tint from the channel divergence — keeps it from
-  // looking like flat greyscale
-  vec3 tint = vec3(r - g, g - b, b - r) * 0.18;
-  metal += tint;
+  // Extra spectrum bleed near the rim, sampled from the warped field
+  float edge = smoothstep(0.35, 0.7, r) * (1.0 - smoothstep(0.85, 1.0, r));
+  vec3 iri = iridescent(lum * 1.4 + r + t * 0.6);
+  metal = mix(metal, iri * 1.2, edge * 0.45);
 
-  // Vignette toward the disk's edge so the rim reads as metal, not paper
-  float vig = 1.0 - smoothstep(0.7, 1.05, length(uv - 0.5) * 2.0);
-  metal *= mix(0.5, 1.0, vig);
+  // Off-center specular pop
+  vec2 sp = p - vec2(-0.3, -0.25);
+  float spec = pow(max(0.0, 1.0 - length(sp) * 1.6), 3.0);
+  metal += vec3(spec) * 0.35;
+
+  // Vignette toward the rim so the disk reads as metal, not paper.
+  float vig = 1.0 - smoothstep(0.78, 1.05, r);
+  metal *= mix(0.4, 1.0, vig);
 
   gl_FragColor = vec4(clamp(metal, 0.0, 1.0), 1.0);
 }

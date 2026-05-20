@@ -153,19 +153,23 @@ export const ClayFlow: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  // Scroll-instruction fades out in the first 10% of the scene
+  // Scroll-instruction breathes (bounces) the whole time the canvas is
+  // panning, then fades only in the final tenth. Source kept it on the
+  // page until the user actually scrolled.
+  const bounceY = Math.sin((frame / 60) * Math.PI) * 15;
   const instructionOpacity = interpolate(
     frame,
-    [0, durationInFrames * 0.08, durationInFrames * 0.12],
+    [0, durationInFrames * 0.85, durationInFrames],
     [1, 1, 0],
-    { extrapolateRight: "clamp" },
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Canvas pan — 0 to -SCROLL_MAX across the scene
+  // Canvas pan — linear from 0 to -SCROLL_MAX. The GSAP scrub is a direct
+  // mapping (scrub: 1), not an eased curve. Easing here would make the
+  // middle race past while the ends crawled.
   const panX = interpolate(frame, [0, durationInFrames], [0, -SCROLL_MAX], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.inOut(Easing.cubic),
   });
 
   // Per-element pop-in: fires when the element's screen X enters the trigger
@@ -200,13 +204,13 @@ export const ClayFlow: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG, overflow: "hidden" }}>
-      {/* Scroll instruction chip */}
+      {/* Scroll instruction chip — bounces in place, fades only at the end */}
       <div
         style={{
           position: "absolute",
           bottom: 60,
           left: "50%",
-          transform: "translateX(-50%)",
+          transform: `translate(-50%, ${-bounceY}px)`,
           fontFamily: "'Segoe UI', sans-serif",
           fontWeight: 700,
           color: TEXT_MUTED,
