@@ -41,6 +41,11 @@ import { NoiseBloom } from "./NoiseBloom";
 import { InkPour } from "./InkPour";
 import { FoldingCircleLoop } from "./FoldingCircleLoop";
 import { GridRun } from "./GridRun";
+import { Invited } from "./Invited";
+import { LightSwitch } from "./LightSwitch";
+import { RippleLoader } from "./RippleLoader";
+import { ClayFlow } from "./ClayFlow";
+import { WorldCup2026 } from "./WorldCup2026";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -89,6 +94,11 @@ const ALL_SCENES = [
   { id: "WP-InkPour", component: InkPour },
   { id: "WP-FoldingCircleLoop", component: FoldingCircleLoop },
   { id: "WP-GridRun", component: GridRun },
+  { id: "WP-Invited", component: Invited },
+  { id: "WP-LightSwitch", component: LightSwitch },
+  { id: "WP-RippleLoader", component: RippleLoader },
+  { id: "WP-ClayFlow", component: ClayFlow },
+  { id: "WP-WorldCup2026", component: WorldCup2026 },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
