@@ -2099,3 +2099,438 @@ sources = ["binance_options"]
 strategy = "momentum"
 [funds.params]
 
+# WARNING: defillama-* sub-source funds reuse existing vault addresses pending chain recovery. See task #5.
+# These 54 funds are display-side shadows; the underlying vaults are shared with the original
+# Lockflow / Unlock / Yield / Exploit / Drift funds and trade the same on-chain `defi` batches.
+
+[[funds]]
+name = "Funding"
+symbol = "FNDG"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-derivatives"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Liquid"
+symbol = "LIQD"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-derivatives"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Perp"
+symbol = "PERP"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-derivatives"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Slippage"
+symbol = "SLPG"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-dexs"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Bookrun"
+symbol = "BKRN"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-dexs"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "MEVfade"
+symbol = "MEVF"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-dexs"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Vesting"
+symbol = "VEST"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-launchpad"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Allocation"
+symbol = "ALOC"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-launchpad"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Postlaunch"
+symbol = "PSTL"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-launchpad"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Recursion"
+symbol = "RCRS"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-prediction-market"]
+strategy = "polymarket_consensus"
+[funds.params]
+
+[[funds]]
+name = "Auger"
+symbol = "AUGR"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-prediction-market"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Oddsmith"
+symbol = "ODSM"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-prediction-market"]
+strategy = "biased"
+[funds.params]
+
+[[funds]]
+name = "Custodian"
+symbol = "CSTD"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-rwa"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Tenor"
+symbol = "TNOR"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-rwa"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Probate"
+symbol = "PRBT"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-rwa"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Restake"
+symbol = "RSTK"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-liquid-staking"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Depeg"
+symbol = "DPEG"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-liquid-staking"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Slash"
+symbol = "SLSH"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-liquid-staking"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Collateral"
+symbol = "COLL"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-lending"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Loanbook"
+symbol = "LNBK"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-lending"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Default"
+symbol = "DFLT"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-lending"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Quorum"
+symbol = "QURM"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-onchain-capital-allocator"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Treasurer"
+symbol = "TRSR"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-onchain-capital-allocator"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Allocator"
+symbol = "ALCT"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-onchain-capital-allocator"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Wrapped"
+symbol = "WRAP"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-bridges"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Custody"
+symbol = "CSTY"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-bridges"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Crosschain"
+symbol = "XCHN"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-bridges"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Curator"
+symbol = "CURT"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-risk-curators"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Auditor"
+symbol = "ADTR"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-risk-curators"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Underwrite"
+symbol = "UNWR"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-risk-curators"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Autonom"
+symbol = "ATNM"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-ai-agents"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Agentic"
+symbol = "AGNT"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-ai-agents"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Hallucin"
+symbol = "HLCN"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-ai-agents"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Mixer"
+symbol = "MIXR"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-privacy"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Shielded"
+symbol = "SHLD"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-privacy"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Obscure"
+symbol = "OBSC"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-privacy"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Threetap"
+symbol = "3TAP"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-telegram-bot"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Sniper"
+symbol = "SNPR"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-telegram-bot"]
+strategy = "volatility_fade"
+[funds.params]
+
+[[funds]]
+name = "Trenchbot"
+symbol = "TRCH"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-telegram-bot"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Tipline"
+symbol = "TIPL"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-trading-app"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Mobile"
+symbol = "MOBL"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-trading-app"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Console"
+symbol = "CNSL"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-trading-app"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Middleware"
+symbol = "MDWR"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-interface"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Aggregator"
+symbol = "AGGR"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-interface"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Wrapper"
+symbol = "WRPR"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-interface"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Keychain"
+symbol = "KCHN"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-wallets"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Seed"
+symbol = "SEED"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-wallets"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Signer"
+symbol = "SIGN"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-wallets"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Gravity"
+symbol = "GRAV"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-top-chains"]
+strategy = "momentum"
+[funds.params]
+
+[[funds]]
+name = "Sequencer"
+symbol = "SEQR"
+vault = "0x9f065FF74984e2242Fa5744a23953A49cED47A9A"  # SHARED with Drift — pending vault deploy
+sources = ["defillama-top-chains"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Fork"
+symbol = "FORK"
+vault = "0x0dCce7FcD3cdE4A372D2956F77f4a4b6Ff28e903"  # SHARED with Lockflow — pending vault deploy
+sources = ["defillama-top-chains"]
+strategy = "contrarian"
+[funds.params]
+
+[[funds]]
+name = "Peg"
+symbol = "PEGG"
+vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
+sources = ["defillama-top-stablecoins"]
+strategy = "mean_reversion"
+[funds.params]
+
+[[funds]]
+name = "Backstop"
+symbol = "BKSP"
+vault = "0x2f7c605b61a7Fe0da4AeCE0C88c5f44C46261E7a"  # SHARED with Yield — pending vault deploy
+sources = ["defillama-top-stablecoins"]
+strategy = "regime"
+[funds.params]
+
+[[funds]]
+name = "Stable"
+symbol = "STBL"
+vault = "0x9fD35570745283a223f47bdb5978379120B303a9"  # SHARED with Exploit — pending vault deploy
+sources = ["defillama-top-stablecoins"]
+strategy = "volatility_fade"
+[funds.params]

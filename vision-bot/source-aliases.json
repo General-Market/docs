@@ -1,13 +1,85 @@
 {
   "_doc": "Legacy source-name aliases. Maps canonical fund.source values to the names the data-node tags batches with on-chain. Fund-manager hashes both the canonical name and every listed alias as keccak(name + '_vN'), AND expands the alias set into FundState.match_set so plain-string source IDs from the batches API also resolve. Run scripts/probe-source-hashes.py to discover new orphans.",
   "aliases": {
-    "defillama":  ["defi"],
-    "treasury":   ["bonds"],
-    "gtfs_rt":    ["gtfs_transit"],
-    "fred":       ["rates"],
-    "nasdaq":     ["stocks"],
-    "sec":        ["sec_13f", "sec_efts", "sec_insider"],
-    "pandascore": ["esports"],
-    "coingecko":  ["crypto"]
+    "defillama": [
+      "defi"
+    ],
+    "treasury": [
+      "bonds"
+    ],
+    "gtfs_rt": [
+      "gtfs_transit"
+    ],
+    "fred": [
+      "rates"
+    ],
+    "nasdaq": [
+      "stocks"
+    ],
+    "sec": [
+      "sec_13f",
+      "sec_efts",
+      "sec_insider"
+    ],
+    "pandascore": [
+      "esports"
+    ],
+    "coingecko": [
+      "crypto"
+    ],
+    "defillama-derivatives": [
+      "defi"
+    ],
+    "defillama-dexs": [
+      "defi"
+    ],
+    "defillama-launchpad": [
+      "defi"
+    ],
+    "defillama-prediction-market": [
+      "defi"
+    ],
+    "defillama-rwa": [
+      "defi"
+    ],
+    "defillama-liquid-staking": [
+      "defi"
+    ],
+    "defillama-lending": [
+      "defi"
+    ],
+    "defillama-onchain-capital-allocator": [
+      "defi"
+    ],
+    "defillama-bridges": [
+      "defi"
+    ],
+    "defillama-risk-curators": [
+      "defi"
+    ],
+    "defillama-ai-agents": [
+      "defi"
+    ],
+    "defillama-privacy": [
+      "defi"
+    ],
+    "defillama-telegram-bot": [
+      "defi"
+    ],
+    "defillama-trading-app": [
+      "defi"
+    ],
+    "defillama-interface": [
+      "defi"
+    ],
+    "defillama-wallets": [
+      "defi"
+    ],
+    "defillama-top-chains": [
+      "defi"
+    ],
+    "defillama-top-stablecoins": [
+      "defi"
+    ]
   }
 }
