@@ -72,6 +72,7 @@ import {
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
+import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
 import {
   TOTAL_FRAMES as TUTORIAL_DURATION,
@@ -322,6 +323,16 @@ export const RemotionRoot: React.FC = () => {
           fps={wabiMeta.fps}
           width={wabiMeta.width}
           height={wabiMeta.height}
+        />
+
+        {/* --- Partnership Reel (motion-design template) --- */}
+        <Composition
+          id={partnershipReelMeta.id}
+          component={partnershipReelMeta.component}
+          durationInFrames={partnershipReelMeta.durationInFrames}
+          fps={partnershipReelMeta.fps}
+          width={partnershipReelMeta.width}
+          height={partnershipReelMeta.height}
         />
 
         {/* --- Ember --- */}
