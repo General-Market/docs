@@ -62,9 +62,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // Legacy source IDs that have been split into more specific pages. The old
 // /source/<id> URLs (shared links, bookmarks, search results) redirect to
 // the new canonical destination instead of 404'ing.
-const REDIRECTS: Record<string, string> = {
-  defillama: 'defillama-tvl-all',
-}
+// `defillama` is intentionally NOT redirected — it keeps rendering the full
+// firehose for backwards-compat with shared links and SEO. The 18 new curated
+// pages live alongside, reachable by direct URL and the sources grid.
+const REDIRECTS: Record<string, string> = {}
 
 export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
