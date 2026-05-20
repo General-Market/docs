@@ -49,6 +49,7 @@ import { WorldCup2026 } from "./WorldCup2026";
 import { LiquidMetalButton } from "./LiquidMetalButton";
 import { Projection } from "./Projection";
 import { PremierLeague } from "./PremierLeague";
+import { GsapGrid } from "./GsapGrid";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -104,6 +105,7 @@ const ALL_SCENES = [
   { id: "WP-WorldCup2026", component: WorldCup2026 },
   { id: "WP-LiquidMetalButton", component: LiquidMetalButton },
   { id: "WP-Projection", component: Projection },
+  { id: "WP-GsapGrid", component: GsapGrid },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
