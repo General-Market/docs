@@ -73,14 +73,14 @@ export default async function SourcePage({ params }: Props) {
     redirect(`/source/${REDIRECTS[sourceId]}`)
   }
 
-  // Sources without a vault are hidden from every UI listing. A direct
-  // deep-link (old share, stale bookmark) shouldn't resurrect them as
-  // an empty "no vault has stepped forward" placeholder — 404 instead.
-  if (!hasVaultForSource(sourceId)) {
+  const source = await getSourceDisplayServer(sourceId)
+
+  // Legacy gate: sources without a vault 404'd. Curated human pages are
+  // allowed to render pre-vault — their component handles the empty state
+  // honestly ("Markets indexing. Check back tomorrow.") instead of pretending.
+  if (!hasVaultForSource(sourceId) && source?.audience !== 'human') {
     notFound()
   }
-
-  const source = await getSourceDisplayServer(sourceId)
 
   // Server-side prefetch: snapshot + batch config + meta in parallel.
   // Hydrated into React Query cache — client hooks find warm data on mount.
