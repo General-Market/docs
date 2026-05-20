@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server'
 import { getAaDataNodeUrl } from '@/lib/config'
 import { allInternalIds } from '@/lib/vision/source-ids'
 import { isHiddenSourceId } from '@/lib/vision/hidden-sources'
+import sourcesDisplay from '@/data/sources-display.json'
+import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
+
+type DisplaySource = {
+  sourceId: string
+  internalIds?: string[]
+  prefixes?: string[]
+  audience?: 'human' | 'bot' | 'redirect'
+  redirectTo?: string
+}
+
+const DISPLAY_BY_ID: Record<string, DisplaySource> = (() => {
+  const map: Record<string, DisplaySource> = {}
+  for (const s of (sourcesDisplay as { sources: DisplaySource[] }).sources) {
+    map[s.sourceId] = s
+  }
+  return map
+})()
 const DETAIL_LIMIT = 10_000   // Per-source detail page (crypto=10K, defi=6K)
 const GRID_CAP_PER_SOURCE = 200  // Grid view bitmap preview cap
 
@@ -56,7 +74,35 @@ export async function GET(request: Request) {
           } catch { return [] }
         })
       )
-      const snapshots = results.reduce((best, curr) => curr.length > best.length ? curr : best, [] as Array<Record<string, unknown>>)
+      let snapshots = results.reduce((best, curr) => curr.length > best.length ? curr : best, [] as Array<Record<string, unknown>>)
+
+      // Audience-aware filtering: human pages get a curated slice of the
+      // upstream firehose. Bot pages get the full prefix range. Redirect
+      // entries shouldn't be reachable here at all — the page-level
+      // redirect handles them — but defend against the edge case anyway.
+      //
+      // TODO: once data-node /vision/snapshot exposes `tradable_in_ui`
+      // and accepts `tradable_only=true`, filter upstream and delete this
+      // client-side intersection (along with data/defillama-curated.json).
+      const display = DISPLAY_BY_ID[sourceFilter]
+      if (display) {
+        const prefixes = display.prefixes ?? []
+        if (prefixes.length > 0) {
+          snapshots = snapshots.filter(s => {
+            const id = typeof s.assetId === 'string' ? s.assetId : ''
+            return prefixes.some(p => id.startsWith(p))
+          })
+        }
+        if (display.audience === 'human') {
+          const allow = getDefiLlamaAllowlist(sourceFilter)
+          if (allow) {
+            snapshots = snapshots.filter(s => {
+              const id = typeof s.assetId === 'string' ? s.assetId : ''
+              return allow.has(id)
+            })
+          }
+        }
+      }
 
       const response = NextResponse.json({
         generatedAt: new Date().toISOString(),

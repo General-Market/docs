@@ -19,4 +19,6 @@ export interface VisionSource {
   valueLabel: string
   valueUnit: string
   isPrice: boolean
+  audience?: 'human' | 'bot' | 'redirect'
+  redirectTo?: string
 }

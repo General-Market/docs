@@ -17,6 +17,8 @@ export interface SourceDisplayServer {
   valueLabel: string
   valueUnit: string
   isPrice: boolean
+  audience?: 'human' | 'bot' | 'redirect'
+  redirectTo?: string
 }
 
 export interface CategoryDisplayServer {
@@ -53,6 +55,8 @@ const STATIC_REGISTRY: SourceRegistryServer = (() => {
     valueLabel: s.valueLabel ?? '',
     valueUnit: s.valueUnit ?? '',
     isPrice: s.isPrice ?? false,
+    audience: s.audience,
+    redirectTo: s.redirectTo,
   }))
   return { sources, categories: raw.categories ?? [] }
 })()

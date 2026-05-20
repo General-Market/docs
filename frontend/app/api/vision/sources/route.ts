@@ -1,5 +1,6 @@
 import { getDataNodeServer } from '@/lib/config'
 import { isHiddenSource } from '@/lib/vision/hidden-sources'
+import sourcesDisplay from '@/data/sources-display.json'
 
 function sanitizeSource(s: any) {
   return {
@@ -12,21 +13,55 @@ function sanitizeSource(s: any) {
   }
 }
 
+// Static overlay: display sources defined only in sources-display.json
+// (e.g. the 18 DefiLlama human pages). The data-node doesn't know about
+// these — they're editorial slices of an existing internal source. We
+// merge them in here so the grid renders them. `audience: "bot"` and
+// `"redirect"` entries are dropped from the public listing; they remain
+// resolvable by direct URL via getSourceDisplayServer.
+function staticOverlaySources(): any[] {
+  const raw = (sourcesDisplay as { sources?: any[] }).sources ?? []
+  return raw.filter(
+    s => s.batchEligible === true
+      && s.audience !== 'bot'
+      && s.audience !== 'redirect'
+      && !isHiddenSource(s),
+  )
+}
+
 export async function GET() {
   try {
     const res = await fetch(`${getDataNodeServer()}/sources/registry`, { next: { revalidate: 60 } })
-    if (!res.ok) return Response.json({ sources: [], categories: [] }, { status: 502 })
+    if (!res.ok) {
+      // Upstream down — at minimum serve the static overlay so the grid
+      // doesn't collapse to empty.
+      const overlay = staticOverlaySources().map(sanitizeSource)
+      return Response.json({ sources: overlay, categories: [] }, { status: 502 })
+    }
     const data = await res.json()
-    // Filter by batchEligible from the data-node registry — no static JSON dependency.
-    // Sources appear/disappear dynamically as the data-node enables them.
-    const sources = (data.sources ?? [])
+    const live = (data.sources ?? [])
       .filter((s: any) => s.batchEligible === true && !isHiddenSource(s))
-      .map(sanitizeSource)
+      // Tag any defillama entry the data-node still advertises as a
+      // redirect, so the grid doesn't show the old umbrella source.
+      .map((s: any) => {
+        if (s.sourceId === 'defillama') return { ...s, audience: 'redirect', redirectTo: 'defillama-tvl-all' }
+        return s
+      })
+      .filter((s: any) => s.audience !== 'bot' && s.audience !== 'redirect')
+
+    // Merge the static overlay, preferring live entries on sourceId collision.
+    const seen = new Set<string>(live.map((s: any) => s.sourceId))
+    const merged = [
+      ...live,
+      ...staticOverlaySources().filter(s => !seen.has(s.sourceId)),
+    ].map(sanitizeSource)
+
     return Response.json({
-      sources,
+      sources: merged,
       categories: data.categories ?? [],
     })
   } catch {
-    return Response.json({ sources: [], categories: [] }, { status: 502 })
+    const overlay = staticOverlaySources().map(sanitizeSource)
+    return Response.json({ sources: overlay, categories: [] }, { status: 502 })
   }
 }

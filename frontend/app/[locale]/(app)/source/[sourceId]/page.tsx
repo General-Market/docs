@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/AppShell'
 import { SourceSearch } from '@/components/layout/SourceSearch'
 import { SourceSidebarApple } from '@/components/domain/vision/detail/SourceSidebarApple'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
+import { SourceDetailHumanTrading } from '@/components/domain/vision/detail/SourceDetailHumanTrading'
 import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboardingCompass'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -58,8 +59,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+// Legacy source IDs that have been split into more specific pages. The old
+// /source/<id> URLs (shared links, bookmarks, search results) redirect to
+// the new canonical destination instead of 404'ing.
+const REDIRECTS: Record<string, string> = {
+  defillama: 'defillama-tvl-all',
+}
+
 export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
+
+  if (REDIRECTS[sourceId]) {
+    redirect(`/source/${REDIRECTS[sourceId]}`)
+  }
 
   // Sources without a vault are hidden from every UI listing. A direct
   // deep-link (old share, stale bookmark) shouldn't resurrect them as
@@ -139,7 +151,11 @@ export default async function SourcePage({ params }: Props) {
         sidebar={<SourceSidebarApple sourceId={sourceId} category={source?.category} />}
       >
         <div className="overflow-x-clip">
-          <SourceDetailV2 sourceId={sourceId} initialSource={source} hideSidebar />
+          {source?.audience === 'human' ? (
+            <SourceDetailHumanTrading sourceId={sourceId} initialSource={source} hideSidebar />
+          ) : (
+            <SourceDetailV2 sourceId={sourceId} initialSource={source} hideSidebar />
+          )}
         </div>
         <HomeOnboardingCompass />
       </AppShell>

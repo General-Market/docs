@@ -14,6 +14,8 @@ interface SourceDisplay {
   valueLabel: string
   valueUnit: string
   isPrice: boolean
+  audience?: 'human' | 'bot' | 'redirect'
+  redirectTo?: string
 }
 
 interface CategoryDisplay {
