@@ -46,6 +46,8 @@ import { LightSwitch } from "./LightSwitch";
 import { RippleLoader } from "./RippleLoader";
 import { ClayFlow } from "./ClayFlow";
 import { WorldCup2026 } from "./WorldCup2026";
+import { LiquidMetalButton } from "./LiquidMetalButton";
+import { Projection } from "./Projection";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -99,6 +101,8 @@ const ALL_SCENES = [
   { id: "WP-RippleLoader", component: RippleLoader },
   { id: "WP-ClayFlow", component: ClayFlow },
   { id: "WP-WorldCup2026", component: WorldCup2026 },
+  { id: "WP-LiquidMetalButton", component: LiquidMetalButton },
+  { id: "WP-Projection", component: Projection },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
