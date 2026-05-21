@@ -531,8 +531,22 @@ async fn list_batches(
                     lifecycle_player_counts.get(&batch_id).copied().unwrap_or(0)
                 };
 
-                // Compute TVL from in-memory player positions
-                let tvl = if let Some((_batch, players)) =
+                // Compute TVL. In lazy mode the in-memory player map is no
+                // longer authoritative — go straight to Postgres. In strict
+                // mode the in-memory sum stays fastest; we only touch
+                // Postgres if the map is empty (post-restart, pre-replay).
+                let tvl = if state.scheduler.is_lazy() {
+                    let s: Option<String> = sqlx::query_scalar(
+                        "SELECT COALESCE(SUM(balance::numeric), 0)::text \
+                         FROM vision_positions WHERE batch_id = $1"
+                    )
+                    .bind(batch_id as i64)
+                    .fetch_one(&state.pool)
+                    .await
+                    .ok()
+                    .flatten();
+                    s.and_then(|v| U256::from_dec_str(&v).ok()).unwrap_or(U256::zero())
+                } else if let Some((_batch, players)) =
                     state.scheduler.get_batch_state(batch_id).await
                 {
                     players
@@ -2931,10 +2945,19 @@ async fn rounds_active(
                     .unwrap_or(0) as usize
                 };
 
-                // Compute TVL from in-memory player deposits (same as list_batches).
-                // Falls back to summing vision_positions when scheduler is empty
-                // (e.g. after oracle restart before chain replay catches up).
-                let tvl = if let Some((_batch, players)) =
+                // Compute TVL. Lazy mode short-circuits to Postgres so the
+                // hot loop avoids a redundant per-batch position load.
+                let tvl = if state.scheduler.is_lazy() {
+                    sqlx::query_scalar::<_, Option<String>>(
+                        "SELECT COALESCE(SUM(balance::numeric), 0)::text FROM vision_positions WHERE batch_id = $1"
+                    )
+                    .bind(batch_id as i64)
+                    .fetch_one(&state.pool)
+                    .await
+                    .ok()
+                    .flatten()
+                    .unwrap_or_else(|| "0".to_string())
+                } else if let Some((_batch, players)) =
                     state.scheduler.get_batch_state(batch_id).await
                 {
                     let sum = players
