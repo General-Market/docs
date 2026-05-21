@@ -60,30 +60,63 @@ export async function GET(request: Request) {
         empty.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60')
         return empty
       }
-      // Try all internal IDs in parallel (e.g., coingecko → ["defi", "crypto"]) — keep largest
-      const results = await Promise.all(
-        allInternalIds(sourceFilter).map(async (internalId) => {
-          try {
-            const res = await fetch(
-              `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
-              { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
-            )
-            if (!res.ok) return []
-            const raw = await res.json()
-            return (raw.snapshots ?? []) as Array<Record<string, unknown>>
-          } catch { return [] }
-        })
-      )
-      let snapshots = results.reduce((best, curr) => curr.length > best.length ? curr : best, [] as Array<Record<string, unknown>>)
+      // Curated human pages know exactly which assetIds they need (10 each).
+      // The bulk /vision/snapshot endpoint paginates alphabetically and caps
+      // at 10K rows per source, which silently drops late-alphabet curated
+      // slugs (`uniswap-*`, `wbtc`, `yield-ai`, `veda`, …) for large sources
+      // like `defi` that exceed the cap. Ask the data-node directly for the
+      // exact rows instead — it's a single indexed lookup.
+      const allow = getDefiLlamaAllowlist(sourceFilter)
+      let snapshots: Array<Record<string, unknown>>
+      if (allow && allow.size > 0) {
+        const assetIds = Array.from(allow)
+        const results = await Promise.all(
+          allInternalIds(sourceFilter).map(async (internalId) => {
+            try {
+              const res = await fetch(
+                `${getAaDataNodeUrl()}/vision/snapshot/targeted`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ source: internalId, asset_ids: assetIds }),
+                  next: { revalidate: 30 },
+                  signal: AbortSignal.timeout(30_000),
+                },
+              )
+              if (!res.ok) return []
+              const raw = await res.json()
+              return (raw.snapshots ?? []) as Array<Record<string, unknown>>
+            } catch { return [] }
+          })
+        )
+        snapshots = results.reduce(
+          (best, curr) => (curr.length > best.length ? curr : best),
+          [] as Array<Record<string, unknown>>,
+        )
+      } else {
+        const results = await Promise.all(
+          allInternalIds(sourceFilter).map(async (internalId) => {
+            try {
+              const res = await fetch(
+                `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
+                { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
+              )
+              if (!res.ok) return []
+              const raw = await res.json()
+              return (raw.snapshots ?? []) as Array<Record<string, unknown>>
+            } catch { return [] }
+          })
+        )
+        snapshots = results.reduce(
+          (best, curr) => (curr.length > best.length ? curr : best),
+          [] as Array<Record<string, unknown>>,
+        )
+      }
 
-      // Audience-aware filtering: human pages get a curated slice of the
-      // upstream firehose. Bot pages get the full prefix range. Redirect
-      // entries shouldn't be reachable here at all — the page-level
-      // redirect handles them — but defend against the edge case anyway.
-      //
-      // TODO: once data-node /vision/snapshot exposes `tradable_in_ui`
-      // and accepts `tradable_only=true`, filter upstream and delete this
-      // client-side intersection (along with data/defillama-curated.json).
+      // Audience-aware filtering: prefixes still need to be enforced for the
+      // non-targeted fallback (bulk fetch may include sibling asset families
+      // we don't want on a human page). The targeted query returns exactly
+      // the curated slugs so the filter is a no-op there.
       const display = DISPLAY_BY_ID[sourceFilter]
       if (display) {
         const prefixes = display.prefixes ?? []
@@ -92,15 +125,6 @@ export async function GET(request: Request) {
             const id = typeof s.assetId === 'string' ? s.assetId : ''
             return prefixes.some(p => id.startsWith(p))
           })
-        }
-        if (display.audience === 'human') {
-          const allow = getDefiLlamaAllowlist(sourceFilter)
-          if (allow) {
-            snapshots = snapshots.filter(s => {
-              const id = typeof s.assetId === 'string' ? s.assetId : ''
-              return allow.has(id)
-            })
-          }
         }
       }
 
