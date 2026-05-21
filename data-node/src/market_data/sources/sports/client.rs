@@ -16,7 +16,7 @@
 //! Rate limit: 30 req/min self-imposed (undocumented public API; be polite)
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -45,6 +45,12 @@ const INTER_REQUEST_DELAY_MS: u64 = 2000;
 /// inter-league delay because summary calls don't share a bottleneck and we
 /// want to fit a full weekend's live games inside one sync cycle.
 const SUMMARY_DELAY_MS: u64 = 750;
+
+/// Pre-game events whose scheduled start is within this many hours are kept
+/// as score-only markets. Wider than zero so the page is never empty between
+/// matches; tight enough that we don't carry tomorrow's full slate as 0–0
+/// flat lines. Picks up the "matches starting tonight" cohort.
+const UPCOMING_WINDOW_HOURS: i64 = 12;
 
 /// All leagues to poll. Each entry is (sport_path, league_code, display_name).
 const LEAGUES: &[(&str, &str, &str)] = &[
@@ -192,6 +198,10 @@ struct ScoreboardResponse {
 struct Event {
     #[serde(default)]
     id: String,
+    /// ISO-8601 kickoff timestamp. Pre-games use this to decide whether the
+    /// event is close enough to register as an upcoming score market.
+    #[serde(default)]
+    date: Option<String>,
     #[serde(default)]
     competitions: Vec<Competition>,
 }
@@ -319,6 +329,7 @@ struct GameInfo {
     home_score: Option<Decimal>,
     away_score: Option<Decimal>,
     state: String,
+    start_time: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -449,12 +460,17 @@ impl MarketDataSource for SportsMarketSource {
                 .clone()
         };
 
+        let now = Utc::now();
+        let upcoming_horizon =
+            chrono::Duration::hours(UPCOMING_WINDOW_HOURS);
+
         let mut assets = Vec::new();
         let mut next_live: HashSet<String> = HashSet::new();
         let mut new_cache: HashMap<String, EventSummary> = HashMap::new();
         let mut total_events = 0u32;
         let mut live_events = 0u32;
         let mut final_tick_events = 0u32;
+        let mut upcoming_events = 0u32;
         let mut league_errors = 0u32;
 
         for (idx, &(sport_path, league_code, display_name)) in LEAGUES.iter().enumerate() {
@@ -486,20 +502,30 @@ impl MarketDataSource for SportsMarketSource {
                 let key = format!("{}/{}", league_code, game.game_id);
                 let is_live = is_live_state(&game.state);
                 let is_final_tick = !is_live && game.state == "post" && prev_live.contains(&key);
+                let is_upcoming = !is_live
+                    && !is_final_tick
+                    && game.state == "pre"
+                    && game
+                        .start_time
+                        .map(|t| t > now && (t - now) <= upcoming_horizon)
+                        .unwrap_or(false);
 
-                if !is_live && !is_final_tick {
+                if !is_live && !is_final_tick && !is_upcoming {
                     continue;
                 }
 
                 if is_live {
                     live_events += 1;
                     next_live.insert(key.clone());
-                } else {
+                } else if is_final_tick {
                     final_tick_events += 1;
+                } else {
+                    upcoming_events += 1;
                 }
 
                 let matchup = format!("{} vs {}", game.away_team, game.home_team);
                 let subcategory = league_code.to_string();
+                let start_iso = game.start_time.map(|t| t.to_rfc3339());
 
                 // Score assets: home, away, total.
                 for side in ["home", "away", "total"] {
@@ -521,9 +547,19 @@ impl MarketDataSource for SportsMarketSource {
                                 "away_team": game.away_team,
                                 "state": game.state,
                                 "final_tick": is_final_tick,
+                                "upcoming": is_upcoming,
+                                "start_time": start_iso,
                             },
                         }),
                     });
+                }
+
+                // Pre-game (upcoming) events register score-only. No summary
+                // fetch, no stat fan-out — the boxscore is empty before
+                // kickoff and the rate-limit budget is better spent on live
+                // matches.
+                if is_upcoming {
+                    continue;
                 }
 
                 // Boxscore stat assets — only for sports with a catalog.
@@ -615,12 +651,14 @@ impl MarketDataSource for SportsMarketSource {
         }
 
         info!(
-            "Sports fetch_assets: {} leagues ({} errors) -> {} events ({} live, {} final-tick) -> {} assets",
+            "Sports fetch_assets: {} leagues ({} errors) -> {} events ({} live, {} final-tick, {} upcoming<{}h) -> {} assets",
             LEAGUES.len(),
             league_errors,
             total_events,
             live_events,
             final_tick_events,
+            upcoming_events,
+            UPCOMING_WINDOW_HOURS,
             assets.len()
         );
 
@@ -957,6 +995,19 @@ fn league_code_to_sport_path(league_code: &str) -> Option<&'static str> {
     None
 }
 
+/// ESPN serves event timestamps in two flavors:
+/// - `2026-05-24T15:00:00Z` (full RFC3339)
+/// - `2026-05-24T15:00Z`    (seconds elided)
+/// chrono's strict RFC3339 parser rejects the second form; try both.
+fn parse_espn_timestamp(raw: &str) -> Option<DateTime<Utc>> {
+    if let Ok(dt) = DateTime::parse_from_rfc3339(raw) {
+        return Some(dt.with_timezone(&Utc));
+    }
+    chrono::NaiveDateTime::parse_from_str(raw, "%Y-%m-%dT%H:%MZ")
+        .ok()
+        .map(|n| n.and_utc())
+}
+
 fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
     let mut games = Vec::new();
 
@@ -1007,6 +1058,10 @@ fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
                 .unwrap_or_else(|| "pre".to_string());
 
             if !home_team.is_empty() || !away_team.is_empty() {
+                let start_time = event
+                    .date
+                    .as_deref()
+                    .and_then(parse_espn_timestamp);
                 games.push(GameInfo {
                     game_id: event.id.clone(),
                     home_team,
@@ -1014,6 +1069,7 @@ fn extract_games(scoreboard: &ScoreboardResponse) -> Vec<GameInfo> {
                     home_score,
                     away_score,
                     state,
+                    start_time,
                 });
             }
         }
@@ -1407,6 +1463,7 @@ mod tests {
         let scoreboard = ScoreboardResponse {
             events: vec![Event {
                 id: "401656789".to_string(),
+                date: None,
                 competitions: vec![Competition {
                     competitors: vec![
                         Competitor {
@@ -1451,10 +1508,90 @@ mod tests {
     }
 
     #[test]
+    fn test_extract_games_parses_start_time() {
+        let scoreboard = ScoreboardResponse {
+            events: vec![Event {
+                id: "740966".to_string(),
+                date: Some("2026-05-24T15:00Z".to_string()),
+                competitions: vec![Competition {
+                    competitors: vec![
+                        Competitor {
+                            id: "1".to_string(),
+                            team: Some(TeamInfo {
+                                display_name: "Team A".to_string(),
+                            }),
+                            score: None,
+                            home_away: Some("home".to_string()),
+                            winner: None,
+                        },
+                        Competitor {
+                            id: "2".to_string(),
+                            team: Some(TeamInfo {
+                                display_name: "Team B".to_string(),
+                            }),
+                            score: None,
+                            home_away: Some("away".to_string()),
+                            winner: None,
+                        },
+                    ],
+                    status: Some(CompetitionStatus {
+                        status_type: Some(StatusType {
+                            completed: false,
+                            state: Some("pre".to_string()),
+                        }),
+                    }),
+                }],
+            }],
+        };
+
+        let games = extract_games(&scoreboard);
+        let st = games[0].start_time.expect("start_time should parse");
+        assert_eq!(st.to_rfc3339(), "2026-05-24T15:00:00+00:00");
+    }
+
+    #[test]
+    fn test_parse_espn_timestamp_full_rfc3339() {
+        let dt = parse_espn_timestamp("2026-05-24T15:00:00Z").unwrap();
+        assert_eq!(dt.to_rfc3339(), "2026-05-24T15:00:00+00:00");
+    }
+
+    #[test]
+    fn test_parse_espn_timestamp_abbreviated() {
+        let dt = parse_espn_timestamp("2026-05-24T15:00Z").unwrap();
+        assert_eq!(dt.to_rfc3339(), "2026-05-24T15:00:00+00:00");
+    }
+
+    #[test]
+    fn test_parse_espn_timestamp_rejects_garbage() {
+        assert!(parse_espn_timestamp("").is_none());
+        assert!(parse_espn_timestamp("not-a-date").is_none());
+    }
+
+    #[test]
+    fn test_upcoming_window_classifier() {
+        let now = Utc::now();
+        let horizon = chrono::Duration::hours(UPCOMING_WINDOW_HOURS);
+
+        let in_window = now + chrono::Duration::hours(2);
+        let out_of_window = now + chrono::Duration::hours(48);
+        let past = now - chrono::Duration::hours(1);
+
+        // Mirror of the gate predicate from fetch_assets.
+        let is_upcoming = |start: DateTime<Utc>| -> bool {
+            start > now && (start - now) <= horizon
+        };
+
+        assert!(is_upcoming(in_window));
+        assert!(!is_upcoming(out_of_window));
+        assert!(!is_upcoming(past));
+    }
+
+    #[test]
     fn test_extract_games_pre_no_scores() {
         let scoreboard = ScoreboardResponse {
             events: vec![Event {
                 id: "401656790".to_string(),
+                date: Some("2026-05-24T15:00Z".to_string()),
                 competitions: vec![Competition {
                     competitors: vec![
                         Competitor {
@@ -1498,6 +1635,7 @@ mod tests {
         let scoreboard = ScoreboardResponse {
             events: vec![Event {
                 id: "".to_string(),
+                date: None,
                 competitions: vec![Competition {
                     competitors: vec![Competitor {
                         id: "1".to_string(),
