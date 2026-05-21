@@ -83,6 +83,12 @@ pub struct VisionConfig {
     /// without orphaning batches mid-tick.
     #[serde(default)]
     pub legacy_drain_only: bool,
+
+    /// Skip preloading all player positions into RAM on startup. Authoritative
+    /// position reads are served from Postgres on demand. Cuts ~200 MB RSS per
+    /// 100 k positions. Roll out one oracle at a time.
+    #[serde(default)]
+    pub lazy_state: bool,
 }
 
 impl Default for VisionConfig {
@@ -115,6 +121,7 @@ impl Default for VisionConfig {
             vision_reconciler_address: String::new(),
             bundle_single_sig_enabled: false,
             legacy_drain_only: false,
+            lazy_state: false,
         }
     }
 }

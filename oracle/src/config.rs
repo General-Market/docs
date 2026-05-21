@@ -428,6 +428,10 @@ impl OracleConfig {
                             .ok()
                             .and_then(|v| v.parse().ok())
                             .unwrap_or(false),
+                        lazy_state: std::env::var("ORACLE_LAZY_VISION_STATE")
+                            .ok()
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(false),
                     })
                 } else {
                     None

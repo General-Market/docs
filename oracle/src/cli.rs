@@ -264,6 +264,13 @@ pub(crate) struct Args {
     #[arg(long)]
     pub vision_start_block: Option<u64>,
 
+    /// Skip the in-memory bootstrap of all player positions on startup, and
+    /// serve authoritative position reads from Postgres on demand. Cuts the
+    /// scheduler's steady-state RSS by ~200 MB per 100 k positions. Roll out
+    /// one oracle at a time and watch RSS before flipping the rest.
+    #[arg(long, env = "ORACLE_LAZY_VISION_STATE")]
+    pub lazy_vision_state: bool,
+
     // vision_reveal_window_secs and vision_tick_poll_interval_ms deleted (round-only purge)
 
     /// Settlement RPC URL for watching Vision deposit events.

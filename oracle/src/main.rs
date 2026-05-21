@@ -81,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(block) = args.vision_start_block {
                 vision_cfg.start_block = block;
             }
+            vision_cfg.lazy_state = args.lazy_vision_state;
             // reveal_window_secs and tick_poll_interval_ms deleted (round-only purge)
             vision_cfg.data_node_token = args.data_node_token.clone();
             // Cross-chain deposit config — CLI args first, then env var fallbacks
@@ -585,9 +586,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut _vision_runtime: Option<tokio::runtime::Runtime> = None;
     if let Some(ref vision_cfg) = vision_config {
         if vision_cfg.enabled {
-            // Initialize Vision components
+            // Initialize Vision components. The scheduler is constructed below,
+            // after the Postgres pool exists, so it can be wired into lazy mode
+            // if `--lazy-vision-state` is set.
             let bitmap_store = Arc::new(oracle::vision::bitmap_store::BitmapStore::new());
-            let scheduler = Arc::new(oracle::vision::tick_scheduler::TickScheduler::new());
             let resolver = Arc::new(oracle::vision::resolver::TickResolver::new(
                 bitmap_store.clone(),
                 vision_cfg.clone(),
@@ -659,6 +661,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .idle_timeout(std::time::Duration::from_secs(300))
                 .connect_with(pool_opts).await {
                 Ok(pool) => {
+                    // Build the scheduler. Lazy mode skips the position bootstrap
+                    // and serves authoritative position reads from Postgres on
+                    // demand. See `tick_scheduler.rs` for the memory model.
+                    let scheduler = if vision_cfg.lazy_state {
+                        info!(node_id, "lazy-vision-state enabled — skipping in-memory position bootstrap");
+                        Arc::new(oracle::vision::tick_scheduler::TickScheduler::new_lazy(pool.clone()))
+                    } else {
+                        Arc::new(oracle::vision::tick_scheduler::TickScheduler::new())
+                    };
                     // Restore scheduler state from DB (crash recovery)
                     if let Err(e) = scheduler.load_from_db(&pool).await {
                         tracing::warn!(error = %e, "Failed to restore vision scheduler from DB");

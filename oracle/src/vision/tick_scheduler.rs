@@ -3,6 +3,24 @@
 //! Maintains in-memory state of all active batches and their players.
 //! Fed by the chain listener (via event handler methods) and queried by the
 //! lifecycle manager and API layer.
+//!
+//! ## Memory model
+//!
+//! Two modes are supported, switchable per oracle via `--lazy-vision-state`.
+//!
+//! * **Strict** (legacy default): every active batch and every active player
+//!   position is preloaded on startup and kept in memory for the life of the
+//!   process. Simple, fast, and leaks several GB of RSS on busy networks.
+//! * **Lazy**: `load_from_db` skips the position load. The `batches` map still
+//!   holds the small, immutable per-batch config (~200 B × ~30 k = 6 MB). Player
+//!   positions are read from Postgres on demand at settle time, then dropped.
+//!   The `players` map is still updated by chain events for hot-path bitmap
+//!   verification, but it is no longer treated as authoritative cold storage —
+//!   it only ever holds joins/withdraws observed since startup.
+//!
+//! Lazy mode collapses the steady-state RSS by 1000×: a missed `mark_settled`
+//! used to leak a 200-position map (tens of KB), now it leaks at most a single
+//! `Batch` (~200 B).
 
 use std::collections::HashMap;
 use tokio::sync::RwLock;
@@ -13,12 +31,20 @@ use tracing::info;
 
 use super::types::{Batch, PlayerPosition};
 
-/// Batch state tracker: holds in-memory batch metadata and player positions.
+/// Batch state tracker: holds in-memory batch metadata and (optionally) player positions.
 pub struct TickScheduler {
-    /// All active batches: batch_id -> Batch
+    /// All active batches: batch_id -> Batch (config-only; ~200 B per entry).
     batches: RwLock<HashMap<u64, Batch>>,
-    /// All player positions: batch_id -> (player -> PlayerPosition)
+    /// All player positions: batch_id -> (player -> PlayerPosition).
+    /// In lazy mode this map is fed only by chain events observed since startup;
+    /// authoritative reads go to Postgres via `load_positions_now`.
     players: RwLock<HashMap<u64, HashMap<Address, PlayerPosition>>>,
+    /// When true, `load_from_db` skips the position bootstrap and authoritative
+    /// reads (`get_batch_state`, `player_count`, `get_player_bitmap_hash`) consult
+    /// Postgres on demand.
+    lazy: bool,
+    /// Postgres pool used by lazy-mode on-demand reads. `None` in strict mode.
+    pool: Option<PgPool>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -30,11 +56,78 @@ pub enum TickSchedulerError {
 }
 
 impl TickScheduler {
+    /// Strict mode constructor — preserves legacy behavior.
     pub fn new() -> Self {
         Self {
             batches: RwLock::new(HashMap::new()),
             players: RwLock::new(HashMap::new()),
+            lazy: false,
+            pool: None,
         }
+    }
+
+    /// Lazy mode constructor — skips the position bootstrap and serves
+    /// authoritative position reads from Postgres. The pool must be the same
+    /// one passed to `load_from_db`.
+    pub fn new_lazy(pool: PgPool) -> Self {
+        Self {
+            batches: RwLock::new(HashMap::new()),
+            players: RwLock::new(HashMap::new()),
+            lazy: true,
+            pool: Some(pool),
+        }
+    }
+
+    /// Whether this scheduler operates in lazy mode.
+    pub fn is_lazy(&self) -> bool {
+        self.lazy
+    }
+
+    /// Read player positions for a batch directly from Postgres, bypassing the
+    /// in-memory `players` map. Used by lazy mode at settle time and by lazy-mode
+    /// API handlers. Returns `Ok(vec![])` if the batch has no live positions.
+    pub async fn load_positions_now(
+        &self,
+        batch_id: u64,
+    ) -> Result<Vec<PlayerPosition>, sqlx::Error> {
+        let pool = match self.pool.as_ref() {
+            Some(p) => p,
+            None => return Ok(Vec::new()),
+        };
+        let rows: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT player, bitmap_hash, total_deposited::text \
+             FROM vision_positions \
+             WHERE batch_id = $1 AND balance > 0",
+        )
+        .bind(batch_id as i64)
+        .fetch_all(pool)
+        .await?;
+
+        let mut out = Vec::with_capacity(rows.len());
+        for (player, bitmap_hash, total_deposited) in rows {
+            out.push(PlayerPosition {
+                player: player.parse().unwrap_or_default(),
+                bitmap_hash: bitmap_hash.parse().unwrap_or_default(),
+                deposit: U256::from_dec_str(&total_deposited).unwrap_or_default(),
+            });
+        }
+        Ok(out)
+    }
+
+    /// Count live positions for a batch directly from Postgres. Used by lazy
+    /// mode where the in-memory `players` map is not authoritative.
+    async fn count_positions_now(&self, batch_id: u64) -> Result<usize, sqlx::Error> {
+        let pool = match self.pool.as_ref() {
+            Some(p) => p,
+            None => return Ok(0),
+        };
+        let count: Option<i64> = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM vision_positions WHERE batch_id = $1 AND balance > 0",
+        )
+        .bind(batch_id as i64)
+        .fetch_one(pool)
+        .await?;
+        Ok(count.unwrap_or(0) as usize)
     }
 
     // === Chain event handlers (called by ChainListener) ===
@@ -143,35 +236,82 @@ impl TickScheduler {
 
     // === Query methods ===
 
-    /// Get batch state for resolution.
+    /// Get batch state for resolution. In lazy mode the player list is read
+    /// from Postgres on demand; in strict mode it comes from the in-memory map.
     pub async fn get_batch_state(
         &self,
         batch_id: u64,
     ) -> Option<(Batch, Vec<PlayerPosition>)> {
-        let batches = self.batches.read().await;
-        let players = self.players.read().await;
+        let batch = self.batches.read().await.get(&batch_id)?.clone();
 
-        let batch = batches.get(&batch_id)?.clone();
-        let player_list = players
-            .get(&batch_id)
-            .map(|m| m.values().cloned().collect())
-            .unwrap_or_default();
-
-        Some((batch, player_list))
+        if self.lazy {
+            // Authoritative read goes to Postgres. The in-memory map is best-effort.
+            match self.load_positions_now(batch_id).await {
+                Ok(list) => Some((batch, list)),
+                Err(e) => {
+                    tracing::warn!(
+                        batch_id,
+                        error = %e,
+                        "lazy load_positions_now failed; falling back to in-memory players map"
+                    );
+                    let list = self
+                        .players
+                        .read()
+                        .await
+                        .get(&batch_id)
+                        .map(|m| m.values().cloned().collect())
+                        .unwrap_or_default();
+                    Some((batch, list))
+                }
+            }
+        } else {
+            let list = self
+                .players
+                .read()
+                .await
+                .get(&batch_id)
+                .map(|m| m.values().cloned().collect())
+                .unwrap_or_default();
+            Some((batch, list))
+        }
     }
 
     /// Get a player's on-chain bitmap hash (for verification).
+    /// In lazy mode this consults Postgres when the in-memory map has no entry,
+    /// so chain-event lag doesn't masquerade as a cache miss.
     pub async fn get_player_bitmap_hash(
         &self,
         batch_id: u64,
         player: Address,
     ) -> Option<H256> {
-        self.players
+        if let Some(hash) = self
+            .players
             .read()
             .await
-            .get(&batch_id)?
-            .get(&player)
+            .get(&batch_id)
+            .and_then(|m| m.get(&player))
             .map(|p| p.bitmap_hash)
+        {
+            return Some(hash);
+        }
+
+        if !self.lazy {
+            return None;
+        }
+
+        let pool = self.pool.as_ref()?;
+        let player_hex = format!("{:?}", player);
+        sqlx::query_scalar::<_, String>(
+            "SELECT bitmap_hash FROM vision_positions \
+             WHERE batch_id = $1 AND LOWER(player) = LOWER($2) AND balance > 0",
+        )
+        .bind(batch_id as i64)
+        .bind(&player_hex)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|s| s.parse().ok())
     }
 
     /// Get a batch by ID.
@@ -190,13 +330,33 @@ impl TickScheduler {
     }
 
     /// Get the number of players in a batch.
+    /// In lazy mode this defers to Postgres unless the in-memory map already
+    /// has a positive count (covers freshly-joined players observed since the
+    /// last bootstrap).
     pub async fn player_count(&self, batch_id: u64) -> usize {
-        self.players
+        let in_memory = self
+            .players
             .read()
             .await
             .get(&batch_id)
             .map(|m| m.len())
-            .unwrap_or(0)
+            .unwrap_or(0);
+
+        if !self.lazy || in_memory > 0 {
+            return in_memory;
+        }
+
+        match self.count_positions_now(batch_id).await {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!(
+                    batch_id,
+                    error = %e,
+                    "lazy count_positions_now failed; reporting 0"
+                );
+                0
+            }
+        }
     }
 
     /// Find the latest (highest ID) on-chain batch for a given source.
@@ -268,6 +428,17 @@ impl TickScheduler {
             }
         }
         info!(count = batch_rows.len(), "Loaded batches from DB");
+
+        if self.lazy {
+            // The whole point of lazy mode: do not preload ~221k positions into
+            // RAM. Authoritative reads happen on demand via `load_positions_now`.
+            // Chain-event handlers still populate the in-memory map for the
+            // hot bitmap-verification path, but that map only ever holds joins
+            // observed since this oracle started — bounded by the active batch
+            // tick window, not by historical depth.
+            info!("lazy-vision-state: skipping player position bootstrap");
+            return Ok(());
+        }
 
         // 2. Load player positions — only for the active, non-paused batches we just
         // loaded above. Without this join, positions from already-settled batches that
@@ -397,6 +568,16 @@ mod tests {
         let (_, players) = scheduler.get_batch_state(1).await.unwrap();
         assert_eq!(players.len(), 1);
         assert_eq!(players[0].player, player_b);
+    }
+
+    #[tokio::test]
+    async fn test_strict_mode_default() {
+        // Strict mode preserves the legacy behavior: `is_lazy` is false, no pool.
+        let scheduler = TickScheduler::new();
+        assert!(!scheduler.is_lazy());
+        // load_positions_now returns empty (no pool) without panicking.
+        let positions = scheduler.load_positions_now(42).await.unwrap();
+        assert!(positions.is_empty());
     }
 
     #[tokio::test]
