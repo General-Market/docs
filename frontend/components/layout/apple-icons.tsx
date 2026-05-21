@@ -117,3 +117,19 @@ export function ArrowLeftIcon(p: IconProps) {
     </svg>
   )
 }
+
+export function ChevronLeftIcon(p: IconProps) {
+  return (
+    <svg {...baseProps} {...p}>
+      <path d="M15 6l-6 6 6 6" />
+    </svg>
+  )
+}
+
+export function ChevronRightIcon(p: IconProps) {
+  return (
+    <svg {...baseProps} {...p}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  )
+}

@@ -31,6 +31,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
+import { MarketCandleChart } from './MarketCandleChart'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -399,6 +400,8 @@ export function SourceDetailHumanTrading({
   const [stakeInput, setStakeInput] = useState<string>('10')
   const [flow, setFlow] = useState<FlowStep>('idle')
   const [revealRetryCount, setRevealRetryCount] = useState(0)
+  // -- Which market the big candle chart on top is currently focused on --
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null)
 
   // Reconcile flow with joinStep + isJoined
   useEffect(() => {
@@ -762,13 +765,38 @@ export function SourceDetailHumanTrading({
           <ErrorBar message={displayError} onDismiss={() => resetJoin()} />
         )}
 
+        {/* Big candle chart of the focused market — drives the page's chart
+            real estate. Tiles below switch which market this shows. */}
+        {!showEmpty && curatedMarkets.length > 0 && (() => {
+          const focused =
+            curatedMarkets.find(m => m.assetId === selectedAssetId)
+            ?? curatedMarkets[0]
+          return (
+            <MarketCandleChart
+              key={focused.assetId}
+              sourceId={sourceId}
+              source={source}
+              market={focused}
+              roundOpenAt={roundOpenAt}
+              roundCloseAt={roundCloseAt}
+              resolved={resolved}
+            />
+          )
+        })()}
+
         {/* Rows */}
         {isSnapshotLoading && curatedMarkets.length === 0 ? (
           <SkeletonRows />
         ) : showEmpty ? (
           <IndexingNotice />
         ) : !activeBatch ? (
-          <NoActiveRound markets={curatedMarkets} sourceId={sourceId} source={source} />
+          <NoActiveRound
+            markets={curatedMarkets}
+            sourceId={sourceId}
+            source={source}
+            selectedAssetId={selectedAssetId ?? curatedMarkets[0]?.assetId ?? null}
+            onSelect={setSelectedAssetId}
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {tradableMarkets.map(({ market }) => (
@@ -786,6 +814,10 @@ export function SourceDetailHumanTrading({
                 roundOpenAt={roundOpenAt}
                 roundCloseAt={roundCloseAt}
                 resolved={resolved}
+                selected={
+                  (selectedAssetId ?? tradableMarkets[0]?.market.assetId) === market.assetId
+                }
+                onSelect={() => setSelectedAssetId(market.assetId)}
               />
             ))}
           </div>
@@ -830,7 +862,7 @@ function HumanHeader({
   const hasLogo = !!logo && !logoBroken
 
   return (
-    <header className="flex flex-col gap-5">
+    <header className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <span
           style={{
@@ -846,24 +878,24 @@ function HumanHeader({
         </span>
       </div>
 
-      <div className="flex items-center gap-5 sm:gap-6">
+      <div className="flex items-center gap-3 sm:gap-4">
         {hasLogo && (
           <div
-            className="hidden sm:flex shrink-0 items-center justify-center overflow-hidden"
+            className="shrink-0 inline-flex items-center justify-center overflow-hidden"
             style={{
-              width: 72,
-              height: 72,
+              width: 44,
+              height: 44,
               background: brandBg || '#000',
-              borderRadius: 12,
+              borderRadius: 10,
             }}
             aria-hidden
           >
             <Image
               src={logo}
               alt=""
-              width={120}
-              height={56}
-              className="max-h-[56px] max-w-[80%] object-contain"
+              width={88}
+              height={36}
+              className="max-h-[34px] max-w-[80%] object-contain"
               priority
               onError={() => setLogoBroken(true)}
             />
@@ -873,10 +905,10 @@ function HumanHeader({
           <h1
             style={{
               fontFamily: FONT_DISPLAY,
-              fontSize: 'clamp(40px, 5.5vw, 56px)',
+              fontSize: 'clamp(22px, 3.4vw, 32px)',
               fontWeight: 600,
-              letterSpacing: '-0.016em',
-              lineHeight: 1.0714,
+              letterSpacing: '-0.022em',
+              lineHeight: 1.1,
               color: APPLE_TEXT,
               margin: 0,
             }}
@@ -885,12 +917,12 @@ function HumanHeader({
           </h1>
           {description && (
             <p
-              className="mt-3"
+              className="mt-1"
               style={{
                 fontFamily: FONT_TEXT,
-                fontSize: 17,
-                lineHeight: 1.4706,
-                letterSpacing: '-0.022em',
+                fontSize: 13,
+                lineHeight: 1.4,
+                letterSpacing: '-0.016em',
                 color: APPLE_TEXT_SECONDARY,
                 margin: 0,
                 maxWidth: 640,
@@ -900,31 +932,32 @@ function HumanHeader({
             </p>
           )}
         </div>
-      </div>
-
-      <div className="flex items-baseline gap-3 flex-wrap">
-        <span
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 32,
-            fontWeight: 500,
-            letterSpacing: '-0.016em',
-            color: APPLE_TEXT,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {aggValue}
-        </span>
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 14,
-            letterSpacing: '-0.016em',
-            color: '#6E6E73',
-          }}
-        >
-          {aggLabel}
-        </span>
+        <div className="hidden sm:flex flex-col items-end shrink-0" style={{ minWidth: 120 }}>
+          <span
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 22,
+              fontWeight: 500,
+              letterSpacing: '-0.022em',
+              color: APPLE_TEXT,
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1.1,
+            }}
+          >
+            {aggValue}
+          </span>
+          <span
+            style={{
+              fontFamily: FONT_TEXT,
+              fontSize: 11,
+              letterSpacing: '-0.016em',
+              color: '#6E6E73',
+              marginTop: 2,
+            }}
+          >
+            {aggLabel}
+          </span>
+        </div>
       </div>
     </header>
   )
@@ -1664,10 +1697,14 @@ function NoActiveRound({
   markets,
   sourceId,
   source,
+  selectedAssetId,
+  onSelect,
 }: {
   markets: SnapshotPrice[]
   sourceId: string
   source: { logo: string; brandBg: string; prefixes: string[]; isPrice: boolean; valueLabel: string }
+  selectedAssetId: string | null
+  onSelect: (assetId: string) => void
 }) {
   // Render the same cards but with picks disabled and no round window.
   return (
@@ -1709,6 +1746,8 @@ function NoActiveRound({
             roundOpenAt={null}
             roundCloseAt={null}
             resolved={false}
+            selected={selectedAssetId === m.assetId}
+            onSelect={() => onSelect(m.assetId)}
           />
         ))}
       </div>

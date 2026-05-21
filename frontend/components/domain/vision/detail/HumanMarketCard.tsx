@@ -60,6 +60,10 @@ interface HumanMarketCardProps {
   roundCloseAt: number | null
   /** True once `now >= roundCloseAt` — chart shows the settled outcome. */
   resolved: boolean
+  /** Whether this tile is the one driving the big candle chart on top. */
+  selected?: boolean
+  /** Called when the user clicks the tile body (not a pick button). */
+  onSelect?: () => void
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -97,6 +101,8 @@ export function HumanMarketCard({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  selected = false,
+  onSelect,
 }: HumanMarketCardProps) {
   const [imgErr, setImgErr] = useState(false)
   const name = market.name || market.symbol || market.assetId
@@ -110,13 +116,17 @@ export function HumanMarketCard({
       style={{
         background: APPLE_PANEL,
         borderRadius: 14,
-        boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
+        boxShadow: selected
+          ? '0 0 0 2px #0071E3, 0 1px 2px rgba(0,0,0,0.03)'
+          : '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
         padding: '12px 12px 10px',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
         transition: `box-shadow 250ms ${EASE_DEFAULT}`,
+        cursor: onSelect ? 'pointer' : 'default',
       }}
+      onClick={onSelect}
     >
       {/* Header: logo / name / value */}
       <header className="flex items-center gap-2">
@@ -196,8 +206,8 @@ export function HumanMarketCard({
         resolved={resolved}
       />
 
-      {/* Pick buttons */}
-      <div className="grid grid-cols-2 gap-1.5">
+      {/* Pick buttons — click here must not bubble up to onSelect */}
+      <div className="grid grid-cols-2 gap-1.5" onClick={e => e.stopPropagation()}>
         <PickButton
           direction="up"
           active={pick === 'up'}
