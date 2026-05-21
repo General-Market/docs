@@ -12,6 +12,7 @@ import {
   Tooltip as RechartsTooltip,
 } from 'recharts'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
+import { toInternalId } from '@/lib/vision/source-ids'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 
 // ── Apple tokens ─────────────────────────────────────────────────────────────
@@ -108,24 +109,24 @@ export function HumanMarketCard({
     <article
       style={{
         background: APPLE_PANEL,
-        borderRadius: 18,
+        borderRadius: 14,
         boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
-        padding: '18px 18px 14px',
+        padding: '12px 12px 10px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        gap: 8,
         transition: `box-shadow 250ms ${EASE_DEFAULT}`,
       }}
     >
       {/* Header: logo / name / value */}
-      <header className="flex items-center gap-3">
+      <header className="flex items-center gap-2">
         <div
           className="shrink-0 inline-flex items-center justify-center overflow-hidden"
           style={{
-            width: 40,
-            height: 40,
+            width: 28,
+            height: 28,
             background: APPLE_CHIP_BG,
-            borderRadius: 10,
+            borderRadius: 7,
           }}
           aria-hidden
         >
@@ -134,8 +135,8 @@ export function HumanMarketCard({
             <img
               src={imgSrc}
               alt=""
-              width={40}
-              height={40}
+              width={28}
+              height={28}
               className="object-cover w-full h-full"
               loading="lazy"
               onError={() => setImgErr(true)}
@@ -144,7 +145,7 @@ export function HumanMarketCard({
             <span
               style={{
                 fontFamily: FONT_TEXT,
-                fontSize: 16,
+                fontSize: 13,
                 fontWeight: 600,
                 color: APPLE_TEXT,
               }}
@@ -159,9 +160,9 @@ export function HumanMarketCard({
             className="truncate"
             style={{
               fontFamily: FONT_DISPLAY,
-              fontSize: 17,
-              fontWeight: 500,
-              letterSpacing: '-0.022em',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '-0.016em',
               color: APPLE_TEXT,
               lineHeight: 1.2,
             }}
@@ -169,44 +170,18 @@ export function HumanMarketCard({
             {name}
           </div>
           <div
-            className="mt-0.5 truncate"
+            className="truncate"
             style={{
-              fontFamily: FONT_MONO,
-              fontSize: 10.5,
-              letterSpacing: '+0.011em',
-              color: APPLE_TEXT_SECONDARY,
-              textTransform: 'uppercase',
-            }}
-          >
-            {market.symbol || subLabel}
-          </div>
-        </div>
-
-        <div className="text-right shrink-0">
-          <div
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 17,
+              fontFamily: FONT_TEXT,
+              fontSize: 12,
               fontWeight: 500,
-              letterSpacing: '-0.022em',
-              color: APPLE_TEXT,
+              letterSpacing: '-0.016em',
+              color: APPLE_TEXT_SECONDARY,
               fontVariantNumeric: 'tabular-nums',
               lineHeight: 1.2,
             }}
           >
             {value}
-          </div>
-          <div
-            className="mt-0.5"
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 11,
-              color: APPLE_TEXT_SECONDARY,
-              letterSpacing: '-0.016em',
-              textTransform: 'lowercase',
-            }}
-          >
-            {subLabel}
           </div>
         </div>
       </header>
@@ -222,7 +197,7 @@ export function HumanMarketCard({
       />
 
       {/* Pick buttons */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <PickButton
           direction="up"
           active={pick === 'up'}
@@ -309,7 +284,10 @@ function MarketChart({
     const to = new Date()
     // 24h lookback — gives context around the round window.
     const from = new Date(to.getTime() - 24 * 60 * 60 * 1000)
-    const url = `/api/market/history?source=${encodeURIComponent(sourceId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
+    // The history endpoint speaks data-node internal IDs (e.g. "defi"),
+    // not display IDs (e.g. "defillama-ai-agents").
+    const dataNodeId = toInternalId(sourceId)
+    const url = `/api/market/history?source=${encodeURIComponent(dataNodeId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
     fetch(url, { signal: AbortSignal.timeout(12_000) })
       .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then((data: { prices?: Array<{ fetchedAt?: string; value?: string | number }> }) => {
@@ -385,9 +363,9 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 140,
+          height: 120,
           background: APPLE_CHIP_BG,
-          borderRadius: 10,
+          borderRadius: 8,
           opacity: 0.5,
         }}
       />
@@ -398,12 +376,12 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 140,
+          height: 120,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           background: APPLE_CHIP_BG,
-          borderRadius: 10,
+          borderRadius: 8,
         }}
       >
         <span
@@ -436,7 +414,7 @@ function MarketChart({
   const rectColor = openPrice != null && closePrice != null && closePrice >= openPrice ? APPLE_GREEN : APPLE_RED
 
   return (
-    <div style={{ position: 'relative', height: 140, width: '100%' }}>
+    <div style={{ position: 'relative', height: 120, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
           <XAxis dataKey="ts" type="number" domain={['dataMin', 'dataMax']} hide />
@@ -605,15 +583,15 @@ function PickButton({
   const opacity = disabled && !active ? 0.4 : 1
 
   const style: CSSProperties = {
-    height: 44,
-    borderRadius: 12,
+    height: 32,
+    borderRadius: 8,
     background: bg,
     color,
     border,
     boxShadow,
     fontFamily: FONT_TEXT,
-    fontSize: 15,
-    fontWeight: 500,
+    fontSize: 12,
+    fontWeight: 600,
     letterSpacing: '-0.016em',
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: `background 250ms ${EASE_DEFAULT}, color 250ms ${EASE_DEFAULT}, border-color 250ms ${EASE_DEFAULT}, transform 200ms ${EASE_OUT}`,

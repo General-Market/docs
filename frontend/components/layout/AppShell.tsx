@@ -8,8 +8,8 @@ type AppShellProps = {
   search?: ReactNode
   /**
    * Custom sidebar for the left rail. When provided, replaces the default
-   * LeftRail global nav. Source detail pages use this to slot in
-   * SourceSidebarApple — same 240px column, different content.
+   * LeftRail global nav. The sidebar dictates its own width via inline
+   * styles — the shell tracks it with `auto` on the first grid column.
    */
   sidebar?: ReactNode
 }
@@ -21,7 +21,7 @@ type AppShellProps = {
 export function AppShell({ children, search, sidebar }: AppShellProps) {
   return (
     <div
-      className="min-h-screen w-full grid grid-cols-1 md:grid-cols-[240px_1fr]"
+      className="min-h-screen w-full grid grid-cols-1 md:grid-cols-[auto_1fr]"
       style={{ background: 'var(--apple-panel)', color: 'var(--apple-text)' }}
     >
       <TopBar search={search} />

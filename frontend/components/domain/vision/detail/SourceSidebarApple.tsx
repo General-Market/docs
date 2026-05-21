@@ -89,152 +89,103 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
     <aside
       aria-label={t('aria_label')}
       style={{
-        width: 'var(--apple-shell-left)',
+        width: 56,
         borderRight: '1px solid var(--apple-line)',
         background: 'var(--apple-panel)',
         flexShrink: 0,
       }}
-      className="hidden md:flex flex-col overflow-y-auto"
+      className="hidden md:flex flex-col overflow-y-auto items-center"
     >
       {/* ── Back to home ── */}
-      <div style={{ padding: '12px 12px 0' }}>
-        <Link
-          href={'/' as never}
-          className="flex items-center gap-2 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple"
-          style={{
-            color: 'var(--apple-text-secondary)',
-            textDecoration: 'none',
-            fontFamily: 'var(--apple-font-text)',
-            fontSize: 13,
-            letterSpacing: 'var(--apple-track-tight)',
-          }}
-        >
-          <ArrowLeftIcon className="w-[14px] h-[14px]" />
-          <span>{t('back_to_home')}</span>
-        </Link>
-      </div>
-
-      {/* ── Source identity ── */}
-      <div
+      <Link
+        href={'/' as never}
+        title={t('back_to_home')}
+        aria-label={t('back_to_home')}
+        className="flex items-center justify-center rounded-apple-sm transition-colors duration-200 ease-apple"
         style={{
-          padding: '12px 16px 16px',
-          borderBottom: '1px solid var(--apple-line)',
+          width: 36,
+          height: 36,
+          marginTop: 12,
+          color: 'var(--apple-text-secondary)',
+          textDecoration: 'none',
         }}
       >
-        <Link
-          href={overviewHref as never}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
-        >
-          <LogoImg
-            src={currentSource?.logo ? `/source-imgs/icons/${currentSource.sourceId}.png` : undefined}
-            alt={currentSource?.name ?? ''}
-            size={36}
-            radius={8}
-          />
-          <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <p
-              style={{
-                fontFamily: 'var(--apple-font-display)',
-                fontSize: 15,
-                fontWeight: 600,
-                letterSpacing: 'var(--apple-track-tight)',
-                color: 'var(--apple-text)',
-                margin: 0,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {currentSource?.name ?? sourceId}
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--apple-font-text)',
-                fontSize: 12,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                color: 'var(--apple-text-secondary)',
-                margin: '2px 0 0',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {categoryLabel}
-            </p>
-          </div>
-        </Link>
+        <ArrowLeftIcon className="w-[16px] h-[16px]" />
+      </Link>
+
+      {/* ── Source identity (logo only) ── */}
+      <Link
+        href={overviewHref as never}
+        title={currentSource?.name ?? sourceId}
+        aria-label={currentSource?.name ?? sourceId}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
+          width: 36,
+          height: 36,
+          marginTop: 8,
+          marginBottom: 8,
+        }}
+      >
+        <LogoImg
+          src={currentSource?.logo ? `/source-imgs/icons/${currentSource.sourceId}.png` : undefined}
+          alt={currentSource?.name ?? ''}
+          size={28}
+          radius={6}
+        />
+      </Link>
+
+      <Divider />
+
+      {/* ── Source nav (icons) ── */}
+      <div className="flex flex-col items-center gap-1" style={{ paddingTop: 8 }}>
+        <NavIcon href={overviewHref} label={t('nav_overview')} Icon={HomeIcon} pathname={pathname} exact />
+        <NavIcon href={marketsHref} label={t('nav_markets')} Icon={BoxesIcon} pathname={pathname} />
+        <NavIcon href={activityHref} label={t('nav_activity')} Icon={PulseIcon} pathname={pathname} />
+        <NavIcon href={leaderboardHref} label={t('nav_leaderboard')} Icon={TrophyIcon} pathname={pathname} />
       </div>
 
-      {/* ── Source nav ── */}
-      <div className="flex flex-col gap-0.5" style={{ padding: '12px 12px 0' }}>
-        <GroupHeader label={t('group_for_you')} />
-        <NavRow href={overviewHref} label={t('nav_overview')} Icon={HomeIcon} pathname={pathname} exact />
-        <NavRow href={marketsHref} label={t('nav_markets')} Icon={BoxesIcon} pathname={pathname} />
-        <NavRow href={activityHref} label={t('nav_activity')} Icon={PulseIcon} pathname={pathname} />
-        <NavRow href={leaderboardHref} label={t('nav_leaderboard')} Icon={TrophyIcon} pathname={pathname} />
-      </div>
+      <Divider />
 
       {/* ── Build ── */}
-      <div className="flex flex-col gap-0.5" style={{ padding: '12px 12px 0' }}>
-        <GroupHeader label={t('group_build')} />
-        <NavRow href="/build-bot" label={t('nav_run_a_bot')} Icon={BotIcon} pathname={pathname} />
+      <div className="flex flex-col items-center gap-1" style={{ paddingTop: 8 }}>
+        <NavIcon href="/build-bot" label={t('nav_run_a_bot')} Icon={BotIcon} pathname={pathname} />
       </div>
 
-      {/* ── Category peers ── */}
+      {/* ── Category peers (logos only) ── */}
       {peers.length > 0 && (
-        <div className="flex flex-col gap-0.5" style={{ padding: '12px 12px 0' }}>
-          <GroupHeader label={t('group_more_sources')} />
-          {peers.map(peer => (
-            <Link
-              key={peer.sourceId}
-              href={`/source/${peer.sourceId}` as never}
-              className="flex items-center gap-3 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple source-peer-row"
-              style={{ textDecoration: 'none' }}
-            >
-              <LogoImg
-                src={`/source-imgs/icons/${peer.sourceId}.png`}
-                alt={peer.name}
-                size={18}
-                radius={4}
-              />
-              <span
+        <>
+          <Divider />
+          <div className="flex flex-col items-center gap-1" style={{ paddingTop: 8 }}>
+            {peers.map(peer => (
+              <Link
+                key={peer.sourceId}
+                href={`/source/${peer.sourceId}` as never}
+                title={peer.name}
+                aria-label={peer.name}
+                className="flex items-center justify-center rounded-apple-sm transition-colors duration-200 ease-apple source-peer-row"
                 style={{
-                  fontFamily: 'var(--apple-font-text)',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  letterSpacing: 'var(--apple-track-tight)',
-                  color: 'var(--apple-text)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  minWidth: 0,
+                  width: 36,
+                  height: 36,
+                  textDecoration: 'none',
                 }}
               >
-                {peer.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+                <LogoImg
+                  src={`/source-imgs/icons/${peer.sourceId}.png`}
+                  alt={peer.name}
+                  size={20}
+                  radius={5}
+                />
+              </Link>
+            ))}
+          </div>
+        </>
       )}
 
       {/* spacer */}
       <div style={{ flex: 1, minHeight: 16 }} />
-
-      {/* ── Footer pin ── */}
-      <div
-        style={{
-          padding: '10px 16px 14px',
-          borderTop: '1px solid var(--apple-line)',
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 11,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
-          color: 'var(--apple-text-secondary)',
-        }}
-      >
-        Anti-Cheat · Beta
-      </div>
 
       <style jsx>{`
         :global(.source-peer-row:hover) {
@@ -245,27 +196,22 @@ export function SourceSidebarApple({ sourceId, category }: SourceSidebarApplePro
   )
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function GroupHeader({ label }: { label: string }) {
+function Divider() {
   return (
-    <p
+    <div
       style={{
-        fontFamily: 'var(--apple-font-text)',
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: '0.04em',
-        color: 'var(--apple-text-secondary)',
-        textTransform: 'uppercase',
-        margin: '4px 0 6px 12px',
+        width: 24,
+        height: 1,
+        background: 'var(--apple-line)',
+        marginTop: 8,
       }}
-    >
-      {label}
-    </p>
+    />
   )
 }
 
-interface NavRowProps {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+interface NavIconProps {
   href: string
   label: string
   Icon: React.ComponentType<{ className?: string }>
@@ -279,30 +225,24 @@ function isNavActive(pathname: string, href: string, exact: boolean): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-function NavRow({ href, label, Icon, pathname, exact = false }: NavRowProps) {
+function NavIcon({ href, label, Icon, pathname, exact = false }: NavIconProps) {
   const active = isNavActive(pathname, href, exact)
   return (
     <Link
       href={href as never}
+      title={label}
+      aria-label={label}
       aria-current={active ? 'page' : undefined}
-      className="flex items-center gap-3 px-3 py-2 rounded-apple-sm transition-colors duration-200 ease-apple"
+      className="flex items-center justify-center rounded-apple-sm transition-colors duration-200 ease-apple"
       style={{
-        background: active ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
+        width: 36,
+        height: 36,
+        background: active ? 'rgba(0, 0, 0, 0.06)' : 'transparent',
         color: active ? 'var(--apple-text)' : 'var(--apple-text-secondary)',
         textDecoration: 'none',
       }}
     >
       <Icon className="w-[18px] h-[18px]" />
-      <span
-        style={{
-          fontFamily: 'var(--apple-font-text)',
-          fontSize: 14,
-          letterSpacing: 'var(--apple-track-tight)',
-          fontWeight: active ? 600 : 500,
-        }}
-      >
-        {label}
-      </span>
     </Link>
   )
 }

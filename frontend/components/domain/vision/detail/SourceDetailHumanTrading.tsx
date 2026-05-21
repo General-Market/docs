@@ -706,8 +706,7 @@ export function SourceDetailHumanTrading({
 
       {/* Hero */}
       <div
-        className="mx-auto w-full px-6 py-10 md:px-8 md:py-14 lg:py-16 flex flex-col gap-8"
-        style={{ maxWidth: CONTENT_MAX }}
+        className="w-full px-4 py-6 md:px-6 md:py-8 flex flex-col gap-6"
       >
         <HumanHeader
           name={source.name}
@@ -737,8 +736,7 @@ export function SourceDetailHumanTrading({
       />
 
       <div
-        className="mx-auto w-full px-6 md:px-8 pb-16 flex flex-col gap-6"
-        style={{ maxWidth: CONTENT_MAX }}
+        className="w-full px-4 md:px-6 pb-10 flex flex-col gap-4"
       >
         {/* Stake input */}
         {!showEmpty && activeBatch && (
@@ -773,7 +771,7 @@ export function SourceDetailHumanTrading({
         ) : !activeBatch ? (
           <NoActiveRound markets={curatedMarkets} sourceId={sourceId} source={source} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {tradableMarkets.map(({ market }) => (
               <HumanMarketCard
                 key={market.assetId}
@@ -987,9 +985,8 @@ function StickyHeader({
       }}
     >
       <div
-        className="mx-auto w-full flex items-center gap-4 px-4 md:px-6"
+        className="w-full flex items-center gap-4"
         style={{
-          maxWidth: CONTENT_MAX,
           padding: '12px 24px',
         }}
       >
