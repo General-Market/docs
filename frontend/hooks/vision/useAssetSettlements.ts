@@ -43,14 +43,14 @@ export function useAssetSettlements(
   return useQuery<AssetSettlement[]>({
     queryKey: ['asset-settlements', sourceId, assetId, limit],
     queryFn: async () => {
-      // The proxy itself now caps at ~8s with a per-attempt budget. Match
-      // that on the client: a longer client timeout than the server is
-      // dead weight — it just keeps a hung socket alive.
+      // The proxy itself caps at 15s outer budget. Match that on the
+      // client: a longer client timeout than the server is dead weight —
+      // it just keeps a hung socket alive.
       const res = await fetch(
         `/api/vision/asset/${encodeURIComponent(sourceId)}/${encodeURIComponent(
           assetId,
         )}/settlements?limit=${limit}`,
-        { signal: AbortSignal.timeout(10_000) },
+        { signal: AbortSignal.timeout(18_000) },
       )
       // Throw on transport failure so React Query surfaces an error state
       // instead of caching an empty array — otherwise the UI is indistinguishable

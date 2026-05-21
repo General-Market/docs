@@ -3,15 +3,17 @@ import { getVisionOracleUrls } from '@/lib/config'
 /**
  * Per-attempt budget — how long we are willing to wait on a single oracle
  * before giving up on it and letting Promise.any pick whichever of the
- * remaining two answered. This is the value that matters during oracle
- * rolling restarts: a freshly-recreated container is reachable on TCP
- * (nginx connects) but may take several seconds to finish loading state
- * before it answers. We want that window short enough that the page
- * doesn't sit on "Loading participants…" for half a minute, but long
- * enough that a healthy oracle returning a 200-row settlement page
- * (typically 3–5s) still wins.
+ * remaining two answered. Measured ceilings on the oracle backend:
+ *   • binance asset with no settlements: ~10ms
+ *   • aave-v3 (warm popular asset): ~3.7s
+ *   • giza (new low-volume defi asset): ~8.5s
+ * Twelve seconds covers the slow tail with a margin, and still drops
+ * a hung/restarting oracle well inside the React Query retry window.
+ * Hard-fail responses (5xx, connection refused) still bounce on the
+ * first network roundtrip via `isHardFail` — the per-attempt timer
+ * only matters when the oracle holds the socket open with nothing.
  */
-const PER_ATTEMPT_MS = 6_000
+const PER_ATTEMPT_MS = 12_000
 
 /**
  * Outer budget — hard ceiling on the whole proxy call. With three
@@ -19,7 +21,7 @@ const PER_ATTEMPT_MS = 6_000
  * inside PER_ATTEMPT_MS. The extra room here just lets a slow-and-steady
  * winner cross the line.
  */
-const TOTAL_BUDGET_MS = 8_000
+const TOTAL_BUDGET_MS = 15_000
 
 /**
  * Status codes that mean "this oracle is the wrong one to wait on" —
