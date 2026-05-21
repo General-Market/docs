@@ -1,0 +1,650 @@
+'use client'
+
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
+  Tooltip as RechartsTooltip,
+} from 'recharts'
+import { getAssetImageUrl } from '@/lib/vision/asset-images'
+import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
+
+// ── Apple tokens ─────────────────────────────────────────────────────────────
+
+const APPLE_GREEN = '#28CD41'
+const APPLE_RED = '#FF3B30'
+const APPLE_TEXT = '#1D1D1F'
+const APPLE_TEXT_SECONDARY = '#86868B'
+const APPLE_PANEL = '#FFFFFF'
+const APPLE_CHIP_BG = '#F5F5F7'
+const EASE_DEFAULT = 'cubic-bezier(0.4, 0, 0.6, 1)'
+const EASE_OUT = 'cubic-bezier(0.25, 0.1, 0.3, 1)'
+const FONT_DISPLAY = 'var(--apple-font-display), "SF Pro Display", Helvetica, Arial, sans-serif'
+const FONT_TEXT = 'var(--apple-font-text), "SF Pro Text", Helvetica, Arial, sans-serif'
+const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+type Pick = 'up' | 'down'
+
+interface HistoryPoint {
+  ts: number
+  value: number
+}
+
+interface HumanMarketCardProps {
+  sourceId: string
+  source: {
+    logo: string
+    brandBg: string
+    prefixes: string[]
+    isPrice: boolean
+    valueLabel: string
+  }
+  market: SnapshotPrice
+  pick: Pick | undefined
+  onPick: (marketId: string, direction: Pick) => void
+  locked: boolean
+  revealFailed: boolean
+  onRetryReveal: () => void
+  roundSettling: boolean
+  /** Round-window open timestamp in ms epoch. null while no round is active. */
+  roundOpenAt: number | null
+  /** Round-window close timestamp in ms epoch. null while no round is active. */
+  roundCloseAt: number | null
+  /** True once `now >= roundCloseAt` — chart shows the settled outcome. */
+  resolved: boolean
+}
+
+// ── Formatters ───────────────────────────────────────────────────────────────
+
+function formatBigUsd(value: string | number | null): string {
+  if (value == null) return '—'
+  const n = typeof value === 'string' ? parseFloat(value) : value
+  if (!isFinite(n)) return '—'
+  const abs = Math.abs(n)
+  if (abs >= 1e12) return `$${(n / 1e12).toFixed(2)}T`
+  if (abs >= 1e9) return `$${(n / 1e9).toFixed(2)}B`
+  if (abs >= 1e6) return `$${(n / 1e6).toFixed(2)}M`
+  if (abs >= 1e3) return `$${(n / 1e3).toFixed(2)}K`
+  return `$${n.toFixed(2)}`
+}
+
+function formatPct(n: number, opts: { sign?: boolean } = {}): string {
+  if (!isFinite(n)) return '—'
+  const sign = opts.sign && n > 0 ? '+' : ''
+  return `${sign}${n.toFixed(2)}%`
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export function HumanMarketCard({
+  sourceId,
+  source,
+  market,
+  pick,
+  onPick,
+  locked,
+  revealFailed,
+  onRetryReveal,
+  roundSettling,
+  roundOpenAt,
+  roundCloseAt,
+  resolved,
+}: HumanMarketCardProps) {
+  const [imgErr, setImgErr] = useState(false)
+  const name = market.name || market.symbol || market.assetId
+  const value = formatBigUsd(market.value)
+  const subLabel = source.isPrice ? 'price' : (source.valueLabel || '').toLowerCase()
+  const imgSrc =
+    !imgErr && (market.imageUrl || getAssetImageUrl(sourceId, market.assetId, source.prefixes))
+
+  return (
+    <article
+      style={{
+        background: APPLE_PANEL,
+        borderRadius: 18,
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
+        padding: '18px 18px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        transition: `box-shadow 250ms ${EASE_DEFAULT}`,
+      }}
+    >
+      {/* Header: logo / name / value */}
+      <header className="flex items-center gap-3">
+        <div
+          className="shrink-0 inline-flex items-center justify-center overflow-hidden"
+          style={{
+            width: 40,
+            height: 40,
+            background: APPLE_CHIP_BG,
+            borderRadius: 10,
+          }}
+          aria-hidden
+        >
+          {imgSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imgSrc}
+              alt=""
+              width={40}
+              height={40}
+              className="object-cover w-full h-full"
+              loading="lazy"
+              onError={() => setImgErr(true)}
+            />
+          ) : (
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 16,
+                fontWeight: 600,
+                color: APPLE_TEXT,
+              }}
+            >
+              {name.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div
+            className="truncate"
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 17,
+              fontWeight: 500,
+              letterSpacing: '-0.022em',
+              color: APPLE_TEXT,
+              lineHeight: 1.2,
+            }}
+          >
+            {name}
+          </div>
+          <div
+            className="mt-0.5 truncate"
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 10.5,
+              letterSpacing: '+0.011em',
+              color: APPLE_TEXT_SECONDARY,
+              textTransform: 'uppercase',
+            }}
+          >
+            {market.symbol || subLabel}
+          </div>
+        </div>
+
+        <div className="text-right shrink-0">
+          <div
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 17,
+              fontWeight: 500,
+              letterSpacing: '-0.022em',
+              color: APPLE_TEXT,
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1.2,
+            }}
+          >
+            {value}
+          </div>
+          <div
+            className="mt-0.5"
+            style={{
+              fontFamily: FONT_TEXT,
+              fontSize: 11,
+              color: APPLE_TEXT_SECONDARY,
+              letterSpacing: '-0.016em',
+              textTransform: 'lowercase',
+            }}
+          >
+            {subLabel}
+          </div>
+        </div>
+      </header>
+
+      {/* Chart with overlays */}
+      <MarketChart
+        sourceId={sourceId}
+        assetId={market.assetId}
+        pick={pick}
+        roundOpenAt={roundOpenAt}
+        roundCloseAt={roundCloseAt}
+        resolved={resolved}
+      />
+
+      {/* Pick buttons */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <PickButton
+          direction="up"
+          active={pick === 'up'}
+          inactive={pick === 'down'}
+          disabled={locked || roundSettling}
+          onClick={() => onPick(market.assetId, 'up')}
+        />
+        <PickButton
+          direction="down"
+          active={pick === 'down'}
+          inactive={pick === 'up'}
+          disabled={locked || roundSettling}
+          onClick={() => onPick(market.assetId, 'down')}
+        />
+      </div>
+
+      {/* Footer: locked / retry */}
+      {locked && !revealFailed && (
+        <p
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 11,
+            color: APPLE_TEXT_SECONDARY,
+            letterSpacing: '-0.016em',
+            margin: 0,
+            textAlign: 'center',
+          }}
+        >
+          Committed for this round
+        </p>
+      )}
+      {revealFailed && (
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onRetryReveal}
+            style={{
+              fontFamily: FONT_TEXT,
+              fontSize: 11,
+              color: '#8A5A00',
+              background: '#FFF6E5',
+              border: '1px solid #F5C26B',
+              borderRadius: 980,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              letterSpacing: '-0.016em',
+            }}
+          >
+            Retry reveal
+          </button>
+        </div>
+      )}
+    </article>
+  )
+}
+
+// ── Chart (line + open marker + resolved rectangle) ─────────────────────────
+
+interface MarketChartProps {
+  sourceId: string
+  assetId: string
+  pick: Pick | undefined
+  roundOpenAt: number | null
+  roundCloseAt: number | null
+  resolved: boolean
+}
+
+function MarketChart({
+  sourceId,
+  assetId,
+  pick,
+  roundOpenAt,
+  roundCloseAt,
+  resolved,
+}: MarketChartProps) {
+  const [points, setPoints] = useState<HistoryPoint[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(false)
+    const to = new Date()
+    // 24h lookback — gives context around the round window.
+    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000)
+    const url = `/api/market/history?source=${encodeURIComponent(sourceId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
+    fetch(url, { signal: AbortSignal.timeout(12_000) })
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data: { prices?: Array<{ fetchedAt?: string; value?: string | number }> }) => {
+        if (cancelled) return
+        const raw = data.prices ?? []
+        const parsed: HistoryPoint[] = raw
+          .map(p => ({
+            ts: p.fetchedAt ? new Date(p.fetchedAt).getTime() : 0,
+            value:
+              typeof p.value === 'string'
+                ? parseFloat(p.value)
+                : typeof p.value === 'number'
+                  ? p.value
+                  : NaN,
+          }))
+          .filter(p => isFinite(p.value) && p.ts > 0)
+        setPoints(parsed)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sourceId, assetId])
+
+  // Compute open / close prices inside the round window.
+  const { openPrice, closePrice, changePct, chartData, yDomain } = useMemo(() => {
+    if (!points || points.length < 2) {
+      return { openPrice: null, closePrice: null, changePct: null, chartData: [], yDomain: undefined as [number, number] | undefined }
+    }
+    const sorted = [...points].sort((a, b) => a.ts - b.ts)
+    const data =
+      sorted.length > 240
+        ? sorted.filter((_, i) => i % Math.ceil(sorted.length / 240) === 0)
+        : sorted
+
+    let open: number | null = null
+    let close: number | null = null
+    if (roundOpenAt != null) {
+      const openPoint = sorted.find(p => p.ts >= roundOpenAt) ?? sorted[0]
+      open = openPoint.value
+      if (resolved && roundCloseAt != null) {
+        // last point at or before roundCloseAt
+        let lastInWindow = openPoint
+        for (const p of sorted) {
+          if (p.ts <= roundCloseAt) lastInWindow = p
+          else break
+        }
+        close = lastInWindow.value
+      } else {
+        close = sorted[sorted.length - 1].value
+      }
+    }
+    const pct = open && close ? ((close - open) / open) * 100 : null
+
+    // Pad y-domain so the open line + rectangle don't kiss the edges.
+    const values = data.map(d => d.value)
+    if (open != null) values.push(open)
+    if (close != null) values.push(close)
+    const minV = Math.min(...values)
+    const maxV = Math.max(...values)
+    const pad = (maxV - minV) * 0.12 || maxV * 0.01 || 1
+    const domain: [number, number] = [minV - pad, maxV + pad]
+
+    return { openPrice: open, closePrice: close, changePct: pct, chartData: data, yDomain: domain }
+  }, [points, roundOpenAt, roundCloseAt, resolved])
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          height: 140,
+          background: APPLE_CHIP_BG,
+          borderRadius: 10,
+          opacity: 0.5,
+        }}
+      />
+    )
+  }
+
+  if (error || !points || points.length < 2) {
+    return (
+      <div
+        style={{
+          height: 140,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: APPLE_CHIP_BG,
+          borderRadius: 10,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 12,
+            color: APPLE_TEXT_SECONDARY,
+            letterSpacing: '-0.016em',
+          }}
+        >
+          No recent series.
+        </span>
+      </div>
+    )
+  }
+
+  // Line stroke follows the pick during betting; freezes at resolution.
+  const strokeColor =
+    resolved
+      ? (changePct != null && changePct >= 0 ? APPLE_GREEN : APPLE_RED)
+      : pick === 'up'
+        ? APPLE_GREEN
+        : pick === 'down'
+          ? APPLE_RED
+          : APPLE_TEXT_SECONDARY
+
+  // Rectangle: only after resolution, drawn from open→close on Y, and across the round window on X.
+  const showRect =
+    resolved && openPrice != null && closePrice != null && roundOpenAt != null && roundCloseAt != null
+  const rectColor = openPrice != null && closePrice != null && closePrice >= openPrice ? APPLE_GREEN : APPLE_RED
+
+  return (
+    <div style={{ position: 'relative', height: 140, width: '100%' }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+          <XAxis dataKey="ts" type="number" domain={['dataMin', 'dataMax']} hide />
+          <YAxis type="number" domain={yDomain ?? ['auto', 'auto']} hide />
+          <RechartsTooltip
+            content={<ChartTooltip />}
+            cursor={{ stroke: 'rgba(0,0,0,0.10)', strokeWidth: 1 }}
+          />
+
+          {/* Round-open horizontal marker */}
+          {openPrice != null && (
+            <ReferenceLine
+              y={openPrice}
+              stroke="#D2D2D7"
+              strokeDasharray="3 3"
+              strokeWidth={1}
+              isFront={false}
+            />
+          )}
+
+          {/* Resolved rectangle: open → close on Y, round-window on X */}
+          {showRect && (
+            <ReferenceArea
+              x1={roundOpenAt!}
+              x2={roundCloseAt!}
+              y1={Math.min(openPrice!, closePrice!)}
+              y2={Math.max(openPrice!, closePrice!)}
+              fill={rectColor}
+              fillOpacity={0.18}
+              stroke={rectColor}
+              strokeOpacity={0.45}
+              strokeWidth={1}
+              isFront={false}
+            />
+          )}
+
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={strokeColor}
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            dot={false}
+            isAnimationActive={false}
+            style={{ transition: `stroke 250ms ${EASE_DEFAULT}` }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* Resolved badge — top-right corner of the chart */}
+      {resolved && changePct != null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 10,
+            background: '#FFFFFF',
+            border: `1px solid ${changePct >= 0 ? 'rgba(40,205,65,0.35)' : 'rgba(255,59,48,0.35)'}`,
+            color: changePct >= 0 ? '#1A9D34' : '#C92A1F',
+            borderRadius: 980,
+            padding: '2px 8px',
+            fontFamily: FONT_MONO,
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '+0.011em',
+            fontVariantNumeric: 'tabular-nums',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+          }}
+          aria-label={`Resolved ${formatPct(changePct, { sign: true })}`}
+        >
+          {formatPct(changePct, { sign: true })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ChartTooltip(props: {
+  active?: boolean
+  payload?: Array<{ payload?: HistoryPoint; value?: number }>
+}) {
+  if (!props.active || !props.payload || props.payload.length === 0) return null
+  const item = props.payload[0]
+  if (!item || item.payload === undefined) return null
+  const v = item.value ?? item.payload.value
+  const ts = item.payload.ts
+  if (typeof v !== 'number') return null
+  const d = new Date(ts)
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        border: '1px solid rgba(0,0,0,0.08)',
+        borderRadius: 8,
+        padding: '6px 10px',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+        fontFamily: FONT_TEXT,
+        fontSize: 11,
+        color: APPLE_TEXT,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: FONT_MONO,
+          fontSize: 11,
+          color: APPLE_TEXT,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {formatBigUsd(v)}
+      </div>
+      <div
+        style={{
+          fontSize: 10,
+          color: APPLE_TEXT_SECONDARY,
+          marginTop: 2,
+        }}
+      >
+        {d.toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── PickButton (inlined — matches parent style intentionally) ────────────────
+
+function PickButton({
+  direction,
+  active,
+  inactive,
+  disabled,
+  onClick,
+}: {
+  direction: Pick
+  active: boolean
+  inactive: boolean
+  disabled: boolean
+  onClick: () => void
+}) {
+  const [pressed, setPressed] = useState(false)
+  const isUp = direction === 'up'
+  const accent = isUp ? APPLE_GREEN : APPLE_RED
+  const glyph = isUp ? '▲' : '▼'
+  const label = isUp ? 'UP' : 'DOWN'
+
+  let bg = APPLE_CHIP_BG
+  let color = APPLE_TEXT
+  let border = '1px solid transparent'
+  let boxShadow: string | undefined
+
+  if (active) {
+    bg = accent
+    color = '#FFFFFF'
+    boxShadow = 'inset 0 -2px 0 rgba(0,0,0,0.12)'
+  } else if (inactive) {
+    bg = '#FFFFFF'
+    color = APPLE_TEXT_SECONDARY
+    border = '1px solid rgba(0,0,0,0.12)'
+  }
+
+  const opacity = disabled && !active ? 0.4 : 1
+
+  const style: CSSProperties = {
+    height: 44,
+    borderRadius: 12,
+    background: bg,
+    color,
+    border,
+    boxShadow,
+    fontFamily: FONT_TEXT,
+    fontSize: 15,
+    fontWeight: 500,
+    letterSpacing: '-0.016em',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: `background 250ms ${EASE_DEFAULT}, color 250ms ${EASE_DEFAULT}, border-color 250ms ${EASE_DEFAULT}, transform 200ms ${EASE_OUT}`,
+    transform: pressed ? 'scale(0.97)' : 'scale(1)',
+    opacity,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    width: '100%',
+    userSelect: 'none',
+    pointerEvents: disabled ? 'none' : 'auto',
+  }
+
+  return (
+    <button
+      type="button"
+      style={style}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={`${label} — ${active ? 'selected' : 'select'}`}
+    >
+      <span aria-hidden style={{ fontSize: 12, lineHeight: 1 }}>
+        {glyph}
+      </span>
+      {label}
+    </button>
+  )
+}

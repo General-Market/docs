@@ -12,12 +12,6 @@ import { useRouter } from '@/i18n/routing'
 import { useAccount, useConnect, useReadContract } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
-import {
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-} from 'recharts'
 import { useSourceSnapshot, type SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -32,11 +26,11 @@ import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { decodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
-import { getAssetImageUrl } from '@/lib/vision/asset-images'
 import { SourceTabNav } from './SourceTabNav'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { useTranslations } from 'next-intl'
+import { HumanMarketCard } from './HumanMarketCard'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -338,14 +332,29 @@ export function SourceDetailHumanTrading({
 
   // -- bettingEnd from the round (server-truth) --
   const { data: rounds } = useRounds(sourceId)
-  const bettingEnd = useMemo(() => {
+  const round = useMemo(() => {
     if (!activeBatch || !rounds) return null
-    const r = rounds.find(r => r.batchId === activeBatch.id)
-    return r?.bettingEnd ?? null
+    return rounds.find(r => r.batchId === activeBatch.id) ?? null
   }, [rounds, activeBatch])
+  const bettingEnd = round?.bettingEnd ?? null
   const remainingSecs = useSharedCountdown(bettingEnd)
   const isBettingOpen = !!bettingEnd && remainingSecs > 0
   const isRoundSettling = !!bettingEnd && remainingSecs === 0
+
+  // -- Round window for the per-card chart overlays --
+  // Open ≈ bettingEnd − timeframeSecs. Close ≈ bettingEnd. `resolved` flips on once we cross close.
+  const { roundOpenAt, roundCloseAt, resolved } = useMemo(() => {
+    if (!round || !round.bettingEnd) {
+      return { roundOpenAt: null, roundCloseAt: null, resolved: false }
+    }
+    const closeMs = new Date(round.bettingEnd).getTime()
+    const openMs = round.timeframeSecs > 0 ? closeMs - round.timeframeSecs * 1000 : null
+    return {
+      roundOpenAt: openMs,
+      roundCloseAt: closeMs,
+      resolved: remainingSecs <= 0,
+    }
+  }, [round, remainingSecs])
 
   // -- Player position (for already-joined state on refresh) --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
@@ -729,7 +738,7 @@ export function SourceDetailHumanTrading({
 
       <div
         className="mx-auto w-full px-6 md:px-8 pb-16 flex flex-col gap-6"
-        style={{ maxWidth: 840 }}
+        style={{ maxWidth: CONTENT_MAX }}
       >
         {/* Stake input */}
         {!showEmpty && activeBatch && (
@@ -764,9 +773,9 @@ export function SourceDetailHumanTrading({
         ) : !activeBatch ? (
           <NoActiveRound markets={curatedMarkets} sourceId={sourceId} source={source} />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {tradableMarkets.map(({ market }) => (
-              <MarketRow
+              <HumanMarketCard
                 key={market.assetId}
                 sourceId={sourceId}
                 source={source}
@@ -777,6 +786,9 @@ export function SourceDetailHumanTrading({
                 revealFailed={flow === 'reveal-failed'}
                 onRetryReveal={onRetryReveal}
                 roundSettling={isRoundSettling}
+                roundOpenAt={roundOpenAt}
+                roundCloseAt={roundCloseAt}
+                resolved={resolved}
               />
             ))}
           </div>
@@ -1458,475 +1470,6 @@ function StakeInput({
   )
 }
 
-// ── Market row ───────────────────────────────────────────────────────────────
-
-function MarketRow({
-  sourceId,
-  source,
-  market,
-  pick,
-  onPick,
-  locked,
-  revealFailed,
-  onRetryReveal,
-  roundSettling,
-}: {
-  sourceId: string
-  source: { logo: string; brandBg: string; prefixes: string[]; isPrice: boolean; valueLabel: string }
-  market: SnapshotPrice
-  pick: Pick | undefined
-  onPick: (marketId: string, direction: Pick) => void
-  locked: boolean
-  revealFailed: boolean
-  onRetryReveal: () => void
-  roundSettling: boolean
-}) {
-  const [imgErr, setImgErr] = useState(false)
-  const change = formatChange(market.changePct)
-  const name = market.name || market.symbol || market.assetId
-  const category = (market.category ?? '').toLowerCase()
-  const value = formatBigUsd(market.value)
-  const subLabel = source.isPrice ? 'price' : source.valueLabel.toLowerCase()
-  const imgSrc =
-    !imgErr && (market.imageUrl || getAssetImageUrl(sourceId, market.assetId, source.prefixes))
-
-  // Chart stroke color follows the pick
-  const strokeColor =
-    pick === 'up' ? APPLE_GREEN : pick === 'down' ? APPLE_RED : APPLE_TEXT_SECONDARY
-
-  return (
-    <article
-      style={{
-        background: APPLE_PANEL,
-        borderRadius: 18,
-        boxShadow:
-          '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
-        padding: '20px 24px',
-        transition: `box-shadow 250ms ${EASE_DEFAULT}`,
-      }}
-    >
-      {/* Header row */}
-      <div className="flex items-center gap-4">
-        <div
-          className="shrink-0 inline-flex items-center justify-center overflow-hidden"
-          style={{
-            width: 48,
-            height: 48,
-            background: APPLE_CHIP_BG,
-            borderRadius: 12,
-          }}
-          aria-hidden
-        >
-          {imgSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imgSrc}
-              alt=""
-              width={48}
-              height={48}
-              className="object-cover w-full h-full"
-              loading="lazy"
-              onError={() => setImgErr(true)}
-            />
-          ) : (
-            <span
-              style={{
-                fontFamily: FONT_TEXT,
-                fontSize: 18,
-                fontWeight: 600,
-                color: APPLE_TEXT,
-              }}
-            >
-              {name.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div
-            className="truncate"
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 24,
-              fontWeight: 500,
-              letterSpacing: '-0.016em',
-              color: APPLE_TEXT,
-              lineHeight: 1.1666,
-            }}
-          >
-            {name}
-          </div>
-          {category && (
-            <div
-              className="mt-0.5 truncate"
-              style={{
-                fontFamily: FONT_MONO,
-                fontSize: 11,
-                letterSpacing: '+0.011em',
-                color: APPLE_TEXT_SECONDARY,
-                textTransform: 'uppercase',
-              }}
-            >
-              {category}
-            </div>
-          )}
-        </div>
-
-        <div className="text-right shrink-0 flex flex-col items-end">
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 28,
-              fontWeight: 400,
-              letterSpacing: '-0.016em',
-              color: APPLE_TEXT,
-              fontVariantNumeric: 'tabular-nums',
-              lineHeight: 1,
-            }}
-          >
-            {value}
-          </span>
-          <span
-            className="mt-1"
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 12,
-              color: APPLE_TEXT_SECONDARY,
-              letterSpacing: '+0.007em',
-              textTransform: 'lowercase',
-            }}
-          >
-            {subLabel}
-          </span>
-        </div>
-
-        <div className="hidden sm:flex shrink-0 ml-3">
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 14,
-              fontWeight: 500,
-              letterSpacing: '-0.016em',
-              fontVariantNumeric: 'tabular-nums',
-              color:
-                change.positive === true
-                  ? APPLE_GREEN
-                  : change.positive === false
-                    ? APPLE_RED
-                    : APPLE_TEXT_SECONDARY,
-            }}
-          >
-            {change.positive === true ? '▲ ' : change.positive === false ? '▼ ' : ''}
-            {change.text}
-          </span>
-        </div>
-      </div>
-
-      {/* Chart */}
-      <div className="mt-4">
-        <AssetSparkline
-          sourceId={sourceId}
-          assetId={market.assetId}
-          stroke={strokeColor}
-        />
-      </div>
-
-      {/* Pick buttons */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <PickButton
-          direction="up"
-          active={pick === 'up'}
-          inactive={pick === 'down'}
-          disabled={locked || roundSettling}
-          onClick={() => onPick(market.assetId, 'up')}
-        />
-        <PickButton
-          direction="down"
-          active={pick === 'down'}
-          inactive={pick === 'up'}
-          disabled={locked || roundSettling}
-          onClick={() => onPick(market.assetId, 'down')}
-        />
-      </div>
-
-      {/* Locked footer */}
-      {locked && (
-        <p
-          className="mt-3"
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 12,
-            color: APPLE_TEXT_SECONDARY,
-            letterSpacing: '-0.016em',
-            margin: '12px 0 0',
-            textAlign: 'center',
-          }}
-        >
-          Committed for this round
-        </p>
-      )}
-      {revealFailed && (
-        <div className="mt-3 flex items-center justify-center">
-          <button
-            type="button"
-            onClick={onRetryReveal}
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 12,
-              color: '#8A5A00',
-              background: '#FFF6E5',
-              border: '1px solid #F5C26B',
-              borderRadius: 980,
-              padding: '4px 12px',
-              cursor: 'pointer',
-              letterSpacing: '-0.016em',
-            }}
-          >
-            Reveal pending — retry
-          </button>
-        </div>
-      )}
-    </article>
-  )
-}
-
-// ── Pick button ──────────────────────────────────────────────────────────────
-
-function PickButton({
-  direction,
-  active,
-  inactive,
-  disabled,
-  onClick,
-}: {
-  direction: Pick
-  active: boolean
-  inactive: boolean
-  disabled: boolean
-  onClick: () => void
-}) {
-  const [pressed, setPressed] = useState(false)
-  const isUp = direction === 'up'
-  const accent = isUp ? APPLE_GREEN : APPLE_RED
-  const glyph = isUp ? '▲' : '▼'
-  const label = isUp ? 'UP' : 'DOWN'
-
-  let bg = APPLE_CHIP_BG
-  let color = APPLE_TEXT
-  let border = '1px solid transparent'
-  let boxShadow: string | undefined
-
-  if (active) {
-    bg = accent
-    color = '#FFFFFF'
-    boxShadow = 'inset 0 -2px 0 rgba(0,0,0,0.12)'
-  } else if (inactive) {
-    bg = '#FFFFFF'
-    color = APPLE_TEXT_SECONDARY
-    border = '1px solid rgba(0,0,0,0.12)'
-  }
-
-  const opacity = disabled && !active ? 0.4 : 1
-
-  const style: CSSProperties = {
-    height: 56,
-    borderRadius: 14,
-    background: bg,
-    color,
-    border,
-    boxShadow,
-    fontFamily: FONT_TEXT,
-    fontSize: 17,
-    fontWeight: 500,
-    letterSpacing: '-0.016em',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    transition: `background 250ms ${EASE_DEFAULT}, color 250ms ${EASE_DEFAULT}, border-color 250ms ${EASE_DEFAULT}, transform 200ms ${EASE_OUT}`,
-    transform: pressed ? 'scale(0.97)' : 'scale(1)',
-    opacity,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: '100%',
-    userSelect: 'none',
-    pointerEvents: disabled ? 'none' : 'auto',
-  }
-
-  return (
-    <button
-      type="button"
-      style={style}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      onMouseLeave={() => setPressed(false)}
-      onTouchStart={() => setPressed(true)}
-      onTouchEnd={() => setPressed(false)}
-      onClick={onClick}
-      aria-pressed={active}
-      aria-label={`${label} — ${active ? 'selected' : 'select'}`}
-    >
-      <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>{glyph}</span>
-      {label}
-    </button>
-  )
-}
-
-// ── Asset sparkline (real history) ───────────────────────────────────────────
-
-interface HistoryPoint {
-  ts: number // ms
-  value: number
-}
-
-function AssetSparkline({
-  sourceId,
-  assetId,
-  stroke,
-}: {
-  sourceId: string
-  assetId: string
-  stroke: string
-}) {
-  const [points, setPoints] = useState<HistoryPoint[] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(false)
-    const to = new Date()
-    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000)
-    const url = `/api/market/history?source=${encodeURIComponent(sourceId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
-    fetch(url, { signal: AbortSignal.timeout(12_000) })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((data: { prices?: Array<{ fetchedAt?: string; value?: string | number }> }) => {
-        if (cancelled) return
-        const raw = data.prices ?? []
-        const parsed: HistoryPoint[] = raw
-          .map(p => ({
-            ts: p.fetchedAt ? new Date(p.fetchedAt).getTime() : 0,
-            value:
-              typeof p.value === 'string'
-                ? parseFloat(p.value)
-                : typeof p.value === 'number'
-                  ? p.value
-                  : NaN,
-          }))
-          .filter(p => isFinite(p.value) && p.ts > 0)
-        setPoints(parsed)
-      })
-      .catch(() => {
-        if (!cancelled) setError(true)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [sourceId, assetId])
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          height: 96,
-          background: APPLE_CHIP_BG,
-          borderRadius: 8,
-          opacity: 0.5,
-        }}
-      />
-    )
-  }
-
-  if (error || !points || points.length < 2) {
-    return (
-      <div
-        style={{
-          height: 96,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 12,
-            color: APPLE_TEXT_SECONDARY,
-            letterSpacing: '-0.016em',
-          }}
-        >
-          No recent series.
-        </span>
-      </div>
-    )
-  }
-
-  // Downsample
-  const data =
-    points.length > 288
-      ? points.filter((_, i) => i % Math.ceil(points.length / 288) === 0)
-      : points
-
-  return (
-    <div style={{ height: 96, width: '100%' }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 6, right: 6, left: 6, bottom: 6 }}>
-          <RechartsTooltip
-            content={<SparklineTooltip />}
-            cursor={{ stroke: 'rgba(0,0,0,0.12)', strokeWidth: 1 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke={stroke}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            dot={false}
-            isAnimationActive={false}
-            style={{ transition: `stroke 250ms ${EASE_DEFAULT}` }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-function SparklineTooltip(props: { active?: boolean; payload?: Array<{ payload?: HistoryPoint; value?: number }> }) {
-  if (!props.active || !props.payload || props.payload.length === 0) return null
-  const item = props.payload[0]
-  if (!item || item.payload === undefined) return null
-  const v = item.value ?? item.payload.value
-  const ts = item.payload.ts
-  if (typeof v !== 'number') return null
-  return (
-    <div
-      style={{
-        background: '#FFFFFF',
-        border: '1px solid rgba(0,0,0,0.08)',
-        borderRadius: 8,
-        padding: '6px 10px',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-        fontFamily: FONT_TEXT,
-        fontSize: 12,
-        color: APPLE_TEXT,
-        letterSpacing: '-0.016em',
-      }}
-    >
-      <div style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-        {formatBigUsd(String(v))}
-      </div>
-      <div style={{ color: APPLE_TEXT_SECONDARY, fontSize: 11 }}>
-        {new Date(ts).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </div>
-    </div>
-  )
-}
 
 // ── Notices ──────────────────────────────────────────────────────────────────
 
@@ -2130,9 +1673,9 @@ function NoActiveRound({
   sourceId: string
   source: { logo: string; brandBg: string; prefixes: string[]; isPrice: boolean; valueLabel: string }
 }) {
-  // Render the same rows but with picks disabled and chart greyed.
+  // Render the same cards but with picks disabled and no round window.
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div
         style={{
           background: APPLE_PANEL,
@@ -2154,20 +1697,25 @@ function NoActiveRound({
           No active round. Picks will open when the next one starts.
         </p>
       </div>
-      {markets.map(m => (
-        <MarketRow
-          key={m.assetId}
-          sourceId={sourceId}
-          source={source}
-          market={m}
-          pick={undefined}
-          onPick={() => { /* disabled */ }}
-          locked
-          revealFailed={false}
-          onRetryReveal={() => { /* noop */ }}
-          roundSettling={false}
-        />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {markets.map(m => (
+          <HumanMarketCard
+            key={m.assetId}
+            sourceId={sourceId}
+            source={source}
+            market={m}
+            pick={undefined}
+            onPick={() => { /* disabled */ }}
+            locked
+            revealFailed={false}
+            onRetryReveal={() => { /* noop */ }}
+            roundSettling={false}
+            roundOpenAt={null}
+            roundCloseAt={null}
+            resolved={false}
+          />
+        ))}
+      </div>
     </div>
   )
 }
