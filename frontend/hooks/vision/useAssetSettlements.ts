@@ -43,11 +43,14 @@ export function useAssetSettlements(
   return useQuery<AssetSettlement[]>({
     queryKey: ['asset-settlements', sourceId, assetId, limit],
     queryFn: async () => {
+      // The proxy itself now caps at ~8s with a per-attempt budget. Match
+      // that on the client: a longer client timeout than the server is
+      // dead weight — it just keeps a hung socket alive.
       const res = await fetch(
         `/api/vision/asset/${encodeURIComponent(sourceId)}/${encodeURIComponent(
           assetId,
         )}/settlements?limit=${limit}`,
-        { signal: AbortSignal.timeout(35_000) },
+        { signal: AbortSignal.timeout(10_000) },
       )
       // Throw on transport failure so React Query surfaces an error state
       // instead of caching an empty array — otherwise the UI is indistinguishable
@@ -75,9 +78,16 @@ export function useAssetSettlements(
           : [],
       })) as AssetSettlement[]
     },
-    refetchInterval: 30_000,
+    // Steady-state poll cadence. When the last query errored, fall back to
+    // a shorter interval so the page recovers within ~6s of the proxy
+    // coming back, rather than waiting on the full 30s steady tick.
+    refetchInterval: (q) =>
+      q.state.status === 'error' ? 6_000 : 30_000,
     staleTime: 15_000,
-    retry: 2,
-    retryDelay: attempt => Math.min(2_000 * 2 ** attempt, 10_000),
+    // Cover the worst case of an oracle rolling restart: ~5s per oracle
+    // × 3 oracles + jitter. Four retries with capped backoff get the
+    // hook through the restart window without the user noticing.
+    retry: 4,
+    retryDelay: attempt => Math.min(1_500 * 2 ** attempt, 4_000),
   })
 }
