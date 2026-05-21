@@ -1694,7 +1694,7 @@ function NoActiveRound({
           No active round. Picks will open when the next one starts.
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {markets.map(m => (
           <HumanMarketCard
             key={m.assetId}
