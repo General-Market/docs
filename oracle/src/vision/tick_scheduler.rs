@@ -269,11 +269,20 @@ impl TickScheduler {
         }
         info!(count = batch_rows.len(), "Loaded batches from DB");
 
-        // 2. Load player positions
+        // 2. Load player positions — only for the active, non-paused batches we just
+        // loaded above. Without this join, positions from already-settled batches that
+        // happen to still carry balance > 0 (refunds pending, withdrawals not claimed)
+        // pile into the in-memory map: ~493k of the ~715k rows belong to dead batches.
+        // The oracle never schedules ticks for them; it just paid RSS to remember them.
         let pos_rows: Vec<(i64, String, String, i64, String, String)> =
             sqlx::query_as(
-                "SELECT batch_id, player, bitmap_hash, start_tick, balance::text, total_deposited::text \
-                 FROM vision_positions WHERE balance > 0",
+                "SELECT p.batch_id, p.player, p.bitmap_hash, p.start_tick, \
+                        p.balance::text, p.total_deposited::text \
+                 FROM vision_positions p \
+                 JOIN vision_batches b ON b.id = p.batch_id \
+                 WHERE p.balance > 0 \
+                   AND NOT b.paused \
+                   AND (b.state = 'active' OR b.state IS NULL)",
             )
             .fetch_all(pool)
             .await?;
