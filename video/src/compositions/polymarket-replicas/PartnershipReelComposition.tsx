@@ -6,10 +6,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { GMLogo } from "../gm/brand/theme";
+import { loadFont as loadInterTight } from "@remotion/google-fonts/InterTight";
 
-const { fontFamily: INTER } = loadInter("normal", {
+const { fontFamily: INTER } = loadInterTight("normal", {
   weights: ["400", "500", "600", "700"],
 });
 
@@ -24,6 +23,7 @@ const PALETTE = {
   gridLine: "rgba(255, 255, 255, 0.055)",
   gridDot: "rgba(255, 255, 255, 0.13)",
   text: "#F5F6F8",
+  textPrice: "#D8DCE3",
   textDim: "#8E939D",
   textVeryDim: "#5F6571",
   cardSurface: "#0F1218",
@@ -121,33 +121,34 @@ const GMBrandMark: React.FC = () => (
     style={{
       display: "flex",
       alignItems: "center",
-      gap: 30,
+      gap: 32,
       color: PALETTE.mark,
     }}
   >
-    <div
-      style={{
-        width: 220,
-        height: 220,
-        borderRadius: 36,
-        background: "#000",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <GMLogo size={170} bgColor="#000" barColor={PALETTE.mark} />
-    </div>
+    <svg width="240" height="240" viewBox="0 0 1024 1024" fill="none">
+      <rect width="1024" height="1024" rx="232" ry="232" fill="#000000" />
+      <rect
+        x="256"
+        y="462"
+        width="512"
+        height="100"
+        rx="50"
+        ry="50"
+        fill="#FFFFFF"
+      />
+    </svg>
     <div
       style={{
         fontFamily: INTER,
-        fontSize: 110,
+        fontSize: 132,
         fontWeight: 600,
-        letterSpacing: "-0.032em",
-        lineHeight: 0.95,
+        letterSpacing: "-0.044em",
+        lineHeight: 0.92,
+        color: "#1D1D1F",
+        WebkitTextFillColor: PALETTE.mark,
       }}
     >
-      GeneralMarket
+      general
     </div>
   </div>
 );
@@ -449,15 +450,15 @@ const Headline: React.FC<{ lines: string[] }> = ({ lines }) => {
 const Pill: React.FC<{ verdict: "yes" | "no" }> = ({ verdict }) => (
   <div
     style={{
-      padding: "10px 26px",
-      borderRadius: 14,
-      fontSize: 38,
-      fontWeight: 600,
+      padding: "8px 22px",
+      borderRadius: 12,
+      fontSize: 36,
+      fontWeight: 500,
       background: verdict === "yes" ? PALETTE.yesBg : PALETTE.noBg,
       color: verdict === "yes" ? PALETTE.yesText : PALETTE.noText,
       letterSpacing: "-0.005em",
       fontFamily: INTER,
-      minWidth: 92,
+      minWidth: 80,
       textAlign: "center",
     }}
   >
@@ -533,34 +534,35 @@ const MarketCard: React.FC<{ card: Card }> = ({ card }) => (
         <div
           key={idx}
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr auto",
             alignItems: "center",
-            justifyContent: "space-between",
             gap: 24,
             fontSize: 48,
             fontWeight: 500,
+            fontFeatureSettings: '"tnum" 1, "cv11" 1',
           }}
         >
           <div
             style={{
-              color: PALETTE.textDim,
+              color: PALETTE.textPrice,
               fontVariantNumeric: "tabular-nums",
             }}
           >
             {tier.price}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-            <div
-              style={{
-                color: PALETTE.text,
-                fontVariantNumeric: "tabular-nums",
-                fontWeight: 600,
-                minWidth: 130,
-                textAlign: "right",
-              }}
-            >
-              {tier.percent}
-            </div>
+          <div
+            style={{
+              color: PALETTE.text,
+              fontVariantNumeric: "tabular-nums",
+              fontWeight: 600,
+              textAlign: "right",
+              paddingRight: 12,
+            }}
+          >
+            {tier.percent}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <Pill verdict="yes" />
             <Pill verdict="no" />
           </div>
