@@ -214,7 +214,9 @@ export function HumanMarketCard({
         />
       </div>
 
-      {/* Footer: locked / retry */}
+      {/* Footer: locked / retry. `locked` is also passed when there is no
+          active round at all — in that case it means "picks closed", not
+          "you've committed". The roundOpenAt being null is how we tell. */}
       {locked && !revealFailed && (
         <p
           style={{
@@ -226,7 +228,11 @@ export function HumanMarketCard({
             textAlign: 'center',
           }}
         >
-          Committed for this round
+          {roundOpenAt == null
+            ? 'Picks open with the next round'
+            : resolved
+              ? 'Round closed'
+              : 'Committed for this round'}
         </p>
       )}
       {revealFailed && (

@@ -35,7 +35,6 @@ import { HumanMarketCard } from './HumanMarketCard'
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const TOP_N = 10
-const CONTENT_MAX = 1068
 const APPLE_BLUE = '#0071E3'
 const APPLE_BLUE_HOVER = '#0066CC'
 const APPLE_GREEN = '#28CD41'
