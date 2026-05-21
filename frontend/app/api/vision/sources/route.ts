@@ -39,8 +39,26 @@ export async function GET() {
       return Response.json({ sources: overlay, categories: [] }, { status: 502 })
     }
     const data = await res.json()
+    // Index the static overlay by sourceId for fast editorial lookup.
+    const allStatic = ((sourcesDisplay as { sources?: any[] }).sources ?? [])
+    const staticById = new Map<string, any>(allStatic.map((s: any) => [s.sourceId, s]))
+
     const live = (data.sources ?? [])
       .filter((s: any) => s.batchEligible === true && !isHiddenSource(s))
+      // Overlay editorial fields (audience, redirectTo) from the static JSON
+      // onto every live entry. The data-node owns functional data; the static
+      // file owns the human/bot/redirect routing decision.
+      .map((s: any) => {
+        const editorial = staticById.get(s.sourceId)
+        if (editorial) {
+          return {
+            ...s,
+            audience: editorial.audience ?? s.audience,
+            redirectTo: editorial.redirectTo ?? s.redirectTo,
+          }
+        }
+        return s
+      })
       // Tag any defillama entry the data-node still advertises as a
       // redirect, so the grid doesn't show the old umbrella source.
       .map((s: any) => {

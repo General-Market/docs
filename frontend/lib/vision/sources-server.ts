@@ -115,12 +115,19 @@ export async function getSourceDisplayServer(
   sourceId: string,
 ): Promise<SourceDisplayServer | undefined> {
   const registry = await getSourceRegistryServer()
-  const found = findInRegistry(registry, sourceId)
-  if (found) return found
-  // Live registry didn't know — consult the static fallback before giving up.
-  // Covers the case where the data-node responded but omitted a known source
-  // (e.g. batchEligible=false at the upstream, but the client still routes here).
-  return findInRegistry(STATIC_REGISTRY, sourceId)
+  const live = findInRegistry(registry, sourceId)
+  const staticEntry = findInRegistry(STATIC_REGISTRY, sourceId)
+  if (live) {
+    // The data-node owns functional data (prefixes, internalIds, valueLabel).
+    // The static JSON owns editorial decisions (audience, redirectTo) — overlay
+    // those on top of the live entry so routing sees the human/bot flag.
+    return {
+      ...live,
+      audience: staticEntry?.audience ?? live.audience,
+      redirectTo: staticEntry?.redirectTo ?? live.redirectTo,
+    }
+  }
+  return staticEntry
 }
 
 /**
