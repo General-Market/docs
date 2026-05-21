@@ -6,7 +6,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { GMLogo } from "../gm/brand/theme";
+
+const { fontFamily: INTER } = loadInter("normal", {
+  weights: ["400", "500", "600", "700"],
+});
 
 const WIDTH = 2160;
 const HEIGHT = 2160;
@@ -14,26 +19,28 @@ const FPS = 60;
 const DURATION = FPS * 50;
 
 const PALETTE = {
-  bg: "#0A0D11",
-  bgEdge: "#04060A",
-  gridDot: "rgba(255, 255, 255, 0.05)",
-  text: "#F7F8FA",
-  textDim: "#9AA0AA",
-  cardSurface: "#0E1218",
-  cardBorder: "rgba(255, 255, 255, 0.055)",
-  yesText: "#3FD489",
-  yesBg: "rgba(63, 212, 137, 0.12)",
-  noText: "#E66072",
-  noBg: "rgba(230, 96, 114, 0.12)",
+  bgTop: "#1A1E25",
+  bgBottom: "#06080C",
+  gridLine: "rgba(255, 255, 255, 0.055)",
+  gridDot: "rgba(255, 255, 255, 0.13)",
+  text: "#F5F6F8",
+  textDim: "#8E939D",
+  textVeryDim: "#5F6571",
+  cardSurface: "#0F1218",
+  cardBorder: "rgba(255, 255, 255, 0.05)",
+  yesText: "#3AD686",
+  yesBg: "rgba(58, 214, 134, 0.10)",
+  noText: "#E45E70",
+  noBg: "rgba(228, 94, 112, 0.10)",
   mark: "#F2F4F8",
 };
 
-type CardRow = { price: string; percent: string; verdict: "yes" | "no" };
+type Tier = { price: string; percent: string };
 type Card = {
   id: string;
   badge: React.ReactNode;
-  title: string;
-  rows: [CardRow, CardRow];
+  question: string;
+  tiers: [Tier, Tier];
 };
 
 type PartnershipReelProps = {
@@ -41,29 +48,29 @@ type PartnershipReelProps = {
   brandB?: React.ReactNode;
   headline?: string[];
   cards?: Card[];
-  rowCount?: number;
-  rowSpeeds?: number[];
+  rowSpeed?: number;
 };
 
 const InitialBadge: React.FC<{
-  initials: string;
-  tint: string;
+  initials?: string;
   glyph?: string;
-}> = ({ initials, tint, glyph }) => (
+  tint: string;
+  textColor?: string;
+}> = ({ initials, glyph, tint, textColor = "#0A0D11" }) => (
   <div
     style={{
       width: "100%",
       height: "100%",
-      borderRadius: 26,
+      borderRadius: 24,
       background: tint,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      color: "#0A0D11",
+      color: textColor,
       fontWeight: 700,
-      fontSize: glyph ? 88 : 64,
+      fontSize: glyph ? 90 : 60,
       letterSpacing: "-0.025em",
-      fontFamily: "'Geist Sans', system-ui, sans-serif",
+      fontFamily: INTER,
     }}
   >
     {glyph ?? initials}
@@ -75,42 +82,29 @@ const PlaceholderMark: React.FC<{ label: string }> = ({ label }) => (
     style={{
       display: "flex",
       alignItems: "center",
-      gap: 36,
+      gap: 30,
       color: PALETTE.mark,
     }}
   >
+    <svg width="220" height="220" viewBox="0 0 200 200" fill="none">
+      <path
+        d="M30 100 L70 60 L110 100 L150 60 L190 100"
+        stroke={PALETTE.mark}
+        strokeWidth="22"
+        strokeLinejoin="miter"
+        fill="none"
+      />
+      <path
+        d="M10 130 L50 90 L90 130 L130 90 L170 130"
+        stroke={PALETTE.mark}
+        strokeWidth="22"
+        strokeLinejoin="miter"
+        fill="none"
+      />
+    </svg>
     <div
       style={{
-        width: 240,
-        height: 240,
-        borderRadius: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: PALETTE.mark,
-      }}
-    >
-      <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-        <path
-          d="M30 100 L70 60 L110 100 L150 60 L190 100"
-          stroke={PALETTE.mark}
-          strokeWidth="22"
-          strokeLinejoin="miter"
-          fill="none"
-        />
-        <path
-          d="M10 130 L50 90 L90 130 L130 90 L170 130"
-          stroke={PALETTE.mark}
-          strokeWidth="22"
-          strokeLinejoin="miter"
-          fill="none"
-          opacity="0.95"
-        />
-      </svg>
-    </div>
-    <div
-      style={{
-        fontFamily: "'Geist Sans', system-ui, sans-serif",
+        fontFamily: INTER,
         fontSize: 96,
         fontWeight: 600,
         letterSpacing: "-0.03em",
@@ -127,7 +121,7 @@ const GMBrandMark: React.FC = () => (
     style={{
       display: "flex",
       alignItems: "center",
-      gap: 32,
+      gap: 30,
       color: PALETTE.mark,
     }}
   >
@@ -146,10 +140,10 @@ const GMBrandMark: React.FC = () => (
     </div>
     <div
       style={{
-        fontFamily: "'Geist Sans', system-ui, sans-serif",
+        fontFamily: INTER,
         fontSize: 110,
         fontWeight: 600,
-        letterSpacing: "-0.03em",
+        letterSpacing: "-0.032em",
         lineHeight: 0.95,
       }}
     >
@@ -160,149 +154,175 @@ const GMBrandMark: React.FC = () => (
 
 const DEFAULT_CARDS: Card[] = [
   {
-    id: "rain-london",
+    id: "weather-london",
     badge: <InitialBadge initials="LD" tint="#7CB7FF" />,
-    title: "Will London record rain on July 14?",
-    rows: [
-      { price: "Yes", percent: "63%", verdict: "yes" },
-      { price: "No", percent: "37%", verdict: "no" },
+    question: "Will London record over ___ mm rain on July 14?",
+    tiers: [
+      { price: "5 mm", percent: "63%" },
+      { price: "12 mm", percent: "37%" },
     ],
   },
   {
-    id: "btc-120k",
-    badge: <InitialBadge initials="BTC" tint="#F4B73B" glyph="₿" />,
-    title: "Bitcoin closes above $120k this Friday?",
-    rows: [
-      { price: "Yes", percent: "41%", verdict: "yes" },
-      { price: "No", percent: "59%", verdict: "no" },
+    id: "btc-friday",
+    badge: <InitialBadge glyph="₿" tint="#F4B73B" />,
+    question: "Will Bitcoin close above $ ___ this Friday?",
+    tiers: [
+      { price: "$110k", percent: "62%" },
+      { price: "$120k", percent: "31%" },
     ],
   },
   {
-    id: "lakers-win",
+    id: "lakers-game",
     badge: <InitialBadge initials="LA" tint="#FFB36A" />,
-    title: "Lakers favored in their next regular-season game?",
-    rows: [
-      { price: "Yes", percent: "57%", verdict: "yes" },
-      { price: "No", percent: "43%", verdict: "no" },
+    question: "Will the Lakers win their next game by ___ pts?",
+    tiers: [
+      { price: "5 pts", percent: "57%" },
+      { price: "10 pts", percent: "29%" },
     ],
   },
   {
     id: "jfk-delay",
     badge: <InitialBadge initials="JFK" tint="#A8E0C4" />,
-    title: "JFK average departure delay over 20 min today?",
-    rows: [
-      { price: "Yes", percent: "28%", verdict: "yes" },
-      { price: "No", percent: "72%", verdict: "no" },
+    question: "Will JFK average departures be over ___ min today?",
+    tiers: [
+      { price: "15 min", percent: "48%" },
+      { price: "25 min", percent: "21%" },
     ],
   },
   {
     id: "eth-gas",
-    badge: <InitialBadge initials="Ξ" tint="#9FA8FF" glyph="Ξ" />,
-    title: "ETH average gas under 8 gwei this hour?",
-    rows: [
-      { price: "Yes", percent: "67%", verdict: "yes" },
-      { price: "No", percent: "33%", verdict: "no" },
+    badge: <InitialBadge glyph="Ξ" tint="#9FA8FF" />,
+    question: "Will ETH average gas stay under ___ gwei this hour?",
+    tiers: [
+      { price: "6 gwei", percent: "67%" },
+      { price: "4 gwei", percent: "33%" },
     ],
   },
   {
-    id: "fed-hold",
+    id: "fed-rates",
     badge: <InitialBadge initials="FE" tint="#E3E6EB" />,
-    title: "Fed holds rates at the next FOMC meeting?",
-    rows: [
-      { price: "Yes", percent: "74%", verdict: "yes" },
-      { price: "No", percent: "26%", verdict: "no" },
+    question: "Will the Fed cut by ___ bps at the next meeting?",
+    tiers: [
+      { price: "25 bps", percent: "74%" },
+      { price: "50 bps", percent: "12%" },
     ],
   },
   {
     id: "ercot-load",
     badge: <InitialBadge initials="EG" tint="#FFC9A1" />,
-    title: "ERCOT load peaks above 80 GW between 4 and 6 pm?",
-    rows: [
-      { price: "Yes", percent: "31%", verdict: "yes" },
-      { price: "No", percent: "69%", verdict: "no" },
+    question: "Will ERCOT load peak above ___ GW between 4-6 pm?",
+    tiers: [
+      { price: "75 GW", percent: "52%" },
+      { price: "82 GW", percent: "18%" },
     ],
   },
   {
-    id: "spx-day",
+    id: "spx-thursday",
     badge: <InitialBadge initials="SP" tint="#B6F0D0" />,
-    title: "S&P 500 closes green on Thursday?",
-    rows: [
-      { price: "Yes", percent: "55%", verdict: "yes" },
-      { price: "No", percent: "45%", verdict: "no" },
+    question: "Will the S&P 500 close above ___ on Thursday?",
+    tiers: [
+      { price: "5,400", percent: "55%" },
+      { price: "5,500", percent: "23%" },
     ],
   },
   {
     id: "binance-vol",
     badge: <InitialBadge initials="BN" tint="#F6E58D" />,
-    title: "Binance BTC spot volume over $14B today?",
-    rows: [
-      { price: "Yes", percent: "48%", verdict: "yes" },
-      { price: "No", percent: "52%", verdict: "no" },
+    question: "Will Binance BTC spot volume exceed $ ___ today?",
+    tiers: [
+      { price: "$10B", percent: "61%" },
+      { price: "$15B", percent: "24%" },
     ],
   },
   {
     id: "mlb-runs",
     badge: <InitialBadge initials="MB" tint="#FFB6A2" />,
-    title: "Yankees @ Red Sox combined runs over 8.5?",
-    rows: [
-      { price: "Yes", percent: "44%", verdict: "yes" },
-      { price: "No", percent: "56%", verdict: "no" },
+    question: "Will Yankees @ Red Sox combined runs go over ___ ?",
+    tiers: [
+      { price: "8.5", percent: "44%" },
+      { price: "10.5", percent: "19%" },
     ],
   },
   {
     id: "nyc-heat",
     badge: <InitialBadge initials="NY" tint="#9DD1FF" />,
-    title: "NYC daytime high over 88°F on Saturday?",
-    rows: [
-      { price: "Yes", percent: "39%", verdict: "yes" },
-      { price: "No", percent: "61%", verdict: "no" },
+    question: "Will NYC high temperature go above ___ on Saturday?",
+    tiers: [
+      { price: "88°F", percent: "59%" },
+      { price: "94°F", percent: "17%" },
     ],
   },
   {
     id: "tsla-week",
     badge: <InitialBadge initials="TS" tint="#E8D7FF" />,
-    title: "Tesla closes above $260 by Friday?",
-    rows: [
-      { price: "Yes", percent: "52%", verdict: "yes" },
-      { price: "No", percent: "48%", verdict: "no" },
+    question: "Will Tesla close above $ ___ by Friday?",
+    tiers: [
+      { price: "$260", percent: "52%" },
+      { price: "$280", percent: "21%" },
     ],
   },
 ];
 
-const DotGrid: React.FC = () => {
-  const cells: React.ReactNode[] = [];
-  const spacing = 110;
-  const cols = Math.ceil(WIDTH / spacing) + 1;
-  const rows = Math.ceil(HEIGHT / spacing) + 1;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      cells.push(
-        <div
-          key={`${r}-${c}`}
-          style={{
-            position: "absolute",
-            left: c * spacing,
-            top: r * spacing,
-            width: 5,
-            height: 5,
-            borderRadius: 3,
-            background: PALETTE.gridDot,
-          }}
-        />,
-      );
-    }
-  }
-  return <AbsoluteFill>{cells}</AbsoluteFill>;
+const GridBackdrop: React.FC = () => {
+  const spacing = 120;
+  const cols = Math.ceil(WIDTH / spacing);
+  const rows = Math.ceil(HEIGHT / spacing);
+  return (
+    <AbsoluteFill>
+      <svg
+        width={WIDTH}
+        height={HEIGHT}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <defs>
+          <radialGradient id="grid-mask" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="white" stopOpacity="1" />
+            <stop offset="60%" stopColor="white" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+          <mask id="grid-fade">
+            <rect width={WIDTH} height={HEIGHT} fill="url(#grid-mask)" />
+          </mask>
+        </defs>
+        <g mask="url(#grid-fade)">
+          {Array.from({ length: rows + 1 }).map((_, r) => (
+            <line
+              key={`h-${r}`}
+              x1={0}
+              y1={r * spacing}
+              x2={WIDTH}
+              y2={r * spacing}
+              stroke={PALETTE.gridLine}
+              strokeWidth={1.2}
+            />
+          ))}
+          {Array.from({ length: cols + 1 }).map((_, c) => (
+            <line
+              key={`v-${c}`}
+              x1={c * spacing}
+              y1={0}
+              x2={c * spacing}
+              y2={HEIGHT}
+              stroke={PALETTE.gridLine}
+              strokeWidth={1.2}
+            />
+          ))}
+          {Array.from({ length: rows + 1 }).flatMap((_, r) =>
+            Array.from({ length: cols + 1 }).map((__, c) => (
+              <circle
+                key={`d-${r}-${c}`}
+                cx={c * spacing}
+                cy={r * spacing}
+                r={2.5}
+                fill={PALETTE.gridDot}
+              />
+            )),
+          )}
+        </g>
+      </svg>
+    </AbsoluteFill>
+  );
 };
-
-const Vignette: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      background: `radial-gradient(circle at 50% 35%, transparent 0%, transparent 40%, ${PALETTE.bgEdge} 95%)`,
-      pointerEvents: "none",
-    }}
-  />
-);
 
 const Separator: React.FC = () => (
   <div
@@ -316,24 +336,24 @@ const Separator: React.FC = () => (
       opacity: 0.55,
     }}
   >
-    <svg width="180" height="180" viewBox="0 0 180 180" fill="none">
+    <svg width="170" height="170" viewBox="0 0 180 180" fill="none">
       <defs>
-        <filter id="x-blur" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="4" />
+        <filter id="x-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" />
         </filter>
       </defs>
-      <g filter="url(#x-blur)" opacity="0.85">
+      <g filter="url(#x-glow)" opacity="0.8">
         <path
-          d="M50 50 L130 130 M130 50 L50 130"
+          d="M55 55 L125 125 M125 55 L55 125"
           stroke={PALETTE.mark}
           strokeWidth="6"
           strokeLinecap="round"
         />
       </g>
       <path
-        d="M50 50 L130 130 M130 50 L50 130"
+        d="M55 55 L125 125 M125 55 L55 125"
         stroke={PALETTE.mark}
-        strokeWidth="4"
+        strokeWidth="3.5"
         strokeLinecap="round"
       />
     </svg>
@@ -370,7 +390,7 @@ const HeaderLockup: React.FC<{
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 64,
+          gap: 56,
         }}
       >
         {brandA}
@@ -388,15 +408,15 @@ const Headline: React.FC<{ lines: string[] }> = ({ lines }) => {
     <div
       style={{
         position: "absolute",
-        top: 820,
+        top: 800,
         width: "100%",
         textAlign: "center",
-        fontFamily: "'Geist Sans', system-ui, sans-serif",
+        fontFamily: INTER,
         color: PALETTE.text,
         fontSize: 178,
         fontWeight: 700,
-        letterSpacing: "-0.038em",
-        lineHeight: 1.04,
+        letterSpacing: "-0.04em",
+        lineHeight: 1.05,
       }}
     >
       {lines.map((line, i) => {
@@ -429,15 +449,15 @@ const Headline: React.FC<{ lines: string[] }> = ({ lines }) => {
 const Pill: React.FC<{ verdict: "yes" | "no" }> = ({ verdict }) => (
   <div
     style={{
-      padding: "14px 30px",
-      borderRadius: 18,
-      fontSize: 42,
+      padding: "10px 26px",
+      borderRadius: 14,
+      fontSize: 38,
       fontWeight: 600,
       background: verdict === "yes" ? PALETTE.yesBg : PALETTE.noBg,
       color: verdict === "yes" ? PALETTE.yesText : PALETTE.noText,
-      letterSpacing: "-0.01em",
-      fontFamily: "'Geist Sans', system-ui, sans-serif",
-      minWidth: 100,
+      letterSpacing: "-0.005em",
+      fontFamily: INTER,
+      minWidth: 92,
       textAlign: "center",
     }}
   >
@@ -445,72 +465,104 @@ const Pill: React.FC<{ verdict: "yes" | "no" }> = ({ verdict }) => (
   </div>
 );
 
+const QuestionWithBlank: React.FC<{ question: string }> = ({ question }) => {
+  const parts = question.split("___");
+  return (
+    <span>
+      {parts.map((part, idx) => (
+        <React.Fragment key={idx}>
+          {part}
+          {idx < parts.length - 1 && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 110,
+                borderBottom: `3px solid ${PALETTE.text}`,
+                verticalAlign: "8px",
+                margin: "0 4px",
+              }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </span>
+  );
+};
+
 const MarketCard: React.FC<{ card: Card }> = ({ card }) => (
   <div
     style={{
       width: 1080,
-      height: 500,
+      height: 700,
       flexShrink: 0,
       background: PALETTE.cardSurface,
-      borderRadius: 44,
+      borderRadius: 48,
       border: `1px solid ${PALETTE.cardBorder}`,
-      padding: "52px 58px",
+      padding: "56px 60px",
       display: "flex",
       flexDirection: "column",
-      gap: 36,
-      boxShadow: "0 30px 90px -60px rgba(0, 0, 0, 0.9)",
-      fontFamily: "'Geist Sans', system-ui, sans-serif",
+      gap: 40,
+      boxShadow: "0 40px 100px -60px rgba(0, 0, 0, 0.9)",
+      fontFamily: INTER,
     }}
   >
     <div style={{ display: "flex", gap: 32, alignItems: "flex-start" }}>
-      <div style={{ width: 130, height: 130, flexShrink: 0 }}>{card.badge}</div>
+      <div style={{ width: 132, height: 132, flexShrink: 0 }}>{card.badge}</div>
       <div
         style={{
           color: PALETTE.text,
-          fontSize: 50,
+          fontSize: 48,
           fontWeight: 600,
-          lineHeight: 1.16,
-          letterSpacing: "-0.02em",
+          lineHeight: 1.18,
+          letterSpacing: "-0.022em",
           flex: 1,
         }}
       >
-        {card.title}
+        <QuestionWithBlank question={card.question} />
       </div>
     </div>
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 18,
+        gap: 22,
         marginTop: "auto",
       }}
     >
-      {card.rows.map((row, idx) => (
+      {card.tiers.map((tier, idx) => (
         <div
           key={idx}
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 28,
-            fontSize: 50,
+            gap: 24,
+            fontSize: 48,
             fontWeight: 500,
           }}
         >
-          <div style={{ color: PALETTE.textDim }}>{row.price}</div>
+          <div
+            style={{
+              color: PALETTE.textDim,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {tier.price}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
             <div
               style={{
                 color: PALETTE.text,
                 fontVariantNumeric: "tabular-nums",
                 fontWeight: 600,
-                minWidth: 140,
+                minWidth: 130,
                 textAlign: "right",
               }}
             >
-              {row.percent}
+              {tier.percent}
             </div>
-            <Pill verdict={row.verdict} />
+            <Pill verdict="yes" />
+            <Pill verdict="no" />
           </div>
         </div>
       ))}
@@ -518,29 +570,27 @@ const MarketCard: React.FC<{ card: Card }> = ({ card }) => (
   </div>
 );
 
-const CardRowScroller: React.FC<{
+const CardCarousel: React.FC<{
   cards: Card[];
   topPx: number;
-  direction: 1 | -1;
   pxPerSecond: number;
-  offset: number;
-}> = ({ cards, topPx, direction, pxPerSecond, offset }) => {
+}> = ({ cards, topPx, pxPerSecond }) => {
   const frame = useCurrentFrame();
-  const gap = 44;
+  const gap = 48;
   const cardWidth = 1080;
   const stride = cardWidth + gap;
   const loop = stride * cards.length;
   const seconds = frame / FPS;
-  const raw = (seconds * pxPerSecond * direction + offset) % loop;
-  const translate = raw <= 0 ? raw : raw - loop;
+  const raw = (seconds * pxPerSecond) % loop;
+  const translate = -raw;
   const enter = spring({
-    frame: frame - 24,
+    frame: frame - 26,
     fps: FPS,
     config: { damping: 200, mass: 0.8 },
     durationInFrames: 60,
   });
   const opacity = interpolate(enter, [0, 1], [0, 1]);
-  const lift = interpolate(enter, [0, 1], [90, 0]);
+  const lift = interpolate(enter, [0, 1], [100, 0]);
   return (
     <div
       style={{
@@ -573,8 +623,7 @@ export const PartnershipReel: React.FC<PartnershipReelProps> = ({
   brandB,
   headline,
   cards,
-  rowCount = 2,
-  rowSpeeds,
+  rowSpeed = 130,
 }) => {
   const resolvedCards = cards && cards.length > 0 ? cards : DEFAULT_CARDS;
   const resolvedBrandA = brandA ?? <GMBrandMark />;
@@ -582,42 +631,28 @@ export const PartnershipReel: React.FC<PartnershipReelProps> = ({
   const resolvedHeadline =
     headline && headline.length > 0
       ? headline
-      : ["Markets you couldn't trade.", "Until now."];
-  const baseSpeeds = rowSpeeds ?? [120, 95];
-  const speeds = Array.from(
-    { length: rowCount },
-    (_, i) => baseSpeeds[i % baseSpeeds.length],
-  );
+      : ["Markets others", "won't make."];
 
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(circle at 50% 28%, ${PALETTE.bg} 0%, ${PALETTE.bgEdge} 90%)`,
+        background: `radial-gradient(ellipse 100% 70% at 50% 25%, ${PALETTE.bgTop} 0%, ${PALETTE.bgBottom} 100%)`,
       }}
     >
-      <DotGrid />
-      <Vignette />
+      <GridBackdrop />
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(circle at 50% 45%, transparent 0%, transparent 50%, ${PALETTE.bgBottom} 100%)`,
+          pointerEvents: "none",
+        }}
+      />
       <HeaderLockup brandA={resolvedBrandA} brandB={resolvedBrandB} />
       <Headline lines={resolvedHeadline} />
-      {Array.from({ length: rowCount }).map((_, i) => {
-        const direction: 1 | -1 = i % 2 === 0 ? -1 : 1;
-        const top = 1520 + i * 560;
-        const offset = (i * 360) % 1080;
-        const rowCards = [
-          ...resolvedCards.slice(i * 4),
-          ...resolvedCards.slice(0, i * 4),
-        ];
-        return (
-          <CardRowScroller
-            key={i}
-            cards={rowCards}
-            topPx={top}
-            direction={direction}
-            pxPerSecond={speeds[i]}
-            offset={offset}
-          />
-        );
-      })}
+      <CardCarousel
+        cards={resolvedCards}
+        topPx={1640}
+        pxPerSecond={rowSpeed}
+      />
     </AbsoluteFill>
   );
 };
