@@ -11,9 +11,9 @@
   "defillama-risk-curators": ["steakhouse-financial","sentora","gauntlet","k3-capital","kpk","sky-money","telos-consilium","vault-bridge","rockawayx","clearstar"],
   "defillama-ai-agents": ["morpheusai","giza","capx-ai","agentfi","infinite-trading-protocol","gud.tech","mind-network","yield-ai","calculus","glorb"],
   "defillama-privacy": ["tornado-cash","railgun","zama","privacy-pools","aztec-connect","privacy-cash","namada-shielded-pools","hinkal","zkbob","0x0.ai"],
-  "defillama-telegram-bot": ["banana-gun","maestro","unibot","bonkbot","trojan","bullx","sigma","pepe-boost","magnum","ton-pump"],
-  "defillama-trading-app": ["photon","axiom","bullx","gmgn","trojan","padre","okx-web3","vector","defined","birdeye"],
-  "defillama-interface": ["ventuals","dflow-prediction-market","jupiter-prediction","desk-clob","raydium-perps","binance-dex","binance-alpha","backpack-exchange","pacific-exchange","one-trading"],
-  "defillama-wallets": ["metamask-wallet","phantom-wallet","rabby-wallet","coinbase-wallet","trust-wallet","rainbow-wallet","backpack-wallet","argent-wallet","zerion-wallet","ambire-wallet"],
+  "defillama-telegram-bot": ["banana-gun","maestro","unibot","bonkbot","trojan","bullx","ton-pump"],
+  "defillama-trading-app": ["photon","axiom","bullx","gmgn","trojan","padre"],
+  "defillama-interface": ["ventuals","dflow-prediction-market","jupiter-prediction","desk-clob","raydium-perps","backpack","pacifica"],
+  "defillama-wallets": ["metamask-wallet","phantom-wallet","rabby-wallet","rainbow-wallet","zerion-wallet","ambire-wallet"],
   "defillama-top-chains": ["chain_ethereum","chain_solana","chain_bsc","chain_bitcoin","chain_tron","chain_base","chain_hyperliquid_l1","chain_arbitrum","chain_provenance","chain_polygon"]
 }

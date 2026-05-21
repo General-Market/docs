@@ -602,16 +602,31 @@ impl MarketDataSource for DefiLlamaMarketSource {
                             .unwrap_or_else(|| protocol.slug.to_uppercase());
 
                         if protocol_ids.contains(&&asset_id) {
-                            if let Some(tvl) = protocol.tvl {
-                                let change_pct =
-                                    protocol.change_1d.and_then(|v| Decimal::try_from(v).ok());
-                                let market_cap =
-                                    protocol.mcap.and_then(|v| Decimal::try_from(v).ok());
-
+                            let change_pct =
+                                protocol.change_1d.and_then(|v| Decimal::try_from(v).ok());
+                            let market_cap =
+                                protocol.mcap.and_then(|v| Decimal::try_from(v).ok());
+                            // Custody-less categories (wallets, bots, trading
+                            // apps, interfaces, ai agents) legitimately report
+                            // tvl=null. fetch_assets() keeps the asset row;
+                            // mirror that here by emitting value=0 so the
+                            // price row also exists. Without it the snapshot
+                            // would have an asset entry and no priceable row,
+                            // making the protocol invisible to human pages.
+                            let subcategory =
+                                protocol.category.as_deref().unwrap_or("").to_lowercase();
+                            let keep_zero =
+                                KEEP_ZERO_TVL_CATEGORIES.contains(&subcategory.as_str());
+                            let value = match protocol.tvl {
+                                Some(tvl) => Some(Decimal::try_from(tvl).unwrap_or_default()),
+                                None if keep_zero => Some(Decimal::ZERO),
+                                None => None,
+                            };
+                            if let Some(value) = value {
                                 results.push(PriceUpdate {
                                     asset_id: asset_id.clone(),
                                     symbol: symbol.clone(),
-                                    value: Decimal::try_from(tvl).unwrap_or_default(),
+                                    value,
                                     prev_close: None,
                                     change_pct,
                                     volume_24h: None,
