@@ -11,6 +11,7 @@ type SearchResult = {
   sourceId: string
   name: string
   category: string
+  logo: string
   settlements: number
 }
 
@@ -40,16 +41,16 @@ function fuzzyScore(haystack: string, needle: string): number {
 }
 
 /** Round logo. Apple's circle treatment: registry image, neutral fallback. */
-function ResultLogo({ sourceId, name }: { sourceId: string; name: string }) {
+function ResultLogo({ logo, name }: { logo: string; name: string }) {
   const [broken, setBroken] = useState(false)
-  if (!broken) {
+  if (logo && !broken) {
     return (
       <span
         className="inline-flex items-center justify-center w-7 h-7 shrink-0 overflow-hidden rounded-full"
         style={{ background: '#f5f5f7' }}
       >
         <Image
-          src={`/source-imgs/icons/${sourceId}.png`}
+          src={logo}
           alt=""
           width={28}
           height={28}
@@ -108,6 +109,7 @@ export function SourceSearch() {
       sourceId: s.sourceId,
       name: s.name,
       category: s.category,
+      logo: s.logo,
       settlements: settlementsBySource.get(s.sourceId) ?? 0,
     })
     if (!trimmed) {
@@ -131,10 +133,11 @@ export function SourceSearch() {
         return b.settlements - a.settlements
       })
       .slice(0, MAX_RESULTS_TYPING)
-      .map(({ sourceId, name, category, settlements }) => ({
+      .map(({ sourceId, name, category, logo, settlements }) => ({
         sourceId,
         name,
         category,
+        logo,
         settlements,
       }))
   }, [q, sources, settlementsBySource])
@@ -239,7 +242,7 @@ export function SourceSearch() {
                 background: i === active ? 'rgba(0,0,0,0.04)' : 'transparent',
               }}
             >
-              <ResultLogo sourceId={r.sourceId} name={r.name} />
+              <ResultLogo logo={r.logo} name={r.name} />
               <span
                 className="flex-1 truncate"
                 style={{
