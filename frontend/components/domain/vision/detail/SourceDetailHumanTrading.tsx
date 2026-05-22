@@ -36,7 +36,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
-import { MarketCandleChart, chartHistoryQueryOptions } from './MarketCandleChart'
+import { MarketCandleChart, chartHistoryQueryOptions, type Timeframe } from './MarketCandleChart'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -473,6 +473,8 @@ export function SourceDetailHumanTrading({
   const [revealRetryCount, setRevealRetryCount] = useState(0)
   // -- Which market the big candle chart on top is currently focused on --
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null)
+  // Lifted from MarketCandleChart so hover-prefetch matches the user's choice.
+  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('1h')
 
   // Reconcile flow with joinStep + isJoined
   useEffect(() => {
@@ -779,14 +781,14 @@ export function SourceDetailHumanTrading({
     [historyByAsset],
   )
 
-  // Warm the big-chart cache for an asset before the user clicks. Default
-  // timeframe is '1h' to match the chart's initial state; if the user has
-  // switched timeframes, the cache miss falls back to a normal fetch.
+  // Warm the big-chart cache for an asset before the user clicks. Uses the
+  // currently selected timeframe so the prefetch hits the cache regardless of
+  // whether the user is still on '1h' or switched to '5m'/'15m'/'1d'.
   const prefetchChartFor = useCallback(
     (assetId: string) => {
-      queryClient.prefetchQuery(chartHistoryQueryOptions(sourceId, assetId, '1h'))
+      queryClient.prefetchQuery(chartHistoryQueryOptions(sourceId, assetId, chartTimeframe))
     },
-    [queryClient, sourceId],
+    [queryClient, sourceId, chartTimeframe],
   )
 
   // -- Layout --
@@ -848,6 +850,8 @@ export function SourceDetailHumanTrading({
                     roundOpenAt={roundOpenAt}
                     roundCloseAt={roundCloseAt}
                     resolved={resolved}
+                    timeframe={chartTimeframe}
+                    onTimeframeChange={setChartTimeframe}
                     onReady={onBigChartReady}
                   />
                 )}

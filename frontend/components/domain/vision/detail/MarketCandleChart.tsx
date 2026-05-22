@@ -35,7 +35,7 @@ const TZ_OFFSET_SEC = new Date().getTimezoneOffset() * -60
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Timeframe = '5m' | '15m' | '1h' | '1d'
+export type Timeframe = '5m' | '15m' | '1h' | '1d'
 
 const TIMEFRAME_BUCKET_MS: Record<Timeframe, number> = {
   '5m': 5 * 60 * 1000,
@@ -111,6 +111,12 @@ interface MarketCandleChartProps {
   roundCloseAt: number | null
   /** True once the countdown has hit zero. */
   resolved: boolean
+  /**
+   * Selected candle timeframe. Lifted to the parent so hover-prefetch on
+   * the mini-cards can warm the cache for the actual user-chosen resolution.
+   */
+  timeframe: Timeframe
+  onTimeframeChange: (t: Timeframe) => void
   /** Fires once when the first history fetch + chart draw complete. */
   onReady?: () => void
 }
@@ -188,9 +194,10 @@ export function MarketCandleChart({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  timeframe,
+  onTimeframeChange,
   onReady,
 }: MarketCandleChartProps) {
-  const [timeframe, setTimeframe] = useState<Timeframe>('1h')
   const [imgErr, setImgErr] = useState(false)
 
   // useQuery with keepPreviousData so the previous asset's candles stay visible
@@ -484,7 +491,7 @@ export function MarketCandleChart({
           )}
         </div>
 
-        <TimeframeStrip value={timeframe} onChange={setTimeframe} />
+        <TimeframeStrip value={timeframe} onChange={onTimeframeChange} />
       </div>
 
       {/* Chart body */}
