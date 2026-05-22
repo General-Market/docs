@@ -553,8 +553,9 @@ export function HumanTradingOnboarding(props: HumanTradingOnboardingProps) {
   const pointerNearestOf = !isTerminal ? def.nearestOf : undefined
   const hasPointer = (pointerSelectors?.length ?? 0) > 0 || !!pointerNearestOf
 
-  // Don't show "Step N of M" once we're at the terminal celebration step
-  const visibleTotal = STEPS.length - 1 // excludes committed
+  // STEPS already excludes `committed` — that step is handled separately
+  // as the terminal celebration. Don't subtract again here.
+  const visibleTotal = STEPS.length
   const visibleCurrent = stepIndex < 0 ? 0 : Math.min(stepIndex, visibleTotal - 1)
 
   return (
