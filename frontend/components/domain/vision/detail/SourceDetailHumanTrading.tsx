@@ -861,9 +861,14 @@ export function SourceDetailHumanTrading({
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
                 style={{ display: chartsReady ? 'grid' : 'none' }}
               >
-                {(activeBatch ? tradableMarkets.map(t => t.market) : curatedMarkets).map(
-                  (market) => {
-                    const isInteractive = !!activeBatch && roundPhase === 'open'
+                {/* Always show the curated 10 so the logos are visible even
+                    when the live batch's marketIds don't intersect the curated
+                    allowlist. Picks only fire for markets that are actually in
+                    the active batch — the rest are locked and informational. */}
+                {curatedMarkets.map((market) => {
+                    const inActiveBatch =
+                      !!activeBatch && marketIds.includes(market.assetId)
+                    const isInteractive = inActiveBatch && roundPhase === 'open'
                     return (
                       <HumanMarketCard
                         key={market.assetId}
@@ -885,8 +890,7 @@ export function SourceDetailHumanTrading({
                         points={getPointsFor(market.assetId)}
                       />
                     )
-                  },
-                )}
+                  })}
               </div>
             </>
           )}
