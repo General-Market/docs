@@ -69,108 +69,6 @@ const ERC20_BALANCE_ABI = [
   },
 ] as const
 
-// ── Cioran prose ─────────────────────────────────────────────────────────────
-
-const PROSE: Record<string, string[]> = {
-  'defillama-lending': [
-    'Lending is the quiet engine. Capital deposited yesterday earns rent tonight.',
-    'The interesting question is which protocol survives the next stress test — not which posts the largest TVL today.',
-    'Pick the one you would still trust in a drawdown.',
-  ],
-  'defillama-dexs': [
-    'A DEX is a market that exists because no one was watching.',
-    'Volume tells you how many people agreed to pretend the orderbook was thick.',
-    'The protocol that still has fees in a flat week is the one that matters.',
-  ],
-  'defillama-derivatives': [
-    'Perps are conviction with extra steps.',
-    'Open interest measures how confident the room is — never how correct.',
-    'Trade the venue, not the trader.',
-  ],
-  'defillama-liquid-staking': [
-    'Staking turned into a derivative the moment it had a token.',
-    'Yield is the prize for waiting; liquidity is the prize for not.',
-    'Pick the one whose discount peg you would survive.',
-  ],
-  'defillama-bridges': [
-    'Bridges are where capital stops being yours for a few minutes.',
-    'Volume here is not a feature — it is exposure.',
-    'The one with the smallest unexplained outage wins.',
-  ],
-  'defillama-launchpad': [
-    'Launchpads are factories for things that will not exist next year.',
-    'Volume measures hope. Hope is priced.',
-    'Trade the floor, not the ceiling.',
-  ],
-  'defillama-prediction-market': [
-    'Prediction markets sell certainty about uncertainty.',
-    'The interesting figure is not the volume — it is the spread between belief and outcome.',
-    'Pick the venue that pays out without arguing.',
-  ],
-  'defillama-rwa': [
-    'Real-world assets are the part of crypto that does not believe in itself.',
-    'TVL measures how much off-chain reality the chain dared touch.',
-    'Pick the issuer who answers the phone.',
-  ],
-  'defillama-onchain-capital-allocator': [
-    'A capital allocator is a manager who admitted it in the smart contract.',
-    'Returns matter; methodology matters more.',
-    'Trust the rules; the discretion is what kills.',
-  ],
-  'defillama-risk-curators': [
-    'Risk curators are the actuaries DeFi pretends not to need.',
-    'Their TVL is a measure of whose judgment the market borrowed.',
-    'Pick the one who has been wrong least cheaply.',
-  ],
-  'defillama-ai-agents': [
-    'AI agents are a category that wrote its own headline.',
-    'Their TVL is a polite estimate of how much capital agreed to be experimented on.',
-    'Trade the protocol whose pause button still works.',
-  ],
-  'defillama-privacy': [
-    'Privacy protocols are the only category whose users disappear when measured.',
-    'TVL here is a courtesy figure.',
-    'Pick the one that is still legal where you live.',
-  ],
-  'defillama-telegram-bot': [
-    'Trading from a chat window is a confession dressed as convenience.',
-    'TVL here is rarely the point — it is the volume that pays the bills.',
-    'Pick the bot that still replies after a bad week.',
-  ],
-  'defillama-trading-app': [
-    'Trading apps are interfaces over things you do not own.',
-    'They make custody feel optional. It is not.',
-    'Pick the one whose deposit address has not changed in a year.',
-  ],
-  'defillama-interface': [
-    'An interface is whoever managed to put a button on someone else’s smart contract first.',
-    'No custody, no TVL — only traffic.',
-    'The interesting question is which one will still resolve to a domain next quarter.',
-  ],
-  'defillama-wallets': [
-    'A wallet is a contract that takes responsibility for your wrong decisions.',
-    'TVL here is just trust, denominated.',
-    'Pick the one whose recovery flow you have actually tested.',
-  ],
-  'defillama-top-chains': [
-    'Chains compete to be the place where capital chooses to sit still.',
-    'TVL is the only honest scoreboard, and even it lies on weekends.',
-    'Pick the chain you would still use if its token went to zero.',
-  ],
-}
-
-const PROSE_FALLBACK = [
-  'A market is a place where opinions become numbers.',
-  'These ten are the ones the curator could defend in writing.',
-  'The rest were not asked.',
-]
-
-const PROSE_COMMITTED = [
-  'Ten directions, all visible.',
-  'The market knows.',
-  'The round will judge.',
-]
-
 // ── Formatting helpers ───────────────────────────────────────────────────────
 
 function formatBigUsd(value: string | null): string {
@@ -704,11 +602,6 @@ export function SourceDetailHumanTrading({
   const showEmpty = !isSnapshotLoading && curatedMarkets.length === 0
   const sourceLogo = source.logo
 
-  const proseLines = useMemo(() => {
-    if (flow === 'committed') return PROSE_COMMITTED
-    return PROSE[sourceId] ?? PROSE_FALLBACK
-  }, [flow, sourceId])
-
   const displayError = joinError || submitError
 
   // Validate button copy state-aware
@@ -913,8 +806,6 @@ export function SourceDetailHumanTrading({
               onRetry={onRetryReveal}
             />
           )}
-
-          <ProseBlock lines={proseLines} />
         </div>
 
         {/* Right rail — entry card + positions stacked, hidden on mobile (MobileValidate covers entry) */}
@@ -1959,33 +1850,4 @@ function IndexingNotice() {
   )
 }
 
-
-function ProseBlock({ lines }: { lines: string[] }) {
-  return (
-    <section
-      style={{
-        borderTop: '1px solid rgba(0,0,0,0.06)',
-        paddingTop: 32,
-        marginTop: 16,
-        maxWidth: 734,
-      }}
-    >
-      {lines.map((line, i) => (
-        <p
-          key={i}
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 17,
-            lineHeight: 1.4706,
-            letterSpacing: '-0.022em',
-            color: i === lines.length - 1 ? APPLE_TEXT : '#6E6E73',
-            margin: i === 0 ? 0 : '12px 0 0',
-          }}
-        >
-          {line}
-        </p>
-      ))}
-    </section>
-  )
-}
 
