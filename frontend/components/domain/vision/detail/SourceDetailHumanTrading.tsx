@@ -9,7 +9,9 @@ import {
 } from 'react'
 import Image from 'next/image'
 import { useRouter } from '@/i18n/routing'
-import { useAccount, useConnect, useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
+import { useWalletLogin } from '@/hooks/useWalletLogin'
+import { indexL3 } from '@/lib/wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
 import { useSourceSnapshot, type SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
@@ -27,7 +29,6 @@ import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { decodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
-import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
 import { SourceTabNav } from './SourceTabNav'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
@@ -382,7 +383,7 @@ export function SourceDetailHumanTrading({
 
   // -- Wallet + gas + USDC balance --
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
+  const handleConnectWallet = useWalletLogin({ source: 'source-detail-human' })
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
   const { isLow: hasLowGas } = useL3GasBalance()
@@ -531,34 +532,6 @@ export function SourceDetailHumanTrading({
   const allPicked = totalPicked === marketCount && marketCount > 0
   const exceedsBalance =
     isConnected && stakeNum > 0 && BigInt(Math.round(stakeNum * 1e18)) > walletUsdc
-
-  // -- Wallet connect --
-  const handleConnectWallet = useCallback(async () => {
-    const injected = connectors.find(c => c.id === 'injected')
-    if (!injected) return
-    const chainIdHex = `0x${indexL3.id.toString(16)}`
-    const provider = (window as unknown as { ethereum?: { request: (req: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum
-    if (provider) {
-      try {
-        await provider.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: chainIdHex,
-            chainName: indexL3.name,
-            nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: getWalletRpcUrls(indexL3),
-          }],
-        })
-      } catch { /* may already exist */ }
-      try {
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: chainIdHex }],
-        })
-      } catch { /* user rejected */ }
-    }
-    connect({ connector: injected, chainId: indexL3.id })
-  }, [connect, connectors])
 
   // -- Build bets array in batch market order --
   const buildBets = useCallback((): BetDirection[] => {

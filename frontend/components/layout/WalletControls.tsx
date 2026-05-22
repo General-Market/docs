@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
+import { useWalletLogin } from '@/hooks/useWalletLogin'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { HeaderBalanceBar } from './HeaderBalanceBar'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -25,12 +26,11 @@ export function WalletControls({ isDark }: WalletControlsProps) {
 
   const { address, isConnected } = useAccount()
   const authenticated = isConnected
-  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
-  const injectedConnector = connectors.find(c => c.type === 'injected') || connectors[0]
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const isWrongNetwork = isConnected && chainId !== indexL3.id
+  const handleLogin = useWalletLogin({ source: 'header' })
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -53,48 +53,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
       capture('wallet_connected', { wallet_address: address, chain_id: chainId })
     }
   }, [authenticated, address])
-
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-  const isAndroid = /Android/i.test(ua)
-  const isIOS = /iPhone|iPad|iPod/i.test(ua)
-  const isMobile = isAndroid || isIOS
-  const isInMetaMaskBrowser = /MetaMaskMobile/i.test(ua)
-  const hasInjectedProvider = typeof window !== 'undefined' && !!window.ethereum
-
-  // Connect first. The injected connector's switchChain handles
-  // wallet_addEthereumChain via the 4902 fallback after the wallet is
-  // authorized. Chaining add/switch/connect across three app context
-  // switches on mobile strands the promise chain.
-  const handleLogin = () => {
-    capture('login_clicked', { source: 'header', mobile: isMobile, has_provider: hasInjectedProvider })
-
-    // Mobile browser without injected provider → hand off to the MetaMask app.
-    // Skip if we're already inside MM's in-app browser (provider may be late
-    // to inject during hydration); never bounce a user out of MM into Chrome.
-    if (isMobile && !hasInjectedProvider && !isInMetaMaskBrowser) {
-      const dappPath = `${window.location.host}${window.location.pathname}${window.location.search}`
-      // Android: intent URL forces the MM package and avoids Chrome opening
-      // metamask.app.link as a regular tab when the universal link fails to
-      // intercept. iOS: universal link is the only handoff that exists.
-      const target = isAndroid
-        ? `intent://${dappPath}#Intent;scheme=https;package=io.metamask;S.browser_fallback_url=https%3A%2F%2Fmetamask.app.link%2Fdapp%2F${encodeURIComponent(dappPath)};end`
-        : `https://metamask.app.link/dapp/${dappPath}`
-      window.location.assign(target)
-      return
-    }
-
-    // Desktop browser without injected provider → send them to the install
-    // page. Calling connect() with no provider silently no-ops and looks like
-    // the button is dead.
-    if (!isMobile && !hasInjectedProvider) {
-      window.open('https://metamask.io/download/', '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    if (injectedConnector) {
-      connect({ connector: injectedConnector, chainId: indexL3.id })
-    }
-  }
 
   const handleLogout = () => {
     capture('wallet_disconnected')

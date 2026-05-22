@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
-import { useAccount, useReadContract, useConnect, usePublicClient } from 'wagmi'
+import { useAccount, useReadContract, usePublicClient } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
@@ -11,8 +11,9 @@ import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
+import { useWalletLogin } from '@/hooks/useWalletLogin'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringPress } from '@/components/ui/spring'
@@ -111,18 +112,7 @@ export default function BatchEntryPanel({
 
   // -- Wallet connection --
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
-  const handleConnectWallet = useCallback(async () => {
-    const injectedConnector = connectors.find(c => c.id === 'injected')
-    if (!injectedConnector) return
-    const chainIdHex = `0x${indexL3.id.toString(16)}`
-    const provider = (window as any).ethereum
-    if (provider) {
-      try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: getWalletRpcUrls(indexL3) }] }) } catch { /* chain may exist */ }
-      try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] }) } catch { /* user rejected */ }
-    }
-    connect({ connector: injectedConnector, chainId: indexL3.id })
-  }, [connect, connectors])
+  const handleConnectWallet = useWalletLogin({ source: 'batch-entry-panel' })
 
   // -- Wallet USDC balance (round-based: no Vision balance pool) --
   const { data: walletUsdcRaw, isLoading: isBalanceLoading, refetch: refetchBalance } = useReadContract({
