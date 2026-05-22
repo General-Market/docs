@@ -57,6 +57,16 @@ import { UnderwaterDive } from "./UnderwaterDive";
 import { DudeWalk } from "./DudeWalk";
 import { DashboardReveal } from "./DashboardReveal";
 import { BongoCat } from "./BongoCat";
+import { FluidMotion } from "./FluidMotion";
+import { PsychoPixels } from "./PsychoPixels";
+import { KiplingCube } from "./KiplingCube";
+import { StarTreck } from "./StarTreck";
+import { CloudDrag } from "./CloudDrag";
+import { PsychoTitle } from "./PsychoTitle";
+import { DivTv } from "./DivTv";
+import { GeneralMarketGlitch } from "./GeneralMarketGlitch";
+import { DiamondGrid } from "./DiamondGrid";
+import { WalkRideLogo } from "./WalkRideLogo";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -120,6 +130,16 @@ const ALL_SCENES = [
   { id: "WP-DudeWalk", component: DudeWalk },
   { id: "WP-DashboardReveal", component: DashboardReveal },
   { id: "WP-BongoCat", component: BongoCat },
+  { id: "WP-FluidMotion", component: FluidMotion },
+  { id: "WP-PsychoPixels", component: PsychoPixels },
+  { id: "WP-KiplingCube", component: KiplingCube },
+  { id: "WP-StarTreck", component: StarTreck },
+  { id: "WP-CloudDrag", component: CloudDrag },
+  { id: "WP-PsychoTitle", component: PsychoTitle },
+  { id: "WP-DivTv", component: DivTv },
+  { id: "WP-GeneralMarketGlitch", component: GeneralMarketGlitch },
+  { id: "WP-DiamondGrid", component: DiamondGrid },
+  { id: "WP-WalkRideLogo", component: WalkRideLogo },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
