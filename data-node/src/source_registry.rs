@@ -25,6 +25,13 @@ pub struct SourceDisplay {
     pub sync_interval_secs: u64,
     #[serde(rename = "batchEligible", default)]
     pub batch_eligible: bool,
+    /// When set, this source maps to a *curated subset* of its parent
+    /// (internal_ids[0]). The data-node treats `batch_subsource_key` as the
+    /// on-chain batch source_id and filters the parent's healthy assets by
+    /// the corresponding allowlist in `dl-curated.json`. Lets one ingested
+    /// firehose serve many editorial sub-pages, each with its own batch.
+    #[serde(rename = "batchSubsourceKey", default)]
+    pub batch_subsource_key: Option<String>,
 }
 
 fn default_sync_interval() -> u64 {
@@ -64,15 +71,42 @@ impl SourceRegistry {
 
     /// Return all batch-eligible sources as (internal_id, display_name, sync_interval_secs) tuples.
     /// Flattens multi-internal-ID sources so each internal ID gets its own entry.
+    ///
+    /// Curated sub-sources (those with `batch_subsource_key`) are skipped here;
+    /// the parent firehose source still appears once via its `internal_ids`.
+    /// Use [`curated_batch_subsources`] to get the per-sub-source filter specs.
     pub fn batch_sources(&self) -> Vec<(String, String, u64)> {
         let mut out = Vec::new();
         for s in &self.sources {
             if !s.batch_eligible {
                 continue;
             }
+            if s.batch_subsource_key.is_some() {
+                continue;
+            }
             for iid in &s.internal_ids {
                 out.push((iid.clone(), s.name.clone(), s.sync_interval_secs));
             }
+        }
+        out
+    }
+
+    /// Return curated-subsource batch specs as (batch_source_id, parent_internal_id,
+    /// display_name, sync_interval_secs).
+    ///
+    /// Each entry corresponds to one editorial sub-page (e.g. defillama-bridges) that
+    /// shares an ingested firehose with its siblings. The batch engine queries the
+    /// parent's healthy assets and filters them by the dl-curated.json allowlist
+    /// keyed on `batch_source_id`.
+    pub fn curated_batch_subsources(&self) -> Vec<(String, String, String, u64)> {
+        let mut out = Vec::new();
+        for s in &self.sources {
+            if !s.batch_eligible {
+                continue;
+            }
+            let Some(key) = s.batch_subsource_key.as_ref() else { continue };
+            let Some(parent) = s.internal_ids.first() else { continue };
+            out.push((key.clone(), parent.clone(), s.name.clone(), s.sync_interval_secs));
         }
         out
     }

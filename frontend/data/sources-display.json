@@ -62,6 +62,7 @@
     {
       "sourceId": "defillama-derivatives",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-derivatives",
       "name": "DefiLlama Perps",
       "description": "Leverage, dressed as discovery.",
       "category": "finance",
@@ -78,6 +79,7 @@
     {
       "sourceId": "defillama-dexs",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-dexs",
       "name": "DefiLlama DEXes",
       "description": "Where liquidity meets impatience.",
       "category": "finance",
@@ -94,6 +96,7 @@
     {
       "sourceId": "defillama-launchpad",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-launchpad",
       "name": "DefiLlama Launchpads",
       "description": "Factories for things that mostly do not survive.",
       "category": "finance",
@@ -110,6 +113,7 @@
     {
       "sourceId": "defillama-prediction-market",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-prediction-market",
       "name": "DefiLlama Prediction Markets",
       "description": "Crowds, priced.",
       "category": "finance",
@@ -126,6 +130,7 @@
     {
       "sourceId": "defillama-rwa",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-rwa",
       "name": "DefiLlama RWA",
       "description": "The old world, tokenized and patient.",
       "category": "finance",
@@ -142,6 +147,7 @@
     {
       "sourceId": "defillama-liquid-staking",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-liquid-staking",
       "name": "DefiLlama Liquid Staking",
       "description": "Yield without the inconvenience of locking it up.",
       "category": "finance",
@@ -158,6 +164,7 @@
     {
       "sourceId": "defillama-lending",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-lending",
       "name": "DefiLlama Lending",
       "description": "Where capital sleeps, briefly, in exchange for a number.",
       "category": "finance",
@@ -174,6 +181,7 @@
     {
       "sourceId": "defillama-onchain-capital-allocator",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-onchain-capital-allocator",
       "name": "DefiLlama Capital Allocators",
       "description": "Money outsourcing its own judgment.",
       "category": "finance",
@@ -190,6 +198,7 @@
     {
       "sourceId": "defillama-bridges",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-bridges",
       "name": "DefiLlama Bridges",
       "description": "Tunnels between worlds that never agree on weather.",
       "category": "finance",
@@ -206,6 +215,7 @@
     {
       "sourceId": "defillama-risk-curators",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-risk-curators",
       "name": "DefiLlama Risk Curators",
       "description": "Strangers paid to be more cautious than you.",
       "category": "finance",
@@ -222,6 +232,7 @@
     {
       "sourceId": "defillama-ai-agents",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-ai-agents",
       "name": "DefiLlama AI Agents",
       "description": "Software that trades while it pretends to think.",
       "category": "finance",
@@ -238,6 +249,7 @@
     {
       "sourceId": "defillama-privacy",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-privacy",
       "name": "DefiLlama Privacy",
       "description": "The freedom to have a balance no one else can read.",
       "category": "finance",
@@ -254,6 +266,7 @@
     {
       "sourceId": "defillama-telegram-bot",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-telegram-bot",
       "name": "DefiLlama Telegram Bots",
       "description": "Trading reduced to a chat window. Mostly losing one.",
       "category": "finance",
@@ -270,6 +283,7 @@
     {
       "sourceId": "defillama-trading-app",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-trading-app",
       "name": "DefiLlama Trading Apps",
       "description": "Interfaces designed so you forget to stop.",
       "category": "finance",
@@ -286,6 +300,7 @@
     {
       "sourceId": "defillama-interface",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-interface",
       "name": "DefiLlama Interfaces",
       "description": "The thin layer between intention and loss.",
       "category": "finance",
@@ -302,6 +317,7 @@
     {
       "sourceId": "defillama-wallets",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-wallets",
       "name": "DefiLlama Wallets",
       "description": "Containers for the conviction you keep losing.",
       "category": "finance",
@@ -318,6 +334,7 @@
     {
       "sourceId": "defillama-top-chains",
       "internalIds": ["defi"],
+      "batchSubsourceKey": "defillama-top-chains",
       "name": "DefiLlama Top Chains",
       "description": "Ten ledgers competing to be the one that lasts.",
       "category": "finance",

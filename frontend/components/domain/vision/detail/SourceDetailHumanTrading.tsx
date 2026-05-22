@@ -265,7 +265,7 @@ export function SourceDetailHumanTrading({
   const source = useMemo(() => {
     if (sourceEntry) {
       return {
-        id: sourceEntry.sourceId,
+        sourceId: sourceEntry.sourceId,
         name: sourceEntry.name,
         description: sourceEntry.description,
         category: sourceEntry.category,
@@ -276,11 +276,12 @@ export function SourceDetailHumanTrading({
         valueUnit: sourceEntry.valueUnit,
         isPrice: sourceEntry.isPrice,
         internalIds: sourceEntry.internalIds ?? [],
+        batchSubsourceKey: sourceEntry.batchSubsourceKey,
       }
     }
     if (initialSource) {
       return {
-        id: initialSource.sourceId,
+        sourceId: initialSource.sourceId,
         name: initialSource.name,
         description: initialSource.description,
         category: initialSource.category,
@@ -291,6 +292,7 @@ export function SourceDetailHumanTrading({
         valueUnit: initialSource.valueUnit,
         isPrice: initialSource.isPrice,
         internalIds: initialSource.internalIds ?? [],
+        batchSubsourceKey: initialSource.batchSubsourceKey,
       }
     }
     return null
@@ -323,12 +325,19 @@ export function SourceDetailHumanTrading({
   }, [allMarkets, allowlist])
 
   // -- Active batch + round phase --
+  // Match order: dedicated `batchSubsourceKey` first (e.g. `defillama-bridges`
+  // → its own 10-market batch), then `sourceId`, then `internalIds`. Curated
+  // sub-pages have to beat the parent firehose; otherwise the bridges page
+  // would resolve to the 8 192-market `defi` batch and silently bet DOWN on
+  // every protocol the user didn't pick.
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
-    if (!batches || batches.length === 0) return null
-    const internalSet = new Set([source?.id, ...(source?.internalIds ?? [])])
-    const match = batches.find(b => internalSet.has(b.sourceId)) ?? null
-    return match
+    if (!batches || batches.length === 0 || !source) return null
+    const candidates = new Set<string>(
+      [source.batchSubsourceKey, source.sourceId, ...(source.internalIds ?? [])]
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+    return batches.find(b => candidates.has(b.sourceId)) ?? null
   }, [batches, source])
 
   const marketIds: string[] = activeBatch?.marketIds ?? []
@@ -408,8 +417,11 @@ export function SourceDetailHumanTrading({
   const { profile: playerProfile } = usePlayerProfile(address ?? '')
   const sourcePositions = useMemo<SourcePositions>(() => {
     if (!playerProfile || !source) return EMPTY_POSITIONS
-    const internalSet = new Set<string>([source.id, ...(source.internalIds ?? [])])
-    const batchesHere = playerProfile.batches.filter(b => internalSet.has(b.sourceId))
+    const candidates = new Set<string>(
+      [source.batchSubsourceKey, source.sourceId, ...(source.internalIds ?? [])]
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+    const batchesHere = playerProfile.batches.filter(b => candidates.has(b.sourceId))
     if (batchesHere.length === 0) return EMPTY_POSITIONS
     const active = batchesHere.filter(b => b.status === 'active')
     const ticks: TickEntry[] = []

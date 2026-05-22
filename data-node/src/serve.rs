@@ -2603,8 +2603,30 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         let batch_pool = pool.clone();
         let batch_state_clone = Arc::clone(&batch_state);
         let batch_sources = source_registry.batch_sources();
+        // Curated sub-sources: each editorial DefiLlama page (bridges, lending, …)
+        // becomes its own batch keyed by `batchSubsourceKey`. Allowlists come
+        // from dl-curated.json, embedded into the batch engine at compile time.
+        let curated_allowlists = crate::batch_engine::load_dl_curated_allowlists();
+        let curated_subsources: Vec<crate::batch_engine::CuratedSubsource> = source_registry
+            .curated_batch_subsources()
+            .into_iter()
+            .filter_map(|(batch_id, parent, display, sync)| {
+                let allow = curated_allowlists.get(&batch_id).cloned()?;
+                Some(crate::batch_engine::CuratedSubsource {
+                    batch_source_id: batch_id,
+                    parent_source_id: parent,
+                    display_name: display,
+                    sync_interval_secs: sync,
+                    asset_allowlist: allow,
+                })
+            })
+            .collect();
+        info!(
+            curated_subsource_count = curated_subsources.len(),
+            "Loaded curated subsource specs",
+        );
         tokio::spawn(async move {
-            crate::batch_engine::run(batch_pool, batch_state_clone, batch_sources).await;
+            crate::batch_engine::run(batch_pool, batch_state_clone, batch_sources, curated_subsources).await;
         });
         info!("BatchEngine started");
     }

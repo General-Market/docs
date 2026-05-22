@@ -85,6 +85,43 @@ const MAX_MARKETS_PER_BATCH: usize = 8192;
 /// Built at startup from the source registry (sources-display.json).
 pub type SourceMeta = (String, String, u64);
 
+/// Curated sub-source spec. The batch engine produces one batch per entry,
+/// filtering the parent source's healthy assets through `asset_allowlist`.
+/// The resulting batch is tagged with `batch_source_id` — distinct from the
+/// parent firehose's source_id, so each editorial sub-page rolls forward
+/// its own on-chain batch.
+#[derive(Debug, Clone)]
+pub struct CuratedSubsource {
+    pub batch_source_id: String,
+    pub parent_source_id: String,
+    pub display_name: String,
+    pub sync_interval_secs: u64,
+    pub asset_allowlist: std::collections::HashSet<String>,
+}
+
+/// dl-curated.json, embedded at compile time. Identical to
+/// `frontend/data/defillama-curated.json` — the editorial decision about which
+/// 10 protocols belong on each curated DefiLlama sub-page. Used to build
+/// [`CuratedSubsource::asset_allowlist`].
+const DL_CURATED_JSON: &str = include_str!("./config/dl-curated.json");
+
+/// Build a `batchSubsourceKey -> asset_id allowlist` map from the embedded
+/// dl-curated.json. Asset IDs are prefixed (`protocol_<slug>` or `chain_<slug>`)
+/// to match what the defillama client writes into `market_prices_latest`.
+pub fn load_dl_curated_allowlists() -> HashMap<String, std::collections::HashSet<String>> {
+    let parsed: HashMap<String, Vec<String>> =
+        serde_json::from_str(DL_CURATED_JSON).expect("dl-curated.json must parse");
+    let mut out: HashMap<String, std::collections::HashSet<String>> = HashMap::new();
+    for (key, slugs) in parsed {
+        let assets: std::collections::HashSet<String> = slugs
+            .into_iter()
+            .map(|s| if s.starts_with("chain_") { s } else { format!("protocol_{}", s) })
+            .collect();
+        out.insert(key, assets);
+    }
+    out
+}
+
 // ── Source health tracking ──────────────────────────────────────────────
 // Tracks per-source failures so chronically broken sources get temporarily
 // excluded from batch generation instead of poisoning every cycle.
@@ -878,12 +915,61 @@ async fn generate_batch_config(
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
-    let healthy = match get_healthy_assets(pool, source_id, sync_interval_secs).await {
+    generate_batch_config_inner(pool, source_id, source_id, None, display_name, sync_interval_secs).await
+}
+
+/// Generate a batch config for a curated sub-source.
+///
+/// Reads healthy assets, settlement history, and threshold calibration from
+/// `parent_source_id`, then narrows the result to `curated_allowlist`. The
+/// resulting BatchConfig is tagged with `batch_source_id`, so the on-chain
+/// batch (and its config hash) is distinct from every sibling that shares
+/// the same parent firehose.
+async fn generate_subsource_batch_config(
+    pool: &PgPool,
+    batch_source_id: &str,
+    parent_source_id: &str,
+    curated_allowlist: &std::collections::HashSet<String>,
+    display_name: &str,
+    sync_interval_secs: u64,
+) -> Option<BatchConfig> {
+    generate_batch_config_inner(
+        pool,
+        batch_source_id,
+        parent_source_id,
+        Some(curated_allowlist),
+        display_name,
+        sync_interval_secs,
+    )
+    .await
+}
+
+/// Shared body for batch config generation. `batch_source_id` becomes the
+/// on-chain identifier and feeds the config hash. `parent_source_id` is the
+/// key used to query healthy assets, stagnation, and threshold history from
+/// the DB — equal to `batch_source_id` for primary sources, distinct for
+/// curated sub-sources that share a parent firehose's ingested data.
+async fn generate_batch_config_inner(
+    pool: &PgPool,
+    batch_source_id: &str,
+    parent_source_id: &str,
+    curated_allowlist: Option<&std::collections::HashSet<String>>,
+    display_name: &str,
+    sync_interval_secs: u64,
+) -> Option<BatchConfig> {
+    let source_id = batch_source_id;
+    let healthy = match get_healthy_assets(pool, parent_source_id, sync_interval_secs).await {
         Ok(ids) => ids,
         Err(e) => {
-            warn!(source = source_id, %e, "Failed to get healthy assets");
+            warn!(source = source_id, parent = parent_source_id, %e, "Failed to get healthy assets");
             return None;
         }
+    };
+
+    let healthy: Vec<String> = if let Some(allow) = curated_allowlist {
+        healthy.into_iter().filter(|a| allow.contains(a)).collect()
+    } else {
+        healthy
     };
 
     if healthy.is_empty() {
@@ -896,7 +982,7 @@ async fn generate_batch_config(
     // automatic: one non-zero settlement clears the asset from the stagnant
     // set on the next cycle.
     let window = stagnation_window(sync_interval_secs);
-    let stagnant = match get_stagnant_assets(pool, source_id, window).await {
+    let stagnant = match get_stagnant_assets(pool, parent_source_id, window).await {
         Ok(s) => s,
         Err(e) => {
             warn!(source = source_id, %e, "Failed to query stagnant assets — skipping filter");
@@ -934,7 +1020,7 @@ async fn generate_batch_config(
     let tick_duration_secs = sync_interval_secs;
     let lock_offset_secs = 0u64; // No lock window — settlement delay = tick_duration (symmetric)
 
-    let markets = compute_asset_thresholds(pool, source_id, &healthy).await;
+    let markets = compute_asset_thresholds(pool, parent_source_id, &healthy).await;
 
     let hash = compute_config_hash(source_id, tick_duration_secs, lock_offset_secs, &markets);
     let hash_hex = format!("0x{}", hex::encode(hash));
@@ -1129,8 +1215,22 @@ async fn recover_last_config_from_db(
 }
 
 /// Run the batch engine. Recomputes all source configs every 60s.
-pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<SourceMeta>) {
-    info!("BatchEngine started with {} sources", sources.len());
+///
+/// `curated_subsources` are derived sub-batches that share a parent source's
+/// ingested data but expose a filtered, editorial view (e.g. defillama-bridges
+/// shows 10 protocols out of the 8 192-protocol DefiLlama firehose). Each one
+/// emits a distinct batch with its own config hash.
+pub async fn run(
+    pool: PgPool,
+    state: Arc<BatchEngineState>,
+    sources: Vec<SourceMeta>,
+    curated_subsources: Vec<CuratedSubsource>,
+) {
+    info!(
+        sources = sources.len(),
+        curated = curated_subsources.len(),
+        "BatchEngine started",
+    );
 
     // Load signed configs from DB (crash recovery)
     state.load_signed_from_db(&pool).await;
@@ -1168,6 +1268,39 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
                 }
                 None => {
                     state.health_tracker.record_failure(source_id);
+                }
+            }
+        }
+
+        // Curated sub-sources: derived batches that ride on a parent source's
+        // ingested data. One generate call per sub-source — filtered, hashed
+        // and stored as if it were a first-class source.
+        for sub in &curated_subsources {
+            if is_source_disabled(&sub.batch_source_id) {
+                continue;
+            }
+            if state.health_tracker.should_skip(&sub.batch_source_id) {
+                continue;
+            }
+            match generate_subsource_batch_config(
+                &pool,
+                &sub.batch_source_id,
+                &sub.parent_source_id,
+                &sub.asset_allowlist,
+                &sub.display_name,
+                sub.sync_interval_secs,
+            )
+            .await
+            {
+                Some(config) => {
+                    if let Err(e) = store_batch_config(&pool, &config).await {
+                        warn!(source = %sub.batch_source_id, %e, "Failed to store curated subsource batch config");
+                    }
+                    state.health_tracker.record_success(&sub.batch_source_id);
+                    configs.push(config);
+                }
+                None => {
+                    state.health_tracker.record_failure(&sub.batch_source_id);
                 }
             }
         }

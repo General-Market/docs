@@ -5,6 +5,10 @@ import useSWR from 'swr'
 interface SourceDisplay {
   sourceId: string
   internalIds?: string[]
+  /** When set, the data-node emits a dedicated Vision batch keyed by this id,
+   *  derived from the parent firehose's data filtered to a curated allowlist.
+   *  Frontend uses this to find the right batch for the source detail page. */
+  batchSubsourceKey?: string
   name: string
   description: string
   category: string

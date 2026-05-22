@@ -45,9 +45,10 @@ export async function GET() {
 
     const live = (data.sources ?? [])
       .filter((s: any) => s.batchEligible === true && !isHiddenSource(s))
-      // Overlay editorial fields (audience, redirectTo) from the static JSON
-      // onto every live entry. The data-node owns functional data; the static
-      // file owns the human/bot/redirect routing decision.
+      // Overlay editorial fields (audience, redirectTo, batchSubsourceKey)
+      // from the static JSON onto every live entry. The data-node owns
+      // functional data; the static file owns the human/bot/redirect routing
+      // decision and the curated-subsource → batch mapping.
       .map((s: any) => {
         const editorial = staticById.get(s.sourceId)
         if (editorial) {
@@ -55,6 +56,7 @@ export async function GET() {
             ...s,
             audience: editorial.audience ?? s.audience,
             redirectTo: editorial.redirectTo ?? s.redirectTo,
+            batchSubsourceKey: editorial.batchSubsourceKey ?? s.batchSubsourceKey,
           }
         }
         return s

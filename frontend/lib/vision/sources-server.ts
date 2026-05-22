@@ -8,6 +8,11 @@ import sourcesDisplay from '@/data/sources-display.json'
 export interface SourceDisplayServer {
   sourceId: string
   internalIds?: string[]
+  /** Identifies the Vision batch that backs this source detail page. When the
+   *  source is a curated subset of a parent firehose (e.g. defillama-bridges
+   *  inside the DefiLlama feed), the data-node emits a dedicated batch keyed
+   *  by this id. */
+  batchSubsourceKey?: string
   name: string
   description: string
   category: string
@@ -46,6 +51,7 @@ const STATIC_REGISTRY: SourceRegistryServer = (() => {
   const sources: SourceDisplayServer[] = (raw.sources ?? []).map(s => ({
     sourceId: s.sourceId,
     internalIds: s.internalIds,
+    batchSubsourceKey: s.batchSubsourceKey,
     name: s.name ?? s.sourceId,
     description: s.description ?? '',
     category: s.category ?? '',
@@ -119,12 +125,14 @@ export async function getSourceDisplayServer(
   const staticEntry = findInRegistry(STATIC_REGISTRY, sourceId)
   if (live) {
     // The data-node owns functional data (prefixes, internalIds, valueLabel).
-    // The static JSON owns editorial decisions (audience, redirectTo) — overlay
-    // those on top of the live entry so routing sees the human/bot flag.
+    // The static JSON owns editorial decisions (audience, redirectTo,
+    // batchSubsourceKey) — overlay those on top of the live entry so routing
+    // and batch lookup see the human/bot flag and the dedicated batch id.
     return {
       ...live,
       audience: staticEntry?.audience ?? live.audience,
       redirectTo: staticEntry?.redirectTo ?? live.redirectTo,
+      batchSubsourceKey: staticEntry?.batchSubsourceKey ?? live.batchSubsourceKey,
     }
   }
   return staticEntry
