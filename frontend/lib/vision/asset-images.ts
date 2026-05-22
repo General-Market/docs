@@ -8,11 +8,108 @@
  * 3. null — text badge fallback (no images exist for this source)
  */
 
+import defillamaMetaRaw from '@/data/defillama-meta.json'
+
+type DefiLlamaProtocolMeta = {
+  name: string
+  logo: string | null
+  url: string | null
+  twitter: string | null
+  description: string | null
+  category: string | null
+  chain: string | null
+}
+
+type DefiLlamaChainMeta = {
+  name: string
+  logo: string | null
+  gecko_id: string | null
+  tokenSymbol: string | null
+}
+
+const DEFILLAMA_META = defillamaMetaRaw as {
+  generatedAt: string
+  protocols: Record<string, DefiLlamaProtocolMeta>
+  chains: Record<string, DefiLlamaChainMeta>
+}
+
+/** Stripped asset identifier classified by its DefiLlama family. */
+function defillamaLookup(suffix: string): {
+  logo: string | null
+  url: string | null
+  twitter: string | null
+  name: string | null
+} {
+  // protocol_<slug>, chain_<slug>, and dex_*_<slug> all resolve to protocol
+  // logos on DefiLlama's CDN. Bare slugs (curated human pages already strip
+  // the prefix) fall through to the protocol lookup too.
+  let kind: 'protocol' | 'chain' | null = null
+  let slug = suffix
+  if (suffix.startsWith('protocol_')) { kind = 'protocol'; slug = suffix.slice(9) }
+  else if (suffix.startsWith('chain_')) { kind = 'chain'; slug = suffix.slice(6) }
+  else if (suffix.startsWith('dex_24h_')) { kind = 'protocol'; slug = suffix.slice(8) }
+  else if (suffix.startsWith('dex_30d_')) { kind = 'protocol'; slug = suffix.slice(8) }
+  else { kind = 'protocol' } // curated pages strip the prefix already
+
+  if (kind === 'chain') {
+    const meta = DEFILLAMA_META.chains[slug]
+    if (meta) return { logo: meta.logo, url: null, twitter: null, name: meta.name }
+    return {
+      logo: `https://icons.llamao.fi/icons/chains/rsz_${slug.replace(/_/g, '-')}.jpg`,
+      url: null,
+      twitter: null,
+      name: null,
+    }
+  }
+
+  const meta = DEFILLAMA_META.protocols[slug]
+  if (meta) {
+    return {
+      logo: meta.logo ?? `https://icons.llamao.fi/icons/protocols/${slug}?w=48&h=48`,
+      url: meta.url,
+      twitter: meta.twitter,
+      name: meta.name,
+    }
+  }
+  return {
+    logo: `https://icons.llamao.fi/icons/protocols/${slug}?w=48&h=48`,
+    url: null,
+    twitter: null,
+    name: null,
+  }
+}
+
+/** Returns the image URL plus optional website + Twitter link for a market
+ *  card. For non-DefiLlama sources only the logo is populated. */
+export function getAssetMeta(
+  sourceId: string,
+  assetId: string,
+  prefixes: string[],
+): { logo: string | null; website: string | null; twitter: string | null } {
+  // Every defillama-* human page (and the bare `defillama` firehose) goes
+  // through the same DefiLlama resolver, so rotating which slugs appear on
+  // the page never breaks the logo — the slug itself is the lookup key.
+  if (sourceId === 'defillama' || sourceId.startsWith('defillama-')) {
+    const suffix = stripPrefix(assetId, prefixes) ?? assetId
+    const r = defillamaLookup(suffix)
+    return { logo: r.logo, website: r.url, twitter: r.twitter }
+  }
+  return { logo: getAssetImageUrl(sourceId, assetId, prefixes), website: null, twitter: null }
+}
+
 export function getAssetImageUrl(
   sourceId: string,
   assetId: string,
   prefixes: string[],
 ): string | null {
+  // DefiLlama family — protocols, chains, and DEX overviews all share one
+  // CDN. Handled before the switch so the 18 curated human pages don't each
+  // need an entry.
+  if (sourceId === 'defillama' || sourceId.startsWith('defillama-')) {
+    const suffix = stripPrefix(assetId, prefixes) ?? assetId
+    return defillamaLookup(suffix).logo
+  }
+
   const suffix = stripPrefix(assetId, prefixes)
   if (!suffix) return null
 
@@ -27,19 +124,6 @@ export function getAssetImageUrl(
       const ticker = suffix.toUpperCase()
       if (/^[A-Z]{1,5}$/.test(ticker))
         return `https://financialmodelingprep.com/image-stock/${ticker}.png`
-      return null
-    }
-
-    // ── DeFiLlama — protocol / chain / dex icons ─────────────────────
-    case 'defillama': {
-      if (suffix.startsWith('protocol_'))
-        return `https://icons.llamao.fi/icons/protocols/${suffix.slice(9)}?w=48&h=48`
-      if (suffix.startsWith('chain_'))
-        return `https://icons.llamao.fi/icons/chains/rsz_${suffix.slice(6)}.jpg`
-      if (suffix.startsWith('dex_24h_'))
-        return `https://icons.llamao.fi/icons/protocols/${suffix.slice(8)}?w=48&h=48`
-      if (suffix.startsWith('dex_30d_'))
-        return `https://icons.llamao.fi/icons/protocols/${suffix.slice(8)}?w=48&h=48`
       return null
     }
 

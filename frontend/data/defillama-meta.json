@@ -1,0 +1,1363 @@
+{
+  "generatedAt": "2026-05-22T20:57:56.670Z",
+  "protocols": {
+    "lido": {
+      "name": "Lido",
+      "logo": "https://icons.llama.fi/lido.png",
+      "url": "https://lido.fi/",
+      "twitter": "LidoFinance",
+      "description": "Liquid staking for Ethereum and Polygon. Daily staking rewards, no lock ups.",
+      "category": "Liquid Staking",
+      "chain": "Multi-Chain"
+    },
+    "aave-v3": {
+      "name": "Aave V3",
+      "logo": "https://icons.llama.fi/aave-v3.png",
+      "url": "https://aave.com",
+      "twitter": "aave",
+      "description": "Earn interest, borrow assets, and build applications",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "wbtc": {
+      "name": "WBTC",
+      "logo": "https://icons.llama.fi/wbtc.png",
+      "url": "https://wbtc.network/",
+      "twitter": "WrappedBTC",
+      "description": "Wrapped Bitcoin (WBTC) is the first ERC20 token backed 1:1 with Bitcoin.Completely transparent. 100% verifiable. Community led.",
+      "category": "Bridge",
+      "chain": "Bitcoin"
+    },
+    "binance-staked-eth": {
+      "name": "Binance staked ETH",
+      "logo": "https://icons.llama.fi/binance-staked-eth.png",
+      "url": "https://www.binance.com/en/wbeth",
+      "twitter": "binance",
+      "description": "A token created by depositing BETH into the BETH wrapper. Each WBETH represents 1 BETH (1:1 to staked ETH) plus all of its accrued ETH2.0 staking rewards",
+      "category": "Liquid Staking",
+      "chain": "Multi-Chain"
+    },
+    "morpho-blue": {
+      "name": "Morpho Blue",
+      "logo": "https://icons.llama.fi/morpho-blue.png",
+      "url": "https://app.morpho.org",
+      "twitter": "Morpho",
+      "description": "Morpho Blue is a trustless and efficient lending primitive with permissionless market creation",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "coinbase-bridge": {
+      "name": "Coinbase Bridge",
+      "logo": "https://icons.llama.fi/coinbase-bridge.jpg",
+      "url": "https://www.coinbase.com/",
+      "twitter": "coinbase",
+      "description": "Wrapped tokens backed 1:1 by assets held by Coinbase.",
+      "category": "Bridge",
+      "chain": "Multi-Chain"
+    },
+    "hyperliquid-bridge": {
+      "name": "Hyperliquid Bridge",
+      "logo": "https://icons.llama.fi/hyperliquid.png",
+      "url": "https://app.hyperliquid.xyz",
+      "twitter": "HyperliquidX",
+      "description": "Hyperliquid is a Layer 1 blockchain best known for perpetual futures and spot trading. Native USDC is minted on Hyperliquid via CCTP, and USDC is bridged from Arbitrum.",
+      "category": "Bridge",
+      "chain": "Multi-Chain"
+    },
+    "binance-bitcoin": {
+      "name": "Binance Bitcoin",
+      "logo": "https://icons.llama.fi/binance-bitcoin.jpg",
+      "url": "https://www.binance.com/en/collateral-btokens",
+      "twitter": "binance",
+      "description": "Binance Bridge pegged BTC token",
+      "category": "Bridge",
+      "chain": "Bitcoin"
+    },
+    "usdt0": {
+      "name": "USDT0",
+      "logo": "https://icons.llama.fi/usdt0.jpg",
+      "url": "https://usdt0.to",
+      "twitter": "USDT0_to",
+      "description": "USDT0 is a one stop solution for Tether’s Interoperability and Expansion.",
+      "category": "Bridge",
+      "chain": "Ethereum"
+    },
+    "justlend": {
+      "name": "JustLend",
+      "logo": "https://icons.llama.fi/justlend.png",
+      "url": "https://justlend.just.network",
+      "twitter": "DeFi_JUST",
+      "description": "JustLend is a TRON-powered coin market protocol aimed at establishing fund pools whose interest rates are determined by an algorithm based on the supply and demand of TRON assets.",
+      "category": "Lending",
+      "chain": "Tron"
+    },
+    "sparklend": {
+      "name": "SparkLend",
+      "logo": "https://icons.llama.fi/sparklend.jpg",
+      "url": "https://app.spark.fi/points/KNQ5HD",
+      "twitter": "sparkdotfi",
+      "description": "SparkLend is a stablecoin lending market. Unlike other lending protocols where rates fluctuate based on utilization or loan size, SparkLend offers governance-defined rates that do not vary based on those factors. This is made possible by Spark’s Liquidity Layer (SLL), which supplies consistent stablecoin liquidity to the protocol",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "tether-gold": {
+      "name": "Tether Gold",
+      "logo": "https://icons.llama.fi/tether-gold.png",
+      "url": "https://gold.tether.to/",
+      "twitter": "tethergold",
+      "description": "Tether Gold (XAUt) is a token that provides you ownership of real physical gold. By putting gold on a Blockchain, we unlock a variety of characteristics that typically only crypto assets possess",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "arbitrum-bridge": {
+      "name": "Arbitrum Bridge",
+      "logo": "https://icons.llama.fi/arbitrum-bridge.png",
+      "url": "https://portal.arbitrum.io/bridge",
+      "twitter": "arbitrum",
+      "description": "The Arbitrum Bridge acts as a secure channel connecting Ethereum's mainnet (Layer-1) with the Arbitrum Rollup (Layer-2). This bridge allows users to transfer assets, like ETH or ERC-20 tokens, between these layers",
+      "category": "Canonical Bridge",
+      "chain": "Ethereum"
+    },
+    "blackrock-buidl": {
+      "name": "BlackRock BUIDL",
+      "logo": "https://icons.llama.fi/blackrock-buidl.png",
+      "url": "https://securitize.io/",
+      "twitter": "BlackRock",
+      "description": "BlackRock USD Institutional Digital Liquidity Fund",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "circle-usyc": {
+      "name": "Circle USYC",
+      "logo": "https://icons.llama.fi/circle-usyc.png",
+      "url": "https://www.circle.com/usyc",
+      "twitter": "circle",
+      "description": "Circle USYC is a regulated DeFi platform with permissioned smart contracts, on-chain transparency, and customizable investment strategies for optimized risk-reward profiles.  USYC is a Hashnote product which provides exposure to short duration US Treasuries and Reverse Repo on US Treasuries",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "spark-liquidity-layer": {
+      "name": "Spark Liquidity Layer",
+      "logo": "https://icons.llama.fi/spark-liquidity-layer.jpg",
+      "url": "https://app.spark.fi/points/KNQ5HD",
+      "twitter": "sparkdotfi",
+      "description": "The Spark Liquidity Layer (SLL) automates liquidity provision of USDS, sUSDS, and USDC directly from Sky across various blockchain networks, DeFi protocols, and RWA",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "base-bridge": {
+      "name": "Base Bridge",
+      "logo": "https://icons.llama.fi/base-bridge.jpg",
+      "url": "https://docs.base.org/base-chain/network-information/bridges-mainnet",
+      "twitter": "BuildOnBase",
+      "description": "Base Bridge enables the transfer of certain digital assets and other data back and forth between Ethereum and Base.",
+      "category": "Canonical Bridge",
+      "chain": "Ethereum"
+    },
+    "ondo-yield-assets": {
+      "name": "Ondo Yield Assets",
+      "logo": "https://icons.llama.fi/ondo-yield-assets.jpg",
+      "url": "https://ondo.finance",
+      "twitter": "OndoFinance",
+      "description": "This share class provides liquid exposure to an ETF of short-term U.S. Treasuries",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "grove-finance": {
+      "name": "Grove Finance",
+      "logo": "https://icons.llama.fi/grove-finance.jpg",
+      "url": "https://data.grove.finance/",
+      "twitter": "grovedotfinance",
+      "description": "Grove is a capital allocation protocol within the Sky (formerly MakerDAO) ecosystem, launched June 2025. It deploys capital into tokenized RWA assets, Aave lending, Morpho vaults, and Curve LP positions across Ethereum, Base, Avalanche, and Plume",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "justcryptos": {
+      "name": "JustCryptos",
+      "logo": "https://icons.llama.fi/justcryptos.png",
+      "url": "https://just.network/token",
+      "twitter": "DeFi_JUST",
+      "description": "Just Cryptos builds a bridge that connects premium crypto currencies from the TRON network and other public chains, and introduces token value to TRON to power the JUST ecosystem. All assets are stored, and can be swapped on Poloniex.",
+      "category": "Bridge",
+      "chain": "Tron"
+    },
+    "steakhouse-financial": {
+      "name": "Steakhouse Financial",
+      "logo": "https://icons.llama.fi/steakhouse-financial.jpg",
+      "url": null,
+      "twitter": "SteakhouseFi",
+      "description": "We build transparent, efficient, and accessible financial primitives to power the next generation of capital markets on public blockchains",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "paxos-gold": {
+      "name": "Paxos Gold",
+      "logo": "https://icons.llama.fi/paxos-gold.png",
+      "url": "https://paxos.com/paxgold/",
+      "twitter": "Paxos",
+      "description": "PAXG offers investors a cost-effective way to own investment-grade physical gold with all the benefits of the blockchain. Each Pax Gold (PAXG) token is backed by one fine troy ounce of gold, stored in LBMA vaults in London. If you own PAXG, you own the underlying physical gold, held in custody by Paxos Trust Company",
+      "category": "RWA",
+      "chain": "Ethereum"
+    },
+    "maple": {
+      "name": "Maple",
+      "logo": "https://icons.llama.fi/maple.png",
+      "url": "https://www.maple.finance",
+      "twitter": "maplefinance",
+      "description": "Maple Finance is an institutional capital marketplace powered by blockchain technology.",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "portal": {
+      "name": "Portal",
+      "logo": "https://icons.llama.fi/portal.png",
+      "url": "https://portalbridge.com",
+      "twitter": "portalbridge_",
+      "description": "A token bridge built on Wormhole.",
+      "category": "Bridge",
+      "chain": "Multi-Chain"
+    },
+    "pancakeswap-amm": {
+      "name": "PancakeSwap AMM",
+      "logo": "https://icons.llama.fi/pancakeswap-amm.jpg",
+      "url": "https://pancakeswap.finance/",
+      "twitter": "PancakeSwap",
+      "description": "The #1 AMM and yield farm on Binance Smart Chain",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "uniswap-v3": {
+      "name": "Uniswap V3",
+      "logo": "https://icons.llama.fi/uniswap-v3.png",
+      "url": "https://app.uniswap.org/",
+      "twitter": "Uniswap",
+      "description": "A fully decentralized protocol for automated liquidity provision on Ethereum. V2",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "sentora": {
+      "name": "Sentora",
+      "logo": "https://icons.llama.fi/sentora.jpg",
+      "url": "https://sentora.com/",
+      "twitter": "SentoraHQ",
+      "description": "Sentora provides the institutional-grade foundation for powering the next generation of DeFi solutions. Sentora's vault platform unlocks access to DeFi through sophisticated strategies, robust risk management, and enterprise-grade security.",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "curve-dex": {
+      "name": "Curve DEX",
+      "logo": "https://icons.llama.fi/curve.png",
+      "url": "https://curve.finance",
+      "twitter": "CurveFinance",
+      "description": "Curve is a decentralized exchange liquidity pool on Ethereum designed for extremely efficient stablecoin trading",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "centrifuge-protocol": {
+      "name": "Centrifuge Protocol",
+      "logo": "https://icons.llama.fi/centrifuge-protocol.jpg",
+      "url": "https://centrifuge.io",
+      "twitter": "centrifuge",
+      "description": "Centrifuge protocol enables asset managers to tokenize, manage, and distribute tokenized funds onchain, while providing investors access to a diversified portfolio of high-quality tokenized assets.",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "gauntlet": {
+      "name": "Gauntlet",
+      "logo": "https://icons.llama.fi/gauntlet.jpg",
+      "url": "https://www.gauntlet.xyz",
+      "twitter": "gauntlet_xyz",
+      "description": "Our vaults provide risk-adjusted DeFi yields for institutional capital at scale. These strategies are optimized by our automated risk platform— designed by the most vigilant, quantitative minds in crypto.",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "kamino-lend": {
+      "name": "Kamino Lend",
+      "logo": "https://icons.llama.fi/kamino-lend.jpg",
+      "url": "https://kamino.com/",
+      "twitter": "Kamino",
+      "description": "Kamino Lend (K-Lend) is a novel peer-to-pool borrowing primitive designed as foundational infrastructure to power complex financial products with leverage and automation and as a decentralized matchmaker between borrowers and lenders",
+      "category": "Lending",
+      "chain": "Solana"
+    },
+    "spiko": {
+      "name": "Spiko",
+      "logo": "https://icons.llama.fi/spiko.png",
+      "url": "https://www.spiko.io/",
+      "twitter": "Spiko_finance",
+      "description": "Spiko USTBL / EUTBL are Tokenized Money Market Funds regulated by the French Financial Markets Authority that invest in US T-Bills / Eurozone T-Bills",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "compound-v3": {
+      "name": "Compound V3",
+      "logo": "https://icons.llama.fi/compound-v3.png",
+      "url": "https://v3-app.compound.finance/",
+      "twitter": "compoundfinance",
+      "description": "Compound is an algorithmic, autonomous interest rate protocol built for developers, to unlock a universe of open financial applications.",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "sanctum-validator-lsts": {
+      "name": "Sanctum Validator LSTs",
+      "logo": "https://icons.llama.fi/sanctum-validator-lsts.jpg",
+      "url": "https://www.sanctum.so",
+      "twitter": "sanctumso",
+      "description": "A Sanctum validator LST is a type of LST for which stake pools were deployed with the SanctumSPL Program.",
+      "category": "Liquid Staking",
+      "chain": "Solana"
+    },
+    "venus-core-pool": {
+      "name": "Venus Core Pool",
+      "logo": "https://icons.llama.fi/venus-core-pool.jpg",
+      "url": "https://app.venus.io/#/core-pool",
+      "twitter": "VenusProtocol",
+      "description": "A Decentralized Marketplace for Lenders and Borrowers with Borderless Stablecoins.",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "ethena-usdtb": {
+      "name": "Ethena USDtb",
+      "logo": "https://icons.llama.fi/ethena-usdtb.jpg",
+      "url": "https://usdtb.money",
+      "twitter": "ethena_labs",
+      "description": "USDtb is a digital dollar, otherwise known as a USD stablecoin. USDtb can be used the same way a holder would use any other dollar, whether to send and receive payments, acquire and trade assets, or to simply hold dollars.",
+      "category": "RWA",
+      "chain": "Ethereum"
+    },
+    "ondo-global-markets": {
+      "name": "Ondo Global Markets",
+      "logo": "https://icons.llama.fi/ondo-global-markets.jpg",
+      "url": "https://ondo.finance",
+      "twitter": "OndoFinance",
+      "description": "Stocks on chain",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "jupiter-lend": {
+      "name": "Jupiter Lend",
+      "logo": "https://icons.llama.fi/jupiter-lend.jpg",
+      "url": "https://jup.ag/?ref=f6y1ryr2snn3",
+      "twitter": "JupiterExchange",
+      "description": "Jupiter Lend is Jupiter's DeFi platform for lending and borrowing crypto",
+      "category": "Lending",
+      "chain": "Solana"
+    },
+    "veda": {
+      "name": "Veda",
+      "logo": "https://icons.llama.fi/veda.jpg",
+      "url": "https://veda.tech",
+      "twitter": "veda_labs",
+      "description": "Veda is the leading DeFi vault platform, enabling crypto applications, asset issuers, and protocols to build consumer-grade cross chain yield products. Veda's technology is powering many of DeFi's largest vault products, including ether.fi Liquid, Lombard DeFi Vault, and Mantle cmETH",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "raydium-amm": {
+      "name": "Raydium AMM",
+      "logo": "https://icons.llama.fi/raydium.jpg",
+      "url": "https://raydium.io",
+      "twitter": "RaydiumProtocol",
+      "description": "An on-chain order book AMM powering the evolution of DeFi.",
+      "category": "Dexs",
+      "chain": "Solana"
+    },
+    "kinetiq-khype": {
+      "name": "Kinetiq kHYPE",
+      "logo": "https://icons.llama.fi/kinetiq-khype.jpg",
+      "url": "https://kinetiq.xyz/stake",
+      "twitter": "kinetiq_xyz",
+      "description": "Kinetiq is a non-custodial liquid staking protocol that allows users to stake HYPE tokens on Hyperliquid L1 and receive kHYPE, a yield-bearing representation of staked HYPE that is usable in DeFi.",
+      "category": "Liquid Staking",
+      "chain": "Hyperliquid L1"
+    },
+    "concrete": {
+      "name": "Concrete",
+      "logo": "https://icons.llama.fi/concrete.png",
+      "url": "https://app.concrete.xyz",
+      "twitter": "ConcreteXYZ",
+      "description": "Concrete provides full-stack yield infrastructure for DeFi, powering automated, risk-managed vault products across major ecosystems. Concrete combines quantitative modeling, modular architecture, and cross-chain integrations to deliver institutional-grade vaults with transparent, sustainable performance.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "anemoy-capital": {
+      "name": "Anemoy Capital",
+      "logo": "https://icons.llama.fi/anemoy-capital.png",
+      "url": "https://www.anemoy.io",
+      "twitter": "anemoycapital",
+      "description": "Anemoy is a web3 native asset manager powered by Centrifuge, providing investors with exposure to a broad spectrum of superior assets",
+      "category": "RWA",
+      "chain": "Multi-Chain"
+    },
+    "binance-staked-sol": {
+      "name": "Binance Staked SOL",
+      "logo": "https://icons.llama.fi/binance-staked-sol.png",
+      "url": "https://www.binance.com/en/solana-staking",
+      "twitter": "binance",
+      "description": "Stake SOL and get BNSOL as the tokenized representation on your staked SOL",
+      "category": "Liquid Staking",
+      "chain": "Solana"
+    },
+    "uniswap-v2": {
+      "name": "Uniswap V2",
+      "logo": "https://icons.llama.fi/uniswap-v2.png",
+      "url": "https://app.uniswap.org/",
+      "twitter": "Uniswap",
+      "description": "A fully decentralized protocol for automated liquidity provision on Ethereum. V2",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "rocket-pool": {
+      "name": "Rocket Pool",
+      "logo": "https://icons.llama.fi/rocket-pool.jpg",
+      "url": "https://rocketpool.net",
+      "twitter": "Rocket_Pool",
+      "description": "Rocket Pool is the first truly decentralised Ethereum staking pool. Liquid Staking, Audited SC, and Minimised Penalty Risk. Unlike solo stakers, who are required to put 32 ETH up for deposit to create a new validator, Rocket Pool nodes only need to deposit 16 ETH per validator. This will be coupled with 16 ETH from the staking pool (which stakers deposited in exchange for rETH) to create a new ETH2 validator.",
+      "category": "Liquid Staking",
+      "chain": "Ethereum"
+    },
+    "fluid-lending": {
+      "name": "Fluid Lending",
+      "logo": "https://icons.llama.fi/fluid-lending.png",
+      "url": "https://fluid.io/lending/1",
+      "twitter": "0xfluid",
+      "description": "An ever-evolving DeFi protocol and financial system of the future by Instadapp",
+      "category": "Lending",
+      "chain": "Multi-Chain"
+    },
+    "jito-liquid-staking": {
+      "name": "Jito Liquid Staking",
+      "logo": "https://icons.llama.fi/jito-liquid-staking.png",
+      "url": "https://jito.network",
+      "twitter": "jito_sol",
+      "description": "JitoSOL is the first liquid staking derivative on Solana to include MEV rewards. Tracks the price of SOL while accruing staking and MEV rewards. Yield is accrued in the price so it will steadily appreciate vs. SOL",
+      "category": "Liquid Staking",
+      "chain": "Solana"
+    },
+    "jupiter-staked-sol": {
+      "name": "Jupiter Staked SOL",
+      "logo": "https://icons.llama.fi/jupiter-staked-sol.jpg",
+      "url": "https://jup.ag/?ref=f6y1ryr2snn3",
+      "twitter": "JupiterExchange",
+      "description": "Liquid staking on Solana",
+      "category": "Liquid Staking",
+      "chain": "Solana"
+    },
+    "function-fbtc": {
+      "name": "Function FBTC",
+      "logo": "https://icons.llama.fi/function-fbtc.jpg",
+      "url": "https://www.fxn.xyz",
+      "twitter": "FunctionBTC",
+      "description": "Function is building the standard infrastructure that transforms Bitcoin into a capital-efficient, hyperliquid, and composable asset through ƒBTC (FBTC). By enabling Bitcoin to flow freely across financial markets, Function is positioning BTC as the reserve asset for both traditional and decentralized finance. ƒBTC is powered by core contributors Antalpha Prime, Mantle, and Galaxy Digital.",
+      "category": "Bridge",
+      "chain": "Bitcoin"
+    },
+    "stakewise-v2": {
+      "name": "StakeWise V2",
+      "logo": "https://icons.llama.fi/stakewise.png",
+      "url": "https://stakewise.io/",
+      "twitter": "stakewise_io",
+      "description": "Stake your ETH and manage your capital flexibly with the principal and yield tokens from StakeWise.",
+      "category": "Liquid Staking",
+      "chain": "Multi-Chain"
+    },
+    "uniswap-v4": {
+      "name": "Uniswap V4",
+      "logo": "https://icons.llama.fi/uniswap-v4.png",
+      "url": "https://app.uniswap.org/",
+      "twitter": "Uniswap",
+      "description": "Uniswap v4 inherits all of the capital efficiency gains of Uniswap v3, but provides flexibility via hooks and gas optimizations across the entire lifecycle",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "liquid-collective": {
+      "name": "Liquid Collective",
+      "logo": "https://icons.llama.fi/liquid-collective.jpg",
+      "url": "https://liquidcollective.io",
+      "twitter": "liquid_col",
+      "description": "Liquid Collective is a non-custodial staking protocol launched on Ethereum. Liquid Collective is built and run by a collective of leading web3 teams. The protocol was initially launched in 2023.",
+      "category": "Liquid Staking",
+      "chain": "Ethereum"
+    },
+    "jupiter-perpetual-exchange": {
+      "name": "Jupiter Perpetual Exchange",
+      "logo": "https://icons.llama.fi/jupiter-perpetual-exchange.jpg",
+      "url": "https://jup.ag/?ref=f6y1ryr2snn3",
+      "twitter": "JupiterExchange",
+      "description": "Jupiter Perpetual Exchange is a LP-to-trader perpetual exchange based on oracle prices.",
+      "category": "Derivatives",
+      "chain": "Solana"
+    },
+    "tornado-cash": {
+      "name": "Tornado Cash",
+      "logo": "https://icons.llama.fi/tornado-cash.jpg",
+      "url": null,
+      "twitter": "TornadoCash",
+      "description": "Non-custodial anonymous transactions on Ethereum.",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "polymarket-international": {
+      "name": "Polymarket International",
+      "logo": "https://icons.llama.fi/polymarket-international.jpg",
+      "url": "https://polymarket.com/?r=defillamareal",
+      "twitter": "Polymarket",
+      "description": "Polymarket is an information markets platform that lets you trade on the world’s most highly-debated topics (e.g. coronavirus, politics, current events, etc). On Polymarket, you build a portfolio based on your forecasts and earn a return if you are right.",
+      "category": "Prediction Market",
+      "chain": "Polygon"
+    },
+    "quickswap-dex": {
+      "name": "Quickswap Dex",
+      "logo": "https://icons.llama.fi/quickswap-dex.jpg",
+      "url": "https://quickswap.exchange/",
+      "twitter": "QuickswapDEX",
+      "description": "AMM",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "hyperliquid-hlp": {
+      "name": "Hyperliquid HLP",
+      "logo": "https://icons.llama.fi/hyperliquid.png",
+      "url": "https://app.hyperliquid.xyz",
+      "twitter": "HyperliquidX",
+      "description": "Hyperliquidity Provider (HLP) is a protocol vault that provides liquidity to Hyperliquid through multiple market making strategies, performs liquidations, supplies USDC in Earn, and accrues a portion of trading fees. HLP democratizes strategies typically reserved for privileged parties on other exchanges. HLP is fully community-owned.",
+      "category": "Derivatives",
+      "chain": "Hyperliquid L1"
+    },
+    "pancakeswap-amm-v3": {
+      "name": "PancakeSwap AMM V3",
+      "logo": "https://icons.llama.fi/pancakeswap-amm-v3.jpg",
+      "url": "https://pancakeswap.finance/swap",
+      "twitter": "PancakeSwap",
+      "description": "PancakeSwap V3: A More Efficient and User-Friendly DEX on BNB Chain",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "backpack": {
+      "name": "Backpack",
+      "logo": "https://icons.llama.fi/backpack.jpg",
+      "url": "https://backpack.exchange",
+      "twitter": "Backpack",
+      "description": "Next-level crypto wallet and exchange.",
+      "category": "CEX",
+      "chain": "Multi-Chain"
+    },
+    "upshift": {
+      "name": "Upshift",
+      "logo": "https://icons.llama.fi/upshift.jpg",
+      "url": "https://app.upshift.finance/r/8feeeF621Ee3",
+      "twitter": "upshift_fi",
+      "description": "Upshift opens access to transparent yields backed by secure risk controls. Supply, stake and access cross-chain yields.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "orca-dex": {
+      "name": "Orca DEX",
+      "logo": "https://icons.llama.fi/orca-dex.jpg",
+      "url": "https://www.orca.so",
+      "twitter": "orca_so",
+      "description": "AMM",
+      "category": "Dexs",
+      "chain": "Multi-Chain"
+    },
+    "pumpswap": {
+      "name": "PumpSwap",
+      "logo": "https://icons.llama.fi/pumpswap.jpg",
+      "url": "https://swap.pump.fun",
+      "twitter": "Pumpfun",
+      "description": "The native dex for pump.fun",
+      "category": "Dexs",
+      "chain": "Solana"
+    },
+    "ether.fi-liquid": {
+      "name": "ether.fi Liquid",
+      "logo": "https://icons.llama.fi/ether.fi.jpg",
+      "url": "https://www.ether.fi/refer/04bb2542",
+      "twitter": "ether_fi",
+      "description": "Liquid is an automated DeFi strategy vault that provides ether.fi users a simple access point to use their eETH in the DeFi ecosystem",
+      "category": "Onchain Capital Allocator",
+      "chain": "Ethereum"
+    },
+    "k3-capital": {
+      "name": "K3 Capital",
+      "logo": "https://icons.llama.fi/k3-capital.jpg",
+      "url": "https://k3.capital",
+      "twitter": "k3_capital",
+      "description": "Leading institutional asset and risk management in decentralized finance",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "gmx-v2-perps": {
+      "name": "GMX V2 Perps",
+      "logo": "https://icons.llama.fi/gmx-v2-perps.png",
+      "url": "https://gmx.io/#/?ref=defillama",
+      "twitter": "GMX_IO",
+      "description": "GMX is a decentralized spot and perpetual exchange that supports low swap fees and zero price impact trades. Trading is supported by a unique multi-asset pool that earns liquidity providers fees from market making, swap fees, leverage trading (spreads, funding fees & liquidations) and asset rebalancing.",
+      "category": "Derivatives",
+      "chain": "Multi-Chain"
+    },
+    "kpk": {
+      "name": "KPK",
+      "logo": "https://icons.llama.fi/kpk.jpg",
+      "url": "https://kpk.io/",
+      "twitter": "kpk_io",
+      "description": "KPK is a noncustodial onchain asset manager for DAOs, institutions and capital allocators, actively managing capital across DeFi since 2020. Over $2bn deployed onchain,",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "pinksale": {
+      "name": "PinkSale",
+      "logo": "https://icons.llama.fi/pinksale.png",
+      "url": "https://www.pinksale.finance",
+      "twitter": "pinkecosystem",
+      "description": "PinkSale is a decentralized launchpad that allows users to launch their own token and create their own initial token sale",
+      "category": "Launchpad",
+      "chain": "Multi-Chain"
+    },
+    "telos-consilium": {
+      "name": "Telos Consilium",
+      "logo": "https://icons.llama.fi/telos-consilium.jpg",
+      "url": "https://telosc.com/",
+      "twitter": "TelosConsilium",
+      "description": "Telos Consilium (Telosc) is a Web3 advisory and treasury firm offering risk-curated vault allocations, tokenized equity, and capital structuring services.",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "extended": {
+      "name": "Extended",
+      "logo": "https://icons.llama.fi/extended.jpg",
+      "url": "https://app.extended.exchange/join/LLAMAS123",
+      "twitter": "extendedapp",
+      "description": "Extended is a perp DEX, built by ex-Revolut team, on a mission to offer the most extensive product portfolio in DeFi—featuring cross-asset collateral, unified margin, perps, spot, and lending markets.",
+      "category": "Derivatives",
+      "chain": "Multi-Chain"
+    },
+    "sky-money": {
+      "name": "Sky Money",
+      "logo": "https://icons.llama.fi/sky-money.jpg",
+      "url": "https://app.sky.money/?network=ethereum&widget=vaults",
+      "twitter": "SkyMoney",
+      "description": "Sky Money is a Morpho vault curator that manages lending vault allocations, with TVL tracking assets deposited into vaults curated by Sky.",
+      "category": "Risk Curators",
+      "chain": "Ethereum"
+    },
+    "mellow-core": {
+      "name": "Mellow Core",
+      "logo": "https://icons.llama.fi/mellow-core.jpg",
+      "url": "https://app.mellow.finance/vaults",
+      "twitter": "mellowprotocol",
+      "description": "Core Vaults encode strategy constraints directly into the vault configuration. This includes which integrations can be used, which actions are permitted, and how capital can move between execution paths. Enforcement happens onchain, making strategy behavior inspectable and resistant to off-policy execution.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "vault-bridge": {
+      "name": "Vault Bridge",
+      "logo": "https://icons.llama.fi/vault-bridge.jpg",
+      "url": "https://www.agglayer.dev/",
+      "twitter": "Agglayer",
+      "description": "The Agglayer's VaultBridge is a customizable yield-generating mechanism for providing chains with a native revenue stream",
+      "category": "Risk Curators",
+      "chain": "Ethereum"
+    },
+    "derive-v2": {
+      "name": "Derive V2",
+      "logo": "https://icons.llama.fi/derive.png",
+      "url": "https://app.derive.xyz?ref=defillama",
+      "twitter": "derivexyz",
+      "description": "Trade options, perps and spot on the most powerful self-custodial exchange.",
+      "category": "Derivatives",
+      "chain": "Multi-Chain"
+    },
+    "lagoon": {
+      "name": "Lagoon",
+      "logo": "https://icons.llama.fi/lagoon.jpg",
+      "url": "https://lagoon.finance",
+      "twitter": "lagoon_finance",
+      "description": "LAGOON provides open, general-purpose, secure vault infrastructure to build and scale on-chain yield products. Powered by the ERC-7540 standard, curators manage deposits and withdrawals asynchronously, while users can join any public vault to start earning on their assets.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "clearstar": {
+      "name": "Clearstar",
+      "logo": "https://icons.llama.fi/clearstar.jpg",
+      "url": "https://clearstar.xyz",
+      "twitter": "ClearstarLabs",
+      "description": "Building onchain infra and strategies.",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "rockawayx": {
+      "name": "RockawayX",
+      "logo": "https://icons.llama.fi/rockawayx.jpg",
+      "url": "https://rockawayx.com/",
+      "twitter": "Rockaway_X",
+      "description": "On-chain asset manager. Risk curator on Morpho and other DeFi lending protocols. Market-neutral yield strategies for institutional and HNWI clients - stablecoins, ETH, BTC, SOL",
+      "category": "Risk Curators",
+      "chain": "Multi-Chain"
+    },
+    "ember-protocol": {
+      "name": "Ember Protocol",
+      "logo": "https://icons.llama.fi/ember-protocol.jpg",
+      "url": "https://ember.so/",
+      "twitter": "EmberProtocol",
+      "description": "Ember is the investment platform and infrastructure for launching, accessing, and distributing traditional and onchain financial products through crypto capital markets.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "dydx-v4": {
+      "name": "dYdX V4",
+      "logo": "https://icons.llama.fi/dydx-v4.jpg",
+      "url": "https://dydx.trade?ref=LoneHull0UN",
+      "twitter": "dYdX",
+      "description": "dYdX Chain Mainnet, a robust blockchain built with the CosmosSDK. This documentation is diligently maintained by the dYdX Operations subDAO to provide a comprehensive resource for validators, developers, and the dYdX community at large.",
+      "category": "Derivatives",
+      "chain": "dYdX"
+    },
+    "aera-v3": {
+      "name": "Aera V3",
+      "logo": "https://icons.llama.fi/aera-v3.jpg",
+      "url": "https://www.aera.finance",
+      "twitter": "aerafinance",
+      "description": "Autonomous onchain treasury management protocol for DAOs, built by the team at Gauntlet.",
+      "category": "Onchain Capital Allocator",
+      "chain": "Multi-Chain"
+    },
+    "railgun": {
+      "name": "Railgun",
+      "logo": "https://icons.llama.fi/railgun.jpg",
+      "url": "https://railgun.org",
+      "twitter": "railgun_project",
+      "description": "RAILGUN secures privacy for DEX trading and lending. Built without any bridge or layer-2, RAILGUN is a smart contract system that gives zk-SNARK privacy to any transaction or smart contract interaction on Ethereum.",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "avantis": {
+      "name": "Avantis",
+      "logo": "https://icons.llama.fi/avantis.png",
+      "url": "https://www.avantisfi.com/referral?code=DefiLlama",
+      "twitter": "avantisfi",
+      "description": "Avantis is a onchain perpetuals DEX built offering advanced risk management for LPs, loss protection for traders, and access to trading leverage crypto and synthetic real world assets. Avantis is built on and backed Base, and other investors such as Pantera Capital and Galaxy Digital.",
+      "category": "Derivatives",
+      "chain": "Base"
+    },
+    "ostium": {
+      "name": "Ostium",
+      "logo": "https://icons.llama.fi/ostium.png",
+      "url": "https://www.ostium.io/",
+      "twitter": "OstiumLabs",
+      "description": "Trade FX, metals, energy, & RWAs from your wallet",
+      "category": "Derivatives",
+      "chain": "Arbitrum"
+    },
+    "decibel": {
+      "name": "Decibel",
+      "logo": "https://icons.llama.fi/decibel.jpg",
+      "url": "https://app.decibel.trade/trade",
+      "twitter": "DecibelTrade",
+      "description": "Decibel is a composable, onchain trading engine for spot, perps, and yield opportunities.",
+      "category": "Derivatives",
+      "chain": "Aptos"
+    },
+    "gmtrade": {
+      "name": "GMTrade",
+      "logo": "https://icons.llama.fi/gmtrade.jpg",
+      "url": "https://gmtrade.xyz/referrals/?ref=545",
+      "twitter": "gmtrade_xyz",
+      "description": "GMTrade is a perpetual DEX built on Solana that supports both crypto and RWA markets. The protocol utilizes isolated liquidity pools combined with a cross-pool coordination system that optimizes liquidity utilization. It aims to provide a seamless trading experience with fast execution and low fees while maintaining security and decentralization.",
+      "category": "Derivatives",
+      "chain": "Solana"
+    },
+    "zama": {
+      "name": "Zama",
+      "logo": "https://icons.llama.fi/zama.jpg",
+      "url": "https://www.zama.org/",
+      "twitter": "zama",
+      "description": "Zama is an open source cryptography company building state-of-the-art Fully Homomorphic Encryption (FHE) solutions for blockchain",
+      "category": "Privacy",
+      "chain": "Ethereum"
+    },
+    "pacifica": {
+      "name": "Pacifica",
+      "logo": "https://icons.llama.fi/pacifica.jpg",
+      "url": "https://app.pacifica.fi?referral=defillama",
+      "twitter": "pacifica_fi",
+      "description": "Pacifica is a decentralized perpetual futures exchange offering leverage trading through advanced order types and APIs",
+      "category": "Derivatives",
+      "chain": "Solana"
+    },
+    "ventuals": {
+      "name": "Ventuals",
+      "logo": "https://icons.llama.fi/ventuals.jpg",
+      "url": "https://ventuals.com/trade",
+      "twitter": "ventuals",
+      "description": "Ventuals is a decentralized trading protocol that creates perpetual futures markets on private-company valuations, powered by Hyperliquid’s HIP-3 infrastructure",
+      "category": "Interface",
+      "chain": "Hyperliquid L1"
+    },
+    "aerodrome-ignition": {
+      "name": "Aerodrome Ignition",
+      "logo": "https://icons.llama.fi/aerodrome-ignition.png",
+      "url": "https://aerodrome.finance/",
+      "twitter": "aerodromefi",
+      "description": "Aerodrome Ignition is a DEX-native token launch mechanism on Base that bootstraps liquidity by depositing 10-20% of a project's token supply into Aerodrome pools, allowing veAERO holders to direct emissions incentives and enabling fair, market-driven price discovery and distribution without presales or private allocations",
+      "category": "Launchpad",
+      "chain": "Base"
+    },
+    "dxsale": {
+      "name": "DxSale",
+      "logo": "https://icons.llama.fi/dxsale.png",
+      "url": "https://dx.app",
+      "twitter": "dxsale",
+      "description": "With currently 16 supported chains, Dx is the biggest IDO Launchpad in the crypto space. As a truly decentralized token management platform, we aim for a low-barrier approach to launching your project. Instead of a steep learning curve and cumbersome interfaces, our platform will provide all the necessary tools to create and launch your project with no prior coding skills required. Of course, you can also use our platform if you're just here to invest in a project you deem interesting. This will be the first decision you will face",
+      "category": "Launchpad",
+      "chain": "Multi-Chain"
+    },
+    "morpheusai": {
+      "name": "MorpheusAI",
+      "logo": "https://icons.llama.fi/morpheusai.jpg",
+      "url": "https://mor.org",
+      "twitter": "MorpheusAIs",
+      "description": "Morpheus is the decentralized infrastructure layer where anyone can build, deploy, and scale AI without gatekeepers. It combines yield-powered tokenomics, decentralized compute, and open-source code into a permissionless network — with the native token MOR aligning incentives through daily emissions to four contributor groups: Capital, Compute, Code, and Builders.",
+      "category": "AI Agents",
+      "chain": "Multi-Chain"
+    },
+    "predict-fun": {
+      "name": "Predict Fun",
+      "logo": "https://icons.llama.fi/predict-fun.jpg",
+      "url": "https://predict.fun?ref=04249",
+      "twitter": "predictdotfun",
+      "description": "The yield-bearing prediction market built on Blast",
+      "category": "Prediction Market",
+      "chain": "Multi-Chain"
+    },
+    "juicebox-v1": {
+      "name": "Juicebox V1",
+      "logo": "https://icons.llama.fi/juicebox.png",
+      "url": "https://juicebox.money/",
+      "twitter": "juiceboxETH",
+      "description": "The programmable crypto fundraising protocol for builders and creators. Light enough for a group of friends, powerful enough for a global network of anons. Community-owned, on Ethereum",
+      "category": "Launchpad",
+      "chain": "Ethereum"
+    },
+    "opinion": {
+      "name": "OPINION",
+      "logo": "https://icons.llama.fi/opinion.jpg",
+      "url": "https://app.opinion.trade?code=hV0KVj",
+      "twitter": "opinionlabsxyz",
+      "description": "Opinion is building a prediction exchange that enables direct trading of macroeconomic data, predictions, and news as standardized assets, leveraging proprietary on-chain infrastructure, AI Oracle, and trading tools to create new opportunities for retail users, institutions, and global decision makers in democratizing economic insights and risk management.",
+      "category": "Prediction Market",
+      "chain": "Binance"
+    },
+    "privacy-pools": {
+      "name": "Privacy Pools",
+      "logo": "https://icons.llama.fi/privacy-pools.jpg",
+      "url": "https://privacypools.com/",
+      "twitter": "0xbowio",
+      "description": "Privacy Pools is a protocol that enables private asset withdrawals using zero-knowledge proofs and commitment schemes, allowing users to deposit and later withdraw assets without creating an on-chain link between their deposit and withdrawal addresses",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "aztec-connect": {
+      "name": "Aztec Connect",
+      "logo": "https://icons.llama.fi/aztec-connect.jpg",
+      "url": "https://aztec.network",
+      "twitter": "aztecnetwork",
+      "description": "Aztec is building an open source layer 2 network on Ethereum. Aztec's layer 2 network uses zkSNARK proofs to extend Ethereum's functionality with the addition of private state.",
+      "category": "Privacy",
+      "chain": "Ethereum"
+    },
+    "four.meme": {
+      "name": "four.meme",
+      "logo": "https://icons.llama.fi/four.meme.png",
+      "url": "https://four.meme?code=DZ9DF74J64FA",
+      "twitter": "four_meme_",
+      "description": "Four.meme is a premier fair launch platform for meme coins on the BSC chain. Our platform is dedicated to empowering creators and communities to launch successful meme coin projects with ease.",
+      "category": "Launchpad",
+      "chain": "Binance"
+    },
+    "bio-protocol": {
+      "name": "Bio Protocol",
+      "logo": "https://icons.llama.fi/bio.jpg",
+      "url": "https://www.bio.xyz/",
+      "twitter": "BioProtocol",
+      "description": "The Bio protocol is DeSci's new financial layer, engineered to commercialize the best science, faster",
+      "category": "Launchpad",
+      "chain": "Multi-Chain"
+    },
+    "giza": {
+      "name": "Giza",
+      "logo": "https://icons.llama.fi/giza.jpg",
+      "url": "https://www.gizatech.xyz/",
+      "twitter": "gizatechxyz",
+      "description": "Giza is the infrastructure powering autonomous financial markets by enabling non-custodial algorithmic agents that execute sophisticated DeFi strategies around the clock",
+      "category": "AI Agents",
+      "chain": "Multi-Chain"
+    },
+    "sport.fun": {
+      "name": "Sport.fun",
+      "logo": "https://icons.llama.fi/sport.fun.jpg",
+      "url": "https://pro.sport.fun/login/?referral_code=UBJWCCSWOVU",
+      "twitter": "sportfun",
+      "description": "Sport.fun is a Base chain fantasy soccer protocol where users trade fractional player shares backed by actual football performance, using Gold pegged to USDC, with limited-use contracts and active market-driven gameplay",
+      "category": "Prediction Market",
+      "chain": "Base"
+    },
+    "rain": {
+      "name": "Rain",
+      "logo": "https://icons.llama.fi/rain.jpg",
+      "url": "https://www.rain.one/",
+      "twitter": "Rain__Protocol",
+      "description": "Rain | Decentralized Prediction markets Protocol. Predict anything. Create markets. Trade options. Own the future!.",
+      "category": "Prediction Market",
+      "chain": "Arbitrum"
+    },
+    "privacy-cash": {
+      "name": "Privacy Cash",
+      "logo": "https://icons.llama.fi/privacy-cash.jpg",
+      "url": "https://privacycash.org/",
+      "twitter": "theprivacycash",
+      "description": "Privacy Cash allows users to transfer SOL privately",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "sunpump": {
+      "name": "SunPump",
+      "logo": "https://icons.llama.fi/sunpump.png",
+      "url": "https://sunpump.meme/",
+      "twitter": "OfficialSUNio",
+      "description": "The First Meme Fair Launch Platform on Tron",
+      "category": "Launchpad",
+      "chain": "Tron"
+    },
+    "gnosis-protocol-v1": {
+      "name": "Gnosis Protocol v1",
+      "logo": "https://icons.llama.fi/gnosis-protocol-v1.png",
+      "url": "https://gnosis.io/",
+      "twitter": "gnosisPM",
+      "description": "Gnosis builds new market mechanisms for decentralized finance.",
+      "category": "Prediction Market",
+      "chain": "Ethereum"
+    },
+    "capx-ai": {
+      "name": "Capx AI",
+      "logo": "https://icons.llama.fi/capx-ai.jpg",
+      "url": "https://capx.ai",
+      "twitter": "0xcapx",
+      "description": "Capx Chain is an Ethereum Layer 2 where AI Apps launch ERC20 tokens, distribute ownership to users, and scale on infrastructure secured by more than $220M in restaked assets.",
+      "category": "AI Agents",
+      "chain": "Capx Chain"
+    },
+    "deeplock": {
+      "name": "DeepLock",
+      "logo": "https://icons.llama.fi/deeplock.png",
+      "url": null,
+      "twitter": "deeplockio",
+      "description": "DEEPL0CK is the ultimate one-stop platform to launch projects on the Binance Smart Chain in a safe way, and for keeping digital assets safe on #BSC.",
+      "category": "Launchpad",
+      "chain": "Binance"
+    },
+    "flaunch": {
+      "name": "flaunch",
+      "logo": "https://icons.llama.fi/ƒlaunch.jpg",
+      "url": "https://flaunch.gg",
+      "twitter": "flaunchgg",
+      "description": "Buy, sell and launch memes. 100% of trading fees go to creators and buybacks. Powered by Uniswap V4.",
+      "category": "Launchpad",
+      "chain": "Base"
+    },
+    "rise.rich": {
+      "name": "Rise.rich",
+      "logo": "https://icons.llama.fi/rise.rich.jpg",
+      "url": null,
+      "twitter": "risedotrich",
+      "description": "RISE is the first floor-backed, permissionless token launchpad on Solana, enabling creators to launch tokens instantly while embedding capped downside risk mechanics and in-house lending from day one",
+      "category": "Launchpad",
+      "chain": "Solana"
+    },
+    "augur": {
+      "name": "Augur",
+      "logo": "https://icons.llama.fi/augur.png",
+      "url": "https://augur.net/",
+      "twitter": "AugurProject",
+      "description": "A transparent exchange with no limit on what you can bet on, no max limits on the amount you can bet and no rollover requirements.",
+      "category": "Prediction Market",
+      "chain": "Ethereum"
+    },
+    "dflow-prediction-market": {
+      "name": "DFlow Prediction Market",
+      "logo": "https://icons.llama.fi/dflow-prediction-market.jpg",
+      "url": "https://dflow.net/",
+      "twitter": "dflow",
+      "description": "DFlow Prediction Markets on Solana, powered by the Kalshi CLP (Concurrent Liquidity Program).",
+      "category": "Interface",
+      "chain": "Solana"
+    },
+    "seer": {
+      "name": "Seer",
+      "logo": "https://icons.llama.fi/seer.png",
+      "url": "https://seer.pm/",
+      "twitter": "seer_pm",
+      "description": "A decentralized protocol allowing users to create markets, trade yield bearing tokens, use outcome tokens compatible with other exchanges, and offering new types of prediction markets",
+      "category": "Prediction Market",
+      "chain": "Multi-Chain"
+    },
+    "liquidity-house": {
+      "name": "Liquidity House",
+      "logo": "https://icons.llama.fi/liquidity-house.png",
+      "url": "https://liquidity.house",
+      "twitter": null,
+      "description": "GambleFi Liquidity Infrastructure Protocol",
+      "category": "Prediction Market",
+      "chain": "Etherlink"
+    },
+    "overtime": {
+      "name": "Overtime",
+      "logo": "https://icons.llama.fi/overtime.jpg",
+      "url": "https://www.overtimemarkets.xyz/markets?referrerId=defillama",
+      "twitter": "Overtime_io",
+      "description": "Overtime is a decentralized onchain sportsbook ecosystem enabling sports betting and digital options trading. Built on smart contracts with Chainlink data feeds, it operates without centralized control. Features pioneering AMM architecture and trustless liquidity pools for seamless, transparent betting experiences across popular sporting events.",
+      "category": "Prediction Market",
+      "chain": "Multi-Chain"
+    },
+    "namada-shielded-pools": {
+      "name": "Namada Shielded Pools",
+      "logo": "https://icons.llama.fi/namada-shielded-pools.jpg",
+      "url": "https://namada.net",
+      "twitter": "namada",
+      "description": "Namada is an L1 proof-of-stake blockchain with a ZK-powered multi-asset shielded pool serving as the composable privacy layer for the multichain",
+      "category": "Privacy",
+      "chain": "Namada"
+    },
+    "agentfi": {
+      "name": "AgentFi",
+      "logo": "https://icons.llama.fi/agentfi.png",
+      "url": "https://agentfi.io/",
+      "twitter": "Agent_Fi",
+      "description": "AgentFi is at the intersection of blockchain and AI: allowing anyone to create, customise and share onchain agents",
+      "category": "AI Agents",
+      "chain": "Blast"
+    },
+    "hinkal": {
+      "name": "Hinkal",
+      "logo": "https://icons.llama.fi/hinkal.jpg",
+      "url": "https://hinkal.pro",
+      "twitter": "hinkal_protocol",
+      "description": "Hinkal is an institutional-grade protocol enabling confidential on-chain transactions. It is a category-defining solution, that allows liquid funds and retail users to create shielded addresses and transact on major dApps in complete confidentiality (the origin and destination of transaction, value).",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "jupiter-prediction": {
+      "name": "Jupiter Prediction",
+      "logo": "https://icons.llama.fi/jupiter-prediction.jpg",
+      "url": "https://jup.ag/?ref=f6y1ryr2snn3",
+      "twitter": "JupiterExchange",
+      "description": "Prediction markets let you make predictions on real-world events by trading YES or NO.",
+      "category": "Interface",
+      "chain": "Solana"
+    },
+    "zkbob": {
+      "name": "zkBob",
+      "logo": "https://icons.llama.fi/zkbob.png",
+      "url": "https://app.zkbob.com",
+      "twitter": "zkBob_",
+      "description": "A stablecoin-based zkprotocol designed for simplicity, privacy and utility.",
+      "category": "Privacy",
+      "chain": "Multi-Chain"
+    },
+    "0x0.ai": {
+      "name": "0x0.ai",
+      "logo": "https://icons.llama.fi/0x0.ai.png",
+      "url": "https://0x0.ai",
+      "twitter": "0x0exchange",
+      "description": "A comprehensive privacy solution featuring a variety of AI-based safety tools that redistributes 100% revenue to 0x0 holders",
+      "category": "Privacy",
+      "chain": "Ethereum"
+    },
+    "infinite-trading-protocol": {
+      "name": "Infinite Trading Protocol",
+      "logo": "https://icons.llama.fi/infinite-trading-protocol.png",
+      "url": "https://www.infinitetrading.io/",
+      "twitter": "InfiniteTradePr",
+      "description": "Infinite Trading is a groundbreaking marketplace and protocol that enables you to invest in fully automated trading strategies within the Ethereum DeFi ecosystem. Our platform leverages AI and automated trading to provide you with exceptional investment opportunities while removing the reliance on centralized exchanges",
+      "category": "AI Agents",
+      "chain": "Multi-Chain"
+    },
+    "gud.tech": {
+      "name": "Gud.Tech",
+      "logo": "https://icons.llama.fi/gud.tech.jpg",
+      "url": "https://gud.tech",
+      "twitter": "gudtech_ai",
+      "description": "AI for the attention economy. Gud.tech is the singularity that connects gud AI to gud Blockchain. Uncover alpha 24/7 effortlessly.",
+      "category": "AI Agents",
+      "chain": "Zircuit"
+    },
+    "mind-network": {
+      "name": "Mind Network",
+      "logo": "https://icons.llama.fi/mind-network.jpg",
+      "url": "https://www.mindnetwork.xyz",
+      "twitter": "mindnetwork_xyz",
+      "description": "Mind Network is a pioneer FHE (Fully Homomorphic Encryption) infrastructure for a Fully Encrypted Web by enabling quantum-resistant, fully encrypted data and AI computation. It co-builds a Zero Trust Internet Protocol (HTTPZ) with industry leaders to enable trusted AI and onchain data computation as a new Web3 standard.",
+      "category": "AI Agents",
+      "chain": "Multi-Chain"
+    },
+    "yield-ai": {
+      "name": "Yield AI",
+      "logo": "https://icons.llama.fi/yield-ai.png",
+      "url": "https://yieldai.app/",
+      "twitter": "yieldai_app",
+      "description": "Yield AI is a DeFi dashboard for Aptos that integrates 10+ protocols and an AI Agent in one interface. Track balances and positions, compare APRs, and deposit, withdraw, swap, and claim rewards gaslessly — all to maximize your yield.",
+      "category": "AI Agents",
+      "chain": "Aptos"
+    },
+    "calculus": {
+      "name": "Calculus",
+      "logo": "https://icons.llama.fi/calculus.jpg",
+      "url": "https://www.calculus.finance/",
+      "twitter": "CalculusFinance",
+      "description": "Calculus Finance is an on-chain framework for training and deploying autonomous trading agents on BNB Chain. It uses on-chain behavioral data to create agents that manage liquidity provision and trading strategies within defined risk limits",
+      "category": "AI Agents",
+      "chain": "Binance"
+    },
+    "ton-pump": {
+      "name": "TON Pump",
+      "logo": "https://icons.llama.fi/ton-pump.jpg",
+      "url": "https://hot-labs.org",
+      "twitter": "hotdao_",
+      "description": "A revolutionary memcoin launchpad platform on the TON blockchain. Works inside Telegram Mini App and HOT Wallet. Create your own token, trade tokens on the curve, won contest for the best token launch.",
+      "category": "Telegram Bot",
+      "chain": "TON"
+    },
+    "desk-clob": {
+      "name": "DESK CLOB",
+      "logo": "https://icons.llama.fi/desk-clob.jpg",
+      "url": "https://clob.desk.exchange/",
+      "twitter": "TradeOnDESK",
+      "description": "DESK's Central Limit Orderbook",
+      "category": "Interface",
+      "chain": "Arbitrum"
+    },
+    "glorb": {
+      "name": "Glorb",
+      "logo": "https://icons.llama.fi/glorb.jpg",
+      "url": null,
+      "twitter": "Glorb_wtf",
+      "description": "Glorb is an autonomous AI agent operating on Base with two onchain games.",
+      "category": "AI Agents",
+      "chain": "Base"
+    },
+    "ambire-wallet": {
+      "name": "Ambire Wallet",
+      "logo": "https://icons.llama.fi/ambire-wallet.png",
+      "url": "https://www.ambire.com",
+      "twitter": "AmbireWallet",
+      "description": "The First Non-Custodial DeFi Wallet with Email Authentication, Available on Ethereum, Avalanche, Polygon, Fantom, BSC, Moonbeam & more.",
+      "category": "Wallets",
+      "chain": "Ethereum"
+    },
+    "maestro": {
+      "name": "Maestro",
+      "logo": "https://icons.llama.fi/maestro.jpg",
+      "url": "https://www.maestrobots.com",
+      "twitter": "MaestroBots",
+      "description": "Empowering users with DeFi focused tools.",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "metamask-wallet": {
+      "name": "MetaMask Wallet",
+      "logo": "https://icons.llama.fi/metamask-wallet.jpg",
+      "url": "https://metamask.io/",
+      "twitter": "MetaMask",
+      "description": "MetaMask is the leading self-custodial wallet. A simple way to access blockchain applications and web3",
+      "category": "Wallets",
+      "chain": null
+    },
+    "rainbow-wallet": {
+      "name": "Rainbow Wallet",
+      "logo": "https://icons.llama.fi/rainbow-wallet.jpg",
+      "url": "https://rainbow.me",
+      "twitter": "rainbowdotme",
+      "description": "The fun, simple, & secure way to explore Web3, NFTs, & Ethereum",
+      "category": "Wallets",
+      "chain": null
+    },
+    "unibot": {
+      "name": "Unibot",
+      "logo": "https://icons.llama.fi/unibot.png",
+      "url": "https://unibot.app",
+      "twitter": "TeamUnibot",
+      "description": "The Fastest Telegram Uniswap Sniper, Swap and snipe at lightning-speed with our free-to-use app",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "banana-gun": {
+      "name": "Banana Gun",
+      "logo": "https://icons.llama.fi/banana-gun.png",
+      "url": "https://t.me/BananaGunSniper_bot?start=ref_defillama",
+      "twitter": "BananaGunBot",
+      "description": "The ETH bot that will make your life easier.For degens, by degens. We know what you need.",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "zerion-wallet": {
+      "name": "Zerion Wallet",
+      "logo": "https://icons.llama.fi/zerion-wallet.jpg",
+      "url": "https://zerion.io",
+      "twitter": "zerion",
+      "description": "A crypto wallet for everything onchain",
+      "category": "Wallets",
+      "chain": null
+    },
+    "bonkbot": {
+      "name": "BONKbot",
+      "logo": "https://icons.llama.fi/bonkbot.png",
+      "url": "https://www.bonkbot.io/",
+      "twitter": "bonkbot_io",
+      "description": "Solana's FREE telegram tool, by the Bonk community, to trade any SPL token",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "trojan": {
+      "name": "Trojan",
+      "logo": "https://icons.llama.fi/trojan.jpg",
+      "url": "https://trojan.com/@defillama",
+      "twitter": "TrojanOnSolana",
+      "description": "Trojan is a Telegram trading bot with a wide range of features including a bespoke live price feed, limit and DCA orders, copy trading and sniping",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "photon": {
+      "name": "Photon",
+      "logo": "https://icons.llama.fi/photon.jpg",
+      "url": "https://photon-sol.tinyastro.io/@defillama",
+      "twitter": "tradewithPhoton",
+      "description": "Snipe and sell tokens at lightning speed",
+      "category": "Trading App",
+      "chain": null
+    },
+    "phantom-wallet": {
+      "name": "Phantom Wallet",
+      "logo": "https://icons.llama.fi/phantom-wallet.jpg",
+      "url": "https://phantom.com/",
+      "twitter": "phantom",
+      "description": "The friendly crypto wallet built for DeFi & NFTs",
+      "category": "Wallets",
+      "chain": null
+    },
+    "bullx": {
+      "name": "BullX",
+      "logo": "https://icons.llama.fi/bullx.jpg",
+      "url": "https://bullx.io/",
+      "twitter": "bullx_io",
+      "description": "A decentralized trading system with features like sniping, copy trading, and limit orders",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "gmgn": {
+      "name": "GMGN",
+      "logo": "https://icons.llama.fi/gmgn.jpg",
+      "url": "https://gmgn.ai/r/defillama",
+      "twitter": "gmgnai",
+      "description": "Discover faster, Trading in seconds http://gmgn.ai",
+      "category": "Telegram Bot",
+      "chain": null
+    },
+    "rabby-wallet": {
+      "name": "Rabby Wallet",
+      "logo": "https://icons.llama.fi/rabby-wallet.png",
+      "url": "https://rabby.io/",
+      "twitter": "Rabby_io",
+      "description": "A wallet for Ethereum and all EVM chains By DeBank",
+      "category": "Wallets",
+      "chain": null
+    },
+    "raydium-perps": {
+      "name": "Raydium Perps",
+      "logo": "https://icons.llama.fi/raydium.jpg",
+      "url": "https://perps.raydium.io/",
+      "twitter": "RaydiumProtocol",
+      "description": "Raydium Perpetual is a gasless Central Limit Order Book (CLOB) perps protocol with up to 50x leverage",
+      "category": "Interface",
+      "chain": null
+    },
+    "axiom": {
+      "name": "Axiom",
+      "logo": "https://icons.llama.fi/axiom.jpg",
+      "url": "https://axiom.trade/@defillama",
+      "twitter": "AxiomExchange",
+      "description": "A decentralized trading platform designed to offer a comprehensive suite of tools for on-chain trading",
+      "category": "Trading App",
+      "chain": null
+    },
+    "padre": {
+      "name": "Padre",
+      "logo": "https://icons.llama.fi/padre.jpg",
+      "url": "https://trade.padre.gg/rk/defillama",
+      "twitter": "PadreApp",
+      "description": "Memecoin trading terminal built for traders",
+      "category": "Telegram Bot",
+      "chain": null
+    }
+  },
+  "chains": {
+    "ethereum": {
+      "name": "Ethereum",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg",
+      "gecko_id": "ethereum",
+      "tokenSymbol": "ETH"
+    },
+    "solana": {
+      "name": "Solana",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_solana.jpg",
+      "gecko_id": "solana",
+      "tokenSymbol": "SOL"
+    },
+    "bsc": {
+      "name": "BSC",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_bsc.jpg",
+      "gecko_id": "binancecoin",
+      "tokenSymbol": "BNB"
+    },
+    "bitcoin": {
+      "name": "Bitcoin",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_bitcoin.jpg",
+      "gecko_id": "bitcoin",
+      "tokenSymbol": "BTC"
+    },
+    "tron": {
+      "name": "Tron",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_tron.jpg",
+      "gecko_id": "tron",
+      "tokenSymbol": "TRON"
+    },
+    "base": {
+      "name": "Base",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_base.jpg",
+      "gecko_id": null,
+      "tokenSymbol": null
+    },
+    "hyperliquid_l1": {
+      "name": "Hyperliquid L1",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_hyperliquid-l1.jpg",
+      "gecko_id": "hyperliquid",
+      "tokenSymbol": "HYPE"
+    },
+    "arbitrum": {
+      "name": "Arbitrum",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
+      "gecko_id": "arbitrum",
+      "tokenSymbol": "ARB"
+    },
+    "provenance": {
+      "name": "Provenance",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_provenance.jpg",
+      "gecko_id": "hash-2",
+      "tokenSymbol": "HASH"
+    },
+    "polygon": {
+      "name": "Polygon",
+      "logo": "https://icons.llamao.fi/icons/chains/rsz_polygon.jpg",
+      "gecko_id": "polygon-ecosystem-token",
+      "tokenSymbol": "POL"
+    }
+  }
+}

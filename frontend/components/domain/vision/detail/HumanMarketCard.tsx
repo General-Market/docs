@@ -11,7 +11,7 @@ import {
   ReferenceArea,
   Tooltip as RechartsTooltip,
 } from 'recharts'
-import { getAssetImageUrl } from '@/lib/vision/asset-images'
+import { getAssetMeta } from '@/lib/vision/asset-images'
 import { toInternalId } from '@/lib/vision/source-ids'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import type { HistoryPoint } from '@/hooks/vision/useBulkMarketHistory'
@@ -111,8 +111,18 @@ export function HumanMarketCard({
   const name = market.name || market.symbol || market.assetId
   const value = formatBigUsd(market.value)
   const subLabel = source.isPrice ? 'price' : (source.valueLabel || '').toLowerCase()
-  const imgSrc =
-    !imgErr && (market.imageUrl || getAssetImageUrl(sourceId, market.assetId, source.prefixes))
+  const assetMeta = useMemo(
+    () => getAssetMeta(sourceId, market.assetId, source.prefixes),
+    [sourceId, market.assetId, source.prefixes],
+  )
+  const imgSrc = !imgErr && (market.imageUrl || assetMeta.logo)
+  const website = assetMeta.website
+  const twitterHandle = assetMeta.twitter
+  const twitterUrl = twitterHandle
+    ? (twitterHandle.startsWith('http')
+        ? twitterHandle
+        : `https://x.com/${twitterHandle.replace(/^@/, '')}`)
+    : null
 
   return (
     <article
@@ -197,6 +207,61 @@ export function HumanMarketCard({
             {value}
           </div>
         </div>
+
+        {(website || twitterUrl) && (
+          <div
+            className="shrink-0 flex items-center gap-1"
+            onClick={e => e.stopPropagation()}
+          >
+            {website && (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={website}
+                aria-label={`${name} website`}
+                className="inline-flex items-center justify-center"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  color: APPLE_TEXT_SECONDARY,
+                  transition: `color 200ms ${EASE_DEFAULT}, background 200ms ${EASE_DEFAULT}`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = APPLE_TEXT; e.currentTarget.style.background = APPLE_CHIP_BG }}
+                onMouseLeave={e => { e.currentTarget.style.color = APPLE_TEXT_SECONDARY; e.currentTarget.style.background = 'transparent' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </a>
+            )}
+            {twitterUrl && (
+              <a
+                href={twitterUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={twitterHandle ?? 'X / Twitter'}
+                aria-label={`${name} on X`}
+                className="inline-flex items-center justify-center"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  color: APPLE_TEXT_SECONDARY,
+                  transition: `color 200ms ${EASE_DEFAULT}, background 200ms ${EASE_DEFAULT}`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = APPLE_TEXT; e.currentTarget.style.background = APPLE_CHIP_BG }}
+                onMouseLeave={e => { e.currentTarget.style.color = APPLE_TEXT_SECONDARY; e.currentTarget.style.background = 'transparent' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M18.244 2H21.5l-7.06 8.069L23 22h-6.59l-5.16-6.74L5.36 22H2.1l7.55-8.628L1.5 2h6.75l4.66 6.165L18.244 2zm-2.31 18h1.82L7.18 4H5.24l10.694 16z" />
+                </svg>
+              </a>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Chart with overlays */}
