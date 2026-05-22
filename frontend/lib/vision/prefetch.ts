@@ -106,25 +106,30 @@ export async function prefetchSourceSnapshot(sourceId: string) {
   }
 }
 
-/** Prefetch batch config for a source server-side */
+/** Prefetch batch config for a source server-side.
+ *
+ *  Try the literal sourceId first. Curated subsources like `defillama-bridges`
+ *  resolve through `toInternalId` to the umbrella `defi`, whose endpoint
+ *  returns the 8 192-market firehose — if that comes back first it shadows the
+ *  curated 7-market batch and the picker fills with the wrong markets. The
+ *  internal id is only useful as a fallback for legacy display→internal pairs
+ *  that share their batch with the umbrella (e.g. `coingecko` → `crypto`).
+ */
 export async function prefetchBatchConfigBySource(sourceId: string) {
   const { toInternalId } = await import('@/lib/vision/source-ids')
   const internalId = toInternalId(sourceId)
-  const candidates = internalId !== sourceId ? [internalId, sourceId] : [sourceId]
-  const results = await Promise.all(
-    candidates.map(async (name) => {
-      try {
-        const res = await fetch(
-          `${getDataNodeServer()}/batches/source/${encodeURIComponent(name)}/config`,
-          { next: { revalidate: 300 }, signal: AbortSignal.timeout(5_000) }
-        )
-        if (res.ok) return res.json()
-      } catch {}
-      return null
-    })
-  )
-  for (const data of results) {
-    if (data && (data.markets ?? []).length > 0) return data
+  const candidates = internalId !== sourceId ? [sourceId, internalId] : [sourceId]
+  for (const name of candidates) {
+    try {
+      const res = await fetch(
+        `${getDataNodeServer()}/batches/source/${encodeURIComponent(name)}/config`,
+        { next: { revalidate: 300 }, signal: AbortSignal.timeout(5_000) }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        if (data && (data.markets ?? []).length > 0) return data
+      }
+    } catch {}
   }
   return { markets: [] }
 }

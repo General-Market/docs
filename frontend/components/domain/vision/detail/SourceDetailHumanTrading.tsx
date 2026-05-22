@@ -18,7 +18,7 @@ import { formatUnits } from 'viem'
 import { useSourceSnapshot, type SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useBatches } from '@/hooks/vision/useBatches'
-import { useBatchConfig } from '@/hooks/vision/useBatchConfig'
+import { useBatchConfigBySource } from '@/hooks/vision/useBatchConfig'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
@@ -243,11 +243,12 @@ export function SourceDetailHumanTrading({
   const configHash = (activeBatch?.configHash ?? null) as `0x${string}` | null
 
   // The /vision/batches API returns market_count but not the full marketIds
-  // array. Pull the authoritative ordered list from /batches/config/<hash>,
-  // which the data-node serves immutably keyed on the pinned config hash.
-  // Without this, tradableMarkets stays empty and the page falls back to
-  // "0 active this round" even when a curated subsource batch is live.
-  const { data: batchConfig } = useBatchConfig(configHash ?? undefined)
+  // array. Pull the authoritative ordered list from the data-node, keyed by
+  // sourceId so the SSR prefetch (page.tsx → ['batch-config-source', sourceId])
+  // warms the same cache slot this hook reads. Keying by configHash here
+  // missed the prefetch on every cold paint AND 404'd briefly during round
+  // transitions, leaving the picker stuck at "0 active this round".
+  const { data: batchConfig } = useBatchConfigBySource(sourceId)
   const marketIds: string[] = useMemo(
     () => batchConfig?.markets?.map(m => m.assetId) ?? [],
     [batchConfig],
