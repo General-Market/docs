@@ -75,19 +75,17 @@ function truncateMiddle(str: string, maxLen: number): string {
 }
 
 /** Format resolution type with precise threshold from config.
- *  UP_X + 30bps → "Up 0.3%"   DOWN_X + 50bps → "Dn 0.5%"
- *  FLAT_X + 30bps → "Flat 0.3%"   UP_0 → "Up/Dn"
+ *  UP_X + 30bps → "Up 0.3%"   DOWN_X + 50bps → "Dn 0.5%"   UP_0 → "Up/Dn"
  */
 function formatResLabel(resType: string, thresholdBps?: number): string {
   const dir = resType.startsWith('UP') ? 'Up'
     : resType.startsWith('DOWN') ? 'Dn'
-    : resType.startsWith('FLAT') ? 'Flat'
     : null
   if (!dir) return resType
 
   const bps = thresholdBps ?? 0
   if (bps <= 0) {
-    return dir === 'Flat' ? 'Flat' : dir === 'Up' ? 'Up/Dn' : 'Dn/Up'
+    return dir === 'Up' ? 'Up/Dn' : 'Dn/Up'
   }
 
   const pct = bps / 100
@@ -104,14 +102,11 @@ function resolutionBadge(resType: string | undefined, thresholdBps?: number) {
   const label = formatResLabel(resType, thresholdBps)
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
-  const isFlat = resType.startsWith('FLAT')
   const bg = isUp
     ? 'bg-surface-up text-color-up border-color-up/20'
     : isDown
       ? 'bg-surface-down text-color-down border-color-down/20'
-      : isFlat
-        ? 'bg-surface-warning text-color-warning border-color-warning/20'
-        : 'bg-muted text-text-secondary border-border-light'
+      : 'bg-muted text-text-secondary border-border-light'
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
       {label}
@@ -398,10 +393,11 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       const abs = Math.abs(pct)
       let resType: string
       let thresholdBps: number
-      if (abs < 0.3) { resType = 'FLAT_X'; thresholdBps = 30 }
-      else if (abs < 3) { resType = pct < 0 ? 'DOWN_0' : 'UP_X'; thresholdBps = 30 }
-      else if (abs < 30) { resType = pct < 0 ? 'DOWN_300' : 'UP_300'; thresholdBps = 300 }
-      else { resType = pct < 0 ? 'DOWN_3000' : 'UP_3000'; thresholdBps = 3000 }
+      // Snapshot fallback — mirrors the data-node EMA path's floor logic.
+      // Below the 20-bps binary floor → up_0/down_0 (any-move-wins). Above
+      // it → up_x/down_x at the exact 24h move in bps. flat_x retired.
+      if (abs < 0.2) { resType = pct < 0 ? 'DOWN_0' : 'UP_0'; thresholdBps = 0 }
+      else { resType = pct < 0 ? 'DOWN_X' : 'UP_X'; thresholdBps = Math.min(Math.round(abs * 100), 10000) }
       map.set(market.assetId, { resType, thresholdBps })
     }
     return map
@@ -558,10 +554,8 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                       resInfo?.resType ?? (() => {
                         const pct = parseFloat(market.changePct ?? '0')
                         const abs = Math.abs(pct)
-                        if (abs < 0.3) return 'FLAT_X'
-                        if (abs < 3) return pct < 0 ? 'DOWN_0' : 'UP_X'
-                        if (abs < 30) return pct < 0 ? 'DOWN_300' : 'UP_300'
-                        return pct < 0 ? 'DOWN_3000' : 'UP_3000'
+                        if (abs < 0.2) return pct < 0 ? 'DOWN_0' : 'UP_0'
+                        return pct < 0 ? 'DOWN_X' : 'UP_X'
                       })(),
                       resInfo?.thresholdBps
                     )}

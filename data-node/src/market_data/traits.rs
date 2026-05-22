@@ -140,166 +140,103 @@ pub fn load_all_asset_entries(json_str: &str) -> Result<Vec<AssetEntry>> {
 
 /// How the batch engine should calibrate thresholds for this source.
 ///
-/// Each source lives in a different volatility universe. PumpFun tokens
-/// swing 50% in 5 minutes; Swiss weather barely moves 0.1° in an hour.
-/// The strategy tells the batch engine how to set thresholds so that
-/// ~50% of bets resolve UP and ~50% DOWN.
+/// Every source has its own rate of change. PumpFun tokens swing 50%
+/// in 5 minutes; Swiss weather barely moves 0.1° in an hour. The
+/// strategy says how aggressively the batch engine smooths past moves
+/// into the next threshold so that ~50% of bets resolve UP and ~50%
+/// DOWN.
+///
+/// One calibration mode: exponential moving average of |change_pct|
+/// over recent settled batches. `ema_change_span` controls how short
+/// the memory is — small span chases regime shifts, large span sits
+/// still. `fixed_threshold_bps`, when set, replaces the EMA entirely.
 #[derive(Debug, Clone, Copy)]
 pub struct BatchStrategy {
-    /// How many recent settlements to use for median calibration.
-    /// Short lookback (10) tracks regime changes in volatile sources.
-    /// Long lookback (48) smooths noise in slow-changing sources.
-    pub lookback_ticks: usize,
-
     /// Floor — never set threshold below this (bps).
-    /// Prevents trivially won bets on noise.
+    /// Prevents trivially won bets on pure noise.
     pub min_threshold_bps: u32,
 
     /// Ceiling — never exceed this (bps).
     /// Prevents impossible-to-win bets.
     pub max_threshold_bps: u32,
 
-    /// Resolution type when median is near zero (no directional trend).
-    /// "up_0" = any positive wins (binary coin-flip).
-    /// "flat_x" = flat if below threshold (ternary: flat/up/down).
-    pub zero_trend_type: &'static str,
+    /// EMA span over the last N settled batches' |change_pct| (bps).
+    /// α = 2 / (span + 1). Short span = jumpy, long span = smooth.
+    /// Bootstrap requires at least 3 settlements; below that, falls
+    /// through to single-settlement and 24h-history backstops.
+    pub ema_change_span: usize,
 
-    /// Reference lookback for the resolver (seconds).
-    /// None = compare to previous tick end (default).
-    /// Some(86400) = compare to the value 24 hours ago.
-    /// Stored in batch config for the oracle resolver to read.
-    pub reference_lookback_secs: Option<u64>,
-
-    /// When true, the batch engine never picks the `flat_x` resolution
-    /// type. Stationary markets become `up_0`/`down_0` instead — any
-    /// move wins, no refund band. Prediction-market sources (polymarket,
-    /// sports books) need this: their prices barely move within a tick,
-    /// `flat_x` collapses every market to a refund, and the parimutuel
-    /// returns every player's deposit. Bots cannot trade against each
-    /// other if the venue refuses to declare a winner.
-    pub force_binary_resolution: bool,
-
-    /// When `Some(bps)`, bypass median / last_batch / 24h_history calibration
-    /// entirely and use a flat fixed threshold for every asset in this source.
-    /// The resolution type is decided by the asset's most recent directional
-    /// hint (median sign if available, else `up_x`). Used by prediction-market
-    /// sources where 24h cumulative drift dwarfs 5-min tick movement — a
-    /// volatility-derived threshold (e.g. 344 bps from 3.44% over 24h) is two
-    /// orders of magnitude larger than the actual per-tick move and produces
-    /// rounds where every market refunds. A small fixed value (15–20 bps)
-    /// crosses on most ticks while still filtering pure noise.
+    /// When `Some(bps)`, bypass EMA calibration entirely and use a
+    /// flat fixed threshold for every asset in this source. The
+    /// resolution direction is still chosen per asset from the last
+    /// settled batch's sign. Useful for sources whose per-tick move
+    /// is uniform across all markets and any history-derived value
+    /// would only add noise.
     pub fixed_threshold_bps: Option<u32>,
-
-    /// When `Some(n)`, derive each market's threshold from the median of
-    /// the absolute price deltas across the last `n` tick samples in
-    /// `market_prices`. With threshold = median |Δ|, ~50% of past ticks
-    /// crossed it — so a batch of N markets averages to roughly N/2 UP
-    /// winners and N/2 DOWN winners. The vaults can finally trade.
-    ///
-    /// The window is in raw samples, not seconds. With polymarket syncing
-    /// every 5 minutes, 30 samples ≈ 2.5h of history — long enough to
-    /// smooth single-tick noise, short enough to follow regime changes.
-    /// Clamped by `min_threshold_bps` / `max_threshold_bps`.
-    ///
-    /// Takes precedence over `fixed_threshold_bps` when both are set.
-    pub median_recent_delta_window: Option<usize>,
 }
 
 impl BatchStrategy {
-    /// Default: median of 20 ticks, no special reference, 0-10000 bps range.
+    /// Default: short EMA, full 0-10000 bps range.
     pub const DEFAULT: Self = Self {
-        lookback_ticks: 20,
         min_threshold_bps: 0,
         max_threshold_bps: 10000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: false,
+        ema_change_span: 10,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Fast volatile source (meme tokens, live streams).
-    /// Short lookback to track regime changes.
+    /// Short EMA chases regime shifts; floor at 0.5% to drop noise.
     pub const FAST_VOLATILE: Self = Self {
-        lookback_ticks: 10,
-        min_threshold_bps: 50,   // at least 0.5% move to win
+        min_threshold_bps: 50,
         max_threshold_bps: 10000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: false,
+        ema_change_span: 8,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Slow environmental source (weather, air quality, tides).
-    /// Long lookback, compare to 24h ago for meaningful bets.
+    /// Long EMA smooths through hourly noise.
     pub const ENVIRONMENTAL: Self = Self {
-        lookback_ticks: 48,
         min_threshold_bps: 0,
         max_threshold_bps: 5000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: Some(86400), // 24h
-        force_binary_resolution: false,
+        ema_change_span: 24,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Macro/daily source (rates, bonds, inflation).
-    /// Long lookback, tight range — these barely move.
+    /// Long EMA, tight ceiling — these barely move.
     pub const MACRO_DAILY: Self = Self {
-        lookback_ticks: 30,
         min_threshold_bps: 0,
         max_threshold_bps: 1000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: false,
+        ema_change_span: 14,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Engagement/social source (reddit, twitch, hackernews).
-    /// High variance, regime changes common.
+    /// Medium EMA, regime changes common.
     pub const ENGAGEMENT: Self = Self {
-        lookback_ticks: 15,
         min_threshold_bps: 10,
         max_threshold_bps: 10000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: false,
+        ema_change_span: 10,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Status/event source (transit delays, outages, alerts).
     /// Binary-ish data, small thresholds.
     pub const STATUS: Self = Self {
-        lookback_ticks: 20,
         min_threshold_bps: 0,
         max_threshold_bps: 5000,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: false,
+        ema_change_span: 10,
         fixed_threshold_bps: None,
-        median_recent_delta_window: None,
     };
 
     /// Probability source (polymarket, sports odds).
-    /// Already 0-100, prices barely move within a tick.
-    ///
-    /// `force_binary_resolution = true` rules out `flat_x` so stationary
-    /// markets don't collapse to refund. `median_recent_delta_window` derives
-    /// each market's threshold from its own recent tick history — median |Δ|
-    /// over the last 30 samples (~2.5 h at 5-min sync). 50% of past ticks
-    /// crossed it, 50% didn't — the question is finally fair.
+    /// Already 0-100, prices barely move within a tick. Tight ceiling
+    /// keeps the question fair even when an asset went wild last batch.
     pub const PROBABILITY: Self = Self {
-        lookback_ticks: 20,
         min_threshold_bps: 1,
         max_threshold_bps: 200,
-        zero_trend_type: "up_0",
-        reference_lookback_secs: None,
-        force_binary_resolution: true,
+        ema_change_span: 10,
         fixed_threshold_bps: None,
-        median_recent_delta_window: Some(30),
     };
 }
 

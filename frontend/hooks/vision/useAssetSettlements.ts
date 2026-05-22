@@ -30,7 +30,9 @@ export interface AssetSettlement {
   /** Threshold in bps used to resolve this batch. Zero for binary up_0/down_0
    *  markets, or for legacy rows from before the oracle persisted it. */
   thresholdBps: number
-  /** 0 = unknown, 1 = up_x, 2 = down_x, 3 = flat_x, 4 = up_0, 5 = down_0, etc. */
+  /** 0 = unknown, 1 = up_x, 2 = down_x, 4 = up_0, 5 = down_0, etc.
+   *  Type 3 (flat_x) is retired — new batches never emit it, but legacy
+   *  rows from before the EMA migration may still report it. */
   resolutionType: number
   players: AssetSettlementPlayer[]
 }

@@ -12,7 +12,9 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getTxUrl } from '@/lib/utils/explorer'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
-// Maps to IVision.ResolutionType enum (see resolver.rs for full logic)
+// Maps to IVision.ResolutionType enum (see resolver.rs for full logic).
+// FLAT_X (value 7) intentionally omitted — stationary markets resolve as
+// up_0/down_0 instead so the parimutuel never collapses to a full refund.
 const RESOLUTION_TYPES = [
   { value: 0, label: 'UP_0', description: 'Up (any positive)' },
   { value: 1, label: 'UP_30', description: 'Up (> 0.3%)' },
@@ -21,7 +23,6 @@ const RESOLUTION_TYPES = [
   { value: 4, label: 'DOWN_30', description: 'Down (> 0.3%)' },
   { value: 5, label: 'DOWN_X', description: 'Down (custom threshold)' },
   { value: 6, label: 'FLAT_0', description: 'Flat (exactly 0)' },
-  { value: 7, label: 'FLAT_X', description: 'Flat (custom threshold)' },
   { value: 8, label: 'UP_300', description: 'Up (> 3%)' },
   { value: 9, label: 'UP_3000', description: 'Up (> 30%)' },
   { value: 10, label: 'DOWN_300', description: 'Down (> 3%)' },
@@ -44,7 +45,7 @@ const STEPS: Step[] = ['markets', 'configure', 'preview', 'confirm']
 // Step labels are rendered using t() below
 
 function isCustomThresholdType(resType: number): boolean {
-  return resType === 2 || resType === 5 || resType === 7 // UP_X, DOWN_X, FLAT_X
+  return resType === 2 || resType === 5 // UP_X, DOWN_X
 }
 
 interface MarketConfig {

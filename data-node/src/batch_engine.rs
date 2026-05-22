@@ -234,7 +234,8 @@ impl SourceHealthTracker {
 #[serde(rename_all = "camelCase")]
 pub struct BatchMarket {
     pub asset_id: String,
-    /// Resolution type: flat_x, up_x, up_300, or up_3000 (based on volatility).
+    /// Resolution type: `up_x` / `down_x` (per-market EMA threshold) or `up_0` / `down_0`
+    /// (any-move-wins floor). The legacy `flat_x` / `up_300` / `up_3000` types are no longer emitted.
     pub resolution_type: String,
     /// Threshold in basis points (e.g. 150 = 1.5%). Clamped to 10000 (100%).
     pub threshold_bps: u32,
@@ -468,106 +469,74 @@ async fn get_all_24h_changes(
     Ok(result)
 }
 
-// median_lookback_ticks removed — strategies now live in each source's
-// `batch_strategy()` method and are read via get_strategy().
-
-/// Per-asset median absolute Δ (in bps) over the last `window_minutes` of
-/// `market_prices`. One bulk query, no per-asset loop.
+/// Per-asset EMA of |change_pct| in bps over the last `span` settled batches.
 ///
-/// Used by sources with `median_recent_delta_window` set — prediction
-/// markets, sports books, anything where a 5-min move differs fundamentally
-/// from a 24h move and the per-tick scale is what matters.
+/// One bulk query, EMA folded in Rust. α = 2/(span+1); samples are weighted
+/// chronologically — oldest first, most recent contributes α to the result.
+/// Returns no entry for assets with fewer than `MIN_EMA_SAMPLES` settlements;
+/// the caller falls through to single-settlement and 24h-history backstops.
 ///
-/// `threshold = median |Δ|` ⇒ ~50% of past ticks crossed it, ~50% didn't.
-/// The question is fair. Bots with edge win; bots without lose.
-async fn get_median_recent_delta_bps(
+/// `threshold = ema(|Δ|)` ⇒ the threshold tracks how much this asset has
+/// been moving lately. Smooth across many batches, responsive to regime
+/// shifts within the span. Stable enough that the same market reads
+/// roughly the same threshold across consecutive batches.
+async fn get_ema_change_bps(
     pool: &PgPool,
     source_id: &str,
     asset_ids: &[String],
-    window_minutes: u32,
+    span: usize,
 ) -> Result<HashMap<String, u32>, sqlx::Error> {
-    if asset_ids.is_empty() {
+    const MIN_EMA_SAMPLES: usize = 3;
+    if asset_ids.is_empty() || span == 0 {
         return Ok(HashMap::new());
     }
 
-    let interval = format!("{} minutes", window_minutes);
-
-    let rows: Vec<(String, Option<f64>)> = sqlx::query_as(
+    let rows: Vec<(String, f64, i64)> = sqlx::query_as(
         r#"
-        WITH samples AS (
-            SELECT asset_id,
-                   abs(
-                       (value - lag(value) OVER (PARTITION BY asset_id ORDER BY fetched_at))
-                       / NULLIF(lag(value) OVER (PARTITION BY asset_id ORDER BY fetched_at), 0)
-                   )::float8 * 10000.0 AS delta_bps
-            FROM market_prices
-            WHERE source = $1
+        WITH ranked AS (
+            SELECT asset_id, change_pct::float8 AS pct,
+                   ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY settled_at DESC) AS rn
+            FROM batch_settlements
+            WHERE source_id = $1
               AND asset_id = ANY($2)
-              AND fetched_at > NOW() - $3::interval
-              AND value IS NOT NULL
         )
-        SELECT asset_id,
-               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY delta_bps) AS median_bps
-        FROM samples
-        WHERE delta_bps IS NOT NULL
-        GROUP BY asset_id
+        SELECT asset_id, pct, rn
+        FROM ranked
+        WHERE rn <= $3
+        ORDER BY asset_id, rn DESC
         "#,
     )
     .bind(source_id)
     .bind(asset_ids)
-    .bind(&interval)
+    .bind(span as i64)
     .fetch_all(pool)
     .await?;
 
-    Ok(rows
+    // Rows arrive grouped by asset_id, oldest-first within each asset.
+    let mut by_asset: HashMap<String, Vec<f64>> = HashMap::new();
+    for (id, pct, _rn) in rows {
+        if pct.is_nan() || pct.is_infinite() {
+            continue;
+        }
+        by_asset.entry(id).or_default().push(pct.abs() * 100.0); // bps
+    }
+
+    let alpha = 2.0 / (span as f64 + 1.0);
+    Ok(by_asset
         .into_iter()
-        .filter_map(|(id, median)| {
-            median.and_then(|m| {
-                if m.is_nan() || m.is_infinite() || m < 0.0 {
-                    None
-                } else {
-                    Some((id, m.round().min(u32::MAX as f64) as u32))
-                }
-            })
+        .filter_map(|(id, samples)| {
+            if samples.len() < MIN_EMA_SAMPLES {
+                return None;
+            }
+            let mut ema = samples[0];
+            for &x in &samples[1..] {
+                ema = alpha * x + (1.0 - alpha) * ema;
+            }
+            if !ema.is_finite() || ema < 0.0 {
+                return None;
+            }
+            Some((id, ema.round().min(u32::MAX as f64) as u32))
         })
-        .collect())
-}
-
-/// Get the median signed change % over the last N settlements per asset.
-/// Returns HashMap<asset_id, median_change_pct>.
-///
-/// The median of signed changes is the natural 50/50 threshold:
-/// by definition, ~50% of future values will exceed it.
-async fn get_median_settlement_changes(
-    pool: &PgPool,
-    source_id: &str,
-    lookback_ticks: usize,
-) -> Result<HashMap<String, f64>, sqlx::Error> {
-    // Postgres PERCENTILE_CONT gives exact median
-    let rows: Vec<(String, Option<f64>)> = sqlx::query_as(
-        r#"
-        WITH recent AS (
-            SELECT asset_id, change_pct::float8 as change_pct,
-                   ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY settled_at DESC) as rn
-            FROM batch_settlements
-            WHERE source_id = $1
-        )
-        SELECT asset_id,
-               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY change_pct) as median_change
-        FROM recent
-        WHERE rn <= $2
-        GROUP BY asset_id
-        HAVING COUNT(*) >= 3
-        "#,
-    )
-    .bind(source_id)
-    .bind(lookback_ticks as i64)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows
-        .into_iter()
-        .filter_map(|(id, median)| median.map(|m| (id, m)))
         .collect())
 }
 
@@ -667,73 +636,70 @@ async fn get_healthy_assets(
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
-/// Pick resolution type and threshold based on observed volatility (abs change %).
-/// Used as FALLBACK when median calibration has no data.
-/// - <0.3% avg change  → "flat_x" with 30 bps (low volatility)
-/// - 0.3-3%            → "up_x"   with 30 bps (moderate volatility)
-/// - 3-30%             → "up_300" with 300 bps (high volatility)
-/// - 30%+              → "up_3000" with 3000 bps (extreme volatility)
-fn resolution_for_volatility(change_pct: f64, force_binary: bool) -> (&'static str, u32) {
-    // Use the same exact-threshold logic as resolution_from_median —
-    // compute bps from the actual change instead of bucketing into presets.
-    let threshold_bps = sanitize_threshold_bps(change_pct.abs());
-    let up = change_pct >= 0.0;
-
-    if threshold_bps < 10 {
-        if force_binary {
-            return if up { ("up_0", 0) } else { ("down_0", 0) };
-        }
-        return ("flat_x", 30);
-    }
-    if threshold_bps < 20 {
-        return if up { ("up_0", 0) } else { ("down_0", 0) };
-    }
-    if up { ("up_x", threshold_bps) } else { ("down_x", threshold_bps) }
-}
-
-/// Convert a median signed change to a resolution type + threshold.
-///
-/// Three types only:
-/// - `flat_x` — nearly stationary (|median| < 0.1%), ternary: flat/up/down
-/// - `up_0` / `down_0` — trivial volatility (0.1-0.2%), any movement wins
-/// - `up_x` / `down_x` — everything else, exact median threshold for 50/50
-fn resolution_from_median(median_change_pct: f64, force_binary: bool) -> (&'static str, u32) {
-    let threshold_bps = sanitize_threshold_bps(median_change_pct.abs());
-    let up = median_change_pct >= 0.0;
-
-    // Nearly stationary — flat within ±threshold. With `force_binary`
-    // we never sit on the fence; any move declares a winner.
-    if threshold_bps < 10 {
-        if force_binary {
-            return if up { ("up_0", 0) } else { ("down_0", 0) };
-        }
-        return ("flat_x", 30);
-    }
-
-    // Trivial volatility — any directional movement wins
-    if threshold_bps < 20 {
-        return if up { ("up_0", 0) } else { ("down_0", 0) };
-    }
-
-    // Everything else — exact median threshold, 50/50 by construction
-    if up { ("up_x", threshold_bps) } else { ("down_x", threshold_bps) }
-}
-
 /// Clamp threshold_bps to the source's strategy bounds.
 fn clamp_threshold(bps: u32, strategy: &BatchStrategy) -> u32 {
     bps.max(strategy.min_threshold_bps).min(strategy.max_threshold_bps)
 }
 
+/// Build a per-asset (resolution_type, threshold_bps, source_tag) from a
+/// directional hint and a raw threshold in bps. Drops `flat_x` entirely:
+/// trivial moves resolve up_0/down_0 (any movement wins), and the resolver
+/// declares a winner instead of refunding.
+fn build_market_threshold(
+    raw_bps: u32,
+    direction_pct: f64,
+    strategy: &BatchStrategy,
+    threshold_source: &str,
+) -> (&'static str, u32, &'static str) {
+    let up = direction_pct >= 0.0;
+    let clamped = clamp_threshold(raw_bps, strategy);
+    if clamped < 20 {
+        if up {
+            ("up_0", 0, threshold_source_to_label(threshold_source, true))
+        } else {
+            ("down_0", 0, threshold_source_to_label(threshold_source, true))
+        }
+    } else if up {
+        ("up_x", clamped, threshold_source_to_label(threshold_source, false))
+    } else {
+        ("down_x", clamped, threshold_source_to_label(threshold_source, false))
+    }
+}
+
+fn threshold_source_to_label(source: &str, floored: bool) -> &'static str {
+    match (source, floored) {
+        ("ema", true) => "ema_floor",
+        ("ema", false) => "ema",
+        ("last_settlement", true) => "last_settlement_floor",
+        ("last_settlement", false) => "last_settlement",
+        ("24h_history", true) => "24h_history_floor",
+        ("24h_history", false) => "24h_history",
+        ("fixed", _) => "fixed",
+        _ => "no_data",
+    }
+}
+
 /// Compute thresholds for all assets of a source in batch.
 ///
-/// Strategy: **median-first calibration** for 50/50 outcomes.
-/// Each source defines its own `BatchStrategy` via the `MarketDataSource` trait.
+/// Calibration: EMA of `|change_pct|` over each asset's last
+/// `ema_change_span` settled batches. The EMA tracks how much the market
+/// has been moving lately, smoothed across many settlements, responsive
+/// to regime shifts within the span. Stable across consecutive batches —
+/// the same asset reads roughly the same threshold from one round to the
+/// next, regardless of which single settlement just landed.
 ///
-/// Priority:
-/// 1. Median of last N settlement changes (50/50 by construction)
-/// 2. Last batch settlement (fallback to volatility bands)
-/// 3. 24h price history (fallback to volatility bands)
-/// 4. No data → source's `zero_trend_type`
+/// Direction comes from the sign of the last settled batch. Falls back
+/// to the 24h price-history sign when no settlement exists yet, then to
+/// `up` as a final default.
+///
+/// Priority for the threshold value:
+/// 1. EMA over last N settlements (≥ 3 samples)
+/// 2. Last single settlement |Δ| (when EMA hasn't bootstrapped yet)
+/// 3. 24h price-history |Δ| (newly-listed asset, no settlements at all)
+/// 4. `min_threshold_bps` floor (no data anywhere)
+///
+/// `fixed_threshold_bps`, when set on the strategy, replaces every
+/// calibration path and uses the same direction logic.
 async fn compute_asset_thresholds(
     pool: &PgPool,
     source_id: &str,
@@ -741,167 +707,104 @@ async fn compute_asset_thresholds(
 ) -> Vec<BatchMarket> {
     let strategy = get_strategy(source_id);
 
-    // Per-asset median-recent-Δ mode. Each market's threshold is its own
-    // median |Δ| over the last `window_minutes` of `market_prices`. ~50%
-    // of past ticks crossed it, ~50% didn't — the question is fair.
-    //
-    // Takes precedence over `fixed_threshold_bps`: when both are set,
-    // dynamic per-market wins over flat per-source.
-    if let Some(window) = strategy.median_recent_delta_window {
-        // Convert sample count to a minute interval. Sync intervals on
-        // probability sources sit around 5 min, so 30 samples ≈ 150 min.
-        // A x4 safety factor (sample slippage, sync gaps) keeps the
-        // SQL window from starving when the source hiccups.
-        let window_minutes = ((window as u32) * 5 * 4).max(60);
+    // Direction comes from the last settled batch — falling back to the
+    // 24h sign for assets that have never settled. This is the same
+    // hint shared by every calibration path below.
+    let last_settlements = get_all_last_settlement_changes(pool, source_id)
+        .await
+        .unwrap_or_default();
+    let h24 = if last_settlements.len() < asset_ids.len() {
+        get_all_24h_changes(pool, source_id).await.unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
 
-        let medians = get_median_recent_delta_bps(pool, source_id, asset_ids, window_minutes)
-            .await
-            .unwrap_or_default();
+    let direction_pct = |asset_id: &str| -> f64 {
+        last_settlements
+            .get(asset_id)
+            .copied()
+            .filter(|v| *v != 0.0)
+            .or_else(|| h24.get(asset_id).copied())
+            .unwrap_or(0.0)
+    };
 
-        // Direction hint: last settlement sign, else 24h sign, else up.
-        let last = get_all_last_settlement_changes(pool, source_id)
-            .await
-            .unwrap_or_default();
-        let h24 = if last.len() < asset_ids.len() {
-            get_all_24h_changes(pool, source_id).await.unwrap_or_default()
-        } else {
-            HashMap::new()
-        };
-
+    // Fixed-threshold mode bypasses every calibration path. Used by
+    // sources whose per-tick move is uniform across markets and history
+    // would only add noise.
+    if let Some(bps) = strategy.fixed_threshold_bps {
         return asset_ids
             .iter()
             .map(|asset_id| {
-                let dir = last
-                    .get(asset_id)
-                    .copied()
-                    .or_else(|| h24.get(asset_id).copied())
-                    .unwrap_or(0.0);
-                let up = dir >= 0.0;
-                let res_type = if up { "up_x" } else { "down_x" };
-
-                // No history → floor. Otherwise clamp to strategy bounds.
-                let (threshold_bps, source) = match medians.get(asset_id).copied() {
-                    Some(median) => (clamp_threshold(median, &strategy), "median_recent_delta"),
-                    None => (strategy.min_threshold_bps, "median_recent_delta_floor"),
-                };
-
+                let (res_type, threshold_bps, label) =
+                    build_market_threshold(bps, direction_pct(asset_id), &strategy, "fixed");
                 BatchMarket {
                     asset_id: asset_id.clone(),
                     resolution_type: res_type.to_string(),
                     threshold_bps,
-                    threshold_source: source.to_string(),
+                    threshold_source: label.to_string(),
                 }
             })
             .collect();
     }
 
-    // Fixed-threshold mode bypasses every calibration path.
-    // Used by PROBABILITY sources whose per-tick movement is orders of
-    // magnitude smaller than any volatility-derived threshold.
-    if let Some(bps) = strategy.fixed_threshold_bps {
-        // Direction hint: last settlement sign, then 24h sign, else up.
-        let last = get_all_last_settlement_changes(pool, source_id)
-            .await
-            .unwrap_or_default();
-        let h24 = if last.len() < asset_ids.len() {
-            get_all_24h_changes(pool, source_id).await.unwrap_or_default()
-        } else {
-            HashMap::new()
-        };
-        return asset_ids
-            .iter()
-            .map(|asset_id| {
-                let dir = last
-                    .get(asset_id)
-                    .copied()
-                    .or_else(|| h24.get(asset_id).copied())
-                    .unwrap_or(0.0);
-                let up = dir >= 0.0;
-                let res_type = if up { "up_x" } else { "down_x" };
-                BatchMarket {
-                    asset_id: asset_id.clone(),
-                    resolution_type: res_type.to_string(),
-                    threshold_bps: bps,
-                    threshold_source: "fixed".to_string(),
-                }
-            })
-            .collect();
-    }
-
-    // Primary: median calibration from settlement history
-    let median_changes = get_median_settlement_changes(pool, source_id, strategy.lookback_ticks)
+    let ema = get_ema_change_bps(pool, source_id, asset_ids, strategy.ema_change_span)
         .await
         .unwrap_or_default();
-
-    // Fallback sources (only queried if median is incomplete)
-    let settlement_changes = if median_changes.len() < asset_ids.len() {
-        get_all_last_settlement_changes(pool, source_id)
-            .await
-            .unwrap_or_default()
-    } else {
-        HashMap::new()
-    };
-    let history_changes = if median_changes.len() + settlement_changes.len() < asset_ids.len() {
-        get_all_24h_changes(pool, source_id)
-            .await
-            .unwrap_or_default()
-    } else {
-        HashMap::new()
-    };
 
     asset_ids
         .iter()
         .map(|asset_id| {
-            // 1. Median calibration — 50/50 by construction
-            if let Some(&median_pct) = median_changes.get(asset_id) {
-                if !median_pct.is_nan() && !median_pct.is_infinite() {
-                    let (res_type, raw_bps) =
-                        resolution_from_median(median_pct, strategy.force_binary_resolution);
-                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
+            let dir = direction_pct(asset_id);
+
+            // 1. EMA — the primary calibration path
+            if let Some(&bps) = ema.get(asset_id) {
+                let (res_type, threshold_bps, label) =
+                    build_market_threshold(bps, dir, &strategy, "ema");
+                return BatchMarket {
+                    asset_id: asset_id.clone(),
+                    resolution_type: res_type.to_string(),
+                    threshold_bps,
+                    threshold_source: label.to_string(),
+                };
+            }
+
+            // 2. Single last settlement — EMA hasn't bootstrapped yet
+            if let Some(&change_pct) = last_settlements.get(asset_id) {
+                if change_pct.is_finite() && change_pct.abs() > 0.0 {
+                    let raw_bps = sanitize_threshold_bps(change_pct.abs());
+                    let (res_type, threshold_bps, label) =
+                        build_market_threshold(raw_bps, dir, &strategy, "last_settlement");
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
                         threshold_bps,
-                        threshold_source: "median".to_string(),
+                        threshold_source: label.to_string(),
                     };
                 }
             }
 
-            // 2. Last settlement (fallback — volatility bands)
-            if let Some(&change_pct) = settlement_changes.get(asset_id) {
-                if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, raw_bps) =
-                        resolution_for_volatility(change_pct, strategy.force_binary_resolution);
-                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
+            // 3. 24h history — asset has never settled
+            if let Some(&change_pct) = h24.get(asset_id) {
+                if change_pct.is_finite() && change_pct.abs() > 0.0 {
+                    let raw_bps = sanitize_threshold_bps(change_pct.abs());
+                    let (res_type, threshold_bps, label) =
+                        build_market_threshold(raw_bps, dir, &strategy, "24h_history");
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
                         threshold_bps,
-                        threshold_source: "last_batch".to_string(),
+                        threshold_source: label.to_string(),
                     };
                 }
             }
 
-            // 3. 24h history (fallback — volatility bands)
-            if let Some(&change_pct) = history_changes.get(asset_id) {
-                if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, raw_bps) =
-                        resolution_for_volatility(change_pct, strategy.force_binary_resolution);
-                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
-                    return BatchMarket {
-                        asset_id: asset_id.clone(),
-                        resolution_type: res_type.to_string(),
-                        threshold_bps,
-                        threshold_source: "24h_history".to_string(),
-                    };
-                }
-            }
-
-            // 4. No data — use source's zero_trend_type
+            // 4. No data anywhere — floor + default to up_0
+            let (res_type, threshold_bps, _) =
+                build_market_threshold(strategy.min_threshold_bps, dir, &strategy, "no_data");
             BatchMarket {
                 asset_id: asset_id.clone(),
-                resolution_type: strategy.zero_trend_type.to_string(),
-                threshold_bps: strategy.min_threshold_bps,
+                resolution_type: res_type.to_string(),
+                threshold_bps,
                 threshold_source: "no_data".to_string(),
             }
         })
@@ -1530,65 +1433,71 @@ mod tests {
     }
 
     #[test]
-    fn test_resolution_for_volatility() {
-        // Stationary band (< 0.1% / 10 bps) → flat_x
-        assert_eq!(resolution_for_volatility(0.0, false), ("flat_x", 30));
-        assert_eq!(resolution_for_volatility(0.05, false), ("flat_x", 30));
-        assert_eq!(resolution_for_volatility(-0.05, false), ("flat_x", 30));
+    fn test_build_market_threshold_direction() {
+        let s = BatchStrategy::DEFAULT;
 
-        // Trivial volatility (0.1-0.2%) → up_0 / down_0
-        assert_eq!(resolution_for_volatility(0.1, false), ("up_0", 0));
-        assert_eq!(resolution_for_volatility(-0.1, false), ("down_0", 0));
-
-        // Moderate volatility → up_x / down_x with exact bps
-        assert_eq!(resolution_for_volatility(0.3, false), ("up_x", 30));
-        assert_eq!(resolution_for_volatility(2.99, false), ("up_x", 299));
-        assert_eq!(resolution_for_volatility(-0.3, false), ("down_x", 30));
-        assert_eq!(resolution_for_volatility(-2.99, false), ("down_x", 299));
-
-        // force_binary=true rewrites the stationary band into up_0/down_0.
-        assert_eq!(resolution_for_volatility(0.0, true), ("up_0", 0));
-        assert_eq!(resolution_for_volatility(0.05, true), ("up_0", 0));
-        assert_eq!(resolution_for_volatility(-0.05, true), ("down_0", 0));
+        // Direction follows the sign of the last settlement.
+        let (rt, bps, _) = build_market_threshold(150, 0.5, &s, "ema");
+        assert_eq!((rt, bps), ("up_x", 150));
+        let (rt, bps, _) = build_market_threshold(150, -0.5, &s, "ema");
+        assert_eq!((rt, bps), ("down_x", 150));
     }
 
     #[test]
-    fn test_resolution_from_median() {
-        // Nearly stationary → flat_x
-        assert_eq!(resolution_from_median(0.0, false), ("flat_x", 30));
-        assert_eq!(resolution_from_median(0.05, false), ("flat_x", 30));
-        assert_eq!(resolution_from_median(-0.05, false), ("flat_x", 30));
+    fn test_build_market_threshold_floor_into_up_0() {
+        let s = BatchStrategy::DEFAULT;
 
-        // Trivial volatility → up_0 / down_0
-        assert_eq!(resolution_from_median(0.15, false), ("up_0", 0));
-        assert_eq!(resolution_from_median(-0.15, false), ("down_0", 0));
+        // Below the 20-bps binary floor → up_0 / down_0, never flat_x.
+        let (rt, bps, _) = build_market_threshold(0, 0.0, &s, "ema");
+        assert_eq!((rt, bps), ("up_0", 0));
+        let (rt, bps, _) = build_market_threshold(5, -0.1, &s, "ema");
+        assert_eq!((rt, bps), ("down_0", 0));
+        let (rt, bps, _) = build_market_threshold(19, 0.1, &s, "ema");
+        assert_eq!((rt, bps), ("up_0", 0));
 
-        // Everything else → up_x / down_x with exact median threshold
-        assert_eq!(resolution_from_median(0.3, false), ("up_x", 30));
-        assert_eq!(resolution_from_median(0.5, false), ("up_x", 50));
-        assert_eq!(resolution_from_median(-0.3, false), ("down_x", 30));
-        assert_eq!(resolution_from_median(1.0, false), ("up_x", 100));
-        assert_eq!(resolution_from_median(-1.5, false), ("down_x", 150));
-        assert_eq!(resolution_from_median(3.0, false), ("up_x", 300));
-        assert_eq!(resolution_from_median(10.0, false), ("up_x", 1000));
-        assert_eq!(resolution_from_median(-15.0, false), ("down_x", 1500));
-        assert_eq!(resolution_from_median(50.0, false), ("up_x", 5000));
+        // At and above 20 bps → up_x / down_x.
+        let (rt, bps, _) = build_market_threshold(20, 0.1, &s, "ema");
+        assert_eq!((rt, bps), ("up_x", 20));
+    }
 
-        // force_binary=true never returns flat_x for the stationary band.
-        assert_eq!(resolution_from_median(0.0, true), ("up_0", 0));
-        assert_eq!(resolution_from_median(-0.05, true), ("down_0", 0));
+    #[test]
+    fn test_build_market_threshold_clamps() {
+        let probability = BatchStrategy::PROBABILITY;
+
+        // PROBABILITY caps max at 200 bps even if EMA reports more.
+        let (rt, bps, _) = build_market_threshold(5000, 1.0, &probability, "ema");
+        assert_eq!((rt, bps), ("up_x", 200));
+
+        // FAST_VOLATILE floors min at 50 bps.
+        let fast = BatchStrategy::FAST_VOLATILE;
+        let (rt, bps, _) = build_market_threshold(10, 1.0, &fast, "ema");
+        assert_eq!((rt, bps), ("up_x", 50));
+    }
+
+    #[test]
+    fn test_ema_fold_math() {
+        // Hand-roll the same fold the helper does and confirm it matches
+        // the textbook EMA recurrence on a fixed sample sequence.
+        let samples = [100.0, 200.0, 150.0, 175.0, 160.0_f64];
+        let span = 10_usize;
+        let alpha = 2.0 / (span as f64 + 1.0);
+        let mut ema = samples[0];
+        for &x in &samples[1..] {
+            ema = alpha * x + (1.0 - alpha) * ema;
+        }
+        // The most recent value pulls the EMA upward from the bootstrap.
+        assert!(ema > samples[0]);
+        assert!(ema < samples.iter().cloned().fold(0.0_f64, f64::max));
     }
 
     #[test]
     fn test_strategy_registry() {
-        // Unregistered source returns DEFAULT
         let s = get_strategy("unknown_source_xyz");
-        assert_eq!(s.lookback_ticks, BatchStrategy::DEFAULT.lookback_ticks);
+        assert_eq!(s.ema_change_span, BatchStrategy::DEFAULT.ema_change_span);
 
-        // Register a custom strategy
         register_strategy("test_src", BatchStrategy::FAST_VOLATILE);
         let s = get_strategy("test_src");
-        assert_eq!(s.lookback_ticks, BatchStrategy::FAST_VOLATILE.lookback_ticks);
+        assert_eq!(s.ema_change_span, BatchStrategy::FAST_VOLATILE.ema_change_span);
         assert_eq!(s.min_threshold_bps, BatchStrategy::FAST_VOLATILE.min_threshold_bps);
     }
 }

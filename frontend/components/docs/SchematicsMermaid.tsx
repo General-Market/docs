@@ -646,40 +646,29 @@ export function ResolutionDecisionFlow() {
 
         <Arrow x1={W / 2} y1={76} x2={W / 2} y2={102} curve={false} markerId="rd-arr-gray" />
 
-        {/* Three branches: UP_0/DOWN_0 (left), UP_30/DOWN_30 (center), FLAT_X (right) */}
+        {/* Two branches: UP_0/DOWN_0 (left), UP_X/DOWN_X (right) — flat_x retired. */}
 
         {/* LEFT branch: UP_0 / DOWN_0 → diamond pct > 0? */}
-        <Diamond cx={150} cy={260} w={150} h={70} text="pct > 0 ?" accent="gray" />
-        <Arrow x1={W / 2 - 60} y1={150} x2={210} y2={245} accent="gray" label="UP_0 / DOWN_0" markerId="rd-arr-gray" />
+        <Diamond cx={W / 2 - 180} cy={260} w={170} h={70} text="pct > 0 ?" accent="gray" />
+        <Arrow x1={W / 2 - 50} y1={150} x2={W / 2 - 130} y2={245} accent="gray" label="UP_0 / DOWN_0" markerId="rd-arr-gray" />
 
-        {/* CENTER branch: UP_30 / DOWN_30 */}
-        <Diamond cx={W / 2} cy={260} w={170} h={70} text="|pct| > 0.3% ?" accent="gray" />
-        <Arrow x1={W / 2} y1={180} x2={W / 2} y2={228} curve={false} accent="gray" label="UP_30 / DOWN_30" markerId="rd-arr-gray" />
-
-        {/* RIGHT branch: FLAT_X */}
-        <Diamond cx={W - 150} cy={260} w={170} h={70} text="|pct| < threshold ?" accent="gray" />
-        <Arrow x1={W / 2 + 60} y1={150} x2={W - 210} y2={245} accent="gray" label="FLAT_X" markerId="rd-arr-gray" />
+        {/* RIGHT branch: UP_X / DOWN_X — exact per-market threshold from EMA */}
+        <Diamond cx={W / 2 + 180} cy={260} w={200} h={70} text="|pct| > threshold ?" accent="gray" />
+        <Arrow x1={W / 2 + 50} y1={150} x2={W / 2 + 130} y2={245} accent="gray" label="UP_X / DOWN_X" markerId="rd-arr-gray" />
 
         {/* Outcomes */}
-        <Box x={40} y={380} w={130} h={64} title="DOWN wins" sub="pct < 0" accent="red" />
-        <Box x={200} y={380} w={130} h={64} title="UP wins" sub="pct > 0" accent="green" />
-        <Box x={W / 2 - 65} y={380} w={130} h={64} title="FLAT" sub="full refund" accent="orange" />
-        <Box x={W - 330} y={380} w={130} h={64} title="UP wins" sub="pct > +0.3%" accent="green" />
-        <Box x={W - 170} y={380} w={130} h={64} title="DOWN wins" sub="pct < −0.3%" accent="red" />
+        <Box x={W / 2 - 320} y={380} w={130} h={64} title="DOWN wins" sub="pct < 0" accent="red" />
+        <Box x={W / 2 - 160} y={380} w={130} h={64} title="UP wins" sub="pct > 0" accent="green" />
+        <Box x={W / 2 + 50} y={380} w={130} h={64} title="DOWN wins" sub="pct < −threshold" accent="red" />
+        <Box x={W / 2 + 210} y={380} w={130} h={64} title="UP wins" sub="pct > +threshold" accent="green" />
 
         {/* LEFT branch outcomes */}
-        <Arrow x1={120} y1={290} x2={105} y2={380} accent="red" label="No" markerId="rd-arr-red" />
-        <Arrow x1={180} y1={290} x2={265} y2={380} accent="green" label="Yes" markerId="rd-arr-green" />
-
-        {/* CENTER branch outcomes */}
-        <Arrow x1={W / 2 - 30} y1={290} x2={W / 2 - 250} y2={378} accent="green" label="pct > +0.3%" markerId="rd-arr-green" />
-        <Arrow x1={W / 2} y1={295} x2={W / 2} y2={378} curve={false} accent="orange" label="within band" markerId="rd-arr-orange" />
-        <Arrow x1={W / 2 + 30} y1={290} x2={W / 2 + 235} y2={378} accent="red" label="pct < −0.3%" markerId="rd-arr-red" />
+        <Arrow x1={W / 2 - 210} y1={290} x2={W / 2 - 255} y2={378} accent="red" label="No" markerId="rd-arr-red" />
+        <Arrow x1={W / 2 - 150} y1={290} x2={W / 2 - 95} y2={378} accent="green" label="Yes" markerId="rd-arr-green" />
 
         {/* RIGHT branch outcomes */}
-        <Arrow x1={W - 180} y1={290} x2={W - 105} y2={378} accent="red" label="No, pct < 0" markerId="rd-arr-red" />
-        <Arrow x1={W - 220} y1={290} x2={W - 265} y2={378} accent="green" label="No, pct > 0" markerId="rd-arr-green" />
-        <Arrow x1={W - 150} y1={295} x2={W / 2 + 5} y2={378} accent="orange" label="Yes" markerId="rd-arr-orange" />
+        <Arrow x1={W / 2 + 150} y1={290} x2={W / 2 + 115} y2={378} accent="red" label="pct < −x" markerId="rd-arr-red" />
+        <Arrow x1={W / 2 + 210} y1={290} x2={W / 2 + 275} y2={378} accent="green" label="pct > +x" markerId="rd-arr-green" />
       </svg>
       <figcaption>The threshold is the entire question. Cross it and the market speaks. Stay inside it and everyone goes home with what they brought.</figcaption>
     </figure>
