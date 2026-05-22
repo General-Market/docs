@@ -557,7 +557,12 @@ impl SyncEngine {
         }
 
         // Deactivate active assets that either:
-        // - Have no entry in market_prices_latest (never priced = dead/delisted)
+        // - Were registered ≥1h ago and still have no entry in market_prices_latest
+        //   (delisted, or upstream stopped reporting). The 1h grace window lets a
+        //   freshly-discovered asset survive long enough for the next fetch_prices
+        //   tick to populate its row — discovery-style sources (sports, flights)
+        //   register N assets per metadata cycle but only price them on the next
+        //   sync tick, so a zero-grace sweep nukes them seconds after birth.
         // - Have an entry in market_prices_latest with fetched_at older than 7 days
         let result = sqlx::query(
             r#"
@@ -566,10 +571,13 @@ impl SyncEngine {
             WHERE a.source = $1
               AND a.is_active = true
               AND (
-                -- Never priced: no row in latest at all
-                NOT EXISTS (
-                    SELECT 1 FROM market_prices_latest l
-                    WHERE l.source = a.source AND l.asset_id = a.asset_id
+                -- Never priced AND past the 1h grace window: dead/delisted
+                (
+                    a.updated_at < NOW() - INTERVAL '1 hour'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM market_prices_latest l
+                        WHERE l.source = a.source AND l.asset_id = a.asset_id
+                    )
                 )
                 OR
                 -- Had prices but stale: last price older than 7 days
