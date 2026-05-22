@@ -14,6 +14,7 @@ import {
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 import { toInternalId } from '@/lib/vision/source-ids'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
+import type { HistoryPoint } from '@/hooks/vision/useBulkMarketHistory'
 
 // ── Apple tokens ─────────────────────────────────────────────────────────────
 
@@ -32,11 +33,6 @@ const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Pick = 'up' | 'down'
-
-interface HistoryPoint {
-  ts: number
-  value: number
-}
 
 interface HumanMarketCardProps {
   sourceId: string
@@ -64,6 +60,12 @@ interface HumanMarketCardProps {
   selected?: boolean
   /** Called when the user clicks the tile body (not a pick button). */
   onSelect?: () => void
+  /**
+   * Pre-fetched 24h history. When provided, the card skips its own network
+   * call — the parent has already loaded the series via the bulk endpoint.
+   * Pass `undefined` while loading; pass `[]` when there is no data.
+   */
+  points?: HistoryPoint[]
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -103,6 +105,7 @@ export function HumanMarketCard({
   resolved,
   selected = false,
   onSelect,
+  points,
 }: HumanMarketCardProps) {
   const [imgErr, setImgErr] = useState(false)
   const name = market.name || market.symbol || market.assetId
@@ -204,6 +207,7 @@ export function HumanMarketCard({
         roundOpenAt={roundOpenAt}
         roundCloseAt={roundCloseAt}
         resolved={resolved}
+        externalPoints={points}
       />
 
       {/* Pick buttons — click here must not bubble up to onSelect */}
@@ -279,6 +283,8 @@ interface MarketChartProps {
   roundOpenAt: number | null
   roundCloseAt: number | null
   resolved: boolean
+  /** Pre-fetched 24h history from the parent's bulk hook. Skips local fetch. */
+  externalPoints?: HistoryPoint[]
 }
 
 function MarketChart({
@@ -288,20 +294,26 @@ function MarketChart({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  externalPoints,
 }: MarketChartProps) {
-  const [points, setPoints] = useState<HistoryPoint[] | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Local fetch is only the fallback path for callers that don't pre-fetch.
+  // The Vision human-trading page passes `externalPoints` so this effect is a no-op.
+  const [points, setPoints] = useState<HistoryPoint[] | null>(externalPoints ?? null)
+  const [loading, setLoading] = useState(externalPoints === undefined)
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (externalPoints !== undefined) {
+      setPoints(externalPoints)
+      setLoading(false)
+      setError(false)
+      return
+    }
     let cancelled = false
     setLoading(true)
     setError(false)
     const to = new Date()
-    // 24h lookback — gives context around the round window.
     const from = new Date(to.getTime() - 24 * 60 * 60 * 1000)
-    // The history endpoint speaks data-node internal IDs (e.g. "defi"),
-    // not display IDs (e.g. "defillama-ai-agents").
     const dataNodeId = toInternalId(sourceId)
     const url = `/api/market/history?source=${encodeURIComponent(dataNodeId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
     fetch(url, { signal: AbortSignal.timeout(12_000) })
@@ -331,7 +343,7 @@ function MarketChart({
     return () => {
       cancelled = true
     }
-  }, [sourceId, assetId])
+  }, [sourceId, assetId, externalPoints])
 
   // Compute open / close prices inside the round window.
   const { openPrice, closePrice, changePct, chartData, yDomain } = useMemo(() => {
@@ -440,14 +452,36 @@ function MarketChart({
             cursor={{ stroke: 'rgba(0,0,0,0.10)', strokeWidth: 1 }}
           />
 
-          {/* Round-open horizontal marker */}
+          {/* Round window: tinted vertical band marking the betting interval */}
+          {roundOpenAt != null && roundCloseAt != null && !showRect && (
+            <ReferenceArea
+              x1={roundOpenAt}
+              x2={roundCloseAt}
+              fill="#0071E3"
+              fillOpacity={0.05}
+              stroke="#0071E3"
+              strokeOpacity={0.18}
+              strokeWidth={1}
+              isFront={false}
+            />
+          )}
+
+          {/* Round-open horizontal marker (the threshold for UP/DOWN) */}
           {openPrice != null && (
             <ReferenceLine
               y={openPrice}
-              stroke="#D2D2D7"
+              stroke="#86868B"
               strokeDasharray="3 3"
               strokeWidth={1}
               isFront={false}
+              label={{
+                value: `Open ${formatBigUsd(openPrice)}`,
+                position: 'insideTopRight',
+                fill: '#1D1D1F',
+                fontSize: 10,
+                fontFamily: FONT_MONO,
+                offset: 4,
+              }}
             />
           )}
 

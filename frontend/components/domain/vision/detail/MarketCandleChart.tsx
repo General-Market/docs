@@ -72,6 +72,8 @@ interface MarketCandleChartProps {
   roundCloseAt: number | null
   /** True once the countdown has hit zero. */
   resolved: boolean
+  /** Fires once when the first history fetch + chart draw complete. */
+  onReady?: () => void
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -147,6 +149,7 @@ export function MarketCandleChart({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  onReady,
 }: MarketCandleChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1h')
   const [points, setPoints] = useState<HistoryPoint[] | null>(null)
@@ -297,6 +300,7 @@ export function MarketCandleChart({
   }, [points, timeframe, roundOpenAt, roundCloseAt, resolved])
 
   // -- Push candles into the series --
+  const firstDrawDone = useRef(false)
   useEffect(() => {
     if (!chartReady || !seriesRef.current) return
     if (candles.length === 0) {
@@ -312,7 +316,21 @@ export function MarketCandleChart({
     }))
     seriesRef.current.setData(data)
     chartRef.current?.timeScale().fitContent()
-  }, [candles, chartReady])
+    if (!firstDrawDone.current) {
+      firstDrawDone.current = true
+      onReady?.()
+    }
+  }, [candles, chartReady, onReady])
+
+  // If history fails or returns nothing, still resolve the parent's wait gate
+  // so the page doesn't sit on a loader forever.
+  useEffect(() => {
+    if (firstDrawDone.current) return
+    if (!loading && (error || points?.length === 0)) {
+      firstDrawDone.current = true
+      onReady?.()
+    }
+  }, [loading, error, points, onReady])
 
   // -- Overlay: round-open + close price lines --
   useEffect(() => {

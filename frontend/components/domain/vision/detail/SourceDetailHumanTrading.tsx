@@ -20,9 +20,11 @@ import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
+import { useBulkMarketHistory, type HistoryPoint } from '@/hooks/vision/useBulkMarketHistory'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useDeployment } from '@/hooks/useDeployment'
 import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
+import { toInternalId } from '@/lib/vision/source-ids'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { decodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 import { indexL3, getWalletRpcUrls } from '@/lib/wagmi'
@@ -179,14 +181,6 @@ function formatBigUsd(value: string | null): string {
   return `$${n.toFixed(2)}`
 }
 
-function formatChange(pct: string | null): { text: string; positive: boolean | null } {
-  if (pct == null) return { text: '—', positive: null }
-  const n = parseFloat(pct)
-  if (!isFinite(n)) return { text: '—', positive: null }
-  const sign = n > 0 ? '+' : ''
-  return { text: `${sign}${n.toFixed(2)}%`, positive: n === 0 ? null : n > 0 }
-}
-
 function formatCountdown(secs: number): string {
   if (secs <= 0) return '0:00'
   const m = Math.floor(secs / 60)
@@ -330,6 +324,18 @@ export function SourceDetailHumanTrading({
     return result
   }, [curatedMarkets, marketIds, activeBatch])
 
+  // -- Bulk 24h history for every curated market — one network call gates the
+  //    entire chart area, so the page never shows a row of staggered skeletons. --
+  const curatedAssetIds = useMemo(
+    () => curatedMarkets.map(m => m.assetId),
+    [curatedMarkets],
+  )
+  const dataNodeSourceId = useMemo(() => toInternalId(sourceId), [sourceId])
+  const {
+    data: historyByAsset,
+    isLoading: isBulkHistoryLoading,
+  } = useBulkMarketHistory(dataNodeSourceId, curatedAssetIds)
+
   // -- bettingEnd from the round (server-truth) --
   const { data: rounds } = useRounds(sourceId)
   const round = useMemo(() => {
@@ -338,8 +344,23 @@ export function SourceDetailHumanTrading({
   }, [rounds, activeBatch])
   const bettingEnd = round?.bettingEnd ?? null
   const remainingSecs = useSharedCountdown(bettingEnd)
-  const isBettingOpen = !!bettingEnd && remainingSecs > 0
-  const isRoundSettling = !!bettingEnd && remainingSecs === 0
+
+  // Round lifecycle. The oracle's /vision/rounds/active drops settled rounds,
+  // so between ticks `round` briefly becomes null even though the batch is alive.
+  // Treat that gap as "waiting for next round" — never as "no round is active".
+  type RoundPhase = 'open' | 'pending' | 'locked' | 'settling' | 'absent'
+  const roundPhase: RoundPhase = useMemo(() => {
+    if (!activeBatch) return 'absent'
+    if (!round) return 'pending'
+    if (round.status === 'betting' && !!bettingEnd && remainingSecs > 0) return 'open'
+    if (round.status === 'locked') return 'locked'
+    if (round.status === 'settling' || round.status === 'settled') return 'settling'
+    return 'pending'
+  }, [activeBatch, round, bettingEnd, remainingSecs])
+
+  const isBettingOpen = roundPhase === 'open'
+  const isBetweenRounds = roundPhase === 'pending' || roundPhase === 'locked' || roundPhase === 'settling'
+  const isRoundSettling = roundPhase === 'settling' || (roundPhase === 'open' && remainingSecs === 0)
 
   // -- Round window for the per-card chart overlays --
   // Open ≈ bettingEnd − timeframeSecs. Close ≈ bettingEnd. `resolved` flips on once we cross close.
@@ -658,19 +679,21 @@ export function SourceDetailHumanTrading({
   // Validate button copy state-aware
   const validateLabel = useMemo(() => {
     if (!isConnected) return 'Connect wallet'
-    if (!isBettingOpen) return 'Round closed'
     if (flow === 'approving') return 'Approving…'
     if (flow === 'committing') return 'Committing…'
     if (flow === 'publishing') return 'Publishing…'
     if (flow === 'committed') return 'In custody'
     if (flow === 'reveal-failed') return 'Retry reveal'
+    if (roundPhase === 'absent') return 'No round yet'
+    if (isBetweenRounds) return 'Next round opening'
     if (!allPicked) return `${totalPicked} / ${marketCount} chosen`
     if (!meetsMinimum) return `Min ${formatUsdDollars(MIN_PER_MARKET)} per market`
     if (exceedsBalance) return 'Insufficient balance'
     return 'Validate'
   }, [
     isConnected,
-    isBettingOpen,
+    roundPhase,
+    isBetweenRounds,
     flow,
     allPicked,
     totalPicked,
@@ -689,6 +712,18 @@ export function SourceDetailHumanTrading({
 
   const isProcessing = flow === 'approving' || flow === 'committing' || flow === 'publishing'
 
+  // Validate pill colors. Computed via `(flow as FlowStep)` so narrowing from
+  // `validateEnabled` doesn't kill the committed/reveal-failed branches.
+  const flowForColor = flow as FlowStep
+  const validateBgColor = !validateEnabled
+    ? APPLE_CHIP_BG
+    : flowForColor === 'committed'
+      ? APPLE_GREEN
+      : flowForColor === 'reveal-failed'
+        ? '#F5A623'
+        : APPLE_BLUE
+  const validateTextColor = !validateEnabled ? APPLE_TEXT_SECONDARY : '#FFFFFF'
+
   const onValidateClick = () => {
     if (!isConnected) {
       handleConnectWallet()
@@ -701,155 +736,202 @@ export function SourceDetailHumanTrading({
     onValidate()
   }
 
+  // Single gate for the chart area. When this is true, both the big candle
+  // chart and the 10 mini-cards are guaranteed to have data — so the page
+  // never paints staggered skeletons.
+  const [bigChartReady, setBigChartReady] = useState(false)
+  const onBigChartReady = useCallback(() => setBigChartReady(true), [])
+  const chartsReady =
+    !isBulkHistoryLoading &&
+    (bigChartReady || curatedMarkets.length === 0 || showEmpty)
+
+  // Reset big-chart readiness when the focused asset changes — the chart
+  // remounts and we want the loader back until the new asset draws.
+  useEffect(() => {
+    setBigChartReady(false)
+  }, [selectedAssetId])
+
+  const focusedMarket =
+    curatedMarkets.find(m => m.assetId === selectedAssetId) ?? curatedMarkets[0] ?? null
+
+  const getPointsFor = useCallback(
+    (assetId: string): HistoryPoint[] | undefined => historyByAsset?.get(assetId),
+    [historyByAsset],
+  )
+
   // -- Layout --
   const content = (
     <div className="flex-1 min-w-0 flex flex-col" style={{ background: APPLE_BG }}>
       <SourceTabNav sourceId={sourceId} activeTab="overview" />
 
-      {/* Hero */}
-      <div
-        className="w-full px-4 py-6 md:px-6 md:py-8 flex flex-col gap-6"
-      >
-        <HumanHeader
-          name={source.name}
-          description={source.description}
-          logo={sourceLogo}
-          brandBg={source.brandBg}
-          aggValue={aggValue}
-          aggLabel={aggLabel}
+      <CompactHero
+        name={source.name}
+        description={source.description}
+        logo={sourceLogo}
+        brandBg={source.brandBg}
+        aggValue={aggValue}
+        aggLabel={aggLabel}
+        roundPhase={roundPhase}
+        remainingSecs={remainingSecs}
+        bettingEnd={bettingEnd}
+      />
+
+      <div className="w-full px-4 md:px-6 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Main column — big candle + grid of mini cards */}
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
+          {activeBatch && allowlist && marketCount < (allowlist.size ?? TOP_N) && (
+            <CoverageNotice active={marketCount} curated={allowlist.size ?? TOP_N} />
+          )}
+
+          {displayError && (
+            <ErrorBar message={displayError} onDismiss={() => resetJoin()} />
+          )}
+
+          {showEmpty ? (
+            <IndexingNotice />
+          ) : (
+            <>
+              {/* Charts: one loader for both diagrams. Once data + initial
+                  chart draw land, both fade in together. */}
+              {!chartsReady && (
+                <div
+                  style={{
+                    background: APPLE_PANEL,
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    borderRadius: 14,
+                    minHeight: 420,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <GeneralLoader height="320px" />
+                </div>
+              )}
+
+              <div style={{ display: chartsReady ? 'block' : 'none' }}>
+                {focusedMarket && (
+                  <MarketCandleChart
+                    key={focusedMarket.assetId}
+                    sourceId={sourceId}
+                    source={source}
+                    market={focusedMarket}
+                    roundOpenAt={roundOpenAt}
+                    roundCloseAt={roundCloseAt}
+                    resolved={resolved}
+                    onReady={onBigChartReady}
+                  />
+                )}
+              </div>
+
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+                style={{ display: chartsReady ? 'grid' : 'none' }}
+              >
+                {(activeBatch ? tradableMarkets.map(t => t.market) : curatedMarkets).map(
+                  (market) => {
+                    const isInteractive = !!activeBatch && roundPhase === 'open'
+                    return (
+                      <HumanMarketCard
+                        key={market.assetId}
+                        sourceId={sourceId}
+                        source={source}
+                        market={market}
+                        pick={picks[market.assetId]}
+                        onPick={isInteractive ? onPick : () => { /* picks queued for next round */ }}
+                        locked={!isInteractive || (flow !== 'idle' && flow !== 'reveal-failed')}
+                        revealFailed={flow === 'reveal-failed'}
+                        onRetryReveal={onRetryReveal}
+                        roundSettling={isRoundSettling}
+                        roundOpenAt={roundOpenAt}
+                        roundCloseAt={roundCloseAt}
+                        resolved={resolved}
+                        selected={(selectedAssetId ?? focusedMarket?.assetId ?? null) === market.assetId}
+                        onSelect={() => setSelectedAssetId(market.assetId)}
+                        points={getPointsFor(market.assetId)}
+                      />
+                    )
+                  },
+                )}
+              </div>
+            </>
+          )}
+
+          {flow === 'reveal-failed' && (
+            <RevealFailedBanner
+              retryCount={revealRetryCount}
+              isSubmitting={isSubmitting}
+              onRetry={onRetryReveal}
+            />
+          )}
+
+          <ProseBlock lines={proseLines} />
+        </div>
+
+        {/* Right rail — sticky entry panel, hidden on mobile (MobileValidate covers it) */}
+        <EntryRail
+          roundPhase={roundPhase}
+          remainingSecs={remainingSecs}
+          bettingEnd={bettingEnd}
+          totalPicked={totalPicked}
+          marketCount={marketCount}
+          stakeInput={stakeInput}
+          setStakeInput={setStakeInput}
+          perMarketStake={perMarketStake}
+          stakeNum={stakeNum}
+          meetsMinimum={meetsMinimum}
+          exceedsBalance={exceedsBalance}
+          walletUsdc={walletUsdc}
+          isConnected={isConnected}
+          hasLowGas={hasLowGas}
+          flow={flow}
+          isProcessing={isProcessing}
+          validateLabel={validateLabel}
+          validateEnabled={validateEnabled}
+          onValidate={onValidateClick}
+          inputDisabled={flow !== 'idle' && flow !== 'reveal-failed'}
         />
       </div>
 
-      {/* Sticky bar */}
-      <StickyHeader
-        remainingSecs={remainingSecs}
-        bettingEnd={bettingEnd}
-        totalPicked={totalPicked}
-        marketCount={marketCount}
-        stakeNum={stakeNum}
-        perMarketStake={perMarketStake}
-        validateLabel={validateLabel}
+      <MobileValidate
+        validateBg={validateBgColor}
+        validateColor={validateTextColor}
         validateEnabled={validateEnabled}
         isProcessing={isProcessing}
         flow={flow}
-        onValidate={onValidateClick}
-        hasLowGas={isConnected && hasLowGas}
-        connected={isConnected}
+        label={validateLabel}
+        onClick={onValidateClick}
       />
 
-      <div
-        className="w-full px-4 md:px-6 pb-10 flex flex-col gap-4"
-      >
-        {/* Stake input */}
-        {!showEmpty && activeBatch && (
-          <StakeInput
-            stakeInput={stakeInput}
-            setStakeInput={setStakeInput}
-            marketCount={marketCount}
-            perMarketStake={perMarketStake}
-            meetsMinimum={meetsMinimum}
-            exceedsBalance={exceedsBalance}
-            walletUsdc={walletUsdc}
-            isConnected={isConnected}
-            disabled={flow !== 'idle' && flow !== 'reveal-failed'}
-          />
-        )}
-
-        {/* Curated coverage notice */}
-        {activeBatch && allowlist && marketCount < (allowlist.size ?? TOP_N) && (
-          <CoverageNotice active={marketCount} curated={allowlist.size ?? TOP_N} />
-        )}
-
-        {/* Errors */}
-        {displayError && (
-          <ErrorBar message={displayError} onDismiss={() => resetJoin()} />
-        )}
-
-        {/* Big candle chart of the focused market — drives the page's chart
-            real estate. Tiles below switch which market this shows. */}
-        {!showEmpty && curatedMarkets.length > 0 && (() => {
-          const focused =
-            curatedMarkets.find(m => m.assetId === selectedAssetId)
-            ?? curatedMarkets[0]
-          return (
-            <MarketCandleChart
-              key={focused.assetId}
-              sourceId={sourceId}
-              source={source}
-              market={focused}
-              roundOpenAt={roundOpenAt}
-              roundCloseAt={roundCloseAt}
-              resolved={resolved}
-            />
-          )
-        })()}
-
-        {/* Rows */}
-        {isSnapshotLoading && curatedMarkets.length === 0 ? (
-          <SkeletonRows />
-        ) : showEmpty ? (
-          <IndexingNotice />
-        ) : !activeBatch ? (
-          <NoActiveRound
-            markets={curatedMarkets}
-            sourceId={sourceId}
-            source={source}
-            selectedAssetId={selectedAssetId ?? curatedMarkets[0]?.assetId ?? null}
-            onSelect={setSelectedAssetId}
-          />
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {tradableMarkets.map(({ market }) => (
-              <HumanMarketCard
-                key={market.assetId}
-                sourceId={sourceId}
-                source={source}
-                market={market}
-                pick={picks[market.assetId]}
-                onPick={onPick}
-                locked={flow !== 'idle' && flow !== 'reveal-failed'}
-                revealFailed={flow === 'reveal-failed'}
-                onRetryReveal={onRetryReveal}
-                roundSettling={isRoundSettling}
-                roundOpenAt={roundOpenAt}
-                roundCloseAt={roundCloseAt}
-                resolved={resolved}
-                selected={
-                  (selectedAssetId ?? tradableMarkets[0]?.market.assetId) === market.assetId
-                }
-                onSelect={() => setSelectedAssetId(market.assetId)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Reveal retry banner */}
-        {flow === 'reveal-failed' && (
-          <RevealFailedBanner
-            retryCount={revealRetryCount}
-            isSubmitting={isSubmitting}
-            onRetry={onRetryReveal}
-          />
-        )}
-
-        {/* Cioran prose */}
-        <ProseBlock lines={proseLines} />
-      </div>
+      <style>{`
+        @keyframes gm-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.015); }
+        }
+        @keyframes gm-spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 
   return hideSidebar ? content : <div className="flex">{content}</div>
 }
 
-// ── Hero header (no change in concept) ───────────────────────────────────────
+// ── Compact hero: one row, logo + name + aggregate + round phase chip ────────
 
-function HumanHeader({
+type RoundPhase = 'open' | 'pending' | 'locked' | 'settling' | 'absent'
+
+function CompactHero({
   name,
   description,
   logo,
   brandBg,
   aggValue,
   aggLabel,
+  roundPhase,
+  remainingSecs,
+  bettingEnd,
 }: {
   name: string
   description: string
@@ -857,144 +939,177 @@ function HumanHeader({
   brandBg: string
   aggValue: string
   aggLabel: string
+  roundPhase: RoundPhase
+  remainingSecs: number
+  bettingEnd: string | null
 }) {
   const [logoBroken, setLogoBroken] = useState(false)
   const hasLogo = !!logo && !logoBroken
 
+  const phaseLabel =
+    roundPhase === 'open'
+      ? bettingEnd ? `Round · ${formatCountdown(remainingSecs)}` : 'Round'
+      : roundPhase === 'pending'
+        ? 'Next round opening'
+        : roundPhase === 'locked'
+          ? 'Locked'
+          : roundPhase === 'settling'
+            ? 'Settling'
+            : 'No round yet'
+  const phaseColor =
+    roundPhase === 'open'
+      ? remainingSecs > 0 && remainingSecs < 60 ? APPLE_RED : APPLE_TEXT
+      : APPLE_TEXT_SECONDARY
+
   return (
-    <header className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span
+    <header className="w-full px-4 md:px-6 pt-4 pb-3 flex items-center gap-3">
+      {hasLogo && (
+        <div
+          className="shrink-0 inline-flex items-center justify-center overflow-hidden"
           style={{
-            fontFamily: FONT_MONO,
-            fontSize: 11,
-            fontWeight: 500,
-            letterSpacing: '+0.011em',
-            color: APPLE_TEXT_SECONDARY,
-            textTransform: 'uppercase',
+            width: 36,
+            height: 36,
+            background: brandBg || '#000',
+            borderRadius: 9,
+          }}
+          aria-hidden
+        >
+          <Image
+            src={logo}
+            alt=""
+            width={72}
+            height={30}
+            className="max-h-[28px] max-w-[80%] object-contain"
+            priority
+            onError={() => setLogoBroken(true)}
+          />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <h1
+          className="truncate"
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 'clamp(18px, 2.2vw, 22px)',
+            fontWeight: 600,
+            letterSpacing: '-0.022em',
+            lineHeight: 1.15,
+            color: APPLE_TEXT,
+            margin: 0,
           }}
         >
-          DefiLlama · Manually curated
-        </span>
-      </div>
-
-      <div className="flex items-center gap-3 sm:gap-4">
-        {hasLogo && (
-          <div
-            className="shrink-0 inline-flex items-center justify-center overflow-hidden"
-            style={{
-              width: 44,
-              height: 44,
-              background: brandBg || '#000',
-              borderRadius: 10,
-            }}
-            aria-hidden
-          >
-            <Image
-              src={logo}
-              alt=""
-              width={88}
-              height={36}
-              className="max-h-[34px] max-w-[80%] object-contain"
-              priority
-              onError={() => setLogoBroken(true)}
-            />
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <h1
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 'clamp(22px, 3.4vw, 32px)',
-              fontWeight: 600,
-              letterSpacing: '-0.022em',
-              lineHeight: 1.1,
-              color: APPLE_TEXT,
-              margin: 0,
-            }}
-          >
-            {name}
-          </h1>
-          {description && (
-            <p
-              className="mt-1"
-              style={{
-                fontFamily: FONT_TEXT,
-                fontSize: 13,
-                lineHeight: 1.4,
-                letterSpacing: '-0.016em',
-                color: APPLE_TEXT_SECONDARY,
-                margin: 0,
-                maxWidth: 640,
-              }}
-            >
-              {description}
-            </p>
-          )}
-        </div>
-        <div className="hidden sm:flex flex-col items-end shrink-0" style={{ minWidth: 120 }}>
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 22,
-              fontWeight: 500,
-              letterSpacing: '-0.022em',
-              color: APPLE_TEXT,
-              fontVariantNumeric: 'tabular-nums',
-              lineHeight: 1.1,
-            }}
-          >
-            {aggValue}
-          </span>
-          <span
+          {name}
+        </h1>
+        {description && (
+          <p
+            className="truncate hidden sm:block"
             style={{
               fontFamily: FONT_TEXT,
-              fontSize: 11,
+              fontSize: 12,
+              lineHeight: 1.4,
               letterSpacing: '-0.016em',
-              color: '#6E6E73',
-              marginTop: 2,
+              color: APPLE_TEXT_SECONDARY,
+              margin: 0,
+              maxWidth: 540,
             }}
           >
-            {aggLabel}
-          </span>
-        </div>
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="hidden md:flex flex-col items-end shrink-0" style={{ minWidth: 110 }}>
+        <span
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 18,
+            fontWeight: 500,
+            letterSpacing: '-0.022em',
+            color: APPLE_TEXT,
+            fontVariantNumeric: 'tabular-nums',
+            lineHeight: 1.1,
+          }}
+        >
+          {aggValue}
+        </span>
+        <span
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 10.5,
+            letterSpacing: '-0.016em',
+            color: APPLE_TEXT_SECONDARY,
+            marginTop: 1,
+          }}
+        >
+          {aggLabel}
+        </span>
+      </div>
+      <div
+        className="shrink-0"
+        style={{
+          padding: '5px 12px',
+          borderRadius: 980,
+          background: APPLE_CHIP_BG,
+          fontFamily: FONT_TEXT,
+          fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: '-0.016em',
+          color: phaseColor,
+          fontVariantNumeric: 'tabular-nums',
+          transition: `color 250ms ${EASE_DEFAULT}`,
+        }}
+      >
+        {phaseLabel}
       </div>
     </header>
   )
 }
 
-// ── Sticky header ────────────────────────────────────────────────────────────
+// ── Right-rail entry: countdown, picks progress, stake, validate ─────────────
 
-function StickyHeader({
+function EntryRail({
+  roundPhase,
   remainingSecs,
   bettingEnd,
   totalPicked,
   marketCount,
-  stakeNum,
+  stakeInput,
+  setStakeInput,
   perMarketStake,
+  stakeNum,
+  meetsMinimum,
+  exceedsBalance,
+  walletUsdc,
+  isConnected,
+  hasLowGas,
+  flow,
+  isProcessing,
   validateLabel,
   validateEnabled,
-  isProcessing,
-  flow,
   onValidate,
-  hasLowGas,
-  connected,
+  inputDisabled,
 }: {
+  roundPhase: RoundPhase
   remainingSecs: number
   bettingEnd: string | null
   totalPicked: number
   marketCount: number
-  stakeNum: number
+  stakeInput: string
+  setStakeInput: (v: string) => void
   perMarketStake: number
+  stakeNum: number
+  meetsMinimum: boolean
+  exceedsBalance: boolean
+  walletUsdc: bigint
+  isConnected: boolean
+  hasLowGas: boolean
+  flow: FlowStep
+  isProcessing: boolean
   validateLabel: string
   validateEnabled: boolean
-  isProcessing: boolean
-  flow: FlowStep
   onValidate: () => void
-  hasLowGas: boolean
-  connected: boolean
+  inputDisabled: boolean
 }) {
-  const countdownColor = remainingSecs > 0 && remainingSecs < 60 ? APPLE_RED : APPLE_TEXT
+  const balanceHuman = parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS))
   const validateBg = !validateEnabled
     ? APPLE_CHIP_BG
     : flow === 'committed'
@@ -1003,27 +1118,32 @@ function StickyHeader({
         ? '#F5A623'
         : APPLE_BLUE
   const validateColor = !validateEnabled ? APPLE_TEXT_SECONDARY : '#FFFFFF'
+  const countdownColor =
+    roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
+      ? APPLE_RED
+      : APPLE_TEXT
 
   return (
-    <div
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 30,
-        backdropFilter: 'saturate(180%) blur(20px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-        background: 'rgba(255,255,255,0.8)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
-      }}
+    <aside
+      className="hidden lg:block shrink-0"
+      style={{ width: 320 }}
     >
       <div
-        className="w-full flex items-center gap-4"
+        className="lg:sticky"
         style={{
-          padding: '12px 24px',
+          top: 16,
+          background: APPLE_PANEL,
+          border: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: 16,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          padding: '16px 18px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
         }}
       >
-        {/* Countdown */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Round phase + countdown */}
+        <div className="flex items-baseline justify-between">
           <span
             style={{
               fontFamily: FONT_TEXT,
@@ -1034,84 +1154,202 @@ function StickyHeader({
               textTransform: 'uppercase',
             }}
           >
-            Round
+            {roundPhase === 'open'
+              ? 'Round closes in'
+              : roundPhase === 'pending'
+                ? 'Next round'
+                : roundPhase === 'locked'
+                  ? 'Locked'
+                  : roundPhase === 'settling'
+                    ? 'Settling'
+                    : 'Status'}
           </span>
           <span
             style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 14,
+              fontFamily: FONT_DISPLAY,
+              fontSize: 22,
               fontWeight: 500,
               fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.016em',
+              letterSpacing: '-0.022em',
               color: countdownColor,
               transition: `color 250ms ${EASE_DEFAULT}`,
-              minWidth: 56,
             }}
           >
-            {bettingEnd ? formatCountdown(remainingSecs) : '—'}
+            {roundPhase === 'open' && bettingEnd
+              ? formatCountdown(remainingSecs)
+              : roundPhase === 'absent'
+                ? '—'
+                : 'soon'}
           </span>
         </div>
 
-        <Divider />
-
-        {/* Progress */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Picks progress */}
+        <div className="flex items-baseline justify-between">
           <span
             style={{
               fontFamily: FONT_TEXT,
-              fontSize: 14,
+              fontSize: 13,
+              color: APPLE_TEXT_SECONDARY,
+              letterSpacing: '-0.016em',
+            }}
+          >
+            Chosen
+          </span>
+          <span
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 17,
               fontWeight: 500,
               fontVariantNumeric: 'tabular-nums',
               letterSpacing: '-0.016em',
               color: APPLE_TEXT,
-              transition: `color 250ms ${EASE_DEFAULT}`,
             }}
           >
             {totalPicked}
-            <span style={{ color: APPLE_TEXT_SECONDARY }}> / {marketCount}</span>
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 13,
-              color: APPLE_TEXT_SECONDARY,
-              letterSpacing: '-0.016em',
-            }}
-          >
-            chosen
+            <span style={{ color: APPLE_TEXT_SECONDARY }}> / {marketCount || '—'}</span>
           </span>
         </div>
 
-        {/* Stake summary (hidden on small screens) */}
-        <div className="hidden md:flex items-center gap-2 min-w-0">
-          <Divider />
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 13,
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.016em',
-              color: APPLE_TEXT_SECONDARY,
-            }}
-          >
-            {marketCount > 0 ? (
-              <>
-                {formatUsdDollars(stakeNum)} total ·{' '}
-                {formatUsdDollars(perMarketStake)} / market
-              </>
-            ) : (
-              'no active round'
+        {/* Stake input — compact */}
+        <div
+          style={{
+            background: APPLE_CHIP_BG,
+            borderRadius: 12,
+            padding: '12px 14px',
+            opacity: inputDisabled ? 0.6 : 1,
+            pointerEvents: inputDisabled ? 'none' : undefined,
+            transition: `opacity 250ms ${EASE_DEFAULT}`,
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: '+0.011em',
+                textTransform: 'uppercase',
+                color: APPLE_TEXT_SECONDARY,
+              }}
+            >
+              Stake
+            </span>
+            {isConnected && (
+              <span
+                style={{
+                  fontFamily: FONT_TEXT,
+                  fontSize: 11,
+                  color: APPLE_TEXT_SECONDARY,
+                  letterSpacing: '-0.016em',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {balanceHuman.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+              </span>
             )}
-          </span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 28,
+                color: APPLE_TEXT,
+                fontWeight: 400,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              $
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={stakeInput}
+              onChange={(e) => setStakeInput(e.target.value)}
+              placeholder="10"
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 28,
+                color: APPLE_TEXT,
+                fontWeight: 400,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                width: '100%',
+                padding: 0,
+                appearance: 'textfield',
+                MozAppearance: 'textfield',
+              }}
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {STAKE_QUICK_PICKS.map(amount => {
+              const active = stakeNum === amount
+              return (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => setStakeInput(String(amount))}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 980,
+                    background: active ? APPLE_BLUE : APPLE_PANEL,
+                    color: active ? '#FFFFFF' : APPLE_TEXT,
+                    fontFamily: FONT_TEXT,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    letterSpacing: '-0.016em',
+                    fontVariantNumeric: 'tabular-nums',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    cursor: 'pointer',
+                    transition: `background 200ms ${EASE_DEFAULT}, color 200ms ${EASE_DEFAULT}`,
+                  }}
+                >
+                  ${amount}
+                </button>
+              )
+            })}
+          </div>
+          {marketCount > 0 && (
+            <p
+              className="mt-2"
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 11,
+                color: APPLE_TEXT_SECONDARY,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+                margin: 0,
+              }}
+            >
+              {formatUsdDollars(perMarketStake)} per market · {marketCount} markets
+            </p>
+          )}
+          {marketCount > 0 && !meetsMinimum && stakeNum > 0 && (
+            <p
+              className="mt-1"
+              style={{ fontFamily: FONT_TEXT, fontSize: 11, color: APPLE_RED, letterSpacing: '-0.016em', margin: 0 }}
+            >
+              Minimum {formatUsdDollars(MIN_PER_MARKET)} per market.
+            </p>
+          )}
+          {exceedsBalance && (
+            <p
+              className="mt-1"
+              style={{ fontFamily: FONT_TEXT, fontSize: 11, color: APPLE_RED, letterSpacing: '-0.016em', margin: 0 }}
+            >
+              Stake exceeds wallet balance.
+            </p>
+          )}
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Low gas chip */}
-        {connected && hasLowGas && (
+        {isConnected && hasLowGas && (
           <div
-            className="hidden sm:flex items-center gap-1.5"
+            className="flex items-center gap-1.5"
             style={{
               background: '#FFF6E5',
               border: '1px solid #F5C26B',
@@ -1122,6 +1360,7 @@ function StickyHeader({
               fontWeight: 500,
               color: '#8A5A00',
               letterSpacing: '-0.016em',
+              alignSelf: 'flex-start',
             }}
           >
             <span style={{ width: 6, height: 6, borderRadius: 999, background: '#F5A623' }} />
@@ -1129,16 +1368,17 @@ function StickyHeader({
           </div>
         )}
 
-        {/* Validate pill (desktop) */}
+        {/* Validate */}
         <button
           type="button"
           onClick={onValidate}
           disabled={!validateEnabled && !isProcessing}
-          className="hidden sm:inline-flex"
           style={{
+            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '12px 24px',
+            width: '100%',
+            padding: '12px 20px',
             borderRadius: 980,
             background: validateBg,
             color: validateColor,
@@ -1150,10 +1390,9 @@ function StickyHeader({
             cursor: validateEnabled ? 'pointer' : 'not-allowed',
             transition: `background 200ms ${EASE_DEFAULT}, color 200ms ${EASE_DEFAULT}`,
             animation:
-              validateEnabled && flow === 'idle' ? `gm-pulse 1.2s ${EASE_DEFAULT} infinite` : undefined,
-            minWidth: 140,
-            position: 'relative',
-            overflow: 'hidden',
+              validateEnabled && flow === 'idle'
+                ? `gm-pulse 1.2s ${EASE_DEFAULT} infinite`
+                : undefined,
           }}
           onMouseEnter={(e) => {
             if (validateEnabled && flow === 'idle')
@@ -1169,43 +1408,7 @@ function StickyHeader({
           <span>{validateLabel}</span>
         </button>
       </div>
-
-      {/* Mobile bottom-pinned Validate */}
-      <MobileValidate
-        validateBg={validateBg}
-        validateColor={validateColor}
-        validateEnabled={validateEnabled}
-        isProcessing={isProcessing}
-        flow={flow}
-        label={validateLabel}
-        onClick={onValidate}
-      />
-
-      {/* Keyframes (scoped inline) */}
-      <style>{`
-        @keyframes gm-pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.015); }
-        }
-        @keyframes gm-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-function Divider() {
-  return (
-    <span
-      aria-hidden
-      style={{
-        width: 1,
-        height: 16,
-        background: 'rgba(0,0,0,0.1)',
-        display: 'inline-block',
-      }}
-    />
+    </aside>
   )
 }
 
@@ -1310,194 +1513,6 @@ function MobileValidate({
   )
 }
 
-// ── Stake input ──────────────────────────────────────────────────────────────
-
-function StakeInput({
-  stakeInput,
-  setStakeInput,
-  marketCount,
-  perMarketStake,
-  meetsMinimum,
-  exceedsBalance,
-  walletUsdc,
-  isConnected,
-  disabled,
-}: {
-  stakeInput: string
-  setStakeInput: (v: string) => void
-  marketCount: number
-  perMarketStake: number
-  meetsMinimum: boolean
-  exceedsBalance: boolean
-  walletUsdc: bigint
-  isConnected: boolean
-  disabled: boolean
-}) {
-  const balanceHuman = parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS))
-  const stakeNum = parseFloat(stakeInput) || 0
-
-  return (
-    <section
-      style={{
-        background: APPLE_PANEL,
-        border: '1px solid rgba(0,0,0,0.06)',
-        borderRadius: 18,
-        padding: '20px 24px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-        opacity: disabled ? 0.6 : 1,
-        pointerEvents: disabled ? 'none' : undefined,
-        transition: `opacity 250ms ${EASE_DEFAULT}`,
-      }}
-    >
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 14,
-            color: APPLE_TEXT_SECONDARY,
-            letterSpacing: '-0.016em',
-          }}
-        >
-          Stake per round
-        </span>
-        {isConnected && (
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 12,
-              color: APPLE_TEXT_SECONDARY,
-              letterSpacing: '-0.016em',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            Balance{' '}
-            {balanceHuman.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}{' '}
-            USDC
-          </span>
-        )}
-      </div>
-
-      <div className="mt-3 flex items-baseline gap-2">
-        <span
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 32,
-            color: APPLE_TEXT,
-            fontWeight: 400,
-            letterSpacing: '-0.016em',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          $
-        </span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          value={stakeInput}
-          onChange={(e) => setStakeInput(e.target.value)}
-          placeholder="10"
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 32,
-            color: APPLE_TEXT,
-            fontWeight: 400,
-            letterSpacing: '-0.016em',
-            fontVariantNumeric: 'tabular-nums',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            width: '100%',
-            maxWidth: 220,
-            padding: 0,
-            appearance: 'textfield',
-            MozAppearance: 'textfield',
-          }}
-        />
-      </div>
-
-      {/* Quick picks */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {STAKE_QUICK_PICKS.map(amount => {
-          const active = stakeNum === amount
-          return (
-            <button
-              key={amount}
-              type="button"
-              onClick={() => setStakeInput(String(amount))}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 980,
-                background: active ? APPLE_BLUE : APPLE_CHIP_BG,
-                color: active ? '#FFFFFF' : APPLE_TEXT,
-                fontFamily: FONT_TEXT,
-                fontSize: 13,
-                fontWeight: 500,
-                letterSpacing: '-0.016em',
-                fontVariantNumeric: 'tabular-nums',
-                border: 'none',
-                cursor: 'pointer',
-                transition: `background 200ms ${EASE_DEFAULT}, color 200ms ${EASE_DEFAULT}`,
-              }}
-            >
-              ${amount}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Split line */}
-      <p
-        className="mt-3"
-        style={{
-          fontFamily: FONT_TEXT,
-          fontSize: 12,
-          color: APPLE_TEXT_SECONDARY,
-          letterSpacing: '-0.016em',
-          fontVariantNumeric: 'tabular-nums',
-          margin: '12px 0 0',
-        }}
-      >
-        {marketCount > 0
-          ? `${formatUsdDollars(stakeNum)} ÷ ${marketCount} markets = ${formatUsdDollars(perMarketStake)} per market`
-          : 'No tradable markets in the current round.'}
-      </p>
-
-      {/* Helper */}
-      {marketCount > 0 && !meetsMinimum && stakeNum > 0 && (
-        <p
-          className="mt-2"
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 12,
-            color: APPLE_RED,
-            letterSpacing: '-0.016em',
-            margin: '8px 0 0',
-          }}
-        >
-          Minimum {formatUsdDollars(MIN_PER_MARKET)} per market.
-        </p>
-      )}
-      {exceedsBalance && (
-        <p
-          className="mt-2"
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 12,
-            color: APPLE_RED,
-            letterSpacing: '-0.016em',
-            margin: '8px 0 0',
-          }}
-        >
-          Stake exceeds wallet balance.
-        </p>
-      )}
-    </section>
-  )
-}
 
 
 // ── Notices ──────────────────────────────────────────────────────────────────
@@ -1693,67 +1708,6 @@ function IndexingNotice() {
   )
 }
 
-function NoActiveRound({
-  markets,
-  sourceId,
-  source,
-  selectedAssetId,
-  onSelect,
-}: {
-  markets: SnapshotPrice[]
-  sourceId: string
-  source: { logo: string; brandBg: string; prefixes: string[]; isPrice: boolean; valueLabel: string }
-  selectedAssetId: string | null
-  onSelect: (assetId: string) => void
-}) {
-  // Render the same cards but with picks disabled and no round window.
-  return (
-    <div className="flex flex-col gap-4">
-      <div
-        style={{
-          background: APPLE_PANEL,
-          border: '1px solid rgba(0,0,0,0.06)',
-          borderRadius: 18,
-          padding: '14px 16px',
-          textAlign: 'center',
-        }}
-      >
-        <p
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 14,
-            color: APPLE_TEXT_SECONDARY,
-            letterSpacing: '-0.016em',
-            margin: 0,
-          }}
-        >
-          No active round. Picks will open when the next one starts.
-        </p>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {markets.map(m => (
-          <HumanMarketCard
-            key={m.assetId}
-            sourceId={sourceId}
-            source={source}
-            market={m}
-            pick={undefined}
-            onPick={() => { /* disabled */ }}
-            locked
-            revealFailed={false}
-            onRetryReveal={() => { /* noop */ }}
-            roundSettling={false}
-            roundOpenAt={null}
-            roundCloseAt={null}
-            resolved={false}
-            selected={selectedAssetId === m.assetId}
-            onSelect={() => onSelect(m.assetId)}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function ProseBlock({ lines }: { lines: string[] }) {
   return (
