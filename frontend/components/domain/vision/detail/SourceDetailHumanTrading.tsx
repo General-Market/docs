@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from 'react'
 import Image from 'next/image'
 import { useRouter } from '@/i18n/routing'
@@ -22,6 +23,7 @@ import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
+import { usePlayerProfile, type ProfileBatch, type ProfileTick } from '@/hooks/usePlayerProfile'
 import { useBulkMarketHistory, type HistoryPoint } from '@/hooks/vision/useBulkMarketHistory'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useDeployment } from '@/hooks/useDeployment'
@@ -222,6 +224,24 @@ interface CuratedMarket {
   marketIndex: number // index inside batch.marketIds
 }
 
+interface TickEntry extends ProfileTick {
+  batchId: number
+}
+
+interface SourcePositions {
+  active: ProfileBatch[]
+  ticks: TickEntry[]
+  totalPnl: number
+  batches: ProfileBatch[]
+}
+
+const EMPTY_POSITIONS: SourcePositions = {
+  active: [],
+  ticks: [],
+  totalPnl: 0,
+  batches: [],
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface SourceDetailHumanTradingProps {
@@ -383,6 +403,23 @@ export function SourceDetailHumanTrading({
 
   // -- Wallet + gas + USDC balance --
   const { address, isConnected } = useAccount()
+
+  // -- Player profile, filtered to this source's batches (drives positions rail) --
+  const { profile: playerProfile } = usePlayerProfile(address ?? '')
+  const sourcePositions = useMemo<SourcePositions>(() => {
+    if (!playerProfile || !source) return EMPTY_POSITIONS
+    const internalSet = new Set<string>([source.id, ...(source.internalIds ?? [])])
+    const batchesHere = playerProfile.batches.filter(b => internalSet.has(b.sourceId))
+    if (batchesHere.length === 0) return EMPTY_POSITIONS
+    const active = batchesHere.filter(b => b.status === 'active')
+    const ticks: TickEntry[] = []
+    for (const b of batchesHere) {
+      for (const t of b.ticks) ticks.push({ ...t, batchId: b.batchId })
+    }
+    ticks.sort((a, b) => b.tickId - a.tickId)
+    const totalPnl = ticks.reduce((s, t) => s + t.pnl, 0)
+    return { active, ticks, totalPnl, batches: batchesHere }
+  }, [playerProfile, source])
   const handleConnectWallet = useWalletLogin({ source: 'source-detail-human' })
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
@@ -841,29 +878,49 @@ export function SourceDetailHumanTrading({
           <ProseBlock lines={proseLines} />
         </div>
 
-        {/* Right rail — sticky entry panel, hidden on mobile (MobileValidate covers it) */}
-        <EntryRail
-          roundPhase={roundPhase}
-          remainingSecs={remainingSecs}
-          bettingEnd={bettingEnd}
-          totalPicked={totalPicked}
-          marketCount={marketCount}
-          stakeInput={stakeInput}
-          setStakeInput={setStakeInput}
-          perMarketStake={perMarketStake}
-          stakeNum={stakeNum}
-          meetsMinimum={meetsMinimum}
-          exceedsBalance={exceedsBalance}
-          walletUsdc={walletUsdc}
-          isConnected={isConnected}
-          hasLowGas={hasLowGas}
-          flow={flow}
-          isProcessing={isProcessing}
-          validateLabel={validateLabel}
-          validateEnabled={validateEnabled}
-          onValidate={onValidateClick}
-          inputDisabled={flow !== 'idle' && flow !== 'reveal-failed'}
-        />
+        {/* Right rail — entry card + positions stacked, hidden on mobile (MobileValidate covers entry) */}
+        <aside
+          className="hidden lg:block shrink-0"
+          style={{ width: 320 }}
+        >
+          <div
+            className="lg:sticky"
+            style={{
+              top: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              maxHeight: 'calc(100vh - 32px)',
+            }}
+          >
+            <EntryCard
+              roundPhase={roundPhase}
+              remainingSecs={remainingSecs}
+              bettingEnd={bettingEnd}
+              totalPicked={totalPicked}
+              marketCount={marketCount}
+              stakeInput={stakeInput}
+              setStakeInput={setStakeInput}
+              perMarketStake={perMarketStake}
+              stakeNum={stakeNum}
+              meetsMinimum={meetsMinimum}
+              exceedsBalance={exceedsBalance}
+              walletUsdc={walletUsdc}
+              isConnected={isConnected}
+              hasLowGas={hasLowGas}
+              flow={flow}
+              isProcessing={isProcessing}
+              validateLabel={validateLabel}
+              validateEnabled={validateEnabled}
+              onValidate={onValidateClick}
+              inputDisabled={flow !== 'idle' && flow !== 'reveal-failed'}
+            />
+            <PositionsCard
+              isConnected={isConnected}
+              positions={sourcePositions}
+            />
+          </div>
+        </aside>
       </div>
 
       <MobileValidate
@@ -1039,7 +1096,7 @@ function CompactHero({
 
 // ── Right-rail entry: countdown, picks progress, stake, validate ─────────────
 
-function EntryRail({
+function EntryCard({
   roundPhase,
   remainingSecs,
   bettingEnd,
@@ -1097,24 +1154,18 @@ function EntryRail({
       : APPLE_TEXT
 
   return (
-    <aside
-      className="hidden lg:block shrink-0"
-      style={{ width: 320 }}
+    <div
+      style={{
+        background: APPLE_PANEL,
+        border: '1px solid rgba(0,0,0,0.06)',
+        borderRadius: 16,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        padding: '16px 18px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+      }}
     >
-      <div
-        className="lg:sticky"
-        style={{
-          top: 16,
-          background: APPLE_PANEL,
-          border: '1px solid rgba(0,0,0,0.06)',
-          borderRadius: 16,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-          padding: '16px 18px 18px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
-        }}
-      >
         {/* Round phase + countdown */}
         <div className="flex items-baseline justify-between">
           <span
@@ -1380,9 +1431,197 @@ function EntryRail({
           {flow === 'committed' && <CheckMark />}
           <span>{validateLabel}</span>
         </button>
-      </div>
-    </aside>
+    </div>
   )
+}
+
+// ── Positions card: current commit + past resolved ticks ─────────────────────
+
+function PositionsCard({
+  isConnected,
+  positions,
+}: {
+  isConnected: boolean
+  positions: SourcePositions
+}) {
+  const { active, ticks, totalPnl } = positions
+  const hasActive = active.length > 0
+  const hasHistory = ticks.length > 0
+
+  // Disconnected wallet — quiet prompt, no shouting.
+  if (!isConnected) {
+    return (
+      <div style={cardShellStyle}>
+        <CardHeader>Positions</CardHeader>
+        <p style={cardMutedTextStyle}>Connect a wallet to see positions on this source.</p>
+      </div>
+    )
+  }
+
+  if (!hasActive && !hasHistory) {
+    return (
+      <div style={cardShellStyle}>
+        <CardHeader>Positions</CardHeader>
+        <p style={cardMutedTextStyle}>No positions yet on this source.</p>
+      </div>
+    )
+  }
+
+  const totalColor = totalPnl >= 0 ? APPLE_GREEN : APPLE_RED
+  // Cap visible rows so the rail never grows beyond a reasonable height; the
+  // sticky wrapper handles overflow but a single page of ten is the right rhythm.
+  const visibleTicks = ticks.slice(0, 24)
+
+  return (
+    <div style={cardShellStyle}>
+      <CardHeader>Positions</CardHeader>
+
+      {hasActive && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {active.map(b => (
+            <div key={`active-${b.batchId}`} style={positionRowStyle}>
+              <span style={rowLabelStyle}>This round</span>
+              <span style={rowValueStyle}>
+                {formatUsdDollars(b.balance)}
+                <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
+                  · {b.tickCount} rounds
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasHistory && (
+        <>
+          {hasActive && <div style={dividerStyle} />}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              overflowY: 'auto',
+              maxHeight: 220,
+              marginRight: -4,
+              paddingRight: 4,
+            }}
+          >
+            {visibleTicks.map(t => {
+              const pnlColor = t.pnl > 0 ? APPLE_GREEN : t.pnl < 0 ? APPLE_RED : APPLE_TEXT_SECONDARY
+              const verdict = t.won ? 'Won' : t.pnl < 0 ? 'Lost' : 'Tied'
+              return (
+                <div key={`${t.batchId}-${t.tickId}`} style={positionRowStyle}>
+                  <span style={{ ...rowLabelStyle, fontVariantNumeric: 'tabular-nums' }}>
+                    #{t.tickId}
+                  </span>
+                  <span style={{ ...rowLabelStyle, color: APPLE_TEXT }}>{verdict}</span>
+                  <span
+                    style={{
+                      ...rowValueStyle,
+                      color: pnlColor,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {formatPnl(t.pnl)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {(hasHistory || hasActive) && (
+        <>
+          <div style={dividerStyle} />
+          <div style={positionRowStyle}>
+            <span style={rowLabelStyle}>Total P&amp;L</span>
+            <span
+              style={{
+                ...rowValueStyle,
+                color: totalColor,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {formatPnl(totalPnl)}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function CardHeader({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: FONT_TEXT,
+        fontSize: 11,
+        fontWeight: 500,
+        letterSpacing: '+0.011em',
+        textTransform: 'uppercase',
+        color: APPLE_TEXT_SECONDARY,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function formatPnl(n: number): string {
+  if (!isFinite(n)) return '—'
+  const sign = n > 0 ? '+' : n < 0 ? '−' : ''
+  const abs = Math.abs(n)
+  const body = abs >= 1000 ? abs.toFixed(0) : abs.toFixed(2)
+  return `${sign}$${body}`
+}
+
+const cardShellStyle: CSSProperties = {
+  background: APPLE_PANEL,
+  border: '1px solid rgba(0,0,0,0.06)',
+  borderRadius: 16,
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+  padding: '14px 18px 16px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+}
+
+const cardMutedTextStyle: CSSProperties = {
+  fontFamily: FONT_TEXT,
+  fontSize: 13,
+  color: APPLE_TEXT_SECONDARY,
+  letterSpacing: '-0.016em',
+  margin: 0,
+}
+
+const positionRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: 8,
+}
+
+const rowLabelStyle: CSSProperties = {
+  fontFamily: FONT_TEXT,
+  fontSize: 13,
+  color: APPLE_TEXT_SECONDARY,
+  letterSpacing: '-0.016em',
+}
+
+const rowValueStyle: CSSProperties = {
+  fontFamily: FONT_DISPLAY,
+  fontSize: 14,
+  fontWeight: 500,
+  color: APPLE_TEXT,
+  letterSpacing: '-0.016em',
+}
+
+const dividerStyle: CSSProperties = {
+  height: 1,
+  background: 'rgba(0,0,0,0.06)',
+  margin: '2px 0',
 }
 
 function Spinner() {
