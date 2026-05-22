@@ -36,7 +36,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
-import { MarketCandleChart } from './MarketCandleChart'
+import { MarketCandleChart, chartHistoryQueryOptions } from './MarketCandleChart'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -767,11 +767,9 @@ export function SourceDetailHumanTrading({
     !isBulkHistoryLoading &&
     (bigChartReady || curatedMarkets.length === 0 || showEmpty)
 
-  // Reset big-chart readiness when the focused asset changes — the chart
-  // remounts and we want the loader back until the new asset draws.
-  useEffect(() => {
-    setBigChartReady(false)
-  }, [selectedAssetId])
+  // The chart stays mounted across asset clicks — useQuery + keepPreviousData
+  // keeps the old candles visible while the next asset's history loads, and
+  // hover-prefetch warms the cache so the swap is instant on click.
 
   const focusedMarket =
     curatedMarkets.find(m => m.assetId === selectedAssetId) ?? curatedMarkets[0] ?? null
@@ -779,6 +777,16 @@ export function SourceDetailHumanTrading({
   const getPointsFor = useCallback(
     (assetId: string): HistoryPoint[] | undefined => historyByAsset?.get(assetId),
     [historyByAsset],
+  )
+
+  // Warm the big-chart cache for an asset before the user clicks. Default
+  // timeframe is '1h' to match the chart's initial state; if the user has
+  // switched timeframes, the cache miss falls back to a normal fetch.
+  const prefetchChartFor = useCallback(
+    (assetId: string) => {
+      queryClient.prefetchQuery(chartHistoryQueryOptions(sourceId, assetId, '1h'))
+    },
+    [queryClient, sourceId],
   )
 
   // -- Layout --
@@ -834,7 +842,6 @@ export function SourceDetailHumanTrading({
               <div style={{ display: chartsReady ? 'block' : 'none' }}>
                 {focusedMarket && (
                   <MarketCandleChart
-                    key={focusedMarket.assetId}
                     sourceId={sourceId}
                     source={source}
                     market={focusedMarket}
@@ -870,6 +877,7 @@ export function SourceDetailHumanTrading({
                         resolved={resolved}
                         selected={(selectedAssetId ?? focusedMarket?.assetId ?? null) === market.assetId}
                         onSelect={() => setSelectedAssetId(market.assetId)}
+                        onPrefetch={() => prefetchChartFor(market.assetId)}
                         points={getPointsFor(market.assetId)}
                       />
                     )

@@ -61,6 +61,11 @@ interface HumanMarketCardProps {
   /** Called when the user clicks the tile body (not a pick button). */
   onSelect?: () => void
   /**
+   * Called on first hover/touch — used by the parent to warm the big chart's
+   * history cache so clicking the tile feels instant.
+   */
+  onPrefetch?: () => void
+  /**
    * Pre-fetched 24h history. When provided, the card skips its own network
    * call — the parent has already loaded the series via the bulk endpoint.
    * Pass `undefined` while loading; pass `[]` when there is no data.
@@ -105,6 +110,7 @@ export function HumanMarketCard({
   resolved,
   selected = false,
   onSelect,
+  onPrefetch,
   points,
 }: HumanMarketCardProps) {
   const [imgErr, setImgErr] = useState(false)
@@ -140,6 +146,8 @@ export function HumanMarketCard({
         cursor: onSelect ? 'pointer' : 'default',
       }}
       onClick={onSelect}
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
     >
       {/* Header: logo / name / value */}
       <header className="flex items-center gap-2">

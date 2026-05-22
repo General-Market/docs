@@ -8,6 +8,7 @@ import type {
   Time,
   IPriceLine,
 } from 'lightweight-charts'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
@@ -48,6 +49,44 @@ const TIMEFRAME_LOOKBACK_MS: Record<Timeframe, number> = {
   '15m': 3 * 24 * 60 * 60 * 1000, // 3 days
   '1h': 14 * 24 * 60 * 60 * 1000, // 14 days
   '1d': 90 * 24 * 60 * 60 * 1000, // 90 days
+}
+
+/**
+ * Cached, shareable query for a single market's history. The parent prefetches
+ * this on hover so a click swaps the chart instantly instead of dropping to a
+ * loading state.
+ */
+export function chartHistoryQueryOptions(
+  sourceId: string,
+  assetId: string,
+  timeframe: Timeframe,
+) {
+  const dataNodeId = toInternalId(sourceId)
+  const lookbackMs = TIMEFRAME_LOOKBACK_MS[timeframe]
+  return {
+    queryKey: ['chart-history', dataNodeId, assetId, timeframe] as const,
+    queryFn: async (): Promise<HistoryPoint[]> => {
+      const to = new Date()
+      const from = new Date(to.getTime() - lookbackMs)
+      const url = `/api/market/history?source=${encodeURIComponent(dataNodeId)}&asset=${encodeURIComponent(assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
+      const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: { prices?: Array<{ fetchedAt?: string; value?: string | number }> } = await res.json()
+      const raw = data.prices ?? []
+      return raw
+        .map(p => ({
+          ts: p.fetchedAt ? new Date(p.fetchedAt).getTime() : 0,
+          value:
+            typeof p.value === 'string'
+              ? parseFloat(p.value)
+              : typeof p.value === 'number'
+                ? p.value
+                : NaN,
+        }))
+        .filter(p => isFinite(p.value) && p.ts > 0)
+    },
+    staleTime: 30_000,
+  }
 }
 
 const TIMEFRAMES: { label: string; value: Timeframe }[] = [
@@ -152,10 +191,19 @@ export function MarketCandleChart({
   onReady,
 }: MarketCandleChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1h')
-  const [points, setPoints] = useState<HistoryPoint[] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const [imgErr, setImgErr] = useState(false)
+
+  // useQuery with keepPreviousData so the previous asset's candles stay visible
+  // while the next asset's history loads. Combined with no `key` prop on the
+  // component, this gives the user a soft in-place swap instead of a remount.
+  const {
+    data: points,
+    isLoading: loading,
+    isError: error,
+  } = useQuery({
+    ...chartHistoryQueryOptions(sourceId, market.assetId, timeframe),
+    placeholderData: keepPreviousData,
+  })
 
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
@@ -163,44 +211,6 @@ export function MarketCandleChart({
   const openLineRef = useRef<IPriceLine | null>(null)
   const closeLineRef = useRef<IPriceLine | null>(null)
   const [chartReady, setChartReady] = useState(false)
-
-  // -- Fetch history when market or timeframe changes --
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(false)
-    const dataNodeId = toInternalId(sourceId)
-    const to = new Date()
-    const from = new Date(to.getTime() - TIMEFRAME_LOOKBACK_MS[timeframe])
-    const url = `/api/market/history?source=${encodeURIComponent(dataNodeId)}&asset=${encodeURIComponent(market.assetId)}&from=${from.toISOString()}&to=${to.toISOString()}`
-    fetch(url, { signal: AbortSignal.timeout(15_000) })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((data: { prices?: Array<{ fetchedAt?: string; value?: string | number }> }) => {
-        if (cancelled) return
-        const raw = data.prices ?? []
-        const parsed: HistoryPoint[] = raw
-          .map(p => ({
-            ts: p.fetchedAt ? new Date(p.fetchedAt).getTime() : 0,
-            value:
-              typeof p.value === 'string'
-                ? parseFloat(p.value)
-                : typeof p.value === 'number'
-                  ? p.value
-                  : NaN,
-          }))
-          .filter(p => isFinite(p.value) && p.ts > 0)
-        setPoints(parsed)
-      })
-      .catch(() => {
-        if (!cancelled) setError(true)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [sourceId, market.assetId, timeframe])
 
   // -- Create the chart once --
   useEffect(() => {
