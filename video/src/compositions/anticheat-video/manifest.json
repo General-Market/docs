@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "videoOffsetSeconds": 0,
+  "takeAVideoSrc": "anticheat-takes/take-A-video.mp4",
+  "takeAAudioSrc": "anticheat-takes/take-A-clean.wav",
+  "takeBAudioSrc": "anticheat-takes/take-B-clean.wav",
+  "sentences": [],
+  "summary": {
+    "totalSentences": 0,
+    "chosenA": 0,
+    "chosenB": 0,
+    "manualOverrides": 0,
+    "unmatched": 0,
+    "retakesDetectedInA": 0,
+    "retakesDetectedInB": 0,
+    "note": "stub — built by 06-voiceover/build_manifest.py after parakeet alignment"
+  }
+}
