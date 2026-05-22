@@ -132,6 +132,7 @@ export function HumanMarketCard({
 
   return (
     <article
+      data-onboarding-target="market-card"
       style={{
         background: APPLE_PANEL,
         borderRadius: 14,

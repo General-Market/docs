@@ -158,7 +158,10 @@ export default async function SourcePage({ params }: Props) {
             <SourceDetailV2 sourceId={sourceId} initialSource={source} hideSidebar />
           )}
         </div>
-        <HomeOnboardingCompass />
+        {/* Human-trading pages mount their own Apple-styled onboarding
+            inside SourceDetailHumanTrading. The legacy vault/bot compass
+            only fits the firehose bot pages now. */}
+        {source?.audience !== 'human' && <HomeOnboardingCompass />}
       </AppShell>
     </HydrationBoundary>
   )

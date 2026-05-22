@@ -37,6 +37,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { GeneralLoader } from '@/components/ui/GeneralLoader'
 import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
+import { HumanTradingOnboarding } from './HumanTradingOnboarding'
 import { MarketCandleChart, chartHistoryQueryOptions, type Timeframe } from './MarketCandleChart'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -863,6 +864,17 @@ export function SourceDetailHumanTrading({
         onClick={onValidateClick}
       />
 
+      <HumanTradingOnboarding
+        sourceId={sourceId}
+        isConnected={isConnected}
+        hasFunds={isConnected && walletUsdc > 0n && !hasLowGas}
+        picksCount={totalPicked}
+        marketCount={marketCount}
+        isCommitted={flow === 'committed'}
+        isProcessing={isProcessing}
+        isBettingOpen={isBettingOpen}
+      />
+
       <style>{`
         @keyframes gm-pulse {
           0%, 100% { transform: scale(1); }
@@ -1166,6 +1178,7 @@ function EntryCard({
 
         {/* Stake input — compact */}
         <div
+          data-onboarding-target="stake-row"
           style={{
             background: APPLE_CHIP_BG,
             borderRadius: 12,
@@ -1325,6 +1338,7 @@ function EntryCard({
         {/* Validate */}
         <button
           type="button"
+          data-onboarding-target="validate-button"
           onClick={onValidate}
           disabled={!validateEnabled && !isProcessing}
           style={{
