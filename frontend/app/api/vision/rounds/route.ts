@@ -20,7 +20,15 @@ const INTERNAL_TO_DISPLAY: Record<string, string> = {}
 const DISPLAY_HASHES: Record<string, Set<string>> = {}
 for (const s of (sourcesDisplay as any).sources) {
   const displayId = s.sourceId as string
-  const ids: string[] = s.internalIds ?? [displayId]
+  // Sources that own a curated sub-source batch (batchSubsourceKey) get a
+  // dedicated on-chain batch keyed by that string — the oracle stores its
+  // source_id as the subsource key. Recognise it as a valid identifier
+  // alongside the legacy internalIds firehose. Without this, the
+  // /vision/rounds API filter would miss rounds for defillama-bridges and
+  // its 16 siblings because their internalIds only list "defi".
+  const subKey = s.batchSubsourceKey as string | undefined
+  const baseIds: string[] = s.internalIds ?? [displayId]
+  const ids: string[] = subKey ? [subKey, ...baseIds] : baseIds
   const hashes = new Set<string>()
   for (const iid of ids) {
     INTERNAL_TO_DISPLAY[iid.toLowerCase()] = displayId
