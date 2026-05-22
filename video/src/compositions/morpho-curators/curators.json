@@ -1,0 +1,725 @@
+[
+  {
+    "slug": "steakhouse-financial",
+    "name": "Steakhouse Financial",
+    "tvl": 2141868301.8007562,
+    "change_1d": 0.15349701975905816,
+    "change_7d": 0.4519298610751008,
+    "chains": [
+      "Base",
+      "Ethereum",
+      "Monad",
+      "Solana",
+      "Katana",
+      "Arbitrum",
+      "Polygon",
+      "Corn",
+      "Unichain"
+    ],
+    "logo": "https://icons.llama.fi/steakhouse-financial.jpg"
+  },
+  {
+    "slug": "sentora",
+    "name": "Sentora",
+    "tvl": 1653549338.1242235,
+    "change_1d": 0.5729629698937515,
+    "change_7d": 7.834933271894968,
+    "chains": [
+      "Ethereum",
+      "Solana",
+      "Ink"
+    ],
+    "logo": "https://icons.llama.fi/sentora.jpg"
+  },
+  {
+    "slug": "gauntlet",
+    "name": "Gauntlet",
+    "tvl": 1435083598.9075122,
+    "change_1d": 1.2343994636448343,
+    "change_7d": -4.035205897772698,
+    "chains": [
+      "Binance",
+      "Ethereum",
+      "Base",
+      "Katana",
+      "Solana",
+      "Optimism",
+      "Arbitrum",
+      "Polygon",
+      "Hyperliquid L1",
+      "Unichain",
+      "Stable",
+      "Tempo"
+    ],
+    "logo": "https://icons.llama.fi/gauntlet.jpg"
+  },
+  {
+    "slug": "k3-capital",
+    "name": "K3 Capital",
+    "tvl": 202130753.40437108,
+    "change_1d": -2.4331534010954954,
+    "change_7d": 5.151449765020999,
+    "chains": [
+      "Ethereum",
+      "Monad",
+      "Plasma",
+      "Avalanche",
+      "Arbitrum",
+      "Binance",
+      "Unichain",
+      "BOB"
+    ],
+    "logo": "https://icons.llama.fi/k3-capital.jpg"
+  },
+  {
+    "slug": "kpk",
+    "name": "KPK",
+    "tvl": 169706094.47511548,
+    "change_1d": -0.6261324073210659,
+    "change_7d": -4.631618724593011,
+    "chains": [
+      "Ethereum",
+      "xDai",
+      "Arbitrum",
+      "Binance",
+      "Base",
+      "Optimism",
+      "Polygon"
+    ],
+    "logo": "https://icons.llama.fi/kpk.jpg"
+  },
+  {
+    "slug": "telos-consilium",
+    "name": "Telos Consilium",
+    "tvl": 153581876.36074114,
+    "change_1d": 10.683982133588259,
+    "change_7d": 10.640196602964693,
+    "chains": [
+      "Plasma",
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/telos-consilium.jpg"
+  },
+  {
+    "slug": "sky-money",
+    "name": "Sky Money",
+    "tvl": 146138851.1708179,
+    "change_1d": -7.7967278514063025,
+    "change_7d": null,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/sky-money.jpg"
+  },
+  {
+    "slug": "vault-bridge",
+    "name": "Vault Bridge",
+    "tvl": 132306422.64406002,
+    "change_1d": 4.226628662822023,
+    "change_7d": -7.887483398242594,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/vault-bridge.jpg"
+  },
+  {
+    "slug": "clearstar",
+    "name": "Clearstar",
+    "tvl": 110041050.78744946,
+    "change_1d": -1.4356958377116626,
+    "change_7d": 7.252389897078814,
+    "chains": [
+      "Flare",
+      "Ethereum",
+      "Base",
+      "Monad",
+      "Hyperliquid L1",
+      "Hemi",
+      "Starknet",
+      "Arbitrum",
+      "Katana",
+      "Unichain",
+      "Polygon"
+    ],
+    "logo": "https://icons.llama.fi/clearstar.jpg"
+  },
+  {
+    "slug": "hyperithm",
+    "name": "Hyperithm",
+    "tvl": 108000369.18090436,
+    "change_1d": -0.113135654991396,
+    "change_7d": 10.159185501178541,
+    "chains": [
+      "Ethereum",
+      "Monad",
+      "Solana",
+      "Arbitrum",
+      "Plasma",
+      "Stable",
+      "Hyperliquid L1",
+      "Katana",
+      "Binance",
+      "XRPL EVM"
+    ],
+    "logo": "https://icons.llama.fi/hyperithm.jpg"
+  },
+  {
+    "slug": "rockawayx",
+    "name": "RockawayX",
+    "tvl": 107073517.0918841,
+    "change_1d": -1.0926254337777408,
+    "change_7d": -10.944736465294241,
+    "chains": [
+      "Ethereum",
+      "Solana",
+      "Sei",
+      "Binance",
+      "Etherlink",
+      "Plume Mainnet"
+    ],
+    "logo": "https://icons.llama.fi/rockawayx.jpg"
+  },
+  {
+    "slug": "re7-labs",
+    "name": "Re7 Labs",
+    "tvl": 80124291.51822996,
+    "change_1d": 0.4582125041076637,
+    "change_7d": -0.055125179886246656,
+    "chains": [
+      "Avalanche",
+      "World Chain",
+      "Plasma",
+      "Ethereum",
+      "Starknet",
+      "Binance",
+      "Plume Mainnet",
+      "Base",
+      "Linea",
+      "Sonic",
+      "Unichain",
+      "TAC",
+      "Polygon",
+      "BOB",
+      "Berachain"
+    ],
+    "logo": "https://icons.llama.fi/re7-labs.jpg"
+  },
+  {
+    "slug": "ultrayield-curator",
+    "name": "UltraYield Curator",
+    "tvl": 78644636.96248762,
+    "change_1d": -6.486070183166731,
+    "change_7d": -12.402382514676319,
+    "chains": [
+      "Ethereum",
+      "Hyperliquid L1",
+      "Etherlink",
+      "Monad",
+      "Base",
+      "TAC",
+      "Optimism",
+      "Arbitrum",
+      "Plasma",
+      "Plume Mainnet",
+      "Linea"
+    ],
+    "logo": "https://icons.llama.fi/ultrayield-curator.jpg"
+  },
+  {
+    "slug": "yearn-curating",
+    "name": "Yearn Curating",
+    "tvl": 69878778.66290542,
+    "change_1d": 3.942686272066979,
+    "change_7d": 10.646688361917981,
+    "chains": [
+      "Ethereum",
+      "Katana",
+      "Base",
+      "Hyperliquid L1",
+      "Arbitrum"
+    ],
+    "logo": "https://icons.llama.fi/yearn-curating.jpg"
+  },
+  {
+    "slug": "galaxy-curation",
+    "name": "Galaxy Curation",
+    "tvl": 67584716.0883162,
+    "change_1d": -0.9108201867540515,
+    "change_7d": null,
+    "chains": [
+      "Ethereum",
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/galaxy-curation.jpg"
+  },
+  {
+    "slug": "alphaping",
+    "name": "AlphaPing",
+    "tvl": 66316801.99224815,
+    "change_1d": 0.44840902629263724,
+    "change_7d": 9.752426507077587,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/alphaping.jpg"
+  },
+  {
+    "slug": "mev-capital",
+    "name": "MEV Capital",
+    "tvl": 65551766.85355426,
+    "change_1d": -2.759517940537563,
+    "change_7d": 3.5024753028881577,
+    "chains": [
+      "Hyperliquid L1",
+      "Ethereum",
+      "Binance",
+      "Sui",
+      "Arbitrum",
+      "Berachain",
+      "Base",
+      "Sonic",
+      "Avalanche",
+      "Unichain",
+      "Polygon"
+    ],
+    "logo": "https://icons.llama.fi/mev-capital.jpg"
+  },
+  {
+    "slug": "block-analitica",
+    "name": "Block Analitica",
+    "tvl": 50651577.83699629,
+    "change_1d": -1.4289421410744012,
+    "change_7d": -1.9754457343384217,
+    "chains": [
+      "Ethereum",
+      "Base",
+      "Arbitrum",
+      "Sonic"
+    ],
+    "logo": "https://icons.llama.fi/block-analitica.jpg"
+  },
+  {
+    "slug": "armitage-by-wintermute",
+    "name": "Armitage by Wintermute",
+    "tvl": 50153472.52033992,
+    "change_1d": 0.02475995423529298,
+    "change_7d": null,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/armitage-by-wintermute.jpg"
+  },
+  {
+    "slug": "tulipa-capital",
+    "name": "Tulipa Capital",
+    "tvl": 49056097.763684265,
+    "change_1d": -1.917289001613696,
+    "change_7d": -4.3677439706950025,
+    "chains": [
+      "Ethereum",
+      "TAC",
+      "Berachain",
+      "Avalanche",
+      "Monad",
+      "BOB",
+      "Binance",
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/tulipa-capital.jpg"
+  },
+  {
+    "slug": "hakutora",
+    "name": "Hakutora",
+    "tvl": 23763448.05502819,
+    "change_1d": 0.017630620006841013,
+    "change_7d": -1.7604026238095827,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/hakutora.jpg"
+  },
+  {
+    "slug": "anthias-labs",
+    "name": "Anthias Labs",
+    "tvl": 22221872.34518799,
+    "change_1d": -2.094555826140436,
+    "change_7d": 0.9273618574044349,
+    "chains": [
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/anthias-labs.jpg"
+  },
+  {
+    "slug": "volo-vault",
+    "name": "Volo Vault",
+    "tvl": 16601787.108750673,
+    "change_1d": -2.1530812588930104,
+    "change_7d": -3.908548099542628,
+    "chains": [
+      "Sui"
+    ],
+    "logo": "https://icons.llama.fi/volo-vaults.jpg"
+  },
+  {
+    "slug": "feather",
+    "name": "Feather",
+    "tvl": 16523147.835194368,
+    "change_1d": -0.2612971416161969,
+    "change_7d": 1.343942316751992,
+    "chains": [
+      "Sei",
+      "Celo",
+      "Klaytn"
+    ],
+    "logo": "https://icons.llama.fi/feather.jpg"
+  },
+  {
+    "slug": "api3",
+    "name": "Api3",
+    "tvl": 13861515.683208153,
+    "change_1d": -1.846099840720683,
+    "change_7d": -4.107643756851246,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/api3.png"
+  },
+  {
+    "slug": "alphagrowth",
+    "name": "alphagrowth",
+    "tvl": 8711164.43563905,
+    "change_1d": -2.6626822592466795,
+    "change_7d": -6.606629273151128,
+    "chains": [
+      "Unichain",
+      "Base",
+      "Ethereum",
+      "Linea"
+    ],
+    "logo": "https://icons.llama.fi/alphagrowth.jpg"
+  },
+  {
+    "slug": "keyring",
+    "name": "Keyring",
+    "tvl": 6222437.871319836,
+    "change_1d": 0.005750852220074876,
+    "change_7d": -0.006664689016588454,
+    "chains": [
+      "Avalanche"
+    ],
+    "logo": "https://icons.llama.fi/keyring.jpg"
+  },
+  {
+    "slug": "tau-labs",
+    "name": "TAU Labs",
+    "tvl": 5002255.993602219,
+    "change_1d": -0.4945330198843436,
+    "change_7d": 23.857411018996274,
+    "chains": [
+      "Ethereum",
+      "Plasma",
+      "Flow"
+    ],
+    "logo": "https://icons.llama.fi/tau-labs.jpg"
+  },
+  {
+    "slug": "singularv",
+    "name": "SingularV",
+    "tvl": 2100105.508494708,
+    "change_1d": -18.61087519874573,
+    "change_7d": 19.283225026467292,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/singularv.jpg"
+  },
+  {
+    "slug": "zerolend-vaults",
+    "name": "ZeroLend Vaults",
+    "tvl": 1808098.4775436774,
+    "change_1d": -0.7389005503366946,
+    "change_7d": -0.9354295558004821,
+    "chains": [
+      "Ethereum",
+      "Berachain",
+      "Linea",
+      "Sonic"
+    ],
+    "logo": "https://icons.llama.fi/zerolend-vaults.jpg"
+  },
+  {
+    "slug": "b.protocol-curator",
+    "name": "B.Protocol Curator",
+    "tvl": 615629.7351281303,
+    "change_1d": -0.46228284923375895,
+    "change_7d": -1.0928436870384672,
+    "chains": [
+      "Ethereum",
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/b.protocol-curator.jpg"
+  },
+  {
+    "slug": "muscadine",
+    "name": "Muscadine",
+    "tvl": 486465.6685499937,
+    "change_1d": -1.7953879154525794,
+    "change_7d": -3.195847345067264,
+    "chains": [
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/muscadine.jpg"
+  },
+  {
+    "slug": "avantgarde",
+    "name": "Avantgarde",
+    "tvl": 418248.9151859012,
+    "change_1d": -0.5178613364059288,
+    "change_7d": -1.1977854674348407,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/avantgarde.jpg"
+  },
+  {
+    "slug": "apostro",
+    "name": "Apostro",
+    "tvl": 312365.1404464105,
+    "change_1d": 2.148664724109622,
+    "change_7d": 4.442091936174776,
+    "chains": [
+      "Ethereum",
+      "Base",
+      "Binance"
+    ],
+    "logo": "https://icons.llama.fi/apostro.jpg"
+  },
+  {
+    "slug": "varlamore-capital",
+    "name": "Varlamore Capital",
+    "tvl": 174911.4597173374,
+    "change_1d": 1.249768640383067,
+    "change_7d": 4.605040117267194,
+    "chains": [
+      "Sonic",
+      "Ethereum",
+      "Avalanche",
+      "Arbitrum"
+    ],
+    "logo": "https://icons.llama.fi/varlamore-capital.jpg"
+  },
+  {
+    "slug": "invariant-group",
+    "name": "Invariant Group",
+    "tvl": 158565.09185842407,
+    "change_1d": -0.09947032983286874,
+    "change_7d": -0.6205063945298264,
+    "chains": [
+      "Plasma",
+      "Hemi",
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/invariant-group.jpg"
+  },
+  {
+    "slug": "alterscope",
+    "name": "Alterscope",
+    "tvl": 113222.22276409566,
+    "change_1d": -19.508717353426405,
+    "change_7d": -34.45151746343001,
+    "chains": [
+      "Base",
+      "Starknet",
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/alterscope.jpg"
+  },
+  {
+    "slug": "unified-labs",
+    "name": "Unified Labs",
+    "tvl": 99954.8204527896,
+    "change_1d": 0.011477681062245892,
+    "change_7d": 0.046967547695246026,
+    "chains": [
+      "Monad"
+    ],
+    "logo": "https://icons.llama.fi/unified-labs.jpg"
+  },
+  {
+    "slug": "9summits",
+    "name": "9Summits",
+    "tvl": 79923.3007361662,
+    "change_1d": 0.16361524528718974,
+    "change_7d": -1.114969135273796,
+    "chains": [
+      "Ethereum",
+      "Base",
+      "Unichain"
+    ],
+    "logo": "https://icons.llama.fi/9summits.jpg"
+  },
+  {
+    "slug": "excellion-finance",
+    "name": "Excellion Finance",
+    "tvl": 29858.095698164994,
+    "change_1d": 0.006727829103695626,
+    "change_7d": -0.004652867852058762,
+    "chains": [
+      "Avalanche"
+    ],
+    "logo": "https://icons.llama.fi/excellion-finance.jpg"
+  },
+  {
+    "slug": "tanken-capital",
+    "name": "Tanken Capital",
+    "tvl": 21294.60036060145,
+    "change_1d": 1.8106336466490376,
+    "change_7d": 6.14364030249412,
+    "chains": [
+      "Base",
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/tanken-capital.jpg"
+  },
+  {
+    "slug": "relend-network",
+    "name": "Relend Network",
+    "tvl": 16733.84542751742,
+    "change_1d": -0.11617501673350716,
+    "change_7d": -0.3260643770495193,
+    "chains": [
+      "Ethereum",
+      "Base",
+      "Swellchain"
+    ],
+    "logo": "https://icons.llama.fi/relend-network.jpg"
+  },
+  {
+    "slug": "hyperstable-vaults",
+    "name": "Hyperstable Vaults",
+    "tvl": 7122.247965273941,
+    "change_1d": -17.819941276447096,
+    "change_7d": -24.979212237292685,
+    "chains": [
+      "Hyperliquid L1"
+    ],
+    "logo": "https://icons.llama.fi/hyperstable-vaults.jpg"
+  },
+  {
+    "slug": "m11-credit",
+    "name": "M11 Credit",
+    "tvl": 5298.837948897018,
+    "change_1d": 0.031865702821562536,
+    "change_7d": 0.11905599608768114,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/m11-credit.jpg"
+  },
+  {
+    "slug": "llamarisk",
+    "name": "LlamaRisk",
+    "tvl": 3004.9513366208093,
+    "change_1d": 0.01759798605536389,
+    "change_7d": 0.045093899917489466,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/llamarisk.jpg"
+  },
+  {
+    "slug": "ouroboros-capital",
+    "name": "Ouroboros Capital",
+    "tvl": 2579.8526962915194,
+    "change_1d": 0.007500056472636629,
+    "change_7d": -0.0014483155869271513,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/ouroboros-capital.jpg"
+  },
+  {
+    "slug": "fence-finance",
+    "name": "Fence Finance",
+    "tvl": 1350.9630216830294,
+    "change_1d": 0.07944535543582276,
+    "change_7d": -0.1936908595632474,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/fence-finance.jpg"
+  },
+  {
+    "slug": "altera-finance",
+    "name": "Altera Finance",
+    "tvl": 817.6616905325885,
+    "change_1d": -1.6013739095252788,
+    "change_7d": -3.1002871245225663,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/altera-finance.jpg"
+  },
+  {
+    "slug": "greenhouse-finance",
+    "name": "Greenhouse Finance",
+    "tvl": 133.7998324625343,
+    "change_1d": -0.1254883548298693,
+    "change_7d": 1.2461921859835883,
+    "chains": [
+      "Sonic",
+      "Arbitrum"
+    ],
+    "logo": "https://icons.llama.fi/greenhouse-finance.jpg"
+  },
+  {
+    "slug": "trinity-protocol",
+    "name": "Trinity Protocol",
+    "tvl": 67.06794554584387,
+    "change_1d": 1.0313061337426745,
+    "change_7d": 13.614705378030578,
+    "chains": [
+      "Arbitrum"
+    ],
+    "logo": "https://icons.llama.fi/trinity-protocol.jpg"
+  },
+  {
+    "slug": "cian-curating",
+    "name": "CIAN Curating",
+    "tvl": 17.906126853970687,
+    "change_1d": -0.5203163585846511,
+    "change_7d": -4.393636001799607,
+    "chains": [
+      "Ethereum"
+    ],
+    "logo": "https://icons.llama.fi/cian-curating.jpg"
+  },
+  {
+    "slug": "yfarmer",
+    "name": "YFarmer",
+    "tvl": 1.9995688749101772,
+    "change_1d": 0.0037773096911166704,
+    "change_7d": -0.007502415062973,
+    "chains": [
+      "Base"
+    ],
+    "logo": "https://icons.llama.fi/yfarmer.jpg"
+  },
+  {
+    "slug": "euler-dao",
+    "name": "Euler DAO",
+    "tvl": 0,
+    "change_1d": null,
+    "change_7d": null,
+    "chains": [
+      "Ethereum",
+      "Base",
+      "Unichain",
+      "Swellchain",
+      "Linea",
+      "Arbitrum",
+      "Monad"
+    ],
+    "logo": "https://icons.llama.fi/euler-dao.jpg"
+  }
+]

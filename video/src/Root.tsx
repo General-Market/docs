@@ -128,6 +128,7 @@ import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
+import { morphoCuratorsMeta } from "./compositions/morpho-curators/MorphoCuratorsComposition";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -867,6 +868,14 @@ export const RemotionRoot: React.FC = () => {
           fps={financeChartsCompareMeta.fps}
           width={financeChartsCompareMeta.width}
           height={financeChartsCompareMeta.height}
+        />
+        <Composition
+          id={morphoCuratorsMeta.id}
+          component={morphoCuratorsMeta.component}
+          durationInFrames={morphoCuratorsMeta.durationInFrames}
+          fps={morphoCuratorsMeta.fps}
+          width={morphoCuratorsMeta.width}
+          height={morphoCuratorsMeta.height}
         />
       </Folder>
 
