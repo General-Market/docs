@@ -18,6 +18,7 @@ import { formatUnits } from 'viem'
 import { useSourceSnapshot, type SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useBatches } from '@/hooks/vision/useBatches'
+import { useBatchConfig } from '@/hooks/vision/useBatchConfig'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
@@ -340,8 +341,18 @@ export function SourceDetailHumanTrading({
     return batches.find(b => candidates.has(b.sourceId)) ?? null
   }, [batches, source])
 
-  const marketIds: string[] = activeBatch?.marketIds ?? []
   const configHash = (activeBatch?.configHash ?? null) as `0x${string}` | null
+
+  // The /vision/batches API returns market_count but not the full marketIds
+  // array. Pull the authoritative ordered list from /batches/config/<hash>,
+  // which the data-node serves immutably keyed on the pinned config hash.
+  // Without this, tradableMarkets stays empty and the page falls back to
+  // "0 active this round" even when a curated subsource batch is live.
+  const { data: batchConfig } = useBatchConfig(configHash ?? undefined)
+  const marketIds: string[] = useMemo(
+    () => batchConfig?.markets?.map(m => m.assetId) ?? [],
+    [batchConfig],
+  )
 
   // -- Curated markets that ARE in the current batch (only these are bettable) --
   const tradableMarkets: CuratedMarket[] = useMemo(() => {
