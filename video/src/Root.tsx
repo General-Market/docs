@@ -123,7 +123,6 @@ import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassur
 import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
-import { antiCheatVideoMeta } from "./compositions/anticheat-video/AntiCheatVideoComposition";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
@@ -144,17 +143,6 @@ const LofiDotsHexBench: React.FC = () => (
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ ANTI-CHEAT VIDEO — long-form, manifest-driven, retake-aware ═══ */}
-      <Composition
-        id={antiCheatVideoMeta.id}
-        component={antiCheatVideoMeta.component}
-        durationInFrames={antiCheatVideoMeta.durationInFrames}
-        fps={antiCheatVideoMeta.fps}
-        width={antiCheatVideoMeta.width}
-        height={antiCheatVideoMeta.height}
-        calculateMetadata={antiCheatVideoMeta.calculateMetadata}
-      />
-
       {/* ═══ ANTI-CHEAT — full launch video (60s) and its scenes ═══ */}
       <Folder name="AntiCheat">
         <Composition
