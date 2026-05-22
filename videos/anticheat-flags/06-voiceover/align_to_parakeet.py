@@ -35,10 +35,11 @@ from pathlib import Path
 WORD_CHARS_RE = re.compile(r"[A-Za-z0-9']+(?:-[A-Za-z0-9']+)*")
 
 # Tuning knobs
-MIN_SCORE = 0.6           # candidate must match at least 60% of sentence words
-MAX_LOOKAHEAD = 3         # parakeet words to skip when looking for next sentence word
+MIN_SCORE = 0.5           # candidate must match at least 50% of sentence words
+MAX_LOOKAHEAD = 4         # parakeet words to skip when looking for next sentence word
 WINDOW_MULTIPLIER = 2.5   # max window size as multiple of sentence length
 OVERLAP_TOL = 3           # candidates whose ranges overlap by <= this many words deduped
+LEAD_TOLERANCE = 3        # allow first 0..LEAD_TOLERANCE sentence words to be skipped at start
 
 
 def normalise(word: str) -> str:
@@ -60,15 +61,25 @@ def find_candidates(sentence_words: list[str], parakeet_words: list[dict]) -> li
 
     candidates: list[dict] = []
 
+    # Quick filter — only consider starting positions where parakeet's word
+    # matches one of the sentence's first LEAD_TOLERANCE+1 words. This still
+    # lets us pick up matches when parakeet mistranscribed the very first
+    # word (e.g. "he'd" → "it"), but skips most irrelevant positions.
+    head_set = set(sentence_words[:LEAD_TOLERANCE + 1])
+
     for start in range(M):
-        if parakeet_norm[start] != sentence_words[0]:
-            # Quick filter: skip starts whose first word doesn't match the
-            # sentence's first word. The greedy match still allows skipping
-            # the first word, but most retakes start clean from the first word.
+        if parakeet_norm[start] not in head_set:
             continue
+        # Figure out which sentence word index parakeet's `start` matches —
+        # the greedy loop below begins from that sentence position.
+        sent_start = 0
+        for lookback in range(LEAD_TOLERANCE + 1):
+            if lookback < N and parakeet_norm[start] == sentence_words[lookback]:
+                sent_start = lookback
+                break
         end_limit = min(M, start + max_window)
         matched: list[int] = []
-        sent_i = 0
+        sent_i = sent_start
         para_i = start
         while sent_i < N and para_i < end_limit:
             sw = sentence_words[sent_i]
