@@ -868,7 +868,11 @@ export function SourceDetailHumanTrading({
               tickDuration={round?.timeframeSecs ?? activeBatch?.tickDuration ?? 0}
               remainingSecs={remainingSecs}
               roundPhase={roundPhase}
-              currentStakeUsd={currentCommit?.stakeUsd ?? null}
+              poolNowUsd={(() => {
+                const raw = round?.tvl ?? activeBatch?.tvl
+                if (!raw || raw === '0') return null
+                try { return Number(formatUnits(BigInt(raw), VISION_USDC_DECIMALS)) } catch { return null }
+              })()}
               hasCurrentCommit={!!currentCommit}
               hadLastTick={sourcePositions.ticks.length > 0}
             />
@@ -956,7 +960,7 @@ function RoundTimeline({
   tickDuration,
   remainingSecs,
   roundPhase,
-  currentStakeUsd,
+  poolNowUsd,
   hasCurrentCommit,
   hadLastTick,
 }: {
@@ -964,7 +968,8 @@ function RoundTimeline({
   tickDuration: number
   remainingSecs: number
   roundPhase: RoundPhase
-  currentStakeUsd: number | null
+  /** Total committed by all players for the NOW round, in USDC. */
+  poolNowUsd: number | null
   hasCurrentCommit: boolean
   hadLastTick: boolean
 }) {
@@ -978,12 +983,16 @@ function RoundTimeline({
     prevTickRef.current = currentTick
   }, [currentTick])
 
-  const countdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : '—'
-  const nextCountdown =
+  const nowCountdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : '—'
+  // NEXT closes `tickDuration` after NOW closes, so its close-countdown is
+  // always distinct from NOW's — keeps the three boxes from showing the same
+  // number when settlement and the live close fall on the same instant.
+  const nextCloseCountdown =
     remainingSecs > 0 && tickDuration > 0
       ? formatCountdown(remainingSecs + tickDuration)
       : '—'
   const urgentNow = roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
+  const poolNowDisplay = poolNowUsd !== null && poolNowUsd > 0 ? formatBigUsd(String(poolNowUsd)) : '—'
 
   return (
     <div
@@ -1008,32 +1017,46 @@ function RoundTimeline({
         <TimelineBox
           slot="LAST"
           tickNumber={currentTick > 0 ? currentTick - 1 : null}
-          statusLabel="Settles"
-          countdown={countdown}
-          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          mainKind="status"
+          mainText="Settling"
+          // Pool size for past rounds isn't surfaced by /vision/rounds (the
+          // endpoint only carries non-paused rounds). Keep the slot quiet
+          // rather than guessing.
+          poolDisplay="—"
           isIn={hadLastTick || hasCurrentCommit}
           tone="muted"
         />
         <TimelineBox
           slot="NOW"
           tickNumber={currentTick > 0 ? currentTick : null}
-          statusLabel={roundPhase === 'open' ? 'Closes' : roundPhase === 'settling' ? 'Settling' : roundPhase === 'locked' ? 'Locked' : 'Soon'}
-          countdown={countdown}
-          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          mainKind="timer"
+          mainText={nowCountdown}
+          statusLabel={
+            roundPhase === 'open'
+              ? 'Closes'
+              : roundPhase === 'settling'
+                ? 'Settling'
+                : roundPhase === 'locked'
+                  ? 'Locked'
+                  : 'Soon'
+          }
+          poolDisplay={poolNowDisplay}
           isIn={hasCurrentCommit}
           tone={urgentNow ? 'urgent' : 'primary'}
         />
         <TimelineBox
           slot="NEXT"
           tickNumber={currentTick > 0 ? currentTick + 1 : null}
-          statusLabel="Opens"
-          countdown={countdown}
-          // Auto-rollover: if the user is in the current tick, the same stake
-          // carries into the next one unless they exit. Show it as a hint.
-          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          mainKind="timer"
+          mainText={nextCloseCountdown}
+          statusLabel="Closes"
+          // No pool yet — the next round hasn't opened.
+          poolDisplay="—"
+          // Auto-rollover: in Vision parimutuel, the user's balance carries
+          // into the next round unless they exit. So the IN pill on NEXT
+          // mirrors NOW.
           isIn={hasCurrentCommit}
           tone="muted"
-          nextLabel={nextCountdown}
         />
       </div>
     </div>
@@ -1043,27 +1066,27 @@ function RoundTimeline({
 function TimelineBox({
   slot,
   tickNumber,
+  mainKind,
+  mainText,
   statusLabel,
-  countdown,
-  stakeUsd,
+  poolDisplay,
   isIn,
   tone,
-  nextLabel,
 }: {
   slot: 'LAST' | 'NOW' | 'NEXT'
   tickNumber: number | null
-  statusLabel: string
-  countdown: string
-  stakeUsd: number | null
+  /** 'timer' renders mainText big + statusLabel small. 'status' renders mainText big alone. */
+  mainKind: 'timer' | 'status'
+  mainText: string
+  statusLabel?: string
+  /** Pool $ for this round, pre-formatted, or '—' when unknown. */
+  poolDisplay: string
   isIn: boolean
   tone: 'primary' | 'muted' | 'urgent'
-  /** For NEXT box: the close-countdown for the upcoming round, shown subtly. */
-  nextLabel?: string
 }) {
   const slotColor =
     tone === 'urgent' ? APPLE_RED : tone === 'primary' ? APPLE_TEXT : APPLE_TEXT_SECONDARY
-  const tickColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : APPLE_TEXT
-  const dotColor = isIn ? APPLE_GREEN : 'rgba(0,0,0,0.18)'
+  const mainColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : APPLE_TEXT
 
   return (
     <div
@@ -1112,52 +1135,47 @@ function TimelineBox({
       <div
         style={{
           fontFamily: FONT_DISPLAY,
-          fontSize: 17,
+          fontSize: mainKind === 'status' ? 14 : 17,
           fontWeight: 500,
           letterSpacing: '-0.022em',
-          color: tickColor,
+          color: mainColor,
           fontVariantNumeric: 'tabular-nums',
           lineHeight: 1.1,
+          marginTop: mainKind === 'status' ? 4 : 0,
         }}
       >
-        {slot === 'NEXT' && nextLabel && nextLabel !== '—' ? nextLabel : countdown}
+        {mainText}
       </div>
-      <div
-        style={{
-          fontFamily: FONT_TEXT,
-          fontSize: 9.5,
-          color: APPLE_TEXT_SECONDARY,
-          letterSpacing: '+0.011em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {statusLabel}
-      </div>
+      {mainKind === 'timer' && statusLabel && (
+        <div
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 9.5,
+            color: APPLE_TEXT_SECONDARY,
+            letterSpacing: '+0.011em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {statusLabel}
+        </div>
+      )}
 
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: 4,
-          marginTop: 2,
-          minHeight: 14,
+          marginTop: 4,
+          minHeight: 18,
         }}
       >
         <span
           style={{
-            width: 5,
-            height: 5,
-            borderRadius: 999,
-            background: dotColor,
-            flexShrink: 0,
-          }}
-          aria-hidden
-        />
-        <span
-          style={{
             fontFamily: FONT_TEXT,
             fontSize: 11,
-            color: isIn ? APPLE_TEXT : APPLE_TEXT_SECONDARY,
+            fontWeight: 500,
+            color: poolDisplay === '—' ? APPLE_TEXT_SECONDARY : APPLE_TEXT,
             letterSpacing: '-0.016em',
             fontVariantNumeric: 'tabular-nums',
             whiteSpace: 'nowrap',
@@ -1165,12 +1183,29 @@ function TimelineBox({
             textOverflow: 'ellipsis',
           }}
         >
-          {isIn && stakeUsd !== null
-            ? formatUsdDollars(stakeUsd)
-            : isIn
-              ? 'In'
-              : 'Out'}
+          {poolDisplay}
         </span>
+        {isIn ? (
+          <span
+            style={{
+              padding: '1px 7px',
+              borderRadius: 980,
+              background: APPLE_GREEN,
+              color: '#FFFFFF',
+              fontFamily: FONT_TEXT,
+              fontSize: 9.5,
+              fontWeight: 600,
+              letterSpacing: '+0.04em',
+              textTransform: 'uppercase',
+              lineHeight: 1.4,
+              flexShrink: 0,
+            }}
+          >
+            In
+          </span>
+        ) : (
+          <span style={{ minWidth: 1, flexShrink: 0 }} aria-hidden />
+        )}
       </div>
     </div>
   )
