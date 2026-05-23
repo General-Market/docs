@@ -296,6 +296,10 @@ export function HumanMarketCard({
         externalPoints={points}
         resolutionType={resolutionType ?? null}
         thresholdBps={thresholdBps ?? null}
+        latestValue={(() => {
+          const v = parseFloat(market.value)
+          return isFinite(v) ? v : null
+        })()}
       />
 
       {/* Pick buttons — click here must not bubble up to onSelect */}
@@ -375,6 +379,9 @@ interface MarketChartProps {
   externalPoints?: HistoryPoint[]
   resolutionType?: string | null
   thresholdBps?: number | null
+  /** Latest snapshot price. Used as the threshold reference when no round is
+   *  active and we have no openPrice yet. */
+  latestValue?: number | null
 }
 
 function MarketChart({
@@ -387,6 +394,7 @@ function MarketChart({
   externalPoints,
   resolutionType,
   thresholdBps,
+  latestValue,
 }: MarketChartProps) {
   // Local fetch is only the fallback path for callers that don't pre-fetch.
   // The Vision human-trading page passes `externalPoints` so this effect is a no-op.
@@ -477,18 +485,24 @@ function MarketChart({
     }
     const pct = open && close ? ((close - open) / open) * 100 : null
 
+    // During an active round, the threshold is anchored to that round's
+    // open price. Between rounds, fall back to the latest snapshot value so
+    // the square previews where the threshold will sit when the next round
+    // opens. The x position uses roundCloseAt when known, else dataMax.
+    const refPrice = open ?? (latestValue != null && isFinite(latestValue) ? latestValue : null)
+    const refTime = roundCloseAt ?? (data.length > 0 ? data[data.length - 1].ts : null)
     let sq: { color: string; price: number; time: number } | null = null
-    if (open != null && roundCloseAt != null) {
+    if (refPrice != null && refTime != null) {
       const bps = thresholdBps ?? 0
       const type = (resolutionType ?? '').toUpperCase()
       if (type === 'UP_X' && bps > 0) {
-        sq = { color: APPLE_GREEN, price: open * (1 + bps / 10000), time: roundCloseAt }
+        sq = { color: APPLE_GREEN, price: refPrice * (1 + bps / 10000), time: refTime }
       } else if (type === 'DOWN_X' && bps > 0) {
-        sq = { color: APPLE_RED, price: open * (1 - bps / 10000), time: roundCloseAt }
+        sq = { color: APPLE_RED, price: refPrice * (1 - bps / 10000), time: refTime }
       } else if (type === 'UP_0') {
-        sq = { color: APPLE_GREEN, price: open, time: roundCloseAt }
+        sq = { color: APPLE_GREEN, price: refPrice, time: refTime }
       } else if (type === 'DOWN_0') {
-        sq = { color: APPLE_RED, price: open, time: roundCloseAt }
+        sq = { color: APPLE_RED, price: refPrice, time: refTime }
       }
     }
 
@@ -504,7 +518,7 @@ function MarketChart({
     const domain: [number, number] = [minV - pad, maxV + pad]
 
     return { openPrice: open, closePrice: close, changePct: pct, chartData: data, yDomain: domain, settlement: sq }
-  }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps])
+  }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps, latestValue])
 
   if (loading) {
     return (

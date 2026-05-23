@@ -368,32 +368,34 @@ export function MarketCandleChart({
   }, [loading, error, points, onReady])
 
   // -- Settlement square: at (roundCloseAt, threshold) --
-  // UP_X paints a green square at open × (1 + bps/10000); DOWN_X paints a red
-  // one at open × (1 − bps/10000). UP_0 and DOWN_0 are any-move-wins binaries
-  // — the threshold IS the open price, so the square sits on the dashed open
-  // line. The square is an HTML overlay positioned via timeToCoordinate +
-  // priceToCoordinate so the y stays glued to the threshold under pan/zoom.
+  // During an active round, threshold is computed off the round's open price.
+  // Between rounds (settling / pending / absent), there is no open yet — fall
+  // back to the latest snapshot value so the square previews where the
+  // threshold will sit when the next round opens. UP_X paints green at +bps;
+  // DOWN_X paints red at −bps; UP_0/DOWN_0 sit on the reference price itself.
   const settlement = useMemo<
-    { color: string; price: number; time: number } | null
+    { color: string; price: number; time: number | null } | null
   >(() => {
-    if (openPrice == null) return null
-    if (roundCloseAt == null) return null
+    const latest = parseFloat(market.value)
+    const referencePrice = openPrice ?? (isFinite(latest) ? latest : null)
+    if (referencePrice == null) return null
+    const referenceTime = roundCloseAt // null is fine — recompute clamps x.
     const bps = thresholdBps ?? 0
     const type = (resolutionType ?? '').toUpperCase()
     if (type === 'UP_X' && bps > 0) {
-      return { color: APPLE_GREEN, price: openPrice * (1 + bps / 10000), time: roundCloseAt }
+      return { color: APPLE_GREEN, price: referencePrice * (1 + bps / 10000), time: referenceTime }
     }
     if (type === 'DOWN_X' && bps > 0) {
-      return { color: APPLE_RED, price: openPrice * (1 - bps / 10000), time: roundCloseAt }
+      return { color: APPLE_RED, price: referencePrice * (1 - bps / 10000), time: referenceTime }
     }
     if (type === 'UP_0') {
-      return { color: APPLE_GREEN, price: openPrice, time: roundCloseAt }
+      return { color: APPLE_GREEN, price: referencePrice, time: referenceTime }
     }
     if (type === 'DOWN_0') {
-      return { color: APPLE_RED, price: openPrice, time: roundCloseAt }
+      return { color: APPLE_RED, price: referencePrice, time: referenceTime }
     }
     return null
-  }, [openPrice, roundCloseAt, resolutionType, thresholdBps])
+  }, [openPrice, roundCloseAt, resolutionType, thresholdBps, market.value])
 
   const [squarePos, setSquarePos] = useState<{ left: number; top: number } | null>(null)
 
@@ -407,23 +409,27 @@ export function MarketCandleChart({
     if (!chart || !series) return
 
     const recompute = () => {
-      const timeSec = ((settlement.time / 1000) + TZ_OFFSET_SEC) as Time
       const yCoord = series.priceToCoordinate(settlement.price)
       if (yCoord == null) {
         setSquarePos(null)
         return
       }
-      const xCoord = chart.timeScale().timeToCoordinate(timeSec)
+      let xCoord: number | null = null
+      if (settlement.time != null) {
+        const timeSec = ((settlement.time / 1000) + TZ_OFFSET_SEC) as Time
+        const c = chart.timeScale().timeToCoordinate(timeSec)
+        xCoord = c == null ? null : (c as unknown as number)
+      }
       let x: number
       if (xCoord == null) {
-        // Settle time sits past the last candle (live round) — clamp the
-        // square to the right edge of the plotting area so the y position
-        // (the threshold) stays honest.
+        // Either no active round (so no settle time), or the settle time
+        // sits past the last candle (live round). Clamp to the right edge
+        // so the y — the threshold price — stays honest.
         const containerW = containerRef.current?.clientWidth ?? 0
         const priceScaleW = chart.priceScale('right').width()
         x = Math.max(0, containerW - priceScaleW - 6)
       } else {
-        x = xCoord as unknown as number
+        x = xCoord
       }
       setSquarePos({ left: x, top: yCoord as unknown as number })
     }
