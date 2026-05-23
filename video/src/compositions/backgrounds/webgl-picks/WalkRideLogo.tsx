@@ -69,6 +69,8 @@ const MOBILITY_MONTH_LETTERS: string[] = [
 // ─── Component ──────────────────────────────────────────────────────────────
 
 /** One scrolling row of WALK or RIDE text, tiled horizontally. */
+const TILE_ADVANCE = 280; // ~14% of 2000-wide viewBox, matching source ~65/460
+
 const TiledText: React.FC<{
   word: string;
   scrollPx: number;
@@ -77,19 +79,18 @@ const TiledText: React.FC<{
   fill: string;
 }> = ({ word, scrollPx, y, faded, fill }) => {
   const TILES = 12;
-  const ADVANCE = 320; // px between tile starts at this font size
   return (
     <g transform={`translate(${scrollPx} ${y})`} opacity={faded}>
       {Array.from({ length: TILES }).map((_, i) => (
         <text
           key={i}
-          x={i * ADVANCE - ADVANCE * 2}
+          x={i * TILE_ADVANCE - TILE_ADVANCE * 2}
           y={0}
           fill={fill}
           fontFamily='"Helvetica Neue", "Arial Black", Helvetica, Arial, sans-serif'
           fontWeight={900}
-          fontSize={100}
-          letterSpacing={6}
+          fontSize={90}
+          letterSpacing={4}
         >
           {word}
         </text>
@@ -106,7 +107,8 @@ export const WalkRideLogo: React.FC = () => {
 
   // ─── Scrolling rows ────────────────────────────────────────────────────────
   // Each row scrolls at ~80px/s. WALK moves left, RIDE moves right.
-  const ROW_ADVANCE = 320; // must match TiledText ADVANCE
+  // Modulo by tile advance so the scroll wraps seamlessly.
+  const ROW_ADVANCE = 280; // must match TILE_ADVANCE in TiledText
   const walkScroll = -((seconds * 80) % ROW_ADVANCE);
   const rideScroll = (seconds * 80) % ROW_ADVANCE;
 
@@ -208,18 +210,23 @@ export const WalkRideLogo: React.FC = () => {
   void totalSeconds;
 
   // ─── Layout constants ──────────────────────────────────────────────────────
+  // Source uses 12 rows with y-spacing = 17 in a 200-unit viewBox (~8.5%
+  // each). Our viewBox is 1400 tall, so 8.5% ≈ 120 units between rows.
   const ROWS = 12;
-  const ROW_SPACING = 90; // px between rows in source y-units
+  const ROW_SPACING = 120;
 
   return (
     <AbsoluteFill style={{ background: BG, overflow: "hidden" }}>
       {/* ── WALK rows (top half) ─────────────────────────────────────────── */}
+      {/* Source: top half wrapper translated y: -99 with height 50%, so the
+          rows overflow slightly into the center where the brand mark sits. */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          top: -120,
-          height: "60%",
+          left: 0,
+          right: 0,
+          top: "-9.9%", // y: -99 in a ~1000h viewport ≈ -9.9%
+          height: "50%",
           transform: "rotate(6deg) skewY(-11deg) scale(1.05)",
           transformOrigin: "center",
           overflow: "visible",
@@ -228,7 +235,7 @@ export const WalkRideLogo: React.FC = () => {
         <svg
           width="100%"
           height="100%"
-          viewBox="-200 -100 2000 800"
+          viewBox="-200 -50 2000 1400"
           preserveAspectRatio="xMidYMax slice"
           overflow="visible"
         >
@@ -240,7 +247,7 @@ export const WalkRideLogo: React.FC = () => {
               <TiledText
                 key={i}
                 word="WALK"
-                scrollPx={walkScroll + (i % 2 === 0 ? 0 : -60)}
+                scrollPx={walkScroll + (i % 2 === 0 ? 0 : -ROW_ADVANCE / 2)}
                 y={i * ROW_SPACING + 100}
                 faded={alpha}
                 fill={WALK_FILL}
@@ -251,12 +258,16 @@ export const WalkRideLogo: React.FC = () => {
       </div>
 
       {/* ── RIDE rows (bottom half) ──────────────────────────────────────── */}
+      {/* Source: bottom half wrapper translated y: +99 with height 50%, so
+          the rows again overflow slightly into the centre. */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
+          left: 0,
+          right: 0,
           top: "50%",
-          height: "60%",
+          marginTop: "9.9%",
+          height: "50%",
           transform: "rotate(6deg) skewY(-11deg) scale(1.05)",
           transformOrigin: "center",
           overflow: "visible",
@@ -265,7 +276,7 @@ export const WalkRideLogo: React.FC = () => {
         <svg
           width="100%"
           height="100%"
-          viewBox="-200 -100 2000 800"
+          viewBox="-200 -50 2000 1400"
           preserveAspectRatio="xMidYMin slice"
           overflow="visible"
         >
@@ -276,7 +287,7 @@ export const WalkRideLogo: React.FC = () => {
               <TiledText
                 key={i}
                 word="RIDE"
-                scrollPx={rideScroll + (i % 2 === 0 ? 0 : 60)}
+                scrollPx={rideScroll + (i % 2 === 0 ? 0 : ROW_ADVANCE / 2)}
                 y={i * ROW_SPACING + 100}
                 faded={alpha}
                 fill={WALK_FILL}
