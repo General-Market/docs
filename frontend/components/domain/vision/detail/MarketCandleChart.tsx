@@ -368,10 +368,11 @@ export function MarketCandleChart({
   }, [loading, error, points, onReady])
 
   // -- Settlement square: at (roundCloseAt, threshold) --
-  // UP_X markets paint a green square at open × (1 + bps/10000); DOWN_X markets
-  // paint a red one at open × (1 − bps/10000). UP_0/DOWN_0 have no threshold
-  // and render nothing. The square is an HTML element absolutely positioned
-  // inside the chart's container, driven by timeToCoordinate + priceToCoordinate.
+  // UP_X paints a green square at open × (1 + bps/10000); DOWN_X paints a red
+  // one at open × (1 − bps/10000). UP_0 and DOWN_0 are any-move-wins binaries
+  // — the threshold IS the open price, so the square sits on the dashed open
+  // line. The square is an HTML overlay positioned via timeToCoordinate +
+  // priceToCoordinate so the y stays glued to the threshold under pan/zoom.
   const settlement = useMemo<
     { color: string; price: number; time: number } | null
   >(() => {
@@ -379,12 +380,17 @@ export function MarketCandleChart({
     if (roundCloseAt == null) return null
     const bps = thresholdBps ?? 0
     const type = (resolutionType ?? '').toUpperCase()
-    if (bps <= 0) return null
-    if (type === 'UP_X') {
+    if (type === 'UP_X' && bps > 0) {
       return { color: APPLE_GREEN, price: openPrice * (1 + bps / 10000), time: roundCloseAt }
     }
-    if (type === 'DOWN_X') {
+    if (type === 'DOWN_X' && bps > 0) {
       return { color: APPLE_RED, price: openPrice * (1 - bps / 10000), time: roundCloseAt }
+    }
+    if (type === 'UP_0') {
+      return { color: APPLE_GREEN, price: openPrice, time: roundCloseAt }
+    }
+    if (type === 'DOWN_0') {
+      return { color: APPLE_RED, price: openPrice, time: roundCloseAt }
     }
     return null
   }, [openPrice, roundCloseAt, resolutionType, thresholdBps])
@@ -402,13 +408,24 @@ export function MarketCandleChart({
 
     const recompute = () => {
       const timeSec = ((settlement.time / 1000) + TZ_OFFSET_SEC) as Time
-      const x = chart.timeScale().timeToCoordinate(timeSec)
-      const y = series.priceToCoordinate(settlement.price)
-      if (x == null || y == null) {
+      const yCoord = series.priceToCoordinate(settlement.price)
+      if (yCoord == null) {
         setSquarePos(null)
         return
       }
-      setSquarePos({ left: x, top: y })
+      const xCoord = chart.timeScale().timeToCoordinate(timeSec)
+      let x: number
+      if (xCoord == null) {
+        // Settle time sits past the last candle (live round) — clamp the
+        // square to the right edge of the plotting area so the y position
+        // (the threshold) stays honest.
+        const containerW = containerRef.current?.clientWidth ?? 0
+        const priceScaleW = chart.priceScale('right').width()
+        x = Math.max(0, containerW - priceScaleW - 6)
+      } else {
+        x = xCoord as unknown as number
+      }
+      setSquarePos({ left: x, top: yCoord as unknown as number })
     }
 
     recompute()

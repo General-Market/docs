@@ -481,10 +481,14 @@ function MarketChart({
     if (open != null && roundCloseAt != null) {
       const bps = thresholdBps ?? 0
       const type = (resolutionType ?? '').toUpperCase()
-      if (bps > 0 && type === 'UP_X') {
+      if (type === 'UP_X' && bps > 0) {
         sq = { color: APPLE_GREEN, price: open * (1 + bps / 10000), time: roundCloseAt }
-      } else if (bps > 0 && type === 'DOWN_X') {
+      } else if (type === 'DOWN_X' && bps > 0) {
         sq = { color: APPLE_RED, price: open * (1 - bps / 10000), time: roundCloseAt }
+      } else if (type === 'UP_0') {
+        sq = { color: APPLE_GREEN, price: open, time: roundCloseAt }
+      } else if (type === 'DOWN_0') {
+        sq = { color: APPLE_RED, price: open, time: roundCloseAt }
       }
     }
 
@@ -560,7 +564,20 @@ function MarketChart({
     <div style={{ position: 'relative', height: 120, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
-          <XAxis dataKey="ts" type="number" domain={['dataMin', 'dataMax']} hide />
+          {/* X domain extends past dataMax to include the settle time, so
+              the live-round square doesn't get clipped when roundCloseAt
+              sits past the last history point. */}
+          <XAxis
+            dataKey="ts"
+            type="number"
+            domain={[
+              'dataMin',
+              settlement
+                ? (dm: number) => Math.max(dm, settlement.time)
+                : 'dataMax',
+            ]}
+            hide
+          />
           <YAxis type="number" domain={yDomain ?? ['auto', 'auto']} hide />
           <RechartsTooltip
             content={<ChartTooltip />}

@@ -734,28 +734,33 @@ export function AssetActivityCard({
               })}
               {/* Per-batch threshold square. Each settlement carries one
                   resolutionType — UP_X (1) draws a green square at +x bps,
-                  DOWN_X (2) draws a red one at −x bps. UP_0 / DOWN_0 carry
-                  no threshold and draw nothing. When the threshold sits
-                  outside the chart range, the square clamps to the edge
-                  and switches to dashed so the off-scale fact is visible. */}
+                  DOWN_X (2) draws a red one at −x bps. UP_0 (4) and DOWN_0
+                  (5) are any-move-wins binaries: the threshold IS the open,
+                  so the square sits on the baseline. When the threshold
+                  clips the chart range, the square clamps to the edge and
+                  switches to dashed so the off-scale fact stays visible. */}
               {columns.map((c, i) => {
-                const bps = c.batch.thresholdBps
-                if (!bps || bps <= 0) return null
                 const rt = c.batch.resolutionType
-                const isUpX = rt === 1
-                const isDownX = rt === 2
-                if (!isUpX && !isDownX) return null
-                const ratio = bps / 10000
+                const isUp = rt === 1 || rt === 4
+                const isDown = rt === 2 || rt === 5
+                if (!isUp && !isDown) return null
+                const bps = c.batch.thresholdBps
+                const ratio = bps > 0 ? bps / 10000 : 0
                 const x = xForIdx(i)
                 const padTop = 12
                 const padBot = CHART_HEIGHT - 12
-                const rawY = isUpX ? yForRatio(1 + ratio) : yForRatio(1 - ratio)
-                const y = isUpX
+                const targetRatio = isUp ? 1 + ratio : 1 - ratio
+                const rawY = yForRatio(targetRatio)
+                const y = isUp
                   ? Math.max(padTop, rawY)
                   : Math.min(padBot, rawY)
-                const offScale = isUpX ? rawY < padTop : rawY > padBot
-                const fill = isUpX ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+                const offScale = isUp ? rawY < padTop : rawY > padBot
+                const fill = isUp ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
                 const size = Math.max(6, CELL_W * 0.6)
+                const label =
+                  bps > 0
+                    ? `${isUp ? 'UP' : 'DOWN'} threshold · ${isUp ? '+' : '−'}${formatRulePct(bps)}`
+                    : `${isUp ? 'UP' : 'DOWN'} · any move wins`
                 return (
                   <rect
                     key={`tk-${c.batch.batchId}`}
@@ -772,7 +777,7 @@ export function AssetActivityCard({
                     ry={1.5}
                   >
                     <title>
-                      {`${isUpX ? 'UP' : 'DOWN'} threshold · ±${formatRulePct(bps)} · settles ${formatTime(new Date(c.batch.settledAt).getTime())}`}
+                      {`${label} · settles ${formatTime(new Date(c.batch.settledAt).getTime())}`}
                     </title>
                   </rect>
                 )
