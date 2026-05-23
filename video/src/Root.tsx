@@ -129,6 +129,7 @@ import {
   flagCardMetas,
 } from "./compositions/anticheat/AntiCheatFlagCard";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
+import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
@@ -205,6 +206,16 @@ export const RemotionRoot: React.FC = () => {
         fps={blockTradingExileMeta.fps}
         width={blockTradingExileMeta.width}
         height={blockTradingExileMeta.height}
+      />
+
+      {/* ═══ ANTICHEAT-EDIT — auto-cut camera+mic recording (silences trimmed, retakes dropped) ═══ */}
+      <Composition
+        id={anticheatEditMeta.id}
+        component={anticheatEditMeta.component}
+        durationInFrames={anticheatEditMeta.durationInFrames}
+        fps={anticheatEditMeta.fps}
+        width={anticheatEditMeta.width}
+        height={anticheatEditMeta.height}
       />
 
       {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
