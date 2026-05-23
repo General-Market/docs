@@ -85,7 +85,14 @@ export function chartHistoryQueryOptions(
         }))
         .filter(p => isFinite(p.value) && p.ts > 0)
     },
-    staleTime: 30_000,
+    // The history we already have is enough — completed candles don't
+    // change, and the live tail moves slowly enough that a 2-minute
+    // staleTime feels real-time without thrashing the chart on every
+    // focus/blur. Default refetchOnWindowFocus was repainting the chart
+    // every time the user alt-tabbed and back.
+    staleTime: 2 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   }
 }
 

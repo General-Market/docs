@@ -63,7 +63,11 @@ export function useBulkMarketHistory(
       }
       return out
     },
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    // 24h sparklines move slowly. Hold the result for 5 min and let the
+    // user refresh by navigating away and back — polling every 60s was
+    // hammering an endpoint that already struggles on big-defi sources.
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 }

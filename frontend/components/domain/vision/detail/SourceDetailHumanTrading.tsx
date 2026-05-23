@@ -39,6 +39,7 @@ import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
 import { HumanTradingOnboarding } from './HumanTradingOnboarding'
 import { MarketCandleChart, chartHistoryQueryOptions, type Timeframe } from './MarketCandleChart'
+import { SourceBulkPickBar } from './SourceBulkPickBar'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -272,10 +273,10 @@ export function SourceDetailHumanTrading({
     [curatedMarkets],
   )
   const dataNodeSourceId = useMemo(() => toInternalId(sourceId), [sourceId])
-  const {
-    data: historyByAsset,
-    isLoading: isBulkHistoryLoading,
-  } = useBulkMarketHistory(dataNodeSourceId, curatedAssetIds)
+  // Bulk 24h history feeds the mini-card sparklines. The big candle chart
+  // owns its own per-asset history fetch — gating the page on this endpoint
+  // breaks the chart whenever the data-node's batch-history is slow or 502s.
+  const { data: historyByAsset } = useBulkMarketHistory(dataNodeSourceId, curatedAssetIds)
 
   // -- bettingEnd from the round (server-truth) --
   const { data: rounds } = useRounds(sourceId)
@@ -666,18 +667,15 @@ export function SourceDetailHumanTrading({
     onValidate()
   }
 
-  // Single gate for the chart area. When this is true, both the big candle
-  // chart and the 10 mini-cards are guaranteed to have data — so the page
-  // never paints staggered skeletons.
-  const [bigChartReady, setBigChartReady] = useState(false)
-  const onBigChartReady = useCallback(() => setBigChartReady(true), [])
-  const chartsReady =
-    !isBulkHistoryLoading &&
-    (bigChartReady || curatedMarkets.length === 0 || showEmpty)
-
   // The chart stays mounted across asset clicks — useQuery + keepPreviousData
   // keeps the old candles visible while the next asset's history loads, and
   // hover-prefetch warms the cache so the swap is instant on click.
+
+  // Asset IDs the user can actually pick on — used by the bulk-pick bar.
+  const tradableAssetIds = useMemo(
+    () => tradableMarkets.map(m => m.market.assetId),
+    [tradableMarkets],
+  )
 
   const focusedMarket =
     curatedMarkets.find(m => m.assetId === selectedAssetId) ?? curatedMarkets[0] ?? null
@@ -729,44 +727,32 @@ export function SourceDetailHumanTrading({
             <IndexingNotice />
           ) : (
             <>
-              {/* Charts: one loader for both diagrams. Once data + initial
-                  chart draw land, both fade in together. */}
-              {!chartsReady && (
-                <div
-                  style={{
-                    background: APPLE_PANEL,
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    borderRadius: 14,
-                    minHeight: 420,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <GeneralLoader height="320px" />
-                </div>
+              {/* Bulk picker — All UP, All DOWN, Surprise me. Lives above the
+                  big chart so the user can stake a portfolio in one tap, then
+                  scroll past to the individual tiles to refine. */}
+              <SourceBulkPickBar
+                tradableAssetIds={tradableAssetIds}
+                setPicks={setPicks}
+                disabled={flow !== 'idle' || !isBettingOpen}
+              />
+
+              {/* Big candle chart — renders as soon as its own history lands.
+                  Don't gate on the bulk-history endpoint (which can be slow or
+                  502 on overloaded sources); each chart owns its own loader. */}
+              {focusedMarket && (
+                <MarketCandleChart
+                  sourceId={sourceId}
+                  source={source}
+                  market={focusedMarket}
+                  roundOpenAt={roundOpenAt}
+                  roundCloseAt={roundCloseAt}
+                  resolved={resolved}
+                  timeframe={chartTimeframe}
+                  onTimeframeChange={setChartTimeframe}
+                />
               )}
 
-              <div style={{ display: chartsReady ? 'block' : 'none' }}>
-                {focusedMarket && (
-                  <MarketCandleChart
-                    sourceId={sourceId}
-                    source={source}
-                    market={focusedMarket}
-                    roundOpenAt={roundOpenAt}
-                    roundCloseAt={roundCloseAt}
-                    resolved={resolved}
-                    timeframe={chartTimeframe}
-                    onTimeframeChange={setChartTimeframe}
-                    onReady={onBigChartReady}
-                  />
-                )}
-              </div>
-
-              <div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
-                style={{ display: chartsReady ? 'grid' : 'none' }}
-              >
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {/* Always show the curated 10 so the logos are visible even
                     when the live batch's marketIds don't intersect the curated
                     allowlist. Picks only fire for markets that are actually in
@@ -1803,37 +1789,6 @@ function RevealFailedBanner({
       >
         {isSubmitting ? 'Retrying…' : 'Retry now'}
       </button>
-    </div>
-  )
-}
-
-function SkeletonRows() {
-  return (
-    <div className="flex flex-col gap-3" aria-hidden>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            background: APPLE_PANEL,
-            border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: 18,
-            padding: '20px 24px',
-            height: 210,
-            opacity: 0.6,
-          }}
-        >
-          <div className="flex items-center gap-4">
-            <span className="skeleton shrink-0" style={{ width: 48, height: 48, borderRadius: 12 }} />
-            <span className="skeleton flex-1 h-[18px] rounded" />
-            <span className="skeleton w-[120px] h-[24px] rounded" />
-          </div>
-          <span className="skeleton block mt-4" style={{ height: 96, borderRadius: 8 }} />
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <span className="skeleton" style={{ height: 56, borderRadius: 14 }} />
-            <span className="skeleton" style={{ height: 56, borderRadius: 14 }} />
-          </div>
-        </div>
-      ))}
     </div>
   )
 }
