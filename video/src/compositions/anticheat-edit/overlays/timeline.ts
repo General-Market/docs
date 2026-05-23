@@ -1,50 +1,40 @@
-// Section title → chart timeline.
+// Mechanism → chart timeline.
 //
-// Timestamps are the position (seconds) of each section-title marker
-// inside the baked final.mp4. They were computed by walking cuts.json
-// (sum of segment durations through that marker); see overlays/README.
+// `at` = position (seconds) inside the baked final.mp4 where the video
+// starts explaining that mechanism. Computed by walking cuts.json's
+// segment durations to the source-second of each explanation
+// (scripts/anticheat-final-times). Each chart fades in over the video
+// for `duration` seconds; the audio keeps playing under it.
 //
-// Each entry mounts the named chart starting at `at` for `duration` seconds.
-// The chart appears fullscreen on top of the OffthreadVideo and the audio
-// keeps playing under it.
+// Thirteen mechanism charts, plus an overview card that opens the video.
 
 import type { FC } from "react";
-import {
-  MechanismsChart,
-  ColocationChart,
-  FeeTierChart,
-  MaxingCostChart,
-  VenueBleedChart,
-  VenueReceiptsChart,
-} from "./charts";
+import { MechanismsOverview, MECHANISM_CHARTS } from "./charts";
 
 export type OverlaySlot = {
-  /** Final.mp4 seconds. */
+  /** final.mp4 seconds. */
   at: number;
-  /** Seconds the chart stays on screen. */
+  /** seconds the chart stays on screen. */
   duration: number;
   component: FC;
 };
 
-// Each chart sits on screen for ~6s — enough for the eye to read all bars,
-// short enough to keep the cut moving. The first overlay (mechanisms) opens
-// the video as a chapter card; the last (receipts) closes it.
+const HOLD = 5.5;
+
 export const OVERLAYS: OverlaySlot[] = [
-  // Hook → opening chapter card. Sits for 6s right at the start.
-  { at: 0.5, duration: 6, component: MechanismsChart },
+  { at: 0.5, duration: 6, component: MechanismsOverview },
 
-  // Title: Colocation
-  { at: 30.2, duration: 6, component: ColocationChart },
-
-  // Title: unfair fee tier
-  { at: 114.5, duration: 6, component: FeeTierChart },
-
-  // Title: maxing out advantages
-  { at: 213.9, duration: 6, component: MaxingCostChart },
-
-  // Title: order flows (also covers PFOF / b-book → use venue bleed)
-  { at: 386.1, duration: 6, component: VenueBleedChart },
-
-  // Title: maker rebate tiers — closes on the receipt count
-  { at: 693.9, duration: 6, component: VenueReceiptsChart },
+  { at: 29.1, duration: HOLD, component: MECHANISM_CHARTS["colocation"] },
+  { at: 47.8, duration: HOLD, component: MECHANISM_CHARTS["region-cluster"] },
+  { at: 106.3, duration: HOLD, component: MECHANISM_CHARTS["vip-fee-tier"] },
+  { at: 238.5, duration: HOLD, component: MECHANISM_CHARTS["listing-frontrun"] },
+  { at: 275.9, duration: HOLD, component: MECHANISM_CHARTS["order-flow-vis"] },
+  { at: 339.3, duration: HOLD, component: MECHANISM_CHARTS["pfof"] },
+  { at: 352.0, duration: HOLD, component: MECHANISM_CHARTS["b-book"] },
+  { at: 433.3, duration: HOLD, component: MECHANISM_CHARTS["jito-mev"] },
+  { at: 460.2, duration: HOLD, component: MECHANISM_CHARTS["last-look"] },
+  { at: 499.1, duration: HOLD, component: MECHANISM_CHARTS["api-rate-ceiling"] },
+  { at: 516.8, duration: HOLD, component: MECHANISM_CHARTS["oracle-peek"] },
+  { at: 602.1, duration: HOLD, component: MECHANISM_CHARTS["maker-rebate"] },
+  { at: 619.6, duration: HOLD, component: MECHANISM_CHARTS["adl-visibility"] },
 ];

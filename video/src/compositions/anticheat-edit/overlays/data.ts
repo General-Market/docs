@@ -1,134 +1,173 @@
-// Data mirrored from frontend/app/[locale]/(marketing)/anticheat-flags/.
-// Single source of truth lives in the frontend — this file is the
-// video-side snapshot. If the page values move materially, refresh here.
+// Mechanism data mirrored from
+// frontend/app/[locale]/(marketing)/anticheat-flags/data-edge-ways.ts.
+// Thirteen ways a venue takes a bite, ranked by effective bps per
+// round-trip (peak × frequency). One chart per mechanism in the video.
 
-import type { GlowBar } from "./GlowBars";
-
-// Venue palette. Each venue gets a single color used for its pill and halo.
-// Hand-picked to map to the brand or to a memorable association.
-const C = {
-  // Cool blues — exchanges that play it straight in the UI but tax in fees.
-  binance: "#F0B90B",
-  bybit: "#F7A600",
-  coinbase: "#0052FF",
-  hyperliquid: "#97FCE4",
-  deribit: "#7BFF8E",
-  pumpfun: "#A78BFA",
-  // Prediction markets.
-  polymarket: "#5EA0FF",
-  kalshi: "#06CB9D",
-  // Brokers.
-  robinhood: "#B7F60D",
-  ibkr: "#FF7A5C",
-  etoro: "#FF4F8D",
-  // Generic accent for mechanisms.
-  cobalt: "#5B79FF",
-  base: "#0052FF",
-  amber: "#FFBE3D",
-  rose: "#FF4F8D",
-  emerald: "#34D399",
-  white: "#F4F6F8",
+export type Mechanism = {
+  slug: string;
+  /** Full name, rendered as the chart title. */
+  name: string;
+  /** Short label rendered under the bar. */
+  short: string;
+  /** Rank, 1 = worst. */
+  rank: number;
+  peakBps: number;
+  /** 0..1 — share of round-trips the mechanism fires on. */
+  frequency: number;
+  /** Effective bps = peak × frequency. */
+  bps: number;
+  /** One-line peak × frequency = effective, for the callout. */
+  conversion: string;
+  /** The General Market answer. */
+  fix: string;
 };
 
-// ─── 1. Thirteen mechanisms ────────────────────────────────────────────────
-// Effective bps per round-trip = peak × frequency. Sorted descending.
-// Values pulled from data-edge-ways.ts (frontend).
-
-export const MECHANISM_BARS: GlowBar[] = [
-  { key: "jito-mev", value: 60, topLabel: "60.0", bottomLabel: "Jito-bundle MEV", color: C.pumpfun },
-  { key: "pfof", value: 17, topLabel: "17.0", bottomLabel: "PFOF markup", color: C.robinhood },
-  { key: "b-book", value: 15, topLabel: "15.0", bottomLabel: "Internal b-book", color: C.etoro },
-  { key: "vip-fee-tier", value: 11, topLabel: "11.0", bottomLabel: "VIP fee tier", color: C.binance },
-  { key: "order-flow-vis", value: 2, topLabel: "2.0", bottomLabel: "Flow visibility", color: C.deribit },
-  { key: "region-cluster", value: 2, topLabel: "2.0", bottomLabel: "AWS cluster", color: C.hyperliquid },
-  { key: "listing-frontrun", value: 1.6, topLabel: "1.6", bottomLabel: "Listing frontrun", color: C.coinbase },
-  { key: "maker-rebate", value: 1.5, topLabel: "1.5", bottomLabel: "Maker rebate", color: C.kalshi },
-  { key: "oracle-peek", value: 0.6, topLabel: "0.6", bottomLabel: "Oracle peek", color: C.polymarket },
-  { key: "colocation", value: 0.5, topLabel: "0.5", bottomLabel: "Colocation", color: C.amber },
-  { key: "api-rate", value: 0.5, topLabel: "0.5", bottomLabel: "API rate", color: C.cobalt },
-  { key: "last-look", value: 0.2, topLabel: "0.2", bottomLabel: "Last look", color: C.ibkr },
-  { key: "adl", value: 0.004, topLabel: "0.004", bottomLabel: "ADL cascade", color: C.rose },
+// Sorted by effective bps, descending — the order the bar chart draws in.
+export const MECHANISMS: Mechanism[] = [
+  {
+    slug: "jito-mev",
+    name: "Jito-bundle MEV",
+    short: "MEV",
+    rank: 1,
+    peakBps: 400,
+    frequency: 0.15,
+    bps: 60,
+    conversion: "400 bps peak × 15% sandwiched = 60 bps a round-trip",
+    fix: "Sealed bets. No mempool to sandwich.",
+  },
+  {
+    slug: "pfof",
+    name: "PFOF wholesaler markup",
+    short: "PFOF",
+    rank: 2,
+    peakBps: 17,
+    frequency: 1.0,
+    bps: 17,
+    conversion: "17 bps peak × every order sold = 17 bps a round-trip",
+    fix: "No order flow to sell. Bets post to the pool.",
+  },
+  {
+    slug: "b-book",
+    name: "Internal book",
+    short: "B-book",
+    rank: 3,
+    peakBps: 15,
+    frequency: 1.0,
+    bps: 15,
+    conversion: "15 bps peak × every fill internalized = 15 bps",
+    fix: "No internal book. The pool is the counterparty.",
+  },
+  {
+    slug: "vip-fee-tier",
+    name: "VIP fee-tier subsidy",
+    short: "VIP tier",
+    rank: 4,
+    peakBps: 11,
+    frequency: 1.0,
+    bps: 11,
+    conversion: "VIP 0 pays 10 bps, VIP 9 pays 2.3 — gap is yours",
+    fix: "A single flat fee, one tier for everyone.",
+  },
+  {
+    slug: "order-flow-vis",
+    name: "Order-flow visibility",
+    short: "Flow view",
+    rank: 5,
+    peakBps: 2,
+    frequency: 1.0,
+    bps: 2,
+    conversion: "2 bps peak × the book is always visible = 2 bps",
+    fix: "Sealed bets. The book is private until resolve.",
+  },
+  {
+    slug: "region-cluster",
+    name: "AWS region clustering",
+    short: "AWS cluster",
+    rank: 6,
+    peakBps: 2,
+    frequency: 1.0,
+    bps: 2,
+    conversion: "195 ms Tokyo→Ashburn gap, taxed every trade",
+    fix: "Global pricing. Geography is not an input.",
+  },
+  {
+    slug: "listing-frontrun",
+    name: "Listing front-running",
+    short: "Listing FR",
+    rank: 7,
+    peakBps: 800,
+    frequency: 0.002,
+    bps: 1.6,
+    conversion: "800 bps peak × 0.2% of trades = 1.6 bps",
+    fix: "BLS-resolved bets. No listing pipeline to leak.",
+  },
+  {
+    slug: "maker-rebate",
+    name: "Maker rebate / inverted fees",
+    short: "Rebate",
+    rank: 8,
+    peakBps: 1.5,
+    frequency: 1.0,
+    bps: 1.5,
+    conversion: "1.5 bps peak × every match = 1.5 bps",
+    fix: "No maker/taker model. One fee, whoever posts.",
+  },
+  {
+    slug: "oracle-peek",
+    name: "Oracle / price-feed peek",
+    short: "Oracle peek",
+    rank: 9,
+    peakBps: 12,
+    frequency: 0.05,
+    bps: 0.6,
+    conversion: "12 bps peak × 5% price-sensitive ticks = 0.6 bps",
+    fix: "BLS-aggregated consensus. No single peek.",
+  },
+  {
+    slug: "colocation",
+    name: "Colocation latency edge",
+    short: "Colocation",
+    rank: 10,
+    peakBps: 0.5,
+    frequency: 1.0,
+    bps: 0.5,
+    conversion: "0.5 bps global latency-arbitrage tax, every trade",
+    fix: "A parimutuel pool with no engine to game.",
+  },
+  {
+    slug: "api-rate-ceiling",
+    name: "API rate ceiling",
+    short: "API rate",
+    rank: 11,
+    peakBps: 0.5,
+    frequency: 1.0,
+    bps: 0.5,
+    conversion: "One public ceiling, institutional tiers undisclosed",
+    fix: "One rate for everyone, pool resolves once a round.",
+  },
+  {
+    slug: "last-look",
+    name: "Last-look quote rejection",
+    short: "Last look",
+    rank: 12,
+    peakBps: 2,
+    frequency: 0.1,
+    bps: 0.2,
+    conversion: "2 bps peak × 10% volatile fills = 0.2 bps",
+    fix: "A sealed-bid auction with no last-look step.",
+  },
+  {
+    slug: "adl-visibility",
+    name: "ADL / liquidation visibility",
+    short: "ADL",
+    rank: 13,
+    peakBps: 4,
+    frequency: 0.001,
+    bps: 0.004,
+    conversion: "4 bps peak × 0.1% cascade trades = 0.004 bps",
+    fix: "No leverage, so no forced-liquidation pathway.",
+  },
 ];
 
-// ─── 2. Per-venue bleed at 1,000 trades ────────────────────────────────────
-// bpsPerTrade × 1,000 ÷ 100 = % bleed at the central estimate.
-// Sorted descending. Values pulled from data-venue-bleed.ts.
-
-export const VENUE_BLEED_BARS: GlowBar[] = [
-  { key: "pumpfun", value: 80.3, topLabel: "+803%", bottomLabel: "Pump.fun", color: C.pumpfun },
-  { key: "polymarket", value: 17.7, topLabel: "+177%", bottomLabel: "Polymarket", color: C.polymarket },
-  { key: "robinhood", value: 17.3, topLabel: "+173%", bottomLabel: "Robinhood", color: C.robinhood },
-  { key: "etoro", value: 16.7, topLabel: "+167%", bottomLabel: "eToro", color: C.etoro },
-  { key: "binance", value: 16.2, topLabel: "+162%", bottomLabel: "Binance", color: C.binance },
-  { key: "coinbase", value: 13.0, topLabel: "+130%", bottomLabel: "Coinbase", color: C.coinbase },
-  { key: "ibkr", value: 12.5, topLabel: "+125%", bottomLabel: "IBKR", color: C.ibkr },
-  { key: "kalshi", value: 4.5, topLabel: "+45%", bottomLabel: "Kalshi", color: C.kalshi },
-  { key: "bybit", value: 4.0, topLabel: "+40%", bottomLabel: "Bybit", color: C.bybit },
-  { key: "deribit", value: 2.2, topLabel: "+22%", bottomLabel: "Deribit", color: C.deribit },
-  { key: "hyperliquid", value: 1.9, topLabel: "+19%", bottomLabel: "Hyperliquid", color: C.hyperliquid },
-];
-
-// ─── 3. Colocation gated latency ───────────────────────────────────────────
-// edgeMs — the latency gap that survives after a retail VPS is already
-// running in the right region. Sorted descending.
-
-export const COLOCATION_BARS: GlowBar[] = [
-  { key: "etoro", value: 100, topLabel: "+100ms", bottomLabel: "eToro", color: C.etoro },
-  { key: "pumpfun", value: 50, topLabel: "+50ms", bottomLabel: "Pump.fun", color: C.pumpfun },
-  { key: "ibkr", value: 50, topLabel: "+50ms", bottomLabel: "IBKR", color: C.ibkr },
-  { key: "kalshi", value: 49, topLabel: "+49ms", bottomLabel: "Kalshi", color: C.kalshi },
-  { key: "robinhood", value: 35, topLabel: "+35ms", bottomLabel: "Robinhood", color: C.robinhood },
-  { key: "hyperliquid", value: 25, topLabel: "+25ms", bottomLabel: "Hyperliquid", color: C.hyperliquid },
-  { key: "binance", value: 20, topLabel: "+20ms", bottomLabel: "Binance", color: C.binance },
-  { key: "bybit", value: 15, topLabel: "+15ms", bottomLabel: "Bybit", color: C.bybit },
-  { key: "polymarket", value: 5, topLabel: "+5ms", bottomLabel: "Polymarket", color: C.polymarket },
-  { key: "deribit", value: 5, topLabel: "+5ms", bottomLabel: "Deribit", color: C.deribit },
-  { key: "coinbase", value: 5, topLabel: "+5ms", bottomLabel: "Coinbase", color: C.coinbase },
-];
-
-// ─── 4. Fee tier round-trip rebate (VIP 0 vs VIP 9 disclosed deltas) ───────
-// From data-fee-tiers (numbers visible in the page footer cards).
-
-export const FEE_TIER_BARS: GlowBar[] = [
-  { key: "binance", value: 15.4, topLabel: "−15.4 bps", bottomLabel: "Binance", color: C.binance },
-  { key: "bybit", value: 12.0, topLabel: "−12.0 bps", bottomLabel: "Bybit", color: C.bybit },
-  { key: "deribit", value: 9.5, topLabel: "−9.5 bps", bottomLabel: "Deribit", color: C.deribit },
-  { key: "coinbase", value: 8.0, topLabel: "−8.0 bps", bottomLabel: "Coinbase", color: C.coinbase },
-  { key: "hyperliquid", value: 4.4, topLabel: "−4.4 bps", bottomLabel: "Hyperliquid", color: C.hyperliquid },
-  { key: "kalshi", value: 3.5, topLabel: "−3.5 bps", bottomLabel: "Kalshi", color: C.kalshi },
-];
-
-// ─── 5. Cost of maxing out advantages ($/mo to keep an MM seat) ────────────
-// Robinhood is the outlier — its composite extractor seat costs $110M/mo to
-// run but nets +$1.85M after capturing $115.4M in PFOF/spread revenue. Use a
-// log-friendly trim by capping the chart at "M/mo" granularity.
-
-export const MAXING_COST_BARS: GlowBar[] = [
-  { key: "robinhood", value: 110.55, topLabel: "$110M", bottomLabel: "Robinhood", color: C.robinhood },
-  { key: "binance", value: 4.37, topLabel: "$4.4M", bottomLabel: "Binance", color: C.binance },
-  { key: "bybit", value: 4.07, topLabel: "$4.1M", bottomLabel: "Bybit", color: C.bybit },
-  { key: "deribit", value: 2.30, topLabel: "$2.3M", bottomLabel: "Deribit", color: C.deribit },
-  { key: "hyperliquid", value: 1.15, topLabel: "$1.2M", bottomLabel: "Hyperliquid", color: C.hyperliquid },
-  { key: "pumpfun", value: 0.63, topLabel: "$626k", bottomLabel: "Pump.fun", color: C.pumpfun },
-  { key: "kalshi", value: 0.35, topLabel: "$348k", bottomLabel: "Kalshi", color: C.kalshi },
-  { key: "ibkr", value: 0.18, topLabel: "$180k", bottomLabel: "IBKR", color: C.ibkr },
-  { key: "polymarket", value: 0.13, topLabel: "$131k", bottomLabel: "Polymarket", color: C.polymarket },
-  { key: "coinbase", value: 0.10, topLabel: "$104k", bottomLabel: "Coinbase", color: C.coinbase },
-];
-
-// ─── 6. Documented incidents per venue ──────────────────────────────────────
-// Pulled from /anticheat-flags venue pills (incidents.length).
-
-export const VENUE_RECEIPTS_BARS: GlowBar[] = [
-  { key: "binance", value: 12, topLabel: "12", bottomLabel: "Binance", color: C.binance },
-  { key: "polymarket", value: 9, topLabel: "9", bottomLabel: "Polymarket", color: C.polymarket },
-  { key: "hyperliquid", value: 6, topLabel: "6", bottomLabel: "Hyperliquid", color: C.hyperliquid },
-  { key: "coinbase", value: 6, topLabel: "6", bottomLabel: "Coinbase", color: C.coinbase },
-  { key: "robinhood", value: 4, topLabel: "4", bottomLabel: "Robinhood", color: C.robinhood },
-  { key: "kalshi", value: 4, topLabel: "4", bottomLabel: "Kalshi", color: C.kalshi },
-  { key: "bybit", value: 4, topLabel: "4", bottomLabel: "Bybit", color: C.bybit },
-  { key: "ibkr", value: 3, topLabel: "3", bottomLabel: "IBKR", color: C.ibkr },
-  { key: "deribit", value: 3, topLabel: "3", bottomLabel: "Deribit", color: C.deribit },
-  { key: "etoro", value: 3, topLabel: "3", bottomLabel: "eToro", color: C.etoro },
-  { key: "pumpfun", value: 2, topLabel: "2", bottomLabel: "Pump.fun", color: C.pumpfun },
-];
+export const TOTAL_BPS = +MECHANISMS.reduce((a, m) => a + m.bps, 0).toFixed(1);
+export const MAX_BPS = Math.max(...MECHANISMS.map((m) => m.bps));
