@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAccount } from 'wagmi'
 import { AnimatePresence } from 'framer-motion'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { WaitlistModal } from './WaitlistModal'
 import { useWaitlistStatus, clearWaitlistCache } from '@/hooks/useWaitlistStatus'
 
@@ -30,8 +31,24 @@ export function WaitlistGateProvider({ children }: { children: ReactNode }) {
   const { whitelisted, refresh, invalidate } = useWaitlistStatus()
   const [isOpen, setIsOpen] = useState(false)
   const pendingActionRef = useRef<GateAction | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const open = useCallback(() => setIsOpen(true), [])
+
+  // ?waitlist=1 (any value) opens the modal once, then the param is stripped
+  // so a refresh does not re-open. The /waitlist marketing route redirects
+  // here, so this is the only entry point that survives.
+  useEffect(() => {
+    if (!searchParams) return
+    if (!searchParams.has('waitlist')) return
+    setIsOpen(true)
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete('waitlist')
+    const qs = next.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [searchParams, pathname, router])
 
   const close = useCallback(() => {
     setIsOpen(false)

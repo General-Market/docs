@@ -1,4 +1,5 @@
 import { Pool } from 'pg'
+import { randomBytes } from 'crypto'
 
 let _pool: Pool | null = null
 let _bootstrapped = false
@@ -30,6 +31,13 @@ async function ensureSchema(pool: Pool): Promise<void> {
       ip          TEXT,
       ua          TEXT
     );
+    CREATE TABLE IF NOT EXISTS handle_codes (
+      handle      TEXT PRIMARY KEY,
+      code        TEXT NOT NULL REFERENCES invite_codes(code),
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ip          TEXT,
+      ua          TEXT
+    );
   `)
   _bootstrapped = true
 }
@@ -40,6 +48,98 @@ export function normalizeAddress(addr: string): string {
 
 export function normalizeCode(code: string): string {
   return code.trim().toUpperCase().slice(0, 64)
+}
+
+export function normalizeHandle(handle: string): string {
+  return handle.trim().toLowerCase().replace(/^@+/, '').slice(0, 64)
+}
+
+// Crockford base32 minus look-alikes — 8 chars give ~40 bits of entropy,
+// formatted as GMW-XXXX-XXXX so the user reads it back fluently.
+const CROCKFORD = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+
+function mintCode(): string {
+  const bytes = randomBytes(8)
+  let out = ''
+  for (let i = 0; i < 8; i++) {
+    out += CROCKFORD[bytes[i] % CROCKFORD.length]
+  }
+  return `GMW-${out.slice(0, 4)}-${out.slice(4, 8)}`
+}
+
+export type IssueResult =
+  | { ok: true; code: string; isNew: boolean }
+  | { ok: false; reason: 'unconfigured' }
+
+/**
+ * Returns the same code for the same handle on every call. First call inserts
+ * a fresh single-use code into `invite_codes` and pins it via `handle_codes`.
+ * Concurrent first-time issuances are resolved by the PK on `handle_codes` —
+ * the loser re-reads and returns the winner's row.
+ */
+export async function issueCodeForHandle(
+  rawHandle: string,
+  meta: { ip?: string; ua?: string } = {},
+): Promise<IssueResult> {
+  const pool = getWaitlistPool()
+  if (!pool) return { ok: false, reason: 'unconfigured' }
+  await ensureSchema(pool)
+  const handle = normalizeHandle(rawHandle)
+
+  const existing = await pool.query<{ code: string }>(
+    `SELECT code FROM handle_codes WHERE handle = $1 LIMIT 1`,
+    [handle],
+  )
+  if (existing.rowCount! > 0) {
+    return { ok: true, code: existing.rows[0].code, isNew: false }
+  }
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const code = mintCode()
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      const insertedCode = await client.query(
+        `INSERT INTO invite_codes (code, max_uses, notes)
+           VALUES ($1, 1, $2)
+           ON CONFLICT (code) DO NOTHING
+           RETURNING code`,
+        [code, `auto:${handle}`],
+      )
+      if (insertedCode.rowCount === 0) {
+        await client.query('ROLLBACK')
+        continue
+      }
+      const pinned = await client.query<{ code: string }>(
+        `INSERT INTO handle_codes (handle, code, ip, ua)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (handle) DO NOTHING
+           RETURNING code`,
+        [handle, code, meta.ip ?? null, meta.ua ?? null],
+      )
+      if (pinned.rowCount === 0) {
+        // Another request issued first — drop our unused code, return theirs.
+        await client.query(`DELETE FROM invite_codes WHERE code = $1`, [code])
+        await client.query('COMMIT')
+        const winner = await pool.query<{ code: string }>(
+          `SELECT code FROM handle_codes WHERE handle = $1 LIMIT 1`,
+          [handle],
+        )
+        if (winner.rowCount! > 0) {
+          return { ok: true, code: winner.rows[0].code, isNew: false }
+        }
+        continue
+      }
+      await client.query('COMMIT')
+      return { ok: true, code, isNew: true }
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {})
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+  throw new Error('issueCodeForHandle: exhausted code collisions')
 }
 
 export async function isWhitelisted(address: string): Promise<boolean> {

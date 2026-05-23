@@ -12,7 +12,7 @@ export type LinktreeEntry = {
 export const LINKTREE_ENTRIES: LinktreeEntry[] = [
   {
     label: 'Join the waitlist',
-    href: '/waitlist',
+    href: '/?waitlist=1',
     icon: 'waitlist',
     featured: true,
     kicker: 'Early access',

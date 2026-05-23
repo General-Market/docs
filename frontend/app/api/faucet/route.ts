@@ -24,8 +24,8 @@ import { isWhitelisted } from '@/lib/waitlist-db'
 
 const WAITLIST_GATE_ENABLED = process.env.WAITLIST_GATE_ENABLED !== 'false'
 const WAITLIST_URL = process.env.NEXT_PUBLIC_SITE_ORIGIN
-  ? `${process.env.NEXT_PUBLIC_SITE_ORIGIN}/waitlist`
-  : 'https://generalmarket.io/waitlist'
+  ? `${process.env.NEXT_PUBLIC_SITE_ORIGIN}/?waitlist=1`
+  : 'https://generalmarket.io/?waitlist=1'
 
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
 

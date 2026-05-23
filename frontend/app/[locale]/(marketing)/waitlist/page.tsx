@@ -1,26 +1,12 @@
-import type { Metadata } from 'next'
-import { Caveat } from 'next/font/google'
-import WaitlistForm from '@/components/marketing/WaitlistForm'
+import { redirect } from 'next/navigation'
 
-const caveat = Caveat({
-  subsets: ['latin'],
-  weight: ['700'],
-  variable: '--font-caveat',
-  display: 'swap',
-})
+export const dynamic = 'force-static'
 
-export const metadata: Metadata = {
-  title: 'Waitlist — GeneralMarket',
-  description:
-    'Be the first to shield your pnl from insider trading, early access, lower fees, referral rewards',
-  alternates: { canonical: '/waitlist' },
-  robots: { index: true, follow: true },
-}
-
-export default function WaitlistPage() {
-  return (
-    <div className={caveat.variable}>
-      <WaitlistForm />
-    </div>
-  )
+export default async function WaitlistPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  redirect(`/${locale}?waitlist=1`)
 }

@@ -21,14 +21,24 @@ const REASON_TEXT: Record<RedeemReason, string> = {
   wallet_taken: 'This wallet is already on a different code.',
 }
 
+const HANDLE_RE = /^[A-Za-z0-9_]{1,32}$/
+
+type Step = 'handle' | 'reveal' | 'redeem'
+
 export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props) {
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnecting } = useConnect()
   const injectedConnector = connectors.find((c) => c.id === 'injected')
 
+  const [step, setStep] = useState<Step>('handle')
+  const [handle, setHandle] = useState('')
   const [code, setCode] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [issuing, setIssuing] = useState(false)
+  const [issueError, setIssueError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const [redeeming, setRedeeming] = useState(false)
+  const [redeemError, setRedeemError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -41,9 +51,6 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
     if (isConnected && address) onWalletConnected?.()
   }, [isConnected, address, onWalletConnected])
 
-  // Lock body scroll while the modal is open — without this, the page
-  // behind the backdrop scrolls and the modal feels detached from the
-  // user's gaze.
   useEffect(() => {
     if (typeof document === 'undefined') return
     const prev = document.body.style.overflow
@@ -51,16 +58,53 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
     return () => { document.body.style.overflow = prev }
   }, [])
 
+  const cleanHandle = handle.trim().replace(/^@+/, '')
+
+  const handleIssue = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (issuing) return
+    if (!HANDLE_RE.test(cleanHandle)) {
+      setIssueError('Twitter handles are letters, numbers and underscores only.')
+      return
+    }
+    setIssuing(true)
+    setIssueError(null)
+    try {
+      const res = await fetch('/api/waitlist/issue-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle: cleanHandle }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok && typeof data.code === 'string') {
+        setCode(data.code)
+        setStep('reveal')
+        return
+      }
+      if (res.status === 429) {
+        setIssueError('Too many tries. Wait a few minutes and try again.')
+      } else if (data?.reason === 'invalid_handle') {
+        setIssueError('That handle does not look right.')
+      } else {
+        setIssueError('Could not issue a code. Try again in a moment.')
+      }
+    } catch {
+      setIssueError('Network error. Try again.')
+    } finally {
+      setIssuing(false)
+    }
+  }
+
   const handleConnect = () => {
     if (!injectedConnector) return
     connect({ connector: injectedConnector, chainId: indexL3.id })
   }
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleRedeem = async (e?: React.FormEvent) => {
     e?.preventDefault()
-    if (!address || !code.trim() || submitting) return
-    setSubmitting(true)
-    setError(null)
+    if (!address || !code.trim() || redeeming) return
+    setRedeeming(true)
+    setRedeemError(null)
     try {
       const res = await fetch('/api/waitlist/redeem', {
         method: 'POST',
@@ -74,15 +118,23 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
         return
       }
       const reason = data?.reason as RedeemReason | undefined
-      setError(reason ? REASON_TEXT[reason] : data?.error || 'Could not redeem code.')
+      setRedeemError(reason ? REASON_TEXT[reason] : data?.error || 'Could not redeem code.')
     } catch {
-      setError('Network error. Try again.')
+      setRedeemError('Network error. Try again.')
     } finally {
-      setSubmitting(false)
+      setRedeeming(false)
     }
   }
 
-  const canSubmit = isConnected && code.trim().length >= 3 && !submitting
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1400)
+    } catch {
+      // Clipboard blocked — the user can still read and re-type the code.
+    }
+  }
 
   if (!mounted || typeof document === 'undefined') return null
 
@@ -111,122 +163,35 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
         )}
 
         {success ? (
-          <div className="flex flex-col items-center text-center py-8 sm:py-12">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-              style={{
-                background: 'rgba(16,185,129,0.10)',
-                border: '1px solid rgba(16,185,129,0.30)',
-                boxShadow: '0 0 0 6px rgba(16,185,129,0.06)',
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <h2 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
-              Welcome aboard.
-            </h2>
-            <p className="mt-3 text-[15px] text-text-muted max-w-[440px]">
-              Your wallet is whitelisted. The faucet is yours, and the rest of the site too.
-            </p>
-            <p className="mt-5 text-[12px] uppercase tracking-[0.16em] text-text-muted">
-              Returning you to what you were doing…
-            </p>
-          </div>
+          <SuccessPanel />
+        ) : step === 'handle' ? (
+          <HandlePanel
+            handle={handle}
+            onHandleChange={(v) => { setHandle(v); setIssueError(null) }}
+            onSubmit={handleIssue}
+            error={issueError}
+            submitting={issuing}
+            valid={HANDLE_RE.test(cleanHandle)}
+          />
+        ) : step === 'reveal' ? (
+          <RevealPanel
+            handle={cleanHandle}
+            code={code}
+            copied={copied}
+            onCopy={copy}
+            onContinue={() => setStep('redeem')}
+          />
         ) : (
-        <>
-        <div className="flex flex-col items-center text-center pt-2">
-          <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-7a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2zm10-12V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-
-          <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
-            {isConnected ? 'This wallet is not whitelisted' : 'Whitelist required'}
-          </h2>
-          <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
-            {isConnected
-              ? 'Enter the invite code you were given, or apply on the waitlist if you don\'t have one.'
-              : 'The faucet is closed to the curious and open to the chosen. Connect your wallet, enter a code.'}
-          </p>
-
-          {!isConnected ? (
-            <button
-              onClick={handleConnect}
-              disabled={isConnecting || !injectedConnector}
-              className="mt-7 px-8 h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[220px]"
-            >
-              {isConnecting ? 'Connecting…' : 'Connect Wallet'}
-            </button>
-          ) : (
-            <form onSubmit={handleSubmit} className="mt-7 w-full max-w-[400px]">
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => { setCode(e.target.value); setError(null) }}
-                placeholder="Enter invite code"
-                autoComplete="off"
-                spellCheck={false}
-                className={`${glass.input} text-center !text-[16px] tracking-[0.04em] uppercase`}
-                disabled={submitting}
-                maxLength={64}
-              />
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Verifying…' : 'Submit code'}
-              </button>
-              {error && (
-                <p className="mt-3 text-[13px] text-red-600">{error}</p>
-              )}
-            </form>
-          )}
-
-          <a
-            href="/waitlist"
-            className="mt-5 text-[13px] text-text-muted hover:text-text-primary underline underline-offset-4 decoration-black/20 hover:decoration-black/60 transition-colors"
-          >
-            Don&apos;t have a code? Apply on the waitlist →
-          </a>
-        </div>
-
-        <div className="mt-10 pt-8 border-t border-black/[0.08]">
-          <p className="text-center text-[13px] text-text-muted mb-4">Other ways in — soon.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SoonCard
-              title="Refer 3+ friends"
-              caption="More invites = faster access"
-              icon={
-                <svg fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-6a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              }
-            />
-            <SoonCard
-              title="Follow on X"
-              caption="One human-shaped signal"
-              icon={
-                <svg fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2H21l-6.51 7.44L22 22h-6.86l-4.79-6.26L4.86 22H2.1l6.96-7.95L2 2h7.04l4.33 5.72L18.24 2zm-2.4 18.34h1.83L7.27 3.57H5.32l10.52 16.77z" />
-                </svg>
-              }
-            />
-            <SoonCard
-              title="Hold $GM"
-              caption="Skin in the game"
-              icon={
-                <svg fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2m9-4a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-            />
-          </div>
-        </div>
-        </>
+          <RedeemPanel
+            code={code}
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            canConnect={Boolean(injectedConnector)}
+            onConnect={handleConnect}
+            onSubmit={handleRedeem}
+            redeeming={redeeming}
+            error={redeemError}
+          />
         )}
       </SpringModal>
     </SpringBackdrop>
@@ -235,15 +200,247 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   return createPortal(node, document.body)
 }
 
-function SoonCard({ title, caption, icon }: { title: string; caption: string; icon: React.ReactNode }) {
+function HandlePanel({
+  handle,
+  onHandleChange,
+  onSubmit,
+  error,
+  submitting,
+  valid,
+}: {
+  handle: string
+  onHandleChange: (v: string) => void
+  onSubmit: (e?: React.FormEvent) => void
+  error: string | null
+  submitting: boolean
+  valid: boolean
+}) {
   return (
-    <div className="rounded-xl bg-black/[0.03] border border-black/[0.06] p-4 opacity-60 select-none relative">
-      <div className="absolute top-2 right-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-muted bg-black/[0.05] rounded-full px-2 py-0.5">
-        Soon
+    <div className="flex flex-col items-center text-center pt-2">
+      <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
+        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path d="M18.244 2H21l-6.51 7.44L22 22h-6.86l-4.79-6.26L4.86 22H2.1l6.96-7.95L2 2h7.04l4.33 5.72L18.24 2zm-2.4 18.34h1.83L7.27 3.57H5.32l10.52 16.77z" />
+        </svg>
       </div>
-      <div className="w-7 h-7 text-text-primary mb-3">{icon}</div>
-      <p className="text-[14px] font-medium text-text-primary leading-tight">{title}</p>
-      <p className="mt-1 text-[12px] text-text-muted leading-snug">{caption}</p>
+
+      <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        Your handle, your code
+      </h2>
+      <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
+        Drop your Twitter handle. We mint a one-shot code on the spot, and the gate opens.
+      </p>
+
+      <form onSubmit={onSubmit} className="mt-7 w-full max-w-[400px]">
+        <div className="relative">
+          <span
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[16px] text-text-muted pointer-events-none"
+            aria-hidden
+          >
+            @
+          </span>
+          <input
+            type="text"
+            value={handle.replace(/^@+/, '')}
+            onChange={(e) => onHandleChange(e.target.value)}
+            placeholder="yourhandle"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className={`${glass.input} pl-9 !text-[16px]`}
+            disabled={submitting}
+            maxLength={32}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!valid || submitting}
+          className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {submitting ? 'Minting your code…' : 'Get my code'}
+        </button>
+        {error && (
+          <p className="mt-3 text-[13px] text-red-600">{error}</p>
+        )}
+      </form>
+    </div>
+  )
+}
+
+function RevealPanel({
+  handle,
+  code,
+  copied,
+  onCopy,
+  onContinue,
+}: {
+  handle: string
+  code: string
+  copied: boolean
+  onCopy: () => void
+  onContinue: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center text-center pt-2">
+      <div
+        className="w-14 h-14 rounded-full flex items-center justify-center mb-5"
+        style={{
+          background: 'rgba(0,82,255,0.08)',
+          border: '1px solid rgba(0,82,255,0.22)',
+        }}
+      >
+        <svg className="w-7 h-7" fill="none" stroke="#0052FF" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+
+      <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        Here is your code, @{handle}
+      </h2>
+      <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
+        Keep it. One wallet, one use. Same handle, same code on every visit.
+      </p>
+
+      <button
+        type="button"
+        onClick={onCopy}
+        className="mt-7 group relative inline-flex items-center gap-3 rounded-2xl px-5 py-4 transition-colors"
+        style={{
+          background: '#0A0A0A',
+          color: '#FFFFFF',
+          boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 14px 36px -16px rgba(10,10,12,0.55)',
+        }}
+        aria-label="Copy code"
+      >
+        <span className="font-mono tracking-[0.18em] text-[20px] sm:text-[22px] tabular-nums">
+          {code}
+        </span>
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-white/10">
+          {copied ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          )}
+        </span>
+      </button>
+      <p className="mt-2 h-4 text-[12px] uppercase tracking-[0.16em] text-text-muted">
+        {copied ? 'Copied' : 'Tap to copy'}
+      </p>
+
+      <button
+        type="button"
+        onClick={onContinue}
+        className="mt-6 w-full max-w-[400px] h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors"
+      >
+        Connect wallet &amp; unlock →
+      </button>
+    </div>
+  )
+}
+
+function RedeemPanel({
+  code,
+  isConnected,
+  isConnecting,
+  canConnect,
+  onConnect,
+  onSubmit,
+  redeeming,
+  error,
+}: {
+  code: string
+  isConnected: boolean
+  isConnecting: boolean
+  canConnect: boolean
+  onConnect: () => void
+  onSubmit: (e?: React.FormEvent) => void
+  redeeming: boolean
+  error: string | null
+}) {
+  return (
+    <div className="flex flex-col items-center text-center pt-2">
+      <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-7a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2zm10-12V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+
+      <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        {isConnected ? 'Last step — redeem' : 'Connect the wallet to unlock'}
+      </h2>
+      <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
+        {isConnected
+          ? 'Your code is pre-filled. Press Redeem and the gate opens.'
+          : 'The code is bound to the first wallet you redeem it on. Connect, then redeem.'}
+      </p>
+
+      <div className="mt-7 w-full max-w-[400px]">
+        <div
+          className="flex items-center justify-center gap-2 rounded-xl py-3 px-4 font-mono tracking-[0.18em] text-[15px] tabular-nums"
+          style={{ background: '#F4F4F5', border: '1px solid rgba(10,10,12,0.08)' }}
+          aria-label="Code being redeemed"
+        >
+          <span className="text-text-muted text-[11px] uppercase tracking-[0.16em] mr-1">Code</span>
+          <span className="text-text-primary">{code}</span>
+        </div>
+
+        {!isConnected ? (
+          <button
+            type="button"
+            onClick={onConnect}
+            disabled={isConnecting || !canConnect}
+            className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isConnecting ? 'Connecting…' : 'Connect wallet'}
+          </button>
+        ) : (
+          <form onSubmit={onSubmit}>
+            <button
+              type="submit"
+              disabled={redeeming}
+              className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {redeeming ? 'Verifying…' : 'Redeem'}
+            </button>
+          </form>
+        )}
+        {error && (
+          <p className="mt-3 text-[13px] text-red-600">{error}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SuccessPanel() {
+  return (
+    <div className="flex flex-col items-center text-center py-8 sm:py-12">
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
+        style={{
+          background: 'rgba(16,185,129,0.10)',
+          border: '1px solid rgba(16,185,129,0.30)',
+          boxShadow: '0 0 0 6px rgba(16,185,129,0.06)',
+        }}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <h2 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        Welcome aboard.
+      </h2>
+      <p className="mt-3 text-[15px] text-text-muted max-w-[440px]">
+        Your wallet is whitelisted. The faucet is yours, and the rest of the site too.
+      </p>
+      <p className="mt-5 text-[12px] uppercase tracking-[0.16em] text-text-muted">
+        Returning you to what you were doing…
+      </p>
     </div>
   )
 }
