@@ -130,19 +130,19 @@ const ALL_SCENES = [
   { id: "WP-DudeWalk", component: DudeWalk },
   { id: "WP-DashboardReveal", component: DashboardReveal },
   { id: "WP-BongoCat", component: BongoCat },
-  { id: "WP-FluidMotion", component: FluidMotion },
-  { id: "WP-PsychoPixels", component: PsychoPixels },
-  { id: "WP-KiplingCube", component: KiplingCube },
-  { id: "WP-StarTreck", component: StarTreck },
-  { id: "WP-CloudDrag", component: CloudDrag },
-  { id: "WP-PsychoTitle", component: PsychoTitle },
-  { id: "WP-DivTv", component: DivTv },
-  { id: "WP-GeneralMarketGlitch", component: GeneralMarketGlitch },
-  { id: "WP-DiamondGrid", component: DiamondGrid },
-  { id: "WP-WalkRideLogo", component: WalkRideLogo },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
+  { id: "WP-FluidMotion", component: FluidMotion, reelOnly: true },
+  { id: "WP-PsychoPixels", component: PsychoPixels, reelOnly: true },
+  { id: "WP-KiplingCube", component: KiplingCube, reelOnly: true },
+  { id: "WP-StarTreck", component: StarTreck, reelOnly: true },
+  { id: "WP-CloudDrag", component: CloudDrag, reelOnly: true },
+  { id: "WP-PsychoTitle", component: PsychoTitle, reelOnly: true },
+  { id: "WP-DivTv", component: DivTv, reelOnly: true },
+  { id: "WP-GeneralMarketGlitch", component: GeneralMarketGlitch, reelOnly: true },
+  { id: "WP-DiamondGrid", component: DiamondGrid, reelOnly: true },
+  { id: "WP-WalkRideLogo", component: WalkRideLogo, reelOnly: true },
 ] as { id: string; component: React.FC; reelOnly?: boolean }[];
 
 export const WebGLPicksComposition: React.FC = () => {

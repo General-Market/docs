@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // ── Apple tokens ─────────────────────────────────────────────────────────────
@@ -545,8 +546,20 @@ export function HumanTradingOnboarding(props: HumanTradingOnboardingProps) {
     }
   }, [stepId])
 
+  // The AppShell wraps the page in a `filter: blur(0)` ancestor. That creates
+  // a CSS containing block for any `position: fixed` descendant — the floating
+  // card lands far beyond the viewport bottom instead of sticking to the page
+  // edge. Render through a portal to `document.body` so the card always sits
+  // in the viewport, no matter what filters its in-tree parents apply.
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    setPortalEl(document.body)
+  }, [])
+
   if (dismissed) return null
   if (stepId === 'done') return null
+  if (!portalEl) return null
 
   const isTerminal = stepId === 'committed'
   const pointerSelectors = !isTerminal ? def.targets : undefined
@@ -558,7 +571,7 @@ export function HumanTradingOnboarding(props: HumanTradingOnboardingProps) {
   const visibleTotal = STEPS.length
   const visibleCurrent = stepIndex < 0 ? 0 : Math.min(stepIndex, visibleTotal - 1)
 
-  return (
+  return createPortal(
     <>
       {hasPointer && (
         <AnimatePresence>
@@ -776,7 +789,8 @@ export function HumanTradingOnboarding(props: HumanTradingOnboardingProps) {
           </AnimatePresence>
         </div>
       </motion.div>
-    </>
+    </>,
+    portalEl,
   )
 }
 
