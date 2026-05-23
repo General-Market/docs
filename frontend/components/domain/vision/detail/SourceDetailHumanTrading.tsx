@@ -255,11 +255,15 @@ export function SourceDetailHumanTrading({
   )
 
   // assetId → { resType, thresholdBps } — drives the green/red settlement
-  // square on every chart on the page. The data-node pins one resType per
-  // market per batch (UP_X / DOWN_X / UP_0 / DOWN_0); UP_0/DOWN_0 carry no
-  // threshold and so render no square.
+  // square on every chart on the page. Batch-config entries are the source
+  // of truth for markets in the active batch. Curated markets that aren't
+  // in the active batch (locked, "will be in next round") get a fallback
+  // derived from the snapshot's 24h move — same heuristic the data-node
+  // EMA uses to assign a resolution side. Without the fallback, the chart
+  // shows nothing for ~90% of curated tiles on most sources.
   const resolutionByAsset = useMemo(() => {
     const m = new Map<string, { resType: string; thresholdBps: number }>()
+    // First pass: batch-config truth.
     for (const row of batchConfig?.markets ?? []) {
       if (!row.assetId) continue
       m.set(row.assetId, {
@@ -267,8 +271,28 @@ export function SourceDetailHumanTrading({
         thresholdBps: row.thresholdBps ?? 0,
       })
     }
+    // Second pass: snapshot fallback for everything else on screen.
+    // Mirrors resolution_for_volatility in batch_engine: below the 20-bps
+    // floor → up_0/down_0; above → up_x/down_x at the 24h move in bps.
+    for (const market of curatedMarkets) {
+      if (m.has(market.assetId)) continue
+      const pct = parseFloat(market.changePct ?? '0')
+      if (!isFinite(pct)) continue
+      const abs = Math.abs(pct)
+      if (abs < 0.2) {
+        m.set(market.assetId, {
+          resType: pct < 0 ? 'DOWN_0' : 'UP_0',
+          thresholdBps: 0,
+        })
+      } else {
+        m.set(market.assetId, {
+          resType: pct < 0 ? 'DOWN_X' : 'UP_X',
+          thresholdBps: Math.min(Math.round(abs * 100), 10000),
+        })
+      }
+    }
     return m
-  }, [batchConfig])
+  }, [batchConfig, curatedMarkets])
 
   // -- Curated markets that ARE in the current batch (only these are bettable) --
   const tradableMarkets: CuratedMarket[] = useMemo(() => {
