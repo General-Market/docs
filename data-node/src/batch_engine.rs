@@ -78,8 +78,8 @@ pub fn get_strategy(source_id: &str) -> BatchStrategy {
 
 /// Maximum markets per batch.
 /// The on-chain bitmap uses raw bytes (not uint256), so we can go beyond 256.
-/// Each byte = 8 markets. 8192 markets = 1024 bytes bitmap.
-const MAX_MARKETS_PER_BATCH: usize = 8192;
+/// Each byte = 8 markets. 10 000 markets = 1250 bytes bitmap.
+const MAX_MARKETS_PER_BATCH: usize = 10_000;
 
 /// Source metadata tuple: (source_id, display_name, sync_interval_secs).
 /// Built at startup from the source registry (sources-display.json).
@@ -97,6 +97,11 @@ pub struct CuratedSubsource {
     pub display_name: String,
     pub sync_interval_secs: u64,
     pub asset_allowlist: std::collections::HashSet<String>,
+    /// True for editorial human-trading pages where the page promises
+    /// "always N markets" — skips staleness + stagnation filters so a
+    /// niche pick that updates slowly still appears. False for bot-audience
+    /// firehoses where stale/dead markets should be pruned.
+    pub is_human: bool,
 }
 
 /// dl-curated.json, embedded at compile time. Identical to
@@ -859,7 +864,16 @@ async fn generate_batch_config(
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
-    generate_batch_config_inner(pool, source_id, source_id, None, display_name, sync_interval_secs).await
+    generate_batch_config_inner(
+        pool,
+        source_id,
+        source_id,
+        None,
+        false,
+        display_name,
+        sync_interval_secs,
+    )
+    .await
 }
 
 /// Generate a batch config for a curated sub-source.
@@ -868,12 +882,15 @@ async fn generate_batch_config(
 /// `parent_source_id`, then narrows the result to `curated_allowlist`. The
 /// resulting BatchConfig is tagged with `batch_source_id`, so the on-chain
 /// batch (and its config hash) is distinct from every sibling that shares
-/// the same parent firehose.
+/// the same parent firehose. `is_human` toggles whether the staleness /
+/// stagnation filters apply — human-audience pages keep their full
+/// editorial roster, bot-audience curated pages prune like firehoses do.
 async fn generate_subsource_batch_config(
     pool: &PgPool,
     batch_source_id: &str,
     parent_source_id: &str,
     curated_allowlist: &std::collections::HashSet<String>,
+    is_human: bool,
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
@@ -882,6 +899,7 @@ async fn generate_subsource_batch_config(
         batch_source_id,
         parent_source_id,
         Some(curated_allowlist),
+        is_human,
         display_name,
         sync_interval_secs,
     )
@@ -893,47 +911,71 @@ async fn generate_subsource_batch_config(
 /// key used to query healthy assets, stagnation, and threshold history from
 /// the DB — equal to `batch_source_id` for primary sources, distinct for
 /// curated sub-sources that share a parent firehose's ingested data.
+///
+/// `is_human` is only meaningful when `curated_allowlist` is `Some`. It
+/// gates the relaxation of the staleness and stagnation filters — human
+/// editorial pages keep their full roster, bot firehoses prune.
 async fn generate_batch_config_inner(
     pool: &PgPool,
     batch_source_id: &str,
     parent_source_id: &str,
     curated_allowlist: Option<&std::collections::HashSet<String>>,
+    is_human: bool,
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
     let source_id = batch_source_id;
+    // Only relax the staleness filter for human-audience curated subsources.
+    // Bot-audience curated batches still prune stale assets like a firehose.
+    let healthy_allowlist = if is_human { curated_allowlist } else { None };
     let healthy = match get_healthy_assets(
         pool,
         parent_source_id,
         sync_interval_secs,
-        curated_allowlist,
+        healthy_allowlist,
     )
     .await
     {
-        Ok(ids) => ids,
+        Ok(ids) => {
+            // The SQL only filters by allowlist when it's also relaxing
+            // staleness (i.e. for human curated). For bot-audience curated
+            // subsources we still need to narrow the firehose result to the
+            // allowlist — apply it in Rust the way the engine did originally.
+            if !is_human {
+                if let Some(allow) = curated_allowlist {
+                    ids.into_iter().filter(|a| allow.contains(a)).collect()
+                } else {
+                    ids
+                }
+            } else {
+                ids
+            }
+        }
         Err(e) => {
             warn!(source = source_id, parent = parent_source_id, %e, "Failed to get healthy assets");
             return None;
         }
     };
 
-    // For curated sub-sources, the editorial promise is "always N markets".
-    // Warn loudly if any asset from the allowlist is missing — that means a
-    // protocol/chain is unknown to the data-node entirely and needs to be
-    // indexed before it can resolve. We still build the batch with whatever
-    // we have; missing assets simply don't appear this round.
-    if let Some(allow) = curated_allowlist {
-        if healthy.len() < allow.len() {
-            let returned: std::collections::HashSet<&String> = healthy.iter().collect();
-            let missing: Vec<&String> = allow.iter().filter(|a| !returned.contains(a)).collect();
-            warn!(
-                source = source_id,
-                parent = parent_source_id,
-                returned = healthy.len(),
-                curated = allow.len(),
-                ?missing,
-                "Curated allowlist not fully covered by parent's market_prices_latest"
-            );
+    // Human curated: editorial promise is "always N markets". Warn if any
+    // allowlist entry didn't appear in the parent's market_prices_latest —
+    // that protocol/chain isn't indexed yet and needs to be added upstream.
+    // We still build the batch with whatever we have.
+    if is_human {
+        if let Some(allow) = curated_allowlist {
+            if healthy.len() < allow.len() {
+                let returned: std::collections::HashSet<&String> = healthy.iter().collect();
+                let missing: Vec<&String> =
+                    allow.iter().filter(|a| !returned.contains(a)).collect();
+                warn!(
+                    source = source_id,
+                    parent = parent_source_id,
+                    returned = healthy.len(),
+                    curated = allow.len(),
+                    ?missing,
+                    "Human curated allowlist not fully covered by parent's market_prices_latest"
+                );
+            }
         }
     }
 
@@ -941,12 +983,14 @@ async fn generate_batch_config_inner(
         return None;
     }
 
-    // Stagnation filter — only applies to primary firehose batches. Curated
-    // subsources keep their full editorial roster: a niche protocol that
-    // posted K consecutive zero-change ticks is still the right pick for
-    // the page, and refunded markets do no harm. The filter exists to keep
-    // the parent firehose from carrying thousands of dead protocols.
-    let healthy: Vec<String> = if curated_allowlist.is_some() {
+    // Stagnation filter — applies to primary firehose batches and to
+    // bot-audience curated subsources. Human curated pages keep the full
+    // editorial roster: a niche protocol with K consecutive zero-change
+    // ticks is still the right pick for the page, and refunded markets do
+    // no harm. The filter exists to keep firehoses from carrying thousands
+    // of dead protocols and to spare bots from boring rounds.
+    let skip_stagnation = is_human && curated_allowlist.is_some();
+    let healthy: Vec<String> = if skip_stagnation {
         healthy
     } else {
         let window = stagnation_window(sync_interval_secs);
@@ -1259,6 +1303,7 @@ pub async fn run(
                 &sub.batch_source_id,
                 &sub.parent_source_id,
                 &sub.asset_allowlist,
+                sub.is_human,
                 &sub.display_name,
                 sub.sync_interval_secs,
             )

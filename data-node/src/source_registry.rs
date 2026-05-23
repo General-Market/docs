@@ -32,6 +32,19 @@ pub struct SourceDisplay {
     /// firehose serve many editorial sub-pages, each with its own batch.
     #[serde(rename = "batchSubsourceKey", default)]
     pub batch_subsource_key: Option<String>,
+    /// "human" for editorial pages that surface to a human trader; "bot"
+    /// (or absent) for firehose pages consumed by automated strategies.
+    /// The batch engine relaxes its staleness/stagnation filters only for
+    /// human-audience curated subsources — those pages promise "always N
+    /// markets" regardless of how often a niche protocol updates.
+    #[serde(default)]
+    pub audience: Option<String>,
+}
+
+impl SourceDisplay {
+    pub fn is_human(&self) -> bool {
+        self.audience.as_deref() == Some("human")
+    }
 }
 
 fn default_sync_interval() -> u64 {
@@ -98,7 +111,7 @@ impl SourceRegistry {
     /// shares an ingested firehose with its siblings. The batch engine queries the
     /// parent's healthy assets and filters them by the dl-curated.json allowlist
     /// keyed on `batch_source_id`.
-    pub fn curated_batch_subsources(&self) -> Vec<(String, String, String, u64)> {
+    pub fn curated_batch_subsources(&self) -> Vec<(String, String, String, u64, bool)> {
         let mut out = Vec::new();
         for s in &self.sources {
             if !s.batch_eligible {
@@ -106,7 +119,13 @@ impl SourceRegistry {
             }
             let Some(key) = s.batch_subsource_key.as_ref() else { continue };
             let Some(parent) = s.internal_ids.first() else { continue };
-            out.push((key.clone(), parent.clone(), s.name.clone(), s.sync_interval_secs));
+            out.push((
+                key.clone(),
+                parent.clone(),
+                s.name.clone(),
+                s.sync_interval_secs,
+                s.is_human(),
+            ));
         }
         out
     }

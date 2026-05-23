@@ -2610,7 +2610,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         let curated_subsources: Vec<crate::batch_engine::CuratedSubsource> = source_registry
             .curated_batch_subsources()
             .into_iter()
-            .filter_map(|(batch_id, parent, display, sync)| {
+            .filter_map(|(batch_id, parent, display, sync, is_human)| {
                 let allow = curated_allowlists.get(&batch_id).cloned()?;
                 Some(crate::batch_engine::CuratedSubsource {
                     batch_source_id: batch_id,
@@ -2618,6 +2618,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                     display_name: display,
                     sync_interval_secs: sync,
                     asset_allowlist: allow,
+                    is_human,
                 })
             })
             .collect();
