@@ -1538,8 +1538,9 @@ function PositionsCard({
   /** Live on-chain commit for the round the user is sitting in. */
   currentCommit: CurrentCommit | null
 }) {
-  const { totalPnl } = positions
+  const { totalPnl, ticks } = positions
   const hasCurrent = currentCommit !== null
+  const recentTicks = ticks.slice(0, 6)
 
   if (!isConnected) {
     return (
@@ -1550,78 +1551,201 @@ function PositionsCard({
     )
   }
 
-  if (!hasCurrent && positions.ticks.length === 0) {
+  if (!hasCurrent && ticks.length === 0) {
     return (
       <div style={cardShellStyle}>
         <CardHeader>Positions</CardHeader>
-        <p style={cardMutedTextStyle}>No positions yet on this source.</p>
+        <p style={cardMutedTextStyle}>Pick a direction on every market, set a stake, and your first round shows up here.</p>
       </div>
     )
   }
 
-  const totalColor = totalPnl >= 0 ? APPLE_GREEN : APPLE_RED
+  const totalColor = totalPnl > 0 ? APPLE_GREEN : totalPnl < 0 ? APPLE_RED : APPLE_TEXT_SECONDARY
 
   return (
     <div style={cardShellStyle}>
-      <CardHeader>Positions</CardHeader>
-
-      {hasCurrent && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>This round</span>
-            <span style={rowValueStyle}>
-              {formatUsdDollars(currentCommit!.stakeUsd)}
-              <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
-                · {formatUsdDollars(currentCommit!.perMarketUsd)}/mkt
-              </span>
-            </span>
-          </div>
-          {(currentCommit!.ups > 0 || currentCommit!.downs > 0) && (
-            <div style={positionRowStyle}>
-              <span style={rowLabelStyle}>Picks</span>
-              <span
-                style={{
-                  ...rowValueStyle,
-                  fontVariantNumeric: 'tabular-nums',
-                  display: 'inline-flex',
-                  gap: 8,
-                }}
-              >
-                <span style={{ color: APPLE_GREEN }}>{currentCommit!.ups} UP</span>
-                <span style={{ color: APPLE_TEXT_SECONDARY }}>·</span>
-                <span style={{ color: APPLE_RED }}>{currentCommit!.downs} DOWN</span>
-              </span>
-            </div>
-          )}
-          <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>Batch</span>
-            <span
-              style={{
-                ...rowLabelStyle,
-                color: APPLE_TEXT,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              #{currentCommit!.batchId}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div style={dividerStyle} />
-      <div style={positionRowStyle}>
-        <span style={rowLabelStyle}>Total P&amp;L</span>
+      {/* Header carries the running P&L so the number you care about reads first. */}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <CardHeader>Positions</CardHeader>
         <span
           style={{
-            ...rowValueStyle,
+            fontFamily: FONT_DISPLAY,
+            fontSize: 15,
+            fontWeight: 600,
             color: totalColor,
+            letterSpacing: '-0.016em',
             fontVariantNumeric: 'tabular-nums',
           }}
+          title="Total profit and loss on this source"
         >
           {formatPnl(totalPnl)}
         </span>
       </div>
+
+      {hasCurrent && (
+        <div
+          style={{
+            background: APPLE_CHIP_BG,
+            borderRadius: 12,
+            padding: '10px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: '+0.011em',
+                textTransform: 'uppercase',
+                color: APPLE_TEXT_SECONDARY,
+              }}
+            >
+              This round
+            </span>
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 11,
+                color: APPLE_TEXT_SECONDARY,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              Batch #{currentCommit!.batchId}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 24,
+                fontWeight: 500,
+                color: APPLE_TEXT,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {formatUsdDollars(currentCommit!.stakeUsd)}
+            </span>
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 12,
+                color: APPLE_TEXT_SECONDARY,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {formatUsdDollars(currentCommit!.perMarketUsd)}/mkt
+            </span>
+          </div>
+          {(currentCommit!.ups > 0 || currentCommit!.downs > 0) && (
+            <div style={{ display: 'inline-flex', gap: 6 }}>
+              <PickPill count={currentCommit!.ups} dir="up" />
+              <PickPill count={currentCommit!.downs} dir="down" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {recentTicks.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span
+            style={{
+              fontFamily: FONT_TEXT,
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: '+0.011em',
+              textTransform: 'uppercase',
+              color: APPLE_TEXT_SECONDARY,
+              marginBottom: 4,
+            }}
+          >
+            Recent rounds
+          </span>
+          {recentTicks.map((tick, i) => {
+            const color = tick.pnl > 0 ? APPLE_GREEN : tick.pnl < 0 ? APPLE_RED : APPLE_TEXT_SECONDARY
+            return (
+              <div
+                key={`${tick.batchId}-${tick.tickId}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '7px 0',
+                  borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.06)',
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 999,
+                      background: tick.won ? APPLE_GREEN : APPLE_RED,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: FONT_TEXT,
+                      fontSize: 13,
+                      color: APPLE_TEXT,
+                      letterSpacing: '-0.016em',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    Round {tick.tickId}
+                  </span>
+                </span>
+                <span
+                  style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color,
+                    letterSpacing: '-0.016em',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {formatPnl(tick.pnl)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
+  )
+}
+
+// UP/DOWN pick count, rendered as a tinted pill rather than inline text.
+function PickPill({ count, dir }: { count: number; dir: 'up' | 'down' }) {
+  const color = dir === 'up' ? APPLE_GREEN : APPLE_RED
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        background: dir === 'up' ? 'rgba(40,205,65,0.10)' : 'rgba(255,59,48,0.10)',
+        color,
+        borderRadius: 980,
+        padding: '2px 9px',
+        fontFamily: FONT_TEXT,
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: '-0.012em',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      {count} {dir === 'up' ? 'UP' : 'DOWN'}
+    </span>
   )
 }
 
@@ -1667,34 +1791,6 @@ const cardMutedTextStyle: CSSProperties = {
   color: APPLE_TEXT_SECONDARY,
   letterSpacing: '-0.016em',
   margin: 0,
-}
-
-const positionRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'baseline',
-  justifyContent: 'space-between',
-  gap: 8,
-}
-
-const rowLabelStyle: CSSProperties = {
-  fontFamily: FONT_TEXT,
-  fontSize: 13,
-  color: APPLE_TEXT_SECONDARY,
-  letterSpacing: '-0.016em',
-}
-
-const rowValueStyle: CSSProperties = {
-  fontFamily: FONT_DISPLAY,
-  fontSize: 14,
-  fontWeight: 500,
-  color: APPLE_TEXT,
-  letterSpacing: '-0.016em',
-}
-
-const dividerStyle: CSSProperties = {
-  height: 1,
-  background: 'rgba(0,0,0,0.06)',
-  margin: '2px 0',
 }
 
 function Spinner() {
