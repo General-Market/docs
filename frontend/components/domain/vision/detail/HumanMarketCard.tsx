@@ -594,7 +594,7 @@ function MarketChart({
   return (
     <div style={{ position: 'relative', height: 140, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+        <LineChart data={chartData} margin={{ top: 8, right: 4, left: 12, bottom: 0 }}>
           {/* X domain extends past dataMax to include the settle time, so
               the live-round square doesn't get clipped when roundCloseAt
               sits past the last history point. */}
@@ -613,7 +613,8 @@ function MarketChart({
             axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
             interval="preserveStartEnd"
             minTickGap={28}
-            height={14}
+            height={16}
+            padding={{ left: 8, right: 4 }}
           />
           <YAxis
             type="number"
@@ -623,7 +624,7 @@ function MarketChart({
             tickLine={false}
             axisLine={false}
             orientation="right"
-            width={32}
+            width={36}
             tickCount={3}
           />
           <RechartsTooltip
