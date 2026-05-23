@@ -123,6 +123,11 @@ import { antiCheatReassureMeta } from "./compositions/anticheat/AntiCheatReassur
 import { antiCheatBridgeMeta } from "./compositions/anticheat/AntiCheatBridge";
 import { antiCheatEndCardMeta } from "./compositions/anticheat/AntiCheatEndCard";
 import { antiCheatFullMeta } from "./compositions/anticheat/AntiCheatFull";
+import { antiCheatThirteenTreeMeta } from "./compositions/anticheat/AntiCheatThirteenTree";
+import {
+  antiCheatFlagCardSampleMeta,
+  flagCardMetas,
+} from "./compositions/anticheat/AntiCheatFlagCard";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
@@ -164,6 +169,8 @@ export const RemotionRoot: React.FC = () => {
           antiCheatReassureMeta,
           antiCheatBridgeMeta,
           antiCheatEndCardMeta,
+          antiCheatThirteenTreeMeta,
+          antiCheatFlagCardSampleMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}
@@ -175,6 +182,19 @@ export const RemotionRoot: React.FC = () => {
             height={meta.height}
           />
         ))}
+        <Folder name="FlagCards">
+          {flagCardMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
       </Folder>
 
       {/* ═══ BLOCK TRADING — single-slide kill-list explainer ═══ */}
