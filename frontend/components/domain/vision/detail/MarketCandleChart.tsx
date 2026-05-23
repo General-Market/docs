@@ -235,6 +235,7 @@ export function MarketCandleChart({
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const openLineRef = useRef<IPriceLine | null>(null)
   const closeLineRef = useRef<IPriceLine | null>(null)
+  const thresholdLineRef = useRef<IPriceLine | null>(null)
   const [chartReady, setChartReady] = useState(false)
 
   // -- Create the chart once --
@@ -400,7 +401,13 @@ export function MarketCandleChart({
   const [squarePos, setSquarePos] = useState<{ left: number; top: number } | null>(null)
 
   useEffect(() => {
-    if (!chartReady || !settlement) {
+    // The square marks one exact point — (close time, threshold). It only makes
+    // sense once the round has resolved and that close time actually sits on the
+    // chart. During a live round the close is in the future, timeToCoordinate
+    // returns null, and the old code clamped the square to the right edge — which
+    // reads as "stuck on the Y axis." In that case we show nothing here; the
+    // threshold price line (drawn below) carries the level across the whole X.
+    if (!chartReady || !settlement || !resolved || settlement.time == null) {
       setSquarePos(null)
       return
     }
@@ -410,28 +417,13 @@ export function MarketCandleChart({
 
     const recompute = () => {
       const yCoord = series.priceToCoordinate(settlement.price)
-      if (yCoord == null) {
+      const timeSec = ((settlement.time! / 1000) + TZ_OFFSET_SEC) as Time
+      const xCoord = chart.timeScale().timeToCoordinate(timeSec)
+      if (yCoord == null || xCoord == null) {
         setSquarePos(null)
         return
       }
-      let xCoord: number | null = null
-      if (settlement.time != null) {
-        const timeSec = ((settlement.time / 1000) + TZ_OFFSET_SEC) as Time
-        const c = chart.timeScale().timeToCoordinate(timeSec)
-        xCoord = c == null ? null : (c as unknown as number)
-      }
-      let x: number
-      if (xCoord == null) {
-        // Either no active round (so no settle time), or the settle time
-        // sits past the last candle (live round). Clamp to the right edge
-        // so the y — the threshold price — stays honest.
-        const containerW = containerRef.current?.clientWidth ?? 0
-        const priceScaleW = chart.priceScale('right').width()
-        x = Math.max(0, containerW - priceScaleW - 6)
-      } else {
-        x = xCoord
-      }
-      setSquarePos({ left: x, top: yCoord as unknown as number })
+      setSquarePos({ left: xCoord as unknown as number, top: yCoord as unknown as number })
     }
 
     recompute()
@@ -446,9 +438,9 @@ export function MarketCandleChart({
       ts.unsubscribeVisibleLogicalRangeChange(recompute)
       ro.disconnect()
     }
-  }, [chartReady, settlement, candles])
+  }, [chartReady, settlement, resolved, candles])
 
-  // -- Overlay: round-open + close price lines --
+  // -- Overlay: round-open + close + live threshold price lines --
   useEffect(() => {
     if (!chartReady || !seriesRef.current) return
 
@@ -460,6 +452,24 @@ export function MarketCandleChart({
     if (closeLineRef.current) {
       seriesRef.current.removePriceLine(closeLineRef.current)
       closeLineRef.current = null
+    }
+    if (thresholdLineRef.current) {
+      seriesRef.current.removePriceLine(thresholdLineRef.current)
+      thresholdLineRef.current = null
+    }
+
+    // Live round: the close time is in the future, so the threshold can't be a
+    // point on the chart. Draw it as a horizontal line spanning the whole X —
+    // "you win if it closes above/below here" — instead of a square pinned right.
+    if (settlement && !resolved) {
+      thresholdLineRef.current = seriesRef.current.createPriceLine({
+        price: settlement.price,
+        color: settlement.color,
+        lineWidth: 1,
+        lineStyle: 2, // dashed
+        axisLabelVisible: true,
+        title: 'settles',
+      })
     }
 
     if (openPrice != null) {
@@ -483,7 +493,7 @@ export function MarketCandleChart({
         title: up ? `close +${changePct?.toFixed(2)}%` : `close ${changePct?.toFixed(2)}%`,
       })
     }
-  }, [chartReady, openPrice, closePrice, resolved, changePct])
+  }, [chartReady, openPrice, closePrice, resolved, changePct, settlement])
 
   // -- Header values --
   const name = market.name || market.symbol || market.assetId
