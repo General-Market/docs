@@ -1,11 +1,16 @@
 // Faithful port of the original "GENERAL MARKET" title-quake sequence.
 //
-// The original SVG defines the wordmark once and references it through three
-// <use> elements, each clipped to a polygon that carves the title into three
-// chunks (left, middle, right). The chunks scale in, then quiver with a low
-// blur, then shake harder. After the shake settles, each chunk slides apart
-// along the crack line, the visible crack outlines fade in, and the whole
-// thing comes to rest broken.
+// The original SVG defines the wordmark once at font-size 60 and references it
+// through three <use> elements positioned at (x=195.3, y=421.1) inside an
+// 800 × 800 viewBox. Each <use> is clipped to a polygon that carves the title
+// into three chunks (left, middle, right). The chunks scale in, then quiver
+// with a low blur, then shake harder. After the shake settles, each chunk
+// slides apart along the crack line, the visible crack outlines fade in, and
+// the whole thing comes to rest broken.
+//
+// The polygon percentages resolve against the 800 × 800 viewBox, NOT the
+// wordmark's bounding box. So the surface MUST be square. Anything else
+// distorts the cracks.
 
 import React from "react";
 import {
@@ -15,14 +20,26 @@ import {
   interpolate,
   Easing,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/FamiljenGrotesk";
 
-const BG = "#0a1118";
+const { fontFamily } = loadFont("normal", {
+  weights: ["700"],
+  subsets: ["latin"],
+});
+
+const BG = "#000";
+
+// SVG-native coordinate system. The original is 800 × 800; the title <use>
+// sits at (195.3, 421.1) with font-size 60 and letter-spacing 2.
+const VB = 800;
+const TEXT_X = 195.3;
+const TEXT_Y = 421.1;
+const TEXT_SIZE = 60;
+const TEXT_LETTER_SPACING = 2;
 
 // ── Clip-path polygons (verbatim from the source) ──
-// Each polygon is plotted in % of the 525 × 198 wordmark bounding box. They
-// fit together to exactly cover the title; sliding them apart shows the
-// crack.
-
+// Plotted in % of the 800 × 800 SVG viewBox. They fit together to cover the
+// title; sliding them apart shows the crack.
 const POLY_LEFT =
   "polygon(7.76% 9.16%, 18.81% 39.67%, 27.09% 45.26%, 41.57% 66.95%, 43.11% 84.74%, 20.18% 84.74%, -2.07% 85.26%, -1.55% 11.69%)";
 const POLY_MIDDLE =
@@ -30,8 +47,7 @@ const POLY_MIDDLE =
 const POLY_RIGHT =
   "polygon(70% 24.4%, 100.52% 23.9%, 100.52% 88.3%, 64.31% 87.8%, 43.96% 42.04%, 40.33% 27.3%)";
 
-// Crack overlay path data (verbatim subset of the source) — the irregular
-// fragment edges that appear at the moment the title breaks.
+// Crack overlay path data — light shimmer cracks plus dark shard lines.
 const CRACK_STROKES: Array<{ d: string; w: number; s: string }> = [
   { d: "M754 539.7 c-3.7-1.3-15.2-6.1-21.2-8.8", w: 0.1, s: "#f2f2f2" },
   { d: "M770.8 547.3 l-16.6-7.5", w: 0.18, s: "#ffffff" },
@@ -49,41 +65,35 @@ export const GeneralMarketGlitch: React.FC = () => {
   const t = frame / durationInFrames;
   const seconds = frame / fps;
 
-  // ── Phase timings ──
-  // 0.0 → 0.3 — title scales up 0.6 → 1.05
-  // 0.05 → 0.7 — low-amplitude quiver + blur (matches 142ms quiver in source)
-  // 0.7 → 0.85 — hard shake (50ms shake, 20 iters in source)
-  // 0.85 → 1.0 — crack: chunks slide apart along the fault line, crack
-  //              strokes fade in, the wordmark stays broken to the end.
+  // ── Phase timings (scaled from the source's 3.1s timeline to t ∈ [0,1]) ──
+  // 0.00 → 0.30 — title scales up 0.62 → 1.05 (then holds)
+  // 0.05 → 0.70 — low-amplitude quiver + blur
+  // 0.70 → 0.85 — hard shake
+  // 0.85 → 1.00 — crack: chunks slide apart, crack strokes fade in
   const scale = interpolate(t, [0, 0.3], [0.62, 1.05], {
     easing: Easing.bezier(0.2, 0.8, 0.3, 1),
     extrapolateRight: "clamp",
   });
 
-  // Blur and quiver — small Y oscillation while the title is in the
-  // "quiver" phase. Frequency mirrors the source's 142ms-per-iter quiver,
-  // ~7Hz.
   const inQuiver = t > 0.05 && t < 0.7;
   const blurPx = inQuiver ? Math.abs(Math.sin(seconds * 14)) * 1.6 : 0;
   const quiverY = inQuiver ? Math.sin(seconds * 18) * 1.4 : 0;
 
-  // Hard shake.
   const inShake = t > 0.7 && t < 0.85;
   const shakeY = inShake ? Math.sin(seconds * 90) * 5.5 : 0;
   const shakeX = inShake ? Math.cos(seconds * 75) * 3 : 0;
 
-  // Crack — chunks separate.
+  // Crack — chunks separate by very small amounts. The source uses:
+  //   left:  translate(-0.45%,  +0.35%)  ⇒  (-3.6,  +2.8) px on an 800-px box
+  //   right: translate(+1.00%,  -1.00%)  ⇒  (+8.0,  -8.0) px on an 800-px box
+  //   middle: no translate
   const crackT = Math.max(0, Math.min(1, (t - 0.85) / 0.12));
   const crackEase = Easing.bezier(0.3, 0.8, 0.4, 1)(crackT);
 
-  // Per-chunk offsets — left drifts down-left, middle stays roughly put with
-  // a slight downward drop, right drifts up-right (matches a "two halves
-  // peeling away from a central wedge" feel).
-  const leftDX = -crackEase * 22;
-  const leftDY = crackEase * 12;
-  const midDY = crackEase * 6;
-  const rightDX = crackEase * 28;
-  const rightDY = -crackEase * 22;
+  const leftDX = crackEase * -0.45;
+  const leftDY = crackEase * 0.35;
+  const rightDX = crackEase * 1.0;
+  const rightDY = crackEase * -1.0;
 
   return (
     <AbsoluteFill
@@ -94,48 +104,27 @@ export const GeneralMarketGlitch: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Slight vignette to bury the chrome */}
+      {/* Square stage — polygon % resolve against this box, so it MUST be 1:1. */}
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      <div
-        style={{
-          width: "min(1400px, 75%)",
-          aspectRatio: "525 / 198",
+          width: "min(80vw, 80vh, 800px)",
+          aspectRatio: "1 / 1",
           position: "relative",
           transform: `translate(${shakeX}px, ${shakeY + quiverY}px) scale(${scale})`,
+          transformOrigin: "center",
           filter: blurPx > 0 ? `blur(${blurPx}px)` : "none",
           willChange: "transform, filter",
         }}
       >
         {/* Three copies of the title, each clipped to its polygon. They start
             stacked perfectly and only separate when the crack phase begins. */}
-        <TitleChunk
-          clip={POLY_LEFT}
-          translateX={leftDX}
-          translateY={leftDY}
-        />
-        <TitleChunk
-          clip={POLY_MIDDLE}
-          translateX={0}
-          translateY={midDY}
-        />
-        <TitleChunk
-          clip={POLY_RIGHT}
-          translateX={rightDX}
-          translateY={rightDY}
-        />
+        <TitleChunk clip={POLY_LEFT} translateXPct={leftDX} translateYPct={leftDY} />
+        <TitleChunk clip={POLY_MIDDLE} translateXPct={0} translateYPct={0} />
+        <TitleChunk clip={POLY_RIGHT} translateXPct={rightDX} translateYPct={rightDY} />
 
         {/* Crack outlines fade in once the title starts breaking. */}
         <svg
-          viewBox="0 0 915 580"
+          viewBox={`0 0 ${VB} ${VB}`}
           preserveAspectRatio="xMidYMid meet"
           style={{
             position: "absolute",
@@ -163,12 +152,15 @@ export const GeneralMarketGlitch: React.FC = () => {
   );
 };
 
-// ── Inner — the wordmark, clipped. ─────────────────────────────────────────
+// ── Inner — one wordmark, clipped to its polygon. ──────────────────────────
+// The text is rendered as native SVG <text> at (TEXT_X, TEXT_Y) in the same
+// 800-unit space the polygons reference. The clip-path is applied to the
+// wrapper div (which is the square viewBox surface), so the polygons map 1:1.
 const TitleChunk: React.FC<{
   clip: string;
-  translateX: number;
-  translateY: number;
-}> = ({ clip, translateX, translateY }) => {
+  translateXPct: number;
+  translateYPct: number;
+}> = ({ clip, translateXPct, translateYPct }) => {
   return (
     <div
       style={{
@@ -176,28 +168,31 @@ const TitleChunk: React.FC<{
         inset: 0,
         clipPath: clip,
         WebkitClipPath: clip,
-        transform: `translate(${translateX}px, ${translateY}px)`,
+        transform: `translate(${translateXPct}%, ${translateYPct}%)`,
       }}
     >
-      <div
+      <svg
+        viewBox={`0 0 ${VB} ${VB}`}
+        preserveAspectRatio="xMidYMid meet"
         style={{
           position: "absolute",
           inset: 0,
-          display: "grid",
-          placeItems: "center",
-          color: "#bfbfc8",
-          fontFamily:
-            '"Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif',
-          fontWeight: 800,
-          fontSize: "20vw",
-          letterSpacing: "0.06em",
-          textShadow: "0 0 16px rgba(0,0,0,.55)",
-          whiteSpace: "nowrap",
-          lineHeight: 1,
+          width: "100%",
+          height: "100%",
         }}
       >
-        GENERAL MARKET
-      </div>
+        <text
+          x={TEXT_X}
+          y={TEXT_Y}
+          fill="#bfbfc8"
+          fontSize={TEXT_SIZE}
+          fontWeight={700}
+          letterSpacing={TEXT_LETTER_SPACING}
+          fontFamily={`${fontFamily}, "Helvetica Neue", Helvetica, Arial, sans-serif`}
+        >
+          GENERAL MARKET
+        </text>
+      </svg>
     </div>
   );
 };
