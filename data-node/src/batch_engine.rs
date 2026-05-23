@@ -591,61 +591,71 @@ async fn get_stagnant_assets(
 }
 
 /// Get all healthy assets for a source.
-/// "Healthy" = has a price in `market_prices_latest` within 2× sync_interval and value > 0.
 ///
-/// Uses `market_prices_latest` (the live snapshot table) as the single source of truth.
-/// Some sources write different asset_id formats to `market_assets` vs `market_prices`
-/// (e.g. defi writes protocol_* to assets but dex_24h_* to prices), so we query the
-/// price table directly rather than joining through the asset registry.
+/// **Primary sources** ("Healthy" = has a price in `market_prices_latest`
+/// within 2× sync_interval and value > 0): the staleness filter prunes
+/// dead protocols from the parent firehose so the on-chain batch only
+/// carries markets the oracle can actually resolve.
 ///
-/// When `allowlist` is `Some`, the filter is applied in SQL **before** the
-/// `LIMIT`. This is load-bearing for curated sub-sources whose parent firehose
-/// has more than `MAX_MARKETS_PER_BATCH` healthy assets — e.g. `defi` regularly
-/// carries 14k+ protocols, and alphabetically-late entries like
-/// `protocol_morpheusai` or `protocol_yield-ai` would otherwise fall past the
-/// 8192-row cutoff and silently disappear from their curated batch.
+/// **Curated sub-sources** (`allowlist = Some`): the editorial promise is
+/// that all N picks appear on the page every round, even if a niche
+/// protocol updates rarely. The staleness filter is dropped and the
+/// allowlist is applied in SQL **before** the `LIMIT` — otherwise a
+/// curated asset whose alphabetical position exceeds `MAX_MARKETS_PER_BATCH`
+/// in the parent (e.g. `protocol_yield-ai` at rank 13 000 inside `defi`)
+/// silently disappears. Stale rows still come through; the oracle's
+/// per-market resolver downgrades them to `Cancelled` and the universal
+/// refund path in `oracle::vision::settlement` returns the stake.
 ///
-/// Returns max MAX_MARKETS_PER_BATCH assets, sorted by asset_id.
+/// Uses `market_prices_latest` (the live snapshot table) as the single
+/// source of truth. Some sources write different asset_id formats to
+/// `market_assets` vs `market_prices` (e.g. defi writes `protocol_*` to
+/// assets but `dex_24h_*` to prices), so we query the price table
+/// directly rather than joining through the asset registry.
+///
+/// Returns max `MAX_MARKETS_PER_BATCH` assets, sorted by asset_id.
 async fn get_healthy_assets(
     pool: &PgPool,
     source_id: &str,
     sync_interval_secs: u64,
     allowlist: Option<&std::collections::HashSet<String>>,
 ) -> Result<Vec<String>, sqlx::Error> {
-    // Align with the oracle's staleness ceiling (`max(1800, 2 * tick)`),
-    // not 10× tick. The previous "generous window" let the data-node
-    // recommend assets the oracle would later cancel as stale, producing
-    // rounds where every market resolved Cancelled — github, crypto,
-    // tomtom_traffic, tomtom_evcharge all exhibited the pattern.
-    //
-    // We add the tick once so an asset fetched right at config-build time
-    // is still within the threshold at settlement (one tick later).
-    let oracle_threshold_secs = (2 * sync_interval_secs).max(1800);
-    let cutoff_secs = oracle_threshold_secs.saturating_sub(sync_interval_secs).max(60);
-    let staleness_cutoff =
-        Utc::now() - chrono::Duration::seconds(cutoff_secs as i64);
-
     let rows: Vec<(String,)> = if let Some(allow) = allowlist {
+        // Curated: no staleness cutoff. The oracle handles missing prices
+        // by cancelling the affected market, and the refund path returns
+        // the per-market stake. Editorial "always 10" beats freshness.
         let allow_vec: Vec<String> = allow.iter().cloned().collect();
         sqlx::query_as(
             r#"
             SELECT asset_id
             FROM market_prices_latest
             WHERE source = $1
-              AND fetched_at >= $2
               AND value IS NOT NULL
-              AND asset_id = ANY($3)
+              AND asset_id = ANY($2)
             ORDER BY asset_id
-            LIMIT $4
+            LIMIT $3
             "#,
         )
         .bind(source_id)
-        .bind(staleness_cutoff)
         .bind(&allow_vec)
         .bind(MAX_MARKETS_PER_BATCH as i64)
         .fetch_all(pool)
         .await?
     } else {
+        // Primary firehose: keep the staleness filter aligned with the
+        // oracle's resolver ceiling (`max(1800, 2 * tick)`). Letting stale
+        // assets through here caused historical rounds — github, crypto,
+        // tomtom_traffic, tomtom_evcharge — to resolve fully Cancelled.
+        //
+        // We add the tick once so an asset fetched right at config-build
+        // time is still within the threshold at settlement (one tick later).
+        let oracle_threshold_secs = (2 * sync_interval_secs).max(1800);
+        let cutoff_secs = oracle_threshold_secs
+            .saturating_sub(sync_interval_secs)
+            .max(60);
+        let staleness_cutoff =
+            Utc::now() - chrono::Duration::seconds(cutoff_secs as i64);
+
         sqlx::query_as(
             r#"
             SELECT asset_id
@@ -907,41 +917,68 @@ async fn generate_batch_config_inner(
         }
     };
 
+    // For curated sub-sources, the editorial promise is "always N markets".
+    // Warn loudly if any asset from the allowlist is missing — that means a
+    // protocol/chain is unknown to the data-node entirely and needs to be
+    // indexed before it can resolve. We still build the batch with whatever
+    // we have; missing assets simply don't appear this round.
+    if let Some(allow) = curated_allowlist {
+        if healthy.len() < allow.len() {
+            let returned: std::collections::HashSet<&String> = healthy.iter().collect();
+            let missing: Vec<&String> = allow.iter().filter(|a| !returned.contains(a)).collect();
+            warn!(
+                source = source_id,
+                parent = parent_source_id,
+                returned = healthy.len(),
+                curated = allow.len(),
+                ?missing,
+                "Curated allowlist not fully covered by parent's market_prices_latest"
+            );
+        }
+    }
+
     if healthy.is_empty() {
         return None;
     }
 
-    // Drop assets whose last K settlements were all exactly 0% change. K
-    // scales with sync_interval. A stagnant asset makes a boring market —
-    // every bet refunds, every cycle wastes oracle work. Re-inclusion is
-    // automatic: one non-zero settlement clears the asset from the stagnant
-    // set on the next cycle.
-    let window = stagnation_window(sync_interval_secs);
-    let stagnant = match get_stagnant_assets(pool, parent_source_id, window).await {
-        Ok(s) => s,
-        Err(e) => {
-            warn!(source = source_id, %e, "Failed to query stagnant assets — skipping filter");
-            std::collections::HashSet::new()
-        }
-    };
-
-    let healthy: Vec<String> = if stagnant.is_empty() {
+    // Stagnation filter — only applies to primary firehose batches. Curated
+    // subsources keep their full editorial roster: a niche protocol that
+    // posted K consecutive zero-change ticks is still the right pick for
+    // the page, and refunded markets do no harm. The filter exists to keep
+    // the parent firehose from carrying thousands of dead protocols.
+    let healthy: Vec<String> = if curated_allowlist.is_some() {
         healthy
     } else {
-        let before = healthy.len();
-        let filtered: Vec<String> = healthy.into_iter().filter(|id| !stagnant.contains(id)).collect();
-        let removed = before - filtered.len();
-        if removed > 0 {
-            info!(
-                source = source_id,
-                stagnant_window = window,
-                removed,
-                remaining = filtered.len(),
-                "Excluded stagnant assets ({} consecutive zero-change settlements)",
-                window
-            );
+        let window = stagnation_window(sync_interval_secs);
+        let stagnant = match get_stagnant_assets(pool, parent_source_id, window).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(source = source_id, %e, "Failed to query stagnant assets — skipping filter");
+                std::collections::HashSet::new()
+            }
+        };
+
+        if stagnant.is_empty() {
+            healthy
+        } else {
+            let before = healthy.len();
+            let filtered: Vec<String> = healthy
+                .into_iter()
+                .filter(|id| !stagnant.contains(id))
+                .collect();
+            let removed = before - filtered.len();
+            if removed > 0 {
+                info!(
+                    source = source_id,
+                    stagnant_window = window,
+                    removed,
+                    remaining = filtered.len(),
+                    "Excluded stagnant assets ({} consecutive zero-change settlements)",
+                    window
+                );
+            }
+            filtered
         }
-        filtered
     };
 
     if healthy.is_empty() {
