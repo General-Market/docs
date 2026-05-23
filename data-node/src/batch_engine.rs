@@ -597,11 +597,20 @@ async fn get_stagnant_assets(
 /// Some sources write different asset_id formats to `market_assets` vs `market_prices`
 /// (e.g. defi writes protocol_* to assets but dex_24h_* to prices), so we query the
 /// price table directly rather than joining through the asset registry.
+///
+/// When `allowlist` is `Some`, the filter is applied in SQL **before** the
+/// `LIMIT`. This is load-bearing for curated sub-sources whose parent firehose
+/// has more than `MAX_MARKETS_PER_BATCH` healthy assets — e.g. `defi` regularly
+/// carries 14k+ protocols, and alphabetically-late entries like
+/// `protocol_morpheusai` or `protocol_yield-ai` would otherwise fall past the
+/// 8192-row cutoff and silently disappear from their curated batch.
+///
 /// Returns max MAX_MARKETS_PER_BATCH assets, sorted by asset_id.
 async fn get_healthy_assets(
     pool: &PgPool,
     source_id: &str,
     sync_interval_secs: u64,
+    allowlist: Option<&std::collections::HashSet<String>>,
 ) -> Result<Vec<String>, sqlx::Error> {
     // Align with the oracle's staleness ceiling (`max(1800, 2 * tick)`),
     // not 10× tick. The previous "generous window" let the data-node
@@ -616,22 +625,44 @@ async fn get_healthy_assets(
     let staleness_cutoff =
         Utc::now() - chrono::Duration::seconds(cutoff_secs as i64);
 
-    let rows: Vec<(String,)> = sqlx::query_as(
-        r#"
-        SELECT asset_id
-        FROM market_prices_latest
-        WHERE source = $1
-          AND fetched_at >= $2
-          AND value IS NOT NULL
-        ORDER BY asset_id
-        LIMIT $3
-        "#,
-    )
-    .bind(source_id)
-    .bind(staleness_cutoff)
-    .bind(MAX_MARKETS_PER_BATCH as i64)
-    .fetch_all(pool)
-    .await?;
+    let rows: Vec<(String,)> = if let Some(allow) = allowlist {
+        let allow_vec: Vec<String> = allow.iter().cloned().collect();
+        sqlx::query_as(
+            r#"
+            SELECT asset_id
+            FROM market_prices_latest
+            WHERE source = $1
+              AND fetched_at >= $2
+              AND value IS NOT NULL
+              AND asset_id = ANY($3)
+            ORDER BY asset_id
+            LIMIT $4
+            "#,
+        )
+        .bind(source_id)
+        .bind(staleness_cutoff)
+        .bind(&allow_vec)
+        .bind(MAX_MARKETS_PER_BATCH as i64)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as(
+            r#"
+            SELECT asset_id
+            FROM market_prices_latest
+            WHERE source = $1
+              AND fetched_at >= $2
+              AND value IS NOT NULL
+            ORDER BY asset_id
+            LIMIT $3
+            "#,
+        )
+        .bind(source_id)
+        .bind(staleness_cutoff)
+        .bind(MAX_MARKETS_PER_BATCH as i64)
+        .fetch_all(pool)
+        .await?
+    };
 
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
@@ -861,18 +892,19 @@ async fn generate_batch_config_inner(
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
     let source_id = batch_source_id;
-    let healthy = match get_healthy_assets(pool, parent_source_id, sync_interval_secs).await {
+    let healthy = match get_healthy_assets(
+        pool,
+        parent_source_id,
+        sync_interval_secs,
+        curated_allowlist,
+    )
+    .await
+    {
         Ok(ids) => ids,
         Err(e) => {
             warn!(source = source_id, parent = parent_source_id, %e, "Failed to get healthy assets");
             return None;
         }
-    };
-
-    let healthy: Vec<String> = if let Some(allow) = curated_allowlist {
-        healthy.into_iter().filter(|a| allow.contains(a)).collect()
-    } else {
-        healthy
     };
 
     if healthy.is_empty() {

@@ -39,7 +39,6 @@ import { useTranslations } from 'next-intl'
 import { HumanMarketCard } from './HumanMarketCard'
 import { HumanTradingOnboarding } from './HumanTradingOnboarding'
 import { MarketCandleChart, chartHistoryQueryOptions, type Timeframe } from './MarketCandleChart'
-import { SourceBulkPickBar } from './SourceBulkPickBar'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -58,7 +57,7 @@ const EASE_OUT = 'cubic-bezier(0.25, 0.1, 0.3, 1)'
 const FONT_DISPLAY = 'var(--apple-font-display), "SF Pro Display", Helvetica, Arial, sans-serif'
 const FONT_TEXT = 'var(--apple-font-text), "SF Pro Text", Helvetica, Arial, sans-serif'
 const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
-const STAKE_QUICK_PICKS = [1, 5, 10, 25, 50, 100]
+const STAKE_QUICK_PICKS = [1, 5, 10, 25, 50]
 const MIN_PER_MARKET = 0.1
 
 const ERC20_BALANCE_ABI = [
@@ -710,12 +709,6 @@ export function SourceDetailHumanTrading({
   // keeps the old candles visible while the next asset's history loads, and
   // hover-prefetch warms the cache so the swap is instant on click.
 
-  // Asset IDs the user can actually pick on — used by the bulk-pick bar.
-  const tradableAssetIds = useMemo(
-    () => tradableMarkets.map(m => m.market.assetId),
-    [tradableMarkets],
-  )
-
   const focusedMarket =
     curatedMarkets.find(m => m.assetId === selectedAssetId) ?? curatedMarkets[0] ?? null
 
@@ -754,10 +747,6 @@ export function SourceDetailHumanTrading({
       <div className="w-full px-4 md:px-6 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Main column — big candle + grid of mini cards */}
         <div className="flex-1 min-w-0 flex flex-col gap-3">
-          {activeBatch && allowlist && marketCount < (allowlist.size ?? TOP_N) && (
-            <CoverageNotice active={marketCount} curated={allowlist.size ?? TOP_N} />
-          )}
-
           {displayError && (
             <ErrorBar message={displayError} onDismiss={() => resetJoin()} />
           )}
@@ -766,15 +755,6 @@ export function SourceDetailHumanTrading({
             <IndexingNotice />
           ) : (
             <>
-              {/* Bulk picker — All UP, All DOWN, Surprise me. Lives above the
-                  big chart so the user can stake a portfolio in one tap, then
-                  scroll past to the individual tiles to refine. */}
-              <SourceBulkPickBar
-                tradableAssetIds={tradableAssetIds}
-                setPicks={setPicks}
-                disabled={flow !== 'idle' || !isBettingOpen}
-              />
-
               {/* Big candle chart — renders as soon as its own history lands.
                   Don't gate on the bulk-history endpoint (which can be slow or
                   502 on overloaded sources); each chart owns its own loader. */}
@@ -1738,26 +1718,6 @@ function MobileValidate({
 
 
 // ── Notices ──────────────────────────────────────────────────────────────────
-
-function CoverageNotice({ active, curated }: { active: number; curated: number }) {
-  return (
-    <div
-      style={{
-        background: APPLE_PANEL,
-        border: '1px solid rgba(0,0,0,0.06)',
-        borderRadius: 14,
-        padding: '10px 14px',
-        fontFamily: FONT_TEXT,
-        fontSize: 13,
-        color: APPLE_TEXT_SECONDARY,
-        letterSpacing: '-0.016em',
-        fontVariantNumeric: 'tabular-nums',
-      }}
-    >
-      Curated {curated} · {active} active this round.
-    </div>
-  )
-}
 
 function ErrorBar({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (

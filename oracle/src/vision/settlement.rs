@@ -62,11 +62,32 @@ pub fn compute_settlement(
         .collect();
     sorted.sort_by_key(|(addr, _, _)| *addr);
 
-    // Zero-sum invariant: total payouts must equal total deposits.
-    // If this fires, something upstream produced non-conservative results.
     let total_payouts: U256 = sorted.iter().map(|(_, p, _)| *p).fold(U256::zero(), |a, b| a + b);
     let total_deposits: U256 = player_deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
-    if total_payouts != total_deposits {
+
+    // Universal-refund short-circuit. When no market produced any winning
+    // payout (e.g. every market resolved Cancelled because the oracle had no
+    // start/end price for the batch), every player should walk away with
+    // their deposit. Falling through to the "give the deficit to the last
+    // sorted player" fix below silently moves the entire pool to the
+    // lexicographically-largest address — a real loss observed on
+    // defillama-ai-agents batches (see vision_settlements 100040 et al.).
+    let any_resolved = tick_result.market_results.iter().any(|mr| {
+        matches!(mr.outcome, MarketOutcome::Up | MarketOutcome::Down)
+    });
+    if !any_resolved && total_payouts < total_deposits {
+        let deposit_map: std::collections::HashMap<Address, U256> =
+            player_deposits.iter().cloned().collect();
+        for entry in sorted.iter_mut() {
+            entry.1 = deposit_map.get(&entry.0).copied().unwrap_or(U256::zero());
+        }
+        tracing::warn!(
+            batch_id = tick_result.batch_id,
+            players = sorted.len(),
+            total_deposits = %total_deposits,
+            "No market resolved Up/Down — refunding every player their full deposit"
+        );
+    } else if total_payouts != total_deposits {
         let delta = if total_payouts > total_deposits {
             total_payouts - total_deposits
         } else {
