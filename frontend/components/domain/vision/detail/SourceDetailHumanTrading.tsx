@@ -414,6 +414,11 @@ export function SourceDetailHumanTrading({
     },
   })
   const walletUsdc = (walletUsdcRaw as bigint | undefined) ?? 0n
+  // An undefined read (cold query key after navigation, or the deployment
+  // address briefly resolving to 0x0) must NOT read as a real zero — that is
+  // what made a freshly funded wallet show "0 USDC / stake exceeds balance"
+  // right after a successful faucet claim and a page switch.
+  const walletUsdcKnown = walletUsdcRaw !== undefined
 
   // -- Join + submit hooks --
   const {
@@ -474,6 +479,10 @@ export function SourceDetailHumanTrading({
         refetchPosition()
         queryClient.invalidateQueries({ queryKey: ['vision-rounds'] })
         queryClient.invalidateQueries({ queryKey: ['vision-batches'] })
+        // Positions rail reads from the player profile (60s poll). Refetch it
+        // now so the bet the user just placed shows up immediately instead of
+        // after the next poll.
+        queryClient.invalidateQueries({ queryKey: ['player-profile'] })
       })
   }, [
     joinStep,
@@ -572,7 +581,7 @@ export function SourceDetailHumanTrading({
   )
   const allPicked = totalPicked === marketCount && marketCount > 0
   const exceedsBalance =
-    isConnected && stakeNum > 0 && BigInt(Math.round(stakeNum * 1e18)) > walletUsdc
+    isConnected && walletUsdcKnown && stakeNum > 0 && BigInt(Math.round(stakeNum * 1e18)) > walletUsdc
 
   // -- Build bets array in batch market order --
   const buildBets = useCallback((): BetDirection[] => {
@@ -909,6 +918,7 @@ export function SourceDetailHumanTrading({
               meetsMinimum={meetsMinimum}
               exceedsBalance={exceedsBalance}
               walletUsdc={walletUsdc}
+              balanceKnown={walletUsdcKnown}
               isConnected={isConnected}
               hasLowGas={hasLowGas}
               flow={flow}
@@ -1015,6 +1025,10 @@ function RoundTimeline({
     remainingSecs > 0 && tickDuration > 0
       ? formatCountdown(remainingSecs + tickDuration)
       : '—'
+  // The previous round settles the instant the current one closes, so its
+  // settlement countdown is exactly `remainingSecs`. Show that timer in the
+  // LAST box rather than a static "Settling" word with no number.
+  const lastSettleCountdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : null
   const urgentNow = roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
   const poolNowDisplay = poolNowUsd !== null && poolNowUsd > 0 ? formatBigUsd(String(poolNowUsd)) : '—'
 
@@ -1041,8 +1055,9 @@ function RoundTimeline({
         <TimelineBox
           slot="LAST"
           tickNumber={currentTick > 0 ? currentTick - 1 : null}
-          mainKind="status"
-          mainText="Settling"
+          mainKind={lastSettleCountdown ? 'timer' : 'status'}
+          mainText={lastSettleCountdown ?? 'Settling'}
+          statusLabel={lastSettleCountdown ? 'Settles' : undefined}
           // Pool size for past rounds isn't surfaced by /vision/rounds (the
           // endpoint only carries non-paused rounds). Keep the slot quiet
           // rather than guessing.
@@ -1246,6 +1261,7 @@ function EntryCard({
   meetsMinimum,
   exceedsBalance,
   walletUsdc,
+  balanceKnown,
   isConnected,
   hasLowGas,
   flow,
@@ -1263,6 +1279,7 @@ function EntryCard({
   meetsMinimum: boolean
   exceedsBalance: boolean
   walletUsdc: bigint
+  balanceKnown: boolean
   isConnected: boolean
   hasLowGas: boolean
   flow: FlowStep
@@ -1330,7 +1347,9 @@ function EntryCard({
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {balanceHuman.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                {balanceKnown
+                  ? `${balanceHuman.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`
+                  : '… USDC'}
               </span>
             )}
           </div>
