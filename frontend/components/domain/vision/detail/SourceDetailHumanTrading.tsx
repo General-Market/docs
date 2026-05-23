@@ -91,6 +91,18 @@ function formatCountdown(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+// Hours-aware clock for the round timeline. Sources tick anywhere from 60s
+// (twitch) to 86400s (ECB), so a bare m:ss would print "1440:00" for a daily
+// round. Roll into H:MM:SS past the hour.
+function formatClock(secs: number): string {
+  if (secs <= 0) return '0:00'
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 function formatUsdDollars(n: number): string {
   if (!isFinite(n)) return '$0.00'
   if (Math.abs(n) >= 1000) return `$${n.toFixed(0)}`
@@ -240,8 +252,6 @@ export function SourceDetailHumanTrading({
     return batches.find(b => candidates.has(b.sourceId)) ?? null
   }, [batches, source])
 
-  const configHash = (activeBatch?.configHash ?? null) as `0x${string}` | null
-
   // The /vision/batches API returns market_count but not the full marketIds
   // array. Pull the authoritative ordered list from the data-node, keyed by
   // sourceId so the SSR prefetch (page.tsx → ['batch-config-source', sourceId])
@@ -295,15 +305,18 @@ export function SourceDetailHumanTrading({
   }, [batchConfig, curatedMarkets])
 
   // -- Curated markets that ARE in the current batch (only these are bettable) --
+  // Driven by marketIds (source-keyed batch config), NOT activeBatch — so the
+  // picker stays live during the window where /vision/batches lags behind the
+  // live round on a tick rollover.
   const tradableMarkets: CuratedMarket[] = useMemo(() => {
-    if (!activeBatch) return []
+    if (marketIds.length === 0) return []
     const result: CuratedMarket[] = []
     for (const m of curatedMarkets) {
       const idx = marketIds.indexOf(m.assetId)
       if (idx >= 0) result.push({ market: m, marketIndex: idx })
     }
     return result
-  }, [curatedMarkets, marketIds, activeBatch])
+  }, [curatedMarkets, marketIds])
 
   // -- Bulk 24h history for every curated market — one network call gates the
   //    entire chart area, so the page never shows a row of staggered skeletons. --
@@ -320,24 +333,50 @@ export function SourceDetailHumanTrading({
   // -- bettingEnd from the round (server-truth) --
   const { data: rounds } = useRounds(sourceId)
   const round = useMemo(() => {
-    if (!activeBatch || !rounds) return null
-    return rounds.find(r => r.batchId === activeBatch.id) ?? null
+    if (!rounds || rounds.length === 0) return null
+    // Exact match when the two endpoints agree.
+    if (activeBatch) {
+      const exact = rounds.find(r => r.batchId === activeBatch.id)
+      if (exact) return exact
+    }
+    // /vision/rounds is already filtered to this source and refetches every 5s,
+    // while /vision/batches (activeBatch) refetches every 10s AND reads on-chain.
+    // On a tick rollover the old batch pauses and a new one is created; for the
+    // window where activeBatch still points at the just-paused batch, the exact
+    // match misses and the whole timeline blanks to "—". Fall back to the
+    // source's newest live betting round so the clock tracks the chain.
+    const live = rounds
+      .filter(r => r.status === 'betting' && !!r.bettingEnd)
+      .sort((a, b) => b.batchId - a.batchId)
+    if (live.length > 0) return live[0]
+    return [...rounds].sort((a, b) => b.batchId - a.batchId)[0] ?? null
   }, [rounds, activeBatch])
   const bettingEnd = round?.bettingEnd ?? null
   const remainingSecs = useSharedCountdown(bettingEnd)
 
+  // Single source of truth for "which batch is this page operating on". Prefer
+  // the live round (fast 5s feed) over activeBatch (10s + on-chain reads), so
+  // the join, the on-chain position read, and the timeline never target a
+  // stale or just-paused batch during a tick rollover.
+  const currentBatchId = round?.batchId ?? activeBatch?.id ?? null
+  const currentConfigHash = (round?.configHash || activeBatch?.configHash || null) as
+    | `0x${string}`
+    | null
+
   // Round lifecycle. The oracle's /vision/rounds/active drops settled rounds,
   // so between ticks `round` briefly becomes null even though the batch is alive.
   // Treat that gap as "waiting for next round" — never as "no round is active".
+  // Gate on currentBatchId (round-or-batch) rather than activeBatch alone, so a
+  // lagging /vision/batches can't blank a live round into "absent".
   type RoundPhase = 'open' | 'pending' | 'locked' | 'settling' | 'absent'
   const roundPhase: RoundPhase = useMemo(() => {
-    if (!activeBatch) return 'absent'
+    if (currentBatchId == null) return 'absent'
     if (!round) return 'pending'
     if (round.status === 'betting' && !!bettingEnd && remainingSecs > 0) return 'open'
     if (round.status === 'locked') return 'locked'
     if (round.status === 'settling' || round.status === 'settled') return 'settling'
     return 'pending'
-  }, [activeBatch, round, bettingEnd, remainingSecs])
+  }, [currentBatchId, round, bettingEnd, remainingSecs])
 
   const isBettingOpen = roundPhase === 'open'
   const isBetweenRounds = roundPhase === 'pending' || roundPhase === 'locked' || roundPhase === 'settling'
@@ -359,7 +398,9 @@ export function SourceDetailHumanTrading({
   }, [round, remainingSecs])
 
   // -- Player position (for already-joined state on refresh) --
-  const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
+  const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(
+    currentBatchId ?? undefined,
+  )
 
   // -- Wallet + gas + USDC balance --
   const { address, isConnected } = useAccount()
@@ -457,10 +498,10 @@ export function SourceDetailHumanTrading({
 
   // After joinBatchDirect lands, publish bitmap to issuers
   useEffect(() => {
-    if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
+    if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || currentBatchId == null) return
     setFlow('publishing')
     submitBitmap({
-      batchId: activeBatch.id,
+      batchId: currentBatchId,
       bitmap: encodedBitmap,
       bitmapHash,
     })
@@ -488,7 +529,7 @@ export function SourceDetailHumanTrading({
     joinStep,
     encodedBitmap,
     bitmapHash,
-    activeBatch,
+    currentBatchId,
     submitBitmap,
     resetJoin,
     refetchPosition,
@@ -498,7 +539,7 @@ export function SourceDetailHumanTrading({
   // If user already joined this round (refresh), decode their stored picks
   // so the rows mount in `committed` state with the correct direction visible.
   useEffect(() => {
-    if (!isJoined || !position || !activeBatch) return
+    if (!isJoined || !position || currentBatchId == null) return
     if (flow === 'committed') return
     // Best-effort decode: we have the bitmap hash on-chain but not the bytes.
     // Try to fetch from the issuer; if unavailable, we still set flow=committed
@@ -507,7 +548,7 @@ export function SourceDetailHumanTrading({
     const decodeFromIssuer = async () => {
       try {
         const res = await fetch(
-          `/api/vision/rounds/${activeBatch.id}/bitmaps?player=${address}`,
+          `/api/vision/rounds/${currentBatchId}/bitmaps?player=${address}`,
         )
         if (!res.ok) return
         const data = await res.json()
@@ -533,7 +574,7 @@ export function SourceDetailHumanTrading({
     }
     decodeFromIssuer()
     return () => { cancelled = true }
-  }, [isJoined, position, activeBatch, address, marketIds, flow])
+  }, [isJoined, position, currentBatchId, address, marketIds, flow])
 
   // -- Pick handlers --
   const onPick = useCallback((marketId: string, direction: Pick) => {
@@ -549,8 +590,8 @@ export function SourceDetailHumanTrading({
   // subsource pages; on-chain is the source of truth. Picks distribution
   // (X UP / Y DOWN) comes from the decoded bitmap in local `picks` state, so
   // refreshes after lock-in still show the right colors.
-  const currentCommit = useMemo(() => {
-    if (!isJoined || !position || !activeBatch) return null
+  const currentCommit = useMemo<CurrentCommit | null>(() => {
+    if (!isJoined || !position || currentBatchId == null) return null
     const stakeUsd = Number(formatUnits(position.totalDeposited, VISION_USDC_DECIMALS))
     let ups = 0
     let downs = 0
@@ -560,7 +601,7 @@ export function SourceDetailHumanTrading({
       else if (p === 'down') downs += 1
     }
     return {
-      batchId: activeBatch.id,
+      batchId: currentBatchId,
       stakeUsd,
       perMarketUsd:
         tradableMarkets.length > 0 ? stakeUsd / tradableMarkets.length : 0,
@@ -568,7 +609,7 @@ export function SourceDetailHumanTrading({
       downs,
       marketCount: tradableMarkets.length,
     }
-  }, [isJoined, position, activeBatch, tradableMarkets, picks])
+  }, [isJoined, position, currentBatchId, tradableMarkets, picks])
 
   // -- Stake math --
   const stakeNum = parseFloat(stakeInput) || 0
@@ -583,6 +624,32 @@ export function SourceDetailHumanTrading({
   const exceedsBalance =
     isConnected && walletUsdcKnown && stakeNum > 0 && BigInt(Math.round(stakeNum * 1e18)) > walletUsdc
 
+  // Optimistic commit: the instant the user confirms, reflect their stake and
+  // picks in the timeline + positions card — don't wait for the on-chain
+  // position read to catch up. `currentCommit` (chain truth) supersedes it as
+  // soon as usePlayerPosition refetches, so a failed join cleanly reverts.
+  const optimisticCommit = useMemo<CurrentCommit | null>(() => {
+    if (flow === 'idle' || flow === 'reveal-failed') return null
+    if (currentBatchId == null) return null
+    let ups = 0
+    let downs = 0
+    for (const m of tradableMarkets) {
+      const p = picks[m.market.assetId]
+      if (p === 'up') ups += 1
+      else if (p === 'down') downs += 1
+    }
+    return {
+      batchId: currentBatchId,
+      stakeUsd: stakeNum,
+      perMarketUsd: tradableMarkets.length > 0 ? stakeNum / tradableMarkets.length : 0,
+      ups,
+      downs,
+      marketCount: tradableMarkets.length,
+    }
+  }, [flow, currentBatchId, tradableMarkets, picks, stakeNum])
+
+  const effectiveCommit = currentCommit ?? optimisticCommit
+
   // -- Build bets array in batch market order --
   const buildBets = useCallback((): BetDirection[] => {
     return marketIds.map(id => {
@@ -594,26 +661,27 @@ export function SourceDetailHumanTrading({
 
   // -- Validate handler --
   const onValidate = useCallback(() => {
-    if (!activeBatch || !configHash || !isConnected || !allPicked) return
+    if (currentBatchId == null || !currentConfigHash || !isConnected || !allPicked) return
     if (!meetsMinimum || exceedsBalance) return
     if (flow !== 'idle') return
 
     const bets = buildBets()
     const depositAmount = BigInt(Math.round(stakeNum * 1e18))
-    const marketCountForBitmap = activeBatch.marketCount || marketIds.length
+    const marketCountForBitmap = activeBatch?.marketCount || marketIds.length
 
     setFlow('approving') // optimistic — useJoinBatch will reconcile
 
     join({
-      batchId: BigInt(activeBatch.id),
-      configHash,
+      batchId: BigInt(currentBatchId),
+      configHash: currentConfigHash,
       depositAmount,
       bets,
       marketCount: marketCountForBitmap,
     })
   }, [
+    currentBatchId,
+    currentConfigHash,
     activeBatch,
-    configHash,
     isConnected,
     allPicked,
     meetsMinimum,
@@ -627,12 +695,11 @@ export function SourceDetailHumanTrading({
 
   // -- Retry reveal --
   const onRetryReveal = useCallback(async () => {
-    if (!encodedBitmap || !bitmapHash || !activeBatch) {
+    if (currentBatchId == null) return
+    if (!encodedBitmap || !bitmapHash) {
       // We lost the bitmap from join state. Re-encode from current picks.
-      if (!activeBatch) return
-      const bets = buildBets()
       const result = await submitBitmap({
-        batchId: activeBatch.id,
+        batchId: currentBatchId,
         bitmap: new Uint8Array(0), // placeholder — useSubmitBitmap.submitBets is the right call
         bitmapHash: ('0x' + '00'.repeat(32)) as `0x${string}`,
       }).catch(() => null)
@@ -645,7 +712,7 @@ export function SourceDetailHumanTrading({
     setFlow('publishing')
     try {
       const result = await submitBitmap({
-        batchId: activeBatch.id,
+        batchId: currentBatchId,
         bitmap: encodedBitmap,
         bitmapHash,
       })
@@ -658,7 +725,7 @@ export function SourceDetailHumanTrading({
       setFlow('reveal-failed')
     }
     setRevealRetryCount(n => n + 1)
-  }, [encodedBitmap, bitmapHash, activeBatch, buildBets, submitBitmap])
+  }, [encodedBitmap, bitmapHash, currentBatchId, submitBitmap])
 
   // -- Loading / not-found --
   if (isRegistryLoading && !initialSource) {
@@ -841,7 +908,7 @@ export function SourceDetailHumanTrading({
                     the active batch — the rest are locked and informational. */}
                 {curatedMarkets.map((market) => {
                     const inActiveBatch =
-                      !!activeBatch && marketIds.includes(market.assetId)
+                      currentBatchId != null && marketIds.includes(market.assetId)
                     const isInteractive = inActiveBatch && roundPhase === 'open'
                     const res = resolutionByAsset.get(market.assetId)
                     return (
@@ -897,7 +964,7 @@ export function SourceDetailHumanTrading({
             }}
           >
             <RoundTimeline
-              currentTick={activeBatch?.currentTick ?? 0}
+              currentTick={round?.batchId ?? activeBatch?.currentTick ?? 0}
               tickDuration={round?.timeframeSecs ?? activeBatch?.tickDuration ?? 0}
               remainingSecs={remainingSecs}
               roundPhase={roundPhase}
@@ -906,7 +973,8 @@ export function SourceDetailHumanTrading({
                 if (!raw || raw === '0') return null
                 try { return Number(formatUnits(BigInt(raw), VISION_USDC_DECIMALS)) } catch { return null }
               })()}
-              hasCurrentCommit={!!currentCommit}
+              hasCurrentCommit={!!effectiveCommit}
+              userStakeUsd={effectiveCommit?.stakeUsd ?? null}
               hadLastTick={sourcePositions.ticks.length > 0}
             />
             <EntryCard
@@ -971,6 +1039,10 @@ export function SourceDetailHumanTrading({
           60% { opacity: 1; }
           100% { transform: translateX(0); opacity: 1; }
         }
+        @keyframes gm-livedot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
       `}</style>
     </div>
   )
@@ -996,8 +1068,10 @@ function RoundTimeline({
   roundPhase,
   poolNowUsd,
   hasCurrentCommit,
+  userStakeUsd,
   hadLastTick,
 }: {
+  /** Live batch/round id — increments each tick; drives the slide animation. */
   currentTick: number
   tickDuration: number
   remainingSecs: number
@@ -1005,6 +1079,8 @@ function RoundTimeline({
   /** Total committed by all players for the NOW round, in USDC. */
   poolNowUsd: number | null
   hasCurrentCommit: boolean
+  /** The user's own deposit riding this round, in USDC. */
+  userStakeUsd: number | null
   hadLastTick: boolean
 }) {
   const [animKey, setAnimKey] = useState(0)
@@ -1017,20 +1093,26 @@ function RoundTimeline({
     prevTickRef.current = currentTick
   }, [currentTick])
 
-  const nowCountdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : '—'
-  // NEXT closes `tickDuration` after NOW closes, so its close-countdown is
-  // always distinct from NOW's — keeps the three boxes from showing the same
-  // number when settlement and the live close fall on the same instant.
-  const nextCloseCountdown =
-    remainingSecs > 0 && tickDuration > 0
-      ? formatCountdown(remainingSecs + tickDuration)
-      : '—'
-  // The previous round settles the instant the current one closes, so its
-  // settlement countdown is exactly `remainingSecs`. Show that timer in the
-  // LAST box rather than a static "Settling" word with no number.
-  const lastSettleCountdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : null
-  const urgentNow = roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
+  const nowOpen = roundPhase === 'open' && remainingSecs > 0
+  const urgentNow = nowOpen && remainingSecs < 60
+
+  // NOW closes when remainingSecs hits 0; the previous round settles at that
+  // same instant; NEXT closes one tick later.
+  const nowTimer = remainingSecs > 0 ? formatClock(remainingSecs) : null
+  const lastTimer = remainingSecs > 0 ? formatClock(remainingSecs) : null
+  const nextTimer =
+    remainingSecs > 0 && tickDuration > 0 ? formatClock(remainingSecs + tickDuration) : null
+
   const poolNowDisplay = poolNowUsd !== null && poolNowUsd > 0 ? formatBigUsd(String(poolNowUsd)) : '—'
+  const youDisplay = userStakeUsd !== null && userStakeUsd > 0 ? formatUsdDollars(userStakeUsd) : null
+  const nowStatus =
+    roundPhase === 'open'
+      ? 'Closes'
+      : roundPhase === 'settling'
+        ? 'Settling'
+        : roundPhase === 'locked'
+          ? 'Locked'
+          : 'Soon'
 
   return (
     <div
@@ -1054,48 +1136,43 @@ function RoundTimeline({
       >
         <TimelineBox
           slot="LAST"
-          tickNumber={currentTick > 0 ? currentTick - 1 : null}
-          mainKind={lastSettleCountdown ? 'timer' : 'status'}
-          mainText={lastSettleCountdown ?? 'Settling'}
-          statusLabel={lastSettleCountdown ? 'Settles' : undefined}
-          // Pool size for past rounds isn't surfaced by /vision/rounds (the
-          // endpoint only carries non-paused rounds). Keep the slot quiet
-          // rather than guessing.
+          timer={lastTimer}
+          fallbackWord="Settling"
+          statusLabel="Settles"
+          // Past-round pool isn't surfaced by /vision/rounds — keep it quiet.
           poolDisplay="—"
+          youDisplay={hadLastTick || hasCurrentCommit ? youDisplay : null}
           isIn={hadLastTick || hasCurrentCommit}
           tone="muted"
+          live={false}
+          roundId={null}
         />
         <TimelineBox
           slot="NOW"
-          tickNumber={currentTick > 0 ? currentTick : null}
-          mainKind="timer"
-          mainText={nowCountdown}
-          statusLabel={
-            roundPhase === 'open'
-              ? 'Closes'
-              : roundPhase === 'settling'
-                ? 'Settling'
-                : roundPhase === 'locked'
-                  ? 'Locked'
-                  : 'Soon'
-          }
+          timer={nowTimer}
+          fallbackWord={nowStatus}
+          statusLabel={nowStatus}
           poolDisplay={poolNowDisplay}
+          youDisplay={hasCurrentCommit ? youDisplay : null}
           isIn={hasCurrentCommit}
           tone={urgentNow ? 'urgent' : 'primary'}
+          live={nowOpen}
+          roundId={currentTick > 0 ? currentTick : null}
         />
         <TimelineBox
           slot="NEXT"
-          tickNumber={currentTick > 0 ? currentTick + 1 : null}
-          mainKind="timer"
-          mainText={nextCloseCountdown}
+          timer={nextTimer}
+          fallbackWord="Soon"
           statusLabel="Closes"
           // No pool yet — the next round hasn't opened.
           poolDisplay="—"
-          // Auto-rollover: in Vision parimutuel, the user's balance carries
-          // into the next round unless they exit. So the IN pill on NEXT
-          // mirrors NOW.
+          // Auto-rollover: the user's balance carries into the next round
+          // unless they exit, so NEXT mirrors NOW's deposit.
+          youDisplay={hasCurrentCommit ? youDisplay : null}
           isIn={hasCurrentCommit}
           tone="muted"
+          live={false}
+          roundId={null}
         />
       </div>
     </div>
@@ -1104,28 +1181,37 @@ function RoundTimeline({
 
 function TimelineBox({
   slot,
-  tickNumber,
-  mainKind,
-  mainText,
+  timer,
+  fallbackWord,
   statusLabel,
   poolDisplay,
+  youDisplay,
   isIn,
   tone,
+  live,
+  roundId,
 }: {
   slot: 'LAST' | 'NOW' | 'NEXT'
-  tickNumber: number | null
-  /** 'timer' renders mainText big + statusLabel small. 'status' renders mainText big alone. */
-  mainKind: 'timer' | 'status'
-  mainText: string
-  statusLabel?: string
+  /** Pre-formatted countdown, or null when there's no live timer. */
+  timer: string | null
+  /** Word shown big when `timer` is null (e.g. "Settling", "Soon"). */
+  fallbackWord: string
+  statusLabel: string
   /** Pool $ for this round, pre-formatted, or '—' when unknown. */
   poolDisplay: string
+  /** The user's own deposit for this round, pre-formatted, or null. */
+  youDisplay: string | null
   isIn: boolean
   tone: 'primary' | 'muted' | 'urgent'
+  /** Pulsing green dot — only on the live NOW box. */
+  live: boolean
+  /** Round id shown small in the header, or null to hide. */
+  roundId: number | null
 }) {
   const slotColor =
     tone === 'urgent' ? APPLE_RED : tone === 'primary' ? APPLE_TEXT : APPLE_TEXT_SECONDARY
-  const mainColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : APPLE_TEXT
+  const isTimer = timer !== null
+  const heroColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : tone === 'urgent' ? APPLE_RED : APPLE_TEXT
 
   return (
     <div
@@ -1135,7 +1221,7 @@ function TimelineBox({
         padding: '8px 10px 9px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
+        gap: 3,
         minWidth: 0,
       }}
     >
@@ -1147,105 +1233,138 @@ function TimelineBox({
           gap: 4,
         }}
       >
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 9.5,
-            fontWeight: 600,
-            letterSpacing: '+0.04em',
-            textTransform: 'uppercase',
-            color: slotColor,
-          }}
-        >
-          {slot}
-        </span>
-        <span
-          style={{
-            fontFamily: FONT_MONO,
-            fontSize: 10,
-            color: APPLE_TEXT_SECONDARY,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {tickNumber !== null && tickNumber > 0 ? `#${tickNumber}` : '—'}
-        </span>
-      </div>
-
-      <div
-        style={{
-          fontFamily: FONT_DISPLAY,
-          fontSize: mainKind === 'status' ? 14 : 17,
-          fontWeight: 500,
-          letterSpacing: '-0.022em',
-          color: mainColor,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1.1,
-          marginTop: mainKind === 'status' ? 4 : 0,
-        }}
-      >
-        {mainText}
-      </div>
-      {mainKind === 'timer' && statusLabel && (
-        <div
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 9.5,
-            color: APPLE_TEXT_SECONDARY,
-            letterSpacing: '+0.011em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {statusLabel}
-        </div>
-      )}
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 4,
-          marginTop: 4,
-          minHeight: 18,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 11,
-            fontWeight: 500,
-            color: poolDisplay === '—' ? APPLE_TEXT_SECONDARY : APPLE_TEXT,
-            letterSpacing: '-0.016em',
-            fontVariantNumeric: 'tabular-nums',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {poolDisplay}
-        </span>
-        {isIn ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+          {live && (
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: 999,
+                background: APPLE_GREEN,
+                flexShrink: 0,
+                animation: 'gm-livedot 1.4s ease-in-out infinite',
+              }}
+            />
+          )}
           <span
             style={{
-              padding: '1px 7px',
-              borderRadius: 980,
-              background: APPLE_GREEN,
-              color: '#FFFFFF',
               fontFamily: FONT_TEXT,
               fontSize: 9.5,
               fontWeight: 600,
               letterSpacing: '+0.04em',
               textTransform: 'uppercase',
-              lineHeight: 1.4,
-              flexShrink: 0,
+              color: slotColor,
             }}
           >
-            In
+            {slot}
           </span>
-        ) : (
-          <span style={{ minWidth: 1, flexShrink: 0 }} aria-hidden />
+        </span>
+        {roundId !== null && (
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 9.5,
+              color: APPLE_TEXT_SECONDARY,
+              fontVariantNumeric: 'tabular-nums',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            #{roundId}
+          </span>
         )}
       </div>
+
+      <div
+        style={{
+          fontFamily: isTimer ? FONT_MONO : FONT_DISPLAY,
+          fontSize: isTimer ? 18 : 14,
+          fontWeight: 600,
+          letterSpacing: isTimer ? '0' : '-0.022em',
+          color: heroColor,
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.05,
+          marginTop: isTimer ? 0 : 3,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {timer ?? fallbackWord}
+      </div>
+      <div
+        style={{
+          fontFamily: FONT_TEXT,
+          fontSize: 9,
+          fontWeight: 500,
+          color: APPLE_TEXT_SECONDARY,
+          letterSpacing: '+0.04em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {statusLabel}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          marginTop: 4,
+          paddingTop: 5,
+          borderTop: '1px solid rgba(0,0,0,0.05)',
+        }}
+      >
+        <DataRow label="Pool" value={poolDisplay} dim={poolDisplay === '—'} />
+        <DataRow
+          label="You"
+          value={youDisplay ?? '—'}
+          dim={!isIn || youDisplay === null}
+          accent={isIn && youDisplay !== null}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Binance-style label:value micro-row — gray uppercase label, mono tabular value.
+function DataRow({
+  label,
+  value,
+  dim,
+  accent,
+}: {
+  label: string
+  value: string
+  dim?: boolean
+  accent?: boolean
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
+      <span
+        style={{
+          fontFamily: FONT_TEXT,
+          fontSize: 8.5,
+          fontWeight: 500,
+          letterSpacing: '+0.02em',
+          textTransform: 'uppercase',
+          color: APPLE_TEXT_SECONDARY,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: FONT_MONO,
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: accent ? APPLE_GREEN : dim ? APPLE_TEXT_SECONDARY : APPLE_TEXT,
+          fontVariantNumeric: 'tabular-nums',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '66%',
+        }}
+      >
+        {value}
+      </span>
     </div>
   )
 }
@@ -1618,30 +1737,44 @@ function PositionsCard({
               Batch #{currentCommit!.batchId}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 8.5,
+                fontWeight: 500,
+                letterSpacing: '+0.04em',
+                textTransform: 'uppercase',
+                color: APPLE_TEXT_SECONDARY,
+              }}
+            >
+              Deposited
+            </span>
             <span
               style={{
                 fontFamily: FONT_DISPLAY,
                 fontSize: 24,
-                fontWeight: 500,
+                fontWeight: 600,
                 color: APPLE_TEXT,
                 letterSpacing: '-0.016em',
                 fontVariantNumeric: 'tabular-nums',
+                lineHeight: 1.1,
               }}
             >
               {formatUsdDollars(currentCommit!.stakeUsd)}
             </span>
-            <span
-              style={{
-                fontFamily: FONT_TEXT,
-                fontSize: 12,
-                color: APPLE_TEXT_SECONDARY,
-                letterSpacing: '-0.016em',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {formatUsdDollars(currentCommit!.perMarketUsd)}/mkt
-            </span>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+              paddingTop: 7,
+              borderTop: '1px solid rgba(0,0,0,0.06)',
+            }}
+          >
+            <DataRow label="Per market" value={formatUsdDollars(currentCommit!.perMarketUsd)} />
+            <DataRow label="Markets" value={String(currentCommit!.marketCount)} />
           </div>
           {(currentCommit!.ups > 0 || currentCommit!.downs > 0) && (
             <div style={{ display: 'inline-flex', gap: 6 }}>

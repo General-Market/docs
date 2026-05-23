@@ -13,6 +13,9 @@ export interface RoundInfo {
   marketCount: number
   /** Tick duration in seconds — used for progress computation */
   timeframeSecs: number
+  /** On-chain config hash for this round's batch — lets the join target the
+   *  live round directly when /vision/batches lags behind. */
+  configHash: string
 }
 
 export function useRounds(sourceId?: string) {
@@ -35,6 +38,7 @@ export function useRounds(sourceId?: string) {
           settledAt: r.settledAt ?? r.settled_at ?? null,
           marketCount: r.marketCount ?? r.market_count ?? 0,
           timeframeSecs: r.timeframeSecs ?? r.timeframe_secs ?? 0,
+          configHash: r.configHash ?? r.config_hash ?? '',
         }))
         // Keep all rounds — oracle already filters to non-paused (unsettled) only.
         // Settled batches have paused=true and won't appear in the API response.

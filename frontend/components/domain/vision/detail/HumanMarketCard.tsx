@@ -322,8 +322,10 @@ export function HumanMarketCard({
 
       {/* Footer: locked / retry. `locked` is also passed when there is no
           active round at all — in that case it means "picks closed", not
-          "you've committed". The roundOpenAt being null is how we tell. */}
-      {locked && !revealFailed && (
+          "you've committed". The roundOpenAt being null is how we tell.
+          The committed-and-open case shows no footer text — the locked row
+          state already conveys it. */}
+      {locked && !revealFailed && (roundOpenAt == null || resolved) && (
         <p
           style={{
             fontFamily: FONT_TEXT,
@@ -334,11 +336,7 @@ export function HumanMarketCard({
             textAlign: 'center',
           }}
         >
-          {roundOpenAt == null
-            ? 'Picks open with the next round'
-            : resolved
-              ? 'Round closed'
-              : 'Committed for this round'}
+          {roundOpenAt == null ? 'Picks open with the next round' : 'Round closed'}
         </p>
       )}
       {revealFailed && (
