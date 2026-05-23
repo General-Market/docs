@@ -524,7 +524,7 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 120,
+          height: 140,
           background: APPLE_CHIP_BG,
           borderRadius: 8,
           opacity: 0.5,
@@ -537,7 +537,7 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 120,
+          height: 140,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -574,10 +574,27 @@ function MarketChart({
     resolved && openPrice != null && closePrice != null && roundOpenAt != null && roundCloseAt != null
   const rectColor = openPrice != null && closePrice != null && closePrice >= openPrice ? APPLE_GREEN : APPLE_RED
 
+  const formatXTick = (ts: number) => {
+    const d = new Date(ts)
+    const h = d.getHours().toString().padStart(2, '0')
+    const m = d.getMinutes().toString().padStart(2, '0')
+    return `${h}:${m}`
+  }
+  const formatYTick = (v: number) => {
+    const a = Math.abs(v)
+    if (a >= 1e12) return `${(v / 1e12).toFixed(1)}T`
+    if (a >= 1e9) return `${(v / 1e9).toFixed(1)}B`
+    if (a >= 1e6) return `${(v / 1e6).toFixed(1)}M`
+    if (a >= 1e3) return `${(v / 1e3).toFixed(1)}K`
+    if (a >= 1) return v.toFixed(1)
+    if (a >= 0.01) return v.toFixed(3)
+    return v.toFixed(5)
+  }
+
   return (
-    <div style={{ position: 'relative', height: 120, width: '100%' }}>
+    <div style={{ position: 'relative', height: 140, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }}>
+        <LineChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           {/* X domain extends past dataMax to include the settle time, so
               the live-round square doesn't get clipped when roundCloseAt
               sits past the last history point. */}
@@ -590,9 +607,25 @@ function MarketChart({
                 ? (dm: number) => Math.max(dm, settlement.time)
                 : 'dataMax',
             ]}
-            hide
+            tick={{ fill: APPLE_TEXT_SECONDARY, fontSize: 9, fontFamily: FONT_MONO }}
+            tickFormatter={formatXTick}
+            tickLine={false}
+            axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
+            interval="preserveStartEnd"
+            minTickGap={28}
+            height={14}
           />
-          <YAxis type="number" domain={yDomain ?? ['auto', 'auto']} hide />
+          <YAxis
+            type="number"
+            domain={yDomain ?? ['auto', 'auto']}
+            tick={{ fill: APPLE_TEXT_SECONDARY, fontSize: 9, fontFamily: FONT_MONO }}
+            tickFormatter={formatYTick}
+            tickLine={false}
+            axisLine={false}
+            orientation="right"
+            width={32}
+            tickCount={3}
+          />
           <RechartsTooltip
             content={<ChartTooltip />}
             cursor={{ stroke: 'rgba(0,0,0,0.10)', strokeWidth: 1 }}
