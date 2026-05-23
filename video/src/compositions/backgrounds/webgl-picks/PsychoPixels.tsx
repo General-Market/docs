@@ -1,7 +1,8 @@
 // Faithful port of the original "PsychoPixels" SVG animation:
-// a 5x5 macro grid of blue pixel-art cells (each subdivided 12x12) sitting on
-// a radial-gradient background, with 20 dashed grey strokes that draw in
-// sequence to form a spiraling sigil, finishing on a big white spiral sweep.
+// four corner pixel-art frames (12x12 cells each) around a central cross
+// of open gradient, framed by a 1px white outer rectangle. Twenty dashed
+// grey strokes draw in sequence to form a spiraling sigil, finishing on
+// a big white spiral sweep.
 
 import React from "react";
 import {
@@ -92,77 +93,78 @@ const segmentProgress = (t: number, start: number, end: number) => {
   return easeBezier(raw);
 };
 
-// 5x5 macro grid where each macro cell is itself a 12x12 fine grid.
-// Drawn in the same user-space the original matrix sits in (about 500x500),
-// then scaled out into the 915x580 viewBox.
-const MACRO = 5;
-const MICRO = 12;
-const MACRO_SIZE = 100; // user units before the outer matrix
-const MICRO_SIZE = MACRO_SIZE / MICRO;
+// The original SVG sits in a 500x500 user space, then the outer matrix
+// scales/translates it into the 915x580 viewBox.
 const GRID_TRANSFORM =
   "matrix(1.86677, 0, 0, 1.90283, -7.96795, -211.73)";
-const PIXEL_BLUE = "#286194";
-const GRID_LINE = "rgba(255,255,255,0.5)";
+const PIXEL_BLUE = "rgb(40,97,148)";
+
+// Four quadrant frames in the 500x500 user space. Each 166.5x166.5 region
+// in a corner, leaving a central cross of open gradient.
+const QUADRANTS: Array<{ x: number; y: number }> = [
+  { x: 0.124, y: 0.876 },     // top-left
+  { x: 333.625, y: 0.876 },   // top-right
+  { x: 0.124, y: 334.376 },   // bottom-left
+  { x: 333.625, y: 334.376 }, // bottom-right
+];
+const QUADRANT_SIZE = 166.501; // 166.625 - 0.124, etc.
+const CELLS = 12;
+// Geometry per the source: 12 cells with ~0.42 unit gaps. Cell stride
+// is QUADRANT_SIZE / 12 and each cell is slightly smaller than the stride.
+const CELL_GAP = 0.42;
+const CELL_STRIDE = QUADRANT_SIZE / CELLS; // ~13.875
+const CELL_SIZE = CELL_STRIDE - CELL_GAP;   // ~13.455
 
 const PixelGrid: React.FC = () => {
-  const macros = Array.from({ length: MACRO });
-  const micros = Array.from({ length: MICRO });
+  const cellAxis = Array.from({ length: CELLS });
   return (
     <g transform={GRID_TRANSFORM}>
-      {/* Pre-fill the whole macro region so we don't render 3600 fills */}
+      {/* Background radial gradient fills the whole 500x500 plane */}
+      <rect x={0} y={0} width={501} height={501} fill="url(#_Radial2)" />
+
+      {/* Four corner quadrant frames in solid PIXEL_BLUE, then each
+          quadrant gets a 12x12 grid of small gradient-filled cells.
+          The PIXEL_BLUE that survives between cells reads as thin
+          dark-blue grid lines. */}
+      {QUADRANTS.map((q, qi) => (
+        <g key={`q${qi}`}>
+          <rect
+            x={q.x}
+            y={q.y}
+            width={QUADRANT_SIZE}
+            height={QUADRANT_SIZE}
+            fill={PIXEL_BLUE}
+          />
+          {cellAxis.map((_, col) =>
+            cellAxis.map((__, row) => {
+              const cx = q.x + CELL_GAP + col * CELL_STRIDE;
+              const cy = q.y + CELL_GAP + row * CELL_STRIDE;
+              return (
+                <rect
+                  key={`c${col}-${row}`}
+                  x={cx}
+                  y={cy}
+                  width={CELL_SIZE}
+                  height={CELL_SIZE}
+                  fill="url(#_Radial2)"
+                />
+              );
+            })
+          )}
+        </g>
+      ))}
+
+      {/* 1px white outer frame around the full 500x500 region. The source
+          uses an even-odd punch path; a hairline rect reads the same. */}
       <rect
-        x={0}
-        y={111.265}
-        width={MACRO * MACRO_SIZE}
-        height={MACRO * MACRO_SIZE}
-        fill={PIXEL_BLUE}
+        x={0.124}
+        y={0.876}
+        width={500.001}
+        height={500}
+        fill="none"
+        stroke="white"
+        strokeWidth={0.25}
       />
-      {macros.map((_, mx) =>
-        macros.map((__, my) => {
-          const x0 = mx * MACRO_SIZE;
-          // The original macro grid sits offset on the y axis so the outer
-          // matrix lands it inside the viewBox after translation.
-          const y0 = 111.265 + my * MACRO_SIZE;
-          return (
-            <g key={`${mx}-${my}`}>
-              {/* Vertical micro grid lines */}
-              {micros.map((___, i) => (
-                <line
-                  key={`v${i}`}
-                  x1={x0 + i * MICRO_SIZE}
-                  y1={y0}
-                  x2={x0 + i * MICRO_SIZE}
-                  y2={y0 + MACRO_SIZE}
-                  stroke={GRID_LINE}
-                  strokeWidth={0.18}
-                />
-              ))}
-              {/* Horizontal micro grid lines */}
-              {micros.map((___, i) => (
-                <line
-                  key={`h${i}`}
-                  x1={x0}
-                  y1={y0 + i * MICRO_SIZE}
-                  x2={x0 + MACRO_SIZE}
-                  y2={y0 + i * MICRO_SIZE}
-                  stroke={GRID_LINE}
-                  strokeWidth={0.18}
-                />
-              ))}
-              {/* Outer macro border, slightly bolder */}
-              <rect
-                x={x0}
-                y={y0}
-                width={MACRO_SIZE}
-                height={MACRO_SIZE}
-                fill="none"
-                stroke={GRID_LINE}
-                strokeWidth={0.4}
-              />
-            </g>
-          );
-        })
-      )}
     </g>
   );
 };
@@ -183,23 +185,27 @@ export const PsychoPixels: React.FC = () => {
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
+          {/* Matches the source: userSpaceOnUse, center (250.125, 250.876)
+              in the 500x500 plane, radius 297.827. Referenced from inside
+              the GRID_TRANSFORM group so the userSpace is that plane. */}
           <radialGradient
             id="_Radial2"
-            cx="50%"
-            cy="50%"
-            r="65%"
-            fx="50%"
-            fy="50%"
+            cx={0}
+            cy={0}
+            r={1}
+            gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(297.827, 0, 0, 297.827, 250.125, 250.876)"
           >
-            <stop offset="0%" stopColor="rgb(28,77,128)" />
-            <stop offset="100%" stopColor="rgb(0,35,82)" />
+            <stop offset="0" stopColor="rgb(28,77,128)" />
+            <stop offset="1" stopColor="rgb(0,35,82)" />
           </radialGradient>
         </defs>
 
-        {/* Background radial gradient */}
-        <rect x={0} y={0} width={915} height={580} fill="url(#_Radial2)" />
+        {/* Solid page-blue underneath in case the gradient region doesn't
+            cover the full 915x580 viewBox after the matrix transform. */}
+        <rect x={0} y={0} width={915} height={580} fill={PIXEL_BLUE} />
 
-        {/* Layer 1 — 5x5 macro grid, each cell a 12x12 micro grid */}
+        {/* Layer 1 — gradient + 4 corner pixel-art frames + white border */}
         <PixelGrid />
 
         {/* Layer 2 — twenty dashed grey strokes drawn in sequence */}
