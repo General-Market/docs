@@ -51,9 +51,10 @@ const TARGETS = [
   },
   {
     slug: "jito-mev",
-    url: "https://github.com/cicere/pumpfun-bundler",
-    name: "Pump.fun",
-    phrases: ["bundler", "bundle", "Jito"],
+    url: "https://www.helius.dev/blog/solana-mev-an-introduction",
+    fetchUrl: "https://web.archive.org/web/2024/https://www.helius.dev/blog/solana-mev-an-introduction",
+    name: "Solana",
+    phrases: ["sandwich", "MEV", "extract", "front-run"],
   },
   {
     slug: "adl-visibility",
@@ -156,8 +157,20 @@ const main = async () => {
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
   });
+  // Optional slug filter: `node 07_article_shots.mjs jito-mev pfof` re-captures
+  // only those, reusing the existing manifest for the rest (so a fix to one
+  // shot doesn't risk re-flaking the others).
+  const ONLY = process.argv.slice(2);
+  let prev = [];
+  try { prev = JSON.parse(fs.readFileSync(path.join(OUT_DIR, "manifest.json"), "utf8")); } catch {}
+  const prevBySlug = Object.fromEntries(prev.map((e) => [e.slug, e]));
+
   const manifest = [];
   for (const t of TARGETS) {
+    if (ONLY.length && !ONLY.includes(t.slug)) {
+      if (prevBySlug[t.slug]) { manifest.push(prevBySlug[t.slug]); console.log(`skip ${t.slug} (kept)`); }
+      continue;
+    }
     const entry = { slug: t.slug, name: t.name, url: t.url, image: `anticheat-edit/articles/${t.slug}.png`, highlights: [], status: "ok" };
     try {
       const page = await ctx.newPage();

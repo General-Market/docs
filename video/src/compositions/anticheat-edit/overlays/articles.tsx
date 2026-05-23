@@ -54,7 +54,7 @@ const PLACEMENT: Record<
   "listing-frontrun": { at: 214.9, duration: 6, treatment: "whip", zoom: 2.8, source: "sec.gov · press-release 2022-127" },
   "order-flow-vis": { at: 255, duration: 6, treatment: "punch", zoom: 2.8, source: "sec.gov · press-release 2023-101" },
   pfof: { at: 308.6, duration: 6, treatment: "punch", zoom: 2.8, source: "sec.gov · press-release 2020-321" },
-  "jito-mev": { at: 368, duration: 6, treatment: "whip", zoom: 2.8, source: "github.com · pumpfun-bundler" },
+  "jito-mev": { at: 368, duration: 6, treatment: "whip", zoom: 2.8, source: "helius.dev · solana mev" },
   matching: { at: 388, duration: 6, treatment: "punch", zoom: 2.8, source: "developers.binance.com · amend-keep priority" },
   funding: { at: 451, duration: 5.5, treatment: "punch", zoom: 2.8, source: "hyperliquid · funding docs" },
   "maker-rebate": { at: 478, duration: 6, treatment: "punch", zoom: 2.6, source: "binance.com · spot LP program" },
@@ -116,8 +116,12 @@ const ArticleFlash: React.FC<{ slot: ArticleSlot; durationInFrames: number }> = 
   const imgH = imgW * IMG_AR;
   const fx = focus.x + focus.w / 2;
   const fy = focus.y + focus.h / 2;
-  const left = W / 2 - fx * imgW + slideX;
-  const top = H / 2 - fy * imgH;
+  // Centre the phrase, then clamp so the image always covers the frame — no
+  // dark gap when the phrase sits near an edge. slideX rides on top for the
+  // whip entry only.
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const left = clamp(W / 2 - fx * imgW, W - imgW, 0) + slideX;
+  const top = clamp(H / 2 - fy * imgH, H - imgH, 0);
   const reveal = Math.max(0, Math.min(1, (frame - 6) / 9));
 
   return (
