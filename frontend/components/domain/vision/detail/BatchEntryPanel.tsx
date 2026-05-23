@@ -22,6 +22,7 @@ import StrategyList from './StrategyList'
 import { useTranslations } from 'next-intl'
 import { useDeployment } from '@/hooks/useDeployment'
 import { useWaitlistGate } from '@/components/waitlist/WaitlistGateProvider'
+import type { RecentBetEvent, RecentBetsResponse } from '@/hooks/useRecentBets'
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -124,7 +125,12 @@ export default function BatchEntryPanel({
     query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000', refetchInterval: 10_000 },
   })
   const walletUsdc = (walletUsdcRaw as bigint | undefined) ?? 0n
-  const hasZeroBalance = !isBalanceLoading && walletUsdc === 0n
+  // Only assert "no USDC" when we have actually read a zero. An undefined
+  // read (cold query key after navigation, or an in-flight deployment
+  // address) must not masquerade as zero — that is what made a freshly
+  // funded wallet show the "you have no balance" warning on page switch.
+  const balanceKnown = walletUsdcRaw !== undefined
+  const hasZeroBalance = balanceKnown && !isBalanceLoading && walletUsdc === 0n
 
   // -- Wallet L3 GM gas balance — guards the Sign step from running out of gas --
   const { isLow: hasLowGas, refetch: refetchGas } = useL3GasBalance()
@@ -156,6 +162,19 @@ export default function BatchEntryPanel({
   // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
     if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
+    // Snapshot the values that describe this bet before resetJoin clears them,
+    // so we can drop it into the recent-bets feed the instant it lands instead
+    // of waiting on the 60s poll / indexer lag.
+    const c = bitmapEditor.getCounts(sourceId, marketIds)
+    const optimistic: RecentBetEvent = {
+      betId: bitmapHash,
+      walletAddress: address ?? '',
+      eventType: 'placed',
+      portfolioSize: c.up + c.down,
+      amount: stakeInput || '0',
+      result: null,
+      timestamp: new Date().toISOString(),
+    }
     submitBitmap({
       batchId: activeBatch.id,
       bitmap: encodedBitmap,
@@ -163,12 +182,18 @@ export default function BatchEntryPanel({
     }).finally(() => {
       resetJoin()
       refetchPosition()
+      queryClient.setQueryData<RecentBetsResponse>(['recent-bets', 20], (old) => ({
+        events: [optimistic, ...(old?.events ?? [])].slice(0, 20),
+      }))
       // Invalidate round/batch queries so BatchHistory picks up the new player count
       // without waiting for the next 5s/10s poll cycle
       queryClient.invalidateQueries({ queryKey: ['vision-rounds'] })
       queryClient.invalidateQueries({ queryKey: ['vision-batches'] })
+      // Let the indexer catch up, then refetch so the real row replaces the
+      // optimistic one (server betId, matched/odds, etc).
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['recent-bets'] }), 8000)
     })
-  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition, queryClient])
+  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition, queryClient, address, bitmapEditor, sourceId, marketIds, stakeInput])
 
   // -- Get public client for direct reads --
   const publicClient = usePublicClient({ chainId: indexL3.id })
@@ -260,7 +285,9 @@ export default function BatchEntryPanel({
           body: JSON.stringify({ address, amount: '1000', scope: 'vision' }),
         })
         const data = await res.json()
-        if (!res.ok || data.error) {
+        if (res.status === 429 || data.error === 'COOLDOWN') {
+          setFaucetError(`Just sent some — check your balance in a few seconds${data.retryAfter ? `, or claim again in ${data.retryAfter}s` : ''}.`)
+        } else if (!res.ok || data.error) {
           setFaucetError(data.error || 'Faucet request failed')
         } else if (data.vision?.usdc?.error) {
           setFaucetError(`USDC mint failed: ${data.vision.usdc.error}`)
@@ -268,8 +295,13 @@ export default function BatchEntryPanel({
           setFaucetError(`Gas drip failed: ${data.vision.gas.error}`)
         } else {
           setFaucetSuccess(true)
-          setTimeout(() => { refetchBalance(); refetchGas() }, 2000)
-          setTimeout(() => setFaucetSuccess(false), 4000)
+          // Mint confirms a block or two later (~2s/block on L3). A single
+          // read at 2s often loses the race and reads the pre-mint zero, so
+          // poll a few times and let the 10s interval take it from there.
+          for (const ms of [1500, 4000, 8000]) {
+            setTimeout(() => { refetchBalance(); refetchGas() }, ms)
+          }
+          setTimeout(() => setFaucetSuccess(false), 6000)
         }
       } catch (e: any) {
         setFaucetError(e.message || 'Network error')
@@ -307,9 +339,18 @@ export default function BatchEntryPanel({
     ? new Date(new Date(bettingEnd).getTime() + tickDuration * 1000).toISOString()
     : null
   const settlementRemaining = useSharedCountdown(settlementTarget)
-  const settlementCountdown = settlementTarget
-    ? `${Math.floor(settlementRemaining / 60)}:${(settlementRemaining % 60).toString().padStart(2, '0')}`
-    : ''
+  const fmtClock = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+  const settlementCountdown = settlementTarget ? fmtClock(settlementRemaining) : ''
+
+  // -- Betting-phase countdowns. The cadence is symmetric: the betting window,
+  // the settlement delay, and the gap between rounds all equal tickDuration.
+  // So this batch settles tickDuration after it closes, and the PREVIOUS batch
+  // settles the instant this one closes. The user wants both surfaced, not
+  // just the close time. --
+  const thisSettleTarget = (bettingEnd && tickDuration > 0)
+    ? new Date(new Date(bettingEnd).getTime() + tickDuration * 1000).toISOString()
+    : null
+  const thisSettleRemaining = useSharedCountdown(thisSettleTarget)
 
   return (
     <div>
@@ -417,6 +458,31 @@ export default function BatchEntryPanel({
                 )}
               </div>
             </div>
+
+            {/* Round clock — close + settlement countdowns */}
+            {bettingEnd && tickDuration > 0 && (
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-1.5">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-neutral-400">
+                    {t('batch_detail.closes_in')}
+                  </div>
+                  <div className="text-[15px] font-bold font-mono tabular-nums text-neutral-900 leading-tight">
+                    {fmtClock(bettingRemaining)}
+                  </div>
+                </div>
+                <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-1.5">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-neutral-400">
+                    {t('batch_detail.this_settles_in')}
+                  </div>
+                  <div className="text-[15px] font-bold font-mono tabular-nums text-neutral-900 leading-tight">
+                    {fmtClock(thisSettleRemaining)}
+                  </div>
+                </div>
+                <p className="col-span-2 -mt-0.5 text-[9px] text-neutral-400">
+                  {t('batch_detail.prev_settles_note')}
+                </p>
+              </div>
+            )}
 
             {/* Connect wallet prompt */}
             {!isConnected && !isJoined && (

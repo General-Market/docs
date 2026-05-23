@@ -21,6 +21,9 @@ import { privateKeyToAccount } from 'viem/accounts'
 
 import { getL3RpcServer, SETTLEMENT_RPC_URL } from '@/lib/config'
 import { isWhitelisted } from '@/lib/waitlist-db'
+import { rateLimit } from '@/lib/rate-limit'
+
+const FAUCET_COOLDOWN_SECONDS = 30
 
 const WAITLIST_GATE_ENABLED = process.env.WAITLIST_GATE_ENABLED !== 'false'
 const WAITLIST_URL = process.env.NEXT_PUBLIC_SITE_ORIGIN
@@ -231,6 +234,21 @@ export async function POST(req: NextRequest) {
     const amount = Math.min(parseFloat(amountStr || '100'), MAX_MINT)
     if (!(amount > 0)) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+    }
+
+    // Per-address cooldown — stops the rapid double-claim a user makes when
+    // the first mint hasn't shown up in their balance yet. One drip per
+    // address per cooldown window is plenty for testnet.
+    const cooldown = await rateLimit(
+      `faucet:claim:${address.toLowerCase()}`,
+      1,
+      FAUCET_COOLDOWN_SECONDS,
+    )
+    if (!cooldown.allowed) {
+      return NextResponse.json(
+        { error: 'COOLDOWN', retryAfter: cooldown.resetSeconds },
+        { status: 429, headers: { 'Retry-After': String(cooldown.resetSeconds) } },
+      )
     }
 
     const scope = resolveScope(body)

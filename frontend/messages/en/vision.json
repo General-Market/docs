@@ -769,7 +769,10 @@
     "live": "Live",
     "batch": "Batch",
     "no_players": "No players",
-    "settle": "Settle"
+    "settle": "Settle",
+    "closes_in": "Closes in",
+    "this_settles_in": "This batch settles",
+    "prev_settles_note": "The previous batch settles the moment this one closes."
   },
   "vaults": {
     "label": "Managed Vaults",
