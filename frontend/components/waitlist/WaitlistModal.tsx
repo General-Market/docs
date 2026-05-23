@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAccount, useConnect } from 'wagmi'
 import { SpringBackdrop, SpringModal, glass, ModalClose } from '@/components/ui/spring'
-import { indexL3 } from '@/lib/wagmi'
+import { useWalletLogin } from '@/hooks/useWalletLogin'
 
 interface Props {
   onClose: () => void
@@ -27,8 +27,8 @@ type Step = 'handle' | 'reveal' | 'redeem'
 
 export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props) {
   const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnecting } = useConnect()
-  const injectedConnector = connectors.find((c) => c.id === 'injected')
+  const { isPending: isConnecting } = useConnect()
+  const login = useWalletLogin({ source: 'waitlist-modal' })
 
   const [step, setStep] = useState<Step>('handle')
   const [handle, setHandle] = useState('')
@@ -41,6 +41,7 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   const [redeemError, setRedeemError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const autoRedeemRef = useRef(false)
 
   useEffect(() => {
     setMounted(true)
@@ -95,11 +96,6 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
     }
   }
 
-  const handleConnect = () => {
-    if (!injectedConnector) return
-    connect({ connector: injectedConnector, chainId: indexL3.id })
-  }
-
   const handleRedeem = async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!address || !code.trim() || redeeming) return
@@ -125,6 +121,19 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
       setRedeeming(false)
     }
   }
+
+  // Auto-fire redeem as soon as the wallet connects on the redeem step.
+  // One user click on "Connect wallet" now covers connect + redeem; without
+  // this, the wallet returns and the user has to click again.
+  useEffect(() => {
+    if (step !== 'redeem') return
+    if (!isConnected || !address || !code) return
+    if (redeeming || success || autoRedeemRef.current) return
+    autoRedeemRef.current = true
+    void handleRedeem()
+  // handleRedeem is stable enough — gating is done via autoRedeemRef.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isConnected, address, code, redeeming, success])
 
   const copy = async () => {
     try {
@@ -186,8 +195,7 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
             code={code}
             isConnected={isConnected}
             isConnecting={isConnecting}
-            canConnect={Boolean(injectedConnector)}
-            onConnect={handleConnect}
+            onConnect={login}
             onSubmit={handleRedeem}
             redeeming={redeeming}
             error={redeemError}
@@ -347,7 +355,6 @@ function RedeemPanel({
   code,
   isConnected,
   isConnecting,
-  canConnect,
   onConnect,
   onSubmit,
   redeeming,
@@ -356,7 +363,6 @@ function RedeemPanel({
   code: string
   isConnected: boolean
   isConnecting: boolean
-  canConnect: boolean
   onConnect: () => void
   onSubmit: (e?: React.FormEvent) => void
   redeeming: boolean
@@ -393,7 +399,7 @@ function RedeemPanel({
           <button
             type="button"
             onClick={onConnect}
-            disabled={isConnecting || !canConnect}
+            disabled={isConnecting}
             className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isConnecting ? 'Connecting…' : 'Connect wallet'}
