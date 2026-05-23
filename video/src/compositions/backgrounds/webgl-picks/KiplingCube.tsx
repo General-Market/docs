@@ -39,8 +39,8 @@ const POEM_TEXT = (
     make dreams your <span style={{ color: RED }}>master</span>; If you can{" "}
     <span style={{ color: RED }}>think</span>—and not make thoughts your{" "}
     <span style={{ color: RED }}>aim</span>; If you can meet with{" "}
-    <span style={{ color: RED }}>Triumph</span> and{" "}
-    <span style={{ color: RED }}>Disaster</span> And treat those two{" "}
+    <span style={{ color: RED }}>triumph</span> and{" "}
+    <span style={{ color: RED }}>disaster</span> And treat those two{" "}
     <span style={{ color: RED }}>impostors</span> just the same; If you can bear
     to hear the <span style={{ color: RED }}>truth</span> you've spoken{" "}
     <span style={{ color: RED }}>Twisted</span> by knaves to make a{" "}
@@ -212,8 +212,9 @@ const Cube: React.FC<CubeProps> = ({
 
 export const KiplingCube: React.FC = () => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, fps } = useVideoConfig();
   const t = frame / durationInFrames; // 0..1
+  const seconds = frame / fps;
 
   // 200s loop compressed to 10s: text travels 5% of the original range.
   const leftMargin = interpolate(t, [0, 1], [480, -2244]);
@@ -227,13 +228,13 @@ export const KiplingCube: React.FC = () => {
   // Plate brightness/contrast drift
   const brightness = 1 - 0.2 * t;
   const contrast = 1 + 0.3 * t;
-  // Hue rotation on the overlay — ~1.25 cycles across the 10s
-  const hue = 100 * Math.sin(t * Math.PI * (10 / 4));
+  // Hue overlay pulses on an 8s cycle (matches original CSS hue-rotate keyframes)
+  const hue = 100 * Math.sin((seconds * Math.PI) / 4);
 
   return (
     <AbsoluteFill
       style={{
-        background: "black",
+        background: "linear-gradient(10deg, #ccc, #f5f5f5)",
         overflow: "hidden",
         display: "flex",
         alignItems: "center",
