@@ -18,6 +18,7 @@ from email.utils import parseaddr
 
 from imapclient import IMAPClient
 
+from . import blocklist, forwarded_index
 from .config import Config, STATE_DIR
 from .formatters import GmailMessage, gmail_received
 from .telegram_client import Telegram
@@ -56,6 +57,17 @@ def _is_outreach(msg: GmailMessage) -> str | None:
     for dom in OUTREACH_SENDER_DOMAINS:
         if sender.endswith("@" + dom) or sender.endswith("." + dom):
             return f"sender-domain:{dom}"
+    return None
+
+
+def _drop_reason(msg: GmailMessage) -> str | None:
+    """Combined check: hardcoded outreach + runtime ban/mute list."""
+    reason = _is_outreach(msg)
+    if reason:
+        return reason
+    blocked = blocklist.is_blocked(msg.sender_email)
+    if blocked:
+        return f"runtime-{blocked}"
     return None
 
 
@@ -153,10 +165,10 @@ def _run_one_poll(cfg: Config, max_uid: int) -> tuple[list[GmailMessage], int, b
         fetched = _fetch_messages(to_fetch, client)
         keepers: list[GmailMessage] = []
         for m in fetched:
-            reason = _is_outreach(m)
+            reason = _drop_reason(m)
             if reason:
                 log.info(
-                    "skipped outreach: from=%s subj=%r (%s)",
+                    "skipped: from=%s subj=%r (%s)",
                     m.sender_email,
                     (m.subject or "")[:80],
                     reason,
@@ -178,7 +190,14 @@ async def poll_gmail_loop(cfg: Config, tg: Telegram) -> None:
             if bootstrapped:
                 log.info("gmail bootstrap complete, max_uid=%d (pre-existing mail ignored)", new_max_uid)
             for m in messages:
-                await tg.send(gmail_received(m), html=True)
+                msg_id = await tg.send(gmail_received(m), html=True)
+                if msg_id is not None:
+                    forwarded_index.record(
+                        msg_id,
+                        source="gmail",
+                        sender_email=m.sender_email,
+                        sender_name=m.sender_name,
+                    )
             if new_max_uid != max_uid:
                 max_uid = new_max_uid
                 _save_max_uid(max_uid)
@@ -186,3 +205,39 @@ async def poll_gmail_loop(cfg: Config, tg: Telegram) -> None:
             log.error("gmail poll error: %s", e)
 
         await asyncio.sleep(cfg.gmail_poll_seconds)
+
+
+def _trash_folder(client: IMAPClient) -> str:
+    """Find Gmail's Trash folder via IMAP SPECIAL-USE — works across locales."""
+    try:
+        for flags, _delim, name in client.list_folders():
+            if b"\\Trash" in flags:
+                return name
+    except Exception as e:
+        log.warning("list_folders failed (%s), falling back to [Gmail]/Trash", e)
+    return "[Gmail]/Trash"
+
+
+def trash_sender_messages(cfg: Config, sender_email: str) -> int:
+    """Move every INBOX message from sender_email to Gmail's Trash.
+
+    Used by the ban command. Synchronous IMAP call — callers should wrap
+    in asyncio.to_thread. Returns the count moved.
+    """
+    sender = (sender_email or "").strip()
+    if not sender:
+        return 0
+    with IMAPClient(IMAP_HOST, ssl=True, timeout=30) as client:
+        client.login(cfg.gmail_user, cfg.gmail_app_password)
+        trash = _trash_folder(client)
+        client.select_folder("INBOX", readonly=False)
+        uids = client.search(["FROM", sender])
+        if not uids:
+            return 0
+        try:
+            client.move(uids, trash)
+        except Exception as e:
+            log.warning("move to %s failed (%s), falling back to flag+expunge", trash, e)
+            client.add_flags(uids, [b"\\Deleted"])
+            client.expunge()
+        return len(uids)

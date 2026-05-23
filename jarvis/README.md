@@ -1,14 +1,28 @@
 # jarvis
 
-One Python process. Three watchers. One Telegram chat (Max).
+One Python process. Three watchers + a command listener. One Telegram chat (Max).
 
 | Watcher | Source | What it forwards | State file |
 |---|---|---|---|
 | Waitlist | Postgres `submissions` (waitlist-pg on dokploy-network) | New signups with full personal payload | `state/submissions.json` |
 | Discord | Discord bot in *General Market* server, channel `#general` | Every human message in that one channel | none — websocket, no replay |
-| Gmail | IMAP at `imap.gmail.com` for `max@generalmarket.io` | New unread mail, **minus** outreach/warmup spam | `state/gmail.json` |
+| Gmail | IMAP at `imap.gmail.com` for `max@generalmarket.io` | New unread mail, **minus** outreach/warmup spam **and** anything on the runtime ban/mute list | `state/gmail.json` |
+| Commands | Telegram getUpdates long-poll | Acts on `ban`/`mute` replies to Gmail forwards | `state/forwarded.json`, `state/blocklist.json` |
 
 Polling, not webhooks. No frontend changes. No Dokploy redeploys.
+
+## Reply commands (Gmail only, today)
+
+Reply to a forwarded Gmail message in Telegram — either directly below or by quoting — with one word:
+
+| Command | Effect on inbox | Effect on Jarvis |
+|---|---|---|
+| `mute` (also `silence`) | untouched | future mail from that sender is silenced |
+| `ban` (also `block`) | all existing INBOX mail from that sender moved to Gmail Trash (recoverable for 30 days) | future mail is silenced |
+
+Parsing is first-word, case-insensitive, trailing text ignored. *"ban — they never stop"* still parses. Sender match is exact email address; the ban does not generalize to a domain. Edit `state/blocklist.json` by hand to undo or extend.
+
+The mapping from Telegram message → Gmail sender lives in `state/forwarded.json`, capped at the last 500 forwards. Older messages can't be acted on; Jarvis will say so.
 
 ---
 
@@ -68,11 +82,14 @@ The container is named `jarvis`, attached to `dokploy-network` (so it can reach 
 jarvis/
   main.py              # asyncio orchestrator, SIGTERM-clean
   config.py            # env loader + dataclass
-  telegram_client.py   # aiohttp wrapper around Bot API
+  telegram_client.py   # aiohttp wrapper around Bot API (send + getUpdates)
   formatters.py        # HTML formatters for all three notification types
   waitlist.py          # Postgres submissions poll
   discord_bridge.py    # discord.py client on one channel
-  gmail_poller.py      # IMAP poll + outreach filter
+  gmail_poller.py      # IMAP poll + outreach filter + ban/mute filter + trash
+  command_poller.py    # Telegram getUpdates → ban/mute reply commands
+  blocklist.py         # runtime ban/mute list, persisted to state/blocklist.json
+  forwarded_index.py   # telegram_msg_id → source mapping, capped LRU on disk
   get_chat_id.py       # one-shot helper to discover TELEGRAM_CHAT_ID
   Dockerfile           # python:3.12-slim, COPY ., CMD python -m jarvis.main
   jarvis.service       # systemd unit (alternative to docker)
@@ -149,8 +166,10 @@ To temporarily disable a watcher, add `-e DISCORD_ENABLED=false` or `-e GMAIL_EN
 |---|---|---|
 | `submissions.json` | `{"last_seen": "<RFC3339>"}` | Replay every submission newer than the timestamp |
 | `gmail.json` | `{"max_uid": <int>}` | If you wipe this, next start does a bootstrap (forwards nothing once) |
+| `forwarded.json` | `{telegram_msg_id: {source, sender_email, ...}}`, last 500 | Replies to older messages will get "I don't remember that" |
+| `blocklist.json` | `{banned_emails: [...], muted_emails: [...]}` | Hand-edit to undo a ban or mute, or to seed a list |
 
-Removing both files and restarting is the clean way to "start watching from now."
+Removing all four files and restarting is the clean way to "start watching from now."
 
 ---
 

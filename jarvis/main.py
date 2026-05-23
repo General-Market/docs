@@ -12,6 +12,7 @@ from .telegram_client import Telegram
 from .waitlist import poll_waitlist_loop
 from .gmail_poller import poll_gmail_loop
 from .discord_bridge import run_discord_bridge
+from .command_poller import poll_commands_loop
 
 
 def _setup_logging() -> None:
@@ -29,7 +30,7 @@ async def _main() -> None:
     log = logging.getLogger("jarvis")
 
     async with Telegram(cfg.telegram_bot_token, cfg.telegram_chat_id) as tg:
-        await tg.send("Jarvis online. Three watchers — waitlist, Discord, Gmail. Speak when spoken to.")
+        await tg.send("Jarvis online. Watchers — waitlist, Discord, Gmail. Reply <code>ban</code> or <code>mute</code> to a Gmail forward to act on the sender.", html=True)
 
         tasks: list[asyncio.Task] = []
         tasks.append(asyncio.create_task(poll_waitlist_loop(cfg, tg), name="waitlist"))
@@ -43,6 +44,8 @@ async def _main() -> None:
             tasks.append(asyncio.create_task(poll_gmail_loop(cfg, tg), name="gmail"))
         else:
             log.warning("gmail disabled or unconfigured")
+
+        tasks.append(asyncio.create_task(poll_commands_loop(cfg, tg), name="commands"))
 
         stop = asyncio.Event()
 
