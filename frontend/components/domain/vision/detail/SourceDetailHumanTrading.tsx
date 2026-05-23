@@ -653,12 +653,12 @@ export function SourceDetailHumanTrading({
     if (flow === 'publishing') return 'Publishing…'
     if (flow === 'committed') return 'In custody'
     if (flow === 'reveal-failed') return 'Retry reveal'
-    if (roundPhase === 'absent') return 'No round yet'
-    if (isBetweenRounds) return 'Next round opening'
-    if (!allPicked) return `${totalPicked} / ${marketCount} chosen`
+    if (roundPhase === 'absent') return 'Idle'
+    if (isBetweenRounds) return 'Next round'
+    if (!allPicked) return `${totalPicked} / ${marketCount} filled`
     if (!meetsMinimum) return `Min ${formatUsdDollars(MIN_PER_MARKET)} per market`
     if (exceedsBalance) return 'Insufficient balance'
-    return 'Validate'
+    return 'Confirm'
   }, [
     isConnected,
     roundPhase,
@@ -927,14 +927,14 @@ function CompactHero({
 
   const phaseLabel =
     roundPhase === 'open'
-      ? bettingEnd ? `Round · ${formatCountdown(remainingSecs)}` : 'Round'
+      ? bettingEnd ? `Closes in ${formatCountdown(remainingSecs)}` : 'Open'
       : roundPhase === 'pending'
-        ? 'Next round opening'
+        ? 'Next round'
         : roundPhase === 'locked'
           ? 'Locked'
           : roundPhase === 'settling'
             ? 'Settling'
-            : 'No round yet'
+            : 'Idle'
   const phaseColor =
     roundPhase === 'open'
       ? remainingSecs > 0 && remainingSecs < 60 ? APPLE_RED : APPLE_TEXT
@@ -1128,14 +1128,14 @@ function EntryCard({
             }}
           >
             {roundPhase === 'open'
-              ? 'Round closes in'
+              ? 'Closes in'
               : roundPhase === 'pending'
                 ? 'Next round'
                 : roundPhase === 'locked'
                   ? 'Locked'
                   : roundPhase === 'settling'
                     ? 'Settling'
-                    : 'Status'}
+                    : 'Idle'}
           </span>
           <span
             style={{
@@ -1166,7 +1166,7 @@ function EntryCard({
               letterSpacing: '-0.016em',
             }}
           >
-            Chosen
+            Filled
           </span>
           <span
             style={{
@@ -1300,7 +1300,7 @@ function EntryCard({
                 margin: 0,
               }}
             >
-              {formatUsdDollars(perMarketStake)} per market · {marketCount} markets
+              {formatUsdDollars(perMarketStake)} × {marketCount} markets
             </p>
           )}
           {marketCount > 0 && !meetsMinimum && stakeNum > 0 && (
@@ -1308,7 +1308,7 @@ function EntryCard({
               className="mt-1"
               style={{ fontFamily: FONT_TEXT, fontSize: 11, color: APPLE_RED, letterSpacing: '-0.016em', margin: 0 }}
             >
-              Minimum {formatUsdDollars(MIN_PER_MARKET)} per market.
+              Min {formatUsdDollars(MIN_PER_MARKET)} per market.
             </p>
           )}
           {exceedsBalance && (
@@ -1316,7 +1316,7 @@ function EntryCard({
               className="mt-1"
               style={{ fontFamily: FONT_TEXT, fontSize: 11, color: APPLE_RED, letterSpacing: '-0.016em', margin: 0 }}
             >
-              Stake exceeds wallet balance.
+              Stake exceeds balance.
             </p>
           )}
         </div>
@@ -1442,7 +1442,7 @@ function PositionsCard({
       {hasCurrent && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>This round</span>
+            <span style={rowLabelStyle}>Open</span>
             <span style={rowValueStyle}>
               {formatUsdDollars(currentCommit!.stakeUsd)}
               <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
@@ -1468,7 +1468,7 @@ function PositionsCard({
             </div>
           )}
           <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>Batch</span>
+            <span style={rowLabelStyle}>Round</span>
             <span
               style={{
                 ...rowLabelStyle,
