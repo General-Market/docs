@@ -22,6 +22,7 @@ import {
 } from "remotion";
 import metaJson from "./final.meta.json";
 import { OVERLAYS } from "./overlays/timeline";
+import { ARTICLE_OVERLAYS, ArticleFlash } from "./overlays/articles";
 
 const FPS = 30;
 const W = 1920;
@@ -58,6 +59,22 @@ export const AntiCheatEditComposition: React.FC = () => {
             <FadeWrap durationFrames={durationFrames}>
               <Component />
             </FadeWrap>
+          </Sequence>
+        );
+      })}
+
+      {/* Article-proof flashes at the proof beats (clear of the chart beats). */}
+      {ARTICLE_OVERLAYS.map((slot, i) => {
+        const startFrame = Math.round(slot.at * FPS);
+        const durationFrames = Math.round(slot.duration * FPS);
+        return (
+          <Sequence
+            key={`article-${slot.shot.slug}-${i}`}
+            from={startFrame}
+            durationInFrames={durationFrames}
+            layout="none"
+          >
+            <ArticleFlash slot={slot} durationInFrames={durationFrames} />
           </Sequence>
         );
       })}
