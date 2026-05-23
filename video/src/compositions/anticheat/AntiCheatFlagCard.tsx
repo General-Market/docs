@@ -255,8 +255,7 @@ export const AntiCheatFlagCard: React.FC<Props> = ({ flag }) => {
 // Factory — one Composition meta per flag. Registered in Root.tsx so the
 // cutting agent can drop any of the 13 into the timeline by id.
 export const flagCardMetas = THIRTEEN.map((flag) => ({
-  id: `AntiCheatFlag${String(flag.rank).padStart(2, "0")}_${flag.slug
-    .replace(/-/g, "_")}`,
+  id: `AntiCheatFlag${String(flag.rank).padStart(2, "0")}-${flag.slug}`,
   component: () => <AntiCheatFlagCard flag={flag} />,
   durationInFrames: SCENE_FRAMES,
   fps: FPS,
