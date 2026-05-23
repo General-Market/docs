@@ -326,6 +326,11 @@ export function SourceDetailHumanTrading({
   const { address, isConnected } = useAccount()
 
   // -- Player profile, filtered to this source's batches (drives positions rail) --
+  // The issuer's /player/profile endpoint returns sourceId="" on active batches
+  // (only exited rows carry a stable sourceId). So matching by source name alone
+  // misses the user's current commit. We match by source name AND by the active
+  // batch's ID — the batch we know they're sitting in. Curated subsource pages
+  // need this; the umbrella `defillama` keeps working through name matching.
   const { profile: playerProfile } = usePlayerProfile(address ?? '')
   const sourcePositions = useMemo<SourcePositions>(() => {
     if (!playerProfile || !source) return EMPTY_POSITIONS
@@ -333,7 +338,15 @@ export function SourceDetailHumanTrading({
       [source.batchSubsourceKey, source.sourceId, ...(source.internalIds ?? [])]
         .filter((id): id is string => typeof id === 'string' && id.length > 0)
     )
-    const batchesHere = playerProfile.batches.filter(b => candidates.has(b.sourceId))
+    const activeBatchId = activeBatch?.id
+    const batchesHere = playerProfile.batches.filter(b => {
+      if (b.sourceId && candidates.has(b.sourceId)) return true
+      // Active batches arrive with sourceId="" — keep the one matching the
+      // page's live batch by id so the user always sees the commit they just
+      // landed instead of "No positions yet".
+      if (activeBatchId !== undefined && b.batchId === activeBatchId) return true
+      return false
+    })
     if (batchesHere.length === 0) return EMPTY_POSITIONS
     const active = batchesHere.filter(b => b.status === 'active')
     const ticks: TickEntry[] = []
@@ -343,7 +356,7 @@ export function SourceDetailHumanTrading({
     ticks.sort((a, b) => b.tickId - a.tickId)
     const totalPnl = ticks.reduce((s, t) => s + t.pnl, 0)
     return { active, ticks, totalPnl, batches: batchesHere }
-  }, [playerProfile, source])
+  }, [playerProfile, source, activeBatch])
   const handleConnectWallet = useWalletLogin({ source: 'source-detail-human' })
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
@@ -482,6 +495,32 @@ export function SourceDetailHumanTrading({
       return { ...prev, [marketId]: direction }
     })
   }, [flow])
+
+  // Current-round commit, read straight from the contract via usePlayerPosition.
+  // The issuer profile drops sourceId on active rows so it's unreliable for
+  // subsource pages; on-chain is the source of truth. Picks distribution
+  // (X UP / Y DOWN) comes from the decoded bitmap in local `picks` state, so
+  // refreshes after lock-in still show the right colors.
+  const currentCommit = useMemo(() => {
+    if (!isJoined || !position || !activeBatch) return null
+    const stakeUsd = Number(formatUnits(position.totalDeposited, VISION_USDC_DECIMALS))
+    let ups = 0
+    let downs = 0
+    for (const m of tradableMarkets) {
+      const p = picks[m.market.assetId]
+      if (p === 'up') ups += 1
+      else if (p === 'down') downs += 1
+    }
+    return {
+      batchId: activeBatch.id,
+      stakeUsd,
+      perMarketUsd:
+        tradableMarkets.length > 0 ? stakeUsd / tradableMarkets.length : 0,
+      ups,
+      downs,
+      marketCount: tradableMarkets.length,
+    }
+  }, [isJoined, position, activeBatch, tradableMarkets, picks])
 
   // -- Stake math --
   const stakeNum = parseFloat(stakeInput) || 0
@@ -836,6 +875,7 @@ export function SourceDetailHumanTrading({
             <PositionsCard
               isConnected={isConnected}
               positions={sourcePositions}
+              currentCommit={currentCommit}
             />
           </div>
         </aside>
@@ -1368,15 +1408,27 @@ function EntryCard({
 
 // ── Positions card: current commit + past resolved ticks ─────────────────────
 
+interface CurrentCommit {
+  batchId: number
+  stakeUsd: number
+  perMarketUsd: number
+  ups: number
+  downs: number
+  marketCount: number
+}
+
 function PositionsCard({
   isConnected,
   positions,
+  currentCommit,
 }: {
   isConnected: boolean
   positions: SourcePositions
+  /** Live on-chain commit for the round the user is sitting in. */
+  currentCommit: CurrentCommit | null
 }) {
-  const { active, ticks, totalPnl } = positions
-  const hasActive = active.length > 0
+  const { ticks, totalPnl } = positions
+  const hasCurrent = currentCommit !== null
   const hasHistory = ticks.length > 0
 
   // Disconnected wallet — quiet prompt, no shouting.
@@ -1389,7 +1441,7 @@ function PositionsCard({
     )
   }
 
-  if (!hasActive && !hasHistory) {
+  if (!hasCurrent && !hasHistory) {
     return (
       <div style={cardShellStyle}>
         <CardHeader>Positions</CardHeader>
@@ -1407,25 +1459,52 @@ function PositionsCard({
     <div style={cardShellStyle}>
       <CardHeader>Positions</CardHeader>
 
-      {hasActive && (
+      {hasCurrent && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {active.map(b => (
-            <div key={`active-${b.batchId}`} style={positionRowStyle}>
-              <span style={rowLabelStyle}>This round</span>
-              <span style={rowValueStyle}>
-                {formatUsdDollars(b.balance)}
-                <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
-                  · {b.tickCount} rounds
-                </span>
+          <div style={positionRowStyle}>
+            <span style={rowLabelStyle}>This round</span>
+            <span style={rowValueStyle}>
+              {formatUsdDollars(currentCommit!.stakeUsd)}
+              <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
+                · {formatUsdDollars(currentCommit!.perMarketUsd)}/mkt
+              </span>
+            </span>
+          </div>
+          {(currentCommit!.ups > 0 || currentCommit!.downs > 0) && (
+            <div style={positionRowStyle}>
+              <span style={rowLabelStyle}>Picks</span>
+              <span
+                style={{
+                  ...rowValueStyle,
+                  fontVariantNumeric: 'tabular-nums',
+                  display: 'inline-flex',
+                  gap: 10,
+                }}
+              >
+                <span style={{ color: APPLE_GREEN }}>{currentCommit!.ups} UP</span>
+                <span style={{ color: APPLE_TEXT_SECONDARY }}>·</span>
+                <span style={{ color: APPLE_RED }}>{currentCommit!.downs} DOWN</span>
               </span>
             </div>
-          ))}
+          )}
+          <div style={positionRowStyle}>
+            <span style={rowLabelStyle}>Batch</span>
+            <span
+              style={{
+                ...rowLabelStyle,
+                color: APPLE_TEXT,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              #{currentCommit!.batchId}
+            </span>
+          </div>
         </div>
       )}
 
       {hasHistory && (
         <>
-          {hasActive && <div style={dividerStyle} />}
+          {hasCurrent && <div style={dividerStyle} />}
           <div
             style={{
               display: 'flex',
@@ -1462,7 +1541,7 @@ function PositionsCard({
         </>
       )}
 
-      {(hasHistory || hasActive) && (
+      {(hasHistory || hasCurrent) && (
         <>
           <div style={dividerStyle} />
           <div style={positionRowStyle}>
