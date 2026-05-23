@@ -1,7 +1,11 @@
-// Source: a SVG title sequence for "GENERAL MARKET" — the title scales up,
-// blurs, quivers in place, shakes harder, then cracks into three offset
-// pieces. Three <use>s reference the same <text> definition; each gets a
-// different clip-path on the crack frame to split the word into pieces.
+// Faithful port of the original "GENERAL MARKET" title-quake sequence.
+//
+// The original SVG defines the wordmark once and references it through three
+// <use> elements, each clipped to a polygon that carves the title into three
+// chunks (left, middle, right). The chunks scale in, then quiver with a low
+// blur, then shake harder. After the shake settles, each chunk slides apart
+// along the crack line, the visible crack outlines fade in, and the whole
+// thing comes to rest broken.
 
 import React from "react";
 import {
@@ -14,39 +18,72 @@ import {
 
 const BG = "#0a1118";
 
+// ── Clip-path polygons (verbatim from the source) ──
+// Each polygon is plotted in % of the 525 × 198 wordmark bounding box. They
+// fit together to exactly cover the title; sliding them apart shows the
+// crack.
+
+const POLY_LEFT =
+  "polygon(7.76% 9.16%, 18.81% 39.67%, 27.09% 45.26%, 41.57% 66.95%, 43.11% 84.74%, 20.18% 84.74%, -2.07% 85.26%, -1.55% 11.69%)";
+const POLY_MIDDLE =
+  "polygon(41.73% 23.68%, 48.4% 38.16%, 55.62% 59.29%, 65.64% 78.93%, 65.44% 86.84%, 43.28% 86.84%, 43.88% 69.39%, 38.63% 66.75%, 26.69% 46.24%, 21.12% 44.58%, 18.23% 43.47%, 14.06% 23.7%)";
+const POLY_RIGHT =
+  "polygon(70% 24.4%, 100.52% 23.9%, 100.52% 88.3%, 64.31% 87.8%, 43.96% 42.04%, 40.33% 27.3%)";
+
+// Crack overlay path data (verbatim subset of the source) — the irregular
+// fragment edges that appear at the moment the title breaks.
+const CRACK_STROKES: Array<{ d: string; w: number; s: string }> = [
+  { d: "M754 539.7 c-3.7-1.3-15.2-6.1-21.2-8.8", w: 0.1, s: "#f2f2f2" },
+  { d: "M770.8 547.3 l-16.6-7.5", w: 0.18, s: "#ffffff" },
+  { d: "M801 561.4 c-3.6-1.9-25.1-11.2-30.3-14.2", w: 0.1, s: "#f2f2f2" },
+  { d: "M834.1 576.6 c0-0.3-32.9-15-33-15.2", w: 0.18, s: "#ffffff" },
+  { d: "M691.4 517.9 c-3.6-1.9-17.3-9.8-22.4-12.7", w: 0.1, s: "#000" },
+  { d: "M707.1 527.3 c-3.5-2.1-10.9-6.7-16.1-9.6", w: 0.18, s: "#000" },
+  { d: "M735.8 545.9 c-3.6-1.9-23.5-15.6-28.7-18.5", w: 0.1, s: "#000" },
+  { d: "M765.5 562.2 c-5.0-1.7-24.5-13.3-29.6-16.2", w: 0.2, s: "#000" },
+];
+
 export const GeneralMarketGlitch: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const t = frame / durationInFrames;
   const seconds = frame / fps;
 
-  // Phase timings
-  // 0 → 0.3: scale up
-  // 0.3 → 0.7: quiver + blur
-  // 0.7 → 0.8: hard shake
-  // 0.8 → 1.0: crack + drift
-  const scale = interpolate(t, [0, 0.3], [0.6, 1.05], {
-    extrapolateRight: "clamp",
+  // ── Phase timings ──
+  // 0.0 → 0.3 — title scales up 0.6 → 1.05
+  // 0.05 → 0.7 — low-amplitude quiver + blur (matches 142ms quiver in source)
+  // 0.7 → 0.85 — hard shake (50ms shake, 20 iters in source)
+  // 0.85 → 1.0 — crack: chunks slide apart along the fault line, crack
+  //              strokes fade in, the wordmark stays broken to the end.
+  const scale = interpolate(t, [0, 0.3], [0.62, 1.05], {
     easing: Easing.bezier(0.2, 0.8, 0.3, 1),
+    extrapolateRight: "clamp",
   });
-  const blurPx = t > 0.3 && t < 0.7
-    ? Math.abs(Math.sin(seconds * 14)) * 1.6
-    : 0;
-  const quiverY = t > 0.3 && t < 0.7
-    ? Math.sin(seconds * 18) * 1.4
-    : 0;
-  const shakeY = t > 0.7 && t < 0.8
-    ? Math.sin(seconds * 80) * 5
-    : 0;
 
-  // Crack progression
-  const crackT = Math.max(0, Math.min(1, (t - 0.78) / 0.15));
+  // Blur and quiver — small Y oscillation while the title is in the
+  // "quiver" phase. Frequency mirrors the source's 142ms-per-iter quiver,
+  // ~7Hz.
+  const inQuiver = t > 0.05 && t < 0.7;
+  const blurPx = inQuiver ? Math.abs(Math.sin(seconds * 14)) * 1.6 : 0;
+  const quiverY = inQuiver ? Math.sin(seconds * 18) * 1.4 : 0;
 
-  // Per-piece offsets
-  const leftDX = -crackT * 8;
-  const leftDY = crackT * 6;
-  const rightDX = crackT * 18;
-  const rightDY = -crackT * 16;
+  // Hard shake.
+  const inShake = t > 0.7 && t < 0.85;
+  const shakeY = inShake ? Math.sin(seconds * 90) * 5.5 : 0;
+  const shakeX = inShake ? Math.cos(seconds * 75) * 3 : 0;
+
+  // Crack — chunks separate.
+  const crackT = Math.max(0, Math.min(1, (t - 0.85) / 0.12));
+  const crackEase = Easing.bezier(0.3, 0.8, 0.4, 1)(crackT);
+
+  // Per-chunk offsets — left drifts down-left, middle stays roughly put with
+  // a slight downward drop, right drifts up-right (matches a "two halves
+  // peeling away from a central wedge" feel).
+  const leftDX = -crackEase * 22;
+  const leftDY = crackEase * 12;
+  const midDY = crackEase * 6;
+  const rightDX = crackEase * 28;
+  const rightDY = -crackEase * 22;
 
   return (
     <AbsoluteFill
@@ -57,66 +94,110 @@ export const GeneralMarketGlitch: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      <svg viewBox="0 0 800 600" width="80%" height="80%">
-        <defs>
-          {/* The base title text */}
-          <text
-            id="gm-title"
-            fill="#bfbfc8"
-            fontSize={86}
-            fontWeight={900}
-            letterSpacing={4}
-            fontFamily='"Familjen Grotesk", "Helvetica Neue", sans-serif'
-            x={400}
-            y={320}
-            textAnchor="middle"
-          >
-            GENERAL MARKET
-          </text>
-          <filter id="gm-blur">
-            <feGaussianBlur stdDeviation={blurPx} />
-          </filter>
-          <clipPath id="gm-left">
-            <polygon points="0,0 250,0 320,400 0,400" />
-          </clipPath>
-          <clipPath id="gm-middle">
-            <polygon points="250,0 540,0 540,400 320,400" />
-          </clipPath>
-          <clipPath id="gm-right">
-            <polygon points="540,0 800,0 800,400 540,400" />
-          </clipPath>
-        </defs>
-        <g
-          transform={`translate(0 ${quiverY + shakeY}) scale(${scale}) translate(0 0)`}
-          style={{ transformOrigin: "400px 320px" }}
-          filter="url(#gm-blur)"
-        >
-          {/* Three crack-shifted pieces */}
-          <g transform={`translate(${leftDX} ${leftDY})`}>
-            <use href="#gm-title" clipPath="url(#gm-left)" />
-          </g>
-          <g>
-            <use href="#gm-title" clipPath="url(#gm-middle)" />
-          </g>
-          <g transform={`translate(${rightDX} ${rightDY})`}>
-            <use href="#gm-title" clipPath="url(#gm-right)" />
-          </g>
-        </g>
+      {/* Slight vignette to bury the chrome */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%)",
+          pointerEvents: "none",
+        }}
+      />
 
-        {/* Crack lines that appear at the end */}
-        {crackT > 0 && (
-          <g
-            stroke="#f2f2f2"
-            strokeWidth={0.4}
-            opacity={Math.min(1, crackT * 1.5)}
-            fill="none"
-          >
-            <path d="M260,260 L320,340 L335,400" />
-            <path d="M540,260 L555,340 L585,395" />
-            <path d="M280,340 L460,360 L600,330" />
-          </g>
-        )}
-      </svg>
+      <div
+        style={{
+          width: "min(1400px, 75%)",
+          aspectRatio: "525 / 198",
+          position: "relative",
+          transform: `translate(${shakeX}px, ${shakeY + quiverY}px) scale(${scale})`,
+          filter: blurPx > 0 ? `blur(${blurPx}px)` : "none",
+          willChange: "transform, filter",
+        }}
+      >
+        {/* Three copies of the title, each clipped to its polygon. They start
+            stacked perfectly and only separate when the crack phase begins. */}
+        <TitleChunk
+          clip={POLY_LEFT}
+          translateX={leftDX}
+          translateY={leftDY}
+        />
+        <TitleChunk
+          clip={POLY_MIDDLE}
+          translateX={0}
+          translateY={midDY}
+        />
+        <TitleChunk
+          clip={POLY_RIGHT}
+          translateX={rightDX}
+          translateY={rightDY}
+        />
+
+        {/* Crack outlines fade in once the title starts breaking. */}
+        <svg
+          viewBox="0 0 915 580"
+          preserveAspectRatio="xMidYMid meet"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            opacity: crackT,
+            pointerEvents: "none",
+          }}
+        >
+          {CRACK_STROKES.map((stroke, i) => (
+            <path
+              key={i}
+              d={stroke.d}
+              stroke={stroke.s}
+              strokeWidth={stroke.w * 8}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+        </svg>
+      </div>
     </AbsoluteFill>
+  );
+};
+
+// ── Inner — the wordmark, clipped. ─────────────────────────────────────────
+const TitleChunk: React.FC<{
+  clip: string;
+  translateX: number;
+  translateY: number;
+}> = ({ clip, translateX, translateY }) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        clipPath: clip,
+        WebkitClipPath: clip,
+        transform: `translate(${translateX}px, ${translateY}px)`,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          color: "#bfbfc8",
+          fontFamily:
+            '"Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontWeight: 800,
+          fontSize: "20vw",
+          letterSpacing: "0.06em",
+          textShadow: "0 0 16px rgba(0,0,0,.55)",
+          whiteSpace: "nowrap",
+          lineHeight: 1,
+        }}
+      >
+        GENERAL MARKET
+      </div>
+    </div>
   );
 };

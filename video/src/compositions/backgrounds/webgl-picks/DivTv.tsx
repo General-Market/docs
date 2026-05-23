@@ -1,7 +1,9 @@
-// Source: a CRT-television demo where the screen is a <div> whose
-// border-image is a TV photo, and whose background-image keyframes through
-// different "channels": waving → dancing → static → happy-dance → black.
-// The TV wobbles 3D briefly on enter, then channels switch over time.
+// Faithful port of the "I'm just a div" demo.
+// A single <div> uses border-image to wear a CRT television frame as its
+// border. Its background-image cycles through four channels (waving →
+// dancing → static → happy-dance) before fading to black, and the whole
+// thing wobbles around the Y axis at the start. A small italic caption
+// "I'm just a div" reveals in the centre once the screen has gone dark.
 
 import React from "react";
 import {
@@ -11,43 +13,89 @@ import {
   interpolate,
 } from "remotion";
 
-const TV_FRAME =
-  "https://roboleary.net/demos/HvnZUakQ/img/tv.webp";
-const CHANNELS = [
-  { src: "https://www.roboleary.net/demos/HvnZUakQ/img/waving.webp", size: "100%" },
-  { src: "https://www.roboleary.net/demos/HvnZUakQ/img/gene-kelly-dancing2.webp", size: "150%" },
-  { src: "https://www.roboleary.net/demos/HvnZUakQ/img/static.webp", size: "100%" },
-  { src: "https://www.roboleary.net/demos/HvnZUakQ/img/happy-dance.webp", size: "100%" },
+// ── Original asset URLs ────────────────────────────────────────────────────
+
+const TV_FRAME = "https://roboleary.net/demos/HvnZUakQ/img/tv.webp";
+
+type Channel = {
+  src: string | null;
+  size: string;
+};
+
+// Channels and their `background-size`, from the source's @keyframes switch
+const CHANNELS: Channel[] = [
+  {
+    src: "https://www.roboleary.net/demos/HvnZUakQ/img/waving.webp",
+    size: "auto",
+  },
+  {
+    src: "https://www.roboleary.net/demos/HvnZUakQ/img/gene-kelly-dancing2.webp",
+    size: "150%",
+  },
+  {
+    src: "https://www.roboleary.net/demos/HvnZUakQ/img/static.webp",
+    size: "auto",
+  },
+  {
+    src: "https://www.roboleary.net/demos/HvnZUakQ/img/happy-dance.webp",
+    size: "auto",
+  },
+  { src: null, size: "auto" }, // final fade to black
 ];
+
+// The source's wobble keyframes: rotateY 0 → 40deg, alternate, 0.25s, 2 iters.
+// Total wobble runs 0.5s of the animation.
+const WOBBLE_DURATION_S = 0.5;
+
+// The switch animation runs 4s on top of (concurrent with) the wobble.
+// Channel transition timing taken from the source's switch keyframes:
+//   0%   waving (full size)
+//   40%  waving → swap to dancing, size jumps to 150%
+//   55%  dancing → static (back to default size)
+//   70%  static → happy-dance
+//   100% all images cleared, screen is empty
+const SWITCH_DURATION_S = 4;
+
+const channelAtT = (t: number): Channel => {
+  if (t < 0.4) return CHANNELS[0];
+  if (t < 0.55) return CHANNELS[1];
+  if (t < 0.7) return CHANNELS[2];
+  if (t < 1.0) return CHANNELS[3];
+  return CHANNELS[4];
+};
+
+// The caption reveal — source has @keyframes reveal with 0..90% opacity 0
+// then 91..100% opacity 1, total 4s duration with 1s delay.
+const captionOpacity = (sceneT: number) => {
+  // Map the scene's normalised time to the same 4s+1s envelope.
+  // (Scale assumes a 10s scene; once the screen has been black for a bit,
+  // pop the caption in.)
+  return interpolate(sceneT, [0.84, 0.91], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+};
 
 export const DivTv: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
-  const t = frame / durationInFrames;
+  const seconds = frame / fps;
+  const sceneT = frame / durationInFrames;
 
-  // Two-step wobble like the CSS animation: rotates +40deg, alternate reverse,
-  // 0.25s, 2 iterations. Total wobble = 0.5s.
-  const wobbleProgress = Math.min(1, frame / (fps * 0.5));
-  const wobble = Math.sin(wobbleProgress * Math.PI * 4) * (1 - wobbleProgress) * 30;
+  // ── Wobble — sinusoidal sweep of rotateY 0..40 over 0.5s, two iterations,
+  // alternating direction (matches the source's `wobble` keyframes set
+  // `alternate, 2 iterations, 0.25s` => total 0.5s).
+  const wobbleT = Math.min(1, seconds / WOBBLE_DURATION_S);
+  const wobbleEnv = wobbleT < 1 ? Math.sin(wobbleT * Math.PI) : 0;
+  const rotateY = wobbleEnv * 35 * Math.sin(wobbleT * Math.PI * 4);
 
-  // Channel index over the "switch" 4-second window after wobble.
-  const switchT = Math.max(0, (frame - fps * 0.5) / (fps * 4));
-  let channelIdx = 0;
-  if (switchT < 0.4) channelIdx = 0;
-  else if (switchT < 0.55) channelIdx = 1;
-  else if (switchT < 0.7) channelIdx = 2;
-  else if (switchT < 0.95) channelIdx = 3;
-  else channelIdx = -1; // off (black)
+  // ── Channel selection on the switch timeline (starts at t=0 like the
+  // source's other animation; the wobble plays alongside it).
+  const switchT = Math.min(1, seconds / SWITCH_DURATION_S);
+  const channel = channelAtT(switchT);
 
-  // Reveal of "I'm just a div" caption — matches the source's @keyframes reveal
-  const captionOpacity = interpolate(t, [0.85, 0.92], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Static-noise overlay strength
-  const staticAlpha = channelIdx === 2 ? 0.7 : 0;
-  const ch = channelIdx >= 0 ? CHANNELS[channelIdx] : null;
+  // ── Caption reveal.
+  const capOp = captionOpacity(sceneT);
 
   return (
     <AbsoluteFill
@@ -55,51 +103,58 @@ export const DivTv: React.FC = () => {
         background: "hsl(80, 100%, 50%)",
         display: "grid",
         placeItems: "center",
+        perspective: "1200px",
       }}
     >
       <div
         style={{
-          width: "min(60dvw, 600px)",
+          // The original sets `width: min(60dvw, 400px)` and aspect 4/3.8,
+          // with border-image-outset of width/3 — the outset is what makes the
+          // TV frame appear around the content box. Scaled up for 1920x1080.
+          width: 600,
           aspectRatio: "4 / 3.8",
           position: "relative",
-          // border-image trick replicates the source
-          borderStyle: "solid",
-          borderImageSource: `url(${TV_FRAME})`,
-          borderImageSlice: "19% 20% 34.3% 19%",
-          borderImageWidth: "24% 20% 24% 20%",
-          borderImageOutset: "calc(min(60dvw, 600px) / 3)",
           backgroundColor: "white",
-          backgroundImage: ch ? `url(${ch.src})` : "none",
+          backgroundImage: channel.src ? `url(${channel.src})` : "none",
+          backgroundSize: channel.size,
           backgroundPosition: "50%",
-          backgroundSize: ch ? ch.size : "auto",
           color: "black",
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily:
+            '"Lucida Sans", "Lucida Sans Regular", "Lucida Grande", "Lucida Sans Unicode", Geneva, Verdana, sans-serif',
           display: "grid",
           placeItems: "center",
-          transform: `rotateY(${wobble}deg)`,
+          // border-image — the TV frame asset is sliced at the original
+          // percentages (top/right/bottom/left = 19/20/34.3/19).
+          borderStyle: "solid",
+          borderWidth: "24% 20% 24% 20%",
+          borderImageSource: `url(${TV_FRAME})`,
+          borderImageSlice: "19 20 34.3 19 fill",
+          borderImageWidth: "24% 20% 24% 20%",
+          borderImageOutset: "calc(600px / 3)",
+          transform: `rotateY(${rotateY}deg)`,
           transformStyle: "preserve-3d",
         }}
       >
-        {/* Static noise overlay when on the "static" channel */}
-        {staticAlpha > 0 && (
+        {/* Static-noise overlay only while on the static channel */}
+        {switchT >= 0.55 && switchT < 0.7 && (
           <div
             style={{
               position: "absolute",
               inset: 0,
-              backgroundImage: `repeating-conic-gradient(rgba(255,255,255,${staticAlpha}) 0% 0.5%, rgba(0,0,0,${staticAlpha}) 0.5% 1%)`,
+              backgroundImage:
+                "repeating-conic-gradient(rgba(255,255,255,0.75) 0% 0.5%, rgba(0,0,0,0.75) 0.5% 1%)",
               mixBlendMode: "screen",
-              opacity: staticAlpha,
+              opacity: 0.85,
               pointerEvents: "none",
             }}
           />
         )}
-        {/* Caption after the last fade-to-black */}
         <span
           style={{
             position: "relative",
-            fontStyle: "italic",
             fontSize: "1.1rem",
-            opacity: captionOpacity,
+            fontStyle: "italic",
+            opacity: capOp,
           }}
         >
           I'm just a div
