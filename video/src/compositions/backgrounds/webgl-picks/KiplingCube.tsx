@@ -1,8 +1,9 @@
-// Source: a "boy-in-a-cube" demo — a photo of a person sits inside a glass box
-// whose interior walls scroll Kipling's *If*. The original drives the text by
-// CSS keyframes (margin-left animation) and adds hue-rotate + zoom-in over
-// a 200s loop. We compress the loop to fit a 10s scene and drive the same
-// values with frame number.
+// Faithful port of the original CSS-3D Kipling cube. A boy photo sits on a
+// background, a hue-rotating overlay floats on top, and a CSS cube whose
+// interior walls scroll Kipling's *If—* (public domain, 1910) is mirrored
+// below as a soft reflection. The original loop is 200s; the scene is 10s,
+// so animations are driven from frame fraction and the text scroll covers
+// the first 5% of the original travel.
 
 import React from "react";
 import {
@@ -10,34 +11,224 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  Easing,
 } from "remotion";
 
-// Long poem reduced to a single repeating phrase ribbon. The original wraps the
-// full poem and lets it scroll for minutes; for a 10s clip we want a fast-moving
-// banner that always reads as text.
-const POEM_WORDS = [
-  "keep", "losing", "blaming", "trust", "doubt", "allowance", "wait",
-  "lied", "lies", "hated", "hating", "dream", "master", "think", "aim",
-  "triumph", "disaster", "impostors", "truth", "twisted", "trap",
-  "broken", "stoop", "heap", "winnings", "risk", "lose", "loss",
-  "force", "sinew", "serve", "hold on", "Will", "talk", "virtue",
-  "walk", "touch", "foes", "count", "minute", "run", "Earth", "Man",
-];
+const BACKGROUND_IMAGE =
+  "https://drive.google.com/thumbnail?id=1_ZMV_LcmUXLsRokuz6WXGyN9zVCGfAHp&sz=w1920";
+const BOY_IMAGE =
+  "https://drive.google.com/thumbnail?id=1eGqJskQQgBJ67myGekmo4YfIVI3lfDTm&sz=w1920";
 
-const RIBBON_TEXT = `If you can keep your head when all about you are losing theirs and blaming it on you, if you can trust yourself when all men doubt you but make allowance for their doubting too, if you can wait and not be tired by waiting, or being lied about, don't deal in lies — `;
+const RED = "red";
+
+// Kipling, *If—* (1910, public domain). Highlighted words match the original
+// CSS demo. Repeated four times so the long faces stream uninterrupted.
+const POEM_TEXT = (
+  <>
+    If you can <span style={{ color: RED }}>keep</span> your head when all about
+    you are <span style={{ color: RED }}>losing</span> theirs and{" "}
+    <span style={{ color: RED }}>blaming</span> it on you, If you can{" "}
+    <span style={{ color: RED }}>trust</span> yourself when all men{" "}
+    <span style={{ color: RED }}>doubt</span> you, but make{" "}
+    <span style={{ color: RED }}>allowance</span> for their doubting too; If you
+    can <span style={{ color: RED }}>wait</span> and not be tired by waiting, Or
+    being <span style={{ color: RED }}>lied</span> about, don't deal in{" "}
+    <span style={{ color: RED }}>lies</span>, Or being{" "}
+    <span style={{ color: RED }}>hated</span>, don't give way to{" "}
+    <span style={{ color: RED }}>hating</span>, And yet don't look too good, nor
+    talk too wise: If you can <span style={{ color: RED }}>dream</span>—and not
+    make dreams your <span style={{ color: RED }}>master</span>; If you can{" "}
+    <span style={{ color: RED }}>think</span>—and not make thoughts your{" "}
+    <span style={{ color: RED }}>aim</span>; If you can meet with{" "}
+    <span style={{ color: RED }}>Triumph</span> and{" "}
+    <span style={{ color: RED }}>Disaster</span> And treat those two{" "}
+    <span style={{ color: RED }}>impostors</span> just the same; If you can bear
+    to hear the <span style={{ color: RED }}>truth</span> you've spoken{" "}
+    <span style={{ color: RED }}>Twisted</span> by knaves to make a{" "}
+    <span style={{ color: RED }}>trap</span> for fools, Or watch the things you
+    gave your life to, <span style={{ color: RED }}>broken</span>, And{" "}
+    <span style={{ color: RED }}>stoop</span> and build 'em up with worn-out
+    tools: If you can make one <span style={{ color: RED }}>heap</span> of all
+    your <span style={{ color: RED }}>winnings</span> And{" "}
+    <span style={{ color: RED }}>risk</span> it on one turn of pitch-and-toss,
+    And <span style={{ color: RED }}>lose</span>, and start again at your
+    beginnings And never breathe a word about your{" "}
+    <span style={{ color: RED }}>loss</span>; If you can{" "}
+    <span style={{ color: RED }}>force</span> your heart and nerve and{" "}
+    <span style={{ color: RED }}>sinew</span> To{" "}
+    <span style={{ color: RED }}>serve</span> your turn long after they are
+    gone, And so <span style={{ color: RED }}>hold on</span> when there is
+    nothing in you Except the <span style={{ color: RED }}>Will</span> which
+    says to them: 'Hold on!' If you can{" "}
+    <span style={{ color: RED }}>talk</span> with crowds and keep your{" "}
+    <span style={{ color: RED }}>virtue</span>, Or{" "}
+    <span style={{ color: RED }}>walk</span> with Kings—nor lose the common{" "}
+    <span style={{ color: RED }}>touch</span>, If neither{" "}
+    <span style={{ color: RED }}>foes</span> nor loving friends can hurt you,
+    If all men <span style={{ color: RED }}>count</span> with you, but none too
+    much; If you can fill the unforgiving{" "}
+    <span style={{ color: RED }}>minute</span> With sixty seconds' worth of
+    distance <span style={{ color: RED }}>run</span>, Yours is the{" "}
+    <span style={{ color: RED }}>Earth</span> and everything that's in it, And—
+    which is more—you'll be a <span style={{ color: RED }}>Man</span>, my son!
+    &nbsp;&nbsp;&nbsp;
+  </>
+);
+
+const POEM_REPEATED = (
+  <>
+    {POEM_TEXT}
+    {POEM_TEXT}
+    {POEM_TEXT}
+    {POEM_TEXT}
+  </>
+);
+
+type CubeProps = {
+  leftMargin: number;
+  backMargin: number;
+  rightMargin: number;
+  reflection?: boolean;
+};
+
+const FACE_W = 870;
+const FACE_H = 190;
+const TB_SIZE = 870;
+
+const faceBase: React.CSSProperties = {
+  width: FACE_W,
+  height: FACE_H,
+  position: "absolute",
+  background: "transparent",
+  opacity: 0.5,
+  overflow: "hidden",
+};
+
+const tbBase: React.CSSProperties = {
+  ...faceBase,
+  width: TB_SIZE,
+  height: TB_SIZE,
+};
+
+const pBase: React.CSSProperties = {
+  whiteSpace: "nowrap",
+  fontFamily: '"Bebas Neue", "Oswald", "Arial Narrow", sans-serif',
+  fontWeight: 400,
+  fontSize: "calc(6em + 19px * 0.7)",
+  paddingTop: 20,
+  color: "white",
+  margin: 0,
+};
+
+const Cube: React.FC<CubeProps> = ({
+  leftMargin,
+  backMargin,
+  rightMargin,
+  reflection = false,
+}) => {
+  // Reflection mirrors vertically and uses a different perspective origin.
+  const perspectiveOrigin = reflection ? "51% -30%" : "51% 70%";
+
+  const back: React.CSSProperties = {
+    ...faceBase,
+    transform: reflection
+      ? "translateZ(-435px) rotateY(180deg) scaleX(-1) scaleY(-1)"
+      : "translateZ(-435px) rotateY(180deg) scaleX(-1)",
+  };
+  const left: React.CSSProperties = {
+    ...faceBase,
+    transform: reflection
+      ? "translateX(-435px) rotateY(-90deg) scaleX(-1) scaleY(-1)"
+      : "translateX(-435px) rotateY(-90deg) scaleX(-1)",
+  };
+  const right: React.CSSProperties = {
+    ...faceBase,
+    transform: reflection
+      ? "translateX(435px) rotateY(90deg) scaleX(-1) scaleY(-1)"
+      : "translateX(435px) rotateY(90deg) scaleX(-1)",
+  };
+  const top: React.CSSProperties = {
+    ...tbBase,
+    transform: "translateY(-435px) rotateX(90deg) scaleY(-1)",
+  };
+  const bottom: React.CSSProperties = {
+    ...tbBase,
+    transform: "translateY(-245px) rotateX(-90deg) scaleY(-1)",
+  };
+
+  const pTransform = reflection ? "scaleY(0.7)" : undefined;
+
+  return (
+    <div
+      style={{
+        width: FACE_W,
+        height: FACE_H,
+        position: "relative",
+        transformStyle: "preserve-3d",
+        perspective: 480,
+        perspectiveOrigin,
+      }}
+    >
+      <div style={top} />
+      <div style={bottom} />
+      <div style={left}>
+        <p
+          style={{
+            ...pBase,
+            marginLeft: leftMargin,
+            transform: pTransform,
+            transformOrigin: "left top",
+          }}
+        >
+          {POEM_REPEATED}
+        </p>
+      </div>
+      <div style={right}>
+        <p
+          style={{
+            ...pBase,
+            marginLeft: rightMargin,
+            transform: pTransform,
+            transformOrigin: "left top",
+          }}
+        >
+          {POEM_REPEATED}
+        </p>
+      </div>
+      <div style={back}>
+        <p
+          style={{
+            ...pBase,
+            marginLeft: backMargin,
+            transform: pTransform,
+            transformOrigin: "left top",
+          }}
+        >
+          {POEM_REPEATED}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export const KiplingCube: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const t = frame / durationInFrames; // 0..1
 
-  // Slow zoom-in matches the CSS keyframes
-  const scale = interpolate(t, [0, 1], [1, 1.6], { easing: Easing.linear });
-  // Hue rotation
-  const hue = Math.sin(t * Math.PI * 2) * 50;
-  // Ribbon scroll velocity
-  const scrollPx = -t * 4200;
+  // 200s loop compressed to 10s: text travels 5% of the original range.
+  const leftMargin = interpolate(t, [0, 1], [480, -2244]);
+  const backMargin = interpolate(t, [0, 1], [-390, -3114]);
+  const rightMargin = interpolate(t, [0, 1], [-1260, -3984]);
+
+  // Zoom 1 -> 2.5
+  const scale = 1 + 1.5 * t;
+  // Boy blur 0 -> 3px
+  const boyBlur = 3 * t;
+  // Plate brightness/contrast drift
+  const brightness = 1 - 0.2 * t;
+  const contrast = 1 + 0.3 * t;
+  // Hue rotation on the overlay — ~1.25 cycles across the 10s
+  const hue = 100 * Math.sin(t * Math.PI * (10 / 4));
 
   return (
     <AbsoluteFill
@@ -49,144 +240,111 @@ export const KiplingCube: React.FC = () => {
         justifyContent: "center",
       }}
     >
+      {/* The .content frame: 1000x562, rounded, with the slow filter drift */}
       <div
         style={{
-          width: 1500,
-          height: 900,
+          width: 1000,
+          height: 562,
           position: "relative",
-          transform: `scale(${scale})`,
-          transformOrigin: "center",
-          borderRadius: 28,
+          borderRadius: 40,
           overflow: "hidden",
-          filter: `hue-rotate(${hue}deg)`,
+          filter: `brightness(${brightness}) contrast(${contrast})`,
         }}
       >
-        {/* Background plate (subtle gradient stand-in for the photo) */}
+        {/* .container-full: holds the zoom-in transform */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "radial-gradient(ellipse at 50% 60%, #4c7fb5, #0a2a4a 70%, #000 100%)",
+            width: 1000,
+            height: 562,
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
           }}
-        />
-        {/* Subject silhouette — pure CSS stand-in */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 0,
-            transform: "translateX(-50%)",
-            width: 360,
-            height: 720,
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,.6) 80%, rgba(0,0,0,.95) 100%)",
-            filter: "blur(2px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 60,
-            transform: "translateX(-50%)",
-            width: 200,
-            height: 480,
-            background: "radial-gradient(circle at 50% 30%, #d2a87a, #4a2a14 80%, transparent 100%)",
-            borderRadius: "40% 40% 20% 20%",
-          }}
-        />
+        >
+          {/* Hue overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              zIndex: 3,
+              width: "100%",
+              height: "100%",
+              mixBlendMode: "overlay",
+              background:
+                "radial-gradient(ellipse at center, #1e5799 0%, #7db9e8 100%)",
+              filter: `hue-rotate(${hue}deg)`,
+              pointerEvents: "none",
+            }}
+          />
 
-        {/* The cube interior — four walls of scrolling text */}
-        <CubeWall side="left" scrollPx={scrollPx} />
-        <CubeWall side="right" scrollPx={scrollPx} />
-        <CubeWall side="back" scrollPx={scrollPx} />
-        <CubeWall side="top" scrollPx={scrollPx} />
+          {/* Background plate */}
+          <img
+            src={BACKGROUND_IMAGE}
+            alt=""
+            style={{
+              position: "absolute",
+              width: 1000,
+              top: 0,
+              left: 0,
+            }}
+          />
 
-        {/* Overlay hue tint */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            mixBlendMode: "overlay",
-            background:
-              "radial-gradient(ellipse at center, #1e5799 0%, #7db9e8 100%)",
-            opacity: 1,
-            pointerEvents: "none",
-          }}
-        />
+          {/* Boy in front */}
+          <img
+            src={BOY_IMAGE}
+            alt=""
+            style={{
+              position: "absolute",
+              width: 1000,
+              top: 0,
+              left: 0,
+              zIndex: 2,
+              filter: `blur(${boyBlur}px)`,
+            }}
+          />
+
+          {/* Main cube */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 4,
+            }}
+          >
+            <Cube
+              leftMargin={leftMargin}
+              backMargin={backMargin}
+              rightMargin={rightMargin}
+            />
+          </div>
+
+          {/* Reflected cube — mirrored and blurred */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: 380,
+              filter: "blur(10px)",
+              zIndex: 4,
+            }}
+          >
+            <Cube
+              leftMargin={leftMargin}
+              backMargin={backMargin}
+              rightMargin={rightMargin}
+              reflection
+            />
+          </div>
+        </div>
       </div>
     </AbsoluteFill>
-  );
-};
-
-const CubeWall: React.FC<{
-  side: "left" | "right" | "back" | "top";
-  scrollPx: number;
-}> = ({ side, scrollPx }) => {
-  // Pseudo-3D inset positions using CSS skews — close enough at 10s.
-  const styles: Record<typeof side, React.CSSProperties> = {
-    left: {
-      left: "8%",
-      right: "65%",
-      top: "12%",
-      bottom: "12%",
-      transform: "perspective(1200px) rotateY(45deg)",
-      transformOrigin: "left center",
-    },
-    right: {
-      left: "65%",
-      right: "8%",
-      top: "12%",
-      bottom: "12%",
-      transform: "perspective(1200px) rotateY(-45deg)",
-      transformOrigin: "right center",
-    },
-    back: {
-      left: "20%",
-      right: "20%",
-      top: "12%",
-      bottom: "12%",
-    },
-    top: {
-      left: "8%",
-      right: "8%",
-      top: 0,
-      height: "12%",
-      transform: "perspective(1200px) rotateX(70deg)",
-      transformOrigin: "center bottom",
-    },
-  };
-  return (
-    <div
-      style={{
-        position: "absolute",
-        overflow: "hidden",
-        ...styles[side],
-      }}
-    >
-      <div
-        style={{
-          whiteSpace: "nowrap",
-          color: "white",
-          opacity: 0.55,
-          fontFamily: "'Bebas Neue', 'Arial Narrow', sans-serif",
-          fontSize: 60,
-          fontWeight: 400,
-          paddingTop: 20,
-          transform: `translateX(${scrollPx * (side === "back" ? 1.2 : 1)}px)`,
-          willChange: "transform",
-        }}
-      >
-        {RIBBON_TEXT.repeat(20).split(" ").map((word, i) => {
-          const isHighlight = POEM_WORDS.includes(word.toLowerCase().replace(/[^a-z]/g, ""));
-          return (
-            <span key={i} style={{ color: isHighlight ? "#ff5050" : "white" }}>
-              {word}{" "}
-            </span>
-          );
-        })}
-      </div>
-    </div>
   );
 };
