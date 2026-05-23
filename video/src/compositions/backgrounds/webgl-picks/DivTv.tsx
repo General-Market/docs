@@ -44,19 +44,23 @@ const CHANNELS: Channel[] = [
 ];
 
 // The source's wobble keyframes: rotateY 0 → 40deg, alternate, 0.25s, 2 iters.
-// Total wobble runs 0.5s of the animation.
-const WOBBLE_DURATION_S = 0.5;
+// Total wobble runs 0.5s starting at t=0. With "alternate" the second iter
+// plays in reverse, so the element rests at 0deg after 0.5s.
+const WOBBLE_ITER_S = 0.25;
 
-// The switch animation runs 4s on top of (concurrent with) the wobble.
-// Channel transition timing taken from the source's switch keyframes:
-//   0%   waving (full size)
-//   40%  waving → swap to dancing, size jumps to 150%
-//   55%  dancing → static (back to default size)
-//   70%  static → happy-dance
-//   100% all images cleared, screen is empty
+// The switch animation runs 4s with a 1s delay (so absolute t=1s → t=5s).
+// Channel transition timing taken from the source's switch keyframes
+// (percentages are of the 4s switch duration, then offset by +1s):
+//   0%   (t=1.0s) waving (default size)
+//   40%  (t=2.6s) swap to dancing, size jumps to 150%
+//   55%  (t=3.2s) swap to static, size back to default
+//   70%  (t=3.8s) swap to happy-dance
+//   100% (t=5.0s) all images cleared, screen is empty (white)
+const SWITCH_DELAY_S = 1;
 const SWITCH_DURATION_S = 4;
 
 const channelAtT = (t: number): Channel => {
+  if (t < 0) return CHANNELS[0]; // before switch starts: waving on screen
   if (t < 0.4) return CHANNELS[0];
   if (t < 0.55) return CHANNELS[1];
   if (t < 0.7) return CHANNELS[2];
@@ -64,38 +68,47 @@ const channelAtT = (t: number): Channel => {
   return CHANNELS[4];
 };
 
-// The caption reveal — source has @keyframes reveal with 0..90% opacity 0
-// then 91..100% opacity 1, total 4s duration with 1s delay.
-const captionOpacity = (sceneT: number) => {
-  // Map the scene's normalised time to the same 4s+1s envelope.
-  // (Scale assumes a 10s scene; once the screen has been black for a bit,
-  // pop the caption in.)
-  return interpolate(sceneT, [0.84, 0.91], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+// Smooth ease in/out (matches CSS default `ease` reasonably well for sub-1s
+// keyframes). Sine half-wave 0→1 over the iteration.
+const easedSine = (x: number) => 0.5 - 0.5 * Math.cos(Math.PI * x);
+
+// The caption reveal — source has @keyframes reveal with 4s duration + 1s
+// delay. Opacity stays 0 until 90% of the 4s (t=4.6s absolute), then snaps
+// to 1 from 91% (t=4.64s) to the end (t=5.0s). With `forwards` it stays
+// visible after the animation completes.
+const captionOpacity = (seconds: number) => {
+  if (seconds < 4.6) return 0;
+  if (seconds < 4.64) {
+    return interpolate(seconds, [4.6, 4.64], [0, 1]);
+  }
+  return 1;
 };
 
 export const DivTv: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const seconds = frame / fps;
-  const sceneT = frame / durationInFrames;
 
-  // ── Wobble — sinusoidal sweep of rotateY 0..40 over 0.5s, two iterations,
-  // alternating direction (matches the source's `wobble` keyframes set
-  // `alternate, 2 iterations, 0.25s` => total 0.5s).
-  const wobbleT = Math.min(1, seconds / WOBBLE_DURATION_S);
-  const wobbleEnv = wobbleT < 1 ? Math.sin(wobbleT * Math.PI) : 0;
-  const rotateY = wobbleEnv * 35 * Math.sin(wobbleT * Math.PI * 4);
+  // ── Wobble — two 0.25s iterations of rotateY 0→40 alternating direction.
+  // Iter 1 (0→0.25s): 0 → 40. Iter 2 (0.25s→0.5s, reversed): 40 → 0.
+  // After 0.5s the element rests at 0deg.
+  const wobbleProgress = seconds / WOBBLE_ITER_S; // 0..2 over 0.5s, then >2
+  let rotateY = 0;
+  if (wobbleProgress < 1) {
+    rotateY = 40 * easedSine(wobbleProgress);
+  } else if (wobbleProgress < 2) {
+    rotateY = 40 * (1 - easedSine(wobbleProgress - 1));
+  }
 
-  // ── Channel selection on the switch timeline (starts at t=0 like the
-  // source's other animation; the wobble plays alongside it).
-  const switchT = Math.min(1, seconds / SWITCH_DURATION_S);
+  // ── Channel selection on the switch timeline. Switch starts at t=1s and
+  // runs 4s, so absolute t=[1s, 5s] maps to switchT=[0, 1]. Before t=1s the
+  // screen sits on the initial "waving" channel.
+  const switchT = (seconds - SWITCH_DELAY_S) / SWITCH_DURATION_S;
   const channel = channelAtT(switchT);
 
-  // ── Caption reveal.
-  const capOp = captionOpacity(sceneT);
+  // ── Caption reveal — opacity 0 until t=4.6s, then snaps to 1 by t=4.64s
+  // and stays visible (matches `animation-fill-mode: forwards`).
+  const capOp = captionOpacity(seconds);
 
   return (
     <AbsoluteFill
