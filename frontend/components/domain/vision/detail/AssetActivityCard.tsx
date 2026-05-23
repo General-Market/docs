@@ -732,47 +732,49 @@ export function AssetActivityCard({
                   />
                 )
               })}
-              {/* Per-batch threshold ticks. Each batch carries its own band
-                  in the settlement payload — we draw both sides of the band
-                  as short ticks centered on the column. When the band would
-                  fall outside the chart range, the tick clamps to the edge
-                  and gets an arrow marker so the off-scale fact is visible. */}
+              {/* Per-batch threshold square. Each settlement carries one
+                  resolutionType — UP_X (1) draws a green square at +x bps,
+                  DOWN_X (2) draws a red one at −x bps. UP_0 / DOWN_0 carry
+                  no threshold and draw nothing. When the threshold sits
+                  outside the chart range, the square clamps to the edge
+                  and switches to dashed so the off-scale fact is visible. */}
               {columns.map((c, i) => {
                 const bps = c.batch.thresholdBps
                 if (!bps || bps <= 0) return null
+                const rt = c.batch.resolutionType
+                const isUpX = rt === 1
+                const isDownX = rt === 2
+                if (!isUpX && !isDownX) return null
                 const ratio = bps / 10000
                 const x = xForIdx(i)
                 const padTop = 12
                 const padBot = CHART_HEIGHT - 12
-                const rawYUp = yForRatio(1 + ratio)
-                const rawYDn = yForRatio(1 - ratio)
-                const clampedYUp = Math.max(padTop, rawYUp)
-                const clampedYDn = Math.min(padBot, rawYDn)
-                const upOff = rawYUp < padTop
-                const dnOff = rawYDn > padBot
+                const rawY = isUpX ? yForRatio(1 + ratio) : yForRatio(1 - ratio)
+                const y = isUpX
+                  ? Math.max(padTop, rawY)
+                  : Math.min(padBot, rawY)
+                const offScale = isUpX ? rawY < padTop : rawY > padBot
+                const fill = isUpX ? 'rgb(52,199,89)' : 'rgb(255,59,48)'
+                const size = Math.max(6, CELL_W * 0.6)
                 return (
-                  <g key={`tk-${c.batch.batchId}`}>
-                    <line
-                      x1={x - CELL_W / 2}
-                      x2={x + CELL_W / 2}
-                      y1={clampedYUp}
-                      y2={clampedYUp}
-                      stroke="rgb(52,199,89)"
-                      strokeOpacity={upOff ? 0.55 : 0.85}
-                      strokeWidth={upOff ? 1 : 1.25}
-                      strokeDasharray={upOff ? '2 2' : undefined}
-                    />
-                    <line
-                      x1={x - CELL_W / 2}
-                      x2={x + CELL_W / 2}
-                      y1={clampedYDn}
-                      y2={clampedYDn}
-                      stroke="rgb(255,59,48)"
-                      strokeOpacity={dnOff ? 0.55 : 0.85}
-                      strokeWidth={dnOff ? 1 : 1.25}
-                      strokeDasharray={dnOff ? '2 2' : undefined}
-                    />
-                  </g>
+                  <rect
+                    key={`tk-${c.batch.batchId}`}
+                    x={x - size / 2}
+                    y={y - size / 2}
+                    width={size}
+                    height={size}
+                    fill={fill}
+                    fillOpacity={offScale ? 0.55 : 0.95}
+                    stroke="#FFFFFF"
+                    strokeWidth={1}
+                    strokeDasharray={offScale ? '2 2' : undefined}
+                    rx={1.5}
+                    ry={1.5}
+                  >
+                    <title>
+                      {`${isUpX ? 'UP' : 'DOWN'} threshold · ±${formatRulePct(bps)} · settles ${formatTime(new Date(c.batch.settledAt).getTime())}`}
+                    </title>
+                  </rect>
                 )
               })}
               {/* Baseline at ratio = 1.0 */}

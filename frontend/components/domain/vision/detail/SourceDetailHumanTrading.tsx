@@ -796,6 +796,8 @@ export function SourceDetailHumanTrading({
                   resolved={resolved}
                   timeframe={chartTimeframe}
                   onTimeframeChange={setChartTimeframe}
+                  resolutionType={resolutionByAsset.get(focusedMarket.assetId)?.resType ?? null}
+                  thresholdBps={resolutionByAsset.get(focusedMarket.assetId)?.thresholdBps ?? null}
                 />
               )}
 
@@ -808,6 +810,7 @@ export function SourceDetailHumanTrading({
                     const inActiveBatch =
                       !!activeBatch && marketIds.includes(market.assetId)
                     const isInteractive = inActiveBatch && roundPhase === 'open'
+                    const res = resolutionByAsset.get(market.assetId)
                     return (
                       <HumanMarketCard
                         key={market.assetId}
@@ -827,6 +830,8 @@ export function SourceDetailHumanTrading({
                         onSelect={() => setSelectedAssetId(market.assetId)}
                         onPrefetch={() => prefetchChartFor(market.assetId)}
                         points={getPointsFor(market.assetId)}
+                        resolutionType={res?.resType ?? null}
+                        thresholdBps={res?.thresholdBps ?? null}
                       />
                     )
                   })}

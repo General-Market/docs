@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   ReferenceArea,
+  ReferenceDot,
   Tooltip as RechartsTooltip,
 } from 'recharts'
 import { getAssetMeta } from '@/lib/vision/asset-images'
@@ -71,6 +72,15 @@ interface HumanMarketCardProps {
    * Pass `undefined` while loading; pass `[]` when there is no data.
    */
   points?: HistoryPoint[]
+  /**
+   * The market's resolution side for this batch — UP_X / DOWN_X / UP_0 /
+   * DOWN_0. Combined with `thresholdBps`, drives the colored settlement
+   * square: green for UP_X, red for DOWN_X. UP_0/DOWN_0 carry no threshold
+   * and so render no square.
+   */
+  resolutionType?: string | null
+  /** Bps move that decides the binary. Threshold = open × (1 ± bps/10000). */
+  thresholdBps?: number | null
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -112,6 +122,8 @@ export function HumanMarketCard({
   onSelect,
   onPrefetch,
   points,
+  resolutionType,
+  thresholdBps,
 }: HumanMarketCardProps) {
   const [imgErr, setImgErr] = useState(false)
   const name = market.name || market.symbol || market.assetId
@@ -282,6 +294,8 @@ export function HumanMarketCard({
         roundCloseAt={roundCloseAt}
         resolved={resolved}
         externalPoints={points}
+        resolutionType={resolutionType ?? null}
+        thresholdBps={thresholdBps ?? null}
       />
 
       {/* Pick buttons — click here must not bubble up to onSelect */}
@@ -359,6 +373,8 @@ interface MarketChartProps {
   resolved: boolean
   /** Pre-fetched 24h history from the parent's bulk hook. Skips local fetch. */
   externalPoints?: HistoryPoint[]
+  resolutionType?: string | null
+  thresholdBps?: number | null
 }
 
 function MarketChart({
@@ -369,6 +385,8 @@ function MarketChart({
   roundCloseAt,
   resolved,
   externalPoints,
+  resolutionType,
+  thresholdBps,
 }: MarketChartProps) {
   // Local fetch is only the fallback path for callers that don't pre-fetch.
   // The Vision human-trading page passes `externalPoints` so this effect is a no-op.
@@ -419,10 +437,20 @@ function MarketChart({
     }
   }, [sourceId, assetId, externalPoints])
 
-  // Compute open / close prices inside the round window.
-  const { openPrice, closePrice, changePct, chartData, yDomain } = useMemo(() => {
+  // Compute open / close prices inside the round window, plus the colored
+  // settlement square at (roundCloseAt, threshold). UP_X paints green at
+  // open × (1 + bps/10000); DOWN_X paints red at open × (1 − bps/10000).
+  // UP_0/DOWN_0 carry no threshold and render no square.
+  const { openPrice, closePrice, changePct, chartData, yDomain, settlement } = useMemo(() => {
     if (!points || points.length < 2) {
-      return { openPrice: null, closePrice: null, changePct: null, chartData: [], yDomain: undefined as [number, number] | undefined }
+      return {
+        openPrice: null,
+        closePrice: null,
+        changePct: null,
+        chartData: [],
+        yDomain: undefined as [number, number] | undefined,
+        settlement: null as { color: string; price: number; time: number } | null,
+      }
     }
     const sorted = [...points].sort((a, b) => a.ts - b.ts)
     const data =
@@ -449,17 +477,30 @@ function MarketChart({
     }
     const pct = open && close ? ((close - open) / open) * 100 : null
 
-    // Pad y-domain so the open line + rectangle don't kiss the edges.
+    let sq: { color: string; price: number; time: number } | null = null
+    if (open != null && roundCloseAt != null) {
+      const bps = thresholdBps ?? 0
+      const type = (resolutionType ?? '').toUpperCase()
+      if (bps > 0 && type === 'UP_X') {
+        sq = { color: APPLE_GREEN, price: open * (1 + bps / 10000), time: roundCloseAt }
+      } else if (bps > 0 && type === 'DOWN_X') {
+        sq = { color: APPLE_RED, price: open * (1 - bps / 10000), time: roundCloseAt }
+      }
+    }
+
+    // Pad y-domain so the open line, rectangle, and settlement square don't
+    // kiss the edges of the chart.
     const values = data.map(d => d.value)
     if (open != null) values.push(open)
     if (close != null) values.push(close)
+    if (sq != null) values.push(sq.price)
     const minV = Math.min(...values)
     const maxV = Math.max(...values)
     const pad = (maxV - minV) * 0.12 || maxV * 0.01 || 1
     const domain: [number, number] = [minV - pad, maxV + pad]
 
-    return { openPrice: open, closePrice: close, changePct: pct, chartData: data, yDomain: domain }
-  }, [points, roundOpenAt, roundCloseAt, resolved])
+    return { openPrice: open, closePrice: close, changePct: pct, chartData: data, yDomain: domain, settlement: sq }
+  }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps])
 
   if (loading) {
     return (
@@ -585,6 +626,34 @@ function MarketChart({
             isAnimationActive={false}
             style={{ transition: `stroke 250ms ${EASE_DEFAULT}` }}
           />
+
+          {/* Settlement square: at (settle time, threshold price). Green for
+              UP_X, red for DOWN_X. Skipped for UP_0/DOWN_0. */}
+          {settlement && (
+            <ReferenceDot
+              x={settlement.time}
+              y={settlement.price}
+              r={5}
+              fill={settlement.color}
+              stroke="#FFFFFF"
+              strokeWidth={1.5}
+              isFront
+              ifOverflow="extendDomain"
+              shape={(props: { cx?: number; cy?: number }) => (
+                <rect
+                  x={(props.cx ?? 0) - 5}
+                  y={(props.cy ?? 0) - 5}
+                  width={10}
+                  height={10}
+                  fill={settlement.color}
+                  stroke="#FFFFFF"
+                  strokeWidth={1.5}
+                  rx={1.5}
+                  ry={1.5}
+                />
+              )}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
 

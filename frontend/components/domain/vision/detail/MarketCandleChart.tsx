@@ -126,6 +126,15 @@ interface MarketCandleChartProps {
   onTimeframeChange: (t: Timeframe) => void
   /** Fires once when the first history fetch + chart draw complete. */
   onReady?: () => void
+  /**
+   * The market's resolution side — UP_X or DOWN_X. When provided alongside a
+   * non-zero thresholdBps, the chart paints a colored square at (settle time,
+   * threshold price): green for UP_X, red for DOWN_X. UP_0/DOWN_0 carry no
+   * threshold and render no square.
+   */
+  resolutionType?: string | null
+  /** Bps move that decides the binary. Threshold = open × (1 ± bps/10000). */
+  thresholdBps?: number | null
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -204,6 +213,8 @@ export function MarketCandleChart({
   timeframe,
   onTimeframeChange,
   onReady,
+  resolutionType,
+  thresholdBps,
 }: MarketCandleChartProps) {
   const [imgErr, setImgErr] = useState(false)
 
@@ -355,6 +366,64 @@ export function MarketCandleChart({
       onReady?.()
     }
   }, [loading, error, points, onReady])
+
+  // -- Settlement square: at (roundCloseAt, threshold) --
+  // UP_X markets paint a green square at open × (1 + bps/10000); DOWN_X markets
+  // paint a red one at open × (1 − bps/10000). UP_0/DOWN_0 have no threshold
+  // and render nothing. The square is an HTML element absolutely positioned
+  // inside the chart's container, driven by timeToCoordinate + priceToCoordinate.
+  const settlement = useMemo<
+    { color: string; price: number; time: number } | null
+  >(() => {
+    if (openPrice == null) return null
+    if (roundCloseAt == null) return null
+    const bps = thresholdBps ?? 0
+    const type = (resolutionType ?? '').toUpperCase()
+    if (bps <= 0) return null
+    if (type === 'UP_X') {
+      return { color: APPLE_GREEN, price: openPrice * (1 + bps / 10000), time: roundCloseAt }
+    }
+    if (type === 'DOWN_X') {
+      return { color: APPLE_RED, price: openPrice * (1 - bps / 10000), time: roundCloseAt }
+    }
+    return null
+  }, [openPrice, roundCloseAt, resolutionType, thresholdBps])
+
+  const [squarePos, setSquarePos] = useState<{ left: number; top: number } | null>(null)
+
+  useEffect(() => {
+    if (!chartReady || !settlement) {
+      setSquarePos(null)
+      return
+    }
+    const chart = chartRef.current
+    const series = seriesRef.current
+    if (!chart || !series) return
+
+    const recompute = () => {
+      const timeSec = ((settlement.time / 1000) + TZ_OFFSET_SEC) as Time
+      const x = chart.timeScale().timeToCoordinate(timeSec)
+      const y = series.priceToCoordinate(settlement.price)
+      if (x == null || y == null) {
+        setSquarePos(null)
+        return
+      }
+      setSquarePos({ left: x, top: y })
+    }
+
+    recompute()
+    const ts = chart.timeScale()
+    ts.subscribeVisibleTimeRangeChange(recompute)
+    ts.subscribeVisibleLogicalRangeChange(recompute)
+    const ro = new ResizeObserver(recompute)
+    if (containerRef.current) ro.observe(containerRef.current)
+
+    return () => {
+      ts.unsubscribeVisibleTimeRangeChange(recompute)
+      ts.unsubscribeVisibleLogicalRangeChange(recompute)
+      ro.disconnect()
+    }
+  }, [chartReady, settlement, candles])
 
   // -- Overlay: round-open + close price lines --
   useEffect(() => {
@@ -532,6 +601,27 @@ export function MarketCandleChart({
           </div>
         )}
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+        {settlement && squarePos && (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              left: squarePos.left,
+              top: squarePos.top,
+              width: 12,
+              height: 12,
+              transform: 'translate(-50%, -50%)',
+              background: settlement.color,
+              border: '1.5px solid #FFFFFF',
+              borderRadius: 2,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+              pointerEvents: 'none',
+              transition: `left 120ms ${EASE_DEFAULT}, top 120ms ${EASE_DEFAULT}`,
+              zIndex: 2,
+            }}
+            title={`Settles ${(resolutionType ?? '').toLowerCase()} at ${settlement.price.toFixed(6)}`}
+          />
+        )}
       </div>
     </section>
   )
