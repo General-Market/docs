@@ -14,4 +14,6 @@ export type { PixelRevealProps } from "./PixelReveal";
 export { FloatingItem, FloatingChip } from "./FloatingItem";
 export type { FloatingItemProps, FloatingChipProps } from "./FloatingItem";
 export { SceneFrame } from "./SceneFrame";
+export { StatDuel, StatSolo } from "./Stat";
+export type { Side } from "./Stat";
 export { scene, font, monoFont, BLUE_FIELD_GRADIENT, FPS, W, H } from "./tokens";
