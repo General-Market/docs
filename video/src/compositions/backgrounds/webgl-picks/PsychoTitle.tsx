@@ -1,8 +1,10 @@
-// Source: a Hitchcock "Psycho" title sequence — three horizontal slabs of the
-// word "PSYCHO" slide together, the middle slab quivers, then the title slabs
-// peel away as a 50-bar audio visualizer slams up from the top and down from
-// the bottom. The original uses animejs createTimeline + an audio file. We
-// drive the same beats with useCurrentFrame.
+// Faithful port of the Hitchcock "Psycho" title sequence by Rob O'Leary
+// (animejs original). Three horizontal slabs of the same "PSYCHO" wordmark,
+// clipped to top/middle/bottom thirds, stack into one whole word. The middle
+// slab quivers (snap-left, snap-right, snap-left); then the top slab slides
+// up off-screen, the bottom slab slides down, and a 50-bar audio visualizer
+// (25 above + 25 below) scales up to its full per-bar height with an
+// easeOut curve and then pulses like a waveform.
 
 import React from "react";
 import {
@@ -10,167 +12,182 @@ import {
   useCurrentFrame,
   useVideoConfig,
   Easing,
+  interpolate,
 } from "remotion";
 
 const BG = "black";
 const GREEN = "hsl(123, 70%, 45%)";
 
-// Heights for the bar columns (relative to the half-height of the screen).
-// Pulled from the source's .bars > .bar:nth-of-type(n) {height: X%} rules.
-const BAR_HEIGHTS_TOP = [
+// .bars.upper .bar:nth-of-type(n) heights — relative to the bars container.
+const BAR_HEIGHTS_UPPER = [
   0.04, 0.09, 0.12, 0.06, 0.05, 0.11, 0.19, 0.21, 0.17, 0.14, 0.30,
   0.35, 0.33, 0.35, 0.30, 0.14, 0.17, 0.21, 0.19, 0.11, 0.05, 0.06,
   0.10, 0.09, 0.04,
 ];
-const BAR_HEIGHTS_BOT = [
-  0.11, 0.12, 0.19, 0.13, 0.07, 0.07, 0.17, 0.20, 0.20, 0.16, 0.27,
-  0.35, 0.30, 0.40, 0.30, 0.23, 0.20, 0.18, 0.14, 0.07, 0.10, 0.13,
-  0.13, 0.16, 0.09,
+// .bars.lower overrides 1-6, 14, 16, 18, 19, 24 from the same base array.
+const BAR_HEIGHTS_LOWER = [
+  0.11, 0.12, 0.19, 0.13, 0.07, 0.07, 0.19, 0.21, 0.17, 0.14, 0.30,
+  0.35, 0.33, 0.40, 0.30, 0.23, 0.17, 0.18, 0.14, 0.11, 0.05, 0.06,
+  0.10, 0.16, 0.04,
 ];
 
-const ease = Easing.bezier(0.4, 0, 0.2, 1);
+const easeOut = Easing.bezier(0.0, 0.0, 0.2, 1);
 
-// Renders one of the three horizontal slab text-rows. The middle slab uses a
-// stronger clipping (it sits in front and shakes).
+// SVG viewBox for the wordmark. 525 wide, 198 tall — three 66-tall bands.
+const SVG_VIEW_W = 525;
+const SVG_VIEW_H = 198;
+
+// One slab = one <g> with a clipPath restricting the shared <text> to a band.
 const TitleSlab: React.FC<{
-  variant: "top" | "middle" | "bottom";
-  xPct: number; // 0..1 horizontal offset
-}> = ({ variant, xPct }) => {
-  const offset = (xPct - 0.5) * 200;
+  band: "top" | "mid" | "bot";
+  xPx: number;
+  yPx: number;
+}> = ({ band, xPx, yPx }) => {
+  const clipId =
+    band === "top" ? "psycho-clip-top" : band === "mid" ? "psycho-clip-mid" : "psycho-clip-bot";
+  // The middle slab has scaleY(1.05) to close the 1px gaps between bands.
+  const scaleY = band === "mid" ? 1.05 : 1;
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        fontFamily: '"Anton", "Bebas Neue", "Arial Narrow", sans-serif',
-        fontWeight: 800,
-        color: "white",
-        fontSize: 280,
-        letterSpacing: 12,
-        lineHeight: 0.85,
-        transform: `translateX(${offset}px)`,
-        clipPath:
-          variant === "top"
-            ? "polygon(0 0, 100% 0, 100% 38%, 0 38%)"
-            : variant === "middle"
-            ? "polygon(0 38%, 100% 38%, 100% 62%, 0 62%)"
-            : "polygon(0 62%, 100% 62%, 100% 100%, 0 100%)",
-      }}
+    <g
+      transform={`translate(${xPx} ${yPx}) scale(1 ${scaleY})`}
+      style={{ transformOrigin: "center center" }}
     >
-      PSYCHO
-    </div>
+      <use href="#psycho-text" clipPath={`url(#${clipId})`} />
+    </g>
   );
 };
 
 export const PsychoTitle: React.FC = () => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const t = frame / durationInFrames; // 0..1
+  const { fps, width, height } = useVideoConfig();
+  const t = frame / fps; // seconds
 
-  // Phase timings (as fractions of the full scene)
-  const PHASE_QUIVER_IN = 0.05;
-  const PHASE_QUIVER_OUT = 0.45;
-  const PHASE_SLAB_AWAY = 0.5;
-  const PHASE_BARS = 0.55;
-
-  // Quiver of the middle slab
-  let middleX = 0.5;
-  if (t > PHASE_QUIVER_IN && t < PHASE_QUIVER_OUT) {
-    const q = (t - PHASE_QUIVER_IN) / (PHASE_QUIVER_OUT - PHASE_QUIVER_IN);
-    // Lateral oscillation — picks up amplitude as it goes
-    middleX = 0.5 + Math.sin(q * Math.PI * 14) * (0.05 + q * 0.07);
+  // ---- Middle-slab quiver: snap to -10% at 0.3s, snap to +5% at 1.0s,
+  //      snap back to -10% at 1.8s. Each snap is a 100ms linear interpolation.
+  let middleXPct = 0; // % of slab width
+  if (t < 0.3) {
+    middleXPct = 0;
+  } else if (t < 0.4) {
+    middleXPct = interpolate(t, [0.3, 0.4], [0, -10], { extrapolateRight: "clamp" });
+  } else if (t < 1.0) {
+    middleXPct = -10;
+  } else if (t < 1.1) {
+    middleXPct = interpolate(t, [1.0, 1.1], [-10, 5], { extrapolateRight: "clamp" });
+  } else if (t < 1.8) {
+    middleXPct = 5;
+  } else if (t < 1.9) {
+    middleXPct = interpolate(t, [1.8, 1.9], [5, -10], { extrapolateRight: "clamp" });
+  } else {
+    middleXPct = -10;
   }
 
-  // Slab fly-away (top up, bottom down)
-  const slabAway = Math.max(0, Math.min(1, (t - PHASE_SLAB_AWAY) / 0.06));
-  const slabAwayEased = ease(slabAway);
+  // ---- Slab slide-out at t=4.0s..4.5s. dvh maps to viewport height.
+  const slabProgress = interpolate(t, [4.0, 4.5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const dvh = height; // 1080 in our 1920x1080 scene
+  const topSlabY = -slabProgress * 0.8 * dvh;
+  const botSlabY = slabProgress * 0.8 * dvh;
 
-  // Bars scale up from bottom of each row.
-  // After PHASE_BARS, scale from 0 → BAR_HEIGHTS_X[i] * full height (the bars
-  // grow via scaleY of a 100%-tall element).
-  const barsProgress = Math.max(0, Math.min(1, (t - PHASE_BARS) / 0.3));
+  // ---- Bars: scale from 0 → 1 over 4.0s..5.0s with easeOut. Then pulse.
+  const barRawProgress = interpolate(t, [4.0, 5.0], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const barProgress = easeOut(barRawProgress);
 
-  // Bars beat — once they've come up, modulate the heights with a sine wave
-  // per column to fake an audio waveform.
-  const beat = (i: number) => {
-    if (barsProgress < 0.98) return 1;
-    const phase = i * 0.31 + frame * 0.12;
-    return 0.85 + 0.25 * Math.sin(phase) * Math.sin(phase * 0.31);
+  const pulseFactor = (i: number) => {
+    if (t < 5.0) return 1;
+    // subtle waveform pulse — frame/8 + i for per-bar phase
+    return 0.92 + 0.08 * Math.sin(frame / 8 + i);
   };
 
-  // Bar palette — solid green is canonical; introduce one rare red bar to
-  // honor the source's :nth-of-type "different colored bar" intent
-  const barColor = (i: number) => {
-    return i === 12 ? "hsl(0, 80%, 50%)" : GREEN;
-  };
+  // ---- Title SVG sizing: ~70% of viewport width, centered. We draw it as
+  //      one SVG so all three slabs share a single <text> def and stay aligned.
+  const svgWidth = width * 0.7;
+  const svgHeight = (svgWidth * SVG_VIEW_H) / SVG_VIEW_W;
+
+  // Middle slab x offset in viewBox units (% of full slab width = SVG_VIEW_W).
+  const midXViewBox = (middleXPct / 100) * SVG_VIEW_W;
+
+  // Per-slab Y translation in viewBox units. The slide-out is in CSS pixels,
+  // so convert viewport px → viewBox units via svgHeight/SVG_VIEW_H.
+  const pxToVB = SVG_VIEW_H / svgHeight;
+  const topYViewBox = topSlabY * pxToVB;
+  const botYViewBox = botSlabY * pxToVB;
 
   return (
     <AbsoluteFill style={{ background: BG, overflow: "hidden" }}>
-      {/* Title slabs — visible until they peel away */}
+      {/* ---- Title block, centered ---- */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 1 - slabAwayEased,
-          transform: `translateY(${slabAwayEased * 0}px)`,
           display: "grid",
-          alignContent: "center",
+          placeItems: "center",
         }}
       >
-        <div
-          style={{
-            position: "relative",
-            height: 250,
-            transform: `translateY(${-slabAwayEased * 540}px)`,
-          }}
+        <svg
+          viewBox={`0 0 ${SVG_VIEW_W} ${SVG_VIEW_H}`}
+          width={svgWidth}
+          height={svgHeight}
+          style={{ overflow: "visible" }}
         >
-          <TitleSlab variant="top" xPct={0.5} />
-        </div>
-        <div
-          style={{
-            position: "relative",
-            height: 0,
-          }}
-        >
-          <TitleSlab variant="middle" xPct={middleX} />
-        </div>
-        <div
-          style={{
-            position: "relative",
-            height: 250,
-            transform: `translateY(${slabAwayEased * 540}px)`,
-          }}
-        >
-          <TitleSlab variant="bottom" xPct={0.5} />
-        </div>
+          <defs>
+            <text
+              id="psycho-text"
+              x={SVG_VIEW_W / 2}
+              y={155}
+              textAnchor="middle"
+              fontFamily='"Lucida Sans","Helvetica Neue",sans-serif'
+              fontWeight={900}
+              fontSize={210}
+              letterSpacing={2}
+              fill="white"
+            >
+              PSYCHO
+            </text>
+            <clipPath id="psycho-clip-top">
+              <rect x={0} y={0} width={SVG_VIEW_W} height={66} />
+            </clipPath>
+            <clipPath id="psycho-clip-mid">
+              <rect x={0} y={66} width={SVG_VIEW_W} height={66} />
+            </clipPath>
+            <clipPath id="psycho-clip-bot">
+              <rect x={0} y={132} width={SVG_VIEW_W} height={66} />
+            </clipPath>
+          </defs>
+
+          <TitleSlab band="top" xPx={0} yPx={topYViewBox} />
+          <TitleSlab band="mid" xPx={midXViewBox} yPx={0} />
+          <TitleSlab band="bot" xPx={0} yPx={botYViewBox} />
+        </svg>
       </div>
 
-      {/* Upper bars — flipped (rotate 180°) so they grow downward from top */}
+      {/* ---- Upper bars (rotated 180° so they grow down from the top edge) ---- */}
       <div
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          height: "50%",
+          height: "49.5%",
+          paddingTop: "0.5%",
           display: "flex",
           justifyContent: "space-evenly",
           transform: "rotate(180deg)",
-          paddingTop: 4,
         }}
       >
-        {BAR_HEIGHTS_TOP.map((h, i) => {
-          const scale = barsProgress * h * beat(i);
+        {BAR_HEIGHTS_UPPER.map((h, i) => {
+          const finalPct = h * pulseFactor(i) * barProgress;
           return (
             <div
               key={i}
               style={{
                 width: "2%",
-                height: "100%",
-                background: barColor(i),
-                transform: `scaleY(${scale})`,
+                height: `${finalPct * 100}%`,
+                background: GREEN,
                 transformOrigin: "center top",
               }}
             />
@@ -178,28 +195,28 @@ export const PsychoTitle: React.FC = () => {
         })}
       </div>
 
-      {/* Lower bars */}
+      {/* ---- Lower bars ---- */}
       <div
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          height: "50%",
+          height: "49.5%",
+          paddingTop: "0.5%",
           display: "flex",
           justifyContent: "space-between",
         }}
       >
-        {BAR_HEIGHTS_BOT.map((h, i) => {
-          const scale = barsProgress * h * beat(i + 25);
+        {BAR_HEIGHTS_LOWER.map((h, i) => {
+          const finalPct = h * pulseFactor(i + 25) * barProgress;
           return (
             <div
               key={i}
               style={{
                 width: "2%",
-                height: "100%",
-                background: barColor(i + 25),
-                transform: `scaleY(${scale})`,
+                height: `${finalPct * 100}%`,
+                background: GREEN,
                 transformOrigin: "center top",
               }}
             />
