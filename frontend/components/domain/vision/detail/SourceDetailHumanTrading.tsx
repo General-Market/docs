@@ -4,11 +4,11 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from 'react'
-import Image from 'next/image'
 import { useRouter } from '@/i18n/routing'
 import { useAccount, useReadContract } from 'wagmi'
 import { useWalletLogin } from '@/hooks/useWalletLogin'
@@ -253,6 +253,22 @@ export function SourceDetailHumanTrading({
     () => batchConfig?.markets?.map(m => m.assetId) ?? [],
     [batchConfig],
   )
+
+  // assetId → { resType, thresholdBps } — drives the green/red settlement
+  // square on every chart on the page. The data-node pins one resType per
+  // market per batch (UP_X / DOWN_X / UP_0 / DOWN_0); UP_0/DOWN_0 carry no
+  // threshold and so render no square.
+  const resolutionByAsset = useMemo(() => {
+    const m = new Map<string, { resType: string; thresholdBps: number }>()
+    for (const row of batchConfig?.markets ?? []) {
+      if (!row.assetId) continue
+      m.set(row.assetId, {
+        resType: (row.resolutionType ?? '').toUpperCase(),
+        thresholdBps: row.thresholdBps ?? 0,
+      })
+    }
+    return m
+  }, [batchConfig])
 
   // -- Curated markets that ARE in the current batch (only these are bettable) --
   const tradableMarkets: CuratedMarket[] = useMemo(() => {
@@ -728,23 +744,35 @@ export function SourceDetailHumanTrading({
   )
 
   // -- Layout --
+  // Brand + aggregate value get folded into the tab nav row so the page
+  // doesn't burn 70-ish vertical pixels on a hero block before the first
+  // chart. The phase chip lives in the right-rail timeline now.
+  const headerTrailing = (
+    <span
+      style={{
+        fontFamily: FONT_DISPLAY,
+        fontSize: 14,
+        fontWeight: 500,
+        letterSpacing: '-0.022em',
+        color: APPLE_TEXT,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+      title={aggLabel}
+    >
+      {aggValue}
+    </span>
+  )
+
   const content = (
     <div className="flex-1 min-w-0 flex flex-col" style={{ background: APPLE_BG }}>
-      <SourceTabNav sourceId={sourceId} activeTab="overview" />
-
-      <CompactHero
-        name={source.name}
-        description={source.description}
-        logo={sourceLogo}
-        brandBg={source.brandBg}
-        aggValue={aggValue}
-        aggLabel={aggLabel}
-        roundPhase={roundPhase}
-        remainingSecs={remainingSecs}
-        bettingEnd={bettingEnd}
+      <SourceTabNav
+        sourceId={sourceId}
+        activeTab="overview"
+        brand={{ name: source.name, logo: sourceLogo, brandBg: source.brandBg }}
+        trailing={headerTrailing}
       />
 
-      <div className="w-full px-4 md:px-6 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="w-full px-4 md:px-6 pt-4 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Main column — big candle + grid of mini cards */}
         <div className="flex-1 min-w-0 flex flex-col gap-3">
           {displayError && (
@@ -826,20 +854,25 @@ export function SourceDetailHumanTrading({
               top: 16,
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 10,
               maxHeight: 'calc(100vh - 32px)',
             }}
           >
-            <EntryCard
-              roundPhase={roundPhase}
+            <RoundTimeline
+              currentTick={activeBatch?.currentTick ?? 0}
+              tickDuration={round?.timeframeSecs ?? activeBatch?.tickDuration ?? 0}
               remainingSecs={remainingSecs}
-              bettingEnd={bettingEnd}
-              totalPicked={totalPicked}
-              marketCount={marketCount}
+              roundPhase={roundPhase}
+              currentStakeUsd={currentCommit?.stakeUsd ?? null}
+              hasCurrentCommit={!!currentCommit}
+              hadLastTick={sourcePositions.ticks.length > 0}
+            />
+            <EntryCard
               stakeInput={stakeInput}
               setStakeInput={setStakeInput}
               perMarketStake={perMarketStake}
               stakeNum={stakeNum}
+              marketCount={marketCount}
               meetsMinimum={meetsMinimum}
               exceedsBalance={exceedsBalance}
               walletUsdc={walletUsdc}
@@ -890,6 +923,11 @@ export function SourceDetailHumanTrading({
         @keyframes gm-spin {
           to { transform: rotate(360deg); }
         }
+        @keyframes gm-tick-slide {
+          0% { transform: translateX(33.5%); opacity: 0; }
+          60% { opacity: 1; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
       `}</style>
     </div>
   )
@@ -897,164 +935,250 @@ export function SourceDetailHumanTrading({
   return hideSidebar ? content : <div className="flex">{content}</div>
 }
 
-// ── Compact hero: one row, logo + name + aggregate + round phase chip ────────
+// ── Round phase typing kept for downstream callers ───────────────────────────
 
 type RoundPhase = 'open' | 'pending' | 'locked' | 'settling' | 'absent'
 
-function CompactHero({
-  name,
-  description,
-  logo,
-  brandBg,
-  aggValue,
-  aggLabel,
-  roundPhase,
-  remainingSecs,
-  bettingEnd,
-}: {
-  name: string
-  description: string
-  logo: string
-  brandBg: string
-  aggValue: string
-  aggLabel: string
-  roundPhase: RoundPhase
-  remainingSecs: number
-  bettingEnd: string | null
-}) {
-  const [logoBroken, setLogoBroken] = useState(false)
-  const hasLogo = !!logo && !logoBroken
+// ── 3-box round timeline: LAST · NOW · NEXT ──────────────────────────────────
+//
+// The previous round (T-1) settles at the same instant the current round (T)
+// closes for betting — settlement delay equals tick duration. So a single
+// countdown drives both: when it hits zero, T-1 settles, T closes, T+1 opens.
+// On `currentTick` increment, the boxes slide left and a fresh NEXT appears.
 
-  const phaseLabel =
-    roundPhase === 'open'
-      ? bettingEnd ? `Closes in ${formatCountdown(remainingSecs)}` : 'Open'
-      : roundPhase === 'pending'
-        ? 'Next round'
-        : roundPhase === 'locked'
-          ? 'Locked'
-          : roundPhase === 'settling'
-            ? 'Settling'
-            : 'Idle'
-  const phaseColor =
-    roundPhase === 'open'
-      ? remainingSecs > 0 && remainingSecs < 60 ? APPLE_RED : APPLE_TEXT
-      : APPLE_TEXT_SECONDARY
+function RoundTimeline({
+  currentTick,
+  tickDuration,
+  remainingSecs,
+  roundPhase,
+  currentStakeUsd,
+  hasCurrentCommit,
+  hadLastTick,
+}: {
+  currentTick: number
+  tickDuration: number
+  remainingSecs: number
+  roundPhase: RoundPhase
+  currentStakeUsd: number | null
+  hasCurrentCommit: boolean
+  hadLastTick: boolean
+}) {
+  const [animKey, setAnimKey] = useState(0)
+  const prevTickRef = useRef(currentTick)
+
+  useEffect(() => {
+    if (currentTick !== prevTickRef.current && prevTickRef.current > 0 && currentTick > 0) {
+      setAnimKey(k => k + 1)
+    }
+    prevTickRef.current = currentTick
+  }, [currentTick])
+
+  const countdown = remainingSecs > 0 ? formatCountdown(remainingSecs) : '—'
+  const nextCountdown =
+    remainingSecs > 0 && tickDuration > 0
+      ? formatCountdown(remainingSecs + tickDuration)
+      : '—'
+  const urgentNow = roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
 
   return (
-    <header className="w-full px-4 md:px-6 pt-4 pb-3 flex items-center gap-3">
-      {hasLogo && (
-        <div
-          className="shrink-0 inline-flex items-center justify-center overflow-hidden"
-          style={{
-            width: 36,
-            height: 36,
-            background: brandBg || '#000',
-            borderRadius: 9,
-          }}
-          aria-hidden
-        >
-          <Image
-            src={logo}
-            alt=""
-            width={72}
-            height={30}
-            className="max-h-[28px] max-w-[80%] object-contain"
-            priority
-            onError={() => setLogoBroken(true)}
-          />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <h1
-          className="truncate"
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 'clamp(18px, 2.2vw, 22px)',
-            fontWeight: 600,
-            letterSpacing: '-0.022em',
-            lineHeight: 1.15,
-            color: APPLE_TEXT,
-            margin: 0,
-          }}
-        >
-          {name}
-        </h1>
-        {description && (
-          <p
-            className="truncate hidden sm:block"
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 12,
-              lineHeight: 1.4,
-              letterSpacing: '-0.016em',
-              color: APPLE_TEXT_SECONDARY,
-              margin: 0,
-              maxWidth: 540,
-            }}
-          >
-            {description}
-          </p>
-        )}
-      </div>
-      <div className="hidden md:flex flex-col items-end shrink-0" style={{ minWidth: 110 }}>
-        <span
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 18,
-            fontWeight: 500,
-            letterSpacing: '-0.022em',
-            color: APPLE_TEXT,
-            fontVariantNumeric: 'tabular-nums',
-            lineHeight: 1.1,
-          }}
-        >
-          {aggValue}
-        </span>
-        <span
-          style={{
-            fontFamily: FONT_TEXT,
-            fontSize: 10.5,
-            letterSpacing: '-0.016em',
-            color: APPLE_TEXT_SECONDARY,
-            marginTop: 1,
-          }}
-        >
-          {aggLabel}
-        </span>
-      </div>
+    <div
+      style={{
+        background: APPLE_PANEL,
+        border: '1px solid rgba(0,0,0,0.06)',
+        borderRadius: 16,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        padding: 4,
+        overflow: 'hidden',
+      }}
+    >
       <div
-        className="shrink-0"
+        key={animKey}
         style={{
-          padding: '5px 12px',
-          borderRadius: 980,
-          background: APPLE_CHIP_BG,
-          fontFamily: FONT_TEXT,
-          fontSize: 12,
-          fontWeight: 500,
-          letterSpacing: '-0.016em',
-          color: phaseColor,
-          fontVariantNumeric: 'tabular-nums',
-          transition: `color 250ms ${EASE_DEFAULT}`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 2,
+          animation: animKey > 0 ? `gm-tick-slide 480ms ${EASE_OUT}` : undefined,
         }}
       >
-        {phaseLabel}
+        <TimelineBox
+          slot="LAST"
+          tickNumber={currentTick > 0 ? currentTick - 1 : null}
+          statusLabel="Settles"
+          countdown={countdown}
+          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          isIn={hadLastTick || hasCurrentCommit}
+          tone="muted"
+        />
+        <TimelineBox
+          slot="NOW"
+          tickNumber={currentTick > 0 ? currentTick : null}
+          statusLabel={roundPhase === 'open' ? 'Closes' : roundPhase === 'settling' ? 'Settling' : roundPhase === 'locked' ? 'Locked' : 'Soon'}
+          countdown={countdown}
+          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          isIn={hasCurrentCommit}
+          tone={urgentNow ? 'urgent' : 'primary'}
+        />
+        <TimelineBox
+          slot="NEXT"
+          tickNumber={currentTick > 0 ? currentTick + 1 : null}
+          statusLabel="Opens"
+          countdown={countdown}
+          // Auto-rollover: if the user is in the current tick, the same stake
+          // carries into the next one unless they exit. Show it as a hint.
+          stakeUsd={hasCurrentCommit ? currentStakeUsd : null}
+          isIn={hasCurrentCommit}
+          tone="muted"
+          nextLabel={nextCountdown}
+        />
       </div>
-    </header>
+    </div>
   )
 }
 
-// ── Right-rail entry: countdown, picks progress, stake, validate ─────────────
+function TimelineBox({
+  slot,
+  tickNumber,
+  statusLabel,
+  countdown,
+  stakeUsd,
+  isIn,
+  tone,
+  nextLabel,
+}: {
+  slot: 'LAST' | 'NOW' | 'NEXT'
+  tickNumber: number | null
+  statusLabel: string
+  countdown: string
+  stakeUsd: number | null
+  isIn: boolean
+  tone: 'primary' | 'muted' | 'urgent'
+  /** For NEXT box: the close-countdown for the upcoming round, shown subtly. */
+  nextLabel?: string
+}) {
+  const slotColor =
+    tone === 'urgent' ? APPLE_RED : tone === 'primary' ? APPLE_TEXT : APPLE_TEXT_SECONDARY
+  const tickColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : APPLE_TEXT
+  const dotColor = isIn ? APPLE_GREEN : 'rgba(0,0,0,0.18)'
+
+  return (
+    <div
+      style={{
+        background: tone === 'primary' || tone === 'urgent' ? APPLE_CHIP_BG : 'transparent',
+        borderRadius: 12,
+        padding: '8px 10px 9px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 4,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 9.5,
+            fontWeight: 600,
+            letterSpacing: '+0.04em',
+            textTransform: 'uppercase',
+            color: slotColor,
+          }}
+        >
+          {slot}
+        </span>
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 10,
+            color: APPLE_TEXT_SECONDARY,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {tickNumber !== null && tickNumber > 0 ? `#${tickNumber}` : '—'}
+        </span>
+      </div>
+
+      <div
+        style={{
+          fontFamily: FONT_DISPLAY,
+          fontSize: 17,
+          fontWeight: 500,
+          letterSpacing: '-0.022em',
+          color: tickColor,
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.1,
+        }}
+      >
+        {slot === 'NEXT' && nextLabel && nextLabel !== '—' ? nextLabel : countdown}
+      </div>
+      <div
+        style={{
+          fontFamily: FONT_TEXT,
+          fontSize: 9.5,
+          color: APPLE_TEXT_SECONDARY,
+          letterSpacing: '+0.011em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {statusLabel}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          marginTop: 2,
+          minHeight: 14,
+        }}
+      >
+        <span
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: 999,
+            background: dotColor,
+            flexShrink: 0,
+          }}
+          aria-hidden
+        />
+        <span
+          style={{
+            fontFamily: FONT_TEXT,
+            fontSize: 11,
+            color: isIn ? APPLE_TEXT : APPLE_TEXT_SECONDARY,
+            letterSpacing: '-0.016em',
+            fontVariantNumeric: 'tabular-nums',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {isIn && stakeUsd !== null
+            ? formatUsdDollars(stakeUsd)
+            : isIn
+              ? 'In'
+              : 'Out'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── Right-rail entry: stake input + validate (countdown lives in RoundTimeline) ─
 
 function EntryCard({
-  roundPhase,
-  remainingSecs,
-  bettingEnd,
-  totalPicked,
-  marketCount,
   stakeInput,
   setStakeInput,
   perMarketStake,
   stakeNum,
+  marketCount,
   meetsMinimum,
   exceedsBalance,
   walletUsdc,
@@ -1067,15 +1191,11 @@ function EntryCard({
   onValidate,
   inputDisabled,
 }: {
-  roundPhase: RoundPhase
-  remainingSecs: number
-  bettingEnd: string | null
-  totalPicked: number
-  marketCount: number
   stakeInput: string
   setStakeInput: (v: string) => void
   perMarketStake: number
   stakeNum: number
+  marketCount: number
   meetsMinimum: boolean
   exceedsBalance: boolean
   walletUsdc: bigint
@@ -1097,10 +1217,6 @@ function EntryCard({
         ? '#F5A623'
         : APPLE_BLUE
   const validateColor = !validateEnabled ? APPLE_TEXT_SECONDARY : '#FFFFFF'
-  const countdownColor =
-    roundPhase === 'open' && remainingSecs > 0 && remainingSecs < 60
-      ? APPLE_RED
-      : APPLE_TEXT
 
   return (
     <div
@@ -1109,87 +1225,19 @@ function EntryCard({
         border: '1px solid rgba(0,0,0,0.06)',
         borderRadius: 16,
         boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-        padding: '16px 18px 18px',
+        padding: '12px 14px 14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 14,
+        gap: 10,
       }}
     >
-        {/* Round phase + countdown */}
-        <div className="flex items-baseline justify-between">
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: '+0.011em',
-              color: APPLE_TEXT_SECONDARY,
-              textTransform: 'uppercase',
-            }}
-          >
-            {roundPhase === 'open'
-              ? 'Closes in'
-              : roundPhase === 'pending'
-                ? 'Next round'
-                : roundPhase === 'locked'
-                  ? 'Locked'
-                  : roundPhase === 'settling'
-                    ? 'Settling'
-                    : 'Idle'}
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 22,
-              fontWeight: 500,
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.022em',
-              color: countdownColor,
-              transition: `color 250ms ${EASE_DEFAULT}`,
-            }}
-          >
-            {roundPhase === 'open' && bettingEnd
-              ? formatCountdown(remainingSecs)
-              : roundPhase === 'absent'
-                ? '—'
-                : 'soon'}
-          </span>
-        </div>
-
-        {/* Picks progress */}
-        <div className="flex items-baseline justify-between">
-          <span
-            style={{
-              fontFamily: FONT_TEXT,
-              fontSize: 13,
-              color: APPLE_TEXT_SECONDARY,
-              letterSpacing: '-0.016em',
-            }}
-          >
-            Filled
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: 17,
-              fontWeight: 500,
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.016em',
-              color: APPLE_TEXT,
-            }}
-          >
-            {totalPicked}
-            <span style={{ color: APPLE_TEXT_SECONDARY }}> / {marketCount || '—'}</span>
-          </span>
-        </div>
-
         {/* Stake input — compact */}
         <div
           data-onboarding-target="stake-row"
           style={{
             background: APPLE_CHIP_BG,
             borderRadius: 12,
-            padding: '12px 14px',
+            padding: '10px 12px',
             opacity: inputDisabled ? 0.6 : 1,
             pointerEvents: inputDisabled ? 'none' : undefined,
             transition: `opacity 250ms ${EASE_DEFAULT}`,
@@ -1407,11 +1455,9 @@ function PositionsCard({
   /** Live on-chain commit for the round the user is sitting in. */
   currentCommit: CurrentCommit | null
 }) {
-  const { ticks, totalPnl } = positions
+  const { totalPnl } = positions
   const hasCurrent = currentCommit !== null
-  const hasHistory = ticks.length > 0
 
-  // Disconnected wallet — quiet prompt, no shouting.
   if (!isConnected) {
     return (
       <div style={cardShellStyle}>
@@ -1421,7 +1467,7 @@ function PositionsCard({
     )
   }
 
-  if (!hasCurrent && !hasHistory) {
+  if (!hasCurrent && positions.ticks.length === 0) {
     return (
       <div style={cardShellStyle}>
         <CardHeader>Positions</CardHeader>
@@ -1431,9 +1477,6 @@ function PositionsCard({
   }
 
   const totalColor = totalPnl >= 0 ? APPLE_GREEN : APPLE_RED
-  // Cap visible rows so the rail never grows beyond a reasonable height; the
-  // sticky wrapper handles overflow but a single page of ten is the right rhythm.
-  const visibleTicks = ticks.slice(0, 24)
 
   return (
     <div style={cardShellStyle}>
@@ -1442,7 +1485,7 @@ function PositionsCard({
       {hasCurrent && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>Open</span>
+            <span style={rowLabelStyle}>This round</span>
             <span style={rowValueStyle}>
               {formatUsdDollars(currentCommit!.stakeUsd)}
               <span style={{ color: APPLE_TEXT_SECONDARY, fontWeight: 400, marginLeft: 6 }}>
@@ -1458,7 +1501,7 @@ function PositionsCard({
                   ...rowValueStyle,
                   fontVariantNumeric: 'tabular-nums',
                   display: 'inline-flex',
-                  gap: 10,
+                  gap: 8,
                 }}
               >
                 <span style={{ color: APPLE_GREEN }}>{currentCommit!.ups} UP</span>
@@ -1468,7 +1511,7 @@ function PositionsCard({
             </div>
           )}
           <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>Round</span>
+            <span style={rowLabelStyle}>Batch</span>
             <span
               style={{
                 ...rowLabelStyle,
@@ -1482,62 +1525,19 @@ function PositionsCard({
         </div>
       )}
 
-      {hasHistory && (
-        <>
-          {hasCurrent && <div style={dividerStyle} />}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              overflowY: 'auto',
-              maxHeight: 220,
-              marginRight: -4,
-              paddingRight: 4,
-            }}
-          >
-            {visibleTicks.map(t => {
-              const pnlColor = t.pnl > 0 ? APPLE_GREEN : t.pnl < 0 ? APPLE_RED : APPLE_TEXT_SECONDARY
-              const verdict = t.won ? 'Won' : t.pnl < 0 ? 'Lost' : 'Tied'
-              return (
-                <div key={`${t.batchId}-${t.tickId}`} style={positionRowStyle}>
-                  <span style={{ ...rowLabelStyle, fontVariantNumeric: 'tabular-nums' }}>
-                    #{t.tickId}
-                  </span>
-                  <span style={{ ...rowLabelStyle, color: APPLE_TEXT }}>{verdict}</span>
-                  <span
-                    style={{
-                      ...rowValueStyle,
-                      color: pnlColor,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {formatPnl(t.pnl)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {(hasHistory || hasCurrent) && (
-        <>
-          <div style={dividerStyle} />
-          <div style={positionRowStyle}>
-            <span style={rowLabelStyle}>Total P&amp;L</span>
-            <span
-              style={{
-                ...rowValueStyle,
-                color: totalColor,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {formatPnl(totalPnl)}
-            </span>
-          </div>
-        </>
-      )}
+      <div style={dividerStyle} />
+      <div style={positionRowStyle}>
+        <span style={rowLabelStyle}>Total P&amp;L</span>
+        <span
+          style={{
+            ...rowValueStyle,
+            color: totalColor,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {formatPnl(totalPnl)}
+        </span>
+      </div>
     </div>
   )
 }

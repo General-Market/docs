@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import { useState, type ReactNode } from 'react'
 import { Link, usePathname } from '@/i18n/routing'
 
 export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard' | 'compare'
@@ -14,6 +16,18 @@ interface SourceTabNavProps {
   sourceId: string
   /** Active tab. Derived from pathname when omitted. */
   activeTab?: SourceTab
+  /**
+   * Inline brand block rendered to the left of the tabs. When provided, the
+   * tab-nav row absorbs what used to live in a separate hero, saving ~70px
+   * of vertical space at the top of the page.
+   */
+  brand?: {
+    name: string
+    logo?: string
+    brandBg?: string
+  }
+  /** Right-aligned slot — typically the round-phase chip or aggregate value. */
+  trailing?: ReactNode
 }
 
 const COMPARE_SOURCES = new Set(['polymarket'])
@@ -42,7 +56,12 @@ function deriveActiveTab(pathname: string, sourceId: string): SourceTab {
   return 'overview'
 }
 
-export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNavProps) {
+export function SourceTabNav({
+  sourceId,
+  activeTab: activeTabProp,
+  brand,
+  trailing,
+}: SourceTabNavProps) {
   const pathname = usePathname()
   const active = activeTabProp ?? deriveActiveTab(pathname, sourceId)
   const tabs = buildTabs(sourceId)
@@ -66,6 +85,8 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
           padding: '0 16px',
         }}
       >
+        {brand && <BrandBadge {...brand} />}
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 auto', minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {tabs.map(tab => {
           const isActive = tab.id === active
           return (
@@ -94,6 +115,12 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
             </Link>
           )
         })}
+        </div>
+        {trailing && (
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
+            {trailing}
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -102,5 +129,64 @@ export function SourceTabNav({ sourceId, activeTab: activeTabProp }: SourceTabNa
         }
       `}</style>
     </nav>
+  )
+}
+
+function BrandBadge({ name, logo, brandBg }: { name: string; logo?: string; brandBg?: string }) {
+  const [broken, setBroken] = useState(false)
+  const hasLogo = !!logo && !broken
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        paddingRight: 14,
+        marginRight: 6,
+        borderRight: '1px solid var(--apple-line)',
+        flexShrink: 0,
+      }}
+    >
+      {hasLogo && (
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            background: brandBg || '#000',
+            borderRadius: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+          aria-hidden
+        >
+          <Image
+            src={logo!}
+            alt=""
+            width={48}
+            height={20}
+            className="max-h-[18px] max-w-[80%] object-contain"
+            priority
+            onError={() => setBroken(true)}
+          />
+        </div>
+      )}
+      <span
+        style={{
+          fontFamily: 'var(--apple-font-display)',
+          fontSize: 'var(--apple-fs-14)',
+          fontWeight: 600,
+          letterSpacing: 'var(--apple-track-tight)',
+          color: 'var(--apple-text)',
+          whiteSpace: 'nowrap',
+          maxWidth: 220,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {name}
+      </span>
+    </div>
   )
 }
