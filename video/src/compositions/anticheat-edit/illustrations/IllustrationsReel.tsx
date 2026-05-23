@@ -54,9 +54,10 @@ export const illustrationsReelMeta = {
   height: H,
 };
 
-// One meta per schematic, for the studio Folder.
+// One meta per schematic, for the studio Folder. Composition ids allow
+// only [a-zA-Z0-9-] (no underscore), so the prefix is hyphenated.
 export const illustrationMetas = ILLUSTRATIONS.map((ill) => ({
-  id: `Ill_${ill.name}`,
+  id: `Ill-${ill.name}`,
   component: ill.component,
   durationInFrames: HOLD,
   fps: FPS,
