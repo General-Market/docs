@@ -3,6 +3,7 @@ import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 import { Sparkline } from './Sparkline'
 import { ShineOverlay } from './ShineOverlay'
+import { AudiencePill } from './AudiencePill'
 import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
 import type { Coverage } from './AssetCard'
 import type { SourceFeed } from '@/lib/vision/adapters'
@@ -200,6 +201,7 @@ export function HeroCard({ feature, side, dots }: Props) {
               </p>
               <div className="mt-4 flex items-center gap-2">
                 <PillCoverage coverage={feature.coverage} />
+                <AudiencePill sourceId={feature.sourceId} />
               </div>
             </div>
             <span
@@ -382,6 +384,7 @@ function SideRow({ feed }: { feed: SourceFeed }) {
               External
             </span>
           )}
+          <AudiencePill sourceId={feed.sourceId} size="xs" />
         </div>
         {feed.assetName && (
           <div

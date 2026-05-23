@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/routing'
 import { Sparkline } from './Sparkline'
 import { ShineOverlay } from './ShineOverlay'
+import { AudiencePill } from './AudiencePill'
 import { sourceGradient, sourceStroke, sourceFill } from './source-hue'
 
 export type Coverage = 'anticheat' | 'external' | 'soon'
@@ -149,6 +150,7 @@ export function AssetCard({
               </span>
             )}
             <CoveragePill coverage={coverage} />
+            <AudiencePill sourceId={sourceId} />
           </div>
         </div>
 
