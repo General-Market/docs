@@ -11,11 +11,23 @@
 // own backgrounds. The rig renders each at native size inside a clipped box
 // and transform-scales it to the panel, so the original design is preserved —
 // just shrunk into the side.
+//
+// Each panel's content is mounted inside its own <Sequence from={at}>, so the
+// node's useCurrentFrame() is LOCAL (0 at the panel's start). That is what lets
+// the pixel-dissolve, the title reveal, and the article's fade/pan fire — and,
+// crucially, what stops the article fade-OUT from clamping a late global frame
+// to zero opacity (the bug that left article panels blank).
+//
+// When a section TITLE hands off to its mechanism schematic on the same side,
+// the camera does NOT return to centre and swing back; it holds the side and
+// the CONTENT PANEL turns on a 3D carousel — a rotateX flip from the title face
+// to the schematic face, like one segment of a horizontal drum.
 
 import React from "react";
 import {
   AbsoluteFill,
   OffthreadVideo,
+  Sequence,
   interpolate,
   spring,
   staticFile,
@@ -23,7 +35,12 @@ import {
   useVideoConfig,
 } from "remotion";
 import { PixelReveal } from "./props";
-import { activePanel, type PanelEvent, type PanelSide } from "./panelEvents";
+import {
+  activePanel,
+  PANEL_EVENTS,
+  type PanelEvent,
+  type PanelSide,
+} from "./panelEvents";
 import { BEATS_PLAY_TIME } from "./beatgrid";
 import { colors } from "../anticheat/theme";
 
@@ -152,99 +169,284 @@ export function idleCamera(sec: number, fps: number): Pose {
   };
 }
 
-// ── The scaled panel — a full-bleed node shrunk into the content area ────────
+// ── Panel scene — which panel is up, and whether it is mid-carousel ──────────
+//
+// The merged timeline (panelEvents.ts) drops a title, then its schematic, then
+// charts — a mechanism's beats all share ONE side; the next mechanism flips. So
+// a title and its first schematic are usually adjacent and same-side: instead
+// of swinging the head back to centre in the gap between them, we HOLD the side
+// and turn the content panel on a 3D carousel. A handoff is any two consecutive
+// same-side events with a small enough gap; the turn fires at the second one's
+// start and lasts TURN_SEC.
 
-const ScaledPanel: React.FC<{ event: PanelEvent; area: Rect; framesIn: number }> = ({
+const BRIDGE_MAX_SEC = 1.3; // max title→schematic gap we bridge with a held camera
+const TURN_SEC = 0.6; // length of the 3D carousel turn (18 frames @ 30)
+
+type Handoff = { from: PanelEvent; to: PanelEvent; seam: number };
+
+// Same-side, small-gap consecutive pairs — the carousel handoffs. Built once.
+const HANDOFFS: Handoff[] = (() => {
+  const out: Handoff[] = [];
+  for (let i = 0; i < PANEL_EVENTS.length - 1; i++) {
+    const from = PANEL_EVENTS[i];
+    const to = PANEL_EVENTS[i + 1];
+    if (from.side === to.side && to.at - (from.at + from.duration) <= BRIDGE_MAX_SEC) {
+      out.push({ from, to, seam: to.at });
+    }
+  }
+  return out;
+})();
+
+// The events that ARRIVE via a carousel turn — they must not also play their
+// own fresh entrance (the rotation IS their entrance).
+const CAROUSEL_TARGETS = new Set<PanelEvent>(HANDOFFS.map((h) => h.to));
+const arrivesByTurn = (e: PanelEvent): boolean => CAROUSEL_TARGETS.has(e);
+
+type Scene = {
+  side: PanelSide | "center";
+  /** content on the front face (the current / outgoing panel) */
+  front: PanelEvent | null;
+  /** content on the back face during a turn (the incoming panel) */
+  back: PanelEvent | null;
+  /** 0 = front flat, 1 = back flat */
+  turn: number;
+  /** play-second the turn pivots around (its seam) */
+  seam: number;
+  /** play-second the front face stays mounted until — past its own window
+   *  while it is held over a bridge gap and through the turn. */
+  frontEndSec: number;
+};
+
+const CENTER_SCENE: Scene = {
+  side: "center",
+  front: null,
+  back: null,
+  turn: 0,
+  seam: 0,
+  frontEndSec: 0,
+};
+
+function panelScene(sec: number): Scene {
+  // A carousel turn — or the held-side bridge that leads into it — wins over
+  // the plain active panel, so the camera never dips toward centre in the gap.
+  for (const h of HANDOFFS) {
+    // The outgoing face must outlive its own window across the bridge AND the
+    // turn, or it pops to an empty panel in the gap before the schematic.
+    const heldUntil = h.seam + TURN_SEC;
+    if (sec >= h.seam && sec < h.seam + TURN_SEC) {
+      return {
+        side: h.to.side,
+        front: h.from,
+        back: h.to,
+        turn: (sec - h.seam) / TURN_SEC,
+        seam: h.seam,
+        frontEndSec: heldUntil,
+      };
+    }
+    // Bridge gap: the first panel has ended but the turn hasn't begun — hold it.
+    if (sec >= h.from.at + h.from.duration && sec < h.seam) {
+      return {
+        side: h.from.side,
+        front: h.from,
+        back: null,
+        turn: 0,
+        seam: h.seam,
+        frontEndSec: heldUntil,
+      };
+    }
+  }
+  const a = activePanel(sec);
+  if (a) {
+    return { side: a.side, front: a, back: null, turn: 0, seam: 0, frontEndSec: a.at + a.duration };
+  }
+  return CENTER_SCENE;
+}
+
+function sideAt(sec: number): PanelSide | "center" {
+  return panelScene(sec).side;
+}
+
+function sideToLayout(
+  side: PanelSide | "center",
+): "centered" | "left-medium" | "right-medium" {
+  if (side === "left") return "left-medium";
+  if (side === "right") return "right-medium";
+  return "centered";
+}
+
+// ── The panel box — a full-bleed node shrunk into the content area ───────────
+//
+// `area` is RELATIVE to the stage (which is positioned at the real content
+// rect), so x/y are 0 here. The node's own entrance animates off the LOCAL
+// frame (the caller wraps this in a Sequence). `entrance` is suppressed for the
+// faces of a carousel — there the rotation is the entrance, so the content just
+// shows its settled state.
+
+const PanelBox: React.FC<{ event: PanelEvent; area: Rect; entrance: boolean }> = ({
   event,
   area,
-  framesIn,
+  entrance,
 }) => {
-  // Contain the 1920×1080 source inside the panel, then center it.
-  const scale = Math.min(area.w / SRC_W, area.h / SRC_H);
-  const dispW = SRC_W * scale;
-  const dispH = SRC_H * scale;
+  const frame = useCurrentFrame();
+  const sw = event.srcW ?? SRC_W;
+  const sh = event.srcH ?? SRC_H;
+  const scale = Math.min(area.w / sw, area.h / sh);
+  const dispW = sw * scale;
+  const dispH = sh * scale;
   const offX = area.x + (area.w - dispW) / 2;
   const offY = area.y + (area.h - dispH) / 2;
 
   const ENTER = 10;
-  const opacity = interpolate(framesIn, [0, ENTER], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  // Slide in from the panel's outer edge as it settles.
-  const slide =
-    event.side === "left"
-      ? interpolate(framesIn, [0, ENTER + 4], [40, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-      : interpolate(framesIn, [0, ENTER + 4], [-40, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const opacity = entrance
+    ? interpolate(frame, [0, ENTER], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
+  // Slide in from the panel's outer edge as it settles (fresh entrance only).
+  const slide = !entrance
+    ? 0
+    : event.side === "left"
+      ? interpolate(frame, [0, ENTER + 4], [40, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+      : interpolate(frame, [0, ENTER + 4], [-40, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  const inner = (
+  // The source rendered at native size, scaled to fit the box.
+  const scaledNode = (
     <div
       style={{
         position: "absolute",
-        left: offX,
-        top: offY,
-        width: dispW,
-        height: dispH,
-        borderRadius: 22 * Math.min(1, scale * 1.6),
-        overflow: "hidden",
-        boxShadow: "0 24px 80px rgba(2,14,43,0.45)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        left: 0,
+        top: 0,
+        width: sw,
+        height: sh,
+        transform: `scale(${scale})`,
+        transformOrigin: "top left",
       }}
     >
-      {/* Render the source at its native size, scaled to fit the box. */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: SRC_W,
-          height: SRC_H,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
-      >
-        {event.render}
-      </div>
+      {event.render}
     </div>
   );
 
   return (
-    <div style={{ opacity, transform: `translateX(${slide}px)` }}>
-      {event.pixel ? (
-        // The chunky pixel front IS the entrance — clip it to the panel box so
-        // the dissolve happens inside the side, not across the whole frame.
+    <div style={{ position: "absolute", inset: 0, opacity, transform: `translateX(${slide}px)` }}>
+      <div
+        style={{
+          position: "absolute",
+          left: offX,
+          top: offY,
+          width: dispW,
+          height: dispH,
+          borderRadius: 22 * Math.min(1, scale * 1.6),
+          overflow: "hidden",
+          boxShadow: "0 24px 80px rgba(2,14,43,0.45)",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {/* The chunky pixel front IS the fresh entrance for schematics; on a
+            carousel face we skip it and let the turn do the reveal. */}
+        {event.pixel && entrance ? (
+          <PixelReveal mode="in" from="down-left" startFrame={0} durationInFrames={22} cellSize={56}>
+            {scaledNode}
+          </PixelReveal>
+        ) : (
+          scaledNode
+        )}
+      </div>
+    </div>
+  );
+};
+
+// One panel face, mounted in its own Sequence so its node sees a LOCAL frame.
+// `endSec` lets a carousel's outgoing face outlive its own window through the
+// turn; a normal panel just unmounts at its end.
+const PanelFace: React.FC<{
+  event: PanelEvent;
+  area: Rect;
+  entrance: boolean;
+  endSec: number;
+}> = ({ event, area, entrance, endSec }) => {
+  const { fps } = useVideoConfig();
+  const from = Math.round(event.at * fps);
+  const dur = Math.max(1, Math.round(endSec * fps) - from);
+  return (
+    <Sequence from={from} durationInFrames={dur} layout="none">
+      <PanelBox event={event} area={area} entrance={entrance} />
+    </Sequence>
+  );
+};
+
+// ── The stage — the content rect, holding either one panel or a turning pair ──
+
+const PanelStage: React.FC<{ scene: Scene; areas: Record<PanelSide, Rect> }> = ({
+  scene,
+  areas,
+}) => {
+  const side = scene.side;
+  if (side === "center" || !scene.front) return null;
+
+  const area = areas[side];
+  const relArea: Rect = { x: 0, y: 0, w: area.w, h: area.h };
+  const stageBase: React.CSSProperties = {
+    position: "absolute",
+    left: area.x,
+    top: area.y,
+    width: area.w,
+    height: area.h,
+  };
+
+  if (scene.back) {
+    // 3D carousel: the panel turns about its horizontal axis (rotateX). The
+    // back face is pre-rotated 180° so it lands face-on as the turn completes.
+    const rot = -scene.turn * 180;
+    return (
+      <div style={{ ...stageBase, perspective: 1600 }}>
         <div
           style={{
             position: "absolute",
-            left: offX,
-            top: offY,
-            width: dispW,
-            height: dispH,
-            borderRadius: 22 * Math.min(1, scale * 1.6),
-            overflow: "hidden",
-            boxShadow: "0 24px 80px rgba(2,14,43,0.45)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            inset: 0,
+            transformStyle: "preserve-3d",
+            transform: `rotateX(${rot}deg)`,
           }}
         >
           <div
             style={{
               position: "absolute",
-              left: 0,
-              top: 0,
-              width: SRC_W,
-              height: SRC_H,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
+              inset: 0,
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
           >
-            <PixelReveal mode="in" from="down-left" startFrame={0} durationInFrames={22} cellSize={56}>
-              {event.render}
-            </PixelReveal>
+            <PanelFace event={scene.front} area={relArea} entrance={false} endSec={scene.frontEndSec} />
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+              transform: "rotateX(180deg)",
+            }}
+          >
+            <PanelFace
+              event={scene.back}
+              area={relArea}
+              entrance={false}
+              endSec={scene.back.at + scene.back.duration}
+            />
           </div>
         </div>
-      ) : (
-        inner
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={stageBase}>
+      <PanelFace
+        event={scene.front}
+        area={relArea}
+        entrance={!arrivesByTurn(scene.front)}
+        endSec={scene.frontEndSec}
+      />
     </div>
   );
 };
@@ -279,34 +481,24 @@ export const AntiCheatLayout: React.FC = () => {
 
   const { webcam: RECTS, content: AREAS } = React.useMemo(() => buildRects(W, H), [W, H]);
 
-  const panel = activePanel(sec);
+  const scene = panelScene(sec);
 
-  // Target layout: shift to the head side when a panel is up, else full frame.
-  const targetLayout = panel
-    ? panel.side === "left"
-      ? "left-medium"
-      : "right-medium"
-    : "centered";
+  // Target layout: shift to the panel side (held across a same-side handoff),
+  // else full frame. sideAt() keeps the side through a carousel bridge so the
+  // camera never dips toward centre between a title and its schematic.
+  const targetLayout = sideToLayout(scene.side);
 
-  // Spring the webcam rect from where it was a transition ago. We approximate
-  // "previous layout" by sampling the panel state TRANSITION frames earlier.
+  // Spring the webcam rect from where it was a transition ago.
   const prevSec = (frame - TRANSITION) / fps;
-  const prevPanel = activePanel(prevSec);
-  const prevLayout = prevPanel
-    ? prevPanel.side === "left"
-      ? "left-medium"
-      : "right-medium"
-    : "centered";
+  const prevLayout = sideToLayout(sideAt(prevSec));
 
-  // When did the current layout begin? Walk back to the boundary.
   const target = RECTS[targetLayout];
   let webcamRect = target;
   if (prevLayout !== targetLayout) {
-    // Find the frame the panel became active/inactive, within the window.
+    // Find the frame the layout changed, within the window.
     let boundaryFrame = frame;
     for (let f = frame; f >= frame - TRANSITION - 2 && f >= 0; f--) {
-      const p = activePanel(f / fps);
-      const lay = p ? (p.side === "left" ? "left-medium" : "right-medium") : "centered";
+      const lay = sideToLayout(sideAt(f / fps));
       if (lay !== targetLayout) {
         boundaryFrame = f + 1;
         break;
@@ -345,12 +537,6 @@ export const AntiCheatLayout: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Frames the panel has been active (for its entrance).
-  let panelFramesIn = 0;
-  if (panel) {
-    panelFramesIn = frame - Math.round(panel.at * fps);
-  }
-
   return (
     <AbsoluteFill style={{ backgroundColor: "#020E2B" }}>
       {/* The inverted end-card field, revealed as the camera zooms out. */}
@@ -382,14 +568,9 @@ export const AntiCheatLayout: React.FC = () => {
         />
       </div>
 
-      {/* The schematic / article, scaled into the freed content area. */}
-      {panel && (
-        <ScaledPanel
-          event={panel}
-          area={AREAS[panel.side]}
-          framesIn={panelFramesIn}
-        />
-      )}
+      {/* The schematic / article, scaled into the freed content area — turning
+          on a 3D carousel when a title hands off to its mechanism schematic. */}
+      <PanelStage scene={scene} areas={AREAS} />
     </AbsoluteFill>
   );
 };
