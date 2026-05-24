@@ -104,6 +104,21 @@ const TARGETS = [
     name: "",
     phrases: [],
   },
+  // ─── Our own site — b-roll, not receipts. No yellow strike: nothing to
+  //     incriminate here. Clean top-of-page reveals, shown when the talk turns
+  //     to "we made a blog", "with general market…", and the Discord CTA. ────
+  {
+    slug: "gm-home",
+    url: "https://generalmarket.io",
+    name: "",
+    phrases: [],
+  },
+  {
+    slug: "gm-flags",
+    url: "https://generalmarket.io/anticheat-flags",
+    name: "",
+    phrases: [],
+  },
 ];
 
 // In-page: best box for a phrase, in viewport coords. Prefer an occurrence

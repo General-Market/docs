@@ -28,6 +28,12 @@ const H = 1080;
 // The captures are 1440×1120; rendered at frame width the image is this tall.
 const IMG_AR = 1120 / 1440;
 
+// Vertical pan timing (frames @ 30fps): dwell on the article's top so the
+// masthead reads, then glide down to the highlighted phrase. Top first, proof
+// second — the article never opens mid-page.
+const PAN_HOLD = 16; // frames held on the masthead before the pan starts
+const PAN_LEN = 44; // frames of the top→phrase glide (~1.5s)
+
 export type ArticleSlot = {
   /** final.mp4 seconds. */
   at: number;
@@ -41,32 +47,54 @@ export type ArticleSlot = {
   source: string;
 };
 
-// Per-slug placement: the proof beat (final.mp4 seconds), hold, entry, zoom,
-// and citation. Each beat sits inside the mechanism's spoken section and clear
-// of that section's chart window, so the article and the chart never share the
-// frame. zoom is tuned per shot — headline phrases read at ~2.8×, the page-wide
-// "long list" stays wider.
-const PLACEMENT: Record<
-  string,
-  { at: number; duration: number; treatment: Treatment; zoom: number; source: string }
-> = {
-  "vip-fee-tier": { at: 130, duration: 6, treatment: "punch", zoom: 2.8, source: "binance.com · spot trading fees" },
-  "listing-frontrun": { at: 214.9, duration: 6, treatment: "whip", zoom: 2.8, source: "sec.gov · press-release 2022-127" },
-  "order-flow-vis": { at: 255, duration: 6, treatment: "punch", zoom: 2.8, source: "sec.gov · press-release 2023-101" },
-  pfof: { at: 308.6, duration: 6, treatment: "punch", zoom: 2.8, source: "sec.gov · press-release 2020-321" },
-  "jito-mev": { at: 368, duration: 6, treatment: "whip", zoom: 2.8, source: "helius.dev · solana mev" },
-  matching: { at: 388, duration: 6, treatment: "punch", zoom: 2.8, source: "developers.binance.com · amend-keep priority" },
-  funding: { at: 451, duration: 5.5, treatment: "punch", zoom: 2.8, source: "hyperliquid · funding docs" },
-  "maker-rebate": { at: 478, duration: 6, treatment: "punch", zoom: 2.6, source: "binance.com · spot LP program" },
-  "adl-visibility": { at: 560, duration: 6, treatment: "whip", zoom: 2.8, source: "coindesk · hyperliquid delists JELLY" },
-  // Wider — the whole list is the point, not one phrase.
-  "long-list": { at: 736, duration: 6, treatment: "fullscreen", zoom: 1.5, source: "generalmarket.io/anticheat-flags" },
-  polymarket: { at: 803.8, duration: 6.5, treatment: "fullscreen", zoom: 2.6, source: "cftc.gov · release 8478-22" },
+// Placement is keyed by TIME, not by shot — so a page can appear more than
+// once. Each beat sits inside its spoken section and clear of that section's
+// chart window, so the proof and the chart never share the frame. `shot` names
+// the captured page (article-shots.ts). zoom is the *destination* scale the pan
+// settles at — moderate (~1.6×) on the receipts so the phrase reads without
+// burying the masthead; the page-wide shots stay wider since the whole page is
+// the point. Our own site (gm-*) is b-roll, not a receipt: wide, no yellow.
+type Placement = {
+  /** which captured page (article-shots.ts slug) to draw */
+  shot: string;
+  at: number;
+  duration: number;
+  treatment: Treatment;
+  zoom: number;
+  source: string;
 };
 
-export const ARTICLE_OVERLAYS: ArticleSlot[] = ARTICLE_SHOTS.flatMap((shot) => {
-  const p = PLACEMENT[shot.slug];
-  if (!p) return [];
+const PLACEMENTS: Placement[] = [
+  // Our blog — "if you want to read more about it, we made a blog" (0:70).
+  { shot: "gm-flags", at: 68.8, duration: 2.6, treatment: "fullscreen", zoom: 1.12, source: "generalmarket.io/anticheat-flags" },
+
+  { shot: "vip-fee-tier", at: 110.657, duration: 6, treatment: "punch", zoom: 1.6, source: "binance.com · spot trading fees" },
+  { shot: "listing-frontrun", at: 160.479, duration: 6, treatment: "whip", zoom: 1.6, source: "sec.gov · press-release 2022-127" },
+  { shot: "order-flow-vis", at: 191.685, duration: 6, treatment: "punch", zoom: 1.6, source: "sec.gov · press-release 2023-101" },
+  { shot: "pfof", at: 242.363, duration: 6, treatment: "punch", zoom: 1.6, source: "sec.gov · press-release 2020-321" },
+  { shot: "jito-mev", at: 302.69, duration: 6, treatment: "whip", zoom: 1.6, source: "helius.dev · solana mev" },
+  { shot: "matching", at: 312.877, duration: 6, treatment: "punch", zoom: 1.6, source: "developers.binance.com · amend-keep priority" },
+  { shot: "funding", at: 373.4, duration: 4.5, treatment: "punch", zoom: 1.6, source: "hyperliquid · funding docs" },
+  { shot: "maker-rebate", at: 404.6, duration: 6, treatment: "punch", zoom: 1.55, source: "binance.com · spot LP program" },
+  { shot: "adl-visibility", at: 455.194, duration: 6, treatment: "whip", zoom: 1.6, source: "coindesk · hyperliquid delists JELLY" },
+
+  // The solution — "with general market, we create the first financial instrument" (8:11).
+  { shot: "gm-home", at: 491.3, duration: 6, treatment: "fullscreen", zoom: 1.08, source: "generalmarket.io" },
+
+  { shot: "long-list", at: 556.419, duration: 6, treatment: "fullscreen", zoom: 1.2, source: "generalmarket.io/anticheat-flags" },
+  { shot: "polymarket", at: 599.869, duration: 6.5, treatment: "fullscreen", zoom: 1.45, source: "cftc.gov · release 8478-22" },
+
+  // The CTA — "you can join our Discord to know more" (10:29).
+  { shot: "gm-home", at: 629.4, duration: 4.6, treatment: "fullscreen", zoom: 1.08, source: "generalmarket.io · discord" },
+];
+
+const SHOT_BY_SLUG: Record<string, ArticleShot> = Object.fromEntries(
+  ARTICLE_SHOTS.map((s) => [s.slug, s]),
+);
+
+export const ARTICLE_OVERLAYS: ArticleSlot[] = PLACEMENTS.flatMap((p) => {
+  const shot = SHOT_BY_SLUG[p.shot];
+  if (!shot) return [];
   return [{ at: p.at, duration: p.duration, shot, treatment: p.treatment, zoom: p.zoom, source: p.source }];
 }).sort((a, b) => a.at - b.at);
 
@@ -93,14 +121,12 @@ const ArticleFlash: React.FC<{ slot: ArticleSlot; durationInFrames: number }> = 
   const boxes = yellowBoxes(shot);
   const focus = focusBox(shot);
 
-  // Entry + a slow continuous push for life. Zoom eases from a touch tighter
-  // (punch) or settles from the same (whip/fullscreen), then drifts up 4%.
-  const entryZoom =
+  // Entry settles from a touch tighter; the vertical pan now carries the motion,
+  // so there's no separate zoom drift.
+  const Z =
     treatment === "punch"
-      ? interpolate(frame, [0, 7], [zoom * 1.12, zoom], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-      : interpolate(frame, [0, 8], [zoom * 1.05, zoom], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const drift = interpolate(frame, [0, durationInFrames], [1, 1.04], { extrapolateRight: "clamp" });
-  const Z = entryZoom * drift;
+      ? interpolate(frame, [0, 7], [zoom * 1.08, zoom], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+      : interpolate(frame, [0, 8], [zoom * 1.04, zoom], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   // Whip slides in from the right; others just fade.
   const slideX =
@@ -116,13 +142,29 @@ const ArticleFlash: React.FC<{ slot: ArticleSlot; durationInFrames: number }> = 
   const imgH = imgW * IMG_AR;
   const fx = focus.x + focus.w / 2;
   const fy = focus.y + focus.h / 2;
-  // Centre the phrase, then clamp so the image always covers the frame — no
-  // dark gap when the phrase sits near an edge. slideX rides on top for the
-  // whip entry only.
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+  // Horizontal: centre the phrase, clamped so the image always covers the frame
+  // (no dark gutter). slideX rides on top for the whip entry only.
   const left = clamp(W / 2 - fx * imgW, W - imgW, 0) + slideX;
-  const top = clamp(H / 2 - fy * imgH, H - imgH, 0);
-  const reveal = Math.max(0, Math.min(1, (frame - 6) / 9));
+
+  // Vertical PAN: open flush with the article's top (topTop = 0 — masthead and
+  // headline read first), then glide down so the phrase lands at 60% of the
+  // frame. A phrase that already sits high needs no pan (both ends clamp to 0).
+  const topTop = 0;
+  const topPhrase = clamp(H * 0.6 - fy * imgH, H - imgH, 0);
+  const panP = interpolate(frame, [PAN_HOLD, PAN_HOLD + PAN_LEN], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const top = topTop + (topPhrase - topTop) * panP;
+
+  // The strike + ring land as the pan settles on the phrase. When there's no
+  // pan (phrase already at the top) they fire early so the proof isn't held back.
+  const hasPan = Math.abs(topPhrase - topTop) > 24;
+  const arriveAt = hasPan ? PAN_HOLD + PAN_LEN - 8 : 6;
+  const reveal = Math.max(0, Math.min(1, (frame - arriveAt) / 11));
 
   return (
     <AbsoluteFill style={{ overflow: "hidden", opacity, backgroundColor: "#0a0c12" }}>
@@ -136,7 +178,11 @@ const ArticleFlash: React.FC<{ slot: ArticleSlot; durationInFrames: number }> = 
           style={{ width: imgW, height: imgH, display: "block" }}
         />
         <YellowHighlightLayer highlights={boxes} reveal={reveal} />
-        <ShockwaveRing centerXPct={fx} centerYPct={fy} fireAt={treatment === "punch" ? 4 : 8} />
+        {/* The strike-ring is a "gotcha" — only fire it where there's a phrase
+            to strike. Our own pages (no highlights) reveal clean. */}
+        {boxes.length > 0 && (
+          <ShockwaveRing centerXPct={fx} centerYPct={fy} fireAt={arriveAt + 2} />
+        )}
       </div>
       <SourcePill text={slot.source} opacity={opacity} />
     </AbsoluteFill>

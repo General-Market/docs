@@ -253,5 +253,17 @@ export const ARTICLE_SHOTS: ArticleShot[] = [
     "name": "",
     "image": "anticheat-edit/articles/long-list.png",
     "highlights": []
+  },
+  {
+    "slug": "gm-home",
+    "name": "",
+    "image": "anticheat-edit/articles/gm-home.png",
+    "highlights": []
+  },
+  {
+    "slug": "gm-flags",
+    "name": "",
+    "image": "anticheat-edit/articles/gm-flags.png",
+    "highlights": []
   }
 ];
