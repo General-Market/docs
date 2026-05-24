@@ -104,6 +104,49 @@ const TARGETS = [
     name: "",
     phrases: [],
   },
+  // ─── More receipts — fill the mechanisms that had no proof flash ─────────
+  {
+    // M1 Colocation — the venue sells the rack next to its matching engine.
+    slug: "colocation",
+    url: "https://www.cmegroup.com/trading/colocation/co-location-services.html",
+    fetchUrl:
+      "https://web.archive.org/web/2024/https://www.cmegroup.com/trading/colocation/co-location-services.html",
+    name: "CME Group",
+    phrases: ["Co-Location", "low-latency", "matching engine"],
+  },
+  {
+    // M3 Maxing out — the venue pays the maker to keep its advantage.
+    slug: "maxing-out",
+    url: "https://www.bybit.com/en/help-center/article/Introduction-to-the-Market-Maker-Incentive-Program",
+    fetchUrl:
+      "https://web.archive.org/web/2024/https://www.bybit.com/en/help-center/article/Introduction-to-the-Market-Maker-Incentive-Program",
+    name: "Bybit",
+    phrases: ["Market Maker Incentive", "rebate", "exclusive"],
+  },
+  {
+    // M9 Cancellation priority — "Last Look": reject the trade that would lose.
+    slug: "last-look",
+    url: "https://www.dfs.ny.gov/reports_and_publications/press_releases/pr1511181",
+    fetchUrl:
+      "https://web.archive.org/web/2023/https://www.dfs.ny.gov/reports_and_publications/press_releases/pr1511181",
+    name: "Barclays",
+    phrases: ["Last Look", "rejected", "unprofitable"],
+  },
+  {
+    // M10 API rate limits — the ceiling is the wall; the maker gets a higher one.
+    slug: "api-rate",
+    url: "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/limits",
+    name: "Binance",
+    phrases: ["REQUEST_WEIGHT", "rate limit", "IP ban"],
+  },
+  {
+    // Outro — one more case: oracle manipulation drained $110M.
+    slug: "mango",
+    url: "https://www.cftc.gov/PressRoom/PressReleases/8647-23",
+    fetchUrl: "https://web.archive.org/web/2023/https://www.cftc.gov/PressRoom/PressReleases/8647-23",
+    name: "Mango Markets",
+    phrases: ["manipulative", "misappropriate", "oracle"],
+  },
   // ─── Our own site — b-roll, not receipts. No yellow strike: nothing to
   //     incriminate here. Clean top-of-page reveals, shown when the talk turns
   //     to "we made a blog", "with general market…", and the Discord CTA. ────

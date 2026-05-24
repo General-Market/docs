@@ -65,15 +65,24 @@ type Placement = {
 };
 
 const PLACEMENTS: Placement[] = [
+  // M1 Colocation — the venue rents the rack next to its matching engine.
+  { shot: "colocation", at: 49.6, duration: 5, treatment: "punch", zoom: 1.55, source: "cmegroup.com · co-location services" },
+
   // Our blog — "if you want to read more about it, we made a blog" (0:70).
   { shot: "gm-flags", at: 68.8, duration: 2.6, treatment: "fullscreen", zoom: 1.12, source: "generalmarket.io/anticheat-flags" },
 
   { shot: "vip-fee-tier", at: 110.657, duration: 6, treatment: "punch", zoom: 1.6, source: "binance.com · spot trading fees" },
+  // M3 Maxing out — the venue pays the maker to keep its stacked advantage.
+  { shot: "maxing-out", at: 124.4, duration: 4, treatment: "punch", zoom: 1.55, source: "bybit.com · market maker incentive" },
   { shot: "listing-frontrun", at: 160.479, duration: 6, treatment: "whip", zoom: 1.6, source: "sec.gov · press-release 2022-127" },
   { shot: "order-flow-vis", at: 191.685, duration: 6, treatment: "punch", zoom: 1.6, source: "sec.gov · press-release 2023-101" },
   { shot: "pfof", at: 242.363, duration: 6, treatment: "punch", zoom: 1.6, source: "sec.gov · press-release 2020-321" },
   { shot: "jito-mev", at: 302.69, duration: 6, treatment: "whip", zoom: 1.6, source: "helius.dev · solana mev" },
   { shot: "matching", at: 312.877, duration: 6, treatment: "punch", zoom: 1.6, source: "developers.binance.com · amend-keep priority" },
+  // M9 Cancellation — "Last Look": reject the trade that would have lost them money.
+  { shot: "last-look", at: 339.0, duration: 5, treatment: "whip", zoom: 1.6, source: "dfs.ny.gov · barclays last look" },
+  // M10 API rate limits — a quick glance at the ceiling (the section is tight).
+  { shot: "api-rate", at: 358.2, duration: 2.4, treatment: "fullscreen", zoom: 1.18, source: "developers.binance.com · api rate limits" },
   { shot: "funding", at: 373.4, duration: 4.5, treatment: "punch", zoom: 1.6, source: "hyperliquid · funding docs" },
   { shot: "maker-rebate", at: 404.6, duration: 6, treatment: "punch", zoom: 1.55, source: "binance.com · spot LP program" },
   { shot: "adl-visibility", at: 455.194, duration: 6, treatment: "whip", zoom: 1.6, source: "coindesk · hyperliquid delists JELLY" },
@@ -82,6 +91,8 @@ const PLACEMENTS: Placement[] = [
   { shot: "gm-home", at: 491.3, duration: 6, treatment: "fullscreen", zoom: 1.08, source: "generalmarket.io" },
 
   { shot: "long-list", at: 556.419, duration: 6, treatment: "fullscreen", zoom: 1.2, source: "generalmarket.io/anticheat-flags" },
+  // Outro — "for each case, there is 10 to 100 not covered": one more receipt.
+  { shot: "mango", at: 574.5, duration: 5, treatment: "whip", zoom: 1.6, source: "cftc.gov · release 8647-23" },
   { shot: "polymarket", at: 599.869, duration: 6.5, treatment: "fullscreen", zoom: 1.45, source: "cftc.gov · release 8478-22" },
 
   // The CTA — "you can join our Discord to know more" (10:29).
