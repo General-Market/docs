@@ -37,11 +37,12 @@ produced `cutout-test.mov` + `light_shafts.mp4`, used here for the first time in
 the edit. Layer order inside one `IntroHero` overlay mounted ABOVE `AntiCheatLayout`:
 
 1. **Back layer** — the `$1B` glyph + the carousel's far-side cards.
-2. **Person cutout** — `cutout-intro.mov` (ProRes 4444 alpha, `human_seg`, final
-   10–17s), full-frame, `objectFit:cover`, carrying the *identical* idle-breath
-   transform as the base head (else it ghosts). Re-reveals the speaker in front
-   of layer 1. (`birefnet` hangs on MPS — too slow; `human_seg` is clean on this
-   plain-wall shot.)
+2. **Person cutout** — a transparent **PNG sequence** (`cutout-frames/f_%04d.png`,
+   `human_seg` matte, final 10–17s) rendered via `<Img>`, full-frame,
+   `objectFit:cover`, carrying the *identical* idle-breath transform as the base
+   head (else it ghosts). Re-reveals the speaker in front of layer 1. (Not the
+   ProRes `.mov` — Chrome can't decode ProRes, so Studio preview throws; this
+   ffmpeg can't encode alpha WebM either. `birefnet` hangs on MPS — use `human_seg`.)
 3. **Front layer** — the carousel's near-side cards.
 
 The number is a colossal, translucent Base-blue **`$1B`** (~1300px) that bleeds
