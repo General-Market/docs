@@ -1093,26 +1093,20 @@ function RoundTimeline({
     prevTickRef.current = currentTick
   }, [currentTick])
 
-  const nowOpen = roundPhase === 'open' && remainingSecs > 0
-  const urgentNow = nowOpen && remainingSecs < 60
+  const R = remainingSecs
+  const D = tickDuration
+  const nowOpen = roundPhase === 'open' && R > 0
+  const urgentNow = nowOpen && R < 60
+  const hasD = R > 0 && D > 0
+  const clk = (s: number | null) => (s !== null && s > 0 ? formatClock(s) : '—')
 
-  // NOW closes when remainingSecs hits 0; the previous round settles at that
-  // same instant; NEXT closes one tick later.
-  const nowTimer = remainingSecs > 0 ? formatClock(remainingSecs) : null
-  const lastTimer = remainingSecs > 0 ? formatClock(remainingSecs) : null
-  const nextTimer =
-    remainingSecs > 0 && tickDuration > 0 ? formatClock(remainingSecs + tickDuration) : null
-
+  // Every round has two moments: betting CLOSES, then it SETTLES one tick later
+  // (settlement delay = tick duration). The three boxes are consecutive rounds:
+  //   LAST (T-1): already closed; settles when NOW closes        → R
+  //   NOW  (T):   closes in R;        settles in R + D
+  //   NEXT (T+1): closes in R + D;    settles in R + 2D
   const poolNowDisplay = poolNowUsd !== null && poolNowUsd > 0 ? formatBigUsd(String(poolNowUsd)) : '—'
   const youDisplay = userStakeUsd !== null && userStakeUsd > 0 ? formatUsdDollars(userStakeUsd) : null
-  const nowStatus =
-    roundPhase === 'open'
-      ? 'Closes'
-      : roundPhase === 'settling'
-        ? 'Settling'
-        : roundPhase === 'locked'
-          ? 'Locked'
-          : 'Soon'
 
   return (
     <div
@@ -1136,9 +1130,8 @@ function RoundTimeline({
       >
         <TimelineBox
           slot="LAST"
-          timer={lastTimer}
-          fallbackWord="Settling"
-          statusLabel="Settles"
+          closesValue={R > 0 ? 'Closed' : '—'}
+          settlesValue={clk(R)}
           // Past-round pool isn't surfaced by /vision/rounds — keep it quiet.
           poolDisplay="—"
           youDisplay={hadLastTick || hasCurrentCommit ? youDisplay : null}
@@ -1149,9 +1142,8 @@ function RoundTimeline({
         />
         <TimelineBox
           slot="NOW"
-          timer={nowTimer}
-          fallbackWord={nowStatus}
-          statusLabel={nowStatus}
+          closesValue={clk(R)}
+          settlesValue={clk(hasD ? R + D : null)}
           poolDisplay={poolNowDisplay}
           youDisplay={hasCurrentCommit ? youDisplay : null}
           isIn={hasCurrentCommit}
@@ -1161,13 +1153,11 @@ function RoundTimeline({
         />
         <TimelineBox
           slot="NEXT"
-          timer={nextTimer}
-          fallbackWord="Soon"
-          statusLabel="Closes"
-          // No pool yet — the next round hasn't opened.
-          poolDisplay="—"
-          // Auto-rollover: the user's balance carries into the next round
-          // unless they exit, so NEXT mirrors NOW's deposit.
+          closesValue={clk(hasD ? R + D : null)}
+          settlesValue={clk(hasD ? R + 2 * D : null)}
+          // Parimutuel auto-rollover: the live pool carries into the next round
+          // unless players exit, so NEXT shows the current pool as its size.
+          poolDisplay={poolNowDisplay}
           youDisplay={hasCurrentCommit ? youDisplay : null}
           isIn={hasCurrentCommit}
           tone="muted"
@@ -1181,9 +1171,8 @@ function RoundTimeline({
 
 function TimelineBox({
   slot,
-  timer,
-  fallbackWord,
-  statusLabel,
+  closesValue,
+  settlesValue,
   poolDisplay,
   youDisplay,
   isIn,
@@ -1192,11 +1181,10 @@ function TimelineBox({
   roundId,
 }: {
   slot: 'LAST' | 'NOW' | 'NEXT'
-  /** Pre-formatted countdown, or null when there's no live timer. */
-  timer: string | null
-  /** Word shown big when `timer` is null (e.g. "Settling", "Soon"). */
-  fallbackWord: string
-  statusLabel: string
+  /** Pre-formatted "betting closes" countdown / word (e.g. "6:14", "Closed"). */
+  closesValue: string
+  /** Pre-formatted "round settles" countdown / word. */
+  settlesValue: string
   /** Pool $ for this round, pre-formatted, or '—' when unknown. */
   poolDisplay: string
   /** The user's own deposit for this round, pre-formatted, or null. */
@@ -1210,8 +1198,7 @@ function TimelineBox({
 }) {
   const slotColor =
     tone === 'urgent' ? APPLE_RED : tone === 'primary' ? APPLE_TEXT : APPLE_TEXT_SECONDARY
-  const isTimer = timer !== null
-  const heroColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : tone === 'urgent' ? APPLE_RED : APPLE_TEXT
+  const timerColor = tone === 'muted' ? APPLE_TEXT_SECONDARY : tone === 'urgent' ? APPLE_RED : APPLE_TEXT
 
   return (
     <div
@@ -1221,7 +1208,7 @@ function TimelineBox({
         padding: '8px 10px 9px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
+        gap: 6,
         minWidth: 0,
       }}
     >
@@ -1274,32 +1261,10 @@ function TimelineBox({
         )}
       </div>
 
-      <div
-        style={{
-          fontFamily: isTimer ? FONT_MONO : FONT_DISPLAY,
-          fontSize: isTimer ? 18 : 14,
-          fontWeight: 600,
-          letterSpacing: isTimer ? '0' : '-0.022em',
-          color: heroColor,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1.05,
-          marginTop: isTimer ? 0 : 3,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {timer ?? fallbackWord}
-      </div>
-      <div
-        style={{
-          fontFamily: FONT_TEXT,
-          fontSize: 9,
-          fontWeight: 500,
-          color: APPLE_TEXT_SECONDARY,
-          letterSpacing: '+0.04em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {statusLabel}
+      {/* Two timers per round: when betting closes, and when it settles. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <TimerLine label="Closes" value={closesValue} color={timerColor} size={17} />
+        <TimerLine label="Settles" value={settlesValue} color={timerColor} size={14} />
       </div>
 
       <div
@@ -1307,8 +1272,8 @@ function TimelineBox({
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          marginTop: 4,
-          paddingTop: 5,
+          marginTop: 1,
+          paddingTop: 6,
           borderTop: '1px solid rgba(0,0,0,0.05)',
         }}
       >
@@ -1320,6 +1285,52 @@ function TimelineBox({
           accent={isIn && youDisplay !== null}
         />
       </div>
+    </div>
+  )
+}
+
+// One timer: a big mono countdown with its label beneath. Falls back to the
+// display font for words like "Closed" / "—" so they don't read as numerals.
+function TimerLine({
+  label,
+  value,
+  color,
+  size,
+}: {
+  label: string
+  value: string
+  color: string
+  size: number
+}) {
+  const isNum = /\d/.test(value)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
+      <span
+        style={{
+          fontFamily: isNum ? FONT_MONO : FONT_DISPLAY,
+          fontSize: size,
+          fontWeight: 600,
+          letterSpacing: isNum ? '0' : '-0.022em',
+          color,
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1.1,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontFamily: FONT_TEXT,
+          fontSize: 8.5,
+          fontWeight: 500,
+          color: APPLE_TEXT_SECONDARY,
+          letterSpacing: '+0.04em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
     </div>
   )
 }
