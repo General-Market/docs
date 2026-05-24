@@ -473,18 +473,26 @@ function MarketChart({
     let open: number | null = null
     let close: number | null = null
     if (roundOpenAt != null) {
-      const openPoint = sorted.find(p => p.ts >= roundOpenAt) ?? sorted[0]
-      open = openPoint.value
-      if (resolved && roundCloseAt != null) {
-        // last point at or before roundCloseAt
-        let lastInWindow = openPoint
-        for (const p of sorted) {
-          if (p.ts <= roundCloseAt) lastInWindow = p
-          else break
+      // First sample at or after the round opened. When this feed's cached 24h
+      // series hasn't refreshed past the freshly-advanced roundOpenAt, no such
+      // point exists — the open is genuinely unknown. Leave it null (no open
+      // line, threshold falls back to the live value below) instead of falling
+      // back to sorted[0], the 24h-old edge of the window, which made the card
+      // contradict the big candle chart's open.
+      const openPoint = sorted.find(p => p.ts >= roundOpenAt)
+      if (openPoint) {
+        open = openPoint.value
+        if (resolved && roundCloseAt != null) {
+          // last point at or before roundCloseAt
+          let lastInWindow = openPoint
+          for (const p of sorted) {
+            if (p.ts <= roundCloseAt) lastInWindow = p
+            else break
+          }
+          close = lastInWindow.value
+        } else {
+          close = sorted[sorted.length - 1].value
         }
-        close = lastInWindow.value
-      } else {
-        close = sorted[sorted.length - 1].value
       }
     }
     const pct = open && close ? ((close - open) / open) * 100 : null

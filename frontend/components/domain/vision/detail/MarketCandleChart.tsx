@@ -352,17 +352,25 @@ export function MarketCandleChart({
     let close: number | null = null
     if (roundOpenAt != null) {
       const sorted = [...points].sort((a, b) => a.ts - b.ts)
-      const openPoint = sorted.find(p => p.ts >= roundOpenAt) ?? sorted[0]
-      open = openPoint.value
-      if (resolved && roundCloseAt != null) {
-        let lastInWindow = openPoint
-        for (const p of sorted) {
-          if (p.ts <= roundCloseAt) lastInWindow = p
-          else break
+      // First sample at or after the round opened. If the feed hasn't caught up
+      // to the freshly-advanced roundOpenAt yet, there is no such point — the
+      // open is genuinely unknown. Leave it null and draw no open line rather
+      // than falling back to sorted[0]: the oldest point in this feed's window
+      // differs per timeframe/feed, which is what made the candle chart and the
+      // mini-cards disagree on "open".
+      const openPoint = sorted.find(p => p.ts >= roundOpenAt)
+      if (openPoint) {
+        open = openPoint.value
+        if (resolved && roundCloseAt != null) {
+          let lastInWindow = openPoint
+          for (const p of sorted) {
+            if (p.ts <= roundCloseAt) lastInWindow = p
+            else break
+          }
+          close = lastInWindow.value
+        } else {
+          close = sorted[sorted.length - 1].value
         }
-        close = lastInWindow.value
-      } else {
-        close = sorted[sorted.length - 1].value
       }
     }
     const pct = open && close ? ((close - open) / open) * 100 : null
