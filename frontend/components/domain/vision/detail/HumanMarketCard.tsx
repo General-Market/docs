@@ -61,6 +61,12 @@ interface HumanMarketCardProps {
   roundCloseAt: number | null
   /** True once `now >= roundCloseAt` — chart shows the settled outcome. */
   resolved: boolean
+  /**
+   * The round's open price — frozen once per round in the parent and shared
+   * with the big candle chart, so every chart reads the same number. null
+   * until the open is known for this round.
+   */
+  openPrice: number | null
   /** Whether this tile is the one driving the big candle chart on top. */
   selected?: boolean
   /** Called when the user clicks the tile body (not a pick button). */
@@ -122,6 +128,7 @@ export function HumanMarketCard({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  openPrice,
   selected = false,
   onSelect,
   onPrefetch,
@@ -297,6 +304,7 @@ export function HumanMarketCard({
         roundOpenAt={roundOpenAt}
         roundCloseAt={roundCloseAt}
         resolved={resolved}
+        openPrice={openPrice}
         externalPoints={points}
         resolutionType={resolutionType ?? null}
         thresholdBps={thresholdBps ?? null}
@@ -377,6 +385,8 @@ interface MarketChartProps {
   roundOpenAt: number | null
   roundCloseAt: number | null
   resolved: boolean
+  /** Shared, frozen round-open price from the parent. */
+  openPrice: number | null
   /** Pre-fetched 24h history from the parent's bulk hook. Skips local fetch. */
   externalPoints?: HistoryPoint[]
   resolutionType?: string | null
@@ -393,6 +403,7 @@ function MarketChart({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  openPrice,
   externalPoints,
   resolutionType,
   thresholdBps,
@@ -451,10 +462,9 @@ function MarketChart({
   // settlement square at (roundCloseAt, threshold). UP_X paints green at
   // open × (1 + bps/10000); DOWN_X paints red at open × (1 − bps/10000).
   // UP_0/DOWN_0 carry no threshold and render no square.
-  const { openPrice, closePrice, changePct, chartData, yDomain, settlement, lastPoint, runwayRight } = useMemo(() => {
+  const { closePrice, changePct, chartData, yDomain, settlement, lastPoint, runwayRight } = useMemo(() => {
     if (!points || points.length < 2) {
       return {
-        openPrice: null,
         closePrice: null,
         changePct: null,
         chartData: [],
@@ -470,38 +480,29 @@ function MarketChart({
         ? sorted.filter((_, i) => i % Math.ceil(sorted.length / 240) === 0)
         : sorted
 
-    let open: number | null = null
+    // The open is the shared, frozen round-open from the parent (openPrice
+    // prop). Here we only derive the close against it from this feed's samples.
     let close: number | null = null
-    if (roundOpenAt != null) {
-      // First sample at or after the round opened. When this feed's cached 24h
-      // series hasn't refreshed past the freshly-advanced roundOpenAt, no such
-      // point exists — the open is genuinely unknown. Leave it null (no open
-      // line, threshold falls back to the live value below) instead of falling
-      // back to sorted[0], the 24h-old edge of the window, which made the card
-      // contradict the big candle chart's open.
-      const openPoint = sorted.find(p => p.ts >= roundOpenAt)
-      if (openPoint) {
-        open = openPoint.value
-        if (resolved && roundCloseAt != null) {
-          // last point at or before roundCloseAt
-          let lastInWindow = openPoint
-          for (const p of sorted) {
-            if (p.ts <= roundCloseAt) lastInWindow = p
-            else break
-          }
-          close = lastInWindow.value
-        } else {
-          close = sorted[sorted.length - 1].value
+    if (roundOpenAt != null && openPrice != null) {
+      if (resolved && roundCloseAt != null) {
+        // last point at or before roundCloseAt
+        let lastInWindow = sorted[0]
+        for (const p of sorted) {
+          if (p.ts <= roundCloseAt) lastInWindow = p
+          else break
         }
+        close = lastInWindow.value
+      } else {
+        close = sorted[sorted.length - 1].value
       }
     }
-    const pct = open && close ? ((close - open) / open) * 100 : null
+    const pct = openPrice != null && close != null ? ((close - openPrice) / openPrice) * 100 : null
 
     // During an active round, the threshold is anchored to that round's
     // open price. Between rounds, fall back to the latest snapshot value so
     // the square previews where the threshold will sit when the next round
     // opens. The x position uses roundCloseAt when known, else dataMax.
-    const refPrice = open ?? (latestValue != null && isFinite(latestValue) ? latestValue : null)
+    const refPrice = openPrice ?? (latestValue != null && isFinite(latestValue) ? latestValue : null)
     const refTime = roundCloseAt ?? (data.length > 0 ? data[data.length - 1].ts : null)
     let sq: { color: string; price: number; time: number } | null = null
     if (refPrice != null && refTime != null) {
@@ -521,7 +522,7 @@ function MarketChart({
     // Pad y-domain so the open line, threshold line, and target zone don't
     // kiss the edges of the chart.
     const values = data.map(d => d.value)
-    if (open != null) values.push(open)
+    if (openPrice != null) values.push(openPrice)
     if (close != null) values.push(close)
     if (sq != null) values.push(sq.price)
     const minV = Math.min(...values)
@@ -540,7 +541,6 @@ function MarketChart({
     const right = span > 0 ? lastTs + span * (RUNWAY_FRAC / (1 - RUNWAY_FRAC)) : lastTs
 
     return {
-      openPrice: open,
       closePrice: close,
       changePct: pct,
       chartData: data,
@@ -549,7 +549,7 @@ function MarketChart({
       lastPoint: { ts: lastTs, value: lastVal },
       runwayRight: right,
     }
-  }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps, latestValue])
+  }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps, latestValue, openPrice])
 
   if (loading) {
     return (

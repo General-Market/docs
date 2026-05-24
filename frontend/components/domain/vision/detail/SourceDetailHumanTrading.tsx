@@ -27,6 +27,7 @@ import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { usePlayerProfile, type ProfileBatch, type ProfileTick } from '@/hooks/usePlayerProfile'
 import { useBulkMarketHistory, type HistoryPoint } from '@/hooks/vision/useBulkMarketHistory'
+import { useRoundOpenPrices } from '@/hooks/vision/useRoundOpenPrices'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useDeployment } from '@/hooks/useDeployment'
 import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
@@ -843,6 +844,11 @@ export function SourceDetailHumanTrading({
     [historyByAsset],
   )
 
+  // One frozen open price per market for this round, shared by the big candle
+  // chart and every mini-card. Recovered once and held for the life of the
+  // round so the open never flickers and the charts can't disagree.
+  const openByAsset = useRoundOpenPrices(roundOpenAt, curatedMarkets, historyByAsset)
+
   // Warm the big-chart cache for an asset before the user clicks. Uses the
   // currently selected timeframe so the prefetch hits the cache regardless of
   // whether the user is still on '1h' or switched to '5m'/'15m'/'1d'.
@@ -904,6 +910,7 @@ export function SourceDetailHumanTrading({
                   roundOpenAt={roundOpenAt}
                   roundCloseAt={roundCloseAt}
                   resolved={resolved}
+                  openPrice={openByAsset.get(focusedMarket.assetId) ?? null}
                   timeframe={chartTimeframe}
                   onTimeframeChange={setChartTimeframe}
                   resolutionType={resolutionByAsset.get(focusedMarket.assetId)?.resType ?? null}
@@ -936,6 +943,7 @@ export function SourceDetailHumanTrading({
                         roundOpenAt={roundOpenAt}
                         roundCloseAt={roundCloseAt}
                         resolved={resolved}
+                        openPrice={openByAsset.get(market.assetId) ?? null}
                         selected={(selectedAssetId ?? focusedMarket?.assetId ?? null) === market.assetId}
                         onSelect={() => setSelectedAssetId(market.assetId)}
                         onPrefetch={() => prefetchChartFor(market.assetId)}

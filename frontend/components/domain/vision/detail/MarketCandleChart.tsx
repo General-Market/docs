@@ -126,6 +126,12 @@ interface MarketCandleChartProps {
   /** True once the countdown has hit zero. */
   resolved: boolean
   /**
+   * The round's open price — frozen once per round in the parent and shared
+   * with the mini-cards, so every chart reads the same number. null until the
+   * open is known for this round.
+   */
+  openPrice: number | null
+  /**
    * Selected candle timeframe. Lifted to the parent so hover-prefetch on
    * the mini-cards can warm the cache for the actual user-chosen resolution.
    */
@@ -244,6 +250,7 @@ export function MarketCandleChart({
   roundOpenAt,
   roundCloseAt,
   resolved,
+  openPrice,
   timeframe,
   onTimeframeChange,
   onReady,
@@ -342,40 +349,31 @@ export function MarketCandleChart({
     }
   }, [])
 
-  // -- Bucketize points → candles + derive open/close inside the round window --
-  const { candles, openPrice, closePrice, changePct } = useMemo(() => {
+  // -- Bucketize points → candles. The open is the shared, frozen round-open
+  //    from the parent (openPrice prop); here we only derive the close and the
+  //    this-round change against it from this feed's own samples. --
+  const { candles, closePrice, changePct } = useMemo(() => {
     if (!points || points.length === 0) {
-      return { candles: [] as Candle[], openPrice: null, closePrice: null, changePct: null }
+      return { candles: [] as Candle[], closePrice: null, changePct: null }
     }
     const cs = bucketize(points, TIMEFRAME_BUCKET_MS[timeframe])
-    let open: number | null = null
     let close: number | null = null
-    if (roundOpenAt != null) {
+    if (roundOpenAt != null && openPrice != null) {
       const sorted = [...points].sort((a, b) => a.ts - b.ts)
-      // First sample at or after the round opened. If the feed hasn't caught up
-      // to the freshly-advanced roundOpenAt yet, there is no such point — the
-      // open is genuinely unknown. Leave it null and draw no open line rather
-      // than falling back to sorted[0]: the oldest point in this feed's window
-      // differs per timeframe/feed, which is what made the candle chart and the
-      // mini-cards disagree on "open".
-      const openPoint = sorted.find(p => p.ts >= roundOpenAt)
-      if (openPoint) {
-        open = openPoint.value
-        if (resolved && roundCloseAt != null) {
-          let lastInWindow = openPoint
-          for (const p of sorted) {
-            if (p.ts <= roundCloseAt) lastInWindow = p
-            else break
-          }
-          close = lastInWindow.value
-        } else {
-          close = sorted[sorted.length - 1].value
+      if (resolved && roundCloseAt != null) {
+        let lastInWindow = sorted[0]
+        for (const p of sorted) {
+          if (p.ts <= roundCloseAt) lastInWindow = p
+          else break
         }
+        close = lastInWindow.value
+      } else {
+        close = sorted[sorted.length - 1].value
       }
     }
-    const pct = open && close ? ((close - open) / open) * 100 : null
-    return { candles: cs, openPrice: open, closePrice: close, changePct: pct }
-  }, [points, timeframe, roundOpenAt, roundCloseAt, resolved])
+    const pct = openPrice != null && close != null ? ((close - openPrice) / openPrice) * 100 : null
+    return { candles: cs, closePrice: close, changePct: pct }
+  }, [points, timeframe, roundOpenAt, roundCloseAt, resolved, openPrice])
 
   // -- Push candles into the series --
   const firstDrawDone = useRef(false)
