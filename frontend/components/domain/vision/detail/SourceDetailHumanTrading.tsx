@@ -429,9 +429,18 @@ export function SourceDetailHumanTrading({
     })
     if (batchesHere.length === 0) return EMPTY_POSITIONS
     const active = batchesHere.filter(b => b.status === 'active')
+    // One settled round is one tick. The issuer's profile builder can attach the
+    // same round to more than one batch, so dedupe by (batch, round) before we
+    // sum — a single loss must never read as two.
     const ticks: TickEntry[] = []
+    const seen = new Set<string>()
     for (const b of batchesHere) {
-      for (const t of b.ticks) ticks.push({ ...t, batchId: b.batchId })
+      for (const t of b.ticks) {
+        const key = `${b.batchId}-${t.tickId}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        ticks.push({ ...t, batchId: b.batchId })
+      }
     }
     ticks.sort((a, b) => b.tickId - a.tickId)
     const totalPnl = ticks.reduce((s, t) => s + t.pnl, 0)
@@ -975,7 +984,6 @@ export function SourceDetailHumanTrading({
               })()}
               hasCurrentCommit={!!effectiveCommit}
               userStakeUsd={effectiveCommit?.stakeUsd ?? null}
-              hadLastTick={sourcePositions.ticks.length > 0}
             />
             <EntryCard
               stakeInput={stakeInput}
@@ -999,7 +1007,7 @@ export function SourceDetailHumanTrading({
             <PositionsCard
               isConnected={isConnected}
               positions={sourcePositions}
-              currentCommit={currentCommit}
+              currentCommit={effectiveCommit}
             />
           </div>
         </aside>
@@ -1069,7 +1077,6 @@ function RoundTimeline({
   poolNowUsd,
   hasCurrentCommit,
   userStakeUsd,
-  hadLastTick,
 }: {
   /** Live batch/round id — increments each tick; drives the slide animation. */
   currentTick: number
@@ -1081,7 +1088,6 @@ function RoundTimeline({
   hasCurrentCommit: boolean
   /** The user's own deposit riding this round, in USDC. */
   userStakeUsd: number | null
-  hadLastTick: boolean
 }) {
   const [animKey, setAnimKey] = useState(0)
   const prevTickRef = useRef(currentTick)
@@ -1134,8 +1140,11 @@ function RoundTimeline({
           settlesValue={clk(R)}
           // Past-round pool isn't surfaced by /vision/rounds — keep it quiet.
           poolDisplay="—"
-          youDisplay={hadLastTick || hasCurrentCommit ? youDisplay : null}
-          isIn={hadLastTick || hasCurrentCommit}
+          // "IN" belongs only to the round the user demonstrably holds (NOW).
+          // We don't track a distinct per-round position for the closing round,
+          // so never light LAST off the current commit or stale history.
+          youDisplay={null}
+          isIn={false}
           tone="muted"
           live={false}
           roundId={null}
@@ -1158,8 +1167,10 @@ function RoundTimeline({
           // Parimutuel auto-rollover: the live pool carries into the next round
           // unless players exit, so NEXT shows the current pool as its size.
           poolDisplay={poolNowDisplay}
-          youDisplay={hasCurrentCommit ? youDisplay : null}
-          isIn={hasCurrentCommit}
+          // The stake rides NEXT only after NOW settles without an exit — that
+          // hasn't happened yet, so don't claim the user is "IN" the next round.
+          youDisplay={null}
+          isIn={false}
           tone="muted"
           live={false}
           roundId={null}
@@ -1694,22 +1705,40 @@ function PositionsCard({
 
   return (
     <div style={cardShellStyle}>
-      {/* Header carries the running P&L so the number you care about reads first. */}
+      {/* The header number is REALIZED P&L across settled rounds — never the open
+          round, which has no result yet. Label it so a past loss can't be read as
+          the live bet losing, and hide it entirely until a round has settled. */}
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <CardHeader>Positions</CardHeader>
-        <span
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 15,
-            fontWeight: 600,
-            color: totalColor,
-            letterSpacing: '-0.016em',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-          title="Total profit and loss on this source"
-        >
-          {formatPnl(totalPnl)}
-        </span>
+        {ticks.length > 0 && (
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+            <span
+              style={{
+                fontFamily: FONT_TEXT,
+                fontSize: 9.5,
+                fontWeight: 500,
+                letterSpacing: '+0.04em',
+                textTransform: 'uppercase',
+                color: APPLE_TEXT_SECONDARY,
+              }}
+            >
+              Realized
+            </span>
+            <span
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: 15,
+                fontWeight: 600,
+                color: totalColor,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+              title="Realized profit and loss across settled rounds on this source"
+            >
+              {formatPnl(totalPnl)}
+            </span>
+          </span>
+        )}
       </div>
 
       {hasCurrent && (

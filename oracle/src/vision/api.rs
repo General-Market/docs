@@ -2385,11 +2385,12 @@ async fn player_profile(
     let position_map: std::collections::HashMap<i64, &PositionRow> =
         positions.iter().map(|r| (r.batch_id, r)).collect();
 
-    // Group round_rows by SOURCE (not batch) — each round creates a new batch_id
-    // but the frontend groups by source. We need ticks keyed by source_id.
-    // Also keep the old batch-level map for legacy tick-engine batches.
-    let mut rounds_by_source: std::collections::HashMap<String, Vec<ProfileTick>> =
-        std::collections::HashMap::new();
+    // Each settled round becomes a tick attached to ITS OWN batch_id. Q0
+    // (round_aggs) and Q1 (round_rows) read the same table — grouped vs not —
+    // so every batch with a tick also has an aggregate row and surfaces through
+    // its own ProfileBatch below. Grouping by source name instead would let one
+    // source's settled history land on whichever batch is processed first (the
+    // live, unsettled one) — a past loss bleeding onto the open round.
     let mut rounds_by_batch: std::collections::HashMap<i64, Vec<ProfileTick>> =
         std::collections::HashMap::new();
     for r in &round_rows {
@@ -2400,16 +2401,9 @@ async fn player_profile(
             pnl: (pnl * 100.0).round() / 100.0,
             won: pnl_wei > 0,
         };
-        // Group by source using batch_meta_map
-        if let Some(source) = batch_meta_map.get(&r.batch_id) {
-            rounds_by_source.entry(source.clone()).or_default().push(tick.clone());
-        }
         rounds_by_batch.entry(r.batch_id).or_default().push(tick);
     }
     // Reverse so oldest is first
-    for rounds in rounds_by_source.values_mut() {
-        rounds.reverse();
-    }
     for rounds in rounds_by_batch.values_mut() {
         rounds.reverse();
     }
@@ -2455,11 +2449,9 @@ async fn player_profile(
         let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
 
         let source = batch_meta_map.get(&pos.batch_id).cloned().unwrap_or_default();
-        // Get ticks by source (covers all rounds across all batches for this source)
-        // Use remove so each source's ticks are only attached once
-        let ticks = rounds_by_source.remove(&source)
-            .or_else(|| rounds_by_batch.remove(&pos.batch_id))
-            .unwrap_or_default();
+        // This batch's own settled rounds only. An active (unsettled) batch has
+        // none — so the live round never inherits a prior round's result.
+        let ticks = rounds_by_batch.remove(&pos.batch_id).unwrap_or_default();
 
         // A stale vision_positions row is not proof of activity. The batch is
         // only "active" if the chain hasn't settled it yet AND this player has
@@ -2501,9 +2493,7 @@ async fn player_profile(
         let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
 
         let source = batch_meta_map.get(&agg.batch_id).cloned().unwrap_or_default();
-        let ticks = rounds_by_source.remove(&source)
-            .or_else(|| rounds_by_batch.remove(&agg.batch_id))
-            .unwrap_or_default();
+        let ticks = rounds_by_batch.remove(&agg.batch_id).unwrap_or_default();
 
         profile_batches.push(ProfileBatch {
             batch_id: agg.batch_id,
