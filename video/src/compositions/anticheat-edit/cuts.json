@@ -1,595 +1,1720 @@
 {
   "source": "anticheat-edit/source.mp4",
-  "duration_source": 1824.25,
-  "duration_cut": 1051.559,
-  "ratio": 0.576,
+  "duration_source": 1824.348,
+  "duration_cut": 795.121,
+  "ratio": 0.436,
   "segments": [
     {
-      "start": 88.99,
-      "end": 92.86,
-      "text": "L15  Hook: if you are a trader but don't make as much money as a market maker"
+      "start": 7.489,
+      "end": 11.421,
+      "text": "you are a trader, but don't make as much money as a market maker."
     },
     {
-      "start": 114.34,
-      "end": 120.27,
-      "text": "L19  13 mechanisms every market maker uses to beat you on every trade"
+      "start": 11.502,
+      "end": 15.174,
+      "text": "Here is 13 mechanism that every market maker use"
     },
     {
-      "start": 133.04,
-      "end": 144.04,
-      "text": "L22  I traded 1B volume — perps, options, memecoins, prediction markets + built protocols"
+      "start": 15.435,
+      "end": 18.323,
+      "text": "to make more than you on every trade you make."
     },
     {
-      "start": 156.03,
-      "end": 163.14,
-      "text": "L24  Mission: empower the next generation to have the same winning odds as industry giants"
+      "start": 25.631,
+      "end": 33.237,
+      "text": "I know very well the strategies because I've been trading one billion of volume on purpose"
     },
     {
-      "start": 167.18,
-      "end": 169.47,
-      "text": "L25  Let's start with number one"
+      "start": 38.963,
+      "end": 39.703,
+      "text": "And I built"
     },
     {
-      "start": 204.6,
-      "end": 205.73,
-      "text": "L26  Title: Colocation"
+      "start": 39.904,
+      "end": 41.365,
+      "text": "purpose and index"
     },
     {
-      "start": 220.12,
-      "end": 227.57,
-      "text": "L30  If you ever saw a red candle but weren't fast enough — someone caught it before you"
+      "start": 41.545,
+      "end": 46.7,
+      "text": "protocol myself. The"
     },
     {
-      "start": 228.11,
-      "end": 233.56,
-      "text": "L31  Because some market participants are faster than you"
+      "start": 67.566,
+      "end": 72.912,
+      "text": "The reason I'm making this video is because I'm on a mission to empower the next generatio"
     },
     {
-      "start": 245.1,
-      "end": 251.69,
-      "text": "L34  In colocation, market maker buys slots next to the exchange to be faster"
+      "start": 73.213,
+      "end": 73.873,
+      "text": "traders"
     },
     {
-      "start": 271.073,
-      "end": 279.58,
-      "text": "L36  What MMs do: you trade Paris → Tokyo server, your trade takes time"
+      "start": 74.114,
+      "end": 75.695,
+      "text": "to have the same winning odds"
     },
     {
-      "start": 292.12,
-      "end": 301.4,
-      "text": "L39  They pay the company for servers in the same bay as the order books"
+      "start": 75.976,
+      "end": 79.9,
+      "text": "than the biggest players."
     },
     {
-      "start": 347.54,
-      "end": 356.67,
-      "text": "L41-42  This is a practice every exchange does; MMs pay up to 200K/month"
+      "start": 167.285,
+      "end": 169.968,
+      "text": "And so let's start with number one."
     },
     {
-      "start": 357.87,
-      "end": 369.09,
-      "text": "L43-44  Some exchanges sell it clearly; others, it's decentralized"
+      "start": 220.223,
+      "end": 222.265,
+      "text": "If you ever seen a red candles"
     },
     {
-      "start": 393.5,
-      "end": 404.96,
-      "text": "L47  MM program lets hedge funds pay 200K/month to be faster than you"
+      "start": 222.586,
+      "end": 227.672,
+      "text": "but are not fast enough to catch it, it means that someone else did catch it before you."
     },
     {
-      "start": 405.06,
-      "end": 412.79,
-      "text": "L48  So whenever in backtest you feel you have an edge — someone is before you"
+      "start": 228.213,
+      "end": 229.334,
+      "text": "And this happened"
     },
     {
-      "start": 420.67,
-      "end": 424.32,
-      "text": "L49  And here you have the proof every exchange does this"
+      "start": 229.775,
+      "end": 233.659,
+      "text": "by having some market participants that are faster than you."
     },
     {
-      "start": 429.49,
-      "end": 432.17,
-      "text": "L50  If you want to read more, we made a blog"
+      "start": 245.203,
+      "end": 247.886,
+      "text": "In collocation, market maker buys slots"
     },
     {
-      "start": 437.68,
-      "end": 440.12,
-      "text": "L51  Title: unfair fee tier"
+      "start": 248.867,
+      "end": 251.79,
+      "text": "next to the exchange to be faster."
     },
     {
-      "start": 443.23,
-      "end": 471.29,
-      "text": "L53  Strategy at 30 bps vs. arbitrage at 2-4 bps — MMs have lower tiers"
+      "start": 271.053,
+      "end": 273.896,
+      "text": "what market maker do instead of you is"
     },
     {
-      "start": 473.62,
-      "end": 496.64,
-      "text": "L54  If you don't pay, don't earn, don't have MM access — these strategies aren't for you"
+      "start": 275.198,
+      "end": 277.601,
+      "text": "maybe you are trading from Paris"
     },
     {
-      "start": 525.85,
-      "end": 535.45,
-      "text": "L58  If you do market making or arbitrage, many strategies are 2-4 bps profitable"
+      "start": 278.102,
+      "end": 279.684,
+      "text": "in a server in Tokyo."
     },
     {
-      "start": 535.8,
-      "end": 541.97,
-      "text": "L59  But on those exchanges, you need to pay enough in fees, volume, or programs"
+      "start": 288.256,
+      "end": 289.858,
+      "text": "Your trade will take 200"
     },
     {
-      "start": 543.54,
-      "end": 548.274,
-      "text": "L60  Minimum fees > your edge → forced into directional, riskier strategies [pre]"
+      "start": 290.119,
+      "end": 291.22,
+      "text": "milliseconds."
     },
     {
-      "start": 549.746,
-      "end": 569.27,
-      "text": "L60  Minimum fees > your edge → forced into directional, riskier strategies [post]"
+      "start": 292.218,
+      "end": 297.581,
+      "text": "What the market maker will do is he will pay the company to have servers"
     },
     {
-      "start": 575.74,
-      "end": 585.43,
-      "text": "L61  Depending on broker, edge can go from 5% to 3 bps"
+      "start": 297.803,
+      "end": 299.067,
+      "text": "in the same bay"
     },
     {
-      "start": 585.25,
-      "end": 589.8,
-      "text": "L62  Every exchange you've ever traded on is affected"
+      "start": 300.253,
+      "end": 301.497,
+      "text": "of the order books."
     },
     {
-      "start": 604.71,
-      "end": 609.12,
-      "text": "L64  Title: maxing out advantages"
+      "start": 347.635,
+      "end": 350.279,
+      "text": "This is a practice that every exchange does."
     },
     {
-      "start": 610.58,
-      "end": 615.71,
-      "text": "L65  Trading = how much you risk to get a reward"
+      "start": 350.4,
+      "end": 354.847,
+      "text": "And sometimes market maker pays a collocation up to 200K per month"
     },
     {
-      "start": 618.47,
-      "end": 626.48,
-      "text": "L66  If you pay the platform for advantages, it's like doing a trade"
+      "start": 355.188,
+      "end": 356.77,
+      "text": "just to be faster than you."
     },
     {
-      "start": 627.35,
-      "end": 631.03,
-      "text": "L67  You'll win more later because it's easier to win on the market"
+      "start": 357.973,
+      "end": 359.275,
+      "text": "There is exchanges"
     },
     {
-      "start": 633.43,
-      "end": 648.55,
-      "text": "L68  Almost every exchange has MM programs — 100M to a few hundred K per month"
+      "start": 359.897,
+      "end": 360.497,
+      "text": "where"
     },
     {
-      "start": 649.93,
-      "end": 654.87,
-      "text": "L70  If players are willing to pay this, it means they're profitable"
+      "start": 361.56,
+      "end": 366.808,
+      "text": "they sell collocation clearly. And there is exchanges where"
     },
     {
-      "start": 657.673,
-      "end": 661.94,
-      "text": "L71  Which means: people who don't pay are paying for them"
+      "start": 366.989,
+      "end": 367.369,
+      "text": "it's"
     },
     {
-      "start": 661.76,
-      "end": 666.99,
-      "text": "L72  If your strategy works in backtest but not in life, this is maybe why"
+      "start": 368.031,
+      "end": 368.942,
+      "text": "decentralized. For"
     },
     {
-      "start": 674.78,
-      "end": 693.459,
-      "text": "L73  Listing front-running: insiders know which tokens get listed → frontrun you [pre]"
+      "start": 405.159,
+      "end": 405.779,
+      "text": "And so"
     },
     {
-      "start": 695.473,
-      "end": 699.26,
-      "text": "L73  Listing front-running: insiders know which tokens get listed → frontrun you [post]"
+      "start": 406.02,
+      "end": 406.681,
+      "text": "whenever"
     },
     {
-      "start": 702.65,
-      "end": 708.1,
-      "text": "L74  They don't take direct money — they take a statistical edge"
+      "start": 406.861,
+      "end": 409.805,
+      "text": "in backtest you trade something and you feel you have an edge,"
     },
     {
-      "start": 710.24,
-      "end": 722.33,
-      "text": "L75  1000 trades → won't affect all, but will affect some hugely"
+      "start": 410.446,
+      "end": 412.889,
+      "text": "someone will always be before you."
     },
     {
-      "start": 722.79,
-      "end": 732.96,
-      "text": "L76  Averaged out: you bleed slowly"
+      "start": 420.771,
+      "end": 424.416,
+      "text": "And here you have all the proof that every exchange does."
     },
     {
-      "start": 739.36,
-      "end": 743.2,
-      "text": "L77  Title: unfair dealer flow visibility"
+      "start": 429.586,
+      "end": 432.27,
+      "text": "If you want to read more about it, we made a blog."
     },
     {
-      "start": 744.88,
-      "end": 750.45,
-      "text": "L78  Everyone trades on the exchange but can't see who's trading what"
+      "start": 437.779,
+      "end": 440.623,
+      "text": "The second one is unfair fit here."
     },
     {
-      "start": 751.65,
-      "end": 760.99,
-      "text": "L79  Some participants buy access to this data — know who tends to lose"
+      "start": 443.333,
+      "end": 446.698,
+      "text": "that is profitable at 30 bps"
     },
     {
-      "start": 764.63,
-      "end": 769.8,
-      "text": "L81  They know who wins, who loses, when, where"
+      "start": 446.938,
+      "end": 447.579,
+      "text": "if you"
     },
     {
-      "start": 770.65,
-      "end": 779.12,
-      "text": "L82  Gives them a new class of strategy nobody else can run"
+      "start": 448.02,
+      "end": 449.281,
+      "text": "have a strategy that"
     },
     {
-      "start": 781.03,
-      "end": 783.65,
-      "text": "L83  Affects almost every exchange"
+      "start": 449.803,
+      "end": 452.186,
+      "text": "in average make 30 bps per trade"
     },
     {
-      "start": 787.89,
-      "end": 815.93,
-      "text": "L84  Order books need private servers; on-chain isn't fast enough; you can't avoid this"
+      "start": 453.047,
+      "end": 454.329,
+      "text": "and you have a market maker"
     },
     {
-      "start": 821.49,
-      "end": 829.74,
-      "text": "L86  The only way to avoid this is not to trade on order books"
+      "start": 454.59,
+      "end": 456.072,
+      "text": "who made a lot of money"
     },
     {
-      "start": 850.02,
-      "end": 852.19,
-      "text": "L87  Title: order flows"
+      "start": 461.961,
+      "end": 463.623,
+      "text": "there is some kind of strategy"
     },
     {
-      "start": 857.04,
-      "end": 867.62,
-      "text": "L90  In TradFi / CFDs you trade against a broker directly"
+      "start": 464.004,
+      "end": 468.069,
+      "text": "that are very low edge for example market making for example arbitrage"
     },
     {
-      "start": 867.69,
-      "end": 871.61,
-      "text": "L91  Who charges you spread every time you trade"
+      "start": 468.27,
+      "end": 471.214,
+      "text": "where you make only two to four bps per trades"
     },
     {
-      "start": 871.78,
-      "end": 878.3,
-      "text": "L92  Every zero-fee CFD runs on this business model"
+      "start": 474.606,
+      "end": 476.549,
+      "text": "on this exchange you do not pay a"
     },
     {
-      "start": 878.48,
-      "end": 894.49,
-      "text": "L93  Studies: zero-fee exchanges cost more in spread than fee-paying ones"
+      "start": 476.77,
+      "end": 477.21,
+      "text": "fee"
     },
     {
-      "start": 897.78,
-      "end": 926.65,
-      "text": "L94  Free lunch: see other trades first → faster to react → easy win"
+      "start": 479.374,
+      "end": 480.916,
+      "text": "to lower your tier,"
     },
     {
-      "start": 927.73,
-      "end": 931.04,
-      "text": "L95  Once again, almost every exchange has these programs"
+      "start": 481.397,
+      "end": 483.781,
+      "text": "if on this exchange you don't make enough money,"
     },
     {
-      "start": 930.92,
-      "end": 934.9,
-      "text": "L96  Without it, you're the one losing"
+      "start": 484.402,
+      "end": 487.106,
+      "text": "if on this exchange you don't have access"
     },
     {
-      "start": 934.92,
-      "end": 955.89,
-      "text": "L97  Only way out: become a market maker, or trade products without latency edge"
+      "start": 487.507,
+      "end": 489.269,
+      "text": "to the market making program,"
     },
     {
-      "start": 968.25,
-      "end": 971.821,
-      "text": "L98  In some exchanges, MM trades get filled before yours at same price [pre]"
+      "start": 489.57,
+      "end": 493.957,
+      "text": "this kind of very profitable strategy are not accessible to you because"
     },
     {
-      "start": 973.193,
-      "end": 995.74,
-      "text": "L98  In some exchanges, MM trades get filled before yours at same price [post]"
+      "start": 494.158,
+      "end": 495.299,
+      "text": "the minimum fees"
     },
     {
-      "start": 996.94,
-      "end": 1003.84,
-      "text": "L99  Lots of this in DeFi via complex MEV setups"
+      "start": 495.52,
+      "end": 496.741,
+      "text": "are higher."
     },
     {
-      "start": 1003.66,
-      "end": 1009.78,
-      "text": "L100  Sophisticated trading desks can win with that"
+      "start": 525.953,
+      "end": 527.035,
+      "text": "If you trade"
     },
     {
-      "start": 1027.63,
-      "end": 1034.84,
-      "text": "L101  In normal exchanges: 'order among key priorities'"
+      "start": 529.009,
+      "end": 530.923,
+      "text": "market making or arbitrage,"
     },
     {
-      "start": 1034.82,
-      "end": 1045.94,
-      "text": "L102  Maker can shrink an order book without losing queue place"
+      "start": 531.124,
+      "end": 532.467,
+      "text": "many of the strategy"
     },
     {
-      "start": 1060.38,
-      "end": 1063.64,
-      "text": "L104  Title: cancellation priorities"
+      "start": 532.648,
+      "end": 535.553,
+      "text": "are 2 to 4 BPS per trade profitable."
     },
     {
-      "start": 1064.66,
-      "end": 1072.57,
-      "text": "L105  Someone can cancel before you, even if you asked at the same time"
+      "start": 535.895,
+      "end": 542.067,
+      "text": "But on less exchanges, if you don't pay enough money in fees or volume or on other program"
     },
     {
-      "start": 1080.15,
-      "end": 1085.6,
-      "text": "L107  Information first → take your order first → faster reaction"
+      "start": 543.638,
+      "end": 546.662,
+      "text": "the minimum fees will be higher than this threshold"
     },
     {
-      "start": 1085.64,
-      "end": 1094.59,
-      "text": "L108  Last to react = loses statistical edge = loses P&L"
+      "start": 549.726,
+      "end": 552.89,
+      "text": "and you will be forced to do only directional strategies"
     },
     {
-      "start": 1097.43,
-      "end": 1105.45,
-      "text": "L109  Even on highly directional strategies — multiple percent per trade"
+      "start": 556.815,
+      "end": 559.378,
+      "text": "that are less profitable more risky"
     },
     {
-      "start": 1106.34,
-      "end": 1112.92,
-      "text": "L110  1000 trades → tiny invisible fee on each one"
+      "start": 563.944,
+      "end": 564.645,
+      "text": "than this"
     },
     {
-      "start": 1116.47,
-      "end": 1118.23,
-      "text": "L111  Title: unfair API rate limits"
+      "start": 565.907,
+      "end": 569.191,
+      "text": "than the strategy that the big players are doing"
     },
     {
-      "start": 1118.55,
-      "end": 1127.8,
-      "text": "L112  More API calls → more complex strategies, see more, trade more"
+      "start": 575.836,
+      "end": 577.478,
+      "text": "Once again, you can see that"
     },
     {
-      "start": 1129.07,
-      "end": 1133.57,
-      "text": "L113  Once again, a technical edge on you"
+      "start": 577.999,
+      "end": 580.543,
+      "text": "depending on the brokers in the market,"
     },
     {
-      "start": 1138.64,
-      "end": 1143.09,
-      "text": "L115  Title: unfair funding rate boundary"
+      "start": 580.743,
+      "end": 582.005,
+      "text": "it can go from 5%"
     },
     {
-      "start": 1143.65,
-      "end": 1154.78,
-      "text": "L116  Funding happening in 2 minutes — but you can't arbitrage it"
+      "start": 583.567,
+      "end": 585.42,
+      "text": "only through BPS."
     },
     {
-      "start": 1155.26,
-      "end": 1164.23,
-      "text": "L117  MMs pay exchanges for the edge; you don't have access"
+      "start": 585.73,
+      "end": 587.953,
+      "text": "every exchanges you ever traded on"
     },
     {
-      "start": 1186.73,
-      "end": 1209.29,
-      "text": "L118  Even worse: MM programs paying for quotes — exchanges need liquidity"
+      "start": 588.414,
+      "end": 590.296,
+      "text": "is affected by this."
     },
     {
-      "start": 1209.95,
-      "end": 1216.98,
-      "text": "L119  Pro MMs go to the exchange that pays them the most"
+      "start": 607.334,
+      "end": 609.217,
+      "text": "maxing out advantages."
     },
     {
-      "start": 1217.6,
-      "end": 1225.175,
-      "text": "L120  Exchanges pay the winning participants → other participants pay for that [pre]"
+      "start": 610.68,
+      "end": 612.663,
+      "text": "Trading is how much"
     },
     {
-      "start": 1228.229,
-      "end": 1240.32,
-      "text": "L120  Exchanges pay the winning participants → other participants pay for that [post]"
+      "start": 613.404,
+      "end": 615.808,
+      "text": "you put at risk to get a reward."
     },
     {
-      "start": 1241.56,
-      "end": 1270.28,
-      "text": "L121  Run unprofitable strategies that are still profitable due to the reward — you can never beat them"
+      "start": 619.835,
+      "end": 621.638,
+      "text": "if you pay the platform"
     },
     {
-      "start": 1296.42,
-      "end": 1301.24,
-      "text": "L122-123  Title: maker rebate tiers — works similarly"
+      "start": 622.479,
+      "end": 623.721,
+      "text": "to get advantages,"
     },
     {
-      "start": 1304.35,
-      "end": 1326.22,
-      "text": "L124  Similar to paying MMs, but rewards the top market maker on the venue"
+      "start": 625.264,
+      "end": 626.585,
+      "text": "it's like doing a trade."
     },
     {
-      "start": 1347.04,
-      "end": 1371.76,
-      "text": "L125  Liquidation engine quirks: profitable position closed, MMs offered the liquidation"
+      "start": 627.448,
+      "end": 631.133,
+      "text": "You will win more later because it's easier to win on the market."
     },
     {
-      "start": 1374.41,
-      "end": 1381.02,
-      "text": "L126  Exchanges let MMs take counterparty on liquidation"
+      "start": 633.531,
+      "end": 635.455,
+      "text": "And almost every exchanges"
     },
     {
-      "start": 1381.1,
-      "end": 1399.35,
-      "text": "L127  Best fills (high candles) → given to MM programs, once again"
+      "start": 635.957,
+      "end": 636.338,
+      "text": "have"
     },
     {
-      "start": 1407.22,
-      "end": 1410.591,
-      "text": "L128  All 13 mechanisms — large players use them — but there are solutions [pre]"
+      "start": 636.94,
+      "end": 638.343,
+      "text": "market making program,"
     },
     {
-      "start": 1413.224,
-      "end": 1436.21,
-      "text": "L128  All 13 mechanisms — large players use them — but there are solutions [post]"
+      "start": 638.724,
+      "end": 640.228,
+      "text": "which come from 100"
     },
     {
-      "start": 1437.61,
-      "end": 1455.72,
-      "text": "L129  If you want to avoid this: trade on exchanges that don't allow it"
+      "start": 641.151,
+      "end": 641.752,
+      "text": "million"
     },
     {
-      "start": 1456.12,
-      "end": 1463.85,
-      "text": "L130  Problem: most exchanges run on order books / IMMs with all these issues"
+      "start": 642.995,
+      "end": 648.629,
+      "text": "a few hundred K per month. If"
     },
     {
-      "start": 1464.36,
-      "end": 1470.45,
-      "text": "L131  With General Market, we create the first market in all finance"
+      "start": 650.035,
+      "end": 652.2,
+      "text": "are ready to pay this amount,"
     },
     {
-      "start": 1470.95,
-      "end": 1476.37,
-      "text": "L132  First financial instrument that doesn't give this kind of edge"
+      "start": 652.721,
+      "end": 654.966,
+      "text": "this means that they are profitable."
     },
     {
-      "start": 1480.46,
-      "end": 1488.23,
-      "text": "L134  You can live on the moon, trade in Tokyo, same edge as someone colocated to our servers"
+      "start": 657.653,
+      "end": 662.243,
+      "text": "and this means that people that don't pay this amount are paying for this."
     },
     {
-      "start": 1496.45,
-      "end": 1506.44,
-      "text": "L135  No more unfair listing or insider trading using illegal information"
+      "start": 662.253,
+      "end": 665.25,
+      "text": "your strategy is working in backtesting, but not in life,"
     },
     {
-      "start": 1507.46,
-      "end": 1515.57,
-      "text": "L136  We group assets in batches of 10 to 10,000 — everyone trades together"
+      "start": 665.672,
+      "end": 667.494,
+      "text": "this is maybe why."
     },
     {
-      "start": 1515.81,
-      "end": 1528.46,
-      "text": "L137  Instead of who is best on one market — who is best on 10,000 markets"
+      "start": 674.875,
+      "end": 678.321,
+      "text": "listing front running this one happened on only few exchanges"
     },
     {
-      "start": 1528.38,
-      "end": 1533.29,
-      "text": "L138  Who is better at finding directional data"
+      "start": 685.354,
+      "end": 688.399,
+      "text": "but if you trade major crypto exchanges"
     },
     {
-      "start": 1534.2,
-      "end": 1547.58,
-      "text": "L139  10,000 markets at once → patterns, not insider info"
+      "start": 688.961,
+      "end": 690.143,
+      "text": "and some launchpads"
     },
     {
-      "start": 1552.78,
-      "end": 1561.683,
-      "text": "L140  Not for arbitrage / very technical — for people who learn, like, and find patterns [pre]"
+      "start": 691.185,
+      "end": 692.767,
+      "text": "there is some insider that know"
     },
     {
-      "start": 1564.137,
-      "end": 1572.61,
-      "text": "L140  Not for arbitrage / very technical — for people who learn, like, and find patterns [post]"
+      "start": 695.543,
+      "end": 697.155,
+      "text": "which token will be promoted and"
     },
     {
-      "start": 1587.65,
-      "end": 1595.76,
-      "text": "L141  I've received messages saying what I share isn't true"
+      "start": 697.577,
+      "end": 699.179,
+      "text": "can frontrun you based on that"
     },
     {
-      "start": 1596.75,
-      "end": 1607.71,
-      "text": "L142  I invite you to read the long list of everything that happened on these exchanges"
+      "start": 702.753,
+      "end": 708.197,
+      "text": "On this point, they don't take you directly money, but they take you a statistical hedge."
     },
     {
-      "start": 1609.01,
-      "end": 1613.569,
-      "text": "L143  Only the public part, only what went to court — 10 to 100 more cases per public one [pre]"
+      "start": 710.339,
+      "end": 712.741,
+      "text": "This means that if you make 1000 trades,"
     },
     {
-      "start": 1615.605,
-      "end": 1626.91,
-      "text": "L143  Only the public part, only what went to court — 10 to 100 more cases per public one [post]"
+      "start": 715.384,
+      "end": 716.444,
+      "text": "the front running"
     },
     {
-      "start": 1628.52,
-      "end": 1630.86,
-      "text": "L144  And it happens on every exchange"
+      "start": 717.105,
+      "end": 722.429,
+      "text": "on listings won't affect you on all trade, but it will affect you hugely on some trades."
     },
     {
-      "start": 1632.8,
-      "end": 1636.65,
-      "text": "L146  Every exchange with order books or IMM technology"
+      "start": 722.89,
+      "end": 725.712,
+      "text": "And if you average on every trade you make in your life,"
     },
     {
-      "start": 1636.87,
-      "end": 1639.57,
-      "text": "L147  Not that exchanges are bad —"
+      "start": 730.136,
+      "end": 733.458,
+      "text": "you will bleed slowly some money."
     },
     {
-      "start": 1639.65,
-      "end": 1646.2,
-      "text": "L148  business model: maintain an order book → you need this kind of practice"
+      "start": 739.456,
+      "end": 741.158,
+      "text": "the unfair dealer flow"
     },
     {
-      "start": 1656.39,
-      "end": 1664.47,
-      "text": "L151  They can only exist by removing your edge"
+      "start": 741.639,
+      "end": 743.301,
+      "text": "visibility."
     },
     {
-      "start": 1669.92,
-      "end": 1679.29,
-      "text": "L152  As builder of General — once I see what we're doing, I'll never trade on order books"
+      "start": 744.984,
+      "end": 747.167,
+      "text": "Everyone makes trade on an exchange,"
     },
     {
-      "start": 1682.11,
-      "end": 1693.55,
-      "text": "L153  Polymarket case: 0.04% of traders get 70% of wins"
+      "start": 747.608,
+      "end": 748.689,
+      "text": "but you cannot see"
     },
     {
-      "start": 1693.37,
-      "end": 1701.6,
-      "text": "L154  99.96% share only 30% of the winners"
+      "start": 748.87,
+      "end": 750.552,
+      "text": "what trade takes over."
     },
     {
-      "start": 1703.02,
-      "end": 1708.81,
-      "text": "L155  If you think you're smarter than others, look at how much"
+      "start": 751.754,
+      "end": 755.74,
+      "text": "But some market participants can just buy access to this data"
     },
     {
-      "start": 1710.23,
-      "end": 1715.209,
-      "text": "L156  hedge funds spend on infrastructure — if you haven't spent 1M, you're the one being found [pre]"
+      "start": 756.161,
+      "end": 757.743,
+      "text": "and can know, OK,"
     },
     {
-      "start": 1718.549,
-      "end": 1723.82,
-      "text": "L156  hedge funds spend on infrastructure — if you haven't spent 1M, you're the one being found [post]"
+      "start": 758.584,
+      "end": 761.087,
+      "text": "this kind of trader tend to lose a lot."
     },
     {
-      "start": 1738.03,
-      "end": 1740.27,
-      "text": "L159  Join our Discord to know more"
+      "start": 764.734,
+      "end": 767.309,
+      "text": "It can know who win, who lose, when"
     },
     {
-      "start": 1763.0,
-      "end": 1774.51,
-      "text": "L162  Hope this video brings a spark — in 10 years you'll be glad to have avoided this"
+      "start": 768.812,
+      "end": 769.903,
+      "text": "they take trades."
     },
     {
-      "start": 1810.67,
-      "end": 1824.25,
-      "text": "L164  Always choose your counterparty; if not technical, don't trade where technical players win 70%"
+      "start": 770.746,
+      "end": 779.222,
+      "text": "And this gives them access to a new kind of strategy that no one else is able to do."
+    },
+    {
+      "start": 781.127,
+      "end": 783.751,
+      "text": "It affects almost every exchanges."
+    },
+    {
+      "start": 790.03,
+      "end": 791.751,
+      "text": "it's a basic of order books"
+    },
+    {
+      "start": 792.872,
+      "end": 797.677,
+      "text": "to make an efficient order books you need private server even decentralized finance"
+    },
+    {
+      "start": 798.237,
+      "end": 799.218,
+      "text": "is not enough"
+    },
+    {
+      "start": 800.579,
+      "end": 802.961,
+      "text": "on chain order book are not enough efficient"
+    },
+    {
+      "start": 803.402,
+      "end": 805.303,
+      "text": "for speed unit in order books"
+    },
+    {
+      "start": 808.607,
+      "end": 811.789,
+      "text": "so every exchanges you will trade with another book"
+    },
+    {
+      "start": 813.011,
+      "end": 815.853,
+      "text": "will have this dealer flow visibility"
+    },
+    {
+      "start": 821.417,
+      "end": 830.236,
+      "text": "about. The only way to avoid this is by not trading on all the books."
+    },
+    {
+      "start": 850.122,
+      "end": 852.286,
+      "text": "Next is order flows."
+    },
+    {
+      "start": 857.138,
+      "end": 860.585,
+      "text": "We can see it more in traditional finance or in CFDs"
+    },
+    {
+      "start": 861.889,
+      "end": 862.369,
+      "text": "where"
+    },
+    {
+      "start": 862.55,
+      "end": 864.234,
+      "text": "instead of trading on another book,"
+    },
+    {
+      "start": 864.595,
+      "end": 867.721,
+      "text": "you will trade against a broker directly."
+    },
+    {
+      "start": 867.79,
+      "end": 869.452,
+      "text": "that will charge you some"
+    },
+    {
+      "start": 869.733,
+      "end": 871.715,
+      "text": "spread each time you trade."
+    },
+    {
+      "start": 871.876,
+      "end": 874.939,
+      "text": "Mainly in every CFDs where you see zero fees,"
+    },
+    {
+      "start": 875.48,
+      "end": 878.404,
+      "text": "it means that they run on this kind of business."
+    },
+    {
+      "start": 878.585,
+      "end": 879.986,
+      "text": "And some studies shows"
+    },
+    {
+      "start": 881.128,
+      "end": 881.508,
+      "text": "that"
+    },
+    {
+      "start": 881.949,
+      "end": 885.294,
+      "text": "trading on this kind of exchange,"
+    },
+    {
+      "start": 885.755,
+      "end": 887.717,
+      "text": "trading with zero fees exchanges"
+    },
+    {
+      "start": 888.218,
+      "end": 888.878,
+      "text": "always"
+    },
+    {
+      "start": 890.04,
+      "end": 894.986,
+      "text": "cost more in spread than trading of real exchange with fees."
+    },
+    {
+      "start": 897.878,
+      "end": 899.159,
+      "text": "there is no free lunch"
+    },
+    {
+      "start": 909.05,
+      "end": 910.712,
+      "text": "and fair feed latency"
+    },
+    {
+      "start": 912.354,
+      "end": 913.335,
+      "text": "if you can see"
+    },
+    {
+      "start": 913.635,
+      "end": 914.236,
+      "text": "trades"
+    },
+    {
+      "start": 914.917,
+      "end": 915.777,
+      "text": "of overs"
+    },
+    {
+      "start": 916.198,
+      "end": 917.059,
+      "text": "on the order books"
+    },
+    {
+      "start": 917.339,
+      "end": 918.38,
+      "text": "before anyone else"
+    },
+    {
+      "start": 919.241,
+      "end": 920.132,
+      "text": "you will be faster"
+    },
+    {
+      "start": 922.495,
+      "end": 923.786,
+      "text": "to react to the market"
+    },
+    {
+      "start": 924.407,
+      "end": 926.569,
+      "text": "and it will be pretty easy to win"
+    },
+    {
+      "start": 927.831,
+      "end": 931.136,
+      "text": "And once again, almost every exchange has this kind of programs."
+    },
+    {
+      "start": 931.356,
+      "end": 933.359,
+      "text": "if you don't have this kind of programs,"
+    },
+    {
+      "start": 933.6,
+      "end": 935.001,
+      "text": "you are the one losing."
+    },
+    {
+      "start": 935.022,
+      "end": 935.963,
+      "text": "The only way"
+    },
+    {
+      "start": 936.164,
+      "end": 936.985,
+      "text": "to not"
+    },
+    {
+      "start": 941.793,
+      "end": 945.198,
+      "text": "have this kind of issue is either you become a market maker,"
+    },
+    {
+      "start": 945.699,
+      "end": 946.219,
+      "text": "either"
+    },
+    {
+      "start": 946.7,
+      "end": 947.922,
+      "text": "you trade on"
+    },
+    {
+      "start": 948.623,
+      "end": 949.344,
+      "text": "products,"
+    },
+    {
+      "start": 950.386,
+      "end": 952.709,
+      "text": "either you trade on financial products"
+    },
+    {
+      "start": 953.13,
+      "end": 956.394,
+      "text": "that doesn't have edge on latency."
+    },
+    {
+      "start": 968.348,
+      "end": 970.63,
+      "text": "unfair matching and giant priority"
+    },
+    {
+      "start": 973.173,
+      "end": 974.294,
+      "text": "in some exchanges"
+    },
+    {
+      "start": 974.875,
+      "end": 977.457,
+      "text": "your trade will be first to be filled"
+    },
+    {
+      "start": 977.858,
+      "end": 978.799,
+      "text": "so if you"
+    },
+    {
+      "start": 979.359,
+      "end": 980.981,
+      "text": "with another market participant"
+    },
+    {
+      "start": 981.321,
+      "end": 982.482,
+      "text": "put a trade at 10"
+    },
+    {
+      "start": 983.243,
+      "end": 984.905,
+      "text": "both of you at the same times"
+    },
+    {
+      "start": 986.667,
+      "end": 987.808,
+      "text": "the market maker"
+    },
+    {
+      "start": 988.008,
+      "end": 989.029,
+      "text": "or the hedge fund"
+    },
+    {
+      "start": 989.39,
+      "end": 992.833,
+      "text": "that did pay some benefits that is paying more money for you to"
+    },
+    {
+      "start": 993.174,
+      "end": 993.874,
+      "text": "get filled"
+    },
+    {
+      "start": 994.215,
+      "end": 995.656,
+      "text": "will be filled in first"
+    },
+    {
+      "start": 997.036,
+      "end": 1000.386,
+      "text": "This open a lot in DeFi where there is a lot of MEV"
+    },
+    {
+      "start": 1000.688,
+      "end": 1004.138,
+      "text": "that are complex setups."
+    },
+    {
+      "start": 1004.159,
+      "end": 1007.128,
+      "text": "very sophisticated trading desk"
+    },
+    {
+      "start": 1007.59,
+      "end": 1008.031,
+      "text": "can"
+    },
+    {
+      "start": 1008.553,
+      "end": 1009.876,
+      "text": "win with that."
+    },
+    {
+      "start": 1027.731,
+      "end": 1030.275,
+      "text": "In finance, in normal exchanges,"
+    },
+    {
+      "start": 1031.357,
+      "end": 1034.942,
+      "text": "there is what we call order among key priorities."
+    },
+    {
+      "start": 1034.942,
+      "end": 1037.326,
+      "text": "It's often in big crypto exchanges"
+    },
+    {
+      "start": 1037.847,
+      "end": 1038.367,
+      "text": "where"
+    },
+    {
+      "start": 1040.811,
+      "end": 1042.334,
+      "text": "the maker of the order"
+    },
+    {
+      "start": 1042.614,
+      "end": 1046.439,
+      "text": "shrink an order book without losing its place in the queue."
+    },
+    {
+      "start": 1060.478,
+      "end": 1063.742,
+      "text": "And coming to the next one, cancellation priorities."
+    },
+    {
+      "start": 1064.764,
+      "end": 1072.673,
+      "text": "It means that someone can cancel the trade before you, even if you ask it at the same time"
+    },
+    {
+      "start": 1080.246,
+      "end": 1081.73,
+      "text": "getting information first,"
+    },
+    {
+      "start": 1082.232,
+      "end": 1085.702,
+      "text": "you can take your order first so you can react to the market faster."
+    },
+    {
+      "start": 1085.743,
+      "end": 1088.671,
+      "text": "And once again, the last in the market to be able to react"
+    },
+    {
+      "start": 1092.463,
+      "end": 1094.689,
+      "text": "is the one that lose P&L on that."
+    },
+    {
+      "start": 1097.526,
+      "end": 1103.933,
+      "text": "Even if you are making strategy that are very directional, that take multiple percent"
+    },
+    {
+      "start": 1104.253,
+      "end": 1105.554,
+      "text": "win per trades."
+    },
+    {
+      "start": 1106.436,
+      "end": 1113.423,
+      "text": "If you make 1000 trades, it is a small fee, very invisible that it takes on each of them."
+    },
+    {
+      "start": 1116.567,
+      "end": 1118.328,
+      "text": "Unfair API rate limits."
+    },
+    {
+      "start": 1118.649,
+      "end": 1120.011,
+      "text": "If someone can call"
+    },
+    {
+      "start": 1120.431,
+      "end": 1121.512,
+      "text": "an API"
+    },
+    {
+      "start": 1121.793,
+      "end": 1126.297,
+      "text": "more than you, he can make more complex strategy, he can see more things, he can"
+    },
+    {
+      "start": 1126.478,
+      "end": 1127.899,
+      "text": "trade more assets."
+    },
+    {
+      "start": 1130.549,
+      "end": 1131.79,
+      "text": "it will once again get a"
+    },
+    {
+      "start": 1132.171,
+      "end": 1134.073,
+      "text": "technical edge on you."
+    },
+    {
+      "start": 1138.741,
+      "end": 1140.323,
+      "text": "Unfair"
+    },
+    {
+      "start": 1141.605,
+      "end": 1143.186,
+      "text": "funding rate boundary."
+    },
+    {
+      "start": 1143.748,
+      "end": 1145.109,
+      "text": "If you have a trade on purpose"
+    },
+    {
+      "start": 1145.51,
+      "end": 1147.433,
+      "text": "and you try to trade fundings,"
+    },
+    {
+      "start": 1147.753,
+      "end": 1152.24,
+      "text": "you see that there is a funding happening in two minutes,"
+    },
+    {
+      "start": 1152.66,
+      "end": 1154.883,
+      "text": "but you can never arbitrage it."
+    },
+    {
+      "start": 1155.357,
+      "end": 1158.429,
+      "text": "some market participants are paying exchanges"
+    },
+    {
+      "start": 1158.611,
+      "end": 1159.755,
+      "text": "to have an edge on that"
+    },
+    {
+      "start": 1161.844,
+      "end": 1164.553,
+      "text": "and you usually don't have access to that"
+    },
+    {
+      "start": 1186.829,
+      "end": 1188.812,
+      "text": "and it gets even worse"
+    },
+    {
+      "start": 1189.574,
+      "end": 1192.339,
+      "text": "mm programs that pays market making for quotes"
+    },
+    {
+      "start": 1194.944,
+      "end": 1199.151,
+      "text": "no one is able everyone every exchanges that have another books"
+    },
+    {
+      "start": 1199.332,
+      "end": 1200.493,
+      "text": "need to make"
+    },
+    {
+      "start": 1200.774,
+      "end": 1201.996,
+      "text": "liquidity on their books"
+    },
+    {
+      "start": 1202.277,
+      "end": 1203.719,
+      "text": "so they need to incentivize"
+    },
+    {
+      "start": 1206.534,
+      "end": 1207.947,
+      "text": "professional market maker"
+    },
+    {
+      "start": 1208.428,
+      "end": 1209.209,
+      "text": "wants"
+    },
+    {
+      "start": 1210.049,
+      "end": 1214.434,
+      "text": "and professional market maker will go to the exchange that pays the most to them"
+    },
+    {
+      "start": 1214.974,
+      "end": 1217.076,
+      "text": "to get this reward."
+    },
+    {
+      "start": 1217.697,
+      "end": 1220.14,
+      "text": "So exchanges are paying the market"
+    },
+    {
+      "start": 1232.193,
+      "end": 1235.437,
+      "text": "participants that already win the most with more money"
+    },
+    {
+      "start": 1236.818,
+      "end": 1238.32,
+      "text": "to incentivize them"
+    },
+    {
+      "start": 1239.041,
+      "end": 1240.422,
+      "text": "to stay on the platform."
+    },
+    {
+      "start": 1241.656,
+      "end": 1242.557,
+      "text": "which mean"
+    },
+    {
+      "start": 1243.378,
+      "end": 1245.161,
+      "text": "and it's a lot more complex than that"
+    },
+    {
+      "start": 1245.762,
+      "end": 1250.248,
+      "text": "they can run strategy that are not profitable and still be profitable in the end"
+    },
+    {
+      "start": 1251.349,
+      "end": 1256.636,
+      "text": "this means that if there is an alpha on the market about arbitrage about market making or "
+    },
+    {
+      "start": 1258.299,
+      "end": 1262.144,
+      "text": "you will never be able to be profitable on that kind of strategy"
+    },
+    {
+      "start": 1262.585,
+      "end": 1265.148,
+      "text": "because they will take all the liquidity"
+    },
+    {
+      "start": 1265.549,
+      "end": 1266.75,
+      "text": "even until"
+    },
+    {
+      "start": 1267.031,
+      "end": 1270.195,
+      "text": "they are not profitable because of this reward"
+    },
+    {
+      "start": 1296.516,
+      "end": 1297.697,
+      "text": "maker"
+    },
+    {
+      "start": 1298.419,
+      "end": 1301.342,
+      "text": "rebate tiers. It's worked very similarly."
+    },
+    {
+      "start": 1304.447,
+      "end": 1307.13,
+      "text": "It's very similar as paying market makers,"
+    },
+    {
+      "start": 1307.311,
+      "end": 1308.933,
+      "text": "to quote, but this time"
+    },
+    {
+      "start": 1313.359,
+      "end": 1318.506,
+      "text": "it's a program that rewards"
+    },
+    {
+      "start": 1323.453,
+      "end": 1324.934,
+      "text": "top market maker"
+    },
+    {
+      "start": 1325.275,
+      "end": 1326.716,
+      "text": "on the venue."
+    },
+    {
+      "start": 1347.141,
+      "end": 1349.424,
+      "text": "unfair liquidation engine quirks"
+    },
+    {
+      "start": 1350.046,
+      "end": 1353.151,
+      "text": "on many once again crypto exchanges if your position"
+    },
+    {
+      "start": 1353.451,
+      "end": 1356.416,
+      "text": "is too profitable sometimes the exchange will close it"
+    },
+    {
+      "start": 1362.075,
+      "end": 1368.115,
+      "text": "and sometimes it will offer"
+    },
+    {
+      "start": 1368.737,
+      "end": 1371.681,
+      "text": "market makers to take this liquidation"
+    },
+    {
+      "start": 1381.204,
+      "end": 1382.806,
+      "text": "This means that they can fill"
+    },
+    {
+      "start": 1383.267,
+      "end": 1390.238,
+      "text": "trades at very good prices because often in liquidation we see high candles that takes lik"
+    },
+    {
+      "start": 1390.879,
+      "end": 1392.581,
+      "text": "and these best fills"
+    },
+    {
+      "start": 1394.425,
+      "end": 1396.768,
+      "text": "are given to the programs,"
+    },
+    {
+      "start": 1396.949,
+      "end": 1399.452,
+      "text": "to the market making programs once again."
+    },
+    {
+      "start": 1413.204,
+      "end": 1414.625,
+      "text": "and this is all the"
+    },
+    {
+      "start": 1414.826,
+      "end": 1416.027,
+      "text": "mechanism that"
+    },
+    {
+      "start": 1416.587,
+      "end": 1418.489,
+      "text": "market maker hedge fund managers"
+    },
+    {
+      "start": 1418.87,
+      "end": 1421.472,
+      "text": "or large player are doing to get more"
+    },
+    {
+      "start": 1422.614,
+      "end": 1424.495,
+      "text": "to beat you on every trade you make"
+    },
+    {
+      "start": 1429.22,
+      "end": 1430.321,
+      "text": "there is solutions"
+    },
+    {
+      "start": 1435.046,
+      "end": 1436.127,
+      "text": "first"
+    },
+    {
+      "start": 1437.709,
+      "end": 1441.074,
+      "text": "If you don't want to trade against all this kind of trading,"
+    },
+    {
+      "start": 1441.555,
+      "end": 1442.166,
+      "text": "for example, you"
+    },
+    {
+      "start": 1444.059,
+      "end": 1444.639,
+      "text": "want to"
+    },
+    {
+      "start": 1445.2,
+      "end": 1447.003,
+      "text": "trade directional strategies"
+    },
+    {
+      "start": 1447.364,
+      "end": 1449.567,
+      "text": "and don't want to do crazy arbitrage,"
+    },
+    {
+      "start": 1450.048,
+      "end": 1451.169,
+      "text": "crazy execution,"
+    },
+    {
+      "start": 1452.031,
+      "end": 1453.933,
+      "text": "you need to trade on exchanges"
+    },
+    {
+      "start": 1454.154,
+      "end": 1455.816,
+      "text": "that don't allow this."
+    },
+    {
+      "start": 1456.217,
+      "end": 1463.948,
+      "text": "But the issue is like it's very slim because most of the exchanges run on order books, on "
+    },
+    {
+      "start": 1464.456,
+      "end": 1465.277,
+      "text": "That's why"
+    },
+    {
+      "start": 1465.618,
+      "end": 1467.44,
+      "text": "with general market, we create"
+    },
+    {
+      "start": 1467.661,
+      "end": 1468.883,
+      "text": "the first market"
+    },
+    {
+      "start": 1469.203,
+      "end": 1470.545,
+      "text": "in all financial."
+    },
+    {
+      "start": 1471.046,
+      "end": 1473.33,
+      "text": "We create the first financial instrument"
+    },
+    {
+      "start": 1473.771,
+      "end": 1474.752,
+      "text": "that doesn't give"
+    },
+    {
+      "start": 1475.333,
+      "end": 1476.294,
+      "text": "this kind of edge."
+    },
+    {
+      "start": 1480.561,
+      "end": 1482.684,
+      "text": "You can live on the moon and trade in Tokyo"
+    },
+    {
+      "start": 1483.125,
+      "end": 1484.127,
+      "text": "and don't"
+    },
+    {
+      "start": 1484.327,
+      "end": 1488.333,
+      "text": "have less edge than someone that is co-located to our servers."
+    },
+    {
+      "start": 1496.553,
+      "end": 1498.959,
+      "text": "You don't have to suffer from"
+    },
+    {
+      "start": 1499.662,
+      "end": 1500.905,
+      "text": "unfair market listing"
+    },
+    {
+      "start": 1502.109,
+      "end": 1502.73,
+      "text": "unfair"
+    },
+    {
+      "start": 1503.052,
+      "end": 1505.178,
+      "text": "insider trading using illegal"
+    },
+    {
+      "start": 1505.399,
+      "end": 1506.541,
+      "text": "information."
+    },
+    {
+      "start": 1507.555,
+      "end": 1509.437,
+      "text": "because we group assets"
+    },
+    {
+      "start": 1509.618,
+      "end": 1510.499,
+      "text": "between batch"
+    },
+    {
+      "start": 1511.02,
+      "end": 1513.563,
+      "text": "of 10 to 10,000 assets,"
+    },
+    {
+      "start": 1513.783,
+      "end": 1515.665,
+      "text": "but everyone trade together."
+    },
+    {
+      "start": 1515.906,
+      "end": 1517.087,
+      "text": "So instead of"
+    },
+    {
+      "start": 1517.448,
+      "end": 1523.236,
+      "text": "finding out who is the best trader on one market, where often there is like someone very g"
+    },
+    {
+      "start": 1523.857,
+      "end": 1524.818,
+      "text": "we are switching"
+    },
+    {
+      "start": 1525.319,
+      "end": 1528.563,
+      "text": "the market to know who is better at 10,000 market."
+    },
+    {
+      "start": 1528.563,
+      "end": 1530.986,
+      "text": "So who is better to find directional"
+    },
+    {
+      "start": 1532.248,
+      "end": 1533.209,
+      "text": "data"
+    },
+    {
+      "start": 1534.302,
+      "end": 1538.936,
+      "text": "Because most often, if you trade 10,000 markets at once, you cannot rely on"
+    },
+    {
+      "start": 1539.117,
+      "end": 1547.682,
+      "text": "specific information, but you have to rely more on patterns that everyone can access to."
+    },
+    {
+      "start": 1552.881,
+      "end": 1555.865,
+      "text": "you want to make arbitrage or very technical"
+    },
+    {
+      "start": 1556.286,
+      "end": 1556.846,
+      "text": "trades"
+    },
+    {
+      "start": 1557.487,
+      "end": 1561.132,
+      "text": "general is not for you it's only for people that want still"
+    },
+    {
+      "start": 1564.207,
+      "end": 1564.897,
+      "text": "to do trading"
+    },
+    {
+      "start": 1567.812,
+      "end": 1569.063,
+      "text": "like they have an agent"
+    },
+    {
+      "start": 1569.544,
+      "end": 1572.528,
+      "text": "by finding patterns by finding inefficiency"
+    },
+    {
+      "start": 1587.745,
+      "end": 1591.753,
+      "text": "I've received a lot of messages saying that"
+    },
+    {
+      "start": 1592.195,
+      "end": 1592.715,
+      "text": "what I'm"
+    },
+    {
+      "start": 1593.638,
+      "end": 1595.862,
+      "text": "sharing in this video is not true."
+    },
+    {
+      "start": 1596.845,
+      "end": 1598.167,
+      "text": "And I invite you"
+    },
+    {
+      "start": 1598.408,
+      "end": 1601.054,
+      "text": "to read the long list"
+    },
+    {
+      "start": 1602.377,
+      "end": 1605.564,
+      "text": "everything that happened on all exchanges"
+    },
+    {
+      "start": 1605.925,
+      "end": 1607.808,
+      "text": "listed in this video."
+    },
+    {
+      "start": 1615.585,
+      "end": 1615.925,
+      "text": "it's"
+    },
+    {
+      "start": 1619.183,
+      "end": 1621.037,
+      "text": "only the part that went to court"
+    },
+    {
+      "start": 1621.779,
+      "end": 1623.222,
+      "text": "but for each case"
+    },
+    {
+      "start": 1623.423,
+      "end": 1626.831,
+      "text": "like that there is 10 to 100 case not covered"
+    },
+    {
+      "start": 1633.424,
+      "end": 1636.748,
+      "text": "on every exchanges that have order books or IMM technology."
+    },
+    {
+      "start": 1636.969,
+      "end": 1639.673,
+      "text": "It's not about that exchanges are bad."
+    },
+    {
+      "start": 1639.754,
+      "end": 1640.514,
+      "text": "This is about"
+    },
+    {
+      "start": 1641.256,
+      "end": 1646.303,
+      "text": "business model that to maintain an order book, you need this kind of practice."
+    },
+    {
+      "start": 1656.494,
+      "end": 1658.096,
+      "text": "They can only existing"
+    },
+    {
+      "start": 1662.844,
+      "end": 1664.567,
+      "text": "by removing your edge."
+    },
+    {
+      "start": 1670.016,
+      "end": 1674.704,
+      "text": "I used to say as a builder of general,"
+    },
+    {
+      "start": 1675.625,
+      "end": 1679.391,
+      "text": "once I see what we are doing, I will never trade on over market."
+    },
+    {
+      "start": 1682.211,
+      "end": 1683.633,
+      "text": "especially when you see"
+    },
+    {
+      "start": 1684.013,
+      "end": 1685.795,
+      "text": "a case recently on Polymarket"
+    },
+    {
+      "start": 1686.116,
+      "end": 1688.659,
+      "text": "where 0.04%"
+    },
+    {
+      "start": 1689.04,
+      "end": 1690.862,
+      "text": "of traders get 70%"
+    },
+    {
+      "start": 1691.904,
+      "end": 1692.244,
+      "text": "of"
+    },
+    {
+      "start": 1692.985,
+      "end": 1693.846,
+      "text": "wins."
+    },
+    {
+      "start": 1694.057,
+      "end": 1696.49,
+      "text": "that 99.96%"
+    },
+    {
+      "start": 1697.271,
+      "end": 1699.414,
+      "text": "of traders only share 30%"
+    },
+    {
+      "start": 1699.975,
+      "end": 1700.295,
+      "text": "of"
+    },
+    {
+      "start": 1700.876,
+      "end": 1701.696,
+      "text": "all winners."
+    },
+    {
+      "start": 1703.119,
+      "end": 1705.902,
+      "text": "And if you ever think that you are smarter than others,"
+    },
+    {
+      "start": 1706.664,
+      "end": 1708.726,
+      "text": "you can just look at how much"
+    },
+    {
+      "start": 1710.325,
+      "end": 1711.949,
+      "text": "hedge funds spend"
+    },
+    {
+      "start": 1712.411,
+      "end": 1714.757,
+      "text": "on their infrastructures to know that"
+    },
+    {
+      "start": 1718.529,
+      "end": 1723.744,
+      "text": "if you haven't spent 1 million on your infrastructure probably you are the one being found"
+    },
+    {
+      "start": 1758.127,
+      "end": 1760.189,
+      "text": "You can join our discord to know more. And"
+    },
+    {
+      "start": 1783.099,
+      "end": 1785.102,
+      "text": "And I hope this video will"
+    },
+    {
+      "start": 1785.463,
+      "end": 1786.404,
+      "text": "bring a spark"
+    },
+    {
+      "start": 1786.945,
+      "end": 1789.708,
+      "text": "where when you will still trading in 10 years,"
+    },
+    {
+      "start": 1790.269,
+      "end": 1794.614,
+      "text": "you will be glad to know about this and to have avoided this."
+    },
+    {
+      "start": 1810.771,
+      "end": 1813.214,
+      "text": "Always choose who is your counterparty"
+    },
+    {
+      "start": 1813.595,
+      "end": 1816.398,
+      "text": "and make sure that if you don't trade technical,"
+    },
+    {
+      "start": 1817.76,
+      "end": 1820.283,
+      "text": "don't trade on markets where"
+    },
+    {
+      "start": 1820.564,
+      "end": 1822.966,
+      "text": "technical players are rewarded with 70%"
+    },
+    {
+      "start": 1823.267,
+      "end": 1824.348,
+      "text": "of profits."
     }
   ],
   "stats": {
-    "method": "hand-curated from English transcript, one best take per beat",
-    "pad_seconds": 0.2,
-    "beats": 108,
-    "stutter_trims": 10,
-    "after_clean_segments": 116
+    "method": "word-level clean rebuild — rollbacks, hesitations, slide-repeats removed",
+    "lead_pad": 0.1,
+    "tail_pad": 0.12,
+    "sent_end_pad": 0.3,
+    "hesitation_gap_s": 0.4
   }
 }

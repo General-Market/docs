@@ -26,6 +26,7 @@ import {
 import metaJson from "./final.meta.json";
 import { AntiCheatLayout } from "./AntiCheatLayout";
 import { CaptionLayer } from "./CaptionLayer";
+import { ChapterRail } from "./overlays/ChapterRail";
 import { MusicTrack } from "./MusicTrack";
 import { AtmosphereTrack } from "./AtmosphereTrack";
 import { IntroHero, HERO_FROM, HERO_DUR } from "./overlays/IntroHero";
@@ -39,14 +40,25 @@ const W = 1920;
 const H = 1080;
 
 const durationSeconds = Number((metaJson as { duration_seconds: number }).duration_seconds) || 1;
-const totalDurationFrames = Math.max(1, Math.round(durationSeconds * FPS));
+const bakedFrames = Math.max(1, Math.round(durationSeconds * FPS));
+
+// The recording trails off on a qualifier — "…and make sure that if you don't
+// trade technical, don't trade on markets where…". The line that lands is the
+// one before it: "Always choose who is your counterparty." We end the speech
+// there (10:45; "counterparty." finishes ~645.1s, "and" begins 645.28s) and
+// hand straight to the outro. The dropped tail is ~4s of final.mp4 that simply
+// never plays — clamped to the baked length for safety.
+const SPEECH_END_SEC = 645.2;
+const SPEECH_END_FRAMES = Math.min(bakedFrames, Math.round(SPEECH_END_SEC * FPS));
 
 // The same close as AntiCheatFull — the inverted blue end card. It crossfades
-// in over the last frames of the talk, then holds in silence for reading time
-// (the music and voice have already ended, exactly as in the full cut).
+// in over the last frames of the *speech* (not the baked end), then holds for
+// reading time. Unlike the full cut, the warm score plays ON through the card:
+// MusicTrack's final cue now runs to the composition end, so the outro lands on
+// music, not silence.
 const END_CARD_FRAMES = antiCheatEndCardMeta.durationInFrames;
 const END_CARD_CROSSFADE = 14;
-const END_CARD_START = totalDurationFrames - END_CARD_CROSSFADE;
+const END_CARD_START = SPEECH_END_FRAMES - END_CARD_CROSSFADE;
 const compositionDurationFrames = END_CARD_START + END_CARD_FRAMES;
 
 // Resting white bloom from AntiCheatFull's root. The full cut pulses this on
@@ -58,7 +70,7 @@ const REST_TEXT_SHADOW =
 export const AntiCheatEditComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#020E2B" }}>
-      <Sequence durationInFrames={totalDurationFrames} layout="none">
+      <Sequence durationInFrames={SPEECH_END_FRAMES} layout="none">
         <AntiCheatLayout />
       </Sequence>
 
@@ -69,8 +81,15 @@ export const AntiCheatEditComposition: React.FC = () => {
         <IntroHero />
       </Sequence>
 
+      {/* Chapter rail — the persistent progress spine. Always on while the 13
+          mechanisms play (mechanism 01 → the turn); top-edge chrome over the
+          head, fades out as the answer begins. */}
+      <Sequence durationInFrames={SPEECH_END_FRAMES} layout="none">
+        <ChapterRail />
+      </Sequence>
+
       {/* Emphasis captions — above the rig, hidden whenever a panel is active. */}
-      <Sequence durationInFrames={totalDurationFrames} layout="none">
+      <Sequence durationInFrames={SPEECH_END_FRAMES} layout="none">
         <CaptionLayer />
       </Sequence>
 

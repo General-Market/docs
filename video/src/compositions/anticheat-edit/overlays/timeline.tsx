@@ -1,8 +1,9 @@
 import { type FC } from "react";
 import { MechanismsOverview } from "./charts";
 import { TitleSlide } from "./TitleSlide";
-import { ExchangeBreakdown } from "./ExchangeBreakdown";
+import { topicChart } from "./LogoBarChart";
 import { ILLUSTRATIONS_BY_SLUG } from "../illustrations/registry";
+import { CHAPTERS } from "./chapters";
 
 // Overlay timeline — what shows on top of the talking head, and when.
 //
@@ -14,16 +15,18 @@ import { ILLUSTRATIONS_BY_SLUG } from "../illustrations/registry";
 //   title    — the blue section card, dropped over the baked title card.
 //   explain  — the schematic (one of the 24 illustrations) — enters with the
 //              chunky pixel dissolve.
-//   subchart — the venues documented to run it (ExchangeBreakdown).
+//   subchart — the per-venue bar chart from /anticheat-flags (TOPIC_BARS):
+//              venue logos, the sourced value per venue, General at zero. Full
+//              height beside the 1/3 webcam.
 //
 // The title/subchart fade; only the explanation cards pixel-dissolve. The
 // two reusable motifs (slow bleed, subsidy flow) reprise where the script
 // repeats the argument.
 //
-// Timecodes are kept clear of the article-proof flashes in ./articles
-// (the court-case screenshots). Where an article already proves a mechanism
-// at the same beat (funding, liquidation), its subchart is dropped rather
-// than stacked. "Maxing out" has no venue analogue, so no subchart.
+// All thirteen mechanisms carry a bar chart. Funding and Liquidation also have
+// an article-proof flash in ./articles; funding's chart takes its schematic
+// slot (the section is tight), liquidation's sits after the article. "Maxing
+// out" draws the market-maker-subsidy chart.
 //
 // Subcharts are keyed to the bps-rank taxonomy (data.ts), bridged to the
 // spoken mechanism.
@@ -48,103 +51,114 @@ const ill = (slug: string): FC => {
   return entry.component;
 };
 
-// A blue section title card, with the spoken mechanism name.
-const titleCard =
-  (num: number, name: string): FC =>
+// A blue section title card for chapter `num` (1-based), sourced from CHAPTERS
+// so the card's number, name, and time can never drift from the ChapterRail.
+// The inner function MUST stay named "Title" — panelEvents.ts keys the
+// side-flip on `component.name === "Title"`.
+const titleCard = (num: number): FC =>
   function Title() {
+    const ch = CHAPTERS[num - 1];
     return (
       <TitleSlide
-        kicker={`MECHANISM ${String(num).padStart(2, "0")} / 13`}
-        title={name}
+        kicker={`MECHANISM ${String(ch.n).padStart(2, "0")} / 13`}
+        title={ch.name}
       />
     );
   };
 
-// The venue subchart for a bps-rank mechanism slug.
-const subchart =
-  (slug: string): FC =>
-  function Subchart() {
-    return <ExchangeBreakdown mechanismSlug={slug} />;
-  };
+// A title OverlaySlot built straight from CHAPTERS — one source for name + time.
+const titleSlot = (num: number): OverlaySlot => ({
+  at: CHAPTERS[num - 1].at,
+  duration: TITLE,
+  component: titleCard(num),
+});
+
+// Per-venue subchart for a mechanism — the /anticheat-flags "unfair matrix"
+// rendered as a full-height horizontal bar chart: venue logos as labels, the
+// sourced value per venue, General at zero. Keyed by the video mechanism slug;
+// the data lives in venue-bars.ts (TOPIC_BARS).
+const subchart = (slug: string): FC => topicChart(slug);
 
 export const OVERLAYS: OverlaySlot[] = [
   // Opener — the whole ranking at once.
   { at: 0.5, duration: 6, component: MechanismsOverview, pixel: true },
 
   // ── 01 Colocation
-  { at: 24.0, duration: TITLE, component: titleCard(1, "Colocation") },
-  { at: 28, duration: HOLD, component: ill("m01-colocation"), pixel: true },
-  { at: 44, duration: HOLD, component: ill("motif-latency-map"), pixel: true },
-  { at: 60, duration: HOLD, component: subchart("colocation") },
-  { at: 79, duration: HOLD, component: ill("motif-backtest-vs-live"), pixel: true },
+  titleSlot(1),
+  { at: 29.807, duration: HOLD, component: ill("m01-colocation"), pixel: true },
+  { at: 37.796, duration: HOLD, component: ill("motif-latency-map"), pixel: true },
+  { at: 57.187, duration: HOLD, component: subchart("colocation") },
+  { at: 60.734, duration: HOLD, component: ill("motif-backtest-vs-live"), pixel: true },
 
-  // ── 02 Unfair fee tiers  (article: vip-fee-tier @130)
-  { at: 91.8, duration: TITLE, component: titleCard(2, "Unfair Fee Tiers") },
-  { at: 99, duration: HOLD, component: ill("motif-bps-ruler"), pixel: true },
-  { at: 116, duration: HOLD, component: ill("m02-fee-tiers"), pixel: true },
-  { at: 150, duration: HOLD, component: subchart("vip-fee-tier") },
+  // ── 02 Unfair fee tiers  (article: vip-fee-tier @110.66)
+  titleSlot(2),
+  { at: 79.287, duration: HOLD, component: ill("motif-bps-ruler"), pixel: true },
+  { at: 90.05, duration: HOLD, component: ill("m02-fee-tiers"), pixel: true },
+  { at: 102.561, duration: HOLD, component: subchart("vip-fee-tier") },
 
-  // ── 03 Maxing out advantages (no venue analogue → no subchart)
-  { at: 160.5, duration: TITLE, component: titleCard(3, "Maxing Out Advantages") },
-  { at: 169.5, duration: HOLD, component: ill("m03-maxing-out"), pixel: true },
-  { at: 190, duration: HOLD, component: ill("motif-subsidy-flow"), pixel: true },
+  // ── 03 Maxing out advantages  (chart: market-maker subsidy programs)
+  titleSlot(3),
+  { at: 118.658, duration: HOLD, component: ill("m03-maxing-out"), pixel: true },
+  { at: 128.711, duration: HOLD, component: ill("motif-subsidy-flow"), pixel: true },
+  { at: 137.5, duration: HOLD, component: subchart("maxing-out") },
 
-  // ── 04 Listing front-running  (article: listing-frontrun @214.9)
-  { at: 203.1, duration: TITLE, component: titleCard(4, "Listing Front-Running") },
-  { at: 207, duration: HOLD, component: ill("m04-listing-frontrun"), pixel: true },
-  { at: 222, duration: HOLD, component: ill("motif-slow-bleed"), pixel: true },
-  { at: 229, duration: HOLD, component: subchart("listing-frontrun") },
+  // ── 04 Listing front-running  (article: listing-frontrun @160.48)
+  titleSlot(4),
+  { at: 153.588, duration: HOLD, component: ill("m04-listing-frontrun"), pixel: true },
+  { at: 168.426, duration: HOLD, component: subchart("listing-frontrun") },
+  { at: 175.363, duration: HOLD, component: ill("motif-slow-bleed"), pixel: true },
 
-  // ── 05 Dealer flow visibility  (article: order-flow-vis @255)
-  { at: 235.8, duration: TITLE, component: titleCard(5, "Dealer Flow Visibility") },
-  { at: 241, duration: HOLD, component: ill("m05-dealer-flow"), pixel: true },
-  { at: 263, duration: HOLD, component: subchart("order-flow-vis") },
+  // ── 05 Dealer flow visibility  (article: order-flow-vis @191.69)
+  titleSlot(5),
+  { at: 183.925, duration: HOLD, component: ill("m05-dealer-flow"), pixel: true },
+  { at: 212.419, duration: HOLD, component: subchart("order-flow-vis") },
 
-  // ── 06 Order flow  (article: pfof @308.6)
-  { at: 288.5, duration: TITLE, component: titleCard(6, "Order Flow") },
-  { at: 295, duration: HOLD, component: ill("m06-order-flow-pfof"), pixel: true },
-  { at: 302, duration: HOLD, component: subchart("pfof") },
+  // ── 06 Order flow  (article: pfof @242.36)
+  titleSlot(6),
+  { at: 236.465, duration: HOLD, component: ill("m06-order-flow-pfof"), pixel: true },
+  { at: 248.769, duration: HOLD, component: subchart("pfof") },
 
   // ── 07 Feed latency
-  { at: 318.6, duration: TITLE, component: titleCard(7, "Feed Latency") },
-  { at: 323, duration: HOLD, component: ill("m07-feed-latency"), pixel: true },
-  { at: 338, duration: HOLD, component: subchart("region-cluster") },
+  titleSlot(7),
+  { at: 258.7, duration: HOLD, component: ill("m07-feed-latency"), pixel: true },
+  { at: 264.512, duration: HOLD, component: subchart("region-cluster") },
 
-  // ── 08 Matching & queue priority  (articles: jito-mev @368, matching @388)
-  { at: 352.4, duration: TITLE, component: titleCard(8, "Matching & Queue Priority") },
-  { at: 357, duration: HOLD, component: ill("m08-queue-priority"), pixel: true },
-  { at: 376, duration: HOLD, component: subchart("jito-mev") },
+  // ── 08 Matching & queue priority  (articles: jito-mev @302.69, matching @312.88)
+  titleSlot(8),
+  { at: 282.038, duration: HOLD, component: ill("m08-queue-priority"), pixel: true },
+  { at: 296.642, duration: HOLD, component: subchart("jito-mev") },
 
   // ── 09 Cancellation priority
-  { at: 395.4, duration: TITLE, component: titleCard(9, "Cancellation Priority") },
-  { at: 400, duration: HOLD, component: ill("m09-cancel-priority"), pixel: true },
-  { at: 414, duration: HOLD, component: ill("motif-slow-bleed"), pixel: true },
-  { at: 421, duration: HOLD, component: subchart("last-look") },
+  titleSlot(9),
+  { at: 321.172, duration: HOLD, component: ill("m09-cancel-priority"), pixel: true },
+  { at: 329.201, duration: HOLD, component: subchart("last-look") },
+  { at: 345.686, duration: HOLD, component: ill("motif-slow-bleed"), pixel: true },
 
   // ── 10 API rate limits (short section → tighter subchart)
-  { at: 429.3, duration: TITLE, component: titleCard(10, "API Rate Limits") },
-  { at: 432.5, duration: HOLD, component: ill("m10-api-rate-limits"), pixel: true },
-  { at: 438, duration: 5.0, component: subchart("api-rate-ceiling") },
+  titleSlot(10),
+  { at: 354.0, duration: HOLD, component: ill("m10-api-rate-limits"), pixel: true },
+  { at: 360.657, duration: 5.0, component: subchart("api-rate-ceiling") },
 
-  // ── 11 Funding rate edge  (article: funding @451 — it carries the proof)
-  { at: 443.1, duration: TITLE, component: titleCard(11, "Funding Rate Edge") },
-  { at: 445.3, duration: HOLD, component: ill("m11-funding-edge"), pixel: true },
+  // ── 11 Funding rate edge  (tight section: chart takes the schematic slot; article @373.4)
+  titleSlot(11),
+  { at: 367.688, duration: HOLD, component: subchart("funding-edge") },
 
-  // ── 12 Market-maker rebates  (article: maker-rebate @478)
-  { at: 461.7, duration: TITLE, component: titleCard(12, "Market-Maker Rebates") },
-  { at: 466, duration: HOLD, component: ill("m12-maker-rebates"), pixel: true },
-  { at: 486, duration: HOLD, component: ill("motif-subsidy-flow"), pixel: true },
-  { at: 505, duration: HOLD, component: subchart("maker-rebate") },
+  // ── 12 Market-maker rebates  (article: maker-rebate @404.6)
+  titleSlot(12),
+  { at: 383.0, duration: HOLD, component: ill("m12-maker-rebates"), pixel: true },
+  { at: 396.775, duration: HOLD, component: ill("motif-subsidy-flow"), pixel: true },
+  { at: 423.99, duration: HOLD, component: subchart("maker-rebate") },
 
-  // ── 13 Liquidation engine quirks  (article: adl-visibility @560 — carries proof)
-  { at: 534.2, duration: TITLE, component: titleCard(13, "Liquidation Engine Quirks") },
-  { at: 539, duration: HOLD, component: ill("m13-liquidation"), pixel: true },
+  // ── 13 Liquidation engine quirks  (article: adl-visibility @455.19; chart after it)
+  titleSlot(13),
+  { at: 444.267, duration: HOLD, component: ill("m13-liquidation"), pixel: true },
+  { at: 463.0, duration: HOLD, component: subchart("liquidation") },
 
-  // ── The turn — problem to answer  (article: long-list @736)
-  { at: 597, duration: HOLD, component: ill("turn-thin-field"), pixel: true },
-  { at: 627, duration: HOLD, component: ill("turn-batch-pool"), pixel: true },
-  { at: 634, duration: HOLD, component: ill("turn-one-vs-ten-thousand"), pixel: true },
-  { at: 687, duration: HOLD, component: ill("turn-iceberg"), pixel: true },
-  { at: 722, duration: HOLD, component: ill("turn-pareto"), pixel: true },
-  { at: 745, duration: HOLD, component: ill("turn-infra-gap"), pixel: true },
+  // ── The turn — problem to answer  (article: long-list @556.42)
+  { at: 482.045, duration: HOLD, component: ill("turn-thin-field"), pixel: true },
+  { at: 508.58, duration: HOLD, component: ill("turn-batch-pool"), pixel: true },
+  { at: 521.585, duration: HOLD, component: ill("turn-one-vs-ten-thousand"), pixel: true },
+  { at: 527.085, duration: HOLD, component: ill("turn-iceberg"), pixel: true },
+  { at: 601.483, duration: HOLD, component: ill("turn-pareto"), pixel: true },
+  { at: 618.815, duration: HOLD, component: ill("turn-infra-gap"), pixel: true },
 ];

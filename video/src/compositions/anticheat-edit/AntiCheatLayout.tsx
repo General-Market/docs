@@ -43,6 +43,7 @@ import {
 } from "./panelEvents";
 import { BEATS_PLAY_TIME } from "./beatgrid";
 import { colors } from "../anticheat/theme";
+import { RAIL_W, railPresence } from "./overlays/chapters";
 
 const SRC_W = 1920;
 const SRC_H = 1080;
@@ -479,7 +480,11 @@ export const AntiCheatLayout: React.FC = () => {
   const { fps, width: W, height: H } = useVideoConfig();
   const sec = frame / fps;
 
-  const { webcam: RECTS, content: AREAS } = React.useMemo(() => buildRects(W, H), [W, H]);
+  // The chapter board claims the right edge while it is live; ease the whole
+  // rig into the remaining left width by the same presence curve, so the head
+  // and panels never sit behind it (and ease back to full frame at the turn).
+  const EW = W - RAIL_W * railPresence(sec);
+  const { webcam: RECTS, content: AREAS } = buildRects(EW, H);
 
   const scene = panelScene(sec);
 

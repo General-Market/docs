@@ -7,19 +7,21 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../../common/fonts";
+import { font } from "../../../common/fonts";
 import { colors } from "../../anticheat/theme";
 import { DotGrid, DotGridVignette } from "../../anticheat/DotGrid";
-import { IdleZoom, RevealChars } from "../../anticheat/vibe";
+import { IdleZoom } from "../../anticheat/vibe";
 import { MECHANISMS, type Mechanism } from "./data";
 import { venuesForMechanism, type VenueBrand } from "./logos";
 
-// Per-mechanism subdiagram: the venues documented to run this play, as
-// brand cards. Same AntiCheatFull language as the bar charts — light
-// field, Base-blue dot grid, idle breath, near-black display type — so
-// it reads as the second half of each mechanism's beat.
+// Per-mechanism subdiagram, stripped to its essence: the logos of the venues
+// documented to run this play, and the one number that measures it. Same
+// AntiCheatFull language as the bar charts — light field, Base-blue dot grid,
+// idle breath — but no kicker, no title, no fix line, no venue-name labels.
+// Just the diagrams and the bps number. The spoken title card a beat earlier
+// already names the mechanism; the subchart only has to show who runs it and
+// what it costs.
 
-const FG = colors.fg;
 const ACCENT = colors.accent;
 const DIM = colors.dim;
 
@@ -47,53 +49,10 @@ export const ExchangeBreakdown: React.FC<ExchangeBreakdownProps> = ({
       <IdleZoom durationInFrames={9999} from={1.0} to={1.03}>
         <DotGrid intensity={0.85} speed={1.0} />
 
-        {/* Kicker */}
-        <div
-          style={{
-            position: "absolute",
-            top: 110,
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontFamily: monoFont,
-            fontSize: 22,
-            fontWeight: 600,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: ACCENT,
-            opacity: interpolate(frame, [2, 14], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            }),
-          }}
-        >
-          {`Documented at ${venues.length} ${venues.length === 1 ? "venue" : "venues"} · mechanism ${String(m.rank).padStart(2, "0")} / 13`}
-        </div>
+        {/* Venue logos — the diagram */}
+        <VenueCards venues={venues} />
 
-        {/* Title */}
-        <div
-          style={{
-            position: "absolute",
-            top: 148,
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontFamily: font,
-            fontSize: 82,
-            fontWeight: 800,
-            letterSpacing: "-0.022em",
-            lineHeight: 1.0,
-            color: FG,
-            padding: "0 120px",
-          }}
-        >
-          <RevealChars text={m.name} startFrame={4} stagger={1.0} duration={12} />
-        </div>
-
-        {/* Venue cards */}
-        <VenueCards venues={venues} accent={ACCENT} />
-
-        {/* Foot: effective bps + the fix */}
+        {/* The one number */}
         <Foot mechanism={m} frame={frame} />
 
         <DotGridVignette intensity={0.26} />
@@ -102,30 +61,27 @@ export const ExchangeBreakdown: React.FC<ExchangeBreakdownProps> = ({
   );
 };
 
-const VenueCards: React.FC<{ venues: VenueBrand[]; accent: string }> = ({
-  venues,
-}) => {
+const VenueCards: React.FC<{ venues: VenueBrand[] }> = ({ venues }) => {
   const { fps } = useVideoConfig();
   const frame = useCurrentFrame();
 
   // Card size steps down as the venue count climbs, so even the busiest
   // mechanism (order-flow visibility, 7 venues) fits the band cleanly.
   const n = venues.length;
-  const compact = n > 4;
   const cardW = n > 6 ? 212 : n > 4 ? 238 : 282;
-  const cardH = n > 6 ? 182 : n > 4 ? 200 : 228;
+  const cardH = n > 6 ? 200 : n > 4 ? 220 : 248;
   const gap = n > 6 ? 22 : 26;
 
   return (
     <div
       style={{
         position: "absolute",
-        // A fixed band between the title block and the foot, so cards
-        // never collide with either. Centered, wrapping only when needed.
-        top: 322,
+        // A fixed band, re-centred now that the title is gone, with the bps
+        // number sitting just beneath it. Centered, wrapping only when needed.
+        top: 230,
         left: 90,
         right: 90,
-        height: 430,
+        height: 540,
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
@@ -164,10 +120,8 @@ const VenueCards: React.FC<{ venues: VenueBrand[]; accent: string }> = ({
               opacity: op,
               transform: `translateY(${ty.toFixed(1)}px)`,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 18,
             }}
           >
             {/* Top accent bar in brand color */}
@@ -181,22 +135,7 @@ const VenueCards: React.FC<{ venues: VenueBrand[]; accent: string }> = ({
                 background: v.color,
               }}
             />
-            <VenueMark venue={v} compact={compact} />
-            {/* The name label is redundant when the mark is itself a
-                wordmark — show it only for icon (or fallback) cards. */}
-            {v.icon ? (
-              <div
-                style={{
-                  fontFamily: font,
-                  fontSize: compact ? 22 : 26,
-                  fontWeight: 700,
-                  letterSpacing: "-0.016em",
-                  color: FG,
-                }}
-              >
-                {v.name}
-              </div>
-            ) : null}
+            <VenueMark venue={v} compact={n > 4} />
           </div>
         );
       })}
@@ -210,7 +149,7 @@ const VenueMark: React.FC<{ venue: VenueBrand; compact: boolean }> = ({
   venue,
   compact,
 }) => {
-  const iconSize = compact ? 76 : 92;
+  const iconSize = compact ? 92 : 112;
   if (venue.icon) {
     return (
       <img
@@ -233,7 +172,7 @@ const VenueMark: React.FC<{ venue: VenueBrand; compact: boolean }> = ({
         alt=""
         draggable={false}
         style={{
-          width: compact ? 150 : 184,
+          width: compact ? 168 : 204,
           height: iconSize,
           objectFit: "contain",
           display: "block",
@@ -276,38 +215,26 @@ const Foot: React.FC<{ mechanism: Mechanism; frame: number }> = ({
         position: "absolute",
         left: 0,
         right: 0,
-        bottom: 70,
+        top: 810,
         textAlign: "center",
         opacity: op,
-        padding: "0 120px",
       }}
     >
       <div
         style={{
           fontFamily: font,
-          fontSize: 46,
+          fontSize: 92,
           fontWeight: 800,
           letterSpacing: "-0.022em",
           color: ACCENT,
+          lineHeight: 1.0,
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {fmtBps(mechanism.bps)}
-        <span style={{ fontSize: 24, fontWeight: 700, color: DIM, marginLeft: 8 }}>
+        <span style={{ fontSize: 34, fontWeight: 700, color: DIM, marginLeft: 12 }}>
           bps / trade
         </span>
-      </div>
-      <div
-        style={{
-          fontFamily: monoFont,
-          fontSize: 19,
-          fontWeight: 500,
-          letterSpacing: "0.03em",
-          color: colors.fgSoft,
-          marginTop: 12,
-        }}
-      >
-        {mechanism.fix}
       </div>
     </div>
   );
