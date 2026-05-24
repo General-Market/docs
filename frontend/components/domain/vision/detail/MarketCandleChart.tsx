@@ -33,6 +33,12 @@ const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 
 const TZ_OFFSET_SEC = new Date().getTimezoneOffset() * -60
 
+// The runway: the empty space to the right of the last candle, reserved for the
+// gap to settlement. Held at a fixed fraction of the visible width so the
+// "time until it settles" reads the same on every chart, regardless of how far
+// off the real settle time is.
+const RUNWAY_FRAC = 0.15
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Timeframe = '5m' | '15m' | '1h' | '1d'
@@ -351,7 +357,13 @@ export function MarketCandleChart({
       close: c.close,
     }))
     seriesRef.current.setData(data)
-    chartRef.current?.timeScale().fitContent()
+    // Reserve a fixed runway on the right instead of fitting the candles edge
+    // to edge. The last bar lands at (1 − RUNWAY_FRAC) of the width; the rest
+    // is empty space for the settlement marker to live in.
+    const lastIdx = data.length - 1
+    const from = -0.5
+    const total = (lastIdx - from) / (1 - RUNWAY_FRAC)
+    chartRef.current?.timeScale().setVisibleLogicalRange({ from, to: from + total })
     if (!firstDrawDone.current) {
       firstDrawDone.current = true
       onReady?.()
@@ -434,6 +446,63 @@ export function MarketCandleChart({
     if (containerRef.current) ro.observe(containerRef.current)
 
     return () => {
+      ts.unsubscribeVisibleTimeRangeChange(recompute)
+      ts.unsubscribeVisibleLogicalRangeChange(recompute)
+      ro.disconnect()
+    }
+  }, [chartReady, settlement, resolved, candles])
+
+  // -- Live target zone: the blue rectangle from the last close to the
+  // threshold crossing. The crossing pins to the right edge of the plot (the
+  // end of the 15% runway); the threshold price gives its Y. Mirrors the
+  // small-card treatment so the two charts read the same. --
+  const [zone, setZone] = useState<
+    { lastX: number; lastY: number; crossX: number; crossY: number } | null
+  >(null)
+
+  useEffect(() => {
+    if (!chartReady || !settlement || resolved || candles.length === 0) {
+      setZone(null)
+      return
+    }
+    const chart = chartRef.current
+    const series = seriesRef.current
+    if (!chart || !series) return
+
+    const last = candles[candles.length - 1]
+    const lastTime = ((last.time + TZ_OFFSET_SEC) as Time)
+
+    const recompute = () => {
+      const ts = chart.timeScale()
+      const crossX = ts.width()
+      const lastX = ts.timeToCoordinate(lastTime)
+      const lastY = series.priceToCoordinate(last.close)
+      const crossY = series.priceToCoordinate(settlement.price)
+      if (lastX == null || lastY == null || crossY == null) {
+        setZone(null)
+        return
+      }
+      setZone({
+        lastX: lastX as unknown as number,
+        lastY: lastY as unknown as number,
+        crossX,
+        crossY: crossY as unknown as number,
+      })
+    }
+
+    recompute()
+    // The threshold price line is created in a sibling effect on the same
+    // commit; its autoscale pull only lands on the next frame. Recompute then
+    // so the crossing sits on the threshold instead of off-canvas on first paint.
+    const raf = requestAnimationFrame(recompute)
+    const ts = chart.timeScale()
+    ts.subscribeVisibleTimeRangeChange(recompute)
+    ts.subscribeVisibleLogicalRangeChange(recompute)
+    const ro = new ResizeObserver(recompute)
+    if (containerRef.current) ro.observe(containerRef.current)
+
+    return () => {
+      cancelAnimationFrame(raf)
       ts.unsubscribeVisibleTimeRangeChange(recompute)
       ts.unsubscribeVisibleLogicalRangeChange(recompute)
       ro.disconnect()
@@ -636,6 +705,64 @@ export function MarketCandleChart({
           </div>
         )}
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+
+        {/* Live target zone: blue rectangle from the last close to the
+            threshold crossing, the full-height settle line, and the crossing
+            marker — the runway made visible. */}
+        {settlement && zone && (
+          <>
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: zone.lastX,
+                top: Math.min(zone.lastY, zone.crossY),
+                width: Math.max(0, zone.crossX - zone.lastX),
+                height: Math.abs(zone.crossY - zone.lastY),
+                background: 'rgba(0,113,227,0.10)',
+                borderTop: '1px solid rgba(0,113,227,0.22)',
+                borderBottom: '1px solid rgba(0,113,227,0.22)',
+                pointerEvents: 'none',
+                transition: `all 120ms ${EASE_DEFAULT}`,
+                zIndex: 1,
+              }}
+            />
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: zone.crossX,
+                top: 0,
+                bottom: 0,
+                borderLeft: `1px dashed ${APPLE_TEXT_SECONDARY}`,
+                pointerEvents: 'none',
+                zIndex: 1,
+              }}
+            />
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: zone.crossX,
+                top: zone.crossY,
+                width: 12,
+                height: 12,
+                transform: 'translate(-50%, -50%)',
+                background: settlement.color,
+                border: '1.5px solid #FFFFFF',
+                borderRadius: 2,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+                pointerEvents: 'none',
+                transition: `left 120ms ${EASE_DEFAULT}, top 120ms ${EASE_DEFAULT}`,
+                zIndex: 2,
+              }}
+              title={`Settles ${(resolutionType ?? '').toLowerCase()} at ${settlement.price.toFixed(6)}`}
+            />
+          </>
+        )}
+
+        {/* Resolved: the close already happened — pin the marker at its true
+            (close time, threshold) point. */}
         {settlement && squarePos && (
           <div
             aria-hidden

@@ -451,7 +451,7 @@ function MarketChart({
   // settlement square at (roundCloseAt, threshold). UP_X paints green at
   // open × (1 + bps/10000); DOWN_X paints red at open × (1 − bps/10000).
   // UP_0/DOWN_0 carry no threshold and render no square.
-  const { openPrice, closePrice, changePct, chartData, yDomain, settlement } = useMemo(() => {
+  const { openPrice, closePrice, changePct, chartData, yDomain, settlement, lastPoint, runwayRight } = useMemo(() => {
     if (!points || points.length < 2) {
       return {
         openPrice: null,
@@ -460,6 +460,8 @@ function MarketChart({
         chartData: [],
         yDomain: undefined as [number, number] | undefined,
         settlement: null as { color: string; price: number; time: number } | null,
+        lastPoint: null as { ts: number; value: number } | null,
+        runwayRight: null as number | null,
       }
     }
     const sorted = [...points].sort((a, b) => a.ts - b.ts)
@@ -508,7 +510,7 @@ function MarketChart({
       }
     }
 
-    // Pad y-domain so the open line, rectangle, and settlement square don't
+    // Pad y-domain so the open line, threshold line, and target zone don't
     // kiss the edges of the chart.
     const values = data.map(d => d.value)
     if (open != null) values.push(open)
@@ -519,7 +521,26 @@ function MarketChart({
     const pad = (maxV - minV) * 0.12 || maxV * 0.01 || 1
     const domain: [number, number] = [minV - pad, maxV + pad]
 
-    return { openPrice: open, closePrice: close, changePct: pct, chartData: data, yDomain: domain, settlement: sq }
+    // The runway: the gap from the last point to the settlement edge is held
+    // at a fixed 15% of the full x-range, regardless of how far off the real
+    // settle time is. History fills the left 85%; settlement pins to the edge.
+    const firstTs = data[0].ts
+    const lastTs = data[data.length - 1].ts
+    const lastVal = data[data.length - 1].value
+    const span = lastTs - firstTs
+    const RUNWAY_FRAC = 0.15
+    const right = span > 0 ? lastTs + span * (RUNWAY_FRAC / (1 - RUNWAY_FRAC)) : lastTs
+
+    return {
+      openPrice: open,
+      closePrice: close,
+      changePct: pct,
+      chartData: data,
+      yDomain: domain,
+      settlement: sq,
+      lastPoint: { ts: lastTs, value: lastVal },
+      runwayRight: right,
+    }
   }, [points, roundOpenAt, roundCloseAt, resolved, resolutionType, thresholdBps, latestValue])
 
   if (loading) {
@@ -576,6 +597,11 @@ function MarketChart({
     resolved && openPrice != null && closePrice != null && roundOpenAt != null && roundCloseAt != null
   const rectColor = openPrice != null && closePrice != null && closePrice >= openPrice ? APPLE_GREEN : APPLE_RED
 
+  // Live round: there is a threshold ahead and the round hasn't closed. This is
+  // when the target zone — the runway from the last price to the crossing —
+  // gets drawn.
+  const live = !resolved && settlement != null && lastPoint != null && runwayRight != null
+
   const formatXTick = (ts: number) => {
     const d = new Date(ts)
     const h = d.getHours().toString().padStart(2, '0')
@@ -597,18 +623,13 @@ function MarketChart({
     <div style={{ position: 'relative', height: SPARK_H, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 4, left: 12, bottom: 0 }}>
-          {/* X domain extends past dataMax to include the settle time, so
-              the live-round square doesn't get clipped when roundCloseAt
-              sits past the last history point. */}
+          {/* X domain reserves a fixed 15% runway on the right for the gap
+              from the last price to the settlement edge. History fills the
+              left 85%; the crossing pins to the right edge. */}
           <XAxis
             dataKey="ts"
             type="number"
-            domain={[
-              'dataMin',
-              settlement
-                ? (dm: number) => Math.max(dm, settlement.time)
-                : 'dataMax',
-            ]}
+            domain={['dataMin', live ? runwayRight! : 'dataMax']}
             tick={{ fill: APPLE_TEXT_SECONDARY, fontSize: 9, fontFamily: FONT_MONO }}
             tickFormatter={formatXTick}
             tickLine={false}
@@ -616,7 +637,7 @@ function MarketChart({
             interval="preserveStartEnd"
             minTickGap={28}
             height={16}
-            padding={{ left: 8, right: 4 }}
+            padding={{ left: 8, right: 0 }}
           />
           <YAxis
             type="number"
@@ -634,15 +655,43 @@ function MarketChart({
             cursor={{ stroke: 'rgba(0,0,0,0.10)', strokeWidth: 1 }}
           />
 
-          {/* Round window: tinted vertical band marking the betting interval */}
-          {roundOpenAt != null && roundCloseAt != null && !showRect && (
+          {/* Target zone: the blue rectangle spanning from the last price to
+              the threshold crossing — across the 15% runway on X, and from the
+              last value to the threshold on Y. "Here is where it has to land." */}
+          {live && (
             <ReferenceArea
-              x1={roundOpenAt}
-              x2={roundCloseAt}
+              x1={lastPoint!.ts}
+              x2={runwayRight!}
+              y1={lastPoint!.value}
+              y2={settlement!.price}
               fill="#0071E3"
-              fillOpacity={0.05}
+              fillOpacity={0.1}
               stroke="#0071E3"
-              strokeOpacity={0.18}
+              strokeOpacity={0.22}
+              strokeWidth={1}
+              isFront={false}
+            />
+          )}
+
+          {/* Horizontal threshold line: the price the round settles against,
+              full width. Green for UP, red for DOWN. */}
+          {live && (
+            <ReferenceLine
+              y={settlement!.price}
+              stroke={settlement!.color}
+              strokeDasharray="4 3"
+              strokeWidth={1.25}
+              isFront={false}
+            />
+          )}
+
+          {/* Vertical settle line: the settlement moment, pinned to the right
+              edge of the runway, full height. */}
+          {live && (
+            <ReferenceLine
+              x={runwayRight!}
+              stroke={APPLE_TEXT_SECONDARY}
+              strokeDasharray="4 3"
               strokeWidth={1}
               isFront={false}
             />
@@ -694,25 +743,25 @@ function MarketChart({
             style={{ transition: `stroke 250ms ${EASE_DEFAULT}` }}
           />
 
-          {/* Settlement square: at (settle time, threshold price). Green for
-              UP_X, red for DOWN_X. Skipped for UP_0/DOWN_0. */}
-          {settlement && (
+          {/* Crossing marker: a small square where the threshold meets the
+              settle edge — the corner of the target zone. */}
+          {live && (
             <ReferenceDot
-              x={settlement.time}
-              y={settlement.price}
-              r={5}
-              fill={settlement.color}
+              x={runwayRight!}
+              y={settlement!.price}
+              r={4}
+              fill={settlement!.color}
               stroke="#FFFFFF"
               strokeWidth={1.5}
               isFront
-              ifOverflow="extendDomain"
+              ifOverflow="visible"
               shape={(props: { cx?: number; cy?: number }) => (
                 <rect
-                  x={(props.cx ?? 0) - 5}
-                  y={(props.cy ?? 0) - 5}
-                  width={10}
-                  height={10}
-                  fill={settlement.color}
+                  x={(props.cx ?? 0) - 4}
+                  y={(props.cy ?? 0) - 4}
+                  width={8}
+                  height={8}
+                  fill={settlement!.color}
                   stroke="#FFFFFF"
                   strokeWidth={1.5}
                   rx={1.5}
