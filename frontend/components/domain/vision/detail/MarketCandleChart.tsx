@@ -7,6 +7,7 @@ import type {
   CandlestickData,
   Time,
   IPriceLine,
+  AutoscaleInfo,
 } from 'lightweight-charts'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { toInternalId } from '@/lib/vision/source-ids'
@@ -205,6 +206,33 @@ function bucketize(points: HistoryPoint[], bucketMs: number): Candle[] {
   }
   candles.push(cur)
   return candles
+}
+
+// ── Autoscale: keep the threshold on the price axis ──────────────────────────
+// lightweight-charts fits the price axis to the candle data alone — it ignores
+// price lines and overlays. So a threshold sitting a few percent off the recent
+// candles falls clean off the top or bottom of the plot, and the marker/zone
+// computed via priceToCoordinate land off-screen. This provider widens the
+// series' own range to include the threshold (and open/close), the exact
+// Y-axis twin of the yDomain padding the small cards already do.
+function makeAutoscaleProvider(extra: number[]) {
+  const finite = extra.filter(v => Number.isFinite(v))
+  return (original: () => AutoscaleInfo | null): AutoscaleInfo | null => {
+    const base = original()
+    if (finite.length === 0) return base
+    const lo = Math.min(...finite)
+    const hi = Math.max(...finite)
+    if (!base || !base.priceRange) {
+      return { priceRange: { minValue: lo, maxValue: hi } }
+    }
+    return {
+      ...base,
+      priceRange: {
+        minValue: Math.min(base.priceRange.minValue, lo),
+        maxValue: Math.max(base.priceRange.maxValue, hi),
+      },
+    }
+  }
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -409,6 +437,19 @@ export function MarketCandleChart({
     }
     return null
   }, [openPrice, roundCloseAt, resolutionType, thresholdBps, market.value])
+
+  // -- Keep the threshold (and open/close) inside the price axis. Declared
+  // before the marker/zone effects so the scale is already widened when they
+  // read priceToCoordinate. A fresh provider closure each time forces the
+  // series to recompute its range. --
+  useEffect(() => {
+    if (!chartReady || !seriesRef.current) return
+    const extra: number[] = []
+    if (settlement) extra.push(settlement.price)
+    if (openPrice != null) extra.push(openPrice)
+    if (closePrice != null) extra.push(closePrice)
+    seriesRef.current.applyOptions({ autoscaleInfoProvider: makeAutoscaleProvider(extra) })
+  }, [chartReady, settlement, openPrice, closePrice, candles])
 
   const [squarePos, setSquarePos] = useState<{ left: number; top: number } | null>(null)
 
