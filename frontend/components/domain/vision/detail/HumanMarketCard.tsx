@@ -670,6 +670,7 @@ function MarketChart({
               strokeOpacity={0.22}
               strokeWidth={1}
               isFront={false}
+              ifOverflow="visible"
             />
           )}
 
@@ -694,6 +695,7 @@ function MarketChart({
               strokeDasharray="4 3"
               strokeWidth={1}
               isFront={false}
+              ifOverflow="visible"
             />
           )}
 
