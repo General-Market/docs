@@ -44,7 +44,7 @@ const GAP = 40;
 
 function buildRects(W: number, H: number) {
   const h = H - 2 * MARGIN;
-  const medW = Math.round(W * 0.46); // ~883 at 1920 — head stays readable
+  const medW = Math.round(W * 0.33); // ~634 at 1920 — head at a third, diagram takes the rest
   const cInset = Math.round(W * 0.0); // full frame when centered
 
   const webcam: Record<"centered" | "left-medium" | "right-medium", Rect> = {
@@ -340,8 +340,8 @@ export const AntiCheatLayout: React.FC = () => {
   // into a panel. Drives the blue dot field in behind the head and the page.
   const bgReveal = interpolate(
     webcamRect.w,
-    [RECTS.centered.w, RECTS["left-medium"].w],
-    [0, 1],
+    [RECTS["left-medium"].w, RECTS.centered.w],
+    [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 

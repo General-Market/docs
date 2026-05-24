@@ -1,28 +1,38 @@
 /**
- * AntiCheatEdit — plays the baked final.mp4 with section-title overlays.
+ * AntiCheatEdit — the baked talk, played in the Tutorial side-panel rig.
  *
- * Cuts and 1.2× speed-up are pre-rendered by /tmp/bake_final.sh via ffmpeg.
- * Remotion plays the single baked file under <OffthreadVideo>, and on top
- * of it we mount the GlowBars chart overlays at section-title timestamps.
+ * The talking head (final.mp4) is no longer a flat fullscreen plate. It rides
+ * inside AntiCheatLayout: a rectangle that spring-animates to one side when a
+ * schematic or article is due, freeing the other side as a CONTENT AREA where
+ * that overlay is scaled to fit. When nothing is due the head returns to full
+ * frame and breathes — a slow, beat-snapped push / pan so the talk never sits
+ * still. Sides alternate per mechanism; articles take the opposite side from
+ * their section's chart.
  *
- * Overlays sit fullscreen on top of the video for ~6s each — the audio
- * keeps playing underneath, so the talk continues over the chart cuts.
+ * Timing comes from the same OVERLAYS / ARTICLE_OVERLAYS arrays as before, now
+ * merged and side-assigned in panelEvents.ts (their `at` values are untouched).
+ * AtmosphereTrack + MusicTrack carry the sound; the inverted end card closes.
  *
- * Section timestamps are computed from cuts.json — see overlays/timeline.ts.
+ * Cuts and 1.2× speed-up are pre-rendered into final.mp4 (649.466s, 30fps).
  */
 
 import React from "react";
 import {
   AbsoluteFill,
-  OffthreadVideo,
   Sequence,
   interpolate,
-  staticFile,
   useCurrentFrame,
 } from "remotion";
 import metaJson from "./final.meta.json";
-import { OVERLAYS } from "./overlays/timeline";
-import { ARTICLE_OVERLAYS, ArticleFlash } from "./overlays/articles";
+import { AntiCheatLayout } from "./AntiCheatLayout";
+import { CaptionLayer } from "./CaptionLayer";
+import { MusicTrack } from "./MusicTrack";
+import { AtmosphereTrack } from "./AtmosphereTrack";
+import { IntroHero, HERO_FROM, HERO_DUR } from "./overlays/IntroHero";
+import {
+  AntiCheatEndCard,
+  antiCheatEndCardMeta,
+} from "../anticheat/AntiCheatEndCard";
 
 const FPS = 30;
 const W = 1920;
@@ -31,75 +41,69 @@ const H = 1080;
 const durationSeconds = Number((metaJson as { duration_seconds: number }).duration_seconds) || 1;
 const totalDurationFrames = Math.max(1, Math.round(durationSeconds * FPS));
 
-const FADE_FRAMES = 8;
+// The same close as AntiCheatFull — the inverted blue end card. It crossfades
+// in over the last frames of the talk, then holds in silence for reading time
+// (the music and voice have already ended, exactly as in the full cut).
+const END_CARD_FRAMES = antiCheatEndCardMeta.durationInFrames;
+const END_CARD_CROSSFADE = 14;
+const END_CARD_START = totalDurationFrames - END_CARD_CROSSFADE;
+const compositionDurationFrames = END_CARD_START + END_CARD_FRAMES;
+
+// Resting white bloom from AntiCheatFull's root. The full cut pulses this on
+// every beat; here we hold it at its rest value so the end-card type carries
+// the same soft halo it does in the film. The wordmark overrides it to none.
+const REST_TEXT_SHADOW =
+  "0 0 4px rgba(255, 255, 255, 0.45), 0 0 22px rgba(255, 255, 255, 0.55), 0 0 56px rgba(255, 255, 255, 0.30)";
 
 export const AntiCheatEditComposition: React.FC = () => {
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <OffthreadVideo
-        src={staticFile("anticheat-edit/final.mp4")}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }}
-      />
+    <AbsoluteFill style={{ backgroundColor: "#020E2B" }}>
+      <Sequence durationInFrames={totalDurationFrames} layout="none">
+        <AntiCheatLayout />
+      </Sequence>
 
-      {OVERLAYS.map((slot, i) => {
-        const startFrame = Math.round(slot.at * FPS);
-        const durationFrames = Math.round(slot.duration * FPS);
-        const Component = slot.component;
-        return (
-          <Sequence
-            key={`${slot.at}-${i}`}
-            from={startFrame}
-            durationInFrames={durationFrames}
-            layout="none"
-          >
-            <FadeWrap durationFrames={durationFrames}>
-              <Component />
-            </FadeWrap>
-          </Sequence>
-        );
-      })}
+      {/* Intro hero — the billion number stands behind the speaker and the
+          product ring orbits him on the "one billion of volume on perps…" line.
+          Sits above the head (behind-subject sandwich); below the captions. */}
+      <Sequence from={HERO_FROM} durationInFrames={HERO_DUR} layout="none">
+        <IntroHero />
+      </Sequence>
 
-      {/* Article-proof flashes at the proof beats (clear of the chart beats). */}
-      {ARTICLE_OVERLAYS.map((slot, i) => {
-        const startFrame = Math.round(slot.at * FPS);
-        const durationFrames = Math.round(slot.duration * FPS);
-        return (
-          <Sequence
-            key={`article-${slot.shot.slug}-${i}`}
-            from={startFrame}
-            durationInFrames={durationFrames}
-            layout="none"
-          >
-            <ArticleFlash slot={slot} durationInFrames={durationFrames} />
-          </Sequence>
-        );
-      })}
+      {/* Emphasis captions — above the rig, hidden whenever a panel is active. */}
+      <Sequence durationInFrames={totalDurationFrames} layout="none">
+        <CaptionLayer />
+      </Sequence>
+
+      <AtmosphereTrack />
+      <MusicTrack />
+
+      {/* End card — the same inverted close as AntiCheatFull. */}
+      <Sequence
+        from={END_CARD_START}
+        durationInFrames={END_CARD_FRAMES}
+        layout="none"
+      >
+        <EndCardClose>
+          <AntiCheatEndCard />
+        </EndCardClose>
+      </Sequence>
     </AbsoluteFill>
   );
 };
 
-const FadeWrap: React.FC<{ durationFrames: number; children: React.ReactNode }> = ({
-  durationFrames,
-  children,
-}) => {
+// Crossfades the end card in over the tail of the talk, then carries the
+// resting white bloom the full cut applies from its root.
+const EndCardClose: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const frame = useCurrentFrame();
-  const opacity = Math.min(
-    interpolate(frame, [0, FADE_FRAMES], [0, 1], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }),
-    interpolate(
-      frame,
-      [durationFrames - FADE_FRAMES, durationFrames],
-      [1, 0],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-    ),
+  const opacity = interpolate(frame, [0, END_CARD_CROSSFADE], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return (
+    <AbsoluteFill style={{ opacity, textShadow: REST_TEXT_SHADOW }}>
+      {children}
+    </AbsoluteFill>
   );
-  return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
 };
 
 export const anticheatEditMeta = {
@@ -108,5 +112,5 @@ export const anticheatEditMeta = {
   width: W,
   height: H,
   fps: FPS,
-  durationInFrames: totalDurationFrames,
+  durationInFrames: compositionDurationFrames,
 };
