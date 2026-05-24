@@ -17,7 +17,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Audio,
-  OffthreadVideo,
+  Img,
   Sequence,
   interpolate,
   spring,
@@ -63,6 +63,12 @@ export const IntroHero: React.FC = () => {
   // The cutout must ride the exact same breath as the base head beneath it.
   const cam = idleCamera(absSec, fps);
   const headTransform = `scale(${cam.scale}) translate(${cam.px * 100}%, ${cam.py * 100}%)`;
+
+  // The person cutout is a transparent PNG sequence, not the ProRes .mov: the
+  // .mov renders fine but Chrome can't decode ProRes, so Studio preview throws.
+  // heroLocal 0 maps to f_0001 (cutout file frame 0 = final 10.0s).
+  const cutoutIdx = Math.min(210, Math.max(1, heroLocal + 1));
+  const cutoutSrc = `anticheat-edit/cutout-frames/f_${String(cutoutIdx).padStart(4, "0")}.png`;
 
   // ── Billion number — booms in on "billion" (heroLocal 31), holds, recedes ──
   const billPop = spring({
@@ -116,9 +122,8 @@ export const IntroHero: React.FC = () => {
       </AbsoluteFill>
 
       {/* ── 2. CUTOUT — the speaker, re-revealed in front of the back layer ── */}
-      <OffthreadVideo
-        src={staticFile("anticheat-edit/cutout-intro.mov")}
-        transparent
+      <Img
+        src={staticFile(cutoutSrc)}
         style={{
           width: "100%",
           height: "100%",
