@@ -64,11 +64,17 @@ export const IntroHero: React.FC = () => {
   const cam = idleCamera(absSec, fps);
   const headTransform = `scale(${cam.scale}) translate(${cam.px * 100}%, ${cam.py * 100}%)`;
 
-  // The person cutout is a transparent PNG sequence, not the ProRes .mov: the
-  // .mov renders fine but Chrome can't decode ProRes, so Studio preview throws.
-  // heroLocal 0 maps to f_0001 (cutout file frame 0 = final 10.0s).
-  const cutoutIdx = Math.min(210, Math.max(1, heroLocal + 1));
-  const cutoutSrc = `anticheat-edit/cutout-frames/f_${String(cutoutIdx).padStart(4, "0")}.png`;
+  // Everything in this window is a frame-exact PNG, so nothing can desync. The
+  // base AntiCheatLayout video (OffthreadVideo) lags ~1 frame behind in the
+  // Studio preview; a frame-exact cutout on top of it left the lagging base
+  // person poking past the silhouette — a "double". The fix: cover the base with
+  // our OWN room plate (the same frames, frame-locked), then layer graphics and
+  // the cutout on top. Single source per pixel → no lag, no double, in preview
+  // and render alike. heroLocal 0 maps to f_0001 (= final 10.0s).
+  const frameIdx = Math.min(168, Math.max(1, heroLocal + 1));
+  const pad = (n: number) => String(n).padStart(4, "0");
+  const roomSrc = `anticheat-edit/room-frames/f_${pad(frameIdx)}.png`;
+  const cutoutSrc = `anticheat-edit/cutout-frames/f_${pad(Math.min(210, frameIdx))}.png`;
 
   // ── Billion number — booms in on "billion" (heroLocal 31), holds, recedes ──
   const billPop = spring({
@@ -97,6 +103,20 @@ export const IntroHero: React.FC = () => {
 
   return (
     <AbsoluteFill>
+      {/* ── 0. ROOM PLATE — our own frame-locked copy of the room, covering the
+             lagging base video so every visible pixel comes from an exact PNG.
+             Carries the head's idle breath so it sits identically to the base. ── */}
+      <Img
+        src={staticFile(roomSrc)}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          transform: headTransform,
+          transformOrigin: "center center",
+        }}
+      />
+
       {/* ── 1. BACK — billion number + far cards (behind the person) ── */}
       <AbsoluteFill>
         {billOpacity > 0 && (
