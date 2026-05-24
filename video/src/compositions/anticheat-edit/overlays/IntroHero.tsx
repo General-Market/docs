@@ -27,7 +27,6 @@ import {
 } from "remotion";
 import { idleCamera } from "../AntiCheatLayout";
 import { font } from "../../../common/fonts";
-import { colors } from "../../anticheat/theme";
 import { IntroCarousel, INTRO_CAROUSEL_DEFAULT } from "./IntroCarousel";
 
 // 10.0s — also the cutout file's --start, so the OffthreadVideo's frame 0 maps
@@ -35,9 +34,9 @@ import { IntroCarousel, INTRO_CAROUSEL_DEFAULT } from "./IntroCarousel";
 export const HERO_FROM = 300;
 export const HERO_DUR = 168; // → 15.6s
 
-// The billion glyph. "$1,000,000,000" bleeds wide behind the head; switch to
-// "$1B" if the wall reads too busy.
-const BILLION_TEXT = "$1,000,000,000";
+// The billion glyph — giant, so it must be a few characters: "$1B" bleeds off
+// the frame the way a hero word does, the room reading through the letters.
+const BILLION_TEXT = "$1B";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -198,7 +197,10 @@ const IntroHeroSfx: React.FC = () => (
   </>
 );
 
-// The giant number, wide behind the head — Base blue, nothing else. Clean.
+// The hero glyph — colossal, bleeding off the frame, translucent Base blue so
+// the room reads through the letters and the speaker stands small in front of
+// it. The reference is a giant frosted title; on this cream wall a see-through
+// blue tint carries it where frosted white would vanish.
 const BillionPlate: React.FC<{
   text: string;
   opacity: number;
@@ -215,11 +217,11 @@ const BillionPlate: React.FC<{
     <div
       style={{
         fontFamily: font,
-        fontSize: 200,
+        fontSize: 1300,
         fontWeight: 800,
-        letterSpacing: "-0.03em",
-        color: colors.accent,
-        lineHeight: 0.9,
+        letterSpacing: "-0.05em",
+        color: "rgba(0, 82, 255, 0.5)",
+        lineHeight: 0.78,
         whiteSpace: "nowrap",
         transform: `scale(${scale.toFixed(4)})`,
         filter: blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : undefined,

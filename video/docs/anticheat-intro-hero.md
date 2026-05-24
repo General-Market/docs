@@ -36,11 +36,21 @@ The behind-subject sandwich, gated to this window only — the same method that
 produced `cutout-test.mov` + `light_shafts.mp4`, used here for the first time in
 the edit. Layer order inside one `IntroHero` overlay mounted ABOVE `AntiCheatLayout`:
 
-1. **Back layer** — the billion number + the carousel's far-side cards.
-2. **Person cutout** — `cutout-intro.mov` (ProRes 4444 alpha, birefnet, final 10–17s),
-   full-frame, `objectFit:cover`, carrying the *identical* idle-breath transform as
-   the base head (else it ghosts). Re-reveals the speaker in front of layer 1.
-3. **Front layer** — the thumbs-up + the carousel's near-side cards.
+1. **Back layer** — the `$1B` glyph + the carousel's far-side cards.
+2. **Person cutout** — `cutout-intro.mov` (ProRes 4444 alpha, `human_seg`, final
+   10–17s), full-frame, `objectFit:cover`, carrying the *identical* idle-breath
+   transform as the base head (else it ghosts). Re-reveals the speaker in front
+   of layer 1. (`birefnet` hangs on MPS — too slow; `human_seg` is clean on this
+   plain-wall shot.)
+3. **Front layer** — the carousel's near-side cards.
+
+The number is a colossal, translucent Base-blue **`$1B`** (~1300px) that bleeds
+off the frame — the room reads through the letters and the speaker stands small
+in front, the "1" behind his head. Reference: a giant frosted title; on this
+cream wall a see-through blue tint carries it where frosted white would vanish.
+No thumb, no sub-text — clean. The wide orbit (`radius 560`, `ringZ 0`) is what
+makes cards visibly clip behind his silhouette as they rotate to the back; the
+named card faces the camera dead-centre on its word.
 
 A clean silhouette is what lets a number stand behind a person.
 
@@ -62,13 +72,16 @@ here the card is just the product name under an eyebrow.
 ## Sound
 
 Local `public/sfx` is the Epidemic-sourced library; exact matches already on disk.
-Wired in `overlays/stingers.ts` on the beats:
+Scoped inside `IntroHero` as `<Audio>` one-shots (not the unmounted global
+`StingerTrack`, to avoid double-play):
 
 - **riser** into the number — `riser-cinematic-build.mp3` (~10.3s)
-- **billion slam** — `drop-sub-impact.mp3` + `money-jackpot.mp3` (11.0s)
-- **thumb pop** — `pop-number-reveal.mp3` / `whoosh-punch.mp3` (~11.3s)
+- **billion slam** — `drop-sub-impact.mp3` + `hit-deep-sub.mp3` + `money-jackpot.mp3` (11.0s)
 - **carousel spiral** — `whoosh-spin-fast.mp3` (~11.7s)
 - **per-card snap** — `text-snap-in.mp3` on perps / options / predictions / meme coins
+- **explode** — `transition-swoosh.mp3` (~14.6s)
+
+(`pop-number-reveal.mp3` in the library is a 0-byte stub — avoid it.)
 
 A live Epidemic API pull is available on request — it needs a partner-API client
 (the only fetch script here is Freesound), and the library already covers the beat.
@@ -80,10 +93,10 @@ A live Epidemic API pull is available on request — it needs a partner-API clie
 - `overlays/IntroHero.tsx` — new (the sandwich orchestrator)
 - `AntiCheatEditComposition.tsx` — mount `IntroHero` above the layout
 - `AntiCheatLayout.tsx` — export `idleCamera` so the cutout matches the breath
-- `overlays/stingers.ts` — the hero SFX hits
 
 ## Open / tunable
 
-- Billion number format (`$1,000,000,000` wide vs `$1B`) and color against the cream wall.
-- Ring center Z / radius / scale / screen position — tuned by rendering frames at the word moments.
-- The thumbs-up is behind a `SHOW_THUMB` const — trivially removable.
+- `$1B` glyph size / translucency (`fontSize 1300`, `rgba(0,82,255,0.5)`) in `BillionPlate`.
+- Ring `radius` / `ringZ` / `scale` / `tiltX` in `INTRO_CAROUSEL_DEFAULT`, and
+  `RING_CX/RING_CY` in `IntroHero` — the orbit's reach and where it sits on him.
+- Per-card font sizing in `CardSurface` (long words like "predictions" auto-shrink).
