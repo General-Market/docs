@@ -26,6 +26,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Loop,
   OffthreadVideo,
   Sequence,
   interpolate,
@@ -569,8 +570,24 @@ export const AntiCheatLayout: React.FC = () => {
             objectFit: "cover",
             transform: `scale(${cam.scale}) translate(${cam.px * 100}%, ${cam.py * 100}%)`,
             transformOrigin: "center center",
+            // Keynote grade — richer, not washed out (per the look-dev pass).
+            filter: "brightness(1.03) contrast(1.10) saturate(1.17)",
           }}
         />
+        {/* Dynamic electric-blue light — drifting god-rays from the top-left,
+            screen-blended so it only adds light. Clipped to the head, looped
+            across the talk. Tune LIGHT presence with the opacity below. */}
+        <AbsoluteFill
+          style={{ mixBlendMode: "screen", opacity: 0.4, filter: "saturate(1.5) brightness(1.08)" }}
+        >
+          <Loop durationInFrames={360}>
+            <OffthreadVideo
+              src={staticFile("anticheat-edit/light_shafts.mp4")}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              muted
+            />
+          </Loop>
+        </AbsoluteFill>
       </div>
 
       {/* The schematic / article, scaled into the freed content area — turning

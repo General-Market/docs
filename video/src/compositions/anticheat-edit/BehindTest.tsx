@@ -56,7 +56,7 @@ export const AntiCheatBehindTest: React.FC = () => {
 
       {/* 3. your cutout in front — graded crisp + natural */}
       <AbsoluteFill style={{ filter: "brightness(1.05) contrast(1.08) saturate(1.13)" }}>
-        <OffthreadVideo src={staticFile("anticheat-edit/cutout-test.mov")} style={cover} muted />
+        <OffthreadVideo src={staticFile("anticheat-edit/cutout-test.mov")} style={cover} transparent muted />
       </AbsoluteFill>
     </AbsoluteFill>
   );
