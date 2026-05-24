@@ -584,9 +584,13 @@ export function HumanTradingOnboarding(props: HumanTradingOnboardingProps) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 12 }}
         transition={{ duration: 0.45, ease: EASE_OUT }}
+        // Below `lg` the MobileActionBar (stake + validate) sits fixed at the
+        // bottom edge — lift the card above it so it never buries the button.
+        // `bottom` lives in className, not inline style, so the responsive
+        // variant can win (inline styles would override it).
+        className="bottom-[max(20px,calc(env(safe-area-inset-bottom)+14px))] max-lg:bottom-[calc(150px+env(safe-area-inset-bottom))]"
         style={{
           position: 'fixed',
-          bottom: 'max(20px, calc(env(safe-area-inset-bottom) + 14px))',
           right: 'max(16px, calc(env(safe-area-inset-right) + 12px))',
           width: 'min(92vw, 320px)',
           zIndex: 50,

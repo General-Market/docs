@@ -514,7 +514,7 @@ export function MarketCandleChart({
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-3" style={{ padding: '14px 18px', borderBottom: `1px solid ${APPLE_LINE}` }}>
+      <div className="flex items-center gap-3" style={{ padding: '11px 16px', borderBottom: `1px solid ${APPLE_LINE}` }}>
         <div
           className="shrink-0 inline-flex items-center justify-center overflow-hidden"
           style={{ width: 36, height: 36, background: APPLE_CHIP_BG, borderRadius: 8 }}
@@ -603,8 +603,10 @@ export function MarketCandleChart({
         <TimeframeStrip value={timeframe} onChange={onTimeframeChange} />
       </div>
 
-      {/* Chart body */}
-      <div style={{ position: 'relative', height: 360 }}>
+      {/* Chart body — height tracks the viewport so the candle + the mini-card
+          grid below it land inside one screen on a laptop. Re-fits on resize
+          via the window listener above (clientHeight is read fresh). */}
+      <div style={{ position: 'relative', height: 'clamp(180px, 27vh, 290px)' }}>
         {loading && (
           <div
             style={{

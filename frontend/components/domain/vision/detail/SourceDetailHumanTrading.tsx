@@ -9,6 +9,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from '@/i18n/routing'
 import { useAccount, useReadContract } from 'wagmi'
 import { useWalletLogin } from '@/hooks/useWalletLogin'
@@ -881,9 +882,9 @@ export function SourceDetailHumanTrading({
         trailing={headerTrailing}
       />
 
-      <div className="w-full px-4 md:px-6 pt-4 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="w-full px-4 md:px-6 pt-2.5 pb-10 max-lg:pb-[150px] flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Main column — big candle + grid of mini cards */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3">
+        <div className="flex-1 min-w-0 flex flex-col gap-2.5">
           {displayError && (
             <ErrorBar message={displayError} onDismiss={() => resetJoin()} />
           )}
@@ -910,7 +911,7 @@ export function SourceDetailHumanTrading({
                 />
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
                 {/* Always show the curated 10 so the logos are visible even
                     when the live batch's marketIds don't intersect the curated
                     allowlist. Picks only fire for markets that are actually in
@@ -957,7 +958,10 @@ export function SourceDetailHumanTrading({
           )}
         </div>
 
-        {/* Right rail — entry card + positions stacked, hidden on mobile (MobileValidate covers entry) */}
+        {/* Right rail — entry card + positions stacked. Hidden below lg, where
+            MobileActionBar carries the stake selector + validate instead. The
+            two tile exactly at the lg breakpoint, so there is never a width
+            with no way to bet. */}
         <aside
           className="hidden lg:block shrink-0"
           style={{ width: 320 }}
@@ -1013,7 +1017,15 @@ export function SourceDetailHumanTrading({
         </aside>
       </div>
 
-      <MobileValidate
+      <MobileActionBar
+        stakeInput={stakeInput}
+        setStakeInput={setStakeInput}
+        stakeNum={stakeNum}
+        perMarketStake={perMarketStake}
+        marketCount={marketCount}
+        meetsMinimum={meetsMinimum}
+        exceedsBalance={exceedsBalance}
+        inputDisabled={flow !== 'idle' && flow !== 'reveal-failed'}
         validateBg={validateBgColor}
         validateColor={validateTextColor}
         validateEnabled={validateEnabled}
@@ -2004,7 +2016,18 @@ function CheckMark() {
   )
 }
 
-function MobileValidate({
+// Bottom action bar for every width below `lg`, where the right-rail EntryCard
+// is hidden. Carries the same two things a bettor needs — a stake to set and a
+// button to commit — so phones and tablets can place a bet, not just laptops.
+function MobileActionBar({
+  stakeInput,
+  setStakeInput,
+  stakeNum,
+  perMarketStake,
+  marketCount,
+  meetsMinimum,
+  exceedsBalance,
+  inputDisabled,
   validateBg,
   validateColor,
   validateEnabled,
@@ -2013,6 +2036,14 @@ function MobileValidate({
   label,
   onClick,
 }: {
+  stakeInput: string
+  setStakeInput: (v: string) => void
+  stakeNum: number
+  perMarketStake: number
+  marketCount: number
+  meetsMinimum: boolean
+  exceedsBalance: boolean
+  inputDisabled: boolean
   validateBg: string
   validateColor: string
   validateEnabled: boolean
@@ -2021,24 +2052,119 @@ function MobileValidate({
   label: string
   onClick: () => void
 }) {
-  return (
+  const hint = exceedsBalance
+    ? { text: 'Stake exceeds balance', color: APPLE_RED }
+    : marketCount > 0 && !meetsMinimum && stakeNum > 0
+      ? { text: `Min ${formatUsdDollars(MIN_PER_MARKET)} per market`, color: APPLE_RED }
+      : marketCount > 0
+        ? { text: `${formatUsdDollars(perMarketStake)} × ${marketCount}`, color: APPLE_TEXT_SECONDARY }
+        : null
+
+  // The AppShell wraps the page in a `filter` ancestor, which becomes the
+  // containing block for any `position: fixed` descendant — so a bar rendered
+  // in-tree sticks to the bottom of the page content, below the footer, not to
+  // the viewport. Portal to document.body so it pins to the screen edge.
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (typeof document !== 'undefined') setPortalEl(document.body)
+  }, [])
+  if (!portalEl) return null
+
+  return createPortal(
+    // `flex flex-col` lives in className, not inline style: an inline
+    // `display` would beat the `lg:hidden` utility and leak the bar onto
+    // desktop, where the right-rail EntryCard already covers entry.
     <div
-      className="sm:hidden"
+      className="lg:hidden flex flex-col"
       style={{
         position: 'fixed',
         left: 0,
         right: 0,
         bottom: 0,
-        padding: '12px 16px calc(env(safe-area-inset-bottom) + 12px)',
+        padding: '10px 16px calc(env(safe-area-inset-bottom) + 10px)',
         backdropFilter: 'saturate(180%) blur(20px)',
         WebkitBackdropFilter: 'saturate(180%) blur(20px)',
         background: 'rgba(255,255,255,0.85)',
         borderTop: '1px solid rgba(0,0,0,0.06)',
         zIndex: 40,
+        gap: 8,
       }}
     >
+      {/* Stake quick-picks — the only stake control on phones and tablets */}
+      <div
+        data-onboarding-target="stake-row"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          overflowX: 'auto',
+          opacity: inputDisabled ? 0.5 : 1,
+          pointerEvents: inputDisabled ? 'none' : undefined,
+          transition: `opacity 250ms ${EASE_DEFAULT}`,
+        }}
+      >
+        <span
+          style={{
+            flexShrink: 0,
+            fontFamily: FONT_TEXT,
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '+0.011em',
+            textTransform: 'uppercase',
+            color: APPLE_TEXT_SECONDARY,
+          }}
+        >
+          Stake
+        </span>
+        {STAKE_QUICK_PICKS.map(amount => {
+          const active = stakeNum === amount
+          return (
+            <button
+              key={amount}
+              type="button"
+              onClick={() => setStakeInput(String(amount))}
+              style={{
+                flexShrink: 0,
+                padding: '6px 14px',
+                borderRadius: 980,
+                background: active ? APPLE_BLUE : APPLE_PANEL,
+                color: active ? '#FFFFFF' : APPLE_TEXT,
+                fontFamily: FONT_TEXT,
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: '-0.016em',
+                fontVariantNumeric: 'tabular-nums',
+                border: '1px solid rgba(0,0,0,0.08)',
+                cursor: 'pointer',
+                transition: `background 200ms ${EASE_DEFAULT}, color 200ms ${EASE_DEFAULT}`,
+              }}
+            >
+              ${amount}
+            </button>
+          )
+        })}
+        {hint && (
+          <span
+            style={{
+              marginLeft: 'auto',
+              flexShrink: 0,
+              paddingLeft: 10,
+              fontFamily: FONT_TEXT,
+              fontSize: 12,
+              color: hint.color,
+              letterSpacing: '-0.016em',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {hint.text}
+          </span>
+        )}
+      </div>
+
+      {/* Validate / commit */}
       <button
         type="button"
+        data-onboarding-target="validate-button"
         onClick={onClick}
         disabled={!validateEnabled && !isProcessing}
         style={{
@@ -2063,7 +2189,8 @@ function MobileValidate({
         {flow === 'committed' && <CheckMark />}
         <span>{label}</span>
       </button>
-    </div>
+    </div>,
+    portalEl,
   )
 }
 

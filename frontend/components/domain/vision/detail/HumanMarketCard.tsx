@@ -31,6 +31,10 @@ const FONT_DISPLAY = 'var(--apple-font-display), "SF Pro Display", Helvetica, Ar
 const FONT_TEXT = 'var(--apple-font-text), "SF Pro Text", Helvetica, Arial, sans-serif'
 const FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 
+// Sparkline height. Kept compact so the candle chart plus both rows of cards
+// land inside one laptop screen. Loading/empty placeholders match it exactly.
+const SPARK_H = 84
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Pick = 'up' | 'down'
@@ -151,10 +155,10 @@ export function HumanMarketCard({
         boxShadow: selected
           ? '0 0 0 2px #0071E3, 0 1px 2px rgba(0,0,0,0.03)'
           : '0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)',
-        padding: '12px 12px 10px',
+        padding: '10px 12px 9px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 6,
         transition: `box-shadow 250ms ${EASE_DEFAULT}`,
         cursor: onSelect ? 'pointer' : 'default',
       }}
@@ -522,7 +526,7 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 140,
+          height: SPARK_H,
           background: APPLE_CHIP_BG,
           borderRadius: 8,
           opacity: 0.5,
@@ -535,7 +539,7 @@ function MarketChart({
     return (
       <div
         style={{
-          height: 140,
+          height: SPARK_H,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -590,7 +594,7 @@ function MarketChart({
   }
 
   return (
-    <div style={{ position: 'relative', height: 140, width: '100%' }}>
+    <div style={{ position: 'relative', height: SPARK_H, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 4, left: 12, bottom: 0 }}>
           {/* X domain extends past dataMax to include the settle time, so
