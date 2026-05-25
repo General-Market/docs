@@ -22,15 +22,16 @@ const REASON_TEXT: Record<RedeemReason, string> = {
 }
 
 const HANDLE_RE = /^[A-Za-z0-9_]{1,32}$/
+const CODE_RE = /^[A-Za-z0-9_-]{3,64}$/
 
-type Step = 'handle' | 'reveal' | 'redeem'
+type Step = 'choose' | 'handle' | 'reveal' | 'redeem' | 'enter'
 
 export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props) {
   const { address, isConnected } = useAccount()
   const { isPending: isConnecting } = useConnect()
   const login = useWalletLogin({ source: 'waitlist-modal' })
 
-  const [step, setStep] = useState<Step>('handle')
+  const [step, setStep] = useState<Step>('choose')
   const [handle, setHandle] = useState('')
   const [code, setCode] = useState('')
   const [issuing, setIssuing] = useState(false)
@@ -42,6 +43,21 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
   const autoRedeemRef = useRef(false)
+  // True only after the user clicks Connect on the "I have a code" panel — so a
+  // typed code is never auto-redeemed mid-keystroke when a wallet is already on.
+  const enterIntentRef = useRef(false)
+
+  const codeValid = CODE_RE.test(code.trim())
+
+  const goChoose = () => {
+    setStep('choose')
+    setCode('')
+    setHandle('')
+    setIssueError(null)
+    setRedeemError(null)
+    autoRedeemRef.current = false
+    enterIntentRef.current = false
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -122,18 +138,21 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
     }
   }
 
-  // Auto-fire redeem as soon as the wallet connects on the redeem step.
-  // One user click on "Connect wallet" now covers connect + redeem; without
-  // this, the wallet returns and the user has to click again.
+  // Auto-fire redeem as soon as the wallet connects. One user click on "Connect
+  // wallet" now covers connect + redeem; without this, the wallet returns and
+  // the user has to click again. On the minted-code (redeem) path the code is
+  // known, so we fire on connect. On the typed-code (enter) path we wait for an
+  // explicit connect intent and a valid code, so we never fire mid-keystroke.
   useEffect(() => {
-    if (step !== 'redeem') return
+    if (step !== 'redeem' && step !== 'enter') return
     if (!isConnected || !address || !code) return
+    if (step === 'enter' && (!enterIntentRef.current || !codeValid)) return
     if (redeeming || success || autoRedeemRef.current) return
     autoRedeemRef.current = true
     void handleRedeem()
   // handleRedeem is stable enough — gating is done via autoRedeemRef.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, isConnected, address, code, redeeming, success])
+  }, [step, isConnected, address, code, codeValid, redeeming, success])
 
   const copy = async () => {
     try {
@@ -165,6 +184,20 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
       }}
     >
       <SpringModal className={`${glass.modal} max-w-[640px] w-full p-8 sm:p-10 relative`}>
+        {!success && (step === 'handle' || step === 'enter') && (
+          <button
+            type="button"
+            onClick={goChoose}
+            className="absolute top-4 left-4 inline-flex items-center gap-1 text-[13px] text-text-muted hover:text-text-primary transition-colors"
+            aria-label="Back"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back
+          </button>
+        )}
+
         {!success && (
           <div className="absolute top-4 right-4">
             <ModalClose onClick={onClose} />
@@ -173,6 +206,23 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
 
         {success ? (
           <SuccessPanel />
+        ) : step === 'choose' ? (
+          <ChoosePanel
+            onHaveCode={() => { setRedeemError(null); setStep('enter') }}
+            onUseTwitter={() => { setIssueError(null); setStep('handle') }}
+          />
+        ) : step === 'enter' ? (
+          <EnterCodePanel
+            code={code}
+            onCodeChange={(v) => { setCode(v); setRedeemError(null) }}
+            valid={codeValid}
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            onConnect={() => { enterIntentRef.current = true; login() }}
+            onSubmit={handleRedeem}
+            redeeming={redeeming}
+            error={redeemError}
+          />
         ) : step === 'handle' ? (
           <HandlePanel
             handle={handle}
@@ -206,6 +256,159 @@ export function WaitlistModal({ onClose, onRedeemed, onWalletConnected }: Props)
   )
 
   return createPortal(node, document.body)
+}
+
+function ChoosePanel({
+  onHaveCode,
+  onUseTwitter,
+}: {
+  onHaveCode: () => void
+  onUseTwitter: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center text-center pt-2">
+      <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a4 4 0 11-3.9 5h-2.3l-1.4 1.4-1.4-1.4H4v-2.3A4 4 0 1115 7z" />
+          <circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </div>
+
+      <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        How do you get in?
+      </h2>
+      <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
+        Redeem a code you were handed, or get one with your Twitter.
+      </p>
+
+      <div className="mt-7 w-full max-w-[400px] flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={onHaveCode}
+          className="group w-full h-14 rounded-2xl border border-black/10 bg-white hover:bg-black/[0.03] transition-colors flex items-center justify-between px-5"
+        >
+          <span className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-black/5">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a4 4 0 100 8 4 4 0 000-8zm-4 4H3m0 0l2-2m-2 2l2 2" />
+              </svg>
+            </span>
+            <span className="text-[15px] font-medium text-text-primary">I have a code</span>
+          </span>
+          <Arrow />
+        </button>
+
+        <button
+          type="button"
+          onClick={onUseTwitter}
+          className="group w-full h-14 rounded-2xl border border-black/10 bg-white hover:bg-black/[0.03] transition-colors flex items-center justify-between px-5"
+        >
+          <span className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-black/5">
+              <svg className="w-[18px] h-[18px]" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path d="M18.244 2H21l-6.51 7.44L22 22h-6.86l-4.79-6.26L4.86 22H2.1l6.96-7.95L2 2h7.04l4.33 5.72L18.24 2zm-2.4 18.34h1.83L7.27 3.57H5.32l10.52 16.77z" />
+              </svg>
+            </span>
+            <span className="text-[15px] font-medium text-text-primary">Get access with Twitter</span>
+          </span>
+          <Arrow />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Arrow() {
+  return (
+    <svg
+      className="w-4 h-4 text-text-muted transition-transform group-hover:translate-x-0.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+    </svg>
+  )
+}
+
+function EnterCodePanel({
+  code,
+  onCodeChange,
+  valid,
+  isConnected,
+  isConnecting,
+  onConnect,
+  onSubmit,
+  redeeming,
+  error,
+}: {
+  code: string
+  onCodeChange: (v: string) => void
+  valid: boolean
+  isConnected: boolean
+  isConnecting: boolean
+  onConnect: () => void
+  onSubmit: (e?: React.FormEvent) => void
+  redeeming: boolean
+  error: string | null
+}) {
+  return (
+    <div className="flex flex-col items-center text-center pt-2">
+      <div className="w-14 h-14 rounded-full bg-black/5 border border-black/10 flex items-center justify-center mb-5">
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a4 4 0 100 8 4 4 0 000-8zm-4 4H3m0 0l2-2m-2 2l2 2" />
+        </svg>
+      </div>
+
+      <h2 className="text-[24px] sm:text-[28px] font-semibold tracking-[-0.022em] text-text-primary leading-tight">
+        Enter your code
+      </h2>
+      <p className="mt-2 text-[15px] text-text-muted max-w-[440px]">
+        The code you were handed. One wallet, one use.
+      </p>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (isConnected) onSubmit(e)
+          else if (valid) onConnect()
+        }}
+        className="mt-7 w-full max-w-[400px]"
+      >
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => onCodeChange(e.target.value)}
+          placeholder="Your code"
+          autoComplete="off"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          className={`${glass.input} text-center font-mono tracking-[0.16em] !text-[16px] uppercase placeholder:tracking-normal placeholder:normal-case placeholder:font-sans`}
+          disabled={redeeming}
+          maxLength={64}
+        />
+        <button
+          type="submit"
+          disabled={!valid || redeeming || isConnecting}
+          className="mt-3 w-full h-12 bg-zinc-900 text-white text-[15px] font-medium rounded-full hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {redeeming
+            ? 'Verifying…'
+            : isConnecting
+              ? 'Connecting…'
+              : isConnected
+                ? 'Redeem'
+                : 'Connect wallet & unlock'}
+        </button>
+        {error && (
+          <p className="mt-3 text-[13px] text-red-600">{error}</p>
+        )}
+      </form>
+    </div>
+  )
 }
 
 function HandlePanel({
