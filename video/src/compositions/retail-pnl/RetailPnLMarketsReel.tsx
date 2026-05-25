@@ -17,39 +17,73 @@ import { LOGOS_BY_VENUE } from "./logos";
 // The fixed metric, shown as a centered subtitle under the changing venue.
 const SUBTITLE = "Share of profits captured by cohorts";
 
-// Stripe ships Söhne (Klim) — not free / not on Google Fonts. Inter is the
-// closest loadable neo-grotesque; tight tracking matches Stripe's headings.
 const { fontFamily: INTER } = loadInter("normal", {
   weights: ["400", "500", "600", "700", "800"],
 });
 
-// Normal landscape video format — a 16:9 frame, so the curved-monitor glass
-// reads like a real screen rather than a square card.
+// Normal landscape video format — a 16:9 CRT screen.
 const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 60;
 
-// AntiCheat / Base palette. Light field, electric blue curve, near-black type.
+// Dark CRT palette. Near-black tube, gray keynote type, neon data that glows.
+const DARK_GRADIENT =
+  "radial-gradient(ellipse 120% 95% at 50% 32%, #15171C 0%, #0A0B0E 55%, #050506 100%)";
 const PALETTE = {
-  bgTop: "#FFFFFF",
-  bgBottom: "#E7EAEE",
-  text: "#0A0A0A",
-  textDim: "#6E727A",
-  textVeryDim: "#9AA0A8",
-  accent: "#0052FF",
-  accentSoft: "#5B79FF",
-  ghost: "rgba(10, 10, 12, 0.07)",
-  grid: "rgba(10, 10, 12, 0.10)",
-  axis: "#1F1F24",
-  tick: "rgba(10, 10, 12, 0.22)",
-  dotRing: "#FFFFFF",
+  text: "#C4CAD4", // venue title — keynote gray
+  textDim: "#787E88", // subtitle gray
+  textVeryDim: "#565C66", // source
+  ghost: "rgba(200, 212, 235, 0.13)", // previous-chart lines
+  grid: "rgba(255, 255, 255, 0.05)", // axis gridlines, faint
+  axis: "#9AA0AA", // axis labels
+  tick: "rgba(255, 255, 255, 0.22)",
+  dotRing: "#06070A",
 };
+
+// Per-market neon, analysed from the reference bars: electric blue, neon green,
+// gold, violet, cyan, orange, lime, magenta, spring green, sky, white, red.
+const NEON = [
+  "#2F7BFF",
+  "#2BE84D",
+  "#F5C842",
+  "#9B5CFF",
+  "#34E0D0",
+  "#FF7A3C",
+  "#C6E04B",
+  "#FF4DA6",
+  "#3FE07A",
+  "#34B6FF",
+  "#F2F4F8",
+  "#FF4D4D",
+];
+const hexToRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ];
+};
+const NEON_RGB = NEON.map(hexToRgb);
 
 // Fast cadence: all twelve markets whip past in 4s — 20 frames each at 60fps.
 const HOLD_SECONDS_PER_SNAPSHOT = 20 / 60;
 const TRANSITION_FRACTION = 0.6;
 
+// Tail: hold the final market, then the CRT cuts out.
+const TAIL_HOLD = 18;
+const SHUTDOWN_FRAMES = 28;
+
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+const lerpColor = (
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): string =>
+  `rgb(${Math.round(lerp(a[0], b[0], t))}, ${Math.round(
+    lerp(a[1], b[1], t),
+  )}, ${Math.round(lerp(a[2], b[2], t))})`;
 
 const lerpSnapshot = (a: Snapshot, b: Snapshot, t: number): number[] =>
   a.values.map((v, i) => lerp(v, b.values[i] ?? v, t));
@@ -99,40 +133,38 @@ const polyPoints = (
 
 const computeReelDuration = (dataset: Dataset, fps: number): number => {
   const holdFrames = Math.max(20, Math.round(HOLD_SECONDS_PER_SNAPSHOT * fps));
-  return holdFrames * dataset.snapshots.length;
+  return holdFrames * dataset.snapshots.length + TAIL_HOLD + SHUTDOWN_FRAMES;
 };
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
 // ── Background — curved monitor grid ───────────────────────────────────────
-// A regular square grid, faint, bowed by a barrel warp so it reads as the grid
-// on a curved screen. Static; the chart and type sit flat and crisp in front.
+// A faint square grid bowed OUTWARD by a barrel warp, like the grid on a
+// bulging CRT. Static; the chart and type sit flat and crisp in front.
 
-// CRT "monitor curvature" — barrel warp on the grid only. Zero at the centre,
-// growing with r², so the lines bow outward at the rim.
-const BARREL_K = 0.13;
+// Barrel bulge — the centre magnifies and the edge-midpoints hold, so straight
+// rows bow outward (convex) like a real tube. f = 1 at r²=1 (the edges), > 1
+// at the centre, < 1 only at the far corners.
+const BARREL_K = 0.12;
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
 const barrel = (x: number, y: number): { x: number; y: number } => {
   const nx = (x - HALF_W) / HALF_W;
   const ny = (y - HALF_H) / HALF_H;
-  const f = 1 + BARREL_K * (nx * nx + ny * ny);
+  const f = 1 + BARREL_K * (1 - (nx * nx + ny * ny));
   return { x: HALF_W + nx * f * HALF_W, y: HALF_H + ny * f * HALF_H };
 };
 
 const GRID_SPACING = 150;
-const GRID_LINE_COLOR = "rgba(36, 50, 90, 0.11)";
-const GRID_MARGIN = 220; // sample beyond the frame so bowed ends still cover
+const GRID_LINE_COLOR = "rgba(255, 255, 255, 0.05)";
+const GRID_MARGIN = 260; // sample beyond the frame so the bow still covers
 
-// One bowed gridline, sampled and warped into a polyline. Static, so the whole
-// grid is precomputed once.
 const bowedLine = (fixed: number, horizontal: boolean): string => {
   const N = 48;
-  const lo = horizontal ? -GRID_MARGIN : -GRID_MARGIN;
   const span = horizontal ? WIDTH + 2 * GRID_MARGIN : HEIGHT + 2 * GRID_MARGIN;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
-    const v = lo + (i / N) * span;
+    const v = -GRID_MARGIN + (i / N) * span;
     const p = horizontal ? barrel(v, fixed) : barrel(fixed, v);
     pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
   }
@@ -140,63 +172,47 @@ const bowedLine = (fixed: number, horizontal: boolean): string => {
 };
 
 const H_LINES = Array.from(
-  { length: Math.ceil(HEIGHT / GRID_SPACING) + 3 },
-  (_, i) => bowedLine((i - 1) * GRID_SPACING, true),
+  { length: Math.ceil(HEIGHT / GRID_SPACING) + 5 },
+  (_, i) => bowedLine((i - 2) * GRID_SPACING, true),
 );
 const V_LINES = Array.from(
-  { length: Math.ceil(WIDTH / GRID_SPACING) + 3 },
-  (_, i) => bowedLine((i - 1) * GRID_SPACING, false),
+  { length: Math.ceil(WIDTH / GRID_SPACING) + 5 },
+  (_, i) => bowedLine((i - 2) * GRID_SPACING, false),
 );
 
 const CurvedGrid: React.FC = React.memo(() => (
   <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
-    {H_LINES.map((pts, i) => (
+    {[...H_LINES, ...V_LINES].map((pts, i) => (
       <polyline
-        key={`h-${i}`}
+        key={i}
         points={pts}
         fill="none"
         stroke={GRID_LINE_COLOR}
-        strokeWidth={1.6}
-      />
-    ))}
-    {V_LINES.map((pts, i) => (
-      <polyline
-        key={`v-${i}`}
-        points={pts}
-        fill="none"
-        stroke={GRID_LINE_COLOR}
-        strokeWidth={1.6}
+        strokeWidth={1.5}
       />
     ))}
   </svg>
 ));
 CurvedGrid.displayName = "CurvedGrid";
 
-// Gentle vignette — the grid fills the frame and only the far corners fall off.
 const SCREEN_MASK =
-  "radial-gradient(ellipse 98% 98% at 50% 46%, #000 0%, #000 72%, transparent 100%)";
+  "radial-gradient(ellipse 99% 99% at 50% 50%, #000 0%, #000 78%, transparent 100%)";
 
 const CurvedScreen: React.FC = () => (
   <AbsoluteFill
     style={{
       WebkitMaskImage: SCREEN_MASK,
       maskImage: SCREEN_MASK,
-      // Chromatic-aberration fringe — the glass-package lens character.
-      filter: "url(#reel-chroma)",
     }}
   >
     <CurvedGrid />
   </AbsoluteFill>
 );
 
-// ── CRT / VCR overlays ─────────────────────────────────────────────────────
-// Ported from the screen-effect kit, but deterministic: the noise is an SVG
-// feTurbulence seeded by the frame number (not a requestAnimationFrame canvas),
-// so every render frame is reproducible.
+// ── CRT / VCR overlays — deterministic feTurbulence seeded by the frame ─────
 
-const SNOW_OPACITY = 0.12;
+const SNOW_OPACITY = 0.1;
 
-// TV static — full-frame grayscale noise, re-seeded each frame.
 const SnowStatic: React.FC = () => {
   const frame = useCurrentFrame();
   return (
@@ -208,7 +224,7 @@ const SnowStatic: React.FC = () => {
         inset: 0,
         pointerEvents: "none",
         opacity: SNOW_OPACITY,
-        mixBlendMode: "overlay",
+        mixBlendMode: "screen",
       }}
     >
       <filter id="crt-snow">
@@ -226,8 +242,6 @@ const SnowStatic: React.FC = () => {
   );
 };
 
-// VCR tracking band — a horizontal band of bright streaked noise that drifts
-// down the screen, the way tape tracking rolls.
 const VCR_BAND_H = 110;
 const VCRBand: React.FC = () => {
   const frame = useCurrentFrame();
@@ -253,7 +267,7 @@ const VCRBand: React.FC = () => {
         />
         <feColorMatrix type="saturate" values="0" />
         <feComponentTransfer>
-          <feFuncA type="linear" slope="2.2" intercept="-0.75" />
+          <feFuncA type="linear" slope="2.2" intercept="-0.78" />
         </feComponentTransfer>
       </filter>
       <rect
@@ -262,35 +276,33 @@ const VCRBand: React.FC = () => {
         width="100%"
         height={VCR_BAND_H}
         filter="url(#crt-vcr)"
-        opacity={0.5}
+        opacity={0.45}
       />
     </svg>
   );
 };
 
-// Scanlines — the dark horizontal raster plus a faint RGB sub-pixel column.
 const Scanlines: React.FC = () => (
   <AbsoluteFill
     style={{
       pointerEvents: "none",
       mixBlendMode: "multiply",
       backgroundImage:
-        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.24) 50%), linear-gradient(90deg, rgba(255,0,0,0.05), rgba(0,255,0,0.015), rgba(0,0,255,0.05))",
+        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.28) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06))",
       backgroundSize: "100% 3px, 4px 100%",
     }}
   />
 );
 
-// CRT vignette — the tube darkens hard toward the rounded corners.
+// Lighter tube vignette than before.
 const CRTVignette: React.FC = () => (
   <AbsoluteFill
     style={{
       pointerEvents: "none",
-      borderRadius: 28,
+      borderRadius: 26,
       background:
-        "radial-gradient(ellipse 72% 74% at 50% 50%, transparent 48%, rgba(0,0,0,0.28) 84%, rgba(0,0,0,0.62) 100%)",
-      boxShadow:
-        "inset 0 0 200px 50px rgba(0,0,0,0.5), inset 0 0 60px 10px rgba(0,0,0,0.35)",
+        "radial-gradient(ellipse 84% 86% at 50% 50%, transparent 62%, rgba(0,0,0,0.16) 88%, rgba(0,0,0,0.38) 100%)",
+      boxShadow: "inset 0 0 120px 24px rgba(0,0,0,0.32)",
     }}
   />
 );
@@ -303,17 +315,17 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const W = WIDTH;
   const H = HEIGHT;
 
-  // Layout for the 16:9 frame — title top-left, venue label top-right, the
-  // plot filling the width, logo strip and source in the band below it.
+  // Layout for the 16:9 frame — centered header, a tall plot that fills the
+  // height, a big logo strip and the source below.
   const MARGIN = 80;
-  const MARGIN_TOP = 56;
+  const MARGIN_TOP = 46;
   const AXIS_GUTTER = 90;
   const plotL = MARGIN + AXIS_GUTTER; // 170
   const plotR = W - MARGIN; // 1840
   const plotW = plotR - plotL; // 1670
-  const plotT = 250;
-  const PLOT_BOTTOM = 700;
-  const plotH = PLOT_BOTTOM - plotT; // 450
+  const plotT = 205;
+  const PLOT_BOTTOM = 745;
+  const plotH = PLOT_BOTTOM - plotT; // 540
 
   const scale = dataset.yScale ?? "linear";
 
@@ -322,6 +334,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const transitionFrames = Math.round(holdFrames * TRANSITION_FRACTION);
   const sliceLen = dataset.snapshots.length;
   const totalScrubFrames = holdFrames * sliceLen;
+  const shutdownStart = totalScrubFrames + TAIL_HOLD;
 
   // Open at the lip of the first transition so the curve is already moving on
   // frame 1 — no static beat to start on.
@@ -345,16 +358,19 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const interpolated = lerpSnapshot(current, next, tEased);
   const labelDuringTransition = tEased > 0.5 ? next : current;
 
-  // Dots breathe on each new snapshot.
-  const snapAge = localFrame;
+  // Per-market neon colour, blended across the transition.
+  const curveColor = lerpColor(NEON_RGB[idxFloor], NEON_RGB[idxNext], tEased);
+
+  // Dots breathe on each new snapshot; the glow flashes as a market lands.
   const pulse = spring({
-    frame: snapAge,
+    frame: localFrame,
     fps,
     config: { damping: 12, stiffness: 220, mass: 0.7 },
     from: 0,
     to: 1,
   });
   const pulseScale = 1 + 0.05 * (1 - pulse);
+  const flash = Math.max(0, 1 - localFrame / 6);
 
   const yTickElems = dataset.yTicks.map((tick) => {
     const y = yAt(tick, dataset.yMin, dataset.yMax, plotT, plotH, scale);
@@ -406,7 +422,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         />
         <text
           x={x}
-          y={plotT + plotH + 46}
+          y={plotT + plotH + 44}
           textAnchor="middle"
           fontFamily={INTER}
           fontSize={27}
@@ -435,7 +451,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
       )}
       fill="none"
       stroke={PALETTE.ghost}
-      strokeWidth={2}
+      strokeWidth={3.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -456,267 +472,244 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const venue = labelDuringTransition.label;
   const venueLogos = LOGOS_BY_VENUE[venue] ?? [];
 
-  // Right column dips at the crossfade midpoint so the venue label + logos
-  // swap rather than morph.
-  const swapDip = interpolate(
-    Math.abs(tEased - 0.5) * 2,
-    [0, 1],
-    [0.12, 1],
-  );
+  const swapDip = interpolate(Math.abs(tEased - 0.5) * 2, [0, 1], [0.12, 1]);
 
-  // CRT wobble — a 1px vertical jitter, toggled every few frames. The slight
-  // overscan scale hides the gap the wobble would open at the edges.
+  // CRT wobble — a 1px vertical jitter.
   const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 1;
 
+  // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
+  // point at the centre and wink out.
+  const sd =
+    frame >= shutdownStart
+      ? Math.min(1, (frame - shutdownStart) / SHUTDOWN_FRAMES)
+      : 0;
+  const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+  const sdScaleY = interpolate(sd, [0, 0.42, 1], [1, 0.006, 0.006], clamp);
+  const sdScaleX = interpolate(sd, [0, 0.66, 1], [1, 1, 0.002], clamp);
+  const sdBright = interpolate(
+    sd,
+    [0, 0.1, 0.42, 0.7, 1],
+    [1, 1.9, 3.2, 2, 1],
+    clamp,
+  );
+  const sdOpacity = interpolate(sd, [0.86, 1], [1, 0], clamp);
+
   return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(ellipse 120% 90% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
-        fontFamily: INTER,
-        transform: `translateY(${wobbleY}px) scale(1.008)`,
-        transformOrigin: "50% 50%",
-      }}
-    >
-      {/* Filter defs — chromatic split for the glass lens, glows for the curve. */}
-      <svg width={0} height={0} style={{ position: "absolute" }}>
-        <defs>
-          <filter
-            id="reel-chroma"
-            x="-3%"
-            y="-3%"
-            width="106%"
-            height="106%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feColorMatrix
-              in="SourceGraphic"
-              type="matrix"
-              values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-              result="r"
-            />
-            <feOffset in="r" dx="1.8" dy="0" result="rS" />
-            <feColorMatrix
-              in="SourceGraphic"
-              type="matrix"
-              values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-              result="g"
-            />
-            <feColorMatrix
-              in="SourceGraphic"
-              type="matrix"
-              values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-              result="b"
-            />
-            <feOffset in="b" dx="-1.8" dy="0" result="bS" />
-            <feBlend in="rS" in2="g" mode="screen" result="rg" />
-            <feBlend in="rg" in2="bS" mode="screen" />
-          </filter>
-        </defs>
-      </svg>
-
-      <CurvedScreen />
-
-      {/* Header — centered. The venue is the big title (changes per market);
-          the metric is the fixed subtitle beneath it. */}
-      <div
-        style={{
-          position: "absolute",
-          top: MARGIN_TOP,
-          left: 0,
-          width: "100%",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: INTER,
-            fontSize: 86,
-            fontWeight: 800,
-            letterSpacing: "-0.03em",
-            lineHeight: 1.0,
-            color: PALETTE.text,
-            whiteSpace: "nowrap",
-            opacity: swapDip,
-          }}
-        >
-          {venue}
-        </div>
-        <div
-          style={{
-            marginTop: 10,
-            fontFamily: INTER,
-            fontSize: 32,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            color: PALETTE.textDim,
-          }}
-        >
-          {SUBTITLE}
-        </div>
-      </div>
-
-      <svg
-        width={W}
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        style={{
-          position: "absolute",
-          inset: 0,
-        }}
-      >
-        <defs>
-          <filter
-            id="reel-line-glow"
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
-          >
-            <feGaussianBlur stdDeviation="6" />
-          </filter>
-          <filter
-            id="reel-dot-glow"
-            x="-80%"
-            y="-80%"
-            width="260%"
-            height="260%"
-          >
-            <feGaussianBlur stdDeviation="4" />
-          </filter>
-        </defs>
-
-        {yTickElems}
-        {ghostLines}
-
-        {/* Glow pass behind the accent curve. */}
-        <polyline
-          points={linePts}
-          fill="none"
-          stroke={PALETTE.accentSoft}
-          strokeWidth={11}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={0.5}
-          filter="url(#reel-line-glow)"
-        />
-
-        {/* Highlighted current line. */}
-        <polyline
-          points={linePts}
-          fill="none"
-          stroke={PALETTE.accent}
-          strokeWidth={6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {interpolated.map((v, i) => {
-          const cx = xAt(i, interpolated.length, plotL, plotW);
-          const cy = yAt(v, dataset.yMin, dataset.yMax, plotT, plotH, scale);
-          return (
-            <g key={`dot-${i}`}>
-              <circle
-                cx={cx}
-                cy={cy}
-                r={12 * pulseScale}
-                fill={PALETTE.accentSoft}
-                opacity={0.4}
-                filter="url(#reel-dot-glow)"
-              />
-              <circle
-                cx={cx}
-                cy={cy}
-                r={8.5 * pulseScale}
-                fill={PALETTE.accent}
-                stroke={PALETTE.dotRing}
-                strokeWidth={3}
-              />
-            </g>
-          );
-        })}
-
-        {xLabelElems}
-      </svg>
-
-      {/* Logo strip — the dominant platforms, centered under the plot. */}
-      {venueLogos.length > 0 ? (
-        <div
-          style={{
-            position: "absolute",
-            top: PLOT_BOTTOM + 72,
-            left: plotL,
-            width: plotW,
-            display: "flex",
-            justifyContent: "center",
-            gap: 22,
-            opacity: swapDip,
-          }}
-        >
-          {venueLogos.slice(0, 6).map((logo) => (
-            <div
-              key={logo.file}
-              style={{
-                width: 150,
-                height: 150,
-                flexShrink: 0,
-                borderRadius: 32,
-                background: "rgba(255, 255, 255, 0.95)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 18,
-                boxShadow: "0 16px 40px -24px rgba(0, 0, 0, 0.9)",
-              }}
-            >
-              <Img
-                src={staticFile(logo.file)}
-                alt={logo.name}
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Source — bottom-left, wraps inside the frame. */}
-      {source ? (
-        <div
-          style={{
-            position: "absolute",
-            top: PLOT_BOTTOM + 72 + 150 + 22,
-            left: MARGIN,
-            width: plotR - MARGIN,
-            fontFamily: INTER,
-            fontSize: 15,
-            fontWeight: 500,
-            letterSpacing: "-0.005em",
-            lineHeight: 1.35,
-            color: PALETTE.textVeryDim,
-          }}
-        >
-          Source: {source}
-        </div>
-      ) : null}
-
-      {/* Soft screen glare across the glass. */}
+    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
       <AbsoluteFill
         style={{
-          pointerEvents: "none",
-          mixBlendMode: "screen",
-          background:
-            "linear-gradient(122deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 22%, transparent 40%)",
+          background: DARK_GRADIENT,
+          fontFamily: INTER,
+          transform: `translateY(${wobbleY}px) scale(${(1.008 * sdScaleX).toFixed(4)}, ${(1.008 * sdScaleY).toFixed(4)})`,
+          transformOrigin: "50% 50%",
+          filter: `brightness(${sdBright.toFixed(2)})`,
+          opacity: sdOpacity,
         }}
-      />
+      >
+        {/* Glow filters for the neon curve + dots. */}
+        <svg width={0} height={0} style={{ position: "absolute" }}>
+          <defs>
+            <filter
+              id="reel-line-glow"
+              x="-30%"
+              y="-30%"
+              width="160%"
+              height="160%"
+            >
+              <feGaussianBlur stdDeviation="11" />
+            </filter>
+            <filter
+              id="reel-dot-glow"
+              x="-100%"
+              y="-100%"
+              width="300%"
+              height="300%"
+            >
+              <feGaussianBlur stdDeviation="6" />
+            </filter>
+          </defs>
+        </svg>
 
-      {/* CRT / VCR stack — static, tracking band, scanlines, tube vignette. */}
-      <SnowStatic />
-      <VCRBand />
-      <Scanlines />
-      <CRTVignette />
+        <CurvedScreen />
+
+        {/* Header — centered. Venue is the big title; metric is the subtitle. */}
+        <div
+          style={{
+            position: "absolute",
+            top: MARGIN_TOP,
+            left: 0,
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: INTER,
+              fontSize: 88,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.0,
+              color: PALETTE.text,
+              whiteSpace: "nowrap",
+              opacity: swapDip,
+            }}
+          >
+            {venue}
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              fontFamily: INTER,
+              fontSize: 32,
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              color: PALETTE.textDim,
+            }}
+          >
+            {SUBTITLE}
+          </div>
+        </div>
+
+        <svg
+          width={W}
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ position: "absolute", inset: 0 }}
+        >
+          {yTickElems}
+          {ghostLines}
+
+          {/* Wide neon glow — flares as a market lands. */}
+          <polyline
+            points={linePts}
+            fill="none"
+            stroke={curveColor}
+            strokeWidth={16 + 12 * flash}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.5 + 0.4 * flash}
+            filter="url(#reel-line-glow)"
+          />
+
+          {/* Bright core line. */}
+          <polyline
+            points={linePts}
+            fill="none"
+            stroke={curveColor}
+            strokeWidth={7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {interpolated.map((v, i) => {
+            const cx = xAt(i, interpolated.length, plotL, plotW);
+            const cy = yAt(v, dataset.yMin, dataset.yMax, plotT, plotH, scale);
+            return (
+              <g key={`dot-${i}`}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={(13 + 6 * flash) * pulseScale}
+                  fill={curveColor}
+                  opacity={0.5 + 0.35 * flash}
+                  filter="url(#reel-dot-glow)"
+                />
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={8 * pulseScale}
+                  fill={curveColor}
+                  stroke={PALETTE.dotRing}
+                  strokeWidth={2.5}
+                />
+              </g>
+            );
+          })}
+
+          {xLabelElems}
+        </svg>
+
+        {/* Logo strip — big, centered under the plot. */}
+        {venueLogos.length > 0 ? (
+          <div
+            style={{
+              position: "absolute",
+              top: PLOT_BOTTOM + 58,
+              left: plotL,
+              width: plotW,
+              display: "flex",
+              justifyContent: "center",
+              gap: 24,
+              opacity: swapDip,
+            }}
+          >
+            {venueLogos.slice(0, 6).map((logo) => (
+              <div
+                key={logo.file}
+                style={{
+                  width: 184,
+                  height: 184,
+                  flexShrink: 0,
+                  borderRadius: 38,
+                  background: "rgba(255, 255, 255, 0.96)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 22,
+                  boxShadow:
+                    "0 18px 44px -22px rgba(0, 0, 0, 0.9), 0 0 40px -10px rgba(255,255,255,0.12)",
+                }}
+              >
+                <Img
+                  src={staticFile(logo.file)}
+                  alt={logo.name}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Source — bottom-left. */}
+        {source ? (
+          <div
+            style={{
+              position: "absolute",
+              top: PLOT_BOTTOM + 58 + 184 + 12,
+              left: MARGIN,
+              width: plotR - MARGIN,
+              fontFamily: INTER,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: "-0.005em",
+              lineHeight: 1.3,
+              color: PALETTE.textVeryDim,
+            }}
+          >
+            Source: {source}
+          </div>
+        ) : null}
+
+        {/* Soft screen glare. */}
+        <AbsoluteFill
+          style={{
+            pointerEvents: "none",
+            mixBlendMode: "screen",
+            background:
+              "linear-gradient(122deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 22%, transparent 40%)",
+          }}
+        />
+
+        {/* CRT / VCR stack. */}
+        <SnowStatic />
+        <VCRBand />
+        <Scanlines />
+        <CRTVignette />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
