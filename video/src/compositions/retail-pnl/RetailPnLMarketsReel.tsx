@@ -26,35 +26,37 @@ const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 60;
 
-// Dark CRT palette. Near-black tube, gray keynote type, neon data that glows.
-const DARK_GRADIENT =
-  "radial-gradient(ellipse 120% 95% at 50% 32%, #15171C 0%, #0A0B0E 55%, #050506 100%)";
+// Light field palette. White ground, near-black keynote type, saturated data.
+const BG_GRADIENT =
+  "radial-gradient(ellipse 120% 90% at 50% 16%, #FFFFFF 0%, #F0F2F4 55%, #E7EAEE 100%)";
 const PALETTE = {
-  text: "#C4CAD4", // venue title — keynote gray
-  textDim: "#787E88", // subtitle gray
-  textVeryDim: "#565C66", // source
-  ghost: "rgba(200, 212, 235, 0.13)", // previous-chart lines
-  grid: "rgba(255, 255, 255, 0.05)", // axis gridlines, faint
-  axis: "#9AA0AA", // axis labels
-  tick: "rgba(255, 255, 255, 0.22)",
-  dotRing: "#06070A",
+  text: "#1D2026", // venue title
+  textDim: "#6E727A", // subtitle
+  textVeryDim: "#9AA0A8", // source
+  ghost: "rgba(10, 12, 20, 0.10)", // previous-chart lines
+  grid: "rgba(10, 12, 20, 0.07)", // axis gridlines, faint
+  axis: "#3A3F49", // axis labels
+  tick: "rgba(10, 12, 20, 0.22)",
+  dotRing: "#FFFFFF",
 };
 
-// Per-market neon, analysed from the reference bars: electric blue, neon green,
-// gold, violet, cyan, orange, lime, magenta, spring green, sky, white, red.
+// Per-market colour — the reference hues, deepened so each reads on the light
+// field: blue, green, amber, violet, teal, orange, lime, magenta, emerald,
+// sky, indigo, red. (The reference's white becomes indigo — white is invisible
+// on a white field.)
 const NEON = [
-  "#2F7BFF",
-  "#2BE84D",
-  "#F5C842",
-  "#9B5CFF",
-  "#34E0D0",
-  "#FF7A3C",
-  "#C6E04B",
-  "#FF4DA6",
-  "#3FE07A",
-  "#34B6FF",
-  "#F2F4F8",
-  "#FF4D4D",
+  "#1F6FEB",
+  "#16B33F",
+  "#D9931C",
+  "#7B3FE4",
+  "#109A8E",
+  "#F0601C",
+  "#8DA017",
+  "#E0318C",
+  "#18AE66",
+  "#1B95E0",
+  "#3D4CC9",
+  "#E63838",
 ];
 const hexToRgb = (hex: string): [number, number, number] => {
   const h = hex.replace("#", "");
@@ -156,7 +158,7 @@ const barrel = (x: number, y: number): { x: number; y: number } => {
 };
 
 const GRID_SPACING = 150;
-const GRID_LINE_COLOR = "rgba(255, 255, 255, 0.05)";
+const GRID_LINE_COLOR = "rgba(30, 44, 84, 0.07)";
 const GRID_MARGIN = 260; // sample beyond the frame so the bow still covers
 
 const bowedLine = (fixed: number, horizontal: boolean): string => {
@@ -224,7 +226,7 @@ const SnowStatic: React.FC = () => {
         inset: 0,
         pointerEvents: "none",
         opacity: SNOW_OPACITY,
-        mixBlendMode: "screen",
+        mixBlendMode: "overlay",
       }}
     >
       <filter id="crt-snow">
@@ -254,7 +256,7 @@ const VCRBand: React.FC = () => {
         position: "absolute",
         inset: 0,
         pointerEvents: "none",
-        mixBlendMode: "screen",
+        mixBlendMode: "overlay",
       }}
     >
       <filter id="crt-vcr">
@@ -498,7 +500,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
       <AbsoluteFill
         style={{
-          background: DARK_GRADIENT,
+          background: BG_GRADIENT,
           fontFamily: INTER,
           transform: `translateY(${wobbleY}px) scale(${(1.008 * sdScaleX).toFixed(4)}, ${(1.008 * sdScaleY).toFixed(4)})`,
           transformOrigin: "50% 50%",
