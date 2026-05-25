@@ -48,6 +48,24 @@ side-by-side replicas are landscape. Do not assume 1080×1920/30.
 - Prefer opening Studio for preview. Only render to MP4 when the user explicitly
   asks: `npx remotion render src/index.ts <CompositionId> out/video.mp4`.
 
+## Where the files live (on the computer)
+
+The repo is at `/Users/maxguillabert/Downloads/index/video` — nested inside
+`~/Downloads`, NOT a sibling at `~/Downloads/video/`. That old standalone path is
+dead; legacy scripts still pointing there (e.g. `cut-short-02.sh`) are stale.
+
+- **`~/Movies/`** — raw recordings. "The movie" / "the recording" means here. Each
+  session is **three Matroska files**: `screen-YYYY-MM-DD-HH-MM.mkv`,
+  `camera-<same>.mkv`, `mic-<same>.mkv`. Only the **mic** track carries audio.
+  (DaVinci Resolve backups live here too.) `talking-head-edit/01_transcribe.py` and
+  `06_bake.py` read from here.
+- **`~/Downloads/`** — "download" means here. Rendered outputs (`*.mp4`/`*.mov`/
+  `*.png`), downloaded YouTube reference clips (`YTDown_*`), thumbnails, and eyeball
+  copies the pipeline drops for review (e.g. `AntiCheat-enriched-cut.txt`).
+- **`public/`** (inside the repo) — everything a composition renders against: the
+  baked `final.mp4`, cutout frames, light shafts, fetched card/chart images, SFX,
+  music. Reference these with `staticFile()`, never a remote URL.
+
 ## What this project actually produces
 
 - **Talking-head edits** — VO + b-roll illustrations + karaoke captions + behind-
@@ -134,6 +152,28 @@ seconds of the beat. Never matte the whole talk: a full-length cutout is ~40GB.
 - Light layer: `public/anticheat-edit/light_shafts.mp4` (render via
   `scripts/render_light_shafts.py`), screen-blended. Grade + light already ride the
   whole talk inside `AntiCheatLayout`.
+
+## Image treatment (scripts in `scripts/`)
+
+- **Background removal — quality:** `python3 scripts/remove_bg.py` (BiRefNet-portrait)
+  → PNG sequence with alpha. Slow, clean edges.
+- **Background removal — fast:** `python3 scripts/remove_bg_fast.py` (u2netp via rembg)
+  → PNG+alpha, ~0.09s/frame (~11 min for a full clip).
+- **Person matte (whole clip):** `python3 scripts/person_matte.py` → ProRes 4444 `.mov`
+  with alpha (the "titles behind the subject" matte). A full-length matte is ~40GB —
+  for a few-second beat use `cutout_window.py` instead (see Behind-subject beats).
+- **Color grade:** `python3 scripts/color_grade.py` — named, reusable FFmpeg filter
+  chains (the color sibling of `voice_effects.py`). One preset per kind of footage.
+- **Localize remote images before rendering:** `node scripts/prefetch-card-images.mjs`
+  downloads every `imageUrl` in a `sources.json` into `public/scene-images/` and
+  rewrites the URL to a `staticFile`-resolvable path. **Never render a composition
+  against a third-party CDN URL — it fails intermittently.**
+- **Source charts / stills:** `extract-source-charts.py` pulls chart images out of a
+  session JSONL → `public/source-charts/`; `render-finance-stills.sh` renders one still
+  per chart segment → `out/finance-stills/`; `screenshot.mjs` grabs page shots.
+
+Transparent PNG/WebP sequences mount frame-exact via `<Img src={staticFile(...)}>`;
+alpha video needs `OffthreadVideo`'s `transparent` prop.
 
 ## Audio processing (Python scripts in `scripts/`)
 
