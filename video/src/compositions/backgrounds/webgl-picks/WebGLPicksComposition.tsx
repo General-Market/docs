@@ -67,6 +67,15 @@ import { DivTv } from "./DivTv";
 import { GeneralMarketGlitch } from "./GeneralMarketGlitch";
 import { DiamondGrid } from "./DiamondGrid";
 import { WalkRideLogo } from "./WalkRideLogo";
+import { ShimmerButton } from "./ShimmerButton";
+import { EmojiCarousel } from "./EmojiCarousel";
+import { CityHoverCards } from "./CityHoverCards";
+import { TextScramble } from "./TextScramble";
+import { OrganicMotion } from "./OrganicMotion";
+import { AnimationPrinciples } from "./AnimationPrinciples";
+import { RgbGlitch } from "./RgbGlitch";
+import { Backlights } from "./Backlights";
+import { CrtScreen } from "./CrtScreen";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -130,6 +139,9 @@ const ALL_SCENES = [
   { id: "WP-DudeWalk", component: DudeWalk },
   { id: "WP-DashboardReveal", component: DashboardReveal },
   { id: "WP-BongoCat", component: BongoCat },
+  { id: "WP-RgbGlitch", component: RgbGlitch },
+  { id: "WP-Backlights", component: Backlights },
+  { id: "WP-CrtScreen", component: CrtScreen },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
@@ -143,6 +155,12 @@ const ALL_SCENES = [
   { id: "WP-GeneralMarketGlitch", component: GeneralMarketGlitch, reelOnly: true },
   { id: "WP-DiamondGrid", component: DiamondGrid, reelOnly: true },
   { id: "WP-WalkRideLogo", component: WalkRideLogo, reelOnly: true },
+  { id: "WP-ShimmerButton", component: ShimmerButton, reelOnly: true },
+  { id: "WP-EmojiCarousel", component: EmojiCarousel, reelOnly: true },
+  { id: "WP-CityHoverCards", component: CityHoverCards, reelOnly: true },
+  { id: "WP-TextScramble", component: TextScramble, reelOnly: true },
+  { id: "WP-OrganicMotion", component: OrganicMotion, reelOnly: true },
+  { id: "WP-AnimationPrinciples", component: AnimationPrinciples, reelOnly: true },
 ] as { id: string; component: React.FC; reelOnly?: boolean }[];
 
 export const WebGLPicksComposition: React.FC = () => {
