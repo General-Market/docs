@@ -765,7 +765,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <Scanlines />
         <CRTVignette />
 
-        {/* RGB-split glitch — only on the screen-border frame; never the text. */}
+        {/* Electric-blue split glitch — faint, only on the border frame. */}
         <svg
           width={W}
           height={H}
@@ -774,13 +774,14 @@ export const RetailPnLMarketsReel: React.FC = () => {
             inset: 0,
             pointerEvents: "none",
             mixBlendMode: "multiply",
+            opacity: 0.32,
           }}
         >
           {(
             [
-              ["#FF2A2A", borderOff, borderOff],
-              ["#13DE45", 0, 0],
-              ["#2A6BFF", -borderOff, -borderOff],
+              ["#27D6FF", borderOff, borderOff],
+              ["#2E7BFF", 0, 0],
+              ["#6A5CFF", -borderOff, -borderOff],
             ] as const
           ).map(([stroke, ox, oy]) => (
             <rect
