@@ -106,6 +106,11 @@ for i in (1, 2, 3):
         f'      BITGET_READONLY_API_SECRET: "{bget.get("s", "")}"',
         f'      BITGET_READONLY_PASSPHRASE: "{bget.get("p", "")}"',
         '      EXCHANGE_MODE: "testnet"',
+        # Phase-1 storage mirror. The oracle only writes settled rounds to
+        # vision_settlements (the table the participants UI reads) when this is
+        # set. Dropping it silently freezes participants — which is exactly what
+        # happened when a redeploy regenerated the override without it.
+        '      USE_NEW_STORAGE: "1"',
         "    command:",
     ]
     for a in command(i):
