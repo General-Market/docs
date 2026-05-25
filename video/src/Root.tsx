@@ -128,7 +128,7 @@ import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets
 import { retailPnLMarketsReelMeta } from "./compositions/retail-pnl/RetailPnLMarketsReel";
 import { retailPnLMarketsCardsMeta } from "./compositions/retail-pnl/RetailPnLMarketsCards";
 import { retailPnLShortMeta } from "./compositions/retail-pnl/RetailPnLShort";
-import { lendingCuratorsReelMeta } from "./compositions/lending-curators/LendingCuratorsReel";
+import { lendingCuratorsReelMeta, lendingWinnersMeta } from "./compositions/lending-curators/LendingCuratorsReel";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
@@ -138,6 +138,10 @@ import {
   predictionMarketsFlowMeta,
   privacyFlowMeta,
   rwaFlowMeta,
+  perpsWinnersMeta,
+  predictionMarketsWinnersMeta,
+  privacyWinnersMeta,
+  rwaWinnersMeta,
 } from "./compositions/defi-flows/datasets";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
@@ -284,6 +288,11 @@ export const RemotionRoot: React.FC = () => {
           predictionMarketsFlowMeta,
           privacyFlowMeta,
           rwaFlowMeta,
+          perpsWinnersMeta,
+          predictionMarketsWinnersMeta,
+          privacyWinnersMeta,
+          rwaWinnersMeta,
+          lendingWinnersMeta,
         ].map((meta) => (
           <Composition
             key={meta.id}

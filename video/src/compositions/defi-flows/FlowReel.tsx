@@ -81,18 +81,18 @@ const PLOT_R = FLOW_WIDTH - MARGIN; // 2040
 const X_ZERO = (PLOT_L + PLOT_R) / 2;
 const HALF_W = (PLOT_R - PLOT_L) / 2;
 
-const delta = (r: FlowRow) => r.now - r.prior;
-const pct = (r: FlowRow) => (r.prior ? (delta(r) / r.prior) * 100 : 0);
-const metricOf = (r: FlowRow, mode: FlowMode) => (mode === "pct" ? pct(r) : delta(r));
+export const delta = (r: FlowRow) => r.now - r.prior;
+export const pct = (r: FlowRow) => (r.prior ? (delta(r) / r.prior) * 100 : 0);
+export const metricOf = (r: FlowRow, mode: FlowMode) => (mode === "pct" ? pct(r) : delta(r));
 
-const fmtUSD = (v: number): string => {
+export const fmtUSD = (v: number): string => {
   if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(0)}M`;
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
   return `$${v.toFixed(0)}`;
 };
 
-const fmtUsdSigned = (v: number): string => {
+export const fmtUsdSigned = (v: number): string => {
   const sign = v >= 0 ? "+" : "−";
   const a = Math.abs(v);
   if (a >= 1_000_000_000) return `${sign}$${(a / 1_000_000_000).toFixed(2)}B`;
@@ -102,10 +102,10 @@ const fmtUsdSigned = (v: number): string => {
 };
 
 const fmtPct = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}%`;
-const fmtPctSigned = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`;
-const fmtValue = (v: number, mode: FlowMode): string => (mode === "pct" ? fmtPctSigned(v) : fmtUsdSigned(v));
+export const fmtPctSigned = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`;
+export const fmtValue = (v: number, mode: FlowMode): string => (mode === "pct" ? fmtPctSigned(v) : fmtUsdSigned(v));
 
-const niceStep = (max: number): number => {
+export const niceStep = (max: number): number => {
   const rough = max / 2.5;
   const pow = Math.pow(10, Math.floor(Math.log10(rough)));
   const n = rough / pow;
