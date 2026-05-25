@@ -334,7 +334,23 @@ const CRTVignette: React.FC = () => (
   />
 );
 
-export const RetailPnLMarketsReel: React.FC = () => {
+export type RetailPnLMarketsReelProps = {
+  // Seconds each market holds before whipping into the next. Defaults to the
+  // reel's native fast cadence; the vertical short slows it to lock onto the beat.
+  holdSecondsPerSnapshot?: number;
+  // When false, the reel parks on the final market instead of the CRT power-off —
+  // so a host composition can keep it on screen as a frozen backdrop.
+  enableShutdown?: boolean;
+  // Pass-3 mode: recolour the curve red and shade the wedge between it and the
+  // perfectly-fair diagonal — the red area is the profit the top keeps.
+  highlightDiff?: boolean;
+};
+
+export const RetailPnLMarketsReel: React.FC<RetailPnLMarketsReelProps> = ({
+  holdSecondsPerSnapshot = HOLD_SECONDS_PER_SNAPSHOT,
+  enableShutdown = true,
+  highlightDiff = false,
+}) => {
   const dataset = MARKETS_CONCENTRATION;
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -357,7 +373,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const scale = dataset.yScale ?? "linear";
 
   // Scrub state — hold each snapshot, whip into the next.
-  const holdFrames = Math.max(20, Math.round(HOLD_SECONDS_PER_SNAPSHOT * fps));
+  const holdFrames = Math.max(20, Math.round(holdSecondsPerSnapshot * fps));
   const transitionFrames = Math.round(holdFrames * TRANSITION_FRACTION);
   const sliceLen = dataset.snapshots.length;
   const totalScrubFrames = holdFrames * sliceLen;
@@ -385,8 +401,11 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const interpolated = lerpSnapshot(current, next, tEased);
   const labelDuringTransition = tEased > 0.5 ? next : current;
 
-  // Per-market neon colour, blended across the transition.
-  const curveColor = lerpColor(NEON_RGB[idxFloor], NEON_RGB[idxNext], tEased);
+  // Per-market neon colour, blended across the transition. In highlight mode the
+  // whole curve burns red so the wedge below it reads as the house's cut.
+  const curveColor = highlightDiff
+    ? "#EE2B2B"
+    : lerpColor(NEON_RGB[idxFloor], NEON_RGB[idxNext], tEased);
 
   // Dots breathe on each new snapshot; the glow flashes as a market lands.
   const pulse = spring({
@@ -495,6 +514,21 @@ export const RetailPnLMarketsReel: React.FC = () => {
     scale,
   );
 
+  // Pass-3 wedge: the area between the perfectly-fair diagonal and the Lorenz
+  // curve. The polygon walks the diagonal from bottom-left up to top-right, then
+  // back down along the curve — the curve's own ends sit on those two corners.
+  const fairBL = `${plotL.toFixed(1)},${(plotT + plotH).toFixed(1)}`;
+  const revCurve = interpolated
+    .map((v, i) => {
+      const x = xAt(i, interpolated.length, plotL, plotW);
+      const y = yAt(v, dataset.yMin, dataset.yMax, plotT, plotH, scale);
+      return [x, y] as const;
+    })
+    .reverse()
+    .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const gapPolygon = `${fairBL} ${revCurve}`;
+
   const source = labelDuringTransition.source ?? dataset.source;
   const venue = labelDuringTransition.label;
   const venueLogos = LOGOS_BY_VENUE[venue] ?? [];
@@ -508,7 +542,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
   const sd =
-    frame >= shutdownStart
+    enableShutdown && frame >= shutdownStart
       ? Math.min(1, (frame - shutdownStart) / SHUTDOWN_FRAMES)
       : 0;
   const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -634,6 +668,34 @@ export const RetailPnLMarketsReel: React.FC = () => {
         >
           {yTickElems}
           {ghostLines}
+
+          {/* Pass-3 — the wedge between the fair diagonal and the curve, in red. */}
+          {highlightDiff ? (
+            <>
+              <polygon points={gapPolygon} fill="rgba(232, 38, 38, 0.20)" />
+              <line
+                x1={plotL}
+                y1={plotT + plotH}
+                x2={plotL + plotW}
+                y2={plotT}
+                stroke="rgba(40, 46, 60, 0.45)"
+                strokeWidth={2.5}
+                strokeDasharray="11 13"
+              />
+              <text
+                x={plotL + plotW - 8}
+                y={plotT - 14}
+                textAnchor="end"
+                fontFamily={INTER}
+                fontSize={26}
+                fontWeight={600}
+                letterSpacing="-0.01em"
+                fill={PALETTE.textDim}
+              >
+                perfectly fair
+              </text>
+            </>
+          ) : null}
 
           {/* Wide neon glow — bursts as a market lands so the colour pops. */}
           <polyline

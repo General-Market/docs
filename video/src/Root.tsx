@@ -126,6 +126,7 @@ import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditCo
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { retailPnLMarketsReelMeta } from "./compositions/retail-pnl/RetailPnLMarketsReel";
+import { retailPnLMarketsReelShortMeta } from "./compositions/retail-pnl/RetailPnLMarketsReelShort";
 import { retailPnLMarketsCardsMeta } from "./compositions/retail-pnl/RetailPnLMarketsCards";
 import { retailPnLShortMeta } from "./compositions/retail-pnl/RetailPnLShort";
 import { lendingCuratorsReelMeta, lendingWinnersMeta } from "./compositions/lending-curators/LendingCuratorsReel";
@@ -263,6 +264,7 @@ export const RemotionRoot: React.FC = () => {
         {[
           retailPnLMarketsMeta,
           retailPnLMarketsReelMeta,
+          retailPnLMarketsReelShortMeta,
           retailPnLMarketsCardsMeta,
           retailPnLShortMeta,
           lendingCuratorsReelMeta,
