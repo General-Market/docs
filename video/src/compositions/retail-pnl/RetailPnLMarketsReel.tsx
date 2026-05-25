@@ -205,6 +205,8 @@ const CurvedScreen: React.FC = () => (
     style={{
       WebkitMaskImage: SCREEN_MASK,
       maskImage: SCREEN_MASK,
+      // Retro RGB-split glitch — strongest where the grid bows into the corners.
+      filter: "url(#reel-chroma)",
     }}
   >
     <CurvedGrid />
@@ -480,6 +482,12 @@ export const RetailPnLMarketsReel: React.FC = () => {
   // overscan below is widened so the bigger shift never reveals the edge.
   const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 10;
 
+  // Retro RGB glitch — a small constant chromatic split with brief spikes, so
+  // the red/blue channels separate on the curve and out toward the corners.
+  const chromaSpike = frame % 29 < 2 ? 5 : 0;
+  const chromaDX = 1.4 + chromaSpike + Math.sin(frame * 1.7) * 0.5;
+  const chromaDY = chromaSpike > 0 ? 1.5 : 0;
+
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
   const sd =
@@ -530,6 +538,37 @@ export const RetailPnLMarketsReel: React.FC = () => {
             >
               <feGaussianBlur stdDeviation="6" />
             </filter>
+            <filter
+              id="reel-chroma"
+              x="-5%"
+              y="-5%"
+              width="110%"
+              height="110%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feColorMatrix
+                in="SourceGraphic"
+                type="matrix"
+                values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                result="r"
+              />
+              <feOffset in="r" dx={chromaDX} dy={chromaDY} result="rS" />
+              <feColorMatrix
+                in="SourceGraphic"
+                type="matrix"
+                values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                result="g"
+              />
+              <feColorMatrix
+                in="SourceGraphic"
+                type="matrix"
+                values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                result="b"
+              />
+              <feOffset in="b" dx={-chromaDX} dy={-chromaDY} result="bS" />
+              <feBlend in="rS" in2="g" mode="screen" result="rg" />
+              <feBlend in="rg" in2="bS" mode="screen" />
+            </filter>
           </defs>
         </svg>
 
@@ -577,7 +616,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           width={W}
           height={H}
           viewBox={`0 0 ${W} ${H}`}
-          style={{ position: "absolute", inset: 0 }}
+          style={{ position: "absolute", inset: 0, filter: "url(#reel-chroma)" }}
         >
           {yTickElems}
           {ghostLines}
