@@ -348,9 +348,9 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const plotL = MARGIN + AXIS_GUTTER; // 170
   const plotR = W - MARGIN; // 1840
   const plotW = plotR - plotL; // 1670
-  const plotT = 205;
-  const PLOT_BOTTOM = 745;
-  const plotH = PLOT_BOTTOM - plotT; // 540
+  const plotT = 250;
+  const PLOT_BOTTOM = 752;
+  const plotH = PLOT_BOTTOM - plotT;
 
   const scale = dataset.yScale ?? "linear";
 
@@ -499,10 +499,9 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
   const swapDip = interpolate(Math.abs(tEased - 0.5) * 2, [0, 1], [0.12, 1]);
 
-  // Retro RGB glitch — confined to the screen-border frame. It flicks WITH the
-  // graph: the channel offset jumps on each market landing (flash), then
-  // settles. Never touches the text. No screen wobble.
-  const borderOff = 0.6 + 4 * flash;
+  // Retro RGB glitch on the border frame — always visibly separated, and it
+  // flicks WIDER on each market landing (flash), then settles. Never the text.
+  const borderOff = 4 + 8 * flash;
 
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
@@ -600,7 +599,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           <div
             style={{
               fontFamily: INTER,
-              fontSize: 88,
+              fontSize: 122,
               fontWeight: 800,
               letterSpacing: "-0.03em",
               lineHeight: 1.0,
@@ -613,10 +612,10 @@ export const RetailPnLMarketsReel: React.FC = () => {
           </div>
           <div
             style={{
-              marginTop: 10,
+              marginTop: 6,
               fontFamily: INTER,
-              fontSize: 32,
-              fontWeight: 600,
+              fontSize: 46,
+              fontWeight: 700,
               letterSpacing: "-0.01em",
               color: PALETTE.textDim,
             }}
@@ -793,7 +792,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
               rx={16}
               fill="none"
               stroke={stroke}
-              strokeWidth={4}
+              strokeWidth={5}
               transform={`translate(${ox}, ${oy})`}
             />
           ))}
