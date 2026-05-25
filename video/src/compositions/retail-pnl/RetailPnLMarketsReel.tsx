@@ -39,8 +39,6 @@ const FPS = 60;
 const PALETTE = {
   bgTop: "#FFFFFF",
   bgBottom: "#E7EAEE",
-  gridLine: "rgba(0, 82, 255, 0.06)",
-  gridDot: "rgba(0, 82, 255, 0.16)",
   text: "#0A0A0A",
   textDim: "#6E727A",
   textVeryDim: "#9AA0A8",
@@ -57,22 +55,6 @@ const PALETTE = {
 // punchy whip into the next curve — the animation snaps instead of drifts.
 const HOLD_SECONDS_PER_SNAPSHOT = 0.62;
 const TRANSITION_FRACTION = 0.6;
-
-// Beat-locked keynote bloom, lifted from AntiCheatFull. Each new market is a
-// synthetic beat: the blue halo flares on a sharp attack, then ebbs back to
-// rest before the next snap. The same envelope drives a small camera punch.
-const GLOW_ATTACK = 3;
-const GLOW_DECAY = 16;
-const beatPulse = (frame: number, beats: number[]): number => {
-  let max = 0;
-  for (const b of beats) {
-    const d = frame - b;
-    if (d < -GLOW_ATTACK || d > GLOW_DECAY) continue;
-    const env = d <= 0 ? (d + GLOW_ATTACK) / GLOW_ATTACK : 1 - d / GLOW_DECAY;
-    if (env > max) max = env;
-  }
-  return max;
-};
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -129,66 +111,142 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-const GridBackdrop: React.FC = () => {
-  const spacing = 120;
-  const cols = Math.ceil(WIDTH / spacing);
-  const rows = Math.ceil(HEIGHT / spacing);
+// Moving dot field — the AntiCheat house background. A faint blue lattice for
+// texture, plus brighter bands of the same dots drifting across it. The
+// lattice is static and memoised (painted once); only the bands recompute
+// each frame, so the motion is cheap even at 2160².
+const FINE_SPACING = 34;
+const DOT_R = 3.0;
+
+const FineLattice: React.FC = React.memo(() => {
+  const cols = Math.ceil(WIDTH / FINE_SPACING) + 1;
+  const rows = Math.ceil(HEIGHT / FINE_SPACING) + 1;
   return (
-    <AbsoluteFill>
-      <svg
-        width={WIDTH}
-        height={HEIGHT}
-        style={{ position: "absolute", inset: 0 }}
-      >
-        <defs>
-          <radialGradient id="reel-grid-mask" cx="50%" cy="42%" r="62%">
-            <stop offset="0%" stopColor="white" stopOpacity="1" />
-            <stop offset="60%" stopColor="white" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
-          </radialGradient>
-          <mask id="reel-grid-fade">
-            <rect width={WIDTH} height={HEIGHT} fill="url(#reel-grid-mask)" />
-          </mask>
-        </defs>
-        <g mask="url(#reel-grid-fade)">
-          {Array.from({ length: rows + 1 }).map((_, r) => (
-            <line
-              key={`h-${r}`}
-              x1={0}
-              y1={r * spacing}
-              x2={WIDTH}
-              y2={r * spacing}
-              stroke={PALETTE.gridLine}
-              strokeWidth={1.2}
-            />
-          ))}
-          {Array.from({ length: cols + 1 }).map((_, c) => (
-            <line
-              key={`v-${c}`}
-              x1={c * spacing}
-              y1={0}
-              x2={c * spacing}
-              y2={HEIGHT}
-              stroke={PALETTE.gridLine}
-              strokeWidth={1.2}
-            />
-          ))}
-          {Array.from({ length: rows + 1 }).flatMap((_, r) =>
-            Array.from({ length: cols + 1 }).map((__, c) => (
-              <circle
-                key={`d-${r}-${c}`}
-                cx={c * spacing}
-                cy={r * spacing}
-                r={2.5}
-                fill={PALETTE.gridDot}
-              />
-            )),
-          )}
-        </g>
-      </svg>
-    </AbsoluteFill>
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{ position: "absolute", inset: 0 }}
+    >
+      {Array.from({ length: rows }).flatMap((_, r) =>
+        Array.from({ length: cols }).map((__, c) => (
+          <circle
+            key={`${r}-${c}`}
+            cx={c * FINE_SPACING}
+            cy={r * FINE_SPACING}
+            r={1.7}
+            fill={PALETTE.accent}
+            opacity={0.1}
+          />
+        )),
+      )}
+    </svg>
+  );
+});
+FineLattice.displayName = "FineLattice";
+
+// Bands cluster top and bottom, leaving the chart's middle band clear. Each
+// drifts at a steady velocity and wraps; the dots fade in at the ends.
+type DotBand = {
+  y: number;
+  len: number;
+  anchor: number;
+  rows: number;
+  alpha: number;
+  velocity: number;
+  phase: number;
+};
+const BANDS: DotBand[] = [
+  { y: 0.05, len: 0.55, anchor: 0.30, rows: 2, alpha: 0.5, velocity: 110, phase: 0.0 },
+  { y: 0.10, len: 0.40, anchor: 0.66, rows: 1, alpha: 0.45, velocity: 165, phase: 0.4 },
+  { y: 0.155, len: 0.30, anchor: 0.16, rows: 2, alpha: 0.5, velocity: 95, phase: 0.7 },
+  { y: 0.255, len: 0.22, anchor: 0.82, rows: 1, alpha: 0.4, velocity: 205, phase: 0.2 },
+  { y: 0.755, len: 0.24, anchor: 0.18, rows: 1, alpha: 0.4, velocity: 185, phase: 0.55 },
+  { y: 0.84, len: 0.50, anchor: 0.60, rows: 2, alpha: 0.5, velocity: 125, phase: 0.1 },
+  { y: 0.89, len: 0.38, anchor: 0.36, rows: 1, alpha: 0.45, velocity: 155, phase: 0.45 },
+  { y: 0.94, len: 0.30, anchor: 0.76, rows: 2, alpha: 0.5, velocity: 105, phase: 0.78 },
+];
+
+const snapDot = (px: number) => Math.round(px / FINE_SPACING) * FINE_SPACING;
+
+const MovingBands: React.FC = () => {
+  const frame = useCurrentFrame();
+  const t = frame / FPS;
+  const cycleW = WIDTH * 1.5;
+  return (
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{ position: "absolute", inset: 0 }}
+    >
+      {BANDS.map((band, bi) => {
+        const yC = snapDot(band.y * HEIGHT);
+        const lenPx = band.len * WIDTH;
+        const half = lenPx / 2;
+        const drift = band.velocity * t;
+        const mid =
+          (((band.anchor * WIDTH + drift + band.phase * cycleW) % cycleW) +
+            cycleW) %
+            cycleW -
+          cycleW * 0.25;
+        const x0 = snapDot(mid - half);
+        const x1 = snapDot(mid + half);
+        if (x1 < -40 || x0 > WIDTH + 40) return null;
+
+        const cols = Math.max(2, Math.round((x1 - x0) / FINE_SPACING) + 1);
+        const fadePx = lenPx * 0.2;
+        const rowAnchor = Math.floor((band.rows - 1) / 2);
+        const rowOffsets = Array.from(
+          { length: band.rows },
+          (_, r) => (r - rowAnchor) * FINE_SPACING,
+        );
+
+        return (
+          <g key={bi}>
+            {rowOffsets.map((yOff, ri) => (
+              <g key={ri}>
+                {Array.from({ length: cols }).map((_, di) => {
+                  const x = x0 + di * FINE_SPACING;
+                  if (x < -20 || x > WIDTH + 20) return null;
+                  const fromStart = x - x0;
+                  const fromEnd = x1 - x;
+                  let a = 1;
+                  if (fromStart < fadePx) a *= fromStart / fadePx;
+                  if (fromEnd < fadePx) a *= fromEnd / fadePx;
+                  a = Math.max(0, Math.min(1, a));
+                  return (
+                    <circle
+                      key={di}
+                      cx={x}
+                      cy={yC + yOff}
+                      r={DOT_R}
+                      fill={PALETTE.accent}
+                      opacity={band.alpha * a}
+                    />
+                  );
+                })}
+              </g>
+            ))}
+          </g>
+        );
+      })}
+    </svg>
   );
 };
+
+const DOT_FIELD_MASK =
+  "radial-gradient(ellipse 64% 64% at 50% 42%, #000 0%, rgba(0,0,0,0.72) 58%, transparent 100%)";
+
+const MovingDotField: React.FC = () => (
+  <AbsoluteFill
+    style={{
+      WebkitMaskImage: DOT_FIELD_MASK,
+      maskImage: DOT_FIELD_MASK,
+    }}
+  >
+    <FineLattice />
+    <MovingBands />
+  </AbsoluteFill>
+);
 
 export const RetailPnLMarketsReel: React.FC = () => {
   const dataset = MARKETS_CONCENTRATION;
@@ -246,18 +304,6 @@ export const RetailPnLMarketsReel: React.FC = () => {
     to: 1,
   });
   const pulseScale = 1 + 0.05 * (1 - pulse);
-
-  // Beat grid = one beat per snapshot. The bloom flares and the frame punches
-  // a hair on each landing, then settles — the AntiCheat keynote breath.
-  const beats = React.useMemo(
-    () => Array.from({ length: sliceLen }, (_, i) => i * holdFrames),
-    [sliceLen, holdFrames],
-  );
-  const beatEnv = beatPulse(within, beats);
-  const cameraScale = 1 + 0.02 * beatEnv;
-  const glowWidth = 16 + 12 * beatEnv;
-  const glowOpacity = 0.4 + 0.4 * beatEnv;
-  const titleBloom = `0 0 ${(8 + 12 * beatEnv).toFixed(1)}px rgba(0, 82, 255, ${(0.08 + 0.16 * beatEnv).toFixed(3)})`;
 
   // No fade-in: frame 0 lands on the first snapshot fully drawn. The scrub,
   // the dot pulse, and the per-venue swap carry the motion.
@@ -376,25 +422,15 @@ export const RetailPnLMarketsReel: React.FC = () => {
       style={{
         background: `radial-gradient(ellipse 120% 80% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
         fontFamily: INTER,
-        // Beat-pulsed keynote bloom behind every glyph — a faint blue breath
-        // on the light field, brightest the instant a new market lands.
-        textShadow: titleBloom,
       }}
     >
-      <GridBackdrop />
+      <MovingDotField />
       <AbsoluteFill
         style={{
           background: `radial-gradient(ellipse at 50% 45%, transparent 0%, transparent 58%, rgba(10, 12, 20, 0.05) 100%)`,
           pointerEvents: "none",
         }}
       />
-      <AbsoluteFill
-        style={{
-          transform: `scale(${cameraScale.toFixed(4)})`,
-          transformOrigin: "50% 45%",
-          willChange: "transform",
-        }}
-      >
 
       {/* Title — top-left at the outer margin, balanced two lines. */}
       <div
@@ -448,15 +484,15 @@ export const RetailPnLMarketsReel: React.FC = () => {
         {yTickElems}
         {ghostLines}
 
-        {/* Glow pass behind the accent curve — flares on the beat. */}
+        {/* Glow pass behind the accent curve. */}
         <polyline
           points={linePts}
           fill="none"
           stroke={PALETTE.accentSoft}
-          strokeWidth={glowWidth}
+          strokeWidth={16}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={glowOpacity}
+          opacity={0.55}
           filter="url(#reel-line-glow)"
         />
 
@@ -480,7 +516,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 cy={cy}
                 r={20 * pulseScale}
                 fill={PALETTE.accentSoft}
-                opacity={0.35 + 0.4 * beatEnv}
+                opacity={0.4}
                 filter="url(#reel-dot-glow)"
               />
               <circle
@@ -543,13 +579,12 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 height: 270,
                 flexShrink: 0,
                 borderRadius: 52,
-                background: PALETTE.bgTop,
-                border: "1px solid rgba(10, 12, 20, 0.08)",
+                background: "rgba(255, 255, 255, 0.95)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 padding: 32,
-                boxShadow: "0 18px 44px -28px rgba(10, 30, 80, 0.32)",
+                boxShadow: "0 24px 60px -34px rgba(0, 0, 0, 0.9)",
               }}
             >
               <Img
@@ -585,7 +620,6 @@ export const RetailPnLMarketsReel: React.FC = () => {
           Source: {source}
         </div>
       ) : null}
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
