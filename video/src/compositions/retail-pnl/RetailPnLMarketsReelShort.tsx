@@ -1,16 +1,14 @@
 // Vertical short (Shorts / Reels / TikTok) built around the CRT markets reel.
 //
-// The graph IS the hook — the same Lorenz-curve whip-through used in
-// RetailPnLMarketsReel, untouched, scaled to fill the frame. The short loops it
-// three ways and never ends:
-//   pass 1 — full speed, the spectacle: every market bows the curve harder.
-//   pass 2 — half speed, so the eye can hold each one.
-//   pass 3 — half speed, in red: the wedge from the perfectly-fair diagonal is
-//            shaded, so you see exactly how much the top keeps.
-// Then it cuts back to pass 1 on a downbeat. A constant loop.
+// Four screens, one comparison each, on the music's bar grid. The reel graph is
+// the constant hero; each screen names one pair that "moved the curve left" and
+// flips the field — white with horizontal dot bands, blue with vertical ones.
+// Screens hand off with the AntiCheatEdit pixel dissolve. The back two screens
+// burn the graph red, shading the wedge from the perfectly-fair diagonal.
 //
-// Music is rainbows-pitch.mp3 (144 BPM). At 60fps a beat is 25 frames and a bar
-// is 100. Every market whip lands on a beat; every pass change lands on a bar.
+// Music: rainbows-pitch.mp3 (144 BPM) opened ON the drop (53.8s) so the short is
+// already moving the instant it loads. A beat is 25 frames, a bar is 100; every
+// screen change and caption move lands on the grid.
 
 import React from "react";
 import {
@@ -18,11 +16,14 @@ import {
   Audio,
   interpolate,
   Sequence,
+  spring,
   staticFile,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { RetailPnLMarketsReel } from "./RetailPnLMarketsReel";
+import { RetailPnLReelShortBg } from "./RetailPnLReelShortBg";
 
 const { fontFamily: INTER } = loadInter("normal", {
   weights: ["400", "500", "600", "700", "800"],
@@ -33,47 +34,77 @@ const H = 1920;
 const FPS = 60;
 
 // ── Beat grid (144 BPM @ 60fps) ─────────────────────────────────────────────
-const BEAT = 25; // frames per beat (a bar is 4 beats = 100)
-
-// Pass boundaries, all on a downbeat. 12 markets per pass.
-const P1_HOLD = BEAT / FPS; // 1 beat per market — the reel's native fast feel
-const P2_HOLD = (2 * BEAT) / FPS; // 2 beats per market — the slow second look
-const P1_LEN = 12 * BEAT; // 300
-const P2_LEN = 12 * 2 * BEAT; // 600
-const P2_START = P1_LEN; // 300
-const P3_START = P1_LEN + P2_LEN; // 900
-const DURATION = P1_LEN + P2_LEN + P2_LEN; // 1500 → 25s
-const SEAMS = [0, P2_START, P3_START, DURATION] as const;
+const BEAT = 25;
+const BAR = 100;
+const SCREEN = 3 * BAR; // 300 — three bars per screen
+const STARTS = [0, SCREEN, 2 * SCREEN, 3 * SCREEN]; // 0, 300, 600, 900
+const DURATION = 4 * SCREEN; // 1200 → 20s
+const SEAMS = [SCREEN, 2 * SCREEN, 3 * SCREEN]; // pixel-dissolve points
+const XF = 12; // half-width of a pixel transition, frames
+const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
 // ── Music ───────────────────────────────────────────────────────────────────
-// Same energetic slice the family rides: music starts at 50.293s, so the drop
-// (53.8s) lands a beat into the loop. See RetailPnLShort / MUSIC.md.
 const MUSIC = "music/rainbows-pitch.mp3";
-const MUSIC_OFFSET = Math.round(50.293 * FPS); // 3018
+const MUSIC_OFFSET = Math.round(53.8 * FPS); // 3228 — open on the drop
 const MUSIC_GAIN = 0.9;
 const WHOOSH = "sfx/mg-whoosh-light.mp3";
 const IMPACT = "sfx/drop-sub-impact.mp3";
 
-// ── Reel band geometry ──────────────────────────────────────────────────────
+// ── Reel band — fit to width (the largest the 16:9 graph goes without cropping
+// the curve). A taller 60% would clip the curve's corners; see the note below.
 const REEL_W = 1920;
 const REEL_H = 1080;
-const SCALE = W / REEL_W; // 0.5625 → full graph, full width
-const REEL_TOP = 560; // centred band, headline above, pass dots below
+const SCALE = W / REEL_W; // 0.5625 → 607px tall
+const REEL_TOP = 470;
+const REEL_CYCLE = 600; // 12 markets at 50f each
 
-const PALETTE = {
-  text: "#F4F6F8",
-  gold: "#F2B43A",
-  dim: "#8A909B",
-  veryDim: "#5C626D",
-  red: "#EE2B2B",
+// ── Per-screen look ──────────────────────────────────────────────────────────
+const WHITE_BG = "#F0F2F4";
+const BLUE_BG = "#0052FF";
+type Screen = {
+  bg: string;
+  dir: "horizontal" | "vertical";
+  tone: "accent" | "white";
+  text: string;
+  accent: string;
+  dim: string;
+  fair: string;
+  rigged: string;
 };
+const ACCENT = "#0052FF";
+const RED = "#EE2B2B";
+const WHITE_SCREEN = (fair: string, rigged: string, accent: string): Screen => ({
+  bg: WHITE_BG,
+  dir: "horizontal",
+  tone: "accent",
+  text: "#0A0A0A",
+  accent,
+  dim: "#6E727A",
+  fair,
+  rigged,
+});
+const BLUE_SCREEN = (fair: string, rigged: string): Screen => ({
+  bg: BLUE_BG,
+  dir: "vertical",
+  tone: "white",
+  text: "#FFFFFF",
+  accent: "#FFFFFF",
+  dim: "rgba(255,255,255,0.72)",
+  fair,
+  rigged,
+});
+const SCREENS: Screen[] = [
+  WHITE_SCREEN("Prediction markets", "sports betting", ACCENT),
+  BLUE_SCREEN("Memecoins", "the lottery"),
+  WHITE_SCREEN("Index funds", "stock picking", RED),
+  BLUE_SCREEN("Crypto perps", "CFDs"),
+];
 
-// The reel, scaled to fill the width and parked at REEL_TOP. enableShutdown is
-// off so each pass cuts clean on the twelfth market instead of powering down.
-const ReelBand: React.FC<{ hold: number; highlight: boolean }> = ({
-  hold,
-  highlight,
-}) => (
+const screenAt = (frame: number) =>
+  Math.min(3, Math.max(0, Math.floor(frame / SCREEN)));
+
+// ── Reel band ────────────────────────────────────────────────────────────────
+const ReelBand: React.FC<{ highlight: boolean }> = ({ highlight }) => (
   <div
     style={{
       position: "absolute",
@@ -85,96 +116,168 @@ const ReelBand: React.FC<{ hold: number; highlight: boolean }> = ({
       transformOrigin: "0 0",
       borderRadius: 40,
       overflow: "hidden",
-      boxShadow: "0 40px 120px -40px rgba(0,0,0,0.9)",
+      border: "1px solid rgba(10,20,40,0.12)",
+      boxShadow: "0 36px 100px -36px rgba(10,25,60,0.55)",
     }}
   >
     <RetailPnLMarketsReel
-      holdSecondsPerSnapshot={hold}
+      holdSecondsPerSnapshot={(2 * BEAT) / FPS}
       enableShutdown={false}
       highlightDiff={highlight}
     />
   </div>
 );
 
-const Background: React.FC = () => (
-  <>
-    <AbsoluteFill
-      style={{
-        background:
-          "radial-gradient(ellipse 120% 80% at 50% 26%, #12161D 0%, #070A0E 60%, #04060A 100%)",
-      }}
-    />
-    {/* A soft glow under the screen so the bright reel feels emissive. */}
-    <AbsoluteFill
-      style={{
-        background:
-          "radial-gradient(ellipse 70% 26% at 50% 47%, rgba(120,150,210,0.16) 0%, transparent 60%)",
-      }}
-    />
-  </>
-);
+// ── Pixel dissolve (portrait port of anticheat-edit PixelReveal) ─────────────
+const PCELL = 60;
+const PCOLS = Math.ceil(W / PCELL);
+const PROWS = Math.ceil(H / PCELL);
+const phash = (c: number, r: number) => {
+  const s = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+};
+const JIT = 0.18;
 
-// Thesis line — pinned, so anyone joining mid-loop reads it. "instrument" carries
-// the weight, so it carries the colour.
-const Headline: React.FC = () => (
-  <div
-    style={{
-      position: "absolute",
-      top: 150,
-      left: 0,
-      width: W,
-      padding: "0 86px",
-      textAlign: "center",
-      fontFamily: INTER,
-      fontSize: 60,
-      fontWeight: 800,
-      letterSpacing: "-0.03em",
-      lineHeight: 1.08,
-      color: PALETTE.text,
-    }}
-  >
-    The <span style={{ color: PALETTE.gold }}>instrument</span> matters more than
-    your strategy
-  </div>
-);
+// A curtain of solid cells sweeps in from up-left, fully covers at the seam,
+// then peels off down-right — masking the hard swap of field + caption beneath.
+// The loop wrap (1200→0) is filled at the tail and peeled at the head, so the
+// constant loop never shows a hard cut.
+const PixelCurtain: React.FC = () => {
+  const frame = useCurrentFrame();
+  let cover: number;
+  let incoming: Screen;
+  const near = SEAMS.find((s) => Math.abs(frame - s) <= XF);
+  if (near !== undefined) {
+    cover = frame <= near ? (frame - (near - XF)) / XF : 1 - (frame - near) / XF;
+    incoming = SCREENS[screenAt(near + 1)];
+  } else if (frame <= XF) {
+    cover = 1 - frame / XF; // peel the wrap off the head
+    incoming = SCREENS[0];
+  } else if (frame >= DURATION - XF) {
+    cover = (frame - (DURATION - XF)) / XF; // fill toward the wrap at the tail
+    incoming = SCREENS[0];
+  } else {
+    return null;
+  }
+  cover = Math.max(0, Math.min(1, cover));
 
-// Three dots below the screen — which pass you're watching.
-const PassDots: React.FC<{ pass: number }> = ({ pass }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: REEL_TOP + REEL_H * SCALE + 56,
-      left: 0,
-      width: W,
-      display: "flex",
-      justifyContent: "center",
-      gap: 22,
-    }}
-  >
-    {[0, 1, 2].map((i) => {
-      const active = i === pass;
-      const color = i === 2 ? PALETTE.red : PALETTE.gold;
-      return (
-        <div
-          key={i}
-          style={{
-            width: active ? 56 : 16,
-            height: 16,
-            borderRadius: 999,
-            background: active ? color : "rgba(255,255,255,0.18)",
-            transition: "none",
-          }}
-        />
+  const cells: React.ReactNode[] = [];
+  for (let r = 0; r < PROWS; r++) {
+    const fy = PROWS > 1 ? r / (PROWS - 1) : 0;
+    for (let c = 0; c < PCOLS; c++) {
+      const fx = PCOLS > 1 ? c / (PCOLS - 1) : 0;
+      const diag = 0.5 * fx + 0.5 * fy; // from up-left
+      const thr = (diag + phash(c, r) * JIT) / (1 + JIT);
+      if (thr > cover) continue;
+      cells.push(
+        <rect
+          key={`${c}-${r}`}
+          x={c * PCELL}
+          y={r * PCELL}
+          width={PCELL + 1}
+          height={PCELL + 1}
+          fill={incoming.bg}
+        />,
       );
-    })}
-  </div>
-);
+    }
+  }
+  return (
+    <svg
+      width={W}
+      height={H}
+      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      shapeRendering="crispEdges"
+    >
+      {cells}
+    </svg>
+  );
+};
 
-const Footer: React.FC = () => (
+// ── Text ──────────────────────────────────────────────────────────────────────
+// Intro title — the thesis sits above the graph first, then lifts away and
+// disappears before the pairs begin. Anchored to the top band so it never
+// crosses the chart.
+const IntroTitle: React.FC<{ text: string }> = ({ text }) => {
+  const frame = useCurrentFrame();
+  const enter = interpolate(frame, [4, 24], [0, 1], CLAMP);
+  const exit = interpolate(frame, [98, 120], [1, 0], CLAMP);
+  const op = enter * exit;
+  if (op <= 0.001) return null;
+  const lift = interpolate(enter, [0, 1], [34, 0]) + interpolate(frame, [98, 120], [0, -46], CLAMP);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 196,
+        left: 0,
+        width: W,
+        padding: "0 92px",
+        textAlign: "center",
+        fontFamily: INTER,
+        fontSize: 62,
+        fontWeight: 800,
+        letterSpacing: "-0.035em",
+        lineHeight: 1.06,
+        color: text,
+        opacity: op,
+        transform: `translateY(${lift}px)`,
+      }}
+    >
+      The instrument matters more than your strategy
+    </div>
+  );
+};
+
+const CAP_TOP = 1150;
+
+// One pair per screen, below the graph. Springs in on the screen's downbeat,
+// holds, then disappears just before the pixel dissolve.
+const PairCaption: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const idx = screenAt(frame);
+  const start = STARTS[idx];
+  const local = frame - start;
+  const s = SCREENS[idx];
+  // Screen 1 yields its first beats to the intro title.
+  const inAt = idx === 0 ? 130 : 8;
+  const outAt = SCREEN - XF - 18; // gone before the dissolve
+  const enter = spring({ frame: local - inAt, fps, config: { damping: 200, mass: 0.6 }, durationInFrames: 20 });
+  const exit = interpolate(local, [outAt, outAt + 16], [1, 0], CLAMP);
+  const op = enter * exit;
+  if (op <= 0.001) return null;
+  // A gentle beat pulse on every downbeat.
+  const beatPhase = (local % BAR) / BAR;
+  const pulse = 1 + 0.03 * Math.max(0, 1 - beatPhase * 6);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: CAP_TOP,
+        left: 0,
+        width: W,
+        textAlign: "center",
+        opacity: op,
+        transform: `translateY(${interpolate(enter, [0, 1], [26, 0])}px) scale(${pulse})`,
+      }}
+    >
+      <div style={{ fontFamily: INTER, fontSize: 30, fontWeight: 700, letterSpacing: "0.18em", color: s.accent, marginBottom: 26 }}>
+        SAME GAME — MOVED LEFT
+      </div>
+      <div style={{ fontFamily: INTER, fontSize: 60, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+        <span style={{ color: s.text, fontWeight: 800 }}>{s.fair}</span>
+        <span style={{ color: s.accent, margin: "0 20px", fontSize: 50 }}>◂</span>
+        <span style={{ color: s.dim }}>{s.rigged}</span>
+      </div>
+    </div>
+  );
+};
+
+const Footer: React.FC<{ dim: string }> = ({ dim }) => (
   <div
     style={{
       position: "absolute",
-      bottom: 70,
+      bottom: 60,
       left: 0,
       width: W,
       textAlign: "center",
@@ -182,46 +285,12 @@ const Footer: React.FC = () => (
       fontSize: 30,
       fontWeight: 600,
       letterSpacing: "0.04em",
-      color: PALETTE.veryDim,
+      color: dim,
     }}
   >
     generalmarket.io
   </div>
 );
-
-// A short CRT glitch masks each pass cut so the loop reads as a channel change.
-const GlitchSeam: React.FC = () => {
-  const frame = useCurrentFrame();
-  const inten = Math.max(
-    0,
-    ...SEAMS.map((s) => Math.max(0, 1 - Math.abs(frame - s) / 5)),
-  );
-  if (inten <= 0.001) return null;
-  const off = 10 * inten;
-  return (
-    <>
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          mixBlendMode: "screen",
-          opacity: 0.5 * inten,
-          background:
-            "linear-gradient(0deg, rgba(255,255,255,0.0) 0%, rgba(220,235,255,0.9) 48%, rgba(255,255,255,0.0) 52%)",
-          transform: `translateY(${(0.5 - (frame % 2)) * 30}px)`,
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          mixBlendMode: "screen",
-          opacity: 0.35 * inten,
-          background: `linear-gradient(90deg, rgba(255,0,40,0.5), transparent 30%), linear-gradient(270deg, rgba(0,160,255,0.5), transparent 30%)`,
-          transform: `translateX(${off}px)`,
-        }}
-      />
-    </>
-  );
-};
 
 const Score: React.FC = () => (
   <>
@@ -229,81 +298,41 @@ const Score: React.FC = () => (
       src={staticFile(MUSIC)}
       startFrom={MUSIC_OFFSET}
       volume={(f) =>
-        interpolate(
-          f,
-          [0, 10, DURATION - 70, DURATION],
-          [0, MUSIC_GAIN, MUSIC_GAIN, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        )
+        interpolate(f, [0, 8, DURATION - 60, DURATION], [0, MUSIC_GAIN, MUSIC_GAIN, 0], CLAMP)
       }
     />
-    {/* A light whoosh leads each pass change; its peak lands on the downbeat. */}
-    {[P2_START, P3_START].map((cut) => (
-      <Sequence
-        key={`wh-${cut}`}
-        from={cut - 12}
-        durationInFrames={36}
-        layout="none"
-        name={`whoosh-${cut}`}
-      >
-        <Audio
-          src={staticFile(WHOOSH)}
-          volume={(f) =>
-            interpolate(f, [0, 8, 26, 36], [0, 0.22, 0.22, 0], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            })
-          }
-        />
+    {SEAMS.map((cut) => (
+      <Sequence key={`wh-${cut}`} from={cut - 12} durationInFrames={36} layout="none" name={`whoosh-${cut}`}>
+        <Audio src={staticFile(WHOOSH)} volume={(f) => interpolate(f, [0, 8, 26, 36], [0, 0.24, 0.24, 0], CLAMP)} />
       </Sequence>
     ))}
-    {/* Sub-impact on the red pass — the payoff lands with weight. */}
-    <Sequence from={P3_START} durationInFrames={50} layout="none" name="impact">
-      <Audio
-        src={staticFile(IMPACT)}
-        volume={(f) =>
-          interpolate(f, [0, 2, 38, 50], [0, 0.34, 0.34, 0], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          })
-        }
-      />
+    <Sequence from={2 * SCREEN} durationInFrames={50} layout="none" name="impact">
+      <Audio src={staticFile(IMPACT)} volume={(f) => interpolate(f, [0, 2, 38, 50], [0, 0.34, 0.34, 0], CLAMP)} />
     </Sequence>
   </>
 );
 
 export const RetailPnLMarketsReelShort: React.FC = () => {
   const frame = useCurrentFrame();
-  const pass = frame < P2_START ? 0 : frame < P3_START ? 1 : 2;
+  const s = SCREENS[screenAt(frame)];
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#04060A", fontFamily: INTER }}>
-      <Background />
+    <AbsoluteFill style={{ fontFamily: INTER }}>
+      <AbsoluteFill style={{ backgroundColor: s.bg }} />
+      <RetailPnLReelShortBg direction={s.dir} tone={s.tone} speed={2.8} lead={90} />
 
-      <Sequence from={0} durationInFrames={P1_LEN} layout="none" name="pass-1">
-        <ReelBand hold={P1_HOLD} highlight={false} />
+      {/* The reel runs two 12-market cycles: neon, then red. */}
+      <Sequence from={0} durationInFrames={REEL_CYCLE} layout="none" name="reel-neon">
+        <ReelBand highlight={false} />
       </Sequence>
-      <Sequence
-        from={P2_START}
-        durationInFrames={P2_LEN}
-        layout="none"
-        name="pass-2"
-      >
-        <ReelBand hold={P2_HOLD} highlight={false} />
-      </Sequence>
-      <Sequence
-        from={P3_START}
-        durationInFrames={P2_LEN}
-        layout="none"
-        name="pass-3"
-      >
-        <ReelBand hold={P2_HOLD} highlight={true} />
+      <Sequence from={REEL_CYCLE} durationInFrames={REEL_CYCLE} layout="none" name="reel-red">
+        <ReelBand highlight={true} />
       </Sequence>
 
-      <Headline />
-      <PassDots pass={pass} />
-      <Footer />
-      <GlitchSeam />
+      <IntroTitle text={s.text} />
+      <PairCaption />
+      <Footer dim={s.dim} />
+      <PixelCurtain />
       <Score />
     </AbsoluteFill>
   );
