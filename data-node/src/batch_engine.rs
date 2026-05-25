@@ -81,12 +81,19 @@ pub fn get_strategy(source_id: &str) -> BatchStrategy {
 /// Each byte = 8 markets. 10 000 markets = 1250 bytes bitmap.
 const MAX_MARKETS_PER_BATCH: usize = 10_000;
 
-/// Top-N firehose markets to bet on. A non-curated (firehose) source no longer
-/// carries its entire healthy universe — it carries only its current top-N by
-/// popularity, matching the human-source pages that bet on a live top-10.
-/// Curated DefiLlama sub-sources keep their full editorial allowlist and are
-/// unaffected by this cap.
+/// Top-N firehose markets to bet on. A 5-minute-timeframe firehose source no
+/// longer carries its entire healthy universe — it carries only its current
+/// top-N by popularity, matching the human-source pages that bet on a live
+/// top-10. The cap is scoped to fast sources: at a 5-minute tick the top-N
+/// churns enough each round to be worth betting, whereas slower sources keep
+/// their full firehose so liquidity isn't concentrated into ten near-static
+/// markets. Curated DefiLlama sub-sources keep their full editorial allowlist
+/// and are unaffected regardless of timeframe.
 const TOP_N_PER_BATCH: usize = 10;
+
+/// Only firehose sources whose tick equals this (5 minutes) are scoped to the
+/// top-N. Everything slower keeps its full healthy universe.
+const TOP_N_TIMEFRAME_SECS: u64 = 300;
 
 /// Source metadata tuple: (source_id, display_name, sync_interval_secs).
 /// Built at startup from the source registry (sources-display.json).
@@ -1055,15 +1062,20 @@ async fn generate_batch_config_inner(
         return None;
     }
 
-    // Firehose top-N: a non-curated source bets only on its current top-N by
-    // popularity. `get_healthy_assets` already returned the firehose path
-    // ordered by `COALESCE(market_cap, volume_24h, value) DESC, asset_id ASC`,
-    // and both the stagnation filter and the curated-narrowing above preserve
-    // that order, so truncating here keeps the most significant, non-stagnant,
-    // fresh markets. Curated sub-sources (allowlist = Some) keep their full
-    // editorial roster — never capped. The cut is deterministic: the same DB
-    // snapshot always yields the same N asset_ids in the same order.
-    let healthy: Vec<String> = if curated_allowlist.is_none() && healthy.len() > TOP_N_PER_BATCH {
+    // Firehose top-N: a 5-minute-timeframe non-curated source bets only on its
+    // current top-N by popularity. `get_healthy_assets` already returned the
+    // firehose path ordered by `COALESCE(market_cap, volume_24h, value) DESC,
+    // asset_id ASC`, and both the stagnation filter and the curated-narrowing
+    // above preserve that order, so truncating here keeps the most significant,
+    // non-stagnant, fresh markets. Slower firehose sources (tick != 300s) keep
+    // their full universe — their top-N barely moves between rounds, so capping
+    // would only thin liquidity. Curated sub-sources (allowlist = Some) keep
+    // their full editorial roster regardless. The cut is deterministic: the
+    // same DB snapshot always yields the same N asset_ids in the same order.
+    let healthy: Vec<String> = if curated_allowlist.is_none()
+        && sync_interval_secs == TOP_N_TIMEFRAME_SECS
+        && healthy.len() > TOP_N_PER_BATCH
+    {
         let before = healthy.len();
         let top = healthy.into_iter().take(TOP_N_PER_BATCH).collect::<Vec<_>>();
         info!(
