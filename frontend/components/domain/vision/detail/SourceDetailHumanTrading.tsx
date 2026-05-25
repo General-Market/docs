@@ -1242,7 +1242,9 @@ function RoundTimeline({
           slot="LAST"
           closesValue={R > 0 ? 'Closed' : '—'}
           settlesValue={clk(R)}
-          // Past-round pool isn't surfaced by /vision/rounds — keep it quiet.
+          // Only the live (NOW) round has a knowable pool: the oracle serves
+          // active batches only, and a settled batch exposes no pool size on
+          // chain. The closed round stays quiet rather than guess a number.
           poolDisplay="—"
           // "IN" belongs only to the round the user demonstrably holds (NOW).
           // We don't track a distinct per-round position for the closing round,
@@ -1268,11 +1270,12 @@ function RoundTimeline({
           slot="NEXT"
           closesValue={clk(hasD ? R + D : null)}
           settlesValue={clk(hasD ? R + 2 * D : null)}
-          // Parimutuel auto-rollover: the live pool carries into the next round
-          // unless players exit, so NEXT shows the current pool as its size.
-          poolDisplay={poolNowDisplay}
-          // The stake rides NEXT only after NOW settles without an exit — that
-          // hasn't happened yet, so don't claim the user is "IN" the next round.
+          // Each round is a fresh on-chain batch (new batchId) that opens with
+          // zero deposits — Vision has no rollover (joinBatchDirect reverts
+          // AlreadyJoined, positions are keyed per batch). The NEXT batch isn't
+          // even created until NOW locks, so it has no pool. Never carry NOW's.
+          poolDisplay="—"
+          // No position rides into NEXT until the user joins that fresh batch.
           youDisplay={null}
           isIn={false}
           tone="muted"
