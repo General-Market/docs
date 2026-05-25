@@ -13,8 +13,9 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, Easing, interpolate, staticFile } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { ContactShadows, Environment } from "@react-three/drei";
+import { ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { SceneEnvironment } from "./CoinsBackground";
 
 export type EndCardProps = {
   /** 0..1 — drives the full reveal. */
@@ -22,7 +23,6 @@ export type EndCardProps = {
 };
 
 const LOGO_URL = staticFile("gm-mark.svg");
-const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 
 const DISPLAY_STACK =
   '"SF Pro Display", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -193,10 +193,12 @@ const Scene: React.FC<{ progress: number }> = ({ progress }) => {
 
   return (
     <>
-      {/* Studio HDRI gives the white body and the blue pill real
+      {/* Studio cube env gives the white body and the blue pill real
           reflective depth — the metallic clearcoat lifts off the dark
-          background instead of reading as a flat 2D logo. */}
-      <Environment files={HDRI_URL} resolution={256} />
+          background instead of reading as a flat 2D logo. (drei's
+          <Environment>/PMREM blanks the GL draw under three 0.182 — see
+          SceneEnvironment.) */}
+      <SceneEnvironment />
       <ambientLight intensity={0.32} color="#ffffff" />
       <directionalLight position={[-6, 4, 8]} intensity={1.6} color="#ffffff" />
       <directionalLight position={[5, 2, 4]} intensity={0.8} color="#a8b5ff" />

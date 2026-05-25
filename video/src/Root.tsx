@@ -204,6 +204,15 @@ export const RemotionRoot: React.FC = () => {
         width={antiCheatEditThumbnailMeta.width}
         height={antiCheatEditThumbnailMeta.height}
       />
+      <Composition
+        id={explorerProofMeta.id}
+        component={explorerProofMeta.component}
+        durationInFrames={explorerProofMeta.durationInFrames}
+        fps={explorerProofMeta.fps}
+        width={explorerProofMeta.width}
+        height={explorerProofMeta.height}
+        defaultProps={explorerProofMeta.defaultProps}
+      />
 
       {/* ═══ ANTI-CHEAT — scenes for the full launch video ═══ */}
       <Folder name="AntiCheat">
@@ -438,17 +447,6 @@ export const RemotionRoot: React.FC = () => {
           fps={laptopBrollDemoMeta.fps}
           width={laptopBrollDemoMeta.width}
           height={laptopBrollDemoMeta.height}
-        />
-
-        {/* --- Explorer Proof (the system is up online) --- */}
-        <Composition
-          id={explorerProofMeta.id}
-          component={explorerProofMeta.component}
-          durationInFrames={explorerProofMeta.durationInFrames}
-          fps={explorerProofMeta.fps}
-          width={explorerProofMeta.width}
-          height={explorerProofMeta.height}
-          defaultProps={explorerProofMeta.defaultProps}
         />
 
         {/* --- Ridd --- */}

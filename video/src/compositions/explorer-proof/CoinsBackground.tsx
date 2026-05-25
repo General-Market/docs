@@ -6,10 +6,10 @@
 // the lot, lit by a studio HDRI. No painted face textures anywhere.
 
 import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame, staticFile } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Html } from "@react-three/drei";
+import { ContactShadows, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Phone3D, type Phone3DProps } from "./Phone3D";
@@ -23,8 +23,6 @@ export type CoinsBackgroundProps = {
   phone: Phone3DProps;
   sideTextsVisibility: number;
 };
-
-const HDRI_URL = staticFile("textures/hdri/studio_small_03_1k.hdr");
 
 const BG_COLOR = "#FFFFFF";
 
@@ -376,6 +374,51 @@ const CoinMesh: React.FC<{
   );
 };
 
+// Image-based lighting for the metallic coins. drei's <Environment> — and any
+// runtime PMREMGenerator pass (fromEquirectangular / fromScene) — aborts the
+// WebGL draw under three 0.182 / @react-three/fiber 9.5 / drei 10.7: the DOM
+// commits but the GL frame comes back blank. PMREM renders to its own target
+// and, in @remotion/three's single deterministic frame, leaves the renderer in
+// a state the capture reads as empty.
+//
+// Therefore: skip PMREM entirely. Build a small studio gradient as a plain
+// CubeTexture (bright top, dark floor, soft side falloff) and hand it straight
+// to scene.environment. Metals read it as a clean vertical sheen — no loader,
+// no render target, no version coupling.
+function makeGradientFace(top: string, bottom: string, size = 128): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return canvas;
+}
+
+export const SceneEnvironment: React.FC = () => {
+  const scene = useThree((s) => s.scene);
+  useMemo(() => {
+    const sideTop = "#f2f5fb";
+    const sideBottom = "#3b3f4b";
+    const cube = new THREE.CubeTexture([
+      makeGradientFace(sideTop, sideBottom), // +X
+      makeGradientFace(sideTop, sideBottom), // -X
+      makeGradientFace("#ffffff", "#ffffff"), // +Y (ceiling key)
+      makeGradientFace("#23252e", "#16171d"), // -Y (floor)
+      makeGradientFace(sideTop, sideBottom), // +Z
+      makeGradientFace(sideTop, sideBottom), // -Z
+    ] as unknown as HTMLImageElement[]);
+    cube.needsUpdate = true;
+    cube.colorSpace = THREE.SRGBColorSpace;
+    scene.environment = cube;
+    return cube;
+  }, [scene]);
+  return null;
+};
+
 const Scene: React.FC<{
   frame: number;
   forwardProgress: number;
@@ -396,7 +439,7 @@ const Scene: React.FC<{
 
   return (
     <>
-      <Environment files={HDRI_URL} resolution={256} />
+      <SceneEnvironment />
       <ambientLight intensity={0.12} color="#ffffff" />
       <directionalLight
         position={[-9, 3.5, 9]}
