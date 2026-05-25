@@ -4,7 +4,10 @@
 --   1. pumpfun_first_seen — when each pump.fun asset was first observed with a
 --      live price. A token is "new" (a fresh launch) if its first_seen falls on
 --      the current UTC day. Persisted so the signal survives a data-node
---      restart; the in-memory discovery cache in the pumpfun client does not.
+--      restart. The in-memory discovery cache in the pumpfun client does not.
+--      (Keep semicolons out of migration comments — the runner splits
+--      statements on ';' without stripping comments, so a ';' mid-comment
+--      gets parsed as its own broken statement.)
 --      Written once per asset, never updated (ON CONFLICT DO NOTHING).
 --
 --   2. pumpfun_daily_tokens — the frozen daily set. The batch engine computes
