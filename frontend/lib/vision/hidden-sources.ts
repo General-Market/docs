@@ -20,6 +20,11 @@ export const HIDDEN_SOURCE_IDS = new Set<string>([
   // via deep link; UI listings stop pretending these are live)
   'bestbuy',
   'flights',
+  // CoinGecko rate-limited the feed — every crypto batch was refunding.
+  // Disabled in the data-node DISABLED_SOURCES and hidden here; the detail
+  // page 404s (no vault, no human audience). Re-list when the feed is live.
+  'coingecko',
+  'crypto',
   // Bucket C — registry empty / not started
   'aisstream',
   'bgg',

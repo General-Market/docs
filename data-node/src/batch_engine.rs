@@ -44,6 +44,7 @@ pub const DISABLED_SOURCES: &[&str] = &[
     "flights",  // Provider HTTP 503 on every coordinate.
     "weather",  // Open-Meteo daily quota exhausted (free tier); resets at 00:00 UTC.
     "bestbuy",  // Free API key hits per-second rate limit on every call (HTTP 403).
+    "crypto",   // CoinGecko rate-limiting the collector — feed stale for hours, every batch refunded 6824 markets. Re-enable when CoinGecko has headroom (API key / slower cadence).
     // pumpfun re-enabled 2026-05-17 — Jupiter Lite API replaces narrow DexScreener
     // discovery (~44 trending → ~230 unique mints), with 24h in-memory cache to
     // prevent the deactivation cascade that triggered the original refund storm.

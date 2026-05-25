@@ -17,8 +17,7 @@
       "valueUnit": "USD",
       "isPrice": true,
       "syncIntervalSecs": 600,
-      "batchEligible": true,
-      "audience": "human"
+      "batchEligible": true
     },
     {
       "sourceId": "pumpfun",
