@@ -10,6 +10,7 @@ import { HomeOnboardingCompass } from '@/components/domain/vision/HomeOnboarding
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { hasVaultForSource } from '@/lib/vision/sources-vaults'
+import { isHiddenSource } from '@/lib/vision/hidden-sources'
 import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
 import { toInternalId } from '@/lib/vision/source-ids'
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const source = await getSourceDisplayServer(sourceId)
 
-  if (!source) {
+  if (!source || isHiddenSource({ sourceId, internalIds: source.internalIds })) {
     return { title: 'Source Not Found' }
   }
 
@@ -75,6 +76,13 @@ export default async function SourcePage({ params }: Props) {
   }
 
   const source = await getSourceDisplayServer(sourceId)
+
+  // Hidden/dead sources (delisted feeds, rate-limited collectors) 404 their
+  // deep-link page instead of rendering an empty shell — no false hopes. The
+  // not-found page points the reader at markets that are actually open.
+  if (isHiddenSource({ sourceId, internalIds: source?.internalIds })) {
+    notFound()
+  }
 
   // Legacy gate: sources without a vault 404'd. Curated human pages are
   // allowed to render pre-vault — their component handles the empty state
