@@ -32,6 +32,7 @@ Repo is `~/Downloads/index/video` (not `~/Downloads/video/`).
 - **Talking-head edits** — `anticheat-edit/` (`AntiCheatEdit`), via `AntiCheatLayout.tsx`: baked `final.mp4` (`OffthreadVideo`) + graded + light shafts + karaoke captions.
 - **Long-form stories** — `anticheat/AntiCheatFull.tsx`: hook → rigged → solution → flag cards → end card.
 - **Data-viz reels** — `retail-pnl/`, `lending-curators/`, `morpho-curators/`, `finance-charts/`. Read each folder's `data.ts` + `ChartEngine.tsx` (lightweight-charts / recharts).
+- **DeFi category leaderboards** (ranked bar/column reels of protocols by growth, e.g. perps/RWA/privacy "winners"): there's a turnkey engine — numbers + logos in, reel out. **Only if building one of these, read `src/compositions/defi-flows/README.md`** (data-source choice, the %/$/volume call, the logo fetch command, the one-object registry). Don't load it otherwise.
 - **Side-by-side replicas** — the `*SideBySide` family under `replicates/`, `polymarket-replicas/` (see Replicating below).
 - **OG banners / brand** — `gm/`, `endcard/`.
 
