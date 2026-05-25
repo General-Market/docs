@@ -14,15 +14,8 @@ import { MARKETS_CONCENTRATION } from "./data";
 import type { Dataset, Snapshot } from "./data";
 import { LOGOS_BY_VENUE } from "./logos";
 
-const TITLE_LINES = ["Share of profits", "captured by cohorts"];
-
-// Stack a venue name onto two balanced lines so the right-column label reads big.
-const wrapLabel = (label: string): string[] => {
-  const words = label.split(" ");
-  if (words.length <= 1) return [label];
-  const mid = Math.ceil(words.length / 2);
-  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
-};
+// The fixed metric, shown as a centered subtitle under the changing venue.
+const SUBTITLE = "Share of profits captured by cohorts";
 
 // Stripe ships Söhne (Klim) — not free / not on Google Fonts. Inter is the
 // closest loadable neo-grotesque; tight tracking matches Stripe's headings.
@@ -111,14 +104,12 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-// ── Background — curved monitor screen ─────────────────────────────────────
-// No dot grid. Full-width dashed lines bowed by a barrel warp, like the rows
-// of a curved CRT. Each line carries its own muted colour and scrolls its
-// dashes at its own speed; every dash on a line shares that speed. The chart
-// and type stay flat and crisp in front.
+// ── Background — curved monitor grid ───────────────────────────────────────
+// A regular square grid, faint, bowed by a barrel warp so it reads as the grid
+// on a curved screen. Static; the chart and type sit flat and crisp in front.
 
-// CRT "monitor curvature" — barrel warp on the screen lines only. Zero at the
-// centre, growing with r², so the rows bow outward at the rim.
+// CRT "monitor curvature" — barrel warp on the grid only. Zero at the centre,
+// growing with r², so the lines bow outward at the rim.
 const BARREL_K = 0.13;
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
@@ -129,74 +120,59 @@ const barrel = (x: number, y: number): { x: number; y: number } => {
   return { x: HALF_W + nx * f * HALF_W, y: HALF_H + ny * f * HALF_H };
 };
 
-// The dashes scroll fast — 8× the base velocity.
-const LIGHT_SPEED = 8;
-const DASH = 15;
-const GAP = 21;
-const DASH_PERIOD = DASH + GAP;
-const LINE_MARGIN = 180; // sample beyond the frame so bowed ends still cover
+const GRID_SPACING = 150;
+const GRID_LINE_COLOR = "rgba(36, 50, 90, 0.11)";
+const GRID_MARGIN = 220; // sample beyond the frame so bowed ends still cover
 
-// A bowed full-width row at height yRow, sampled and warped into a polyline.
-// Static per row, so it is precomputed once below.
-const bowedRow = (yRow: number): string => {
-  const N = 56;
-  const span = WIDTH + 2 * LINE_MARGIN;
+// One bowed gridline, sampled and warped into a polyline. Static, so the whole
+// grid is precomputed once.
+const bowedLine = (fixed: number, horizontal: boolean): string => {
+  const N = 48;
+  const lo = horizontal ? -GRID_MARGIN : -GRID_MARGIN;
+  const span = horizontal ? WIDTH + 2 * GRID_MARGIN : HEIGHT + 2 * GRID_MARGIN;
   const pts: string[] = [];
   for (let i = 0; i <= N; i++) {
-    const x = -LINE_MARGIN + (i / N) * span;
-    const p = barrel(x, yRow);
+    const v = lo + (i / N) * span;
+    const p = horizontal ? barrel(v, fixed) : barrel(fixed, v);
     pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
   }
   return pts.join(" ");
 };
 
-// Muted, harmonised palette — desaturated indigo/teal/violet/sage/clay.
-// Editorial, never neon.
-const LINE_HUES = [
-  "#6E8BE0", "#52A9A0", "#9079C9", "#5FA0C2", "#86AE84", "#AC7E9C",
-  "#6E8FBE", "#BFA268", "#8893DE", "#4F97B2", "#BC876C", "#7C88B0",
-];
-const SCREEN_LINE_COUNT = 16;
-const SCREEN_LINES = Array.from({ length: SCREEN_LINE_COUNT }, (_, i) => {
-  const y = ((i + 0.5) / SCREEN_LINE_COUNT) * HEIGHT;
-  return {
-    points: bowedRow(y),
-    color: LINE_HUES[i % LINE_HUES.length],
-    velocity: 70 + ((i * 53) % 180), // each line a different scroll speed
-    phase: (i * 0.37) % 1,
-  };
-});
+const H_LINES = Array.from(
+  { length: Math.ceil(HEIGHT / GRID_SPACING) + 3 },
+  (_, i) => bowedLine((i - 1) * GRID_SPACING, true),
+);
+const V_LINES = Array.from(
+  { length: Math.ceil(WIDTH / GRID_SPACING) + 3 },
+  (_, i) => bowedLine((i - 1) * GRID_SPACING, false),
+);
 
-const ScreenLines: React.FC = () => {
-  const frame = useCurrentFrame();
-  const t = frame / FPS;
-  return (
-    <svg
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ position: "absolute", inset: 0 }}
-    >
-      {SCREEN_LINES.map((ln, i) => (
-        <polyline
-          key={i}
-          points={ln.points}
-          fill="none"
-          stroke={ln.color}
-          strokeWidth={2.6}
-          strokeLinecap="round"
-          strokeDasharray={`${DASH} ${GAP}`}
-          strokeDashoffset={
-            -((ln.velocity * LIGHT_SPEED * t + ln.phase * DASH_PERIOD) %
-              DASH_PERIOD)
-          }
-          opacity={0.62}
-        />
-      ))}
-    </svg>
-  );
-};
+const CurvedGrid: React.FC = React.memo(() => (
+  <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
+    {H_LINES.map((pts, i) => (
+      <polyline
+        key={`h-${i}`}
+        points={pts}
+        fill="none"
+        stroke={GRID_LINE_COLOR}
+        strokeWidth={1.6}
+      />
+    ))}
+    {V_LINES.map((pts, i) => (
+      <polyline
+        key={`v-${i}`}
+        points={pts}
+        fill="none"
+        stroke={GRID_LINE_COLOR}
+        strokeWidth={1.6}
+      />
+    ))}
+  </svg>
+));
+CurvedGrid.displayName = "CurvedGrid";
 
-// Gentle vignette — the screen fills the frame and only the far corners fall off.
+// Gentle vignette — the grid fills the frame and only the far corners fall off.
 const SCREEN_MASK =
   "radial-gradient(ellipse 98% 98% at 50% 46%, #000 0%, #000 72%, transparent 100%)";
 
@@ -209,7 +185,7 @@ const CurvedScreen: React.FC = () => (
       filter: "url(#reel-chroma)",
     }}
   >
-    <ScreenLines />
+    <CurvedGrid />
   </AbsoluteFill>
 );
 
@@ -372,7 +348,6 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
   const source = labelDuringTransition.source ?? dataset.source;
   const venue = labelDuringTransition.label;
-  const venueLines = wrapLabel(venue);
   const venueLogos = LOGOS_BY_VENUE[venue] ?? [];
 
   // Right column dips at the crossfade midpoint so the venue label + logos
@@ -429,23 +404,43 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
       <CurvedScreen />
 
-      {/* Title — top-left, balanced two lines. */}
+      {/* Header — centered. The venue is the big title (changes per market);
+          the metric is the fixed subtitle beneath it. */}
       <div
         style={{
           position: "absolute",
           top: MARGIN_TOP,
-          left: MARGIN,
-          fontFamily: INTER,
-          fontSize: 72,
-          fontWeight: 700,
-          letterSpacing: "-0.03em",
-          lineHeight: 1.0,
-          color: PALETTE.text,
+          left: 0,
+          width: "100%",
+          textAlign: "center",
         }}
       >
-        {TITLE_LINES.map((line, i) => (
-          <div key={i}>{line}</div>
-        ))}
+        <div
+          style={{
+            fontFamily: INTER,
+            fontSize: 86,
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.0,
+            color: PALETTE.text,
+            whiteSpace: "nowrap",
+            opacity: swapDip,
+          }}
+        >
+          {venue}
+        </div>
+        <div
+          style={{
+            marginTop: 10,
+            fontFamily: INTER,
+            fontSize: 32,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: PALETTE.textDim,
+          }}
+        >
+          {SUBTITLE}
+        </div>
       </div>
 
       <svg
@@ -530,28 +525,6 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
         {xLabelElems}
       </svg>
-
-      {/* Venue label — top-right, mirrors the title. */}
-      <div
-        style={{
-          position: "absolute",
-          top: MARGIN_TOP,
-          right: MARGIN,
-          maxWidth: 660,
-          textAlign: "right",
-          fontFamily: INTER,
-          fontSize: 78,
-          fontWeight: 800,
-          letterSpacing: "-0.03em",
-          lineHeight: 0.98,
-          color: PALETTE.text,
-          opacity: swapDip,
-        }}
-      >
-        {venueLines.map((line, i) => (
-          <div key={i}>{line}</div>
-        ))}
-      </div>
 
       {/* Logo strip — the dominant platforms, centered under the plot. */}
       {venueLogos.length > 0 ? (
