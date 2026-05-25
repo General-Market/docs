@@ -92,6 +92,7 @@ Cutout only the few seconds of the beat — a full-talk matte is ~40GB.
 - **Grade:** `color_grade.py` — named FFmpeg chains (color sibling of `voice_effects.py`).
 - **Localize images before render:** `prefetch-card-images.mjs` pulls every `imageUrl` from `sources.json` → `public/scene-images/`, rewrites to `staticFile`. **Never render against a CDN URL.**
 - **Charts/stills:** `extract-source-charts.py` → `public/source-charts/`; `render-finance-stills.sh` → `out/finance-stills/`; `screenshot.mjs`.
+- **B-roll from a reference video** (vague timestamps → clean cut-to-cut clips, frame-verified): `scripts/broll-cut/` — `prep.py` detects cuts + renders labelled montages, `extract.py` cuts frame-accurate + edge-verifies. Full protocol in `scripts/broll-cut/README.md` (read it only when cutting b-roll). Clips land in `public/broll/<source-slug>/`, documented in `public/broll/INDEX.md`.
 
 ## Audio scripts (`scripts/`)
 
