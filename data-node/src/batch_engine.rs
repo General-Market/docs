@@ -81,6 +81,13 @@ pub fn get_strategy(source_id: &str) -> BatchStrategy {
 /// Each byte = 8 markets. 10 000 markets = 1250 bytes bitmap.
 const MAX_MARKETS_PER_BATCH: usize = 10_000;
 
+/// Top-N firehose markets to bet on. A non-curated (firehose) source no longer
+/// carries its entire healthy universe — it carries only its current top-N by
+/// popularity, matching the human-source pages that bet on a live top-10.
+/// Curated DefiLlama sub-sources keep their full editorial allowlist and are
+/// unaffected by this cap.
+const TOP_N_PER_BATCH: usize = 10;
+
 /// Source metadata tuple: (source_id, display_name, sync_interval_secs).
 /// Built at startup from the source registry (sources-display.json).
 pub type SourceMeta = (String, String, u64);
@@ -618,7 +625,16 @@ async fn get_stagnant_assets(
 /// assets but `dex_24h_*` to prices), so we query the price table
 /// directly rather than joining through the asset registry.
 ///
-/// Returns max `MAX_MARKETS_PER_BATCH` assets, sorted by asset_id.
+/// **Curated** (`allowlist = Some`): returns the allowlisted set sorted by
+/// `asset_id`, capped at `MAX_MARKETS_PER_BATCH`. Unchanged.
+///
+/// **Firehose** (`allowlist = None`): returns the assets ordered by popularity
+/// — `COALESCE(NULLIF(market_cap,0), NULLIF(volume_24h,0), value) DESC` with a
+/// deterministic `asset_id ASC` tiebreak. The caller truncates this to
+/// `TOP_N_PER_BATCH` *after* the stagnation filter, so the SQL `LIMIT` stays at
+/// `MAX_MARKETS_PER_BATCH` to leave the stagnation filter room to work. The
+/// ranking is a pure function of the DB snapshot at query time — no randomness,
+/// so the resulting batch set (and its config hash) is reproducible.
 async fn get_healthy_assets(
     pool: &PgPool,
     source_id: &str,
@@ -661,6 +677,11 @@ async fn get_healthy_assets(
         let staleness_cutoff =
             Utc::now() - chrono::Duration::seconds(cutoff_secs as i64);
 
+        // Order by popularity so the caller's top-N truncation keeps the most
+        // significant markets. market_cap and volume_24h are nullable (not
+        // every source reports them); NULLIF(...,0) folds zeros into the
+        // COALESCE cascade so a source with only `value` still ranks. The
+        // asset_id tiebreak makes ties deterministic across oracle reads.
         sqlx::query_as(
             r#"
             SELECT asset_id
@@ -668,7 +689,8 @@ async fn get_healthy_assets(
             WHERE source = $1
               AND fetched_at >= $2
               AND value IS NOT NULL
-            ORDER BY asset_id
+            ORDER BY COALESCE(NULLIF(market_cap, 0), NULLIF(volume_24h, 0), value) DESC NULLS LAST,
+                     asset_id ASC
             LIMIT $3
             "#,
         )
@@ -1032,6 +1054,28 @@ async fn generate_batch_config_inner(
         );
         return None;
     }
+
+    // Firehose top-N: a non-curated source bets only on its current top-N by
+    // popularity. `get_healthy_assets` already returned the firehose path
+    // ordered by `COALESCE(market_cap, volume_24h, value) DESC, asset_id ASC`,
+    // and both the stagnation filter and the curated-narrowing above preserve
+    // that order, so truncating here keeps the most significant, non-stagnant,
+    // fresh markets. Curated sub-sources (allowlist = Some) keep their full
+    // editorial roster — never capped. The cut is deterministic: the same DB
+    // snapshot always yields the same N asset_ids in the same order.
+    let healthy: Vec<String> = if curated_allowlist.is_none() && healthy.len() > TOP_N_PER_BATCH {
+        let before = healthy.len();
+        let top = healthy.into_iter().take(TOP_N_PER_BATCH).collect::<Vec<_>>();
+        info!(
+            source = source_id,
+            before,
+            top_n = TOP_N_PER_BATCH,
+            "Firehose batch scoped to top-N by popularity"
+        );
+        top
+    } else {
+        healthy
+    };
 
     let tick_duration_secs = sync_interval_secs;
     let lock_offset_secs = 0u64; // No lock window — settlement delay = tick_duration (symmetric)
