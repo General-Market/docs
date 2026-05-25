@@ -132,6 +132,12 @@ import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofCo
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
 import { morphoCuratorsMeta } from "./compositions/morpho-curators/MorphoCuratorsComposition";
+import {
+  perpsFlowMeta,
+  predictionMarketsFlowMeta,
+  privacyFlowMeta,
+  rwaFlowMeta,
+} from "./compositions/defi-flows/datasets";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -251,6 +257,26 @@ export const RemotionRoot: React.FC = () => {
             />
           ),
         )}
+      </Folder>
+
+      {/* ═══ DEFI FLOWS — DefiLlama categories ranked by 7d dollar flow ═══ */}
+      <Folder name="DefiFlows">
+        {[
+          perpsFlowMeta,
+          predictionMarketsFlowMeta,
+          privacyFlowMeta,
+          rwaFlowMeta,
+        ].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
       </Folder>
 
       {/* ═══ REPLICATE ═══ */}

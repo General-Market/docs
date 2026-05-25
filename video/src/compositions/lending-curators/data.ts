@@ -5,12 +5,8 @@
 // REAL snapshot, pulled live from the VPS 1 data-node (source "defi", which
 // mirrors api.llama.fi/protocols), as of 2026-05-25 04:59 UTC. Each curator
 // carries its AUM now and its AUM ~24h prior (the price point closest to 24h
-// back in the data-node's own history — the same series that drives the Vision
-// markets). The dollar move and the percent move both derive from those two
-// numbers, so there is one source of truth.
-//
-// The roster is the data-node's `defillama-risk-curators` batch
-// (data-node/src/config/dl-curated.json).
+// back in the data-node's own history). The roster is the data-node's
+// `defillama-risk-curators` batch (data-node/src/config/dl-curated.json).
 
 export type Curator = {
   id: string; // logo file stem under public/lending-curators/logos/
@@ -25,7 +21,7 @@ export const CURATORS_ASOF = "2026-05-25 04:59 UTC";
 export const CURATORS_SOURCE =
   "DefiLlama Risk Curators, read live from the generalmarket.io data-node (source “defi”). Bar = net flow over 24h, in dollars, against the node’s own price history.";
 
-const RAW: Curator[] = [
+export const CURATORS: Curator[] = [
   { id: "sentora", name: "Sentora", aum: 1_656_115_968, aum24hAgo: 1_648_903_200, morpho: true },
   { id: "steakhouse", name: "Steakhouse", aum: 2_139_949_232, aum24hAgo: 2_134_341_001, morpho: true },
   { id: "vault-bridge", name: "Vault Bridge", aum: 135_911_333, aum24hAgo: 134_783_973 },
@@ -37,30 +33,3 @@ const RAW: Curator[] = [
   { id: "kpk", name: "kpk", aum: 170_325_477, aum24hAgo: 171_675_836, morpho: true },
   { id: "gauntlet", name: "Gauntlet", aum: 1_443_896_192, aum24hAgo: 1_459_343_069, morpho: true },
 ];
-
-export const deltaUsd = (c: Curator): number => c.aum - c.aum24hAgo;
-export const changePct = (c: Curator): number => ((c.aum - c.aum24hAgo) / c.aum24hAgo) * 100;
-
-// Ranked by dollars moved over 24h, descending.
-export const CURATORS: Curator[] = [...RAW].sort((a, b) => deltaUsd(b) - deltaUsd(a));
-
-// The headline: in dollar terms the biggest Morpho books lead, not the % movers.
-export const TOP_GAINER_ID = CURATORS[0].id;
-
-export const fmtUSD = (v: number): string => {
-  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(0)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toFixed(0)}`;
-};
-
-// Signed dollar move, e.g. "+$7.2M", "−$15.4M", "+$257K".
-export const fmtUsdSigned = (v: number): string => {
-  const sign = v >= 0 ? "+" : "−";
-  const a = Math.abs(v);
-  if (a >= 1_000_000) return `${sign}$${(a / 1_000_000).toFixed(1)}M`;
-  if (a >= 1_000) return `${sign}$${(a / 1_000).toFixed(0)}K`;
-  return `${sign}$${a.toFixed(0)}`;
-};
-
-export const fmtPct = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}%`;
