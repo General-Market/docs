@@ -45,6 +45,9 @@ export function PositionCard({ batch, source, index }: PositionCardProps) {
   const pnl = batch.balance - batch.deposited
   const pnlColor = pnl >= 0 ? 'text-color-up' : 'text-color-down'
   const accent = source ? accentColor(source.brandBg) : '#6366f1'
+  // "exited" with no settled ticks = the round's deadline passed but it never
+  // actually resolved. The position is still open, awaiting settlement.
+  const isAwaitingSettlement = batch.status === 'exited' && batch.tickCount === 0
   const isActive = batch.status === 'active'
 
   const handleViewTransition = useCallback((e: React.MouseEvent) => {
@@ -123,7 +126,18 @@ export function PositionCard({ batch, source, index }: PositionCardProps) {
                     </span>
                   </span>
                 )}
-                {!isActive && (
+                {isAwaitingSettlement && (
+                  <span className="flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50" style={{ backgroundColor: '#f59e0b' }} />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: '#f59e0b' }} />
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#b45309' }}>
+                      Settling
+                    </span>
+                  </span>
+                )}
+                {!isActive && !isAwaitingSettlement && (
                   <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface text-text-muted">
                     Exited
                   </span>
@@ -147,9 +161,15 @@ export function PositionCard({ batch, source, index }: PositionCardProps) {
               <div className="text-[15px] font-black font-mono tabular-nums text-black">
                 ${batch.balance.toFixed(2)}
               </div>
-              <div className={`text-micro font-mono font-bold ${pnlColor}`}>
-                {formatPnL(pnl)} ({compactROI(batch.roi)})
-              </div>
+              {isAwaitingSettlement ? (
+                <div className="text-micro font-mono font-bold text-text-muted">
+                  Awaiting result
+                </div>
+              ) : (
+                <div className={`text-micro font-mono font-bold ${pnlColor}`}>
+                  {formatPnL(pnl)} ({compactROI(batch.roi)})
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

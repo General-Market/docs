@@ -16,6 +16,15 @@ interface PositionsListProps {
   batches: ProfileBatch[]
 }
 
+// A position the chain still backs but that the oracle never actually settled
+// (its settlement deadline elapsed without resolution) arrives as status
+// "exited" with zero ticks and balance == deposited. It is not closed — the
+// funds are in, awaiting settlement — so it stays in the open view rather than
+// being filed under Closed, where it looks like it vanished.
+function isAwaitingSettlement(b: ProfileBatch): boolean {
+  return b.status === 'exited' && b.tickCount === 0
+}
+
 function SegmentedToggle({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
   const reduced = useReducedMotion()
   const options: { id: Filter; label: string; count?: number }[] = [
@@ -65,11 +74,11 @@ export function PositionsList({ batches }: PositionsListProps) {
   }, [filter, search])
 
   const activeBatches = useMemo(
-    () => batches.filter(b => b.status === 'active'),
+    () => batches.filter(b => b.status === 'active' || isAwaitingSettlement(b)),
     [batches],
   )
   const closedBatches = useMemo(
-    () => batches.filter(b => b.status !== 'active'),
+    () => batches.filter(b => b.status === 'exited' && b.tickCount > 0),
     [batches],
   )
 
@@ -161,7 +170,7 @@ export function PositionsList({ batches }: PositionsListProps) {
               const sourceInfo = src ? {
                 sourceId: src.sourceId,
                 name: src.name,
-                logo: `/source-imgs/icons/${src.sourceId}.png`,
+                logo: src.logo,
                 brandBg: src.brandBg,
               } : null
 
