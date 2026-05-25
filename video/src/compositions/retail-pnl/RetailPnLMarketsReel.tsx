@@ -111,18 +111,14 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-// ── Background — curved monitor grid + travelling coloured light ────────────
-// A regular uniform dot grid, bowed by a barrel warp so it reads as a curved
-// screen. Over it, light travels along individual grid rows: each row ("line")
-// has its own speed and its own muted colour; every dot on a row shares them,
-// so motion is coherent within a line and varied across lines.
-const GRID_SPACING = 26;
-const GRID_DOT_R = 1.6;
-const GRID_COLOR = "rgba(58, 74, 120, 0.13)"; // neutral slate so colours pop
+// ── Background — curved monitor screen ─────────────────────────────────────
+// No dot grid. Full-width dashed lines bowed by a barrel warp, like the rows
+// of a curved CRT. Each line carries its own muted colour and scrolls its
+// dashes at its own speed; every dash on a line shares that speed. The chart
+// and type stay flat and crisp in front.
 
-// CRT "monitor curvature" — a barrel warp on the grid + light only; the chart
-// and type stay flat in front. Zero at the centre, growing with r², so rows
-// bow outward at the rim while the data zone reads sharp.
+// CRT "monitor curvature" — barrel warp on the screen lines only. Zero at the
+// centre, growing with r², so the rows bow outward at the rim.
 const BARREL_K = 0.13;
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
@@ -133,136 +129,87 @@ const barrel = (x: number, y: number): { x: number; y: number } => {
   return { x: HALF_W + nx * f * HALF_W, y: HALF_H + ny * f * HALF_H };
 };
 
-const RegularGrid: React.FC = React.memo(() => {
-  // Extra margin rings so the outward bow still fills the frame corners.
-  const cols = Math.ceil(WIDTH / GRID_SPACING) + 11;
-  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 11;
-  return (
-    <svg
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ position: "absolute", inset: 0 }}
-    >
-      {Array.from({ length: rows }).flatMap((_, r) =>
-        Array.from({ length: cols }).map((__, c) => {
-          const p = barrel((c - 5) * GRID_SPACING, (r - 5) * GRID_SPACING);
-          return (
-            <circle
-              key={`${r}-${c}`}
-              cx={p.x}
-              cy={p.y}
-              r={GRID_DOT_R}
-              fill={GRID_COLOR}
-            />
-          );
-        }),
-      )}
-    </svg>
-  );
-});
-RegularGrid.displayName = "RegularGrid";
-
-// Each line is one grid row: a travelling bright segment in a single muted
-// colour, moving at the row's own velocity. Colours are desaturated and
-// harmonised — editorial, not a neon advert.
-type LightLine = {
-  y: number;
-  color: string;
-  velocity: number;
-  len: number;
-  anchor: number;
-  phase: number;
-};
-const LIGHT_LINES: LightLine[] = [
-  { y: 0.07, color: "#6E8BE0", velocity: 130, len: 0.34, anchor: 0.30, phase: 0.0 },
-  { y: 0.13, color: "#52A9A0", velocity: 220, len: 0.22, anchor: 0.62, phase: 0.35 },
-  { y: 0.19, color: "#9079C9", velocity: 90, len: 0.40, anchor: 0.18, phase: 0.6 },
-  { y: 0.25, color: "#5FA0C2", velocity: 300, len: 0.18, anchor: 0.80, phase: 0.15 },
-  { y: 0.32, color: "#86AE84", velocity: 160, len: 0.26, anchor: 0.45, phase: 0.5 },
-  { y: 0.40, color: "#AC7E9C", velocity: 250, len: 0.20, anchor: 0.10, phase: 0.8 },
-  { y: 0.49, color: "#6E8FBE", velocity: 110, len: 0.36, anchor: 0.70, phase: 0.25 },
-  { y: 0.57, color: "#BFA268", velocity: 340, len: 0.16, anchor: 0.35, phase: 0.55 },
-  { y: 0.65, color: "#8893DE", velocity: 180, len: 0.30, anchor: 0.85, phase: 0.05 },
-  { y: 0.73, color: "#4F97B2", velocity: 140, len: 0.24, anchor: 0.22, phase: 0.7 },
-  { y: 0.81, color: "#BC876C", velocity: 270, len: 0.20, anchor: 0.55, phase: 0.4 },
-  { y: 0.88, color: "#7C88B0", velocity: 100, len: 0.34, anchor: 0.40, phase: 0.62 },
-  { y: 0.94, color: "#5FAAB8", velocity: 210, len: 0.26, anchor: 0.72, phase: 0.18 },
-];
-
-// The light streaks across fast — 8× the base drift.
+// The dashes scroll fast — 8× the base velocity.
 const LIGHT_SPEED = 8;
+const DASH = 15;
+const GAP = 21;
+const DASH_PERIOD = DASH + GAP;
+const LINE_MARGIN = 180; // sample beyond the frame so bowed ends still cover
 
-const snapGrid = (px: number) => Math.round(px / GRID_SPACING) * GRID_SPACING;
+// A bowed full-width row at height yRow, sampled and warped into a polyline.
+// Static per row, so it is precomputed once below.
+const bowedRow = (yRow: number): string => {
+  const N = 56;
+  const span = WIDTH + 2 * LINE_MARGIN;
+  const pts: string[] = [];
+  for (let i = 0; i <= N; i++) {
+    const x = -LINE_MARGIN + (i / N) * span;
+    const p = barrel(x, yRow);
+    pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+  }
+  return pts.join(" ");
+};
 
-const TravellingLines: React.FC = () => {
+// Muted, harmonised palette — desaturated indigo/teal/violet/sage/clay.
+// Editorial, never neon.
+const LINE_HUES = [
+  "#6E8BE0", "#52A9A0", "#9079C9", "#5FA0C2", "#86AE84", "#AC7E9C",
+  "#6E8FBE", "#BFA268", "#8893DE", "#4F97B2", "#BC876C", "#7C88B0",
+];
+const SCREEN_LINE_COUNT = 16;
+const SCREEN_LINES = Array.from({ length: SCREEN_LINE_COUNT }, (_, i) => {
+  const y = ((i + 0.5) / SCREEN_LINE_COUNT) * HEIGHT;
+  return {
+    points: bowedRow(y),
+    color: LINE_HUES[i % LINE_HUES.length],
+    velocity: 70 + ((i * 53) % 180), // each line a different scroll speed
+    phase: (i * 0.37) % 1,
+  };
+});
+
+const ScreenLines: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
-  const cycleW = WIDTH * 1.6;
   return (
     <svg
       width={WIDTH}
       height={HEIGHT}
       style={{ position: "absolute", inset: 0 }}
     >
-      {LIGHT_LINES.map((line, li) => {
-        const yC = snapGrid(line.y * HEIGHT);
-        const lenPx = line.len * WIDTH;
-        const half = lenPx / 2;
-        const drift = line.velocity * LIGHT_SPEED * t;
-        const mid =
-          (((line.anchor * WIDTH + drift + line.phase * cycleW) % cycleW) +
-            cycleW) %
-            cycleW -
-          cycleW * 0.3;
-        const x0 = snapGrid(mid - half);
-        const x1 = snapGrid(mid + half);
-        if (x1 < -40 || x0 > WIDTH + 40) return null;
-
-        const cols = Math.max(2, Math.round((x1 - x0) / GRID_SPACING) + 1);
-        const fadePx = lenPx * 0.22;
-        const cells: React.ReactNode[] = [];
-        for (let di = 0; di < cols; di++) {
-          const x = x0 + di * GRID_SPACING;
-          if (x < -20 || x > WIDTH + 20) continue;
-          const fromStart = x - x0;
-          const fromEnd = x1 - x;
-          let a = 1;
-          if (fromStart < fadePx) a *= fromStart / fadePx;
-          if (fromEnd < fadePx) a *= fromEnd / fadePx;
-          a = Math.max(0, Math.min(1, a));
-          const p = barrel(x, yC);
-          cells.push(
-            <circle
-              key={di}
-              cx={p.x}
-              cy={p.y}
-              r={GRID_DOT_R * 1.35}
-              fill={line.color}
-              opacity={0.6 * a}
-            />,
-          );
-        }
-        return <g key={li}>{cells}</g>;
-      })}
+      {SCREEN_LINES.map((ln, i) => (
+        <polyline
+          key={i}
+          points={ln.points}
+          fill="none"
+          stroke={ln.color}
+          strokeWidth={2.6}
+          strokeLinecap="round"
+          strokeDasharray={`${DASH} ${GAP}`}
+          strokeDashoffset={
+            -((ln.velocity * LIGHT_SPEED * t + ln.phase * DASH_PERIOD) %
+              DASH_PERIOD)
+          }
+          opacity={0.62}
+        />
+      ))}
     </svg>
   );
 };
 
-// Gentle vignette — the grid fills the frame and only the far corners fall off.
-const DOT_FIELD_MASK =
-  "radial-gradient(ellipse 96% 96% at 50% 46%, #000 0%, #000 70%, transparent 100%)";
+// Gentle vignette — the screen fills the frame and only the far corners fall off.
+const SCREEN_MASK =
+  "radial-gradient(ellipse 98% 98% at 50% 46%, #000 0%, #000 72%, transparent 100%)";
 
-const MovingDotField: React.FC = () => (
+const CurvedScreen: React.FC = () => (
   <AbsoluteFill
     style={{
-      WebkitMaskImage: DOT_FIELD_MASK,
-      maskImage: DOT_FIELD_MASK,
+      WebkitMaskImage: SCREEN_MASK,
+      maskImage: SCREEN_MASK,
       // Chromatic-aberration fringe — the glass-package lens character.
       filter: "url(#reel-chroma)",
     }}
   >
-    <RegularGrid />
-    <TravellingLines />
+    <ScreenLines />
   </AbsoluteFill>
 );
 
@@ -277,14 +224,14 @@ export const RetailPnLMarketsReel: React.FC = () => {
   // Layout for the 16:9 frame — title top-left, venue label top-right, the
   // plot filling the width, logo strip and source in the band below it.
   const MARGIN = 80;
-  const MARGIN_TOP = 64;
+  const MARGIN_TOP = 56;
   const AXIS_GUTTER = 90;
   const plotL = MARGIN + AXIS_GUTTER; // 170
   const plotR = W - MARGIN; // 1840
   const plotW = plotR - plotL; // 1670
-  const plotT = 235;
-  const PLOT_BOTTOM = 715;
-  const plotH = PLOT_BOTTOM - plotT; // 480
+  const plotT = 250;
+  const PLOT_BOTTOM = 700;
+  const plotH = PLOT_BOTTOM - plotT; // 450
 
   const scale = dataset.yScale ?? "linear";
 
@@ -480,7 +427,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         </defs>
       </svg>
 
-      <MovingDotField />
+      <CurvedScreen />
 
       {/* Title — top-left, balanced two lines. */}
       <div
@@ -489,7 +436,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           top: MARGIN_TOP,
           left: MARGIN,
           fontFamily: INTER,
-          fontSize: 50,
+          fontSize: 72,
           fontWeight: 700,
           letterSpacing: "-0.03em",
           lineHeight: 1.0,
@@ -590,10 +537,10 @@ export const RetailPnLMarketsReel: React.FC = () => {
           position: "absolute",
           top: MARGIN_TOP,
           right: MARGIN,
-          maxWidth: 560,
+          maxWidth: 660,
           textAlign: "right",
           fontFamily: INTER,
-          fontSize: 56,
+          fontSize: 78,
           fontWeight: 800,
           letterSpacing: "-0.03em",
           lineHeight: 0.98,
@@ -611,12 +558,12 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            top: PLOT_BOTTOM + 88,
+            top: PLOT_BOTTOM + 72,
             left: plotL,
             width: plotW,
             display: "flex",
             justifyContent: "center",
-            gap: 18,
+            gap: 22,
             opacity: swapDip,
           }}
         >
@@ -624,16 +571,16 @@ export const RetailPnLMarketsReel: React.FC = () => {
             <div
               key={logo.file}
               style={{
-                width: 116,
-                height: 116,
+                width: 150,
+                height: 150,
                 flexShrink: 0,
-                borderRadius: 26,
+                borderRadius: 32,
                 background: "rgba(255, 255, 255, 0.95)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: 14,
-                boxShadow: "0 14px 34px -22px rgba(0, 0, 0, 0.9)",
+                padding: 18,
+                boxShadow: "0 16px 40px -24px rgba(0, 0, 0, 0.9)",
               }}
             >
               <Img
@@ -655,7 +602,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            top: PLOT_BOTTOM + 88 + 116 + 26,
+            top: PLOT_BOTTOM + 72 + 150 + 22,
             left: MARGIN,
             width: plotR - MARGIN,
             fontFamily: INTER,
