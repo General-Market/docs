@@ -111,82 +111,147 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-// Moving dot field — the AntiCheat house background, ported from
-// anticheat/DotGrid. A fine blue lattice whose brightness rides a slow
-// domain-warped interference wave. The crests travel, so streams of brighter
-// dots flow across the whole frame — points that move, continuously, in every
-// direction. No beat, no pulse-in-place.
-const FINE_SPACING = 42;
+// Background — the AntiCheat DotGrid, faithfully: a regular uniform grid of
+// faint blue dots, with brighter bands of blue "light" travelling across it.
+// The grid is static and memoised; only the light bands recompute each frame.
+const GRID_SPACING = 30;
+const GRID_DOT_R = 1.7;
+const GRID_ALPHA = 0.16;
 
-// Domain-warped interference field → 0..1. Coords are first twisted by a slow
-// low-frequency perturbation, then run through a product of two sines (lobed
-// crests, not stripes) combined with a radial pulse from a wandering centre.
-// The −ω·t phase terms make the crests travel, so the bright regions sweep
-// across the static lattice. tanh softens the peaks.
-const WAVE_K1 = (2 * Math.PI) / 920;
-const WAVE_K2 = (2 * Math.PI) / 1420;
-const WAVE_WARP = 240;
-const waveAt = (x: number, y: number, t: number): number => {
-  const wx = Math.sin(0.0032 * x + 0.0019 * y + 1.7 * t);
-  const wy = Math.cos(0.0024 * x - 0.0029 * y + 1.3 * t + 1.7);
-  const xw = x + WAVE_WARP * wx;
-  const yw = y + WAVE_WARP * wy;
-  const a = Math.sin(WAVE_K1 * xw + 0.32 * WAVE_K1 * yw - 1.9 * t);
-  const b = Math.sin(0.62 * WAVE_K2 * xw + 0.95 * WAVE_K2 * yw - 1.2 * t + 1.37);
-  const cx = WIDTH * 0.5 + 0.3 * WIDTH * Math.sin(0.5 * t);
-  const cy = HEIGHT * 0.5 + 0.32 * HEIGHT * Math.cos(0.6 * t + 0.7);
-  const dx = x - cx;
-  const dy = y - cy;
-  const radial = Math.sin(0.009 * Math.sqrt(dx * dx + dy * dy) - 1.6 * t);
-  const raw = 1.5 * a * b + 0.7 * radial;
-  return (Math.tanh(raw * 0.85) + 1) * 0.5;
+const RegularGrid: React.FC = React.memo(() => {
+  const cols = Math.ceil(WIDTH / GRID_SPACING) + 1;
+  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 1;
+  return (
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{ position: "absolute", inset: 0 }}
+    >
+      {Array.from({ length: rows }).flatMap((_, r) =>
+        Array.from({ length: cols }).map((__, c) => (
+          <circle
+            key={`${r}-${c}`}
+            cx={c * GRID_SPACING}
+            cy={r * GRID_SPACING}
+            r={GRID_DOT_R}
+            fill={PALETTE.accent}
+            opacity={GRID_ALPHA}
+          />
+        )),
+      )}
+    </svg>
+  );
+});
+RegularGrid.displayName = "RegularGrid";
+
+// Bands of light, lifted from anticheat/DotGrid. Each is one or more grid rows
+// whose dots are brighter; the band drifts horizontally at a steady velocity
+// and wraps. Spread across the full height so the light moves everywhere.
+type LightBand = {
+  y: number;
+  len: number;
+  anchor: number;
+  rows: number;
+  alpha: number;
+  velocity: number;
+  phase: number;
 };
+const LIGHT_BANDS: LightBand[] = [
+  { y: 0.045, len: 0.62, anchor: 0.30, rows: 2, alpha: 0.95, velocity: 380, phase: 0.0 },
+  { y: 0.08, len: 0.58, anchor: 0.46, rows: 1, alpha: 0.92, velocity: 540, phase: 0.3 },
+  { y: 0.115, len: 0.42, anchor: 0.22, rows: 2, alpha: 0.95, velocity: 320, phase: 0.55 },
+  { y: 0.21, len: 0.50, anchor: 0.70, rows: 1, alpha: 0.92, velocity: 620, phase: 0.1 },
+  { y: 0.245, len: 0.30, anchor: 0.84, rows: 2, alpha: 0.95, velocity: 720, phase: 0.4 },
+  { y: 0.42, len: 0.18, anchor: 0.10, rows: 1, alpha: 0.85, velocity: 820, phase: 0.65 },
+  { y: 0.62, len: 0.36, anchor: 0.78, rows: 2, alpha: 0.92, velocity: 580, phase: 0.2 },
+  { y: 0.655, len: 0.22, anchor: 0.88, rows: 1, alpha: 0.9, velocity: 700, phase: 0.5 },
+  { y: 0.85, len: 0.58, anchor: 0.62, rows: 2, alpha: 0.95, velocity: 360, phase: 0.05 },
+  { y: 0.885, len: 0.62, anchor: 0.42, rows: 1, alpha: 0.92, velocity: 500, phase: 0.35 },
+  { y: 0.92, len: 0.46, anchor: 0.74, rows: 3, alpha: 0.95, velocity: 280, phase: 0.6 },
+];
 
-const DOT_FIELD_MASK =
-  "radial-gradient(ellipse 74% 74% at 50% 44%, #000 0%, rgba(0,0,0,0.78) 62%, transparent 100%)";
+const snapGrid = (px: number) => Math.round(px / GRID_SPACING) * GRID_SPACING;
 
-const MovingDotField: React.FC = () => {
+const TravellingLight: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
-  const cols = Math.ceil(WIDTH / FINE_SPACING) + 1;
-  const rows = Math.ceil(HEIGHT / FINE_SPACING) + 1;
-  const dots: React.ReactNode[] = [];
-  for (let ry = 0; ry < rows; ry++) {
-    const y = ry * FINE_SPACING;
-    for (let rx = 0; rx < cols; rx++) {
-      const x = rx * FINE_SPACING;
-      // Square the wave so bright crests stand out against a faint floor.
-      const w = waveAt(x, y, t);
-      const k = w * w;
-      dots.push(
-        <circle
-          key={`${ry}-${rx}`}
-          cx={x}
-          cy={y}
-          r={1.5 + 2.4 * k}
-          fill={PALETTE.accent}
-          opacity={0.05 + 0.32 * k}
-        />,
-      );
-    }
-  }
+  const cycleW = WIDTH * 1.6;
   return (
-    <AbsoluteFill
-      style={{
-        WebkitMaskImage: DOT_FIELD_MASK,
-        maskImage: DOT_FIELD_MASK,
-      }}
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{ position: "absolute", inset: 0 }}
     >
-      <svg
-        width={WIDTH}
-        height={HEIGHT}
-        style={{ position: "absolute", inset: 0 }}
-      >
-        {dots}
-      </svg>
-    </AbsoluteFill>
+      {LIGHT_BANDS.map((band, bi) => {
+        const yC = snapGrid(band.y * HEIGHT);
+        const lenPx = band.len * WIDTH;
+        const half = lenPx / 2;
+        const drift = band.velocity * t;
+        const mid =
+          (((band.anchor * WIDTH + drift + band.phase * cycleW) % cycleW) +
+            cycleW) %
+            cycleW -
+          cycleW * 0.3;
+        const x0 = snapGrid(mid - half);
+        const x1 = snapGrid(mid + half);
+        if (x1 < -40 || x0 > WIDTH + 40) return null;
+
+        const cols = Math.max(2, Math.round((x1 - x0) / GRID_SPACING) + 1);
+        const fadePx = lenPx * 0.18;
+        const rowAnchor = Math.floor((band.rows - 1) / 2);
+        const rowOffsets = Array.from(
+          { length: band.rows },
+          (_, r) => (r - rowAnchor) * GRID_SPACING,
+        );
+
+        return (
+          <g key={bi}>
+            {rowOffsets.map((yOff, ri) => (
+              <g key={ri}>
+                {Array.from({ length: cols }).map((_, di) => {
+                  const x = x0 + di * GRID_SPACING;
+                  if (x < -20 || x > WIDTH + 20) return null;
+                  const fromStart = x - x0;
+                  const fromEnd = x1 - x;
+                  let a = 1;
+                  if (fromStart < fadePx) a *= fromStart / fadePx;
+                  if (fromEnd < fadePx) a *= fromEnd / fadePx;
+                  a = Math.max(0, Math.min(1, a));
+                  return (
+                    <circle
+                      key={di}
+                      cx={x}
+                      cy={yC + yOff}
+                      r={GRID_DOT_R * 1.25}
+                      fill={PALETTE.accent}
+                      opacity={band.alpha * 0.7 * a}
+                    />
+                  );
+                })}
+              </g>
+            ))}
+          </g>
+        );
+      })}
+    </svg>
   );
 };
+
+// Gentle vignette — the grid fills the frame and only the far corners fall off.
+const DOT_FIELD_MASK =
+  "radial-gradient(ellipse 92% 92% at 50% 44%, #000 0%, #000 68%, transparent 100%)";
+
+const MovingDotField: React.FC = () => (
+  <AbsoluteFill
+    style={{
+      WebkitMaskImage: DOT_FIELD_MASK,
+      maskImage: DOT_FIELD_MASK,
+    }}
+  >
+    <RegularGrid />
+    <TravellingLight />
+  </AbsoluteFill>
+);
 
 export const RetailPnLMarketsReel: React.FC = () => {
   const dataset = MARKETS_CONCENTRATION;
