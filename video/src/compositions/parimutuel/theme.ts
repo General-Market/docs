@@ -21,7 +21,8 @@ export type BeatKey =
   | "threshold"
   | "pot"
   | "flow"
-  | "scale"
+  | "ballot"
+  | "together"
   | "cost"
   | "guarantees"
   | "landing";
@@ -31,7 +32,8 @@ export const BEATS: { key: BeatKey; seconds: number }[] = [
   { key: "threshold", seconds: 5.5 },
   { key: "pot", seconds: 6.0 },
   { key: "flow", seconds: 6.0 },
-  { key: "scale", seconds: 5.5 },
+  { key: "ballot", seconds: 6.5 },
+  { key: "together", seconds: 6.0 },
   { key: "cost", seconds: 6.0 },
   { key: "guarantees", seconds: 6.5 },
   { key: "landing", seconds: 5.0 },

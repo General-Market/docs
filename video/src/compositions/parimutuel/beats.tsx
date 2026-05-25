@@ -385,22 +385,207 @@ export const FlowBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   );
 };
 
-// ─── 5 · × 10,000 ──────────────────────────────────────────────────────────
+// ─── 5 · The ballot (ten thousand at once) ──────────────────────────────────
+
+// You don't trade one market. You answer a whole sheet of ten thousand
+// yes/no lines, all at once — that sheet IS the trade. A sweep marks each
+// line, then the ticket stamps shut as one batch.
+
+const LINES: { name: string; pick: "yes" | "no" }[] = [
+  { name: "BTC · move ≥ +1%", pick: "yes" },
+  { name: "ETH · move ≥ −2%", pick: "no" },
+  { name: "NYC temperature ≥ +2%", pick: "yes" },
+  { name: "Delhi AQI ≥ 180", pick: "no" },
+  { name: "SOL · move ≥ +3%", pick: "yes" },
+  { name: "London rainfall ≥ 5 mm", pick: "no" },
+  { name: "Train delay ≥ 4 min", pick: "yes" },
+  { name: "ETH gas ≤ 8 gwei", pick: "no" },
+  { name: "Aave TVL ≥ +2%", pick: "yes" },
+  { name: "Followers ≥ +1%", pick: "yes" },
+];
+
+const ROW_H = 44;
+
+const MiniToggle: React.FC<{ pick: "yes" | "no"; locked: boolean }> = ({ pick, locked }) => {
+  const cell = (side: "yes" | "no"): React.ReactNode => {
+    const on = locked && pick === side;
+    const color = side === "yes" ? TONE.yes : TONE.no;
+    return (
+      <div
+        style={{
+          fontFamily: monoFont,
+          fontSize: 22,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          padding: "5px 16px",
+          borderRadius: 8,
+          color: on ? color : "rgba(255,255,255,0.3)",
+          background: on ? `${color}26` : "rgba(255,255,255,0.04)",
+          border: `1.5px solid ${on ? color : "rgba(255,255,255,0.12)"}`,
+        }}
+      >
+        {side === "yes" ? "YES" : "NO"}
+      </div>
+    );
+  };
+  return (
+    <div style={{ display: "flex", gap: 10 }}>
+      {cell("yes")}
+      {cell("no")}
+    </div>
+  );
+};
+
+export const BallotBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const panelIn = useEnter(6);
+  const nRows = LINES.length;
+  const rowsH = nRows * ROW_H;
+  const sweepProg = interpolate(frame, [16, 80], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const stamp = spring({
+    fps,
+    frame: Math.max(0, frame - 88),
+    config: { mass: 0.8, damping: 12, stiffness: 150 },
+    durationInFrames: 20,
+  });
+
+  return (
+    <Beat durationInFrames={durationInFrames} title="Ten thousand at once">
+      <div
+        style={{
+          position: "absolute",
+          top: 232,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 1180,
+            background: "rgba(255,255,255,0.05)",
+            border: "1.5px solid rgba(255,255,255,0.16)",
+            borderRadius: 26,
+            padding: "26px 44px 30px",
+            opacity: panelIn.op,
+            transform: `translateY(${((1 - panelIn.rise) * 28).toFixed(1)}px)`,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <MonoLabel size={24} color={scene.inkDim} style={{ marginBottom: 16 }}>
+            Your ticket · one batch
+          </MonoLabel>
+          <div style={{ position: "relative" }}>
+            {LINES.map((ln, i) => {
+              const locked = sweepProg >= (i + 0.5) / nRows;
+              return (
+                <div
+                  key={ln.name}
+                  style={{
+                    height: ROW_H,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: font,
+                      fontSize: 28,
+                      fontWeight: 500,
+                      color: locked ? scene.ink : scene.inkDim,
+                    }}
+                  >
+                    {ln.name}
+                  </div>
+                  <MiniToggle pick={ln.pick} locked={locked} />
+                </div>
+              );
+            })}
+            <div
+              style={{
+                position: "absolute",
+                left: -44,
+                right: -44,
+                top: sweepProg * rowsH - 1,
+                height: 2,
+                background: scene.accentSoft,
+                boxShadow: `0 0 18px ${scene.accentSoft}`,
+                opacity: sweepProg > 0 && sweepProg < 1 ? 0.9 : 0,
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 18,
+            }}
+          >
+            <div style={{ fontFamily: font, fontSize: 28, fontWeight: 500, color: scene.inkDim }}>
+              … 9,990 more lines
+            </div>
+            <div
+              style={{
+                transform: `scale(${Math.min(1, stamp).toFixed(3)})`,
+                opacity: Math.min(1, stamp),
+                fontFamily: monoFont,
+                fontSize: 26,
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                color: scene.accent,
+                background: "#FFFFFF",
+                borderRadius: 10,
+                padding: "10px 22px",
+              }}
+            >
+              SUBMIT · 10,000 LINES
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 952, textAlign: "center" }}>
+        <MonoLabel size={30}>One ticket — every line a yes or no, sent at once</MonoLabel>
+      </div>
+    </Beat>
+  );
+};
+
+// ─── 6 · Everyone, together ───────────────────────────────────────────────────
 
 const COLS = 48;
 const ROWS = 26;
 
-export const ScaleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
+const INCOMING = [
+  { x: 320, y: 250 },
+  { x: 1600, y: 250 },
+  { x: 180, y: 560 },
+  { x: 1740, y: 560 },
+  { x: 380, y: 900 },
+  { x: 1540, y: 900 },
+];
+
+export const TogetherBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
   const cx = (COLS - 1) / 2;
   const cy = (ROWS - 1) / 2;
   const maxDist = Math.hypot(cx, cy);
+  const centerX = 960;
+  const centerY = 560;
 
   const cells = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const dist = Math.hypot(c - cx, r - cy);
-      const delay = 10 + (dist / maxDist) * 44;
+      const delay = 34 + (dist / maxDist) * 40;
       const o = interpolate(frame, [delay, delay + 12], [0, 1], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
@@ -422,10 +607,10 @@ export const ScaleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
     }
   }
 
-  const statOp = interpolate(frame, [40, 60], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const statOp = interpolate(frame, [76, 94], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <Beat durationInFrames={durationInFrames} title="Now ten thousand">
+    <Beat durationInFrames={durationInFrames} title="Everyone trades the same batch">
       <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
         <div
           style={{
@@ -437,41 +622,80 @@ export const ScaleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
         >
           {cells}
         </div>
-        {/* scrim + centered stat */}
-        <AbsoluteFill
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            background:
-              "radial-gradient(40% 36% at 50% 54%, rgba(2,14,43,0.86) 0%, rgba(2,14,43,0.0) 70%)",
-            pointerEvents: "none",
-          }}
-        >
-          <div style={{ textAlign: "center", marginTop: 60, opacity: statOp }}>
-            <div
-              style={{
-                fontFamily: font,
-                fontSize: 220,
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                color: scene.ink,
-                lineHeight: 0.9,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              10,000
-            </div>
-            <MonoLabel size={34} style={{ marginTop: 24 }}>
-              isolated pools — each one sealed off
-            </MonoLabel>
+      </AbsoluteFill>
+
+      {/* incoming ballots — many traders, all pouring into the same batch */}
+      {INCOMING.map((o, i) => {
+        const p = interpolate(frame, [4 + i * 3, 42 + i * 3], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        const x = interpolate(p, [0, 1], [o.x, centerX]);
+        const y = interpolate(p, [0, 1], [o.y, centerY]);
+        const sc = interpolate(p, [0, 0.7, 1], [1, 1, 0.32]);
+        const op = interpolate(p, [0, 0.6, 1], [0, 1, 0]);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: x - 60,
+              top: y - 40,
+              width: 120,
+              height: 82,
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.1)",
+              border: "1.5px solid rgba(255,255,255,0.42)",
+              transform: `scale(${sc.toFixed(3)})`,
+              opacity: op,
+              display: "flex",
+              flexDirection: "column",
+              gap: 9,
+              padding: 16,
+              boxShadow: `0 12px 30px ${scene.chipShadow}`,
+            }}
+          >
+            <div style={{ height: 6, borderRadius: 3, background: TONE.yes, width: "70%" }} />
+            <div style={{ height: 6, borderRadius: 3, background: TONE.no, width: "52%" }} />
+            <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.5)", width: "84%" }} />
           </div>
-        </AbsoluteFill>
+        );
+      })}
+
+      {/* scrim + centered stat */}
+      <AbsoluteFill
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          background:
+            "radial-gradient(42% 38% at 50% 54%, rgba(2,14,43,0.88) 0%, rgba(2,14,43,0.0) 70%)",
+          pointerEvents: "none",
+        }}
+      >
+        <div style={{ textAlign: "center", marginTop: 56, opacity: statOp }}>
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 200,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: scene.ink,
+              lineHeight: 0.9,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            10,000
+          </div>
+          <MonoLabel size={32} style={{ marginTop: 22 }}>
+            pools — everyone in the same batch, each one sealed
+          </MonoLabel>
+        </div>
       </AbsoluteFill>
     </Beat>
   );
 };
 
-// ─── 6 · Cost to cheat ───────────────────────────────────────────────────────
+// ─── 7 · Cost to cheat ───────────────────────────────────────────────────────
 
 export const CostBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
@@ -561,7 +785,7 @@ export const CostBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   );
 };
 
-// ─── 7 · Three guarantees (the list of 3) ─────────────────────────────────────
+// ─── 8 · Three guarantees (the list of 3) ─────────────────────────────────────
 
 const GUARANTEES: { n: string; head: string; sub: string }[] = [
   { n: "01", head: "Sealed.", sub: "No one sees your bet until it resolves." },
@@ -622,7 +846,7 @@ export const GuaranteesBeat: React.FC<BeatProps> = ({ durationInFrames }) => (
   </Beat>
 );
 
-// ─── 8 · Landing ─────────────────────────────────────────────────────────────
+// ─── 9 · Landing ─────────────────────────────────────────────────────────────
 
 export const LandingBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();

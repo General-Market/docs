@@ -5,14 +5,15 @@ import { BlueField } from "../anticheat-edit/props/BlueField";
 import { font, scene } from "../anticheat-edit/props/tokens";
 import { FPS, H, SCHEDULE, TOTAL_FRAMES, W, type BeatKey } from "./theme";
 import {
+  BallotBeat,
   CostBeat,
   FlowBeat,
   GuaranteesBeat,
   LandingBeat,
   PotBeat,
   QuestionBeat,
-  ScaleBeat,
   ThresholdBeat,
+  TogetherBeat,
 } from "./beats";
 
 // ParimutuelExplainer — how the batch market resists being rigged, told as a
@@ -29,7 +30,8 @@ const BEAT_COMPONENTS: Record<BeatKey, React.FC<{ durationInFrames: number }>> =
   threshold: ThresholdBeat,
   pot: PotBeat,
   flow: FlowBeat,
-  scale: ScaleBeat,
+  ballot: BallotBeat,
+  together: TogetherBeat,
   cost: CostBeat,
   guarantees: GuaranteesBeat,
   landing: LandingBeat,
