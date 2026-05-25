@@ -152,6 +152,14 @@ Full inventory in `vps.md` under "VPS 3".
 ## Contracts
 
 
+## Video / Remotion
+
+Any Remotion / video work lives in `video/`. **Read `video/.claude/rules/remotion.md`
+first and follow it** — it is the source of truth for the composition registration
+convention (`*Meta` + `Root.tsx`), the current bodies of work, where source and render
+files live (`~/Movies` recordings, `~/Downloads` renders), and the image/audio
+pipelines. Do not work from memory of the old chibi short pipeline — it is gone.
+
 ## Writing Style — Christopher Alexander
 
 All external-facing writing follows Alexander's pattern-language voice. Full reference: `docs/christopher-alexander-style.md`.
