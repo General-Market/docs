@@ -45,11 +45,16 @@ export type FlowDataset = {
   asof: string;
   logoBase: string; // e.g. "defi-flows/logos"
   metricNoun?: string; // sublabel noun for the level, default "TVL"
+  // What the bar measures: absolute dollar flow ("usd") or percent growth
+  // ("pct"). Percent surfaces explosive small movers; dollars surface giants.
+  mode?: "usd" | "pct";
   brand?: FlowBrand; // optional top-right lockup
   tagLabel?: string; // e.g. "MORPHO"
   tagColor?: string;
-  rows: FlowRow[]; // any order; sorted by dollar flow here
+  rows: FlowRow[]; // any order; sorted by the chosen metric here
 };
+
+export type FlowMode = "usd" | "pct";
 
 const PALETTE = {
   bgTop: "#1A1E25",
@@ -78,6 +83,7 @@ const HALF_W = (PLOT_R - PLOT_L) / 2;
 
 const delta = (r: FlowRow) => r.now - r.prior;
 const pct = (r: FlowRow) => (r.prior ? (delta(r) / r.prior) * 100 : 0);
+const metricOf = (r: FlowRow, mode: FlowMode) => (mode === "pct" ? pct(r) : delta(r));
 
 const fmtUSD = (v: number): string => {
   if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
@@ -96,16 +102,19 @@ const fmtUsdSigned = (v: number): string => {
 };
 
 const fmtPct = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}%`;
+const fmtPctSigned = (v: number): string => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}%`;
+const fmtValue = (v: number, mode: FlowMode): string => (mode === "pct" ? fmtPctSigned(v) : fmtUsdSigned(v));
 
 const niceStep = (max: number): number => {
-  const rough = max / 3;
+  const rough = max / 2.5;
   const pow = Math.pow(10, Math.floor(Math.log10(rough)));
   const n = rough / pow;
   const step = n >= 5 ? 5 : n >= 2 ? 2 : 1;
   return step * pow;
 };
 
-const fmtTick = (t: number): string => {
+const fmtTick = (t: number, mode: FlowMode): string => {
+  if (mode === "pct") return Math.abs(t) < 0.01 ? "0%" : `${t > 0 ? "+" : "−"}${+Math.abs(t).toFixed(0)}%`;
   if (Math.abs(t) < 1) return "$0";
   const sign = t > 0 ? "+" : "−";
   const a = Math.abs(t);
@@ -157,11 +166,12 @@ const Row: React.FC<{
   rowGap: number;
   rowH: number;
   scaleMax: number;
+  mode: FlowMode;
   logoBase: string;
   metricNoun: string;
   tagLabel?: string;
   tagColor?: string;
-}> = ({ row, index, rank, isTop, rowGap, rowH, scaleMax, logoBase, metricNoun, tagLabel, tagColor }) => {
+}> = ({ row, index, rank, isTop, rowGap, rowH, scaleMax, mode, logoBase, metricNoun, tagLabel, tagColor }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -179,18 +189,18 @@ const Row: React.FC<{
   });
 
   const cy = ROWS_TOP + index * rowGap + rowGap / 2;
-  const d = delta(row);
-  const isGain = d >= 0;
+  const v = metricOf(row, mode);
+  const isGain = v >= 0;
   const barColor = isGain ? (isTop ? PALETTE.goldBright : PALETTE.gold) : PALETTE.loss;
 
-  const xForValue = (v: number) => X_ZERO + (v / scaleMax) * HALF_W;
-  const fullEnd = xForValue(d);
+  const xForValue = (val: number) => X_ZERO + (val / scaleMax) * HALF_W;
+  const fullEnd = xForValue(v);
   const animEnd = X_ZERO + (fullEnd - X_ZERO) * grow;
   const barX = Math.min(X_ZERO, animEnd);
   const barW = Math.abs(animEnd - X_ZERO);
 
   const labelInside = Math.abs(fullEnd - X_ZERO) > 200;
-  const shown = d * grow;
+  const shown = v * grow;
   let labelX: number;
   let labelAnchor: "start" | "end";
   let labelFill: string;
@@ -270,7 +280,7 @@ const Row: React.FC<{
         </div>
         <div style={{ fontFamily: INTER, fontSize: 28, fontWeight: 500, color: PALETTE.textDim, marginTop: 6, marginLeft: 60, whiteSpace: "nowrap" }}>
           {fmtUSD(row.now)} {metricNoun}
-          <span style={{ color: PALETTE.textVeryDim }}>{"  ·  "}{fmtPct(pct(row))}</span>
+          <span style={{ color: PALETTE.textVeryDim }}>{"  ·  "}{mode === "pct" ? fmtUsdSigned(delta(row)) : fmtPct(pct(row))}</span>
         </div>
       </div>
 
@@ -287,7 +297,7 @@ const Row: React.FC<{
           fill={labelFill}
           style={{ fontVariantNumeric: "tabular-nums" } as React.CSSProperties}
         >
-          {fmtUsdSigned(shown)}
+          {fmtValue(shown, mode)}
         </text>
       </svg>
     </div>
@@ -304,11 +314,12 @@ export const FlowReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
   });
   const headerLift = interpolate(headerEnter, [0, 1], [36, 0]);
 
-  const rows = [...dataset.rows].sort((a, b) => delta(b) - delta(a));
+  const mode: FlowMode = dataset.mode ?? "usd";
+  const rows = [...dataset.rows].sort((a, b) => metricOf(b, mode) - metricOf(a, mode));
   const rowGap = (ROWS_BOTTOM - ROWS_TOP) / rows.length;
   const rowH = rowGap - 18;
 
-  const maxAbs = Math.max(...rows.map((r) => Math.abs(delta(r))));
+  const maxAbs = Math.max(...rows.map((r) => Math.abs(metricOf(r, mode))));
   const tickStep = niceStep(maxAbs);
   const scaleMax = maxAbs * 1.12;
   const xForValue = (v: number) => X_ZERO + (v / scaleMax) * HALF_W;
@@ -388,7 +399,7 @@ export const FlowReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
                 fill={isZero ? PALETTE.axis : PALETTE.textVeryDim}
                 style={{ fontVariantNumeric: "tabular-nums" } as React.CSSProperties}
               >
-                {fmtTick(t)}
+                {fmtTick(t, mode)}
               </text>
             </g>
           );
@@ -401,10 +412,11 @@ export const FlowReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
           row={r}
           index={i}
           rank={i + 1}
-          isTop={i === 0 && delta(r) > 0}
+          isTop={i === 0 && metricOf(r, mode) > 0}
           rowGap={rowGap}
           rowH={rowH}
           scaleMax={scaleMax}
+          mode={mode}
           logoBase={dataset.logoBase}
           metricNoun={dataset.metricNoun ?? "TVL"}
           tagLabel={dataset.tagLabel}

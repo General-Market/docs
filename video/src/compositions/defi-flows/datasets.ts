@@ -10,20 +10,24 @@
 import { makeFlowMeta, type FlowDataset } from "./FlowReel";
 
 const ASOF = "2026-05-25 08:17 UTC";
-const EYEBROW = "LAST 7 DAYS";
 const LOGOS = "defi-flows/logos";
 
-const source = (category: string) =>
-  `DefiLlama ${category}, read live from the generalmarket.io data-node (source “defi”). Bar = net flow over 7 days, in dollars, against the node’s own price history.`;
+// Two framings, chosen per category for the most striking growth story:
+// "pct" surfaces explosive small movers, "usd" surfaces the giants.
+const sourceUsd = (category: string) =>
+  `DefiLlama ${category}, read live from the generalmarket.io data-node (source “defi”). Bar = net TVL flow over 7 days, in dollars, against the node’s own price history.`;
+const sourcePct = (category: string) =>
+  `DefiLlama ${category}, read live from the generalmarket.io data-node (source “defi”). Bar = TVL growth over 7 days, in percent, against the node’s own price history.`;
 
 export const PERPS_FLOW: FlowDataset = {
   id: "PerpsFlowReel",
-  eyebrow: EYEBROW,
+  eyebrow: "7-DAY GROWTH",
   title: "Perps exchanges",
-  subtitle: "Net dollars in or out over 7 days — the venues where leverage trades.",
-  source: source("Derivatives"),
+  subtitle: "TVL growth over 7 days — the venues where leverage trades.",
+  source: sourcePct("Derivatives"),
   asof: ASOF,
   logoBase: LOGOS,
+  mode: "pct",
   rows: [
     { id: "jupiter-perpetual-exchange", name: "Jupiter Perps", now: 669_930_921, prior: 675_335_787 },
     { id: "hyperliquid-hlp", name: "Hyperliquid HLP", now: 369_489_679, prior: 388_360_906 },
@@ -40,12 +44,13 @@ export const PERPS_FLOW: FlowDataset = {
 
 export const PREDICTION_FLOW: FlowDataset = {
   id: "PredictionMarketsFlowReel",
-  eyebrow: EYEBROW,
+  eyebrow: "LAST 7 DAYS",
   title: "Prediction markets",
   subtitle: "Net dollars in or out over 7 days — where the crowd bets on outcomes.",
-  source: source("Prediction Markets"),
+  source: sourceUsd("Prediction Markets"),
   asof: ASOF,
   logoBase: LOGOS,
+  mode: "usd",
   rows: [
     { id: "polymarket-international", name: "Polymarket", now: 454_183_234, prior: 447_863_841 },
     { id: "predict-fun", name: "Predict.fun", now: 14_104_503, prior: 14_399_222 },
@@ -62,12 +67,13 @@ export const PREDICTION_FLOW: FlowDataset = {
 
 export const PRIVACY_FLOW: FlowDataset = {
   id: "PrivacyFlowReel",
-  eyebrow: EYEBROW,
+  eyebrow: "7-DAY GROWTH",
   title: "Privacy protocols",
-  subtitle: "Net dollars in or out over 7 days — the mixers and shielded pools.",
-  source: source("Privacy"),
+  subtitle: "TVL growth over 7 days — the mixers and shielded pools.",
+  source: sourcePct("Privacy"),
   asof: ASOF,
   logoBase: LOGOS,
+  mode: "pct",
   rows: [
     { id: "tornado-cash", name: "Tornado Cash", now: 521_515_520, prior: 513_158_776 },
     { id: "railgun", name: "Railgun", now: 94_303_875, prior: 94_907_819 },
@@ -84,12 +90,13 @@ export const PRIVACY_FLOW: FlowDataset = {
 
 export const RWA_FLOW: FlowDataset = {
   id: "RwaFlowReel",
-  eyebrow: EYEBROW,
+  eyebrow: "LAST 7 DAYS",
   title: "Real-world assets",
   subtitle: "Net dollars in or out over 7 days — tokenized treasuries, gold and credit.",
-  source: source("RWA"),
+  source: sourceUsd("RWA"),
   asof: ASOF,
   logoBase: LOGOS,
+  mode: "usd",
   rows: [
     { id: "tether-gold", name: "Tether Gold", now: 3_235_779_408, prior: 3_238_764_543 },
     { id: "blackrock-buidl", name: "BlackRock BUIDL", now: 3_054_831_569, prior: 3_225_558_401 },
