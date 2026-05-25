@@ -146,18 +146,20 @@ const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
 
-const GRID_SPACING = 150;
+// Cells are wider than tall — columns spaced wide, rows kept short.
+const GRID_SPACING_X = 218;
+const GRID_SPACING_Y = 116;
 const GRID_LINE_COLOR = "rgba(30, 44, 84, 0.07)";
 
 // Flat straight grid. The whole screen — grid, chart, axis, title, logos — is
 // bowed together by the barrel displacement filter, so nothing is pre-curved.
 const H_YS = Array.from(
-  { length: Math.ceil(HEIGHT / GRID_SPACING) + 1 },
-  (_, i) => i * GRID_SPACING,
+  { length: Math.ceil(HEIGHT / GRID_SPACING_Y) + 1 },
+  (_, i) => i * GRID_SPACING_Y,
 );
 const V_XS = Array.from(
-  { length: Math.ceil(WIDTH / GRID_SPACING) + 1 },
-  (_, i) => i * GRID_SPACING,
+  { length: Math.ceil(WIDTH / GRID_SPACING_X) + 1 },
+  (_, i) => i * GRID_SPACING_X,
 );
 
 const FlatGrid: React.FC = React.memo(() => (
@@ -701,28 +703,51 @@ export const RetailPnLMarketsReel: React.FC = () => {
               <div
                 key={logo.file}
                 style={{
+                  position: "relative",
                   width: 184,
                   height: 184,
                   flexShrink: 0,
-                  borderRadius: 38,
-                  background: "rgba(255, 255, 255, 0.96)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 22,
-                  boxShadow:
-                    "0 18px 44px -22px rgba(0, 0, 0, 0.9), 0 0 40px -10px rgba(255,255,255,0.12)",
                 }}
               >
+                {/* Cathodic backlight — the logo's own colours, blown up and
+                    blurred behind the card so it glows in its brand colour. */}
                 <Img
                   src={staticFile(logo.file)}
-                  alt={logo.name}
+                  alt=""
                   style={{
-                    maxWidth: "100%",
-                    maxHeight: "100%",
+                    position: "absolute",
+                    left: "-32%",
+                    top: "-26%",
+                    width: "164%",
+                    height: "164%",
                     objectFit: "contain",
+                    filter: "blur(38px) saturate(2.2) brightness(1.15)",
+                    opacity: 0.55 + 0.35 * flash,
                   }}
                 />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 38,
+                    background: "rgba(255, 255, 255, 0.96)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 22,
+                    boxShadow: "0 18px 44px -24px rgba(0, 0, 0, 0.8)",
+                  }}
+                >
+                  <Img
+                    src={staticFile(logo.file)}
+                    alt={logo.name}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </div>
