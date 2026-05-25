@@ -46,7 +46,8 @@ side-by-side replicas are landscape. Do not assume 1080×1920/30.
 - Studio always runs on **port 3333**: `npx remotion studio --port 3333` →
   `http://localhost:3333/<CompositionId>`.
 - Prefer opening Studio for preview. Only render to MP4 when the user explicitly
-  asks: `npx remotion render src/index.ts <CompositionId> out/video.mp4`.
+  asks — and write the final MP4 to **`~/Downloads`**, not into the repo:
+  `npx remotion render src/index.ts <CompositionId> ~/Downloads/<CompositionId>.mp4`.
 
 ## Where the files live (on the computer)
 
@@ -59,9 +60,10 @@ dead; legacy scripts still pointing there (e.g. `cut-short-02.sh`) are stale.
   `camera-<same>.mkv`, `mic-<same>.mkv`. Only the **mic** track carries audio.
   (DaVinci Resolve backups live here too.) `talking-head-edit/01_transcribe.py` and
   `06_bake.py` read from here.
-- **`~/Downloads/`** — "download" means here. Rendered outputs (`*.mp4`/`*.mov`/
-  `*.png`), downloaded YouTube reference clips (`YTDown_*`), thumbnails, and eyeball
-  copies the pipeline drops for review (e.g. `AntiCheat-enriched-cut.txt`).
+- **`~/Downloads/`** — "download" means here. **Final MP4 renders are written here**
+  (not to `out/` in the repo), alongside downloaded YouTube reference clips
+  (`YTDown_*`), thumbnails, and eyeball copies the pipeline drops for review
+  (e.g. `AntiCheat-enriched-cut.txt`).
 - **`public/`** (inside the repo) — everything a composition renders against: the
   baked `final.mp4`, cutout frames, light shafts, fetched card/chart images, SFX,
   music. Reference these with `staticFile()`, never a remote URL.
