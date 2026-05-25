@@ -1,153 +1,166 @@
 # Remotion Video Project — AI Rules
 
-This project has ALL Remotion effect packages installed at v4.0.421.
+All `@remotion/*` packages are aligned at **4.0.438**. Keep them in lockstep on any
+upgrade. This is a mature project with ~75 registered compositions, not a blank
+template — study the existing ones before inventing a new pattern.
 
-## Available Capabilities
+## How a composition is registered (read this first)
 
-### 3D Scenes
-Use `<ThreeCanvas>` from `@remotion/three` with React Three Fiber.
-Load GLTF models via `useGLTF` from `@react-three/drei`.
-Use `useVideoTexture()` for video-on-3D surfaces.
-Pass `layout="none"` to `<Sequence>` inside `<ThreeCanvas>`.
+There is no chibi short pipeline, no `public/chibis/`, no single fixed format.
+Every composition follows one convention:
 
-### Shader Transitions
-Import from `gl-transitions` (80+ GLSL transitions).
-Wrap in `@remotion/transitions` custom presentations.
+1. The composition file exports a `*Meta` object next to its component:
+   ```ts
+   export const retailPnLMarketsReelMeta = {
+     id: "RetailPnLMarketsReel",
+     component: RetailPnLMarketsReel,
+     durationInFrames: DURATION,
+     fps: FPS,
+     width: WIDTH,
+     height: HEIGHT,
+   };
+   ```
+2. `src/Root.tsx` imports that `Meta` and renders one `<Composition>` reading each
+   field off it, grouped inside `<Folder name="...">` blocks:
+   ```tsx
+   <Composition
+     id={anticheatEditMeta.id}
+     component={anticheatEditMeta.component}
+     durationInFrames={anticheatEditMeta.durationInFrames}
+     fps={anticheatEditMeta.fps}
+     width={anticheatEditMeta.width}
+     height={anticheatEditMeta.height}
+   />
+   ```
 
-### Text Animation
-Use `remotion-animate-text` for per-character/word CSS animation.
-Combine with `@remotion/noise` for wavy/TikTok-style effects.
-Use `remotion-animated` for declarative animation helpers.
+To add a composition: export its `Meta`, import it in `Root.tsx`, drop the
+`<Composition>` into the right `<Folder>`. To delete one: remove the
+`<Composition>` and its import, then clean up any now-orphaned imports.
 
-### Lottie (After Effects)
-Use `<Lottie>` from `@remotion/lottie` with JSON files from LottieFiles.
+**Format depends on the composition — read its `Meta`.** Talking-head edits run
+landscape at 30fps; data-viz reels are square (e.g. 2160×2160 @ 60fps);
+side-by-side replicas are landscape. Do not assume 1080×1920/30.
 
-### GIFs
-Use `<Gif>` from `@remotion/gif` to embed animated GIFs.
+## Studio & render
 
-### SVG Morph & Shapes
-Use `@remotion/paths` (`evolvePath`, `interpolatePath`) for SVG morphing.
-Use `@remotion/shapes` (`<Triangle>`, `<Star>`, `<Pie>`, `<Circle>`).
+- Studio always runs on **port 3333**: `npx remotion studio --port 3333` →
+  `http://localhost:3333/<CompositionId>`.
+- Prefer opening Studio for preview. Only render to MP4 when the user explicitly
+  asks: `npx remotion render src/index.ts <CompositionId> out/video.mp4`.
 
-### Noise / Organic Motion
-Use `noise2D` / `noise3D` from `@remotion/noise` for Perlin noise.
+## What this project actually produces
 
-### Motion Blur
-Wrap fast-moving elements in `<CameraMotionBlur>` from `@remotion/motion-blur`.
+- **Talking-head edits** — VO + b-roll illustrations + karaoke captions + behind-
+  subject light. Flagship: `src/compositions/anticheat-edit/` (`AntiCheatEdit`),
+  driven by `AntiCheatLayout.tsx` (baked `final.mp4` via `OffthreadVideo`, graded,
+  light shafts riding the whole talk).
+- **Long-form story compositions** — e.g. `src/compositions/anticheat/AntiCheatFull.tsx`
+  (`AntiCheatFull`): hook → rigged → solution → flag cards → end card.
+- **Data-viz reels** — `src/compositions/retail-pnl/` (`RetailPnLMarketsReel`),
+  `lending-curators/`, `morpho-curators/`, `finance-charts/`. Charts use
+  lightweight-charts / recharts patterns; read the `data.ts` + `ChartEngine.tsx`
+  in each folder.
+- **Side-by-side replicas** — the `*SideBySide` family (Polymarket, Kalshi,
+  Worldcoin, Virtuals, etc.) under `replicates/` / `polymarket-replicas/`.
+- **OG banners, brand cards, pitch decks** — `gm/`, `pitch/`, `pitch-ten/`,
+  `yc-pitch/`, `endcard/`.
 
-### Captions / Subtitles
-Transcribe audio with `@remotion/install-whisper-cpp`.
-Render word-level captions with `@remotion/captions`.
+## Visual style & voice (governing constraints)
 
-### Transitions
-Use `<TransitionSeries>` from `@remotion/transitions` with built-in presentations:
-`fade()`, `slide()`, `wipe()`, `flip()`, `clockWipe()`, or custom GL shader presentations.
+- **Apple-grade visuals.** Every surface follows `docs/apple-style-table.md` (SF Pro
+  Display ≥20px / SF Pro Text <20px, 17px body, `#1D1D1F` text, the sourced easing
+  curves, glass = `saturate(180%) blur(20px)`). No invented numbers.
+- **Reference implementations to match before inventing:**
+  `src/compositions/block-trading/BlockTradingExile.tsx` and
+  `src/compositions/market-anatomy/`.
+- **On-screen prose** follows the Christopher Alexander voice
+  (`docs/christopher-alexander-style.md`). Code, variable names, and these internal
+  notes stay precise and conventional — the voice applies to rendered words only.
 
-### Audio
-Use `<Audio>` component for audio playback with volume keyframes.
-Use `getAudioDurationInSeconds()` to match composition length to audio.
+## Available capabilities
 
-### Layout
-Use `@remotion/layout-utils` for `measureText()` and fitting text to containers.
+- **3D scenes** — `<ThreeCanvas>` (`@remotion/three`) + React Three Fiber. GLTF via
+  `useGLTF` (`@react-three/drei`), `useVideoTexture()` for video-on-3D, `layout="none"`
+  on `<Sequence>` inside the canvas.
+- **Shader transitions** — `gl-transitions` (80+ GLSL) wrapped in `@remotion/transitions`
+  custom presentations.
+- **Text animation** — `remotion-animate-text` (per-char/word), `remotion-animated`
+  (declarative helpers), `@remotion/noise` for wavy/organic motion.
+- **Lottie** — `<Lottie>` (`@remotion/lottie`). **GIFs** — `<Gif>` (`@remotion/gif`).
+- **SVG morph & shapes** — `@remotion/paths` (`evolvePath`, `interpolatePath`),
+  `@remotion/shapes` (`<Triangle>`, `<Star>`, `<Pie>`, `<Circle>`).
+- **Noise** — `noise2D` / `noise3D` (`@remotion/noise`).
+- **Motion blur** — `<CameraMotionBlur>` (`@remotion/motion-blur`).
+- **Captions** — `@remotion/captions` for word-level karaoke; see the karaoke caption
+  data layer in `anticheat-edit/captions.ts` + `CaptionLayer.tsx`.
+- **Transitions** — `<TransitionSeries>` (`@remotion/transitions`): `fade()`, `slide()`,
+  `wipe()`, `flip()`, `clockWipe()`, or custom GL presentations.
+- **Audio** — `<Audio>` with volume keyframes; `getAudioDurationInSeconds()` to fit
+  duration to a track.
+- **Layout** — `@remotion/layout-utils` (`measureText()`, fitting text to containers).
+- **Player** — `<Player>` (`@remotion/player`) for in-browser preview.
 
-### Player (Browser Embed)
-Use `<Player>` from `@remotion/player` for in-browser preview without Studio.
+## Talking-head edit pipeline (`scripts/talking-head-edit/`)
 
-## Standard Workflow
+Ordered scripts; see `scripts/talking-head-edit/PROTOCOL.md` for the full spec.
 
-1. User provides audio file -> transcribe with Whisper -> get word timestamps
-2. Build scenes as React components, each timed to transcript segments
-3. Add transitions between scenes using `<TransitionSeries>`
-4. Layer effects (noise, 3D, text animation) per scene
-5. Preview with `npm run dev` (opens Remotion Studio)
-6. Render with `npx remotion render src/index.ts <CompositionId> out/video.mp4`
+1. `01_transcribe.py` — WhisperX (`large-v3`) transcribe + forced alignment →
+   word-level JSON. The forced alignment is why this step uses WhisperX, not
+   parakeet — karaoke captions need per-word play-time. **Set the language
+   explicitly** (`LANG`); a wrong language silently mistranslates.
+2. `02_process_voice.py` — clean/level VO, `duck_breaths` at source (pre-cut).
+3. `03_curated_beats.py` — pick the kept clauses / beats.
+4. `04_clean_cuts.py` → `04b_enriched_transcript.py` — assemble the cut list.
+5. `05_title_cards.py` — title/lower-third cards (`REALIGN-TITLE-CARDS.md`).
+6. `06_bake.py` — bake to a single `final.mp4` played by ONE `OffthreadVideo`.
+7. `07_article_shots.mjs`, `08_debreath.py` — article b-roll, speech-safe debreath.
 
-## Audio Processing (Python Scripts in `scripts/`)
+The recorder writes screen/camera/mic mkv per session; only the mic has audio.
 
-### Denoise
-- `python3 scripts/clean_audio.py <input.wav> [output.wav]` — AI noise removal via DeepFilterNet
+## Behind-subject beats (titles / light behind the speaker)
 
-### Voice Effects
-- `python3 scripts/voice_effects.py <preset> <input.wav> [output.wav]`
-- Presets: clean-voice, deep-voice, chipmunk, radio, cinematic, echo, robot, warm, phone, underwater
-- Uses Spotify Pedalboard: Reverb, PitchShift, Compressor, Distortion, Delay, Chorus, EQ, Limiter, etc.
+To place a title, chart, or light BEHIND the talking head (room → back content →
+person cutout → front content), you need a person cutout — but ONLY for the few
+seconds of the beat. Never matte the whole talk: a full-length cutout is ~40GB.
 
-### Sound Effects
-- `python3 scripts/fetch_sfx.py "<query>" [count]` — search & download from Freesound.org (needs FREESOUND_API_KEY)
-- `python3 scripts/generate_music.py sfx "<description>" -d <seconds>` — AI-generate SFX via Meta AudioGen
-- FFmpeg can generate sine waves, noise, beeps for basic SFX
+- **Tool:** `python3 scripts/cutout_window.py <video> public/anticheat-edit/beats/<name> --start <sec> --duration <sec> [--room] [--model birefnet]`
+  Mattes that window → `f_0001.webp …` (WebP+alpha, ~64KB/frame). `--room` also emits
+  the frame-locked room plate. (birefnet hangs on MPS — prefer `human_seg`.)
+- Mount frames with `<Img src={staticFile(...)}>` (frame-exact — avoids the
+  `OffthreadVideo` ~1-frame "double" lag). Map local frame → `f_{idx}` (1-based,
+  padStart 4). Ride `idleCamera()` so the cutout matches the base head.
+- `OffthreadVideo` needs the `transparent` prop to honor alpha video; `<Img>`
+  WebP/PNG sequences are transparent by default.
+- Light layer: `public/anticheat-edit/light_shafts.mp4` (render via
+  `scripts/render_light_shafts.py`), screen-blended. Grade + light already ride the
+  whole talk inside `AntiCheatLayout`.
 
-### Music Analysis (No Human Listening Needed)
-- `python3 scripts/analyze_music.py <track.mp3>` — outputs JSON with BPM, beats, segments, energy, peaks, sync points
-- Read the JSON to know exactly when to cut scenes, where energy peaks are, what sections exist
-- `python3 scripts/separate_stems.py <track.mp3>` — splits into vocals/drums/bass/other via Demucs
-- Use stems selectively: drums for action, melody for calm, no vocals for instrumental
+## Audio processing (Python scripts in `scripts/`)
 
-### Music Sources (Open/CC)
-- Freesound.org (API installed), Pixabay Music, Incompetech, Free Music Archive, ccMixter, Filmmusic.io
+- **Transcribe.** Default STT is parakeet: `python3 scripts/parakeet_transcribe.py <audio>`
+  (parakeet-tdt-0.6b-v3, word-level timestamps). The talking-head pipeline's
+  `01_transcribe.py` is the deliberate exception — it uses WhisperX `large-v3` for
+  forced word-level alignment that karaoke captions depend on. Either way, set the
+  language explicitly and verify the first transcript lines before building cuts —
+  a wrong language silently mistranslates.
+- **Denoise** — `python3 scripts/clean_audio.py <in.wav> [out.wav]` (DeepFilterNet).
+- **Voice effects** — `python3 scripts/voice_effects.py <preset> <in.wav> [out.wav]`
+  (Spotify Pedalboard). Presets: clean-voice, deep-voice, radio, cinematic, warm, phone…
+- **SFX** — `python3 scripts/fetch_sfx.py "<query>" [count]` (Freesound, needs
+  `FREESOUND_API_KEY`); `python3 scripts/generate_music.py sfx "<desc>" -d <sec>` (AudioGen).
+- **Music analysis** — `python3 scripts/analyze_music.py <track.mp3>` → JSON with BPM,
+  beats, segments, energy, peaks, sync points, plus Essentia mood/key/visual
+  suggestions. Read it to drive cuts and palette; no human listening needed.
+- **Stems** — `python3 scripts/separate_stems.py <track.mp3>` (Demucs).
+- **Mix (FFmpeg)** — voice + ducked music:
+  `ffmpeg -i voice.wav -i music.wav -filter_complex "[1:a]volume=0.3[bg];[0:a][bg]amix=inputs=2:duration=first" mixed.wav`
 
-### Essentia (Mood, Danceability, Key+Scale)
-- Installed under brew's python@3.9 — runs automatically via `analyze_music.py`
-- Adds to analysis JSON: `essentia.mood_tags`, `essentia.danceability_normalized`, `essentia.visual_suggestions`
-- Mood tags: energetic, groovy, melancholic, dark, happy, warm, dramatic, steady, bass-heavy, bright, muted, slow, moderate, upbeat, fast
-- Visual suggestions: pace, colors, motion style, effects — use these to drive visual design decisions
-- Key+scale (e.g. "A minor") is more accurate than librosa's key estimation
+## Key rules
 
-### Music-Driven Video Workflow
-1. Analyze track → get analysis.json with sync_points, beats, segments, energy, mood, danceability
-2. Read `ai_summary.mood_tags` and `ai_summary.visual_suggestions` for overall visual direction
-3. Build scenes: count = sync_points, transitions aligned to beat_timestamps
-4. High-energy visuals at energy_peaks, calm visuals during low-energy segments
-5. Use mood tags to pick color palettes, motion styles, and effects
-6. Separate stems if needed (drums only for action, etc.)
-
-### Music Generation (Optional)
-- `python3 scripts/generate_music.py music "<description>" -d <seconds>` — AI music via Meta MusicGen
-- Models: facebook/musicgen-small (fast), facebook/musicgen-medium, facebook/musicgen-large (best)
-
-### Audio Cutting
-- Whisper VAD auto-detects speech segments with word-level timestamps
-- FFmpeg: `ffmpeg -i in.wav -ss <start> -to <end> -c copy segment.wav`
-- SoX: `sox in.wav out.wav silence 1 0.1 1% reverse silence 1 0.1 1% reverse` (trim silence)
-
-### Audio Mixing (FFmpeg)
-- Mix voice + music: `ffmpeg -i voice.wav -i music.wav -filter_complex "[1:a]volume=0.3[bg];[0:a][bg]amix=inputs=2:duration=first" mixed.wav`
-- Crossfade: `ffmpeg -i a.wav -i b.wav -filter_complex "acrossfade=d=3" out.wav`
-
-## Short Production Pipeline
-
-See `PRODUCTION.md` for the full 22-step pipeline. Summary:
-
-**Format:** 1080x1920 (9:16), 30fps, H.264, under 60s
-
-**Layers (bottom to top):**
-1. Background — animated gradient, shifts with mood
-2. Music — CC track, ducked under voice (0.12-0.18), up in gaps (0.35)
-3. Chibi character — emotion-matched to transcript segments, spring animations
-4. Captions — word-synced bold text, pop-in animation (THE key retention driver)
-5. SFX — whoosh on transitions, pop on reveals, impact on punchlines
-6. Effects — particles, emojis, emphasis lines, screen shake
-7. Voice — clean, on top, full volume
-
-**Chibi library** is in `public/chibis/`, labeled by emotion (confused, panicking, hyped, frustrated).
-
-**Critical for virality:**
-- First 0.5s must hook — bold text + voice starts immediately
-- Word-synced captions are the #1 retention factor
-- Nothing static — every element has micro-motion
-- Scene changes every 2-4s max
-- SFX accent every transition and punchline
-- Audio: voice clear > music subtle > sfx punchy
-
-## Post-Render
-- Prefer opening Remotion Studio (`npm run dev`) for preview instead of rendering to MP4 directly.
-- Only render to MP4 when the user explicitly asks for a final render.
-
-## Key Rules
-- All `@remotion/*` packages are pinned to 4.0.421 — keep aligned on upgrades
-- Use `staticFile()` for assets in the `public/` folder
-- Use `useCurrentFrame()` and `interpolate()` for all animations
-- Use `spring()` for physics-based easing
-- Compositions go in `src/` and are registered in `src/Root.tsx`
-- SFX files go in `public/sfx/`, music in `public/`
-- See `TOOLS.md` for full command reference and all available effects
+- Assets go in `public/`, referenced with `staticFile()`. SFX in `public/sfx/`,
+  music in `public/`.
+- Animate with `useCurrentFrame()` + `interpolate()`; physics easing with `spring()`.
+- A composition is its `*Meta` export + a `<Composition>` in `Root.tsx`. One source.
+- `TOOLS.md` is the full command/effect reference. (`PRODUCTION.md` describes the
+  retired chibi short pipeline — historical only, do not follow it.)
+- Commit changes as you go — this project is version-controlled and work is easy to lose.
