@@ -148,7 +148,7 @@ const HALF_H = HEIGHT / 2;
 
 // Cells are wider than tall — columns spaced wide, rows kept short.
 const GRID_SPACING_X = 218;
-const GRID_SPACING_Y = 116;
+const GRID_SPACING_Y = 133;
 const GRID_LINE_COLOR = "rgba(30, 44, 84, 0.07)";
 
 // Flat straight grid. The whole screen — grid, chart, axis, title, logos — is
