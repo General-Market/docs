@@ -27,7 +27,7 @@
       "logo": "/source-imgs/new-pumpfun.webp",
       "brandBg": "linear-gradient(135deg,#00d18c,#1a1a2e)",
       "prefixes": [
-        "pumpfun_"
+        "pf_"
       ],
       "valueLabel": "Price",
       "valueUnit": "USD",

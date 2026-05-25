@@ -33,6 +33,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Mutex;
@@ -202,10 +203,17 @@ pub struct PumpfunMarketSource {
     /// Mint -> (info, last_seen). Survives across sync cycles so we don't
     /// flap the universe when a single discovery endpoint hiccups.
     cache: Mutex<HashMap<String, CachedMint>>,
+    /// Read-only handle used solely to pin today's frozen "tokens of the day"
+    /// into the active set (see `pinned_daily_mints`). The daily set is chosen
+    /// by 24h volume but the tracked universe is capped by market cap, so a
+    /// volume-picked token would otherwise age out of the cap, get deactivated,
+    /// and lose its price feed mid-day — blanking the page that renders exactly
+    /// the batch markets. Pinning keeps the frozen set alive for the whole day.
+    pool: PgPool,
 }
 
 impl PumpfunMarketSource {
-    pub fn from_env() -> Result<Self> {
+    pub fn new(pool: PgPool) -> Result<Self> {
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
                 max_requests: 200,
@@ -219,7 +227,33 @@ impl PumpfunMarketSource {
         Ok(Self {
             http,
             cache: Mutex::new(HashMap::new()),
+            pool,
         })
+    }
+
+    /// Today's frozen daily-token mints (`pf_<mint>` stripped to `<mint>`).
+    ///
+    /// Read-only and best-effort: any DB error or an empty set degrades to "no
+    /// pins", which is exactly the pre-pin behaviour — so this can never make
+    /// `fetch_assets` fail.
+    async fn pinned_daily_mints(&self) -> Vec<String> {
+        let today = Utc::now().date_naive();
+        let rows: Vec<(String,)> = match sqlx::query_as(
+            "SELECT asset_id FROM pumpfun_daily_tokens WHERE utc_date = $1",
+        )
+        .bind(today)
+        .fetch_all(&self.pool)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                warn!(%e, "PumpFun: failed to read daily token pins — set may go dark mid-day");
+                return Vec::new();
+            }
+        };
+        rows.into_iter()
+            .filter_map(|(aid,)| aid.strip_prefix("pf_").map(str::to_string))
+            .collect()
     }
 
     /// Discover pump.fun-suffix mints from Jupiter categories.
@@ -457,34 +491,43 @@ impl MarketDataSource for PumpfunMarketSource {
         });
         all.truncate(MAX_TRACKED_TOKENS);
 
-        let assets: Vec<AssetUpdate> = all
+        let mut assets: Vec<AssetUpdate> = all
             .iter()
-            .map(|t| {
-                let short = short_mint(&t.mint);
-                AssetUpdate {
-                    asset_id: format!("pf_{}", t.mint),
-                    symbol: format!("PF:{}", t.symbol),
-                    name: format!("{} ({})", t.name, short),
-                    category: Some("crypto".to_string()),
-                    metadata: serde_json::json!({
-                        "api_ref": t.mint.clone(),
-                        "subcategory": "pumpfun",
-                        "active": true,
-                        "extra": {
-                            "chain": "solana",
-                            "program": "pump.fun",
-                        },
-                    }),
-                }
-            })
+            .map(|t| build_asset_update(&t.mint, &t.symbol, &t.name))
             .collect();
 
+        // Pin today's frozen "tokens of the day" so they stay active for the
+        // whole UTC day. They were chosen by 24h volume and may not be in the
+        // market-cap-capped set above; without this they'd be deactivated by
+        // sync_assets and stop being priced, blanking the pumpfun page (which
+        // renders exactly the batch markets). Re-emit any pinned mint not
+        // already present, reusing cached metadata when we still have it.
+        let present: HashSet<String> = assets.iter().map(|a| a.asset_id.clone()).collect();
+        let pinned = self.pinned_daily_mints().await;
+        let mut pinned_added = 0usize;
+        for mint in &pinned {
+            let asset_id = format!("pf_{mint}");
+            if present.contains(&asset_id) {
+                continue;
+            }
+            let (symbol, name) = {
+                let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+                cache
+                    .get(mint)
+                    .map(|c| (c.info.symbol.clone(), c.info.name.clone()))
+                    .unwrap_or_else(|| ("PUMP".to_string(), mint.clone()))
+            };
+            assets.push(build_asset_update(mint, &symbol, &name));
+            pinned_added += 1;
+        }
+
         info!(
-            "PumpFun fetch_assets: {} tokens (jup={}, dex+jup unique={}, cached total={})",
+            "PumpFun fetch_assets: {} tokens (jup={}, dex+jup unique={}, cached total={}, daily-pinned={})",
             assets.len(),
             jup_mints.len(),
             tokens.len(),
-            all.len()
+            all.len(),
+            pinned_added,
         );
 
         Ok(assets)
@@ -578,14 +621,45 @@ fn short_mint(mint: &str) -> String {
     }
 }
 
+/// Build the `AssetUpdate` for a pump.fun mint. Shared by discovery and the
+/// daily-pin path so both emit an identical shape (`pf_<mint>` id, `PF:` symbol,
+/// `name (short)` label, pumpfun metadata).
+fn build_asset_update(mint: &str, symbol: &str, name: &str) -> AssetUpdate {
+    AssetUpdate {
+        asset_id: format!("pf_{mint}"),
+        symbol: format!("PF:{symbol}"),
+        name: format!("{} ({})", name, short_mint(mint)),
+        category: Some("crypto".to_string()),
+        metadata: serde_json::json!({
+            "api_ref": mint,
+            "subcategory": "pumpfun",
+            "active": true,
+            "extra": {
+                "chain": "solana",
+                "program": "pump.fun",
+            },
+        }),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::market_data::traits::load_all_asset_entries;
 
+    /// A source backed by a lazily-connected pool. The unit tests here only
+    /// exercise pure logic (source_id, the in-memory cache) and never run a
+    /// query, so the pool never actually connects — no live DB required.
+    fn test_source() -> PumpfunMarketSource {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .connect_lazy("postgres://localhost/pumpfun_test")
+            .expect("lazy pool");
+        PumpfunMarketSource::new(pool).unwrap()
+    }
+
     #[test]
     fn test_source_id() {
-        let s = PumpfunMarketSource::from_env().unwrap();
+        let s = test_source();
         assert_eq!(s.source_id(), "pumpfun");
     }
 
@@ -674,7 +748,7 @@ mod tests {
 
     #[test]
     fn test_cache_ttl_prunes_old_entries() {
-        let s = PumpfunMarketSource::from_env().unwrap();
+        let s = test_source();
         let fresh = vec![TokenInfo {
             mint: "AAAApump".to_string(),
             symbol: "A".into(),

@@ -1781,7 +1781,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         spawn_resilient("pumpfun", pw.clone(), move || {
             let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
             async move {
-                match crate::market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
+                match crate::market_data::sources::pumpfun::PumpfunMarketSource::new(pool_c.clone()) {
                     Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
                     Err(e) => { tracing::error!("PumpFun init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
