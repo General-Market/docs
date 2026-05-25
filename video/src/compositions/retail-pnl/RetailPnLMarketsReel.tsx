@@ -170,6 +170,9 @@ const LIGHT_BANDS: LightBand[] = [
   { y: 0.92, len: 0.46, anchor: 0.74, rows: 3, alpha: 0.95, velocity: 280, phase: 0.6 },
 ];
 
+// The bands streak across fast — 8× the base drift.
+const LIGHT_SPEED = 8;
+
 const snapGrid = (px: number) => Math.round(px / GRID_SPACING) * GRID_SPACING;
 
 const TravellingLight: React.FC = () => {
@@ -186,7 +189,7 @@ const TravellingLight: React.FC = () => {
         const yC = snapGrid(band.y * HEIGHT);
         const lenPx = band.len * WIDTH;
         const half = lenPx / 2;
-        const drift = band.velocity * t;
+        const drift = band.velocity * LIGHT_SPEED * t;
         const mid =
           (((band.anchor * WIDTH + drift + band.phase * cycleW) % cycleW) +
             cycleW) %
