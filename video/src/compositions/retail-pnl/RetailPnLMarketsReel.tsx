@@ -51,9 +51,9 @@ const PALETTE = {
   dotRing: "#FFFFFF",
 };
 
-// Fast cadence: all twelve markets walk past in under 8s. Short hold, a
-// punchy whip into the next curve — the animation snaps instead of drifts.
-const HOLD_SECONDS_PER_SNAPSHOT = 0.62;
+// Fast cadence: all twelve markets whip past in 4s — 20 frames each at 60fps.
+// Short hold, a punchy whip into the next curve. The animation snaps.
+const HOLD_SECONDS_PER_SNAPSHOT = 20 / 60;
 const TRANSITION_FRACTION = 0.6;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -106,147 +106,87 @@ const polyPoints = (
 
 const computeReelDuration = (dataset: Dataset, fps: number): number => {
   const holdFrames = Math.max(20, Math.round(HOLD_SECONDS_PER_SNAPSHOT * fps));
-  return holdFrames * dataset.snapshots.length + 18;
+  return holdFrames * dataset.snapshots.length;
 };
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-// Moving dot field — the AntiCheat house background. A faint blue lattice for
-// texture, plus brighter bands of the same dots drifting across it. The
-// lattice is static and memoised (painted once); only the bands recompute
-// each frame, so the motion is cheap even at 2160².
-const FINE_SPACING = 34;
-const DOT_R = 3.0;
+// Moving dot field — the AntiCheat house background, ported from
+// anticheat/DotGrid. A fine blue lattice whose brightness rides a slow
+// domain-warped interference wave. The crests travel, so streams of brighter
+// dots flow across the whole frame — points that move, continuously, in every
+// direction. No beat, no pulse-in-place.
+const FINE_SPACING = 42;
 
-const FineLattice: React.FC = React.memo(() => {
-  const cols = Math.ceil(WIDTH / FINE_SPACING) + 1;
-  const rows = Math.ceil(HEIGHT / FINE_SPACING) + 1;
-  return (
-    <svg
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ position: "absolute", inset: 0 }}
-    >
-      {Array.from({ length: rows }).flatMap((_, r) =>
-        Array.from({ length: cols }).map((__, c) => (
-          <circle
-            key={`${r}-${c}`}
-            cx={c * FINE_SPACING}
-            cy={r * FINE_SPACING}
-            r={1.7}
-            fill={PALETTE.accent}
-            opacity={0.1}
-          />
-        )),
-      )}
-    </svg>
-  );
-});
-FineLattice.displayName = "FineLattice";
-
-// Bands cluster top and bottom, leaving the chart's middle band clear. Each
-// drifts at a steady velocity and wraps; the dots fade in at the ends.
-type DotBand = {
-  y: number;
-  len: number;
-  anchor: number;
-  rows: number;
-  alpha: number;
-  velocity: number;
-  phase: number;
-};
-const BANDS: DotBand[] = [
-  { y: 0.05, len: 0.55, anchor: 0.30, rows: 2, alpha: 0.5, velocity: 110, phase: 0.0 },
-  { y: 0.10, len: 0.40, anchor: 0.66, rows: 1, alpha: 0.45, velocity: 165, phase: 0.4 },
-  { y: 0.155, len: 0.30, anchor: 0.16, rows: 2, alpha: 0.5, velocity: 95, phase: 0.7 },
-  { y: 0.255, len: 0.22, anchor: 0.82, rows: 1, alpha: 0.4, velocity: 205, phase: 0.2 },
-  { y: 0.755, len: 0.24, anchor: 0.18, rows: 1, alpha: 0.4, velocity: 185, phase: 0.55 },
-  { y: 0.84, len: 0.50, anchor: 0.60, rows: 2, alpha: 0.5, velocity: 125, phase: 0.1 },
-  { y: 0.89, len: 0.38, anchor: 0.36, rows: 1, alpha: 0.45, velocity: 155, phase: 0.45 },
-  { y: 0.94, len: 0.30, anchor: 0.76, rows: 2, alpha: 0.5, velocity: 105, phase: 0.78 },
-];
-
-const snapDot = (px: number) => Math.round(px / FINE_SPACING) * FINE_SPACING;
-
-const MovingBands: React.FC = () => {
-  const frame = useCurrentFrame();
-  const t = frame / FPS;
-  const cycleW = WIDTH * 1.5;
-  return (
-    <svg
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ position: "absolute", inset: 0 }}
-    >
-      {BANDS.map((band, bi) => {
-        const yC = snapDot(band.y * HEIGHT);
-        const lenPx = band.len * WIDTH;
-        const half = lenPx / 2;
-        const drift = band.velocity * t;
-        const mid =
-          (((band.anchor * WIDTH + drift + band.phase * cycleW) % cycleW) +
-            cycleW) %
-            cycleW -
-          cycleW * 0.25;
-        const x0 = snapDot(mid - half);
-        const x1 = snapDot(mid + half);
-        if (x1 < -40 || x0 > WIDTH + 40) return null;
-
-        const cols = Math.max(2, Math.round((x1 - x0) / FINE_SPACING) + 1);
-        const fadePx = lenPx * 0.2;
-        const rowAnchor = Math.floor((band.rows - 1) / 2);
-        const rowOffsets = Array.from(
-          { length: band.rows },
-          (_, r) => (r - rowAnchor) * FINE_SPACING,
-        );
-
-        return (
-          <g key={bi}>
-            {rowOffsets.map((yOff, ri) => (
-              <g key={ri}>
-                {Array.from({ length: cols }).map((_, di) => {
-                  const x = x0 + di * FINE_SPACING;
-                  if (x < -20 || x > WIDTH + 20) return null;
-                  const fromStart = x - x0;
-                  const fromEnd = x1 - x;
-                  let a = 1;
-                  if (fromStart < fadePx) a *= fromStart / fadePx;
-                  if (fromEnd < fadePx) a *= fromEnd / fadePx;
-                  a = Math.max(0, Math.min(1, a));
-                  return (
-                    <circle
-                      key={di}
-                      cx={x}
-                      cy={yC + yOff}
-                      r={DOT_R}
-                      fill={PALETTE.accent}
-                      opacity={band.alpha * a}
-                    />
-                  );
-                })}
-              </g>
-            ))}
-          </g>
-        );
-      })}
-    </svg>
-  );
+// Domain-warped interference field → 0..1. Coords are first twisted by a slow
+// low-frequency perturbation, then run through a product of two sines (lobed
+// crests, not stripes) combined with a radial pulse from a wandering centre.
+// The −ω·t phase terms make the crests travel, so the bright regions sweep
+// across the static lattice. tanh softens the peaks.
+const WAVE_K1 = (2 * Math.PI) / 920;
+const WAVE_K2 = (2 * Math.PI) / 1420;
+const WAVE_WARP = 240;
+const waveAt = (x: number, y: number, t: number): number => {
+  const wx = Math.sin(0.0032 * x + 0.0019 * y + 1.7 * t);
+  const wy = Math.cos(0.0024 * x - 0.0029 * y + 1.3 * t + 1.7);
+  const xw = x + WAVE_WARP * wx;
+  const yw = y + WAVE_WARP * wy;
+  const a = Math.sin(WAVE_K1 * xw + 0.32 * WAVE_K1 * yw - 1.9 * t);
+  const b = Math.sin(0.62 * WAVE_K2 * xw + 0.95 * WAVE_K2 * yw - 1.2 * t + 1.37);
+  const cx = WIDTH * 0.5 + 0.3 * WIDTH * Math.sin(0.5 * t);
+  const cy = HEIGHT * 0.5 + 0.32 * HEIGHT * Math.cos(0.6 * t + 0.7);
+  const dx = x - cx;
+  const dy = y - cy;
+  const radial = Math.sin(0.009 * Math.sqrt(dx * dx + dy * dy) - 1.6 * t);
+  const raw = 1.5 * a * b + 0.7 * radial;
+  return (Math.tanh(raw * 0.85) + 1) * 0.5;
 };
 
 const DOT_FIELD_MASK =
-  "radial-gradient(ellipse 64% 64% at 50% 42%, #000 0%, rgba(0,0,0,0.72) 58%, transparent 100%)";
+  "radial-gradient(ellipse 74% 74% at 50% 44%, #000 0%, rgba(0,0,0,0.78) 62%, transparent 100%)";
 
-const MovingDotField: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      WebkitMaskImage: DOT_FIELD_MASK,
-      maskImage: DOT_FIELD_MASK,
-    }}
-  >
-    <FineLattice />
-    <MovingBands />
-  </AbsoluteFill>
-);
+const MovingDotField: React.FC = () => {
+  const frame = useCurrentFrame();
+  const t = frame / FPS;
+  const cols = Math.ceil(WIDTH / FINE_SPACING) + 1;
+  const rows = Math.ceil(HEIGHT / FINE_SPACING) + 1;
+  const dots: React.ReactNode[] = [];
+  for (let ry = 0; ry < rows; ry++) {
+    const y = ry * FINE_SPACING;
+    for (let rx = 0; rx < cols; rx++) {
+      const x = rx * FINE_SPACING;
+      // Square the wave so bright crests stand out against a faint floor.
+      const w = waveAt(x, y, t);
+      const k = w * w;
+      dots.push(
+        <circle
+          key={`${ry}-${rx}`}
+          cx={x}
+          cy={y}
+          r={1.5 + 2.4 * k}
+          fill={PALETTE.accent}
+          opacity={0.05 + 0.32 * k}
+        />,
+      );
+    }
+  }
+  return (
+    <AbsoluteFill
+      style={{
+        WebkitMaskImage: DOT_FIELD_MASK,
+        maskImage: DOT_FIELD_MASK,
+      }}
+    >
+      <svg
+        width={WIDTH}
+        height={HEIGHT}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        {dots}
+      </svg>
+    </AbsoluteFill>
+  );
+};
 
 export const RetailPnLMarketsReel: React.FC = () => {
   const dataset = MARKETS_CONCENTRATION;
@@ -275,12 +215,16 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const sliceLen = dataset.snapshots.length;
   const totalScrubFrames = holdFrames * sliceLen;
 
-  const within = Math.min(frame, totalScrubFrames - 1);
+  // Open at the lip of the first transition so the curve is already moving on
+  // frame 1 — no static beat to start on. The first market is shown for a
+  // single frame, then immediately whips toward the next.
+  const startOffset = holdFrames - transitionFrames;
+  const within = Math.min(frame + startOffset, totalScrubFrames - 1);
   const idxRaw = within / holdFrames;
   const idxFloor = Math.min(Math.floor(idxRaw), sliceLen - 1);
   const idxNext = Math.min(idxFloor + 1, sliceLen - 1);
   const localFrame = within - idxFloor * holdFrames;
-  const transitionStart = holdFrames - transitionFrames;
+  const transitionStart = startOffset;
   const tRaw = (localFrame - transitionStart) / Math.max(1, transitionFrames);
   const tEased = interpolate(
     Math.max(0, Math.min(1, tRaw)),
