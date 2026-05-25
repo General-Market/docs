@@ -112,13 +112,14 @@ export const RWA_FLOW: FlowDataset = {
   ],
 };
 
-export const perpsFlowMeta = makeFlowMeta(PERPS_FLOW);
-export const predictionMarketsFlowMeta = makeFlowMeta(PREDICTION_FLOW);
-export const privacyFlowMeta = makeFlowMeta(PRIVACY_FLOW);
-export const rwaFlowMeta = makeFlowMeta(RWA_FLOW);
+// ── The registry ────────────────────────────────────────────────────────────
+// To add a reel: drop one FlowDataset in here (its id ends in "FlowReel") and
+// put its logos under public/<logoBase>/. Both the horizontal diverging-bar
+// reel and the cathode winners reel register automatically — no edits anywhere
+// else. See README.md for the copy-paste template and the logo fetch command.
+export const REELS: FlowDataset[] = [PERPS_FLOW, PREDICTION_FLOW, PRIVACY_FLOW, RWA_FLOW];
 
-// Winners-only bar charts in the RetailPnLMarketsReel cathode style.
-export const perpsWinnersMeta = makeCrtBarMeta(PERPS_FLOW, "PerpsWinnersReel");
-export const predictionMarketsWinnersMeta = makeCrtBarMeta(PREDICTION_FLOW, "PredictionMarketsWinnersReel");
-export const privacyWinnersMeta = makeCrtBarMeta(PRIVACY_FLOW, "PrivacyWinnersReel");
-export const rwaWinnersMeta = makeCrtBarMeta(RWA_FLOW, "RwaWinnersReel");
+// Horizontal diverging-bar reels (gains + losses), one per dataset.
+export const flowMetas = REELS.map(makeFlowMeta);
+// Cathode winners-only bar reels (RetailPnLMarketsReel style), one per dataset.
+export const winnersMetas = REELS.map((d) => makeCrtBarMeta(d, d.id.replace("FlowReel", "WinnersReel")));

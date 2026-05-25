@@ -29,8 +29,14 @@ export const FLOW_DURATION = 540;
 export type FlowRow = {
   id: string; // logo file stem under `${logoBase}/`
   name: string;
-  now: number; // value now, USD
-  prior: number; // value at the start of the window, USD
+  // Two ways to feed a row:
+  //  · live mode  — give now + prior; the bar is the change between them.
+  //  · manual mode — give value directly (the growth number you want shown),
+  //    plus an optional level for the sublabel (e.g. current TVL).
+  now?: number;
+  prior?: number;
+  value?: number; // overrides now/prior — used verbatim as the bar metric
+  level?: number; // size shown in the sublabel; defaults to `now`
   tag?: boolean; // carries the dataset's brand tag (e.g. MORPHO)
 };
 
@@ -81,9 +87,11 @@ const PLOT_R = FLOW_WIDTH - MARGIN; // 2040
 const X_ZERO = (PLOT_L + PLOT_R) / 2;
 const HALF_W = (PLOT_R - PLOT_L) / 2;
 
-export const delta = (r: FlowRow) => r.now - r.prior;
+export const delta = (r: FlowRow) => (r.now ?? 0) - (r.prior ?? 0);
 export const pct = (r: FlowRow) => (r.prior ? (delta(r) / r.prior) * 100 : 0);
-export const metricOf = (r: FlowRow, mode: FlowMode) => (mode === "pct" ? pct(r) : delta(r));
+export const metricOf = (r: FlowRow, mode: FlowMode) =>
+  r.value !== undefined ? r.value : mode === "pct" ? pct(r) : delta(r);
+export const levelOf = (r: FlowRow): number | undefined => r.level ?? r.now;
 
 export const fmtUSD = (v: number): string => {
   if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`;
@@ -279,8 +287,10 @@ const Row: React.FC<{
           ) : null}
         </div>
         <div style={{ fontFamily: INTER, fontSize: 28, fontWeight: 500, color: PALETTE.textDim, marginTop: 6, marginLeft: 60, whiteSpace: "nowrap" }}>
-          {fmtUSD(row.now)} {metricNoun}
-          <span style={{ color: PALETTE.textVeryDim }}>{"  ·  "}{mode === "pct" ? fmtUsdSigned(delta(row)) : fmtPct(pct(row))}</span>
+          {levelOf(row) !== undefined ? `${fmtUSD(levelOf(row) as number)} ${metricNoun}` : null}
+          {row.now !== undefined && row.prior !== undefined ? (
+            <span style={{ color: PALETTE.textVeryDim }}>{"  ·  "}{mode === "pct" ? fmtUsdSigned(delta(row)) : fmtPct(pct(row))}</span>
+          ) : null}
         </div>
       </div>
 

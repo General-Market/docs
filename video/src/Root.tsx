@@ -134,16 +134,7 @@ import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofCo
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
 import { morphoCuratorsMeta } from "./compositions/morpho-curators/MorphoCuratorsComposition";
-import {
-  perpsFlowMeta,
-  predictionMarketsFlowMeta,
-  privacyFlowMeta,
-  rwaFlowMeta,
-  perpsWinnersMeta,
-  predictionMarketsWinnersMeta,
-  privacyWinnersMeta,
-  rwaWinnersMeta,
-} from "./compositions/defi-flows/datasets";
+import { flowMetas, winnersMetas } from "./compositions/defi-flows/datasets";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -285,17 +276,7 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ DEFI FLOWS — DefiLlama categories ranked by 7d dollar flow ═══ */}
       <Folder name="DefiFlows">
-        {[
-          perpsFlowMeta,
-          predictionMarketsFlowMeta,
-          privacyFlowMeta,
-          rwaFlowMeta,
-          perpsWinnersMeta,
-          predictionMarketsWinnersMeta,
-          privacyWinnersMeta,
-          rwaWinnersMeta,
-          lendingWinnersMeta,
-        ].map((meta) => (
+        {[...flowMetas, ...winnersMetas, lendingWinnersMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
