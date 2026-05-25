@@ -30,12 +30,13 @@ const { fontFamily: INTER } = loadInter("normal", {
   weights: ["400", "500", "600", "700", "800"],
 });
 
-const WIDTH = 2160;
-const HEIGHT = 2160;
+// Normal landscape video format — a 16:9 frame, so the curved-monitor glass
+// reads like a real screen rather than a square card.
+const WIDTH = 1920;
+const HEIGHT = 1080;
 const FPS = 60;
 
-// AntiCheat / Base palette. Light field, electric blue, near-black type —
-// the dark dramatic dressing is gone; the data now reads like a keynote slide.
+// AntiCheat / Base palette. Light field, electric blue curve, near-black type.
 const PALETTE = {
   bgTop: "#FFFFFF",
   bgBottom: "#E7EAEE",
@@ -52,7 +53,6 @@ const PALETTE = {
 };
 
 // Fast cadence: all twelve markets whip past in 4s — 20 frames each at 60fps.
-// Short hold, a punchy whip into the next curve. The animation snaps.
 const HOLD_SECONDS_PER_SNAPSHOT = 20 / 60;
 const TRANSITION_FRACTION = 0.6;
 
@@ -111,18 +111,19 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
-// Background — the AntiCheat DotGrid, faithfully: a regular uniform grid of
-// faint blue dots, with brighter bands of blue "light" travelling across it.
-// The grid is static and memoised; only the light bands recompute each frame.
-const GRID_SPACING = 30;
-const GRID_DOT_R = 1.7;
-const GRID_ALPHA = 0.16;
+// ── Background — curved monitor grid + travelling coloured light ────────────
+// A regular uniform dot grid, bowed by a barrel warp so it reads as a curved
+// screen. Over it, light travels along individual grid rows: each row ("line")
+// has its own speed and its own muted colour; every dot on a row shares them,
+// so motion is coherent within a line and varied across lines.
+const GRID_SPACING = 26;
+const GRID_DOT_R = 1.6;
+const GRID_COLOR = "rgba(58, 74, 120, 0.13)"; // neutral slate so colours pop
 
-// CRT "monitor curvature" — a barrel warp applied to the grid and the light
-// only; the chart and type stay flat in front. The warp is ~0 at the centre
-// and grows with r², so straight grid rows bow outward at the rim while the
-// data zone in the middle reads sharp. Bump BARREL_K to bend it harder.
-const BARREL_K = 0.12;
+// CRT "monitor curvature" — a barrel warp on the grid + light only; the chart
+// and type stay flat in front. Zero at the centre, growing with r², so rows
+// bow outward at the rim while the data zone reads sharp.
+const BARREL_K = 0.13;
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
 const barrel = (x: number, y: number): { x: number; y: number } => {
@@ -134,8 +135,8 @@ const barrel = (x: number, y: number): { x: number; y: number } => {
 
 const RegularGrid: React.FC = React.memo(() => {
   // Extra margin rings so the outward bow still fills the frame corners.
-  const cols = Math.ceil(WIDTH / GRID_SPACING) + 9;
-  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 9;
+  const cols = Math.ceil(WIDTH / GRID_SPACING) + 11;
+  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 11;
   return (
     <svg
       width={WIDTH}
@@ -144,15 +145,14 @@ const RegularGrid: React.FC = React.memo(() => {
     >
       {Array.from({ length: rows }).flatMap((_, r) =>
         Array.from({ length: cols }).map((__, c) => {
-          const p = barrel((c - 4) * GRID_SPACING, (r - 4) * GRID_SPACING);
+          const p = barrel((c - 5) * GRID_SPACING, (r - 5) * GRID_SPACING);
           return (
             <circle
               key={`${r}-${c}`}
               cx={p.x}
               cy={p.y}
               r={GRID_DOT_R}
-              fill={PALETTE.accent}
-              opacity={GRID_ALPHA}
+              fill={GRID_COLOR}
             />
           );
         }),
@@ -162,38 +162,39 @@ const RegularGrid: React.FC = React.memo(() => {
 });
 RegularGrid.displayName = "RegularGrid";
 
-// Bands of light, lifted from anticheat/DotGrid. Each is one or more grid rows
-// whose dots are brighter; the band drifts horizontally at a steady velocity
-// and wraps. Spread across the full height so the light moves everywhere.
-type LightBand = {
+// Each line is one grid row: a travelling bright segment in a single muted
+// colour, moving at the row's own velocity. Colours are desaturated and
+// harmonised — editorial, not a neon advert.
+type LightLine = {
   y: number;
+  color: string;
+  velocity: number;
   len: number;
   anchor: number;
-  rows: number;
-  alpha: number;
-  velocity: number;
   phase: number;
 };
-const LIGHT_BANDS: LightBand[] = [
-  { y: 0.045, len: 0.62, anchor: 0.30, rows: 2, alpha: 0.95, velocity: 380, phase: 0.0 },
-  { y: 0.08, len: 0.58, anchor: 0.46, rows: 1, alpha: 0.92, velocity: 540, phase: 0.3 },
-  { y: 0.115, len: 0.42, anchor: 0.22, rows: 2, alpha: 0.95, velocity: 320, phase: 0.55 },
-  { y: 0.21, len: 0.50, anchor: 0.70, rows: 1, alpha: 0.92, velocity: 620, phase: 0.1 },
-  { y: 0.245, len: 0.30, anchor: 0.84, rows: 2, alpha: 0.95, velocity: 720, phase: 0.4 },
-  { y: 0.42, len: 0.18, anchor: 0.10, rows: 1, alpha: 0.85, velocity: 820, phase: 0.65 },
-  { y: 0.62, len: 0.36, anchor: 0.78, rows: 2, alpha: 0.92, velocity: 580, phase: 0.2 },
-  { y: 0.655, len: 0.22, anchor: 0.88, rows: 1, alpha: 0.9, velocity: 700, phase: 0.5 },
-  { y: 0.85, len: 0.58, anchor: 0.62, rows: 2, alpha: 0.95, velocity: 360, phase: 0.05 },
-  { y: 0.885, len: 0.62, anchor: 0.42, rows: 1, alpha: 0.92, velocity: 500, phase: 0.35 },
-  { y: 0.92, len: 0.46, anchor: 0.74, rows: 3, alpha: 0.95, velocity: 280, phase: 0.6 },
+const LIGHT_LINES: LightLine[] = [
+  { y: 0.07, color: "#6E8BE0", velocity: 130, len: 0.34, anchor: 0.30, phase: 0.0 },
+  { y: 0.13, color: "#52A9A0", velocity: 220, len: 0.22, anchor: 0.62, phase: 0.35 },
+  { y: 0.19, color: "#9079C9", velocity: 90, len: 0.40, anchor: 0.18, phase: 0.6 },
+  { y: 0.25, color: "#5FA0C2", velocity: 300, len: 0.18, anchor: 0.80, phase: 0.15 },
+  { y: 0.32, color: "#86AE84", velocity: 160, len: 0.26, anchor: 0.45, phase: 0.5 },
+  { y: 0.40, color: "#AC7E9C", velocity: 250, len: 0.20, anchor: 0.10, phase: 0.8 },
+  { y: 0.49, color: "#6E8FBE", velocity: 110, len: 0.36, anchor: 0.70, phase: 0.25 },
+  { y: 0.57, color: "#BFA268", velocity: 340, len: 0.16, anchor: 0.35, phase: 0.55 },
+  { y: 0.65, color: "#8893DE", velocity: 180, len: 0.30, anchor: 0.85, phase: 0.05 },
+  { y: 0.73, color: "#4F97B2", velocity: 140, len: 0.24, anchor: 0.22, phase: 0.7 },
+  { y: 0.81, color: "#BC876C", velocity: 270, len: 0.20, anchor: 0.55, phase: 0.4 },
+  { y: 0.88, color: "#7C88B0", velocity: 100, len: 0.34, anchor: 0.40, phase: 0.62 },
+  { y: 0.94, color: "#5FAAB8", velocity: 210, len: 0.26, anchor: 0.72, phase: 0.18 },
 ];
 
-// The bands streak across fast — 8× the base drift.
+// The light streaks across fast — 8× the base drift.
 const LIGHT_SPEED = 8;
 
 const snapGrid = (px: number) => Math.round(px / GRID_SPACING) * GRID_SPACING;
 
-const TravellingLight: React.FC = () => {
+const TravellingLines: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
   const cycleW = WIDTH * 1.6;
@@ -203,13 +204,13 @@ const TravellingLight: React.FC = () => {
       height={HEIGHT}
       style={{ position: "absolute", inset: 0 }}
     >
-      {LIGHT_BANDS.map((band, bi) => {
-        const yC = snapGrid(band.y * HEIGHT);
-        const lenPx = band.len * WIDTH;
+      {LIGHT_LINES.map((line, li) => {
+        const yC = snapGrid(line.y * HEIGHT);
+        const lenPx = line.len * WIDTH;
         const half = lenPx / 2;
-        const drift = band.velocity * LIGHT_SPEED * t;
+        const drift = line.velocity * LIGHT_SPEED * t;
         const mid =
-          (((band.anchor * WIDTH + drift + band.phase * cycleW) % cycleW) +
+          (((line.anchor * WIDTH + drift + line.phase * cycleW) % cycleW) +
             cycleW) %
             cycleW -
           cycleW * 0.3;
@@ -218,42 +219,30 @@ const TravellingLight: React.FC = () => {
         if (x1 < -40 || x0 > WIDTH + 40) return null;
 
         const cols = Math.max(2, Math.round((x1 - x0) / GRID_SPACING) + 1);
-        const fadePx = lenPx * 0.18;
-        const rowAnchor = Math.floor((band.rows - 1) / 2);
-        const rowOffsets = Array.from(
-          { length: band.rows },
-          (_, r) => (r - rowAnchor) * GRID_SPACING,
-        );
-
-        return (
-          <g key={bi}>
-            {rowOffsets.map((yOff, ri) => (
-              <g key={ri}>
-                {Array.from({ length: cols }).map((_, di) => {
-                  const x = x0 + di * GRID_SPACING;
-                  if (x < -20 || x > WIDTH + 20) return null;
-                  const fromStart = x - x0;
-                  const fromEnd = x1 - x;
-                  let a = 1;
-                  if (fromStart < fadePx) a *= fromStart / fadePx;
-                  if (fromEnd < fadePx) a *= fromEnd / fadePx;
-                  a = Math.max(0, Math.min(1, a));
-                  const p = barrel(x, yC + yOff);
-                  return (
-                    <circle
-                      key={di}
-                      cx={p.x}
-                      cy={p.y}
-                      r={GRID_DOT_R * 1.25}
-                      fill={PALETTE.accent}
-                      opacity={band.alpha * 0.7 * a}
-                    />
-                  );
-                })}
-              </g>
-            ))}
-          </g>
-        );
+        const fadePx = lenPx * 0.22;
+        const cells: React.ReactNode[] = [];
+        for (let di = 0; di < cols; di++) {
+          const x = x0 + di * GRID_SPACING;
+          if (x < -20 || x > WIDTH + 20) continue;
+          const fromStart = x - x0;
+          const fromEnd = x1 - x;
+          let a = 1;
+          if (fromStart < fadePx) a *= fromStart / fadePx;
+          if (fromEnd < fadePx) a *= fromEnd / fadePx;
+          a = Math.max(0, Math.min(1, a));
+          const p = barrel(x, yC);
+          cells.push(
+            <circle
+              key={di}
+              cx={p.x}
+              cy={p.y}
+              r={GRID_DOT_R * 1.35}
+              fill={line.color}
+              opacity={0.6 * a}
+            />,
+          );
+        }
+        return <g key={li}>{cells}</g>;
       })}
     </svg>
   );
@@ -261,17 +250,19 @@ const TravellingLight: React.FC = () => {
 
 // Gentle vignette — the grid fills the frame and only the far corners fall off.
 const DOT_FIELD_MASK =
-  "radial-gradient(ellipse 92% 92% at 50% 44%, #000 0%, #000 68%, transparent 100%)";
+  "radial-gradient(ellipse 96% 96% at 50% 46%, #000 0%, #000 70%, transparent 100%)";
 
 const MovingDotField: React.FC = () => (
   <AbsoluteFill
     style={{
       WebkitMaskImage: DOT_FIELD_MASK,
       maskImage: DOT_FIELD_MASK,
+      // Chromatic-aberration fringe — the glass-package lens character.
+      filter: "url(#reel-chroma)",
     }}
   >
     <RegularGrid />
-    <TravellingLight />
+    <TravellingLines />
   </AbsoluteFill>
 );
 
@@ -283,28 +274,28 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const W = WIDTH;
   const H = HEIGHT;
 
-  // Layout — the plot claims nearly the full width (this ships on Twitter, so it
-  // takes all the room it can). Title sits top-left, venue label top-right; the
-  // logo strip and source live in the band below the plot.
-  const MARGIN = 120; // outer gutter from the frame edges
-  const AXIS_GUTTER = 140; // room for the large y-axis labels left of the plot
-  const plotL = MARGIN + AXIS_GUTTER; // 260
-  const plotR = W - MARGIN; // 2040
-  const plotW = plotR - plotL; // 1780 — full width
-  const plotT = 380;
-  const plotH = 1600 - plotT; // plot bottom at y=1600 — fills the vertical band
+  // Layout for the 16:9 frame — title top-left, venue label top-right, the
+  // plot filling the width, logo strip and source in the band below it.
+  const MARGIN = 80;
+  const MARGIN_TOP = 64;
+  const AXIS_GUTTER = 90;
+  const plotL = MARGIN + AXIS_GUTTER; // 170
+  const plotR = W - MARGIN; // 1840
+  const plotW = plotR - plotL; // 1670
+  const plotT = 235;
+  const PLOT_BOTTOM = 715;
+  const plotH = PLOT_BOTTOM - plotT; // 480
 
   const scale = dataset.yScale ?? "linear";
 
-  // Scrub state — hold each snapshot, crossfade into the next.
+  // Scrub state — hold each snapshot, whip into the next.
   const holdFrames = Math.max(20, Math.round(HOLD_SECONDS_PER_SNAPSHOT * fps));
   const transitionFrames = Math.round(holdFrames * TRANSITION_FRACTION);
   const sliceLen = dataset.snapshots.length;
   const totalScrubFrames = holdFrames * sliceLen;
 
   // Open at the lip of the first transition so the curve is already moving on
-  // frame 1 — no static beat to start on. The first market is shown for a
-  // single frame, then immediately whips toward the next.
+  // frame 1 — no static beat to start on.
   const startOffset = holdFrames - transitionFrames;
   const within = Math.min(frame + startOffset, totalScrubFrames - 1);
   const idxRaw = within / holdFrames;
@@ -336,9 +327,6 @@ export const RetailPnLMarketsReel: React.FC = () => {
   });
   const pulseScale = 1 + 0.05 * (1 - pulse);
 
-  // No fade-in: frame 0 lands on the first snapshot fully drawn. The scrub,
-  // the dot pulse, and the per-venue swap carry the motion.
-
   const yTickElems = dataset.yTicks.map((tick) => {
     const y = yAt(tick, dataset.yMin, dataset.yMax, plotT, plotH, scale);
     return (
@@ -349,22 +337,22 @@ export const RetailPnLMarketsReel: React.FC = () => {
           y1={y}
           y2={y}
           stroke={PALETTE.grid}
-          strokeWidth={2}
+          strokeWidth={1.5}
         />
         <line
-          x1={plotL - 22}
+          x1={plotL - 14}
           x2={plotL}
           y1={y}
           y2={y}
           stroke={PALETTE.tick}
-          strokeWidth={3}
+          strokeWidth={2}
         />
         <text
-          x={plotL - 40}
-          y={y + 18}
+          x={plotL - 26}
+          y={y + 11}
           textAnchor="end"
           fontFamily={INTER}
-          fontSize={52}
+          fontSize={30}
           fontWeight={600}
           letterSpacing="-0.01em"
           fill={PALETTE.axis}
@@ -383,16 +371,16 @@ export const RetailPnLMarketsReel: React.FC = () => {
           x1={x}
           x2={x}
           y1={plotT + plotH}
-          y2={plotT + plotH + 20}
+          y2={plotT + plotH + 13}
           stroke={PALETTE.tick}
-          strokeWidth={3}
+          strokeWidth={2}
         />
         <text
           x={x}
-          y={plotT + plotH + 78}
+          y={plotT + plotH + 46}
           textAnchor="middle"
           fontFamily={INTER}
-          fontSize={46}
+          fontSize={27}
           fontWeight={600}
           letterSpacing="-0.01em"
           fill={PALETTE.axis}
@@ -418,7 +406,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
       )}
       fill="none"
       stroke={PALETTE.ghost}
-      strokeWidth={3}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -440,8 +428,8 @@ export const RetailPnLMarketsReel: React.FC = () => {
   const venueLines = wrapLabel(venue);
   const venueLogos = LOGOS_BY_VENUE[venue] ?? [];
 
-  // Right-column dips to near-black at the midpoint of the crossfade, so the
-  // venue label + logos swap rather than morph.
+  // Right column dips at the crossfade midpoint so the venue label + logos
+  // swap rather than morph.
   const swapDip = interpolate(
     Math.abs(tEased - 0.5) * 2,
     [0, 1],
@@ -451,26 +439,57 @@ export const RetailPnLMarketsReel: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(ellipse 120% 80% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
+        background: `radial-gradient(ellipse 120% 90% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
         fontFamily: INTER,
       }}
     >
-      <MovingDotField />
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(ellipse at 50% 45%, transparent 0%, transparent 58%, rgba(10, 12, 20, 0.05) 100%)`,
-          pointerEvents: "none",
-        }}
-      />
+      {/* Filter defs — chromatic split for the glass lens, glows for the curve. */}
+      <svg width={0} height={0} style={{ position: "absolute" }}>
+        <defs>
+          <filter
+            id="reel-chroma"
+            x="-3%"
+            y="-3%"
+            width="106%"
+            height="106%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feColorMatrix
+              in="SourceGraphic"
+              type="matrix"
+              values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+              result="r"
+            />
+            <feOffset in="r" dx="1.8" dy="0" result="rS" />
+            <feColorMatrix
+              in="SourceGraphic"
+              type="matrix"
+              values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+              result="g"
+            />
+            <feColorMatrix
+              in="SourceGraphic"
+              type="matrix"
+              values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+              result="b"
+            />
+            <feOffset in="b" dx="-1.8" dy="0" result="bS" />
+            <feBlend in="rS" in2="g" mode="screen" result="rg" />
+            <feBlend in="rg" in2="bS" mode="screen" />
+          </filter>
+        </defs>
+      </svg>
 
-      {/* Title — top-left at the outer margin, balanced two lines. */}
+      <MovingDotField />
+
+      {/* Title — top-left, balanced two lines. */}
       <div
         style={{
           position: "absolute",
-          top: MARGIN,
+          top: MARGIN_TOP,
           left: MARGIN,
           fontFamily: INTER,
-          fontSize: 96,
+          fontSize: 50,
           fontWeight: 700,
           letterSpacing: "-0.03em",
           lineHeight: 1.0,
@@ -499,7 +518,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
             width="140%"
             height="140%"
           >
-            <feGaussianBlur stdDeviation="9" />
+            <feGaussianBlur stdDeviation="6" />
           </filter>
           <filter
             id="reel-dot-glow"
@@ -508,7 +527,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
             width="260%"
             height="260%"
           >
-            <feGaussianBlur stdDeviation="6" />
+            <feGaussianBlur stdDeviation="4" />
           </filter>
         </defs>
 
@@ -520,10 +539,10 @@ export const RetailPnLMarketsReel: React.FC = () => {
           points={linePts}
           fill="none"
           stroke={PALETTE.accentSoft}
-          strokeWidth={16}
+          strokeWidth={11}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.55}
+          opacity={0.5}
           filter="url(#reel-line-glow)"
         />
 
@@ -532,7 +551,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           points={linePts}
           fill="none"
           stroke={PALETTE.accent}
-          strokeWidth={9}
+          strokeWidth={6}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -545,7 +564,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
               <circle
                 cx={cx}
                 cy={cy}
-                r={20 * pulseScale}
+                r={12 * pulseScale}
                 fill={PALETTE.accentSoft}
                 opacity={0.4}
                 filter="url(#reel-dot-glow)"
@@ -553,32 +572,31 @@ export const RetailPnLMarketsReel: React.FC = () => {
               <circle
                 cx={cx}
                 cy={cy}
-                r={15 * pulseScale}
+                r={8.5 * pulseScale}
                 fill={PALETTE.accent}
                 stroke={PALETTE.dotRing}
-                strokeWidth={5}
+                strokeWidth={3}
               />
             </g>
           );
         })}
 
         {xLabelElems}
-
       </svg>
 
-      {/* Venue label — top-right, mirrors the title across the full width. */}
+      {/* Venue label — top-right, mirrors the title. */}
       <div
         style={{
           position: "absolute",
-          top: MARGIN,
+          top: MARGIN_TOP,
           right: MARGIN,
-          maxWidth: 820,
+          maxWidth: 560,
           textAlign: "right",
           fontFamily: INTER,
-          fontSize: 96,
+          fontSize: 56,
           fontWeight: 800,
           letterSpacing: "-0.03em",
-          lineHeight: 0.96,
+          lineHeight: 0.98,
           color: PALETTE.text,
           opacity: swapDip,
         }}
@@ -588,17 +606,17 @@ export const RetailPnLMarketsReel: React.FC = () => {
         ))}
       </div>
 
-      {/* Logo strip — the six dominant platforms, centered under the plot. */}
+      {/* Logo strip — the dominant platforms, centered under the plot. */}
       {venueLogos.length > 0 ? (
         <div
           style={{
             position: "absolute",
-            top: plotT + plotH + 96,
+            top: PLOT_BOTTOM + 88,
             left: plotL,
             width: plotW,
             display: "flex",
             justifyContent: "center",
-            gap: 30,
+            gap: 18,
             opacity: swapDip,
           }}
         >
@@ -606,16 +624,16 @@ export const RetailPnLMarketsReel: React.FC = () => {
             <div
               key={logo.file}
               style={{
-                width: 270,
-                height: 270,
+                width: 116,
+                height: 116,
                 flexShrink: 0,
-                borderRadius: 52,
+                borderRadius: 26,
                 background: "rgba(255, 255, 255, 0.95)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: 32,
-                boxShadow: "0 24px 60px -34px rgba(0, 0, 0, 0.9)",
+                padding: 14,
+                boxShadow: "0 14px 34px -22px rgba(0, 0, 0, 0.9)",
               }}
             >
               <Img
@@ -637,20 +655,37 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            top: plotT + plotH + 392,
+            top: PLOT_BOTTOM + 88 + 116 + 26,
             left: MARGIN,
             width: plotR - MARGIN,
             fontFamily: INTER,
-            fontSize: 22,
+            fontSize: 15,
             fontWeight: 500,
             letterSpacing: "-0.005em",
-            lineHeight: 1.4,
+            lineHeight: 1.35,
             color: PALETTE.textVeryDim,
           }}
         >
           Source: {source}
         </div>
       ) : null}
+
+      {/* Glass package — soft screen glare, then an edge vignette over all. */}
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          mixBlendMode: "screen",
+          background:
+            "linear-gradient(122deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 22%, transparent 40%)",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 82% 84% at 50% 46%, transparent 0%, transparent 52%, rgba(10, 14, 30, 0.13) 100%)",
+        }}
+      />
     </AbsoluteFill>
   );
 };
