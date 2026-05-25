@@ -103,14 +103,6 @@ import {
   H as SEQ02_H,
 } from "./compositions/sequence02/theme";
 import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
-import {
-  pitchMeta,
-  pitchSceneMetas,
-} from "./compositions/pitch/PitchComposition";
-import {
-  pitchTenMeta,
-  pitchTenSceneMetas,
-} from "./compositions/pitch-ten/PitchTenComposition";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 import {
   antiCheatStatMeta,
@@ -155,16 +147,51 @@ const LofiDotsHexBench: React.FC = () => (
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ ANTI-CHEAT — full launch video (60s) and its scenes ═══ */}
+      {/* ═══ ROOT — videos in active use. Default: a finished video registers at
+           the root; its scenes/variants live in a <Folder> below. ═══ */}
+      <Composition
+        id={antiCheatFullMeta.id}
+        component={antiCheatFullMeta.component}
+        durationInFrames={antiCheatFullMeta.durationInFrames}
+        fps={antiCheatFullMeta.fps}
+        width={antiCheatFullMeta.width}
+        height={antiCheatFullMeta.height}
+      />
+      <Composition
+        id={anticheatEditMeta.id}
+        component={anticheatEditMeta.component}
+        durationInFrames={anticheatEditMeta.durationInFrames}
+        fps={anticheatEditMeta.fps}
+        width={anticheatEditMeta.width}
+        height={anticheatEditMeta.height}
+      />
+      <Composition
+        id={blockTradingExileMeta.id}
+        component={blockTradingExileMeta.component}
+        durationInFrames={blockTradingExileMeta.durationInFrames}
+        fps={blockTradingExileMeta.fps}
+        width={blockTradingExileMeta.width}
+        height={blockTradingExileMeta.height}
+      />
+      <Composition
+        id={webglPicksMeta.id}
+        component={webglPicksMeta.component}
+        durationInFrames={webglPicksMeta.durationInFrames}
+        fps={webglPicksMeta.fps}
+        width={webglPicksMeta.width}
+        height={webglPicksMeta.height}
+      />
+      <Composition
+        id={antiCheatEditThumbnailMeta.id}
+        component={antiCheatEditThumbnailMeta.component}
+        durationInFrames={antiCheatEditThumbnailMeta.durationInFrames}
+        fps={antiCheatEditThumbnailMeta.fps}
+        width={antiCheatEditThumbnailMeta.width}
+        height={antiCheatEditThumbnailMeta.height}
+      />
+
+      {/* ═══ ANTI-CHEAT — scenes for the full launch video ═══ */}
       <Folder name="AntiCheat">
-        <Composition
-          id={antiCheatFullMeta.id}
-          component={antiCheatFullMeta.component}
-          durationInFrames={antiCheatFullMeta.durationInFrames}
-          fps={antiCheatFullMeta.fps}
-          width={antiCheatFullMeta.width}
-          height={antiCheatFullMeta.height}
-        />
         {[
           antiCheatHookMeta,
           antiCheatBarsMeta,
@@ -203,35 +230,6 @@ export const RemotionRoot: React.FC = () => {
         </Folder>
       </Folder>
 
-      {/* ═══ BLOCK TRADING — single-slide kill-list explainer ═══ */}
-      <Composition
-        id={blockTradingExileMeta.id}
-        component={blockTradingExileMeta.component}
-        durationInFrames={blockTradingExileMeta.durationInFrames}
-        fps={blockTradingExileMeta.fps}
-        width={blockTradingExileMeta.width}
-        height={blockTradingExileMeta.height}
-      />
-
-      {/* ═══ ANTICHEAT-EDIT — auto-cut camera+mic recording (silences trimmed, retakes dropped) ═══ */}
-      <Composition
-        id={anticheatEditMeta.id}
-        component={anticheatEditMeta.component}
-        durationInFrames={anticheatEditMeta.durationInFrames}
-        fps={anticheatEditMeta.fps}
-        width={anticheatEditMeta.width}
-        height={anticheatEditMeta.height}
-      />
-      {/* YouTube miniature — Wintermute on the blue electric field, "The end?" */}
-      <Composition
-        id={antiCheatEditThumbnailMeta.id}
-        component={antiCheatEditThumbnailMeta.component}
-        durationInFrames={antiCheatEditThumbnailMeta.durationInFrames}
-        fps={antiCheatEditThumbnailMeta.fps}
-        width={antiCheatEditThumbnailMeta.width}
-        height={antiCheatEditThumbnailMeta.height}
-      />
-
       {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
       <Folder name="RetailPnL">
         {[
@@ -254,62 +252,6 @@ export const RemotionRoot: React.FC = () => {
           ),
         )}
       </Folder>
-
-      {/* ═══ PITCH — VC pitch deck, 1 second per slide ═══ */}
-      <Composition
-        id={pitchMeta.id}
-        component={pitchMeta.component}
-        durationInFrames={pitchMeta.durationInFrames}
-        fps={pitchMeta.fps}
-        width={pitchMeta.width}
-        height={pitchMeta.height}
-      />
-      <Folder name="Pitch-Slides">
-        {pitchSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
-
-      {/* ═══ PITCH TEN — the ten questions every investor asks ═══ */}
-      <Composition
-        id={pitchTenMeta.id}
-        component={pitchTenMeta.component}
-        durationInFrames={pitchTenMeta.durationInFrames}
-        fps={pitchTenMeta.fps}
-        width={pitchTenMeta.width}
-        height={pitchTenMeta.height}
-      />
-      <Folder name="PitchTen-Slides">
-        {pitchTenSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
-
-      {/* ═══ LOFI DOTS — HexPixelate bench over the broll (5m11s) ═══ */}
-      <Composition
-        id="LofiDots"
-        component={LofiDotsHexBench}
-        durationInFrames={Math.round(311 * ENDCARD_FPS)}
-        fps={ENDCARD_FPS}
-        width={1920}
-        height={1080}
-      />
 
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
@@ -785,13 +727,14 @@ export const RemotionRoot: React.FC = () => {
           width={1920}
           height={1080}
         />
+        {/* LofiDots — HexPixelate bench over the broll (5m11s) */}
         <Composition
-          id={webglPicksMeta.id}
-          component={webglPicksMeta.component}
-          durationInFrames={webglPicksMeta.durationInFrames}
-          fps={webglPicksMeta.fps}
-          width={webglPicksMeta.width}
-          height={webglPicksMeta.height}
+          id="LofiDots"
+          component={LofiDotsHexBench}
+          durationInFrames={Math.round(311 * ENDCARD_FPS)}
+          fps={ENDCARD_FPS}
+          width={1920}
+          height={1080}
         />
         {SHOW_SCENES && (
           <Folder name="WebGL-Picks">

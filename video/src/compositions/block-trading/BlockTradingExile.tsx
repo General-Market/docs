@@ -1,7 +1,10 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { FPS, H, W } from "../pitch/tokens";
+
+const FPS = 30;
+const W = 1920;
+const H = 1080;
 
 // Inter is the closest Google-Fonts surrogate for SF Pro. SF Pro Display
 // leads the stack so installed Macs render the real thing; Inter and

@@ -10,7 +10,8 @@ Each file exports a `*Meta` next to its component; `src/Root.tsx` renders one `<
 export const fooMeta = { id: "Foo", component: Foo, durationInFrames: DURATION, fps: FPS, width: WIDTH, height: HEIGHT };
 ```
 
-- **Add:** export `Meta` → import in `Root.tsx` → drop `<Composition>` in a `<Folder>`. **Delete:** remove both, clean orphaned imports.
+- **Add:** export `Meta` → import in `Root.tsx` → render a `<Composition>`. **Delete:** remove both, clean orphaned imports.
+- **Where to register:** a finished video goes at the **root** of `Root.tsx` (top of the Studio sidebar); its scenes, variants, and WIP go inside a `<Folder>`. Root today: `AntiCheatFull`, `AntiCheatEdit`, `BlockTradingExile`, `WebGLPicks`, `AntiCheatEditThumbnail`.
 - **Format lives in the `Meta` — read it.** Talking-head = landscape 30fps; reels = square (e.g. 2160² @60); replicas = landscape. Never assume 1080×1920/30.
 
 ## Studio & render
@@ -31,8 +32,20 @@ Repo is `~/Downloads/index/video` (not `~/Downloads/video/`).
 - **Talking-head edits** — `anticheat-edit/` (`AntiCheatEdit`), via `AntiCheatLayout.tsx`: baked `final.mp4` (`OffthreadVideo`) + graded + light shafts + karaoke captions.
 - **Long-form stories** — `anticheat/AntiCheatFull.tsx`: hook → rigged → solution → flag cards → end card.
 - **Data-viz reels** — `retail-pnl/`, `lending-curators/`, `morpho-curators/`, `finance-charts/`. Read each folder's `data.ts` + `ChartEngine.tsx` (lightweight-charts / recharts).
-- **Side-by-side replicas** — the `*SideBySide` family under `replicates/`, `polymarket-replicas/`.
-- **OG banners / brand / pitch** — `gm/`, `pitch/`, `pitch-ten/`, `yc-pitch/`, `endcard/`.
+- **Side-by-side replicas** — the `*SideBySide` family under `replicates/`, `polymarket-replicas/` (see Replicating below).
+- **OG banners / brand** — `gm/`, `endcard/`.
+
+## Replicating a reference video
+
+Rebuild a reference motion-design video scene-by-scene, then score the replica against it. Convention: `<name>Replicate` (the rebuild) + `<name>SideBySide` (reference vs replica) + a `<name>-Scenes` folder, all under the `Replicate` folder.
+
+1. **Analyze** — `./scripts/analyze-reference.sh <ref.mp4> <dir>` → `analysis.json` (scenes, colors, timing, motion).
+2. **Split** — `./scripts/split-scenes.sh <dir>` → per-scene clips + Remotion scaffolds.
+3. **Read the motion** — `storyboard.py` (every micro-shift: position/opacity/scale) + `scene-interpret.py` (intent/emotion/technique per scene).
+4. **Track** — `track-v3.py` (EasyOCR + RAFT + HSV) or `track-cotracker.py` (CoTracker3, for solid backgrounds) → `track-to-gsap.py` (GSAP MotionPath / timeline / SplitText).
+5. **Build** scenes in Remotion, then **verify** — `./scripts/verify-replication.sh <ref.mp4> <Id>` → `SCORE`; `verify-scene-v2.sh` adds SSIM + color + on-screen-text checks.
+
+Go deep — per-element detection, real motion trajectories, typography, SFX. A CSS approximation of a 3D move is not a replica.
 
 ## Style (governing)
 
@@ -47,6 +60,7 @@ Repo is `~/Downloads/index/video` (not `~/Downloads/video/`).
 - **Text** — `remotion-animate-text`, `remotion-animated`, `@remotion/noise`.
 - **Lottie** `<Lottie>` · **GIF** `<Gif>` · **SVG** `@remotion/paths` (`evolvePath`/`interpolatePath`), `@remotion/shapes`.
 - **Motion blur** `<CameraMotionBlur>` · **Noise** `noise2D/3D`.
+- **Organic motion** — `backgrounds/webgl-picks/OrganicMotion.tsx` holds 15 pulse equations (Windle's sketch.js), each `fn(t)→[-1,1]` to drive size/opacity/position with `t=(frame/fps)*1.5`. E.g. `sin(t)`, `cos(t)*sin(t)`, `sin(tan(cos(t)*1.2))`, `sin(pow(8,sin(t)))`, `pow(sin(t*PI),12)`, `cos(sin(t*3)+t*3)`.
 - **Captions** `@remotion/captions` — karaoke layer in `anticheat-edit/captions.ts` + `CaptionLayer.tsx`.
 - **Transitions** `<TransitionSeries>`: `fade/slide/wipe/flip/clockWipe` or custom GL.
 - **Audio** `<Audio>` + `getAudioDurationInSeconds()` · **Layout** `@remotion/layout-utils` (`measureText`) · **Player** `<Player>`.
