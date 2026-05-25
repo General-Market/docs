@@ -122,6 +122,7 @@ import {
 } from "./compositions/anticheat/AntiCheatFlagCard";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
+import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
@@ -183,6 +184,14 @@ export const RemotionRoot: React.FC = () => {
         fps={parimutuelExplainerMeta.fps}
         width={parimutuelExplainerMeta.width}
         height={parimutuelExplainerMeta.height}
+      />
+      <Composition
+        id={batchFlowReelMeta.id}
+        component={batchFlowReelMeta.component}
+        durationInFrames={batchFlowReelMeta.durationInFrames}
+        fps={batchFlowReelMeta.fps}
+        width={batchFlowReelMeta.width}
+        height={batchFlowReelMeta.height}
       />
       <Composition
         id={webglPicksMeta.id}
