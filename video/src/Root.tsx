@@ -130,7 +130,12 @@ import {
 } from "./compositions/anticheat/AntiCheatFlagCard";
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
+import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
+import { retailPnLMarketsReelMeta } from "./compositions/retail-pnl/RetailPnLMarketsReel";
+import { retailPnLMarketsCardsMeta } from "./compositions/retail-pnl/RetailPnLMarketsCards";
+import { retailPnLShortMeta } from "./compositions/retail-pnl/RetailPnLShort";
+import { lendingCuratorsReelMeta } from "./compositions/lending-curators/LendingCuratorsReel";
 import { explorerProofMeta } from "./compositions/explorer-proof/ExplorerProofComposition";
 import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChartsReel";
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
@@ -217,10 +222,25 @@ export const RemotionRoot: React.FC = () => {
         width={anticheatEditMeta.width}
         height={anticheatEditMeta.height}
       />
+      {/* YouTube miniature — Wintermute on the blue electric field, "The end?" */}
+      <Composition
+        id={antiCheatEditThumbnailMeta.id}
+        component={antiCheatEditThumbnailMeta.component}
+        durationInFrames={antiCheatEditThumbnailMeta.durationInFrames}
+        fps={antiCheatEditThumbnailMeta.fps}
+        width={antiCheatEditThumbnailMeta.width}
+        height={antiCheatEditThumbnailMeta.height}
+      />
 
       {/* ═══ RETAIL P&L — Saez/Zucman-style charts, three variants ═══ */}
       <Folder name="RetailPnL">
-        {[retailPnLMarketsMeta].map(
+        {[
+          retailPnLMarketsMeta,
+          retailPnLMarketsReelMeta,
+          retailPnLMarketsCardsMeta,
+          retailPnLShortMeta,
+          lendingCuratorsReelMeta,
+        ].map(
           (meta) => (
             <Composition
               key={meta.id}
