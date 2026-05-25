@@ -234,29 +234,53 @@ export function SourceDetailHumanTrading({
     [snapshotData],
   )
 
+  // Freshest snapshot row per assetId — used to hydrate the pinned cards with
+  // live prices without changing which cards are on screen.
+  const marketsByAssetId = useMemo(
+    () => new Map(allMarkets.map(m => [m.assetId, m])),
+    [allMarkets],
+  )
+
   // -- Curated allowlist (10 slugs per displaySourceId) --
   const allowlist = useMemo(() => getDefiLlamaAllowlist(sourceId), [sourceId])
-  const curatedMarkets: SnapshotPrice[] = useMemo(() => {
+
+  // The live popularity ranking. This re-ranks on EVERY 60s snapshot poll, so
+  // it is never rendered directly — it only seeds the per-round pin below.
+  const rankedAssetIds = useMemo(() => {
     if (!allowlist) {
       // No curated list — rank by the best signal the source has
       // (marketCap → volume24h → value), tiebroken on assetId for a stable order.
-      return rankByPopularity(allMarkets, TOP_N)
+      return rankByPopularity(allMarkets, TOP_N).map(m => m.assetId)
     }
     // Preserve curated order from defillama-curated.json by looking up the assetId
-    const byAssetId = new Map(allMarkets.map(m => [m.assetId, m]))
-    const ordered: SnapshotPrice[] = []
+    const ordered: string[] = []
     for (const id of allowlist) {
-      const m = byAssetId.get(id)
-      if (m) ordered.push(m)
+      if (marketsByAssetId.has(id)) ordered.push(id)
     }
     return ordered.slice(0, TOP_N)
-  }, [allMarkets, allowlist])
+  }, [allMarkets, allowlist, marketsByAssetId])
 
-  // -- FLIP reorder: the polled snapshot re-ranks the top-10 live; glide each
-  //    card from its old slot to its new one instead of letting it jump. We
-  //    cache each card's last-known rect keyed by assetId, then on the commit
-  //    that changes the order we measure the new rect, invert the delta, and
-  //    transition it back to zero. Honoured only when motion is allowed.
+  // The displayed market set is PINNED to the round (see the pin effect below,
+  // once currentBatchId is known). Membership + order only change when the
+  // batch rolls over — never on a mid-round snapshot poll — so cards stop
+  // churning and reloading their sparklines while a round is live. Live prices
+  // still flow into each pinned card via marketsByAssetId.
+  const [pinnedAssetIds, setPinnedAssetIds] = useState<string[]>([])
+  const curatedMarkets: SnapshotPrice[] = useMemo(() => {
+    const out: SnapshotPrice[] = []
+    for (const id of pinnedAssetIds) {
+      const m = marketsByAssetId.get(id)
+      if (m) out.push(m)
+    }
+    return out
+  }, [pinnedAssetIds, marketsByAssetId])
+
+  // -- FLIP reorder: at a round transition the pinned set re-pins to the new
+  //    ranking; glide each card from its old slot to its new one instead of
+  //    letting it jump. We cache each card's last-known rect keyed by assetId,
+  //    then on the commit that changes the order we measure the new rect, invert
+  //    the delta, and transition it back to zero. Honoured only when motion is
+  //    allowed.
   const cardRefs = useRef(new Map<string, HTMLDivElement>())
   const prevRectsRef = useRef(new Map<string, DOMRect>())
   const setCardRef = useCallback((assetId: string, node: HTMLDivElement | null) => {
@@ -420,6 +444,30 @@ export function SourceDetailHumanTrading({
   const currentConfigHash = (round?.configHash || activeBatch?.configHash || null) as
     | `0x${string}`
     | null
+
+  // Pin the displayed market set to the round. rankedAssetIds churns every 60s
+  // as the snapshot repolls; rendered directly it would reshuffle the top-10
+  // mid-round, swapping in cards whose sparklines aren't loaded yet ("No recent
+  // series") and defeating the FLIP glide. Instead we freeze the set and re-pin
+  // only when the batch id actually rolls over — so new markets load exactly
+  // once, at the round transition, and never mid-round.
+  const pinnedBatchRef = useRef<number | null | undefined>(undefined)
+  useEffect(() => {
+    if (rankedAssetIds.length === 0) return
+    const neverPinned = pinnedBatchRef.current === undefined
+    const batchRolled =
+      pinnedBatchRef.current != null &&
+      currentBatchId != null &&
+      currentBatchId !== pinnedBatchRef.current
+    if (neverPinned || batchRolled) {
+      pinnedBatchRef.current = currentBatchId
+      setPinnedAssetIds(rankedAssetIds)
+    } else if (pinnedBatchRef.current == null && currentBatchId != null) {
+      // First time the batch id resolves after an early (batchless) pin — adopt
+      // it without reshuffling the set we already showed.
+      pinnedBatchRef.current = currentBatchId
+    }
+  }, [rankedAssetIds, currentBatchId])
 
   // Round lifecycle. The oracle's /vision/rounds/active drops settled rounds,
   // so between ticks `round` briefly becomes null even though the batch is alive.

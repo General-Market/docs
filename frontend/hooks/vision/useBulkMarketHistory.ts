@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 
 export interface HistoryPoint {
   ts: number
@@ -67,6 +67,11 @@ export function useBulkMarketHistory(
     // user refresh by navigating away and back — polling every 60s was
     // hammering an endpoint that already struggles on big-defi sources.
     staleTime: 5 * 60_000,
+    // When the asset set changes at a round transition, keep the previous map
+    // on screen while the new one loads. Cards that persist into the new round
+    // hold their sparkline (no flash); only genuinely-new assets fall back to
+    // their own loading shimmer. This is what makes the swap smooth.
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
