@@ -28,7 +28,7 @@ const FPS = 60;
 
 // Light field palette. White ground, near-black keynote type, saturated data.
 const BG_GRADIENT =
-  "radial-gradient(ellipse 120% 90% at 50% 16%, #FFFFFF 0%, #F0F2F4 55%, #E7EAEE 100%)";
+  "radial-gradient(ellipse 120% 95% at 50% 18%, #FFFFFF 0%, #FBFCFE 62%, #F2F5F8 100%)";
 const PALETTE = {
   text: "#1D2026", // venue title
   textDim: "#6E727A", // subtitle
@@ -204,10 +204,10 @@ const buildBarrelMap = (): string => {
       const nx = ((i + 0.5) * cw - HALF_W) / HALF_W;
       const ny = ((j + 0.5) * ch - HALF_H) / HALF_H;
       const r2 = nx * nx + ny * ny;
-      // Sample inward, growing with r² → the centre magnifies and the image
-      // bulges. R encodes x-displacement, G encodes y (0.5 = none).
-      const dx = Math.max(-1, Math.min(1, (-nx * r2) / 2));
-      const dy = Math.max(-1, Math.min(1, (-ny * r2) / 2));
+      // Push outward, growing with r² → the image bulges convex like a tube.
+      // R encodes x-displacement, G encodes y (0.5 = none).
+      const dx = Math.max(-1, Math.min(1, (nx * r2) / 2));
+      const dy = Math.max(-1, Math.min(1, (ny * r2) / 2));
       const R = Math.round((dx * 0.5 + 0.5) * 255);
       const G = Math.round((dy * 0.5 + 0.5) * 255);
       rects += `<rect x='${(i * cw).toFixed(1)}' y='${(j * ch).toFixed(1)}' width='${(cw + 1).toFixed(1)}' height='${(ch + 1).toFixed(1)}' fill='rgb(${R},${G},128)'/>`;
@@ -218,7 +218,7 @@ const buildBarrelMap = (): string => {
   )}`;
 };
 const BARREL_MAP = buildBarrelMap();
-const BARREL_SCALE = 130; // base bow strength (px of edge displacement)
+const BARREL_SCALE = 180; // base bow strength (px of edge displacement)
 
 const SCREEN_MASK =
   "radial-gradient(ellipse 99% 99% at 50% 50%, #000 0%, #000 78%, transparent 100%)";
@@ -236,7 +236,7 @@ const CurvedScreen: React.FC = () => (
 
 // ── CRT / VCR overlays — deterministic feTurbulence seeded by the frame ─────
 
-const SNOW_OPACITY = 0.1;
+const SNOW_OPACITY = 0.16;
 
 const SnowStatic: React.FC = () => {
   const frame = useCurrentFrame();
@@ -313,7 +313,7 @@ const Scanlines: React.FC = () => (
       pointerEvents: "none",
       mixBlendMode: "multiply",
       backgroundImage:
-        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.28) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06))",
+        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.11) 50%), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.012), rgba(0,0,255,0.04))",
       backgroundSize: "100% 3px, 4px 100%",
     }}
   />
@@ -326,8 +326,8 @@ const CRTVignette: React.FC = () => (
       pointerEvents: "none",
       borderRadius: 26,
       background:
-        "radial-gradient(ellipse 84% 86% at 50% 50%, transparent 62%, rgba(0,0,0,0.16) 88%, rgba(0,0,0,0.38) 100%)",
-      boxShadow: "inset 0 0 120px 24px rgba(0,0,0,0.32)",
+        "radial-gradient(ellipse 88% 90% at 50% 50%, transparent 70%, rgba(0,0,0,0.08) 90%, rgba(0,0,0,0.22) 100%)",
+      boxShadow: "inset 0 0 90px 16px rgba(0,0,0,0.16)",
     }}
   />
 );
@@ -499,14 +499,10 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
   const swapDip = interpolate(Math.abs(tEased - 0.5) * 2, [0, 1], [0.12, 1]);
 
-  // Retro RGB glitch via per-channel barrel scale — red and blue are displaced
-  // a touch more/less than green, so the colour separates only toward the
-  // edges (zero at centre), with brief spikes. No screen wobble.
-  const chromaSpike = frame % 29 < 2 ? 11 : 0;
-  const sep = 5 + chromaSpike;
-  const scaleR = BARREL_SCALE + sep;
-  const scaleG = BARREL_SCALE;
-  const scaleB = BARREL_SCALE - sep;
+  // Retro RGB glitch — confined to the screen-border frame. It flicks WITH the
+  // graph: the channel offset jumps on each market landing (flash), then
+  // settles. Never touches the text. No screen wobble.
+  const borderOff = 0.6 + 4 * flash;
 
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
@@ -575,50 +571,13 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 preserveAspectRatio="none"
                 result="map"
               />
-              <feColorMatrix
-                in="SourceGraphic"
-                type="matrix"
-                values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                result="rc"
-              />
               <feDisplacementMap
-                in="rc"
+                in="SourceGraphic"
                 in2="map"
-                scale={scaleR}
+                scale={BARREL_SCALE}
                 xChannelSelector="R"
                 yChannelSelector="G"
-                result="rd"
               />
-              <feColorMatrix
-                in="SourceGraphic"
-                type="matrix"
-                values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                result="gc"
-              />
-              <feDisplacementMap
-                in="gc"
-                in2="map"
-                scale={scaleG}
-                xChannelSelector="R"
-                yChannelSelector="G"
-                result="gd"
-              />
-              <feColorMatrix
-                in="SourceGraphic"
-                type="matrix"
-                values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-                result="bc"
-              />
-              <feDisplacementMap
-                in="bc"
-                in2="map"
-                scale={scaleB}
-                xChannelSelector="R"
-                yChannelSelector="G"
-                result="bd"
-              />
-              <feBlend in="rd" in2="gd" mode="screen" result="rg" />
-              <feBlend in="rg" in2="bd" mode="screen" />
             </filter>
           </defs>
         </svg>
@@ -675,15 +634,15 @@ export const RetailPnLMarketsReel: React.FC = () => {
           {yTickElems}
           {ghostLines}
 
-          {/* Wide neon glow — flares as a market lands. */}
+          {/* Wide neon glow — bursts as a market lands so the colour pops. */}
           <polyline
             points={linePts}
             fill="none"
             stroke={curveColor}
-            strokeWidth={16 + 12 * flash}
+            strokeWidth={14 + 24 * flash}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={0.5 + 0.4 * flash}
+            opacity={0.45 + 0.55 * flash}
             filter="url(#reel-line-glow)"
           />
 
@@ -705,9 +664,9 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={(13 + 6 * flash) * pulseScale}
+                  r={(12 + 11 * flash) * pulseScale}
                   fill={curveColor}
-                  opacity={0.5 + 0.35 * flash}
+                  opacity={0.45 + 0.45 * flash}
                   filter="url(#reel-dot-glow)"
                 />
                 <circle
@@ -806,6 +765,39 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <VCRBand />
         <Scanlines />
         <CRTVignette />
+
+        {/* RGB-split glitch — only on the screen-border frame; never the text. */}
+        <svg
+          width={W}
+          height={H}
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            mixBlendMode: "multiply",
+          }}
+        >
+          {(
+            [
+              ["#FF2A2A", borderOff, borderOff],
+              ["#13DE45", 0, 0],
+              ["#2A6BFF", -borderOff, -borderOff],
+            ] as const
+          ).map(([stroke, ox, oy]) => (
+            <rect
+              key={stroke}
+              x={4}
+              y={4}
+              width={W - 8}
+              height={H - 8}
+              rx={16}
+              fill="none"
+              stroke={stroke}
+              strokeWidth={4}
+              transform={`translate(${ox}, ${oy})`}
+            />
+          ))}
+        </svg>
       </AbsoluteFill>
     </AbsoluteFill>
   );
