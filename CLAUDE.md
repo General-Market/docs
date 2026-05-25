@@ -154,7 +154,7 @@ Full inventory in `vps.md` under "VPS 3".
 
 ## Video / Remotion
 
-Remotion/video work lives in `video/`. **Read `video/.claude/rules/remotion.md` first** — it's the source of truth. The old chibi short pipeline is gone.
+Remotion/video work lives in `video/`. **Read `video/.claude/rules/remotion.md` first** — it's the source of truth.
 
 ## Writing Style — Christopher Alexander
 

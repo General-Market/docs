@@ -1,6 +1,6 @@
 # Remotion Video Project — AI Rules
 
-`@remotion/*` all at **4.0.438** (keep in lockstep). ~75 compositions already exist — study them before inventing patterns. No chibi pipeline, no `public/chibis/`, no fixed format.
+`@remotion/*` all at **4.0.438** (keep in lockstep). ~75 compositions already exist — study them before inventing patterns. Each composition sets its own format.
 
 ## Registering a composition
 
@@ -20,7 +20,7 @@ export const fooMeta = { id: "Foo", component: Foo, durationInFrames: DURATION, 
 
 ## Where files live
 
-Repo is `~/Downloads/index/video` — NOT `~/Downloads/video/` (dead path; scripts like `cut-short-02.sh` still pointing there are stale).
+Repo is `~/Downloads/index/video` (not `~/Downloads/video/`).
 
 - **`~/Movies/`** — recordings ("the movie"). Per session: `screen-/camera-/mic-YYYY-MM-DD-HH-MM.mkv`; **only mic has audio**. `01_transcribe.py`/`06_bake.py` read here.
 - **`~/Downloads/`** — final renders, YouTube reference clips (`YTDown_*`), thumbnails, review copies.
@@ -90,5 +90,5 @@ Cutout only the few seconds of the beat — a full-talk matte is ~40GB.
 
 - Assets in `public/` (SFX `public/sfx/`), via `staticFile()`. Animate with `useCurrentFrame()`+`interpolate()`, easing `spring()`.
 - A composition = its `*Meta` + a `<Composition>` in `Root.tsx`. One source.
-- `TOOLS.md` = full command reference. `PRODUCTION.md` = retired chibi pipeline, historical only.
+- `TOOLS.md` = full command reference.
 - Commit as you go.
