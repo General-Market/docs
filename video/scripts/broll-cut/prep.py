@@ -29,25 +29,35 @@ from detect_cuts import detect
 from montage import window_montage
 
 _TS = r"\d+:\d+(?::\d+)?(?:\.\d+)?"
-_LINE = re.compile(rf"^\s*({_TS})\s*(?:to|-|–|→)\s*({_TS})\s+(.+?)\s*$")
+_RANGE = re.compile(rf"^\s*({_TS})\s*(?:to|-|–|→)\s*({_TS})\s+(.+?)\s*$")
+_POINT = re.compile(rf"^\s*({_TS})\s+(.+?)\s*$")
 
 
 def parse_spec(path: str) -> list[dict]:
-    entries, seen = [], {}
+    """Each line is either a range ('M:SS to M:SS desc') or a point ('M:SS desc').
+    A point marks a frame inside the shot; prep brackets it with the cuts on
+    either side to grab the whole insert."""
+    entries, used = [], set()
     for raw in Path(path).read_text().splitlines():
         if not raw.strip() or raw.lstrip().startswith("#"):
             continue
-        m = _LINE.match(raw)
-        if not m:
+        rng = _RANGE.match(raw)
+        pt = _POINT.match(raw)
+        if rng:
+            a, b, desc = rng.groups()
+            vin, vout = parse_ts(a), parse_ts(b)
+        elif pt:
+            a, desc = pt.groups()
+            vin, vout = parse_ts(a), None
+        else:
             print(f"  ! could not parse: {raw!r}")
             continue
-        a, b, desc = m.groups()
-        s = slug(desc)
-        seen[s] = seen.get(s, 0) + 1
-        if seen[s] > 1:
-            s = f"{s}-{seen[s]}"
-        entries.append({"slug": s, "desc": desc.strip(),
-                        "vague_in": parse_ts(a), "vague_out": parse_ts(b)})
+        base = slug(desc)
+        s, k = base, 2
+        while s in used:  # guarantee a globally unique filename
+            s, k = f"{base}-{k}", k + 1
+        used.add(s)
+        entries.append({"slug": s, "desc": desc.strip(), "vague_in": vin, "vague_out": vout})
     return entries
 
 
@@ -88,17 +98,27 @@ def main() -> None:
     work = []
     print(f"\n{'#':>2}  {'slug':22} {'vague':>13}  {'snapped in→out':>22}  montage")
     for i, e in enumerate(entries, 1):
-        ci = nearest_cut(cuts, e["vague_in"], args.tol)
-        cut_in = ci if ci is not None else e["vague_in"]
-        # the out boundary is a cut AFTER the in boundary — never snap back onto it
-        co = nearest_cut([c for c in cuts if c > cut_in + 1e-3], e["vague_out"], args.tol)
-        cut_out = co if co is not None else max(e["vague_out"], cut_in + 1.0)
+        ok = True
+        if e["vague_out"] is None:  # point mark — bracket the shot containing the point
+            t = e["vague_in"]
+            prev = [c for c in cuts if c <= t + 0.05]
+            nxt = [c for c in cuts if c > t + 0.05]
+            cut_in = max(prev) if prev else 0.0
+            cut_out = min(nxt) if nxt else pr.duration
+            vague_disp = fmt_ts(t)
+        else:                       # range — snap each end to a real cut
+            ci = nearest_cut(cuts, e["vague_in"], args.tol)
+            cut_in = ci if ci is not None else e["vague_in"]
+            co = nearest_cut([c for c in cuts if c > cut_in + 1e-3], e["vague_out"], args.tol)
+            cut_out = co if co is not None else max(e["vague_out"], cut_in + 1.0)
+            ok = ci is not None and co is not None
+            vague_disp = f"{fmt_ts(e['vague_in'])}→{fmt_ts(e['vague_out'])}"
         win_start = max(0.0, cut_in - args.pad)
-        win_dur = min(pr.duration - win_start, (cut_out - cut_in) + args.pad + args.tail)
+        win_dur = min(pr.duration - win_start, (cut_out - cut_in) + args.pad + args.tail, 14.0)
         mont = wd / "montages" / f"{i:02d}_{e['slug']}.png"
         window_montage(args.video, win_start, win_dur, str(mont))
-        flag = "" if (ci is not None and co is not None) else "  ⚠ no nearby cut — widen --tol or eyeball"
-        print(f"{i:2d}  {e['slug']:22} {fmt_ts(e['vague_in'])+'→'+fmt_ts(e['vague_out']):>13}  "
+        flag = "" if ok else "  ⚠ no nearby cut — widen --tol or eyeball"
+        print(f"{i:2d}  {e['slug']:22} {vague_disp:>15}  "
               f"{fmt_ts(cut_in)+'→'+fmt_ts(cut_out):>22}  {mont.name}{flag}")
         work.append({**e, "cut_in": round(cut_in, 3), "cut_out": round(cut_out, 3),
                      "win_start": round(win_start, 3), "win_dur": round(win_dur, 3),
