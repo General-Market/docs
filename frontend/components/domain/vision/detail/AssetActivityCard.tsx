@@ -7,6 +7,7 @@ import fundData from '@/data/fund-branding.json'
 interface Props {
   sourceId: string
   dataNodeSourceId: string
+  settlementSourceId: string
   assetId: string
   isPrice: boolean
   valueUnit: string
@@ -215,6 +216,7 @@ function nearestValue(points: PricePoint[], ts: number): number | null {
 export function AssetActivityCard({
   sourceId: _sourceId,
   dataNodeSourceId,
+  settlementSourceId,
   assetId,
   isPrice,
   valueUnit,
@@ -273,7 +275,7 @@ export function AssetActivityCard({
     data: settlements,
     isLoading: settlementsLoading,
     isError: settlementsFailed,
-  } = useAssetSettlements(dataNodeSourceId, assetId, settlementLimit)
+  } = useAssetSettlements(settlementSourceId, assetId, settlementLimit)
 
   const { columns: allColumns, rows: allRows } = useMemo(
     () => buildMatrix(settlements ?? []),

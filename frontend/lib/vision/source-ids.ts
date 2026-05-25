@@ -7,6 +7,7 @@ import sourcesDisplay from '@/data/sources-display.json'
 
 const _internalToDisplay: Record<string, string> = {}
 const _displayToInternals: Record<string, string[]> = {}
+const _displayToBatchKey: Record<string, string> = {}
 
 for (const source of (sourcesDisplay as any).sources) {
   const ids: string[] = (source as any).internalIds ?? []
@@ -15,6 +16,13 @@ for (const source of (sourcesDisplay as any).sources) {
   }
   for (const internalId of ids) {
     _internalToDisplay[internalId] = source.sourceId
+  }
+  // Curated subsources share their parent's price firehose (internalIds) but
+  // run their own Vision batches, keyed by batchSubsourceKey in the oracle's
+  // vision_settlements table — not by the parent internal id.
+  const batchKey: string | undefined = (source as any).batchSubsourceKey
+  if (batchKey) {
+    _displayToBatchKey[source.sourceId] = batchKey
   }
 }
 
@@ -31,4 +39,17 @@ export function toInternalId(displayId: string): string {
 /** Get ALL internal IDs for a display ID (for trying multiple endpoints). */
 export function allInternalIds(displayId: string): string[] {
   return _displayToInternals[displayId] ?? [displayId]
+}
+
+/**
+ * Source ID used to key Vision *batches and settlements* on the oracle side.
+ *
+ * Most sources settle under their data-node internal ID. Curated subsources
+ * (e.g. `defillama-ai-agents`) are the exception: they borrow the parent's
+ * price firehose but run their own batch, so their settlements live under the
+ * `batchSubsourceKey` in `vision_settlements`. Querying the parent ID instead
+ * returns the wrong (and far larger) batch — wrong participants, slow scan.
+ */
+export function toBatchSourceId(displayId: string): string {
+  return _displayToBatchKey[displayId] ?? toInternalId(displayId)
 }

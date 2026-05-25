@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
+import { toBatchSourceId } from '@/lib/vision/source-ids'
 import { AssetActivityCard } from './AssetActivityCard'
 
 interface AssetDetailViewProps {
@@ -73,6 +74,11 @@ export function AssetDetailView({
 }: AssetDetailViewProps) {
   const { sources } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
+
+  // Settlements are keyed by the batch source id on the oracle. For curated
+  // subsources that is the subsource key, not the parent firehose id used for
+  // price history (dataNodeSourceId).
+  const settlementSourceId = toBatchSourceId(sourceId)
 
   const { data } = useSourceSnapshot(dataNodeSourceId)
   const market = useMemo(() => {
@@ -205,6 +211,7 @@ export function AssetDetailView({
       <AssetActivityCard
         sourceId={sourceId}
         dataNodeSourceId={dataNodeSourceId}
+        settlementSourceId={settlementSourceId}
         assetId={assetId}
         isPrice={isPrice}
         valueUnit={valueUnit}
