@@ -118,9 +118,24 @@ const GRID_SPACING = 30;
 const GRID_DOT_R = 1.7;
 const GRID_ALPHA = 0.16;
 
+// CRT "monitor curvature" — a barrel warp applied to the grid and the light
+// only; the chart and type stay flat in front. The warp is ~0 at the centre
+// and grows with r², so straight grid rows bow outward at the rim while the
+// data zone in the middle reads sharp. Bump BARREL_K to bend it harder.
+const BARREL_K = 0.12;
+const HALF_W = WIDTH / 2;
+const HALF_H = HEIGHT / 2;
+const barrel = (x: number, y: number): { x: number; y: number } => {
+  const nx = (x - HALF_W) / HALF_W;
+  const ny = (y - HALF_H) / HALF_H;
+  const f = 1 + BARREL_K * (nx * nx + ny * ny);
+  return { x: HALF_W + nx * f * HALF_W, y: HALF_H + ny * f * HALF_H };
+};
+
 const RegularGrid: React.FC = React.memo(() => {
-  const cols = Math.ceil(WIDTH / GRID_SPACING) + 1;
-  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 1;
+  // Extra margin rings so the outward bow still fills the frame corners.
+  const cols = Math.ceil(WIDTH / GRID_SPACING) + 9;
+  const rows = Math.ceil(HEIGHT / GRID_SPACING) + 9;
   return (
     <svg
       width={WIDTH}
@@ -128,16 +143,19 @@ const RegularGrid: React.FC = React.memo(() => {
       style={{ position: "absolute", inset: 0 }}
     >
       {Array.from({ length: rows }).flatMap((_, r) =>
-        Array.from({ length: cols }).map((__, c) => (
-          <circle
-            key={`${r}-${c}`}
-            cx={c * GRID_SPACING}
-            cy={r * GRID_SPACING}
-            r={GRID_DOT_R}
-            fill={PALETTE.accent}
-            opacity={GRID_ALPHA}
-          />
-        )),
+        Array.from({ length: cols }).map((__, c) => {
+          const p = barrel((c - 4) * GRID_SPACING, (r - 4) * GRID_SPACING);
+          return (
+            <circle
+              key={`${r}-${c}`}
+              cx={p.x}
+              cy={p.y}
+              r={GRID_DOT_R}
+              fill={PALETTE.accent}
+              opacity={GRID_ALPHA}
+            />
+          );
+        }),
       )}
     </svg>
   );
@@ -220,11 +238,12 @@ const TravellingLight: React.FC = () => {
                   if (fromStart < fadePx) a *= fromStart / fadePx;
                   if (fromEnd < fadePx) a *= fromEnd / fadePx;
                   a = Math.max(0, Math.min(1, a));
+                  const p = barrel(x, yC + yOff);
                   return (
                     <circle
                       key={di}
-                      cx={x}
-                      cy={yC + yOff}
+                      cx={p.x}
+                      cy={p.y}
                       r={GRID_DOT_R * 1.25}
                       fill={PALETTE.accent}
                       opacity={band.alpha * 0.7 * a}
