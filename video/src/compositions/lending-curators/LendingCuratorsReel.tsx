@@ -3,7 +3,7 @@
 // roster with the Morpho lockup and per-row Morpho tags.
 
 import { makeFlowMeta, type FlowDataset } from "../defi-flows/FlowReel";
-import { makeColumnsMeta } from "../defi-flows/FlowColumns";
+import { makeCrtBarMeta } from "../defi-flows/CrtBarReel";
 import { CURATORS, CURATORS_ASOF, CURATORS_SOURCE } from "./data";
 
 const LENDING_FLOW: FlowDataset = {
@@ -22,4 +22,4 @@ const LENDING_FLOW: FlowDataset = {
 };
 
 export const lendingCuratorsReelMeta = makeFlowMeta(LENDING_FLOW);
-export const lendingWinnersMeta = makeColumnsMeta(LENDING_FLOW, "LendingWinnersReel");
+export const lendingWinnersMeta = makeCrtBarMeta(LENDING_FLOW, "LendingWinnersReel");

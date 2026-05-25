@@ -8,7 +8,7 @@
 // data-node/src/config/dl-curated.json.
 
 import { makeFlowMeta, type FlowDataset } from "./FlowReel";
-import { makeColumnsMeta } from "./FlowColumns";
+import { makeCrtBarMeta } from "./CrtBarReel";
 
 const ASOF = "2026-05-25 08:17 UTC";
 const LOGOS = "defi-flows/logos";
@@ -117,8 +117,8 @@ export const predictionMarketsFlowMeta = makeFlowMeta(PREDICTION_FLOW);
 export const privacyFlowMeta = makeFlowMeta(PRIVACY_FLOW);
 export const rwaFlowMeta = makeFlowMeta(RWA_FLOW);
 
-// Winners-only vertical-column variants (same data, decliners dropped).
-export const perpsWinnersMeta = makeColumnsMeta(PERPS_FLOW, "PerpsWinnersReel");
-export const predictionMarketsWinnersMeta = makeColumnsMeta(PREDICTION_FLOW, "PredictionMarketsWinnersReel");
-export const privacyWinnersMeta = makeColumnsMeta(PRIVACY_FLOW, "PrivacyWinnersReel");
-export const rwaWinnersMeta = makeColumnsMeta(RWA_FLOW, "RwaWinnersReel");
+// Winners-only bar charts in the RetailPnLMarketsReel cathode style.
+export const perpsWinnersMeta = makeCrtBarMeta(PERPS_FLOW, "PerpsWinnersReel");
+export const predictionMarketsWinnersMeta = makeCrtBarMeta(PREDICTION_FLOW, "PredictionMarketsWinnersReel");
+export const privacyWinnersMeta = makeCrtBarMeta(PRIVACY_FLOW, "PrivacyWinnersReel");
+export const rwaWinnersMeta = makeCrtBarMeta(RWA_FLOW, "RwaWinnersReel");
