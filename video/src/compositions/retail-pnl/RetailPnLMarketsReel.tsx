@@ -141,61 +141,84 @@ const computeReelDuration = (dataset: Dataset, fps: number): number => {
 const DURATION = computeReelDuration(MARKETS_CONCENTRATION, FPS);
 
 // ── Background — curved monitor grid ───────────────────────────────────────
-// A faint square grid bowed OUTWARD by a barrel warp, like the grid on a
-// bulging CRT. Static; the chart and type sit flat and crisp in front.
-
-// Barrel bulge — the centre magnifies and the edge-midpoints hold, so straight
-// rows bow outward (convex) like a real tube. f = 1 at r²=1 (the edges), > 1
-// at the centre, < 1 only at the far corners.
-const BARREL_K = 0.12;
+// A flat square grid bowed by the barrel displacement filter together with the
+// rest of the screen, so the whole image curves like a CRT — text included.
 const HALF_W = WIDTH / 2;
 const HALF_H = HEIGHT / 2;
-const barrel = (x: number, y: number): { x: number; y: number } => {
-  const nx = (x - HALF_W) / HALF_W;
-  const ny = (y - HALF_H) / HALF_H;
-  const f = 1 + BARREL_K * (1 - (nx * nx + ny * ny));
-  return { x: HALF_W + nx * f * HALF_W, y: HALF_H + ny * f * HALF_H };
-};
 
 const GRID_SPACING = 150;
 const GRID_LINE_COLOR = "rgba(30, 44, 84, 0.07)";
-const GRID_MARGIN = 260; // sample beyond the frame so the bow still covers
 
-const bowedLine = (fixed: number, horizontal: boolean): string => {
-  const N = 48;
-  const span = horizontal ? WIDTH + 2 * GRID_MARGIN : HEIGHT + 2 * GRID_MARGIN;
-  const pts: string[] = [];
-  for (let i = 0; i <= N; i++) {
-    const v = -GRID_MARGIN + (i / N) * span;
-    const p = horizontal ? barrel(v, fixed) : barrel(fixed, v);
-    pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
-  }
-  return pts.join(" ");
-};
-
-const H_LINES = Array.from(
-  { length: Math.ceil(HEIGHT / GRID_SPACING) + 5 },
-  (_, i) => bowedLine((i - 2) * GRID_SPACING, true),
+// Flat straight grid. The whole screen — grid, chart, axis, title, logos — is
+// bowed together by the barrel displacement filter, so nothing is pre-curved.
+const H_YS = Array.from(
+  { length: Math.ceil(HEIGHT / GRID_SPACING) + 1 },
+  (_, i) => i * GRID_SPACING,
 );
-const V_LINES = Array.from(
-  { length: Math.ceil(WIDTH / GRID_SPACING) + 5 },
-  (_, i) => bowedLine((i - 2) * GRID_SPACING, false),
+const V_XS = Array.from(
+  { length: Math.ceil(WIDTH / GRID_SPACING) + 1 },
+  (_, i) => i * GRID_SPACING,
 );
 
-const CurvedGrid: React.FC = React.memo(() => (
+const FlatGrid: React.FC = React.memo(() => (
   <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
-    {[...H_LINES, ...V_LINES].map((pts, i) => (
-      <polyline
-        key={i}
-        points={pts}
-        fill="none"
+    {H_YS.map((y, i) => (
+      <line
+        key={`h-${i}`}
+        x1={-40}
+        y1={y}
+        x2={WIDTH + 40}
+        y2={y}
+        stroke={GRID_LINE_COLOR}
+        strokeWidth={1.5}
+      />
+    ))}
+    {V_XS.map((x, i) => (
+      <line
+        key={`v-${i}`}
+        x1={x}
+        y1={-40}
+        x2={x}
+        y2={HEIGHT + 40}
         stroke={GRID_LINE_COLOR}
         strokeWidth={1.5}
       />
     ))}
   </svg>
 ));
-CurvedGrid.displayName = "CurvedGrid";
+FlatGrid.displayName = "FlatGrid";
+
+// ── Barrel displacement map ────────────────────────────────────────────────
+// A precomputed radial map fed to feDisplacementMap. It bows the WHOLE screen
+// outward like a CRT — text included. Each RGB channel is displaced at a
+// slightly different scale, so the colour separates only toward the edges
+// (zero at the centre): the retro glitch rides the rim, never the main content.
+const DISP_NX = 96;
+const DISP_NY = 54;
+const buildBarrelMap = (): string => {
+  const cw = WIDTH / DISP_NX;
+  const ch = HEIGHT / DISP_NY;
+  let rects = "";
+  for (let j = 0; j < DISP_NY; j++) {
+    for (let i = 0; i < DISP_NX; i++) {
+      const nx = ((i + 0.5) * cw - HALF_W) / HALF_W;
+      const ny = ((j + 0.5) * ch - HALF_H) / HALF_H;
+      const r2 = nx * nx + ny * ny;
+      // Sample inward, growing with r² → the centre magnifies and the image
+      // bulges. R encodes x-displacement, G encodes y (0.5 = none).
+      const dx = Math.max(-1, Math.min(1, (-nx * r2) / 2));
+      const dy = Math.max(-1, Math.min(1, (-ny * r2) / 2));
+      const R = Math.round((dx * 0.5 + 0.5) * 255);
+      const G = Math.round((dy * 0.5 + 0.5) * 255);
+      rects += `<rect x='${(i * cw).toFixed(1)}' y='${(j * ch).toFixed(1)}' width='${(cw + 1).toFixed(1)}' height='${(ch + 1).toFixed(1)}' fill='rgb(${R},${G},128)'/>`;
+    }
+  }
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}'>${rects}</svg>`,
+  )}`;
+};
+const BARREL_MAP = buildBarrelMap();
+const BARREL_SCALE = 130; // base bow strength (px of edge displacement)
 
 const SCREEN_MASK =
   "radial-gradient(ellipse 99% 99% at 50% 50%, #000 0%, #000 78%, transparent 100%)";
@@ -205,11 +228,9 @@ const CurvedScreen: React.FC = () => (
     style={{
       WebkitMaskImage: SCREEN_MASK,
       maskImage: SCREEN_MASK,
-      // Retro RGB-split glitch — strongest where the grid bows into the corners.
-      filter: "url(#reel-chroma)",
     }}
   >
-    <CurvedGrid />
+    <FlatGrid />
   </AbsoluteFill>
 );
 
@@ -478,15 +499,14 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
   const swapDip = interpolate(Math.abs(tEased - 0.5) * 2, [0, 1], [0.12, 1]);
 
-  // CRT wobble — a 10px vertical jitter (10× the original amplitude). The
-  // overscan below is widened so the bigger shift never reveals the edge.
-  const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 10;
-
-  // Retro RGB glitch — a small constant chromatic split with brief spikes, so
-  // the red/blue channels separate on the curve and out toward the corners.
-  const chromaSpike = frame % 29 < 2 ? 5 : 0;
-  const chromaDX = 1.4 + chromaSpike + Math.sin(frame * 1.7) * 0.5;
-  const chromaDY = chromaSpike > 0 ? 1.5 : 0;
+  // Retro RGB glitch via per-channel barrel scale — red and blue are displaced
+  // a touch more/less than green, so the colour separates only toward the
+  // edges (zero at centre), with brief spikes. No screen wobble.
+  const chromaSpike = frame % 29 < 2 ? 11 : 0;
+  const sep = 5 + chromaSpike;
+  const scaleR = BARREL_SCALE + sep;
+  const scaleG = BARREL_SCALE;
+  const scaleB = BARREL_SCALE - sep;
 
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
@@ -511,7 +531,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         style={{
           background: BG_GRADIENT,
           fontFamily: INTER,
-          transform: `translateY(${wobbleY}px) scale(${(1.024 * sdScaleX).toFixed(4)}, ${(1.024 * sdScaleY).toFixed(4)})`,
+          transform: `scale(${(1.02 * sdScaleX).toFixed(4)}, ${(1.02 * sdScaleY).toFixed(4)})`,
           transformOrigin: "50% 50%",
           filter: `brightness(${sdBright.toFixed(2)})`,
           opacity: sdOpacity,
@@ -539,39 +559,73 @@ export const RetailPnLMarketsReel: React.FC = () => {
               <feGaussianBlur stdDeviation="6" />
             </filter>
             <filter
-              id="reel-chroma"
-              x="-5%"
-              y="-5%"
-              width="110%"
-              height="110%"
+              id="reel-barrel"
+              x="-12%"
+              y="-12%"
+              width="124%"
+              height="124%"
               colorInterpolationFilters="sRGB"
             >
+              <feImage
+                href={BARREL_MAP}
+                x="0"
+                y="0"
+                width={WIDTH}
+                height={HEIGHT}
+                preserveAspectRatio="none"
+                result="map"
+              />
               <feColorMatrix
                 in="SourceGraphic"
                 type="matrix"
                 values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                result="r"
+                result="rc"
               />
-              <feOffset in="r" dx={chromaDX} dy={chromaDY} result="rS" />
+              <feDisplacementMap
+                in="rc"
+                in2="map"
+                scale={scaleR}
+                xChannelSelector="R"
+                yChannelSelector="G"
+                result="rd"
+              />
               <feColorMatrix
                 in="SourceGraphic"
                 type="matrix"
                 values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                result="g"
+                result="gc"
+              />
+              <feDisplacementMap
+                in="gc"
+                in2="map"
+                scale={scaleG}
+                xChannelSelector="R"
+                yChannelSelector="G"
+                result="gd"
               />
               <feColorMatrix
                 in="SourceGraphic"
                 type="matrix"
                 values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-                result="b"
+                result="bc"
               />
-              <feOffset in="b" dx={-chromaDX} dy={-chromaDY} result="bS" />
-              <feBlend in="rS" in2="g" mode="screen" result="rg" />
-              <feBlend in="rg" in2="bS" mode="screen" />
+              <feDisplacementMap
+                in="bc"
+                in2="map"
+                scale={scaleB}
+                xChannelSelector="R"
+                yChannelSelector="G"
+                result="bd"
+              />
+              <feBlend in="rd" in2="gd" mode="screen" result="rg" />
+              <feBlend in="rg" in2="bd" mode="screen" />
             </filter>
           </defs>
         </svg>
 
+        {/* Everything on the tube — grid, chart, type, logos — bowed together
+            by the barrel displacement filter, so the whole image curves. */}
+        <AbsoluteFill style={{ filter: "url(#reel-barrel)" }}>
         <CurvedScreen />
 
         {/* Header — centered. Venue is the big title; metric is the subtitle. */}
@@ -616,7 +670,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           width={W}
           height={H}
           viewBox={`0 0 ${W} ${H}`}
-          style={{ position: "absolute", inset: 0, filter: "url(#reel-chroma)" }}
+          style={{ position: "absolute", inset: 0 }}
         >
           {yTickElems}
           {ghostLines}
@@ -735,6 +789,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
             Source: {source}
           </div>
         ) : null}
+        </AbsoluteFill>
 
         {/* Soft screen glare. */}
         <AbsoluteFill
