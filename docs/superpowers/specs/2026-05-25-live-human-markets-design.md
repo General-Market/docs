@@ -8,7 +8,7 @@
 2. **A legible card.** A Polymarket-style card that states the proposition in words, answers it with YES / NO, and shows honest implied odds.
 3. **A legible close.** The big chart must say, plainly, what price by what time wins.
 
-Applies to the five named sources — **pumpfun, polymarket, hackernews, defillama (+ its 18 human subsources), twitch** — and generalises to every `audience: 'human'` source.
+Applies to **pumpfun, polymarket, hackernews, defillama (+ its 18 human subsources), twitch, steam** — and generalises to every `audience: 'human'` source.
 
 ## The invariant that constrains everything
 
@@ -38,15 +38,20 @@ interface LiveFeedAdapter {
 }
 ```
 
-| Source | Upstream (keyless, CORS to verify) | Upstream id from assetId | Batched? |
-|---|---|---|---|
-| pumpfun | `lite-api.jup.ag/price/v3?ids=…` | mint = `apiRef` (or strip `pf_`) | ✅ one call, many mints |
-| hackernews | `hacker-news.firebaseio.com/v0/item/<id>.json` → `.score` / `.descendants` | id from `hn_<id>_<metric>` | ❌ one call per story |
-| defillama | `api.llama.fi/tvl/<slug>` (bare number) | slug from `apiRef`/assetId | ❌ one call per protocol |
-| polymarket | `gamma-api.polymarket.com` price/probability | market/token id from `apiRef`/assetId | depends on endpoint |
-| **twitch** | — needs OAuth — **no adapter** (`null`) | — | — |
+| Source | Upstream | Keyless | CORS | Path |
+|---|---|---|---|---|
+| pumpfun | `lite-api.jup.ag/price/v3?ids=…` (mint = `apiRef`/strip `pf_`) | ✅ | ✅ **confirmed** (echoes origin) | client-direct, batched |
+| hackernews | `hacker-news.firebaseio.com/v0/item/<id>.json` → `.score`/`.descendants` (id from `hn_<id>_<metric>`) | ✅ | probe | client-direct, per-story |
+| defillama | `api.llama.fi/tvl/<slug>` bare number (slug from `apiRef`/assetId) | ✅ | probe | client-direct, per-protocol |
+| polymarket | `gamma-api.polymarket.com` price/probability (id from `apiRef`/assetId) | ✅ | probe | client-direct |
+| **steam** | `api.steampowered.com/.../GetNumberOfCurrentPlayers` (appid from `apiRef` `appid:<n>`) | ✅ | ❌ **confirmed blocked** (no CORS headers) | **server-feed** |
+| **twitch** | `api.twitch.tv` — needs OAuth | ❌ | — | **server-feed** |
 
-**Fallback chain:** adapter `null` or any failure → fall back to the existing server `/api/market/history`, polled at a modest interval. Twitch always uses this path; its server feed is already 60s, so its candles already move. On upstream error, show the last good candle — never a broken chart (no false hopes).
+**Two paths, one fallback.**
+- *Client-direct* (keyless **and** CORS-open): the browser polls the upstream itself; rate limit rides the user's IP. pumpfun confirmed; the other three gated on a per-source CORS probe.
+- *Server-feed* (OAuth or no CORS — steam, twitch): no browser adapter. Instead, **refetch the existing `/api/market/history` on an interval** and live-update the candle. This is also the universal fallback for any client-direct source whose probe fails or whose poll errors. On error, show the last good candle — never a broken chart (no false hopes).
+
+**The server-feed refetch is the cheap universal baseline.** It alone fixes steam: the data already moves hard server-side (CS2 swung 623k→1.37M players in 24h, 71 distinct points — confirmed against production 2026-05-25), but the chart fetches once and caches 2 min, so nothing new ever appears. A refetch interval + lower cache makes those points show up. Every source gets this baseline; client-direct adapters are the sub-minute *optimisation* layered on the keyless+CORS ones.
 
 ### 2. `useLiveValues` hook
 
@@ -106,8 +111,8 @@ Edited:
 ## Phases (each ≤ 5 files, verify + commit + push between)
 
 - **Phase 0 — Step-0 cleanup.** `HumanMarketCard` and `MarketCandleChart` are both >300 LOC; strip dead props/imports/logs first, separate commit.
-- **Phase 1 — Live feed infra + pumpfun.** Adapter interface + pumpfun adapter + `useLiveValues` (visibility-gated, fallback). Wire into `MarketCandleChart` for pumpfun only. **First step: a real-browser CORS+limit probe of `lite-api.jup.ag`.** Verify the rightmost candle moves within the poll interval.
-- **Phase 2 — Remaining adapters.** hackernews, defillama, polymarket (each gated by its own CORS probe); twitch fallback. Verify each source's candle moves or falls back cleanly.
+- **Phase 1 — Server-feed refetch baseline.** `MarketCandleChart` (+ the mini-chart) refetch `/api/market/history` on a visibility-gated interval; drop the 2-min `staleTime` and lower the CDN cache; live-update the rightmost candle from each refetch. This alone makes **every** source move on its server cadence — steam and twitch included — at near-zero risk. Verify steam's chart advances after a refetch.
+- **Phase 2 — Client-direct adapters (sub-minute optimisation).** Adapter interface + `useLiveValues` (visibility-gated) for the keyless+CORS sources, layered over the Phase-1 baseline: pumpfun first (Jupiter CORS already confirmed), then hackernews, defillama, polymarket — **each gated by a real-browser CORS probe as its first step**; on refusal that source simply keeps the Phase-1 baseline. Verify pumpfun ticks sub-minute.
 - **Phase 3 — Polymarket card.** Proposition text + YES/NO mapping + odds/pool from floor store + live mini-chart.
 - **Phase 4 — Close clarity.** Settlement marker, countdown, plain sentence on the big chart.
 
@@ -115,7 +120,7 @@ Each phase: `npx tsc --noEmit` + `npx eslint . --quiet` on the slice, then commi
 
 ## Risks
 
-- **R1 — CORS not actually open** for polymarket / defillama / HN. Mitigation: probe from a real browser as the first step of each adapter; on refusal, that source uses the server-feed fallback (still gets faster refetch).
+- **R1 — CORS not actually open** for polymarket / defillama / HN. Mitigation: probe from a real browser as the first step of each adapter; on refusal, that source uses the server-feed path (still gets the refetch baseline). *Already settled:* Jupiter open (pumpfun ✅), Steam blocked (→ server-feed).
 - **R2 — Per-asset poll volume** for non-batchable upstreams (HN, llama, polymarket). Mitigation: visible cards only, gentle interval, visibility-gated, full live rebuild only for the focused token.
 - **R3 — Unit mismatch** between an upstream value and our stored value (e.g. llama raw USD vs our TVL scaling). Mitigation: each adapter must return the value in the same units as `/api/market/history`; verify per adapter against a known asset.
 - **R4 — Display vs settlement divergence.** Entry/target lines stay from the oracle `openPrice`; accept the cosmetic gap; label the levels as authoritative.
