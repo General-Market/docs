@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
   spring,
   staticFile,
@@ -10,11 +11,14 @@ import {
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { EASE } from "../../common/easing";
 import {
+  changePct,
   CURATORS,
   CURATORS_ASOF,
   CURATORS_SOURCE,
+  deltaUsd,
   fmtPct,
   fmtUSD,
+  fmtUsdSigned,
   TOP_GAINER_ID,
   type Curator,
 } from "./data";
@@ -38,18 +42,26 @@ const PALETTE = {
   textVeryDim: "#5F6571",
   gold: "#F1B638",
   goldBright: "#F4B73B",
+  onGold: "#15171C",
   loss: "#D8584F",
-  lossDim: "rgba(216, 88, 79, 0.85)",
   axis: "#E4E7EB",
-  tick: "rgba(255, 255, 255, 0.30)",
   baseline: "rgba(255, 255, 255, 0.42)",
   morpho: "#5B7CFA",
   rowHi: "rgba(241, 182, 56, 0.07)",
 };
 
-// Symmetric diverging scale — the longest bar (gain or loss) reaches the edge.
-const MAX_ABS = Math.max(...CURATORS.map((c) => Math.abs(c.change24h)));
-const SCALE_MAX = Math.ceil(MAX_ABS * 10) / 10; // round up to a clean 0.1
+// Diverging scale, measured in dollars of net 24h flow. Nice round tick step,
+// and a touch of headroom so the longest bar doesn't glue to the plot edge.
+const niceStep = (max: number): number => {
+  const rough = max / 3;
+  const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+  const n = rough / pow;
+  const step = n >= 5 ? 5 : n >= 2 ? 2 : 1;
+  return step * pow;
+};
+const MAX_ABS = Math.max(...CURATORS.map((c) => Math.abs(deltaUsd(c))));
+const TICK_STEP = niceStep(MAX_ABS);
+const SCALE_MAX = MAX_ABS * 1.12;
 
 const MARGIN = 120;
 const ROWS_TOP = 620;
@@ -65,6 +77,12 @@ const X_ZERO = (PLOT_L + PLOT_R) / 2;
 const HALF_W = PLOT_W / 2;
 
 const xForValue = (v: number) => X_ZERO + (v / SCALE_MAX) * HALF_W;
+
+const fmtTick = (t: number): string => {
+  if (Math.abs(t) < 1) return "$0";
+  const m = t / 1_000_000;
+  return `${t > 0 ? "+" : "−"}$${Math.abs(m)}M`;
+};
 
 const GridBackdrop: React.FC = () => {
   const spacing = 120;
@@ -120,26 +138,38 @@ const Row: React.FC<{ curator: Curator; index: number; rank: number }> = ({ cura
   });
 
   const cy = ROWS_TOP + index * ROW_GAP + ROW_GAP / 2;
-  const isGain = curator.change24h >= 0;
+  const delta = deltaUsd(curator);
+  const isGain = delta >= 0;
   const isTop = curator.id === TOP_GAINER_ID;
   const barColor = isGain ? (isTop ? PALETTE.goldBright : PALETTE.gold) : PALETTE.loss;
 
-  const fullEnd = xForValue(curator.change24h);
+  const fullEnd = xForValue(delta);
   const animEnd = X_ZERO + (fullEnd - X_ZERO) * grow;
   const barX = Math.min(X_ZERO, animEnd);
   const barW = Math.abs(animEnd - X_ZERO);
 
-  const shownPct = curator.change24h * grow;
+  // Long bars carry their value inside the tip; short ones sit just outside it.
+  const labelInside = Math.abs(fullEnd - X_ZERO) > 200;
+  const shownDelta = delta * grow;
+  let labelX: number;
+  let labelAnchor: "start" | "end";
+  let labelFill: string;
+  if (isGain) {
+    labelInside
+      ? ((labelX = animEnd - 20), (labelAnchor = "end"), (labelFill = PALETTE.onGold))
+      : ((labelX = animEnd + 24), (labelAnchor = "start"), (labelFill = PALETTE.goldBright));
+  } else {
+    labelInside
+      ? ((labelX = animEnd + 20), (labelAnchor = "start"), (labelFill = "#FFFFFF"))
+      : ((labelX = animEnd - 24), (labelAnchor = "end"), (labelFill = PALETTE.loss));
+  }
+
   const logoSize = 92;
   const logoX = MARGIN;
   const nameX = logoX + logoSize + 30;
 
   // The top gainer breathes a touch after it has fully arrived.
-  const crownPulse = isTop
-    ? 1 + 0.06 * Math.sin(Math.max(0, frame - start - 50) / 12)
-    : 1;
-
-  const pctLabelX = isGain ? animEnd + 28 : animEnd - 28;
+  const crownPulse = isTop ? 1 + 0.06 * Math.sin(Math.max(0, frame - start - 50) / 12) : 1;
 
   return (
     <div style={{ position: "absolute", inset: 0, opacity, transform: `translateX(${slide}px)` }}>
@@ -150,7 +180,7 @@ const Row: React.FC<{ curator: Curator; index: number; rank: number }> = ({ cura
             position: "absolute",
             top: cy - ROW_H / 2 - 6,
             left: MARGIN - 28,
-            width: WIDTH - (MARGIN - 28) - (MARGIN - 28),
+            width: WIDTH - (MARGIN - 28) * 2,
             height: ROW_H + 12,
             borderRadius: 28,
             background: PALETTE.rowHi,
@@ -174,14 +204,14 @@ const Row: React.FC<{ curator: Curator; index: number; rank: number }> = ({ cura
           transform: `scale(${crownPulse})`,
         }}
       >
-        <img
+        <Img
           src={staticFile(`lending-curators/logos/${curator.id}.jpg`)}
           alt={curator.name}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </div>
 
-      {/* name + AUM + rank */}
+      {/* name + AUM + percent + rank */}
       <div style={{ position: "absolute", top: cy - 46, left: nameX, width: PLOT_L - nameX - 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontFamily: INTER, fontSize: 30, fontWeight: 700, color: PALETTE.textVeryDim, fontVariantNumeric: "tabular-nums", width: 44 }}>
@@ -208,26 +238,27 @@ const Row: React.FC<{ curator: Curator; index: number; rank: number }> = ({ cura
             </span>
           ) : null}
         </div>
-        <div style={{ fontFamily: INTER, fontSize: 28, fontWeight: 500, color: PALETTE.textDim, marginTop: 6, marginLeft: 60 }}>
-          {fmtUSD(curator.aum)} under curation
+        <div style={{ fontFamily: INTER, fontSize: 28, fontWeight: 500, color: PALETTE.textDim, marginTop: 6, marginLeft: 60, whiteSpace: "nowrap" }}>
+          {fmtUSD(curator.aum)} AUM
+          <span style={{ color: PALETTE.textVeryDim }}>{"  ·  "}{fmtPct(changePct(curator))}</span>
         </div>
       </div>
 
-      {/* bar + value */}
+      {/* bar + dollar value */}
       <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0 }}>
-        <rect x={barX} y={cy - 22} width={Math.max(0, barW)} height={44} rx={10} fill={barColor} />
+        <rect x={barX} y={cy - 23} width={Math.max(0, barW)} height={46} rx={10} fill={barColor} />
         <text
-          x={pctLabelX}
-          y={cy + 16}
-          textAnchor={isGain ? "start" : "end"}
+          x={labelX}
+          y={cy + 14}
+          textAnchor={labelAnchor}
           fontFamily={INTER}
-          fontSize={44}
+          fontSize={40}
           fontWeight={800}
           letterSpacing="-0.01em"
-          fill={isGain ? PALETTE.goldBright : PALETTE.loss}
+          fill={labelFill}
           style={{ fontVariantNumeric: "tabular-nums" } as React.CSSProperties}
         >
-          {fmtPct(shownPct)}
+          {fmtUsdSigned(shownDelta)}
         </text>
       </svg>
     </div>
@@ -244,12 +275,13 @@ export const LendingCuratorsReel: React.FC = () => {
   });
   const headerLift = interpolate(headerEnter, [0, 1], [36, 0]);
 
-  // Ranked by 24h change, descending (data is already sorted).
+  // Ranked by 24h dollar flow, descending (data is already sorted).
   const rows = CURATORS;
 
-  // Axis ticks across the diverging scale.
+  // Axis ticks across the diverging dollar scale.
   const ticks: number[] = [];
-  for (let t = -SCALE_MAX; t <= SCALE_MAX + 1e-9; t += 0.5) ticks.push(Math.round(t * 100) / 100);
+  const maxTick = Math.floor(SCALE_MAX / TICK_STEP) * TICK_STEP;
+  for (let t = -maxTick; t <= maxTick + 1; t += TICK_STEP) ticks.push(t);
 
   return (
     <AbsoluteFill
@@ -275,7 +307,7 @@ export const LendingCuratorsReel: React.FC = () => {
           Lending’s risk curators
         </div>
         <div style={{ fontFamily: INTER, fontSize: 38, fontWeight: 500, letterSpacing: "-0.01em", color: PALETTE.textDim, marginTop: 18, maxWidth: 1280 }}>
-          Change in assets under curation — the desks running the Morpho, Euler &amp; Spark lending vaults.
+          Net dollars in or out over 24h — the desks running the Morpho, Euler &amp; Spark lending vaults.
         </div>
       </div>
 
@@ -301,7 +333,7 @@ export const LendingCuratorsReel: React.FC = () => {
           </div>
         </div>
         <div style={{ width: 96, height: 96, borderRadius: 28, overflow: "hidden", background: "rgba(255,255,255,0.96)", boxShadow: "0 16px 40px -24px rgba(0,0,0,0.9)" }}>
-          <img src={staticFile("lending-curators/logos/morpho.png")} alt="Morpho" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <Img src={staticFile("lending-curators/logos/morpho.png")} alt="Morpho" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       </div>
 
@@ -309,7 +341,7 @@ export const LendingCuratorsReel: React.FC = () => {
       <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, opacity: headerEnter }}>
         {ticks.map((t) => {
           const x = xForValue(t);
-          const isZero = Math.abs(t) < 1e-9;
+          const isZero = Math.abs(t) < 1;
           return (
             <g key={`tick-${t}`}>
               <line
@@ -330,7 +362,7 @@ export const LendingCuratorsReel: React.FC = () => {
                 fill={isZero ? PALETTE.axis : PALETTE.textVeryDim}
                 style={{ fontVariantNumeric: "tabular-nums" } as React.CSSProperties}
               >
-                {t > 0 ? `+${t}%` : `${t}%`}
+                {fmtTick(t)}
               </text>
             </g>
           );
