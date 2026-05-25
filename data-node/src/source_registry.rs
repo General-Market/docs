@@ -169,4 +169,65 @@ impl SourceRegistry {
     pub fn has_internal_id(&self, internal_id: &str) -> bool {
         self.sources.iter().any(|s| s.internal_ids.iter().any(|iid| iid == internal_id))
     }
+
+    /// Resolve the source string used to *store prices* for a given batch source.
+    ///
+    /// Curated subsources (e.g. `defillama-ai-agents`) run their own batch keyed
+    /// by `batch_subsource_key`, but they never ingest their own prices — those
+    /// live under the parent firehose (`internal_ids[0]`, e.g. `defi`). A snapshot
+    /// query keyed on the subsource name finds nothing, which is why every curated
+    /// subsource batch was resolving 100% Cancelled. For non-subsource sources the
+    /// input is already the ingestion source, so it passes through unchanged.
+    pub fn price_source_for(&self, batch_source: &str) -> String {
+        for s in &self.sources {
+            if s.batch_subsource_key.as_deref() == Some(batch_source) {
+                if let Some(parent) = s.internal_ids.first() {
+                    return parent.clone();
+                }
+            }
+        }
+        batch_source.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn src(source_id: &str, internal_ids: &[&str], subsource_key: Option<&str>) -> SourceDisplay {
+        SourceDisplay {
+            source_id: source_id.to_string(),
+            name: source_id.to_string(),
+            description: String::new(),
+            category: String::new(),
+            logo: String::new(),
+            brand_bg: String::new(),
+            prefixes: vec![],
+            value_label: String::new(),
+            value_unit: String::new(),
+            is_price: false,
+            internal_ids: internal_ids.iter().map(|s| s.to_string()).collect(),
+            sync_interval_secs: 600,
+            batch_eligible: true,
+            batch_subsource_key: subsource_key.map(|s| s.to_string()),
+            audience: None,
+        }
+    }
+
+    #[test]
+    fn price_source_resolves_curated_subsource_to_parent_firehose() {
+        let reg = SourceRegistry {
+            sources: vec![
+                src("defillama-ai-agents", &["defi"], Some("defillama-ai-agents")),
+                src("coingecko", &["crypto"], None),
+            ],
+            categories: vec![],
+        };
+        // Curated subsource → parent ingestion id.
+        assert_eq!(reg.price_source_for("defillama-ai-agents"), "defi");
+        // Non-subsource source → unchanged.
+        assert_eq!(reg.price_source_for("crypto"), "crypto");
+        // Unknown source → unchanged.
+        assert_eq!(reg.price_source_for("nope"), "nope");
+    }
 }

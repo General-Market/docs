@@ -335,6 +335,12 @@ pub async fn snapshot_targeted(
         ));
     }
 
+    // Curated subsources (e.g. `defillama-ai-agents`) carry the subsource key as
+    // their batch source, but their prices are ingested under the parent firehose
+    // (`defi`). Resolve to the price-ingestion source so the snapshot query finds
+    // rows — without this, every curated subsource batch resolves 100% Cancelled.
+    let price_source = state.source_registry.price_source_for(&body.source);
+
     let rows: Vec<(
         String,          // asset_id
         String,          // source
@@ -360,7 +366,7 @@ pub async fn snapshot_targeted(
         ORDER BY l.asset_id
         "#,
     )
-    .bind(&body.source)
+    .bind(&price_source)
     .bind(&body.asset_ids)
     .fetch_all(&state.pool)
     .await
