@@ -17,7 +17,8 @@
       "valueUnit": "USD",
       "isPrice": true,
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "pumpfun",
@@ -36,7 +37,8 @@
         "pumpfun"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "defillama",
@@ -378,7 +380,7 @@
       "isPrice": true,
       "syncIntervalSecs": 600,
       "batchEligible": true,
-      "audience": "bot"
+      "audience": "human"
     },
     {
       "sourceId": "defillama-volume-all",
@@ -394,7 +396,7 @@
       "isPrice": true,
       "syncIntervalSecs": 600,
       "batchEligible": true,
-      "audience": "bot"
+      "audience": "human"
     },
     {
       "sourceId": "defillama-fees-all",
@@ -410,7 +412,7 @@
       "isPrice": true,
       "syncIntervalSecs": 600,
       "batchEligible": true,
-      "audience": "bot"
+      "audience": "human"
     },
     {
       "sourceId": "defillama-revenue-all",
@@ -426,7 +428,7 @@
       "isPrice": true,
       "syncIntervalSecs": 600,
       "batchEligible": true,
-      "audience": "bot"
+      "audience": "human"
     },
     {
       "sourceId": "nasdaq",
@@ -447,7 +449,8 @@
         "stocks"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "zillow",
@@ -466,7 +469,8 @@
         "zillow"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "polymarket",
@@ -485,7 +489,8 @@
         "polymarket"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "finra",
@@ -504,7 +509,8 @@
         "finra"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "finra_short_vol",
@@ -523,7 +529,8 @@
         "finra_short_vol"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "futures",
@@ -542,7 +549,8 @@
         "futures"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "bchain",
@@ -561,7 +569,8 @@
         "bchain"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "yahoo_drinks",
@@ -580,7 +589,8 @@
         "yahoo_drinks"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "twse",
@@ -599,7 +609,8 @@
         "twse"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "bestbuy",
@@ -618,7 +629,8 @@
         "bestbuy"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "fred",
@@ -637,7 +649,8 @@
       "valueUnit": "%",
       "isPrice": false,
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "eia",
@@ -656,7 +669,8 @@
         "eia"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "treasury",
@@ -676,7 +690,8 @@
       "valueUnit": "%",
       "isPrice": false,
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "ecb",
@@ -695,7 +710,8 @@
         "ecb"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "boe",
@@ -714,7 +730,8 @@
         "boe"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "worldbank",
@@ -733,7 +750,8 @@
         "worldbank"
       ],
       "syncIntervalSecs": 604800,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "bls",
@@ -752,7 +770,8 @@
         "bls"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "adzuna",
@@ -771,7 +790,8 @@
         "adzuna"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "usa_spending",
@@ -790,7 +810,8 @@
         "usa_spending"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "imf",
@@ -809,7 +830,8 @@
         "imf"
       ],
       "syncIntervalSecs": 2592000,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "opec",
@@ -828,7 +850,8 @@
         "opec"
       ],
       "syncIntervalSecs": 2592000,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "cftc",
@@ -847,7 +870,8 @@
         "cftc"
       ],
       "syncIntervalSecs": 604800,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "sec",
@@ -870,7 +894,8 @@
       "valueUnit": "",
       "isPrice": false,
       "syncIntervalSecs": 21600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "congress",
@@ -889,7 +914,8 @@
         "congress"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "courtlistener",
@@ -908,7 +934,8 @@
         "courtlistener"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "nyc311",
@@ -927,7 +954,8 @@
         "nyc311"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "github",
@@ -946,7 +974,8 @@
         "github"
       ],
       "syncIntervalSecs": 86400,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "npm",
@@ -965,7 +994,8 @@
         "npm"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "pypi",
@@ -984,7 +1014,8 @@
         "pypi"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "crates_io",
@@ -1003,7 +1034,8 @@
         "crates_io"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "stackexchange",
@@ -1022,7 +1054,8 @@
         "stackexchange"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "hackernews",
@@ -1041,7 +1074,8 @@
         "hackernews"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "cloudflare",
@@ -1060,7 +1094,8 @@
         "cloudflare"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "ioda",
@@ -1079,7 +1114,8 @@
         "ioda"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "openalex",
@@ -1098,7 +1134,8 @@
         "openalex"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "crossref",
@@ -1117,7 +1154,8 @@
         "crossref"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "pubmed",
@@ -1136,7 +1174,8 @@
         "pubmed"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "twitch",
@@ -1155,7 +1194,8 @@
         "twitch"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "tmdb",
@@ -1174,7 +1214,8 @@
         "tmdb"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "lastfm",
@@ -1193,7 +1234,8 @@
         "lastfm"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "steam",
@@ -1212,7 +1254,8 @@
         "steam"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "anilist",
@@ -1231,7 +1274,8 @@
         "anilist"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "reddit",
@@ -1250,7 +1294,8 @@
         "reddit"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "chaturbate",
@@ -1269,7 +1314,8 @@
         "chaturbate"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "tubes",
@@ -1288,7 +1334,8 @@
         "tubes"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "bgg",
@@ -1307,7 +1354,8 @@
         "bgg"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "backpacktf",
@@ -1326,7 +1374,8 @@
         "backpacktf"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "fourchan",
@@ -1345,7 +1394,8 @@
         "fourchan"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "sports",
@@ -1364,7 +1414,8 @@
         "sports"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "pandascore",
@@ -1383,7 +1434,8 @@
       "valueUnit": "",
       "isPrice": false,
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "queue_times",
@@ -1402,7 +1454,8 @@
         "queue_times"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "mcbroken",
@@ -1421,7 +1474,8 @@
         "mcbroken"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "earthquake",
@@ -1440,7 +1494,8 @@
         "earthquake"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "volcano",
@@ -1459,7 +1514,8 @@
         "volcano"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "weather",
@@ -1478,7 +1534,8 @@
         "weather"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "weather_alerts",
@@ -1497,7 +1554,8 @@
         "weather_alerts"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "openmeteo",
@@ -1516,7 +1574,8 @@
         "openmeteo"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "airnow",
@@ -1535,7 +1594,8 @@
         "airnow"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "usgs_water",
@@ -1554,7 +1614,8 @@
         "usgs_water"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "noaa_met",
@@ -1573,7 +1634,8 @@
         "noaa_met"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "noaa_tides",
@@ -1592,7 +1654,8 @@
         "noaa_tides"
       ],
       "syncIntervalSecs": 900,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "ndbc",
@@ -1611,7 +1674,8 @@
         "ndbc"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "nwps",
@@ -1630,7 +1694,8 @@
         "nwps"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "nrc_nuclear",
@@ -1649,7 +1714,8 @@
         "nrc_nuclear"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "wildfire",
@@ -1668,7 +1734,8 @@
         "wildfire"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "epidemic",
@@ -1687,7 +1754,8 @@
         "epidemic"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "power_outages",
@@ -1706,7 +1774,8 @@
         "power_outages"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "flights",
@@ -1725,7 +1794,8 @@
         "flights"
       ],
       "syncIntervalSecs": 3600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "gtfs_rt",
@@ -1744,7 +1814,8 @@
       "valueUnit": "min",
       "isPrice": false,
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "citybikes",
@@ -1763,7 +1834,8 @@
         "citybikes"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "parking",
@@ -1782,7 +1854,8 @@
         "parking"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "tomtom_traffic",
@@ -1801,7 +1874,8 @@
         "tomtom_traffic"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "tomtom_evcharge",
@@ -1820,7 +1894,8 @@
         "tomtom_evcharge"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "cbp_border",
@@ -1839,7 +1914,8 @@
         "cbp_border"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "faa_delays",
@@ -1858,7 +1934,8 @@
         "faa_delays"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "db_trains",
@@ -1877,7 +1954,8 @@
         "db_trains"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "mta_subway",
@@ -1896,7 +1974,8 @@
         "mta_subway"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "paris_metro",
@@ -1915,7 +1994,8 @@
         "paris_metro"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "ryanair",
@@ -1934,7 +2014,8 @@
         "ryanair"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "tfl_tube",
@@ -1953,7 +2034,8 @@
         "tfl_tube"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "aisstream",
@@ -1972,7 +2054,8 @@
         "aisstream"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "maritime",
@@ -1991,7 +2074,8 @@
         "maritime"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "ebird",
@@ -2010,7 +2094,8 @@
         "ebird"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "animals",
@@ -2029,7 +2114,8 @@
         "animals"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "movebank",
@@ -2048,7 +2134,8 @@
         "movebank"
       ],
       "syncIntervalSecs": 1800,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "shelter",
@@ -2067,7 +2154,8 @@
         "shelter"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "spaceweather",
@@ -2086,7 +2174,8 @@
         "spaceweather"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "iss",
@@ -2105,7 +2194,8 @@
         "iss"
       ],
       "syncIntervalSecs": 1200,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "mil_aircraft",
@@ -2124,7 +2214,8 @@
         "mil_aircraft"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "lichess",
@@ -2143,7 +2234,8 @@
         "lichess"
       ],
       "syncIntervalSecs": 600,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "binance_spot",
@@ -2162,7 +2254,8 @@
         "binance_spot"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "binance_futures_funding",
@@ -2181,7 +2274,8 @@
         "binance_futures_funding"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     },
     {
       "sourceId": "binance_options",
@@ -2200,7 +2294,8 @@
         "binance_options"
       ],
       "syncIntervalSecs": 300,
-      "batchEligible": true
+      "batchEligible": true,
+      "audience": "human"
     }
   ],
   "categories": [

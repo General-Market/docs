@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -31,6 +32,7 @@ import { useRoundOpenPrices } from '@/hooks/vision/useRoundOpenPrices'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useDeployment } from '@/hooks/useDeployment'
 import { getDefiLlamaAllowlist } from '@/lib/vision/defillama-curated'
+import { rankByPopularity } from '@/lib/vision/popularity'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { decodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
@@ -118,6 +120,19 @@ function aggregateValue(prices: SnapshotPrice[]): string {
     if (isFinite(v)) sum += v
   }
   return String(sum)
+}
+
+// Title-case a value label for the list header, leaving all-caps acronyms
+// (TVL, MAU) intact so "TVL" stays "TVL" and "score" becomes "Score".
+function titleCaseLabel(label: string): string {
+  return label
+    .split(' ')
+    .map(word => {
+      if (!word) return word
+      if (word === word.toUpperCase()) return word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    })
+    .join(' ')
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -223,10 +238,9 @@ export function SourceDetailHumanTrading({
   const allowlist = useMemo(() => getDefiLlamaAllowlist(sourceId), [sourceId])
   const curatedMarkets: SnapshotPrice[] = useMemo(() => {
     if (!allowlist) {
-      // Fallback: take top 10 by value
-      return [...allMarkets]
-        .sort((a, b) => (parseFloat(b.value) || 0) - (parseFloat(a.value) || 0))
-        .slice(0, TOP_N)
+      // No curated list — rank by the best signal the source has
+      // (marketCap → volume24h → value), tiebroken on assetId for a stable order.
+      return rankByPopularity(allMarkets, TOP_N)
     }
     // Preserve curated order from defillama-curated.json by looking up the assetId
     const byAssetId = new Map(allMarkets.map(m => [m.assetId, m]))
@@ -237,6 +251,48 @@ export function SourceDetailHumanTrading({
     }
     return ordered.slice(0, TOP_N)
   }, [allMarkets, allowlist])
+
+  // -- FLIP reorder: the polled snapshot re-ranks the top-10 live; glide each
+  //    card from its old slot to its new one instead of letting it jump. We
+  //    cache each card's last-known rect keyed by assetId, then on the commit
+  //    that changes the order we measure the new rect, invert the delta, and
+  //    transition it back to zero. Honoured only when motion is allowed.
+  const cardRefs = useRef(new Map<string, HTMLDivElement>())
+  const prevRectsRef = useRef(new Map<string, DOMRect>())
+  const setCardRef = useCallback((assetId: string, node: HTMLDivElement | null) => {
+    if (node) cardRefs.current.set(assetId, node)
+    else cardRefs.current.delete(assetId)
+  }, [])
+
+  const displayOrderKey = curatedMarkets.map(m => m.assetId).join(',')
+  useLayoutEffect(() => {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const prev = prevRectsRef.current
+    const next = new Map<string, DOMRect>()
+    for (const [assetId, node] of cardRefs.current) {
+      next.set(assetId, node.getBoundingClientRect())
+    }
+    if (!prefersReduced) {
+      for (const [assetId, node] of cardRefs.current) {
+        const before = prev.get(assetId)
+        const after = next.get(assetId)
+        if (!before || !after) continue
+        const dx = before.left - after.left
+        const dy = before.top - after.top
+        if (dx === 0 && dy === 0) continue
+        node.style.transition = 'none'
+        node.style.transform = `translate(${dx}px, ${dy}px)`
+        // Force a reflow so the inverted start position is committed before we
+        // transition back to the natural position on the next frame.
+        void node.offsetWidth
+        node.style.transition = `transform 360ms ${EASE_OUT}`
+        node.style.transform = ''
+      }
+    }
+    prevRectsRef.current = next
+  }, [displayOrderKey])
 
   // -- Active batch + round phase --
   // Match order: dedicated `batchSubsourceKey` first (e.g. `defillama-bridges`
@@ -770,6 +826,10 @@ export function SourceDetailHumanTrading({
   const showEmpty = !isSnapshotLoading && curatedMarkets.length === 0
   const sourceLogo = source.logo
 
+  // The curated (DefiLlama) lists keep their own editorial framing — no header.
+  // The ranked fallback says exactly what it is: top 10 by whatever signal it ranked on.
+  const gridHeading = allowlist ? null : `Top ${TOP_N} by ${titleCaseLabel(valueLabel)}`
+
   const displayError = joinError || submitError
 
   // Validate button copy state-aware
@@ -918,39 +978,63 @@ export function SourceDetailHumanTrading({
                 />
               )}
 
+              {gridHeading && (
+                <h2
+                  style={{
+                    fontFamily: FONT_TEXT,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '+0.011em',
+                    textTransform: 'uppercase',
+                    color: APPLE_TEXT_SECONDARY,
+                    margin: '2px 0 0 2px',
+                  }}
+                >
+                  {gridHeading}
+                </h2>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-                {/* Always show the curated 10 so the logos are visible even
-                    when the live batch's marketIds don't intersect the curated
-                    allowlist. Picks only fire for markets that are actually in
-                    the active batch — the rest are locked and informational. */}
+                {/* Always show the ranked 10 so the logos are visible even
+                    when the live batch's marketIds don't intersect them. Picks
+                    only fire for markets that are actually in the active batch
+                    — the rest are locked and informational. Each card sits in a
+                    ref'd wrapper so the FLIP effect can glide it when the live
+                    snapshot re-ranks the order. */}
                 {curatedMarkets.map((market) => {
                     const inActiveBatch =
                       currentBatchId != null && marketIds.includes(market.assetId)
                     const isInteractive = inActiveBatch && roundPhase === 'open'
                     const res = resolutionByAsset.get(market.assetId)
                     return (
-                      <HumanMarketCard
+                      <div
                         key={market.assetId}
-                        sourceId={sourceId}
-                        source={source}
-                        market={market}
-                        pick={picks[market.assetId]}
-                        onPick={isInteractive ? onPick : () => { /* picks queued for next round */ }}
-                        locked={!isInteractive || (flow !== 'idle' && flow !== 'reveal-failed')}
-                        revealFailed={flow === 'reveal-failed'}
-                        onRetryReveal={onRetryReveal}
-                        roundSettling={isRoundSettling}
-                        roundOpenAt={roundOpenAt}
-                        roundCloseAt={roundCloseAt}
-                        resolved={resolved}
-                        openPrice={openByAsset.get(market.assetId) ?? null}
-                        selected={(selectedAssetId ?? focusedMarket?.assetId ?? null) === market.assetId}
-                        onSelect={() => setSelectedAssetId(market.assetId)}
-                        onPrefetch={() => prefetchChartFor(market.assetId)}
-                        points={getPointsFor(market.assetId)}
-                        resolutionType={res?.resType ?? null}
-                        thresholdBps={res?.thresholdBps ?? null}
-                      />
+                        ref={(node) => setCardRef(market.assetId, node)}
+                        className="min-w-0"
+                        style={{ willChange: 'transform' }}
+                      >
+                        <HumanMarketCard
+                          sourceId={sourceId}
+                          source={source}
+                          market={market}
+                          pick={picks[market.assetId]}
+                          onPick={isInteractive ? onPick : () => { /* picks queued for next round */ }}
+                          locked={!isInteractive || (flow !== 'idle' && flow !== 'reveal-failed')}
+                          revealFailed={flow === 'reveal-failed'}
+                          onRetryReveal={onRetryReveal}
+                          roundSettling={isRoundSettling}
+                          roundOpenAt={roundOpenAt}
+                          roundCloseAt={roundCloseAt}
+                          resolved={resolved}
+                          openPrice={openByAsset.get(market.assetId) ?? null}
+                          selected={(selectedAssetId ?? focusedMarket?.assetId ?? null) === market.assetId}
+                          onSelect={() => setSelectedAssetId(market.assetId)}
+                          onPrefetch={() => prefetchChartFor(market.assetId)}
+                          points={getPointsFor(market.assetId)}
+                          resolutionType={res?.resType ?? null}
+                          thresholdBps={res?.thresholdBps ?? null}
+                        />
+                      </div>
                     )
                   })}
               </div>

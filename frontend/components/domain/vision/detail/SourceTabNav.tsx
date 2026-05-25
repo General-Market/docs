@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import { useState, type ReactNode } from 'react'
 import { Link, usePathname } from '@/i18n/routing'
+import { hasVaultForSource } from '@/lib/vision/sources-vaults'
 
-export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard' | 'compare'
+export type SourceTab = 'overview' | 'markets' | 'activity' | 'leaderboard' | 'vault' | 'compare'
 
 interface Tab {
   id: SourceTab
@@ -40,6 +41,9 @@ function buildTabs(sourceId: string): Tab[] {
     { id: 'activity',     label: 'Activity',     href: `${base}/activity` },
     { id: 'leaderboard',  label: 'Leaderboard',  href: `${base}/leaderboard` },
   ]
+  if (hasVaultForSource(sourceId)) {
+    tabs.push({ id: 'vault', label: 'Vault', href: `${base}/vault` })
+  }
   if (COMPARE_SOURCES.has(sourceId)) {
     tabs.push({ id: 'compare', label: 'Compare', href: `${base}/compare` })
   }
@@ -52,6 +56,7 @@ function deriveActiveTab(pathname: string, sourceId: string): SourceTab {
   if (pathname.startsWith(`${base}/markets`)) return 'markets'
   if (pathname.startsWith(`${base}/activity`)) return 'activity'
   if (pathname.startsWith(`${base}/leaderboard`)) return 'leaderboard'
+  if (pathname.startsWith(`${base}/vault`)) return 'vault'
   if (pathname.startsWith(`${base}/compare`)) return 'compare'
   return 'overview'
 }
