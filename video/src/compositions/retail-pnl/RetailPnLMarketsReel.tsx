@@ -189,6 +189,112 @@ const CurvedScreen: React.FC = () => (
   </AbsoluteFill>
 );
 
+// ── CRT / VCR overlays ─────────────────────────────────────────────────────
+// Ported from the screen-effect kit, but deterministic: the noise is an SVG
+// feTurbulence seeded by the frame number (not a requestAnimationFrame canvas),
+// so every render frame is reproducible.
+
+const SNOW_OPACITY = 0.12;
+
+// TV static — full-frame grayscale noise, re-seeded each frame.
+const SnowStatic: React.FC = () => {
+  const frame = useCurrentFrame();
+  return (
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        opacity: SNOW_OPACITY,
+        mixBlendMode: "overlay",
+      }}
+    >
+      <filter id="crt-snow">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.9"
+          numOctaves={2}
+          seed={frame % 256}
+          stitchTiles="stitch"
+        />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#crt-snow)" />
+    </svg>
+  );
+};
+
+// VCR tracking band — a horizontal band of bright streaked noise that drifts
+// down the screen, the way tape tracking rolls.
+const VCR_BAND_H = 110;
+const VCRBand: React.FC = () => {
+  const frame = useCurrentFrame();
+  const y = ((frame * 7) % (HEIGHT + VCR_BAND_H)) - VCR_BAND_H;
+  return (
+    <svg
+      width={WIDTH}
+      height={HEIGHT}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        mixBlendMode: "screen",
+      }}
+    >
+      <filter id="crt-vcr">
+        <feTurbulence
+          type="turbulence"
+          baseFrequency="0.012 0.6"
+          numOctaves={2}
+          seed={frame % 256}
+          stitchTiles="stitch"
+        />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="2.2" intercept="-0.75" />
+        </feComponentTransfer>
+      </filter>
+      <rect
+        x={0}
+        y={y}
+        width="100%"
+        height={VCR_BAND_H}
+        filter="url(#crt-vcr)"
+        opacity={0.5}
+      />
+    </svg>
+  );
+};
+
+// Scanlines — the dark horizontal raster plus a faint RGB sub-pixel column.
+const Scanlines: React.FC = () => (
+  <AbsoluteFill
+    style={{
+      pointerEvents: "none",
+      mixBlendMode: "multiply",
+      backgroundImage:
+        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.24) 50%), linear-gradient(90deg, rgba(255,0,0,0.05), rgba(0,255,0,0.015), rgba(0,0,255,0.05))",
+      backgroundSize: "100% 3px, 4px 100%",
+    }}
+  />
+);
+
+// CRT vignette — the tube darkens hard toward the rounded corners.
+const CRTVignette: React.FC = () => (
+  <AbsoluteFill
+    style={{
+      pointerEvents: "none",
+      borderRadius: 28,
+      background:
+        "radial-gradient(ellipse 72% 74% at 50% 50%, transparent 48%, rgba(0,0,0,0.28) 84%, rgba(0,0,0,0.62) 100%)",
+      boxShadow:
+        "inset 0 0 200px 50px rgba(0,0,0,0.5), inset 0 0 60px 10px rgba(0,0,0,0.35)",
+    }}
+  />
+);
+
 export const RetailPnLMarketsReel: React.FC = () => {
   const dataset = MARKETS_CONCENTRATION;
   const frame = useCurrentFrame();
@@ -358,11 +464,17 @@ export const RetailPnLMarketsReel: React.FC = () => {
     [0.12, 1],
   );
 
+  // CRT wobble — a 1px vertical jitter, toggled every few frames. The slight
+  // overscan scale hides the gap the wobble would open at the edges.
+  const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 1;
+
   return (
     <AbsoluteFill
       style={{
         background: `radial-gradient(ellipse 120% 90% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
         fontFamily: INTER,
+        transform: `translateY(${wobbleY}px) scale(1.008)`,
+        transformOrigin: "50% 50%",
       }}
     >
       {/* Filter defs — chromatic split for the glass lens, glows for the curve. */}
@@ -590,22 +702,21 @@ export const RetailPnLMarketsReel: React.FC = () => {
         </div>
       ) : null}
 
-      {/* Glass package — soft screen glare, then an edge vignette over all. */}
+      {/* Soft screen glare across the glass. */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
           mixBlendMode: "screen",
           background:
-            "linear-gradient(122deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 22%, transparent 40%)",
+            "linear-gradient(122deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 22%, transparent 40%)",
         }}
       />
-      <AbsoluteFill
-        style={{
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 82% 84% at 50% 46%, transparent 0%, transparent 52%, rgba(10, 14, 30, 0.13) 100%)",
-        }}
-      />
+
+      {/* CRT / VCR stack — static, tracking band, scanlines, tube vignette. */}
+      <SnowStatic />
+      <VCRBand />
+      <Scanlines />
+      <CRTVignette />
     </AbsoluteFill>
   );
 };
