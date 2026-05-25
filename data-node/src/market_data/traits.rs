@@ -211,12 +211,28 @@ impl BatchStrategy {
         fixed_threshold_bps: None,
     };
 
-    /// Engagement/social source (reddit, twitch, hackernews).
-    /// Medium EMA, regime changes common.
+    /// Engagement/social source (twitch, live viewer counts).
+    /// Medium EMA, regime changes common. The series moves both up and
+    /// down within a session, so a 10-deep EMA reads a fair typical move.
     pub const ENGAGEMENT: Self = Self {
         min_threshold_bps: 10,
         max_threshold_bps: 10000,
         ema_change_span: 10,
+        fixed_threshold_bps: None,
+    };
+
+    /// Cumulative engagement source (hackernews score/comments, reddit
+    /// upvotes). These series only climb and they *decelerate* — a story
+    /// gains votes fast early, then plateaus. A long EMA lags above the
+    /// curve, so the `up_x%` target sits where the story *was* heading an
+    /// hour ago, not where it is heading now, and the bet is unwinnable.
+    /// A short span (3) chases the deceleration down to the next-tick
+    /// reality. Pair with a youth-capped universe so markets land on
+    /// stories still on the steep part of their curve.
+    pub const ENGAGEMENT_CUMULATIVE: Self = Self {
+        min_threshold_bps: 10,
+        max_threshold_bps: 10000,
+        ema_change_span: 3,
         fixed_threshold_bps: None,
     };
 

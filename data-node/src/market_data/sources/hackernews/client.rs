@@ -2,9 +2,11 @@
 //!
 //! Tracks three metrics per story: score (upvotes), comment count, and
 //! front-page rank (1-indexed position in /topstories). The universe is
-//! the live top UNIVERSE_SIZE stories from /topstories — nothing else.
-//! Age is irrelevant: a 5-day-old story still on the front page is more
-//! interesting than a 1-hour-old story buried at #400.
+//! the live top UNIVERSE_SIZE stories from /topstories, then capped to the
+//! ones still young enough to be climbing (DEFAULT_MAX_STORY_AGE_SECS).
+//! Cumulative metrics decelerate: an old story barely moves, so an `up_x%`
+//! market on it is unwinnable. Markets must land on stories still on the
+//! steep part of their curve.
 //!
 //! Lifecycle:
 //! - Each cycle, the universe is rebuilt from /topstories. Stories not
@@ -48,12 +50,40 @@ const INTER_REQUEST_DELAY_MS: u64 = 50;
 /// of age.
 const UNIVERSE_SIZE: usize = 100;
 
+/// Cap the tracked universe to stories younger than this many seconds.
+/// HackerNews score and comments only climb, and they decelerate — a story
+/// gains votes fast in its first hours, then plateaus. The batch engine
+/// picks markets by value (score) descending, which would otherwise always
+/// land on the oldest, most-plateaued stories, where `up_x%` cannot win.
+/// Capping by age keeps markets on stories still on the steep part of the
+/// curve. Override with `HN_MAX_STORY_AGE_SECS`.
+const DEFAULT_MAX_STORY_AGE_SECS: i64 = 6 * 60 * 60;
+
+/// Starvation guard. If fewer than this many stories clear the age cap,
+/// fall back to the youngest this-many by submission time so the batch
+/// never thins to a handful of markets. Override with `HN_MIN_UNIVERSE`.
+const DEFAULT_MIN_UNIVERSE: usize = 20;
+
+fn max_story_age_secs() -> i64 {
+    std::env::var("HN_MAX_STORY_AGE_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(DEFAULT_MAX_STORY_AGE_SECS)
+}
+
+fn min_universe() -> usize {
+    std::env::var("HN_MIN_UNIVERSE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(DEFAULT_MIN_UNIVERSE)
+}
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 
 /// A single HN item (story, comment, job, poll)
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 struct HnItem {
     id: u64,
     #[serde(default)]
@@ -191,82 +221,18 @@ impl MarketDataSource for HackerNewsMarketSource {
         info!("HN topstories returned {} story IDs (universe = top {})", story_ids.len(), UNIVERSE_SIZE);
 
         let universe: Vec<u64> = story_ids.iter().take(UNIVERSE_SIZE).copied().collect();
-        let mut assets = Vec::with_capacity(universe.len() * 3);
-        let mut skipped = 0u32;
 
+        // Fetch every candidate first so the age cap can see the whole set
+        // before deciding what to keep. Each entry carries its 1-indexed
+        // /topstories rank for the rank metric.
+        let mut fetched: Vec<(usize, HnItem)> = Vec::with_capacity(universe.len());
+        let mut skipped = 0u32;
         for (idx, &story_id) in universe.iter().enumerate() {
             let rank = idx + 1;
             tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
-
             match self.fetch_item(story_id).await {
-                Ok(Some(item)) if item.is_trackable() => {
-                    let title = item.display_title();
-
-                    // Score asset
-                    assets.push(AssetUpdate {
-                        asset_id: format!("hn_{}_score", story_id),
-                        symbol: format!("HN#{}", story_id),
-                        name: format!("{} (score)", title),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": story_id.to_string(),
-                            "subcategory": "hacker_news",
-                            "active": true,
-                            "extra": {
-                                "metric": "score",
-                                "by": item.by,
-                                "url": item.url,
-                                "created_at": item.time,
-                            },
-                        }),
-                    });
-
-                    // Comments asset
-                    assets.push(AssetUpdate {
-                        asset_id: format!("hn_{}_comments", story_id),
-                        symbol: format!("HN#{}", story_id),
-                        name: format!("{} (comments)", title),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": story_id.to_string(),
-                            "subcategory": "hacker_news",
-                            "active": true,
-                            "extra": {
-                                "metric": "comments",
-                                "by": item.by,
-                                "url": item.url,
-                                "created_at": item.time,
-                            },
-                        }),
-                    });
-
-                    // Rank asset — position in /topstories. Oscillates every cycle.
-                    assets.push(AssetUpdate {
-                        asset_id: format!("hn_{}_rank", story_id),
-                        symbol: format!("HN#{}", story_id),
-                        name: format!("{} (rank)", title),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": story_id.to_string(),
-                            "subcategory": "hacker_news",
-                            "active": true,
-                            "extra": {
-                                "metric": "rank",
-                                "by": item.by,
-                                "url": item.url,
-                                "created_at": item.time,
-                                "universe_size": UNIVERSE_SIZE,
-                                "rank_at_discovery": rank,
-                            },
-                        }),
-                    });
-                }
-                Ok(Some(_)) => {
-                    skipped += 1; // dead or deleted
-                }
-                Ok(None) => {
-                    skipped += 1; // null response
-                }
+                Ok(Some(item)) if item.is_trackable() => fetched.push((rank, item)),
+                Ok(Some(_)) | Ok(None) => skipped += 1, // dead, deleted, or null
                 Err(e) => {
                     warn!("Error fetching HN item {}: {:?}", story_id, e);
                     skipped += 1;
@@ -274,11 +240,90 @@ impl MarketDataSource for HackerNewsMarketSource {
             }
         }
 
+        // Youth cap. Keep stories younger than the cap so markets land on
+        // ones still climbing, not on the highest-scored (oldest) stories the
+        // value-DESC batch selection would otherwise pick. If too few clear
+        // the cap, fall back to the youngest N by submission time so the batch
+        // keeps enough markets to be worth trading.
+        let max_age = max_story_age_secs();
+        let candidates = fetched.len();
+        let (kept, young_count) =
+            select_young_stories(fetched, Utc::now().timestamp(), max_age, min_universe());
+        let kept_count = kept.len();
+
+        let mut assets = Vec::with_capacity(kept.len() * 3);
+        for (rank, item) in kept {
+            let story_id = item.id;
+            let title = item.display_title();
+
+            // Score asset
+            assets.push(AssetUpdate {
+                asset_id: format!("hn_{}_score", story_id),
+                symbol: format!("HN#{}", story_id),
+                name: format!("{} (score)", title),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": story_id.to_string(),
+                    "subcategory": "hacker_news",
+                    "active": true,
+                    "extra": {
+                        "metric": "score",
+                        "by": item.by,
+                        "url": item.url,
+                        "created_at": item.time,
+                    },
+                }),
+            });
+
+            // Comments asset
+            assets.push(AssetUpdate {
+                asset_id: format!("hn_{}_comments", story_id),
+                symbol: format!("HN#{}", story_id),
+                name: format!("{} (comments)", title),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": story_id.to_string(),
+                    "subcategory": "hacker_news",
+                    "active": true,
+                    "extra": {
+                        "metric": "comments",
+                        "by": item.by,
+                        "url": item.url,
+                        "created_at": item.time,
+                    },
+                }),
+            });
+
+            // Rank asset — position in /topstories. Oscillates every cycle.
+            assets.push(AssetUpdate {
+                asset_id: format!("hn_{}_rank", story_id),
+                symbol: format!("HN#{}", story_id),
+                name: format!("{} (rank)", title),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": story_id.to_string(),
+                    "subcategory": "hacker_news",
+                    "active": true,
+                    "extra": {
+                        "metric": "rank",
+                        "by": item.by,
+                        "url": item.url,
+                        "created_at": item.time,
+                        "universe_size": UNIVERSE_SIZE,
+                        "rank_at_discovery": rank,
+                    },
+                }),
+            });
+        }
+
         info!(
-            "HN fetch_assets: {} stories -> {} assets ({} skipped)",
-            universe.len(),
-            assets.len(),
+            "HN fetch_assets: {} candidates -> {} stories kept ({} skipped, {} under {}h cap) -> {} assets",
+            candidates,
+            kept_count,
             skipped,
+            young_count,
+            max_age / 3600,
+            assets.len(),
         );
 
         Ok(assets)
@@ -425,8 +470,40 @@ impl MarketDataSource for HackerNewsMarketSource {
     }
 
     fn batch_strategy(&self) -> BatchStrategy {
-        BatchStrategy::ENGAGEMENT
+        // Score and comments are cumulative and decelerating; a short EMA
+        // span keeps the `up_x%` threshold tracking the latest move instead
+        // of lagging above the curve. See ENGAGEMENT_CUMULATIVE.
+        BatchStrategy::ENGAGEMENT_CUMULATIVE
     }
+}
+
+/// Select the stories to track from the fetched candidates.
+///
+/// Keeps stories younger than `max_age` seconds (a missing `time` counts as
+/// age 0 — newest). If fewer than `min_keep` clear the cap, falls back to the
+/// youngest `min_keep` by submission time so the batch never thins to a
+/// handful of markets. Returns `(kept, young_count)`, where `young_count` is
+/// how many cleared the cap before any fallback.
+fn select_young_stories(
+    fetched: Vec<(usize, HnItem)>,
+    now_ts: i64,
+    max_age: i64,
+    min_keep: usize,
+) -> (Vec<(usize, HnItem)>, usize) {
+    let young: Vec<(usize, HnItem)> = fetched
+        .iter()
+        .filter(|(_, it)| now_ts - it.time.unwrap_or(now_ts) <= max_age)
+        .cloned()
+        .collect();
+    let young_count = young.len();
+    let kept = if young.len() >= min_keep {
+        young
+    } else {
+        let mut all = fetched;
+        all.sort_by_key(|(_, it)| std::cmp::Reverse(it.time.unwrap_or(0)));
+        all.into_iter().take(min_keep).collect()
+    };
+    (kept, young_count)
 }
 
 /// Parse story ID from an asset_id like "hn_12345_score" or "hn_12345_comments"
@@ -627,5 +704,80 @@ mod tests {
     #[test]
     fn test_parse_story_id_rank() {
         assert_eq!(parse_story_id("hn_12345_rank"), Some(12345));
+    }
+
+    fn item_at(id: u64, time: Option<i64>) -> HnItem {
+        HnItem {
+            id,
+            score: 0,
+            descendants: 0,
+            title: Some(format!("Story {}", id)),
+            url: None,
+            by: None,
+            item_type: Some("story".to_string()),
+            dead: None,
+            deleted: None,
+            time,
+        }
+    }
+
+    const NOW: i64 = 1_700_000_000;
+    const HOUR: i64 = 3600;
+
+    #[test]
+    fn test_select_young_all_under_cap() {
+        let fetched = vec![
+            (1, item_at(1, Some(NOW - HOUR))),
+            (2, item_at(2, Some(NOW - 2 * HOUR))),
+        ];
+        let (kept, young) = select_young_stories(fetched, NOW, 6 * HOUR, 20);
+        assert_eq!(young, 2);
+        assert_eq!(kept.len(), 2);
+    }
+
+    #[test]
+    fn test_select_young_drops_old_when_enough_remain() {
+        // 3 young, 2 old; min_keep is 3 so the old ones are dropped entirely.
+        let mut fetched = vec![
+            (1, item_at(1, Some(NOW - HOUR))),
+            (2, item_at(2, Some(NOW - 2 * HOUR))),
+            (3, item_at(3, Some(NOW - 3 * HOUR))),
+        ];
+        fetched.push((4, item_at(4, Some(NOW - 20 * HOUR))));
+        fetched.push((5, item_at(5, Some(NOW - 48 * HOUR))));
+        let (kept, young) = select_young_stories(fetched, NOW, 6 * HOUR, 3);
+        assert_eq!(young, 3);
+        assert_eq!(kept.len(), 3);
+        let ids: Vec<u64> = kept.iter().map(|(_, it)| it.id).collect();
+        assert!(!ids.contains(&4) && !ids.contains(&5));
+    }
+
+    #[test]
+    fn test_select_young_falls_back_to_youngest_when_too_few() {
+        // Only 1 young, but min_keep is 3 → fall back to the youngest 3 overall.
+        let fetched = vec![
+            (1, item_at(1, Some(NOW - HOUR))),       // young
+            (2, item_at(2, Some(NOW - 20 * HOUR))),  // old
+            (3, item_at(3, Some(NOW - 30 * HOUR))),  // older
+            (4, item_at(4, Some(NOW - 40 * HOUR))),  // oldest
+        ];
+        let (kept, young) = select_young_stories(fetched, NOW, 6 * HOUR, 3);
+        assert_eq!(young, 1);
+        assert_eq!(kept.len(), 3);
+        let ids: Vec<u64> = kept.iter().map(|(_, it)| it.id).collect();
+        // Youngest three by submission time: 1, 2, 3 (40h-old #4 excluded).
+        assert_eq!(ids, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_select_young_missing_time_counts_as_newest() {
+        let fetched = vec![
+            (1, item_at(1, None)),                   // no time → age 0 → young
+            (2, item_at(2, Some(NOW - 48 * HOUR))),  // old
+        ];
+        let (kept, young) = select_young_stories(fetched, NOW, 6 * HOUR, 20);
+        assert_eq!(young, 1);
+        // Fewer than min_keep young → fallback keeps both (only 2 exist).
+        assert_eq!(kept.len(), 2);
     }
 }
