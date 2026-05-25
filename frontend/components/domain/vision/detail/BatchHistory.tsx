@@ -5,40 +5,9 @@ import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { useRounds, type RoundInfo } from '@/hooks/vision/useRounds'
+import { fetchSourceHistory, type SourceBatch } from '@/hooks/vision/useSourceHistory'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useTranslations } from 'next-intl'
-
-interface SourceBatch {
-  batchId: number
-  status: 'open' | 'settled'
-  playerCount: number
-  totalPool: number
-  avgPnl: number
-  /** Top earner's net P&L (signed). */
-  topEarnerPnl?: number
-  /** Largest gross payout in the round (>= 0). */
-  topPayout?: number
-  topEarnerAddress?: string | null
-  timestamp: string
-  bettingStart?: string | null
-  bettingEnd?: string | null
-  settledAt?: string | null
-  marketCount?: number | null
-}
-
-interface HistoryResponse {
-  batches: SourceBatch[]
-  page: number
-  perPage: number
-  totalSettled: number
-  totalPages: number
-}
-
-async function fetchSourceHistory(sourceId: string, page: number): Promise<HistoryResponse> {
-  const res = await fetch(`/api/vision/source/${encodeURIComponent(sourceId)}/history?page=${page}&per_page=10`)
-  if (!res.ok) return { batches: [], page: 1, perPage: 10, totalSettled: 0, totalPages: 0 }
-  return res.json()
-}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()

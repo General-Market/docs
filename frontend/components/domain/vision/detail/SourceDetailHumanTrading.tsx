@@ -22,6 +22,7 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBatchConfigBySource } from '@/hooks/vision/useBatchConfig'
 import { useRounds } from '@/hooks/vision/useRounds'
+import { useLatestSettledRound } from '@/hooks/vision/useSourceHistory'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
@@ -433,6 +434,8 @@ export function SourceDetailHumanTrading({
 
   // -- bettingEnd from the round (server-truth) --
   const { data: rounds } = useRounds(sourceId)
+  // Previous (just-closed) round's real settled pool, for the LAST timeline box.
+  const lastSettled = useLatestSettledRound(sourceId)
   const round = useMemo(() => {
     if (!rounds || rounds.length === 0) return null
     // Exact match when the two endpoints agree.
@@ -1159,6 +1162,16 @@ export function SourceDetailHumanTrading({
                 if (!raw || raw === '0') return null
                 try { return Number(formatUnits(BigInt(raw), VISION_USDC_DECIMALS)) } catch { return null }
               })()}
+              poolLastUsd={(() => {
+                // The just-closed round's real settled pool. Only trust it when
+                // it settled within ~2 ticks — a source whose settlements have
+                // frozen would otherwise show a pool from days ago in LAST.
+                if (!lastSettled || lastSettled.pool <= 0 || lastSettled.settledAtMs === null) return null
+                const tick = round?.timeframeSecs ?? activeBatch?.tickDuration ?? 0
+                if (tick <= 0) return null
+                if (Date.now() - lastSettled.settledAtMs > 2 * tick * 1000) return null
+                return lastSettled.pool
+              })()}
               hasCurrentCommit={!!effectiveCommit}
               userStakeUsd={effectiveCommit?.stakeUsd ?? null}
             />
@@ -1260,6 +1273,7 @@ function RoundTimeline({
   remainingSecs,
   roundPhase,
   poolNowUsd,
+  poolLastUsd,
   hasCurrentCommit,
   userStakeUsd,
 }: {
@@ -1270,6 +1284,9 @@ function RoundTimeline({
   roundPhase: RoundPhase
   /** Total committed by all players for the NOW round, in USDC. */
   poolNowUsd: number | null
+  /** The just-closed (LAST) round's real settled pool, or null when unknown
+   *  or stale. Already recency-gated by the caller. */
+  poolLastUsd: number | null
   hasCurrentCommit: boolean
   /** The user's own deposit riding this round, in USDC. */
   userStakeUsd: number | null
@@ -1297,6 +1314,7 @@ function RoundTimeline({
   //   NOW  (T):   closes in R;        settles in R + D
   //   NEXT (T+1): closes in R + D;    settles in R + 2D
   const poolNowDisplay = poolNowUsd !== null && poolNowUsd > 0 ? formatBigUsd(String(poolNowUsd)) : '—'
+  const poolLastDisplay = poolLastUsd !== null && poolLastUsd > 0 ? formatBigUsd(String(poolLastUsd)) : '—'
   const youDisplay = userStakeUsd !== null && userStakeUsd > 0 ? formatUsdDollars(userStakeUsd) : null
 
   return (
@@ -1323,10 +1341,10 @@ function RoundTimeline({
           slot="LAST"
           closesValue={R > 0 ? 'Closed' : '—'}
           settlesValue={clk(R)}
-          // Only the live (NOW) round has a knowable pool: the oracle serves
-          // active batches only, and a settled batch exposes no pool size on
-          // chain. The closed round stays quiet rather than guess a number.
-          poolDisplay="—"
+          // The just-closed round's real settled pool, from the source's history
+          // (recency-gated by the caller). "—" when the source has no recent
+          // completed round — never a stale or guessed number.
+          poolDisplay={poolLastDisplay}
           // "IN" belongs only to the round the user demonstrably holds (NOW).
           // We don't track a distinct per-round position for the closing round,
           // so never light LAST off the current commit or stale history.
