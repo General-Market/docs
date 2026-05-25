@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
   interpolate,
   spring,
   staticFile,
@@ -33,25 +34,45 @@ const WIDTH = 2160;
 const HEIGHT = 2160;
 const FPS = 60;
 
+// AntiCheat / Base palette. Light field, electric blue, near-black type —
+// the dark dramatic dressing is gone; the data now reads like a keynote slide.
 const PALETTE = {
-  bgTop: "#1A1E25",
-  bgBottom: "#06080C",
-  gridLine: "rgba(255, 255, 255, 0.055)",
-  gridDot: "rgba(255, 255, 255, 0.13)",
-  text: "#F5F6F8",
-  textDim: "#8E939D",
-  textVeryDim: "#5F6571",
-  gold: "#F1B638",
-  goldBright: "#F4B73B",
-  ghost: "rgba(255, 255, 255, 0.17)",
-  grid: "rgba(255, 255, 255, 0.11)",
-  axis: "#E4E7EB",
-  tick: "rgba(255, 255, 255, 0.35)",
-  dotRing: "#0A0D11",
+  bgTop: "#FFFFFF",
+  bgBottom: "#E7EAEE",
+  gridLine: "rgba(0, 82, 255, 0.06)",
+  gridDot: "rgba(0, 82, 255, 0.16)",
+  text: "#0A0A0A",
+  textDim: "#6E727A",
+  textVeryDim: "#9AA0A8",
+  accent: "#0052FF",
+  accentSoft: "#5B79FF",
+  ghost: "rgba(10, 10, 12, 0.07)",
+  grid: "rgba(10, 10, 12, 0.10)",
+  axis: "#1F1F24",
+  tick: "rgba(10, 10, 12, 0.22)",
+  dotRing: "#FFFFFF",
 };
 
-const HOLD_SECONDS_PER_SNAPSHOT = 1.8;
-const TRANSITION_FRACTION = 0.45;
+// Fast cadence: all twelve markets walk past in under 8s. Short hold, a
+// punchy whip into the next curve — the animation snaps instead of drifts.
+const HOLD_SECONDS_PER_SNAPSHOT = 0.62;
+const TRANSITION_FRACTION = 0.6;
+
+// Beat-locked keynote bloom, lifted from AntiCheatFull. Each new market is a
+// synthetic beat: the blue halo flares on a sharp attack, then ebbs back to
+// rest before the next snap. The same envelope drives a small camera punch.
+const GLOW_ATTACK = 3;
+const GLOW_DECAY = 16;
+const beatPulse = (frame: number, beats: number[]): number => {
+  let max = 0;
+  for (const b of beats) {
+    const d = frame - b;
+    if (d < -GLOW_ATTACK || d > GLOW_DECAY) continue;
+    const env = d <= 0 ? (d + GLOW_ATTACK) / GLOW_ATTACK : 1 - d / GLOW_DECAY;
+    if (env > max) max = env;
+  }
+  return max;
+};
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -207,7 +228,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
     Math.max(0, Math.min(1, tRaw)),
     [0, 1],
     [0, 1],
-    { easing: EASE.smooth },
+    { easing: EASE.out },
   );
 
   const current = dataset.snapshots[idxFloor];
@@ -225,6 +246,18 @@ export const RetailPnLMarketsReel: React.FC = () => {
     to: 1,
   });
   const pulseScale = 1 + 0.05 * (1 - pulse);
+
+  // Beat grid = one beat per snapshot. The bloom flares and the frame punches
+  // a hair on each landing, then settles — the AntiCheat keynote breath.
+  const beats = React.useMemo(
+    () => Array.from({ length: sliceLen }, (_, i) => i * holdFrames),
+    [sliceLen, holdFrames],
+  );
+  const beatEnv = beatPulse(within, beats);
+  const cameraScale = 1 + 0.02 * beatEnv;
+  const glowWidth = 16 + 12 * beatEnv;
+  const glowOpacity = 0.4 + 0.4 * beatEnv;
+  const titleBloom = `0 0 ${(8 + 12 * beatEnv).toFixed(1)}px rgba(0, 82, 255, ${(0.08 + 0.16 * beatEnv).toFixed(3)})`;
 
   // No fade-in: frame 0 lands on the first snapshot fully drawn. The scrub,
   // the dot pulse, and the per-venue swap carry the motion.
@@ -341,17 +374,27 @@ export const RetailPnLMarketsReel: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(ellipse 100% 70% at 50% 25%, ${PALETTE.bgTop} 0%, ${PALETTE.bgBottom} 100%)`,
+        background: `radial-gradient(ellipse 120% 80% at 50% 16%, ${PALETTE.bgTop} 0%, #F0F2F4 55%, ${PALETTE.bgBottom} 100%)`,
         fontFamily: INTER,
+        // Beat-pulsed keynote bloom behind every glyph — a faint blue breath
+        // on the light field, brightest the instant a new market lands.
+        textShadow: titleBloom,
       }}
     >
       <GridBackdrop />
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 50% 45%, transparent 0%, transparent 50%, ${PALETTE.bgBottom} 100%)`,
+          background: `radial-gradient(ellipse at 50% 45%, transparent 0%, transparent 58%, rgba(10, 12, 20, 0.05) 100%)`,
           pointerEvents: "none",
         }}
       />
+      <AbsoluteFill
+        style={{
+          transform: `scale(${cameraScale.toFixed(4)})`,
+          transformOrigin: "50% 45%",
+          willChange: "transform",
+        }}
+      >
 
       {/* Title — top-left at the outer margin, balanced two lines. */}
       <div
@@ -405,15 +448,15 @@ export const RetailPnLMarketsReel: React.FC = () => {
         {yTickElems}
         {ghostLines}
 
-        {/* Glow pass behind the gold curve. */}
+        {/* Glow pass behind the accent curve — flares on the beat. */}
         <polyline
           points={linePts}
           fill="none"
-          stroke={PALETTE.goldBright}
-          strokeWidth={16}
+          stroke={PALETTE.accentSoft}
+          strokeWidth={glowWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.55}
+          opacity={glowOpacity}
           filter="url(#reel-line-glow)"
         />
 
@@ -421,7 +464,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         <polyline
           points={linePts}
           fill="none"
-          stroke={PALETTE.gold}
+          stroke={PALETTE.accent}
           strokeWidth={9}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -436,15 +479,15 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 cx={cx}
                 cy={cy}
                 r={20 * pulseScale}
-                fill={PALETTE.goldBright}
-                opacity={0.4}
+                fill={PALETTE.accentSoft}
+                opacity={0.35 + 0.4 * beatEnv}
                 filter="url(#reel-dot-glow)"
               />
               <circle
                 cx={cx}
                 cy={cy}
                 r={15 * pulseScale}
-                fill={PALETTE.gold}
+                fill={PALETTE.accent}
                 stroke={PALETTE.dotRing}
                 strokeWidth={5}
               />
@@ -500,15 +543,16 @@ export const RetailPnLMarketsReel: React.FC = () => {
                 height: 270,
                 flexShrink: 0,
                 borderRadius: 52,
-                background: "rgba(255, 255, 255, 0.95)",
+                background: PALETTE.bgTop,
+                border: "1px solid rgba(10, 12, 20, 0.08)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 padding: 32,
-                boxShadow: "0 24px 60px -34px rgba(0, 0, 0, 0.9)",
+                boxShadow: "0 18px 44px -28px rgba(10, 30, 80, 0.32)",
               }}
             >
-              <img
+              <Img
                 src={staticFile(logo.file)}
                 alt={logo.name}
                 style={{
@@ -541,6 +585,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
           Source: {source}
         </div>
       ) : null}
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
