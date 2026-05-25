@@ -22,7 +22,8 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { RetailPnLMarketsReel } from "./RetailPnLMarketsReel";
+import { EASE } from "../../common/easing";
+import { RetailPnLPairChart } from "./RetailPnLPairChart";
 import { RetailPnLReelShortBg } from "./RetailPnLReelShortBg";
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -33,8 +34,7 @@ const W = 1080;
 const H = 1920;
 const FPS = 60;
 
-// ── Beat grid (144 BPM @ 60fps) ─────────────────────────────────────────────
-const BEAT = 25;
+// ── Beat grid (144 BPM @ 60fps): a beat is 25 frames, a bar is 100 ───────────
 const BAR = 100;
 const SCREEN = 3 * BAR; // 300 — three bars per screen
 const STARTS = [0, SCREEN, 2 * SCREEN, 3 * SCREEN]; // 0, 300, 600, 900
@@ -50,17 +50,18 @@ const MUSIC_GAIN = 0.9;
 const WHOOSH = "sfx/mg-whoosh-light.mp3";
 const IMPACT = "sfx/drop-sub-impact.mp3";
 
-// ── Reel band — fit to width (the largest the 16:9 graph goes without cropping
-// the curve). A taller 60% would clip the curve's corners; see the note below.
-const REEL_W = 1920;
-const REEL_H = 1080;
-const SCALE = W / REEL_W; // 0.5625 → 607px tall
-const REEL_TOP = 470;
-const REEL_CYCLE = 600; // 12 markets at 50f each
+// ── Pair chart — portrait Lorenz panel, ~60% of the height ───────────────────
+const CW = 1000;
+const CH = 1180;
+const CHART_SCALE = 0.95; // → 1121px tall ≈ 58% of the frame
+const CHART_TOP = 360;
+const CHART_LEFT = (W - CW * CHART_SCALE) / 2;
 
 // ── Per-screen look ──────────────────────────────────────────────────────────
 const WHITE_BG = "#F0F2F4";
 const BLUE_BG = "#0052FF";
+const ACCENT = "#0052FF";
+const RED = "#EE2B2B";
 type Screen = {
   bg: string;
   dir: "horizontal" | "vertical";
@@ -68,22 +69,38 @@ type Screen = {
   text: string;
   accent: string;
   dim: string;
-  fair: string;
-  rigged: string;
+  fair: string; // matches the data label
+  rigged: string; // data label, for the chart lookup
+  riggedCap: string; // shorter label shown in the caption
+  curve: string; // fair-curve colour on the chart
+  hi: boolean; // shade the red wedge
 };
-const ACCENT = "#0052FF";
-const RED = "#EE2B2B";
-const WHITE_SCREEN = (fair: string, rigged: string, accent: string): Screen => ({
+const WHITE_SCREEN = (
+  fair: string,
+  rigged: string,
+  riggedCap: string,
+  curve: string,
+  hi: boolean,
+): Screen => ({
   bg: WHITE_BG,
   dir: "horizontal",
   tone: "accent",
   text: "#0A0A0A",
-  accent,
+  accent: curve,
   dim: "#6E727A",
   fair,
   rigged,
+  riggedCap,
+  curve,
+  hi,
 });
-const BLUE_SCREEN = (fair: string, rigged: string): Screen => ({
+const BLUE_SCREEN = (
+  fair: string,
+  rigged: string,
+  riggedCap: string,
+  curve: string,
+  hi: boolean,
+): Screen => ({
   bg: BLUE_BG,
   dir: "vertical",
   tone: "white",
@@ -92,41 +109,50 @@ const BLUE_SCREEN = (fair: string, rigged: string): Screen => ({
   dim: "rgba(255,255,255,0.72)",
   fair,
   rigged,
+  riggedCap,
+  curve,
+  hi,
 });
 const SCREENS: Screen[] = [
-  WHITE_SCREEN("Prediction markets", "sports betting", ACCENT),
-  BLUE_SCREEN("Memecoins", "the lottery"),
-  WHITE_SCREEN("Index funds", "stock picking", RED),
-  BLUE_SCREEN("Crypto perps", "CFDs"),
+  WHITE_SCREEN("Prediction markets", "Sports betting", "sports betting", ACCENT, false),
+  BLUE_SCREEN("Memecoins", "Online lottery", "the lottery", ACCENT, false),
+  WHITE_SCREEN("Index funds", "Robinhood stocks", "stock picking", RED, true),
+  BLUE_SCREEN("Crypto perps", "FX / CFDs", "CFDs", RED, true),
 ];
 
 const screenAt = (frame: number) =>
   Math.min(3, Math.max(0, Math.floor(frame / SCREEN)));
 
-// ── Reel band ────────────────────────────────────────────────────────────────
-const ReelBand: React.FC<{ highlight: boolean }> = ({ highlight }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: 0,
-      top: REEL_TOP,
-      width: REEL_W,
-      height: REEL_H,
-      transform: `scale(${SCALE})`,
-      transformOrigin: "0 0",
-      borderRadius: 40,
-      overflow: "hidden",
-      border: "1px solid rgba(10,20,40,0.12)",
-      boxShadow: "0 36px 100px -36px rgba(10,25,60,0.55)",
-    }}
-  >
-    <RetailPnLMarketsReel
-      holdSecondsPerSnapshot={(2 * BEAT) / FPS}
-      enableShutdown={false}
-      highlightDiff={highlight}
-    />
-  </div>
-);
+// ── Chart stage — the current screen's pair, lifting left over ~2 bars ───────
+const ChartStage: React.FC = () => {
+  const frame = useCurrentFrame();
+  const idx = screenAt(frame);
+  const s = SCREENS[idx];
+  const local = frame - STARTS[idx];
+  const progress = interpolate(local, [16, 2 * BAR], [0, 1], {
+    ...CLAMP,
+    easing: EASE.out,
+  });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: CHART_LEFT,
+        top: CHART_TOP,
+        transform: `scale(${CHART_SCALE})`,
+        transformOrigin: "0 0",
+      }}
+    >
+      <RetailPnLPairChart
+        fair={s.fair}
+        rigged={s.rigged}
+        progress={progress}
+        color={s.curve}
+        highlight={s.hi}
+      />
+    </div>
+  );
+};
 
 // ── Pixel dissolve (portrait port of anticheat-edit PixelReveal) ─────────────
 const PCELL = 60;
@@ -228,7 +254,7 @@ const IntroTitle: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const CAP_TOP = 1150;
+const CAP_TOP = 1500;
 
 // One pair per screen, below the graph. Springs in on the screen's downbeat,
 // holds, then disappears just before the pixel dissolve.
@@ -267,7 +293,7 @@ const PairCaption: React.FC = () => {
       <div style={{ fontFamily: INTER, fontSize: 60, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
         <span style={{ color: s.text, fontWeight: 800 }}>{s.fair}</span>
         <span style={{ color: s.accent, margin: "0 20px", fontSize: 50 }}>◂</span>
-        <span style={{ color: s.dim }}>{s.rigged}</span>
+        <span style={{ color: s.dim }}>{s.riggedCap}</span>
       </div>
     </div>
   );
@@ -321,13 +347,7 @@ export const RetailPnLMarketsReelShort: React.FC = () => {
       <AbsoluteFill style={{ backgroundColor: s.bg }} />
       <RetailPnLReelShortBg direction={s.dir} tone={s.tone} speed={2.8} lead={90} />
 
-      {/* The reel runs two 12-market cycles: neon, then red. */}
-      <Sequence from={0} durationInFrames={REEL_CYCLE} layout="none" name="reel-neon">
-        <ReelBand highlight={false} />
-      </Sequence>
-      <Sequence from={REEL_CYCLE} durationInFrames={REEL_CYCLE} layout="none" name="reel-red">
-        <ReelBand highlight={true} />
-      </Sequence>
+      <ChartStage />
 
       <IntroTitle text={s.text} />
       <PairCaption />
