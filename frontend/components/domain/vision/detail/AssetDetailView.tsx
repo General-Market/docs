@@ -203,6 +203,9 @@ export function AssetDetailView({
             <LatestBandPill
               thresholdBps={rule.thresholdBps}
               resolutionType={rule.resolutionType}
+              value={value}
+              isPrice={isPrice}
+              valueUnit={valueUnit}
             />
           )}
         </div>
@@ -222,47 +225,93 @@ export function AssetDetailView({
   )
 }
 
+// The threshold this market settles against, stated as a target rather than a
+// band. The percentage is the round's rule; the absolute figure is projected
+// from the current value (the real target reseeds off each round's open, hence
+// "from … now"). Direction colours the whole pill green for UP, red for DOWN.
 function LatestBandPill({
   thresholdBps,
   resolutionType,
+  value,
+  isPrice,
+  valueUnit,
 }: {
   thresholdBps: number
   resolutionType: string
+  value: number | null
+  isPrice: boolean
+  valueUnit: string
 }) {
-  const pctLabel = thresholdBps > 0 ? formatPct(thresholdBps) : null
   const binary = thresholdBps === 0 || resolutionType.endsWith('_0')
+  const up = !resolutionType.startsWith('down')
+  const pctLabel = thresholdBps > 0 ? formatPct(thresholdBps) : null
+  const accent = up ? 'rgb(40,205,65)' : 'rgb(255,59,48)'
+  const accentSoft = up ? 'rgba(40,205,65,0.12)' : 'rgba(255,59,48,0.12)'
+
+  const fmt = (v: number) =>
+    `${isPrice ? '$' : ''}${formatValue(v, isPrice, valueUnit)}${!isPrice && valueUnit ? ` ${valueUnit}` : ''}`
+
+  const target =
+    !binary && value != null && isFinite(value)
+      ? value * (1 + (up ? 1 : -1) * (thresholdBps / 10000))
+      : null
 
   return (
     <div
-      className="mt-3 inline-flex items-center"
+      className="mt-3 inline-flex flex-wrap items-center"
       style={{
         gap: 10,
-        padding: '6px 12px',
+        padding: '8px 12px',
         borderRadius: 'var(--apple-r-sm)',
-        background: 'rgba(0,0,0,0.05)',
-        border: '1px solid rgba(0,0,0,0.06)',
+        background: 'var(--apple-surface)',
+        border: '1px solid var(--apple-line)',
         fontFamily: 'var(--apple-font-text)',
-        fontSize: 13,
-        letterSpacing: 0,
+        fontSize: 14,
         color: 'var(--apple-text)',
         fontVariantNumeric: 'tabular-nums',
       }}
     >
       <span
         style={{
-          fontSize: 10,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '3px 9px',
+          borderRadius: 980,
+          background: accentSoft,
+          color: accent,
+          fontSize: 11,
           fontWeight: 700,
           letterSpacing: 'var(--apple-track-loose)',
-          textTransform: 'uppercase',
-          color: 'var(--apple-text-secondary)',
         }}
       >
-        Latest batch
+        <span aria-hidden style={{ fontSize: 9 }}>{up ? '▲' : '▼'}</span>
+        {binary ? 'ANY MOVE' : up ? 'UP' : 'DOWN'}
       </span>
-      <span style={{ fontWeight: 600 }}>
-        {binary ? 'any move wins' : `±${pctLabel} band`}
+
+      {binary ? (
+        <span style={{ fontWeight: 500 }}>
+          any move {up ? 'up' : 'down'} wins this round
+        </span>
+      ) : (
+        <span style={{ fontWeight: 500 }}>
+          must {up ? 'reach' : 'fall to'}{' '}
+          <strong style={{ fontWeight: 700 }}>
+            {target != null ? fmt(target) : `${up ? '+' : '−'}${pctLabel}`}
+          </strong>
+          {target != null && pctLabel && (
+            <span style={{ marginLeft: 6, color: accent, fontWeight: 600 }}>
+              ({up ? '+' : '−'}
+              {pctLabel})
+            </span>
+          )}{' '}
+          to win
+        </span>
+      )}
+
+      <span style={{ color: 'var(--apple-text-secondary)', fontSize: 12 }}>
+        {target != null ? `from ${fmt(value!)} now · ` : ''}reseeds each round
       </span>
-      <span style={{ color: 'var(--apple-text-secondary)' }}>· reseeds next tick</span>
     </div>
   )
 }

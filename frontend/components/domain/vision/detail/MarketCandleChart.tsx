@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   IChartApi,
   ISeriesApi,
@@ -109,6 +109,24 @@ const TIMEFRAMES: { label: string; value: Timeframe }[] = [
   { label: '1H', value: '1h' },
   { label: '1D', value: '1d' },
 ]
+
+// ── Log scale ─────────────────────────────────────────────────────────────────
+// lightweight-charts PriceScaleMode: 0 = Normal (linear), 1 = Logarithmic.
+const PRICE_SCALE_NORMAL = 0
+const PRICE_SCALE_LOG = 1
+
+// One global choice, remembered across markets and sessions.
+const LOG_PREF_KEY = 'gm:vision:chart-log'
+
+// Sources whose value is cumulative and decelerating — it only climbs, then
+// plateaus (HackerNews score/comments). A linear axis makes every late-stage
+// story look like the same flattening hook; a log axis keeps the climb honest
+// and turns a fixed % band into a constant pixel height. These default to log.
+const CUMULATIVE_SOURCES = new Set(['hackernews'])
+
+function defaultLogScale(sourceId: string): boolean {
+  return CUMULATIVE_SOURCES.has(toInternalId(sourceId))
+}
 
 interface HistoryPoint {
   ts: number
@@ -221,23 +239,26 @@ function bucketize(points: HistoryPoint[], bucketMs: number): Candle[] {
 // computed via priceToCoordinate land off-screen. This provider widens the
 // series' own range to include the threshold (and open/close), the exact
 // Y-axis twin of the yDomain padding the small cards already do.
-function makeAutoscaleProvider(extra: number[]) {
+function makeAutoscaleProvider(extra: number[], log = false) {
   const finite = extra.filter(v => Number.isFinite(v))
   return (original: () => AutoscaleInfo | null): AutoscaleInfo | null => {
     const base = original()
     if (finite.length === 0) return base
     const lo = Math.min(...finite)
     const hi = Math.max(...finite)
-    if (!base || !base.priceRange) {
-      return { priceRange: { minValue: lo, maxValue: hi } }
+    const merged = base?.priceRange
+      ? {
+          minValue: Math.min(base.priceRange.minValue, lo),
+          maxValue: Math.max(base.priceRange.maxValue, hi),
+        }
+      : { minValue: lo, maxValue: hi }
+    // A log axis cannot place a value ≤ 0. Floor the min at a small positive
+    // fraction of the max so the band and overlays stay on-screen.
+    if (log && merged.minValue <= 0) {
+      merged.minValue = merged.maxValue > 0 ? merged.maxValue / 1000 : 1
     }
-    return {
-      ...base,
-      priceRange: {
-        minValue: Math.min(base.priceRange.minValue, lo),
-        maxValue: Math.max(base.priceRange.maxValue, hi),
-      },
-    }
+    if (!base || !base.priceRange) return { priceRange: merged }
+    return { ...base, priceRange: merged }
   }
 }
 
@@ -278,6 +299,24 @@ export function MarketCandleChart({
   const closeLineRef = useRef<IPriceLine | null>(null)
   const thresholdLineRef = useRef<IPriceLine | null>(null)
   const [chartReady, setChartReady] = useState(false)
+
+  // Linear vs log price axis. Defaults to log for cumulative sources; a saved
+  // choice (set by the toggle) overrides the default for every market.
+  const [logScale, setLogScale] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return defaultLogScale(sourceId)
+    const saved = window.localStorage.getItem(LOG_PREF_KEY)
+    if (saved === 'log') return true
+    if (saved === 'linear') return false
+    return defaultLogScale(sourceId)
+  })
+  const setLog = useCallback((v: boolean) => {
+    setLogScale(v)
+    try {
+      window.localStorage.setItem(LOG_PREF_KEY, v ? 'log' : 'linear')
+    } catch {
+      /* private mode / storage disabled — the choice just won't persist */
+    }
+  }, [])
 
   // -- Create the chart once --
   useEffect(() => {
@@ -348,6 +387,16 @@ export function MarketCandleChart({
       setChartReady(false)
     }
   }, [])
+
+  // -- Apply the log/linear choice to the price axis. priceToCoordinate then
+  //    returns log-correct positions, so the threshold line, target zone and
+  //    settlement square all follow without any per-overlay math. --
+  useEffect(() => {
+    if (!chartReady || !chartRef.current) return
+    chartRef.current.priceScale('right').applyOptions({
+      mode: logScale ? PRICE_SCALE_LOG : PRICE_SCALE_NORMAL,
+    })
+  }, [chartReady, logScale])
 
   // -- Bucketize points → candles. The open is the shared, frozen round-open
   //    from the parent (openPrice prop); here we only derive the close and the
@@ -454,8 +503,8 @@ export function MarketCandleChart({
     if (settlement) extra.push(settlement.price)
     if (openPrice != null) extra.push(openPrice)
     if (closePrice != null) extra.push(closePrice)
-    seriesRef.current.applyOptions({ autoscaleInfoProvider: makeAutoscaleProvider(extra) })
-  }, [chartReady, settlement, openPrice, closePrice, candles])
+    seriesRef.current.applyOptions({ autoscaleInfoProvider: makeAutoscaleProvider(extra, logScale) })
+  }, [chartReady, settlement, openPrice, closePrice, candles, logScale])
 
   const [squarePos, setSquarePos] = useState<{ left: number; top: number } | null>(null)
 
@@ -486,6 +535,8 @@ export function MarketCandleChart({
     }
 
     recompute()
+    // A scale-mode switch re-lays-out the axis a frame later; recompute then.
+    const raf = requestAnimationFrame(recompute)
     const ts = chart.timeScale()
     ts.subscribeVisibleTimeRangeChange(recompute)
     ts.subscribeVisibleLogicalRangeChange(recompute)
@@ -493,11 +544,12 @@ export function MarketCandleChart({
     if (containerRef.current) ro.observe(containerRef.current)
 
     return () => {
+      cancelAnimationFrame(raf)
       ts.unsubscribeVisibleTimeRangeChange(recompute)
       ts.unsubscribeVisibleLogicalRangeChange(recompute)
       ro.disconnect()
     }
-  }, [chartReady, settlement, resolved, candles])
+  }, [chartReady, settlement, resolved, candles, logScale])
 
   // -- Live target zone: the blue rectangle from the last close to the
   // threshold crossing. The crossing pins to the right edge of the plot (the
@@ -554,7 +606,7 @@ export function MarketCandleChart({
       ts.unsubscribeVisibleLogicalRangeChange(recompute)
       ro.disconnect()
     }
-  }, [chartReady, settlement, resolved, candles])
+  }, [chartReady, settlement, resolved, candles, logScale])
 
   // -- Overlay: round-open + close + live threshold price lines --
   useEffect(() => {
@@ -578,13 +630,17 @@ export function MarketCandleChart({
     // point on the chart. Draw it as a horizontal line spanning the whole X —
     // "you win if it closes above/below here" — instead of a square pinned right.
     if (settlement && !resolved) {
+      const bps = thresholdBps ?? 0
+      const up = (resolutionType ?? '').toLowerCase().startsWith('up')
+      const pct = bps / 100
+      const pctText = pct >= 10 ? pct.toFixed(0) : pct.toFixed(1).replace(/\.0$/, '')
       thresholdLineRef.current = seriesRef.current.createPriceLine({
         price: settlement.price,
         color: settlement.color,
         lineWidth: 1,
         lineStyle: 2, // dashed
         axisLabelVisible: true,
-        title: 'settles',
+        title: bps > 0 ? `to win ${up ? '+' : '−'}${pctText}%` : `any ${up ? 'up' : 'down'} move`,
       })
     }
 
@@ -609,7 +665,7 @@ export function MarketCandleChart({
         title: up ? `close +${changePct?.toFixed(2)}%` : `close ${changePct?.toFixed(2)}%`,
       })
     }
-  }, [chartReady, openPrice, closePrice, resolved, changePct, settlement])
+  }, [chartReady, openPrice, closePrice, resolved, changePct, settlement, thresholdBps, resolutionType])
 
   // -- Header values --
   const name = market.name || market.symbol || market.assetId
@@ -716,6 +772,7 @@ export function MarketCandleChart({
           )}
         </div>
 
+        <LogToggle value={logScale} onChange={setLog} />
         <TimeframeStrip value={timeframe} onChange={onTimeframeChange} />
       </div>
 
@@ -833,6 +890,57 @@ export function MarketCandleChart({
         )}
       </div>
     </section>
+  )
+}
+
+// ── Lin/Log selector ─────────────────────────────────────────────────────────
+
+function LogToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const options: { label: string; log: boolean }[] = [
+    { label: 'Lin', log: false },
+    { label: 'Log', log: true },
+  ]
+  return (
+    <div
+      role="group"
+      aria-label="Price axis scale"
+      style={{
+        display: 'inline-flex',
+        background: APPLE_CHIP_BG,
+        borderRadius: 8,
+        padding: 2,
+        marginLeft: 12,
+      }}
+    >
+      {options.map(opt => {
+        const active = opt.log === value
+        return (
+          <button
+            key={opt.label}
+            type="button"
+            aria-pressed={active}
+            title={opt.log ? 'Logarithmic axis' : 'Linear axis'}
+            onClick={() => onChange(opt.log)}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: 'none',
+              background: active ? APPLE_PANEL : 'transparent',
+              color: active ? APPLE_TEXT : APPLE_TEXT_SECONDARY,
+              fontFamily: FONT_TEXT,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: '-0.016em',
+              cursor: 'pointer',
+              boxShadow: active ? '0 1px 2px rgba(0,0,0,0.08)' : undefined,
+              transition: `background 180ms ${EASE_DEFAULT}, color 180ms ${EASE_DEFAULT}`,
+            }}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
