@@ -476,8 +476,9 @@ export const RetailPnLMarketsReel: React.FC = () => {
 
   const swapDip = interpolate(Math.abs(tEased - 0.5) * 2, [0, 1], [0.12, 1]);
 
-  // CRT wobble — a 1px vertical jitter.
-  const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 1;
+  // CRT wobble — a 10px vertical jitter (10× the original amplitude). The
+  // overscan below is widened so the bigger shift never reveals the edge.
+  const wobbleY = Math.floor(frame / 3) % 2 === 0 ? 0 : 10;
 
   // CRT power-off — collapse to a bright horizontal line, hold, then snap to a
   // point at the centre and wink out.
@@ -502,7 +503,7 @@ export const RetailPnLMarketsReel: React.FC = () => {
         style={{
           background: BG_GRADIENT,
           fontFamily: INTER,
-          transform: `translateY(${wobbleY}px) scale(${(1.008 * sdScaleX).toFixed(4)}, ${(1.008 * sdScaleY).toFixed(4)})`,
+          transform: `translateY(${wobbleY}px) scale(${(1.024 * sdScaleX).toFixed(4)}, ${(1.024 * sdScaleY).toFixed(4)})`,
           transformOrigin: "50% 50%",
           filter: `brightness(${sdBright.toFixed(2)})`,
           opacity: sdOpacity,
