@@ -20,6 +20,11 @@ interface SourceDisplay {
   isPrice: boolean
   audience?: 'human' | 'bot' | 'redirect'
   redirectTo?: string
+  /** When true, the detail page renders exactly the active batch's markets as
+   *  its top tokens (UI == batch), instead of ranking the snapshot. pump.fun's
+   *  daily set of 10 "tokens of the day" is frozen by the data-node per UTC
+   *  day, so the page follows the batch rather than re-ranking live. */
+  displayFollowsBatch?: boolean
 }
 
 interface CategoryDisplay {

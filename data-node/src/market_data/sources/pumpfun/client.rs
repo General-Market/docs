@@ -124,7 +124,11 @@ struct JupStats {
 struct JupPriceEntry {
     #[serde(default, rename = "usdPrice")]
     usd_price: Option<f64>,
+    /// Present in the `/price/v3` payload but unused — volume/liquidity now come
+    /// from the discovery `stats24h`. Kept so the deserializer documents the
+    /// shape and the parse test can assert against it.
     #[serde(default)]
+    #[allow(dead_code)]
     liquidity: Option<f64>,
     #[serde(default, rename = "priceChange24h")]
     price_change_24h: Option<f64>,
@@ -168,15 +172,20 @@ struct TokenInfo {
     symbol: String,
     name: String,
     market_cap: f64,
+    /// 24h trading volume in USD, from Jupiter `stats24h` (buy + sell). Drives
+    /// the "tokens of the day" ranking — the daily set is the top 10 NEW tokens
+    /// by this number. Jupiter's `/price/v3` path doesn't return volume, so we
+    /// carry it from discovery and attach it in `fetch_prices`.
+    volume_24h: f64,
 }
 
+/// Price snapshot from Jupiter `/price/v3`. Only price and 24h change come from
+/// this endpoint; volume and market cap are carried from discovery (`TokenInfo`)
+/// because `/price/v3` does not publish them.
 #[derive(Debug, Clone)]
 struct PriceInfo {
     price_usd: f64,
-    liquidity_usd: f64,
     change_24h: Option<f64>,
-    volume_24h: f64,
-    market_cap: f64,
 }
 
 /// In-memory cache entry: when a mint was last seen in discovery.
@@ -231,18 +240,30 @@ impl PumpfunMarketSource {
                             continue;
                         }
                         let mcap = t.mcap.or(t.fdv).unwrap_or(0.0);
+                        let vol = t
+                            .stats_24h
+                            .as_ref()
+                            .map(|s| s.buy_volume.unwrap_or(0.0) + s.sell_volume.unwrap_or(0.0))
+                            .unwrap_or(0.0);
                         let info = TokenInfo {
                             mint: t.id.clone(),
                             symbol: t.symbol.unwrap_or_else(|| "PUMP".to_string()),
                             name: t.name.unwrap_or_else(|| t.id.clone()),
                             market_cap: mcap,
+                            volume_24h: vol,
                         };
-                        // Highest mcap wins on collision.
+                        // Highest mcap wins on collision; keep the largest volume
+                        // seen across categories so the daily ranking has the
+                        // fullest 24h picture (different windows report different
+                        // slices of the day).
                         by_mint
                             .entry(t.id)
                             .and_modify(|e| {
                                 if mcap > e.market_cap {
                                     e.market_cap = mcap;
+                                }
+                                if vol > e.volume_24h {
+                                    e.volume_24h = vol;
                                 }
                             })
                             .or_insert_with(|| {
@@ -327,10 +348,7 @@ impl PumpfunMarketSource {
                             mint,
                             PriceInfo {
                                 price_usd: price,
-                                liquidity_usd: entry.liquidity.unwrap_or(0.0),
                                 change_24h: entry.price_change_24h,
-                                volume_24h: 0.0,
-                                market_cap: 0.0,
                             },
                         );
                     }
@@ -420,6 +438,7 @@ impl MarketDataSource for PumpfunMarketSource {
                     symbol: "PUMP".to_string(),
                     name: mint.clone(),
                     market_cap: 0.0,
+                    volume_24h: 0.0,
                 });
             }
         }
@@ -502,20 +521,27 @@ impl MarketDataSource for PumpfunMarketSource {
             let Some(&asset_id) = mint_to_asset.get(mint) else {
                 continue;
             };
-            let symbol = cache
-                .get(mint)
-                .map(|c| c.info.symbol.clone())
+            // Symbol, 24h volume, and market cap come from the discovery cache —
+            // Jupiter's `/price/v3` returns none of them. The cache is populated
+            // by `discover_from_jupiter`, which reads `stats24h` + `mcap`. The
+            // "tokens of the day" ranking is built on this volume figure, so
+            // emitting it (instead of 0) is what makes the daily selection work.
+            let cached = cache.get(mint).map(|c| &c.info);
+            let symbol = cached
+                .map(|c| c.symbol.clone())
                 .unwrap_or_else(|| "PUMP".to_string());
+            let cached_volume = cached.map(|c| c.volume_24h).unwrap_or(0.0);
+            let cached_mcap = cached.map(|c| c.market_cap).unwrap_or(0.0);
 
             let price = Decimal::from_str(&format!("{:.10}", p.price_usd)).unwrap_or(Decimal::ZERO);
             let change_pct = p
                 .change_24h
                 .and_then(|v| Decimal::from_str(&format!("{:.6}", v)).ok());
-            let volume = (p.volume_24h > 0.0)
-                .then(|| Decimal::from_str(&format!("{:.2}", p.volume_24h)).ok())
+            let volume = (cached_volume > 0.0)
+                .then(|| Decimal::from_str(&format!("{:.2}", cached_volume)).ok())
                 .flatten();
-            let mcap = (p.market_cap > 0.0)
-                .then(|| Decimal::from_str(&format!("{:.2}", p.market_cap)).ok())
+            let mcap = (cached_mcap > 0.0)
+                .then(|| Decimal::from_str(&format!("{:.2}", cached_mcap)).ok())
                 .flatten();
 
             results.push(PriceUpdate {
@@ -589,6 +615,24 @@ mod tests {
     }
 
     #[test]
+    fn test_jupiter_token_parse_stats24h_volume() {
+        // The daily ranking sums buyVolume + sellVolume from stats24h.
+        let json = r#"{
+            "id": "3hRBXuscbbfmpuLwjvCbDZBSRSqg7JiGD2xS4Ra4pump",
+            "symbol": "ANTIPUMP",
+            "mcap": 96035.86,
+            "stats24h": { "buyVolume": 12000.5, "sellVolume": 8000.25 }
+        }"#;
+        let t: JupToken = serde_json::from_str(json).unwrap();
+        let vol = t
+            .stats_24h
+            .as_ref()
+            .map(|s| s.buy_volume.unwrap_or(0.0) + s.sell_volume.unwrap_or(0.0))
+            .unwrap_or(0.0);
+        assert!((vol - 20000.75).abs() < 1e-6);
+    }
+
+    #[test]
     fn test_jupiter_token_parse() {
         let json = r#"{
             "id": "3hRBXuscbbfmpuLwjvCbDZBSRSqg7JiGD2xS4Ra4pump",
@@ -636,6 +680,7 @@ mod tests {
             symbol: "A".into(),
             name: "A".into(),
             market_cap: 1.0,
+            volume_24h: 0.0,
         }];
         let out = s.refresh_cache(&fresh);
         assert_eq!(out.len(), 1);
@@ -651,6 +696,7 @@ mod tests {
                         symbol: "O".into(),
                         name: "O".into(),
                         market_cap: 1.0,
+                        volume_24h: 0.0,
                     },
                     last_seen: Utc::now() - chrono::Duration::hours(48),
                 },

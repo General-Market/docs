@@ -96,6 +96,15 @@ const TOP_N_PER_BATCH: usize = 10;
 /// top-N. Everything slower keeps its full healthy universe.
 const TOP_N_TIMEFRAME_SECS: u64 = 300;
 
+/// Source id for the pump.fun launchpad. Gets a bespoke batch path: a frozen
+/// daily set of the top-10 NEW tokens by 24h volume (see
+/// [`get_pumpfun_daily_tokens`]).
+const PUMPFUN_SOURCE_ID: &str = "pumpfun";
+
+/// Size of the pump.fun "tokens of the day" set. The on-chain batch and the UI
+/// both carry exactly this many markets, frozen for the whole UTC day.
+const PUMPFUN_DAILY_COUNT: usize = 10;
+
 /// Source metadata tuple: (source_id, display_name, sync_interval_secs).
 /// Built at startup from the source registry (sources-display.json).
 pub type SourceMeta = (String, String, u64);
@@ -887,6 +896,216 @@ async fn compute_asset_thresholds(
         .collect()
 }
 
+// ── Pump.fun "tokens of the day" ───────────────────────────────────────────
+//
+// The pump.fun page surfaces freshly-launched memecoins, not the established
+// large-caps. The product rule: a daily set of the top 10 NEW tokens (first
+// seen today, UTC) by 24h volume, frozen for the whole UTC day so every one of
+// the 144 rounds — and the UI — shows the identical ten. The UI reads the same
+// batch markets, so the on-chain batch is the single source of truth.
+//
+// "New" = `pumpfun_first_seen.first_seen >= today 00:00 UTC`. first_seen is
+// recorded the first time a pump.fun asset shows up with a live price and is
+// never updated, so it survives data-node restarts (the in-memory discovery
+// cache in the pumpfun client does not).
+
+/// Record the first-seen timestamp for every pump.fun asset that currently has
+/// a live price. Insert-only — an asset's first_seen is set once and never
+/// moved, so "new today" is a stable, restart-proof signal.
+async fn record_pumpfun_first_seen(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        INSERT INTO pumpfun_first_seen (asset_id, first_seen)
+        SELECT asset_id, NOW()
+        FROM market_prices_latest
+        WHERE source = $1
+          AND value IS NOT NULL
+        ON CONFLICT (asset_id) DO NOTHING
+        "#,
+    )
+    .bind(PUMPFUN_SOURCE_ID)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Resolve the frozen daily set of pump.fun tokens for the current UTC day.
+///
+/// Reads `pumpfun_daily_tokens` for today; if present, returns the persisted,
+/// ranked set unchanged (so a mid-day restart reuses it). Otherwise computes
+/// the set — top [`PUMPFUN_DAILY_COUNT`] NEW tokens by 24h volume, filled to a
+/// full count with the next-best recent (last-24h) high-volume tokens — then
+/// persists it and returns it. Deterministic: a pure function of the DB
+/// snapshot plus whatever was already frozen for the day.
+///
+/// Returns asset_ids in rank order (rank 0 first).
+async fn get_pumpfun_daily_tokens(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
+    let today = Utc::now().date_naive();
+
+    // 1. Already frozen for today? Reuse it verbatim.
+    let existing: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT asset_id
+        FROM pumpfun_daily_tokens
+        WHERE utc_date = $1
+        ORDER BY rank ASC
+        "#,
+    )
+    .bind(today)
+    .fetch_all(pool)
+    .await?;
+    if !existing.is_empty() {
+        return Ok(existing.into_iter().map(|(id,)| id).collect());
+    }
+
+    // 2. Compute. Top NEW tokens (first seen today) by 24h volume.
+    let day_start = today
+        .and_hms_opt(0, 0, 0)
+        .map(|naive| DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc))
+        .unwrap_or_else(Utc::now);
+
+    let new_by_volume: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT p.asset_id
+        FROM market_prices_latest p
+        INNER JOIN pumpfun_first_seen f ON f.asset_id = p.asset_id
+        WHERE p.source = $1
+          AND p.value IS NOT NULL
+          AND f.first_seen >= $2
+        ORDER BY COALESCE(p.volume_24h, 0) DESC, p.asset_id ASC
+        LIMIT $3
+        "#,
+    )
+    .bind(PUMPFUN_SOURCE_ID)
+    .bind(day_start)
+    .bind(PUMPFUN_DAILY_COUNT as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let mut chosen: Vec<String> = new_by_volume.into_iter().map(|(id,)| id).collect();
+
+    // 3. Fewer than the target? Backfill with the next-best high-volume tokens
+    //    seen in the last 24h that aren't already chosen, so the batch always
+    //    carries a full set even on a quiet launch day.
+    if chosen.len() < PUMPFUN_DAILY_COUNT {
+        let recent_cutoff = Utc::now() - chrono::Duration::hours(24);
+        let backfill: Vec<(String,)> = sqlx::query_as(
+            r#"
+            SELECT p.asset_id
+            FROM market_prices_latest p
+            LEFT JOIN pumpfun_first_seen f ON f.asset_id = p.asset_id
+            WHERE p.source = $1
+              AND p.value IS NOT NULL
+              AND (f.first_seen IS NULL OR f.first_seen >= $2)
+              AND p.asset_id != ALL($3)
+            ORDER BY COALESCE(p.volume_24h, 0) DESC, p.asset_id ASC
+            LIMIT $4
+            "#,
+        )
+        .bind(PUMPFUN_SOURCE_ID)
+        .bind(recent_cutoff)
+        .bind(&chosen)
+        .bind((PUMPFUN_DAILY_COUNT - chosen.len()) as i64)
+        .fetch_all(pool)
+        .await?;
+        for (id,) in backfill {
+            if chosen.len() >= PUMPFUN_DAILY_COUNT {
+                break;
+            }
+            chosen.push(id);
+        }
+    }
+
+    if chosen.is_empty() {
+        // Nothing priced yet — don't persist an empty day; let the next cycle
+        // try again once the pumpfun source has ingested prices.
+        return Ok(Vec::new());
+    }
+
+    // 4. Persist the frozen set for the day. ON CONFLICT DO NOTHING so a race
+    //    between two cycles (or a restart) can't double-write — the first
+    //    writer wins and every later reader gets the same set.
+    let mut tx = pool.begin().await?;
+    for (rank, asset_id) in chosen.iter().enumerate() {
+        sqlx::query(
+            r#"
+            INSERT INTO pumpfun_daily_tokens (utc_date, rank, asset_id, computed_at)
+            VALUES ($1, $2, $3, NOW())
+            ON CONFLICT (utc_date, rank) DO NOTHING
+            "#,
+        )
+        .bind(today)
+        .bind(rank as i32)
+        .bind(asset_id)
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+
+    // Re-read so a concurrent writer that won the race gives us the canonical
+    // frozen set rather than our locally-computed one.
+    let frozen: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT asset_id FROM pumpfun_daily_tokens
+        WHERE utc_date = $1
+        ORDER BY rank ASC
+        "#,
+    )
+    .bind(today)
+    .fetch_all(pool)
+    .await?;
+    Ok(frozen.into_iter().map(|(id,)| id).collect())
+}
+
+/// Build the pump.fun batch from the frozen daily set. Thresholds are
+/// calibrated live per round (same as every other source — fresh thresholds
+/// track current volatility); only the market *set* is frozen for the day, so
+/// the on-chain batch and the UI carry the identical ten tokens all day.
+async fn generate_pumpfun_batch_config(
+    pool: &PgPool,
+    display_name: &str,
+    sync_interval_secs: u64,
+) -> Option<BatchConfig> {
+    if let Err(e) = record_pumpfun_first_seen(pool).await {
+        warn!(%e, "pumpfun: failed to record first_seen — daily set may under-count new tokens");
+    }
+
+    let asset_ids = match get_pumpfun_daily_tokens(pool).await {
+        Ok(ids) => ids,
+        Err(e) => {
+            warn!(%e, "pumpfun: failed to resolve daily token set");
+            return None;
+        }
+    };
+    if asset_ids.is_empty() {
+        info!("pumpfun: no priced tokens yet — skipping batch this cycle");
+        return None;
+    }
+
+    let tick_duration_secs = sync_interval_secs;
+    let lock_offset_secs = 0u64;
+    let markets = compute_asset_thresholds(pool, PUMPFUN_SOURCE_ID, &asset_ids).await;
+
+    let hash = compute_config_hash(
+        PUMPFUN_SOURCE_ID,
+        tick_duration_secs,
+        lock_offset_secs,
+        &markets,
+    );
+    let hash_hex = format!("0x{}", hex::encode(hash));
+
+    Some(BatchConfig {
+        source_id: PUMPFUN_SOURCE_ID.to_string(),
+        display_name: display_name.to_string(),
+        config_hash: hash_hex,
+        tick_duration_secs,
+        lock_offset_secs,
+        settlement_grace_secs: default_settlement_grace_secs(tick_duration_secs),
+        markets,
+        created_at: Utc::now(),
+    })
+}
+
 /// Generate a full batch config for a source.
 async fn generate_batch_config(
     pool: &PgPool,
@@ -1331,7 +1550,16 @@ pub async fn run(
                 );
                 continue;
             }
-            match generate_batch_config(&pool, source_id, display_name, *sync_interval).await {
+            // pump.fun gets a bespoke path: a frozen daily set of the top-10
+            // NEW tokens by 24h volume, identical for every round that UTC day
+            // and identical to what the UI renders. Every other source uses the
+            // generic healthy-universe builder.
+            let built = if source_id == PUMPFUN_SOURCE_ID {
+                generate_pumpfun_batch_config(&pool, display_name, *sync_interval).await
+            } else {
+                generate_batch_config(&pool, source_id, display_name, *sync_interval).await
+            };
+            match built {
                 Some(config) => {
                     if let Err(e) = store_batch_config(&pool, &config).await {
                         warn!(source = %source_id, %e, "Failed to store batch config");

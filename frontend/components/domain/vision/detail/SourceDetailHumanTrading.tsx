@@ -206,6 +206,7 @@ export function SourceDetailHumanTrading({
         isPrice: sourceEntry.isPrice,
         internalIds: sourceEntry.internalIds ?? [],
         batchSubsourceKey: sourceEntry.batchSubsourceKey,
+        displayFollowsBatch: sourceEntry.displayFollowsBatch ?? false,
       }
     }
     if (initialSource) {
@@ -222,6 +223,7 @@ export function SourceDetailHumanTrading({
         isPrice: initialSource.isPrice,
         internalIds: initialSource.internalIds ?? [],
         batchSubsourceKey: initialSource.batchSubsourceKey,
+        displayFollowsBatch: initialSource.displayFollowsBatch ?? false,
       }
     }
     return null
@@ -244,9 +246,38 @@ export function SourceDetailHumanTrading({
   // -- Curated allowlist (10 slugs per displaySourceId) --
   const allowlist = useMemo(() => getDefiLlamaAllowlist(sourceId), [sourceId])
 
-  // The live popularity ranking. This re-ranks on EVERY 60s snapshot poll, so
-  // it is never rendered directly — it only seeds the per-round pin below.
+  // The /vision/batches API returns market_count but not the full marketIds
+  // array. Pull the authoritative ordered list from the data-node, keyed by
+  // sourceId so the SSR prefetch (page.tsx → ['batch-config-source', sourceId])
+  // warms the same cache slot this hook reads. Keying by configHash here
+  // missed the prefetch on every cold paint AND 404'd briefly during round
+  // transitions, leaving the picker stuck at "0 active this round".
+  const { data: batchConfig } = useBatchConfigBySource(sourceId)
+  const marketIds: string[] = useMemo(
+    () => batchConfig?.markets?.map(m => m.assetId) ?? [],
+    [batchConfig],
+  )
+
+  // `displayFollowsBatch` sources (pump.fun) render exactly the batch's markets
+  // as their top tokens — the data-node freezes a daily set and the batch IS
+  // the single source of truth, so the UI must not re-rank. Resolved from the
+  // source registry; the page degrades gracefully when it's absent.
+  const displayFollowsBatch = source?.displayFollowsBatch ?? false
+
+  // The candidate ranking that seeds the per-round pin below. Never rendered
+  // directly — `rankedAssetIds` re-derives on every 60s snapshot poll, so the
+  // pin effect freezes it per round.
+  //   • displayFollowsBatch → exactly the batch's marketIds, in batch order.
+  //     This is what makes UI == batch by construction. If the batch hasn't
+  //     loaded yet, fall back to popularity so the page isn't blank.
+  //   • curated allowlist → the editorial slug order.
+  //   • otherwise → popularity (marketCap → volume24h → value).
   const rankedAssetIds = useMemo(() => {
+    if (displayFollowsBatch) {
+      if (marketIds.length > 0) return marketIds.slice(0, TOP_N)
+      // Batch not loaded yet — graceful fallback so the grid still paints.
+      return rankByPopularity(allMarkets, TOP_N).map(m => m.assetId)
+    }
     if (!allowlist) {
       // No curated list — rank by the best signal the source has
       // (marketCap → volume24h → value), tiebroken on assetId for a stable order.
@@ -258,7 +289,7 @@ export function SourceDetailHumanTrading({
       if (marketsByAssetId.has(id)) ordered.push(id)
     }
     return ordered.slice(0, TOP_N)
-  }, [allMarkets, allowlist, marketsByAssetId])
+  }, [displayFollowsBatch, marketIds, allMarkets, allowlist, marketsByAssetId])
 
   // The displayed market set is PINNED to the round (see the pin effect below,
   // once currentBatchId is known). Membership + order only change when the
@@ -333,18 +364,6 @@ export function SourceDetailHumanTrading({
     )
     return batches.find(b => candidates.has(b.sourceId)) ?? null
   }, [batches, source])
-
-  // The /vision/batches API returns market_count but not the full marketIds
-  // array. Pull the authoritative ordered list from the data-node, keyed by
-  // sourceId so the SSR prefetch (page.tsx → ['batch-config-source', sourceId])
-  // warms the same cache slot this hook reads. Keying by configHash here
-  // missed the prefetch on every cold paint AND 404'd briefly during round
-  // transitions, leaving the picker stuck at "0 active this round".
-  const { data: batchConfig } = useBatchConfigBySource(sourceId)
-  const marketIds: string[] = useMemo(
-    () => batchConfig?.markets?.map(m => m.assetId) ?? [],
-    [batchConfig],
-  )
 
   // assetId → { resType, thresholdBps } — drives the green/red settlement
   // square on every chart on the page. Batch-config entries are the source
@@ -459,7 +478,15 @@ export function SourceDetailHumanTrading({
       pinnedBatchRef.current != null &&
       currentBatchId != null &&
       currentBatchId !== pinnedBatchRef.current
-    if (neverPinned || batchRolled) {
+    // For displayFollowsBatch sources the batch markets ARE the truth and only
+    // change at a round rollover, so re-pin whenever the candidate set differs
+    // from what's shown. This also corrects a cold load that pinned the
+    // popularity fallback before the batch config finished loading — without
+    // it, the page would show the fallback set until the next round.
+    const followBatchChanged =
+      displayFollowsBatch &&
+      pinnedAssetIds.join(',') !== rankedAssetIds.join(',')
+    if (neverPinned || batchRolled || followBatchChanged) {
       pinnedBatchRef.current = currentBatchId
       setPinnedAssetIds(rankedAssetIds)
     } else if (pinnedBatchRef.current == null && currentBatchId != null) {
@@ -467,7 +494,7 @@ export function SourceDetailHumanTrading({
       // it without reshuffling the set we already showed.
       pinnedBatchRef.current = currentBatchId
     }
-  }, [rankedAssetIds, currentBatchId])
+  }, [rankedAssetIds, currentBatchId, displayFollowsBatch, pinnedAssetIds])
 
   // Round lifecycle. The oracle's /vision/rounds/active drops settled rounds,
   // so between ticks `round` briefly becomes null even though the batch is alive.
@@ -875,8 +902,14 @@ export function SourceDetailHumanTrading({
   const sourceLogo = source.logo
 
   // The curated (DefiLlama) lists keep their own editorial framing — no header.
-  // The ranked fallback says exactly what it is: top 10 by whatever signal it ranked on.
-  const gridHeading = allowlist ? null : `Top ${TOP_N} by ${titleCaseLabel(valueLabel)}`
+  // displayFollowsBatch sources (pump.fun) show the frozen daily set, so the
+  // heading names it. The ranked fallback says exactly what it is: top 10 by
+  // whatever signal it ranked on.
+  const gridHeading = source.displayFollowsBatch
+    ? 'Tokens of the day'
+    : allowlist
+      ? null
+      : `Top ${TOP_N} by ${titleCaseLabel(valueLabel)}`
 
   const displayError = joinError || submitError
 

@@ -37,7 +37,8 @@
       ],
       "syncIntervalSecs": 600,
       "batchEligible": true,
-      "audience": "human"
+      "audience": "human",
+      "displayFollowsBatch": true
     },
     {
       "sourceId": "defillama",

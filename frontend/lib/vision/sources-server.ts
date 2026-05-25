@@ -24,6 +24,11 @@ export interface SourceDisplayServer {
   isPrice: boolean
   audience?: 'human' | 'bot' | 'redirect'
   redirectTo?: string
+  /** When true, the source detail page renders exactly the active batch's
+   *  markets as its "top tokens" (UI == batch by construction), instead of
+   *  ranking the live snapshot by popularity. Used by pump.fun, whose daily
+   *  set of 10 "tokens of the day" is frozen by the data-node per UTC day. */
+  displayFollowsBatch?: boolean
 }
 
 export interface CategoryDisplayServer {
@@ -63,6 +68,7 @@ const STATIC_REGISTRY: SourceRegistryServer = (() => {
     isPrice: s.isPrice ?? false,
     audience: s.audience,
     redirectTo: s.redirectTo,
+    displayFollowsBatch: s.displayFollowsBatch,
   }))
   return { sources, categories: raw.categories ?? [] }
 })()
@@ -133,6 +139,7 @@ export async function getSourceDisplayServer(
       audience: staticEntry?.audience ?? live.audience,
       redirectTo: staticEntry?.redirectTo ?? live.redirectTo,
       batchSubsourceKey: staticEntry?.batchSubsourceKey ?? live.batchSubsourceKey,
+      displayFollowsBatch: staticEntry?.displayFollowsBatch ?? live.displayFollowsBatch,
     }
   }
   return staticEntry

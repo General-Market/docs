@@ -57,6 +57,7 @@ export async function GET() {
             audience: editorial.audience ?? s.audience,
             redirectTo: editorial.redirectTo ?? s.redirectTo,
             batchSubsourceKey: editorial.batchSubsourceKey ?? s.batchSubsourceKey,
+            displayFollowsBatch: editorial.displayFollowsBatch ?? s.displayFollowsBatch,
           }
         }
         return s
