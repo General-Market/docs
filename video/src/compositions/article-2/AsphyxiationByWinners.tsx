@@ -173,10 +173,10 @@ export const AsphyxiationByWinners: React.FC = () => {
           <FlowStream key={`pb-${i}`} from={{ x: b.cx, y: b.topY }} to={TRADER_B} active={payback} color="#FF7A59" count={3} speed={0.85} dotR={5} boardW={BOARD_W} />
         ))}
 
-        {/* the actors, on top */}
-        <TraderChip cx={TRADER_A.x} cy={TRADER_A.y} label="T1" name="Trader 1" color={C.blue} face={showFaces ? traderFace : undefined} />
-        <TraderChip cx={TRADER_B.x} cy={TRADER_B.y} label="T2" name="Trader 2" color="#FF7A59" face={showFaces ? traderFace : undefined} />
-        <MMChip cx={MM.x} cy={MM.y} fill={reservoir} color={C.violet} face={showFaces ? mmFace : undefined} h={140} label="Maker" amount="$" />
+        {/* the actors, on top — sized to stay readable when the camera pulls back */}
+        <TraderChip cx={TRADER_A.x} cy={TRADER_A.y} label="T1" name="Trader 1" color={C.blue} size={120} face={showFaces ? traderFace : undefined} />
+        <TraderChip cx={TRADER_B.x} cy={TRADER_B.y} label="T2" name="Trader 2" color="#FF7A59" size={120} face={showFaces ? traderFace : undefined} />
+        <MMChip cx={MM.x} cy={MM.y} fill={reservoir} color={C.violet} face={showFaces ? mmFace : undefined} h={184} label="Maker" amount="$" />
       </TrackBoard>
 
       {/* titles + captions */}

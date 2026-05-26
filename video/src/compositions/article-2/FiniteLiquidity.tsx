@@ -3,7 +3,6 @@ import { AbsoluteFill, useCurrentFrame, spring } from "remotion";
 import {
   Stage,
   TrackBoard,
-  BeatTitle,
   camAt,
   ci,
   clamp01,
@@ -36,40 +35,44 @@ interface V {
   raise: string;
   tvl: string;
   tint: string;
-  montage?: boolean;
 }
-const VENUES: V[] = [
+// The three real cycles — the camera rests on each.
+const CYCLES: V[] = [
   { x: 1000, name: "Venue A", raise: "$20M", tvl: "$20M", tint: C.blue },
   { x: 2450, name: "Venue B", raise: "$55M", tvl: "$55M", tint: C.violet },
   { x: 3900, name: "Venue C", raise: "$140M", tvl: "$140M", tint: C.pink },
-  { x: 5000, name: "D", raise: "", tvl: "", tint: "#17B0A6", montage: true },
-  { x: 5750, name: "E", raise: "", tvl: "", tint: "#FF7A59", montage: true },
-  { x: 6500, name: "F", raise: "", tvl: "", tint: "#9AB02A", montage: true },
-  { x: 7250, name: "G", raise: "", tvl: "", tint: "#2BA6F0", montage: true },
 ];
+// The conveyor — a dense strip the camera rushes past, each venue booming and
+// busting in turn. Tightly spaced so several are in frame during the fast pan.
+const MONTAGE_TINTS = ["#17B0A6", "#FF7A59", "#9AB02A", "#2BA6F0", "#5566E0", "#F0556A", "#22B36B", "#E8A13A"];
+const MONTAGE_X0 = 4750;
+const MONTAGE_GAP = 430;
+const MONTAGE = MONTAGE_TINTS.map((tint, i) => ({ x: MONTAGE_X0 + i * MONTAGE_GAP, tint })); // last ≈ 7760
 const VF = { x: 8500, name: "Venue H", raise: "$400M", tvl: "$400M", tint: C.blue }; // the boxed survivor
-const CHAL = { x: 9450, name: "Venue I", raise: "$900M", tint: "#7B5CFF" }; // the challenger that fails
-const BOARD_W = 10200;
+const CHAL = { x: 9250, name: "Venue I", raise: "$900M", tint: "#7B5CFF" }; // the challenger that fails
+const BOARD_W = 10400;
 
-// camera rests on each real cycle, accelerates through the montage, settles on VF
+// camera rests on each real cycle, zooms out + rushes the conveyor, settles on VF
 const camera = (frame: number) =>
   camAt(
     frame,
     [
-      { t: 0, x: VENUES[0].x, scale: 1 },
-      { t: sec(3.0), x: VENUES[0].x, scale: 1 },
-      { t: sec(4.2), x: VENUES[1].x, scale: 1 },
-      { t: sec(6.6), x: VENUES[1].x, scale: 1 },
-      { t: sec(7.8), x: VENUES[2].x, scale: 1 },
-      { t: sec(10.0), x: VENUES[2].x, scale: 1 },
-      { t: sec(14.2), x: VF.x, scale: 1 }, // montage glide → settle on VF
+      { t: 0, x: CYCLES[0].x, scale: 1 },
+      { t: sec(3.0), x: CYCLES[0].x, scale: 1 },
+      { t: sec(4.2), x: CYCLES[1].x, scale: 1 },
+      { t: sec(6.6), x: CYCLES[1].x, scale: 1 },
+      { t: sec(7.8), x: CYCLES[2].x, scale: 1 },
+      { t: sec(10.0), x: CYCLES[2].x, scale: 1 },
+      { t: sec(10.9), x: 4950, scale: 0.72 }, // pull back, enter the conveyor
+      { t: sec(13.3), x: 7500, scale: 0.72 }, // fast scroll across it
+      { t: sec(14.4), x: VF.x, scale: 1 }, // zoom back, settle on the survivor
       { t: DURATION, x: VF.x, scale: 1 },
     ],
     EASE.inOut,
   );
 
-// A venue's life is driven by where the camera is relative to it: dark before
-// the camera reaches it, alive as it centres, bust once the camera moves on.
+// A cycle venue's life: dark before the camera reaches it, alive as it centres,
+// bust once the camera moves on.
 const venueLife = (camX: number, vx: number): { state: VenueState; centred: number; aura: number } => {
   const d = camX - vx;
   const centred = clamp01(1 - Math.abs(d) / 320);
@@ -77,6 +80,17 @@ const venueLife = (camX: number, vx: number): { state: VenueState; centred: numb
   if (d > 360) return { state: "bust", centred: 0, aura: 0 };
   const state: VenueState = centred > 0.45 ? "alive" : "funded";
   return { state, centred, aura: centred * 0.7 };
+};
+
+// A conveyor venue's life: a tighter window so, as the camera rushes right, the
+// one ahead is dark, the one centred booms bright, the one behind has busted —
+// a rolling wave of boom → bust.
+const montageLife = (camX: number, vx: number): { state: VenueState; aura: number } => {
+  const d = camX - vx;
+  if (d < -280) return { state: "dark", aura: 0 };
+  if (d > 280) return { state: "bust", aura: 0 };
+  const centred = clamp01(1 - Math.abs(d) / 280);
+  return { state: centred > 0.4 ? "alive" : "funded", aura: centred * 0.85 };
 };
 
 // screen-fixed actors
@@ -92,17 +106,18 @@ export const FiniteLiquidity: React.FC = () => {
   const frame = useCurrentFrame();
   const cam = camera(frame);
 
-  // which venue is most centred, and how centred
+  // which feedable venue (a cycle or the survivor) is most centred — drives the
+  // screen-space feed. The conveyor venues are never fed; they just rush past.
   let active = -1;
   let activeCentred = 0;
-  [...VENUES, VF].forEach((v, i) => {
+  [...CYCLES, VF].forEach((v, i) => {
     const c = clamp01(1 - Math.abs(cam.x - v.x) / 320);
     if (c > activeCentred) {
       activeCentred = c;
       active = i;
     }
   });
-  const activeVenue = active >= 0 ? [...VENUES, VF][active] : null;
+  const activeVenue = active >= 0 ? [...CYCLES, VF][active] : null;
 
   // the 2-years-later beat: camera settled on VF
   const onVF = cam.x > VF.x - 200;
@@ -122,22 +137,19 @@ export const FiniteLiquidity: React.FC = () => {
   return (
     <Stage>
       <TrackBoard width={BOARD_W} cam={cam} spine={{ x1: 700, x2: BOARD_W - 600, y: CY }}>
-        {/* the venues, sliding past */}
-        {VENUES.map((v, i) => {
+        {/* the three real cycle venues, sliding past and busting behind us */}
+        {CYCLES.map((v, i) => {
           const life = venueLife(cam.x, v.x);
           return (
-            <VenueCard
-              key={i}
-              cx={v.x}
-              cy={CY}
-              state={life.state}
-              aura={life.aura}
-              tint={v.tint}
-              name={v.montage ? undefined : v.name}
-              tvl={v.montage ? undefined : v.tvl}
-              w={v.montage ? 150 : 230}
-              h={v.montage ? 104 : 156}
-            />
+            <VenueCard key={i} cx={v.x} cy={CY} state={life.state} aura={life.aura} tint={v.tint} name={v.name} tvl={v.tvl} w={230} h={156} />
+          );
+        })}
+
+        {/* the conveyor — a rolling wave of boom → bust the camera rushes past */}
+        {MONTAGE.map((v, i) => {
+          const life = montageLife(cam.x, v.x);
+          return (
+            <VenueCard key={`m${i}`} cx={v.x} cy={CY} state={life.state} aura={life.aura} tint={v.tint} w={176} h={120} />
           );
         })}
 
@@ -182,16 +194,46 @@ export const FiniteLiquidity: React.FC = () => {
           <MMChip key={`mm${i}`} cx={m.x} cy={m.y} fill={0.7} color={C.violet} h={120} label={`MM ${i + 1}`} amount="$10M" />
         ))}
 
-        <CaptionSeq frame={frame} onVF={onVF} />
+        <CaptionSeq frame={frame} />
       </AbsoluteFill>
 
-      {/* the "2 years later" title rides in as the camera settles on VF */}
-      {frame >= sec(14.0) && <BeatTitle title="2 years later" delay={sec(14.2)} size={50} />}
+      {/* the "2 years later" marker rides in as the camera settles on VF, then
+          clears — it's a moment in time, not a section title, so it must not
+          linger over the government-box beat that follows. */}
+      <TimeMarker frame={frame} at={sec(14.4)} until={sec(17.2)} text="2 years later" />
     </Stage>
   );
 };
 
-const CaptionSeq: React.FC<{ frame: number; onVF: boolean }> = ({ frame }) => {
+// A top-centered temporal marker that fades in, holds, then fades out — the
+// blue→violet gradient pill, like BeatTitle, but it clears itself.
+const TimeMarker: React.FC<{ frame: number; at: number; until: number; text: string }> = ({ frame, at, until, text }) => {
+  const op = ci(frame, at, at + sec(0.3), 0, 1) * ci(frame, until - sec(0.4), until, 1, 0);
+  if (op <= 0.01) return null;
+  const y = ci(frame, at, at + sec(0.4), 16, 0, EASE.out);
+  return (
+    <div style={{ position: "absolute", top: 58, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: op, transform: `translateY(${y.toFixed(1)}px)` }}>
+      <div
+        style={{
+          padding: "16px 40px",
+          borderRadius: 999,
+          background: "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)",
+          boxShadow: "0 16px 40px rgba(94,120,255,0.42), 0 4px 14px rgba(0,113,227,0.30), inset 0 1px 0 rgba(255,255,255,0.5)",
+          fontFamily: font,
+          fontSize: 50,
+          fontWeight: 800,
+          letterSpacing: "-0.01em",
+          color: "#fff",
+          textShadow: "0 1px 2px rgba(40,40,90,0.28)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
+const CaptionSeq: React.FC<{ frame: number }> = ({ frame }) => {
   const lines: { at: number; until: number; text: string }[] = [
     { at: sec(0.8), until: sec(3.0), text: "VC pays for the liquidity" },
     { at: sec(4.4), until: sec(6.6), text: "a bigger raise — the makers switch" },
