@@ -124,9 +124,9 @@ import {
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
-import { finiteLiquidityMeta } from "./compositions/three-walls/FiniteLiquidity";
-import { technicalOverloadMeta } from "./compositions/three-walls/TechnicalOverload";
-import { asphyxiationByWinnersMeta } from "./compositions/three-walls/AsphyxiationByWinners";
+import { finiteLiquidityMeta } from "./compositions/article-2/FiniteLiquidity";
+import { technicalOverloadMeta } from "./compositions/article-2/TechnicalOverload";
+import { asphyxiationByWinnersMeta } from "./compositions/article-2/AsphyxiationByWinners";
 import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
@@ -248,16 +248,6 @@ export const RemotionRoot: React.FC = () => {
           width={batchFlowReelMeta.width}
           height={batchFlowReelMeta.height}
         />
-      </Folder>
-      <Folder name="ThreeWalls">
-        <Composition
-          id={finiteLiquidityMeta.id}
-          component={finiteLiquidityMeta.component}
-          durationInFrames={finiteLiquidityMeta.durationInFrames}
-          fps={finiteLiquidityMeta.fps}
-          width={finiteLiquidityMeta.width}
-          height={finiteLiquidityMeta.height}
-        />
         <Composition
           id={technicalOverloadMeta.id}
           component={technicalOverloadMeta.component}
@@ -265,6 +255,14 @@ export const RemotionRoot: React.FC = () => {
           fps={technicalOverloadMeta.fps}
           width={technicalOverloadMeta.width}
           height={technicalOverloadMeta.height}
+        />
+        <Composition
+          id={finiteLiquidityMeta.id}
+          component={finiteLiquidityMeta.component}
+          durationInFrames={finiteLiquidityMeta.durationInFrames}
+          fps={finiteLiquidityMeta.fps}
+          width={finiteLiquidityMeta.width}
+          height={finiteLiquidityMeta.height}
         />
         <Composition
           id={asphyxiationByWinnersMeta.id}
