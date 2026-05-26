@@ -1,6 +1,6 @@
 import React from "react";
 import { Sequence } from "remotion";
-import { Stage } from "./chrome";
+import { SlideBeat, Stage } from "./chrome";
 import { FPS, H, SCHEDULE, TOTAL_FRAMES, W, type BeatKey } from "./theme";
 import {
   EnterBeat,
@@ -29,12 +29,18 @@ const REGISTRY: Partial<Record<BeatKey, React.FC<{ durationInFrames: number }>>>
 
 export const BatchFlowReel: React.FC = () => (
   <Stage>
-    {SCHEDULE.map((slot) => {
+    {SCHEDULE.map((slot, i) => {
       const Comp = REGISTRY[slot.key];
       if (!Comp) return null;
       return (
         <Sequence key={slot.key} from={slot.from} durationInFrames={slot.durationInFrames} name={slot.key}>
-          <Comp durationInFrames={slot.durationInFrames} />
+          <SlideBeat
+            durationInFrames={slot.durationInFrames}
+            enter={i > 0}
+            exit={i < SCHEDULE.length - 1}
+          >
+            <Comp durationInFrames={slot.durationInFrames} />
+          </SlideBeat>
         </Sequence>
       );
     })}

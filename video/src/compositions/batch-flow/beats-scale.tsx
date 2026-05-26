@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { C, EASE, font, monoFont, PILL_GRADIENT } from "./theme";
-import { BeatTitle, useFade } from "./chrome";
+import { BeatTitle } from "./chrome";
 import { CHAIN_STEPS, CHAIN_TOTAL, HYPERLIQUID_TRADES_PER_DAY, LIQUIDITY_UNLOCKED } from "./data";
 
 type BeatProps = { durationInFrames: number };
@@ -96,8 +96,6 @@ const FactorChip: React.FC<{ at: number; head: string; sub: string; seed?: boole
 
 export const MultiplyBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
-  const fade = useFade(durationInFrames);
-
   // Running product — animate from one cumulative value to the next per step.
   let value = cumulative[0];
   for (let i = 0; i < CHAIN_STEPS.length; i++) {
@@ -124,7 +122,7 @@ export const MultiplyBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   });
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       <BeatTitle title="From one trade" sub="ten thousand markets in a single transaction" />
 
       <div style={{ position: "absolute", top: 332, left: 0, right: 0, textAlign: "center" }}>
@@ -160,8 +158,6 @@ export const MultiplyBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
 
 export const UnlockBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
-  const fade = useFade(durationInFrames);
-
   const dollars = interpolate(frame, [28, 128], [0, LIQUIDITY_UNLOCKED], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -170,7 +166,7 @@ export const UnlockBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const subOp = interpolate(frame, [138, 158], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       <BeatTitle title="Liquidity unlocked" sub="what one user's volume can back" />
 
       <div style={{ position: "absolute", top: 408, left: 0, right: 0, textAlign: "center" }}>

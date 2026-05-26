@@ -5,9 +5,9 @@ import {
   OffthreadVideo,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { C, EASE, EDGE, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
+import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
 //
@@ -33,104 +33,15 @@ export const glassCard = (radius = 16): React.CSSProperties => ({
     "0 8px 24px rgba(70,74,140,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
 });
 
-// ─── Points network ──────────────────────────────────────────────────────
-//
-// A white ground carrying a field of blue points joined by thin lines — a
-// plexus. Every node drifts along a fixed heading, and the distance it has
-// travelled grows with the SQUARE of time, so the whole field accelerates:
-// near-still at the open, brisk by the climax. Positions are a closed form of
-// the frame, so any frame renders identically without state.
-
-const NODES = 90;
-const LINK_DIST = 220; // px — draw a line between points closer than this
-const BASE_SPEED = 6; // px/s at t=0
-const ACCEL = 0.38; // px/s² — the acceleration the brief asks for
-
-const POINT_BLUE = "#0071E3";
-const POINT_BRIGHT = "#2997ff";
-const POINT_VIOLET = "#6E5BFF";
-
-const mulberry32 = (a: number) => () => {
-  a |= 0;
-  a = (a + 0x6d2b79f5) | 0;
-  let t = Math.imul(a ^ (a >>> 15), 1 | a);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
-
-const wrap = (v: number, m: number): number => ((v % m) + m) % m;
-
-type PNode = { x: number; y: number; r: number; color: string };
-
-const PointsNetwork: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const t = frame / fps;
-  // Distance travelled under constant acceleration: v0·t + ½·a·t².
-  const travel = BASE_SPEED * t + 0.5 * ACCEL * t * t;
-  // Bleed past the edges so wrapping points enter/exit off-screen, not at the
-  // visible border.
-  const MX = 160;
-  const fieldW = W + MX * 2;
-  const fieldH = H + MX * 2;
-
-  const nodes: PNode[] = [];
-  for (let i = 0; i < NODES; i++) {
-    const rnd = mulberry32((i + 1) * 2654435761);
-    const x0 = rnd() * fieldW;
-    const y0 = rnd() * fieldH;
-    const ang = rnd() * Math.PI * 2;
-    const spd = 0.55 + rnd() * 0.9; // per-node speed multiplier
-    const pick = rnd();
-    const color = pick > 0.82 ? POINT_VIOLET : pick > 0.5 ? POINT_BRIGHT : POINT_BLUE;
-    const x = wrap(x0 + Math.cos(ang) * travel * spd, fieldW) - MX;
-    const y = wrap(y0 + Math.sin(ang) * travel * spd, fieldH) - MX;
-    nodes.push({ x, y, r: 1.8 + rnd() * 2.6, color });
-  }
-
-  const lines: React.ReactNode[] = [];
-  for (let i = 0; i < NODES; i++) {
-    for (let j = i + 1; j < NODES; j++) {
-      const dx = nodes[i].x - nodes[j].x;
-      const dy = nodes[i].y - nodes[j].y;
-      const d = Math.hypot(dx, dy);
-      if (d >= LINK_DIST) continue;
-      const op = (1 - d / LINK_DIST) * 0.42;
-      lines.push(
-        <line
-          key={`${i}-${j}`}
-          x1={nodes[i].x}
-          y1={nodes[i].y}
-          x2={nodes[j].x}
-          y2={nodes[j].y}
-          stroke="#1F7DEC"
-          strokeWidth={1}
-          opacity={op}
-        />,
-      );
-    }
-  }
-
-  return (
-    <svg width={W} height={H} style={{ position: "absolute", inset: 0, opacity }}>
-      <g>{lines}</g>
-      {nodes.map((n, i) => (
-        <g key={i}>
-          <circle cx={n.x} cy={n.y} r={n.r * 3} fill={n.color} opacity={0.1} />
-          <circle cx={n.x} cy={n.y} r={n.r} fill={n.color} opacity={0.95} />
-        </g>
-      ))}
-    </svg>
-  );
-};
-
 // ─── Stage ────────────────────────────────────────────────────────────────
 //
-// The blue broll plays full-bleed and shows around a white panel floating on
-// it (the onboarding framing). Inside the panel — instead of frosted glass —
-// a white field carries the accelerating blue points network, with a faint
-// center-bright veil so the content reads clean. Beats render in full
-// 1920×1080 space inside the panel.
+// The blue broll plays full-bleed and shows around a panel floating on it (the
+// onboarding framing). Inside the panel sits the AntiCheatEdit flag-chart
+// ground — the light #F0F2F4 paper with its fine Base-blue dot lattice
+// (DotGrid) and a soft edge vignette — the same field the venue bar charts use
+// over there. Beats render in full 1920×1080 space inside the panel.
+
+const FIELD_BG = "#F0F2F4"; // the AntiCheatEdit chart ground (colors.bg)
 
 export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const winW = W * WINDOW_SCALE;
@@ -153,7 +64,7 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
         />
       </AbsoluteFill>
 
-      {/* the panel — a white card floating on the broll, holding the plexus */}
+      {/* the panel — a card floating on the broll, holding the dot-grid field */}
       <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div
           style={{
@@ -162,13 +73,13 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
             height: winH,
             borderRadius: 34,
             overflow: "hidden",
-            background: "#FFFFFF",
+            background: FIELD_BG,
             border: "1px solid rgba(255,255,255,0.7)",
             boxShadow:
               "0 48px 130px rgba(14,30,80,0.42), 0 14px 40px rgba(14,30,80,0.26), inset 0 1px 0 rgba(255,255,255,0.9)",
           }}
         >
-          {/* beat space — white ground + accelerating plexus + veil + beats */}
+          {/* beat space — the AntiCheatEdit dot-grid ground + beats */}
           <div
             style={{
               position: "absolute",
@@ -180,20 +91,9 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
               transformOrigin: "0 0",
             }}
           >
-            <AbsoluteFill
-              style={{
-                background:
-                  "radial-gradient(120% 110% at 50% 42%, #FFFFFF 0%, #FBFCFE 55%, #EEF3FB 100%)",
-              }}
-            />
-            <PointsNetwork />
-            <AbsoluteFill
-              style={{
-                background:
-                  "radial-gradient(70% 62% at 50% 48%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.30) 48%, rgba(255,255,255,0) 78%)",
-                pointerEvents: "none",
-              }}
-            />
+            <AbsoluteFill style={{ background: FIELD_BG }} />
+            <DotGrid intensity={0.7} speed={0.2} />
+            <DotGridVignette intensity={0.24} />
             {children}
           </div>
         </div>
@@ -202,18 +102,41 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
   );
 };
 
-// ─── useFade ────────────────────────────────────────────────────────────────
+// ─── SlideBeat ────────────────────────────────────────────────────────────────
 //
-// Beat envelope — fade in over the head, hold, fade out over the tail, so
-// beats cross-dissolve over the persistent window.
+// The whiteboard slide. A beat enters from the right while the one before it
+// leaves to the left — both travelling right→left — so during the overlap you
+// watch the old panel slide out and the new one slide in, the way a lecture
+// hall board rolls sideways. No fade: panels are opaque on a track, and the
+// frosted window clips whatever rides off either edge.
 
-export const useFade = (durationInFrames: number): number => {
+export const SlideBeat: React.FC<{
+  durationInFrames: number;
+  enter?: boolean;
+  exit?: boolean;
+  children?: React.ReactNode;
+}> = ({ durationInFrames, enter = true, exit = true, children }) => {
   const frame = useCurrentFrame();
-  return interpolate(
-    frame,
-    [0, EDGE, durationInFrames - EDGE, durationInFrames],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  let x = 0;
+  if (enter && frame < EDGE) {
+    x = interpolate(frame, [0, EDGE], [W, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: EASE.out,
+    });
+  } else if (exit && frame > durationInFrames - EDGE) {
+    x = interpolate(frame, [durationInFrames - EDGE, durationInFrames], [0, -W], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: EASE.in,
+    });
+  }
+  return (
+    <AbsoluteFill
+      style={{ transform: `translateX(${x.toFixed(1)}px)`, willChange: "transform" }}
+    >
+      {children}
+    </AbsoluteFill>
   );
 };
 

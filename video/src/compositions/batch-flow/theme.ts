@@ -96,8 +96,8 @@ export const BEATS: { key: BeatKey; seconds: number }[] = [
   { key: "unlock", seconds: 7.0 },
 ];
 
-export const OVERLAP = 14;
-export const EDGE = 14; // beat fade-in / fade-out length, matches OVERLAP
+export const OVERLAP = 30;
+export const EDGE = 30; // beat slide-in / slide-out length, matches OVERLAP
 
 export type BeatSlot = { key: BeatKey; from: number; durationInFrames: number };
 

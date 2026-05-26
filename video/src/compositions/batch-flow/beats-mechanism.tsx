@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { C, EASE, NEON, font, monoFont } from "./theme";
-import { BeatTitle, CaptionPill, useFade } from "./chrome";
+import { BeatTitle, CaptionPill } from "./chrome";
 import { PILL_GRADIENT } from "./theme";
 import {
   MARKETS,
@@ -33,8 +33,6 @@ const SEL_STEP = 30;
 
 export const ProductBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
-  const fade = useFade(durationInFrames);
-
   const picks = MARKETS.map((m, i) => (frame >= SEL_START + i * SEL_STEP ? m.you : null));
 
   const p = Math.max(0, Math.min(MARKETS.length - 1.0001, (frame - SEL_START) / SEL_STEP));
@@ -58,7 +56,7 @@ export const ProductBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   });
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       <AbsoluteFill style={{ transform: `scale(${intro.toFixed(4)})`, transformOrigin: "50% 46%" }}>
         <ProductUI picks={picks} activeIndex={activeIndex} />
         {cursorVisible ? <Cursor x={cursorX} y={cursorY} click={click} /> : null}
@@ -78,8 +76,6 @@ const TRADER_TICKETS: ("up" | "down")[][] = TRADER_NAMES.map((_n, t) =>
 export const EnterBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const fade = useFade(durationInFrames);
-
   const cFrom = cardButtonPos(9, "up");
   const ct = interpolate(frame, [0, 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut });
   const cx = lerp(cFrom.x, CONFIRM_POS.x, ct);
@@ -94,7 +90,7 @@ export const EnterBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const ps = lerp(0.55, 1.0, pk);
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       {uiOpacity > 0.01 ? (
         <AbsoluteFill style={{ opacity: uiOpacity }}>
           <ProductUI picks={YOUR_PICKS} activeIndex={null} confirmGlow={confirmGlow} />
@@ -117,14 +113,12 @@ const TRADER_X = [310, 645, 960, 1275, 1610];
 const POOL = { x: 960, y: 756, w: 560, h: 148 };
 
 export const TradersBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
-  const frame = useCurrentFrame();
-  const fade = useFade(durationInFrames);
-  const launch = (i: number) => 34 + i * 16;
+  const frame = useCurrentFrame();  const launch = (i: number) => 34 + i * 16;
   const arrived = TRADER_NAMES.filter((_n, i) => (frame - launch(i)) / 46 >= 1).length;
   const poolGlow = arrived / N_TRADERS;
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       <BeatTitle title="Everyone sends the same packet" sub="five traders, one pool" />
       <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         <defs>
@@ -205,10 +199,8 @@ const BAR_W = 560;
 
 export const PoolBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const fade = useFade(durationInFrames);
-  return (
-    <AbsoluteFill style={{ opacity: fade }}>
+  const { fps } = useVideoConfig();  return (
+    <AbsoluteFill>
       <BeatTitle title="Each line, matched" sub="up stakes against down stakes" />
       <div style={{ position: "absolute", left: ROWS_X, top: ROWS_Y, display: "flex", flexDirection: "column", gap: 4 }}>
         {MARKETS.map((_m, i) => {
@@ -223,10 +215,8 @@ export const PoolBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
 // ─── 5 · Settlement, each market on its own ───────────────────────────────────
 
 export const SettleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
-  const frame = useCurrentFrame();
-  const fade = useFade(durationInFrames);
-  return (
-    <AbsoluteFill style={{ opacity: fade }}>
+  const frame = useCurrentFrame();  return (
+    <AbsoluteFill>
       <BeatTitle title="Each market settles on its own" sub="up takes down, or down takes up" />
       <div style={{ position: "absolute", left: ROWS_X, top: ROWS_Y, display: "flex", flexDirection: "column", gap: 4 }}>
         {MARKETS.map((_m, i) => {
@@ -242,13 +232,11 @@ export const SettleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
 
 export const PayoutBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const fade = useFade(durationInFrames);
-  const collected = interpolate(frame, [44, 116], [0, YOUR_COLLECT], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();  const collected = interpolate(frame, [44, 116], [0, YOUR_COLLECT], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const netOp = interpolate(frame, [124, 142], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ opacity: fade }}>
+    <AbsoluteFill>
       <BeatTitle title="You collect every winning line" sub="the sum of your winning positions" />
       <div style={{ position: "absolute", top: 286, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 12 }}>
         {MARKETS.map((m, i) => {
