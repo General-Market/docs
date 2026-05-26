@@ -119,6 +119,13 @@ const glassFrameAt = (outer: number): number => {
   return SPLIT_PAYOUT + (outer - C_FROM);
 };
 
+// The three concept beats play on the dark blue field; the glass sections show
+// the light board. The corner mark flips white/black to match, by frame.
+const onDarkGround = (outer: number): boolean =>
+  outer < Q_DUR ||
+  (outer >= TH_FROM && outer < TH_FROM + TH_DUR) ||
+  (outer >= FL_FROM && outer < FL_FROM + FL_DUR);
+
 const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
 
 // Camera rides the element along x, pushing in a touch for the multiply climax.
@@ -262,7 +269,6 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <Stage>
-      <BrandMark surface="light" />
       <div
         style={{
           position: "absolute",
@@ -479,6 +485,7 @@ export const BatchFlowReel: React.FC = () => {
           <FlowBeat durationInFrames={FL_DUR} />
         </DarkBeat>
       </Sequence>
+      <BrandMark surface={(f) => (onDarkGround(f) ? "dark" : "light")} />
     </AbsoluteFill>
   );
 };
