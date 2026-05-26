@@ -1,15 +1,17 @@
-// Conveyor Builder — distilled from masahito's "box flow system" CodePen, a
-// drag-to-build factory of conveyor belts, pneumatic tubes and little boxes
-// with pixel faces. The editor machinery (dev mode, add/delete, config IO,
-// pointer dragging, the setInterval physics loop) is gone. What remains is the
-// *result*: a busy flat top-down factory where boxes ride belts, get sucked up
-// through tubes, drop, and circulate on a seamless loop. All motion is derived
-// from useCurrentFrame — no physics, no events, no interactivity.
+// Conveyor Builder — a faithful replica of masahito's "box flow system" CodePen
+// (ma5a.com), a flat top-down factory of conveyor belts, pneumatic tubes and
+// little boxes with pixel faces. The editor machinery (dev mode, add/delete,
+// config IO, pointer dragging, the setInterval physics loop) is gone; what
+// remains is the *look* of the running plant, on a seamless 600-frame loop
+// driven entirely by useCurrentFrame.
 //
-// The original ships a dense default config (~50 boxes, ~14 belts of 5–68
-// modules, ~7 pneumatic tube networks) packed into a ~1400×810 band. We honour
-// that density: many circulation lanes at different scales plus a wall of decor
-// belts so the floor reads as a working plant, not an empty grid.
+// The three visual signatures of the original, matched here:
+//   • belts  — a dashed black pill outline with two solid pulley circles; the
+//              dash flows around the perimeter to read as a moving tread.
+//   • tubes  — thin white lines that route in right angles with a small white
+//              entrance triangle, exactly like the pneumatic pipes.
+//   • boxes  — 20px flat colored squares wearing the original pixel-face sprite
+//              (neutral / joy / surprise / sleepy), pulled from the source CSS.
 
 import React, { useMemo } from "react";
 import {
@@ -24,141 +26,164 @@ import {
 
 const FLOOR = "#b4b3b3"; // .wrapper background
 const BACKDROP = "#797979"; // body background
-const CONTROL = "#1b8aab"; // --control (belt frame / tube accent)
-const TUBE_BODY = "#5a6b72"; // pneumatic pipe body
-const TUBE_RIM = "#3f4d52";
-const BELT_FRAME = "#2d3338";
-const BELT_TREAD_A = "#3c454b";
-const BELT_TREAD_B = "#525d64";
+const INK = "#0d0d0d"; // belt outline + pulleys (near-black)
+const TUBE = "#ffffff"; // pneumatic pipe line
 const BOX_COLORS = ["#42c6d2", "#797979", "#ffffff"] as const; // box --bg options
 
-// The original is laid out on a 2000×2000 wrapper but the visible config sits in
-// a ~1400×820 band. We model the scene in its own coordinate space and scale it
-// to cover 1920×1080.
+// The original lives on a 2000×2000 wrapper but the visible config sits in a
+// ~1440×810 band. We model the scene in its own space and scale it to cover
+// 1920×1080 (uniform 1.333× — both axes match).
 
 const WORLD_W = 1440;
 const WORLD_H = 810;
 
-const BELT_THICKNESS = 22;
-const BOX_SIZE = 26;
+const PILL_H = 44; // belt pill outer height
+const PULLEY_R = 13; // pulley circle radius
+const STROKE = 3; // dashed-outline stroke width
+const DASH = 13; // dash length …
+const GAP = 9; // … and gap → period 22, animated for tread motion
+const DASH_PERIOD = DASH + GAP;
+const BOX_SIZE = 22;
+const TUBE_W = 2.5; // white pipe line thickness
 const LOOP_FRAMES = 600; // exactly 600 frames @ 60fps
 
-// Tread stripe geometry. The loop is only seamless if every animated px offset
-// returns to its frame-0 value at the seam. We guarantee that by deriving every
-// motion from a phase in [0,1) keyed to (frame % LOOP_FRAMES) and taking it
-// modulo the visual period — never from raw seconds.
-const STRIPE = 18;
-const TREAD_PERIOD = STRIPE * 2; // 36px: one full tread cycle
+// Original box face sprite (40×10 = four 10×10 frames: neutral, joy, surprise,
+// sleepy), copied verbatim from the source `.box::after` background-image.
+const BOX_SPRITE =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAKCAYAAADGmhxQAAAAjElEQVR4AeyRUQqAMAxDp/e/s/IGGTHM6fBHQSEsS9Ja61pe/vwDPv1Bn9ngNvjSkXdWNqpxz3n2qt7sBikCvWY9PXPTdw24DCrdg4OMowHpzqXpdM+5fJ3V04AS2YJDep6egafvd3zgWnJ8R/NzQKZ2tGAQz8DDnr56D+clB5zufKOAF4KrKBlwyO0AAAD//+gQ4F8AAAAGSURBVAMAe0AYFZUAvYEAAAAASUVORK5CYII=";
+
+const FACE_FRAME: Record<RingPoint["expression"], number> = {
+  neutral: 0,
+  joy: 1,
+  surprise: 2,
+  sleepy: 3,
+};
 
 // ── Geometry primitives ──────────────────────────────────────────────────────
 
 type Belt = {
   x: number; // left edge
-  y: number; // center line of the belt frame
+  y: number; // center line of the belt pill
   w: number; // width
   dir: 1 | -1; // +1 → tread (and boxes) move right, -1 → move left
-  // treadCycles: integer number of full tread cycles per loop. Integer keeps
-  // the scroll seamless across the frame-599→0 seam.
+  // treadCycles: integer dash periods scrolled per loop. Integer keeps the
+  // dash flow seamless across the frame-599→0 seam.
   treadCycles: number;
 };
 
 type Tube = {
   // a tube is a vertical lift: boxes enter at the bottom, rise to the top
   x: number; // center x
-  bottom: number; // y where a box enters
-  top: number; // y where a box exits
-  w: number; // pipe width
+  bottom: number; // y where a box enters (low belt center)
+  top: number; // y where a box exits (high belt center)
 };
 
 // One closed circulation: a belt carries boxes to a lift tube, the tube raises
-// them, they drop onto the belt above, ride back the other way, and a drop tube
-// lowers them. Each lane is a self-contained ring so the whole field loops.
+// them, they ride back the other way on the belt above, and a drop tube lowers
+// them. Each lane is a self-contained ring so the whole field loops.
 
 type Lane = {
-  beltLow: Belt; // lower belt
-  beltHigh: Belt; // upper belt (opposite direction)
-  liftTube: Tube; // lift connecting low → high
-  dropTube: Tube; // returns high → low
+  beltLow: Belt;
+  beltHigh: Belt;
+  liftTube: Tube;
+  dropTube: Tube;
   boxCount: number;
   colorSeed: number;
-  // ringCycles: integer rings travelled per loop (1 = boxes make one full
-  // circuit per loop). Integer keeps box motion seamless at the seam.
+  // ringCycles: integer rings travelled per loop (1 = one full circuit/loop).
   ringCycles: number;
 };
 
-// Standalone belts purely for visual density (no boxes ride these — they sit in
-// the background to fill the factory floor like the original's clutter). The
-// original's floor is wall-to-wall belts of every length; we echo that.
+// Standalone belts purely for visual density — the original's floor is
+// wall-to-wall belts of every length. No boxes ride these.
 const DECOR_BELTS: Belt[] = [
-  { x: 40, y: 70, w: 360, dir: 1, treadCycles: 25 },
-  { x: 470, y: 64, w: 150, dir: -1, treadCycles: 12 },
-  { x: 980, y: 90, w: 250, dir: -1, treadCycles: 18 },
-  { x: 1270, y: 120, w: 150, dir: 1, treadCycles: 12 },
-  { x: 1180, y: 250, w: 230, dir: 1, treadCycles: 16 },
-  { x: 40, y: 300, w: 200, dir: -1, treadCycles: 14 },
-  { x: 1230, y: 470, w: 190, dir: -1, treadCycles: 13 },
-  { x: 40, y: 470, w: 200, dir: 1, treadCycles: 14 },
-  { x: 1170, y: 560, w: 250, dir: 1, treadCycles: 17 },
-  { x: 410, y: 760, w: 360, dir: 1, treadCycles: 24 },
-  { x: 830, y: 720, w: 300, dir: -1, treadCycles: 20 },
-  { x: 1090, y: 730, w: 320, dir: 1, treadCycles: 21 },
-  { x: 40, y: 700, w: 300, dir: 1, treadCycles: 20 },
+  { x: 40, y: 80, w: 360, dir: 1, treadCycles: 17 },
+  { x: 470, y: 74, w: 150, dir: -1, treadCycles: 7 },
+  { x: 980, y: 100, w: 250, dir: -1, treadCycles: 12 },
+  { x: 1270, y: 130, w: 150, dir: 1, treadCycles: 7 },
+  { x: 1180, y: 260, w: 230, dir: 1, treadCycles: 11 },
+  { x: 40, y: 310, w: 200, dir: -1, treadCycles: 9 },
+  { x: 1230, y: 480, w: 190, dir: -1, treadCycles: 9 },
+  { x: 40, y: 480, w: 200, dir: 1, treadCycles: 9 },
+  { x: 1170, y: 570, w: 250, dir: 1, treadCycles: 12 },
+  { x: 410, y: 770, w: 360, dir: 1, treadCycles: 17 },
+  { x: 830, y: 730, w: 300, dir: -1, treadCycles: 14 },
+  { x: 1090, y: 740, w: 320, dir: 1, treadCycles: 15 },
+  { x: 40, y: 710, w: 300, dir: 1, treadCycles: 14 },
 ];
 
 const LANES: Lane[] = [
   // Tall left ring
   {
-    beltLow: { x: 150, y: 360, w: 560, dir: 1, treadCycles: 38 },
-    beltHigh: { x: 150, y: 200, w: 560, dir: -1, treadCycles: 38 },
-    liftTube: { x: 686, bottom: 360, top: 200, w: 46 },
-    dropTube: { x: 138, bottom: 360, top: 200, w: 46 },
+    beltLow: { x: 150, y: 370, w: 560, dir: 1, treadCycles: 25 },
+    beltHigh: { x: 150, y: 210, w: 560, dir: -1, treadCycles: 25 },
+    liftTube: { x: 692, bottom: 370, top: 210 },
+    dropTube: { x: 132, bottom: 370, top: 210 },
     boxCount: 8,
     colorSeed: 0,
     ringCycles: 1,
   },
   // Wide lower-center ring
   {
-    beltLow: { x: 470, y: 660, w: 700, dir: -1, treadCycles: 47 },
-    beltHigh: { x: 470, y: 520, w: 700, dir: 1, treadCycles: 47 },
-    liftTube: { x: 452, bottom: 660, top: 520, w: 46 },
-    dropTube: { x: 1188, bottom: 660, top: 520, w: 46 },
+    beltLow: { x: 470, y: 670, w: 700, dir: -1, treadCycles: 31 },
+    beltHigh: { x: 470, y: 530, w: 700, dir: 1, treadCycles: 31 },
+    liftTube: { x: 452, bottom: 670, top: 530 },
+    dropTube: { x: 1188, bottom: 670, top: 530 },
     boxCount: 9,
     colorSeed: 3,
     ringCycles: 1,
   },
   // Compact upper-right ring, faster circulation
   {
-    beltLow: { x: 800, y: 300, w: 460, dir: 1, treadCycles: 31 },
-    beltHigh: { x: 800, y: 180, w: 460, dir: -1, treadCycles: 31 },
-    liftTube: { x: 1238, bottom: 300, top: 180, w: 42 },
-    dropTube: { x: 788, bottom: 300, top: 180, w: 42 },
+    beltLow: { x: 800, y: 310, w: 460, dir: 1, treadCycles: 21 },
+    beltHigh: { x: 800, y: 190, w: 460, dir: -1, treadCycles: 21 },
+    liftTube: { x: 1242, bottom: 310, top: 190 },
+    dropTube: { x: 782, bottom: 310, top: 190 },
     boxCount: 6,
     colorSeed: 1,
     ringCycles: 2,
   },
   // Small left-bottom ring
   {
-    beltLow: { x: 150, y: 580, w: 240, dir: -1, treadCycles: 16 },
-    beltHigh: { x: 150, y: 470, w: 240, dir: 1, treadCycles: 16 },
-    liftTube: { x: 138, bottom: 580, top: 470, w: 40 },
-    dropTube: { x: 378, bottom: 580, top: 470, w: 40 },
+    beltLow: { x: 150, y: 590, w: 240, dir: -1, treadCycles: 11 },
+    beltHigh: { x: 150, y: 480, w: 240, dir: 1, treadCycles: 11 },
+    liftTube: { x: 132, bottom: 590, top: 480 },
+    dropTube: { x: 372, bottom: 590, top: 480 },
     boxCount: 4,
     colorSeed: 2,
     ringCycles: 2,
   },
 ];
 
+// Decorative white pipe routes — the snaking pneumatic tubes that fill the
+// floor in the original. Each is a polyline of right-angle points; we draw it
+// as a thin white line and (optionally) cap one end with an entrance triangle.
+type Route = { pts: [number, number][]; entrance?: "up" | "down" };
+const DECOR_ROUTES: Route[] = [
+  { pts: [[640, 70], [640, 150], [900, 150], [900, 70]] },
+  { pts: [[920, 70], [920, 200], [1120, 200], [1120, 70]], entrance: "down" },
+  { pts: [[300, 130], [300, 420], [120, 420]] },
+  { pts: [[760, 360], [760, 470], [560, 470]] },
+  { pts: [[1340, 300], [1340, 620], [1240, 620]] },
+  { pts: [[60, 560], [60, 760]], entrance: "up" },
+  { pts: [[980, 560], [980, 700], [700, 700]] },
+  { pts: [[1100, 440], [1100, 520], [1320, 520], [1320, 440]], entrance: "up" },
+];
+
 // Each lane forms a ring whose perimeter is travelled at constant speed. We map
-// a normalized phase p∈[0,1) onto a position + which segment the box is on.
+// a normalized phase p∈[0,1) onto a position and which segment the box is on.
 
 type RingPoint = {
   x: number;
-  y: number;
-  z: number; // draw order: tubes (in transit) sit above belts
-  inTube: boolean; // true while inside a pipe (hidden behind the pipe body)
+  y: number; // box top
+  inTube: boolean;
   squash: number; // landing plop, 1 = none
   expression: "neutral" | "joy" | "surprise" | "sleepy";
 };
+
+// Boxes sit on top of the belt pill, overlapping its top edge a touch.
+function surfaceY(belt: Belt): number {
+  return belt.y - PILL_H / 2 - BOX_SIZE + 9;
+}
 
 function ringLengths(lane: Lane) {
   const beltLen = lane.beltLow.w - 60; // usable run, minus tube footprints
@@ -173,8 +198,8 @@ function ringPoint(lane: Lane, p: number): RingPoint {
   const { beltLen, liftLen, dropLen, total } = ringLengths(lane);
   const d = (((p % 1) + 1) % 1) * total;
 
-  const lowSurface = beltLow.y - BELT_THICKNESS / 2 - BOX_SIZE / 2;
-  const highSurface = beltHigh.y - BELT_THICKNESS / 2 - BOX_SIZE / 2;
+  const lowSurface = surfaceY(beltLow);
+  const highSurface = surfaceY(beltHigh);
 
   // Segment 1: ride the low belt from the drop tube to the lift tube.
   if (d < beltLen) {
@@ -182,7 +207,6 @@ function ringPoint(lane: Lane, p: number): RingPoint {
     return {
       x: dropTube.x + (liftTube.x - dropTube.x) * t,
       y: lowSurface,
-      z: 1,
       inTube: false,
       squash: plop(t),
       expression: "neutral",
@@ -196,11 +220,7 @@ function ringPoint(lane: Lane, p: number): RingPoint {
     const eased = Easing.inOut(Easing.cubic)(t);
     return {
       x: liftTube.x,
-      y:
-        liftTube.bottom -
-        (liftTube.bottom - liftTube.top) * eased -
-        BOX_SIZE / 2,
-      z: 0, // behind the pipe body
+      y: lowSurface + (highSurface - lowSurface) * eased,
       inTube: true,
       squash: 1,
       expression: "joy",
@@ -214,7 +234,6 @@ function ringPoint(lane: Lane, p: number): RingPoint {
     return {
       x: liftTube.x + (dropTube.x - liftTube.x) * t,
       y: highSurface,
-      z: 1,
       inTube: false,
       squash: plop(t),
       expression: "neutral",
@@ -227,8 +246,7 @@ function ringPoint(lane: Lane, p: number): RingPoint {
   const eased = Easing.inOut(Easing.cubic)(t);
   return {
     x: dropTube.x,
-    y: dropTube.top + (dropTube.bottom - dropTube.top) * eased - BOX_SIZE / 2,
-    z: 0, // behind the pipe body
+    y: highSurface + (lowSurface - highSurface) * eased,
     inTube: true,
     squash: 1,
     expression: "surprise",
@@ -240,7 +258,6 @@ function ringPoint(lane: Lane, p: number): RingPoint {
 function plop(t: number): number {
   if (t > 0.12) return 1;
   const u = t / 0.12;
-  // 1.16 → 0.9 → 1.0 quick bounce
   return interpolate(u, [0, 0.5, 1], [1.16, 0.9, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -249,137 +266,103 @@ function plop(t: number): number {
 
 // ── Visual components ─────────────────────────────────────────────────────────
 
+// A belt: dashed pill outline + two pulley circles. The dash offset scrolls an
+// integer number of periods per loop so the tread reads as moving yet returns
+// exactly to frame 0 at the seam.
 const BeltView: React.FC<{ belt: Belt; phase: number }> = ({ belt, phase }) => {
-  // phase ∈ [0,1) is the loop phase. Tread scrolls treadCycles full periods per
-  // loop, so the visible offset returns exactly to its frame-0 value at the
-  // seam. Direction follows belt.dir so the tread moves with its boxes.
-  const bg = `repeating-linear-gradient(90deg, ${BELT_TREAD_A} 0px, ${BELT_TREAD_A} ${STRIPE}px, ${BELT_TREAD_B} ${STRIPE}px, ${BELT_TREAD_B} ${STRIPE * 2}px)`;
-  const offset = belt.dir * phase * belt.treadCycles * TREAD_PERIOD;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: belt.x,
-        top: belt.y - BELT_THICKNESS / 2,
-        width: belt.w,
-        height: BELT_THICKNESS,
-        borderRadius: 4,
-        background: BELT_FRAME,
-        boxShadow: `0 4px 0 rgba(0,0,0,0.18), inset 0 0 0 2px ${CONTROL}`,
-        overflow: "hidden",
-      }}
-    >
-      {/* moving tread */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 3,
-          borderRadius: 2,
-          backgroundImage: bg,
-          backgroundPositionX: `${offset}px`,
-        }}
-      />
-      {/* end rollers */}
-      <div style={rollerStyle("left")} />
-      <div style={rollerStyle("right")} />
-    </div>
-  );
-};
-
-const rollerStyle = (side: "left" | "right"): React.CSSProperties => ({
-  position: "absolute",
-  top: 0,
-  bottom: 0,
-  width: 8,
-  [side]: 0,
-  background: `linear-gradient(180deg, ${CONTROL}, ${BELT_FRAME})`,
-  borderRadius: 4,
-});
-
-const TubeView: React.FC<{ tube: Tube }> = ({ tube }) => {
-  const height = tube.bottom - tube.top + BELT_THICKNESS;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: tube.x - tube.w / 2,
-        top: tube.top - BELT_THICKNESS / 2,
-        width: tube.w,
-        height,
-        borderRadius: tube.w / 2,
-        background: `linear-gradient(90deg, ${TUBE_RIM} 0%, ${TUBE_BODY} 28%, #7d8c93 50%, ${TUBE_BODY} 72%, ${TUBE_RIM} 100%)`,
-        boxShadow: `inset 0 0 0 2px ${TUBE_RIM}`,
-      }}
-    >
-      {/* segment rings every 24px, matching the tube's 24px modules */}
-      {Array.from({ length: Math.floor(height / 24) }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: i * 24 + 10,
-            height: 2,
-            background: "rgba(0,0,0,0.22)",
-          }}
-        />
-      ))}
-      {/* glossy highlight */}
-      <div
-        style={{
-          position: "absolute",
-          top: 4,
-          bottom: 4,
-          left: tube.w * 0.32,
-          width: 3,
-          borderRadius: 2,
-          background: "rgba(255,255,255,0.35)",
-        }}
-      />
-    </div>
-  );
-};
-
-const Face: React.FC<{ expression: RingPoint["expression"] }> = ({
-  expression,
-}) => {
-  const ink = "#1c1c1c";
-  // simple pixel-art-ish faces echoing the original sprite expressions
-  const eye = (cx: number) => (
-    <rect x={cx} y={9} width={3} height={3} fill={ink} />
-  );
-  let mouth: React.ReactNode;
-  switch (expression) {
-    case "joy":
-      mouth = (
-        <path d="M9 16 q4 4 8 0" stroke={ink} strokeWidth={2} fill="none" />
-      );
-      break;
-    case "surprise":
-      mouth = <rect x={11} y={15} width={4} height={4} fill={ink} />;
-      break;
-    case "sleepy":
-      mouth = <rect x={9} y={17} width={8} height={2} fill={ink} />;
-      break;
-    default:
-      mouth = <rect x={9} y={16} width={8} height={2} fill={ink} />;
-  }
+  const w = belt.w;
+  const h = PILL_H;
+  const offset = -belt.dir * phase * belt.treadCycles * DASH_PERIOD;
+  const cy = h / 2;
+  const cx1 = PULLEY_R + 8;
+  const cx2 = w - PULLEY_R - 8;
   return (
     <svg
-      width={BOX_SIZE}
-      height={BOX_SIZE}
-      viewBox="0 0 26 26"
-      style={{ position: "absolute", inset: 0 }}
+      width={w}
+      height={h}
+      style={{ position: "absolute", left: belt.x, top: belt.y - h / 2 }}
     >
-      {eye(8)}
-      {eye(15)}
-      {mouth}
+      <rect
+        x={STROKE / 2}
+        y={STROKE / 2}
+        width={w - STROKE}
+        height={h - STROKE}
+        rx={(h - STROKE) / 2}
+        ry={(h - STROKE) / 2}
+        fill="none"
+        stroke={INK}
+        strokeWidth={STROKE}
+        strokeDasharray={`${DASH} ${GAP}`}
+        strokeDashoffset={offset}
+      />
+      <circle cx={cx1} cy={cy} r={PULLEY_R} fill={INK} />
+      <circle cx={cx2} cy={cy} r={PULLEY_R} fill={INK} />
     </svg>
   );
 };
 
+// Thin white pipe line for the lane lift/drop tubes (vertical), with a small
+// entrance triangle at the bottom.
+const LaneTube: React.FC<{ tube: Tube }> = ({ tube }) => {
+  const top = Math.min(tube.top, tube.bottom);
+  const bottom = Math.max(tube.top, tube.bottom);
+  return (
+    <>
+      <line
+        x1={tube.x}
+        y1={top}
+        x2={tube.x}
+        y2={bottom}
+        stroke={TUBE}
+        strokeWidth={TUBE_W}
+        strokeLinecap="round"
+      />
+      <Triangle x={tube.x} y={bottom + 2} dir="up" />
+    </>
+  );
+};
+
+const Triangle: React.FC<{ x: number; y: number; dir: "up" | "down" }> = ({
+  x,
+  y,
+  dir,
+}) => {
+  const s = 6;
+  const pts =
+    dir === "up"
+      ? `${x - s},${y + s} ${x + s},${y + s} ${x},${y - s}`
+      : `${x - s},${y - s} ${x + s},${y - s} ${x},${y + s}`;
+  return <polygon points={pts} fill={TUBE} />;
+};
+
+// A decorative white route: connected right-angle line segments.
+const RouteView: React.FC<{ route: Route }> = ({ route }) => {
+  const d = route.pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
+    .join(" ");
+  const last = route.pts[route.pts.length - 1];
+  const first = route.pts[0];
+  const cap = route.entrance ? (first[1] >= last[1] ? first : last) : null;
+  return (
+    <>
+      <path
+        d={d}
+        fill="none"
+        stroke={TUBE}
+        strokeWidth={TUBE_W}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {cap && route.entrance && (
+        <Triangle x={cap[0]} y={cap[1]} dir={route.entrance} />
+      )}
+    </>
+  );
+};
+
+// A flat colored box wearing the original pixel-face sprite.
 const BoxView: React.FC<{ pt: RingPoint; color: string }> = ({ pt, color }) => {
+  const frame = FACE_FRAME[pt.expression];
   return (
     <div
       style={{
@@ -389,48 +372,55 @@ const BoxView: React.FC<{ pt: RingPoint; color: string }> = ({ pt, color }) => {
         width: BOX_SIZE,
         height: BOX_SIZE,
         background: color,
-        borderRadius: 3,
-        boxShadow:
-          "0 3px 4px rgba(0,0,0,0.25), inset 0 0 0 2px rgba(0,0,0,0.12)",
+        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.10)",
         transform: `scaleY(${pt.squash}) scaleX(${1 + (1 - pt.squash) * 0.6})`,
         transformOrigin: "center bottom",
-        zIndex: pt.z * 10,
       }}
     >
-      <Face expression={pt.expression} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url(${BOX_SPRITE})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: `${BOX_SIZE * 4}px ${BOX_SIZE}px`,
+          backgroundPosition: `-${frame * BOX_SIZE}px 0`,
+          imageRendering: "pixelated",
+        }}
+      />
     </div>
   );
 };
 
-// Scattered idle boxes that sit on the floor and standalone belts, filling the
+// Scattered idle boxes that rest on the floor and decor belts, filling the
 // plant like the original's loose clutter. Deterministic positions; a few drift
 // a hair on a sine keyed to the loop phase so they don't read as dead pixels.
 type IdleBox = { x: number; y: number; color: string; drift: number };
 const IDLE_BOXES: IdleBox[] = [
-  { x: 120, y: 70, color: BOX_COLORS[0], drift: 0 },
-  { x: 250, y: 70, color: BOX_COLORS[2], drift: 1 },
-  { x: 520, y: 64, color: BOX_COLORS[0], drift: 0 },
-  { x: 1050, y: 90, color: BOX_COLORS[2], drift: 2 },
-  { x: 1130, y: 90, color: BOX_COLORS[1], drift: 0 },
-  { x: 1320, y: 120, color: BOX_COLORS[0], drift: 1 },
-  { x: 1260, y: 250, color: BOX_COLORS[1], drift: 0 },
-  { x: 1340, y: 250, color: BOX_COLORS[2], drift: 3 },
-  { x: 90, y: 300, color: BOX_COLORS[0], drift: 0 },
-  { x: 190, y: 300, color: BOX_COLORS[1], drift: 2 },
-  { x: 1280, y: 470, color: BOX_COLORS[2], drift: 0 },
-  { x: 90, y: 470, color: BOX_COLORS[0], drift: 1 },
-  { x: 1230, y: 560, color: BOX_COLORS[1], drift: 0 },
-  { x: 1320, y: 560, color: BOX_COLORS[2], drift: 2 },
-  { x: 480, y: 760, color: BOX_COLORS[0], drift: 0 },
-  { x: 560, y: 760, color: BOX_COLORS[2], drift: 3 },
-  { x: 660, y: 760, color: BOX_COLORS[1], drift: 0 },
-  { x: 900, y: 720, color: BOX_COLORS[0], drift: 1 },
-  { x: 1010, y: 720, color: BOX_COLORS[2], drift: 0 },
-  { x: 1170, y: 730, color: BOX_COLORS[1], drift: 2 },
-  { x: 1270, y: 730, color: BOX_COLORS[0], drift: 0 },
-  { x: 110, y: 700, color: BOX_COLORS[2], drift: 1 },
-  { x: 230, y: 700, color: BOX_COLORS[1], drift: 0 },
-  { x: 320, y: 700, color: BOX_COLORS[0], drift: 3 },
+  { x: 120, y: 80, color: BOX_COLORS[0], drift: 0 },
+  { x: 250, y: 80, color: BOX_COLORS[2], drift: 1 },
+  { x: 520, y: 74, color: BOX_COLORS[0], drift: 0 },
+  { x: 1050, y: 100, color: BOX_COLORS[2], drift: 2 },
+  { x: 1130, y: 100, color: BOX_COLORS[1], drift: 0 },
+  { x: 1320, y: 130, color: BOX_COLORS[0], drift: 1 },
+  { x: 1260, y: 260, color: BOX_COLORS[1], drift: 0 },
+  { x: 1340, y: 260, color: BOX_COLORS[2], drift: 3 },
+  { x: 90, y: 310, color: BOX_COLORS[0], drift: 0 },
+  { x: 190, y: 310, color: BOX_COLORS[1], drift: 2 },
+  { x: 1280, y: 480, color: BOX_COLORS[2], drift: 0 },
+  { x: 90, y: 480, color: BOX_COLORS[0], drift: 1 },
+  { x: 1230, y: 570, color: BOX_COLORS[1], drift: 0 },
+  { x: 1320, y: 570, color: BOX_COLORS[2], drift: 2 },
+  { x: 480, y: 770, color: BOX_COLORS[0], drift: 0 },
+  { x: 560, y: 770, color: BOX_COLORS[2], drift: 3 },
+  { x: 660, y: 770, color: BOX_COLORS[1], drift: 0 },
+  { x: 900, y: 730, color: BOX_COLORS[0], drift: 1 },
+  { x: 1010, y: 730, color: BOX_COLORS[2], drift: 0 },
+  { x: 1170, y: 740, color: BOX_COLORS[1], drift: 2 },
+  { x: 1270, y: 740, color: BOX_COLORS[0], drift: 0 },
+  { x: 110, y: 710, color: BOX_COLORS[2], drift: 1 },
+  { x: 230, y: 710, color: BOX_COLORS[1], drift: 0 },
+  { x: 320, y: 710, color: BOX_COLORS[0], drift: 3 },
 ];
 
 // ── Composition ───────────────────────────────────────────────────────────────
@@ -442,7 +432,6 @@ export const ConveyorBuilder: React.FC = () => {
   // Loop phase ∈ [0,1), wrapping every LOOP_FRAMES for a seamless cycle.
   const phase = (frame % LOOP_FRAMES) / LOOP_FRAMES;
 
-  // Scale the world to cover the frame.
   const scale = useMemo(
     () => Math.max(width / WORLD_W, height / WORLD_H),
     [width, height],
@@ -451,7 +440,7 @@ export const ConveyorBuilder: React.FC = () => {
   const offsetY = (height - WORLD_H * scale) / 2;
 
   // Precompute box phases per lane so boxes are evenly spaced and already
-  // mid-journey on frame 1.
+  // mid-journey on frame 0.
   const lanes = LANES.map((lane) => {
     const points: { pt: RingPoint; color: string }[] = [];
     for (let i = 0; i < lane.boxCount; i++) {
@@ -464,9 +453,11 @@ export const ConveyorBuilder: React.FC = () => {
     return { lane, points };
   });
 
+  const allBelts = [...DECOR_BELTS, ...LANES.flatMap((l) => [l.beltHigh, l.beltLow])];
+
   return (
     <AbsoluteFill style={{ backgroundColor: BACKDROP }}>
-      {/* Factory floor */}
+      {/* Factory floor — plain, no grid (matches the source .wrapper) */}
       <div
         style={{
           position: "absolute",
@@ -477,38 +468,35 @@ export const ConveyorBuilder: React.FC = () => {
           transform: `scale(${scale})`,
           transformOrigin: "top left",
           background: FLOOR,
-          boxShadow: "inset 0 0 120px rgba(0,0,0,0.18)",
         }}
       >
-        {/* subtle floor grid for the engineered look */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-
-        {/* Background decoration belts */}
-        {DECOR_BELTS.map((b, i) => (
-          <BeltView key={`decor-${i}`} belt={b} phase={phase} />
-        ))}
+        {/* White pipe routes drawn first, so belts sit over their endpoints */}
+        <svg
+          width={WORLD_W}
+          height={WORLD_H}
+          style={{ position: "absolute", inset: 0, overflow: "visible" }}
+        >
+          {DECOR_ROUTES.map((r, i) => (
+            <RouteView key={`route-${i}`} route={r} />
+          ))}
+          {lanes.map(({ lane }, i) => (
+            <React.Fragment key={`lane-tubes-${i}`}>
+              <LaneTube tube={lane.dropTube} />
+              <LaneTube tube={lane.liftTube} />
+            </React.Fragment>
+          ))}
+        </svg>
 
         {/* Idle clutter boxes resting on the floor / decor belts */}
         {IDLE_BOXES.map((b, i) => {
           const dy =
-            b.drift === 0
-              ? 0
-              : Math.sin(phase * Math.PI * 2 * b.drift) * 1.5;
+            b.drift === 0 ? 0 : Math.sin(phase * Math.PI * 2 * b.drift) * 1.5;
           return (
             <BoxView
               key={`idle-${i}`}
               pt={{
                 x: b.x,
-                y: b.y - BELT_THICKNESS / 2 - BOX_SIZE / 2 + dy,
-                z: 1,
+                y: b.y - PILL_H / 2 - BOX_SIZE + 9 + dy,
                 inTube: false,
                 squash: 1,
                 expression: "neutral",
@@ -518,50 +506,25 @@ export const ConveyorBuilder: React.FC = () => {
           );
         })}
 
-        {/* Drop/return tubes drawn behind belts so descending boxes hide inside */}
-        {lanes.map(({ lane }, i) => (
-          <TubeView key={`tube-drop-${i}`} tube={lane.dropTube} />
+        {/* All belts — dashed pills with pulleys */}
+        {allBelts.map((b, i) => (
+          <BeltView key={`belt-${i}`} belt={b} phase={phase} />
         ))}
 
-        {/* Lift tubes also drawn before belts so rising boxes hide inside */}
-        {lanes.map(({ lane }, i) => (
-          <TubeView key={`tube-lift-${i}`} tube={lane.liftTube} />
-        ))}
-
-        {/* Boxes that are currently inside a tube — render behind the belts and
-            pipe bodies so the pipe occludes them as they travel through it */}
+        {/* Boxes on belts and in tubes, all riding above the belts */}
         {lanes.map(({ points }, li) =>
-          points
-            .filter((b) => b.pt.inTube)
-            .map((b, bi) => (
-              <BoxView key={`tbox-${li}-${bi}`} pt={b.pt} color={b.color} />
-            )),
-        )}
-
-        {/* Lane belts (drawn over the tube bodies so the belt edge meets the pipe) */}
-        {lanes.map(({ lane }, i) => (
-          <React.Fragment key={`belts-${i}`}>
-            <BeltView belt={lane.beltHigh} phase={phase} />
-            <BeltView belt={lane.beltLow} phase={phase} />
-          </React.Fragment>
-        ))}
-
-        {/* Boxes riding on belts — render above the belts */}
-        {lanes.map(({ points }, li) =>
-          points
-            .filter((b) => !b.pt.inTube)
-            .map((b, bi) => (
-              <BoxView key={`box-${li}-${bi}`} pt={b.pt} color={b.color} />
-            )),
+          points.map((b, bi) => (
+            <BoxView key={`box-${li}-${bi}`} pt={b.pt} color={b.color} />
+          )),
         )}
       </div>
 
-      {/* Vignette to seat the scene as a background */}
+      {/* Faint vignette to seat the scene as a background */}
       <AbsoluteFill
         style={{
           pointerEvents: "none",
           background:
-            "radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,0.28) 100%)",
+            "radial-gradient(120% 120% at 50% 45%, transparent 62%, rgba(0,0,0,0.22) 100%)",
         }}
       />
     </AbsoluteFill>
