@@ -30,7 +30,7 @@ type Bar = {
 // CBOE (options), pump.fun, PIMCO (bonds), and the GM mark for General.
 // A clean cover holds the open (frame 0 is the Twitter preview), then lifts as
 // the first bar lands. Every bar start is offset by LEAD past the cover.
-const LEAD = 62; // cover holds a full 2s (60f) before the first bar lands
+const LEAD = 4; // frame 0 is a clean cover, then it lifts fast — straight into action
 const BARS: Bar[] = [
   { key: "forex", name: "Forex", value: 28, start: 14 + LEAD, grow: 30, logo: "article-2/market-logos/forex.png" },
   { key: "commodities", name: "Commodities", value: 30, start: 50 + LEAD, grow: 28, logo: "article-2/market-logos/commodities.png" },
@@ -163,7 +163,7 @@ export const MarketUniverseScale: React.FC = () => {
   // the cover — frame 0 is the Twitter preview, so it must read clean and still.
   // It holds, then lifts away exactly as the first bar lands.
   if (active < 0) {
-    const lift = easeOut((f - (BARS[0].start - 16)) / 16);
+    const lift = easeOut((f - 6) / 12);
     return (
       <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS }}>
         <BrandMark surface="dark" />
