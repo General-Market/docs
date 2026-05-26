@@ -76,6 +76,15 @@ import { AnimationPrinciples } from "./AnimationPrinciples";
 import { RgbGlitch } from "./RgbGlitch";
 import { Backlights } from "./Backlights";
 import { CrtScreen } from "./CrtScreen";
+import { RingCarousel } from "./RingCarousel";
+import { TravelDeco } from "./TravelDeco";
+import { UmbralFloor } from "./UmbralFloor";
+import { ConveyorBuilder } from "./ConveyorBuilder";
+import { CommandPath } from "./CommandPath";
+import { CommunityHeadline } from "./CommunityHeadline";
+import { ImageGridScroll } from "./ImageGridScroll";
+import { CheckerBlock } from "./CheckerBlock";
+import { BlurLoader } from "./BlurLoader";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -142,6 +151,15 @@ const ALL_SCENES = [
   { id: "WP-RgbGlitch", component: RgbGlitch },
   { id: "WP-Backlights", component: Backlights },
   { id: "WP-CrtScreen", component: CrtScreen },
+  { id: "WP-RingCarousel", component: RingCarousel },
+  { id: "WP-TravelDeco", component: TravelDeco },
+  { id: "WP-UmbralFloor", component: UmbralFloor },
+  { id: "WP-ConveyorBuilder", component: ConveyorBuilder },
+  { id: "WP-CommandPath", component: CommandPath },
+  { id: "WP-CommunityHeadline", component: CommunityHeadline },
+  { id: "WP-ImageGridScroll", component: ImageGridScroll },
+  { id: "WP-CheckerBlock", component: CheckerBlock },
+  { id: "WP-BlurLoader", component: BlurLoader },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
