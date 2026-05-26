@@ -211,6 +211,22 @@ export const RemotionRoot: React.FC = () => {
             height={m.height}
           />
         ))}
+        <Composition
+          id={perpsGraveyardReelMeta.id}
+          component={perpsGraveyardReelMeta.component}
+          durationInFrames={perpsGraveyardReelMeta.durationInFrames}
+          fps={perpsGraveyardReelMeta.fps}
+          width={perpsGraveyardReelMeta.width}
+          height={perpsGraveyardReelMeta.height}
+        />
+        <Composition
+          id={batchFlowReelMeta.id}
+          component={batchFlowReelMeta.component}
+          durationInFrames={batchFlowReelMeta.durationInFrames}
+          fps={batchFlowReelMeta.fps}
+          width={batchFlowReelMeta.width}
+          height={batchFlowReelMeta.height}
+        />
       </Folder>
       <Folder name="Loops">
         <Composition
@@ -237,22 +253,6 @@ export const RemotionRoot: React.FC = () => {
         fps={parimutuelExplainerMeta.fps}
         width={parimutuelExplainerMeta.width}
         height={parimutuelExplainerMeta.height}
-      />
-      <Composition
-        id={batchFlowReelMeta.id}
-        component={batchFlowReelMeta.component}
-        durationInFrames={batchFlowReelMeta.durationInFrames}
-        fps={batchFlowReelMeta.fps}
-        width={batchFlowReelMeta.width}
-        height={batchFlowReelMeta.height}
-      />
-      <Composition
-        id={perpsGraveyardReelMeta.id}
-        component={perpsGraveyardReelMeta.component}
-        durationInFrames={perpsGraveyardReelMeta.durationInFrames}
-        fps={perpsGraveyardReelMeta.fps}
-        width={perpsGraveyardReelMeta.width}
-        height={perpsGraveyardReelMeta.height}
       />
       <Composition
         id={webglPicksMeta.id}

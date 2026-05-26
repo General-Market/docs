@@ -36,6 +36,9 @@ const CANDIDATES = [
   { slug: "apollox", name: "ApolloX", raised: null },
   { slug: "apx-finance", name: "ApolloX", raised: null },
   { slug: "vertex-protocol", name: "Vertex Protocol", raised: 8_500_000 },
+  { slug: "vertex-perps", name: "Vertex Protocol", raised: 8_500_000 },
+  { slug: "satori-finance", name: "Satori Finance", raised: 10_000_000 },
+  { slug: "aevo", name: "Aevo", raised: 10_600_000 },
   { slug: "rabbitx", name: "RabbitX", raised: 11_000_000 },
   { slug: "gmx", name: "GMX", raised: 0 },
   { slug: "gains-network", name: "Gains Network", raised: 250_000 },
@@ -72,6 +75,10 @@ function downsample(series, target = 90) {
     }
     out.push(best);
   }
+  // Pin true endpoints so peak/latest/drawdown are honest (bucketed max can
+  // otherwise overstate "now" when current TVL is volatile, e.g. Helix/Aevo).
+  out[0] = series[0];
+  out[out.length - 1] = series[series.length - 1];
   return out;
 }
 

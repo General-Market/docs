@@ -7,9 +7,9 @@
     "points": 2484,
     "peakUSD": 2966823065,
     "peakDate": "2021-02-10",
-    "latestUSD": 41638542,
+    "latestUSD": 41664239,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9859652762946279
+    "drawdown": 0.9859566148411348
   },
   {
     "slug": "serum",
@@ -31,9 +31,9 @@
     "points": 1636,
     "peakUSD": 1504358626,
     "peakDate": "2025-10-09",
-    "latestUSD": 242259032,
+    "latestUSD": 242407208,
     "latestDate": "2026-05-26",
-    "drawdown": 0.8389619151889651
+    "drawdown": 0.838863417398984
   },
   {
     "slug": "dydx",
@@ -43,9 +43,9 @@
     "points": 2026,
     "peakUSD": 1122865037,
     "peakDate": "2021-10-29",
-    "latestUSD": 139170330,
+    "latestUSD": 139135203,
     "latestDate": "2026-05-26",
-    "drawdown": 0.8760578293791865
+    "drawdown": 0.876089112747038
   },
   {
     "slug": "drift-trade",
@@ -55,9 +55,9 @@
     "points": 1634,
     "peakUSD": 1112685617,
     "peakDate": "2025-10-10",
-    "latestUSD": 6423209,
+    "latestUSD": 6517780,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9942272921462595
+    "drawdown": 0.9941422986866918
   },
   {
     "slug": "gmx",
@@ -67,9 +67,9 @@
     "points": 1730,
     "peakUSD": 710762384,
     "peakDate": "2023-05-06",
-    "latestUSD": 200516213,
+    "latestUSD": 200327226,
     "latestDate": "2026-05-26",
-    "drawdown": 0.7178857273347206
+    "drawdown": 0.7181516206969107
   },
   {
     "slug": "dydx-v4",
@@ -79,9 +79,9 @@
     "points": 797,
     "peakUSD": 415536190,
     "peakDate": "2024-12-17",
-    "latestUSD": 99870800,
+    "latestUSD": 99843751,
     "latestDate": "2026-05-26",
-    "drawdown": 0.7596579975380724
+    "drawdown": 0.7597230917480376
   },
   {
     "slug": "mango-markets",
@@ -103,9 +103,33 @@
     "points": 2091,
     "peakUSD": 207346599,
     "peakDate": "2021-10-15",
-    "latestUSD": 1188285,
+    "latestUSD": 1185811,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9942690885419345
+    "drawdown": 0.9942810202544002
+  },
+  {
+    "slug": "vertex-perps",
+    "name": "Vertex Protocol",
+    "raised": 8500000,
+    "ok": true,
+    "points": 1177,
+    "peakUSD": 102190571,
+    "peakDate": "2024-05-27",
+    "latestUSD": 49,
+    "latestDate": "2026-05-26",
+    "drawdown": 0.9999995205037068
+  },
+  {
+    "slug": "aevo",
+    "name": "Aevo",
+    "raised": 10600000,
+    "ok": true,
+    "points": 1144,
+    "peakUSD": 100182637,
+    "peakDate": "2024-03-13",
+    "latestUSD": 16203514,
+    "latestDate": "2026-05-26",
+    "drawdown": 0.8382602566151258
   },
   {
     "slug": "mux-protocol",
@@ -115,9 +139,9 @@
     "points": 1299,
     "peakUSD": 90635653,
     "peakDate": "2024-03-12",
-    "latestUSD": 9758604,
+    "latestUSD": 9738038,
     "latestDate": "2026-05-26",
-    "drawdown": 0.892331508882051
+    "drawdown": 0.8925584173812926
   },
   {
     "slug": "apollox",
@@ -127,9 +151,9 @@
     "points": 1466,
     "peakUSD": 90142929,
     "peakDate": "2025-10-15",
-    "latestUSD": 73049389,
+    "latestUSD": 73064946,
     "latestDate": "2026-05-26",
-    "drawdown": 0.1896270754636784
+    "drawdown": 0.18945449398476943
   },
   {
     "slug": "futureswap",
@@ -151,9 +175,9 @@
     "points": 900,
     "peakUSD": 75533086,
     "peakDate": "2024-06-02",
-    "latestUSD": 7048731,
+    "latestUSD": 7029503,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9066802195795363
+    "drawdown": 0.9069347835199002
   },
   {
     "slug": "derivadex",
@@ -163,9 +187,9 @@
     "points": 1894,
     "peakUSD": 70466178,
     "peakDate": "2021-10-29",
-    "latestUSD": 1617955,
+    "latestUSD": 1617904,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9770392683990893
+    "drawdown": 0.9770399921505605
   },
   {
     "slug": "gains-network",
@@ -175,9 +199,9 @@
     "points": 1627,
     "peakUSD": 58852563,
     "peakDate": "2023-05-18",
-    "latestUSD": 13729481,
+    "latestUSD": 13683617,
     "latestDate": "2026-05-26",
-    "drawdown": 0.7667139662209783
+    "drawdown": 0.7674932695794404
   },
   {
     "slug": "perpetual-protocol",
@@ -187,9 +211,9 @@
     "points": 1809,
     "peakUSD": 57853771,
     "peakDate": "2022-04-06",
-    "latestUSD": 433573,
+    "latestUSD": 433651,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9925057089191299
+    "drawdown": 0.9925043606924084
   },
   {
     "slug": "vela-exchange",
@@ -199,9 +223,9 @@
     "points": 1189,
     "peakUSD": 54209056,
     "peakDate": "2023-03-08",
-    "latestUSD": 369027,
+    "latestUSD": 368999,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9931925211905553
+    "drawdown": 0.9931930377094189
   },
   {
     "slug": "mycelium",
@@ -211,9 +235,9 @@
     "points": 1673,
     "peakUSD": 51574413,
     "peakDate": "2021-11-12",
-    "latestUSD": 290558,
+    "latestUSD": 290595,
     "latestDate": "2026-05-26",
-    "drawdown": 0.994366237382091
+    "drawdown": 0.9943655199720838
   },
   {
     "slug": "level-finance",
@@ -223,9 +247,9 @@
     "points": 1265,
     "peakUSD": 42613651,
     "peakDate": "2023-04-28",
-    "latestUSD": 33067,
+    "latestUSD": 33133,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9992240279998539
+    "drawdown": 0.9992224792003858
   },
   {
     "slug": "deri-protocol",
@@ -235,9 +259,9 @@
     "points": 1772,
     "peakUSD": 37184242,
     "peakDate": "2021-10-22",
-    "latestUSD": 309637,
+    "latestUSD": 308607,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9916728973525936
+    "drawdown": 0.9917005972583762
   },
   {
     "slug": "helix",
@@ -247,9 +271,9 @@
     "points": 1296,
     "peakUSD": 36287185,
     "peakDate": "2024-10-10",
-    "latestUSD": 1493960,
+    "latestUSD": 1501882,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9588295427159753
+    "drawdown": 0.9586112287299221
   },
   {
     "slug": "zeta",
@@ -271,9 +295,9 @@
     "points": 1381,
     "peakUSD": 19967950,
     "peakDate": "2022-10-08",
-    "latestUSD": 107226,
+    "latestUSD": 107408,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9946300947267996
+    "drawdown": 0.9946209801206434
   },
   {
     "slug": "pika-protocol",
@@ -283,9 +307,9 @@
     "points": 1644,
     "peakUSD": 15594533,
     "peakDate": "2023-06-05",
-    "latestUSD": 404372,
+    "latestUSD": 404480,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9740696306840352
+    "drawdown": 0.9740627051800782
   },
   {
     "slug": "rabbitx",
@@ -307,9 +331,21 @@
     "points": 1702,
     "peakUSD": 7738108,
     "peakDate": "2022-10-10",
-    "latestUSD": 207713,
+    "latestUSD": 207854,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9731571335008506
+    "drawdown": 0.9731389119924405
+  },
+  {
+    "slug": "satori-finance",
+    "name": "Satori Finance",
+    "raised": 10000000,
+    "ok": true,
+    "points": 1155,
+    "peakUSD": 6763014,
+    "peakDate": "2024-09-10",
+    "latestUSD": 1279345,
+    "latestDate": "2026-05-26",
+    "drawdown": 0.8108321230741204
   },
   {
     "slug": "vega-protocol",
@@ -319,8 +355,8 @@
     "points": 1107,
     "peakUSD": 1621870,
     "peakDate": "2023-11-15",
-    "latestUSD": 114,
+    "latestUSD": 115,
     "latestDate": "2026-05-26",
-    "drawdown": 0.9999297107659677
+    "drawdown": 0.9999290941937393
   }
 ]
