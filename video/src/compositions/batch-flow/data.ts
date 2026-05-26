@@ -67,27 +67,18 @@ export const YOUR_COLLECT = MARKETS.reduce((s, _m, i) => s + yourReturn(i), 0);
 export const YOUR_STAKE = N_MARKETS * STAKE_PER_MARKET;
 export const YOUR_NET = YOUR_COLLECT - YOUR_STAKE;
 
-// Beat 7 — the zoom-out. Each line is one batch, one transaction.
-export const SCALE_STEPS: { n: string; label: string; sub: string }[] = [
-  { n: "10,000", label: "Polymarket markets", sub: "one transaction" },
-  { n: "18,000", label: "crypto pairs", sub: "one transaction" },
-  { n: "10,000", label: "Twitch streamers", sub: "one transaction" },
+// The climax — one trade explodes into ten million, per user, per day.
+//   1 trade settles 10,000 markets in a single transaction,
+//   × 100 batches a day, × the 10 markets you pick = 10,000,000 trades/user.
+export const CHAIN_STEPS: { factor: number; head: string; sub: string }[] = [
+  { factor: 10_000, head: "× 10,000", sub: "markets / transaction" },
+  { factor: 100, head: "× 100", sub: "batches / day" },
+  { factor: 10, head: "× 10", sub: "markets you pick" },
 ];
+export const CHAIN_TOTAL = CHAIN_STEPS.reduce((n, s) => n * s.factor, 1); // 10,000,000
 
-// 38,000 markets per batch × 100 batches a day.
-export const PER_BATCH = 38_000;
-export const BATCHES_PER_DAY = 100;
-export const GM_PER_DAY = PER_BATCH * BATCHES_PER_DAY; // 3,800,000
-
-// Beat 8 — real trades (executed fills, not order churn) per day, and the
-// users it took. The point: General Market does it with ONE user. Figures are
-// May 2026: Hyperliquid ~1.4M users + ~$5.75B/day vol → ~1.5M est. fills/day;
-// Polymarket ~478K monthly traders (ATH Oct 2025) + ~260K trades/day. Swap
-// HYPERLIQUID_TRADES_PER_DAY if a clean fill count surfaces.
+// Hyperliquid ~1.5M est. fills/day (May 2026) — one GM user clears more.
 export const HYPERLIQUID_TRADES_PER_DAY = 1_500_000;
-export type Bar = { id: string; name: string; value: number; users: string; accent: string; note: string };
-export const BARS: Bar[] = [
-  { id: "generalmarket", name: "General Market", value: GM_PER_DAY, users: "1 user", accent: "#0071E3", note: "projected · 38k × 100 batches" },
-  { id: "hyperliquid", name: "Hyperliquid", value: HYPERLIQUID_TRADES_PER_DAY, users: "1.4M users", accent: "#17B0A6", note: "est. fills · $5.75B/day" },
-  { id: "polymarket", name: "Polymarket", value: 260_000, users: "478K users", accent: "#1FB877", note: "~478K traders · May 2026" },
-];
+
+// What that throughput backs: a billion in addressable liquidity.
+export const LIQUIDITY_UNLOCKED = 1_000_000_000; // $1B

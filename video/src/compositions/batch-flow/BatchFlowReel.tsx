@@ -10,7 +10,7 @@ import {
   SettleBeat,
   TradersBeat,
 } from "./beats-mechanism";
-import { BarsBeat, ScaleBeat } from "./beats-scale";
+import { MultiplyBeat, UnlockBeat } from "./beats-scale";
 
 // BatchFlowReel — from the product UI to the throughput graph, in the RetailPnL
 // CRT/neon style. One persistent Stage; each beat is a Sequence on top of it.
@@ -23,8 +23,8 @@ const REGISTRY: Partial<Record<BeatKey, React.FC<{ durationInFrames: number }>>>
   pool: PoolBeat,
   settle: SettleBeat,
   payout: PayoutBeat,
-  scale: ScaleBeat,
-  bars: BarsBeat,
+  multiply: MultiplyBeat,
+  unlock: UnlockBeat,
 };
 
 export const BatchFlowReel: React.FC = () => (

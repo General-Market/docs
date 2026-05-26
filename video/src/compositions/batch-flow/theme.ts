@@ -82,8 +82,8 @@ export type BeatKey =
   | "pool"
   | "settle"
   | "payout"
-  | "scale"
-  | "bars";
+  | "multiply"
+  | "unlock";
 
 export const BEATS: { key: BeatKey; seconds: number }[] = [
   { key: "product", seconds: 7.0 },
@@ -92,8 +92,8 @@ export const BEATS: { key: BeatKey; seconds: number }[] = [
   { key: "pool", seconds: 6.5 },
   { key: "settle", seconds: 6.5 },
   { key: "payout", seconds: 5.5 },
-  { key: "scale", seconds: 7.0 },
-  { key: "bars", seconds: 7.0 },
+  { key: "multiply", seconds: 7.0 },
+  { key: "unlock", seconds: 7.0 },
 ];
 
 export const OVERLAP = 14;
