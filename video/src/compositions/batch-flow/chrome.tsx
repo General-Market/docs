@@ -6,7 +6,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { C, EASE, EDGE, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
+import { C, EASE, EDGE, FPS, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
 import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
@@ -104,11 +104,27 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
 
 // ─── SlideBeat ────────────────────────────────────────────────────────────────
 //
-// The whiteboard slide. A beat enters from the right while the one before it
-// leaves to the left — both travelling right→left — so during the overlap you
-// watch the old panel slide out and the new one slide in, the way a lecture
-// hall board rolls sideways. No fade: panels are opaque on a track, and the
-// frosted window clips whatever rides off either edge.
+// One continuous whiteboard. The beats are panels on a single horizontal track:
+// the outgoing one slides off the left exactly as the incoming one arrives from
+// the right, and because both legs share the SAME easing and the SAME window
+// (overlap == edge), the outgoing panel's right edge stays glued to the
+// incoming panel's left edge for the whole pan. There is never a gap and never
+// an overlap — the next schematic is already sitting at the border of the view,
+// so the instant we move left you see it appear. EASE.out gives the pan a quick,
+// decisive start, so that reveal lands in the first frames.
+//
+// While a beat rests, it breathes: a slow organic float driven by the pulse
+// equations from OrganicMotion (t = frame/fps · 1.5). The float is gated to the
+// hold — zero during either slide leg — so the panels stay rigidly adjacent
+// through the transition and only come alive once settled.
+
+const organicFloat = (frame: number, settled: number): string => {
+  const t = (frame / FPS) * 1.5;
+  const fx = settled * 11 * Math.sin(t);
+  const fy = settled * 9 * Math.cos(t) * Math.sin(t);
+  const fr = settled * 0.35 * Math.sin(t) * Math.sin(t * 1.5);
+  return `translate(${fx.toFixed(2)}px, ${fy.toFixed(2)}px) rotate(${fr.toFixed(3)}deg)`;
+};
 
 export const SlideBeat: React.FC<{
   durationInFrames: number;
@@ -128,12 +144,23 @@ export const SlideBeat: React.FC<{
     x = interpolate(frame, [durationInFrames - EDGE, durationInFrames], [0, -W], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: EASE.in,
+      easing: EASE.out,
     });
   }
+  // organic life, but only once the panel is at rest — never mid-pan, or the
+  // two sliding panels would drift out of lockstep.
+  const settled = interpolate(
+    frame,
+    [EDGE, EDGE + 20, durationInFrames - EDGE - 20, durationInFrames - EDGE],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
   return (
     <AbsoluteFill
-      style={{ transform: `translateX(${x.toFixed(1)}px)`, willChange: "transform" }}
+      style={{
+        transform: `translateX(${x.toFixed(1)}px) ${organicFloat(frame, settled)}`,
+        willChange: "transform",
+      }}
     >
       {children}
     </AbsoluteFill>
