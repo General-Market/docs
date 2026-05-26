@@ -54,6 +54,14 @@ Go deep — per-element detection, real motion trajectories, typography, SFX. A 
 - Match the reference comps first: `block-trading/BlockTradingExile.tsx`, `market-anatomy/`.
 - Rendered prose follows the Alexander voice (`docs/christopher-alexander-style.md`); code stays conventional.
 
+## Motion & scene grammar (house rules)
+
+- **Never `fade` as a transition.** No `@remotion/transitions/fade`, no opacity cross-dissolve between scenes. Cuts carry energy; fades leak it. (Legacy `illustrations/IllustrationsReel.tsx` still uses `fade` — migrate it when touched.)
+- **Pixelate is the house transition — use it a lot.** `effects/HexPixelate.tsx` wraps any video in a hex tessellation; animate cell size (coarse→fine to reveal, fine→coarse to exit) to pixelate between scenes instead of fading. Reach for it first. Snap-zoom presentations in `anticheat/transitions.ts` are the other sanctioned cut.
+- **Main text straight and centered.** Don't scatter the small-font copy into the corners. One primary line, horizontal, on the optical center; supporting detail sits directly beneath it, never flung to the margins.
+- **Minimize words per scene.** A scene states one thing. If it needs a second sentence, it's two scenes.
+- **Pace to reading speed.** A scene holds exactly long enough to read its words once, then cuts — long enough to read, fast enough to keep retention. Rule of thumb: ~2.5–3 words/sec plus a ~0.4s settle; never park on a line the eye has already finished.
+
 ## Capabilities (all installed)
 
 - **3D** — `<ThreeCanvas>` (`@remotion/three`) + R3F, `useGLTF` (`@react-three/drei`), `useVideoTexture()`; `layout="none"` on inner `<Sequence>`.
