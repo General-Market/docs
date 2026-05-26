@@ -1,79 +1,66 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  Easing,
-  interpolate,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { measureText } from "@remotion/layout-utils";
 import { FPS, H, NAVY, SANS, SANS_TEXT, W } from "./theme";
 
-/* ── The camera, not the chart ──────────────────────────────────────────────
- * A LINEAR axis that reframes itself. The newest bar always fills ~80% of the
- * plot height; the axis maximum animates up to it, so every older bar collapses
- * together — that is the zoom-out. On a linear scale the dwarfing is the point:
- * when the billion lands, every market before it is a row of ticks on the floor.
+/* ── A camera, not a chart ──────────────────────────────────────────────────
+ * The view starts pushed in on the first bar at 80% of the height. Each new
+ * bar is taller and enters from the right; the camera zooms OUT and pans RIGHT
+ * to keep it at 80%, so the whole trail recedes left and shrinks together. On a
+ * linear scale that recession is the argument — when the billion lands, every
+ * market before it is a row of ticks on the floor.
  *
- * Each bar carries its own cubic-bezier `ease` (the acceleration of its zoom +
- * count roll) and its own `start`/`grow` (the rhythm). Vary both — it should
- * read like a phrase of music, not a metronome.                               */
+ * The name owns the frame: it is measured to ~60% of the width and shrinks as
+ * the diagram fills in, laid over the chart. Each bar carries its own bezier
+ * (the acceleration of the move) and its own start/grow (the rhythm).         */
 type Bar = {
   key: string;
   name: string;
   sub: string;
   value: number;
-  start: number; // frame the bar begins to enter
-  grow: number; // frames to settle at 80% + finish the count roll
+  start: number;
+  grow: number;
   ease: readonly [number, number, number, number];
-  hero?: boolean; // General → blue
-  finale?: boolean; // General at scale → blue, glow
+  hero?: boolean;
+  finale?: boolean;
 };
 
-// Apple-sanctioned beziers, varied per bar (no Material 0.22,1,0.36,1).
-const STD = [0.4, 0, 0.6, 1] as const; // default
-const OUT = [0.25, 0.1, 0.3, 1] as const; // ease-out, snappy settle
-const INOUT = [0.42, 0, 0.58, 1] as const; // slow-fast-slow, for the big zooms
-const QUICK = [0.3, 0, 0.18, 1] as const; // fast attack
+const STD = [0.4, 0, 0.6, 1] as const;
+const OUT = [0.25, 0.1, 0.3, 1] as const;
+const INOUT = [0.42, 0, 0.58, 1] as const;
+const QUICK = [0.3, 0, 0.18, 1] as const;
 
 const BARS: Bar[] = [
-  { key: "forex", name: "Forex", sub: "currency pairs", value: 28, start: 14, grow: 18, ease: OUT },
-  { key: "commodities", name: "Commodities", sub: "liquid futures", value: 30, start: 46, grow: 14, ease: QUICK },
-  { key: "usstocks", name: "US Stocks", sub: "NYSE + Nasdaq", value: 5_200, start: 74, grow: 22, ease: INOUT },
-  { key: "microcaps", name: "Micro-caps", sub: "OTC securities", value: 12_000, start: 112, grow: 16, ease: STD },
-  { key: "crypto", name: "Crypto", sub: "listed tokens", value: 13_000, start: 144, grow: 16, ease: OUT },
-  { key: "etfs", name: "ETFs", sub: "global, exchange-traded", value: 15_600, start: 176, grow: 16, ease: QUICK },
-  { key: "globalstocks", name: "Global Stocks", sub: "every exchange on earth", value: 58_000, start: 210, grow: 22, ease: INOUT },
-  { key: "prediction", name: "Prediction Markets", sub: "Polymarket, active", value: 85_000, start: 248, grow: 20, ease: STD },
-  { key: "gentoday", name: "General", sub: "today", value: 500_000, start: 286, grow: 22, ease: OUT, hero: true },
-  { key: "options", name: "Options", sub: "every strike × expiry", value: 1_000_000, start: 330, grow: 22, ease: INOUT },
-  { key: "memecoins", name: "Memecoins", sub: "pump.fun, launched", value: 10_000_000, start: 374, grow: 26, ease: INOUT },
-  { key: "bonds", name: "Bonds", sub: "fixed-income CUSIPs", value: 50_000_000, start: 420, grow: 28, ease: INOUT },
-  { key: "genscale", name: "General", sub: "at scale", value: 1_000_000_000, start: 466, grow: 42, ease: INOUT, hero: true, finale: true },
+  { key: "forex", name: "Forex", sub: "currency pairs", value: 28, start: 14, grow: 20, ease: OUT },
+  { key: "commodities", name: "Commodities", sub: "liquid futures", value: 30, start: 48, grow: 16, ease: QUICK },
+  { key: "usstocks", name: "US Stocks", sub: "NYSE + Nasdaq", value: 5_200, start: 78, grow: 24, ease: INOUT },
+  { key: "microcaps", name: "Micro-caps", sub: "OTC securities", value: 12_000, start: 118, grow: 18, ease: STD },
+  { key: "crypto", name: "Crypto", sub: "listed tokens", value: 13_000, start: 152, grow: 18, ease: OUT },
+  { key: "etfs", name: "ETFs", sub: "exchange-traded", value: 15_600, start: 186, grow: 18, ease: QUICK },
+  { key: "globalstocks", name: "Global Stocks", sub: "every exchange on earth", value: 58_000, start: 222, grow: 24, ease: INOUT },
+  { key: "prediction", name: "Prediction Markets", sub: "Polymarket, active", value: 85_000, start: 262, grow: 22, ease: STD },
+  { key: "gentoday", name: "General", sub: "today", value: 500_000, start: 302, grow: 24, ease: OUT, hero: true },
+  { key: "options", name: "Options", sub: "every strike × expiry", value: 1_000_000, start: 348, grow: 24, ease: INOUT },
+  { key: "memecoins", name: "Memecoins", sub: "pump.fun, launched", value: 10_000_000, start: 394, grow: 28, ease: INOUT },
+  { key: "bonds", name: "Bonds", sub: "fixed-income CUSIPs", value: 50_000_000, start: 442, grow: 30, ease: INOUT },
+  { key: "genscale", name: "General", sub: "at scale", value: 1_000_000_000, start: 490, grow: 46, ease: INOUT, hero: true, finale: true },
 ];
 
-const TOTAL = 580;
-const FILL = 0.8; // newest bar fills this fraction of the plot height
+const TOTAL = 610;
+const FILL = 0.8; // the newest bar fills this fraction of the plot height
 
-// plot geometry (left), title panel (right)
-const PLOT_L = 120;
-const PLOT_R = 1240;
-const PLOT_W = PLOT_R - PLOT_L;
-const SLOT_W = PLOT_W / BARS.length;
-const BAR_W = 54;
-const BASELINE = 880;
-const PLOT_H = 660;
-const PANEL_L = 1300;
-const slotCenter = (i: number) => PLOT_L + i * SLOT_W + SLOT_W / 2;
+// camera geometry
+const PLOT_H = 620;
+const BASELINE = 872;
+const ANCHOR = W * 0.84; // newest bar lands here, on the right
+const LEFT_EDGE = W * 0.07;
+const SPAN = ANCHOR - LEFT_EDGE;
+const NAME_X = 112;
+const NAME_CY = H * 0.4;
 
-const INK = "#F4F6FA";
 const BLUE = "#0A84FF";
+const INK = "#F4F6FA";
 
-const trim = (n: number) => (Number.isInteger(n) ? `${n}` : n.toFixed(1));
-const compact = (v: number): string => {
-  if (v >= 1e9) return `${trim(v / 1e9)}B`;
-  if (v >= 1e6) return `${trim(v / 1e6)}M`;
-  if (v >= 1e3) return `${trim(v / 1e3)}k`;
-  return `${Math.round(v)}`;
-};
 const full = (v: number) => Math.round(v).toLocaleString("en-US");
 
 const clamp = (
@@ -91,27 +78,38 @@ const clamp = (
 export const MarketUniverseScale: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // which bar owns the frame right now
   let active = -1;
   for (let i = 0; i < BARS.length; i++) if (frame >= BARS[i].start) active = i;
+  if (active < 0) return <AbsoluteFill style={{ backgroundColor: NAVY }} />;
 
-  // the camera: linear axis maximum eased from the previous titan to the newest
-  let axisMax = BARS[0].value / FILL;
-  let enter = 0;
-  if (active >= 0) {
-    const A = BARS[active];
-    enter = clamp(frame, [A.start, A.start + A.grow], [0, 1], Easing.bezier(...A.ease));
-    const newMax = A.value / FILL;
-    const prevMax = active > 0 ? BARS[active - 1].value / FILL : newMax;
-    axisMax = prevMax + (newMax - prevMax) * enter;
-  }
+  const A = BARS[active];
+  const enter = clamp(frame, [A.start, A.start + A.grow], [0, 1], Easing.bezier(...A.ease));
 
-  const A = active >= 0 ? BARS[active] : null;
-  const panelIn = A ? clamp(frame, [A.start, A.start + 9], [0, 1], Easing.out(Easing.cubic)) : 0;
-  const aCount = A ? Math.round(A.value * enter) : 0;
+  // vertical: linear axis maximum eased from the previous titan to the newest
+  const newMax = A.value / FILL;
+  const prevMax = active > 0 ? BARS[active - 1].value / FILL : newMax;
+  const axisMax = prevMax + (newMax - prevMax) * enter;
 
-  // intro headline lifts out as the first bar lands (a move, never a dissolve)
-  const introOut = clamp(frame, [8, 20], [0, 1], Easing.in(Easing.cubic));
+  // horizontal: continuous newest-index → the trail fits, the newest rides the
+  // right anchor, everything slides left as the camera pans
+  const cp = active - 1 + enter;
+  const count = cp + 1;
+  const gap = SPAN / Math.max(1, count);
+  const barW = Math.max(7, Math.min(118, gap * 0.5));
+
+  // the name, measured to a target slice of the width that narrows as bars grow
+  const targetFrac = clamp(active, [0, 12], [0.6, 0.3]);
+  const ref = measureText({
+    text: A.name,
+    fontFamily: SANS,
+    fontWeight: "800",
+    fontSize: 100,
+    letterSpacing: "-3px",
+  });
+  const nameSize = Math.max(56, Math.min(300, (100 * targetFrac * W) / ref.width));
+  const countSize = nameSize * 0.4;
+  const aCount = Math.round(A.value * enter);
+  const titleIn = clamp(frame, [A.start, A.start + 10], [0, 1], Easing.out(Easing.cubic));
 
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS }}>
@@ -119,210 +117,111 @@ export const MarketUniverseScale: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          left: PANEL_L - 700,
-          top: BASELINE - 620,
-          width: 1200,
-          height: 760,
+          left: ANCHOR - 620,
+          top: BASELINE - 600,
+          width: 1120,
+          height: 740,
           background:
-            "radial-gradient(closest-side, rgba(10,132,255,0.16), rgba(10,132,255,0) 70%)",
-          opacity: clamp(frame, [280, 470], [0, 1]),
+            "radial-gradient(closest-side, rgba(10,132,255,0.18), rgba(10,132,255,0) 70%)",
+          opacity: clamp(frame, [300, 500], [0, 1]),
         }}
       />
-
-      {/* kicker */}
-      <div
-        style={{
-          position: "absolute",
-          left: 60,
-          top: 50,
-          opacity: 0.5,
-          fontFamily: SANS_TEXT,
-          fontSize: 22,
-          fontWeight: 600,
-          letterSpacing: "3px",
-          color: INK,
-          textTransform: "uppercase",
-        }}
-      >
-        Tradeable markets — by asset class
-      </div>
 
       {/* baseline */}
       <svg width={W} height={H} style={{ position: "absolute", inset: 0 }}>
         <line
-          x1={PLOT_L - 6}
+          x1={0}
           y1={BASELINE}
-          x2={PLOT_R + 6}
+          x2={W}
           y2={BASELINE}
-          stroke="rgba(255,255,255,0.28)"
+          stroke="rgba(255,255,255,0.18)"
           strokeWidth={2}
         />
       </svg>
 
-      {/* intro headline */}
-      {introOut < 1 && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 360,
-            textAlign: "center",
-            transform: `translateY(${-44 * introOut}px)`,
-            opacity: 1 - introOut,
-          }}
-        >
-          <div style={{ fontSize: 80, fontWeight: 800, color: INK, letterSpacing: "-2px" }}>
-            How many markets exist?
-          </div>
-        </div>
-      )}
-
-      {/* the bars — every height divided by the same axisMax, so all scale together */}
+      {/* the bars — one camera: heights ÷ axisMax, x from the panning trail */}
       {BARS.map((bar, i) => {
-        if (frame < bar.start) return null;
+        if (i > active) return null;
         const isActive = i === active;
         const value = isActive ? bar.value * enter : bar.value;
-        const h = Math.max(3, Math.min(PLOT_H, (value / axisMax) * PLOT_H));
-        const cx = slotCenter(i);
-
+        const h = Math.max(2, Math.min(PLOT_H, (value / axisMax) * PLOT_H));
+        const cx = ANCHOR - (cp - i) * gap;
+        if (cx < -200 || cx > W + 200) return null;
         return (
-          <React.Fragment key={bar.key}>
-            <div
-              style={{
-                position: "absolute",
-                left: cx - BAR_W / 2,
-                top: BASELINE - h,
-                width: BAR_W,
-                height: h,
-                borderRadius: "8px 8px 0 0",
-                background: bar.hero
-                  ? "linear-gradient(180deg, #3AA0FF 0%, #0A6FE0 100%)"
-                  : "linear-gradient(180deg, #E9EEF6 0%, rgba(120,138,168,0.4) 100%)",
-                borderTop: bar.hero ? "2px solid rgba(255,255,255,0.6)" : "none",
-                boxShadow: bar.finale
-                  ? "0 0 52px rgba(10,132,255,0.5)"
-                  : bar.hero
-                    ? "0 0 26px rgba(10,132,255,0.4)"
-                    : "none",
-                opacity: isActive ? 1 : 0.92,
-              }}
-            />
-            {/* compact count above the active bar — connects bar to its value */}
-            {isActive && h > 30 && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: cx - 90,
-                  width: 180,
-                  top: BASELINE - h - 40,
-                  textAlign: "center",
-                  fontVariantNumeric: "tabular-nums",
-                  fontSize: 28,
-                  fontWeight: 800,
-                  letterSpacing: "-0.5px",
-                  color: bar.hero ? "#8AC6FF" : "#fff",
-                }}
-              >
-                {compact(aCount)}
-              </div>
-            )}
-            {/* roster label under the baseline */}
-            <div
-              style={{
-                position: "absolute",
-                left: cx - SLOT_W / 2,
-                width: SLOT_W,
-                top: BASELINE + 12,
-                textAlign: "center",
-                fontFamily: SANS_TEXT,
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.1,
-                color: bar.hero
-                  ? "rgba(120,190,255,0.95)"
-                  : isActive
-                    ? "rgba(255,255,255,0.92)"
-                    : "rgba(255,255,255,0.42)",
-              }}
-            >
-              {bar.name}
-            </div>
-          </React.Fragment>
+          <div
+            key={bar.key}
+            style={{
+              position: "absolute",
+              left: cx - barW / 2,
+              top: BASELINE - h,
+              width: barW,
+              height: h,
+              borderRadius: `${Math.min(10, barW / 6)}px ${Math.min(10, barW / 6)}px 0 0`,
+              background: bar.hero
+                ? "linear-gradient(180deg, #3AA0FF 0%, #0A6FE0 100%)"
+                : "linear-gradient(180deg, #EEF2F8 0%, rgba(120,138,168,0.4) 100%)",
+              borderTop: bar.hero ? "2px solid rgba(255,255,255,0.65)" : "none",
+              boxShadow: bar.finale
+                ? "0 0 60px rgba(10,132,255,0.55)"
+                : bar.hero
+                  ? "0 0 30px rgba(10,132,255,0.4)"
+                  : "none",
+              opacity: isActive ? 1 : 0.95,
+            }}
+          />
         );
       })}
 
-      {/* title panel — the active bar, named big, on the right */}
-      {A && (
+      {/* the name — measured big, laid over the chart, shrinking as it fills */}
+      <div
+        key={A.key + A.start}
+        style={{
+          position: "absolute",
+          left: NAME_X,
+          top: NAME_CY - nameSize * 0.62,
+          transform: `translateY(${(1 - titleIn) * 26}px)`,
+          opacity: titleIn,
+        }}
+      >
         <div
-          key={A.key + A.start}
           style={{
-            position: "absolute",
-            left: PANEL_L,
-            width: W - PANEL_L - 70,
-            top: 318,
-            transform: `translateX(${(1 - panelIn) * 54}px)`,
-            opacity: panelIn,
+            fontSize: nameSize,
+            fontWeight: 800,
+            lineHeight: 0.92,
+            letterSpacing: "-3px",
+            color: A.hero ? "#fff" : INK,
+            textShadow: A.hero
+              ? "0 8px 60px rgba(10,132,255,0.55)"
+              : "0 6px 40px rgba(0,0,0,0.55)",
           }}
         >
-          <div
+          {A.name}
+        </div>
+        <div style={{ marginTop: nameSize * 0.08, display: "flex", alignItems: "baseline" }}>
+          <span
             style={{
-              fontSize: 86,
+              fontVariantNumeric: "tabular-nums",
+              fontSize: countSize,
               fontWeight: 800,
-              letterSpacing: "-2.5px",
-              lineHeight: 0.98,
-              color: A.hero ? "#fff" : INK,
-              textShadow: A.hero ? "0 6px 44px rgba(10,132,255,0.5)" : "none",
+              letterSpacing: "-1px",
+              color: A.hero ? BLUE : INK,
+              textShadow: "0 4px 30px rgba(0,0,0,0.5)",
             }}
           >
-            {A.name}
-          </div>
-          <div style={{ marginTop: 16, display: "flex", alignItems: "baseline", flexWrap: "wrap" }}>
-            <span
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                fontSize: 60,
-                fontWeight: 800,
-                color: A.hero ? BLUE : INK,
-                letterSpacing: "-1px",
-              }}
-            >
-              {full(aCount)}
-            </span>
-            <span style={{ fontSize: 30, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 14 }}>
-              markets
-            </span>
-          </div>
-          <div
+            {full(aCount)}
+          </span>
+          <span
             style={{
-              marginTop: 8,
               fontFamily: SANS_TEXT,
-              fontSize: 25,
-              fontWeight: 500,
-              color: A.hero ? "rgba(120,190,255,0.92)" : "rgba(255,255,255,0.42)",
-              letterSpacing: "0.3px",
+              fontSize: countSize * 0.42,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.55)",
+              marginLeft: countSize * 0.22,
             }}
           >
             {A.sub}
-          </div>
+          </span>
         </div>
-      )}
-
-      {/* footer credit */}
-      <div
-        style={{
-          position: "absolute",
-          right: 40,
-          bottom: 24,
-          opacity: 0.3,
-          fontFamily: SANS_TEXT,
-          fontSize: 14,
-          color: INK,
-          textAlign: "right",
-          letterSpacing: "0.3px",
-        }}
-      >
-        Live tradeable instruments per class · WFE · OTC Markets · CoinGecko · ETFGI · Polymarket · OCC · MSRB · 2026
       </div>
     </AbsoluteFill>
   );
