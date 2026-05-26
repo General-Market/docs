@@ -1,10 +1,10 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, SANS_TEXT, zoomBurst } from "../article-2/theme";
+import { ACCENT, SANS_TEXT, articleZoom } from "../article-2/theme";
 import { ProofArticle } from "./ProofArticle";
 import { HeroPie } from "./HeroPie";
 import { HeroWaffle } from "./HeroWaffle";
-import type { Hero, ProofScreen } from "./screens";
+import { SCREEN_DUR, type Hero, type ProofScreen } from "./screens";
 
 const HeroChart: React.FC<{ hero: Hero }> = ({ hero }) =>
   hero.kind === "pie" ? (
@@ -71,7 +71,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const bgZoom = zoomBurst(frame, 195);
+  const bgZoom = articleZoom(frame, SCREEN_DUR);
 
   // eased stepped scroll: settle on proof #1, hold, snap down to proof #2, hold
   const scroll = interpolate(

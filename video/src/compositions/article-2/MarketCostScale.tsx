@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { ArticlePage, type ArticleContent } from "./ArticlePage";
-import { ACCENT, FPS, H, SANS, SANS_TEXT, W, zoomBurst } from "./theme";
+import { ACCENT, FPS, H, SANS, SANS_TEXT, W, articleZoom } from "./theme";
 
 /* ── The facts ──────────────────────────────────────────────────────────────
  * Polymarket earmarked ~$5M in liquidity incentives for April 2026, spread
@@ -180,7 +180,7 @@ export const MarketCostScale: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <AbsoluteFill style={{ transform: `scale(${zoomBurst(frame, TOTAL)})`, transformOrigin: "center" }}>
+      <AbsoluteFill style={{ transform: `scale(${articleZoom(frame, TOTAL)})`, transformOrigin: "center" }}>
         <ArticlePage
           article={POLY_ARTICLE}
           scroll={artScroll}

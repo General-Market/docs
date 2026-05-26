@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage } from "./ArticlePage";
 import { ImpressionsVolumeChart } from "./ImpressionsVolumeChart";
-import { FPS, H, W, zoomBurst } from "./theme";
+import { FPS, H, W, articleZoom } from "./theme";
 
 const V2_TOTAL = 240;
 
@@ -26,8 +26,8 @@ export const AttentionVolumeV2: React.FC = () => {
     },
   );
 
-  // pronounced 3-burst zoom on the backdrop — frame 0 is already pushing in
-  const bgZoom = zoomBurst(frame, V2_TOTAL);
+  // one continuous push-in on the backdrop — confident, never pulling back
+  const bgZoom = articleZoom(frame, V2_TOTAL);
 
   // whole-page blur lifts as the graph leaves
   const fullBlur = interpolate(frame, [0, 85, 112], [26, 26, 0], {
