@@ -1,8 +1,17 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, ACCENT_SOFT, SANS, SANS_TEXT } from "../article-2/theme";
+import { ACCENT, SANS_TEXT } from "../article-2/theme";
 import { ProofArticle } from "./ProofArticle";
-import type { ProofScreen } from "./screens";
+import { HeroPie } from "./HeroPie";
+import { HeroWaffle } from "./HeroWaffle";
+import type { Hero, ProofScreen } from "./screens";
+
+const HeroChart: React.FC<{ hero: Hero }> = ({ hero }) =>
+  hero.kind === "pie" ? (
+    <HeroPie pct={hero.pct} blueLabel={hero.blueLabel} greyLabel={hero.greyLabel} />
+  ) : (
+    <HeroWaffle filled={hero.filled} total={hero.total} />
+  );
 
 const BG = "#05070c";
 
@@ -95,10 +104,10 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
         />
       </AbsoluteFill>
 
-      {/* dim scrim under the hero number */}
+      {/* dim scrim under the hero chart */}
       {scrimOp > 0.001 && <AbsoluteFill style={{ background: BG, opacity: scrimOp }} />}
 
-      {/* hero number */}
+      {/* hero chart */}
       {heroOp > 0.001 && (
         <AbsoluteFill
           style={{
@@ -111,25 +120,13 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
             transform: `translateY(${heroY}px) scale(${heroScale})`,
           }}
         >
-          <div
-            style={{
-              fontFamily: SANS,
-              fontWeight: 800,
-              fontSize: 256,
-              lineHeight: 1,
-              letterSpacing: "-8px",
-              color: "#fff",
-              textShadow: `0 0 70px ${ACCENT_SOFT}`,
-            }}
-          >
-            {screen.hero}
-          </div>
+          <HeroChart hero={screen.hero} />
           <div
             style={{
               fontFamily: SANS_TEXT,
-              fontSize: 46,
+              fontSize: 44,
               color: "rgba(255,255,255,0.76)",
-              marginTop: 28,
+              marginTop: 44,
               maxWidth: 1240,
               textAlign: "center",
               letterSpacing: "-0.4px",
