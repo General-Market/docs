@@ -1,11 +1,12 @@
 // Source: CodePen "Animating Text Justification" (OKAY DEV) — SplitText headline
 //
 // Original: an Impact headline that GSAP SplitText breaks into lines + words.
-// Each line slides up out of an overflow mask (yPercent 110 -> 0, stagger 0.15,
+// Each line slides up out of an overflow mask (yPercent 110 -> 0, stagger 0.14,
 // expo); the words then justify into place (power4); finally the two
-// [data-accent] words brighten from the base mint to white. Here the scroll-free
-// reveal runs over the first ~3.5s, then a slow continuous breathing keeps the
-// board alive through the hold.
+// [data-accent] words brighten from the base mint to white. The entrance plays
+// ON SCREEN from frame 0 — the lines climb out of their masks in the first ~0.9s
+// so the viewer watches the headline arrive, rather than it being pre-rolled or
+// opening on a held blank. After the reveal a slow breathing keeps it alive.
 
 import React from "react";
 import {
@@ -104,36 +105,37 @@ export const CommunityHeadline: React.FC = () => {
   const { fps } = useVideoConfig();
   const t = frame / fps;
 
-  // Reveal timeline (seconds): lines stagger 0.15, each ~0.8 (expo).
-  // Justify starts -0.5 into the lines (power4, 0.4 each, stagger 0.02).
-  // Accents brighten last (power2, 0.8, stagger 0.04).
+  // Reveal timeline (seconds). The entrance plays ON SCREEN, starting at frame
+  // 0: the three lines climb up out of their overflow masks one after another
+  // (stagger 0.14, each ~0.62, expo) so the viewer actually watches the text
+  // arrive — no pre-rolled head-start, no long blank hold. Justify follows each
+  // word in as it appears (power4). Accents brighten last (power2), after the
+  // headline has settled.
+  const HOLD_START = 2.0; // reveal is fully done by here; breathing takes over
   const lineReveal = (i: number): number => {
-    const start = 0.35 + i * 0.15;
-    return clamp01((t - start) / 0.8);
+    // line 0 begins climbing at t=0; lines 1–2 cascade right behind. The whole
+    // headline is up by ~0.9s, so the entrance reads clearly without dwelling.
+    const start = i * 0.14;
+    return clamp01((t - start) / 0.62);
   };
   const justifyOf = (lineIdx: number, wordIdx: number): number => {
-    // global word index for the small per-word stagger
+    // global word index — words justify in just behind their line's climb
     const before = LINES.slice(0, lineIdx).reduce((n, l) => n + l.length, 0) + wordIdx;
-    const start = 0.6 + before * 0.06;
-    return clamp01((t - start) / 0.45);
+    const start = before * 0.05;
+    return clamp01((t - start) / 0.5);
   };
   const accentOf = (orderIdx: number): number => {
-    const start = 1.9 + orderIdx * 0.18;
+    const start = 1.05 + orderIdx * 0.18;
     return clamp01((t - start) / 0.7);
   };
 
   // Continuous breathing for the back half so it isn't static after the reveal.
-  const breath = Math.sin((t - 3.5) * 0.9) * 0.5 + 0.5;
-  const boardScale = 1 + (t > 3.4 ? interpolate(breath, [0, 1], [-0.004, 0.004]) : 0);
-  const boardDriftY = t > 3.4 ? Math.sin((t - 3.5) * 0.7) * 6 : 0;
+  const breath = Math.sin((t - HOLD_START) * 0.9) * 0.5 + 0.5;
+  const boardScale =
+    1 + (t > HOLD_START ? interpolate(breath, [0, 1], [-0.004, 0.004]) : 0);
+  const boardDriftY = t > HOLD_START ? Math.sin((t - HOLD_START) * 0.7) * 6 : 0;
   // Slow hue/glow pulse on the accents during the hold.
-  const accentGlow = t > 3.4 ? 8 + breath * 14 : 0;
-
-  // Whole-scene entrance.
-  const sceneOpacity = interpolate(frame, [0, 12], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const accentGlow = t > HOLD_START ? 8 + breath * 14 : 0;
 
   // Track accent order for staggered brighten (BETTER first, then COMMUNITY).
   let accentSeen = 0;
@@ -168,7 +170,10 @@ export const CommunityHeadline: React.FC = () => {
           left: "50%",
           transform: "translateX(-50%)",
           textAlign: "center",
-          opacity: interpolate(frame, [6, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+          opacity: interpolate(frame, [0, 14], [0.35, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          }),
           zIndex: 10,
         }}
       >
@@ -207,7 +212,6 @@ export const CommunityHeadline: React.FC = () => {
           width: BOARD_W,
           padding: "0 40px",
           background: COLORS.panel,
-          opacity: sceneOpacity,
           transform: `scale(${boardScale}) translateY(${boardDriftY}px)`,
         }}
       >

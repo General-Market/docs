@@ -4,15 +4,35 @@
 // scroll the whole lattice diagonally as a frame-driven seamless loop. The
 // isometric rotateX/rotateZ + the per-tile rounded shadow are kept verbatim so
 // it still reads as that tilted photo gallery sliding past.
+//
+// Coverage is the whole game here: under scale(1.35) rotateX(45) rotateZ(45) a
+// flat plane projects to a diamond, so a finite grid slides off and bares the
+// background. The fix is a torus — the tile field is periodic in BOTH axes
+// (PERIOD_COLS × PERIOD_ROWS) and we render far more cells than the viewport
+// needs, then shift by one cell pitch wrapped on the period. Every cell pulls
+// its tile by (row mod PERIOD_ROWS, col mod PERIOD_COLS), so the wall is
+// infinite in both directions and no edge can ever enter frame.
 
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
-const COLS = 6;
 const TILE = 175; // px — matches the original span size
 const MARGIN = 10; // px — original span margin
-const STEP = TILE + MARGIN * 2; // one cell pitch
-const ROWS_VISIBLE = 9; // enough rows to overfill the tilted viewport
+const STEP = TILE + MARGIN * 2; // one cell pitch (195px)
+const STAGE_SCALE = 1.35;
+
+// The plane is rotated 45° then tilted 45° and scaled. Its on-screen bounding
+// box is roughly STAGE_SCALE * (W' + H') / sqrt(2) wide. To bury a 1920×1080
+// frame with margin to spare we render a generously oversized lattice — ~30
+// cells each way puts the pre-transform plane near 5850px, far beyond need.
+const COLS = 30;
+const ROWS = 30;
+
+// One full period of unique tiles in each axis. Scroll wraps on these periods so
+// the diagonal loop is seamless: cell (r,c) and (r+PERIOD_ROWS, c) — or
+// (r, c+PERIOD_COLS) — carry identical tiles, and the offset resets cleanly.
+const PERIOD_COLS = 12;
+const PERIOD_ROWS = 12;
 
 // Deterministic hash → [0,1)
 function hash(n: number): number {
@@ -31,11 +51,6 @@ interface Tile {
   glyph: "none" | "circle" | "diag" | "number";
   num: number;
 }
-
-// One full period of unique tiles. The scroll wraps on this period so the loop
-// is seamless: row r and row r+PERIOD_ROWS carry identical tiles.
-const PERIOD_ROWS = 16;
-const TILE_COUNT = COLS * PERIOD_ROWS;
 
 function buildTile(i: number): Tile {
   const h1 = Math.floor(hash(i * 1.7 + 4) * 360);
@@ -148,47 +163,55 @@ export const ImageGridScroll: React.FC = () => {
   const { durationInFrames } = useVideoConfig();
 
   const tiles = useMemo(
-    () => Array.from({ length: TILE_COUNT }, (_, i) => buildTile(i)),
+    () =>
+      Array.from({ length: PERIOD_ROWS * PERIOD_COLS }, (_, i) => buildTile(i)),
     [],
   );
 
-  // Seamless diagonal scroll: advance exactly PERIOD_ROWS cells over the whole
-  // clip, then modulo so frame 0 and frame durationInFrames land identically.
-  const periodPx = PERIOD_ROWS * STEP;
+  // Seamless diagonal scroll. Advance the lattice by an integer number of cells
+  // over the whole clip so frame 0 and frame durationInFrames land identically.
+  // The shift is taken modulo one cell pitch for the sub-cell translate, and the
+  // whole-cell part feeds the source-index wrap below — together they make the
+  // motion continuous AND the seam invisible.
   const loop = (frame % durationInFrames) / durationInFrames;
-  const offsetY = ((loop * periodPx) % periodPx);
-  const offsetX = offsetY * 0.18; // gentle diagonal drift
+  const totalCellShift = PERIOD_ROWS; // whole cells advanced across the loop
+  const advanceY = loop * totalCellShift * STEP; // px down the plane's y axis
+  const advanceX = advanceY; // pure diagonal — matches the rotateZ(45) axis
 
-  // We render a vertical stack tall enough to cover the tilt; rows are pulled
-  // from the periodic tile set with a row index that also wraps, so the wall is
-  // infinite in both directions of the scroll.
-  const totalRows = ROWS_VISIBLE + PERIOD_ROWS;
-  const rowStart = Math.floor(offsetY / STEP);
-  const subY = offsetY - rowStart * STEP;
+  const cellShiftRow = Math.floor(advanceY / STEP);
+  const cellShiftCol = Math.floor(advanceX / STEP);
+  const subY = advanceY - cellShiftRow * STEP;
+  const subX = advanceX - cellShiftCol * STEP;
 
+  // Render one extra ring of cells beyond the oversized plane so the sub-cell
+  // translate never reveals an edge.
   const cells: React.ReactNode[] = [];
-  for (let r = 0; r < totalRows; r++) {
-    const sourceRow = ((rowStart + r) % PERIOD_ROWS + PERIOD_ROWS) % PERIOD_ROWS;
+  for (let r = 0; r < ROWS; r++) {
+    const sourceRow =
+      (((cellShiftRow + r) % PERIOD_ROWS) + PERIOD_ROWS) % PERIOD_ROWS;
     for (let c = 0; c < COLS; c++) {
-      const idx = sourceRow * COLS + c;
+      const sourceCol =
+        (((cellShiftCol + c) % PERIOD_COLS) + PERIOD_COLS) % PERIOD_COLS;
+      const idx = sourceRow * PERIOD_COLS + sourceCol;
       cells.push(<TileCell key={`${r}-${c}`} tile={tiles[idx]} />);
     }
   }
 
   const gridWidth = COLS * STEP;
-  const gridHeight = totalRows * STEP;
+  const gridHeight = ROWS * STEP;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#fcfcfc", overflow: "hidden" }}>
-      {/* isometric stage — translateX(-50%) rotateX(45) rotateZ(45), verbatim */}
+      {/* isometric stage — rotateX(45) rotateZ(45), verbatim. The grid div is
+          its own box, so translate(-50%,-50%) centers the whole lattice on the
+          viewport; only the sub-cell scroll remainder rides on the inner div. */}
       <div
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
           transformStyle: "preserve-3d",
-          transform:
-            "translate(-50%, -50%) scale(1.35) rotateX(45deg) rotateZ(45deg)",
+          transform: `translate(-50%, -50%) scale(${STAGE_SCALE}) rotateX(45deg) rotateZ(45deg)`,
         }}
       >
         <div
@@ -197,8 +220,7 @@ export const ImageGridScroll: React.FC = () => {
             height: gridHeight,
             display: "flex",
             flexWrap: "wrap",
-            justifyContent: "center",
-            transform: `translate(${-offsetX}px, ${-(subY + STEP)}px)`,
+            transform: `translate(${-subX}px, ${-subY}px)`,
           }}
         >
           {cells}
