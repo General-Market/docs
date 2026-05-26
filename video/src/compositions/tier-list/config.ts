@@ -8,7 +8,6 @@ import { FPS, W, H } from "../article-2/theme";
 export { FPS, W, H };
 
 export const TITLE = "Every General Markets Tier List";
-export const SUBTITLE = "ranked by volume";
 
 /** The canonical tiermaker palette, top (S) to bottom (F). */
 export const TIERS: { id: Tier; color: string; ink: string }[] = [
@@ -29,12 +28,13 @@ export const TRACK_BG = "rgba(255,255,255,0.04)";
 export const TRACK_BG_ACTIVE = "rgba(255,255,255,0.10)";
 export const TILE_DISC = "#f5f5f7"; // matches the frontend research-bar logo disc
 
-export const TITLE_BAND = 110;
+export const TITLE_BAND = 150;
+export const TITLE_PAD_TOP = 48; // breathing room above the title
 
 export const LAYOUT = {
-  board: { top: 134, rowH: 90, labelW: 132, trackX: 150, trackRight: 1900, rowGap: 4, leftPad: 14 },
+  board: { top: 208, rowH: 88, labelW: 132, trackX: 150, trackRight: 1900, rowGap: 4, leftPad: 14 },
   tile: { gap: 8, min: 30, max: 92 }, // one uniform size, derived from the fullest row
-  tray: { top: 700, bottom: 1056, cols: 30, padX: 28, tile: 48 },
+  tray: { top: 744, bottom: 1056, cols: 30, padX: 28, tile: 48 },
 };
 
 export const TIMING = {

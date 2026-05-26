@@ -7,11 +7,11 @@ import {
   H,
   INK,
   LAYOUT,
-  SUBTITLE,
   TIERS,
   TIMING,
   TITLE,
   TITLE_BAND,
+  TITLE_PAD_TOP,
   TRACK_BG,
   TRACK_BG_ACTIVE,
   W,
@@ -186,18 +186,19 @@ export const TierListReel: React.FC = () => {
           height: TITLE_BAND,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "center",
           textAlign: "center",
+          paddingTop: TITLE_PAD_TOP,
           opacity: titleOp,
-          background: "linear-gradient(180deg, rgba(7,8,9,0.96) 0%, rgba(7,8,9,0.55) 70%, rgba(7,8,9,0) 100%)",
+          background: "linear-gradient(180deg, rgba(7,8,9,0.96) 0%, rgba(7,8,9,0.6) 72%, rgba(7,8,9,0) 100%)",
         }}
       >
         <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 58, color: INK, letterSpacing: "-1px", lineHeight: 1 }}>
           {TITLE}
         </div>
-        <div style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 24, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
-          {SUBTITLE} · {SCHEDULE.placements.length} sources
+        <div style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 24, color: "rgba(255,255,255,0.55)", marginTop: 8 }}>
+          {SCHEDULE.placements.length} sources
         </div>
       </div>
 
