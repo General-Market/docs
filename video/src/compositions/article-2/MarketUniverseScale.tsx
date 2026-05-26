@@ -19,26 +19,28 @@ type Bar = {
   value: number;
   start: number;
   grow: number;
-  icon?: string; // emoji glyph for pure categories
-  logo?: string; // staticFile path for real brand marks
+  logo: string; // staticFile path — one real brand mark per market
   tag?: string; // small qualifier after the title (General → today / at scale)
   hero?: boolean;
   finale?: boolean;
 };
 
+// One iconic brand per market: IBKR (forex), CME (commodities), Nasdaq, OTC
+// Markets (micro-caps), Coinbase, Invesco (ETFs), MSCI (global), Polymarket,
+// CBOE (options), pump.fun, PIMCO (bonds), and the GM mark for General.
 const BARS: Bar[] = [
-  { key: "forex", name: "Forex", value: 28, start: 14, grow: 30, icon: "💱" },
-  { key: "commodities", name: "Commodities", value: 30, start: 50, grow: 28, icon: "🛢️" },
-  { key: "usstocks", name: "US Stocks", value: 5_200, start: 92, grow: 34, icon: "📈" },
-  { key: "microcaps", name: "Micro-caps", value: 12_000, start: 138, grow: 30, icon: "🔬" },
+  { key: "forex", name: "Forex", value: 28, start: 14, grow: 30, logo: "article-2/market-logos/forex.png" },
+  { key: "commodities", name: "Commodities", value: 30, start: 50, grow: 28, logo: "article-2/market-logos/commodities.png" },
+  { key: "usstocks", name: "US Stocks", value: 5_200, start: 92, grow: 34, logo: "article-2/market-logos/usstocks.png" },
+  { key: "microcaps", name: "Micro-caps", value: 12_000, start: 138, grow: 30, logo: "article-2/market-logos/microcaps.png" },
   { key: "crypto", name: "Crypto", value: 13_000, start: 184, grow: 30, logo: "exchange-logos/coinbase-icon.svg" },
-  { key: "etfs", name: "ETFs", value: 15_600, start: 230, grow: 30, icon: "🧺" },
-  { key: "globalstocks", name: "Global Stocks", value: 58_000, start: 278, grow: 34, icon: "🌍" },
+  { key: "etfs", name: "ETFs", value: 15_600, start: 230, grow: 30, logo: "article-2/market-logos/etfs.png" },
+  { key: "globalstocks", name: "Global Stocks", value: 58_000, start: 278, grow: 34, logo: "article-2/market-logos/globalstocks.png" },
   { key: "prediction", name: "Prediction Markets", value: 85_000, start: 328, grow: 34, logo: "exchange-logos/polymarket-icon.png" },
   { key: "gentoday", name: "General", value: 500_000, start: 380, grow: 36, logo: "article-2/gm-mark-blue.svg", tag: "today", hero: true },
-  { key: "options", name: "Options", value: 1_000_000, start: 432, grow: 36, icon: "🎛️" },
+  { key: "options", name: "Options", value: 1_000_000, start: 432, grow: 36, logo: "article-2/market-logos/options.png" },
   { key: "memecoins", name: "Memecoins", value: 10_000_000, start: 482, grow: 40, logo: "exchange-logos/pumpfun-icon.png" },
-  { key: "bonds", name: "Bonds", value: 50_000_000, start: 534, grow: 42, icon: "🏛️" },
+  { key: "bonds", name: "Bonds", value: 50_000_000, start: 534, grow: 42, logo: "article-2/market-logos/bonds.png" },
   { key: "genscale", name: "General", value: 1_000_000_000, start: 588, grow: 56, logo: "article-2/gm-mark-blue.svg", tag: "at scale", hero: true, finale: true },
 ];
 
@@ -144,11 +146,7 @@ const LogoChip: React.FC<{ bar: Bar; cx: number; top: number; size: number; opac
       opacity,
     }}
   >
-    {bar.logo ? (
-      <Img src={staticFile(bar.logo)} style={{ width: size * 0.66, height: size * 0.66, objectFit: "contain" }} />
-    ) : (
-      <span style={{ fontSize: size * 0.56, lineHeight: 1 }}>{bar.icon}</span>
-    )}
+    <Img src={staticFile(bar.logo)} style={{ width: size * 0.68, height: size * 0.68, objectFit: "contain" }} />
   </div>
 );
 
