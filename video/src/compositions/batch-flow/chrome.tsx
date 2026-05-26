@@ -2,22 +2,10 @@ import React from "react";
 import {
   AbsoluteFill,
   interpolate,
-  OffthreadVideo,
-  staticFile,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
-import {
-  BG_GRADIENT,
-  C,
-  EASE,
-  EDGE,
-  font,
-  PILL_GRADIENT,
-  TOTAL_FRAMES,
-  W,
-  H,
-  WINDOW_SCALE,
-} from "./theme";
+import { C, EASE, EDGE, font, PILL_GRADIENT, W, H } from "./theme";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
 //
@@ -43,94 +31,124 @@ export const glassCard = (radius = 16): React.CSSProperties => ({
     "0 8px 24px rgba(70,74,140,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
 });
 
-// ─── Stage ────────────────────────────────────────────────────────────────
+// ─── Points network ──────────────────────────────────────────────────────
 //
-// The shared ground for every beat: the blurred pastel video, a soft scrim,
-// and one frosted glass window the beats live inside — the way the onboarding
-// tour frames its scene. Each beat is authored in full 1920×1080 space and
-// scaled into the window here.
+// A white ground carrying a field of blue points joined by thin lines — a
+// plexus. Every node drifts along a fixed heading, and the distance it has
+// travelled grows with the SQUARE of time, so the whole field accelerates:
+// near-still at the open, brisk by the climax. Positions are a closed form of
+// the frame, so any frame renders identically without state.
 
-export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const NODES = 90;
+const LINK_DIST = 220; // px — draw a line between points closer than this
+const BASE_SPEED = 6; // px/s at t=0
+const ACCEL = 0.38; // px/s² — the acceleration the brief asks for
+
+const POINT_BLUE = "#0071E3";
+const POINT_BRIGHT = "#2997ff";
+const POINT_VIOLET = "#6E5BFF";
+
+const mulberry32 = (a: number) => () => {
+  a |= 0;
+  a = (a + 0x6d2b79f5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+const wrap = (v: number, m: number): number => ((v % m) + m) % m;
+
+type PNode = { x: number; y: number; r: number; color: string };
+
+const PointsNetwork: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => {
   const frame = useCurrentFrame();
-  const vidScale = interpolate(frame, [0, TOTAL_FRAMES], [1.06, 1.14], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const winW = W * WINDOW_SCALE;
-  const winH = H * WINDOW_SCALE;
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+  // Distance travelled under constant acceleration: v0·t + ½·a·t².
+  const travel = BASE_SPEED * t + 0.5 * ACCEL * t * t;
+  // Bleed past the edges so wrapping points enter/exit off-screen, not at the
+  // visible border.
+  const MX = 160;
+  const fieldW = W + MX * 2;
+  const fieldH = H + MX * 2;
+
+  const nodes: PNode[] = [];
+  for (let i = 0; i < NODES; i++) {
+    const rnd = mulberry32((i + 1) * 2654435761);
+    const x0 = rnd() * fieldW;
+    const y0 = rnd() * fieldH;
+    const ang = rnd() * Math.PI * 2;
+    const spd = 0.55 + rnd() * 0.9; // per-node speed multiplier
+    const pick = rnd();
+    const color = pick > 0.82 ? POINT_VIOLET : pick > 0.5 ? POINT_BRIGHT : POINT_BLUE;
+    const x = wrap(x0 + Math.cos(ang) * travel * spd, fieldW) - MX;
+    const y = wrap(y0 + Math.sin(ang) * travel * spd, fieldH) - MX;
+    nodes.push({ x, y, r: 1.8 + rnd() * 2.6, color });
+  }
+
+  const lines: React.ReactNode[] = [];
+  for (let i = 0; i < NODES; i++) {
+    for (let j = i + 1; j < NODES; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const d = Math.hypot(dx, dy);
+      if (d >= LINK_DIST) continue;
+      const op = (1 - d / LINK_DIST) * 0.42;
+      lines.push(
+        <line
+          key={`${i}-${j}`}
+          x1={nodes[i].x}
+          y1={nodes[i].y}
+          x2={nodes[j].x}
+          y2={nodes[j].y}
+          stroke="#1F7DEC"
+          strokeWidth={1}
+          opacity={op}
+        />,
+      );
+    }
+  }
 
   return (
-    <AbsoluteFill style={{ background: BG_GRADIENT, fontFamily: font }}>
-      <AbsoluteFill style={{ overflow: "hidden" }}>
-        <OffthreadVideo
-          src={staticFile("batch-flow/bg-blur.mp4")}
-          muted
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: `scale(${vidScale.toFixed(4)})`,
-          }}
-        />
-      </AbsoluteFill>
-
-      {/* soft scrim — lift the edges, faint cool tint so the window pops */}
-      <AbsoluteFill
-        style={{
-          background:
-            "radial-gradient(125% 120% at 50% 24%, rgba(255,255,255,0.12) 0%, rgba(40,44,96,0) 44%, rgba(30,34,80,0.22) 100%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div
-          style={{
-            position: "relative",
-            width: winW,
-            height: winH,
-            borderRadius: 34,
-            overflow: "hidden",
-            background:
-              "linear-gradient(150deg, rgba(255,255,255,0.60) 0%, rgba(236,240,255,0.46) 55%, rgba(244,236,250,0.52) 100%)",
-            backdropFilter: "saturate(168%) blur(16px)",
-            WebkitBackdropFilter: "saturate(168%) blur(16px)",
-            border: "1px solid rgba(255,255,255,0.64)",
-            boxShadow:
-              "0 48px 130px rgba(46,50,108,0.32), 0 14px 40px rgba(46,50,108,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
-          }}
-        >
-          {/* top specular sheen — sits under the content */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 16%)",
-              pointerEvents: "none",
-            }}
-          />
-          {/* the beat space, scaled to fill the window */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: W,
-              height: H,
-              transform: `scale(${WINDOW_SCALE})`,
-              transformOrigin: "0 0",
-            }}
-          >
-            {children}
-          </div>
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
+    <svg width={W} height={H} style={{ position: "absolute", inset: 0, opacity }}>
+      <g>{lines}</g>
+      {nodes.map((n, i) => (
+        <g key={i}>
+          <circle cx={n.x} cy={n.y} r={n.r * 3} fill={n.color} opacity={0.1} />
+          <circle cx={n.x} cy={n.y} r={n.r} fill={n.color} opacity={0.95} />
+        </g>
+      ))}
+    </svg>
   );
 };
+
+// ─── Stage ────────────────────────────────────────────────────────────────
+//
+// The shared ground for every beat: a white field with the accelerating blue
+// points network behind, and a faint center-bright vignette so the content
+// reads clean while the plexus lives at the edges. Beats render in full
+// 1920×1080 space on top.
+
+export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <AbsoluteFill style={{ background: "#FFFFFF", fontFamily: font }}>
+    <AbsoluteFill
+      style={{
+        background:
+          "radial-gradient(120% 110% at 50% 42%, #FFFFFF 0%, #FBFCFE 55%, #EEF3FB 100%)",
+      }}
+    />
+    <PointsNetwork />
+    {/* center-bright veil — keeps the middle clean, plexus reads at the edges */}
+    <AbsoluteFill
+      style={{
+        background:
+          "radial-gradient(70% 62% at 50% 48%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.30) 48%, rgba(255,255,255,0) 78%)",
+        pointerEvents: "none",
+      }}
+    />
+    {children}
+  </AbsoluteFill>
+);
 
 // ─── useFade ────────────────────────────────────────────────────────────────
 //

@@ -1,7 +1,7 @@
 // BatchFlowReel — the batch market, from the product UI to the throughput
-// graph, in the frosted-glass language: a blurred pastel video ground, one
-// glass window every beat lives inside, frosted cards, blue→violet gradient
-// pills, soft glows. Brand blue leads; violet and pink are the pastel accents.
+// graph, on a white ground carrying an accelerating blue points-and-lines
+// network. Frosted cards, blue→violet gradient pills, soft glows. Brand blue
+// leads; violet and pink are the pastel accents.
 
 import { Easing } from "remotion";
 import { font, monoFont } from "../../common/fonts";
@@ -14,20 +14,9 @@ export const H = 1080;
 
 export const sec = (s: number): number => Math.round(s * FPS);
 
-// The window is scaled down inside the comp so the blurred video breathes
-// around it (wider side gutters, like the reference). Every beat renders in
-// full 1920×1080 space and is scaled into the window by `Stage`.
-export const WINDOW_SCALE = 0.92;
-
-// Fallback ground behind the video — soft pastel, blue bowing to lilac.
-export const BG_GRADIENT =
-  "linear-gradient(135deg, #DCE6FF 0%, #E7E3FF 52%, #F2E4F1 100%)";
-
-// Blue-led pastel gradient for the pills and the flow arrows.
+// Blue-led pastel gradient for the pills and the flow connectors.
 export const PILL_GRADIENT =
   "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)";
-export const ARROW_GRADIENT =
-  "linear-gradient(90deg, #2997ff 0%, #6E5BFF 60%, #B07BFF 100%)";
 
 export const C = {
   text: "#1D1D1F",
