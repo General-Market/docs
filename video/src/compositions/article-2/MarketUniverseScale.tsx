@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { measureText } from "@remotion/layout-utils";
 import { FPS, H, NAVY, SANS, SANS_TEXT, W } from "./theme";
+import { BrandMark } from "../../components/BrandMark";
 
 /* ── A camera that never stops tracking ─────────────────────────────────────
  * Every bar contributes an eased ramp to the camera. The ramps are long and
@@ -9,12 +10,14 @@ import { FPS, H, NAVY, SANS, SANS_TEXT, W } from "./theme";
  * is interpolated in LOG space, so a thousand-fold pull-back is felt as one
  * even, continuous recession rather than a snap. The newest bar rides the right
  * anchor at 80% height while the whole trail slides left and collapses — on a
- * linear axis that recession IS the scale. The count climbs from the previous
- * titan to the new one; the names slide through, they do not pop.            */
+ * linear axis that recession IS the scale.
+ *
+ * The title is one fixed size for every bar and slides through a blur as it
+ * changes. The counter below it never transitions — it just keeps climbing,
+ * from the previous titan to the new one, and always reads "… markets".       */
 type Bar = {
   key: string;
   name: string;
-  sub: string;
   value: number;
   start: number;
   grow: number; // ramp length — long, so ramps overlap and the camera flows
@@ -23,19 +26,19 @@ type Bar = {
 };
 
 const BARS: Bar[] = [
-  { key: "forex", name: "Forex", sub: "currency pairs", value: 28, start: 14, grow: 56 },
-  { key: "commodities", name: "Commodities", sub: "liquid futures", value: 30, start: 50, grow: 60 },
-  { key: "usstocks", name: "US Stocks", sub: "NYSE + Nasdaq", value: 5_200, start: 92, grow: 64 },
-  { key: "microcaps", name: "Micro-caps", sub: "OTC securities", value: 12_000, start: 138, grow: 62 },
-  { key: "crypto", name: "Crypto", sub: "listed tokens", value: 13_000, start: 184, grow: 62 },
-  { key: "etfs", name: "ETFs", sub: "exchange-traded", value: 15_600, start: 230, grow: 62 },
-  { key: "globalstocks", name: "Global Stocks", sub: "every exchange on earth", value: 58_000, start: 278, grow: 64 },
-  { key: "prediction", name: "Prediction Markets", sub: "Polymarket, active", value: 85_000, start: 328, grow: 64 },
-  { key: "gentoday", name: "General", sub: "today", value: 500_000, start: 380, grow: 66, hero: true },
-  { key: "options", name: "Options", sub: "every strike × expiry", value: 1_000_000, start: 432, grow: 66 },
-  { key: "memecoins", name: "Memecoins", sub: "pump.fun, launched", value: 10_000_000, start: 482, grow: 70 },
-  { key: "bonds", name: "Bonds", sub: "fixed-income CUSIPs", value: 50_000_000, start: 534, grow: 74 },
-  { key: "genscale", name: "General", sub: "at scale", value: 1_000_000_000, start: 588, grow: 96, hero: true, finale: true },
+  { key: "forex", name: "Forex", value: 28, start: 14, grow: 56 },
+  { key: "commodities", name: "Commodities", value: 30, start: 50, grow: 60 },
+  { key: "usstocks", name: "US Stocks", value: 5_200, start: 92, grow: 64 },
+  { key: "microcaps", name: "Micro-caps", value: 12_000, start: 138, grow: 62 },
+  { key: "crypto", name: "Crypto", value: 13_000, start: 184, grow: 62 },
+  { key: "etfs", name: "ETFs", value: 15_600, start: 230, grow: 62 },
+  { key: "globalstocks", name: "Global Stocks", value: 58_000, start: 278, grow: 64 },
+  { key: "prediction", name: "Prediction Markets", value: 85_000, start: 328, grow: 64 },
+  { key: "gentoday", name: "General", value: 500_000, start: 380, grow: 66, hero: true },
+  { key: "options", name: "Options", value: 1_000_000, start: 432, grow: 66 },
+  { key: "memecoins", name: "Memecoins", value: 10_000_000, start: 482, grow: 70 },
+  { key: "bonds", name: "Bonds", value: 50_000_000, start: 534, grow: 74 },
+  { key: "genscale", name: "General", value: 1_000_000_000, start: 588, grow: 96, hero: true, finale: true },
 ];
 
 const TOTAL = 760;
@@ -47,10 +50,11 @@ const ANCHOR = W * 0.84;
 const LEFT_EDGE = W * 0.07;
 const SPAN = ANCHOR - LEFT_EDGE;
 const NAME_X = 112;
-const NAME_CY = H * 0.4;
+const NAME_TOP = H * 0.26;
+const NAME_FIT_W = W * 0.7; // the longest title fits this width; all titles share its size
 const NAME_T = 18; // text transition length
+const COUNT_SIZE = 104;
 
-const BLUE = "#0A84FF";
 const INK = "#F4F6FA";
 
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
@@ -61,85 +65,51 @@ const smootherstep = (t: number) => {
 const rampOf = (f: number, b: Bar) => smootherstep((f - b.start) / b.grow);
 const full = (v: number) => Math.round(v).toLocaleString("en-US");
 const easeOut = (t: number) => Easing.out(Easing.cubic)(clamp01(t));
-
 const logMaxOf = (v: number) => Math.log10(v / FILL);
-const targetFracFor = (i: number) =>
-  interpolate(i, [0, 12], [0.6, 0.3], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-const nameSizeFor = (text: string, frac: number) => {
+// one size for every title — derived from the longest name so none overflow.
+// measureText must run at render time (it needs a DOM), never at module load.
+const longestName = BARS.reduce((a, b) => (b.name.length > a.length ? b.name : a), "");
+const useTitleSize = () => {
   const ref = measureText({
-    text,
+    text: longestName,
     fontFamily: SANS,
     fontWeight: "800",
     fontSize: 100,
     letterSpacing: "-3px",
   });
-  return Math.max(56, Math.min(300, (100 * frac * W) / ref.width));
+  return Math.min(200, (100 * NAME_FIT_W) / ref.width);
 };
 
-const NameBlock: React.FC<{
-  bar: Bar;
-  count: number;
-  ty: number;
-  opacity: number;
-  blur: number;
-}> = ({ bar, count, ty, opacity, blur }) => {
-  const nameSize = nameSizeFor(bar.name, targetFracFor(BARS.indexOf(bar)));
-  const countSize = nameSize * 0.4;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: NAME_X,
-        top: NAME_CY - nameSize * 0.62,
-        transform: `translateY(${ty}px)`,
-        opacity,
-        filter: blur > 0.05 ? `blur(${blur}px)` : undefined,
-      }}
-    >
-      <div
-        style={{
-          fontSize: nameSize,
-          fontWeight: 800,
-          lineHeight: 0.92,
-          letterSpacing: "-3px",
-          color: bar.hero ? "#fff" : INK,
-          textShadow: bar.hero ? "0 8px 64px rgba(10,132,255,0.6)" : "0 6px 44px rgba(0,0,0,0.6)",
-        }}
-      >
-        {bar.name}
-      </div>
-      <div style={{ marginTop: nameSize * 0.08, display: "flex", alignItems: "baseline" }}>
-        <span
-          style={{
-            fontVariantNumeric: "tabular-nums",
-            fontSize: countSize,
-            fontWeight: 800,
-            letterSpacing: "-1px",
-            color: bar.hero ? BLUE : INK,
-            textShadow: "0 4px 30px rgba(0,0,0,0.55)",
-          }}
-        >
-          {full(count)}
-        </span>
-        <span
-          style={{
-            fontFamily: SANS_TEXT,
-            fontSize: countSize * 0.42,
-            fontWeight: 600,
-            color: "rgba(255,255,255,0.55)",
-            marginLeft: countSize * 0.22,
-          }}
-        >
-          {bar.sub}
-        </span>
-      </div>
-    </div>
-  );
-};
+const Title: React.FC<{ bar: Bar; size: number; ty: number; opacity: number; blur: number }> = ({
+  bar,
+  size,
+  ty,
+  opacity,
+  blur,
+}) => (
+  <div
+    style={{
+      position: "absolute",
+      left: NAME_X,
+      top: NAME_TOP + ty,
+      opacity,
+      filter: blur > 0.05 ? `blur(${blur}px)` : undefined,
+      fontSize: size,
+      fontWeight: 800,
+      lineHeight: 0.92,
+      letterSpacing: "-3px",
+      color: bar.hero ? "#fff" : INK,
+      textShadow: bar.hero ? "0 8px 64px rgba(10,132,255,0.6)" : "0 6px 44px rgba(0,0,0,0.6)",
+    }}
+  >
+    {bar.name}
+  </div>
+);
 
 export const MarketUniverseScale: React.FC = () => {
   const f = useCurrentFrame();
+  const nameSize = useTitleSize();
 
   let active = -1;
   for (let i = 0; i < BARS.length; i++) if (f >= BARS[i].start) active = i;
@@ -164,20 +134,18 @@ export const MarketUniverseScale: React.FC = () => {
   const gap = SPAN / count;
   const barW = Math.max(7, Math.min(120, gap * 0.5));
 
-  // the newest bar grows in on its own ramp; the count climbs from the last titan
+  // the newest bar grows in on its own ramp; the counter climbs and never resets
   const rA = rampOf(f, A);
   const prevVal = active > 0 ? BARS[active - 1].value : 0;
   const aCount = Math.round(prevVal + (A.value - prevVal) * rA);
 
-  // text transition: incoming slides up + sharpens, outgoing slides up + blurs out
+  // title transition: incoming slides up + sharpens, outgoing slides up + blurs out
   const tIn = clamp01((f - A.start) / NAME_T);
-  const inTy = (1 - easeOut(tIn)) * 64;
-  const inOp = easeOut(tIn);
-  const inBlur = (1 - tIn) * 12;
   const showOut = active > 0 && tIn < 1;
 
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS }}>
+      <BrandMark surface="dark" />
       {/* blue floor glow once General is on the board */}
       <div
         style={{
@@ -230,17 +198,44 @@ export const MarketUniverseScale: React.FC = () => {
         );
       })}
 
-      {/* names — incoming slides through, outgoing slides out */}
+      {/* title — incoming slides through, outgoing slides out (same size for all) */}
       {showOut && (
-        <NameBlock
+        <Title
           bar={BARS[active - 1]}
-          count={BARS[active - 1].value}
+          size={nameSize}
           ty={-easeOut(tIn) * 64}
           opacity={1 - easeOut(tIn)}
           blur={easeOut(tIn) * 12}
         />
       )}
-      <NameBlock bar={A} count={aCount} ty={inTy} opacity={inOp} blur={inBlur} />
+      <Title bar={A} size={nameSize} ty={(1 - easeOut(tIn)) * 64} opacity={easeOut(tIn)} blur={(1 - tIn) * 12} />
+
+      {/* the counter — persistent, never transitions, always climbing */}
+      <div style={{ position: "absolute", left: NAME_X, top: NAME_TOP + nameSize * 1.04, display: "flex", alignItems: "baseline" }}>
+        <span
+          style={{
+            fontVariantNumeric: "tabular-nums",
+            fontSize: COUNT_SIZE,
+            fontWeight: 800,
+            letterSpacing: "-1px",
+            color: "#fff",
+            textShadow: "0 4px 30px rgba(0,0,0,0.55)",
+          }}
+        >
+          {full(aCount)}
+        </span>
+        <span
+          style={{
+            fontFamily: SANS_TEXT,
+            fontSize: COUNT_SIZE * 0.44,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.55)",
+            marginLeft: COUNT_SIZE * 0.22,
+          }}
+        >
+          markets
+        </span>
+      </div>
     </AbsoluteFill>
   );
 };
