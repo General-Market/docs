@@ -128,6 +128,7 @@ import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGrav
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { attentionVolumeMeta } from "./compositions/article-2/AttentionVolume";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
+import { marketCostScaleMeta } from "./compositions/article-2/MarketCostScale";
 import { liquidityLoopMeta } from "./compositions/loops/LiquidityLoop";
 import { botVolumeProofMeta, botVolumeScreenMetas } from "./compositions/bot-volume/BotVolumeProof";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
@@ -191,6 +192,14 @@ export const RemotionRoot: React.FC = () => {
           fps={attentionVolumeV2Meta.fps}
           width={attentionVolumeV2Meta.width}
           height={attentionVolumeV2Meta.height}
+        />
+        <Composition
+          id={marketCostScaleMeta.id}
+          component={marketCostScaleMeta.component}
+          durationInFrames={marketCostScaleMeta.durationInFrames}
+          fps={marketCostScaleMeta.fps}
+          width={marketCostScaleMeta.width}
+          height={marketCostScaleMeta.height}
         />
         <Composition
           id={botVolumeProofMeta.id}
