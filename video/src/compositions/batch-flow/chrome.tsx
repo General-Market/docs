@@ -2,10 +2,12 @@ import React from "react";
 import {
   AbsoluteFill,
   interpolate,
+  OffthreadVideo,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { C, EASE, EDGE, font, PILL_GRADIENT, W, H } from "./theme";
+import { C, EASE, EDGE, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
 //
@@ -124,31 +126,81 @@ const PointsNetwork: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => {
 
 // ─── Stage ────────────────────────────────────────────────────────────────
 //
-// The shared ground for every beat: a white field with the accelerating blue
-// points network behind, and a faint center-bright vignette so the content
-// reads clean while the plexus lives at the edges. Beats render in full
-// 1920×1080 space on top.
+// The blue broll plays full-bleed and shows around a white panel floating on
+// it (the onboarding framing). Inside the panel — instead of frosted glass —
+// a white field carries the accelerating blue points network, with a faint
+// center-bright veil so the content reads clean. Beats render in full
+// 1920×1080 space inside the panel.
 
-export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
-  <AbsoluteFill style={{ background: "#FFFFFF", fontFamily: font }}>
-    <AbsoluteFill
-      style={{
-        background:
-          "radial-gradient(120% 110% at 50% 42%, #FFFFFF 0%, #FBFCFE 55%, #EEF3FB 100%)",
-      }}
-    />
-    <PointsNetwork />
-    {/* center-bright veil — keeps the middle clean, plexus reads at the edges */}
-    <AbsoluteFill
-      style={{
-        background:
-          "radial-gradient(70% 62% at 50% 48%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.30) 48%, rgba(255,255,255,0) 78%)",
-        pointerEvents: "none",
-      }}
-    />
-    {children}
-  </AbsoluteFill>
-);
+export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const winW = W * WINDOW_SCALE;
+  const winH = H * WINDOW_SCALE;
+  return (
+    <AbsoluteFill style={{ background: "#0B1E46", fontFamily: font }}>
+      {/* blue broll, full-bleed — visible around the panel */}
+      <AbsoluteFill style={{ overflow: "hidden" }}>
+        <OffthreadVideo
+          src={staticFile("batch-flow/bg-blur.mp4")}
+          muted
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: "scale(1.08)",
+          }}
+        />
+      </AbsoluteFill>
+
+      {/* the panel — a white card floating on the broll, holding the plexus */}
+      <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            position: "relative",
+            width: winW,
+            height: winH,
+            borderRadius: 34,
+            overflow: "hidden",
+            background: "#FFFFFF",
+            border: "1px solid rgba(255,255,255,0.7)",
+            boxShadow:
+              "0 48px 130px rgba(14,30,80,0.42), 0 14px 40px rgba(14,30,80,0.26), inset 0 1px 0 rgba(255,255,255,0.9)",
+          }}
+        >
+          {/* beat space — white ground + accelerating plexus + veil + beats */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: W,
+              height: H,
+              transform: `scale(${WINDOW_SCALE})`,
+              transformOrigin: "0 0",
+            }}
+          >
+            <AbsoluteFill
+              style={{
+                background:
+                  "radial-gradient(120% 110% at 50% 42%, #FFFFFF 0%, #FBFCFE 55%, #EEF3FB 100%)",
+              }}
+            />
+            <PointsNetwork />
+            <AbsoluteFill
+              style={{
+                background:
+                  "radial-gradient(70% 62% at 50% 48%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.30) 48%, rgba(255,255,255,0) 78%)",
+                pointerEvents: "none",
+              }}
+            />
+            {children}
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
 
 // ─── useFade ────────────────────────────────────────────────────────────────
 //

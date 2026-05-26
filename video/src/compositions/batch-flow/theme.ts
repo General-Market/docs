@@ -14,6 +14,10 @@ export const H = 1080;
 
 export const sec = (s: number): number => Math.round(s * FPS);
 
+// The panel is scaled down inside the comp so the blue broll breathes around
+// it. Beats render in full 1920×1080 space and are scaled into the panel.
+export const WINDOW_SCALE = 0.92;
+
 // Blue-led pastel gradient for the pills and the flow connectors.
 export const PILL_GRADIENT =
   "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)";
