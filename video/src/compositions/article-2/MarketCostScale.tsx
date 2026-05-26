@@ -1,32 +1,24 @@
 import React from "react";
-import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage, type ArticleContent } from "./ArticlePage";
-import { ACCENT, FPS, H, SANS, SANS_TEXT, W, articleZoom } from "./theme";
+import { ACCENT, FPS, H, SANS, SANS_TEXT, W } from "./theme";
 
 /* ── The facts ──────────────────────────────────────────────────────────────
  * Polymarket earmarked ~$5M in liquidity incentives for April 2026, spread
- * across its ~17,000 markets — ≈ $290 to keep one market liquid for the month.
- * Run a billion markets the same way and the bill is $290B. The diagram nests
- * Polymarket's tiny, costly box inside the billion-market field General Market
- * addresses, with the linear cost drawn as a single climbing arrow.           */
+ * across its ~17,000 markets. That is ≈ $290 to keep one market liquid for the
+ * month. Run a billion markets the same way and the bill is $290B.            */
 const SPEND = 5_000_000;
 const MARKETS = 17_218;
 const PER_MARKET = Math.round(SPEND / MARKETS / 10) * 10; // ≈ $290 / market
 const BILLION = 1_000_000_000;
 const TOTAL_COST = PER_MARKET * BILLION; // 290,000,000,000
 
-const TOTAL = 240;
+const TOTAL = 330;
 
-const RED = "#FF453A"; // iOS systemRed — the cost
-const SKY = "#5AC8FA";
 const INK_LIGHT = "#F4F6FA";
+const SKY = "#5AC8FA";
 
-// diagram geometry, in frame coordinates
-const BIG = { x: 96, y: 84, w: 1728, h: 912, r: 30 };
-const SMALL = { x: 150, y: 648, w: 472, h: 300, r: 18 };
-const ARROW_FROM = { x: SMALL.x + SMALL.w - 8, y: SMALL.y + 36 };
-const ARROW_TO = { x: BIG.x + BIG.w - 78, y: BIG.y + 118 };
-
+/** The Bloomberg story that focus-pulls into view as the source at the end. */
 const POLY_ARTICLE: ArticleContent = {
   headline: "Polymarket Earmarks $5M in Liquidity Incentives for April",
   byline: "Olivia Raeburn",
@@ -34,17 +26,17 @@ const POLY_ARTICLE: ArticleContent = {
   paragraphs: [
     [
       "Polymarket will pay out ",
-      { mark: "$5 million in liquidity incentives", at: 202 },
+      { mark: "$5 million in liquidity incentives", at: 262 },
       " this month — the largest single-month rewards budget in the venue’s history.",
     ],
     [
       "The program spans the platform’s ",
-      { mark: "roughly 17,000 markets", at: 212 },
+      { mark: "roughly 17,000 markets", at: 278 },
       ", paying market makers to keep order books deep across sports, politics and crypto.",
     ],
     [
       "Spread across the book, that budget works out to ",
-      { mark: "about $290 per market", at: 222 },
+      { mark: "about $290 per market", at: 294 },
       " for the month — a cost that recurs with every market listed.",
     ],
     [
@@ -62,125 +54,156 @@ const money = (v: number): string => {
   return `$${Math.round(v).toLocaleString("en-US")}`;
 };
 
-const clamp = (frame: number, range: [number, number], out: [number, number] = [0, 1]) =>
-  interpolate(frame, range, out, { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+/* ── The market field ─────────────────────────────────────────────────────────
+ * One scaling lattice of dot-grid tiles. We open zoomed in on the centre tile —
+ * Polymarket's ~17k markets, $5M — then pull back until that block is a single
+ * lit speck in a field that runs off every edge: a billion markets.           */
+const TILE = 88; // a market block, in field units
+const DOT = 4; // dense inner markets inside the lit block (22 per side)
 
-/** A rounded rectangle whose stroke draws itself in as `draw` goes 0→1. */
-const DrawnRect: React.FC<{
-  rect: { x: number; y: number; w: number; h: number; r: number };
-  color: string;
-  strokeW: number;
-  draw: number;
-  glow?: number;
-}> = ({ rect, color, strokeW, draw, glow }) => (
-  <rect
-    x={rect.x}
-    y={rect.y}
-    width={rect.w}
-    height={rect.h}
-    rx={rect.r}
-    ry={rect.r}
-    fill="none"
-    stroke={color}
-    strokeWidth={strokeW}
-    strokeLinecap="round"
-    pathLength={1}
-    strokeDasharray={`${draw} 1`}
-    opacity={draw <= 0.002 ? 0 : 1}
-    style={glow ? { filter: `drop-shadow(0 0 ${glow}px ${color})` } : undefined}
-  />
-);
+const Field: React.FC<{ zoom: number; surround: number }> = ({ zoom, surround }) => {
+  const frame = useCurrentFrame();
+  const glow = 0.42 + 0.26 * (0.5 + 0.5 * Math.sin(frame / 9));
 
-/** A straight arrow that draws shaft-then-head as `draw` goes 0→1. */
-const Arrow: React.FC<{
-  from: { x: number; y: number };
-  to: { x: number; y: number };
-  color: string;
-  width: number;
-  draw: number;
-  head?: number;
-}> = ({ from, to, color, width, draw, head = 30 }) => {
-  const ang = Math.atan2(to.y - from.y, to.x - from.x);
-  const a1 = ang + Math.PI - 0.42;
-  const a2 = ang + Math.PI + 0.42;
-  const headOp = clamp(draw, [0.82, 1]);
+  // The lit block and every field cell share one on-screen size, so the block
+  // always sits exactly over the field's centre cell as the camera pulls back.
+  const cellPx = TILE * zoom;
+  const blockBorder = Math.max(2, 2 * zoom);
+
   return (
-    <g style={{ filter: `drop-shadow(0 0 6px ${color}66)` }} opacity={draw <= 0.002 ? 0 : 1}>
-      <line
-        x1={from.x}
-        y1={from.y}
-        x2={to.x}
-        y2={to.y}
-        stroke={color}
-        strokeWidth={width}
-        strokeLinecap="round"
-        pathLength={1}
-        strokeDasharray={`${draw} 1`}
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+      {/* the billion-market field — a vast grid of cells, hidden while we open
+          on the single block, then materialising as the camera pulls back. The
+          grid is drawn at the on-screen cell size directly (no nested scale),
+          so its lines never collapse to sub-pixel. */}
+      <AbsoluteFill
+        style={{
+          opacity: surround,
+          WebkitMaskImage: "radial-gradient(circle at center, #000 22%, transparent 60%)",
+          maskImage: "radial-gradient(circle at center, #000 22%, transparent 60%)",
+          backgroundImage: [
+            `radial-gradient(circle, rgba(120,170,255,0.32) 0 ${0.05 * cellPx}px, transparent ${0.07 * cellPx}px)`,
+            `repeating-linear-gradient(90deg, rgba(255,255,255,0.11) 0 ${Math.max(1, 0.045 * cellPx)}px, transparent ${Math.max(1, 0.045 * cellPx)}px ${cellPx}px)`,
+            `repeating-linear-gradient(0deg, rgba(255,255,255,0.11) 0 ${Math.max(1, 0.045 * cellPx)}px, transparent ${Math.max(1, 0.045 * cellPx)}px ${cellPx}px)`,
+          ].join(","),
+          backgroundSize: `${cellPx}px ${cellPx}px, ${cellPx}px ${cellPx}px, ${cellPx}px ${cellPx}px`,
+          // centre a cell on the frame centre: lines fall at ±½cell, dots at cell
+          // centres — so the lit block lands exactly inside the middle cell
+          backgroundPosition: `calc(50% + ${cellPx / 2}px) calc(50% + ${cellPx / 2}px), calc(50% + ${cellPx / 2}px) calc(50% + ${cellPx / 2}px), calc(50% + ${cellPx / 2}px) calc(50% + ${cellPx / 2}px)`,
+        }}
       />
-      <path
-        d={`M ${to.x + Math.cos(a1) * head} ${to.y + Math.sin(a1) * head} L ${to.x} ${to.y} L ${to.x + Math.cos(a2) * head} ${to.y + Math.sin(a2) * head}`}
-        fill="none"
-        stroke={color}
-        strokeWidth={width}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={headOp}
+
+      {/* the lit block — Polymarket's real reach, always the hero square */}
+      <div
+        style={{
+          width: cellPx,
+          height: cellPx,
+          backgroundColor: "rgba(10,132,255,0.16)",
+          border: `${blockBorder}px solid ${SKY}`,
+          boxShadow: `0 0 ${24 * Math.sqrt(zoom)}px rgba(10,132,255,${glow}), 0 0 ${56 * Math.sqrt(zoom)}px rgba(10,132,255,${glow * 0.5}), inset 0 0 ${20 * Math.sqrt(zoom)}px rgba(10,132,255,0.35)`,
+          backgroundImage: `radial-gradient(circle, rgba(150,205,255,0.95) 0 ${0.28 * DOT * zoom}px, transparent ${0.4 * DOT * zoom}px)`,
+          backgroundSize: `${DOT * zoom}px ${DOT * zoom}px`,
+          backgroundPosition: `${(DOT * zoom) / 2}px ${(DOT * zoom) / 2}px`,
+        }}
       />
-    </g>
+    </AbsoluteFill>
   );
 };
+
+const Eyebrow: React.FC<{ children: React.ReactNode; color?: string }> = ({
+  children,
+  color = SKY,
+}) => (
+  <div
+    style={{
+      fontFamily: SANS_TEXT,
+      fontSize: 26,
+      fontWeight: 700,
+      letterSpacing: "3px",
+      textTransform: "uppercase",
+      color,
+    }}
+  >
+    {children}
+  </div>
+);
 
 export const MarketCostScale: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // reveal envelopes — the box is already ~third-drawn and still drawing on
-  // frame 0 (negative input start), so the opening frame reads as motion.
-  const smallDraw = clamp(frame, [-12, 22]);
-  const smallBrand = clamp(frame, [20, 42]);
-  const fiveM = clamp(frame, [36, 56]);
-  const bigDraw = clamp(frame, [56, 100]);
-  const bigBrand = clamp(frame, [88, 112]);
-  const arrowDraw = interpolate(frame, [112, 176], [0, 1], {
+  // focus pull: the dark overlay dissolves and the article snaps into focus
+  const articleBlur = interpolate(frame, [0, 244, 272], [26, 26, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const costRoll = interpolate(frame, [114, 176], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-  const costValue = SPEND + costRoll * (TOTAL_COST - SPEND);
-  const costLabel = clamp(frame, [122, 144]);
-
-  // focus pull → the article as the source
-  const overlayEntryScale = interpolate(frame, [0, 18], [1.03, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-  const overlayOp = interpolate(frame, [0, 182, 200], [1, 1, 0], {
+  const overlayOp = interpolate(frame, [0, 248, 272], [1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const overlayExitScale = interpolate(frame, [182, 200], [1, 1.04], {
+  const overlayScale = interpolate(frame, [248, 272], [1, 1.05], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const overlayScale = overlayEntryScale * overlayExitScale;
-  const articleBlur = interpolate(frame, [0, 182, 200], [26, 26, 0], {
+  const artScroll = interpolate(frame, [260, 330], [0, 38], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const artScroll = clamp(frame, [196, 240], [0, 40]);
-  const artOp = clamp(frame, [232, 240], [1, 0]);
+  const artOp = interpolate(frame, [320, 330], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // the pull-back: centre block fills the frame, then becomes one speck
+  const zoom = interpolate(frame, [100, 208], [7, 0.42], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.inOut(Easing.cubic),
+  });
+  // the billion-market field stays hidden until the camera starts pulling back
+  const surround = interpolate(frame, [104, 196], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.inOut(Easing.cubic),
+  });
+
+  // beat 1 — the $5M block
+  const block = Math.min(
+    interpolate(frame, [12, 30], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+    interpolate(frame, [98, 116], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+  );
+  const blockRise = interpolate(frame, [98, 116], [0, -28], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.cubic),
+  });
+
+  // beat 2 — the billion-market field + linear cost roll
+  const tag = Math.min(
+    interpolate(frame, [178, 198], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+    interpolate(frame, [250, 266], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+  );
+  const cost = Math.min(
+    interpolate(frame, [150, 168], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+    interpolate(frame, [250, 266], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+  );
+  const roll = interpolate(frame, [150, 238], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const costValue = SPEND + roll * (TOTAL_COST - SPEND);
+  const eqOp = interpolate(frame, [164, 182], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <AbsoluteFill style={{ transform: `scale(${articleZoom(frame, TOTAL)})`, transformOrigin: "center" }}>
+      <AbsoluteFill>
         <ArticlePage
           article={POLY_ARTICLE}
           scroll={artScroll}
@@ -195,184 +218,178 @@ export const MarketCostScale: React.FC = () => {
           style={{
             opacity: overlayOp,
             transform: `scale(${overlayScale})`,
-            background: "rgba(9,11,16,0.86)",
+            background: "rgba(9,11,16,0.82)",
           }}
         >
-          {/* strokes + arrows */}
-          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", inset: 0 }}>
-            <DrawnRect rect={BIG} color="rgba(255,255,255,0.9)" strokeW={3} draw={bigDraw} glow={10} />
-            <DrawnRect rect={SMALL} color={ACCENT} strokeW={3} draw={smallDraw} glow={12} />
-            {/* the runaway cost, climbing from Polymarket's box to the far corner */}
-            <Arrow from={ARROW_FROM} to={ARROW_TO} color={RED} width={6} draw={arrowDraw} head={34} />
-          </svg>
+          <Field zoom={zoom} surround={surround} />
 
-          {/* big box brand — General Market */}
-          <div
-            style={{
-              position: "absolute",
-              left: BIG.x + 40,
-              top: BIG.y + 34,
-              opacity: bigBrand,
-              transform: `translateY(${(1 - bigBrand) * 12}px)`,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <Img src={staticFile("article-2/gm-logo-white.svg")} style={{ width: 52, height: 52 }} />
-              <span
+          {/* beat 1 — the block: eyebrow above, caption below, $5M dead centre */}
+          {block > 0.001 && (
+            <AbsoluteFill style={{ opacity: block, transform: `translateY(${blockRise}px)` }}>
+              <div style={{ position: "absolute", top: 150, left: 0, right: 0, textAlign: "center" }}>
+                <Eyebrow>Polymarket · April 2026</Eyebrow>
+              </div>
+              <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+                <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: "-70px -120px",
+                      background:
+                        "radial-gradient(closest-side, rgba(6,8,12,0.72), rgba(6,8,12,0) 78%)",
+                      filter: "blur(10px)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "relative",
+                      fontFamily: SANS,
+                      fontWeight: 800,
+                      fontSize: 230,
+                      lineHeight: 1,
+                      letterSpacing: "-6px",
+                      color: INK_LIGHT,
+                      textShadow: "0 6px 34px rgba(0,0,0,0.65)",
+                    }}
+                  >
+                    $5M
+                  </div>
+                </div>
+              </AbsoluteFill>
+              <div
                 style={{
-                  fontFamily: SANS,
-                  fontWeight: 600,
-                  fontSize: 30,
-                  color: "rgba(255,255,255,0.92)",
-                  letterSpacing: "-0.4px",
+                  position: "absolute",
+                  bottom: 168,
+                  left: 0,
+                  right: 0,
+                  textAlign: "center",
+                  fontFamily: SANS_TEXT,
+                  fontSize: 34,
+                  color: "rgba(255,255,255,0.82)",
+                  letterSpacing: "-0.2px",
+                  textShadow: "0 2px 16px rgba(0,0,0,0.6)",
                 }}
               >
-                General Market
-              </span>
-            </div>
+                ≈ 17,000 markets · liquidity incentives
+              </div>
+            </AbsoluteFill>
+          )}
+
+          {/* beat 2 — the linear price */}
+          {cost > 0.001 && (
+            <AbsoluteFill
+              style={{ justifyContent: "center", alignItems: "center", opacity: cost }}
+            >
+              <Eyebrow color={SKY}>The cost scales with the count</Eyebrow>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontWeight: 800,
+                  fontSize: 168,
+                  lineHeight: 1,
+                  letterSpacing: "-5px",
+                  color: INK_LIGHT,
+                  marginTop: 12,
+                  textShadow: "0 8px 44px rgba(10,132,255,0.4)",
+                }}
+              >
+                {money(costValue)}
+              </div>
+              <div
+                style={{
+                  fontFamily: SANS_TEXT,
+                  fontSize: 32,
+                  color: "rgba(255,255,255,0.66)",
+                  marginTop: 10,
+                  opacity: eqOp,
+                  letterSpacing: "-0.2px",
+                }}
+              >
+                <span style={{ color: ACCENT, fontWeight: 700 }}>$290</span> per market
+                {"  ×  "}
+                <span style={{ color: ACCENT, fontWeight: 700 }}>1,000,000,000</span> markets
+              </div>
+              <CostBar progress={roll} opacity={eqOp} />
+            </AbsoluteFill>
+          )}
+
+          {/* the field's true size, pinned low */}
+          {tag > 0.001 && (
             <div
               style={{
+                position: "absolute",
+                bottom: 96,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                opacity: tag,
                 fontFamily: SANS,
-                fontWeight: 800,
-                fontSize: 72,
-                lineHeight: 1.04,
-                letterSpacing: "-2px",
+                fontWeight: 700,
+                fontSize: 40,
+                letterSpacing: "-0.5px",
                 color: INK_LIGHT,
-                marginTop: 12,
               }}
             >
               1,000,000,000 markets
-            </div>
-            <div
-              style={{
-                fontFamily: SANS_TEXT,
-                fontSize: 26,
-                color: "rgba(255,255,255,0.5)",
-                marginTop: 2,
-                letterSpacing: "0.2px",
-              }}
-            >
-              the world’s markets
-            </div>
-          </div>
-
-          {/* small box brand — Polymarket */}
-          <div
-            style={{
-              position: "absolute",
-              left: SMALL.x + 26,
-              top: SMALL.y + 22,
-              opacity: smallBrand,
-              transform: `translateY(${(1 - smallBrand) * 8}px)`,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-              <Img
-                src={staticFile("article-2/logo-polymarket.png")}
-                style={{ width: 34, height: 34, borderRadius: 8 }}
-              />
-              <span
+              <div
                 style={{
-                  fontFamily: SANS,
-                  fontWeight: 600,
+                  fontFamily: SANS_TEXT,
                   fontSize: 24,
-                  color: "rgba(255,255,255,0.92)",
-                  letterSpacing: "-0.3px",
+                  fontWeight: 500,
+                  color: "rgba(255,255,255,0.5)",
+                  marginTop: 4,
+                  letterSpacing: "0.5px",
                 }}
               >
-                Polymarket
-              </span>
+                the open field — one lit block was Polymarket
+              </div>
             </div>
-            <div
-              style={{
-                fontFamily: SANS,
-                fontWeight: 700,
-                fontSize: 32,
-                color: SKY,
-                marginTop: 8,
-                letterSpacing: "-0.4px",
-              }}
-            >
-              17,000 markets
-            </div>
-          </div>
-
-          {/* the $5M inside the small box */}
-          <div
-            style={{
-              position: "absolute",
-              left: SMALL.x,
-              top: SMALL.y + SMALL.h - 132,
-              width: SMALL.w,
-              textAlign: "center",
-              opacity: fiveM,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SANS,
-                fontWeight: 800,
-                fontSize: 104,
-                lineHeight: 1,
-                letterSpacing: "-4px",
-                color: INK_LIGHT,
-                textShadow: "0 4px 22px rgba(0,0,0,0.55)",
-              }}
-            >
-              $5M
-            </div>
-            <div
-              style={{
-                fontFamily: SANS_TEXT,
-                fontSize: 22,
-                color: "rgba(255,255,255,0.6)",
-                marginTop: -2,
-                letterSpacing: "0.2px",
-              }}
-            >
-              spent in April
-            </div>
-          </div>
-
-          {/* the climax cost, riding the big arrow */}
-          <div
-            style={{
-              position: "absolute",
-              left: 1010,
-              top: 360,
-              opacity: costLabel,
-              transform: `translateY(${(1 - costLabel) * 14}px)`,
-              textAlign: "left",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SANS,
-                fontWeight: 800,
-                fontSize: 158,
-                lineHeight: 1,
-                letterSpacing: "-5px",
-                color: RED,
-                textShadow: `0 8px 44px ${RED}55`,
-              }}
-            >
-              {money(costValue)}
-            </div>
-            <div
-              style={{
-                fontFamily: SANS_TEXT,
-                fontSize: 30,
-                color: "rgba(255,255,255,0.72)",
-                marginTop: 6,
-                letterSpacing: "-0.2px",
-              }}
-            >
-              <span style={{ color: SKY, fontWeight: 700 }}>$290</span> per market, a billion times over
-            </div>
-          </div>
+          )}
         </AbsoluteFill>
       )}
     </AbsoluteFill>
+  );
+};
+
+/** A track that fills left→right as the cost rolls — the linear blow-up, made literal. */
+const CostBar: React.FC<{ progress: number; opacity: number }> = ({ progress, opacity }) => {
+  const TRACK = 940;
+  return (
+    <div style={{ width: TRACK, marginTop: 30, opacity }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontFamily: SANS_TEXT,
+          fontSize: 22,
+          color: "rgba(255,255,255,0.6)",
+          marginBottom: 10,
+          letterSpacing: "-0.1px",
+        }}
+      >
+        <span>$5M · 17K markets</span>
+        <span>$290B · 1B markets</span>
+      </div>
+      <div
+        style={{
+          position: "relative",
+          height: 6,
+          borderRadius: 6,
+          background: "rgba(255,255,255,0.12)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: `${progress * 100}%`,
+            background: `linear-gradient(90deg, ${ACCENT}, ${SKY})`,
+            borderRadius: 6,
+          }}
+        />
+      </div>
+    </div>
   );
 };
 

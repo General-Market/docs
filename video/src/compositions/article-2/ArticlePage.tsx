@@ -188,222 +188,6 @@ const Masthead: React.FC = () => (
   </div>
 );
 
-const fmt = (sec: number) =>
-  `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
-
-const CircleBtn: React.FC<{ children: React.ReactNode; size?: number }> = ({
-  children,
-  size = 56,
-}) => (
-  <div
-    style={{
-      width: size,
-      height: size,
-      borderRadius: size,
-      background: "rgba(38,38,42,0.55)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#fff",
-    }}
-  >
-    {children}
-  </div>
-);
-
-/** YouTube-style transport: red scrub bar + translucent controls. */
-const PlayerChrome: React.FC = () => {
-  const frame = useCurrentFrame();
-  const sec = 456 + frame / 30; // opens at 7:36 like the reference
-  const total = 705; // 11:45
-  const frac = sec / total;
-
-  const trackLeft = 26;
-  const trackW = W - trackLeft - 26;
-  const playedW = trackW * frac;
-  const bufferedW = trackW * Math.min(1, frac + 0.14);
-
-  const Y_BAR = 1080 - 108;
-  const Y_ROW = 1080 - 70;
-
-  return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 22, pointerEvents: "none" }}>
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft,
-          top: Y_BAR,
-          width: trackW,
-          height: 5,
-          borderRadius: 4,
-          background: "rgba(120,120,124,0.45)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft,
-          top: Y_BAR,
-          width: bufferedW,
-          height: 5,
-          borderRadius: 4,
-          background: "rgba(150,150,154,0.55)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft,
-          top: Y_BAR,
-          width: playedW,
-          height: 5,
-          borderRadius: 4,
-          background: "linear-gradient(90deg,#FF1F44,#FF5C8A)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft + playedW - 9,
-          top: Y_BAR - 6.5,
-          width: 18,
-          height: 18,
-          borderRadius: 18,
-          background: "#FF1F44",
-          boxShadow: "0 0 10px rgba(255,31,68,0.5)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          left: 30,
-          top: Y_ROW,
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-        }}
-      >
-        <CircleBtn>
-          <svg width="22" height="24" viewBox="0 0 22 24">
-            <path d="M2 2 L20 12 L2 22 Z" fill="#fff" />
-          </svg>
-        </CircleBtn>
-        <CircleBtn>
-          <svg width="26" height="26" viewBox="0 0 26 26">
-            <path d="M3 10 H8 L14 5 V21 L8 16 H3 Z" fill="#fff" />
-            <path
-              d="M17 8 C20 11 20 15 17 18"
-              stroke="#fff"
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </svg>
-        </CircleBtn>
-        <div
-          style={{
-            height: 56,
-            padding: "0 22px",
-            borderRadius: 980,
-            background: "rgba(38,38,42,0.55)",
-            display: "flex",
-            alignItems: "center",
-            fontFamily: SANS_TEXT,
-            fontSize: 26,
-            color: "#fff",
-            letterSpacing: "0.2px",
-          }}
-        >
-          {fmt(sec)} / {fmt(total)}
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          right: 30,
-          top: Y_ROW,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-        }}
-      >
-        <div
-          style={{
-            width: 70,
-            height: 40,
-            borderRadius: 999,
-            background: "rgba(38,38,42,0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            padding: "0 6px",
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 28,
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12">
-              <path d="M2 2 L10 6 L2 10 Z" fill="#16181D" />
-            </svg>
-          </div>
-        </div>
-        <CircleBtn size={48}>
-          <span style={{ fontFamily: SANS, fontSize: 19, fontWeight: 800 }}>CC</span>
-        </CircleBtn>
-        <CircleBtn size={48}>
-          <svg width="24" height="24" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3.4" fill="#fff" />
-            <g fill="#fff">
-              {Array.from({ length: 8 }).map((_, i) => {
-                const a = (i * Math.PI) / 4;
-                const x = 12 + Math.cos(a) * 8.5;
-                const y = 12 + Math.sin(a) * 8.5;
-                return (
-                  <rect key={i} x={x - 1.6} y={y - 1.6} width={3.2} height={3.2} rx={0.8} />
-                );
-              })}
-            </g>
-          </svg>
-        </CircleBtn>
-        <CircleBtn size={48}>
-          <svg width="26" height="22" viewBox="0 0 26 22">
-            <path
-              d="M9 6 L4 11 L9 16 M17 6 L22 11 L17 16"
-              stroke="#fff"
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </CircleBtn>
-        <CircleBtn size={48}>
-          <svg width="24" height="24" viewBox="0 0 24 24">
-            <path
-              d="M3 9 V3 H9 M21 9 V3 H15 M3 15 V21 H9 M21 15 V21 H15"
-              stroke="#fff"
-              strokeWidth="2.2"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </CircleBtn>
-      </div>
-    </div>
-  );
-};
-
 export interface ArticlePageProps {
   /** vertical scroll offset in px */
   scroll: number;
@@ -413,8 +197,6 @@ export interface ArticlePageProps {
   article?: ArticleContent;
   /** V1 bottom blur ramp + channel watermark */
   bottomBlur?: boolean;
-  /** YouTube-style transport */
-  showChrome?: boolean;
   /** whole-page blur, e.g. for a focus-pull reveal */
   fullBlurPx?: number;
   opacity?: number;
@@ -425,7 +207,6 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
   markTimes = ZERO_MARKS,
   article,
   bottomBlur = false,
-  showChrome = false,
   fullBlurPx = 0,
   opacity = 1,
 }) => {
@@ -539,8 +320,6 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
             />
           </>
         )}
-
-        {showChrome && <PlayerChrome />}
       </div>
     </AbsoluteFill>
   );

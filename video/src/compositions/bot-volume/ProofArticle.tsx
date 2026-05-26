@@ -192,54 +192,6 @@ const BRANDS: Record<BrandKey, BrandSpec> = {
   },
 };
 
-/** Thin YouTube-style scrub bar — sells the "found this in a clip" feel. */
-const Chrome: React.FC = () => {
-  const frame = useCurrentFrame();
-  const frac = (456 + frame / 30) / 705;
-  const trackLeft = 26;
-  const trackW = W - trackLeft - 26;
-  const playedW = trackW * frac;
-  const Y = 1080 - 40;
-  return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 22, pointerEvents: "none" }}>
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft,
-          top: Y,
-          width: trackW,
-          height: 5,
-          borderRadius: 4,
-          background: "rgba(120,120,124,0.45)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft,
-          top: Y,
-          width: playedW,
-          height: 5,
-          borderRadius: 4,
-          background: "linear-gradient(90deg,#FF1F44,#FF5C8A)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: trackLeft + playedW - 9,
-          top: Y - 6.5,
-          width: 18,
-          height: 18,
-          borderRadius: 18,
-          background: "#FF1F44",
-          boxShadow: "0 0 10px rgba(255,31,68,0.5)",
-        }}
-      />
-    </div>
-  );
-};
-
 export interface ProofArticleProps {
   brand: BrandKey;
   title: string;
@@ -252,7 +204,6 @@ export interface ProofArticleProps {
   /** local frame each highlight begins wiping, in document order */
   markTimes: number[];
   bottomBlur?: boolean;
-  showChrome?: boolean;
 }
 
 export const ProofArticle: React.FC<ProofArticleProps> = ({
@@ -266,7 +217,6 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
   opacity = 1,
   markTimes,
   bottomBlur = false,
-  showChrome = false,
 }) => {
   const spec = BRANDS[brand];
   const pStyle: React.CSSProperties = {
@@ -368,8 +318,6 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
             />
           </>
         )}
-
-        {showChrome && <Chrome />}
       </div>
     </AbsoluteFill>
   );
