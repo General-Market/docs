@@ -30,7 +30,7 @@ type Bar = {
 // CBOE (options), pump.fun, PIMCO (bonds), and the GM mark for General.
 // A clean cover holds the open (frame 0 is the Twitter preview), then lifts as
 // the first bar lands. Every bar start is offset by LEAD past the cover.
-const LEAD = 26;
+const LEAD = 62; // cover holds a full 2s (60f) before the first bar lands
 const BARS: Bar[] = [
   { key: "forex", name: "Forex", value: 28, start: 14 + LEAD, grow: 30, logo: "article-2/market-logos/forex.png" },
   { key: "commodities", name: "Commodities", value: 30, start: 50 + LEAD, grow: 28, logo: "article-2/market-logos/commodities.png" },
