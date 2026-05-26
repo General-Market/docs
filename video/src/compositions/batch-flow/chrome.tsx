@@ -6,8 +6,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { C, EASE, EDGE, FPS, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
-import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
+import { C, EASE, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
 //
@@ -36,12 +35,12 @@ export const glassCard = (radius = 16): React.CSSProperties => ({
 // ─── Stage ────────────────────────────────────────────────────────────────
 //
 // The blue broll plays full-bleed and shows around a panel floating on it (the
-// onboarding framing). Inside the panel sits the AntiCheatEdit flag-chart
-// ground — the light #F0F2F4 paper with its fine Base-blue dot lattice
-// (DotGrid) and a soft edge vignette — the same field the venue bar charts use
-// over there. Beats render in full 1920×1080 space inside the panel.
+// onboarding framing). The panel is a fixed 1920×1080 viewport; the board (the
+// children) is larger than the viewport and rides a camera transform, so the
+// panel only ever shows the slice the camera is looking at. The board paints its
+// own #F0F2F4 paper and Base-blue dot lattice.
 
-const FIELD_BG = "#F0F2F4"; // the AntiCheatEdit chart ground (colors.bg)
+export const FIELD_BG = "#F0F2F4"; // the AntiCheatEdit chart ground (colors.bg)
 
 export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const winW = W * WINDOW_SCALE;
@@ -79,7 +78,8 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
               "0 48px 130px rgba(14,30,80,0.42), 0 14px 40px rgba(14,30,80,0.26), inset 0 1px 0 rgba(255,255,255,0.9)",
           }}
         >
-          {/* beat space — the AntiCheatEdit dot-grid ground + beats */}
+          {/* the viewport — a 1920×1080 window onto the board; the board rides
+              the camera transform and paints its own dot field */}
           <div
             style={{
               position: "absolute",
@@ -89,80 +89,14 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
               height: H,
               transform: `scale(${WINDOW_SCALE})`,
               transformOrigin: "0 0",
+              overflow: "hidden",
+              background: FIELD_BG,
             }}
           >
-            <AbsoluteFill style={{ background: FIELD_BG }} />
-            <DotGrid intensity={0.7} speed={0.2} />
-            <DotGridVignette intensity={0.24} />
             {children}
           </div>
         </div>
       </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── SlideBeat ────────────────────────────────────────────────────────────────
-//
-// One continuous whiteboard. The beats are panels on a single horizontal track:
-// the outgoing one slides off the left exactly as the incoming one arrives from
-// the right, and because both legs share the SAME easing and the SAME window
-// (overlap == edge), the outgoing panel's right edge stays glued to the
-// incoming panel's left edge for the whole pan. There is never a gap and never
-// an overlap — the next schematic is already sitting at the border of the view,
-// so the instant we move left you see it appear. EASE.out gives the pan a quick,
-// decisive start, so that reveal lands in the first frames.
-//
-// While a beat rests, it breathes: a slow organic float driven by the pulse
-// equations from OrganicMotion (t = frame/fps · 1.5). The float is gated to the
-// hold — zero during either slide leg — so the panels stay rigidly adjacent
-// through the transition and only come alive once settled.
-
-const organicFloat = (frame: number, settled: number): string => {
-  const t = (frame / FPS) * 1.5;
-  const fx = settled * 11 * Math.sin(t);
-  const fy = settled * 9 * Math.cos(t) * Math.sin(t);
-  const fr = settled * 0.35 * Math.sin(t) * Math.sin(t * 1.5);
-  return `translate(${fx.toFixed(2)}px, ${fy.toFixed(2)}px) rotate(${fr.toFixed(3)}deg)`;
-};
-
-export const SlideBeat: React.FC<{
-  durationInFrames: number;
-  enter?: boolean;
-  exit?: boolean;
-  children?: React.ReactNode;
-}> = ({ durationInFrames, enter = true, exit = true, children }) => {
-  const frame = useCurrentFrame();
-  let x = 0;
-  if (enter && frame < EDGE) {
-    x = interpolate(frame, [0, EDGE], [W, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: EASE.out,
-    });
-  } else if (exit && frame > durationInFrames - EDGE) {
-    x = interpolate(frame, [durationInFrames - EDGE, durationInFrames], [0, -W], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: EASE.out,
-    });
-  }
-  // organic life, but only once the panel is at rest — never mid-pan, or the
-  // two sliding panels would drift out of lockstep.
-  const settled = interpolate(
-    frame,
-    [EDGE, EDGE + 20, durationInFrames - EDGE - 20, durationInFrames - EDGE],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  return (
-    <AbsoluteFill
-      style={{
-        transform: `translateX(${x.toFixed(1)}px) ${organicFloat(frame, settled)}`,
-        willChange: "transform",
-      }}
-    >
-      {children}
     </AbsoluteFill>
   );
 };
