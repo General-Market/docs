@@ -29,26 +29,35 @@ export const TRACK_BG = "rgba(255,255,255,0.04)";
 export const TRACK_BG_ACTIVE = "rgba(255,255,255,0.10)";
 export const TILE_DISC = "#f5f5f7"; // matches the frontend research-bar logo disc
 
-// The whole board + tray must fit inside the frame at scale 1 and never crop.
-// Title rides as a fixed overlay above the world (top 0..TITLE_BAND).
-export const TITLE_BAND = 104;
+export const TITLE_BAND = 110;
 
 export const LAYOUT = {
-  board: { top: 116, rowH: 94, labelW: 138, trackX: 156, trackRight: 1902, rowGap: 4 },
-  tile: { base: 78, gap: 7, min: 28 },
-  tray: { top: 700, bottom: 1058, cols: 30, padX: 28, tile: 48 },
+  board: { top: 134, rowH: 90, labelW: 132, trackX: 150, trackRight: 1900, rowGap: 4, leftPad: 14 },
+  tile: { gap: 8, min: 30, max: 92 }, // one uniform size, derived from the fullest row
+  tray: { top: 700, bottom: 1056, cols: 30, padX: 28, tile: 48 },
 };
 
 export const TIMING = {
-  introFrames: 40, // gentle settle-in (never crops — scales up to 1.0)
-  flight: 13, // frames a logo is airborne, tray -> row
+  introFrames: 46, // establish — the whole board + tray, with a slow push
+  flight: 13,
   drop: { F: 5, D: 5, C: 5, B: 6, A: 9, S: 15 } as Record<Tier, number>,
-  tierLead: 8,
-  tierTail: 6,
+  tierLead: 10,
+  tierTail: 8,
   chipDwell: { F: 13, D: 13, C: 15, B: 20, A: 32, S: 46 } as Record<Tier, number>,
-  outroFrames: 96,
+  outroFrames: 100,
 };
 
+// A camera that never holds still: it establishes the whole board, then dives
+// into each row tracking the cursor, lifts out between rows, and pulls back at
+// the end — all over a gently tilting, breathing 3D plane.
 export const CAMERA = {
-  introStartScale: 0.955, // opens slightly small, grows to fill — a zoom that never crops
+  introPushFrom: 0.84, // establish opens a touch wide, pushes in to establishScale
+  establishScale: 0.92, // whole board + tray in view
+  transitionScale: 1.0, // lifted out, between rows
+  focusScale: 1.34, // dived into the active row, tracking the drop
+  outroScale: 0.92,
+  tiltBaseDeg: 6, // the board reclines like a table — 3D depth
+  tiltOscDeg: 2.2, // …and breathes
+  swayDeg: 2.4, // slow side-to-side yaw
+  perspective: 1500,
 };

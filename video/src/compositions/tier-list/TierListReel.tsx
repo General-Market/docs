@@ -113,7 +113,7 @@ export const TierListReel: React.FC = () => {
         }}
       />
 
-      {/* world — centred, never scales above 1, so nothing ever leaves the frame */}
+      {/* world — a moving camera (pan / zoom / track) over a tilting 3D plane */}
       <div
         style={{
           position: "absolute",
@@ -121,9 +121,20 @@ export const TierListReel: React.FC = () => {
           height: H,
           transformOrigin: "0 0",
           transform: `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.scale})`,
+          perspective: `${cam.persp}px`,
         }}
       >
-        <Board active={active} />
+        <div
+          style={{
+            position: "absolute",
+            width: W,
+            height: H,
+            transformOrigin: "center center",
+            transform: `rotateX(${cam.rotX}deg) rotateY(${cam.rotY}deg)`,
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <Board active={active} />
 
         {/* every logo: tray → flight → placed, all through one wrapper */}
         {SCHEDULE.placements.map((p) => {
@@ -146,16 +157,7 @@ export const TierListReel: React.FC = () => {
             z = 10;
           }
           return (
-            <LogoTile
-              key={p.src.id}
-              src={p.src}
-              size={size}
-              x={fs.pos.x}
-              y={fs.pos.y}
-              lift={lift}
-              z={z}
-              showBadge={fs.phase !== "tray"}
-            />
+            <LogoTile key={p.src.id} src={p.src} size={size} x={fs.pos.x} y={fs.pos.y} lift={lift} z={z} />
           );
         })}
 
@@ -182,7 +184,8 @@ export const TierListReel: React.FC = () => {
             );
           })()}
 
-        <Cursor x={cursor.x} y={cursor.y} press={press} />
+          <Cursor x={cursor.x} y={cursor.y} press={press} />
+        </div>
       </div>
 
       {/* title — fixed overlay, big, always visible, never touched by the camera */}
@@ -196,12 +199,13 @@ export const TierListReel: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          paddingLeft: 32,
+          alignItems: "center",
+          textAlign: "center",
           opacity: titleOp,
           background: "linear-gradient(180deg, rgba(7,8,9,0.96) 0%, rgba(7,8,9,0.55) 70%, rgba(7,8,9,0) 100%)",
         }}
       >
-        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 56, color: INK, letterSpacing: "-1px", lineHeight: 1 }}>
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 58, color: INK, letterSpacing: "-1px", lineHeight: 1 }}>
           {TITLE}
         </div>
         <div style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 24, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>

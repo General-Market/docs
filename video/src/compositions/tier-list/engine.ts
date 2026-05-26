@@ -4,7 +4,7 @@
 
 import { interpolate } from "remotion";
 import { SOURCES, type Tier, type TierSource } from "./data";
-import { CAMERA, FILL_ORDER, LAYOUT, TIERS, TIMING, W, H } from "./config";
+import { CAMERA, FILL_ORDER, FPS, LAYOUT, TIERS, TIMING, W, H } from "./config";
 
 export type Vec = { x: number; y: number };
 
@@ -29,27 +29,22 @@ export const rowGeometry = (tier: Tier) => {
   return { top, center: top + LAYOUT.board.rowH / 2 };
 };
 
-const trackWidth = LAYOUT.board.trackRight - LAYOUT.board.trackX;
+const trackWidth = LAYOUT.board.trackRight - LAYOUT.board.trackX - LAYOUT.board.leftPad;
+const maxRowCount = Math.max(1, ...TIERS.map((t) => byTier(t.id).length));
 
-/** Tile edge length for a row — shrinks so a crowded row still fits the track. */
-export const tileSizeFor = (tier: Tier): number => {
-  const n = byTier(tier).length;
-  if (n === 0) return LAYOUT.tile.base;
-  const fit = (trackWidth - LAYOUT.tile.gap * (n - 1)) / n;
-  return Math.max(LAYOUT.tile.min, Math.min(LAYOUT.tile.base, fit));
-};
+/** One uniform tile size for every logo — sized so the fullest row fits its track. */
+export const TILE = Math.max(
+  LAYOUT.tile.min,
+  Math.min(LAYOUT.tile.max, (trackWidth - LAYOUT.tile.gap * (maxRowCount - 1)) / maxRowCount),
+);
 
-/** Centre of slot `i` in a tier row. */
-export const slotCenter = (tier: Tier, i: number): Vec => {
-  const size = tileSizeFor(tier);
-  const n = byTier(tier).length;
-  const used = n * size + LAYOUT.tile.gap * (n - 1);
-  const startX = LAYOUT.board.trackX + (trackWidth - used) / 2;
-  return {
-    x: startX + i * (size + LAYOUT.tile.gap) + size / 2,
-    y: rowGeometry(tier).center,
-  };
-};
+export const tileSizeFor = (_tier: Tier): number => TILE;
+
+/** Centre of slot `i` in a tier row — left-aligned, like a real tiermaker board. */
+export const slotCenter = (tier: Tier, i: number): Vec => ({
+  x: LAYOUT.board.trackX + LAYOUT.board.leftPad + i * (TILE + LAYOUT.tile.gap) + TILE / 2,
+  y: rowGeometry(tier).center,
+});
 
 const trayRows = Math.ceil(SOURCES.length / LAYOUT.tray.cols);
 const trayCellW = (W - 2 * LAYOUT.tray.padX) / LAYOUT.tray.cols;
@@ -162,17 +157,58 @@ export const cursorAt = (frame: number): Vec => {
   return { x: lerp(from.x, to.x, t), y: lerp(from.y, to.y, t) };
 };
 
-export type Camera = { scale: number; tx: number; ty: number };
+export type Camera = { scale: number; tx: number; ty: number; rotX: number; rotY: number; persp: number };
 
 const opts = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-/** Camera at `frame` — opens slightly small and grows to fill, then holds. Centred
- * and never above scale 1, so the whole board + tray are always inside the frame. */
+// Camera keyframes: establish wide, then for each tier lift out (transition) and
+// dive in (focus, tracking the cursor), then pull back at the end.
+const boardTop = LAYOUT.board.top;
+const boardBottom = boardTop + TIERS.length * LAYOUT.board.rowH;
+const boardCenter = (boardTop + boardBottom) / 2;
+const establishCy = (boardTop + LAYOUT.tray.bottom) / 2;
+
+const kF: number[] = [0, TIMING.introFrames];
+const kScale: number[] = [CAMERA.introPushFrom, CAMERA.establishScale];
+const kCy: number[] = [establishCy, establishCy];
+const kTrack: number[] = [0, 0];
+for (const tier of FILL_ORDER) {
+  const w = SCHEDULE.tierWindow[tier];
+  if (!w) continue;
+  kF.push(w.start - TIMING.tierLead * 0.6);
+  kScale.push(CAMERA.transitionScale);
+  kCy.push((rowGeometry(tier).center + boardCenter) / 2);
+  kTrack.push(0);
+  kF.push((w.start + w.end) / 2);
+  kScale.push(CAMERA.focusScale);
+  kCy.push(rowGeometry(tier).center);
+  kTrack.push(1);
+}
+kF.push(SCHEDULE.outroStart, TOTAL);
+kScale.push(CAMERA.outroScale, CAMERA.outroScale * 1.03);
+kCy.push(boardCenter, boardCenter);
+kTrack.push(0, 0);
+
+/** A camera that never holds still — establishes, dives in tracking the cursor,
+ * lifts out between rows, pulls back at the end, over a gently tilting plane. */
 export const cameraAt = (frame: number): Camera => {
-  const scale = interpolate(frame, [0, TIMING.introFrames], [CAMERA.introStartScale, 1], opts);
-  const cx = W / 2;
-  const cy = H / 2;
-  return { scale, tx: W / 2 - cx * scale, ty: H / 2 - cy * scale };
+  const scale = interpolate(frame, kF, kScale, opts);
+  const cyKey = interpolate(frame, kF, kCy, opts);
+  const track = interpolate(frame, kF, kTrack, opts);
+  const halfW = W / (2 * scale);
+  const halfH = H / (2 * scale);
+  let cx = W / 2;
+  let cy = cyKey;
+  if (scale > 1) {
+    const cursorX = cursorAt(frame).x;
+    cx = clampN(lerp(W / 2, cursorX, track), halfW, W - halfW);
+    cy = clampN(cyKey, halfH, H - halfH);
+  }
+  const t = frame / FPS;
+  const rotX = CAMERA.tiltBaseDeg + CAMERA.tiltOscDeg * Math.sin(t * 0.6);
+  const rotY = CAMERA.swayDeg * Math.sin(t * 0.42 + 1);
+  return { scale, tx: W / 2 - cx * scale, ty: H / 2 - cy * scale, rotX, rotY, persp: CAMERA.perspective };
 };
 
 /** The tier currently being filled — for a subtle row highlight. */

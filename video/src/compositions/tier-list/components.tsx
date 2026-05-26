@@ -13,7 +13,8 @@ export const fmtCount = (n: number): string =>
   n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
 /** A round source logo — the frontend research-bar treatment: registry image on a
- * neutral disc, centred at (x, y) in world space, with an optional sub-market badge. */
+ * neutral disc, centred at (x, y). The image is *contained* (with padding) so wide
+ * wordmark logos show whole instead of cropping to a few letters. */
 export const LogoTile: React.FC<{
   src: TierSource;
   size: number;
@@ -21,14 +22,12 @@ export const LogoTile: React.FC<{
   y: number;
   lift?: number; // 0 resting, 1 fully raised (in flight / just grabbed)
   z?: number;
-  showBadge?: boolean;
-}> = ({ src, size, x, y, lift = 0, z = 0, showBadge = false }) => {
+}> = ({ src, size, x, y, lift = 0, z = 0 }) => {
   const scale = 1 + lift * 0.16;
   const shadow =
     lift > 0.001
       ? `0 ${10 + lift * 26}px ${20 + lift * 34}px rgba(0,0,0,${0.28 + lift * 0.34})`
       : "0 2px 6px rgba(0,0,0,0.32)";
-  const badgeFont = Math.max(11, Math.round(size * 0.24));
   return (
     <div
       style={{
@@ -37,46 +36,19 @@ export const LogoTile: React.FC<{
         top: y - size / 2,
         width: size,
         height: size,
+        borderRadius: "50%",
+        background: TILE_DISC,
+        boxShadow: shadow,
+        overflow: "hidden",
         transform: `scale(${scale})`,
         transformOrigin: "center",
         zIndex: z,
       }}
     >
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          background: TILE_DISC,
-          boxShadow: shadow,
-          overflow: "hidden",
-        }}
-      >
-        <Img src={staticFile(src.logo)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-      {showBadge && src.markets > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: -badgeFont * 0.78,
-            left: "50%",
-            transform: "translateX(-50%)",
-            padding: `${badgeFont * 0.16}px ${badgeFont * 0.5}px`,
-            borderRadius: 999,
-            background: "#fff",
-            border: "1.5px solid rgba(0,0,0,0.18)",
-            color: "#111316",
-            fontFamily: SANS_TEXT,
-            fontWeight: 800,
-            fontSize: badgeFont,
-            lineHeight: 1,
-            whiteSpace: "nowrap",
-            boxShadow: "0 3px 8px rgba(0,0,0,0.45)",
-          }}
-        >
-          {fmtCount(src.markets)}
-        </div>
-      )}
+      <Img
+        src={staticFile(src.logo)}
+        style={{ width: "100%", height: "100%", objectFit: "contain", padding: size * 0.14 }}
+      />
     </div>
   );
 };
