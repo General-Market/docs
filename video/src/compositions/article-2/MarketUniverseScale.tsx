@@ -28,23 +28,26 @@ type Bar = {
 // One iconic brand per market: IBKR (forex), CME (commodities), Nasdaq, OTC
 // Markets (micro-caps), Coinbase, Invesco (ETFs), MSCI (global), Polymarket,
 // CBOE (options), pump.fun, PIMCO (bonds), and the GM mark for General.
+// A clean cover holds the open (frame 0 is the Twitter preview), then lifts as
+// the first bar lands. Every bar start is offset by LEAD past the cover.
+const LEAD = 26;
 const BARS: Bar[] = [
-  { key: "forex", name: "Forex", value: 28, start: 14, grow: 30, logo: "article-2/market-logos/forex.png" },
-  { key: "commodities", name: "Commodities", value: 30, start: 50, grow: 28, logo: "article-2/market-logos/commodities.png" },
-  { key: "usstocks", name: "US Stocks", value: 5_200, start: 92, grow: 34, logo: "article-2/market-logos/usstocks.png" },
-  { key: "microcaps", name: "Micro-caps", value: 12_000, start: 138, grow: 30, logo: "article-2/market-logos/microcaps.png" },
-  { key: "crypto", name: "Crypto", value: 13_000, start: 184, grow: 30, logo: "exchange-logos/coinbase-icon.svg" },
-  { key: "etfs", name: "ETFs", value: 15_600, start: 230, grow: 30, logo: "article-2/market-logos/etfs.png" },
-  { key: "globalstocks", name: "Global Stocks", value: 58_000, start: 278, grow: 34, logo: "article-2/market-logos/globalstocks.png" },
-  { key: "prediction", name: "Prediction Markets", value: 85_000, start: 328, grow: 34, logo: "exchange-logos/polymarket-icon.png" },
-  { key: "gentoday", name: "General", value: 500_000, start: 380, grow: 36, logo: "article-2/gm-mark-blue.svg", tag: "today", hero: true },
-  { key: "options", name: "Options", value: 1_000_000, start: 432, grow: 36, logo: "article-2/market-logos/options.png" },
-  { key: "memecoins", name: "Memecoins", value: 10_000_000, start: 482, grow: 40, logo: "exchange-logos/pumpfun-icon.png" },
-  { key: "bonds", name: "Bonds", value: 50_000_000, start: 534, grow: 42, logo: "article-2/market-logos/bonds.png" },
-  { key: "genscale", name: "General", value: 1_000_000_000, start: 588, grow: 56, logo: "article-2/gm-mark-blue.svg", tag: "at scale", hero: true, finale: true },
+  { key: "forex", name: "Forex", value: 28, start: 14 + LEAD, grow: 30, logo: "article-2/market-logos/forex.png" },
+  { key: "commodities", name: "Commodities", value: 30, start: 50 + LEAD, grow: 28, logo: "article-2/market-logos/commodities.png" },
+  { key: "usstocks", name: "US Stocks", value: 5_200, start: 92 + LEAD, grow: 34, logo: "article-2/market-logos/usstocks.png" },
+  { key: "microcaps", name: "Micro-caps", value: 12_000, start: 138 + LEAD, grow: 30, logo: "article-2/market-logos/microcaps.png" },
+  { key: "crypto", name: "Crypto", value: 13_000, start: 184 + LEAD, grow: 30, logo: "exchange-logos/coinbase-icon.svg" },
+  { key: "etfs", name: "ETFs", value: 15_600, start: 230 + LEAD, grow: 30, logo: "article-2/market-logos/etfs.png" },
+  { key: "globalstocks", name: "Global Stocks", value: 58_000, start: 278 + LEAD, grow: 34, logo: "article-2/market-logos/globalstocks.png" },
+  { key: "prediction", name: "Prediction Markets", value: 85_000, start: 328 + LEAD, grow: 34, logo: "exchange-logos/polymarket-icon.png" },
+  { key: "gentoday", name: "General", value: 500_000, start: 380 + LEAD, grow: 36, logo: "article-2/gm-mark-blue.svg", tag: "today", hero: true },
+  { key: "options", name: "Options", value: 1_000_000, start: 432 + LEAD, grow: 36, logo: "article-2/market-logos/options.png" },
+  { key: "memecoins", name: "Memecoins", value: 10_000_000, start: 482 + LEAD, grow: 40, logo: "exchange-logos/pumpfun-icon.png" },
+  { key: "bonds", name: "Bonds", value: 50_000_000, start: 534 + LEAD, grow: 42, logo: "article-2/market-logos/bonds.png" },
+  { key: "genscale", name: "General", value: 1_000_000_000, start: 588 + LEAD, grow: 56, logo: "article-2/gm-mark-blue.svg", tag: "at scale", hero: true, finale: true },
 ];
 
-const TOTAL = 720;
+const TOTAL = 720 + LEAD;
 const FILL = 0.8;
 
 const PLOT_H = 640;
@@ -156,7 +159,55 @@ export const MarketUniverseScale: React.FC = () => {
 
   let active = -1;
   for (let i = 0; i < BARS.length; i++) if (f >= BARS[i].start) active = i;
-  if (active < 0) return <AbsoluteFill style={{ backgroundColor: NAVY }} />;
+
+  // the cover — frame 0 is the Twitter preview, so it must read clean and still.
+  // It holds, then lifts away exactly as the first bar lands.
+  if (active < 0) {
+    const lift = easeOut((f - (BARS[0].start - 16)) / 16);
+    return (
+      <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS }}>
+        <BrandMark surface="dark" />
+        <svg width={W} height={H} style={{ position: "absolute", inset: 0 }}>
+          <line x1={0} y1={BASELINE} x2={W} y2={BASELINE} stroke="rgba(255,255,255,0.16)" strokeWidth={2} />
+        </svg>
+        <AbsoluteFill
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+            transform: `translateY(${-lift * 70}px)`,
+            opacity: 1 - lift,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: SANS_TEXT,
+              fontSize: 26,
+              fontWeight: 600,
+              letterSpacing: "4px",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.42)",
+              marginBottom: 26,
+            }}
+          >
+            Tradeable markets · by asset class
+          </div>
+          <div
+            style={{
+              fontSize: 124,
+              fontWeight: 800,
+              letterSpacing: "-3px",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: 1,
+              textShadow: "0 8px 60px rgba(0,0,0,0.6)",
+            }}
+          >
+            How many markets exist?
+          </div>
+        </AbsoluteFill>
+      </AbsoluteFill>
+    );
+  }
 
   const A = BARS[active];
 
