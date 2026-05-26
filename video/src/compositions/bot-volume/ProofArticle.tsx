@@ -286,7 +286,13 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
         style={{
           position: "absolute",
           inset: 0,
-          filter: fullBlurPx > 0 ? `blur(${fullBlurPx}px)` : undefined,
+          // Integer radius + an isolated GPU layer so the comp's scale transforms
+          // a cached blurred bitmap instead of re-blurring every frame (the
+          // shimmer source).
+          filter: fullBlurPx > 0.5 ? `blur(${Math.round(fullBlurPx)}px)` : undefined,
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          willChange: "filter",
         }}
       >
         <AbsoluteFill style={{ backgroundColor: spec.page }} />
@@ -347,6 +353,8 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
 
         {bottomBlur && (
           <>
+            {/* bottom fade — a plain gradient, not a backdrop-filter (which
+                flickers frame-to-frame in Chromium renders) */}
             <div
               style={{
                 position: "absolute",
@@ -354,21 +362,6 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
                 right: 0,
                 bottom: 0,
                 height: 360,
-                zIndex: 20,
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                WebkitMaskImage:
-                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 44%)",
-                maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 44%)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 200,
                 zIndex: 21,
                 background: `linear-gradient(to bottom, ${spec.page}00 0%, ${spec.page} 100%)`,
               }}

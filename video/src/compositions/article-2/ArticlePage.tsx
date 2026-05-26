@@ -444,7 +444,13 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
         style={{
           position: "absolute",
           inset: 0,
-          filter: fullBlurPx > 0 ? `blur(${fullBlurPx}px)` : undefined,
+          // Integer radius + an isolated GPU layer: when the comp scales this
+          // page, the blurred bitmap is transformed, not re-blurred every frame,
+          // which is what made the blur shimmer.
+          filter: fullBlurPx > 0.5 ? `blur(${Math.round(fullBlurPx)}px)` : undefined,
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          willChange: "filter",
         }}
       >
         <AbsoluteFill style={{ backgroundColor: PAGE }} />
@@ -517,33 +523,18 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
                 zIndex: 15,
               }}
             />
-            {/* bottom blur ramp */}
+            {/* bottom fade — a plain gradient, not a backdrop-filter (which
+                flickers frame-to-frame in Chromium renders) */}
             <div
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: 460,
-                zIndex: 20,
-                backdropFilter: "blur(22px)",
-                WebkitBackdropFilter: "blur(22px)",
-                WebkitMaskImage:
-                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 34%)",
-                maskImage:
-                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 34%)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 260,
+                height: 360,
                 zIndex: 21,
                 background:
-                  "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(244,244,246,0.7) 100%)",
+                  "linear-gradient(to bottom, rgba(244,244,246,0) 0%, rgba(244,244,246,0.92) 100%)",
               }}
             />
           </>
