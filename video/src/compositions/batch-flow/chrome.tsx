@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  interpolate,
-  OffthreadVideo,
-  staticFile,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { C, EASE, font, PILL_GRADIENT, W, H, WINDOW_SCALE } from "./theme";
 
 // ─── Glass helpers ──────────────────────────────────────────────────────────
@@ -34,11 +28,12 @@ export const glassCard = (radius = 16): React.CSSProperties => ({
 
 // ─── Stage ────────────────────────────────────────────────────────────────
 //
-// The blue broll plays full-bleed and shows around a panel floating on it (the
-// onboarding framing). The panel is a fixed 1920×1080 viewport; the board (the
-// children) is larger than the viewport and rides a camera transform, so the
-// panel only ever shows the slice the camera is looking at. The board paints its
-// own #F0F2F4 paper and Base-blue dot lattice.
+// A calm, static blue backlight fills the frame; the board panel floats on it
+// (the onboarding framing). The backlight does NOT move — an animated broll back
+// there only pulsed for no reason and pulled the eye off the board. The panel is
+// a fixed 1920×1080 viewport; the board (the children) is larger and rides a
+// camera transform, so the panel shows only the slice the camera looks at. The
+// board paints its own #F0F2F4 paper and Base-blue dot lattice.
 
 export const FIELD_BG = "#F0F2F4"; // the AntiCheatEdit chart ground (colors.bg)
 
@@ -47,23 +42,15 @@ export const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
   const winH = H * WINDOW_SCALE;
   return (
     <AbsoluteFill style={{ background: "#0B1E46", fontFamily: font }}>
-      {/* blue broll, full-bleed — visible around the panel */}
-      <AbsoluteFill style={{ overflow: "hidden" }}>
-        <OffthreadVideo
-          src={staticFile("batch-flow/bg-blur.mp4")}
-          muted
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: "scale(1.08)",
-          }}
-        />
-      </AbsoluteFill>
+      {/* a still blue backlight behind the panel — a soft glow, no motion */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(125% 115% at 50% 42%, #1c3f80 0%, #122e60 40%, #0a1c40 72%, #07142f 100%)",
+        }}
+      />
 
-      {/* the panel — a card floating on the broll, holding the dot-grid field */}
+      {/* the panel — a card floating on the backlight, holding the board */}
       <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div
           style={{

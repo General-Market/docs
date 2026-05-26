@@ -138,9 +138,9 @@ export const cellCenter = (key: BeatKey): [number, number] => {
 // the pull-back/dive between them runs. LEAD lets a beat begin building during
 // the dive in, so you arrive on a schematic already in motion.
 export const TRANSITION = sec(1.3);
-export const LEAD = sec(0.45);
-// the closing move: once the last schematic is drawn, pull all the way out and
-// hold on the finished board — every station filled, one surface.
+// the opening move: hold the whole drawn board, then glide in to the first cell.
+export const OPEN = sec(1.9);
+// the closing move: pull back out to the whole board again and hold.
 export const CLOSE = sec(1.7);
 export const CLOSE_HOLD = sec(1.6);
 
@@ -160,7 +160,7 @@ export const FOCUS: FocusSlot[] = (() => {
 const LAST_END =
   FOCUS[FOCUS.length - 1].from + FOCUS[FOCUS.length - 1].durationInFrames;
 
-export const TOTAL_FRAMES = LAST_END + CLOSE + CLOSE_HOLD;
+export const TOTAL_FRAMES = OPEN + LAST_END + CLOSE + CLOSE_HOLD;
 
 // The camera at a given frame: which board point sits under the viewport centre,
 // and at what scale. Resting → the cell at scale 1. Between → it eases out to the
@@ -170,34 +170,44 @@ export const TOTAL_FRAMES = LAST_END + CLOSE + CLOSE_HOLD;
 export type Camera = { scale: number; fx: number; fy: number };
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+const clamp01 = (t: number): number => Math.max(0, Math.min(1, t));
+
+// A deliberate, hand-led camera glide — the bezier a whiteboard animator pans
+// with: eases off the mark, travels, settles softly. Symmetric in/out.
+const CAM = Easing.bezier(0.5, 0, 0.2, 1);
 
 export const cameraAt = (frame: number): Camera => {
+  // Opening: the first frame is the whole drawn board, then the camera glides in
+  // to the first cell. (A dezoom you fly into, not a per-transition habit.)
+  if (frame < OPEN) {
+    const [cx, cy] = cellCenter(FOCUS[0].key);
+    const e = CAM(clamp01(frame / OPEN));
+    return {
+      scale: lerp(ZOOM_OUT, 1, e),
+      fx: lerp(BOARD_CX, cx, e),
+      fy: lerp(BOARD_CY, cy, e),
+    };
+  }
+  const t = frame - OPEN;
   for (let i = 0; i < FOCUS.length; i++) {
     const f = FOCUS[i];
     const end = f.from + f.durationInFrames;
     const [cx, cy] = cellCenter(f.key);
-    if (frame <= end) return { scale: 1, fx: cx, fy: cy };
+    if (t <= end) return { scale: 1, fx: cx, fy: cy };
     const next = FOCUS[i + 1];
-    if (next && frame < next.from) {
-      const p = (frame - end) / (next.from - end); // 0..1 across the transition
+    if (next && t < next.from) {
+      // A pan across the board to the neighbouring cell at full scale — no
+      // pull-back. The camera simply glides to the next drawing, the way a
+      // whiteboard video tracks from one section to the one beside it.
+      const p = CAM(clamp01((t - end) / (next.from - end)));
       const [nx, ny] = cellCenter(next.key);
-      const bump = 0.5 * (1 - Math.cos(2 * Math.PI * p)); // 0→1→0, flat at the ends
-      const scale = 1 - (1 - ZOOM_OUT) * bump;
-      const fx =
-        p < 0.5
-          ? lerp(cx, BOARD_CX, EASE.inOut(p / 0.5))
-          : lerp(BOARD_CX, nx, EASE.inOut((p - 0.5) / 0.5));
-      const fy =
-        p < 0.5
-          ? lerp(cy, BOARD_CY, EASE.inOut(p / 0.5))
-          : lerp(BOARD_CY, ny, EASE.inOut((p - 0.5) / 0.5));
-      return { scale, fx, fy };
+      return { scale: 1, fx: lerp(cx, nx, p), fy: lerp(cy, ny, p) };
     }
   }
-  // closing pull-back: from the last cell out to the whole finished board, held.
+  // Closing: pull back out to the whole board again and hold.
   const last = FOCUS[FOCUS.length - 1];
   const [cx, cy] = cellCenter(last.key);
-  const e = EASE.inOut(Math.max(0, Math.min(1, (frame - LAST_END) / CLOSE)));
+  const e = EASE.inOut(clamp01((t - LAST_END) / CLOSE));
   return {
     scale: lerp(1, ZOOM_OUT, e),
     fx: lerp(cx, BOARD_CX, e),

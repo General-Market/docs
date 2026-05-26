@@ -1,5 +1,5 @@
 import React from "react";
-import { Sequence, useCurrentFrame } from "remotion";
+import { Freeze, useCurrentFrame } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import {
   BOARD_H,
@@ -7,9 +7,10 @@ import {
   cameraAt,
   cellOrigin,
   FOCUS,
+  font,
   FPS,
   H,
-  LEAD,
+  PILL_GRADIENT,
   TOTAL_FRAMES,
   W,
   type BeatKey,
@@ -24,9 +25,11 @@ import {
 } from "./beats-mechanism";
 import { MultiplyBeat, UnlockBeat } from "./beats-scale";
 
-// BatchFlowReel — one board, not nine scenes. Every schematic sits in its own
-// cell of a 3×3 board; a camera rests on each in turn and, between them, pulls
-// all the way back to show the whole board before diving into the next cell.
+// BatchFlowReel — one board, fully drawn. Every schematic sits finished in its
+// own cell of a 3×3 board from the first frame, so a pull-back always shows the
+// whole thing. The camera opens on the entire board, glides into the first cell,
+// then pans station to station like a whiteboard video, and pulls back out at
+// the end. Each station carries its step number.
 
 const REGISTRY: Partial<Record<BeatKey, React.FC<{ durationInFrames: number }>>> = {
   product: ProductBeat,
@@ -47,6 +50,32 @@ const boardField: React.CSSProperties = {
     "radial-gradient(circle, rgba(0,113,227,0.22) 1.2px, transparent 1.5px)",
   backgroundSize: "14px 14px",
 };
+
+const StepBadge: React.FC<{ n: number }> = ({ n }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: 60,
+      top: 54,
+      width: 86,
+      height: 86,
+      borderRadius: 86,
+      background: PILL_GRADIENT,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: font,
+      fontWeight: 800,
+      fontSize: 48,
+      color: "#fff",
+      border: "2px solid rgba(255,255,255,0.55)",
+      boxShadow:
+        "0 14px 32px rgba(94,120,255,0.42), 0 3px 10px rgba(0,113,227,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
+    }}
+  >
+    {n}
+  </div>
+);
 
 export const BatchFlowReel: React.FC = () => {
   const frame = useCurrentFrame();
@@ -70,21 +99,21 @@ export const BatchFlowReel: React.FC = () => {
           ...boardField,
         }}
       >
-        {FOCUS.map((f) => {
+        {FOCUS.map((f, i) => {
           const Comp = REGISTRY[f.key];
           if (!Comp) return null;
           const [ox, oy] = cellOrigin(f.key);
-          // begin building LEAD frames before the camera lands, so we arrive on
-          // a schematic already in motion; hold the final state afterwards.
-          const start = Math.max(0, f.from - LEAD);
           return (
             <div
               key={f.key}
               style={{ position: "absolute", left: ox, top: oy, width: W, height: H, overflow: "hidden" }}
             >
-              <Sequence from={start} name={f.key}>
-                <Comp durationInFrames={f.durationInFrames + LEAD} />
-              </Sequence>
+              {/* drawn and held at its finished state, so the board is complete
+                  on every frame — the camera tours it, it does not build on arrival */}
+              <Freeze frame={f.durationInFrames}>
+                <Comp durationInFrames={f.durationInFrames} />
+              </Freeze>
+              <StepBadge n={i + 1} />
             </div>
           );
         })}
