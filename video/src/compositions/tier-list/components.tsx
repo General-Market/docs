@@ -5,24 +5,30 @@
 import React from "react";
 import { Img, staticFile } from "remotion";
 import type { TierSource } from "./data";
-import { INK, LAYOUT, TILE_BG } from "./config";
+import { INK, TILE_DISC } from "./config";
 import { SANS, SANS_TEXT } from "../article-2/theme";
 
-/** A single source logo on a rounded tile, centred at (x, y) in world space. */
+/** Compact sub-market count: 6799 -> 6.8k, 12000 -> 12k, 102 -> 102. */
+export const fmtCount = (n: number): string =>
+  n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
+/** A round source logo — the frontend research-bar treatment: registry image on a
+ * neutral disc, centred at (x, y) in world space, with an optional sub-market badge. */
 export const LogoTile: React.FC<{
   src: TierSource;
   size: number;
   x: number;
   y: number;
   lift?: number; // 0 resting, 1 fully raised (in flight / just grabbed)
-  radius?: number;
   z?: number;
-}> = ({ src, size, x, y, lift = 0, radius = LAYOUT.tile.radius, z = 0 }) => {
+  showBadge?: boolean;
+}> = ({ src, size, x, y, lift = 0, z = 0, showBadge = false }) => {
   const scale = 1 + lift * 0.16;
   const shadow =
     lift > 0.001
       ? `0 ${10 + lift * 26}px ${20 + lift * 34}px rgba(0,0,0,${0.28 + lift * 0.34})`
-      : "0 2px 6px rgba(0,0,0,0.30)";
+      : "0 2px 6px rgba(0,0,0,0.32)";
+  const badgeFont = Math.max(11, Math.round(size * 0.24));
   return (
     <div
       style={{
@@ -31,19 +37,46 @@ export const LogoTile: React.FC<{
         top: y - size / 2,
         width: size,
         height: size,
-        borderRadius: radius,
-        background: TILE_BG,
-        boxShadow: shadow,
         transform: `scale(${scale})`,
+        transformOrigin: "center",
         zIndex: z,
-        overflow: "hidden",
-        border: "1px solid rgba(0,0,0,0.06)",
       }}
     >
-      <Img
-        src={staticFile(src.logo)}
-        style={{ width: "100%", height: "100%", objectFit: "contain", padding: size * 0.12 }}
-      />
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          background: TILE_DISC,
+          boxShadow: shadow,
+          overflow: "hidden",
+        }}
+      >
+        <Img src={staticFile(src.logo)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+      {showBadge && src.markets > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: -badgeFont * 0.78,
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: `${badgeFont * 0.16}px ${badgeFont * 0.5}px`,
+            borderRadius: 999,
+            background: "#fff",
+            border: "1.5px solid rgba(0,0,0,0.18)",
+            color: "#111316",
+            fontFamily: SANS_TEXT,
+            fontWeight: 800,
+            fontSize: badgeFont,
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            boxShadow: "0 3px 8px rgba(0,0,0,0.45)",
+          }}
+        >
+          {fmtCount(src.markets)}
+        </div>
+      )}
     </div>
   );
 };
@@ -85,7 +118,7 @@ export const DescriptionChip: React.FC<{
         {src.name}
       </div>
       <div style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 19, color: "rgba(255,255,255,0.62)" }}>
-        {src.blurb}
+        {src.blurb} · {src.markets > 0 ? `${fmtCount(src.markets)} markets` : "live soon"}
       </div>
     </div>
   </div>

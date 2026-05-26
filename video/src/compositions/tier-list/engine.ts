@@ -164,29 +164,23 @@ export const cursorAt = (frame: number): Vec => {
 
 export type Camera = { scale: number; tx: number; ty: number };
 
-const focusCy = (tier: Tier) =>
-  rowGeometry(tier).center * (1 - CAMERA.focusBias) + 540 * CAMERA.focusBias;
-
-const camFrames: number[] = [0, TIMING.introFrames];
-const camScale: number[] = [CAMERA.introScale, 1];
-const camCy: number[] = [CAMERA.introCy, 540];
-for (const tier of FILL_ORDER) {
-  const w = SCHEDULE.tierWindow[tier];
-  if (!w) continue;
-  camFrames.push((w.start + w.end) / 2);
-  camScale.push(CAMERA.focusScale);
-  camCy.push(focusCy(tier));
-}
-camFrames.push(SCHEDULE.outroStart, TOTAL);
-camScale.push(CAMERA.outroScale, 1.02);
-camCy.push(CAMERA.outroCy, CAMERA.outroCy);
-
 const opts = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-/** Camera transform at `frame` — a continuous glide up the board, then a pull-back. */
+/** Camera at `frame` — opens slightly small and grows to fill, then holds. Centred
+ * and never above scale 1, so the whole board + tray are always inside the frame. */
 export const cameraAt = (frame: number): Camera => {
-  const scale = interpolate(frame, camFrames, camScale, opts);
-  const cy = interpolate(frame, camFrames, camCy, opts);
+  const scale = interpolate(frame, [0, TIMING.introFrames], [CAMERA.introStartScale, 1], opts);
   const cx = W / 2;
+  const cy = H / 2;
   return { scale, tx: W / 2 - cx * scale, ty: H / 2 - cy * scale };
+};
+
+/** The tier currently being filled — for a subtle row highlight. */
+export const activeTierAt = (frame: number): Tier | null => {
+  let active: Tier | null = null;
+  for (const tier of FILL_ORDER) {
+    const w = SCHEDULE.tierWindow[tier];
+    if (w && frame >= w.start) active = tier;
+  }
+  return active;
 };

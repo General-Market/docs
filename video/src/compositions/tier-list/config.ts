@@ -7,6 +7,9 @@ import { FPS, W, H } from "../article-2/theme";
 
 export { FPS, W, H };
 
+export const TITLE = "Every General Markets Tier List";
+export const SUBTITLE = "ranked by volume";
+
 /** The canonical tiermaker palette, top (S) to bottom (F). */
 export const TIERS: { id: Tier; color: string; ink: string }[] = [
   { id: "S", color: "#FF7F7F", ink: "#3a0d0d" },
@@ -22,34 +25,30 @@ export const FILL_ORDER: Tier[] = ["F", "D", "C", "B", "A", "S"];
 
 export const FIELD_BG = "#070809";
 export const INK = "#F4F6FA";
-export const TRACK_BG = "rgba(255,255,255,0.045)";
-export const TILE_BG = "rgba(255,255,255,0.96)";
+export const TRACK_BG = "rgba(255,255,255,0.04)";
+export const TRACK_BG_ACTIVE = "rgba(255,255,255,0.10)";
+export const TILE_DISC = "#f5f5f7"; // matches the frontend research-bar logo disc
+
+// The whole board + tray must fit inside the frame at scale 1 and never crop.
+// Title rides as a fixed overlay above the world (top 0..TITLE_BAND).
+export const TITLE_BAND = 104;
 
 export const LAYOUT = {
-  title: { y: 30 },
-  board: { top: 96, rowH: 108, labelW: 150, trackX: 170, trackRight: 1892, rowGap: 2 },
-  tile: { base: 84, gap: 8, min: 30, radius: 13 },
-  tray: { top: 762, bottom: 1054, cols: 30, padX: 44, tile: 50, radius: 9 },
+  board: { top: 116, rowH: 94, labelW: 138, trackX: 156, trackRight: 1902, rowGap: 4 },
+  tile: { base: 78, gap: 7, min: 28 },
+  tray: { top: 700, bottom: 1058, cols: 30, padX: 28, tile: 48 },
 };
 
 export const TIMING = {
-  introFrames: 42, // zoom-out reveal
+  introFrames: 40, // gentle settle-in (never crops — scales up to 1.0)
   flight: 13, // frames a logo is airborne, tray -> row
-  // gap between successive pickups, per tier (smaller = faster). Big crowded
-  // tiers fire fast; the S/A giants get room to breathe.
   drop: { F: 5, D: 5, C: 5, B: 6, A: 9, S: 15 } as Record<Tier, number>,
-  tierLead: 8, // beat before a tier begins filling
-  tierTail: 6, // beat after a tier finishes
-  // how long the description chip lingers after a drop, per tier
+  tierLead: 8,
+  tierTail: 6,
   chipDwell: { F: 13, D: 13, C: 15, B: 20, A: 32, S: 46 } as Record<Tier, number>,
-  outroFrames: 96, // pull back to the finished board + brand beat
+  outroFrames: 96,
 };
 
 export const CAMERA = {
-  introScale: 2.3,
-  introCy: 360,
-  focusScale: 1.08,
-  focusBias: 0.5, // 0 = active row centred, 1 = screen centred
-  outroScale: 1.0,
-  outroCy: 408,
+  introStartScale: 0.955, // opens slightly small, grows to fill — a zoom that never crops
 };

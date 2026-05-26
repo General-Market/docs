@@ -1,11 +1,26 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { SANS, SANS_TEXT } from "../article-2/theme";
-import { FIELD_BG, FPS, H, INK, LAYOUT, TIERS, TIMING, TRACK_BG, W } from "./config";
+import {
+  FIELD_BG,
+  FPS,
+  H,
+  INK,
+  LAYOUT,
+  SUBTITLE,
+  TIERS,
+  TIMING,
+  TITLE,
+  TITLE_BAND,
+  TRACK_BG,
+  TRACK_BG_ACTIVE,
+  W,
+} from "./config";
 import {
   SCHEDULE,
   TOTAL,
   activeChip,
+  activeTierAt,
   cameraAt,
   cursorAt,
   flightState,
@@ -14,6 +29,7 @@ import {
   tileSizeFor,
 } from "./engine";
 import { Cursor, DescriptionChip, LogoTile } from "./components";
+import type { Tier } from "./data";
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -21,17 +37,18 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const tierColor = (id: string) => TIERS.find((t) => t.id === id)!.color;
 
 /** The static board: six colored label cells + their dark tracks. */
-const Board: React.FC = () => (
+const Board: React.FC<{ active: Tier | null }> = ({ active }) => (
   <>
     {TIERS.map((t) => {
       const { top } = rowGeometry(t.id);
       const h = LAYOUT.board.rowH - LAYOUT.board.rowGap;
+      const isActive = t.id === active;
       return (
         <div key={t.id}>
           <div
             style={{
               position: "absolute",
-              left: 18,
+              left: 14,
               top,
               width: LAYOUT.board.labelW,
               height: h,
@@ -42,8 +59,9 @@ const Board: React.FC = () => (
               justifyContent: "center",
               fontFamily: SANS,
               fontWeight: 800,
-              fontSize: 58,
+              fontSize: 54,
               color: t.ink,
+              boxShadow: isActive ? `0 0 0 3px ${t.color}, 0 0 26px ${t.color}66` : "none",
             }}
           >
             {t.id}
@@ -55,7 +73,7 @@ const Board: React.FC = () => (
               top,
               width: LAYOUT.board.trackRight - LAYOUT.board.trackX,
               height: h,
-              background: TRACK_BG,
+              background: isActive ? TRACK_BG_ACTIVE : TRACK_BG,
               borderRadius: 10,
             }}
           />
@@ -70,6 +88,7 @@ export const TierListReel: React.FC = () => {
   const cam = cameraAt(frame);
   const cursor = cursorAt(frame);
   const chip = activeChip(frame);
+  const active = activeTierAt(frame);
 
   // cursor "press" — a quick squash whenever a logo is grabbed off the tray
   let press = 0;
@@ -77,7 +96,7 @@ export const TierListReel: React.FC = () => {
     press = Math.max(press, clamp(1 - Math.abs(frame - p.flightStart) / 3));
   }
 
-  const titleOp = interpolate(frame, [6, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const titleOp = interpolate(frame, [4, 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const brandOp = interpolate(
     frame,
     [SCHEDULE.outroStart + 18, SCHEDULE.outroStart + 40],
@@ -94,6 +113,7 @@ export const TierListReel: React.FC = () => {
         }}
       />
 
+      {/* world — centred, never scales above 1, so nothing ever leaves the frame */}
       <div
         style={{
           position: "absolute",
@@ -103,17 +123,7 @@ export const TierListReel: React.FC = () => {
           transform: `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.scale})`,
         }}
       >
-        {/* title */}
-        <div style={{ position: "absolute", top: LAYOUT.title.y, left: 18, opacity: titleOp }}>
-          <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: 40, color: INK, letterSpacing: "-0.5px" }}>
-            Every market on Vision
-          </span>
-          <span style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 26, color: "rgba(255,255,255,0.5)", marginLeft: 16 }}>
-            ranked by volume · {SCHEDULE.placements.length} sources
-          </span>
-        </div>
-
-        <Board />
+        <Board active={active} />
 
         {/* every logo: tray → flight → placed, all through one wrapper */}
         {SCHEDULE.placements.map((p) => {
@@ -143,13 +153,13 @@ export const TierListReel: React.FC = () => {
               x={fs.pos.x}
               y={fs.pos.y}
               lift={lift}
-              radius={fs.phase === "tray" ? LAYOUT.tray.radius : LAYOUT.tile.radius}
               z={z}
+              showBadge={fs.phase !== "tray"}
             />
           );
         })}
 
-        {/* description chip beside the most-recent drop */}
+        {/* description chip beside the most-recent drop, clamped inside the frame */}
         {chip &&
           (() => {
             const c = slotCenter(chip.tier, chip.slotIndex);
@@ -159,10 +169,11 @@ export const TierListReel: React.FC = () => {
             const op = Math.min(clamp(since / 4), clamp((dwell - since) / 6));
             const below = rowGeometry(chip.tier).center < 260;
             const y = below ? c.y + boardTile / 2 + 14 : c.y - boardTile / 2 - 14;
+            const x = clamp(c.x, 270, W - 270);
             return (
               <DescriptionChip
                 src={chip.src}
-                x={c.x}
+                x={x}
                 y={y}
                 opacity={op}
                 rise={below ? -10 : 10}
@@ -174,11 +185,35 @@ export const TierListReel: React.FC = () => {
         <Cursor x={cursor.x} y={cursor.y} press={press} />
       </div>
 
+      {/* title — fixed overlay, big, always visible, never touched by the camera */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: TITLE_BAND,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          paddingLeft: 32,
+          opacity: titleOp,
+          background: "linear-gradient(180deg, rgba(7,8,9,0.96) 0%, rgba(7,8,9,0.55) 70%, rgba(7,8,9,0) 100%)",
+        }}
+      >
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 56, color: INK, letterSpacing: "-1px", lineHeight: 1 }}>
+          {TITLE}
+        </div>
+        <div style={{ fontFamily: SANS_TEXT, fontWeight: 500, fontSize: 24, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
+          {SUBTITLE} · {SCHEDULE.placements.length} sources
+        </div>
+      </div>
+
       {/* outro brand beat */}
       <div
         style={{
           position: "absolute",
-          bottom: 40,
+          bottom: 38,
           width: "100%",
           textAlign: "center",
           opacity: brandOp,
