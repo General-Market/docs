@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { useSourceStats } from '@/hooks/useSourceStats'
-import Image from 'next/image'
+import { SourceLogo } from '@/components/ui/SourceLogo'
 import { SearchIcon } from './apple-icons'
 
 type SearchResult = {
@@ -38,42 +38,6 @@ function fuzzyScore(haystack: string, needle: string): number {
     hi = idx + 1
   }
   return score
-}
-
-/** Round logo. Apple's circle treatment: registry image, neutral fallback. */
-function ResultLogo({ logo, name }: { logo: string; name: string }) {
-  const [broken, setBroken] = useState(false)
-  if (logo && !broken) {
-    return (
-      <span
-        className="inline-flex items-center justify-center w-7 h-7 shrink-0 overflow-hidden rounded-full"
-        style={{ background: '#f5f5f7' }}
-      >
-        <Image
-          src={logo}
-          alt=""
-          width={28}
-          height={28}
-          className="object-cover"
-          unoptimized
-          onError={() => setBroken(true)}
-        />
-      </span>
-    )
-  }
-  return (
-    <span
-      className="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-full font-semibold"
-      style={{
-        background: '#f5f5f7',
-        color: 'var(--apple-text)',
-        fontSize: 12,
-      }}
-      aria-hidden
-    >
-      {name.charAt(0).toUpperCase()}
-    </span>
-  )
 }
 
 export function SourceSearch() {
@@ -242,7 +206,7 @@ export function SourceSearch() {
                 background: i === active ? 'rgba(0,0,0,0.04)' : 'transparent',
               }}
             >
-              <ResultLogo logo={r.logo} name={r.name} />
+              <SourceLogo logo={r.logo} name={r.name} />
               <span
                 className="flex-1 truncate"
                 style={{
