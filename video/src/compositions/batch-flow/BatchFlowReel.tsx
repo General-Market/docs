@@ -1,6 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
+import { BrandMark } from "../../components/BrandMark";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
 import { LineRow, Packet, TraderChip } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
@@ -225,6 +226,7 @@ export const BatchFlowReel: React.FC = () => {
 
   return (
     <Stage>
+      <BrandMark surface="light" />
       <div
         style={{
           position: "absolute",

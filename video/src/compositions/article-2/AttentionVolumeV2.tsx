@@ -3,6 +3,7 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage } from "./ArticlePage";
 import { ImpressionsVolumeChart } from "./ImpressionsVolumeChart";
 import { FPS, H, W, articleZoom } from "./theme";
+import { BrandMark } from "../../components/BrandMark";
 
 const V2_TOTAL = 240;
 
@@ -62,6 +63,7 @@ export const AttentionVolumeV2: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <BrandMark surface="dark" />
       <AbsoluteFill style={{ transform: `scale(${bgZoom})`, transformOrigin: "center" }}>
         <ArticlePage
           scroll={scroll}

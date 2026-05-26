@@ -3,6 +3,7 @@ import { AbsoluteFill, Sequence } from "remotion";
 import { DataProofScreen } from "./DataProofScreen";
 import { SCREENS, SCREEN_DUR } from "./screens";
 import { FPS, H, W } from "../article-2/theme";
+import { BrandMark } from "../../components/BrandMark";
 
 const BG = "#05070c";
 
@@ -14,6 +15,7 @@ export const BotVolumeProof: React.FC = () => (
         <DataProofScreen screen={screen} />
       </Sequence>
     ))}
+    <BrandMark surface="dark" />
   </AbsoluteFill>
 );
 
@@ -32,6 +34,7 @@ export const botVolumeScreenMetas = SCREENS.map((screen) => ({
   component: () => (
     <AbsoluteFill style={{ backgroundColor: BG }}>
       <DataProofScreen screen={screen} />
+      <BrandMark surface="dark" />
     </AbsoluteFill>
   ),
   durationInFrames: SCREEN_DUR,

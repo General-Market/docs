@@ -17,6 +17,7 @@ import {
 import { PROTOCOLS, TOTAL_RAISED_LABEL } from "./data";
 import { Rail } from "./Rail";
 import { Slide } from "./Slide";
+import { BrandMark } from "../../components/BrandMark";
 
 const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
   <AbsoluteFill style={{ background: BG_GRADIENT, fontFamily: font }}>
@@ -89,6 +90,7 @@ Across {PROTOCOLS.length} perps protocols. The liquidity left anyway.
 
 export const PerpsGraveyardReel: React.FC = () => (
   <Stage>
+    <BrandMark surface="light" />
     {SCHEDULE.map((slot, i) => {
       if (slot.kind === "intro")
         return (
