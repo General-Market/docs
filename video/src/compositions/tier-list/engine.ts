@@ -4,7 +4,7 @@
 
 import { interpolate } from "remotion";
 import { SOURCES, type Tier, type TierSource } from "./data";
-import { CAMERA, FILL_ORDER, LAYOUT, TIERS, TIMING, W, H } from "./config";
+import { CAMERA, FILL_ORDER, LAYOUT, OPEN_TRIM, TIERS, TIMING, W, H } from "./config";
 
 export type Vec = { x: number; y: number };
 
@@ -90,6 +90,8 @@ function buildSchedule() {
 
 export const SCHEDULE = buildSchedule();
 export const TOTAL = SCHEDULE.total;
+/** Rendered length — the timeline minus the trimmed-off opening. */
+export const RENDER_DURATION = TOTAL - OPEN_TRIM;
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
@@ -116,30 +118,6 @@ export const flightState = (p: Placement, frame: number): FlightState => {
     phase: "flight",
     airborne: raw,
   };
-};
-
-/** Position of a logo across the WHOLE timeline:
- *  - poster  [0, posterFrames)   → resting in its final placed slot (the board is full)
- *  - spill   [posterFrames, introFrames) → arcing back down into the tray
- *  - fill    [introFrames, …]     → the normal tray → row placement schedule
- */
-export const logoState = (p: Placement, frame: number): FlightState => {
-  const placed = slotCenter(p.tier, p.slotIndex);
-  if (frame < TIMING.posterFrames) return { pos: placed, phase: "placed", airborne: 1 };
-  if (frame < TIMING.introFrames) {
-    const tray = traySlotCenter(p.pickIndex);
-    const raw = (frame - TIMING.posterFrames) / (TIMING.introFrames - TIMING.posterFrames);
-    const t = easeInOut(raw);
-    const peak = Math.min(placed.y, tray.y) - 130;
-    const c1 = { x: placed.x + (tray.x - placed.x) * 0.25, y: peak };
-    const c2 = { x: placed.x + (tray.x - placed.x) * 0.75, y: peak };
-    return {
-      pos: { x: cubic(placed.x, c1.x, c2.x, tray.x, t), y: cubic(placed.y, c1.y, c2.y, tray.y, t) },
-      phase: "flight",
-      airborne: 1 - raw,
-    };
-  }
-  return flightState(p, frame);
 };
 
 /** The one description chip showing at `frame` — the most recent landed logo. */

@@ -38,10 +38,7 @@ export const LAYOUT = {
 };
 
 export const TIMING = {
-  // The first frame is the Twitter poster, so it holds the FULL board. Then the
-  // logos spill back into the tray and the cursor re-fills it.
-  posterFrames: 42, // frame 0..42: the complete board, held
-  introFrames: 66, // poster + spill; the fill begins here
+  introFrames: 8, // a brief beat before the fill (trimmed away by OPEN_TRIM)
   flight: 13,
   drop: { F: 5, D: 5, C: 5, B: 6, A: 9, S: 15 } as Record<Tier, number>,
   tierLead: 10,
@@ -50,10 +47,13 @@ export const TIMING = {
   outroFrames: 100,
 };
 
-// Opens on the whole filled board (the poster), holds through the spill, then a
-// soft focus glide up the board as it re-fills, and a pull-back at the end.
+// The video opens mid-fill — no intro, no poster. Frame 0 of the render is this
+// many frames into the timeline, so the F tier is already partly stacked.
+export const OPEN_TRIM = 90;
+
+// A soft focus glide up the board as it fills, and a pull-back at the end.
 export const CAMERA = {
-  establishScale: 0.9, // frame 0: the whole board + tray in view
+  establishScale: 0.9,
   focusScale: 1.08, // a gentle focus as the camera glides up, row by row
   focusBias: 0.5, // 0 = active row centred, 1 = screen centred
   outroScale: 0.92,

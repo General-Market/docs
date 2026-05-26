@@ -9,6 +9,7 @@ import {
   LAYOUT,
   TIERS,
   TIMING,
+  OPEN_TRIM,
   TITLE,
   TITLE_BAND,
   TITLE_PAD_TOP,
@@ -17,13 +18,13 @@ import {
   W,
 } from "./config";
 import {
+  RENDER_DURATION,
   SCHEDULE,
-  TOTAL,
   activeChip,
   activeTierAt,
   cameraAt,
   cursorAt,
-  logoState,
+  flightState,
   rowGeometry,
   slotCenter,
   tileSizeFor,
@@ -84,7 +85,7 @@ const Board: React.FC<{ active: Tier | null }> = ({ active }) => (
 );
 
 export const TierListReel: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useCurrentFrame() + OPEN_TRIM; // open mid-fill — the front is trimmed
   const cam = cameraAt(frame);
   const cursor = cursorAt(frame);
   const chip = activeChip(frame);
@@ -127,7 +128,7 @@ export const TierListReel: React.FC = () => {
 
         {/* every logo across the whole timeline: poster → spill → tray → flight → placed */}
         {SCHEDULE.placements.map((p) => {
-          const fs = logoState(p, frame);
+          const fs = flightState(p, frame);
           const boardTile = tileSizeFor(p.tier);
           let size: number;
           let lift: number;
@@ -174,7 +175,7 @@ export const TierListReel: React.FC = () => {
             );
           })()}
 
-        {frame >= TIMING.introFrames && <Cursor x={cursor.x} y={cursor.y} press={press} />}
+        <Cursor x={cursor.x} y={cursor.y} press={press} />
       </div>
 
       {/* title — fixed overlay, big, always visible, never touched by the camera */}
@@ -230,5 +231,5 @@ export const tierListReelMeta = {
   width: W,
   height: H,
   fps: FPS,
-  durationInFrames: TOTAL,
+  durationInFrames: RENDER_DURATION,
 };
