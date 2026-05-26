@@ -1,10 +1,13 @@
 import React from "react";
-import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
+import { AbsoluteFill, interpolate, Sequence, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import { BrandMark } from "../../components/BrandMark";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
 import { LineRow, Packet, TraderChip } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
+import { BlueField } from "../anticheat-edit/props/BlueField";
+import { scene } from "../anticheat-edit/props/tokens";
+import { FlowBeat, QuestionBeat, ThresholdBeat } from "../parimutuel/beats";
 import {
   CHAIN_STEPS,
   LIQUIDITY_UNLOCKED,
@@ -19,14 +22,17 @@ import {
   yourReturn,
 } from "./data";
 
-// BatchFlowReel — ONE element handed down the whole pipeline, the camera riding
-// it, using the real rich stations (dashboard, traders, lines, payout cards).
-// The ten picks on the live dashboard COLLAPSE into one packet of all ten votes;
-// the packet flies into the pool with four other traders; the five packets
-// GATHER into the pool, which then UNFOLDS into the ten matched lines; the lines
-// settle; the winning lines collect into the payout; the payout multiplies; the
-// throughput unlocks a billion in liquidity. Every handoff is a transform — one
-// object becoming the next — never a crossfade of two diagrams on the same spot.
+// BatchFlowReel — the batch market, told in sections. Three concept beats (the
+// binary question, the oracle's line, losers-pay-winners) cut in on the dark
+// field between the glass product stations. The glass pipeline itself is ONE
+// element handed down the whole pipeline: ten picks COLLAPSE into one packet of
+// all ten votes; the packet flies into the pool with four other traders; the
+// five packets GATHER into the pool, which then UNFOLDS into the ten matched
+// lines; the lines settle; the winning lines collect into the payout; the payout
+// multiplies; the throughput unlocks a billion in liquidity. Every handoff is a
+// transform — one object becoming the next — never a crossfade on the same spot.
+// Under each dark beat the glass holds a stable frame, then resumes: clean cuts,
+// no skipped motion.
 
 const YOUR_PICKS = MARKETS.map((m) => m.you);
 const TRADER_TICKETS = TRADER_NAMES.map((_n, t) => MARKETS.map((_m, i) => PICKS_BY_MARKET[i][t]));
@@ -54,7 +60,7 @@ const ci = (
 const SEL_START = sec(0.7);
 const SEL_STEP = sec(0.42);
 
-// ── beats (frames @60fps) — deliberately uneven lengths ──────────────────────
+// ── glass-pipeline beats (frames @60fps) — deliberately uneven lengths ───────
 const T = {
   pickEnd: SEL_START + 10 * SEL_STEP + sec(0.4), // ~5.3s — ten calls made
   mergeEnd: 0, // the ten cards collapse into one packet
@@ -80,8 +86,38 @@ T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(2.8)];
 T.payoutHold = T.travel2[1] + sec(2.4);
 T.multiply = [T.payoutHold + sec(0.5), T.payoutHold + sec(4.6)];
 T.unlock = [T.multiply[1] + sec(0.6), T.multiply[1] + sec(4.0)];
-const TOTAL = T.unlock[1] + sec(1.2);
+const GLASS_TOTAL = T.unlock[1] + sec(1.2);
 const STEP_AT = [T.multiply[0] + sec(0.3), T.multiply[0] + sec(1.7), T.multiply[0] + sec(3.1)];
+
+// ── the sectioned reel ───────────────────────────────────────────────────────
+//
+// The dark concept beats cut in at the narrative seams. The glass timeline is
+// split at two points; under each dark beat the glass holds the split frame,
+// then resumes from it on the cut back.
+const Q_DUR = sec(4.0); // "one question" — opens the reel
+const TH_DUR = sec(4.0); // "the oracle draws the line" — before the lines settle
+const FL_DUR = sec(4.2); // "the losers pay the winners" — before the payout
+const SPLIT_SETTLE = T.linesHold; // section A ends with the lines formed, unsettled
+const SPLIT_PAYOUT = T.settle[1]; // section B ends with the lines settled
+
+const Q_FROM = 0;
+const A_FROM = Q_FROM + Q_DUR; // glass [0, SPLIT_SETTLE)
+const TH_FROM = A_FROM + SPLIT_SETTLE;
+const B_FROM = TH_FROM + TH_DUR; // glass [SPLIT_SETTLE, SPLIT_PAYOUT)
+const FL_FROM = B_FROM + (SPLIT_PAYOUT - SPLIT_SETTLE);
+const C_FROM = FL_FROM + FL_DUR; // glass [SPLIT_PAYOUT, GLASS_TOTAL)
+const OUTER_TOTAL = C_FROM + (GLASS_TOTAL - SPLIT_PAYOUT);
+
+// Map the outer frame to the glass timeline: linear inside each glass section,
+// held at the split point while a dark beat plays.
+const glassFrameAt = (outer: number): number => {
+  if (outer < A_FROM) return 0;
+  if (outer < TH_FROM) return outer - A_FROM;
+  if (outer < B_FROM) return SPLIT_SETTLE;
+  if (outer < FL_FROM) return SPLIT_SETTLE + (outer - B_FROM);
+  if (outer < C_FROM) return SPLIT_PAYOUT;
+  return SPLIT_PAYOUT + (outer - C_FROM);
+};
 
 const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
 
@@ -95,7 +131,7 @@ const camera = (frame: number): { x: number; scale: number } => {
   );
   const scale = interpolate(
     frame,
-    [T.multiply[0], STEP_AT[2], T.unlock[0], TOTAL],
+    [T.multiply[0], STEP_AT[2], T.unlock[0], GLASS_TOTAL],
     [1, 1.06, 1.06, 1.03],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
   );
@@ -116,8 +152,7 @@ const heroNumber = (size: number): React.CSSProperties => ({
   filter: "drop-shadow(0 14px 36px rgba(94,120,255,0.4))",
 });
 
-const Caption: React.FC<{ x: number; y: number; at: number; text: string; until?: number }> = ({ x, y, at, text, until }) => {
-  const frame = useCurrentFrame();
+const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text: string; until?: number }> = ({ frame, x, y, at, text, until }) => {
   const op = Math.min(ci(frame, at, at + 12, 0, 1), until ? ci(frame, until - 12, until, 1, 0) : 1);
   const ty = ci(frame, at, at + 14, 16, 0, EASE.out);
   if (op <= 0.01) return null;
@@ -147,8 +182,9 @@ const Caption: React.FC<{ x: number; y: number; at: number; text: string; until?
   );
 };
 
-export const BatchFlowReel: React.FC = () => {
-  const frame = useCurrentFrame();
+// ── GlassPipeline — the product ride, driven by a frame fed from the outside ──
+// (the orchestrator holds this frame steady under each dark beat).
+const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
   const { fps } = useVideoConfig();
   const { x: camX, scale } = camera(frame);
   const tx = W / 2 - camX * scale;
@@ -406,19 +442,51 @@ export const BatchFlowReel: React.FC = () => {
         )}
 
         {/* captions */}
-        <Caption x={AX} y={CY + 470} at={sec(0.6)} text="Pick up or down on ten markets" until={T.pickEnd} />
-        <Caption x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
-        <Caption x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
-        <Caption x={BX} y={CY + 330} at={T.unfold[1]} text="Every line matched, then settled" until={T.travel2[0]} />
+        <Caption frame={frame} x={AX} y={CY + 470} at={sec(0.6)} text="Pick up or down on ten markets" until={T.pickEnd} />
+        <Caption frame={frame} x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
+        <Caption frame={frame} x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
+        <Caption frame={frame} x={BX} y={CY + 330} at={T.unfold[1]} text="Every line matched, then settled" until={T.travel2[0]} />
       </div>
     </Stage>
+  );
+};
+
+// ── DarkBeat — a concept beat on the deep-blue field (the explainer's world) ──
+const DarkBeat: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <AbsoluteFill style={{ backgroundColor: scene.blueAbyss }}>
+    <BlueField />
+    {children}
+  </AbsoluteFill>
+);
+
+export const BatchFlowReel: React.FC = () => {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill style={{ backgroundColor: scene.blueAbyss }}>
+      <GlassPipeline frame={glassFrameAt(frame)} />
+      <Sequence from={Q_FROM} durationInFrames={Q_DUR} name="1 · one question">
+        <DarkBeat>
+          <QuestionBeat durationInFrames={Q_DUR} />
+        </DarkBeat>
+      </Sequence>
+      <Sequence from={TH_FROM} durationInFrames={TH_DUR} name="2 · the line">
+        <DarkBeat>
+          <ThresholdBeat durationInFrames={TH_DUR} />
+        </DarkBeat>
+      </Sequence>
+      <Sequence from={FL_FROM} durationInFrames={FL_DUR} name="3 · losers pay winners">
+        <DarkBeat>
+          <FlowBeat durationInFrames={FL_DUR} />
+        </DarkBeat>
+      </Sequence>
+    </AbsoluteFill>
   );
 };
 
 export const batchFlowReelMeta = {
   id: "BatchFlowReel",
   component: BatchFlowReel,
-  durationInFrames: TOTAL,
+  durationInFrames: OUTER_TOTAL,
   fps: FPS,
   width: W,
   height: H,
