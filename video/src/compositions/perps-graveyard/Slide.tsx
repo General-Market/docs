@@ -62,7 +62,7 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
           opacity: appear(frame, 0),
         }}
       >
-        ORDER-BOOK&nbsp;PERP&nbsp;DEX
+        {p.model.replace(/ /g, " ")}&nbsp;·&nbsp;PERP&nbsp;DEX
       </div>
 
       {/* name */}

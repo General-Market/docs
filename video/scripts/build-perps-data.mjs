@@ -17,24 +17,29 @@ const DIR = `${HERE}/../src/compositions/perps-graveyard`;
 // tvlSlug   — which tvl-raw series to use (defaults to id)
 // raised    — disclosed USD (null = undisclosed / fair launch)
 // raisedNote— shown in place of a dollar figure when raised is null
+// model     — verified market structure, stamped on each slide's eyebrow
 // cause     — one honest line; most about liquidity, a few are accurate variants
 // fundSrc   — funding citation for the source line
-// Verified roster: ORDER-BOOK perps DEXs that raised >$10M (relaxed to ≥$8.5M
-// for Vertex) and failed/faded on the cost of liquidity. Pool/AMM models and
-// living protocols were cut. Ordered by raise, descending. Cause lines are
-// honest per protocol — dYdX is the survivor that still bled; Mango's killer
-// was an exploit; Aevo and Helix faded rather than died.
+// Roster: perps protocols that raised >$10M (≥$8.5M for Vertex) and failed/faded
+// on the cost of liquidity. Order books dominate; SynFutures/Vertex are AMM+book
+// hybrids; Synthetix is a debt pool; Futureswap an AMM; Parcl a synthetic AMM.
+// The pure pool failures that raised <$10M (GMX, MUX, Vela, Level, Mycelium, Perp…)
+// stay out on the money bar. Ordered by raise, descending.
 const ROSTER = [
-  { id: "dydx", name: "dYdX", raised: 87_000_000, cause: "The deepest book of its era — yet still bled 88% as the flow left for Hyperliquid.", fundSrc: "Seed–Series C · a16z, Paradigm, 3AC" },
-  { id: "mango-markets", name: "Mango Markets", raised: 70_000_000, cause: "A $114M oracle exploit on a book too thin to defend — then the regulator finished it.", fundSrc: "MNGO token sale, 2021" },
-  { id: "vega-protocol", name: "Vega Protocol", raised: 53_000_000, cause: "Built a whole chain for markets — and almost nobody made one.", fundSrc: "Pantera · CoinList sale" },
-  { id: "serum", name: "Serum", raised: 20_000_000, cause: "Solana's order book — owned by FTX, killed by FTX. Keys and market maker gone in a week.", fundSrc: "FTX · Alameda · Solana" },
-  { id: "helix", name: "Injective · Helix", raised: 17_000_000, cause: "A fully on-chain book with no resident market makers — it emptied, TVL fell 96%.", fundSrc: "Binance Labs · Pantera · Cuban" },
-  { id: "rabbitx", name: "RabbitX", raised: 15_600_000, cause: "Hopped from chain to chain chasing whoever would rent it liquidity.", fundSrc: "Multicoin · Sequoia (Seed+A+IDO)" },
-  { id: "zeta", name: "Zeta Markets", raised: 13_500_000, cause: "Its book sat on Serum — when FTX fell, the liquidity went with it.", fundSrc: "Jump · Electric · Alameda" },
-  { id: "aevo", name: "Aevo", raised: 10_600_000, cause: "Token-launch liquidity rushed in, then bled 84% as the incentives wore off.", fundSrc: "Paradigm · Dragonfly (Ribbon)" },
-  { id: "satori-finance", name: "Satori Finance", raised: 10_000_000, cause: "Pitched for Polkadot, pivoted to zk-rollups, never found the market makers.", fundSrc: "Polychain · Blockchange" },
-  { id: "vertex-perps", name: "Vertex Protocol", raised: 8_500_000, cause: "Lost the liquidity war to Hyperliquid, then folded the whole stack into another chain.", fundSrc: "Hack VC · Wintermute" },
+  { id: "dydx", name: "dYdX", raised: 87_000_000, model: "ORDER BOOK", cause: "The deepest book of its era — yet still bled 88% as the flow left for Hyperliquid.", fundSrc: "Seed–Series C · a16z, Paradigm, 3AC" },
+  { id: "mango-markets", name: "Mango Markets", raised: 70_000_000, model: "ORDER BOOK", cause: "A $114M oracle exploit on a book too thin to defend — then the regulator finished it.", fundSrc: "MNGO token sale, 2021" },
+  { id: "vega-protocol", name: "Vega Protocol", raised: 53_000_000, model: "ORDER BOOK", cause: "Built a whole chain for markets — and almost nobody made one.", fundSrc: "Pantera · CoinList sale" },
+  { id: "synfutures-v3", name: "SynFutures", raised: 37_000_000, model: "AMM + ORDER BOOK", cause: "An AMM bolted onto an order book — the Oyster never got deep enough to matter.", fundSrc: "Pantera · Polychain · HashKey" },
+  { id: "synthetix", name: "Synthetix", raised: 30_000_000, model: "DEBT POOL", cause: "Every SNX staker was the house — a 400% collateral ratio strangled the depth.", fundSrc: "ICO 2018 · Framework" },
+  { id: "serum", name: "Serum", raised: 20_000_000, model: "ORDER BOOK", cause: "Solana's order book — owned by FTX, killed by FTX. Keys and market maker gone in a week.", fundSrc: "FTX · Alameda · Solana" },
+  { id: "helix", name: "Injective · Helix", raised: 17_000_000, model: "ORDER BOOK", cause: "A fully on-chain book with no resident market makers — it emptied, TVL fell 96%.", fundSrc: "Binance Labs · Pantera · Cuban" },
+  { id: "rabbitx", name: "RabbitX", raised: 15_600_000, model: "ORDER BOOK", cause: "Hopped from chain to chain chasing whoever would rent it liquidity.", fundSrc: "Multicoin · Sequoia (Seed+A+IDO)" },
+  { id: "zeta", name: "Zeta Markets", raised: 13_500_000, model: "ORDER BOOK", cause: "Its book sat on Serum — when FTX fell, the liquidity went with it.", fundSrc: "Jump · Electric · Alameda" },
+  { id: "futureswap", name: "Futureswap", raised: 13_000_000, model: "AMM", cause: "The #1 DEX in three days — abandoned, then drained by its own zombie contracts.", fundSrc: "Framework · Ribbit · Placeholder" },
+  { id: "parcl-v3", name: "Parcl", raised: 11_600_000, model: "SYNTHETIC · AMM", cause: "Synthetic real-estate perps — an index almost nobody needed to hedge.", fundSrc: "Dragonfly · Archetype · Coinbase" },
+  { id: "aevo", name: "Aevo", raised: 10_600_000, model: "ORDER BOOK", cause: "Token-launch liquidity rushed in, then bled 84% as the incentives wore off.", fundSrc: "Paradigm · Dragonfly (Ribbon)" },
+  { id: "satori-finance", name: "Satori Finance", raised: 10_000_000, model: "ORDER BOOK", cause: "Pitched for Polkadot, pivoted to zk-rollups, never found the market makers.", fundSrc: "Polychain · Blockchange" },
+  { id: "vertex-perps", name: "Vertex Protocol", raised: 8_500_000, model: "AMM + ORDER BOOK", cause: "Lost the liquidity war to Hyperliquid, then folded the whole stack into another chain.", fundSrc: "Hack VC · Wintermute" },
 ];
 
 const fmtUSD = (n) =>
@@ -68,6 +73,7 @@ async function main() {
     out.push({
       id: r.id,
       name: r.name,
+      model: r.model,
       raised: r.raised,
       raisedNote: r.raisedNote ?? null,
       raisedLabel: r.raised != null ? fmtRaise(r.raised) : (r.raisedNote ?? ""),
@@ -90,7 +96,7 @@ async function main() {
   const banner = `// AUTO-GENERATED by scripts/build-perps-data.mjs — do not edit by hand.\n// TVL series are real, pulled from the DefiLlama API and downsampled (bucketed max).\n// Re-run the fetch + build scripts to refresh.\n`;
   const body =
     `${banner}\nexport type Protocol = {\n` +
-    `  id: string;\n  name: string;\n  raised: number | null;\n  raisedNote: string | null;\n` +
+    `  id: string;\n  name: string;\n  model: string;\n  raised: number | null;\n  raisedNote: string | null;\n` +
     `  raisedLabel: string;\n  cause: string;\n  fundSrc: string;\n` +
     `  peakUSD: number;\n  peakLabel: string;\n  peakWhen: string;\n  peakIdx: number;\n` +
     `  latestUSD: number;\n  latestLabel: string;\n  drawdownPct: number;\n  spark: number[];\n};\n\n` +

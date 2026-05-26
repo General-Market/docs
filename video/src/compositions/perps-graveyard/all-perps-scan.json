@@ -1,0 +1,3764 @@
+[
+  {
+    "name": "Jupiter Perpetual Exchange",
+    "slug": "jupiter-perpetual-exchange",
+    "chains": "Solana",
+    "peak": 2652262910,
+    "peakWhen": "Sep 2025",
+    "latest": 665369794,
+    "drawdown": 0.749131282765629
+  },
+  {
+    "name": "Hyperliquid HLP",
+    "slug": "hyperliquid-hlp",
+    "chains": "Hyperliquid L1",
+    "peak": 609402337,
+    "peakWhen": "Aug 2025",
+    "latest": 361076768,
+    "drawdown": 0.40749034574181486
+  },
+  {
+    "name": "GMX V2 Perps",
+    "slug": "gmx-v2-perps",
+    "chains": "Arbitrum+Avalanche+MegaETH+Botanix",
+    "peak": 608207029,
+    "peakWhen": "Aug 2025",
+    "latest": 197087060,
+    "drawdown": 0.6759539916464858
+  },
+  {
+    "name": "Extended",
+    "slug": "extended",
+    "chains": "Starknet+Ethereum",
+    "peak": 218207107,
+    "peakWhen": "Feb 2026",
+    "latest": 151458456,
+    "drawdown": 0.3058958615862132
+  },
+  {
+    "name": "Derive V2",
+    "slug": "derive-v2",
+    "chains": "Hyperliquid L1+Arbitrum+Optimism+Base+Ethereum+Blast+Mode",
+    "peak": 135343906,
+    "peakWhen": "May 2026",
+    "latest": 130518113,
+    "drawdown": 0.03565578342330389
+  },
+  {
+    "name": "dYdX V4",
+    "slug": "dydx-v4",
+    "chains": "dYdX",
+    "peak": 415536190,
+    "peakWhen": "Dec 2024",
+    "latest": 99843751,
+    "drawdown": 0.7597230917480376
+  },
+  {
+    "name": "Avantis",
+    "slug": "avantis",
+    "chains": "Base",
+    "peak": 119415973,
+    "peakWhen": "Nov 2025",
+    "latest": 45493850,
+    "drawdown": 0.619030445784669
+  },
+  {
+    "name": "GMTrade",
+    "slug": "gmtrade",
+    "chains": "Solana",
+    "peak": 42838154,
+    "peakWhen": "May 2026",
+    "latest": 42838154,
+    "drawdown": 0
+  },
+  {
+    "name": "Decibel",
+    "slug": "decibel",
+    "chains": "Aptos",
+    "peak": 57715835,
+    "peakWhen": "Feb 2026",
+    "latest": 41881858,
+    "drawdown": 0.27434372213448877
+  },
+  {
+    "name": "Ostium",
+    "slug": "ostium",
+    "chains": "Arbitrum",
+    "peak": 100650659,
+    "peakWhen": "Mar 2026",
+    "latest": 41776032,
+    "drawdown": 0.5849403032721325
+  },
+  {
+    "name": "Synthetix V3",
+    "slug": "synthetix-v3",
+    "chains": "Ethereum+Base+Arbitrum",
+    "peak": 389732681,
+    "peakWhen": "Dec 2024",
+    "latest": 41665369,
+    "drawdown": 0.8930924425093312
+  },
+  {
+    "name": "dYdX V3",
+    "slug": "dydx-v3",
+    "chains": "Ethereum",
+    "peak": 1122865037,
+    "peakWhen": "Oct 2021",
+    "latest": 39291452,
+    "drawdown": 0.9650078587316456
+  },
+  {
+    "name": "Apex Omni",
+    "slug": "apex-omni",
+    "chains": "Ethereum+Arbitrum+Mantle+Binance+Base",
+    "peak": 49513698,
+    "peakWhen": "Nov 2025",
+    "latest": 34814038,
+    "drawdown": 0.29688067330377954
+  },
+  {
+    "name": "Moonlander",
+    "slug": "moonlander",
+    "chains": "Cronos+Cronos zkEVM",
+    "peak": 34120042,
+    "peakWhen": "Sep 2025",
+    "latest": 31411812,
+    "drawdown": 0.07937358342055967
+  },
+  {
+    "name": "Ethereal DEX",
+    "slug": "ethereal-dex",
+    "chains": "Ethereal",
+    "peak": 74884779,
+    "peakWhen": "Jan 2026",
+    "latest": 30717765,
+    "drawdown": 0.5897996173561519
+  },
+  {
+    "name": "Pacifica Perps",
+    "slug": "pacifica-perps",
+    "chains": "Solana",
+    "peak": 46765513,
+    "peakWhen": "Jan 2026",
+    "latest": 30002137,
+    "drawdown": 0.35845594166795514
+  },
+  {
+    "name": "Aevo Perps",
+    "slug": "aevo-perps",
+    "chains": "Ethereum+Base+Arbitrum+Optimism",
+    "peak": 100182637,
+    "peakWhen": "Mar 2024",
+    "latest": 16203514,
+    "drawdown": 0.8382602566151258
+  },
+  {
+    "name": "Gains Network",
+    "slug": "gains-network",
+    "chains": "Arbitrum+Base+Polygon+MegaETH+ApeChain",
+    "peak": 58852563,
+    "peakWhen": "May 2023",
+    "latest": 13683617,
+    "drawdown": 0.7674932695794404
+  },
+  {
+    "name": "Fulcrom Perps",
+    "slug": "fulcrom-perps",
+    "chains": "Cronos+zkSync Era+Cronos zkEVM",
+    "peak": 28732747,
+    "peakWhen": "Sep 2025",
+    "latest": 13322017,
+    "drawdown": 0.5363472556243927
+  },
+  {
+    "name": "Reya Perps",
+    "slug": "reya-perps",
+    "chains": "Reya Network",
+    "peak": 40537501,
+    "peakWhen": "Oct 2025",
+    "latest": 12706862,
+    "drawdown": 0.6865405689413366
+  },
+  {
+    "name": "Boros",
+    "slug": "boros",
+    "chains": "Arbitrum",
+    "peak": 12345211,
+    "peakWhen": "Apr 2026",
+    "latest": 10311393,
+    "drawdown": 0.164745503337286
+  },
+  {
+    "name": "Contango V2",
+    "slug": "contango-v2",
+    "chains": "Arbitrum+Ethereum+Base+Optimism+Avalanche+xDai+Polygon+Linea+Binance+Scroll",
+    "peak": 72307301,
+    "peakWhen": "Dec 2024",
+    "latest": 10174507,
+    "drawdown": 0.8592879714871393
+  },
+  {
+    "name": "FlashTrade",
+    "slug": "flashtrade",
+    "chains": "Solana",
+    "peak": 26403591,
+    "peakWhen": "Sep 2025",
+    "latest": 9799813,
+    "drawdown": 0.6288454475756726
+  },
+  {
+    "name": "MUX Perps",
+    "slug": "mux-perps",
+    "chains": "Arbitrum+Avalanche+Binance+Optimism+Fantom",
+    "peak": 90635653,
+    "peakWhen": "Mar 2024",
+    "latest": 9749504,
+    "drawdown": 0.8924319108728659
+  },
+  {
+    "name": "Antarctic",
+    "slug": "antarctic",
+    "chains": "Arbitrum",
+    "peak": 12207554,
+    "peakWhen": "Feb 2026",
+    "latest": 9578553,
+    "drawdown": 0.2153585394748203
+  },
+  {
+    "name": "Sudo Perps",
+    "slug": "sudo-perps",
+    "chains": "Sui",
+    "peak": 9737477,
+    "peakWhen": "May 2026",
+    "latest": 8138311,
+    "drawdown": 0.16422796171944742
+  },
+  {
+    "name": "Bluefin Pro",
+    "slug": "bluefin-pro",
+    "chains": "Sui",
+    "peak": 14973723,
+    "peakWhen": "Jan 2026",
+    "latest": 6963391,
+    "drawdown": 0.5349592749912631
+  },
+  {
+    "name": "Drift Trade",
+    "slug": "drift-trade",
+    "chains": "Solana",
+    "peak": 1112685617,
+    "peakWhen": "Oct 2025",
+    "latest": 6517780,
+    "drawdown": 0.9941422986866918
+  },
+  {
+    "name": "SynFutures V3",
+    "slug": "synfutures-v3",
+    "chains": "Base+Blast",
+    "peak": 70884084,
+    "peakWhen": "May 2024",
+    "latest": 6170234,
+    "drawdown": 0.9129531814222217
+  },
+  {
+    "name": "Storm Trade",
+    "slug": "storm-trade",
+    "chains": "TON",
+    "peak": 35847784,
+    "peakWhen": "Mar 2025",
+    "latest": 5919923,
+    "drawdown": 0.8348594434735491
+  },
+  {
+    "name": "IntentX",
+    "slug": "intentx",
+    "chains": "Base+Mantle+Arbitrum+Blast",
+    "peak": 6314767,
+    "peakWhen": "May 2024",
+    "latest": 5673214,
+    "drawdown": 0.10159567249274593
+  },
+  {
+    "name": "Polynomial Trade",
+    "slug": "polynomial-trade",
+    "chains": "Optimism+Polynomial",
+    "peak": 9664593,
+    "peakWhen": "Aug 2025",
+    "latest": 4749446,
+    "drawdown": 0.5085725803455976
+  },
+  {
+    "name": "Hakka Finance",
+    "slug": "hakka-finance",
+    "chains": "Ethereum+Binance",
+    "peak": 15657385,
+    "peakWhen": "Nov 2021",
+    "latest": 4611109,
+    "drawdown": 0.7054994176869254
+  },
+  {
+    "name": "RISEx",
+    "slug": "risex",
+    "chains": "RISE",
+    "peak": 4286885,
+    "peakWhen": "May 2026",
+    "latest": 4286885,
+    "drawdown": 0
+  },
+  {
+    "name": "AnyHedge",
+    "slug": "anyhedge",
+    "chains": "Bitcoincash",
+    "peak": 14722168,
+    "peakWhen": "Dec 2024",
+    "latest": 4240561,
+    "drawdown": 0.7119608334859377
+  },
+  {
+    "name": "Bumpin Trade",
+    "slug": "bumpin-trade",
+    "chains": "Solana",
+    "peak": 4947570,
+    "peakWhen": "Jan 2026",
+    "latest": 4075924,
+    "drawdown": 0.17617658769860756
+  },
+  {
+    "name": "Parcl V3",
+    "slug": "parcl-v3",
+    "chains": "Solana",
+    "peak": 185580597,
+    "peakWhen": "Apr 2024",
+    "latest": 3904842,
+    "drawdown": 0.9789587809117782
+  },
+  {
+    "name": "ELFi Protocol",
+    "slug": "elfi-protocol",
+    "chains": "Arbitrum+Base",
+    "peak": 19715088,
+    "peakWhen": "Oct 2025",
+    "latest": 3543428,
+    "drawdown": 0.820268212853019
+  },
+  {
+    "name": "SYMMIO",
+    "slug": "symmio",
+    "chains": "Base+Arbitrum+Coti+Berachain+Binance+Mantle+Sonic+IOTA EVM+Mode",
+    "peak": 9525515,
+    "peakWhen": "Oct 2025",
+    "latest": 3505989,
+    "drawdown": 0.6319370658699293
+  },
+  {
+    "name": "GMX V1 Perps",
+    "slug": "gmx-v1-perps",
+    "chains": "Avalanche+Arbitrum",
+    "peak": 710762384,
+    "peakWhen": "May 2023",
+    "latest": 3242417,
+    "drawdown": 0.9954381139562388
+  },
+  {
+    "name": "Keep3r Network",
+    "slug": "keep3r-network",
+    "chains": "Ethereum",
+    "peak": 629797113,
+    "peakWhen": "Jan 2022",
+    "latest": 3053285,
+    "drawdown": 0.9951519545946219
+  },
+  {
+    "name": "Evedex",
+    "slug": "evedex",
+    "chains": "Eventum",
+    "peak": 2440758,
+    "peakWhen": "May 2026",
+    "latest": 2438736,
+    "drawdown": 0.0008284311676945988
+  },
+  {
+    "name": "KiloEx",
+    "slug": "kiloex",
+    "chains": "Base+Binance+Op_Bnb+Manta+Taiko+BSquared",
+    "peak": 51704696,
+    "peakWhen": "Jan 2025",
+    "latest": 2332778,
+    "drawdown": 0.9548826667504243
+  },
+  {
+    "name": "SparkDEX Perps",
+    "slug": "sparkdex-perps",
+    "chains": "Flare",
+    "peak": 3968246,
+    "peakWhen": "Jan 2026",
+    "latest": 2214571,
+    "drawdown": 0.4419269873893906
+  },
+  {
+    "name": "LeverUp",
+    "slug": "leverup",
+    "chains": "Monad",
+    "peak": 2520271,
+    "peakWhen": "May 2026",
+    "latest": 2225699,
+    "drawdown": 0.1168810814392579
+  },
+  {
+    "name": "DipCoin Perps",
+    "slug": "dipcoin-perps",
+    "chains": "Sui",
+    "peak": 2043201,
+    "peakWhen": "May 2026",
+    "latest": 2038796,
+    "drawdown": 0.002155930816400309
+  },
+  {
+    "name": "Vest Markets",
+    "slug": "vest-markets",
+    "chains": "Arbitrum+Binance+Optimism+Polygon+Ethereum+zkSync Era+Base",
+    "peak": 31049630,
+    "peakWhen": "Oct 2025",
+    "latest": 1655524,
+    "drawdown": 0.9466813614204098
+  },
+  {
+    "name": "DerivaDEX",
+    "slug": "derivadex",
+    "chains": "Ethereum",
+    "peak": 70466178,
+    "peakWhen": "Oct 2021",
+    "latest": 1617904,
+    "drawdown": 0.9770399921505605
+  },
+  {
+    "name": "IPOR Derivatives",
+    "slug": "ipor-derivatives",
+    "chains": "Ethereum+Arbitrum+Base",
+    "peak": 43626270,
+    "peakWhen": "Mar 2023",
+    "latest": 1492781,
+    "drawdown": 0.9657825204859366
+  },
+  {
+    "name": "AlphaX",
+    "slug": "alphax",
+    "chains": "Binance+Ethereum+Arbitrum",
+    "peak": 1704152,
+    "peakWhen": "Feb 2025",
+    "latest": 1486770,
+    "drawdown": 0.12756021763316883
+  },
+  {
+    "name": "ApeX Pro",
+    "slug": "apex-pro",
+    "chains": "Ethereum+Polygon+Arbitrum+Binance+Mantle+Optimism+Avalanche",
+    "peak": 92176849,
+    "peakWhen": "Mar 2024",
+    "latest": 1429638,
+    "drawdown": 0.9844902704365605
+  },
+  {
+    "name": "Rho X",
+    "slug": "rho-x",
+    "chains": "Ethereum",
+    "peak": 1566812,
+    "peakWhen": "May 2026",
+    "latest": 1411550,
+    "drawdown": 0.09909421168589472
+  },
+  {
+    "name": "Wasabi Perps",
+    "slug": "wasabi-perps",
+    "chains": "Base+Solana+Blast+Ethereum+Berachain",
+    "peak": 153074282,
+    "peakWhen": "Nov 2024",
+    "latest": 1307019,
+    "drawdown": 0.9914615376082574
+  },
+  {
+    "name": "Strike Finance Perpetuals",
+    "slug": "strike-finance-perpetuals",
+    "chains": "Cardano",
+    "peak": 7583053,
+    "peakWhen": "Jul 2025",
+    "latest": 1279072,
+    "drawdown": 0.83132492941827
+  },
+  {
+    "name": "Satori Perp",
+    "slug": "satori-perp",
+    "chains": "Ethereum+Linea+Binance+Story+TON+Polygon zkEVM+zkSync Era+Base+Arbitrum+Zircuit+Scroll+Plume Mainnet+X Layer",
+    "peak": 6754766,
+    "peakWhen": "Sep 2024",
+    "latest": 1276499,
+    "drawdown": 0.8110224691721372
+  },
+  {
+    "name": "Domination Finance",
+    "slug": "domination-finance",
+    "chains": "Base+Polygon+Ethereum+Boba",
+    "peak": 2821074,
+    "peakWhen": "May 2022",
+    "latest": 1271689,
+    "drawdown": 0.5492181346536815
+  },
+  {
+    "name": "Perpl",
+    "slug": "perpl",
+    "chains": "Monad",
+    "peak": 1188651,
+    "peakWhen": "May 2026",
+    "latest": 1187608,
+    "drawdown": 0.0008774652946912376
+  },
+  {
+    "name": "Bounce.Tech",
+    "slug": "bounce.tech",
+    "chains": "Hyperliquid L1",
+    "peak": 1468603,
+    "peakWhen": "May 2026",
+    "latest": 1118714,
+    "drawdown": 0.23824614276288414
+  },
+  {
+    "name": "Kyan Blue Perps",
+    "slug": "kyan-blue-perps",
+    "chains": "Arbitrum",
+    "peak": 987238,
+    "peakWhen": "May 2026",
+    "latest": 975875,
+    "drawdown": 0.011509889206047563
+  },
+  {
+    "name": "ZO Perps",
+    "slug": "zo-perps",
+    "chains": "Sui",
+    "peak": 13444665,
+    "peakWhen": "Oct 2025",
+    "latest": 833292,
+    "drawdown": 0.9380206200749517
+  },
+  {
+    "name": "Levana Perps",
+    "slug": "levana-perps",
+    "chains": "Osmosis+Neutron+Injective+Sei",
+    "peak": 14973509,
+    "peakWhen": "Dec 2024",
+    "latest": 735500,
+    "drawdown": 0.9508799173259922
+  },
+  {
+    "name": "Mooncake",
+    "slug": "mooncake",
+    "chains": "Solana",
+    "peak": 3389291,
+    "peakWhen": "Jan 2026",
+    "latest": 730865,
+    "drawdown": 0.7843605048961567
+  },
+  {
+    "name": "Navigator",
+    "slug": "navigator",
+    "chains": "Sonic",
+    "peak": 5272468,
+    "peakWhen": "May 2025",
+    "latest": 717948,
+    "drawdown": 0.8638307525052784
+  },
+  {
+    "name": "Lavarage",
+    "slug": "lavarage",
+    "chains": "Solana",
+    "peak": 2786556,
+    "peakWhen": "Jul 2025",
+    "latest": 678544,
+    "drawdown": 0.756493678935575
+  },
+  {
+    "name": "Tradoor TON",
+    "slug": "tradoor-ton",
+    "chains": "TON",
+    "peak": 5902773,
+    "peakWhen": "Mar 2025",
+    "latest": 628593,
+    "drawdown": 0.8935088643930573
+  },
+  {
+    "name": "Monday Trade Perps",
+    "slug": "monday-trade-perps",
+    "chains": "Monad",
+    "peak": 2747151,
+    "peakWhen": "Mar 2026",
+    "latest": 581490,
+    "drawdown": 0.7883298005824944
+  },
+  {
+    "name": "Adrena Protocol",
+    "slug": "adrena-protocol",
+    "chains": "Solana",
+    "peak": 26750640,
+    "peakWhen": "Jan 2025",
+    "latest": 575585,
+    "drawdown": 0.9784833185299492
+  },
+  {
+    "name": "Opyn Squeeth",
+    "slug": "opyn-squeeth",
+    "chains": "Ethereum",
+    "peak": 26765487,
+    "peakWhen": "Apr 2022",
+    "latest": 524024,
+    "drawdown": 0.980421652705217
+  },
+  {
+    "name": "RollX",
+    "slug": "rollx",
+    "chains": "Base+Bitlayer",
+    "peak": 2475025,
+    "peakWhen": "Aug 2025",
+    "latest": 520763,
+    "drawdown": 0.7895928323956324
+  },
+  {
+    "name": "BMX Classic Perps",
+    "slug": "bmx-classic-perps",
+    "chains": "Base+Sonic+Mode",
+    "peak": 5310272,
+    "peakWhen": "Jan 2025",
+    "latest": 483079,
+    "drawdown": 0.9090293303243224
+  },
+  {
+    "name": "TurboFlow",
+    "slug": "turboflow",
+    "chains": "Binance+Solana",
+    "peak": 562806,
+    "peakWhen": "Feb 2026",
+    "latest": 450706,
+    "drawdown": 0.199180534678024
+  },
+  {
+    "name": "PHAME Protocol",
+    "slug": "phame-protocol",
+    "chains": "Pulse",
+    "peak": 4069252,
+    "peakWhen": "Mar 2024",
+    "latest": 441689,
+    "drawdown": 0.891456955725524
+  },
+  {
+    "name": "Perpetual Protocol",
+    "slug": "perpetual-protocol",
+    "chains": "Ethereum+Optimism",
+    "peak": 57853771,
+    "peakWhen": "Apr 2022",
+    "latest": 433651,
+    "drawdown": 0.9925043606924084
+  },
+  {
+    "name": "Vela Exchange",
+    "slug": "vela-exchange",
+    "chains": "Arbitrum+Base",
+    "peak": 54209056,
+    "peakWhen": "Mar 2023",
+    "latest": 368999,
+    "drawdown": 0.9931930377094189
+  },
+  {
+    "name": "Flamix",
+    "slug": "flamix",
+    "chains": "Flare",
+    "peak": 383124,
+    "peakWhen": "May 2026",
+    "latest": 345111,
+    "drawdown": 0.09921852977104018
+  },
+  {
+    "name": "Astros Perp",
+    "slug": "astros-perp",
+    "chains": "Sui",
+    "peak": 5316848,
+    "peakWhen": "Jan 2026",
+    "latest": 343225,
+    "drawdown": 0.9354457753917359
+  },
+  {
+    "name": "Perennial V1",
+    "slug": "perennial-v1",
+    "chains": "Arbitrum+Ethereum",
+    "peak": 6095988,
+    "peakWhen": "Jun 2023",
+    "latest": 339444,
+    "drawdown": 0.9443168195212983
+  },
+  {
+    "name": "Pika",
+    "slug": "pika",
+    "chains": "Optimism",
+    "peak": 15594533,
+    "peakWhen": "Jun 2023",
+    "latest": 309032,
+    "drawdown": 0.9801833116772397
+  },
+  {
+    "name": "Trado Perpetual",
+    "slug": "trado-perpetual",
+    "chains": "Flow",
+    "peak": 1327664,
+    "peakWhen": "Oct 2024",
+    "latest": 294247,
+    "drawdown": 0.7783723893997276
+  },
+  {
+    "name": "Jarvis Network",
+    "slug": "jarvis-network",
+    "chains": "Polygon+Binance+Avalanche+xDai+Arbitrum+Optimism",
+    "peak": 11734221,
+    "peakWhen": "Dec 2021",
+    "latest": 287372,
+    "drawdown": 0.975509920939788
+  },
+  {
+    "name": "Lynx",
+    "slug": "lynx",
+    "chains": "Boba+Sonic+Goat+Arbitrum+Base+Ethereum+Fantom+Celo+Sei+Binance+Zircuit+Mode+Polygon+Fuse+Flare+Linea+Mantle+Optimism",
+    "peak": 824039,
+    "peakWhen": "Jan 2025",
+    "latest": 281373,
+    "drawdown": 0.6585440737634991
+  },
+  {
+    "name": "Demex Perp",
+    "slug": "demex-perp",
+    "chains": "Carbon",
+    "peak": 2302015,
+    "peakWhen": "Feb 2023",
+    "latest": 278375,
+    "drawdown": 0.8790733335794945
+  },
+  {
+    "name": "MUFEX",
+    "slug": "mufex",
+    "chains": "Binance+Polygon+Arbitrum+Mantle",
+    "peak": 331814,
+    "peakWhen": "Apr 2024",
+    "latest": 276337,
+    "drawdown": 0.16719306599480432
+  },
+  {
+    "name": "Core Markets",
+    "slug": "core-markets",
+    "chains": "Blast",
+    "peak": 269433,
+    "peakWhen": "Aug 2024",
+    "latest": 266485,
+    "drawdown": 0.010941495659403278
+  },
+  {
+    "name": "Contango V1",
+    "slug": "contango-v1",
+    "chains": "Arbitrum+Ethereum",
+    "peak": 1115117,
+    "peakWhen": "May 2023",
+    "latest": 265464,
+    "drawdown": 0.7619406752834008
+  },
+  {
+    "name": "Margined Protocol",
+    "slug": "margined-protocol",
+    "chains": "Osmosis+Neutron",
+    "peak": 3452285,
+    "peakWhen": "Jan 2025",
+    "latest": 265204,
+    "drawdown": 0.9231801545932622
+  },
+  {
+    "name": "HMX",
+    "slug": "hmx",
+    "chains": "Arbitrum+Blast+Polygon",
+    "peak": 34132539,
+    "peakWhen": "Nov 2023",
+    "latest": 257704,
+    "drawdown": 0.9924499024230222
+  },
+  {
+    "name": "Perennial V2",
+    "slug": "perennial-v2",
+    "chains": "Arbitrum+Perennial",
+    "peak": 6316739,
+    "peakWhen": "Feb 2024",
+    "latest": 236662,
+    "drawdown": 0.9625341493450972
+  },
+  {
+    "name": "Horizon Protocol",
+    "slug": "horizon-protocol",
+    "chains": "Binance",
+    "peak": 11626919,
+    "peakWhen": "Mar 2024",
+    "latest": 233311,
+    "drawdown": 0.9799335490339273
+  },
+  {
+    "name": "Voltz",
+    "slug": "voltz",
+    "chains": "Ethereum+Arbitrum+Avalanche",
+    "peak": 15426844,
+    "peakWhen": "Feb 2023",
+    "latest": 229996,
+    "drawdown": 0.9850911826164833
+  },
+  {
+    "name": "Gambit Financial",
+    "slug": "gambit-financial",
+    "chains": "Binance",
+    "peak": 12821465,
+    "peakWhen": "May 2021",
+    "latest": 219194,
+    "drawdown": 0.9829041377096923
+  },
+  {
+    "name": "Cyclo",
+    "slug": "cyclo",
+    "chains": "Flare",
+    "peak": 1057113,
+    "peakWhen": "Sep 2025",
+    "latest": 218358,
+    "drawdown": 0.7934393011910742
+  },
+  {
+    "name": "MYX Finance",
+    "slug": "myx-finance",
+    "chains": "Linea+Binance+Arbitrum+Op_Bnb",
+    "peak": 29436635,
+    "peakWhen": "Oct 2025",
+    "latest": 192933,
+    "drawdown": 0.9934458201489402
+  },
+  {
+    "name": "Cap Finance v1-v3",
+    "slug": "cap-finance-v1-v3",
+    "chains": "Arbitrum",
+    "peak": 7738108,
+    "peakWhen": "Oct 2022",
+    "latest": 187778,
+    "drawdown": 0.9757333446366994
+  },
+  {
+    "name": "Mycelium Perpetual Pools",
+    "slug": "mycelium-perpetual-pools",
+    "chains": "Arbitrum",
+    "peak": 51574413,
+    "peakWhen": "Nov 2021",
+    "latest": 183187,
+    "drawdown": 0.9964481030545127
+  },
+  {
+    "name": "Swych Perpetual",
+    "slug": "swych-perpetual",
+    "chains": "Binance",
+    "peak": 658203,
+    "peakWhen": "Dec 2024",
+    "latest": 164358,
+    "drawdown": 0.7502928427855844
+  },
+  {
+    "name": "Ideamarket",
+    "slug": "ideamarket",
+    "chains": "Arbitrum",
+    "peak": 1153188,
+    "peakWhen": "Apr 2022",
+    "latest": 162879,
+    "drawdown": 0.8587576353552067
+  },
+  {
+    "name": "BMX Freestyle",
+    "slug": "bmx-freestyle",
+    "chains": "Base+Mode",
+    "peak": 210627,
+    "peakWhen": "Aug 2024",
+    "latest": 150843,
+    "drawdown": 0.28383825435485477
+  },
+  {
+    "name": "Float",
+    "slug": "float",
+    "chains": "Polygon+Avalanche",
+    "peak": 1874962,
+    "peakWhen": "Feb 2022",
+    "latest": 145073,
+    "drawdown": 0.9226261652236152
+  },
+  {
+    "name": "Doubler",
+    "slug": "doubler",
+    "chains": "Arbitrum+Manta",
+    "peak": 5067679,
+    "peakWhen": "Jul 2024",
+    "latest": 136091,
+    "drawdown": 0.9731452998502865
+  },
+  {
+    "name": "Cyberperp",
+    "slug": "cyberperp",
+    "chains": "IOTA+IOTA EVM",
+    "peak": 12201740,
+    "peakWhen": "Dec 2024",
+    "latest": 131028,
+    "drawdown": 0.9892615315520573
+  },
+  {
+    "name": "Typus Perp",
+    "slug": "typus-perp",
+    "chains": "Sui",
+    "peak": 4309242,
+    "peakWhen": "Jul 2025",
+    "latest": 126689,
+    "drawdown": 0.9706006299947879
+  },
+  {
+    "name": "InfinityPools",
+    "slug": "infinitypools",
+    "chains": "Base",
+    "peak": 5937279,
+    "peakWhen": "Feb 2025",
+    "latest": 122485,
+    "drawdown": 0.9793701795047867
+  },
+  {
+    "name": "Particle LAMM",
+    "slug": "particle-lamm",
+    "chains": "Blast",
+    "peak": 57480919,
+    "peakWhen": "Jun 2024",
+    "latest": 121746,
+    "drawdown": 0.997881975408222
+  },
+  {
+    "name": "Euphoria Finance",
+    "slug": "euphoria-finance",
+    "chains": "MegaETH",
+    "peak": 116884,
+    "peakWhen": "May 2026",
+    "latest": 116803,
+    "drawdown": 0.0006929947640396117
+  },
+  {
+    "name": "01",
+    "slug": "01",
+    "chains": "Solana",
+    "peak": 63491739,
+    "peakWhen": "Apr 2024",
+    "latest": 112781,
+    "drawdown": 0.9982236901717245
+  },
+  {
+    "name": "SynFutures V1",
+    "slug": "synfutures-v1",
+    "chains": "Polygon+Binance+Ethereum+Arbitrum",
+    "peak": 7845877,
+    "peakWhen": "Dec 2022",
+    "latest": 111601,
+    "drawdown": 0.985775841247575
+  },
+  {
+    "name": "Mycelium Perpetual Swaps",
+    "slug": "mycelium-perpetual-swaps",
+    "chains": "Arbitrum",
+    "peak": 19967950,
+    "peakWhen": "Oct 2022",
+    "latest": 107408,
+    "drawdown": 0.9946209801206434
+  },
+  {
+    "name": "Atomic Green",
+    "slug": "atomic-green",
+    "chains": "Arbitrum",
+    "peak": 580262,
+    "peakWhen": "Apr 2023",
+    "latest": 107018,
+    "drawdown": 0.8155695185967717
+  },
+  {
+    "name": "Bullbit PERP DEX",
+    "slug": "bullbit-perp-dex",
+    "chains": "Base",
+    "peak": 274067,
+    "peakWhen": "Apr 2026",
+    "latest": 104680,
+    "drawdown": 0.6180496010099721
+  },
+  {
+    "name": "SIR",
+    "slug": "sir",
+    "chains": "Ethereum+MegaETH+Hyperliquid L1",
+    "peak": 389092,
+    "peakWhen": "Mar 2025",
+    "latest": 103302,
+    "drawdown": 0.7345049499861216
+  },
+  {
+    "name": "Pika V4",
+    "slug": "pika-v4",
+    "chains": "Optimism",
+    "peak": 6069475,
+    "peakWhen": "Sep 2023",
+    "latest": 95448,
+    "drawdown": 0.9842740928993035
+  },
+  {
+    "name": "Cryptex Pi",
+    "slug": "cryptex-pi",
+    "chains": "Arbitrum",
+    "peak": 2959152,
+    "peakWhen": "Jan 2024",
+    "latest": 95314,
+    "drawdown": 0.9677900966222756
+  },
+  {
+    "name": "Derivio",
+    "slug": "derivio",
+    "chains": "zkSync Era",
+    "peak": 3808193,
+    "peakWhen": "Apr 2024",
+    "latest": 93698,
+    "drawdown": 0.975395679788288
+  },
+  {
+    "name": "Javsphere",
+    "slug": "javsphere",
+    "chains": "Base+DeFiChain EVM+DefiChain",
+    "peak": 12274679,
+    "peakWhen": "Apr 2024",
+    "latest": 86052,
+    "drawdown": 0.9929894704374754
+  },
+  {
+    "name": "Pingu Exchange",
+    "slug": "pingu-exchange",
+    "chains": "Monad+Arbitrum",
+    "peak": 2560324,
+    "peakWhen": "Apr 2024",
+    "latest": 84623,
+    "drawdown": 0.9669483237277782
+  },
+  {
+    "name": "10KDex",
+    "slug": "10kdex",
+    "chains": "Scroll",
+    "peak": 170254,
+    "peakWhen": "May 2024",
+    "latest": 84433,
+    "drawdown": 0.5040762625254032
+  },
+  {
+    "name": "YieldFlow-YTrade",
+    "slug": "yieldflow-ytrade",
+    "chains": "Arbitrum",
+    "peak": 1097233,
+    "peakWhen": "Sep 2025",
+    "latest": 83220,
+    "drawdown": 0.9241546690629976
+  },
+  {
+    "name": "Electra",
+    "slug": "electra",
+    "chains": "Binance+TON+Ethereum",
+    "peak": 441009,
+    "peakWhen": "Mar 2025",
+    "latest": 81784,
+    "drawdown": 0.8145525374765594
+  },
+  {
+    "name": "GoodEntry",
+    "slug": "goodentry",
+    "chains": "Arbitrum",
+    "peak": 1721700,
+    "peakWhen": "Aug 2023",
+    "latest": 78756,
+    "drawdown": 0.9542568391705872
+  },
+  {
+    "name": "Hubble Exchange",
+    "slug": "hubble-exchange",
+    "chains": "Avalanche",
+    "peak": 4744985,
+    "peakWhen": "Aug 2022",
+    "latest": 77400,
+    "drawdown": 0.98368804116346
+  },
+  {
+    "name": "AshPerp",
+    "slug": "ashperp",
+    "chains": "Elrond",
+    "peak": 986267,
+    "peakWhen": "Apr 2024",
+    "latest": 74026,
+    "drawdown": 0.9249432455917109
+  },
+  {
+    "name": "Sai",
+    "slug": "sai",
+    "chains": "Nibiru",
+    "peak": 71348,
+    "peakWhen": "May 2026",
+    "latest": 69134,
+    "drawdown": 0.03103100297135164
+  },
+  {
+    "name": "GOATUP",
+    "slug": "goatup",
+    "chains": "Goat",
+    "peak": 126143,
+    "peakWhen": "Nov 2025",
+    "latest": 61864,
+    "drawdown": 0.5095724693403518
+  },
+  {
+    "name": "Rho Protocol",
+    "slug": "rho-protocol",
+    "chains": "Arbitrum",
+    "peak": 1252937,
+    "peakWhen": "Sep 2025",
+    "latest": 57709,
+    "drawdown": 0.9539410201789874
+  },
+  {
+    "name": "Mummy Finance",
+    "slug": "mummy-finance",
+    "chains": "Optimism+Arbitrum+Fantom+Base",
+    "peak": 19274221,
+    "peakWhen": "Mar 2023",
+    "latest": 51368,
+    "drawdown": 0.9973348858042045
+  },
+  {
+    "name": "Unbound",
+    "slug": "unbound",
+    "chains": "Ethereum+Polygon",
+    "peak": 833080,
+    "peakWhen": "Aug 2022",
+    "latest": 51354,
+    "drawdown": 0.9383564603639506
+  },
+  {
+    "name": "Stobix",
+    "slug": "stobix",
+    "chains": "Base",
+    "peak": 56088,
+    "peakWhen": "Aug 2025",
+    "latest": 50308,
+    "drawdown": 0.1030523463129368
+  },
+  {
+    "name": "Alpaca Perpetual Futures Exchange",
+    "slug": "alpaca-perpetual-futures-exchange",
+    "chains": "Binance",
+    "peak": 8439125,
+    "peakWhen": "May 2023",
+    "latest": 49176,
+    "drawdown": 0.9941728555981811
+  },
+  {
+    "name": "KTX Perps",
+    "slug": "ktx-perps",
+    "chains": "Binance+Mantle+Arbitrum",
+    "peak": 11067941,
+    "peakWhen": "Mar 2024",
+    "latest": 39046,
+    "drawdown": 0.9964721532216335
+  },
+  {
+    "name": "Likwid",
+    "slug": "likwid",
+    "chains": "Base+Binance+Ethereum",
+    "peak": 65929,
+    "peakWhen": "Apr 2026",
+    "latest": 37681,
+    "drawdown": 0.4284609200806929
+  },
+  {
+    "name": "El Dorado Exchange",
+    "slug": "el-dorado-exchange",
+    "chains": "Binance+Arbitrum",
+    "peak": 3730129,
+    "peakWhen": "Feb 2023",
+    "latest": 37331,
+    "drawdown": 0.9899920351280076
+  },
+  {
+    "name": "CompliFi",
+    "slug": "complifi",
+    "chains": "Ethereum+Polygon",
+    "peak": 81952319,
+    "peakWhen": "May 2021",
+    "latest": 37230,
+    "drawdown": 0.9995457114520456
+  },
+  {
+    "name": "100XSOON",
+    "slug": "100xsoon",
+    "chains": "Base",
+    "peak": 42624,
+    "peakWhen": "Apr 2026",
+    "latest": 35941,
+    "drawdown": 0.15678960210210213
+  },
+  {
+    "name": "Y2K V1",
+    "slug": "y2k-v1",
+    "chains": "Arbitrum",
+    "peak": 13802670,
+    "peakWhen": "Dec 2022",
+    "latest": 35455,
+    "drawdown": 0.9974312940902014
+  },
+  {
+    "name": "Coffin.Meme",
+    "slug": "coffin.meme",
+    "chains": "TON",
+    "peak": 1071641,
+    "peakWhen": "Dec 2024",
+    "latest": 34367,
+    "drawdown": 0.9679304916478559
+  },
+  {
+    "name": "K-BIT",
+    "slug": "k-bit",
+    "chains": "Klaytn",
+    "peak": 67808,
+    "peakWhen": "Aug 2025",
+    "latest": 33302,
+    "drawdown": 0.508878008494573
+  },
+  {
+    "name": "Level Perps",
+    "slug": "level-perps",
+    "chains": "Arbitrum+Binance",
+    "peak": 42613651,
+    "peakWhen": "Apr 2023",
+    "latest": 33133,
+    "drawdown": 0.9992224792003858
+  },
+  {
+    "name": "Uniwhale",
+    "slug": "uniwhale",
+    "chains": "Binance",
+    "peak": 2814892,
+    "peakWhen": "Mar 2023",
+    "latest": 33054,
+    "drawdown": 0.988257453571931
+  },
+  {
+    "name": "UniDex Perp",
+    "slug": "unidex-perp",
+    "chains": "Optimism+zkSync Era+Arbitrum+Metis+Fantom+Base+Binance+Boba+Evmos",
+    "peak": 4514312,
+    "peakWhen": "May 2023",
+    "latest": 31333,
+    "drawdown": 0.9930591859844867
+  },
+  {
+    "name": "Bloom Trading",
+    "slug": "bloom-trading",
+    "chains": "Blast",
+    "peak": 14417161,
+    "peakWhen": "Apr 2024",
+    "latest": 30622,
+    "drawdown": 0.9978760034655921
+  },
+  {
+    "name": "Zeno Exchange",
+    "slug": "zeno-exchange",
+    "chains": "Metis",
+    "peak": 596337,
+    "peakWhen": "Jan 2025",
+    "latest": 29405,
+    "drawdown": 0.9506906329810157
+  },
+  {
+    "name": "Onchain Trade",
+    "slug": "onchain-trade",
+    "chains": "zkSync Era+Base",
+    "peak": 1503327,
+    "peakWhen": "Jul 2023",
+    "latest": 29194,
+    "drawdown": 0.9805804059928412
+  },
+  {
+    "name": "Equity",
+    "slug": "equity",
+    "chains": "Fantom",
+    "peak": 2763116,
+    "peakWhen": "Jun 2024",
+    "latest": 26141,
+    "drawdown": 0.9905393041768785
+  },
+  {
+    "name": "Numoen",
+    "slug": "numoen",
+    "chains": "Arbitrum+Polygon+Celo",
+    "peak": 76602,
+    "peakWhen": "Mar 2023",
+    "latest": 25326,
+    "drawdown": 0.6693820004699615
+  },
+  {
+    "name": "JOJO",
+    "slug": "jojo",
+    "chains": "Base+Arbitrum+Binance+zkSync Era",
+    "peak": 4527081,
+    "peakWhen": "Dec 2024",
+    "latest": 24708,
+    "drawdown": 0.9945421785031017
+  },
+  {
+    "name": "Primex Finance",
+    "slug": "primex-finance",
+    "chains": "Ethereum+Polygon+Arbitrum+Base",
+    "peak": 751203,
+    "peakWhen": "May 2024",
+    "latest": 24285,
+    "drawdown": 0.9676718543456296
+  },
+  {
+    "name": "KRAV",
+    "slug": "krav",
+    "chains": "Base",
+    "peak": 196752,
+    "peakWhen": "Jan 2025",
+    "latest": 23021,
+    "drawdown": 0.8829948361388956
+  },
+  {
+    "name": "Superp",
+    "slug": "superp",
+    "chains": "Binance",
+    "peak": 200929,
+    "peakWhen": "Jan 2026",
+    "latest": 22731,
+    "drawdown": 0.8868704865897904
+  },
+  {
+    "name": "Predy V3.2",
+    "slug": "predy-v3.2",
+    "chains": "Arbitrum",
+    "peak": 296070,
+    "peakWhen": "Apr 2023",
+    "latest": 22693,
+    "drawdown": 0.923352585537204
+  },
+  {
+    "name": "Cap Finance V4",
+    "slug": "cap-finance-v4",
+    "chains": "Arbitrum+Base",
+    "peak": 2120271,
+    "peakWhen": "Mar 2023",
+    "latest": 20076,
+    "drawdown": 0.9905313990522909
+  },
+  {
+    "name": "Xena Finance",
+    "slug": "xena-finance",
+    "chains": "Base",
+    "peak": 5981729,
+    "peakWhen": "Jan 2024",
+    "latest": 18814,
+    "drawdown": 0.9968547555397445
+  },
+  {
+    "name": "Fufuture V1",
+    "slug": "fufuture-v1",
+    "chains": "Binance+Arbitrum",
+    "peak": 385791,
+    "peakWhen": "May 2024",
+    "latest": 17927,
+    "drawdown": 0.9535318345943788
+  },
+  {
+    "name": "Flux Exchange",
+    "slug": "flux-exchange",
+    "chains": "zkSync Era+Fantom",
+    "peak": 804344,
+    "peakWhen": "May 2023",
+    "latest": 17842,
+    "drawdown": 0.9778179485394309
+  },
+  {
+    "name": "TsunamiX",
+    "slug": "tsunamix",
+    "chains": "Aptos+Mantle",
+    "peak": 2436247,
+    "peakWhen": "Mar 2024",
+    "latest": 17616,
+    "drawdown": 0.9927692060780372
+  },
+  {
+    "name": "Substance Exchange",
+    "slug": "substance-exchange",
+    "chains": "ZetaChain+Arbitrum",
+    "peak": 1251457,
+    "peakWhen": "Dec 2023",
+    "latest": 17502,
+    "drawdown": 0.9860147012642064
+  },
+  {
+    "name": "SwapBased Perp",
+    "slug": "swapbased-perp",
+    "chains": "Base",
+    "peak": 640072,
+    "peakWhen": "Aug 2023",
+    "latest": 17376,
+    "drawdown": 0.9728530540314214
+  },
+  {
+    "name": "BLEX",
+    "slug": "blex",
+    "chains": "Arbitrum",
+    "peak": 580987,
+    "peakWhen": "Nov 2023",
+    "latest": 17336,
+    "drawdown": 0.9701611223659049
+  },
+  {
+    "name": "Predy V2",
+    "slug": "predy-v2",
+    "chains": "Arbitrum",
+    "peak": 455182,
+    "peakWhen": "Jun 2022",
+    "latest": 17194,
+    "drawdown": 0.9622260985715604
+  },
+  {
+    "name": "Cryptex V2",
+    "slug": "cryptex-v2",
+    "chains": "Arbitrum",
+    "peak": 127065,
+    "peakWhen": "Jun 2023",
+    "latest": 15576,
+    "drawdown": 0.8774170700035415
+  },
+  {
+    "name": "Somnex Perp",
+    "slug": "somnex-perp",
+    "chains": "Somnia",
+    "peak": 444519,
+    "peakWhen": "Dec 2025",
+    "latest": 14315,
+    "drawdown": 0.9677966521116083
+  },
+  {
+    "name": "Defx",
+    "slug": "defx",
+    "chains": "Ethereum+Base+Polygon+Arbitrum+Binance+Solana",
+    "peak": 2705959,
+    "peakWhen": "Jan 2026",
+    "latest": 14138,
+    "drawdown": 0.9947752349536708
+  },
+  {
+    "name": "Capybara Perps",
+    "slug": "capybara-perps",
+    "chains": "Klaytn",
+    "peak": 265554,
+    "peakWhen": "Oct 2024",
+    "latest": 13869,
+    "drawdown": 0.9477733342371043
+  },
+  {
+    "name": "Mango Markets V4 Perps",
+    "slug": "mango-markets-v4-perps",
+    "chains": "Solana",
+    "peak": 23787215,
+    "peakWhen": "Apr 2024",
+    "latest": 13846,
+    "drawdown": 0.9994179226109488
+  },
+  {
+    "name": "Velar Perps",
+    "slug": "velar-perps",
+    "chains": "Stacks+BOB+Mezo",
+    "peak": 1440045,
+    "peakWhen": "Oct 2025",
+    "latest": 13836,
+    "drawdown": 0.9903919669177005
+  },
+  {
+    "name": "YLD",
+    "slug": "yld",
+    "chains": "Ethereum",
+    "peak": 19111,
+    "peakWhen": "May 2026",
+    "latest": 13609,
+    "drawdown": 0.2878970226571085
+  },
+  {
+    "name": "Increment Protocol",
+    "slug": "increment-protocol",
+    "chains": "zkSync Era",
+    "peak": 88960,
+    "peakWhen": "Apr 2024",
+    "latest": 13156,
+    "drawdown": 0.852113309352518
+  },
+  {
+    "name": "ShrikePerps",
+    "slug": "shrikeperps",
+    "chains": "Polygon zkEVM",
+    "peak": 259148,
+    "peakWhen": "Jul 2023",
+    "latest": 12350,
+    "drawdown": 0.9523438344112245
+  },
+  {
+    "name": "Sour Finance",
+    "slug": "sour-finance",
+    "chains": "Solana",
+    "peak": 12246,
+    "peakWhen": "May 2026",
+    "latest": 12242,
+    "drawdown": 0.0003266372693124797
+  },
+  {
+    "name": "Predy V5",
+    "slug": "predy-v5",
+    "chains": "Arbitrum",
+    "peak": 422292,
+    "peakWhen": "Jan 2024",
+    "latest": 11866,
+    "drawdown": 0.9719009595256363
+  },
+  {
+    "name": "Kuma Perpetuals DEX",
+    "slug": "kuma-perpetuals-dex",
+    "chains": "IDEX",
+    "peak": 1343523,
+    "peakWhen": "Dec 2024",
+    "latest": 11442,
+    "drawdown": 0.9914835845757758
+  },
+  {
+    "name": "Golden Finance",
+    "slug": "golden-finance",
+    "chains": "ZetaChain",
+    "peak": 506471,
+    "peakWhen": "Mar 2025",
+    "latest": 10785,
+    "drawdown": 0.9787055922254186
+  },
+  {
+    "name": "prePO",
+    "slug": "prepo",
+    "chains": "Arbitrum+Blast+Base",
+    "peak": 460558,
+    "peakWhen": "Jul 2023",
+    "latest": 10653,
+    "drawdown": 0.9768693628164097
+  },
+  {
+    "name": "Minerva",
+    "slug": "minerva",
+    "chains": "Optimism",
+    "peak": 226375,
+    "peakWhen": "Jun 2023",
+    "latest": 10271,
+    "drawdown": 0.9546283821093319
+  },
+  {
+    "name": "Vanilla",
+    "slug": "vanilla",
+    "chains": "Ethereum",
+    "peak": 559378,
+    "peakWhen": "Nov 2021",
+    "latest": 9967,
+    "drawdown": 0.9821819950015911
+  },
+  {
+    "name": "Spin Perps",
+    "slug": "spin-perps",
+    "chains": "Near",
+    "peak": 140461,
+    "peakWhen": "Jul 2023",
+    "latest": 9787,
+    "drawdown": 0.9303222958686042
+  },
+  {
+    "name": "Realperp",
+    "slug": "realperp",
+    "chains": "Manta",
+    "peak": 1451280,
+    "peakWhen": "Apr 2024",
+    "latest": 9693,
+    "drawdown": 0.9933210682983298
+  },
+  {
+    "name": "Alkimiya",
+    "slug": "alkimiya",
+    "chains": "Base",
+    "peak": 96800,
+    "peakWhen": "Jul 2025",
+    "latest": 9545,
+    "drawdown": 0.9013946280991736
+  },
+  {
+    "name": "Tigris",
+    "slug": "tigris",
+    "chains": "Polygon+Arbitrum",
+    "peak": 540170,
+    "peakWhen": "Aug 2023",
+    "latest": 9414,
+    "drawdown": 0.9825721532110262
+  },
+  {
+    "name": "Lemma",
+    "slug": "lemma",
+    "chains": "Optimism",
+    "peak": 570463,
+    "peakWhen": "Dec 2024",
+    "latest": 9107,
+    "drawdown": 0.9840357744498767
+  },
+  {
+    "name": "Tea-REX",
+    "slug": "tea-rex",
+    "chains": "Sei",
+    "peak": 11173018,
+    "peakWhen": "Dec 2025",
+    "latest": 8917,
+    "drawdown": 0.9992019166173365
+  },
+  {
+    "name": "zkEra Finance",
+    "slug": "zkera-finance",
+    "chains": "zkSync Era+Telos+Metis",
+    "peak": 559192,
+    "peakWhen": "May 2024",
+    "latest": 8451,
+    "drawdown": 0.9848871228486816
+  },
+  {
+    "name": "Symmetry Trade",
+    "slug": "symmetry-trade",
+    "chains": "Scroll",
+    "peak": 588782,
+    "peakWhen": "May 2024",
+    "latest": 7364,
+    "drawdown": 0.9874928241692171
+  },
+  {
+    "name": "MetalSwap",
+    "slug": "metalswap",
+    "chains": "Linea+Ethereum+Optimism+Binance+Polygon",
+    "peak": 1165223,
+    "peakWhen": "Dec 2024",
+    "latest": 7343,
+    "drawdown": 0.9936982019750726
+  },
+  {
+    "name": "ImmortalX",
+    "slug": "immortalx",
+    "chains": "Celo",
+    "peak": 120168,
+    "peakWhen": "Jun 2024",
+    "latest": 6788,
+    "drawdown": 0.9435124159510019
+  },
+  {
+    "name": "Logium",
+    "slug": "logium",
+    "chains": "Ethereum",
+    "peak": 83139,
+    "peakWhen": "Sep 2022",
+    "latest": 6382,
+    "drawdown": 0.9232369886575494
+  },
+  {
+    "name": "Ryze.Fi",
+    "slug": "ryze.fi",
+    "chains": "Arbitrum",
+    "peak": 498400,
+    "peakWhen": "Dec 2023",
+    "latest": 6352,
+    "drawdown": 0.987255216693419
+  },
+  {
+    "name": "D8X",
+    "slug": "d8x",
+    "chains": "Berachain+Arbitrum+X Layer+Polygon zkEVM+Base",
+    "peak": 2368329,
+    "peakWhen": "Apr 2025",
+    "latest": 6129,
+    "drawdown": 0.9974120994169307
+  },
+  {
+    "name": "waveX",
+    "slug": "wavex",
+    "chains": "Soneium",
+    "peak": 709402,
+    "peakWhen": "May 2025",
+    "latest": 6109,
+    "drawdown": 0.9913885215998827
+  },
+  {
+    "name": "SATOSHI PERPS",
+    "slug": "satoshi-perps",
+    "chains": "CORE",
+    "peak": 11047159,
+    "peakWhen": "Mar 2025",
+    "latest": 6060,
+    "drawdown": 0.9994514426740848
+  },
+  {
+    "name": "Surf Protocol",
+    "slug": "surf-protocol",
+    "chains": "Base+Merlin",
+    "peak": 41530628,
+    "peakWhen": "Jun 2024",
+    "latest": 5998,
+    "drawdown": 0.9998555764675651
+  },
+  {
+    "name": "Jetstream",
+    "slug": "jetstream",
+    "chains": "Arbitrum",
+    "peak": 203659,
+    "peakWhen": "Apr 2025",
+    "latest": 5743,
+    "drawdown": 0.9718009024889644
+  },
+  {
+    "name": "Linear Finance",
+    "slug": "linear-finance",
+    "chains": "Binance",
+    "peak": 32702676,
+    "peakWhen": "Dec 2021",
+    "latest": 4856,
+    "drawdown": 0.9998515106225557
+  },
+  {
+    "name": "Erasure",
+    "slug": "erasure",
+    "chains": "Ethereum",
+    "peak": 22034625,
+    "peakWhen": "May 2021",
+    "latest": 4814,
+    "drawdown": 0.99978152566699
+  },
+  {
+    "name": "Racks",
+    "slug": "racks",
+    "chains": "Hyperliquid L1",
+    "peak": 53245,
+    "peakWhen": "Oct 2025",
+    "latest": 4367,
+    "drawdown": 0.9179829091933515
+  },
+  {
+    "name": "GammaSwap Classic",
+    "slug": "gammaswap-classic",
+    "chains": "Arbitrum",
+    "peak": 777025,
+    "peakWhen": "Oct 2023",
+    "latest": 4192,
+    "drawdown": 0.994605064187124
+  },
+  {
+    "name": "Rollie Finance",
+    "slug": "rollie-finance",
+    "chains": "Scroll",
+    "peak": 1192246,
+    "peakWhen": "Jul 2024",
+    "latest": 4162,
+    "drawdown": 0.9965091096971598
+  },
+  {
+    "name": "Sharwa.Finance",
+    "slug": "sharwa.finance",
+    "chains": "Arbitrum",
+    "peak": 101221,
+    "peakWhen": "Oct 2025",
+    "latest": 3998,
+    "drawdown": 0.9605022673160708
+  },
+  {
+    "name": "Ruscet",
+    "slug": "ruscet",
+    "chains": "Fuel",
+    "peak": 612503,
+    "peakWhen": "May 2025",
+    "latest": 3553,
+    "drawdown": 0.9941992120854918
+  },
+  {
+    "name": "Chromatic Protocol",
+    "slug": "chromatic-protocol",
+    "chains": "Arbitrum",
+    "peak": 113976,
+    "peakWhen": "Mar 2024",
+    "latest": 3407,
+    "drawdown": 0.9701077419807679
+  },
+  {
+    "name": "FXDX",
+    "slug": "fxdx",
+    "chains": "Base+Optimism",
+    "peak": 406012,
+    "peakWhen": "Oct 2023",
+    "latest": 3246,
+    "drawdown": 0.9920051624089928
+  },
+  {
+    "name": "SOBAX",
+    "slug": "sobax",
+    "chains": "Polygon+ZetaChain",
+    "peak": 89081,
+    "peakWhen": "Mar 2025",
+    "latest": 3243,
+    "drawdown": 0.9635949304565508
+  },
+  {
+    "name": "Gambit Trade",
+    "slug": "gambit-trade",
+    "chains": "zkSync Era+Arbitrum",
+    "peak": 231857,
+    "peakWhen": "Jan 2024",
+    "latest": 3082,
+    "drawdown": 0.9867073239108588
+  },
+  {
+    "name": "Volta Markets",
+    "slug": "volta-markets",
+    "chains": "CORE",
+    "peak": 117390,
+    "peakWhen": "Aug 2025",
+    "latest": 2874,
+    "drawdown": 0.9755175057500639
+  },
+  {
+    "name": "SeedFi Perp",
+    "slug": "seedfi-perp",
+    "chains": "Superseed",
+    "peak": 28496,
+    "peakWhen": "Jun 2025",
+    "latest": 2685,
+    "drawdown": 0.9057762492981472
+  },
+  {
+    "name": "Predy V3",
+    "slug": "predy-v3",
+    "chains": "Arbitrum",
+    "peak": 229207,
+    "peakWhen": "Feb 2023",
+    "latest": 2608,
+    "drawdown": 0.9886216389551803
+  },
+  {
+    "name": "Y2K V2",
+    "slug": "y2k-v2",
+    "chains": "Arbitrum",
+    "peak": 671392,
+    "peakWhen": "Jul 2023",
+    "latest": 2546,
+    "drawdown": 0.9962078785567895
+  },
+  {
+    "name": "Syrup Finance",
+    "slug": "syrup-finance",
+    "chains": "Binance",
+    "peak": 220931,
+    "peakWhen": "Jan 2023",
+    "latest": 2420,
+    "drawdown": 0.9890463538389814
+  },
+  {
+    "name": "GPLX",
+    "slug": "gplx",
+    "chains": "Pulse",
+    "peak": 86113,
+    "peakWhen": "Jun 2023",
+    "latest": 2386,
+    "drawdown": 0.972292220686772
+  },
+  {
+    "name": "Limitless",
+    "slug": "limitless",
+    "chains": "Arbitrum+Base+Linea",
+    "peak": 625017,
+    "peakWhen": "Jul 2024",
+    "latest": 2286,
+    "drawdown": 0.996342499484014
+  },
+  {
+    "name": "Beamex Perps",
+    "slug": "beamex-perps",
+    "chains": "Moonbeam",
+    "peak": 667579,
+    "peakWhen": "Aug 2023",
+    "latest": 2234,
+    "drawdown": 0.9966535795763498
+  },
+  {
+    "name": "YFX V4",
+    "slug": "yfx-v4",
+    "chains": "Arbitrum+Base",
+    "peak": 1569166,
+    "peakWhen": "Dec 2024",
+    "latest": 2227,
+    "drawdown": 0.9985807747555071
+  },
+  {
+    "name": "DIP Exchange",
+    "slug": "dip-exchange",
+    "chains": "Base",
+    "peak": 247660,
+    "peakWhen": "Sep 2023",
+    "latest": 2022,
+    "drawdown": 0.9918355810385205
+  },
+  {
+    "name": "RabbitX",
+    "slug": "rabbitx",
+    "chains": "Ethereum+Blast+Sonic+Base+Arbitrum",
+    "peak": 13799949,
+    "peakWhen": "May 2024",
+    "latest": 1900,
+    "drawdown": 0.9998623183317562
+  },
+  {
+    "name": "Mars Perps",
+    "slug": "mars-perps",
+    "chains": "Neutron",
+    "peak": 571026,
+    "peakWhen": "Jun 2025",
+    "latest": 1807,
+    "drawdown": 0.9968355206242798
+  },
+  {
+    "name": "Citrex Markets",
+    "slug": "citrex-markets",
+    "chains": "Sei",
+    "peak": 1001012,
+    "peakWhen": "Jun 2025",
+    "latest": 1742,
+    "drawdown": 0.9982597611217447
+  },
+  {
+    "name": "ABEx Finance",
+    "slug": "abex-finance",
+    "chains": "Sui",
+    "peak": 3673237,
+    "peakWhen": "Mar 2024",
+    "latest": 1553,
+    "drawdown": 0.9995772121428593
+  },
+  {
+    "name": "Voodoo Trade Base",
+    "slug": "voodoo-trade-base",
+    "chains": "Base",
+    "peak": 163850,
+    "peakWhen": "Dec 2023",
+    "latest": 1473,
+    "drawdown": 0.9910100701861458
+  },
+  {
+    "name": "SpaceDex",
+    "slug": "spacedex",
+    "chains": "Arbitrum+Binance",
+    "peak": 90523,
+    "peakWhen": "May 2023",
+    "latest": 1304,
+    "drawdown": 0.9855948212056604
+  },
+  {
+    "name": "Thetis Perps",
+    "slug": "thetis-perps",
+    "chains": "Aptos",
+    "peak": 1293132,
+    "peakWhen": "Jan 2025",
+    "latest": 1295,
+    "drawdown": 0.9989985554452291
+  },
+  {
+    "name": "Pegasus Finance",
+    "slug": "pegasus-finance",
+    "chains": "Optimism",
+    "peak": 238558,
+    "peakWhen": "May 2022",
+    "latest": 1281,
+    "drawdown": 0.9946302366720043
+  },
+  {
+    "name": "Narwhal Finance",
+    "slug": "narwhal-finance",
+    "chains": "Arbitrum+Monad+Binance",
+    "peak": 2107949,
+    "peakWhen": "Aug 2023",
+    "latest": 1268,
+    "drawdown": 0.999398467420227
+  },
+  {
+    "name": "LogX V1",
+    "slug": "logx-v1",
+    "chains": "Telos+Manta+Mode+Linea+Mantle+Fuse+Kroma+zkLink",
+    "peak": 15687728,
+    "peakWhen": "Feb 2024",
+    "latest": 1240,
+    "drawdown": 0.9999209573240944
+  },
+  {
+    "name": "Corex Markets",
+    "slug": "corex-markets",
+    "chains": "CORE",
+    "peak": 2584,
+    "peakWhen": "Jan 2026",
+    "latest": 1227,
+    "drawdown": 0.5251547987616099
+  },
+  {
+    "name": "Phission Finance",
+    "slug": "phission-finance",
+    "chains": "Ethereum",
+    "peak": 112029,
+    "peakWhen": "Sep 2022",
+    "latest": 1169,
+    "drawdown": 0.9895652018673736
+  },
+  {
+    "name": "ModeMax Perps",
+    "slug": "modemax-perps",
+    "chains": "Mode",
+    "peak": 157661,
+    "peakWhen": "Oct 2024",
+    "latest": 1035,
+    "drawdown": 0.9934352820291639
+  },
+  {
+    "name": "Mirage Protocol",
+    "slug": "mirage-protocol",
+    "chains": "Aptos",
+    "peak": 1076670,
+    "peakWhen": "Jul 2025",
+    "latest": 1016,
+    "drawdown": 0.9990563496707441
+  },
+  {
+    "name": "Mu Exchange",
+    "slug": "mu-exchange",
+    "chains": "xDai",
+    "peak": 438731,
+    "peakWhen": "Feb 2024",
+    "latest": 959,
+    "drawdown": 0.9978141503563687
+  },
+  {
+    "name": "NLX Protocol",
+    "slug": "nlx-protocol",
+    "chains": "CORE",
+    "peak": 983203,
+    "peakWhen": "Jul 2024",
+    "latest": 935,
+    "drawdown": 0.9990490264980884
+  },
+  {
+    "name": "FWX Derivatives",
+    "slug": "fwx-derivatives",
+    "chains": "Base+Avalanche+Binance",
+    "peak": 455023,
+    "peakWhen": "Dec 2024",
+    "latest": 791,
+    "drawdown": 0.9982616263353721
+  },
+  {
+    "name": "Unlimited Network",
+    "slug": "unlimited-network",
+    "chains": "Arbitrum",
+    "peak": 530941,
+    "peakWhen": "Jul 2023",
+    "latest": 771,
+    "drawdown": 0.9985478612501201
+  },
+  {
+    "name": "ZKX",
+    "slug": "zkx",
+    "chains": "Ethereum",
+    "peak": 2794437,
+    "peakWhen": "Jun 2024",
+    "latest": 754,
+    "drawdown": 0.9997301782076318
+  },
+  {
+    "name": "Loxodrome Perp",
+    "slug": "loxodrome-perp",
+    "chains": "IoTeX",
+    "peak": 27015,
+    "peakWhen": "Dec 2024",
+    "latest": 694,
+    "drawdown": 0.9743105682028502
+  },
+  {
+    "name": "Arcanum",
+    "slug": "arcanum",
+    "chains": "Arbitrum",
+    "peak": 5157,
+    "peakWhen": "Mar 2024",
+    "latest": 651,
+    "drawdown": 0.8737638161721931
+  },
+  {
+    "name": "Synthswap Perps",
+    "slug": "synthswap-perps",
+    "chains": "Base",
+    "peak": 149878,
+    "peakWhen": "Sep 2023",
+    "latest": 563,
+    "drawdown": 0.9962436114706628
+  },
+  {
+    "name": "Amped Finance",
+    "slug": "amped-finance",
+    "chains": "Sonic+Superseed+Base+LightLink+Binance+Berachain",
+    "peak": 1006589,
+    "peakWhen": "Mar 2025",
+    "latest": 549,
+    "drawdown": 0.9994545936822278
+  },
+  {
+    "name": "Perpstreet",
+    "slug": "perpstreet",
+    "chains": "Hemi",
+    "peak": 6863,
+    "peakWhen": "Aug 2025",
+    "latest": 518,
+    "drawdown": 0.9245228034387294
+  },
+  {
+    "name": "2xSwap",
+    "slug": "2xswap",
+    "chains": "Ethereum",
+    "peak": 15427,
+    "peakWhen": "Apr 2026",
+    "latest": 517,
+    "drawdown": 0.9664873274129773
+  },
+  {
+    "name": "RFX Exchange V2",
+    "slug": "rfx-exchange-v2",
+    "chains": "zkSync Era+Sonic",
+    "peak": 617622,
+    "peakWhen": "Mar 2025",
+    "latest": 499,
+    "drawdown": 0.999192062458915
+  },
+  {
+    "name": "Covo V2",
+    "slug": "covo-v2",
+    "chains": "Polygon",
+    "peak": 306604,
+    "peakWhen": "Jul 2023",
+    "latest": 495,
+    "drawdown": 0.9983855396537553
+  },
+  {
+    "name": "Nether.Fi",
+    "slug": "nether.fi",
+    "chains": "Base",
+    "peak": 183776,
+    "peakWhen": "Sep 2023",
+    "latest": 492,
+    "drawdown": 0.9973228277903535
+  },
+  {
+    "name": "Tristero Margin",
+    "slug": "tristero-margin",
+    "chains": "Arbitrum+Base+Ethereum",
+    "peak": 1058,
+    "peakWhen": "May 2026",
+    "latest": 335,
+    "drawdown": 0.6833648393194707
+  },
+  {
+    "name": "Openworld Perps",
+    "slug": "openworld-perps",
+    "chains": "Arbitrum",
+    "peak": 7559,
+    "peakWhen": "Jul 2023",
+    "latest": 331,
+    "drawdown": 0.9562111390395555
+  },
+  {
+    "name": "SpaceWhale",
+    "slug": "spacewhale",
+    "chains": "Arbitrum",
+    "peak": 13048,
+    "peakWhen": "Nov 2025",
+    "latest": 300,
+    "drawdown": 0.9770079705702023
+  },
+  {
+    "name": "Challenge4Trading Perp",
+    "slug": "challenge4trading-perp",
+    "chains": "Arbitrum",
+    "peak": 323,
+    "peakWhen": "May 2026",
+    "latest": 289,
+    "drawdown": 0.10526315789473684
+  },
+  {
+    "name": "DAMX",
+    "slug": "damx",
+    "chains": "Fantom",
+    "peak": 195936,
+    "peakWhen": "May 2023",
+    "latest": 286,
+    "drawdown": 0.9985403397027601
+  },
+  {
+    "name": "YFX",
+    "slug": "yfx",
+    "chains": "Arbitrum",
+    "peak": 1027748,
+    "peakWhen": "Feb 2024",
+    "latest": 276,
+    "drawdown": 0.9997314516788162
+  },
+  {
+    "name": "Meridian Trade",
+    "slug": "meridian-trade",
+    "chains": "Base+Meter",
+    "peak": 57992,
+    "peakWhen": "Sep 2023",
+    "latest": 242,
+    "drawdown": 0.9958270106221547
+  },
+  {
+    "name": "Denaria",
+    "slug": "denaria",
+    "chains": "Linea",
+    "peak": 165446,
+    "peakWhen": "Apr 2026",
+    "latest": 187,
+    "drawdown": 0.9988697218427764
+  },
+  {
+    "name": "Deridex",
+    "slug": "deridex",
+    "chains": "Algorand",
+    "peak": 143441,
+    "peakWhen": "Feb 2023",
+    "latest": 187,
+    "drawdown": 0.9986963281070266
+  },
+  {
+    "name": "DPEX",
+    "slug": "dpex",
+    "chains": "Polygon",
+    "peak": 145099,
+    "peakWhen": "May 2023",
+    "latest": 145,
+    "drawdown": 0.9990006822927794
+  },
+  {
+    "name": "NEX",
+    "slug": "nex",
+    "chains": "Optimism+Aurora",
+    "peak": 498410,
+    "peakWhen": "Oct 2022",
+    "latest": 137,
+    "drawdown": 0.9997251259003631
+  },
+  {
+    "name": "LemonX",
+    "slug": "lemonx",
+    "chains": "CORE",
+    "peak": 22520,
+    "peakWhen": "Oct 2024",
+    "latest": 127,
+    "drawdown": 0.9943605683836589
+  },
+  {
+    "name": "YYEX",
+    "slug": "yyex",
+    "chains": "Bitlayer",
+    "peak": 1990,
+    "peakWhen": "Jun 2024",
+    "latest": 126,
+    "drawdown": 0.9366834170854271
+  },
+  {
+    "name": "Aboard Exchange",
+    "slug": "aboard-exchange",
+    "chains": "Arbitrum+Avalanche+zkSync Era+Base+Scroll+Manta+Mantle+Polygon zkEVM",
+    "peak": 1297173,
+    "peakWhen": "Jul 2023",
+    "latest": 122,
+    "drawdown": 0.9999059493221027
+  },
+  {
+    "name": "Vega Protocol",
+    "slug": "vega-protocol",
+    "chains": "Ethereum+Arbitrum",
+    "peak": 1621870,
+    "peakWhen": "Nov 2023",
+    "latest": 115,
+    "drawdown": 0.9999290941937393
+  },
+  {
+    "name": "BorB",
+    "slug": "borb",
+    "chains": "Binance",
+    "peak": 670,
+    "peakWhen": "Jan 2024",
+    "latest": 110,
+    "drawdown": 0.835820895522388
+  },
+  {
+    "name": "OmniDex Perpetuals",
+    "slug": "omnidex-perpetuals",
+    "chains": "Telos",
+    "peak": 228495,
+    "peakWhen": "Feb 2022",
+    "latest": 104,
+    "drawdown": 0.999544847808486
+  },
+  {
+    "name": "AGDEX",
+    "slug": "agdex",
+    "chains": "Aptos",
+    "peak": 115904,
+    "peakWhen": "May 2025",
+    "latest": 100,
+    "drawdown": 0.9991372170071784
+  },
+  {
+    "name": "Rollup Finance Stake",
+    "slug": "rollup-finance-stake",
+    "chains": "zkSync Era",
+    "peak": 566209,
+    "peakWhen": "Nov 2023",
+    "latest": 94,
+    "drawdown": 0.9998339835643729
+  },
+  {
+    "name": "HoldStation DeFutures",
+    "slug": "holdstation-defutures",
+    "chains": "zkSync Era+World Chain+Berachain+Binance",
+    "peak": 4044784,
+    "peakWhen": "Mar 2024",
+    "latest": 74,
+    "drawdown": 0.9999817048326932
+  },
+  {
+    "name": "BlueSpade",
+    "slug": "bluespade",
+    "chains": "Cronos+Polygon",
+    "peak": 32764,
+    "peakWhen": "Nov 2023",
+    "latest": 72,
+    "drawdown": 0.9978024661213527
+  },
+  {
+    "name": "PairEx",
+    "slug": "pairex",
+    "chains": "Arbitrum",
+    "peak": 28018,
+    "peakWhen": "Dec 2023",
+    "latest": 71,
+    "drawdown": 0.997465914769077
+  },
+  {
+    "name": "Vertex Perps",
+    "slug": "vertex-perps",
+    "chains": "Arbitrum+Avalanche+Base+Mantle+Sonic+Abstract+Sei",
+    "peak": 102190571,
+    "peakWhen": "May 2024",
+    "latest": 49,
+    "drawdown": 0.9999995205037068
+  },
+  {
+    "name": "Tethys Perpetual",
+    "slug": "tethys-perpetual",
+    "chains": "Metis",
+    "peak": 2415669,
+    "peakWhen": "Jan 2024",
+    "latest": 46,
+    "drawdown": 0.9999809576560365
+  },
+  {
+    "name": "LogX V2",
+    "slug": "logx-v2",
+    "chains": "Sonic+Base+Abstract+Arbitrum+Manta+Optimism+Mode+Scroll+Polygon+Rari+ApeChain+Sei+Taiko+BOB+Mantle+Kroma+Mint+Linea+Blast",
+    "peak": 1004687,
+    "peakWhen": "Jun 2025",
+    "latest": 41,
+    "drawdown": 0.9999591912705151
+  },
+  {
+    "name": "DTX Derivatives",
+    "slug": "dtx-derivatives",
+    "chains": "Blast+Taiko",
+    "peak": 29518097,
+    "peakWhen": "Jun 2024",
+    "latest": 39,
+    "drawdown": 0.9999986787766163
+  },
+  {
+    "name": "Lexer Markets",
+    "slug": "lexer-markets",
+    "chains": "Arbitrum",
+    "peak": 64,
+    "peakWhen": "Aug 2025",
+    "latest": 38,
+    "drawdown": 0.40625
+  },
+  {
+    "name": "RubyDex",
+    "slug": "rubydex",
+    "chains": "Ethereum+Optimism+Binance+Avalanche+Polygon+Linea+Mantle+Manta+zkSync Era+Arbitrum",
+    "peak": 113260,
+    "peakWhen": "Aug 2023",
+    "latest": 24,
+    "drawdown": 0.9997880981811761
+  },
+  {
+    "name": "Equation V1",
+    "slug": "equation-v1",
+    "chains": "Arbitrum",
+    "peak": 22998426,
+    "peakWhen": "Dec 2023",
+    "latest": 18,
+    "drawdown": 0.999999217337743
+  },
+  {
+    "name": "foxify",
+    "slug": "foxify",
+    "chains": "Arbitrum+Sonic",
+    "peak": 7200,
+    "peakWhen": "Mar 2026",
+    "latest": 17,
+    "drawdown": 0.9976388888888889
+  },
+  {
+    "name": "FutureSwap",
+    "slug": "futureswap",
+    "chains": "Arbitrum+Ethereum+Avalanche",
+    "peak": 81019229,
+    "peakWhen": "Apr 2021",
+    "latest": 11,
+    "drawdown": 0.9999998642297621
+  },
+  {
+    "name": "Ostrich",
+    "slug": "ostrich",
+    "chains": "Arbitrum",
+    "peak": 165782,
+    "peakWhen": "Oct 2025",
+    "latest": 11,
+    "drawdown": 0.9999336478025359
+  },
+  {
+    "name": "PRINT3R",
+    "slug": "print3r",
+    "chains": "Mode+Base",
+    "peak": 246944,
+    "peakWhen": "Jun 2024",
+    "latest": 9,
+    "drawdown": 0.9999635544900868
+  },
+  {
+    "name": "Voodoo Trade Fantom",
+    "slug": "voodoo-trade-fantom",
+    "chains": "Fantom",
+    "peak": 162927,
+    "peakWhen": "Nov 2023",
+    "latest": 8,
+    "drawdown": 0.9999508982550468
+  },
+  {
+    "name": "handle.fi Perps",
+    "slug": "handle.fi-perps",
+    "chains": "Arbitrum",
+    "peak": 1487118,
+    "peakWhen": "Apr 2023",
+    "latest": 7,
+    "drawdown": 0.9999952929088344
+  },
+  {
+    "name": "Lif3 Trade",
+    "slug": "lif3-trade",
+    "chains": "Binance+Fantom",
+    "peak": 1474047,
+    "peakWhen": "Apr 2023",
+    "latest": 6,
+    "drawdown": 0.9999959295734804
+  },
+  {
+    "name": "Mjolnir Exchange",
+    "slug": "mjolnir-exchange",
+    "chains": "Hemi",
+    "peak": 52,
+    "peakWhen": "Oct 2025",
+    "latest": 5,
+    "drawdown": 0.9038461538461539
+  },
+  {
+    "name": "Morphex V2",
+    "slug": "morphex-v2",
+    "chains": "Binance+Fantom",
+    "peak": 3975649,
+    "peakWhen": "May 2023",
+    "latest": 5,
+    "drawdown": 0.9999987423437029
+  },
+  {
+    "name": "BayMax",
+    "slug": "baymax",
+    "chains": "Avalanche",
+    "peak": 608853,
+    "peakWhen": "Feb 2023",
+    "latest": 3,
+    "drawdown": 0.9999950727022779
+  },
+  {
+    "name": "Dexodus Finance",
+    "slug": "dexodus-finance",
+    "chains": "Base+Cronos+Ethereum+Binance",
+    "peak": 577437,
+    "peakWhen": "May 2025",
+    "latest": 1,
+    "drawdown": 0.9999982682093458
+  },
+  {
+    "name": "Fufuture Contract",
+    "slug": "fufuture-contract",
+    "chains": "Base+ENI+Binance+X Layer+Conflux",
+    "peak": 199,
+    "peakWhen": "Nov 2025",
+    "latest": 1,
+    "drawdown": 0.9949748743718593
+  },
+  {
+    "name": "Equation V2",
+    "slug": "equation-v2",
+    "chains": "Arbitrum",
+    "peak": 4813103,
+    "peakWhen": "Feb 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Covo V1",
+    "slug": "covo-v1",
+    "chains": "Polygon",
+    "peak": 178737,
+    "peakWhen": "Mar 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Peaky Finance",
+    "slug": "peaky-finance",
+    "chains": "Binance",
+    "peak": 100499,
+    "peakWhen": "Nov 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "LionDEX",
+    "slug": "liondex",
+    "chains": "Arbitrum",
+    "peak": 2468175,
+    "peakWhen": "Jul 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Flex Perpetuals",
+    "slug": "flex-perpetuals",
+    "chains": "Base",
+    "peak": 1973628,
+    "peakWhen": "Aug 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Cadence Protocol",
+    "slug": "cadence-protocol",
+    "chains": "Canto",
+    "peak": 4454271,
+    "peakWhen": "Mar 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "KMex",
+    "slug": "kmex",
+    "chains": "Kava",
+    "peak": 653,
+    "peakWhen": "May 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Cranium Exchange",
+    "slug": "cranium-exchange",
+    "chains": "Fantom",
+    "peak": 265919,
+    "peakWhen": "Feb 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Mirakle Defi",
+    "slug": "mirakle-defi",
+    "chains": "Fuse",
+    "peak": 177162,
+    "peakWhen": "Mar 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Rollup Finance vAMM",
+    "slug": "rollup-finance-vamm",
+    "chains": "zkSync Era",
+    "peak": 1625718,
+    "peakWhen": "Nov 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "AZEX",
+    "slug": "azex",
+    "chains": "Berachain+Unichain",
+    "peak": 929476,
+    "peakWhen": "Feb 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Metavault.Trade",
+    "slug": "metavault.trade",
+    "chains": "Polygon",
+    "peak": 7950185,
+    "peakWhen": "Nov 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "SynFutures V2",
+    "slug": "synfutures-v2",
+    "chains": "Polygon",
+    "peak": 6579290,
+    "peakWhen": "Jan 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "SoneFi Perp",
+    "slug": "sonefi-perp",
+    "chains": "Soneium",
+    "peak": 833910,
+    "peakWhen": "Jul 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "BSX Exchange",
+    "slug": "bsx-exchange",
+    "chains": "Base",
+    "peak": 6065772,
+    "peakWhen": "Sep 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Morphex V1 Perps",
+    "slug": "morphex-v1-perps",
+    "chains": "Fantom",
+    "peak": 1090,
+    "peakWhen": "Oct 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Club Quanto",
+    "slug": "club-quanto",
+    "chains": "BounceBit",
+    "peak": 552723,
+    "peakWhen": "Dec 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Allspark",
+    "slug": "allspark",
+    "chains": "zkLink",
+    "peak": 30394,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Mirror",
+    "slug": "mirror",
+    "chains": "Terra",
+    "peak": 2206606457,
+    "peakWhen": "May 2021",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Mango Markets V3",
+    "slug": "mango-markets-v3",
+    "chains": "Solana",
+    "peak": 211467046,
+    "peakWhen": "Nov 2021",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Chaotic Finance",
+    "slug": "chaotic-finance",
+    "chains": "Moonriver",
+    "peak": 269747,
+    "peakWhen": "Apr 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Strips Finance",
+    "slug": "strips-finance",
+    "chains": "Arbitrum",
+    "peak": 810993,
+    "peakWhen": "Apr 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Zeta",
+    "slug": "zeta",
+    "chains": "Solana",
+    "peak": 21844279,
+    "peakWhen": "Apr 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Madmex",
+    "slug": "madmex",
+    "chains": "Polygon",
+    "peak": 21780909,
+    "peakWhen": "Sep 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "OPX Finance",
+    "slug": "opx-finance",
+    "chains": "Optimism",
+    "peak": 858100,
+    "peakWhen": "Dec 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "EMDX",
+    "slug": "emdx",
+    "chains": "Avalanche",
+    "peak": 212083,
+    "peakWhen": "Dec 2022",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "KPerp Exchange",
+    "slug": "kperp-exchange",
+    "chains": "Kava",
+    "peak": 740361,
+    "peakWhen": "Feb 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Athos Finance",
+    "slug": "athos-finance",
+    "chains": "Moonbeam",
+    "peak": 0,
+    "peakWhen": "Dec 2022",
+    "latest": 0,
+    "drawdown": 0
+  },
+  {
+    "name": "NestFi",
+    "slug": "nestfi",
+    "chains": "Ethereum+Binance",
+    "peak": 27449293,
+    "peakWhen": "Feb 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Y2B Finance",
+    "slug": "y2b-finance",
+    "chains": "Ethereum",
+    "peak": 102841,
+    "peakWhen": "Jan 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "HXRO Network",
+    "slug": "hxro-network",
+    "chains": "Solana",
+    "peak": 0,
+    "peakWhen": "Feb 2023",
+    "latest": 0,
+    "drawdown": 0
+  },
+  {
+    "name": "Cypher",
+    "slug": "cypher",
+    "chains": "Solana",
+    "peak": 1569420,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "MyMetaTrader",
+    "slug": "mymetatrader",
+    "chains": "Arbitrum",
+    "peak": 412115,
+    "peakWhen": "May 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Bluefin Legacy",
+    "slug": "bluefin-legacy",
+    "chains": "Arbitrum+Sui",
+    "peak": 31964897,
+    "peakWhen": "Jun 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Sakai Vault",
+    "slug": "sakai-vault",
+    "chains": "Binance",
+    "peak": 0,
+    "peakWhen": "Mar 2023",
+    "latest": 0,
+    "drawdown": 0
+  },
+  {
+    "name": "HashDAO Finance",
+    "slug": "hashdao-finance",
+    "chains": "Arbitrum+Optimism+Binance",
+    "peak": 1397968,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "QuickPerps",
+    "slug": "quickperps",
+    "chains": "Polygon zkEVM",
+    "peak": 10522954,
+    "peakWhen": "Jul 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Kwenta",
+    "slug": "kwenta",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "BFXfi",
+    "slug": "bfxfi",
+    "chains": "Binance",
+    "peak": 35040,
+    "peakWhen": "Jun 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "MarginX Perp",
+    "slug": "marginx-perp",
+    "chains": "FunctionX",
+    "peak": 770481,
+    "peakWhen": "May 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "UrDEX Finance",
+    "slug": "urdex-finance",
+    "chains": "Arbitrum",
+    "peak": 148734,
+    "peakWhen": "Jun 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "OMT Finance",
+    "slug": "omt-finance",
+    "chains": "Onus",
+    "peak": 69102,
+    "peakWhen": "Jun 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Pinnako",
+    "slug": "pinnako",
+    "chains": "zkSync Era",
+    "peak": 495566,
+    "peakWhen": "Jul 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Tribe3",
+    "slug": "tribe3",
+    "chains": "Arbitrum",
+    "peak": 495376,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Palmswap",
+    "slug": "palmswap",
+    "chains": "Binance",
+    "peak": 1074694,
+    "peakWhen": "Jul 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Grizzly Trade Perps",
+    "slug": "grizzly-trade-perps",
+    "chains": "Binance",
+    "peak": 1568045,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "EDEBASE",
+    "slug": "edebase",
+    "chains": "Base",
+    "peak": 486507,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Aark Digital",
+    "slug": "aark-digital",
+    "chains": "Arbitrum",
+    "peak": 8807635,
+    "peakWhen": "Aug 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Basetrade",
+    "slug": "basetrade",
+    "chains": "Base",
+    "peak": 76213,
+    "peakWhen": "Aug 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Kinetix Derivatives",
+    "slug": "kinetix-derivatives",
+    "chains": "Kava",
+    "peak": 31373386,
+    "peakWhen": "Dec 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "THENA PERPS",
+    "slug": "thena-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "PancakeSwap Perps",
+    "slug": "pancakeswap-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "basedmarkets",
+    "slug": "basedmarkets",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "RoseonX",
+    "slug": "roseonx",
+    "chains": "Arbitrum",
+    "peak": 94307,
+    "peakWhen": "Nov 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Merkle Trade",
+    "slug": "merkle-trade",
+    "chains": "Aptos",
+    "peak": 7428314,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Marginly",
+    "slug": "marginly",
+    "chains": "Arbitrum+Blast+Ethereum",
+    "peak": 3344444,
+    "peakWhen": "Jan 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Krunch Defi",
+    "slug": "krunch-defi",
+    "chains": "Polygon",
+    "peak": 3,
+    "peakWhen": "Jan 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Basemax",
+    "slug": "basemax",
+    "chains": "Base",
+    "peak": 220143,
+    "peakWhen": "Dec 2023",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "handle.fi hSP",
+    "slug": "handle.fi-hsp",
+    "chains": "Arbitrum",
+    "peak": 945548,
+    "peakWhen": "Mar 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Metavault Derivatives V2",
+    "slug": "metavault-derivatives-v2",
+    "chains": "Polygon+Linea",
+    "peak": 234378,
+    "peakWhen": "Apr 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "PopFi",
+    "slug": "popfi",
+    "chains": "Solana",
+    "peak": 220058,
+    "peakWhen": "Mar 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "BracketX",
+    "slug": "bracketx",
+    "chains": "Arbitrum",
+    "peak": 211886,
+    "peakWhen": "Feb 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Hyperion Exchange",
+    "slug": "hyperion-exchange",
+    "chains": "Zkfair",
+    "peak": 1522036,
+    "peakWhen": "Feb 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Kinetix Derivatives V2",
+    "slug": "kinetix-derivatives-v2",
+    "chains": "Kava",
+    "peak": 105991,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Blitz Perps",
+    "slug": "blitz-perps",
+    "chains": "Blast",
+    "peak": 31661130,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "BFX (Blast Futures)",
+    "slug": "bfx-(blast-futures)",
+    "chains": "Blast",
+    "peak": 37386697,
+    "peakWhen": "Jun 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Rage Trade",
+    "slug": "rage-trade",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Grizzly Trade V2",
+    "slug": "grizzly-trade-v2",
+    "chains": "Binance",
+    "peak": 47978,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "TLX Finance",
+    "slug": "tlx-finance",
+    "chains": "Optimism",
+    "peak": 12797850,
+    "peakWhen": "Jul 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Equation V3",
+    "slug": "equation-v3",
+    "chains": "Arbitrum",
+    "peak": 1441300,
+    "peakWhen": "May 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Vooi",
+    "slug": "vooi",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "EthosX",
+    "slug": "ethosx",
+    "chains": "Arbitrum+Binance",
+    "peak": 98637,
+    "peakWhen": "Aug 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Bitoro Network",
+    "slug": "bitoro-network",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "LineHub Perps",
+    "slug": "linehub-perps",
+    "chains": "Linea",
+    "peak": 84793,
+    "peakWhen": "Oct 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Unidex Agg Perp",
+    "slug": "unidex-agg-perp",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "MUX Deri Agg",
+    "slug": "mux-deri-agg",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Helix Perp",
+    "slug": "helix-perp",
+    "chains": "Injective",
+    "peak": 36287185,
+    "peakWhen": "Oct 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Pear Perps",
+    "slug": "pear-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Sharpe Perp Aggregator",
+    "slug": "sharpe-perp-aggregator",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Filament Beta",
+    "slug": "filament-beta",
+    "chains": "Sei",
+    "peak": 1133298,
+    "peakWhen": "Sep 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "ModeMax Perps V2",
+    "slug": "modemax-perps-v2",
+    "chains": "Mode",
+    "peak": 95081,
+    "peakWhen": "Dec 2024",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Surge Trade",
+    "slug": "surge-trade",
+    "chains": "Radix",
+    "peak": 743116,
+    "peakWhen": "Jan 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Quenta",
+    "slug": "quenta",
+    "chains": "IoTeX",
+    "peak": 1051,
+    "peakWhen": "Feb 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "RFX Exchange V1",
+    "slug": "rfx-exchange-v1",
+    "chains": "zkSync Era",
+    "peak": 2955901,
+    "peakWhen": "Jan 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Hyperliquid Perps",
+    "slug": "hyperliquid-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "LN Exchange Perps",
+    "slug": "ln-exchange-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Filament V1",
+    "slug": "filament-v1",
+    "chains": "Sei",
+    "peak": 699318,
+    "peakWhen": "Apr 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "DESK Perps",
+    "slug": "desk-perps",
+    "chains": "Binance+Base+Arbitrum",
+    "peak": 712620,
+    "peakWhen": "May 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "FOOM",
+    "slug": "foom",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Plaza Finance",
+    "slug": "plaza-finance",
+    "chains": "Base",
+    "peak": 2070420,
+    "peakWhen": "Aug 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Xyra Labs Perps",
+    "slug": "xyra-labs-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "LuckyFuture",
+    "slug": "luckyfuture",
+    "chains": "Solana",
+    "peak": 76307927,
+    "peakWhen": "Nov 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Sypher Finance",
+    "slug": "sypher-finance",
+    "chains": "Base",
+    "peak": 13204,
+    "peakWhen": "Aug 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "TaraPerps",
+    "slug": "taraperps",
+    "chains": "Taraxa",
+    "peak": 32070,
+    "peakWhen": "Jun 2025",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "Carbon.inc",
+    "slug": "carbon.inc",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "PriveX",
+    "slug": "privex",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Elys Perpetual",
+    "slug": "elys-perpetual",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Hibachi",
+    "slug": "hibachi",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Bullbit",
+    "slug": "bullbit",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Squaretower",
+    "slug": "squaretower",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Orderly Perps",
+    "slug": "orderly-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "edgeX Perps",
+    "slug": "edgex-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Paradex Perps",
+    "slug": "paradex-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Artura Finance",
+    "slug": "artura-finance",
+    "chains": "Botanix",
+    "peak": 0,
+    "peakWhen": "Sep 2025",
+    "latest": 0,
+    "drawdown": 0
+  },
+  {
+    "name": "Aster Perps",
+    "slug": "aster-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Injective Perps",
+    "slug": "injective-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Lighter Perps",
+    "slug": "lighter-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "XTrade Protocol Perps",
+    "slug": "xtrade-protocol-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Quanto",
+    "slug": "quanto",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Grvt Perps",
+    "slug": "grvt-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "MoneyX",
+    "slug": "moneyx",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "SpeedTrading",
+    "slug": "speedtrading",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Upscale",
+    "slug": "upscale",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Gate Perp",
+    "slug": "gate-perp",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Nado Perps",
+    "slug": "nado-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Variational",
+    "slug": "variational",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "StandX Perps",
+    "slug": "standx-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "SunX",
+    "slug": "sunx",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "SoDEX Perps",
+    "slug": "sodex-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "01 Exchange",
+    "slug": "01-exchange",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Normal",
+    "slug": "normal",
+    "chains": "Stellar",
+    "peak": 33474,
+    "peakWhen": "Feb 2026",
+    "latest": 0,
+    "drawdown": 1
+  },
+  {
+    "name": "World Markets Perps",
+    "slug": "world-markets-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Neony Exchange Perp",
+    "slug": "neony-exchange-perp",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Aftermath Perps",
+    "slug": "aftermath-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Rocket Perp",
+    "slug": "rocket-perp",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Phoenix Perp",
+    "slug": "phoenix-perp",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Hotstuff",
+    "slug": "hotstuff",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Katana Perps",
+    "slug": "katana-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "TurboLev",
+    "slug": "turbolev",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "TxFlow Perps",
+    "slug": "txflow-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Bullet Perps",
+    "slug": "bullet-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Dango Perps",
+    "slug": "dango-perps",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "UpDown",
+    "slug": "updown",
+    "chains": "Celo",
+    "peak": 0,
+    "peakWhen": "May 2026",
+    "latest": 0,
+    "drawdown": 0
+  },
+  {
+    "name": "RERANGE",
+    "slug": "rerange",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Fermi Trade",
+    "slug": "fermi-trade",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  },
+  {
+    "name": "Synthetix V4",
+    "slug": "synthetix-v4",
+    "chains": "",
+    "peak": 0,
+    "latest": 0,
+    "drawdown": 0,
+    "note": "no history"
+  }
+]

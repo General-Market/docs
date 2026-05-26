@@ -39,6 +39,8 @@ const CANDIDATES = [
   { slug: "vertex-perps", name: "Vertex Protocol", raised: 8_500_000 },
   { slug: "satori-finance", name: "Satori Finance", raised: 10_000_000 },
   { slug: "aevo", name: "Aevo", raised: 10_600_000 },
+  { slug: "synfutures-v3", name: "SynFutures", raised: 37_000_000 },
+  { slug: "parcl-v3", name: "Parcl", raised: 11_600_000 },
   { slug: "rabbitx", name: "RabbitX", raised: 11_000_000 },
   { slug: "gmx", name: "GMX", raised: 0 },
   { slug: "gains-network", name: "Gains Network", raised: 250_000 },

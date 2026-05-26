@@ -75,7 +75,7 @@ const Outro: React.FC<{ dur: number }> = ({ dur }) => {
         {TOTAL_RAISED_LABEL}+ raised.
       </div>
       <div style={{ fontFamily: font, fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em", color: C.dim, lineHeight: 1.05, marginTop: 22 }}>
-Across {PROTOCOLS.length} order-book perps. The liquidity left anyway.
+Across {PROTOCOLS.length} perps protocols. The liquidity left anyway.
       </div>
       <div style={{ fontFamily: font, fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.2, marginTop: 30, color: C.downDeep }}>
         Rented liquidity leaves. Owned liquidity compounds.
