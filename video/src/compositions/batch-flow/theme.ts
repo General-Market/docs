@@ -1,8 +1,7 @@
 // BatchFlowReel — the batch market, from the product UI to the throughput
-// graph, in the RetailPnL CRT/neon-on-white-glow language.
-//
-// Lighter CRT: white-glow ground + faint scanline + vignette, neon accents,
-// logo/chip cards — but the UI replica and bars stay crisp (no barrel warp).
+// graph, in the frosted-glass language: a blurred pastel video ground, one
+// glass window every beat lives inside, frosted cards, blue→violet gradient
+// pills, soft glows. Brand blue leads; violet and pink are the pastel accents.
 
 import { Easing } from "remotion";
 import { font, monoFont } from "../../common/fonts";
@@ -15,41 +14,65 @@ export const H = 1080;
 
 export const sec = (s: number): number => Math.round(s * FPS);
 
-// The CRT glow ground — white bowing to pale blue-gray at the edges.
+// The window is scaled down inside the comp so the blurred video breathes
+// around it (wider side gutters, like the reference). Every beat renders in
+// full 1920×1080 space and is scaled into the window by `Stage`.
+export const WINDOW_SCALE = 0.92;
+
+// Fallback ground behind the video — soft pastel, blue bowing to lilac.
 export const BG_GRADIENT =
-  "radial-gradient(ellipse 120% 95% at 50% 16%, #FFFFFF 0%, #FBFCFE 60%, #EFF3F7 100%)";
+  "linear-gradient(135deg, #DCE6FF 0%, #E7E3FF 52%, #F2E4F1 100%)";
+
+// Blue-led pastel gradient for the pills and the flow arrows.
+export const PILL_GRADIENT =
+  "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)";
+export const ARROW_GRADIENT =
+  "linear-gradient(90deg, #2997ff 0%, #6E5BFF 60%, #B07BFF 100%)";
 
 export const C = {
-  text: "#1D2026",
-  dim: "#6E727A",
-  faint: "#9AA0A8",
-  grid: "rgba(10, 12, 20, 0.07)",
-  rule: "rgba(10, 12, 20, 0.10)",
-  ruleStrong: "rgba(10, 12, 20, 0.16)",
-  surface: "#FFFFFF",
-  surfaceSunk: "#F4F6F9",
-  up: "#16B33F",
-  upSoft: "rgba(22, 179, 63, 0.14)",
-  down: "#E63838",
-  downSoft: "rgba(230, 56, 56, 0.12)",
-  blue: "#1F6FEB",
-  blueSoft: "rgba(31, 111, 235, 0.12)",
+  text: "#1D1D1F",
+  dim: "#5A5B6A",
+  faint: "#8A8B9C",
+  grid: "rgba(60, 60, 110, 0.08)",
+  rule: "rgba(60, 60, 110, 0.14)",
+  ruleStrong: "rgba(60, 60, 110, 0.22)",
+  // Card / panel fills are translucent so the frosted window reads through
+  // them — anything painted on C.surface becomes glass automatically.
+  surface: "rgba(255, 255, 255, 0.62)",
+  surfaceSunk: "rgba(255, 255, 255, 0.34)",
+  up: "#1FB877",
+  upSoft: "rgba(31, 184, 119, 0.16)",
+  down: "#F2566B",
+  downSoft: "rgba(242, 86, 107, 0.14)",
+  blue: "#0071E3",
+  blueSoft: "rgba(0, 113, 227, 0.14)",
+  // Pastel accents.
+  accent: "#0071E3",
+  accentBright: "#2997ff",
+  violet: "#6E5BFF",
+  pink: "#FF7AC6",
+  // Glass tokens.
+  glass: "rgba(255, 255, 255, 0.62)",
+  glassSunk: "rgba(255, 255, 255, 0.34)",
+  glassBorder: "rgba(255, 255, 255, 0.72)",
 } as const;
 
-// 12-color neon palette, deepened for the white field (matches RetailPnL).
+// 12-color palette — brand blue first, then a legible pastel spread for chips
+// and bars. Saturated enough to read on the frosted window, soft enough to
+// sit in the pastel world.
 export const NEON = [
-  "#1F6FEB",
-  "#16B33F",
-  "#D9931C",
-  "#7B3FE4",
-  "#109A8E",
-  "#F0601C",
-  "#8DA017",
-  "#E0318C",
-  "#18AE66",
-  "#1B95E0",
-  "#3D4CC9",
-  "#E63838",
+  "#0071E3",
+  "#1FB877",
+  "#E8A13A",
+  "#7B5CFF",
+  "#17B0A6",
+  "#FF7A59",
+  "#9AB02A",
+  "#FF6FB5",
+  "#22B36B",
+  "#2BA6F0",
+  "#5566E0",
+  "#F0556A",
 ] as const;
 
 export const EASE = {

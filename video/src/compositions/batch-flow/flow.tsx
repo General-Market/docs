@@ -1,9 +1,11 @@
 import React from "react";
 import { C, font, monoFont } from "./theme";
+import { glassCard } from "./chrome";
 import { MARKETS, N_TRADERS, sideCount, type Market } from "./data";
 
 // Shared pieces for the abstract flow beats (after the UI): a trader's packet,
-// a trader chip, and a per-market pool bar that can also show its verdict.
+// a trader chip, and a per-market pool bar that can also show its verdict —
+// all in the frosted-glass language.
 
 // ── Packet — a trader's ten-line ticket ─────────────────────────────────────
 export const Packet: React.FC<{
@@ -16,11 +18,12 @@ export const Packet: React.FC<{
 }> = ({ picks, label, amount = "$10", w = 248, dim = 1, glow }) => (
   <div
     style={{
+      ...glassCard(16),
       width: w,
-      background: C.surface,
-      borderRadius: 16,
-      border: `1.5px solid ${glow ?? C.rule}`,
-      boxShadow: glow ? `0 14px 36px ${glow}55` : "0 8px 24px rgba(10,12,20,0.10)",
+      border: glow ? `1.5px solid ${glow}` : "1px solid rgba(255,255,255,0.6)",
+      boxShadow: glow
+        ? `0 16px 38px ${glow}55, inset 0 1px 0 rgba(255,255,255,0.85)`
+        : "0 10px 28px rgba(70,74,140,0.14), inset 0 1px 0 rgba(255,255,255,0.85)",
       padding: "14px 16px 16px",
       opacity: dim,
       boxSizing: "border-box",
@@ -39,7 +42,7 @@ export const Packet: React.FC<{
             key={i}
             style={{
               height: 30,
-              borderRadius: 7,
+              borderRadius: 8,
               background: up ? C.upSoft : C.downSoft,
               border: `1px solid ${color}`,
               color,
@@ -70,7 +73,7 @@ export const TraderChip: React.FC<{ name: string; color: string; size?: number }
         width: size,
         height: size,
         borderRadius: 999,
-        background: color,
+        background: `linear-gradient(150deg, ${color}, ${color}DD)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -78,7 +81,8 @@ export const TraderChip: React.FC<{ name: string; color: string; size?: number }
         fontSize: size * 0.42,
         fontWeight: 800,
         color: "#fff",
-        boxShadow: `0 8px 22px ${color}55`,
+        textShadow: "0 1px 2px rgba(40,40,90,0.3)",
+        boxShadow: `0 12px 28px ${color}55, inset 0 1px 0 rgba(255,255,255,0.4)`,
       }}
     >
       {name === "You" ? "Y" : name.replace("Trader ", "")}
@@ -133,8 +137,19 @@ export const LineRow: React.FC<{
       >
         {m.name}
       </div>
-      <div style={{ width: barW, height: 30, display: "flex", borderRadius: 8, overflow: "hidden", background: C.surfaceSunk }}>
-        <div style={{ width: upW, background: C.up, opacity: outcomeUp ? 1 : 1 - settle * 0.7, transition: "none" }} />
+      <div
+        style={{
+          width: barW,
+          height: 30,
+          display: "flex",
+          borderRadius: 9,
+          overflow: "hidden",
+          background: "rgba(255,255,255,0.4)",
+          border: "1px solid rgba(255,255,255,0.6)",
+          boxShadow: "inset 0 1px 2px rgba(60,64,130,0.12)",
+        }}
+      >
+        <div style={{ width: upW, background: C.up, opacity: outcomeUp ? 1 : 1 - settle * 0.7 }} />
         <div style={{ width: downW, background: C.down, opacity: !outcomeUp ? 1 : 1 - settle * 0.7 }} />
       </div>
       {/* counts / verdict */}

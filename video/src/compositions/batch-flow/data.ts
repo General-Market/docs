@@ -87,7 +87,7 @@ export const GM_PER_DAY = PER_BATCH * BATCHES_PER_DAY; // 3,800,000
 export const HYPERLIQUID_TRADES_PER_DAY = 1_500_000;
 export type Bar = { id: string; name: string; value: number; users: string; accent: string; note: string };
 export const BARS: Bar[] = [
-  { id: "generalmarket", name: "General Market", value: GM_PER_DAY, users: "1 user", accent: "#1F6FEB", note: "projected · 38k × 100 batches" },
-  { id: "hyperliquid", name: "Hyperliquid", value: HYPERLIQUID_TRADES_PER_DAY, users: "1.4M users", accent: "#109A8E", note: "est. fills · $5.75B/day" },
-  { id: "polymarket", name: "Polymarket", value: 260_000, users: "478K users", accent: "#16B33F", note: "~478K traders · May 2026" },
+  { id: "generalmarket", name: "General Market", value: GM_PER_DAY, users: "1 user", accent: "#0071E3", note: "projected · 38k × 100 batches" },
+  { id: "hyperliquid", name: "Hyperliquid", value: HYPERLIQUID_TRADES_PER_DAY, users: "1.4M users", accent: "#17B0A6", note: "est. fills · $5.75B/day" },
+  { id: "polymarket", name: "Polymarket", value: 260_000, users: "478K users", accent: "#1FB877", note: "~478K traders · May 2026" },
 ];

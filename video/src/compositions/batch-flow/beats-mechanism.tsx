@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { C, EASE, NEON, font, monoFont } from "./theme";
 import { BeatTitle, CaptionPill, useFade } from "./chrome";
+import { PILL_GRADIENT } from "./theme";
 import {
   MARKETS,
   N_TRADERS,
@@ -125,6 +126,32 @@ export const TradersBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   return (
     <AbsoluteFill style={{ opacity: fade }}>
       <BeatTitle title="Everyone sends the same packet" sub="five traders, one pool" />
+      <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <defs>
+          <linearGradient id="bf-flow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2997ff" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#9E7BFF" stopOpacity="0.14" />
+          </linearGradient>
+        </defs>
+        {TRADER_X.map((tx, i) => {
+          const appear = interpolate(frame, [launch(i), launch(i) + 22], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          });
+          return (
+            <path
+              key={i}
+              d={`M ${tx} 392 C ${tx} 560, ${POOL.x} 600, ${POOL.x} ${POOL.y - POOL.h / 2}`}
+              stroke="url(#bf-flow)"
+              strokeWidth={3}
+              fill="none"
+              opacity={appear * 0.6}
+              strokeDasharray="2 9"
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </svg>
       {TRADER_NAMES.map((name, i) => (
         <div key={`chip-${i}`} style={{ position: "absolute", left: TRADER_X[i], top: 300, transform: "translateX(-50%)" }}>
           <TraderChip name={name} color={TRADER_COLORS[i]} />
@@ -152,8 +179,8 @@ export const TradersBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
           height: POOL.h,
           borderRadius: 22,
           border: `2px solid ${C.blue}`,
-          background: C.surface,
-          boxShadow: `0 0 ${(20 + poolGlow * 46).toFixed(0)}px ${C.blue}${poolGlow > 0 ? "55" : "22"}`,
+          background: "linear-gradient(160deg, rgba(255,255,255,0.72), rgba(255,255,255,0.48))",
+          boxShadow: `0 16px 40px rgba(70,74,140,0.18), 0 0 ${(18 + poolGlow * 52).toFixed(0)}px ${C.blue}${poolGlow > 0 ? "66" : "22"}, inset 0 1px 0 rgba(255,255,255,0.85)`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -234,9 +261,11 @@ export const PayoutBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
                 width: 136,
                 padding: "14px 10px 12px",
                 borderRadius: 14,
-                background: C.surface,
-                border: `1.5px solid ${won ? C.up : C.rule}`,
-                boxShadow: won ? `0 8px 22px ${C.up}33` : "0 2px 10px rgba(10,12,20,0.05)",
+                background: "linear-gradient(160deg, rgba(255,255,255,0.66), rgba(255,255,255,0.40))",
+                border: `1.5px solid ${won ? C.up : "rgba(255,255,255,0.6)"}`,
+                boxShadow: won
+                  ? `0 12px 30px ${C.up}40, inset 0 1px 0 rgba(255,255,255,0.85)`
+                  : "0 8px 22px rgba(70,74,140,0.12), inset 0 1px 0 rgba(255,255,255,0.8)",
                 textAlign: "center",
                 opacity: Math.min(1, r),
                 transform: `translateY(${((1 - Math.min(1, r)) * 16).toFixed(1)}px)`,
@@ -259,7 +288,21 @@ export const PayoutBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
         <div style={{ fontFamily: monoFont, fontSize: 26, fontWeight: 700, letterSpacing: "0.04em", color: C.dim }}>
           {YOUR_WINS} OF 10 LINES WON
         </div>
-        <div style={{ fontFamily: font, fontSize: 168, fontWeight: 800, letterSpacing: "-0.03em", color: C.text, lineHeight: 1.0, fontVariantNumeric: "tabular-nums" }}>
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 168,
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.0,
+            fontVariantNumeric: "tabular-nums",
+            background: PILL_GRADIENT,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            filter: "drop-shadow(0 14px 36px rgba(94,120,255,0.40))",
+          }}
+        >
           ${collected.toFixed(2)}
         </div>
         <div style={{ fontFamily: font, fontSize: 40, fontWeight: 700, color: C.up, opacity: netOp }}>

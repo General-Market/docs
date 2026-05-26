@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { C, EASE, font, monoFont } from "./theme";
+import { C, EASE, font, monoFont, PILL_GRADIENT } from "./theme";
 import { BeatTitle, useFade } from "./chrome";
 import { BARS, BATCHES_PER_DAY, GM_PER_DAY, SCALE_STEPS } from "./data";
 
@@ -54,7 +54,21 @@ export const ScaleBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
 
       {/* right — the throughput */}
       <div style={{ position: "absolute", right: 110, top: 420, width: 760, textAlign: "center", opacity: interpolate(frame, [bigStart - 10, bigStart + 12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        <div style={{ fontFamily: font, fontSize: 150, fontWeight: 800, letterSpacing: "-0.035em", color: C.text, lineHeight: 0.92, fontVariantNumeric: "tabular-nums" }}>
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 150,
+            fontWeight: 800,
+            letterSpacing: "-0.035em",
+            lineHeight: 0.92,
+            fontVariantNumeric: "tabular-nums",
+            background: PILL_GRADIENT,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            filter: "drop-shadow(0 14px 36px rgba(94,120,255,0.40))",
+          }}
+        >
           {commas(big)}
         </div>
         <div style={{ fontFamily: monoFont, fontSize: 30, fontWeight: 700, letterSpacing: "0.04em", color: C.dim, marginTop: 14 }}>

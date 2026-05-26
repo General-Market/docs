@@ -1,11 +1,13 @@
 import React from "react";
-import { C, font, monoFont } from "./theme";
+import { C, font, monoFont, PILL_GRADIENT } from "./theme";
+import { glassCard, glassPanel } from "./chrome";
 import { MARKETS, type Market } from "./data";
 
-// A faithful-but-clean rebuild of the product dashboard from the screenshot:
-// header, candle chart, the TOP-10 grid of UP/DOWN cards, the round panel and
-// the stake/confirm panel. Selection + cursor are driven by props so the beats
-// can animate picking ten outcomes and confirming.
+// A faithful-but-clean rebuild of the product dashboard from the screenshot,
+// dressed in the frosted-glass language: header, candle chart, the TOP-10 grid
+// of UP/DOWN cards, the round panel and the stake/confirm panel. Selection +
+// cursor are driven by props so the beats can animate picking ten outcomes and
+// confirming.
 
 // ── Geometry (composition space, 1920×1080) ──────────────────────────────────
 export const GRID_X0 = 24;
@@ -63,8 +65,8 @@ const Sparkline: React.FC<{ seed: number; up: boolean; w: number; h: number }> =
   const openY = pad + (1 - openFrac) * (h - pad * 2);
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
-      <line x1={pad} y1={openY} x2={w - pad} y2={openY} stroke="rgba(10,12,20,0.28)" strokeWidth={1} strokeDasharray="4 4" />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" />
+      <line x1={pad} y1={openY} x2={w - pad} y2={openY} stroke="rgba(60,64,130,0.26)" strokeWidth={1} strokeDasharray="4 4" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 };
@@ -78,7 +80,7 @@ const PickButton: React.FC<{ side: "up" | "down"; picked: boolean }> = ({ side, 
       style={{
         flex: 1,
         height: 40,
-        borderRadius: 9,
+        borderRadius: 10,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -87,10 +89,12 @@ const PickButton: React.FC<{ side: "up" | "down"; picked: boolean }> = ({ side, 
         fontSize: 18,
         fontWeight: 700,
         letterSpacing: "0.02em",
-        background: picked ? color : C.surface,
+        background: picked ? color : "rgba(255,255,255,0.45)",
         color: picked ? "#FFFFFF" : C.dim,
-        border: `1.5px solid ${picked ? color : C.rule}`,
-        boxShadow: picked ? `0 6px 18px ${color}55` : "none",
+        border: `1.5px solid ${picked ? color : "rgba(255,255,255,0.7)"}`,
+        boxShadow: picked
+          ? `0 8px 20px ${color}55, inset 0 1px 0 rgba(255,255,255,0.4)`
+          : "inset 0 1px 0 rgba(255,255,255,0.7)",
       }}
     >
       <span style={{ fontSize: 15 }}>{isUp ? "▲" : "▼"}</span>
@@ -109,12 +113,13 @@ export const MarketCard: React.FC<{
   return (
     <div
       style={{
+        ...glassCard(16),
         width: CARD_W,
         height: CARD_H,
-        background: C.surface,
-        borderRadius: 16,
-        border: `2px solid ${active ? C.blue : C.rule}`,
-        boxShadow: active ? `0 10px 30px ${C.blue}33` : "0 2px 10px rgba(10,12,20,0.05)",
+        border: active ? `2px solid ${C.blue}` : "1px solid rgba(255,255,255,0.6)",
+        boxShadow: active
+          ? `0 14px 36px ${C.blue}3D, inset 0 1px 0 rgba(255,255,255,0.85)`
+          : "0 8px 24px rgba(70,74,140,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
         padding: "14px 16px 14px",
         display: "flex",
         flexDirection: "column",
@@ -126,8 +131,9 @@ export const MarketCard: React.FC<{
           style={{
             width: 30,
             height: 30,
-            borderRadius: 8,
-            background: C.surfaceSunk,
+            borderRadius: 9,
+            background: "rgba(255,255,255,0.5)",
+            border: "1px solid rgba(255,255,255,0.7)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -181,11 +187,21 @@ const Header: React.FC = () => (
       display: "flex",
       alignItems: "center",
       padding: "0 36px",
-      borderBottom: `1px solid ${C.rule}`,
-      background: "rgba(255,255,255,0.85)",
+      borderBottom: "1px solid rgba(255,255,255,0.5)",
+      background: "rgba(255,255,255,0.34)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
     }}
   >
-    <div style={{ width: 30, height: 30, borderRadius: 8, background: "#0F7A3D", marginRight: 12 }} />
+    <div
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 9,
+        background: "linear-gradient(150deg, #1FB877, #0E9E63)",
+        marginRight: 12,
+        boxShadow: "0 4px 12px rgba(31,184,119,0.4)",
+      }}
+    />
     <div style={{ fontFamily: font, fontSize: 21, fontWeight: 800, color: C.text }}>Pump.fun Tokens</div>
     <div style={{ display: "flex", gap: 28, marginLeft: 44, fontFamily: font, fontSize: 17, fontWeight: 600 }}>
       {["Overview", "Markets", "Activity", "Leaderboard", "Vault"].map((t, i) => (
@@ -227,20 +243,17 @@ const BigChart: React.FC = () => {
   return (
     <div
       style={{
+        ...glassCard(16),
         position: "absolute",
         left: x0,
         top: y0,
         width: w,
         height: h,
-        background: C.surface,
-        borderRadius: 16,
-        border: `1px solid ${C.rule}`,
-        boxShadow: "0 2px 10px rgba(10,12,20,0.05)",
         boxSizing: "border-box",
       }}
     >
       <div style={{ position: "absolute", left: 24, top: 18, display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{ width: 38, height: 38, borderRadius: 9, background: C.surfaceSunk, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontFamily: font, fontSize: 18, color: C.text }}>F</div>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontFamily: font, fontSize: 18, color: C.text }}>F</div>
         <div>
           <div style={{ fontFamily: font, fontSize: 24, fontWeight: 800, color: C.text }}>Fartcoin (9BB6..pump)</div>
           <div style={{ fontFamily: monoFont, fontSize: 13, fontWeight: 600, color: C.faint }}>PF:FARTCOIN</div>
@@ -251,7 +264,7 @@ const BigChart: React.FC = () => {
         <div style={{ fontFamily: monoFont, fontSize: 14, fontWeight: 600, color: C.down }}>-0.14% this round</div>
       </div>
       <svg width={w} height={h} style={{ position: "absolute", inset: 0 }}>
-        <line x1={plotL} y1={openLineY} x2={plotR} y2={openLineY} stroke="rgba(10,12,20,0.3)" strokeWidth={1} strokeDasharray="5 5" />
+        <line x1={plotL} y1={openLineY} x2={plotR} y2={openLineY} stroke="rgba(60,64,130,0.28)" strokeWidth={1} strokeDasharray="5 5" />
         <line x1={plotL} y1={yAt(0.62)} x2={plotR} y2={yAt(0.62)} stroke={C.up} strokeWidth={1} strokeDasharray="5 5" opacity={0.5} />
         {candles.map((cd, i) => {
           const cx = plotL + i * cw + cw / 2;
@@ -273,8 +286,8 @@ const BigChart: React.FC = () => {
       </svg>
       {/* right-edge price tags */}
       <div style={{ position: "absolute", right: 8, top: openLineY - y0 - 28 }}>
-        <div style={{ background: C.up, color: "#fff", fontFamily: monoFont, fontSize: 13, fontWeight: 700, padding: "3px 8px", borderRadius: 5, marginBottom: 4 }}>to win +1%</div>
-        <div style={{ background: C.text, color: "#fff", fontFamily: monoFont, fontSize: 13, fontWeight: 700, padding: "3px 8px", borderRadius: 5 }}>$0.18</div>
+        <div style={{ background: C.up, color: "#fff", fontFamily: monoFont, fontSize: 13, fontWeight: 700, padding: "3px 8px", borderRadius: 6, marginBottom: 4, boxShadow: `0 4px 12px ${C.up}55` }}>to win +1%</div>
+        <div style={{ background: C.text, color: "#fff", fontFamily: monoFont, fontSize: 13, fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>$0.18</div>
       </div>
     </div>
   );
@@ -285,7 +298,7 @@ const RoundPanel: React.FC = () => {
   const col = (head: string, big: string, sub: string, live?: boolean) => (
     <div style={{ flex: 1 }}>
       <div style={{ fontFamily: monoFont, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: live ? C.up : C.faint, display: "flex", alignItems: "center", gap: 5 }}>
-        {live ? <span style={{ width: 7, height: 7, borderRadius: 4, background: C.up, display: "inline-block" }} /> : null}
+        {live ? <span style={{ width: 7, height: 7, borderRadius: 4, background: C.up, display: "inline-block", boxShadow: `0 0 8px ${C.up}` }} /> : null}
         {head}
       </div>
       <div style={{ fontFamily: font, fontSize: 26, fontWeight: 800, color: C.text, marginTop: 4 }}>{big}</div>
@@ -293,10 +306,10 @@ const RoundPanel: React.FC = () => {
     </div>
   );
   return (
-    <div style={{ position: "absolute", left: 1500, top: 80, width: 396, padding: "18px 20px", background: C.surface, borderRadius: 16, border: `1px solid ${C.rule}`, boxSizing: "border-box" }}>
+    <div style={{ ...glassPanel(16), position: "absolute", left: 1500, top: 80, width: 396, padding: "18px 20px", boxSizing: "border-box" }}>
       <div style={{ display: "flex", gap: 8 }}>
         {col("LAST", "Closed", "7:42")}
-        {col("NOW", "7:42", "#124714", true)}
+        {col("NOW", "7:42", "live", true)}
         {col("NEXT", "17:42", "27:42")}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, fontFamily: monoFont, fontSize: 14, fontWeight: 600, color: C.dim }}>
@@ -309,7 +322,7 @@ const RoundPanel: React.FC = () => {
 
 // ── stake panel ───────────────────────────────────────────────────────────
 export const StakePanel: React.FC<{ confirmGlow?: number }> = ({ confirmGlow = 0 }) => (
-  <div style={{ position: "absolute", left: 1500, top: 218, width: 396, padding: "22px 22px 24px", background: C.surface, borderRadius: 16, border: `1px solid ${C.rule}`, boxSizing: "border-box" }}>
+  <div style={{ ...glassPanel(16), position: "absolute", left: 1500, top: 218, width: 396, padding: "22px 22px 24px", boxSizing: "border-box" }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
       <span style={{ fontFamily: monoFont, fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", color: C.faint }}>STAKE</span>
       <span style={{ fontFamily: monoFont, fontSize: 14, fontWeight: 600, color: C.dim }}>2,980 USDC</span>
@@ -317,7 +330,22 @@ export const StakePanel: React.FC<{ confirmGlow?: number }> = ({ confirmGlow = 0
     <div style={{ fontFamily: font, fontSize: 56, fontWeight: 800, color: C.text, marginTop: 6 }}>$10</div>
     <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
       {["$1", "$5", "$10", "$25", "$50"].map((v) => (
-        <div key={v} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 999, fontFamily: font, fontSize: 15, fontWeight: 700, background: v === "$10" ? C.blue : C.surfaceSunk, color: v === "$10" ? "#fff" : C.dim }}>
+        <div
+          key={v}
+          style={{
+            flex: 1,
+            textAlign: "center",
+            padding: "9px 0",
+            borderRadius: 999,
+            fontFamily: font,
+            fontSize: 15,
+            fontWeight: 700,
+            background: v === "$10" ? C.blue : "rgba(255,255,255,0.45)",
+            color: v === "$10" ? "#fff" : C.dim,
+            border: v === "$10" ? "none" : "1px solid rgba(255,255,255,0.7)",
+            boxShadow: v === "$10" ? `0 6px 16px ${C.blue}55` : "inset 0 1px 0 rgba(255,255,255,0.7)",
+          }}
+        >
           {v}
         </div>
       ))}
@@ -328,7 +356,7 @@ export const StakePanel: React.FC<{ confirmGlow?: number }> = ({ confirmGlow = 0
         marginTop: 16,
         height: 60,
         borderRadius: 14,
-        background: C.blue,
+        background: PILL_GRADIENT,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -336,7 +364,8 @@ export const StakePanel: React.FC<{ confirmGlow?: number }> = ({ confirmGlow = 0
         fontSize: 22,
         fontWeight: 700,
         color: "#fff",
-        boxShadow: `0 ${10 + confirmGlow * 20}px ${30 + confirmGlow * 30}px ${C.blue}${confirmGlow > 0 ? "88" : "44"}`,
+        textShadow: "0 1px 2px rgba(40,40,90,0.28)",
+        boxShadow: `0 ${12 + confirmGlow * 22}px ${32 + confirmGlow * 34}px rgba(94,120,255,${(0.4 + confirmGlow * 0.45).toFixed(2)}), inset 0 1px 0 rgba(255,255,255,0.5)`,
         transform: `scale(${(1 - confirmGlow * 0.04).toFixed(3)})`,
       }}
     >
@@ -366,7 +395,7 @@ export const Cursor: React.FC<{ x: number; y: number; click: number }> = ({ x, y
       />
     ) : null}
     <svg width="28" height="28" viewBox="0 0 28 28">
-      <path d="M3 2 L3 22 L9 16 L13 24 L17 22 L13 14 L21 14 Z" fill="#0A0C14" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M3 2 L3 22 L9 16 L13 24 L17 22 L13 14 L21 14 Z" fill="#1D1D1F" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   </div>
 );
