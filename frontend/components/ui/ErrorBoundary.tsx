@@ -1,6 +1,7 @@
 'use client'
 
 import { Component, ReactNode } from 'react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { posthog } from '@/lib/posthog'
 
@@ -14,41 +15,61 @@ interface ErrorBoundaryState {
   error: Error | null
 }
 
+const IS_DEV = process.env.NODE_ENV === 'development'
+
 /**
- * Default fallback UI — functional component so it can use hooks.
+ * Default fallback UI — functional component so it can use hooks. Calm and
+ * branded: no raw minified stack trace shoved at the reader (that goes to
+ * PostHog + the console), just a plain account of what happened and a way out.
  */
 function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
   const t = useTranslations('common')
 
   return (
-    <div className="min-h-screen bg-page flex items-center justify-center p-4">
-      <div className="max-w-md w-full rounded-xl border border-color-down bg-surface-down p-6 text-center shadow-card">
-        <h2 className="text-xl font-bold text-color-down font-sans mb-2">
+    <main className="min-h-screen bg-page flex items-center justify-center px-6">
+      <div className="text-center animate-fade-up max-w-[560px]">
+        <h1 className="text-[56px] font-black tracking-tight text-black leading-none">
           {t('errors.something_went_wrong')}
-        </h2>
-        <p className="text-text-secondary text-sm mb-4">
+        </h1>
+        <p className="text-body text-text-secondary mt-3">
           {t('errors.unexpected_error')}
         </p>
-        {error && (
-          <p className="text-text-muted text-xs mb-4 break-words">
+
+        {IS_DEV && error && (
+          <pre className="mt-5 text-left text-xs text-text-muted bg-surface-down rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-words">
             {error.message}
-          </p>
+          </pre>
         )}
-        <button
-          onClick={onRetry}
-          className="px-4 py-2 bg-card hover:bg-muted border border-border-medium text-text-primary text-sm rounded-lg transition-colors"
-        >
-          {t('actions.try_again')}
-        </button>
+
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={onRetry}
+            className="inline-block px-6 py-3 bg-black text-white text-caption font-bold hover:bg-zinc-800 transition-colors"
+          >
+            {t('actions.try_again')}
+          </button>
+          <Link
+            href="/sources"
+            className="inline-block px-6 py-3 border border-zinc-200 bg-white text-caption font-bold text-black hover:bg-zinc-50 transition-colors"
+          >
+            Browse markets
+          </Link>
+          <Link
+            href="/"
+            className="inline-block px-6 py-3 text-caption font-bold text-text-secondary hover:text-black transition-colors"
+          >
+            Back to General Market
+          </Link>
+        </div>
       </div>
-    </div>
+    </main>
   )
 }
 
 /**
- * Error boundary component to catch and display React errors gracefully
- * Institutional style: white card with red error border
- * Prevents entire app from crashing on component errors
+ * Error boundary — catches client render errors anywhere beneath it and shows
+ * a clean branded page instead of a white screen or a raw React stack. Wraps
+ * the whole app in client-providers, so every page degrades gracefully.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
