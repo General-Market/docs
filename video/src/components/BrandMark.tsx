@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 type Surface = "dark" | "light";
 
@@ -14,20 +14,28 @@ const WORDMARK_FONT =
  *   surface="dark"  → white box, dark pill (the inverted app icon)
  *   surface="light" → near-black box, white pill (the app icon as shipped)
  *
+ * When a composition changes ground mid-clip, pass `surface` a function of the
+ * frame instead of a constant — `(frame) => frame < 240 ? "dark" : "light"` —
+ * and the mark flips with the cut. This is the cheap way to "detect" the
+ * background: the tone is known at authoring time, so it costs one comparison,
+ * not a per-pixel blend.
+ *
  * It sizes itself from the frame width, so one mark fits every format, and it
  * stays out of the way — small, top-left, non-interactive, painted above
  * everything in its parent.
  */
 export const BrandMark: React.FC<{
-  surface?: Surface;
+  surface?: Surface | ((frame: number) => Surface);
   showWordmark?: boolean;
   opacity?: number;
 }> = ({ surface = "dark", showWordmark = false, opacity = 0.9 }) => {
   const { width } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const tone = typeof surface === "function" ? surface(frame) : surface;
   const box = Math.round(width * 0.03); // ~58px at 1920
   const margin = Math.round(width * 0.026); // ~50px
-  const ink = surface === "dark" ? "#FFFFFF" : "#1D1D1F";
-  const pill = surface === "dark" ? "#1D1D1F" : "#FFFFFF";
+  const ink = tone === "dark" ? "#FFFFFF" : "#1D1D1F";
+  const pill = tone === "dark" ? "#1D1D1F" : "#FFFFFF";
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none", zIndex: 200 }}>
