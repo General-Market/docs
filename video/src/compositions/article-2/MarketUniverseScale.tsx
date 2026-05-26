@@ -180,19 +180,6 @@ export const MarketUniverseScale: React.FC = () => {
         >
           <div
             style={{
-              fontFamily: SANS_TEXT,
-              fontSize: 26,
-              fontWeight: 600,
-              letterSpacing: "4px",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.42)",
-              marginBottom: 26,
-            }}
-          >
-            Tradeable markets · by asset class
-          </div>
-          <div
-            style={{
               fontSize: 124,
               fontWeight: 800,
               letterSpacing: "-3px",
