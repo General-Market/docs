@@ -38,7 +38,10 @@ export const LAYOUT = {
 };
 
 export const TIMING = {
-  introFrames: 46, // establish — the whole board + tray, with a slow push
+  // The first frame is the Twitter poster, so it holds the FULL board. Then the
+  // logos spill back into the tray and the cursor re-fills it.
+  posterFrames: 42, // frame 0..42: the complete board, held
+  introFrames: 66, // poster + spill; the fill begins here
   flight: 13,
   drop: { F: 5, D: 5, C: 5, B: 6, A: 9, S: 15 } as Record<Tier, number>,
   tierLead: 10,
@@ -47,13 +50,11 @@ export const TIMING = {
   outroFrames: 100,
 };
 
-// The original motion: a zoom-out reveal on the open, then a soft continuous
-// glide up the board with a gentle focus zoom, and a pull-back at the end.
+// Opens on the whole filled board (the poster), holds through the spill, then a
+// soft focus glide up the board as it re-fills, and a pull-back at the end.
 export const CAMERA = {
-  introScale: 2.3, // opens pushed in, pulls back to reveal the whole board
-  introCy: 360,
+  establishScale: 0.9, // frame 0: the whole board + tray in view
   focusScale: 1.08, // a gentle focus as the camera glides up, row by row
   focusBias: 0.5, // 0 = active row centred, 1 = screen centred
-  outroScale: 1.0,
-  outroCy: 408,
+  outroScale: 0.92,
 };

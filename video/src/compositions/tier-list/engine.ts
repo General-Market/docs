@@ -118,6 +118,30 @@ export const flightState = (p: Placement, frame: number): FlightState => {
   };
 };
 
+/** Position of a logo across the WHOLE timeline:
+ *  - poster  [0, posterFrames)   → resting in its final placed slot (the board is full)
+ *  - spill   [posterFrames, introFrames) → arcing back down into the tray
+ *  - fill    [introFrames, …]     → the normal tray → row placement schedule
+ */
+export const logoState = (p: Placement, frame: number): FlightState => {
+  const placed = slotCenter(p.tier, p.slotIndex);
+  if (frame < TIMING.posterFrames) return { pos: placed, phase: "placed", airborne: 1 };
+  if (frame < TIMING.introFrames) {
+    const tray = traySlotCenter(p.pickIndex);
+    const raw = (frame - TIMING.posterFrames) / (TIMING.introFrames - TIMING.posterFrames);
+    const t = easeInOut(raw);
+    const peak = Math.min(placed.y, tray.y) - 130;
+    const c1 = { x: placed.x + (tray.x - placed.x) * 0.25, y: peak };
+    const c2 = { x: placed.x + (tray.x - placed.x) * 0.75, y: peak };
+    return {
+      pos: { x: cubic(placed.x, c1.x, c2.x, tray.x, t), y: cubic(placed.y, c1.y, c2.y, tray.y, t) },
+      phase: "flight",
+      airborne: 1 - raw,
+    };
+  }
+  return flightState(p, frame);
+};
+
 /** The one description chip showing at `frame` — the most recent landed logo. */
 export const activeChip = (frame: number): Placement | null => {
   let best: Placement | null = null;
@@ -164,11 +188,16 @@ const opts = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const focusCy = (tier: Tier) =>
   rowGeometry(tier).center * (1 - CAMERA.focusBias) + 540 * CAMERA.focusBias;
 
-// Keyframes: zoom-out reveal on the open, a gentle focus that glides up the
-// board row by row, then a pull-back at the end.
+const boardTop = LAYOUT.board.top;
+const boardBottom = boardTop + TIERS.length * LAYOUT.board.rowH;
+const boardCenter = (boardTop + boardBottom) / 2;
+const establishCy = (boardTop + LAYOUT.tray.bottom) / 2;
+
+// Keyframes: open on the whole filled board (poster), hold through the spill,
+// then a gentle focus glide up the board as it re-fills, then a pull-back.
 const camFrames: number[] = [0, TIMING.introFrames];
-const camScale: number[] = [CAMERA.introScale, 1];
-const camCy: number[] = [CAMERA.introCy, 540];
+const camScale: number[] = [CAMERA.establishScale, CAMERA.establishScale * 1.02];
+const camCy: number[] = [establishCy, establishCy];
 for (const tier of FILL_ORDER) {
   const w = SCHEDULE.tierWindow[tier];
   if (!w) continue;
@@ -177,8 +206,8 @@ for (const tier of FILL_ORDER) {
   camCy.push(focusCy(tier));
 }
 camFrames.push(SCHEDULE.outroStart, TOTAL);
-camScale.push(CAMERA.outroScale, 1.02);
-camCy.push(CAMERA.outroCy, CAMERA.outroCy);
+camScale.push(CAMERA.outroScale, CAMERA.outroScale);
+camCy.push(boardCenter, boardCenter);
 
 /** Camera at `frame` — a continuous glide up the board, then a pull-back. */
 export const cameraAt = (frame: number): Camera => {

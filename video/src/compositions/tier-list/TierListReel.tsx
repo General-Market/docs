@@ -23,7 +23,7 @@ import {
   activeTierAt,
   cameraAt,
   cursorAt,
-  flightState,
+  logoState,
   rowGeometry,
   slotCenter,
   tileSizeFor,
@@ -96,7 +96,7 @@ export const TierListReel: React.FC = () => {
     press = Math.max(press, clamp(1 - Math.abs(frame - p.flightStart) / 3));
   }
 
-  const titleOp = interpolate(frame, [4, 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const titleOp = 1; // visible from frame 0 — the first frame is the Twitter poster
   const brandOp = interpolate(
     frame,
     [SCHEDULE.outroStart + 18, SCHEDULE.outroStart + 40],
@@ -125,9 +125,9 @@ export const TierListReel: React.FC = () => {
       >
         <Board active={active} />
 
-        {/* every logo: tray → flight → placed, all through one wrapper */}
+        {/* every logo across the whole timeline: poster → spill → tray → flight → placed */}
         {SCHEDULE.placements.map((p) => {
-          const fs = flightState(p, frame);
+          const fs = logoState(p, frame);
           const boardTile = tileSizeFor(p.tier);
           let size: number;
           let lift: number;
@@ -142,7 +142,8 @@ export const TierListReel: React.FC = () => {
             z = 5000;
           } else {
             size = boardTile;
-            lift = 1 - easeOut(clamp((frame - p.dropFrame) / 7));
+            const sinceDrop = frame - p.dropFrame;
+            lift = sinceDrop >= 0 ? 1 - easeOut(clamp(sinceDrop / 7)) : 0; // rest during the poster
             z = 10;
           }
           return (
@@ -173,7 +174,7 @@ export const TierListReel: React.FC = () => {
             );
           })()}
 
-        <Cursor x={cursor.x} y={cursor.y} press={press} />
+        {frame >= TIMING.introFrames && <Cursor x={cursor.x} y={cursor.y} press={press} />}
       </div>
 
       {/* title — fixed overlay, big, always visible, never touched by the camera */}
