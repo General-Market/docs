@@ -79,14 +79,15 @@ export const PER_BATCH = 38_000;
 export const BATCHES_PER_DAY = 100;
 export const GM_PER_DAY = PER_BATCH * BATCHES_PER_DAY; // 3,800,000
 
-// Beat 8 — real trades (executed fills, not order churn) per day. Hyperliquid
-// posts ~560M order MESSAGES/day, but actual fills back out of volume (~$47B/wk
-// H1 2025 ÷ avg fill) to ~1–2M/day; GM's figure is the projected batch
-// throughput. Swap HYPERLIQUID_TRADES_PER_DAY if a clean fill count surfaces.
+// Beat 8 — real trades (executed fills, not order churn) per day, and the
+// users it took. The point: General Market does it with ONE user. Figures are
+// May 2026: Hyperliquid ~1.4M users + ~$5.75B/day vol → ~1.5M est. fills/day;
+// Polymarket ~478K monthly traders (ATH Oct 2025) + ~260K trades/day. Swap
+// HYPERLIQUID_TRADES_PER_DAY if a clean fill count surfaces.
 export const HYPERLIQUID_TRADES_PER_DAY = 1_500_000;
-export type Bar = { id: string; name: string; value: number; accent: string; note: string };
+export type Bar = { id: string; name: string; value: number; users: string; accent: string; note: string };
 export const BARS: Bar[] = [
-  { id: "generalmarket", name: "General Market", value: GM_PER_DAY, accent: "#1F6FEB", note: "projected · 38k × 100 batches" },
-  { id: "hyperliquid", name: "Hyperliquid", value: HYPERLIQUID_TRADES_PER_DAY, accent: "#109A8E", note: "est. real fills · not orders" },
-  { id: "prediction", name: "Prediction industry", value: 260_000, accent: "#16B33F", note: "Polymarket ~95M / 2025" },
+  { id: "generalmarket", name: "General Market", value: GM_PER_DAY, users: "1 user", accent: "#1F6FEB", note: "projected · 38k × 100 batches" },
+  { id: "hyperliquid", name: "Hyperliquid", value: HYPERLIQUID_TRADES_PER_DAY, users: "1.4M users", accent: "#109A8E", note: "est. fills · $5.75B/day" },
+  { id: "polymarket", name: "Polymarket", value: 260_000, users: "478K users", accent: "#16B33F", note: "~478K traders · May 2026" },
 ];

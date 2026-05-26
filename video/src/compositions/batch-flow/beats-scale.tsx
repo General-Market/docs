@@ -94,10 +94,13 @@ const Column: React.FC<{ index: number; scaleTop: number }> = ({ index, scaleTop
       <text x={cx} y={top - 24} textAnchor="middle" fontFamily={font} fontSize={index === 0 ? 60 : 48} fontWeight={800} letterSpacing="-0.02em" fill={bar.accent} opacity={valOp}>
         {abbr(shown)}
       </text>
-      <text x={cx} y={BASE_Y + 46} textAnchor="middle" fontFamily={font} fontSize={28} fontWeight={700} fill={C.text}>
+      <text x={cx} y={BASE_Y + 44} textAnchor="middle" fontFamily={font} fontSize={27} fontWeight={700} fill={C.text} opacity={valOp}>
         {bar.name}
       </text>
-      <text x={cx} y={BASE_Y + 78} textAnchor="middle" fontFamily={monoFont} fontSize={17} fontWeight={600} fill={C.faint}>
+      <text x={cx} y={BASE_Y + 90} textAnchor="middle" fontFamily={font} fontSize={index === 0 ? 40 : 32} fontWeight={800} letterSpacing="-0.02em" fill={bar.accent} opacity={valOp}>
+        {bar.users}
+      </text>
+      <text x={cx} y={BASE_Y + 122} textAnchor="middle" fontFamily={monoFont} fontSize={15} fontWeight={600} fill={C.faint} opacity={valOp}>
         {bar.note}
       </text>
     </>
@@ -109,7 +112,7 @@ export const BarsBeat: React.FC<BeatProps> = ({ durationInFrames }) => {
   const scaleTop = Math.max(...BARS.map((b) => b.value));
   return (
     <AbsoluteFill style={{ opacity: fade }}>
-      <BeatTitle title="Real trades, every day" sub="executed fills — not cancelled orders" />
+      <BeatTitle title="Real trades a day" sub="and the users it took" />
       <svg width={1920} height={1080} style={{ position: "absolute", inset: 0 }}>
         <defs>
           <filter id="bf-bar-glow" x="-60%" y="-30%" width="220%" height="160%">
