@@ -6,10 +6,13 @@ import type { ProofScreen } from "./screens";
 
 const BG = "#05070c";
 
+// Proof phrases underline after their scroll step settles.
+const MARK_TIMES = [150, 214];
+
 /**
  * One data→proof beat. Opens big on the number over a blurred, dimmed source
  * article; the number blurs and lifts away as the blur drops; then the article
- * is in focus and its proof phrases underline themselves.
+ * is in focus and scrolls — in eased steps — to each proof as it underlines.
  */
 export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) => {
   const frame = useCurrentFrame();
@@ -19,50 +22,58 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const heroOut = interpolate(frame, [108, 142], [1, 0], {
+  const heroOut = interpolate(frame, [92, 124], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
   const heroOp = Math.min(heroIn, heroOut);
-  const heroBlur = interpolate(frame, [100, 142], [0, 30], {
+  const heroBlur = interpolate(frame, [86, 124], [0, 30], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const heroScale = interpolate(frame, [100, 142], [1, 1.14], {
+  const heroScale = interpolate(frame, [86, 124], [1, 1.14], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const heroY = interpolate(frame, [100, 142], [0, -28], {
+  const heroY = interpolate(frame, [86, 124], [0, -28], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
 
   // article: blurred + dimmed under the number, then snaps into focus
-  const articleBlur = interpolate(frame, [0, 100, 142], [30, 30, 0], {
+  const articleBlur = interpolate(frame, [0, 88, 124], [30, 30, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const scrimOp = interpolate(frame, [0, 100, 142], [0.85, 0.85, 0], {
+  const scrimOp = interpolate(frame, [0, 88, 124], [0.85, 0.85, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const bgZoom = interpolate(frame, [0, 142], [1.06, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const scroll = interpolate(frame, [0, 230], [18, 74], {
+  const bgZoom = interpolate(frame, [0, 124], [1.05, 1.0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // source citation appears once the proofs are underlined
-  const sourceOp = interpolate(frame, [196, 214], [0, 1], {
+  // eased stepped scroll: settle on proof #1, hold, snap down to proof #2, hold
+  const scroll = interpolate(
+    frame,
+    [0, 150, 178, 218, 290],
+    [70, 70, 70, 360, 360],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.inOut(Easing.cubic),
+    },
+  );
+
+  // source citation appears once both proofs are underlined
+  const sourceOp = interpolate(frame, [244, 262], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -78,17 +89,14 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
           paragraphs={screen.paragraphs}
           scroll={scroll}
           fullBlurPx={articleBlur}
-          markStart={150}
-          markGap={24}
+          markTimes={MARK_TIMES}
           bottomBlur
           showChrome
         />
       </AbsoluteFill>
 
       {/* dim scrim under the hero number */}
-      {scrimOp > 0.001 && (
-        <AbsoluteFill style={{ background: BG, opacity: scrimOp }} />
-      )}
+      {scrimOp > 0.001 && <AbsoluteFill style={{ background: BG, opacity: scrimOp }} />}
 
       {/* hero number */}
       {heroOp > 0.001 && (
@@ -141,12 +149,11 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
             left: 48,
             bottom: 64,
             opacity: sourceOp,
-            paddingLeft: 18,
             borderLeft: `4px solid ${ACCENT}`,
             fontFamily: SANS_TEXT,
             fontSize: 26,
-            color: "rgba(20,24,29,0.78)",
-            background: "rgba(255,255,255,0.7)",
+            color: "rgba(20,24,29,0.82)",
+            background: "rgba(255,255,255,0.78)",
             borderRadius: 4,
             padding: "10px 18px",
             zIndex: 40,

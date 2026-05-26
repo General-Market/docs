@@ -1,18 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import {
-  ACCENT,
-  ACCENT_HL,
-  INK,
-  INK_SOFT,
-  NAV_BG,
-  PAGE,
-  SANS,
-  SANS_TEXT,
-  SERIF,
-  W,
-} from "../article-2/theme";
-import type { Seg } from "./screens";
+import { ACCENT_HL, INK, INK_SOFT, SANS, SANS_TEXT, SERIF, W } from "../article-2/theme";
+import type { BrandKey, Seg } from "./screens";
 
 const NAV_H = 132;
 const COL_W = 1180;
@@ -41,7 +30,6 @@ const Mark: React.FC<{ children: React.ReactNode; at: number; dur?: number }> = 
         borderRadius: 3,
         padding: "0.02em 0.08em",
         margin: "0 -0.08em",
-        color: INK,
       }}
     >
       {children}
@@ -49,70 +37,160 @@ const Mark: React.FC<{ children: React.ReactNode; at: number; dur?: number }> = 
   );
 };
 
-const NavLink: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ color: "rgba(255,255,255,0.82)" }}>{children}</span>
+type BrandSpec = {
+  page: string;
+  ink: string;
+  inkSoft: string;
+  masthead: React.ReactNode;
+};
+
+const navStyle = (color: string): React.CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 28,
+  fontFamily: SANS_TEXT,
+  fontSize: 20,
+  letterSpacing: "-0.1px",
+  color,
+});
+
+const liveDot = (
+  <span style={{ color: "#ff3b30", display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
+    <span style={{ width: 9, height: 9, borderRadius: 9, background: "#ff3b30" }} />
+    Live
+  </span>
 );
 
-const Masthead: React.FC<{ brand: string }> = ({ brand }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: W,
-      height: NAV_H,
-      background: NAV_BG,
-      borderBottom: "1px solid rgba(255,255,255,0.10)",
-      zIndex: 30,
-    }}
-  >
-    <div
-      style={{
-        position: "absolute",
-        left: 48,
-        top: 20,
-        fontFamily: SERIF,
-        fontWeight: 700,
-        fontSize: 44,
-        color: "#fff",
-        letterSpacing: "-0.5px",
-      }}
-    >
-      {brand}
-    </div>
-    <div
-      style={{
-        position: "absolute",
-        left: 48,
-        top: 86,
-        display: "flex",
-        alignItems: "center",
-        gap: 30,
-        fontFamily: SANS_TEXT,
-        fontSize: 20,
-        letterSpacing: "-0.1px",
-      }}
-    >
-      <span
+const BRANDS: Record<BrandKey, BrandSpec> = {
+  // Financial Times — salmon paper, black serif wordmark.
+  ft: {
+    page: "#FFF1E5",
+    ink: "#262A33",
+    inkSoft: "#6B6258",
+    masthead: (
+      <div
         style={{
-          color: "#ff3b30",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          fontWeight: 600,
+          position: "absolute",
+          inset: 0,
+          background: "#FFF1E5",
+          borderBottom: "2px solid #1A1A1A",
         }}
       >
-        <span style={{ width: 9, height: 9, borderRadius: 9, background: "#ff3b30" }} />
-        Live
-      </span>
-      <NavLink>Markets ⌄</NavLink>
-      <NavLink>Economics</NavLink>
-      <NavLink>Tech</NavLink>
-      <NavLink>Opinion</NavLink>
-      <NavLink>More ⌄</NavLink>
-    </div>
-  </div>
-);
+        <div
+          style={{
+            position: "absolute",
+            left: 48,
+            top: 26,
+            fontFamily: SERIF,
+            fontWeight: 700,
+            fontSize: 46,
+            color: "#1A1A1A",
+            letterSpacing: "0.5px",
+          }}
+        >
+          FINANCIAL TIMES
+        </div>
+        <div style={{ position: "absolute", left: 50, top: 90, ...navStyle("#33302E") }}>
+          <span style={{ fontWeight: 700 }}>Markets</span>
+          <span>Companies</span>
+          <span>Opinion</span>
+          <span>Tech</span>
+          <span>Work &amp; Careers</span>
+        </div>
+      </div>
+    ),
+  },
+
+  // Investing.com — dark navy bar, white wordmark with an orange ".com".
+  investing: {
+    page: "#ffffff",
+    ink: INK,
+    inkSoft: INK_SOFT,
+    masthead: (
+      <div style={{ position: "absolute", inset: 0, background: "#0E1420" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 48,
+            top: 28,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 9,
+              background: "#F5A623",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg width="26" height="26" viewBox="0 0 26 26">
+              <rect x="3" y="14" width="5" height="9" rx="1" fill="#0E1420" />
+              <rect x="10.5" y="9" width="5" height="14" rx="1" fill="#0E1420" />
+              <rect x="18" y="4" width="5" height="19" rx="1" fill="#0E1420" />
+            </svg>
+          </div>
+          <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 38, letterSpacing: "-1px" }}>
+            <span style={{ color: "#fff" }}>Investing</span>
+            <span style={{ color: "#F5A623" }}>.com</span>
+          </div>
+        </div>
+        <div style={{ position: "absolute", left: 50, top: 90, ...navStyle("rgba(255,255,255,0.82)") }}>
+          {liveDot}
+          <span>Markets</span>
+          <span>Crypto</span>
+          <span>News</span>
+          <span>Analysis</span>
+          <span>Tools</span>
+        </div>
+      </div>
+    ),
+  },
+
+  // Bloomberg — black bar, white serif wordmark (the house reference look).
+  bloomberg: {
+    page: "#ffffff",
+    ink: INK,
+    inkSoft: INK_SOFT,
+    masthead: (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#0B0B0C",
+          borderBottom: "1px solid rgba(255,255,255,0.10)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: 48,
+            top: 22,
+            fontFamily: SERIF,
+            fontWeight: 700,
+            fontSize: 46,
+            color: "#fff",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Bloomberg
+        </div>
+        <div style={{ position: "absolute", left: 50, top: 90, ...navStyle("rgba(255,255,255,0.82)") }}>
+          {liveDot}
+          <span>Markets ⌄</span>
+          <span>Economics</span>
+          <span>Technology</span>
+          <span>Opinion</span>
+        </div>
+      </div>
+    ),
+  },
+};
 
 /** Thin YouTube-style scrub bar — sells the "found this in a clip" feel. */
 const Chrome: React.FC = () => {
@@ -163,7 +241,7 @@ const Chrome: React.FC = () => {
 };
 
 export interface ProofArticleProps {
-  brand: string;
+  brand: BrandKey;
   title: string;
   author: string;
   date: string;
@@ -171,10 +249,8 @@ export interface ProofArticleProps {
   scroll: number;
   fullBlurPx?: number;
   opacity?: number;
-  /** local frame the first highlight begins wiping */
-  markStart: number;
-  /** frames between successive highlights */
-  markGap: number;
+  /** local frame each highlight begins wiping, in document order */
+  markTimes: number[];
   bottomBlur?: boolean;
   showChrome?: boolean;
 }
@@ -188,20 +264,20 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
   scroll,
   fullBlurPx = 0,
   opacity = 1,
-  markStart,
-  markGap,
+  markTimes,
   bottomBlur = false,
   showChrome = false,
 }) => {
+  const spec = BRANDS[brand];
   const pStyle: React.CSSProperties = {
     fontFamily: SERIF,
     fontSize: 44,
     lineHeight: 1.55,
-    color: INK,
+    color: spec.ink,
     margin: "0 0 38px 0",
   };
 
-  // Assign each marked run a sequential reveal time across the whole article.
+  // Assign each marked run the next reveal time, in document order.
   let markIdx = 0;
 
   return (
@@ -213,7 +289,7 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
           filter: fullBlurPx > 0 ? `blur(${fullBlurPx}px)` : undefined,
         }}
       >
-        <AbsoluteFill style={{ backgroundColor: PAGE }} />
+        <AbsoluteFill style={{ backgroundColor: spec.page }} />
 
         <div
           style={{
@@ -225,7 +301,7 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
             zIndex: 10,
           }}
         >
-          <div style={{ width: COL_W, margin: "0 auto", paddingTop: 96, paddingBottom: 360 }}>
+          <div style={{ width: COL_W, margin: "0 auto", paddingTop: 84, paddingBottom: 360 }}>
             <h1
               style={{
                 fontFamily: SANS,
@@ -233,26 +309,26 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
                 fontSize: 64,
                 lineHeight: 1.1,
                 letterSpacing: "-1px",
-                color: INK,
+                color: spec.ink,
                 margin: 0,
               }}
             >
               {title}
             </h1>
-            <div style={{ fontFamily: SANS_TEXT, fontSize: 26, color: INK, marginTop: 30 }}>
+            <div style={{ fontFamily: SANS_TEXT, fontSize: 26, color: spec.ink, marginTop: 28 }}>
               By <span style={{ textDecoration: "underline" }}>{author}</span>
             </div>
-            <div style={{ fontFamily: SANS_TEXT, fontSize: 23, color: INK_SOFT, marginTop: 10 }}>
+            <div style={{ fontFamily: SANS_TEXT, fontSize: 23, color: spec.inkSoft, marginTop: 10 }}>
               {date}
             </div>
 
-            <div style={{ height: 54 }} />
+            <div style={{ height: 52 }} />
 
             {paragraphs.map((segs, pi) => (
               <p key={pi} style={pStyle}>
                 {segs.map((seg, si) =>
                   seg.mark ? (
-                    <Mark key={si} at={markStart + markGap * markIdx++}>
+                    <Mark key={si} at={markTimes[markIdx++] ?? 9999}>
                       {seg.t}
                     </Mark>
                   ) : (
@@ -264,36 +340,26 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
           </div>
         </div>
 
-        <Masthead brand={brand} />
+        {/* masthead */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: W, height: NAV_H, zIndex: 30 }}>
+          {spec.masthead}
+        </div>
 
         {bottomBlur && (
           <>
             <div
               style={{
                 position: "absolute",
-                right: 64,
-                top: 540,
-                width: 54,
-                height: 54,
-                borderRadius: 14,
-                background: `linear-gradient(135deg, ${ACCENT}, #5AC8FA)`,
-                opacity: 0.5,
-                zIndex: 15,
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: 380,
+                height: 360,
                 zIndex: 20,
-                backdropFilter: "blur(18px)",
-                WebkitBackdropFilter: "blur(18px)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
                 WebkitMaskImage:
-                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 40%)",
-                maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 40%)",
+                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 44%)",
+                maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 44%)",
               }}
             />
             <div
@@ -302,10 +368,9 @@ export const ProofArticle: React.FC<ProofArticleProps> = ({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: 220,
+                height: 200,
                 zIndex: 21,
-                background:
-                  "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(244,244,246,0.7) 100%)",
+                background: `linear-gradient(to bottom, ${spec.page}00 0%, ${spec.page} 100%)`,
               }}
             />
           </>
