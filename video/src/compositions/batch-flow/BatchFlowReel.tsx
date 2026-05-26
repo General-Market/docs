@@ -1,13 +1,11 @@
 import React from "react";
-import { AbsoluteFill, interpolate, Sequence, useCurrentFrame, useVideoConfig, spring } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import { BrandMark } from "../../components/BrandMark";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
 import { LineRow, Packet, TraderChip } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
-import { BlueField } from "../anticheat-edit/props/BlueField";
-import { scene } from "../anticheat-edit/props/tokens";
-import { FlowBeat, QuestionBeat, ThresholdBeat } from "../parimutuel/beats";
+import { GlassFlow, GlassLine, GlassQuestion } from "./concepts";
 import {
   CHAIN_STEPS,
   LIQUIDITY_UNLOCKED,
@@ -22,17 +20,18 @@ import {
   yourReturn,
 } from "./data";
 
-// BatchFlowReel — the batch market, told in sections. Three concept beats (the
-// binary question, the oracle's line, losers-pay-winners) cut in on the dark
-// field between the glass product stations. The glass pipeline itself is ONE
-// element handed down the whole pipeline: ten picks COLLAPSE into one packet of
-// all ten votes; the packet flies into the pool with four other traders; the
-// five packets GATHER into the pool, which then UNFOLDS into the ten matched
-// lines; the lines settle; the winning lines collect into the payout; the payout
-// multiplies; the throughput unlocks a billion in liquidity. Every handoff is a
-// transform — one object becoming the next — never a crossfade on the same spot.
-// Under each dark beat the glass holds a stable frame, then resumes: clean cuts,
-// no skipped motion.
+// BatchFlowReel — ONE continuous element handed down the whole pipeline, all in
+// the same frosted-glass world. The three explainer ideas are adapted INTO the
+// flow as glass beats, never cutting away to another field:
+//   · "one question" opens it — a single binary call, in glass;
+//   · "the oracle's line" plays just before the lines settle;
+//   · "losers pay the winners" plays just before the payout.
+// Between them the product ride: ten picks COLLAPSE into one packet of all ten
+// votes; the packet flies into the pool with four other traders; the five
+// packets GATHER into the pool, which UNFOLDS into the ten matched lines; the
+// lines settle; the winners collect; the payout multiplies; the throughput
+// unlocks a billion in liquidity. Every handoff is a transform — one object
+// becoming the next — never a crossfade of two diagrams on the same spot.
 
 const YOUR_PICKS = MARKETS.map((m) => m.you);
 const TRADER_TICKETS = TRADER_NAMES.map((_n, t) => MARKETS.map((_m, i) => PICKS_BY_MARKET[i][t]));
@@ -40,9 +39,9 @@ const TRADER_COLORS = ["#0071E3", "#FF7A59", "#7B5CFF", "#17B0A6", "#FF6FB5"];
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 // ── the track the camera flies over ──────────────────────────────────────────
-const AX = 1000; // dashboard → merge → packet (the dashboard is full-frame, centred here)
-const BX = 3120; // pool → gather → unfold → settle
-const DX = 5240; // payout → multiply → unlock
+const AX = 1000; // one question → dashboard → merge → packet
+const BX = 3120; // pool → gather → unfold → the line → settle
+const DX = 5240; // losers pay winners → payout → multiply → unlock
 const CY = 540;
 const TRACK_W = 6300;
 
@@ -56,21 +55,24 @@ const ci = (
 ): number =>
   interpolate(frame, [a, b], [from, to], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing });
 
-// ── pick choreography (the cursor walks the ten cards) ───────────────────────
-const SEL_START = sec(0.7);
+// ── opening: the one-question beat, then the cursor walks the ten cards ───────
+const OPEN_Q: [number, number] = [sec(0.3), sec(3.0)]; // glass "one question" builds, holds at AX
+const SEL_START = sec(3.5);
 const SEL_STEP = sec(0.42);
 
-// ── glass-pipeline beats (frames @60fps) — deliberately uneven lengths ───────
+// ── beats (frames @60fps) — deliberately uneven lengths ──────────────────────
 const T = {
-  pickEnd: SEL_START + 10 * SEL_STEP + sec(0.4), // ~5.3s — ten calls made
+  pickEnd: SEL_START + 10 * SEL_STEP + sec(0.4),
   mergeEnd: 0, // the ten cards collapse into one packet
   travel1: [0, 0] as [number, number], // packet flies to the pool
   poolHold: 0,
   gather: [0, 0] as [number, number], // five packets collapse into the pool
   unfold: [0, 0] as [number, number], // the pool unfolds into ten lines
   linesHold: 0,
+  line: [0, 0] as [number, number], // the oracle's line — glass beat at BX
   settle: [0, 0] as [number, number],
   travel2: [0, 0] as [number, number],
+  flow: [0, 0] as [number, number], // losers pay winners — glass beat at DX
   payoutHold: 0,
   multiply: [0, 0] as [number, number],
   unlock: [0, 0] as [number, number],
@@ -80,51 +82,16 @@ T.travel1 = [T.mergeEnd, T.mergeEnd + sec(2.4)];
 T.poolHold = T.travel1[1] + sec(1.1);
 T.gather = [T.poolHold, T.poolHold + sec(0.9)];
 T.unfold = [T.gather[1] + sec(0.25), T.gather[1] + sec(0.25) + sec(1.5)];
-T.linesHold = T.unfold[1] + sec(0.8);
-T.settle = [T.linesHold, T.linesHold + sec(3.0)];
+T.linesHold = T.unfold[1] + sec(0.7);
+T.line = [T.linesHold + sec(0.3), T.linesHold + sec(0.3) + sec(2.8)];
+T.settle = [T.line[1] + sec(0.5), T.line[1] + sec(0.5) + sec(3.0)];
 T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(2.8)];
-T.payoutHold = T.travel2[1] + sec(2.4);
+T.flow = [T.travel2[1] + sec(0.3), T.travel2[1] + sec(0.3) + sec(2.9)];
+T.payoutHold = T.flow[1] + sec(2.2);
 T.multiply = [T.payoutHold + sec(0.5), T.payoutHold + sec(4.6)];
 T.unlock = [T.multiply[1] + sec(0.6), T.multiply[1] + sec(4.0)];
-const GLASS_TOTAL = T.unlock[1] + sec(1.2);
+const TOTAL = T.unlock[1] + sec(1.2);
 const STEP_AT = [T.multiply[0] + sec(0.3), T.multiply[0] + sec(1.7), T.multiply[0] + sec(3.1)];
-
-// ── the sectioned reel ───────────────────────────────────────────────────────
-//
-// The dark concept beats cut in at the narrative seams. The glass timeline is
-// split at two points; under each dark beat the glass holds the split frame,
-// then resumes from it on the cut back.
-const Q_DUR = sec(4.0); // "one question" — opens the reel
-const TH_DUR = sec(4.0); // "the oracle draws the line" — before the lines settle
-const FL_DUR = sec(4.2); // "the losers pay the winners" — before the payout
-const SPLIT_SETTLE = T.linesHold; // section A ends with the lines formed, unsettled
-const SPLIT_PAYOUT = T.settle[1]; // section B ends with the lines settled
-
-const Q_FROM = 0;
-const A_FROM = Q_FROM + Q_DUR; // glass [0, SPLIT_SETTLE)
-const TH_FROM = A_FROM + SPLIT_SETTLE;
-const B_FROM = TH_FROM + TH_DUR; // glass [SPLIT_SETTLE, SPLIT_PAYOUT)
-const FL_FROM = B_FROM + (SPLIT_PAYOUT - SPLIT_SETTLE);
-const C_FROM = FL_FROM + FL_DUR; // glass [SPLIT_PAYOUT, GLASS_TOTAL)
-const OUTER_TOTAL = C_FROM + (GLASS_TOTAL - SPLIT_PAYOUT);
-
-// Map the outer frame to the glass timeline: linear inside each glass section,
-// held at the split point while a dark beat plays.
-const glassFrameAt = (outer: number): number => {
-  if (outer < A_FROM) return 0;
-  if (outer < TH_FROM) return outer - A_FROM;
-  if (outer < B_FROM) return SPLIT_SETTLE;
-  if (outer < FL_FROM) return SPLIT_SETTLE + (outer - B_FROM);
-  if (outer < C_FROM) return SPLIT_PAYOUT;
-  return SPLIT_PAYOUT + (outer - C_FROM);
-};
-
-// The three concept beats play on the dark blue field; the glass sections show
-// the light board. The corner mark flips white/black to match, by frame.
-const onDarkGround = (outer: number): boolean =>
-  outer < Q_DUR ||
-  (outer >= TH_FROM && outer < TH_FROM + TH_DUR) ||
-  (outer >= FL_FROM && outer < FL_FROM + FL_DUR);
 
 const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
 
@@ -138,7 +105,7 @@ const camera = (frame: number): { x: number; scale: number } => {
   );
   const scale = interpolate(
     frame,
-    [T.multiply[0], STEP_AT[2], T.unlock[0], GLASS_TOTAL],
+    [T.multiply[0], STEP_AT[2], T.unlock[0], TOTAL],
     [1, 1.06, 1.06, 1.03],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
   );
@@ -189,13 +156,17 @@ const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text:
   );
 };
 
-// ── GlassPipeline — the product ride, driven by a frame fed from the outside ──
-// (the orchestrator holds this frame steady under each dark beat).
-const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
+export const BatchFlowReel: React.FC = () => {
+  const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { x: camX, scale } = camera(frame);
   const tx = W / 2 - camX * scale;
   const ty = H / 2 - CY * scale;
+
+  // ── Concept 1: one question — a single binary call, in glass, at AX ────────
+  const qReveal = ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(1.0), 0, 1, EASE.out);
+  const qOp = Math.min(ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(0.4), 0, 1), ci(frame, OPEN_Q[1] - sec(0.1), OPEN_Q[1] + sec(0.4), 1, 0));
+  const qScale = lerp(1, 0.94, ci(frame, OPEN_Q[1] - sec(0.3), OPEN_Q[1] + sec(0.3), 0, 1, EASE.inOut));
 
   // ── Stage 1: the live dashboard, cursor picking ten markets ────────────────
   const picks = MARKETS.map((m, i) => (frame >= SEL_START + i * SEL_STEP ? m.you : null));
@@ -209,13 +180,15 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
   const cursorY = lerp(a.y, b.y, f);
   const click = frame < SEL_START ? 0 : p - i0 < 0.3 ? 1 - (p - i0) / 0.3 : 0;
   const activeIndex = frame < SEL_START ? null : Math.min(MARKETS.length - 1, Math.round((frame - SEL_START) / SEL_STEP));
-  const cursorVisible = frame > sec(0.4) && frame < T.pickEnd;
+  const cursorVisible = frame > SEL_START - sec(0.2) && frame < T.pickEnd;
+
+  // dashboard fades in after the question, recedes as the merge begins
+  const dashIn = ci(frame, OPEN_Q[1] - sec(0.2), OPEN_Q[1] + sec(0.5), 0, 1, EASE.out);
+  const dashMerge = frame < T.pickEnd ? 1 : ci(frame, T.pickEnd, lerp(T.pickEnd, T.mergeEnd, 0.5), 1, 0, EASE.inOut);
+  const dashChromeOp = Math.min(dashIn, dashMerge);
+  const dashScale = lerp(0.96, 1, dashIn);
 
   // ── Stage 1→2: the MERGE — the ten picked cards collapse into one packet ────
-  // The non-card chrome (chart, header, panels) recedes first; then each card
-  // flies to the packet centre, shrinking, while the packet of all ten votes
-  // blooms to receive them. You watch ten calls become one card.
-  const dashChromeOp = frame < T.pickEnd ? 1 : ci(frame, T.pickEnd, lerp(T.pickEnd, T.mergeEnd, 0.5), 1, 0, EASE.inOut);
   const cardsMerging = frame >= T.pickEnd && frame < T.mergeEnd;
   const cardStagger = sec(0.025);
   const cardDur = sec(0.85);
@@ -245,13 +218,25 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
     ci(frame, T.travel2[0], T.travel2[0] + sec(0.4), 1, 0),
   );
 
+  // ── Concept 2: the oracle's line — glass beat at BX, before the lines settle.
+  // The matched lines dim back while the line beat plays, then return to settle.
+  const glLineReveal = ci(frame, T.line[0], T.line[0] + sec(1.4), 0, 1, EASE.out);
+  const glLineOp = Math.min(ci(frame, T.line[0], T.line[0] + sec(0.4), 0, 1), ci(frame, T.line[1] - sec(0.3), T.line[1], 1, 0));
+  const lineDim = 1 - 0.85 * Math.min(ci(frame, T.line[0] - sec(0.3), T.line[0] + sec(0.2), 0, 1), ci(frame, T.line[1] - sec(0.2), T.line[1] + sec(0.3), 1, 0));
+
   // ── Stage 4–5: the ten matched lines unfold downward, then settle ──────────
   const rowsUnfold = ci(frame, T.unfold[0], T.unfold[0] + sec(1.2), 0, 1, EASE.out);
-  const rowsOp = Math.min(ci(frame, T.unfold[0], T.unfold[0] + sec(0.3), 0, 1), ci(frame, T.travel2[0], T.travel2[1], 1, 0));
+  const rowsBase = Math.min(ci(frame, T.unfold[0], T.unfold[0] + sec(0.3), 0, 1), ci(frame, T.travel2[0], T.travel2[1], 1, 0));
+  const rowsOp = rowsBase * lineDim;
 
-  // ── Stage 6: the payout — winning lines collect ────────────────────────────
-  const collected = ci(frame, T.travel2[0], T.payoutHold - sec(0.4), 0, YOUR_COLLECT, EASE.out);
-  const payoutOp = Math.min(ci(frame, T.travel2[0] + sec(0.3), T.travel2[1], 0, 1), ci(frame, T.multiply[0], T.multiply[0] + sec(0.6), 1, 0));
+  // ── Concept 3: losers pay the winners — glass beat at DX, before the payout ─
+  const glFlowReveal = ci(frame, T.flow[0], T.flow[0] + sec(1.0), 0, 1, EASE.out);
+  const glFlow = ci(frame, T.flow[0] + sec(0.4), T.flow[1] - sec(0.2), 0, 1, EASE.inOut);
+  const glFlowOp = Math.min(ci(frame, T.flow[0], T.flow[0] + sec(0.4), 0, 1), ci(frame, T.flow[1] - sec(0.3), T.flow[1], 1, 0));
+
+  // ── Stage 6: the payout — winning lines collect (after the flow beat) ───────
+  const collected = ci(frame, T.flow[1], T.payoutHold - sec(0.4), 0, YOUR_COLLECT, EASE.out);
+  const payoutOp = Math.min(ci(frame, T.flow[1] - sec(0.2), T.flow[1] + sec(0.5), 0, 1), ci(frame, T.multiply[0], T.multiply[0] + sec(0.6), 1, 0));
   const netOp = ci(frame, T.payoutHold - sec(1.0), T.payoutHold - sec(0.2), 0, 1);
 
   // ── Stage 7: multiply ──────────────────────────────────────────────────────
@@ -269,6 +254,7 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <Stage>
+      <BrandMark surface="light" />
       <div
         style={{
           position: "absolute",
@@ -287,10 +273,16 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
         {/* flow spine */}
         <div style={{ position: "absolute", left: AX, top: CY - 1, width: DX - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
 
-        {/* Stage 1 — the real dashboard, full-frame, centred on AX; its chrome
-            recedes as the merge begins */}
+        {/* Concept 1 — one question, in glass, at AX */}
+        {qOp > 0.01 && (
+          <div style={{ position: "absolute", left: AX, top: CY, transform: `translate(-50%,-50%) scale(${qScale.toFixed(3)})`, opacity: qOp, zIndex: 45 }}>
+            <GlassQuestion reveal={qReveal} />
+          </div>
+        )}
+
+        {/* Stage 1 — the real dashboard, full-frame, centred on AX */}
         {dashChromeOp > 0.01 && (
-          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashChromeOp }}>
+          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashChromeOp, transform: `scale(${dashScale.toFixed(3)})`, transformOrigin: "center center" }}>
             <ProductUI picks={picks} activeIndex={activeIndex} />
             {cursorVisible ? <Cursor x={cursorX} y={cursorY} click={click} /> : null}
           </div>
@@ -401,13 +393,20 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         )}
 
+        {/* Concept 2 — the oracle's line, in glass, at BX */}
+        {glLineOp > 0.01 && (
+          <div style={{ position: "absolute", left: BX, top: CY, transform: "translate(-50%,-50%)", opacity: glLineOp, zIndex: 20 }}>
+            <GlassLine reveal={glLineReveal} />
+          </div>
+        )}
+
         {/* Stage 6 — payout: the ten result cards + the collected total */}
         {payoutOp > 0.01 && (
           <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", textAlign: "center", opacity: payoutOp }}>
             <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 22 }}>
               {MARKETS.map((m, i) => {
                 const won = m.you === m.outcome;
-                const r = Math.min(1, spring({ fps, frame: frame - (T.travel2[0] + sec(0.3) + i * 4), config: { damping: 15, stiffness: 130, mass: 0.6 }, durationInFrames: 20 }));
+                const r = Math.min(1, spring({ fps, frame: frame - (T.flow[1] + sec(0.1) + i * 4), config: { damping: 15, stiffness: 130, mass: 0.6 }, durationInFrames: 20 }));
                 return (
                   <div key={i} style={{ width: 124, padding: "12px 8px 10px", borderRadius: 13, background: "linear-gradient(160deg, rgba(255,255,255,0.66), rgba(255,255,255,0.4))", border: `1.5px solid ${won ? C.up : "rgba(255,255,255,0.6)"}`, boxShadow: won ? `0 12px 28px ${C.up}3D, inset 0 1px 0 rgba(255,255,255,0.85)` : "0 8px 20px rgba(70,74,140,0.12), inset 0 1px 0 rgba(255,255,255,0.8)", opacity: r, transform: `translateY(${((1 - r) * 14).toFixed(1)}px)` }}>
                     <div style={{ fontFamily: font, fontSize: 24, fontWeight: 800, color: m.you === "up" ? C.up : C.down }}>{m.you === "up" ? "▲" : "▼"}</div>
@@ -420,6 +419,13 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
             <div style={{ fontFamily: monoFont, fontSize: 26, fontWeight: 700, letterSpacing: "0.04em", color: C.dim }}>{YOUR_WINS} OF 10 LINES WON</div>
             <div style={{ ...heroNumber(150), marginTop: 4 }}>${collected.toFixed(2)}</div>
             <div style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: C.up, opacity: netOp, marginTop: 6 }}>collected — net +${YOUR_NET.toFixed(2)} on ${YOUR_STAKE}</div>
+          </div>
+        )}
+
+        {/* Concept 3 — losers pay the winners, in glass, at DX (before payout) */}
+        {glFlowOp > 0.01 && (
+          <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", opacity: glFlowOp, zIndex: 20 }}>
+            <GlassFlow reveal={glFlowReveal} flow={glFlow} />
           </div>
         )}
 
@@ -448,52 +454,19 @@ const GlassPipeline: React.FC<{ frame: number }> = ({ frame }) => {
         )}
 
         {/* captions */}
-        <Caption frame={frame} x={AX} y={CY + 470} at={sec(0.6)} text="Pick up or down on ten markets" until={T.pickEnd} />
+        <Caption frame={frame} x={AX} y={CY + 470} at={SEL_START - sec(0.1)} text="Pick up or down on ten markets" until={T.pickEnd} />
         <Caption frame={frame} x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
         <Caption frame={frame} x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
-        <Caption frame={frame} x={BX} y={CY + 330} at={T.unfold[1]} text="Every line matched, then settled" until={T.travel2[0]} />
+        <Caption frame={frame} x={BX} y={CY + 330} at={T.settle[0] + sec(0.4)} text="Every line matched, then settled" until={T.travel2[0]} />
       </div>
     </Stage>
-  );
-};
-
-// ── DarkBeat — a concept beat on the deep-blue field (the explainer's world) ──
-const DarkBeat: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <AbsoluteFill style={{ backgroundColor: scene.blueAbyss }}>
-    <BlueField />
-    {children}
-  </AbsoluteFill>
-);
-
-export const BatchFlowReel: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <AbsoluteFill style={{ backgroundColor: scene.blueAbyss }}>
-      <GlassPipeline frame={glassFrameAt(frame)} />
-      <Sequence from={Q_FROM} durationInFrames={Q_DUR} name="1 · one question">
-        <DarkBeat>
-          <QuestionBeat durationInFrames={Q_DUR} />
-        </DarkBeat>
-      </Sequence>
-      <Sequence from={TH_FROM} durationInFrames={TH_DUR} name="2 · the line">
-        <DarkBeat>
-          <ThresholdBeat durationInFrames={TH_DUR} />
-        </DarkBeat>
-      </Sequence>
-      <Sequence from={FL_FROM} durationInFrames={FL_DUR} name="3 · losers pay winners">
-        <DarkBeat>
-          <FlowBeat durationInFrames={FL_DUR} />
-        </DarkBeat>
-      </Sequence>
-      <BrandMark surface={(f) => (onDarkGround(f) ? "dark" : "light")} />
-    </AbsoluteFill>
   );
 };
 
 export const batchFlowReelMeta = {
   id: "BatchFlowReel",
   component: BatchFlowReel,
-  durationInFrames: OUTER_TOTAL,
+  durationInFrames: TOTAL,
   fps: FPS,
   width: W,
   height: H,
