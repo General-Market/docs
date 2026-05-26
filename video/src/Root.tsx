@@ -123,7 +123,9 @@ import {
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
+import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
+import { attentionVolumeMeta } from "./compositions/article-2/AttentionVolume";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { retailPnLMarketsReelMeta } from "./compositions/retail-pnl/RetailPnLMarketsReel";
@@ -169,6 +171,16 @@ export const RemotionRoot: React.FC = () => {
         width={anticheatEditMeta.width}
         height={anticheatEditMeta.height}
       />
+      <Folder name="Article-2">
+        <Composition
+          id={attentionVolumeMeta.id}
+          component={attentionVolumeMeta.component}
+          durationInFrames={attentionVolumeMeta.durationInFrames}
+          fps={attentionVolumeMeta.fps}
+          width={attentionVolumeMeta.width}
+          height={attentionVolumeMeta.height}
+        />
+      </Folder>
       <Composition
         id={blockTradingExileMeta.id}
         component={blockTradingExileMeta.component}
@@ -192,6 +204,14 @@ export const RemotionRoot: React.FC = () => {
         fps={batchFlowReelMeta.fps}
         width={batchFlowReelMeta.width}
         height={batchFlowReelMeta.height}
+      />
+      <Composition
+        id={perpsGraveyardReelMeta.id}
+        component={perpsGraveyardReelMeta.component}
+        durationInFrames={perpsGraveyardReelMeta.durationInFrames}
+        fps={perpsGraveyardReelMeta.fps}
+        width={perpsGraveyardReelMeta.width}
+        height={perpsGraveyardReelMeta.height}
       />
       <Composition
         id={webglPicksMeta.id}
