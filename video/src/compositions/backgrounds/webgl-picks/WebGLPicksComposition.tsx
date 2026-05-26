@@ -92,6 +92,16 @@ const W = 1920;
 const H = 1080;
 
 const ALL_SCENES = [
+  // Newest scenes first so the WebGLPicks reel opens on them.
+  { id: "WP-RingCarousel", component: RingCarousel },
+  { id: "WP-TravelDeco", component: TravelDeco },
+  { id: "WP-UmbralFloor", component: UmbralFloor },
+  { id: "WP-ConveyorBuilder", component: ConveyorBuilder },
+  { id: "WP-CommandPath", component: CommandPath },
+  { id: "WP-CommunityHeadline", component: CommunityHeadline },
+  { id: "WP-ImageGridScroll", component: ImageGridScroll },
+  { id: "WP-CheckerBlock", component: CheckerBlock },
+  { id: "WP-BlurLoader", component: BlurLoader },
   { id: "WP-DepthGallery", component: DepthGallery },
   { id: "WP-GradientCarousel", component: GradientCarousel },
   { id: "WP-TelescopeZoom", component: TelescopeZoom },
@@ -151,15 +161,6 @@ const ALL_SCENES = [
   { id: "WP-RgbGlitch", component: RgbGlitch },
   { id: "WP-Backlights", component: Backlights },
   { id: "WP-CrtScreen", component: CrtScreen },
-  { id: "WP-RingCarousel", component: RingCarousel },
-  { id: "WP-TravelDeco", component: TravelDeco },
-  { id: "WP-UmbralFloor", component: UmbralFloor },
-  { id: "WP-ConveyorBuilder", component: ConveyorBuilder },
-  { id: "WP-CommandPath", component: CommandPath },
-  { id: "WP-CommunityHeadline", component: CommunityHeadline },
-  { id: "WP-ImageGridScroll", component: ImageGridScroll },
-  { id: "WP-CheckerBlock", component: CheckerBlock },
-  { id: "WP-BlurLoader", component: BlurLoader },
   // reelOnly: appears in the WebGLPicks reel but does not get its own
   // top-level composition URL.
   { id: "WP-PremierLeague", component: PremierLeague, reelOnly: true },
