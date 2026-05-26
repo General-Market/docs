@@ -124,10 +124,15 @@ import {
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
+import { finiteLiquidityMeta } from "./compositions/three-walls/FiniteLiquidity";
+import { technicalOverloadMeta } from "./compositions/three-walls/TechnicalOverload";
+import { asphyxiationByWinnersMeta } from "./compositions/three-walls/AsphyxiationByWinners";
 import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
 import { marketCostScaleMeta } from "./compositions/article-2/MarketCostScale";
+import { marketUniverseScaleMeta } from "./compositions/article-2/MarketUniverseScale";
+import { tierListReelMeta } from "./compositions/tier-list/TierListReel";
 import { liquidityLoopMeta } from "./compositions/loops/LiquidityLoop";
 import { botVolumeProofMeta, botVolumeScreenMetas } from "./compositions/bot-volume/BotVolumeProof";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
@@ -175,6 +180,14 @@ export const RemotionRoot: React.FC = () => {
         width={anticheatEditMeta.width}
         height={anticheatEditMeta.height}
       />
+      <Composition
+        id={tierListReelMeta.id}
+        component={tierListReelMeta.component}
+        durationInFrames={tierListReelMeta.durationInFrames}
+        fps={tierListReelMeta.fps}
+        width={tierListReelMeta.width}
+        height={tierListReelMeta.height}
+      />
       <Folder name="Article-2">
         <Composition
           id={attentionVolumeV2Meta.id}
@@ -191,6 +204,14 @@ export const RemotionRoot: React.FC = () => {
           fps={marketCostScaleMeta.fps}
           width={marketCostScaleMeta.width}
           height={marketCostScaleMeta.height}
+        />
+        <Composition
+          id={marketUniverseScaleMeta.id}
+          component={marketUniverseScaleMeta.component}
+          durationInFrames={marketUniverseScaleMeta.durationInFrames}
+          fps={marketUniverseScaleMeta.fps}
+          width={marketUniverseScaleMeta.width}
+          height={marketUniverseScaleMeta.height}
         />
         <Composition
           id={botVolumeProofMeta.id}
@@ -226,6 +247,32 @@ export const RemotionRoot: React.FC = () => {
           fps={batchFlowReelMeta.fps}
           width={batchFlowReelMeta.width}
           height={batchFlowReelMeta.height}
+        />
+      </Folder>
+      <Folder name="ThreeWalls">
+        <Composition
+          id={finiteLiquidityMeta.id}
+          component={finiteLiquidityMeta.component}
+          durationInFrames={finiteLiquidityMeta.durationInFrames}
+          fps={finiteLiquidityMeta.fps}
+          width={finiteLiquidityMeta.width}
+          height={finiteLiquidityMeta.height}
+        />
+        <Composition
+          id={technicalOverloadMeta.id}
+          component={technicalOverloadMeta.component}
+          durationInFrames={technicalOverloadMeta.durationInFrames}
+          fps={technicalOverloadMeta.fps}
+          width={technicalOverloadMeta.width}
+          height={technicalOverloadMeta.height}
+        />
+        <Composition
+          id={asphyxiationByWinnersMeta.id}
+          component={asphyxiationByWinnersMeta.component}
+          durationInFrames={asphyxiationByWinnersMeta.durationInFrames}
+          fps={asphyxiationByWinnersMeta.fps}
+          width={asphyxiationByWinnersMeta.width}
+          height={asphyxiationByWinnersMeta.height}
         />
       </Folder>
       <Folder name="Loops">
