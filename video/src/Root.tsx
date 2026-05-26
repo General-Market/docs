@@ -103,7 +103,7 @@ import {
   H as SEQ02_H,
 } from "./compositions/sequence02/theme";
 import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
-import { whyLiquidityIsHardMeta } from "./compositions/insider-trading/WhyLiquidityIsHard";
+import { whyLiquidityIsHardMeta } from "./compositions/article-2/WhyLiquidityIsHard";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 import {
   antiCheatStatMeta,
@@ -128,6 +128,7 @@ import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGrav
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { attentionVolumeMeta } from "./compositions/article-2/AttentionVolume";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
+import { liquidityLoopMeta } from "./compositions/loops/LiquidityLoop";
 import { botVolumeProofMeta, botVolumeScreenMetas } from "./compositions/bot-volume/BotVolumeProof";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
@@ -191,8 +192,6 @@ export const RemotionRoot: React.FC = () => {
           width={attentionVolumeV2Meta.width}
           height={attentionVolumeV2Meta.height}
         />
-      </Folder>
-      <Folder name="Bot-Volume">
         <Composition
           id={botVolumeProofMeta.id}
           component={botVolumeProofMeta.component}
@@ -212,6 +211,16 @@ export const RemotionRoot: React.FC = () => {
             height={m.height}
           />
         ))}
+      </Folder>
+      <Folder name="Loops">
+        <Composition
+          id={liquidityLoopMeta.id}
+          component={liquidityLoopMeta.component}
+          durationInFrames={liquidityLoopMeta.durationInFrames}
+          fps={liquidityLoopMeta.fps}
+          width={liquidityLoopMeta.width}
+          height={liquidityLoopMeta.height}
+        />
       </Folder>
       <Composition
         id={blockTradingExileMeta.id}
