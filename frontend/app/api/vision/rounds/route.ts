@@ -1,5 +1,6 @@
 import { keccak256, toHex, createPublicClient, http, parseAbiItem } from 'viem'
 import { getIssuerVisionUrl } from '@/lib/config'
+import { isHiddenSourceId } from '@/lib/vision/hidden-sources'
 import sourcesDisplay from '@/data/sources-display.json'
 import deployment from '@/lib/contracts/deployment.json'
 import { indexL3 } from '@/lib/wagmi'
@@ -127,6 +128,13 @@ export async function GET(request: Request) {
         r.sourceId = display
       }
     }
+
+    // Drop disabled/hidden sources (data-node DISABLED_SOURCES — dead/rate-
+    // limited feeds). Their legacy batches still resolve on-chain, but no
+    // rounds-driven surface (the floor, pulse feed) may show them as live.
+    // The detail page already 404s via isHiddenSource; this closes the
+    // rounds-feed leak so a frozen $4k ghost round never reaches the UI.
+    rounds = rounds.filter((r: any) => !isHiddenSourceId((r.source_id ?? r.sourceId ?? '')))
 
     // Filter by display sourceId
     if (sourceFilter && rounds.length > 0) {
