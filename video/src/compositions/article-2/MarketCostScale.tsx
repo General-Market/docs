@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { ArticlePage, type ArticleContent } from "./ArticlePage";
-import { ACCENT, FPS, H, SANS, SANS_TEXT, W } from "./theme";
+import { ACCENT, FPS, H, SANS, SANS_TEXT, W, zoomBurst } from "./theme";
 
 /* ── The facts ──────────────────────────────────────────────────────────────
  * Polymarket earmarked ~$5M in liquidity incentives for April 2026, spread
@@ -15,7 +15,7 @@ const PER_MARKET = Math.round(SPEND / MARKETS / 10) * 10; // ≈ $290 / market
 const BILLION = 1_000_000_000;
 const TOTAL_COST = PER_MARKET * BILLION; // 290,000,000,000
 
-const TOTAL = 360;
+const TOTAL = 240;
 
 const RED = "#FF453A"; // iOS systemRed — the cost
 const SKY = "#5AC8FA";
@@ -34,17 +34,17 @@ const POLY_ARTICLE: ArticleContent = {
   paragraphs: [
     [
       "Polymarket will pay out ",
-      { mark: "$5 million in liquidity incentives", at: 296 },
+      { mark: "$5 million in liquidity incentives", at: 202 },
       " this month — the largest single-month rewards budget in the venue’s history.",
     ],
     [
       "The program spans the platform’s ",
-      { mark: "roughly 17,000 markets", at: 312 },
+      { mark: "roughly 17,000 markets", at: 212 },
       ", paying market makers to keep order books deep across sports, politics and crypto.",
     ],
     [
       "Spread across the book, that budget works out to ",
-      { mark: "about $290 per market", at: 328 },
+      { mark: "about $290 per market", at: 222 },
       " for the month — a cost that recurs with every market listed.",
     ],
     [
@@ -133,54 +133,59 @@ const Arrow: React.FC<{
 export const MarketCostScale: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // reveal envelopes
-  const smallDraw = clamp(frame, [14, 48]);
-  const smallBrand = clamp(frame, [36, 62]);
-  const fiveM = clamp(frame, [52, 78]);
-  const bigDraw = clamp(frame, [78, 134]);
-  const bigBrand = clamp(frame, [120, 150]);
-  const arrowDraw = interpolate(frame, [150, 246], [0, 1], {
+  // reveal envelopes — the box starts drawing on frame 0, so the open is motion
+  const smallDraw = clamp(frame, [0, 28]);
+  const smallBrand = clamp(frame, [20, 42]);
+  const fiveM = clamp(frame, [36, 56]);
+  const bigDraw = clamp(frame, [56, 100]);
+  const bigBrand = clamp(frame, [88, 112]);
+  const arrowDraw = interpolate(frame, [112, 176], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const costRoll = interpolate(frame, [152, 246], [0, 1], {
+  const costRoll = interpolate(frame, [114, 176], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
   const costValue = SPEND + costRoll * (TOTAL_COST - SPEND);
-  const costLabel = clamp(frame, [158, 182]);
+  const costLabel = clamp(frame, [122, 144]);
 
   // focus pull → the article as the source
-  const overlayOp = interpolate(frame, [0, 272, 300], [1, 1, 0], {
+  const overlayEntryScale = interpolate(frame, [0, 18], [1.03, 1.0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const overlayOp = interpolate(frame, [0, 182, 200], [1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const overlayScale = interpolate(frame, [272, 300], [1, 1.04], {
+  const overlayExitScale = interpolate(frame, [182, 200], [1, 1.04], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const articleBlur = interpolate(frame, [0, 272, 300], [26, 26, 0], {
+  const overlayScale = overlayEntryScale * overlayExitScale;
+  const articleBlur = interpolate(frame, [0, 182, 200], [26, 26, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const artScroll = clamp(frame, [288, 360], [0, 40]);
-  const artOp = clamp(frame, [352, 360], [1, 0]);
+  const artScroll = clamp(frame, [196, 240], [0, 40]);
+  const artOp = clamp(frame, [232, 240], [1, 0]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <AbsoluteFill>
+      <AbsoluteFill style={{ transform: `scale(${zoomBurst(frame, TOTAL)})`, transformOrigin: "center" }}>
         <ArticlePage
           article={POLY_ARTICLE}
           scroll={artScroll}
           opacity={artOp}
           fullBlurPx={articleBlur}
           bottomBlur
-          showChrome
         />
       </AbsoluteFill>
 

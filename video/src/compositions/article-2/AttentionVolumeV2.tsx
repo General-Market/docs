@@ -2,9 +2,9 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage } from "./ArticlePage";
 import { ImpressionsVolumeChart } from "./ImpressionsVolumeChart";
-import { FPS, H, W } from "./theme";
+import { FPS, H, W, zoomBurst } from "./theme";
 
-const V2_TOTAL = 360;
+const V2_TOTAL = 240;
 
 /**
  * V2 — graph-first. Open big on the chart over a blurred, dimmed article;
@@ -17,7 +17,7 @@ export const AttentionVolumeV2: React.FC = () => {
   // article scroll: a slow drift behind the chart, then steps through the proofs
   const scroll = interpolate(
     frame,
-    [0, 150, 178, 212, 250, 286, 360],
+    [0, 86, 104, 142, 160, 200, 240],
     [0, 80, 80, 300, 300, 490, 490],
     {
       extrapolateLeft: "clamp",
@@ -26,32 +26,36 @@ export const AttentionVolumeV2: React.FC = () => {
     },
   );
 
-  // slow Ken Burns on the backdrop so the frame keeps moving behind the chart
-  const bgZoom = interpolate(frame, [0, 150], [1.06, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // pronounced 3-burst zoom on the backdrop — frame 0 is already pushing in
+  const bgZoom = zoomBurst(frame, V2_TOTAL);
 
   // whole-page blur lifts as the graph leaves
-  const fullBlur = interpolate(frame, [0, 105, 150], [26, 26, 0], {
+  const fullBlur = interpolate(frame, [0, 66, 94], [26, 26, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
 
   // graph (and its numbers + scrim) dissolves away
-  const graphOp = interpolate(frame, [0, 105, 150], [1, 1, 0], {
+  const graphOp = interpolate(frame, [0, 66, 94], [1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const graphScale = interpolate(frame, [105, 150], [1, 1.06], {
+  // enters already settling (frame 0 reads as motion), then scales up on exit
+  const graphEntryScale = interpolate(frame, [0, 16], [1.04, 1.0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const graphExitScale = interpolate(frame, [66, 94], [1, 1.06], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
+  const graphScale = graphEntryScale * graphExitScale;
 
-  const articleOp = interpolate(frame, [342, 360], [1, 0], {
+  const articleOp = interpolate(frame, [232, 240], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -63,9 +67,8 @@ export const AttentionVolumeV2: React.FC = () => {
           scroll={scroll}
           opacity={articleOp}
           fullBlurPx={fullBlur}
-          markTimes={{ precedes: 158, driver: 220, onePct: 294, third: 314 }}
+          markTimes={{ precedes: 112, driver: 172, onePct: 206, third: 216 }}
           bottomBlur
-          showChrome
         />
       </AbsoluteFill>
       {graphOp > 0.001 && (

@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, SANS_TEXT } from "../article-2/theme";
+import { ACCENT, SANS_TEXT, zoomBurst } from "../article-2/theme";
 import { ProofArticle } from "./ProofArticle";
 import { HeroPie } from "./HeroPie";
 import { HeroWaffle } from "./HeroWaffle";
@@ -16,7 +16,7 @@ const HeroChart: React.FC<{ hero: Hero }> = ({ hero }) =>
 const BG = "#05070c";
 
 // Proof phrases underline after their scroll step settles.
-const MARK_TIMES = [150, 214];
+const MARK_TIMES = [92, 140];
 
 /**
  * One data→proof beat. Opens big on the number over a blurred, dimmed source
@@ -26,53 +26,57 @@ const MARK_TIMES = [150, 214];
 export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) => {
   const frame = useCurrentFrame();
 
-  // hero number: in, hold, then blur + scale + lift away
-  const heroIn = interpolate(frame, [6, 22], [0, 1], {
+  // hero number: opens already in motion (frame 0 is mid-fade, scaling down),
+  // holds, then blurs + scales + lifts away.
+  const heroIn = interpolate(frame, [0, 14], [0.4, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const heroOut = interpolate(frame, [92, 124], [1, 0], {
+  const heroEntryScale = interpolate(frame, [0, 18], [1.08, 1.0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const heroOut = interpolate(frame, [56, 80], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
   const heroOp = Math.min(heroIn, heroOut);
-  const heroBlur = interpolate(frame, [86, 124], [0, 30], {
+  const heroBlur = interpolate(frame, [54, 80], [0, 30], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const heroScale = interpolate(frame, [86, 124], [1, 1.14], {
+  const heroExitScale = interpolate(frame, [54, 80], [1, 1.14], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
-  const heroY = interpolate(frame, [86, 124], [0, -28], {
+  const heroScale = heroEntryScale * heroExitScale;
+  const heroY = interpolate(frame, [54, 80], [0, -28], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
   });
 
   // article: blurred + dimmed under the number, then snaps into focus
-  const articleBlur = interpolate(frame, [0, 88, 124], [30, 30, 0], {
+  const articleBlur = interpolate(frame, [0, 54, 80], [30, 30, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const scrimOp = interpolate(frame, [0, 88, 124], [0.85, 0.85, 0], {
+  const scrimOp = interpolate(frame, [0, 54, 80], [0.85, 0.85, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const bgZoom = interpolate(frame, [0, 124], [1.05, 1.0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const bgZoom = zoomBurst(frame, 195);
 
   // eased stepped scroll: settle on proof #1, hold, snap down to proof #2, hold
   const scroll = interpolate(
     frame,
-    [0, 150, 178, 218, 290],
+    [0, 100, 112, 138, 195],
     [70, 70, 70, 360, 360],
     {
       extrapolateLeft: "clamp",
@@ -82,7 +86,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
   );
 
   // source citation appears once both proofs are underlined
-  const sourceOp = interpolate(frame, [244, 262], [0, 1], {
+  const sourceOp = interpolate(frame, [150, 166], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -100,7 +104,6 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
           fullBlurPx={articleBlur}
           markTimes={MARK_TIMES}
           bottomBlur
-          showChrome
         />
       </AbsoluteFill>
 

@@ -126,7 +126,6 @@ import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExp
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
 import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
-import { attentionVolumeMeta } from "./compositions/article-2/AttentionVolume";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
 import { marketCostScaleMeta } from "./compositions/article-2/MarketCostScale";
 import { liquidityLoopMeta } from "./compositions/loops/LiquidityLoop";
@@ -177,14 +176,6 @@ export const RemotionRoot: React.FC = () => {
         height={anticheatEditMeta.height}
       />
       <Folder name="Article-2">
-        <Composition
-          id={attentionVolumeMeta.id}
-          component={attentionVolumeMeta.component}
-          durationInFrames={attentionVolumeMeta.durationInFrames}
-          fps={attentionVolumeMeta.fps}
-          width={attentionVolumeMeta.width}
-          height={attentionVolumeMeta.height}
-        />
         <Composition
           id={attentionVolumeV2Meta.id}
           component={attentionVolumeV2Meta.component}

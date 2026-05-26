@@ -30,7 +30,7 @@ export interface ProofScreen {
   source: string;
 }
 
-export const SCREEN_DUR = 290;
+export const SCREEN_DUR = 195;
 
 export const SCREENS: ProofScreen[] = [
   {
