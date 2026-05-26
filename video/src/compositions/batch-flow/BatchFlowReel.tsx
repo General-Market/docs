@@ -3,7 +3,7 @@ import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
 import { LineRow, Packet, TraderChip } from "./flow";
-import { cardButtonPos, Cursor, ProductUI } from "./ui";
+import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
 import {
   CHAIN_STEPS,
   LIQUIDITY_UNLOCKED,
@@ -20,10 +20,12 @@ import {
 
 // BatchFlowReel — ONE element handed down the whole pipeline, the camera riding
 // it, using the real rich stations (dashboard, traders, lines, payout cards).
-// The ten picks on the live dashboard fold into a packet; the packet flies into
-// the pool with four other traders; the pool spreads into matched lines; the
-// lines settle; the winning lines collect into the payout; the payout
-// multiplies; the throughput unlocks a billion in liquidity. No cuts.
+// The ten picks on the live dashboard COLLAPSE into one packet of all ten votes;
+// the packet flies into the pool with four other traders; the five packets
+// GATHER into the pool, which then UNFOLDS into the ten matched lines; the lines
+// settle; the winning lines collect into the payout; the payout multiplies; the
+// throughput unlocks a billion in liquidity. Every handoff is a transform — one
+// object becoming the next — never a crossfade of two diagrams on the same spot.
 
 const YOUR_PICKS = MARKETS.map((m) => m.you);
 const TRADER_TICKETS = TRADER_NAMES.map((_n, t) => MARKETS.map((_m, i) => PICKS_BY_MARKET[i][t]));
@@ -31,8 +33,8 @@ const TRADER_COLORS = ["#0071E3", "#FF7A59", "#7B5CFF", "#17B0A6", "#FF6FB5"];
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 // ── the track the camera flies over ──────────────────────────────────────────
-const AX = 1000; // dashboard → packet (the dashboard is full-frame, centred here)
-const BX = 3120; // pool → match → settle
+const AX = 1000; // dashboard → merge → packet (the dashboard is full-frame, centred here)
+const BX = 3120; // pool → gather → unfold → settle
 const DX = 5240; // payout → multiply → unlock
 const CY = 540;
 const TRACK_W = 6300;
@@ -53,28 +55,30 @@ const SEL_STEP = sec(0.42);
 
 // ── beats (frames @60fps) — deliberately uneven lengths ──────────────────────
 const T = {
-  pickEnd: SEL_START + 10 * SEL_STEP + sec(0.4), // ~5.3s
-  foldEnd: 0, // set below
-  travel1: [0, 0] as [number, number],
+  pickEnd: SEL_START + 10 * SEL_STEP + sec(0.4), // ~5.3s — ten calls made
+  mergeEnd: 0, // the ten cards collapse into one packet
+  travel1: [0, 0] as [number, number], // packet flies to the pool
   poolHold: 0,
-  spread: [0, 0] as [number, number],
-  match: 0,
+  gather: [0, 0] as [number, number], // five packets collapse into the pool
+  unfold: [0, 0] as [number, number], // the pool unfolds into ten lines
+  linesHold: 0,
   settle: [0, 0] as [number, number],
   travel2: [0, 0] as [number, number],
   payoutHold: 0,
   multiply: [0, 0] as [number, number],
   unlock: [0, 0] as [number, number],
 };
-T.foldEnd = T.pickEnd + sec(1.3);
-T.travel1 = [T.foldEnd, T.foldEnd + sec(2.6)];
-T.poolHold = T.travel1[1] + sec(1.2);
-T.spread = [T.poolHold, T.poolHold + sec(1.6)];
-T.match = T.spread[1] + sec(1.8);
-T.settle = [T.match, T.match + sec(3.2)];
-T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(3.0)];
-T.payoutHold = T.travel2[1] + sec(2.6);
-T.multiply = [T.payoutHold + sec(0.5), T.payoutHold + sec(4.8)];
-T.unlock = [T.multiply[1] + sec(0.6), T.multiply[1] + sec(4.2)];
+T.mergeEnd = T.pickEnd + sec(1.5);
+T.travel1 = [T.mergeEnd, T.mergeEnd + sec(2.4)];
+T.poolHold = T.travel1[1] + sec(1.1);
+T.gather = [T.poolHold, T.poolHold + sec(0.9)];
+T.unfold = [T.gather[1] + sec(0.25), T.gather[1] + sec(0.25) + sec(1.5)];
+T.linesHold = T.unfold[1] + sec(0.8);
+T.settle = [T.linesHold, T.linesHold + sec(3.0)];
+T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(2.8)];
+T.payoutHold = T.travel2[1] + sec(2.4);
+T.multiply = [T.payoutHold + sec(0.5), T.payoutHold + sec(4.6)];
+T.unlock = [T.multiply[1] + sec(0.6), T.multiply[1] + sec(4.0)];
 const TOTAL = T.unlock[1] + sec(1.2);
 const STEP_AT = [T.multiply[0] + sec(0.3), T.multiply[0] + sec(1.7), T.multiply[0] + sec(3.1)];
 
@@ -159,23 +163,47 @@ export const BatchFlowReel: React.FC = () => {
   const b = cardButtonPos(i1, MARKETS[i1].you);
   const cursorX = lerp(a.x, b.x, f);
   const cursorY = lerp(a.y, b.y, f);
-  const click = frame < SEL_START ? 0 : (p - i0) < 0.3 ? 1 - (p - i0) / 0.3 : 0;
+  const click = frame < SEL_START ? 0 : p - i0 < 0.3 ? 1 - (p - i0) / 0.3 : 0;
   const activeIndex = frame < SEL_START ? null : Math.min(MARKETS.length - 1, Math.round((frame - SEL_START) / SEL_STEP));
-  const dashOp = ci(frame, T.pickEnd, T.foldEnd, 1, 0, EASE.inOut);
   const cursorVisible = frame > sec(0.4) && frame < T.pickEnd;
 
-  // ── Stage 1→2: the You packet folds out of the picks, then flies to the pool
-  const packetIn = ci(frame, T.pickEnd, T.foldEnd, 0, 1, EASE.out);
-  const packetX = interpolate(frame, T.travel1, [AX, BX], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut });
-  const packetGone = ci(frame, T.spread[0], T.spread[1], 1, 0);
+  // ── Stage 1→2: the MERGE — the ten picked cards collapse into one packet ────
+  // The non-card chrome (chart, header, panels) recedes first; then each card
+  // flies to the packet centre, shrinking, while the packet of all ten votes
+  // blooms to receive them. You watch ten calls become one card.
+  const dashChromeOp = frame < T.pickEnd ? 1 : ci(frame, T.pickEnd, lerp(T.pickEnd, T.mergeEnd, 0.5), 1, 0, EASE.inOut);
+  const cardsMerging = frame >= T.pickEnd && frame < T.mergeEnd;
+  const cardStagger = sec(0.025);
+  const cardDur = sec(0.85);
+  const packetBloom = ci(frame, lerp(T.pickEnd, T.mergeEnd, 0.42), T.mergeEnd, 0, 1, EASE.out);
 
-  // ── Stage 3: four other traders converge into the pool ─────────────────────
-  const arrived = TRADER_NAMES.slice(1).filter((_n, k) => ci(frame, T.travel1[0] + sec(0.3) + k * sec(0.2), T.travel1[1], 0, 1) >= 1).length + 1;
-  const poolFill = Math.min(1, arrived / N_TRADERS);
-  const poolOp = Math.min(ci(frame, T.travel1[0], T.travel1[0] + sec(0.5), 0, 1), packetGone);
+  // ── Stage 3: You + four traders fly into the pool ──────────────────────────
+  const RX = 380;
+  const RY = 255;
+  const ringPos = (k: number): { x: number; y: number } => {
+    const ang = (k / N_TRADERS) * Math.PI * 2 - Math.PI / 2;
+    return { x: BX + Math.cos(ang) * RX, y: CY + Math.sin(ang) * RY };
+  };
+  const gatherP = ci(frame, T.gather[0], T.gather[1], 0, 1, EASE.inOut);
+  const arrivedCount =
+    1 + [1, 2, 3, 4].filter((k) => ci(frame, T.travel1[0] + k * sec(0.18), T.travel1[1], 0, 1) >= 1).length;
+  const poolPacketsOp = Math.min(
+    ci(frame, T.travel1[0], T.travel1[0] + sec(0.4), 0, 1),
+    ci(frame, T.gather[1] - sec(0.05), T.gather[1] + sec(0.05), 1, 0),
+  );
 
-  // ── Stage 4–5: the ten matched lines, then settlement ──────────────────────
-  const rowsOp = Math.min(ci(frame, T.spread[0], T.spread[1], 0, 1), ci(frame, T.travel2[0], T.travel2[1], 1, 0));
+  // ── Stage 3→4: the pool box morphs into a header as the lines unfold ───────
+  const poolMorph = ci(frame, T.unfold[0], T.unfold[0] + sec(0.55), 0, 1, EASE.inOut);
+  const poolBoxY = lerp(CY, CY - 322, poolMorph);
+  const poolBoxScale = lerp(1, 0.6, poolMorph);
+  const poolBoxOp = Math.min(
+    ci(frame, T.travel1[0], T.travel1[0] + sec(0.4), 0, 1),
+    ci(frame, T.travel2[0], T.travel2[0] + sec(0.4), 1, 0),
+  );
+
+  // ── Stage 4–5: the ten matched lines unfold downward, then settle ──────────
+  const rowsUnfold = ci(frame, T.unfold[0], T.unfold[0] + sec(1.2), 0, 1, EASE.out);
+  const rowsOp = Math.min(ci(frame, T.unfold[0], T.unfold[0] + sec(0.3), 0, 1), ci(frame, T.travel2[0], T.travel2[1], 1, 0));
 
   // ── Stage 6: the payout — winning lines collect ────────────────────────────
   const collected = ci(frame, T.travel2[0], T.payoutHold - sec(0.4), 0, YOUR_COLLECT, EASE.out);
@@ -215,77 +243,113 @@ export const BatchFlowReel: React.FC = () => {
         {/* flow spine */}
         <div style={{ position: "absolute", left: AX, top: CY - 1, width: DX - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
 
-        {/* Stage 1 — the real dashboard, full-frame, centred on AX */}
-        {dashOp > 0.01 && (
-          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashOp }}>
+        {/* Stage 1 — the real dashboard, full-frame, centred on AX; its chrome
+            recedes as the merge begins */}
+        {dashChromeOp > 0.01 && (
+          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashChromeOp }}>
             <ProductUI picks={picks} activeIndex={activeIndex} />
             {cursorVisible ? <Cursor x={cursorX} y={cursorY} click={click} /> : null}
           </div>
         )}
 
-        {/* Stage 1→2 — the You packet (the folded picks) flying to the pool */}
-        {packetIn > 0.01 && packetGone > 0.01 && (
-          <div style={{ position: "absolute", left: packetX, top: CY, transform: `translate(-50%,-50%) scale(${(0.6 + 0.4 * packetIn).toFixed(3)})`, opacity: Math.min(packetIn, packetGone) }}>
-            <Packet picks={YOUR_PICKS} label="You" glow={C.blue} w={300} />
+        {/* Stage 1→2 — the ten picked cards fly to centre and collapse */}
+        {cardsMerging &&
+          MARKETS.map((m, i) => {
+            const o = cardOrigin(i);
+            const cx0 = AX - W / 2 + o.x + CARD_W / 2;
+            const cy0 = o.y + CARD_H / 2;
+            const conv = ci(frame, T.pickEnd + i * cardStagger, T.pickEnd + i * cardStagger + cardDur, 0, 1, EASE.inOut);
+            const x = lerp(cx0, AX, conv);
+            const y = lerp(cy0, CY, conv);
+            const s = lerp(1, 0.11, conv);
+            const op = conv < 0.82 ? 1 : interpolate(conv, [0.82, 1], [1, 0], { extrapolateRight: "clamp" });
+            return (
+              <div key={`merge-${i}`} style={{ position: "absolute", left: x, top: y, transform: `translate(-50%,-50%) scale(${s.toFixed(3)})`, opacity: op, zIndex: 30 }}>
+                <MarketCard market={m} index={i} picked={m.you} active={false} />
+              </div>
+            );
+          })}
+
+        {/* Stage 2 — the packet of all ten votes blooms at centre */}
+        {frame < T.mergeEnd && packetBloom > 0.01 && (
+          <div style={{ position: "absolute", left: AX, top: CY, transform: `translate(-50%,-50%) scale(${lerp(0.55, 1, packetBloom).toFixed(3)})`, opacity: packetBloom, zIndex: 40 }}>
+            <Packet picks={YOUR_PICKS} label="You" glow={C.blue} w={320} />
           </div>
         )}
 
-        {/* Stage 3 — four traders converge; the five become the pool */}
-        {poolOp > 0.01 && (
-          <div style={{ opacity: poolOp }}>
-            {[1, 2, 3, 4].map((k, idx) => {
-              const angle = (idx / 4) * Math.PI * 2;
-              const t = ci(frame, T.travel1[0] + sec(0.3) + idx * sec(0.2), T.travel1[1], 0, 1, EASE.inOut);
-              const ox = Math.cos(angle) * 520;
-              const oy = Math.sin(angle) * 360;
-              const x = lerp(BX + ox, BX, t);
-              const y = lerp(CY + oy, CY, t);
-              const op = t < 0.85 ? 1 : interpolate(t, [0.85, 1], [1, 0.35]);
+        {/* Stage 3 — You + four traders fly into the pool, then gather in ───── */}
+        {poolPacketsOp > 0.01 && (
+          <div style={{ opacity: poolPacketsOp }}>
+            {[0, 1, 2, 3, 4].map((k) => {
+              const ring = ringPos(k);
+              const arrive = ci(frame, T.travel1[0] + k * sec(0.18), T.travel1[1], 0, 1, EASE.inOut);
+              // You (k=0) enters from the dashboard at AX; the others sweep in from far out.
+              const entry =
+                k === 0
+                  ? { x: AX, y: CY }
+                  : { x: BX + (ring.x - BX) * 2.4, y: CY + (ring.y - CY) * 2.4 };
+              let x = lerp(entry.x, ring.x, arrive);
+              let y = lerp(entry.y, ring.y, arrive);
+              let s = k === 0 ? lerp(1.0, 0.66, arrive) : 0.6;
+              if (gatherP > 0) {
+                x = lerp(ring.x, BX, gatherP);
+                y = lerp(ring.y, CY, gatherP);
+                s = lerp(s, 0.16, gatherP);
+              }
+              const op = gatherP > 0 ? 1 - gatherP * 0.92 : 1;
               return (
-                <div key={k} style={{ position: "absolute", left: x, top: y, transform: `translate(-50%,-50%) scale(${lerp(0.62, 0.34, t).toFixed(3)})`, opacity: op }}>
-                  <Packet picks={TRADER_TICKETS[k]} label={TRADER_NAMES[k]} glow={TRADER_COLORS[k]} w={210} />
+                <div key={`pk-${k}`} style={{ position: "absolute", left: x, top: y, transform: `translate(-50%,-50%) scale(${s.toFixed(3)})`, opacity: op, zIndex: k === 0 ? 12 : 10 }}>
+                  <Packet picks={TRADER_TICKETS[k]} label={TRADER_NAMES[k]} glow={TRADER_COLORS[k]} w={k === 0 ? 320 : 210} />
                 </div>
               );
             })}
             {/* trader chips ring */}
-            {[1, 2, 3, 4].map((k, idx) => {
-              const angle = (idx / 4) * Math.PI * 2;
+            {[1, 2, 3, 4].map((k) => {
+              const ring = ringPos(k);
+              const chipOp = Math.min(ci(frame, T.travel1[0] + sec(0.3), T.travel1[0] + sec(0.7), 0, 1), 1 - gatherP);
               return (
-                <div key={`c${k}`} style={{ position: "absolute", left: BX + Math.cos(angle) * 560, top: CY + Math.sin(angle) * 390, transform: "translate(-50%,-50%) scale(0.9)", opacity: ci(frame, T.travel1[0], T.travel1[0] + sec(0.4), 0, 1) }}>
+                <div key={`c${k}`} style={{ position: "absolute", left: ring.x, top: ring.y - 150, transform: "translate(-50%,-50%) scale(0.82)", opacity: chipOp }}>
                   <TraderChip name={TRADER_NAMES[k]} color={TRADER_COLORS[k]} />
                 </div>
               );
             })}
-            <div
-              style={{
-                position: "absolute",
-                left: BX,
-                top: CY,
-                transform: "translate(-50%,-50%)",
-                width: 460,
-                height: 150,
-                borderRadius: 24,
-                border: `2px solid ${C.blue}`,
-                background: "linear-gradient(160deg, rgba(255,255,255,0.72), rgba(255,255,255,0.48))",
-                boxShadow: `0 18px 44px rgba(70,74,140,0.2), 0 0 ${(20 + poolFill * 60).toFixed(0)}px ${C.blue}66, inset 0 1px 0 rgba(255,255,255,0.85)`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div style={{ fontFamily: font, fontSize: 42, fontWeight: 800, color: C.text }}>POOL</div>
-              <div style={{ fontFamily: monoFont, fontSize: 22, fontWeight: 700, color: C.dim, marginTop: 4 }}>{arrived} / 5 packets · ${arrived * 10}</div>
-            </div>
           </div>
         )}
 
-        {/* Stage 4–5 — matched lines, then settlement */}
+        {/* Stage 3 — the POOL box: catches the packets, then morphs into the
+            header above the lines */}
+        {poolBoxOp > 0.01 && (
+          <div
+            style={{
+              position: "absolute",
+              left: BX,
+              top: poolBoxY,
+              transform: `translate(-50%,-50%) scale(${poolBoxScale.toFixed(3)})`,
+              width: 460,
+              height: 150,
+              borderRadius: 24,
+              border: `2px solid ${C.blue}`,
+              background: "linear-gradient(160deg, rgba(255,255,255,0.72), rgba(255,255,255,0.48))",
+              boxShadow: `0 18px 44px rgba(70,74,140,0.2), 0 0 ${(20 + (arrivedCount / N_TRADERS) * 60).toFixed(0)}px ${C.blue}66, inset 0 1px 0 rgba(255,255,255,0.85)`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: poolBoxOp,
+              zIndex: 8,
+            }}
+          >
+            <div style={{ fontFamily: font, fontSize: 42, fontWeight: 800, color: C.text }}>POOL</div>
+            <div style={{ fontFamily: monoFont, fontSize: 22, fontWeight: 700, color: C.dim, marginTop: 4 }}>{arrivedCount} / {N_TRADERS} packets · ${arrivedCount * 10}</div>
+          </div>
+        )}
+
+        {/* Stage 4–5 — the ten matched lines unfold downward, then settle */}
         {rowsOp > 0.01 && (
-          <div style={{ position: "absolute", left: BX, top: CY, transform: "translate(-50%,-50%)", opacity: rowsOp }}>
+          <div style={{ position: "absolute", left: BX, top: CY - 250, transform: "translate(-50%, 0)", opacity: rowsOp, maxHeight: (rowsUnfold * 600).toFixed(0) + "px", overflow: "hidden", zIndex: 6 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {MARKETS.map((_m, i) => {
-                const reveal = Math.min(1, spring({ fps, frame: frame - (T.spread[0] + i * 4), config: { damping: 16, stiffness: 120, mass: 0.6 }, durationInFrames: 20 }));
+                const reveal = Math.min(1, spring({ fps, frame: frame - (T.unfold[0] + sec(0.2) + i * 3), config: { damping: 16, stiffness: 120, mass: 0.6 }, durationInFrames: 18 }));
                 const settle = ci(frame, T.settle[0] + i * 9, T.settle[0] + i * 9 + sec(0.5), 0, 1, EASE.inOut);
                 return <LineRow key={i} index={i} barW={440} nameW={220} reveal={reveal} settle={settle} highlightYou />;
               })}
@@ -341,9 +405,9 @@ export const BatchFlowReel: React.FC = () => {
 
         {/* captions */}
         <Caption x={AX} y={CY + 470} at={sec(0.6)} text="Pick up or down on ten markets" until={T.pickEnd} />
-        <Caption x={(AX + BX) / 2} y={CY - 230} at={T.foldEnd - sec(0.3)} text="Ten calls — one packet" until={T.travel1[1]} />
-        <Caption x={BX} y={CY - 280} at={T.poolHold} text="Everyone sends the same packet" until={T.spread[0]} />
-        <Caption x={BX} y={CY - 320} at={T.spread[1]} text="Every line matched, then settled" until={T.travel2[0]} />
+        <Caption x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
+        <Caption x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
+        <Caption x={BX} y={CY + 330} at={T.unfold[1]} text="Every line matched, then settled" until={T.travel2[0]} />
       </div>
     </Stage>
   );
