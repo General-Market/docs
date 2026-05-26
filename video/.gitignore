@@ -18,6 +18,9 @@ blender_render/
 # Exception: anticheat-imgs — stills used by the AntiCheat compositions.
 !public/anticheat-imgs/
 !public/anticheat-imgs/**
+# Exception: article-2 — Polymarket + General Market logos for MarketCostScale.
+!public/article-2/
+!public/article-2/**
 
 # Media files anywhere
 *.mp4
