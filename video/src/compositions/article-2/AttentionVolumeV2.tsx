@@ -17,7 +17,7 @@ export const AttentionVolumeV2: React.FC = () => {
   // article scroll: a slow drift behind the chart, then steps through the proofs
   const scroll = interpolate(
     frame,
-    [0, 86, 104, 142, 160, 200, 240],
+    [0, 88, 110, 146, 164, 210, 240],
     [0, 80, 80, 300, 300, 490, 490],
     {
       extrapolateLeft: "clamp",
@@ -30,14 +30,14 @@ export const AttentionVolumeV2: React.FC = () => {
   const bgZoom = zoomBurst(frame, V2_TOTAL);
 
   // whole-page blur lifts as the graph leaves
-  const fullBlur = interpolate(frame, [0, 66, 94], [26, 26, 0], {
+  const fullBlur = interpolate(frame, [0, 85, 112], [26, 26, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
 
   // graph (and its numbers + scrim) dissolves away
-  const graphOp = interpolate(frame, [0, 66, 94], [1, 1, 0], {
+  const graphOp = interpolate(frame, [0, 85, 112], [1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
@@ -48,7 +48,7 @@ export const AttentionVolumeV2: React.FC = () => {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-  const graphExitScale = interpolate(frame, [66, 94], [1, 1.06], {
+  const graphExitScale = interpolate(frame, [85, 112], [1, 1.06], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.in(Easing.cubic),
@@ -67,7 +67,7 @@ export const AttentionVolumeV2: React.FC = () => {
           scroll={scroll}
           opacity={articleOp}
           fullBlurPx={fullBlur}
-          markTimes={{ precedes: 112, driver: 172, onePct: 206, third: 216 }}
+          markTimes={{ precedes: 122, driver: 176, onePct: 216, third: 226 }}
           bottomBlur
         />
       </AbsoluteFill>

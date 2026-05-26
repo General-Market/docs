@@ -32,8 +32,10 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // Opens already partly up (frame 0 ≈ 0.5) so the chart never starts on a
+  // dead frame, and builds fast — axes, line and points all in motion early.
   const sceneOp = Math.min(
-    interpolate(frame, [0, 12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+    interpolate(frame, [0, 8], [0.5, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
     interpolate(frame, [180, 200], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
   );
 
@@ -43,19 +45,19 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
     easing: Easing.out(Easing.cubic),
   });
 
-  const axisDraw = interpolate(frame, [4, 18], [0, 1], {
+  const axisDraw = interpolate(frame, [-4, 12], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
 
-  const lineDraw = interpolate(frame, [46, 76], [0, 1], {
+  const lineDraw = interpolate(frame, [4, 30], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
 
-  const chipOp = interpolate(frame, [78, 96], [0, 1], {
+  const chipOp = interpolate(frame, [40, 56], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -223,7 +225,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
 
         {/* scatter points */}
         {POINTS.map(([nx, ny], i) => {
-          const start = 16 + i * 1.8;
+          const start = i * 1.4;
           const s = spring({
             fps,
             frame: frame - start,

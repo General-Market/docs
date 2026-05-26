@@ -28,14 +28,16 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const sweep = interpolate(frame, [8, 46], [0, 1], {
+  // Negative input start: the wedge is already partway swept and still moving
+  // on frame 0, so the chart opens in motion rather than on a still ring.
+  const sweep = interpolate(frame, [-10, 38], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
   const angle = sweep * (pct / 100) * 360;
 
-  const badgePop = spring({ fps, frame: frame - 30, config: { mass: 0.6, damping: 12 } });
+  const badgePop = spring({ fps, frame: frame - 22, config: { mass: 0.6, damping: 12 } });
   const shown = Math.round(sweep * pct);
 
   return (

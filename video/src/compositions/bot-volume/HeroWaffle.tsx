@@ -19,8 +19,10 @@ const Person: React.FC<{ color: string }> = ({ color }) => (
 export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled, total }) => {
   const frame = useCurrentFrame();
   const rows = Math.ceil(total / COLS);
+  // Negative input start: a block of cells is already lit and more keep filling
+  // on frame 0, so the waffle opens mid-count instead of empty.
   const shown = Math.round(
-    interpolate(frame, [10, 58], [0, filled], {
+    interpolate(frame, [-12, 44], [0, filled], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),

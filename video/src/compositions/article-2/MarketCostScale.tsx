@@ -133,8 +133,9 @@ const Arrow: React.FC<{
 export const MarketCostScale: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // reveal envelopes — the box starts drawing on frame 0, so the open is motion
-  const smallDraw = clamp(frame, [0, 28]);
+  // reveal envelopes — the box is already ~third-drawn and still drawing on
+  // frame 0 (negative input start), so the opening frame reads as motion.
+  const smallDraw = clamp(frame, [-12, 22]);
   const smallBrand = clamp(frame, [20, 42]);
   const fiveM = clamp(frame, [36, 56]);
   const bigDraw = clamp(frame, [56, 100]);
