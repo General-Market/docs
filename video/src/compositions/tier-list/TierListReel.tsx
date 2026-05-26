@@ -113,7 +113,7 @@ export const TierListReel: React.FC = () => {
         }}
       />
 
-      {/* world — a moving camera (pan / zoom / track) over a tilting 3D plane */}
+      {/* world — a continuous glide up the board, then a pull-back */}
       <div
         style={{
           position: "absolute",
@@ -121,20 +121,9 @@ export const TierListReel: React.FC = () => {
           height: H,
           transformOrigin: "0 0",
           transform: `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.scale})`,
-          perspective: `${cam.persp}px`,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            width: W,
-            height: H,
-            transformOrigin: "center center",
-            transform: `rotateX(${cam.rotX}deg) rotateY(${cam.rotY}deg)`,
-            transformStyle: "preserve-3d",
-          }}
-        >
-          <Board active={active} />
+        <Board active={active} />
 
         {/* every logo: tray → flight → placed, all through one wrapper */}
         {SCHEDULE.placements.map((p) => {
@@ -184,8 +173,7 @@ export const TierListReel: React.FC = () => {
             );
           })()}
 
-          <Cursor x={cursor.x} y={cursor.y} press={press} />
-        </div>
+        <Cursor x={cursor.x} y={cursor.y} press={press} />
       </div>
 
       {/* title — fixed overlay, big, always visible, never touched by the camera */}

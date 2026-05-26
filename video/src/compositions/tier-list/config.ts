@@ -47,17 +47,13 @@ export const TIMING = {
   outroFrames: 100,
 };
 
-// A camera that never holds still: it establishes the whole board, then dives
-// into each row tracking the cursor, lifts out between rows, and pulls back at
-// the end — all over a gently tilting, breathing 3D plane.
+// The original motion: a zoom-out reveal on the open, then a soft continuous
+// glide up the board with a gentle focus zoom, and a pull-back at the end.
 export const CAMERA = {
-  introPushFrom: 0.84, // establish opens a touch wide, pushes in to establishScale
-  establishScale: 0.92, // whole board + tray in view
-  transitionScale: 1.0, // lifted out, between rows
-  focusScale: 1.34, // dived into the active row, tracking the drop
-  outroScale: 0.92,
-  tiltBaseDeg: 6, // the board reclines like a table — 3D depth
-  tiltOscDeg: 2.2, // …and breathes
-  swayDeg: 2.4, // slow side-to-side yaw
-  perspective: 1500,
+  introScale: 2.3, // opens pushed in, pulls back to reveal the whole board
+  introCy: 360,
+  focusScale: 1.08, // a gentle focus as the camera glides up, row by row
+  focusBias: 0.5, // 0 = active row centred, 1 = screen centred
+  outroScale: 1.0,
+  outroCy: 408,
 };
