@@ -103,6 +103,7 @@ import {
   H as SEQ02_H,
 } from "./compositions/sequence02/theme";
 import { insiderCasesMeta } from "./compositions/insider-trading/InsiderCases";
+import { whyLiquidityIsHardMeta } from "./compositions/insider-trading/WhyLiquidityIsHard";
 import { antiCheatHookMeta } from "./compositions/anticheat/AntiCheatHook";
 import {
   antiCheatStatMeta,
@@ -126,6 +127,8 @@ import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
 import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
 import { attentionVolumeMeta } from "./compositions/article-2/AttentionVolume";
+import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
+import { botVolumeProofMeta, botVolumeScreenMetas } from "./compositions/bot-volume/BotVolumeProof";
 import { antiCheatEditThumbnailMeta } from "./compositions/anticheat-edit/Thumbnail";
 import { retailPnLMarketsMeta } from "./compositions/retail-pnl/RetailPnLMarkets";
 import { retailPnLMarketsReelMeta } from "./compositions/retail-pnl/RetailPnLMarketsReel";
@@ -180,6 +183,35 @@ export const RemotionRoot: React.FC = () => {
           width={attentionVolumeMeta.width}
           height={attentionVolumeMeta.height}
         />
+        <Composition
+          id={attentionVolumeV2Meta.id}
+          component={attentionVolumeV2Meta.component}
+          durationInFrames={attentionVolumeV2Meta.durationInFrames}
+          fps={attentionVolumeV2Meta.fps}
+          width={attentionVolumeV2Meta.width}
+          height={attentionVolumeV2Meta.height}
+        />
+      </Folder>
+      <Folder name="Bot-Volume">
+        <Composition
+          id={botVolumeProofMeta.id}
+          component={botVolumeProofMeta.component}
+          durationInFrames={botVolumeProofMeta.durationInFrames}
+          fps={botVolumeProofMeta.fps}
+          width={botVolumeProofMeta.width}
+          height={botVolumeProofMeta.height}
+        />
+        {botVolumeScreenMetas.map((m) => (
+          <Composition
+            key={m.id}
+            id={m.id}
+            component={m.component}
+            durationInFrames={m.durationInFrames}
+            fps={m.fps}
+            width={m.width}
+            height={m.height}
+          />
+        ))}
       </Folder>
       <Composition
         id={blockTradingExileMeta.id}
@@ -756,6 +788,14 @@ export const RemotionRoot: React.FC = () => {
           fps={insiderCasesMeta.fps}
           width={insiderCasesMeta.width}
           height={insiderCasesMeta.height}
+        />
+        <Composition
+          id={whyLiquidityIsHardMeta.id}
+          component={whyLiquidityIsHardMeta.component}
+          durationInFrames={whyLiquidityIsHardMeta.durationInFrames}
+          fps={whyLiquidityIsHardMeta.fps}
+          width={whyLiquidityIsHardMeta.width}
+          height={whyLiquidityIsHardMeta.height}
         />
         <Composition
           id="EndCard"
