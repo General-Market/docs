@@ -67,18 +67,25 @@ export const YOUR_COLLECT = MARKETS.reduce((s, _m, i) => s + yourReturn(i), 0);
 export const YOUR_STAKE = N_MARKETS * STAKE_PER_MARKET;
 export const YOUR_NET = YOUR_COLLECT - YOUR_STAKE;
 
-// The climax — one trade explodes into ten million, per user, per day.
-//   1 trade settles 10,000 markets in a single transaction,
-//   × 100 batches a day, × the 10 markets you pick = 10,000,000 trades/user.
-export const CHAIN_STEPS: { factor: number; head: string; sub: string }[] = [
-  { factor: 10_000, head: "× 10,000", sub: "markets / transaction" },
-  { factor: 100, head: "× 100", sub: "batches / day" },
-  { factor: 10, head: "× 10", sub: "markets you pick" },
+// The climax — one trade settles ten thousand lines; a day repeats it a hundred
+// times; ten different sources each run the same machine. 10,000 × 100 × 10 =
+// 10,000,000 settlements a day. Pump.fun leads (it's the dashboard in the reel);
+// the rest are real Vision sources — every one a different world.
+export const LINES_PER_BATCH = 10_000;
+export const BATCHES_PER_DAY = 100;
+export const PER_SOURCE_PER_DAY = LINES_PER_BATCH * BATCHES_PER_DAY; // 1,000,000
+
+export type ThroughputSource = { name: string; color: string };
+export const THROUGHPUT_SOURCES: ThroughputSource[] = [
+  { name: "Pump.fun", color: "#1FB877" },
+  { name: "Polymarket", color: "#5566E0" },
+  { name: "Twitch", color: "#7B5CFF" },
+  { name: "Binance", color: "#E8A13A" },
+  { name: "Hacker News", color: "#FF7A59" },
+  { name: "DefiLlama", color: "#2BA6F0" },
+  { name: "Deutsche Bahn", color: "#F0556A" },
+  { name: "Cloudflare", color: "#9AB02A" },
+  { name: "4chan", color: "#17B0A6" },
+  { name: "Steam", color: "#0071E3" },
 ];
-export const CHAIN_TOTAL = CHAIN_STEPS.reduce((n, s) => n * s.factor, 1); // 10,000,000
-
-// Hyperliquid ~1.5M est. fills/day (May 2026) — one GM user clears more.
-export const HYPERLIQUID_TRADES_PER_DAY = 1_500_000;
-
-// What that throughput backs: a billion in addressable liquidity.
-export const LIQUIDITY_UNLOCKED = 1_000_000_000; // $1B
+export const THROUGHPUT_TOTAL = PER_SOURCE_PER_DAY * THROUGHPUT_SOURCES.length; // 10,000,000

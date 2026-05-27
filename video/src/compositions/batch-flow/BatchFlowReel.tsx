@@ -6,12 +6,16 @@ import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme"
 import { LineRow, Packet, TraderChip } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
 import { GlassFlow, GlassLine, GlassQuestion } from "./concepts";
+import { DayTimeline, PersonIcon, SourceStack, TradeFan } from "./throughput";
 import {
-  CHAIN_STEPS,
-  LIQUIDITY_UNLOCKED,
+  BATCHES_PER_DAY,
+  LINES_PER_BATCH,
   MARKETS,
   N_TRADERS,
+  PER_SOURCE_PER_DAY,
   PICKS_BY_MARKET,
+  THROUGHPUT_SOURCES,
+  THROUGHPUT_TOTAL,
   TRADER_NAMES,
   YOUR_COLLECT,
   YOUR_NET,
@@ -41,9 +45,17 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 // ── the track the camera flies over ──────────────────────────────────────────
 const AX = 1000; // one question → dashboard → merge → packet
 const BX = 3120; // pool → gather → unfold → the line → settle
-const DX = 5240; // losers pay winners → payout → multiply → unlock
+const DX = 5240; // losers pay winners → payout
+const MX1 = DX + 1500; // one person, one trade
+const MX2 = MX1 + 1500; // the trade fans into 10,000 lines
+const MX3 = MX2 + 1700; // a day repeats it ×100, then ten sources pull into view
 const CY = 540;
-const TRACK_W = 6300;
+const TRACK_W = MX3 + 1500;
+
+// The closing pull-back: the camera dezooms and pans down so the ten-source
+// stack (row 0 lands at CY, nine more fall below it) frames whole.
+const ZOOM_SCALE = 0.6;
+const STACK_CAM_Y = 980;
 
 const ci = (
   frame: number,
@@ -74,8 +86,14 @@ const T = {
   travel2: [0, 0] as [number, number],
   flow: [0, 0] as [number, number], // losers pay winners — glass beat at DX
   payoutHold: 0,
-  multiply: [0, 0] as [number, number],
-  unlock: [0, 0] as [number, number],
+  payoutOut: [0, 0] as [number, number], // payout fades, camera leaves DX → MX1
+  trade: [0, 0] as [number, number], // one person fires one trade @ MX1
+  fanFly: [0, 0] as [number, number], // camera MX1 → MX2, the trade travels
+  fan: [0, 0] as [number, number], // 1 trade → 10,000 lines @ MX2
+  dayFly: [0, 0] as [number, number], // camera MX2 → MX3
+  day: [0, 0] as [number, number], // ×100 batches a day → 1,000,000 @ MX3
+  zoom: [0, 0] as [number, number], // pull back: nine more sources fall in
+  tenM: [0, 0] as [number, number], // grand total → 10,000,000
 };
 T.mergeEnd = T.pickEnd + sec(1.5);
 T.travel1 = [T.mergeEnd, T.mergeEnd + sec(2.4)];
@@ -88,28 +106,37 @@ T.settle = [T.line[1] + sec(0.5), T.line[1] + sec(0.5) + sec(3.0)];
 T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(2.8)];
 T.flow = [T.travel2[1] + sec(0.3), T.travel2[1] + sec(0.3) + sec(2.9)];
 T.payoutHold = T.flow[1] + sec(2.2);
-T.multiply = [T.payoutHold + sec(0.5), T.payoutHold + sec(4.6)];
-T.unlock = [T.multiply[1] + sec(0.6), T.multiply[1] + sec(4.0)];
-const TOTAL = T.unlock[1] + sec(1.2);
-const STEP_AT = [T.multiply[0] + sec(0.3), T.multiply[0] + sec(1.7), T.multiply[0] + sec(3.1)];
+T.payoutOut = [T.payoutHold + sec(0.4), T.payoutHold + sec(0.4) + sec(1.9)];
+T.trade = [T.payoutOut[1] - sec(0.6), T.payoutOut[1] + sec(1.3)];
+T.fanFly = [T.trade[1] + sec(0.2), T.trade[1] + sec(0.2) + sec(1.6)];
+T.fan = [T.fanFly[0] + sec(0.5), T.fanFly[1] + sec(1.7)];
+T.dayFly = [T.fan[1] + sec(0.5), T.fan[1] + sec(0.5) + sec(1.6)];
+T.day = [T.dayFly[0] + sec(0.5), T.dayFly[1] + sec(1.9)];
+T.zoom = [T.day[1] + sec(0.7), T.day[1] + sec(0.7) + sec(2.3)];
+T.tenM = [T.zoom[0] + sec(0.9), T.zoom[1] + sec(1.1)];
+const TOTAL = T.tenM[1] + sec(1.8);
 
-const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
-
-// Camera rides the element along x, pushing in a touch for the multiply climax.
-const camera = (frame: number): { x: number; scale: number } => {
+// Camera rides the element along x — to the pool, to the payout, then right
+// across the throughput stations — and at the end pulls back and pans down to
+// frame the ten-source stack whole.
+const camera = (frame: number): { x: number; y: number; scale: number } => {
   const x = interpolate(
     frame,
-    [T.travel1[0], T.travel1[1], T.travel2[0], T.travel2[1]],
-    [AX, BX, BX, DX],
+    [T.travel1[0], T.travel1[1], T.travel2[0], T.travel2[1], T.payoutOut[0], T.payoutOut[1], T.fanFly[0], T.fanFly[1], T.dayFly[0], T.dayFly[1]],
+    [AX, BX, BX, DX, DX, MX1, MX1, MX2, MX2, MX3],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
   );
-  const scale = interpolate(
-    frame,
-    [T.multiply[0], STEP_AT[2], T.unlock[0], TOTAL],
-    [1, 1.06, 1.06, 1.03],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
-  );
-  return { x, scale };
+  const y = interpolate(frame, [T.zoom[0], T.zoom[1]], [CY, STACK_CAM_Y], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.inOut,
+  });
+  const scale = interpolate(frame, [T.zoom[0], T.zoom[1]], [1, ZOOM_SCALE], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.inOut,
+  });
+  return { x, y, scale };
 };
 
 const heroNumber = (size: number): React.CSSProperties => ({
@@ -159,9 +186,9 @@ const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text:
 export const BatchFlowReel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { x: camX, scale } = camera(frame);
+  const { x: camX, y: camY, scale } = camera(frame);
   const tx = W / 2 - camX * scale;
-  const ty = H / 2 - CY * scale;
+  const ty = H / 2 - camY * scale;
 
   // ── Concept 1: one question — a single binary call, in glass, at AX ────────
   const qReveal = ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(1.0), 0, 1, EASE.out);
@@ -236,21 +263,31 @@ export const BatchFlowReel: React.FC = () => {
 
   // ── Stage 6: the payout — winning lines collect (after the flow beat) ───────
   const collected = ci(frame, T.flow[1], T.payoutHold - sec(0.4), 0, YOUR_COLLECT, EASE.out);
-  const payoutOp = Math.min(ci(frame, T.flow[1] - sec(0.2), T.flow[1] + sec(0.5), 0, 1), ci(frame, T.multiply[0], T.multiply[0] + sec(0.6), 1, 0));
+  const payoutOp = Math.min(ci(frame, T.flow[1] - sec(0.2), T.flow[1] + sec(0.5), 0, 1), ci(frame, T.payoutOut[0], T.payoutOut[0] + sec(0.6), 1, 0));
   const netOp = ci(frame, T.payoutHold - sec(1.0), T.payoutHold - sec(0.2), 0, 1);
 
-  // ── Stage 7: multiply ──────────────────────────────────────────────────────
-  let mulValue = 1;
-  const cum = [1, 10000, 1000000, 10000000];
-  for (let i = 0; i < CHAIN_STEPS.length; i++) {
-    const t = ci(frame, STEP_AT[i], STEP_AT[i] + sec(0.5), 0, 1, EASE.out);
-    if (t > 0) mulValue = cum[i] + (cum[i + 1] - cum[i]) * t;
-  }
-  const mulOp = Math.min(ci(frame, T.multiply[0], T.multiply[0] + sec(0.5), 0, 1), ci(frame, T.unlock[0], T.unlock[0] + sec(0.6), 1, 0));
+  // ── Throughput 1 — one person fires one trade @ MX1 ────────────────────────
+  const personIn = ci(frame, T.payoutOut[1] - sec(0.9), T.payoutOut[1] - sec(0.1), 0, 1, EASE.out);
+  const personOp = Math.min(personIn, ci(frame, T.fanFly[0] + sec(0.5), T.fanFly[1], 1, 0));
+  // the fired trade travels MX1 → MX2 during the fly, becoming the fan's origin
+  const tradeFly = ci(frame, T.fanFly[0], T.fanFly[1], 0, 1, EASE.inOut);
+  const tradeDotX = lerp(MX1 + 150, MX2 - 410, tradeFly);
+  const tradeDotOp = Math.min(ci(frame, T.trade[1] - sec(0.5), T.trade[1], 0, 1), ci(frame, T.fanFly[1] - sec(0.2), T.fanFly[1], 1, 0));
 
-  // ── Stage 8: unlock ────────────────────────────────────────────────────────
-  const dollars = ci(frame, T.unlock[0] + sec(0.3), T.unlock[1], 0, LIQUIDITY_UNLOCKED, EASE.out);
-  const unlockOp = ci(frame, T.unlock[0], T.unlock[0] + sec(0.5), 0, 1);
+  // ── Throughput 2 — the trade fans into 10,000 lines @ MX2 ──────────────────
+  const fanReveal = ci(frame, T.fan[0], T.fan[1] - sec(0.3), 0, 1, EASE.out);
+  const fanCount = ci(frame, T.fan[0] + sec(0.3), T.fan[1] - sec(0.2), 0, LINES_PER_BATCH, EASE.out);
+  const fanOp = Math.min(ci(frame, T.fan[0] - sec(0.2), T.fan[0] + sec(0.4), 0, 1), ci(frame, T.dayFly[0] + sec(0.4), T.dayFly[1], 1, 0));
+
+  // ── Throughput 3 — a day repeats it ×100 → 1,000,000 @ MX3 ─────────────────
+  const dayStamps = ci(frame, T.day[0], T.day[1] - sec(0.3), 0, BATCHES_PER_DAY, EASE.out);
+  const dayProduct = ci(frame, T.day[0] + sec(0.2), T.day[1] - sec(0.2), 0, PER_SOURCE_PER_DAY, EASE.out);
+  const dayOp = Math.min(ci(frame, T.day[0] - sec(0.2), T.day[0] + sec(0.4), 0, 1), ci(frame, T.zoom[0], T.zoom[0] + sec(0.6), 1, 0));
+
+  // ── Throughput 4 — pull back: ten sources, grand total → 10,000,000 ────────
+  const sourceRise = ci(frame, T.zoom[0] + sec(0.3), T.zoom[1], 0, 1, EASE.out);
+  const grandTotal = ci(frame, T.tenM[0], T.tenM[1], PER_SOURCE_PER_DAY, THROUGHPUT_TOTAL, EASE.out);
+  const stackOp = ci(frame, T.zoom[0], T.zoom[0] + sec(0.5), 0, 1);
 
   return (
     <Stage>
@@ -271,7 +308,7 @@ export const BatchFlowReel: React.FC = () => {
         }}
       >
         {/* flow spine */}
-        <div style={{ position: "absolute", left: AX, top: CY - 1, width: DX - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
+        <div style={{ position: "absolute", left: AX, top: CY - 1, width: MX2 - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
 
         {/* Concept 1 — one question, in glass, at AX */}
         {qOp > 0.01 && (
@@ -429,27 +466,38 @@ export const BatchFlowReel: React.FC = () => {
           </div>
         )}
 
-        {/* Stage 7 — multiply */}
-        {mulOp > 0.01 && (
-          <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", textAlign: "center", opacity: mulOp }}>
-            <div style={heroNumber(184)}>{commas(mulValue)}</div>
-            <div style={{ fontFamily: monoFont, fontSize: 30, fontWeight: 700, letterSpacing: "0.08em", color: C.dim, marginTop: 10 }}>TRADES · PER USER · PER DAY</div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 26 }}>
-              {CHAIN_STEPS.map((s, i) => {
-                const r = Math.min(1, spring({ fps, frame: frame - STEP_AT[i], config: { damping: 14, stiffness: 130, mass: 0.6 }, durationInFrames: 20 }));
-                return (
-                  <div key={i} style={{ opacity: r, transform: `translateY(${((1 - r) * 14).toFixed(1)}px)`, padding: "13px 20px", borderRadius: 14, background: PILL_GRADIENT, fontFamily: font, fontWeight: 800, fontSize: 30, color: "#fff", boxShadow: "0 12px 30px rgba(94,120,255,0.36)" }}>{s.head}</div>
-                );
-              })}
-            </div>
+        {/* Throughput 1 — one person, one trade @ MX1 */}
+        {personOp > 0.01 && (
+          <div style={{ position: "absolute", left: MX1, top: CY, transform: "translate(-50%,-50%)", opacity: personOp, zIndex: 18, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <PersonIcon />
+            <div style={{ marginTop: 24, fontFamily: font, fontSize: 42, fontWeight: 800, letterSpacing: "-0.02em", color: C.text }}>One trade</div>
+          </div>
+        )}
+        {/* the fired trade — a glowing packet that travels MX1 → MX2 */}
+        {tradeDotOp > 0.01 && (
+          <div style={{ position: "absolute", left: tradeDotX, top: CY, transform: "translate(-50%,-50%)", opacity: tradeDotOp, zIndex: 22 }}>
+            <div style={{ width: 26, height: 26, borderRadius: 999, background: PILL_GRADIENT, boxShadow: "0 0 28px rgba(94,120,255,0.7), 0 8px 20px rgba(94,120,255,0.5)" }} />
           </div>
         )}
 
-        {/* Stage 8 — liquidity unlocked */}
-        {unlockOp > 0.01 && (
-          <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", textAlign: "center", opacity: unlockOp }}>
-            <div style={heroNumber(196)}>${commas(dollars)}</div>
-            <div style={{ fontFamily: font, fontSize: 42, fontWeight: 700, color: C.text, marginTop: 18 }}>Liquidity unlocked — <span style={{ color: C.up, fontWeight: 800 }}>more than Hyperliquid</span></div>
+        {/* Throughput 2 — the trade fans into 10,000 lines @ MX2 */}
+        {fanOp > 0.01 && (
+          <div style={{ position: "absolute", left: MX2 - 450, top: CY, transform: "translate(0,-40%)", opacity: fanOp, zIndex: 16 }}>
+            <TradeFan reveal={fanReveal} count={fanCount} />
+          </div>
+        )}
+
+        {/* Throughput 3 — a day repeats it ×100 → 1,000,000 @ MX3 */}
+        {dayOp > 0.01 && (
+          <div style={{ position: "absolute", left: MX3, top: CY, transform: "translate(-50%,-50%)", opacity: dayOp, zIndex: 14 }}>
+            <DayTimeline stamps={dayStamps} product={dayProduct} />
+          </div>
+        )}
+
+        {/* Throughput 4 — pull back: ten sources, grand total → 10,000,000 @ MX3 */}
+        {stackOp > 0.01 && (
+          <div style={{ position: "absolute", left: MX3, top: CY, transform: "translate(-50%,-57px)", opacity: stackOp, zIndex: 12 }}>
+            <SourceStack sources={THROUGHPUT_SOURCES} rise={sourceRise} total={grandTotal} perSource={PER_SOURCE_PER_DAY} />
           </div>
         )}
 
@@ -458,6 +506,8 @@ export const BatchFlowReel: React.FC = () => {
         <Caption frame={frame} x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
         <Caption frame={frame} x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
         <Caption frame={frame} x={BX} y={CY + 330} at={T.settle[0] + sec(0.4)} text="Every line matched, then settled" until={T.travel2[0]} />
+        <Caption frame={frame} x={MX2} y={CY - 300} at={T.fan[0] + sec(0.2)} text="One trade → 10,000 lines" until={T.dayFly[0]} />
+        <Caption frame={frame} x={MX3} y={CY + 300} at={T.day[0] + sec(0.3)} text="Same engine. Ten different sources." until={T.zoom[0]} />
       </div>
     </Stage>
   );
