@@ -1,223 +1,303 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, spring } from "remotion";
-import {
-  Stage,
-  TrackBoard,
-  BeatTitle,
-  camAt,
-  ci,
-  C,
-  EASE,
-  font,
-  FPS,
-  W,
-  H,
-  sec,
-  type FaceState,
-} from "./ThreeWallsTrack";
-import {
-  TraderChip,
-  MMChip,
-  FlowStream,
-  BarTail,
-  barTailLayout,
-  GeneralLayer,
-  type BarTailParams,
-} from "./ThreeWallsPrimitives";
+import { AbsoluteFill, interpolate, useCurrentFrame, Easing } from "remotion";
+import { FPS, W, H, NAVY, SANS, SANS_TEXT } from "./theme";
+import { BrandMark } from "../../components/BrandMark";
 
-// Wall 3 · Asphyxiation by Winners — ridden along the long tail.
-// Given free choice, traders crowd the same three winner markets; the long tail
-// starves while the maker collects. The camera holds tight on the winners, then
-// slides right along the dead tail to show how long it runs — then pulls back to
-// the whole board as the General layer forces breadth across every market and
-// the money flows back to the traders. Everything lives on the board and rides
-// the camera; no cuts.
+// Self-contained on the article-2 dark system — no glass-theme imports (those
+// pull in local brand fonts that abort an empty-publicDir render).
 
-const DURATION = sec(16); // 960
-const BOARD_W = 3600;
-
-const PARAMS: BarTailParams = {
-  n: 28,
-  baselineY: 720,
-  startX: 480,
-  barW: 70,
-  gap: 24,
-  maxH: 480,
-  decay: 0.42,
-};
-const BARS = barTailLayout(PARAMS);
-const WINNERS = [0, 1, 2];
-
-const TRADER_A = { x: 250, y: 300 };
-const TRADER_B = { x: 250, y: 540 };
-const MM = { x: 3380, y: 470 };
-
-// ── beats (frames) ──────────────────────────────────────────────────────────
-const B = {
-  grow: sec(1.0),
-  crowdIn: sec(3.0),
-  panEnd: sec(5.0), // slid along the tail
-  wideEnd: sec(7.0), // pulled back to the whole board
-  harvestEnd: sec(9.0), // money back to the maker
-  sweepEnd: sec(11.0), // General layer sealed
-  fanEnd: sec(13.0), // forced across all bars
-  // 13–16: money back to traders, hold
-};
-
-const camera = (frame: number) =>
-  camAt(
-    frame,
-    [
-      { t: 0, x: 600, scale: 1.4 },
-      { t: B.crowdIn, x: 600, scale: 1.4 },
-      { t: B.panEnd, x: 1850, scale: 1.22 }, // slide right along the tail
-      { t: B.wideEnd, x: 1800, scale: 0.52 }, // pull back to the whole board
-      { t: DURATION, x: 1800, scale: 0.52 },
-    ],
-    EASE.inOut,
+// ── a small face — the only expression any actor wears ──────────────────────
+const FACE = { happy: "#1FB877", unhappy: "#F2566B", neutral: "#E8A13A" } as const;
+type FaceKind = keyof typeof FACE;
+const Face: React.FC<{ state: FaceKind; size?: number }> = ({ state, size = 56 }) => {
+  const color = FACE[state];
+  const eyeY = size * 0.4;
+  const eyeDx = size * 0.2;
+  const r = size * 0.07;
+  const my = size * 0.62;
+  const mw = size * 0.34;
+  const mouth =
+    state === "happy"
+      ? `M ${size / 2 - mw / 2} ${my} Q ${size / 2} ${my + mw * 0.6} ${size / 2 + mw / 2} ${my}`
+      : state === "unhappy"
+        ? `M ${size / 2 - mw / 2} ${my + mw * 0.4} Q ${size / 2} ${my - mw * 0.3} ${size / 2 + mw / 2} ${my + mw * 0.4}`
+        : `M ${size / 2 - mw / 2} ${my} L ${size / 2 + mw / 2} ${my}`;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+      <circle cx={size / 2} cy={size / 2} r={size / 2 - 1} fill={color} />
+      <circle cx={size / 2 - eyeDx} cy={eyeY} r={r} fill="#fff" />
+      <circle cx={size / 2 + eyeDx} cy={eyeY} r={r} fill="#fff" />
+      <path d={mouth} stroke="#fff" strokeWidth={size * 0.06} fill="none" strokeLinecap="round" />
+      {state === "neutral" && (
+        <text x={size / 2} y={size * 0.92} textAnchor="middle" fontSize={size * 0.28} fontWeight={800} fill="#fff" fontFamily={SANS}>
+          ?
+        </text>
+      )}
+    </svg>
   );
+};
+
+// ── a comet of dots travelling A→B; active (0..1) gates it ──────────────────
+const FlowStream: React.FC<{ from: { x: number; y: number }; to: { x: number; y: number }; active: number; color: string; count?: number; speed?: number; dotR?: number }> = ({
+  from,
+  to,
+  active,
+  color,
+  count = 7,
+  speed = 0.8,
+  dotR = 9,
+}) => {
+  const frame = useCurrentFrame();
+  const a = active < 0 ? 0 : active > 1 ? 1 : active;
+  if (a <= 0) return null;
+  const t = (frame / FPS) * speed;
+  return (
+    <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={color} strokeWidth={2} opacity={a * 0.18} strokeDasharray="2 9" strokeLinecap="round" />
+      {Array.from({ length: count }).map((_, i) => {
+        const ph = (t + i / count) % 1;
+        const tri = 1 - Math.abs(ph * 2 - 1);
+        return <circle key={i} cx={from.x + (to.x - from.x) * ph} cy={from.y + (to.y - from.y) * ph} r={dotR} fill={color} opacity={a * tri} />;
+      })}
+    </svg>
+  );
+};
+
+// Wall 3 · The house wins — until it can't.
+// Free choice: a trader bets only the two markets they know — Bitcoin and a
+// $10k-cap coin. On a normal book the maker picks them off: trader wins 1 in 10,
+// the maker 9 in 10. Then General forces BOTH to trade every market, pooled and
+// symmetric — the maker can't cherry-pick, the odds become 50/50, and the
+// trader finally nets a win. The hero numbers are the two win rates, in the same
+// dark style as the server wall.
+
+const DURATION = 216; // ~7.2s @30fps
+
+const B = {
+  setup: 24, // markets + dials arrive
+  fillEnd: 96, // phase 1: dials reach 10 / 90, money piles on the maker
+  generalIn: 120, // General sweeps, the market set explodes
+  equalizeEnd: 186, // dials swing to 50 / 50, money flows back
+  // 186–216: hold on the turn
+};
+
+const ORANGE = "#F7931A"; // bitcoin
+const LOSE = "#F2566B";
+const WIN = "#1FB877";
+const NEUT = "#E8A13A";
+const BLUE = "#0A84FF";
+
+const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
+const ci = (f: number, a: number, b: number, from: number, to: number, e?: (t: number) => number): number =>
+  interpolate(f, [a, b], [from, to], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: e });
+const easeOut = (t: number): number => Easing.out(Easing.cubic)(clamp01(t));
+const easeInOut = (t: number): number => Easing.inOut(Easing.cubic)(clamp01(t));
+
+// ── win-rate dial — the hero number, a ring that fills to pct ─────────────────
+const WinDial: React.FC<{
+  cx: number;
+  cy: number;
+  pct: number;
+  label: string;
+  color: string;
+  faceState: "happy" | "unhappy" | "neutral";
+  showFace: boolean;
+}> = ({ cx, cy, pct, label, color, faceState, showFace }) => {
+  const size = 300;
+  const r = 124;
+  const circ = 2 * Math.PI * r;
+  const off = circ * (1 - clamp01(pct / 100));
+  return (
+    <div style={{ position: "absolute", left: cx - size / 2, top: cy - size / 2, width: size, height: size }}>
+      {showFace && (
+        <div style={{ position: "absolute", left: "50%", top: -52, transform: "translateX(-50%)" }}>
+          <Face state={faceState} size={56} />
+        </div>
+      )}
+      <svg width={size} height={size} style={{ position: "absolute", inset: 0 }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth={20} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={20}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={off}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ filter: `drop-shadow(0 0 16px ${color}aa)` }}
+        />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: SANS, fontSize: 92, fontWeight: 800, letterSpacing: "-2px", color: "#fff", fontVariantNumeric: "tabular-nums" }}>
+          {Math.round(pct)}%
+        </span>
+        <span style={{ fontFamily: SANS_TEXT, fontSize: 22, fontWeight: 700, letterSpacing: "1px", color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+          WIN RATE
+        </span>
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: size + 8, textAlign: "center", fontFamily: SANS, fontSize: 30, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>
+        {label}
+      </div>
+    </div>
+  );
+};
+
+// ── a market token ────────────────────────────────────────────────────────────
+const MarketToken: React.FC<{ cx: number; cy: number; size: number; glyph: string; name: string; sub?: string; color: string; opacity?: number }> = ({
+  cx,
+  cy,
+  size,
+  glyph,
+  name,
+  sub,
+  color,
+  opacity = 1,
+}) => (
+  <div style={{ position: "absolute", left: cx - size / 2, top: cy - size / 2, width: size, display: "flex", flexDirection: "column", alignItems: "center", opacity }}>
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: `linear-gradient(150deg, ${color}, ${color}CC)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: SANS,
+        fontSize: size * 0.5,
+        fontWeight: 800,
+        color: "#fff",
+        boxShadow: `0 8px 26px ${color}66, inset 0 1px 0 rgba(255,255,255,0.35)`,
+      }}
+    >
+      {glyph}
+    </div>
+    {size > 60 && (
+      <>
+        <div style={{ fontFamily: SANS, fontSize: 22, fontWeight: 800, color: "#fff", marginTop: 8 }}>{name}</div>
+        {sub && <div style={{ fontFamily: SANS_TEXT, fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>{sub}</div>}
+      </>
+    )}
+  </div>
+);
+
+// the long-tail markets that General forces into play
+const TAIL = [
+  { glyph: "Ξ", color: "#627EEA" },
+  { glyph: "◎", color: "#14F195" },
+  { glyph: "K", color: "#5B6Cff" },
+  { glyph: "P", color: "#FF6FB5" },
+  { glyph: "S", color: "#17B0A6" },
+  { glyph: "D", color: "#C2A633" },
+  { glyph: "A", color: "#0033AD" },
+  { glyph: "X", color: "#23292F" },
+  { glyph: "L", color: "#345D9D" },
+  { glyph: "M", color: "#F195FF" },
+  { glyph: "T", color: "#26A17B" },
+  { glyph: "B", color: "#F3BA2F" },
+];
 
 export const AsphyxiationByWinners: React.FC = () => {
   const frame = useCurrentFrame();
-  const cam = camera(frame);
 
-  const reveal = spring({ frame: frame - B.grow, fps: FPS, config: { damping: 16, mass: 0.9, stiffness: 90 }, durationInFrames: 60 });
+  // win rates — fill to 10/90 in phase 1, swing to 50/50 under General
+  const traderWin = frame < B.fillEnd ? ci(frame, B.setup, B.fillEnd, 0, 10, easeOut) : ci(frame, B.generalIn, B.equalizeEnd, 10, 50, easeInOut);
+  const mmWin = frame < B.fillEnd ? ci(frame, B.setup, B.fillEnd, 0, 90, easeOut) : ci(frame, B.generalIn, B.equalizeEnd, 90, 50, easeInOut);
 
-  // crowd the 3 winners
-  const crowd = ci(frame, B.crowdIn - sec(1.0), B.crowdIn, 0, 1, EASE.out) * ci(frame, B.harvestEnd - sec(2.0), B.harvestEnd - sec(1.4), 1, 0);
-  const winnerHighlight = frame >= B.crowdIn - sec(1.0) ? 3 : 0;
+  // money flows: phase 1 trader → maker (losses); phase 2 maker → trader (net win)
+  const loseFlow = ci(frame, B.setup + 8, B.fillEnd, 0, 1) * ci(frame, B.generalIn - 12, B.generalIn, 1, 0);
+  const winFlow = ci(frame, B.generalIn + 20, B.equalizeEnd, 0, 1);
 
-  // money flows back to the maker
-  const harvest = ci(frame, B.wideEnd - sec(0.5), B.wideEnd + sec(0.5), 0, 1) * ci(frame, B.harvestEnd, B.harvestEnd + sec(0.6), 1, 0);
-  const mmFill = ci(frame, B.wideEnd, B.harvestEnd, 0.4, 0.95);
+  // the General sweep + the market set exploding from 2 → many
+  const general = ci(frame, B.generalIn, B.generalIn + 30, 0, 1, easeOut);
+  const tailIn = ci(frame, B.generalIn + 6, B.equalizeEnd - 10, 0, 1, easeOut);
 
-  // the General layer sweeps the whole tail
-  const sweep = ci(frame, B.harvestEnd + sec(0.3), B.sweepEnd, 0, 1, EASE.out);
+  // faces — trader unhappy while fleeced, happy after; maker happy then neutral
+  const showFace = frame > B.setup + 6;
+  const phase2 = frame >= B.generalIn;
+  const traderFace = phase2 && frame > B.generalIn + 30 ? "happy" : "unhappy";
+  const mmFace = phase2 && frame > B.generalIn + 30 ? "neutral" : "happy";
 
-  // forced breadth — fan to ALL bars
-  const fanOut = ci(frame, B.sweepEnd, B.sweepEnd + sec(1.0), 0, 1, EASE.out) * ci(frame, B.fanEnd, B.fanEnd + sec(0.6), 1, 0);
-  const breadthHighlight = frame >= B.sweepEnd + sec(0.5) ? BARS.length : winnerHighlight;
+  const TRADER = { x: 330, y: 470 };
+  const MAKER = { x: W - 330, y: 470 };
+  const BTC = { x: W / 2, y: 360 };
+  const COIN = { x: W / 2, y: 620 };
 
-  // money flows back to the traders
-  const payback = ci(frame, B.fanEnd, B.fanEnd + sec(1.0), 0, 1);
-  const mmSettle = ci(frame, B.sweepEnd, B.fanEnd + sec(0.5), 0.95, 0.6);
+  // title blur-swap
+  const titleP = phase2 ? clamp01((frame - B.generalIn) / 10) : clamp01((frame - 4) / 10);
+  const title = phase2 ? "GENERAL" : "NORMAL MARKET";
+  const titleCol = phase2 ? BLUE : "rgba(255,255,255,0.85)";
 
-  // faces
-  const traderFace: FaceState =
-    frame >= B.fanEnd ? "happy" : frame >= B.sweepEnd ? "neutral" : frame >= B.wideEnd ? "unhappy" : "happy";
-  const mmFace: FaceState = frame >= B.fanEnd ? "neutral" : "neutral";
-  const reservoir = frame >= B.sweepEnd ? mmSettle : mmFill;
-  const showFaces = frame >= B.wideEnd - sec(0.5);
+  // caption
+  const cap =
+    frame < B.generalIn
+      ? frame > B.fillEnd - 30
+        ? "you win 1 in 10 — the maker takes the rest"
+        : ""
+      : frame > B.generalIn + 36
+        ? "forced to trade every market, fair — you net a win"
+        : "everyone trades every market — pooled, symmetric";
 
   return (
-    <Stage>
-      <TrackBoard width={BOARD_W} cam={cam}>
-        {/* the long-tail bar graph */}
-        <BarTail params={PARAMS} reveal={reveal} highlight={frame >= B.sweepEnd ? breadthHighlight : winnerHighlight} />
+    <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS, overflow: "hidden" }}>
+      <BrandMark surface="dark" />
 
-        {/* winner pulse glow */}
-        {frame >= B.crowdIn - sec(1.0) && frame < B.harvestEnd
-          ? WINNERS.map((i) => {
-              const b = BARS[i];
-              const r = 36 * (1 + 0.06 * Math.sin((frame - B.crowdIn) / 7));
-              return (
-                <div
-                  key={`pulse-${i}`}
-                  style={{
-                    position: "absolute",
-                    left: b.cx - r,
-                    top: b.topY - r,
-                    width: r * 2,
-                    height: r * 2,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(94,120,255,0.35) 0%, rgba(94,120,255,0) 70%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              );
-            })
-          : null}
+      {/* phase 2 floor glow */}
+      <AbsoluteFill style={{ background: "radial-gradient(80% 70% at 50% 48%, rgba(10,132,255,0.16), transparent 60%)", opacity: general }} />
 
-        {/* General layer over the whole bar region */}
-        <GeneralLayer x={PARAMS.startX - 40} y={180} w={BARS[BARS.length - 1].cx - PARAMS.startX + 120} h={580} sweep={sweep} />
-
-        {/* crowd the winners */}
-        {WINNERS.map((i) => (
-          <FlowStream key={`ca-${i}`} from={TRADER_A} to={{ x: BARS[i].cx, y: BARS[i].topY }} active={crowd} color={C.blue} count={5} speed={0.7} boardW={BOARD_W} />
-        ))}
-        {WINNERS.map((i) => (
-          <FlowStream key={`cb-${i}`} from={TRADER_B} to={{ x: BARS[i].cx, y: BARS[i].topY }} active={crowd} color="#FF7A59" count={5} speed={0.7} boardW={BOARD_W} />
-        ))}
-        {WINNERS.map((i) => (
-          <FlowStream key={`cm-${i}`} from={MM} to={{ x: BARS[i].cx, y: BARS[i].topY }} active={crowd} color={C.violet} count={5} speed={0.7} boardW={BOARD_W} />
-        ))}
-
-        {/* money flows back to the maker */}
-        {WINNERS.map((i) => (
-          <FlowStream key={`h-${i}`} from={{ x: BARS[i].cx, y: BARS[i].topY }} to={MM} active={harvest} color={C.violet} count={6} speed={0.8} boardW={BOARD_W} />
-        ))}
-
-        {/* forced breadth — fan to ALL bars */}
-        {BARS.map((b, i) => (
-          <FlowStream key={`fa-${i}`} from={TRADER_A} to={{ x: b.cx, y: b.topY }} active={fanOut} color={C.blue} count={3} speed={0.9} dotR={5} boardW={BOARD_W} />
-        ))}
-        {BARS.map((b, i) => (
-          <FlowStream key={`fb-${i}`} from={TRADER_B} to={{ x: b.cx, y: b.topY }} active={fanOut} color="#FF7A59" count={3} speed={0.9} dotR={5} boardW={BOARD_W} />
-        ))}
-
-        {/* money flows back to the traders */}
-        {BARS.map((b, i) => (
-          <FlowStream key={`pa-${i}`} from={{ x: b.cx, y: b.topY }} to={TRADER_A} active={payback} color={C.blue} count={3} speed={0.85} dotR={5} boardW={BOARD_W} />
-        ))}
-        {BARS.map((b, i) => (
-          <FlowStream key={`pb-${i}`} from={{ x: b.cx, y: b.topY }} to={TRADER_B} active={payback} color="#FF7A59" count={3} speed={0.85} dotR={5} boardW={BOARD_W} />
-        ))}
-
-        {/* the actors, on top — sized to stay readable when the camera pulls back */}
-        <TraderChip cx={TRADER_A.x} cy={TRADER_A.y} label="T1" name="Trader 1" color={C.blue} size={120} face={showFaces ? traderFace : undefined} />
-        <TraderChip cx={TRADER_B.x} cy={TRADER_B.y} label="T2" name="Trader 2" color="#FF7A59" size={120} face={showFaces ? traderFace : undefined} />
-        <MMChip cx={MM.x} cy={MM.y} fill={reservoir} color={C.violet} face={showFaces ? mmFace : undefined} h={184} label="Maker" amount="$" />
-      </TrackBoard>
-
-      {/* titles + captions */}
-      <AbsoluteFill>
-        <CaptionSeq frame={frame} />
-      </AbsoluteFill>
-      {frame >= B.fanEnd - sec(0.3) && <BeatTitle title="Forced to spread — the traders win" delay={B.fanEnd} size={48} />}
-    </Stage>
-  );
-};
-
-const CaptionSeq: React.FC<{ frame: number }> = ({ frame }) => {
-  const lines: { at: number; until: number; text: string }[] = [
-    { at: sec(1.4), until: B.crowdIn + sec(0.0), text: "free choice — traders crowd the winners" },
-    { at: B.panEnd - sec(1.6), until: B.wideEnd - sec(0.4), text: "the long tail gets nothing" },
-    { at: B.wideEnd + sec(0.2), until: B.harvestEnd, text: "the maker collects — traders unhappy" },
-    { at: B.harvestEnd + sec(0.4), until: B.sweepEnd, text: "General forces trade across all markets" },
-  ];
-  const active = lines.find((l) => frame >= l.at && frame < l.until);
-  if (!active) return null;
-  const op = ci(frame, active.at, active.at + sec(0.25), 0, 1) * ci(frame, active.until - sec(0.25), active.until, 1, 0);
-  const y = ci(frame, active.at, active.at + sec(0.3), 14, 0, EASE.out);
-  return (
-    <div style={{ position: "absolute", bottom: 40, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: op, transform: `translateY(${y.toFixed(1)}px)` }}>
-      <div
-        style={{
-          padding: "15px 36px",
-          borderRadius: 999,
-          background: "linear-gradient(160deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.48) 100%)",
-          border: "1px solid rgba(255,255,255,0.72)",
-          boxShadow: "0 18px 44px rgba(58,62,130,0.24), inset 0 1px 0 rgba(255,255,255,0.9)",
-          fontFamily: font,
-          fontSize: 30,
-          fontWeight: 700,
-          letterSpacing: "-0.01em",
-          color: C.text,
-        }}
-      >
-        {active.text}
+      {/* title */}
+      <div style={{ position: "absolute", top: 70, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontSize: 52,
+            fontWeight: 800,
+            letterSpacing: "2px",
+            color: titleCol,
+            opacity: easeOut(titleP),
+            filter: titleP < 1 ? `blur(${(1 - titleP) * 9}px)` : undefined,
+            textShadow: phase2 ? `0 0 36px ${BLUE}` : "none",
+          }}
+        >
+          {title}
+        </div>
       </div>
-    </div>
+
+      {/* the markets being traded */}
+      <MarketToken cx={BTC.x} cy={BTC.y} size={108} glyph="₿" name="Bitcoin" sub="the one everyone trades" color={ORANGE} />
+      <MarketToken cx={COIN.x} cy={COIN.y} size={84} glyph="◆" name="MOON" sub="$10K market cap" color="#8A5BFF" />
+
+      {/* the long tail General forces into play */}
+      {tailIn > 0.01 &&
+        TAIL.map((m, i) => {
+          const ang = (i / TAIL.length) * Math.PI * 2;
+          const rad = 300 + (i % 3) * 36;
+          const cx = W / 2 + Math.cos(ang) * rad * 1.15;
+          const cy = 490 + Math.sin(ang) * rad * 0.62;
+          const pop = clamp01(tailIn * TAIL.length - i);
+          return <MarketToken key={i} cx={cx} cy={cy} size={56 * pop} glyph={m.glyph} name="" color={m.color} opacity={pop} />;
+        })}
+
+      {/* money flows */}
+      <FlowStream from={TRADER} to={MAKER} active={loseFlow} color={LOSE} count={7} speed={0.8} dotR={9} />
+      <FlowStream from={MAKER} to={TRADER} active={winFlow} color={WIN} count={7} speed={0.8} dotR={9} />
+
+      {/* the two win-rate dials — the hero numbers */}
+      <WinDial cx={TRADER.x} cy={TRADER.y} pct={traderWin} label="YOU" color={frame >= B.generalIn + 30 ? WIN : LOSE} faceState={traderFace} showFace={showFace} />
+      <WinDial cx={MAKER.x} cy={MAKER.y} pct={mmWin} label="MARKET MAKER" color={frame >= B.generalIn + 30 ? NEUT : WIN} faceState={mmFace} showFace={showFace} />
+
+      {/* caption */}
+      {cap && (
+        <div style={{ position: "absolute", bottom: 56, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+          <div style={{ fontFamily: SANS_TEXT, fontSize: 34, fontWeight: 700, color: "rgba(255,255,255,0.92)", letterSpacing: "-0.3px", textAlign: "center" }}>
+            {cap}
+          </div>
+        </div>
+      )}
+    </AbsoluteFill>
   );
 };
 

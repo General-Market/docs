@@ -1,7 +1,14 @@
 import { Easing, interpolate } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
 
-const { fontFamily: INTER } = loadFont();
+// Load only the latin subset and the weights this family actually uses (400–900).
+// The default loadFont() pulls every subset × weight (~119 requests) and gets
+// rate-limited by Google Fonts during render, which aborts the frame.
+const { fontFamily: INTER } = loadFont("normal", {
+  weights: ["400", "500", "600", "700", "800", "900"],
+  subsets: ["latin"],
+  ignoreTooManyRequestsWarning: true,
+});
 
 export const FPS = 30;
 export const W = 1920;

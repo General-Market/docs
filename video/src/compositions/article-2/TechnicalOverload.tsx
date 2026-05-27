@@ -37,7 +37,7 @@ const START: number[] = (() => {
 })();
 const LAST = STEPS.length - 1;
 const MELT_START = START[LAST]; // the meltdown begins as the final count lands
-const MELT_LEN = 78;
+const MELT_LEN = 92;
 const DURATION = MELT_START + MELT_LEN;
 
 const PITCH = 220; // world units between server centres
@@ -194,10 +194,11 @@ export const TechnicalOverload: React.FC = () => {
   const span = side * PITCH;
   const camScale = Math.min(7.2, FIT_SPAN / Math.max(PITCH, span));
 
-  // meltdown timeline
-  const melt = clamp01((frame - MELT_START) / MELT_LEN);
-  const flare = frame >= MELT_START ? interpolate(frame, [MELT_START + 30, MELT_START + 40, MELT_START + 64], [0, 0.92, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
-  const broken = frame >= MELT_START + 38;
+  // meltdown timeline — a hard white flash, then shards on clean navy (no slow
+  // muddy fade): peak at +37, gone by +45, shatter already flying underneath.
+  const flare = frame >= MELT_START ? interpolate(frame, [MELT_START + 32, MELT_START + 37, MELT_START + 45], [0, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const BREAK_AT = MELT_START + 37;
+  const broken = frame >= BREAK_AT;
 
   // screen shake — grows with heat, spikes at the blast
   const shakeAmp = heat * heat * 14 + (frame >= MELT_START + 36 ? interpolate(frame, [MELT_START + 36, MELT_START + 52, MELT_START + 70], [26, 8, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0);
@@ -229,36 +230,46 @@ export const TechnicalOverload: React.FC = () => {
     }
   }
 
-  // meltdown shards (white-hot chunks of the farm flying out)
+  // meltdown shards — laid on a grid across the WHOLE frame so at t=0 they tile
+  // it (the farm, intact) and only fly apart as t climbs: centre shards barely
+  // move, edge shards rip outward, so it fills instead of forming a hollow ring.
   const shards: React.ReactNode[] = [];
   if (broken) {
-    const t = (frame - (MELT_START + 38)) / FPS;
-    const N = 70;
-    for (let i = 0; i < N; i++) {
-      const a = (i / N) * Math.PI * 2 + (i % 7);
-      const sp = 600 + ((i * 137) % 700);
-      const px = W / 2 + Math.cos(a) * sp * t + sx;
-      const py = H / 2 + Math.sin(a) * sp * t + 0.5 * 900 * t * t + sy;
-      const op = clamp01(1 - t * 1.1);
-      const sz = 26 + ((i * 53) % 40);
-      if (op <= 0) continue;
-      shards.push(
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: px,
-            top: py,
-            width: sz,
-            height: sz,
-            transform: `translate(-50%,-50%) rotate(${(i * 47 + frame * 8).toFixed(0)}deg)`,
-            background: i % 3 === 0 ? "#FFF3DE" : heatColor(0.9),
-            borderRadius: 4,
-            opacity: op,
-            boxShadow: "0 0 16px rgba(255,200,120,0.8)",
-          }}
-        />,
-      );
+    const t = (frame - BREAK_AT) / FPS;
+    const cols = 13;
+    const rows = 8;
+    for (let row = 0; row < rows; row++) {
+      for (let c = 0; c < cols; c++) {
+        const i = row * cols + c;
+        const j = (i * 1103515245 + 12345) % 1000; // cheap per-shard jitter
+        const ox = ((c + 0.5) / cols) * W;
+        const oy = ((row + 0.5) / rows) * H;
+        const dirx = ox - W / 2;
+        const diry = oy - H / 2;
+        const spread = 1.9 + (j % 100) / 100; // 1.9..2.9
+        const px = ox + dirx * spread * t + ((j % 7) - 3) * 120 * t + sx;
+        const py = oy + diry * spread * t + 0.5 * 900 * t * t + sy;
+        const op = clamp01(1 - t * 1.0);
+        const sz = 30 + (j % 44);
+        if (op <= 0) continue;
+        shards.push(
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: px,
+              top: py,
+              width: sz,
+              height: sz,
+              transform: `translate(-50%,-50%) rotate(${(i * 47 + frame * 9).toFixed(0)}deg)`,
+              background: j % 3 === 0 ? "#FFF3DE" : heatColor(0.9),
+              borderRadius: 4,
+              opacity: op,
+              boxShadow: "0 0 16px rgba(255,200,120,0.8)",
+            }}
+          />,
+        );
+      }
     }
   }
 
@@ -346,7 +357,7 @@ export const TechnicalOverload: React.FC = () => {
       )}
 
       {/* the verdict, after the blast */}
-      {melt > 0.55 && (
+      {frame >= BREAK_AT + 10 && (
         <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
           <div
             style={{
@@ -356,8 +367,8 @@ export const TechnicalOverload: React.FC = () => {
               letterSpacing: "-2px",
               color: "#fff",
               textAlign: "center",
-              opacity: interpolate(frame, [MELT_START + 50, MELT_START + 66], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
-              transform: `translateY(${interpolate(frame, [MELT_START + 50, MELT_START + 66], [22, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }).toFixed(1)}px)`,
+              opacity: interpolate(frame, [BREAK_AT + 12, BREAK_AT + 26], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+              transform: `translateY(${interpolate(frame, [BREAK_AT + 12, BREAK_AT + 26], [22, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }).toFixed(1)}px)`,
               textShadow: "0 8px 50px rgba(0,0,0,0.7)",
             }}
           >
