@@ -268,12 +268,12 @@ export const RemotionRoot: React.FC = () => {
           height={settleDiagramMeta.height}
         />
         <Composition
-          id={strategyFlipDiagramMeta.id}
-          component={strategyFlipDiagramMeta.component}
-          durationInFrames={strategyFlipDiagramMeta.durationInFrames}
-          fps={strategyFlipDiagramMeta.fps}
-          width={strategyFlipDiagramMeta.width}
-          height={strategyFlipDiagramMeta.height}
+          id={liquidityLoopMeta.id}
+          component={liquidityLoopMeta.component}
+          durationInFrames={liquidityLoopMeta.durationInFrames}
+          fps={liquidityLoopMeta.fps}
+          width={liquidityLoopMeta.width}
+          height={liquidityLoopMeta.height}
         />
         <Composition
           id={technicalOverloadMeta.id}
@@ -309,15 +309,13 @@ export const RemotionRoot: React.FC = () => {
           width={prosAndConsMeta.width}
           height={prosAndConsMeta.height}
         />
-      </Folder>
-      <Folder name="Loops">
         <Composition
-          id={liquidityLoopMeta.id}
-          component={liquidityLoopMeta.component}
-          durationInFrames={liquidityLoopMeta.durationInFrames}
-          fps={liquidityLoopMeta.fps}
-          width={liquidityLoopMeta.width}
-          height={liquidityLoopMeta.height}
+          id={strategyFlipDiagramMeta.id}
+          component={strategyFlipDiagramMeta.component}
+          durationInFrames={strategyFlipDiagramMeta.durationInFrames}
+          fps={strategyFlipDiagramMeta.fps}
+          width={strategyFlipDiagramMeta.width}
+          height={strategyFlipDiagramMeta.height}
         />
       </Folder>
       <Composition
