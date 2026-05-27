@@ -65,9 +65,9 @@ const Intro: React.FC = () => {
       <div
         style={{
           fontFamily: monoFont,
-          fontSize: 48,
+          fontSize: 24,
           fontWeight: 700,
-          letterSpacing: "0.14em",
+          letterSpacing: "0.2em",
           color: C.faint,
           transform: `scaleX(${wipeOn(frame, 0).toFixed(3)})`,
           transformOrigin: "left center",

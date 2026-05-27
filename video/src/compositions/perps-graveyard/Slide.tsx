@@ -72,11 +72,11 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
         style={{
           position: "absolute",
           left: PANEL_L,
-          top: 80,
+          top: 96,
           fontFamily: monoFont,
-          fontSize: 40,
+          fontSize: 22,
           fontWeight: 700,
-          letterSpacing: "0.12em",
+          letterSpacing: "0.16em",
           color: C.faint,
           transform: `scaleX(${wipeOn(frame, 0).toFixed(3)})`,
           transformOrigin: "left center",
@@ -133,9 +133,9 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
           <div
             style={{
               fontFamily: monoFont,
-              fontSize: 48,
+              fontSize: 22,
               fontWeight: 700,
-              letterSpacing: "0.1em",
+              letterSpacing: "0.16em",
               color: C.faint,
               transform: `scaleX(${wipeOn(frame, 8).toFixed(3)})`,
               transformOrigin: "left center",
@@ -165,7 +165,7 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
         style={{
           position: "absolute",
           left: PANEL_L,
-          top: 444,
+          top: 432,
           maxWidth: 1130,
           fontFamily: font,
           fontSize: 38,
@@ -187,7 +187,7 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
         style={{
           position: "absolute",
           left: chartX + chartW + 40,
-          top: chartY + 60,
+          top: chartY + 78,
           width: 320,
         }}
       >
@@ -197,11 +197,11 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
         <div
           style={{
             fontFamily: monoFont,
-            fontSize: 54,
+            fontSize: 20,
             fontWeight: 700,
-            letterSpacing: "0.06em",
+            letterSpacing: "0.1em",
             color: C.faint,
-            marginTop: 14,
+            marginTop: 12,
             transform: `scaleX(${ddLabelWipe.toFixed(3)})`,
             transformOrigin: "left center",
           }}
