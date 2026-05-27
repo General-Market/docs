@@ -132,6 +132,7 @@ import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditCo
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
 import { marketCostScaleMeta } from "./compositions/article-2/MarketCostScale";
 import { marketUniverseScaleMeta } from "./compositions/article-2/MarketUniverseScale";
+import { prosAndConsMeta } from "./compositions/article-3/ProsAndCons";
 import { tierListReelMeta } from "./compositions/tier-list/TierListReel";
 import { liquidityLoopMeta } from "./compositions/loops/LiquidityLoop";
 import { botVolumeProofMeta, botVolumeScreenMetas } from "./compositions/bot-volume/BotVolumeProof";
@@ -189,6 +190,14 @@ export const RemotionRoot: React.FC = () => {
         height={tierListReelMeta.height}
       />
       <Folder name="Article-2">
+        <Composition
+          id={whyLiquidityIsHardMeta.id}
+          component={whyLiquidityIsHardMeta.component}
+          durationInFrames={whyLiquidityIsHardMeta.durationInFrames}
+          fps={whyLiquidityIsHardMeta.fps}
+          width={whyLiquidityIsHardMeta.width}
+          height={whyLiquidityIsHardMeta.height}
+        />
         <Composition
           id={attentionVolumeV2Meta.id}
           component={attentionVolumeV2Meta.component}
@@ -271,6 +280,16 @@ export const RemotionRoot: React.FC = () => {
           fps={asphyxiationByWinnersMeta.fps}
           width={asphyxiationByWinnersMeta.width}
           height={asphyxiationByWinnersMeta.height}
+        />
+      </Folder>
+      <Folder name="Article-3">
+        <Composition
+          id={prosAndConsMeta.id}
+          component={prosAndConsMeta.component}
+          durationInFrames={prosAndConsMeta.durationInFrames}
+          fps={prosAndConsMeta.fps}
+          width={prosAndConsMeta.width}
+          height={prosAndConsMeta.height}
         />
       </Folder>
       <Folder name="Loops">
@@ -842,14 +861,6 @@ export const RemotionRoot: React.FC = () => {
           fps={insiderCasesMeta.fps}
           width={insiderCasesMeta.width}
           height={insiderCasesMeta.height}
-        />
-        <Composition
-          id={whyLiquidityIsHardMeta.id}
-          component={whyLiquidityIsHardMeta.component}
-          durationInFrames={whyLiquidityIsHardMeta.durationInFrames}
-          fps={whyLiquidityIsHardMeta.fps}
-          width={whyLiquidityIsHardMeta.width}
-          height={whyLiquidityIsHardMeta.height}
         />
         <Composition
           id="EndCard"
