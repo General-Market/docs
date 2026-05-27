@@ -70,38 +70,46 @@ const COL_W = TABLE.w / N_TRADERS;
 const colCx = (t: number): number => TABLE.x0 + t * COL_W + COL_W / 2;
 const TABLE_CX = TABLE.x0 + TABLE.w / 2;
 
+// the dive graphs live on the board, in the space the table later fills — the
+// camera travels to each in turn rather than parking on both at once.
+const CHART_POS = { cx: 1440, cy: 350 };
+const SPLIT_POS = { cx: 1440, cy: 760 };
+
 // ── timeline (frames @60) ─────────────────────────────────────────────────────
 const T = {
   poolIn: [0, sec(0.6)] as [number, number],
   ledgerStart: sec(0.7),
   ledgerStep: sec(0.17),
   ledgerDur: sec(0.85),
-  holdA: sec(4.4),
-  diveIn: [sec(4.6), sec(6.3)] as [number, number],
-  click: sec(6.3),
-  cursorIn: [sec(5.1), sec(6.3)] as [number, number],
-  chartIn: [sec(6.4), sec(7.2)] as [number, number],
-  chartDraw: [sec(6.6), sec(8.8)] as [number, number],
-  splitIn: [sec(8.8), sec(9.6)] as [number, number],
-  splitFlow: [sec(9.6), sec(11.2)] as [number, number],
-  graphsOut: [sec(11.8), sec(12.4)] as [number, number],
-  pullBack: [sec(12.2), sec(13.6)] as [number, number],
-  resolveStart: sec(13.4),
+  holdA: sec(4.0),
+  diveIn: [sec(4.2), sec(5.6)] as [number, number], // tight on the tenth line
+  click: sec(5.6),
+  cursorIn: [sec(4.4), sec(5.6)] as [number, number],
+  chartTravel: [sec(5.9), sec(7.0)] as [number, number], // camera climbs to the chart
+  chartDraw: [sec(6.6), sec(8.6)] as [number, number], // the price crosses +2%
+  splitTravel: [sec(9.0), sec(10.0)] as [number, number], // camera drops to the split
+  splitFlow: [sec(10.2), sec(12.2)] as [number, number], // YES takes the pool
+  graphsOut: [sec(13.0), sec(13.8)] as [number, number],
+  pullBack: [sec(13.4), sec(14.8)] as [number, number],
+  resolveStart: sec(14.6),
   resolveStep: sec(0.15),
   resolveDur: sec(0.5),
-  panTable: [sec(15.8), sec(17.2)] as [number, number],
-  tableStart: sec(17.3),
+  panTable: [sec(16.8), sec(18.2)] as [number, number],
+  tableStart: sec(18.3),
   tableStep: sec(0.2),
   tableDur: sec(0.5),
   totals: [sec(20.9), sec(21.9)] as [number, number],
-  youPulse: [sec(21.9), sec(22.7)] as [number, number],
+  allHold: [sec(22.0), sec(22.8)] as [number, number], // hold on every trader
+  isolate: [sec(22.9), sec(24.4)] as [number, number], // close on only your P&L
+  youPulse: [sec(24.0), sec(24.8)] as [number, number],
 };
-const TOTAL = sec(24.2);
+const TOTAL = sec(26.0);
 const CLICK = T.click;
-// where the tenth line sits on screen at the dive (camera settled) — the click
+// the tenth line sits dead-centre when the camera dives onto it — the click
 // target and the origin of the click's burst.
-const CLICK_SX = 465;
+const CLICK_SX = 960;
 const CLICK_SY = 540;
+const YOU_CX = colCx(0);
 
 // ── internal camera — keyframed glide over the board ──────────────────────────
 const CAM = Easing.bezier(0.5, 0, 0.2, 1);
@@ -109,12 +117,17 @@ type Key = { at: number; cx: number; cy: number; scale: number };
 const KEYS: Key[] = [
   { at: 0, cx: 560, cy: 540, scale: 1.2 },
   { at: T.holdA, cx: 560, cy: 540, scale: 1.2 },
-  { at: T.diveIn[1], cx: 1000, cy: rowY(ZOOM_LINE), scale: 1.92 },
-  { at: T.graphsOut[0], cx: 1000, cy: rowY(ZOOM_LINE), scale: 1.92 },
-  { at: T.pullBack[1], cx: 700, cy: 540, scale: 1.16 },
+  { at: T.diveIn[1], cx: LEDGER.cx, cy: rowY(ZOOM_LINE), scale: 2.1 }, // dive + click
+  { at: T.chartTravel[1], cx: CHART_POS.cx, cy: CHART_POS.cy, scale: 1.42 }, // the price
+  { at: T.splitTravel[0], cx: CHART_POS.cx, cy: CHART_POS.cy, scale: 1.42 },
+  { at: T.splitTravel[1], cx: SPLIT_POS.cx, cy: SPLIT_POS.cy, scale: 1.42 }, // the payout
+  { at: T.graphsOut[0], cx: SPLIT_POS.cx, cy: SPLIT_POS.cy, scale: 1.42 },
+  { at: T.pullBack[1], cx: 700, cy: 540, scale: 1.16 }, // resolve
   { at: T.panTable[0], cx: 700, cy: 540, scale: 1.16 },
-  { at: T.panTable[1], cx: TABLE_CX - 120, cy: 540, scale: 1.02 },
-  { at: TOTAL, cx: TABLE_CX - 120, cy: 540, scale: 1.02 },
+  { at: T.panTable[1], cx: TABLE_CX - 120, cy: 540, scale: 1.0 }, // every trader
+  { at: T.isolate[0], cx: TABLE_CX - 120, cy: 540, scale: 1.0 },
+  { at: T.isolate[1], cx: YOU_CX + 26, cy: 540, scale: 1.62 }, // only your P&L
+  { at: TOTAL, cx: YOU_CX + 26, cy: 540, scale: 1.62 },
 ];
 const cameraAt = (frame: number): { cx: number; cy: number; scale: number } => {
   if (frame <= KEYS[0].at) return KEYS[0];
@@ -346,8 +359,8 @@ const Cursor: React.FC = () => {
   const frame = useCurrentFrame();
   if (frame < T.cursorIn[0] - sec(0.2) || frame > CLICK + sec(1.1)) return null;
   const t = cubicOut(ci(frame, T.cursorIn[0], T.cursorIn[1], 0, 1));
-  const x = bez(t, 1480, 1280, 720, CLICK_SX);
-  const y = bez(t, 1150, 720, 600, CLICK_SY);
+  const x = bez(t, 1540, 1300, 1040, CLICK_SX);
+  const y = bez(t, 1180, 760, 600, CLICK_SY);
   const sc = frame < CLICK ? ci(frame, CLICK - 2, CLICK, 1, 0.82) : ci(frame, CLICK, CLICK + 5, 0.82, 1);
   const op = Math.min(ci(frame, T.cursorIn[0] - sec(0.2), T.cursorIn[0], 0, 1), ci(frame, CLICK + sec(0.5), CLICK + sec(1.1), 1, 0));
   return (
@@ -492,22 +505,30 @@ const PriceChartCard: React.FC<{ draw: number }> = ({ draw }) => {
 };
 
 const SplitCard: React.FC<{ flow: number }> = ({ flow }) => {
-  const win = yesCount(ZOOM_LINE);
-  const lose = noCount(ZOOM_LINE);
-  const perWinner = (N_TRADERS * STAKE_PER_MARKET) / win;
+  const win = yesCount(ZOOM_LINE); // 3 backed YES — the winners
+  const lose = noCount(ZOOM_LINE); // 2 backed NO — they pay
+  const pool = N_TRADERS * STAKE_PER_MARKET; // 5
+  const perWinner = pool / win;
+  // YES fills from its own stakes up to the whole pool; NO drains to nothing.
+  const yesHas = win * STAKE_PER_MARKET + lose * STAKE_PER_MARKET * flow;
+  const noHas = lose * STAKE_PER_MARKET * (1 - flow);
+  const noDim = 1 - flow * 0.62;
+  const glow = 14 + flow * 40;
   return (
     <div style={{ width: 612, height: 392, ...glass(22), padding: 26, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <div style={{ fontFamily: monoFont, fontSize: 16, fontWeight: 700, letterSpacing: "0.1em", color: C.faint }}>
-        PARIMUTUEL · ${N_TRADERS * STAKE_PER_MARKET} POOL
+        PARIMUTUEL · ${pool} POOL · YES WON
       </div>
       <div style={{ marginTop: 14, flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* YES — receives the whole pool */}
         <div
           style={{
-            width: 178,
-            height: 138,
+            width: 188,
+            height: 150,
             borderRadius: 18,
-            background: `${C.up}18`,
-            border: `2px solid ${C.up}`,
+            background: `${C.up}${flow > 0.5 ? "26" : "18"}`,
+            border: `2.5px solid ${C.up}`,
+            boxShadow: `0 0 ${glow.toFixed(0)}px ${C.up}66`,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -516,24 +537,31 @@ const SplitCard: React.FC<{ flow: number }> = ({ flow }) => {
           }}
         >
           <div style={{ fontFamily: font, fontSize: 28, fontWeight: 800, color: C.up }}>YES</div>
-          <div style={{ fontFamily: monoFont, fontSize: 17, fontWeight: 700, color: C.dim }}>{win} winners</div>
-          <div style={{ fontFamily: font, fontSize: 26, fontWeight: 800, color: C.up, fontVariantNumeric: "tabular-nums" }}>+${perWinner.toFixed(2)}</div>
+          <div style={{ fontFamily: monoFont, fontSize: 16, fontWeight: 700, color: C.dim }}>{win} winners</div>
+          <div style={{ fontFamily: font, fontSize: 30, fontWeight: 800, color: C.up, fontVariantNumeric: "tabular-nums" }}>${yesHas.toFixed(2)}</div>
+          <div style={{ fontFamily: monoFont, fontSize: 15, fontWeight: 700, color: C.up, opacity: clamp01((flow - 0.8) * 5) }}>+${perWinner.toFixed(2)} each</div>
         </div>
-        <svg width={180} height={60} style={{ overflow: "visible" }}>
-          <line x1={0} y1={30} x2={180} y2={30} stroke="rgba(60,64,130,0.18)" strokeWidth={2} />
-          {[0, 1, 2, 3].map((k) => {
-            const phase = (flow * 1.3 + k * 0.25) % 1;
-            return <circle key={k} cx={lerp(180, 6, phase)} cy={30} r={5} fill={C.up} opacity={0.9} />;
+
+        {/* the NO stakes crossing into YES */}
+        <svg width={150} height={60} style={{ overflow: "visible" }}>
+          <line x1={0} y1={30} x2={150} y2={30} stroke="rgba(60,64,130,0.16)" strokeWidth={2} />
+          {[0, 1, 2, 3, 4].map((k) => {
+            const phase = (flow * 1.25 + k * 0.2) % 1;
+            return <circle key={k} cx={lerp(150, 2, phase)} cy={30} r={5} fill={C.up} opacity={flow > 0.02 && flow < 0.99 ? 0.95 : 0} />;
           })}
-          <path d="M 18 22 L 6 30 L 18 38" fill="none" stroke={C.up} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 16 22 L 4 30 L 16 38" fill="none" stroke={C.up} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
+
+        {/* NO — drains to zero */}
         <div
           style={{
-            width: 178,
-            height: 138,
+            width: 188,
+            height: 150,
             borderRadius: 18,
-            background: `${C.down}14`,
-            border: `2px solid ${C.down}88`,
+            background: `${C.down}10`,
+            border: `2px solid ${C.down}66`,
+            opacity: noDim,
+            filter: `grayscale(${(flow * 0.5).toFixed(2)})`,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -542,19 +570,19 @@ const SplitCard: React.FC<{ flow: number }> = ({ flow }) => {
           }}
         >
           <div style={{ fontFamily: font, fontSize: 28, fontWeight: 800, color: C.down }}>NO</div>
-          <div style={{ fontFamily: monoFont, fontSize: 17, fontWeight: 700, color: C.dim }}>{lose} losers</div>
-          <div style={{ fontFamily: font, fontSize: 26, fontWeight: 800, color: C.down, fontVariantNumeric: "tabular-nums" }}>−${(lose * STAKE_PER_MARKET).toFixed(2)}</div>
+          <div style={{ fontFamily: monoFont, fontSize: 16, fontWeight: 700, color: C.dim }}>{lose} losers</div>
+          <div style={{ fontFamily: font, fontSize: 30, fontWeight: 800, color: C.down, fontVariantNumeric: "tabular-nums" }}>${noHas.toFixed(2)}</div>
         </div>
       </div>
       <div style={{ fontFamily: font, fontSize: 21, fontWeight: 700, color: C.text }}>
-        The losers <span style={{ color: C.down, fontWeight: 800 }}>pay</span> the winners
+        <span style={{ color: C.up, fontWeight: 800 }}>YES takes the pool</span> — NO gets nothing
       </div>
     </div>
   );
 };
 
 // ── the P&L table ─────────────────────────────────────────────────────────────
-const Cell: React.FC<{ value: number; cx: number; cy: number; frame: number; row: number; highlight: boolean }> = ({ value, cx, cy, frame, row, highlight }) => {
+const Cell: React.FC<{ value: number; cx: number; cy: number; frame: number; row: number; highlight: boolean; dim: number }> = ({ value, cx, cy, frame, row, highlight, dim }) => {
   const local = frame - (T.tableStart + row * T.tableStep);
   if (local < 0) return null;
   const s = spring({ frame: local, fps: FPS, config: { damping: 14, stiffness: 160, mass: 0.6 } });
@@ -567,7 +595,7 @@ const Cell: React.FC<{ value: number; cx: number; cy: number; frame: number; row
         left: cx,
         top: cy,
         transform: `translate(-50%, calc(-50% + ${lerp(10, 0, s).toFixed(1)}px)) scale(${lerp(0.9, 1, s).toFixed(3)})`,
-        opacity: clamp01(s * 1.4) * (pos ? 1 : 0.72),
+        opacity: clamp01(s * 1.4) * (pos ? 1 : 0.72) * dim,
         fontFamily: monoFont,
         fontSize: 18,
         fontWeight: highlight ? 800 : 600,
@@ -601,15 +629,18 @@ export const SettleDiagram: React.FC = () => {
 
   const chartDraw = ci(frame, T.chartDraw[0], T.chartDraw[1], 0, 1, EASE.inOut);
   const splitFlow = ci(frame, T.splitFlow[0], T.splitFlow[1], 0, 1);
-  const graphsOp = Math.min(ci(frame, T.chartIn[0], T.chartIn[1], 0, 1), ci(frame, T.graphsOut[0], T.graphsOut[1], 1, 0));
-  const chartIn = ci(frame, T.chartIn[0], T.chartIn[1], 0, 1, EASE.out);
-  const splitIn = ci(frame, T.splitIn[0], T.splitIn[1], 0, 1, EASE.out);
+  // both graphs live on the board from the click; the camera travels to each.
+  const graphsOp = Math.min(ci(frame, CLICK, CLICK + sec(0.5), 0, 1), ci(frame, T.graphsOut[0], T.graphsOut[1], 1, 0));
+  const chartOp = graphsOp * ci(frame, CLICK + sec(0.1), CLICK + sec(0.6), 0, 1, EASE.out);
+  const splitOp = graphsOp * ci(frame, T.splitTravel[0] - sec(0.3), T.splitTravel[0] + sec(0.3), 0, 1, EASE.out);
 
   const tableAppear = ci(frame, T.panTable[0], T.panTable[1], 0, 1, EASE.out);
   const totalsReveal = ci(frame, T.totals[0], T.totals[1], 0, 1, EASE.out);
+  const isolate = ci(frame, T.isolate[0], T.isolate[1], 0, 1, EASE.inOut);
+  const othersDim = 1 - isolate * 0.86; // fade every trader but You at the close
   const youPulse = ci(frame, T.youPulse[0], (T.youPulse[0] + T.youPulse[1]) / 2, 0, 1) * ci(frame, (T.youPulse[0] + T.youPulse[1]) / 2, T.youPulse[1], 1, 0);
 
-  const tagOp = ci(frame, sec(0.2), sec(0.8), 0, 1) * (1 - ci(frame, T.diveIn[0], T.diveIn[1], 0, 1)) + ci(frame, T.pullBack[0], T.pullBack[1], 0, 1);
+  const tagOp = ci(frame, sec(0.2), sec(0.8), 0, 1) * (1 - ci(frame, T.diveIn[0], T.diveIn[1], 0, 1)) + ci(frame, T.pullBack[0], T.pullBack[1], 0, 1) * (1 - isolate);
 
   return (
     <AbsoluteFill style={{ background: FIELD_BG, fontFamily: font }}>
@@ -691,7 +722,7 @@ export const SettleDiagram: React.FC = () => {
             {/* light behind your winning total */}
             <Bloom x={colCx(0)} y={TOTAL_Y} r={130} color={`${C.up}55`} op={totalsReveal * (0.5 + 0.5 * youPulse)} />
             {TRADER_NAMES.map((name, t) => (
-              <div key={`h${t}`} style={{ ...place(colCx(t), HEADER_Y), opacity: tableAppear, display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+              <div key={`h${t}`} style={{ ...place(colCx(t), HEADER_Y), opacity: tableAppear * (t === 0 ? 1 : othersDim), display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
                 <PersonIcon size={42} accent={TRADER_COLORS[t]} />
                 <div style={{ fontFamily: monoFont, fontSize: 15, fontWeight: 700, color: t === 0 ? C.blue : C.dim, whiteSpace: "nowrap" }}>
                   {t === 0 ? "You" : name}
@@ -700,7 +731,7 @@ export const SettleDiagram: React.FC = () => {
             ))}
             {MARKETS.map((_m, i) =>
               TRADER_NAMES.map((_n, t) => (
-                <Cell key={`c${i}-${t}`} value={traderNetOnLine(i, t)} cx={colCx(t)} cy={rowY(i)} frame={frame} row={i} highlight={t === 0} />
+                <Cell key={`c${i}-${t}`} value={traderNetOnLine(i, t)} cx={colCx(t)} cy={rowY(i)} frame={frame} row={i} highlight={t === 0} dim={t === 0 ? 1 : othersDim} />
               )),
             )}
             <div style={{ position: "absolute", left: TABLE.x0, top: TOTAL_Y - 32, width: TABLE.w, height: 2, background: "rgba(60,64,130,0.18)", opacity: totalsReveal }} />
@@ -722,7 +753,7 @@ export const SettleDiagram: React.FC = () => {
                     left: colCx(t),
                     top: TOTAL_Y,
                     transform: `translate(-50%,-50%) scale(${sc.toFixed(3)})`,
-                    opacity: clamp01(ls * 1.4),
+                    opacity: clamp01(ls * 1.4) * (isYou ? 1 : othersDim),
                     fontFamily: font,
                     fontSize: isYou ? 30 : 24,
                     fontWeight: 800,
@@ -737,22 +768,24 @@ export const SettleDiagram: React.FC = () => {
             })}
           </>
         )}
+
+        {/* the dive graphs — on the board, in the space the table later fills;
+            the camera climbs to the chart, then drops to the payout */}
+        {graphsOp > 0.01 && (
+          <>
+            <Bloom x={CHART_POS.cx} y={CHART_POS.cy} r={400} color={`${C.blue}24`} op={chartOp} />
+            <Bloom x={SPLIT_POS.cx} y={SPLIT_POS.cy} r={400} color={`${C.up}1f`} op={splitOp} />
+            <div style={{ ...place(CHART_POS.cx, CHART_POS.cy), opacity: chartOp }}>
+              <PriceChartCard draw={chartDraw} />
+            </div>
+            <div style={{ ...place(SPLIT_POS.cx, SPLIT_POS.cy), opacity: splitOp }}>
+              <SplitCard flow={splitFlow} />
+            </div>
+          </>
+        )}
       </div>
 
-      {/* the dive graphs — screen-space overlays, lit from behind ─────────────── */}
-      {graphsOp > 0.01 && (
-        <>
-          <Bloom x={1366} y={540} r={520} color={`${C.blue}26`} op={graphsOp} />
-          <div style={{ position: "absolute", right: 80, top: 96, opacity: graphsOp * chartIn, transform: `translateY(${lerp(28, 0, chartIn).toFixed(1)}px)` }}>
-            <PriceChartCard draw={chartDraw} />
-          </div>
-          <div style={{ position: "absolute", right: 80, top: 560, opacity: graphsOp * splitIn, transform: `translateY(${lerp(28, 0, splitIn).toFixed(1)}px)` }}>
-            <SplitCard flow={splitFlow} />
-          </div>
-        </>
-      )}
-
-      {/* cursor + its click burst */}
+      {/* cursor + its click burst — screen space */}
       <Cursor />
       <ClickFX />
     </AbsoluteFill>
