@@ -124,6 +124,7 @@ import {
 import { blockTradingExileMeta } from "./compositions/block-trading/BlockTradingExile";
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
+import { settleDiagramMeta } from "./compositions/batch-flow/SettleDiagram";
 import { finiteLiquidityMeta } from "./compositions/article-2/FiniteLiquidity";
 import { technicalOverloadMeta } from "./compositions/article-2/TechnicalOverload";
 import { asphyxiationByWinnersMeta } from "./compositions/article-2/AsphyxiationByWinners";
@@ -256,6 +257,14 @@ export const RemotionRoot: React.FC = () => {
           fps={batchFlowReelMeta.fps}
           width={batchFlowReelMeta.width}
           height={batchFlowReelMeta.height}
+        />
+        <Composition
+          id={settleDiagramMeta.id}
+          component={settleDiagramMeta.component}
+          durationInFrames={settleDiagramMeta.durationInFrames}
+          fps={settleDiagramMeta.fps}
+          width={settleDiagramMeta.width}
+          height={settleDiagramMeta.height}
         />
         <Composition
           id={technicalOverloadMeta.id}

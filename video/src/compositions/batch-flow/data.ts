@@ -55,15 +55,28 @@ export const sideCount = (i: number, side: Side): number =>
 // $1 per trader per line; the winning side splits the whole line pool.
 export const linePool = (): number => N_TRADERS * STAKE_PER_MARKET;
 
-// What You collect on line i (0 if you lose it), and the running totals.
-export const yourReturn = (i: number): number => {
+// What trader t collects on line i (0 if they lose it); the winning side splits
+// the whole line pool. You are trader 0. These are the one source the ledger,
+// the P&L table and the totals all read from.
+export const traderReturn = (i: number, t: number): number => {
   const m = MARKETS[i];
-  if (m.you !== m.outcome) return 0;
-  const winners = sideCount(i, m.outcome);
-  return linePool() / winners;
+  if (PICKS_BY_MARKET[i][t] !== m.outcome) return 0;
+  return linePool() / sideCount(i, m.outcome);
 };
-export const YOUR_WINS = MARKETS.filter((m) => m.you === m.outcome).length;
-export const YOUR_COLLECT = MARKETS.reduce((s, _m, i) => s + yourReturn(i), 0);
+// Net on a single line (return minus the $1 staked) and across the batch.
+export const traderNetOnLine = (i: number, t: number): number =>
+  traderReturn(i, t) - STAKE_PER_MARKET;
+export const traderCollect = (t: number): number =>
+  MARKETS.reduce((s, _m, i) => s + traderReturn(i, t), 0);
+export const traderWins = (t: number): number =>
+  MARKETS.filter((_m, i) => PICKS_BY_MARKET[i][t] === MARKETS[i].outcome).length;
+export const traderNet = (t: number): number =>
+  traderCollect(t) - N_MARKETS * STAKE_PER_MARKET;
+
+// You = trader 0; the named aliases the rest of the reel reads.
+export const yourReturn = (i: number): number => traderReturn(i, 0);
+export const YOUR_WINS = traderWins(0);
+export const YOUR_COLLECT = traderCollect(0);
 export const YOUR_STAKE = N_MARKETS * STAKE_PER_MARKET;
 export const YOUR_NET = YOUR_COLLECT - YOUR_STAKE;
 
