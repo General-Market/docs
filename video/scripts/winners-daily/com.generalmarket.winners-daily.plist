@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.generalmarket.winners-daily</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/maxguillabert/Downloads/index/video/scripts/winners-daily/run.sh</string>
+  </array>
+
+  <!-- Fire once a day at 14:00 local time. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>14</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/maxguillabert/Downloads/winners-daily/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/maxguillabert/Downloads/winners-daily/logs/launchd.err.log</string>
+</dict>
+</plist>

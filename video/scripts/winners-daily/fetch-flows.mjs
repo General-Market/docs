@@ -127,7 +127,7 @@ async function main() {
     // Qualifying winners: real organic growth — established both weeks, no artifacts.
     const winners = rows
       .filter((r) => r.now > r.prior && r.now >= MIN_LEVEL && r.prior >= MIN_LEVEL)
-      .map((r) => ({ ...r, pct: ((r.now - r.prior) / r.prior) * 100 }))
+      .map((r) => ({ ...r, pct: ((r.now - r.prior) / r.prior) * 100, symbol: bySlug.get(r.id)?.symbol ?? null }))
       .sort((a, b) => b.pct - a.pct);
     ranking.push({
       category: cat.label, datasetId: cat.datasetId, comp: cat.comp,
