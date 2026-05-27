@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.generalmarket.xwatch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>-m</string>
+        <string>xwatch.main</string>
+    </array>
+
+    <!-- parent of the xwatch package, so `-m xwatch.main` resolves -->
+    <key>WorkingDirectory</key>
+    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting</string>
+
+    <!-- keep it alive around the clock: commands work any hour;
+         the daemon itself only SCANS inside the 10:00–22:00 window -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting/xwatch/state/xwatch.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting/xwatch/state/xwatch.err.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+</dict>
+</plist>
