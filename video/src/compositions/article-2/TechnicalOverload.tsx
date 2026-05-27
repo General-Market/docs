@@ -1,116 +1,174 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import {
-  Stage,
-  TrackBoard,
-  BeatTitle,
-  camAt,
-  ci,
-  clamp01,
-  commas,
-  C,
-  EASE,
-  font,
-  monoFont,
-  FPS,
-  W,
-  H,
-  sec,
-} from "./ThreeWallsTrack";
-import { GridWall, ShatterBurst, FlowStream, TraderChip, heatColor } from "./ThreeWallsPrimitives";
+import { AbsoluteFill, interpolate, useCurrentFrame, Easing } from "remotion";
+import { FPS, W, H, NAVY, SANS, SANS_TEXT } from "./theme";
+import { BrandMark } from "../../components/BrandMark";
 
-// Wall 1 · Technical Overload — one matching engine drawn as a wall of order
-// books. The camera holds tight on a calm green panel that keeps up with a
-// trader's orders, then pulls all the way back: that panel was one tile in a
-// wall of a billion books. Everyone trades at once, the wall reddens cell by
-// cell, and it shatters. The throughput ceiling, made physical. The wall rides
-// the camera; the actors and the readout are screen-space HUD.
+// Wall 1 · Technical Overload — one matching engine, asked to run more and more
+// order books. 100 books: fine. 10 billion: it melts. The count ratchets ×10 a
+// beat, the server farm grows and the heat climbs with it — the "it goes harder
+// and harder" escalation, fast, in MarketUniverseScale's dark hero-number style.
+// The mechanism is on screen: every market needs its own book running every
+// instant, so the load is the COUNT of markets, not the trades. A billion never
+// sleep, and the engine can't keep them all alive at once.
 
-const DURATION = sec(11); // 660
+// ── the escalation ───────────────────────────────────────────────────────────
+// books · status · heat (0..1) · servers-per-side shown (the farm grows). The
+// camera pulls back to fit the farm — the self-reframe carries the scale.
+type Step = { books: number; status: string; heat: number; side: number };
+const STEPS: Step[] = [
+  { books: 100, status: "STABLE", heat: 0.02, side: 1 },
+  { books: 1_000, status: "STABLE", heat: 0.06, side: 2 },
+  { books: 10_000, status: "STABLE", heat: 0.13, side: 3 },
+  { books: 100_000, status: "HEATING", heat: 0.30, side: 5 },
+  { books: 1_000_000, status: "HOT", heat: 0.47, side: 7 },
+  { books: 10_000_000, status: "OVERCLOCKING", heat: 0.65, side: 10 },
+  { books: 100_000_000, status: "CRITICAL", heat: 0.82, side: 13 },
+  { books: 1_000_000_000, status: "OVERLOAD", heat: 0.93, side: 16 },
+  { books: 10_000_000_000, status: "MELTDOWN", heat: 1.0, side: 19 },
+];
 
-// ── the wall, in board coordinates ──────────────────────────────────────────
-const COLS = 40;
-const ROWS = 24;
-const TILE = 120;
-const GAP = 3;
-const WALL_W = COLS * TILE + (COLS - 1) * GAP; // 4917
-const WALL_H = ROWS * TILE + (ROWS - 1) * GAP; // 2949
-const CXB = WALL_W / 2;
-const CYB = WALL_H / 2;
+// Accelerating cadence — each beat lands a touch faster than the last, so it
+// builds. grow[k] is the ramp into step k (frames @30fps).
+const GROW = [1, 22, 20, 18, 16, 15, 14, 13, 13];
+const START: number[] = (() => {
+  const out = [0];
+  for (let i = 1; i < STEPS.length; i++) out.push(out[i - 1] + GROW[i]);
+  return out;
+})();
+const LAST = STEPS.length - 1;
+const MELT_START = START[LAST]; // the meltdown begins as the final count lands
+const MELT_LEN = 78;
+const DURATION = MELT_START + MELT_LEN;
 
-const TIGHT = 6.5; // one panel fills the frame
-const WIDE = 0.34; // the whole wall fits, with a margin
+const PITCH = 220; // world units between server centres
+const RACK = 168; // world size of one rack
+const FIT_SPAN = 1480; // the farm is framed to about this on-screen width
 
-// ── beats (frames) ──────────────────────────────────────────────────────────
-const B = {
-  holdEnd: sec(2.4), // 144 — tight on the calm panel
-  pullEnd: sec(6.0), // 360 — pulled all the way out
-  loadEnd: sec(9.0), // 540 — parallel fire reddens it
-  // 540–660: shatter
+const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
+const smoother = (t: number): number => {
+  const x = clamp01(t);
+  return x * x * x * (x * (x * 6 - 15) + 10);
+};
+const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
+const easeOut = (t: number): number => Easing.out(Easing.cubic)(clamp01(t));
+
+// Heat → colour. Cool steel, then green (ok), amber, red, white-hot.
+const mix = (a: number[], b: number[], t: number): string =>
+  `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)}, ${Math.round(a[1] + (b[1] - a[1]) * t)}, ${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+const STEEL = [42, 54, 80];
+const GREEN = [31, 184, 119];
+const AMBER = [232, 161, 58];
+const RED = [242, 86, 107];
+const WHITE = [255, 244, 222];
+const heatColor = (h: number): string => {
+  if (h < 0.16) return mix(STEEL, GREEN, h / 0.16);
+  if (h < 0.5) return mix(GREEN, AMBER, (h - 0.16) / 0.34);
+  if (h < 0.85) return mix(AMBER, RED, (h - 0.5) / 0.35);
+  return mix(RED, WHITE, (h - 0.85) / 0.15);
 };
 
-const camera = (frame: number) =>
-  camAt(
-    frame,
-    [
-      { t: 0, x: CXB, y: CYB, scale: TIGHT },
-      { t: B.holdEnd, x: CXB, y: CYB, scale: TIGHT },
-      { t: B.pullEnd, x: CXB, y: CYB, scale: WIDE },
-      { t: DURATION, x: CXB, y: CYB, scale: WIDE * 1.04 },
-    ],
-    EASE.inOut,
-  );
-
-// ── the top readout — the green light and the live count ────────────────────
-const Readout: React.FC<{ frame: number }> = ({ frame }) => {
-  const op = ci(frame, sec(0.4), sec(1.0), 0, 1) * ci(frame, B.loadEnd + sec(0.3), B.loadEnd + sec(0.8), 1, 0);
-  if (op <= 0.01) return null;
-  const count = ci(frame, B.holdEnd, B.pullEnd, 100000, 1_000_000_000, EASE.inOut);
-  const heat = clamp01(ci(frame, B.pullEnd, B.loadEnd, 0, 1));
-  const dot = heat < 0.5 ? C.up : heatColor(heat);
-  const status = heat < 0.15 ? "OK" : heat < 0.8 ? "STRAINING" : "OVERLOAD";
+// ── one server rack ───────────────────────────────────────────────────────────
+const ServerRack: React.FC<{ x: number; y: number; heat: number; frame: number; seed: number }> = ({
+  x,
+  y,
+  heat,
+  frame,
+  seed,
+}) => {
+  const col = heatColor(heat);
+  const glow = 0.15 + heat * 0.85;
+  const fanSpin = frame * (4 + heat * 46) + seed * 90;
+  const flicker = heat > 0.6 ? 0.85 + 0.15 * Math.sin(frame * (heat * 3) + seed) : 1;
+  const units = 4;
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 56,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "center",
-        opacity: op,
-      }}
-    >
+    <div style={{ position: "absolute", left: x - RACK / 2, top: y - RACK / 2, width: RACK, height: RACK }}>
+      {/* heat glow */}
       <div
         style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 18,
-          padding: "16px 34px",
-          borderRadius: 999,
-          background: "linear-gradient(160deg, rgba(255,255,255,0.78), rgba(255,255,255,0.55))",
-          border: "1px solid rgba(255,255,255,0.75)",
-          boxShadow: "0 18px 44px rgba(58,62,130,0.22), inset 0 1px 0 rgba(255,255,255,0.9)",
+          position: "absolute",
+          inset: -RACK * 0.35,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${col} 0%, transparent 68%)`,
+          opacity: glow * 0.6 * flicker,
+        }}
+      />
+      {/* chassis */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 14,
+          background: "linear-gradient(160deg, #11151f 0%, #0b0e16 100%)",
+          border: `2px solid ${col}`,
+          boxShadow: `0 0 ${(heat * 40).toFixed(0)}px ${col}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+          overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: 999,
-            background: dot,
-            boxShadow: `0 0 16px ${dot}`,
-          }}
-        />
-        <span style={{ fontFamily: font, fontSize: 40, fontWeight: 800, color: C.text, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
-          {commas(count)}
-        </span>
-        <span style={{ fontFamily: monoFont, fontSize: 21, fontWeight: 700, color: C.dim, letterSpacing: "0.04em" }}>
-          ORDER BOOKS
-        </span>
-        <span style={{ fontFamily: font, fontSize: 21, fontWeight: 800, color: dot, letterSpacing: "0.02em" }}>
-          · {status}
-        </span>
+        {/* rack-unit slots */}
+        {Array.from({ length: units }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: 14,
+              right: 56,
+              top: 18 + i * ((RACK - 36) / units),
+              height: (RACK - 36) / units - 10,
+              borderRadius: 5,
+              background: "rgba(255,255,255,0.05)",
+              borderLeft: `4px solid ${col}`,
+              boxShadow: `inset 0 0 8px ${col}33`,
+            }}
+          >
+            {/* activity LEDs */}
+            <div
+              style={{
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: col,
+                opacity: flicker,
+                boxShadow: `0 0 8px ${col}`,
+              }}
+            />
+          </div>
+        ))}
+        {/* two cooling fans, spinning faster as it heats */}
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              right: 14,
+              top: 22 + i * (RACK - 64),
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: `2px solid ${col}`,
+              transform: `rotate(${fanSpin}deg)`,
+            }}
+          >
+            {[0, 1, 2].map((b) => (
+              <div
+                key={b}
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: 3,
+                  height: 15,
+                  background: col,
+                  transformOrigin: "center top",
+                  transform: `translate(-50%,0) rotate(${b * 120}deg)`,
+                }}
+              />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -118,112 +176,197 @@ const Readout: React.FC<{ frame: number }> = ({ frame }) => {
 
 export const TechnicalOverload: React.FC = () => {
   const frame = useCurrentFrame();
-  const cam = camera(frame);
 
-  const heat = clamp01(ci(frame, B.pullEnd, B.loadEnd, 0, 1));
-  const wallOpacity = ci(frame, B.loadEnd, B.loadEnd + sec(0.2), 1, 0);
-  const breakT = frame >= B.loadEnd ? (frame - B.loadEnd) / FPS : 0;
+  // active step + ramp into it (mirrors MarketUniverseScale's camera)
+  let active = 0;
+  for (let i = 0; i < STEPS.length; i++) if (frame >= START[i]) active = i;
+  const A = STEPS[active];
+  const P = STEPS[active > 0 ? active - 1 : 0];
+  const r = smoother((frame - START[active]) / GROW[active]);
 
-  // The single trader firing into the calm panel (tight beat), screen space.
-  const tightFire = ci(frame, sec(0.7), sec(1.0), 0, 1) * ci(frame, B.holdEnd, B.holdEnd + sec(0.4), 1, 0);
-  // The three traders firing in parallel (load beat), screen space.
-  const loadFire = ci(frame, B.pullEnd - sec(0.4), B.pullEnd + sec(0.4), 0, 1) * ci(frame, B.loadEnd - sec(0.1), B.loadEnd, 1, 0);
+  // continuously interpolated state
+  const books = Math.round((active > 0 ? P.books : 0) + (A.books - (active > 0 ? P.books : 0)) * r);
+  const heat = (active > 0 ? P.heat : 0) + (A.heat - (active > 0 ? P.heat : 0)) * r;
+  const sideF = (active > 0 ? P.side : 1) + (A.side - (active > 0 ? P.side : 1)) * r;
+  const side = Math.max(1, Math.round(sideF));
 
-  const center = { x: W / 2, y: H / 2 + 30 };
-  const threeTraders = [
-    { x: 250, y: 300, label: "T1", color: C.blue },
-    { x: 250, y: 800, label: "T2", color: "#FF7A59" },
-    { x: 1670, y: 540, label: "T3", color: "#7B5CFF" },
-  ];
+  // camera scale fits the current farm — the pull-back is the scale reveal
+  const span = side * PITCH;
+  const camScale = Math.min(7.2, FIT_SPAN / Math.max(PITCH, span));
+
+  // meltdown timeline
+  const melt = clamp01((frame - MELT_START) / MELT_LEN);
+  const flare = frame >= MELT_START ? interpolate(frame, [MELT_START + 30, MELT_START + 40, MELT_START + 64], [0, 0.92, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const broken = frame >= MELT_START + 38;
+
+  // screen shake — grows with heat, spikes at the blast
+  const shakeAmp = heat * heat * 14 + (frame >= MELT_START + 36 ? interpolate(frame, [MELT_START + 36, MELT_START + 52, MELT_START + 70], [26, 8, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0);
+  const sx = shakeAmp * Math.sin(frame * 3.1);
+  const sy = shakeAmp * Math.cos(frame * 3.7);
+
+  // hero number swells with its own magnitude — 100 reads small, 10B enormous
+  const mag = clamp01(Math.log10(Math.max(1, books)) / 10);
+  const countSize = 96 * (1 + 0.95 * mag);
+
+  // status word blur-swap
+  const tIn = clamp01((frame - START[active]) / 8);
+  const statusCol = heatColor(heat);
+
+  const gridCenter = ((side - 1) * PITCH) / 2;
+  const tx = W / 2 - gridCenter * camScale + sx;
+  const ty = H / 2 - gridCenter * camScale + sy;
+
+  // grid of racks (only the active count), centred on the world origin grid
+  const racks: React.ReactNode[] = [];
+  if (!broken) {
+    for (let row = 0; row < side; row++) {
+      for (let c = 0; c < side; c++) {
+        const idx = row * side + c;
+        racks.push(
+          <ServerRack key={idx} x={c * PITCH} y={row * PITCH} heat={heat} frame={frame} seed={idx} />,
+        );
+      }
+    }
+  }
+
+  // meltdown shards (white-hot chunks of the farm flying out)
+  const shards: React.ReactNode[] = [];
+  if (broken) {
+    const t = (frame - (MELT_START + 38)) / FPS;
+    const N = 70;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 + (i % 7);
+      const sp = 600 + ((i * 137) % 700);
+      const px = W / 2 + Math.cos(a) * sp * t + sx;
+      const py = H / 2 + Math.sin(a) * sp * t + 0.5 * 900 * t * t + sy;
+      const op = clamp01(1 - t * 1.1);
+      const sz = 26 + ((i * 53) % 40);
+      if (op <= 0) continue;
+      shards.push(
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: px,
+            top: py,
+            width: sz,
+            height: sz,
+            transform: `translate(-50%,-50%) rotate(${(i * 47 + frame * 8).toFixed(0)}deg)`,
+            background: i % 3 === 0 ? "#FFF3DE" : heatColor(0.9),
+            borderRadius: 4,
+            opacity: op,
+            boxShadow: "0 0 16px rgba(255,200,120,0.8)",
+          }}
+        />,
+      );
+    }
+  }
 
   return (
-    <Stage>
-      <TrackBoard width={WALL_W} height={WALL_H} cam={cam}>
-        <div style={{ opacity: wallOpacity }}>
-          <GridWall x={0} y={0} cols={COLS} rows={ROWS} tile={TILE} gap={GAP} heat={heat} cellPitch={8} seed={11} />
-        </div>
-        <ShatterBurst cx={CXB} cy={CYB} spreadW={WALL_W} spreadH={WALL_H} t={breakT} count={150} seed={313} />
-      </TrackBoard>
+    <AbsoluteFill style={{ backgroundColor: NAVY, fontFamily: SANS, overflow: "hidden" }}>
+      <BrandMark surface="dark" />
 
-      {/* screen-space HUD */}
-      <AbsoluteFill>
-        <Readout frame={frame} />
+      {/* ambient heat wash over the whole frame as it climbs */}
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(120% 100% at 50% 55%, ${heatColor(heat)}22 0%, transparent 60%)`,
+          opacity: heat,
+        }}
+      />
 
-        {/* tight beat — one trader feeding the calm panel */}
-        {tightFire > 0.01 && (
-          <>
-            <FlowStream from={{ x: 360, y: H / 2 }} to={center} active={tightFire} color={C.up} count={6} speed={0.9} dotR={11} boardW={W} boardH={H} />
-            <div style={{ opacity: tightFire }}>
-              <TraderChip cx={300} cy={H / 2} label="T" name="Trader" color={C.blue} size={96} />
-            </div>
-          </>
-        )}
-
-        {/* load beat — three traders firing in parallel */}
-        {loadFire > 0.01 && (
-          <div style={{ opacity: loadFire }}>
-            {threeTraders.map((t) => (
-              <FlowStream
-                key={t.label}
-                from={{ x: t.x + (t.x < W / 2 ? 70 : -70), y: t.y }}
-                to={center}
-                active={loadFire}
-                color={heatColor(clamp01(heat))}
-                count={7}
-                speed={1.2}
-                dotR={9}
-                boardW={W}
-                boardH={H}
-              />
-            ))}
-            {threeTraders.map((t) => (
-              <TraderChip key={`c-${t.label}`} cx={t.x} cy={t.y} label={t.label} color={t.color} size={84} />
-            ))}
-          </div>
-        )}
-
-        {/* one bottom caption at a time, across all beats */}
-        <CaptionSeq frame={frame} />
-      </AbsoluteFill>
-
-      {/* the verdict slams in on the break */}
-      {breakT > 0 && (
-        <BeatTitle title="One engine can't hold them all" delay={B.loadEnd + sec(0.3)} size={52} />
-      )}
-    </Stage>
-  );
-};
-
-// The lower captions across the pull-back and load beats. One line at a time.
-const CaptionSeq: React.FC<{ frame: number }> = ({ frame }) => {
-  const lines: { at: number; until: number; text: string }[] = [
-    { at: sec(1.0), until: B.holdEnd + sec(0.2), text: "100,000 markets — the engine keeps up" },
-    { at: B.holdEnd + sec(0.35), until: B.pullEnd - sec(0.2), text: "every market needs its own book" },
-    { at: B.pullEnd + sec(0.2), until: B.loadEnd - sec(0.2), text: "now everyone trades at once" },
-  ];
-  const active = lines.find((l) => frame >= l.at && frame < l.until);
-  if (!active) return null;
-  const op = ci(frame, active.at, active.at + sec(0.25), 0, 1) * ci(frame, active.until - sec(0.25), active.until, 1, 0);
-  const y = ci(frame, active.at, active.at + sec(0.3), 14, 0, EASE.out);
-  return (
-    <div style={{ position: "absolute", bottom: 40, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: op, transform: `translateY(${y.toFixed(1)}px)` }}>
+      {/* the server farm — rides the self-reframing camera */}
       <div
         style={{
-          padding: "15px 36px",
-          borderRadius: 999,
-          background: "linear-gradient(160deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.48) 100%)",
-          border: "1px solid rgba(255,255,255,0.72)",
-          boxShadow: "0 18px 44px rgba(58,62,130,0.24), inset 0 1px 0 rgba(255,255,255,0.9)",
-          fontFamily: font,
-          fontSize: 30,
-          fontWeight: 700,
-          letterSpacing: "-0.01em",
-          color: C.text,
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: 1,
+          height: 1,
+          transformOrigin: "0 0",
+          transform: `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${camScale.toFixed(4)})`,
         }}
       >
-        {active.text}
+        {racks}
       </div>
-    </div>
+
+      {/* meltdown shards (screen space) */}
+      {shards}
+
+      {/* white flare on the blast */}
+      {flare > 0 && <AbsoluteFill style={{ background: "#FFF8EE", opacity: flare }} />}
+
+      {/* status word — top, blur-swap, heat-coloured */}
+      {!broken && (
+        <div style={{ position: "absolute", top: 96, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontSize: 56,
+              fontWeight: 800,
+              letterSpacing: "2px",
+              color: statusCol,
+              textShadow: `0 0 40px ${statusCol}`,
+              opacity: easeOut(tIn),
+              filter: tIn < 1 ? `blur(${(1 - tIn) * 10}px)` : undefined,
+              transform: `translateY(${((1 - easeOut(tIn)) * 18).toFixed(1)}px)`,
+            }}
+          >
+            {A.status}
+          </div>
+        </div>
+      )}
+
+      {/* the hero number — swelling with magnitude, bottom band */}
+      {!broken && (
+        <div style={{ position: "absolute", bottom: 70, left: 0, right: 0, display: "flex", justifyContent: "center", alignItems: "baseline" }}>
+          <span
+            style={{
+              fontVariantNumeric: "tabular-nums",
+              fontSize: countSize,
+              fontWeight: 800,
+              letterSpacing: "-2px",
+              color: "#fff",
+              textShadow: "0 6px 40px rgba(0,0,0,0.6)",
+            }}
+          >
+            {commas(books)}
+          </span>
+          <span
+            style={{
+              fontFamily: SANS_TEXT,
+              fontSize: Math.min(64, countSize * 0.42),
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.6)",
+              marginLeft: countSize * 0.16,
+            }}
+          >
+            order books
+          </span>
+        </div>
+      )}
+
+      {/* the verdict, after the blast */}
+      {melt > 0.55 && (
+        <AbsoluteFill style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontSize: 78,
+              fontWeight: 800,
+              letterSpacing: "-2px",
+              color: "#fff",
+              textAlign: "center",
+              opacity: interpolate(frame, [MELT_START + 50, MELT_START + 66], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+              transform: `translateY(${interpolate(frame, [MELT_START + 50, MELT_START + 66], [22, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }).toFixed(1)}px)`,
+              textShadow: "0 8px 50px rgba(0,0,0,0.7)",
+            }}
+          >
+            One engine can't run
+            <br />a billion order books
+          </div>
+        </AbsoluteFill>
+      )}
+    </AbsoluteFill>
   );
 };
 
