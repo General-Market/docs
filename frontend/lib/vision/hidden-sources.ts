@@ -25,6 +25,11 @@ export const HIDDEN_SOURCE_IDS = new Set<string>([
   // page 404s (no vault, no human audience). Re-list when the feed is live.
   'coingecko',
   'crypto',
+  // DefiLlama's "Wallets" category carries no TVL — every wallet (MetaMask,
+  // Phantom, Rabby, Rainbow, Zerion, Ambire) reads tvl=0/null, so the batch is
+  // a flat $0.00 line that can never move. Structurally dead; hidden until it
+  // rides a real metric. (internalId stays "defi" — do NOT hide that.)
+  'defillama-wallets',
   // Bucket C — registry empty / not started
   'aisstream',
   'bgg',
