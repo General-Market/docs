@@ -15,6 +15,16 @@ import { BATCHES_PER_DAY, LINES_PER_BATCH, THROUGHPUT_SOURCES, THROUGHPUT_TOTAL 
 
 const clamp01 = (t: number): number => Math.max(0, Math.min(1, t));
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+// easeOutBack — overshoots past the target then settles, the tactile "pop".
+const backOut = (t: number, s = 1.9): number => {
+  const u = clamp01(t) - 1;
+  return 1 + (s + 1) * u * u * u + s * u * u;
+};
+// quadratic bezier — a curved path the cursor rides in on.
+const qbez = (t: number, a: number, b: number, c: number): number => {
+  const m = 1 - t;
+  return m * m * a + 2 * m * t * b + t * t * c;
+};
 export const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
 
 const heroText = (size: number): React.CSSProperties => ({
@@ -82,7 +92,9 @@ const FlowBox: React.FC<{
   z?: number;
 }> = ({ cx, cy, w, h, accent, reveal = 1, faint = false, label, fontSize = 30, z = 10 }) => {
   if (reveal <= 0.01) return null;
-  const s = 0.7 + 0.3 * clamp01(reveal);
+  const s = lerp(0.62, 1, backOut(reveal)); // pops past 1, then settles
+  const arrival = Math.sin(clamp01(reveal) * Math.PI); // a bloom of light on arrival
+  const glowColor = accent.startsWith("#") ? accent : C.blue;
   return (
     <div
       style={{
@@ -90,7 +102,7 @@ const FlowBox: React.FC<{
         left: cx,
         top: cy,
         transform: `translate(-50%,-50%) scale(${s.toFixed(3)})`,
-        opacity: clamp01(reveal),
+        opacity: clamp01(reveal / 0.4),
         zIndex: z,
       }}
     >
@@ -101,8 +113,8 @@ const FlowBox: React.FC<{
           ...glassCard(24),
           border: `${faint ? 2 : 2.5}px solid ${accent}`,
           boxShadow: faint
-            ? `0 8px 22px rgba(70,74,140,0.12), inset 0 1px 0 rgba(255,255,255,0.7)`
-            : `0 16px 38px rgba(70,74,140,0.18), inset 0 1px 0 rgba(255,255,255,0.85)`,
+            ? `0 8px 22px rgba(70,74,140,0.12), 0 0 ${(arrival * 26).toFixed(0)}px ${glowColor}44, inset 0 1px 0 rgba(255,255,255,0.7)`
+            : `0 16px 38px rgba(70,74,140,0.18), 0 0 ${(arrival * 44).toFixed(0)}px ${glowColor}66, inset 0 1px 0 rgba(255,255,255,0.85)`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -181,16 +193,64 @@ const Conn: React.FC<{
   );
 };
 
+// ── Click burst — concentric rings, a white core, eight radial spikes ─────────
+// The tactile "fired" moment, lifted from the AntiCheat click beat, recoloured.
+const ClickBurst: React.FC<{ x: number; y: number; t: number; color?: string }> = ({ x, y, t, color = C.blue }) => {
+  if (t <= 0.001 || t >= 1) return null;
+  const cl = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
+  const ringScale = lerp(0.3, 3.6, t);
+  const ringOp = interpolate(t, [0, 0.15, 1], [0, 0.7, 0], cl);
+  const ring2Scale = lerp(0.2, 2.4, t);
+  const ring2Op = interpolate(t, [0, 0.25, 1], [0, 0.5, 0], cl);
+  const coreOp = interpolate(t, [0, 0.08, 0.42], [0, 1, 0], cl);
+  const coreScale = interpolate(t, [0, 0.42], [0.4, 1.8], cl);
+  const spikeT = interpolate(t, [0, 0.5], [0, 1], cl);
+  const spikeOp = interpolate(t, [0, 0.1, 0.6], [0, 1, 0], cl);
+  const len = lerp(0, 74, spikeT);
+  const off = lerp(12, 32, spikeT);
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width: 0, height: 0, zIndex: 40, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: -42, top: -42, width: 84, height: 84, borderRadius: "50%", border: `3px solid ${color}`, transform: `scale(${ringScale})`, opacity: ringOp }} />
+      <div style={{ position: "absolute", left: -32, top: -32, width: 64, height: 64, borderRadius: "50%", border: `3px solid ${C.violet}`, transform: `scale(${ring2Scale})`, opacity: ring2Op }} />
+      <div style={{ position: "absolute", left: -22, top: -22, width: 44, height: 44, borderRadius: "50%", background: "#fff", transform: `scale(${coreScale})`, opacity: coreOp, boxShadow: `0 0 30px ${color}` }} />
+      <svg width={1} height={1} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", opacity: spikeOp }}>
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i * Math.PI * 2) / 8;
+          const x1 = Math.cos(a) * off;
+          const y1 = Math.sin(a) * off;
+          const x2 = Math.cos(a) * (off + len);
+          const y2 = Math.sin(a) * (off + len);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={4} strokeLinecap="round" />;
+        })}
+      </svg>
+    </div>
+  );
+};
+
+// ── The cursor — a mouse pointer that rides a bezier in and clicks ────────────
+const WorldCursor: React.FC<{ x: number; y: number; squish: number; opacity: number; size?: number }> = ({ x, y, squish, opacity, size = 56 }) => {
+  if (opacity <= 0.01) return null;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width: size, height: size, opacity, transform: `scale(${squish.toFixed(3)})`, transformOrigin: "2px 2px", filter: "drop-shadow(0 6px 14px rgba(20,30,80,0.4))", zIndex: 42, pointerEvents: "none" }}>
+      <svg viewBox="0 0 24 24" width={size} height={size}>
+        <path d="M4.5 3 L4.5 19 L8.5 15.5 L11 21 L13.4 20 L10.9 14.6 L16.5 14.6 Z" fill="#ffffff" stroke={C.text} strokeWidth={1.5} strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+};
+
 // ── One market's machine, compact, for the ten-across finale row ──────────────
 const FinaleMachine: React.FC<{ accent: string; name: string; reveal: number }> = ({ accent, name, reveal }) => {
-  const s = 0.82 + 0.18 * clamp01(reveal);
+  const s = lerp(0.78, 1, backOut(reveal));
   const tile = (w: number, h: number, faint: boolean): React.CSSProperties => ({
     width: w,
     height: h,
     borderRadius: 14,
-    background: faint ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.9)",
+    background: faint ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.92)",
     border: `2px solid ${faint ? "rgba(94,108,170,0.45)" : accent}`,
-    boxShadow: "0 6px 16px rgba(70,74,140,0.14), inset 0 1px 0 rgba(255,255,255,0.9)",
+    boxShadow: faint
+      ? "0 6px 16px rgba(70,74,140,0.14), inset 0 1px 0 rgba(255,255,255,0.9)"
+      : `0 8px 20px rgba(70,74,140,0.16), 0 0 22px ${accent}4D, inset 0 1px 0 rgba(255,255,255,0.95)`,
   });
   const link = <div style={{ width: 3, height: 18, background: "rgba(110,91,255,0.5)" }} />;
   return (
@@ -244,11 +304,22 @@ export const ThroughputClimax: React.FC<{ grow: number }> = ({ grow }) => {
   const z = Math.exp(interpolate(grow, KF, [Math.log(1.5), Math.log(1.05), Math.log(0.78), Math.log(0.66), Math.log(0.4), Math.log(0.27)], ease));
   const worldTransform = `translate(${SCX}px, ${SCY}px) scale(${z.toFixed(5)}) translate(${(-camX).toFixed(2)}px, ${(-camY).toFixed(2)}px)`;
 
-  // ── reveal schedule for the hero machine ────────────────────────────────────
-  const busR = clamp01((grow - 0.04) / 0.1);
-  const blockR0 = clamp01((grow - 0.07) / 0.12);
-  const fanR = clamp01((grow - 0.18) / 0.16);
-  const tlR = clamp01((grow - 0.4) / 0.15);
+  // ── the cursor rides in on a bezier and clicks the block to fire the batch ──
+  const cl = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
+  const clickX = BLOCK.cx - 26;
+  const clickY = MY + 10;
+  const curMove = interpolate(grow, [0.04, 0.13], [0, 1], { ...cl, easing: EASE.out });
+  const curX = qbez(curMove, BLOCK.cx - 150, BLOCK.cx - 420, clickX);
+  const curY = qbez(curMove, MY + 470, MY + 150, clickY);
+  const curSquish = interpolate(grow, [0.115, 0.132, 0.165], [1, 0.78, 1], cl);
+  const curOp = interpolate(grow, [0.015, 0.05, 0.2, 0.25], [0, 1, 1, 0], cl);
+  const burstT = interpolate(grow, [0.13, 0.26], [0, 1], cl);
+
+  // ── reveal schedule — cause then effect: bus travels, click lands, fan fires ─
+  const busR = clamp01((grow - 0.03) / 0.09);
+  const blockR0 = clamp01((grow - 0.118) / 0.1); // pops on the click
+  const fanR = clamp01((grow - 0.2) / 0.16);
+  const tlR = clamp01((grow - 0.42) / 0.15);
   const detailFade = clamp01(1 - (grow - 0.66) / 0.1); // fine labels recede before the pull-back
 
   // the hero machine fades as the ten-market row blooms — a motion-led handoff
@@ -284,6 +355,8 @@ export const ThroughputClimax: React.FC<{ grow: number }> = ({ grow }) => {
       {/* the hero machine — one world the camera flies across, fading on handoff */}
       {heroFade > 0.01 && (
         <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transformOrigin: "0 0", transform: worldTransform, willChange: "transform", opacity: heroFade }}>
+          {/* a soft light blooming behind the block as the batch fires */}
+          <div style={{ position: "absolute", left: BLOCK.cx, top: MY, transform: "translate(-50%,-50%)", width: 820, height: 560, borderRadius: "50%", background: `radial-gradient(circle, ${C.blue}30 0%, ${C.violet}1A 42%, transparent 70%)`, opacity: blockR0 * (0.6 + 0.4 * Math.sin(clamp01(blockR0) * Math.PI)), zIndex: 1 }} />
           <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
             {/* trader → block */}
             <Conn x1={TRADER.cx + 52} y1={TRADER.cy} x2={BUS_X} y2={TRADER.cy} reveal={busR} width={4} />
@@ -336,6 +409,10 @@ export const ThroughputClimax: React.FC<{ grow: number }> = ({ grow }) => {
           {/* the multipliers — the storyboard's annotations, in world space */}
           <WorldLabel cx={lerp(BLOCK.cx, TRADE.cx, 0.5)} cy={MY + ROW_DY * 0.66} text="× 10,000" size={66} reveal={fanR * detailFade} />
           <WorldLabel cx={X100_X} cy={MY - ROW_DY} text="× 100" size={62} reveal={tlR * detailFade} />
+
+          {/* the cursor fires the batch — burst at the block, ring + spikes */}
+          <ClickBurst x={BLOCK.cx} y={MY} t={burstT} />
+          <WorldCursor x={curX} y={curY} squish={curSquish} opacity={curOp} />
         </div>
       )}
 
