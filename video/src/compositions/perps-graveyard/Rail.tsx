@@ -1,6 +1,7 @@
 import React from "react";
 import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import {
+  accentCardGlow,
   BUBBLE_D,
   C,
   EASE,
@@ -69,16 +70,19 @@ export const Rail: React.FC = () => {
       </div>
 
       <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <defs>
-          <linearGradient id="rail-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={C.blue} />
-            <stop offset="100%" stopColor={C.violet} />
-          </linearGradient>
-        </defs>
         {/* track ground */}
         <line x1={RAIL_X} y1={RAIL_TOP} x2={RAIL_X} y2={RAIL_BOTTOM} stroke={C.rule} strokeWidth={4} strokeLinecap="round" />
-        {/* filled portion */}
-        <line x1={RAIL_X} y1={RAIL_TOP} x2={RAIL_X} y2={fillEased} stroke="url(#rail-fill)" strokeWidth={4} strokeLinecap="round" />
+        {/* filled portion — solid GM Electric with a glow */}
+        <line
+          x1={RAIL_X}
+          y1={RAIL_TOP}
+          x2={RAIL_X}
+          y2={fillEased}
+          stroke={C.accent}
+          strokeWidth={4}
+          strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 8px rgba(45,91,255,0.55))" }}
+        />
       </svg>
 
       {/* bubbles */}
@@ -102,10 +106,10 @@ export const Rail: React.FC = () => {
               borderRadius: "50%",
               transform: `scale(${scale.toFixed(3)})`,
               overflow: "hidden",
-              background: "#fff",
-              border: `2px solid ${isActive ? C.blue : lit ? "rgba(0,113,227,0.55)" : "rgba(60,60,110,0.18)"}`,
+              background: C.surface,
+              border: `2px solid ${isActive ? C.accent : lit ? "rgba(45,91,255,0.55)" : C.rule}`,
               boxShadow: isActive
-                ? `0 0 0 5px rgba(0,113,227,0.16), 0 10px 26px rgba(0,113,227,0.28)`
+                ? `0 0 0 5px rgba(45,91,255,0.16), ${accentCardGlow(26, 0.34)}`
                 : lit
                 ? "0 4px 14px rgba(10,12,20,0.12)"
                 : "none",

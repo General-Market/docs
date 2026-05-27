@@ -1,13 +1,26 @@
-// PerpsGraveyardReel — the BatchFlowReel frosted-glass language, reused: a soft
-// pastel ground, glass panels, blue→violet pills, SF-Pro/Inter type, sourced
-// Apple easing. One protocol per slide; a rail of logo bubbles on the right
-// lights up as each is named and stays lit — a progress bar made of graves.
+// PerpsGraveyardReel — reskinned into the brand's AntiCheat dot-grid world. The
+// ground is the light field `colors.bg` with an animated blue dot-grid; type is
+// Bricolage bold in near-black; the accent is GM Electric (#2D5BFF) with a glow;
+// surfaces are opaque white cards. Red survives only as the chart's collapse
+// colour. One protocol per slide; a rail of logo bubbles on the right lights up
+// as each is named and stays lit — a progress bar made of graves.
 
 import { Easing } from "remotion";
 import { font, monoFont } from "../../common/fonts";
+import { colors } from "../anticheat/theme";
 import { PROTOCOLS } from "./data";
 
-export { font, monoFont };
+export { font, monoFont, colors };
+
+// Shared glow recipes — text glow for the accent line, stroke glow for SVG,
+// card glow for opaque white surfaces. Centralised so every surface reads the
+// same as the AntiCheat reference.
+export const ACCENT_TEXT_GLOW =
+  "0 0 26px rgba(91,134,255,0.55), 0 0 10px rgba(45,91,255,0.45)";
+export const accentStrokeGlow = (a = 0.55) =>
+  `drop-shadow(0 0 12px rgba(45,91,255,${a}))`;
+export const accentCardGlow = (px: number, a: number) =>
+  `0 18px 44px rgba(10,12,20,0.12), 0 0 ${px}px rgba(45,91,255,${a})`;
 
 export const FPS = 60;
 export const W = 1920;
@@ -15,27 +28,17 @@ export const H = 1080;
 
 export const sec = (s: number): number => Math.round(s * FPS);
 
-export const BG_GRADIENT =
-  "linear-gradient(135deg, #DCE6FF 0%, #E7E3FF 52%, #F2E4F1 100%)";
-export const PILL_GRADIENT =
-  "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)";
-
+// Palette mapped onto the AntiCheat world. `accent` is GM Electric; `down`/
+// `downDeep` keep their red, used only for the chart's collapse.
 export const C = {
-  text: "#1D1D1F",
-  dim: "#5A5B6A",
-  faint: "#8A8B9C",
-  rule: "rgba(60, 60, 110, 0.14)",
-  ruleStrong: "rgba(60, 60, 110, 0.22)",
-  surface: "rgba(255, 255, 255, 0.62)",
-  surfaceSunk: "rgba(255, 255, 255, 0.34)",
-  blue: "#0071E3",
-  blueBright: "#2997ff",
-  violet: "#6E5BFF",
-  pink: "#FF7AC6",
+  text: colors.fg,
+  dim: colors.dim,
+  faint: "#A2A6AE",
+  rule: colors.rule,
+  surface: colors.surface,
+  accent: colors.accent,
   down: "#F2566B",
   downDeep: "#D8324B",
-  up: "#1FB877",
-  glassBorder: "rgba(255, 255, 255, 0.72)",
 } as const;
 
 export const EASE = {

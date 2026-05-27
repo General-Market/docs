@@ -1,12 +1,12 @@
 import React from "react";
 import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { ACCENT } from "../article-2/theme";
+import { colors } from "../anticheat/theme";
 import { font, monoFont } from "../../common/fonts";
 
 const R = 230;
 const CX = 280;
 const CY = 280;
-const GREY = "rgba(255,255,255,0.16)";
+const GREY = "rgba(10,10,12,0.10)";
 
 // point on the circle; 0° = top, clockwise
 const pt = (deg: number) => {
@@ -46,12 +46,16 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
       <svg width={CX * 2} height={CY * 2} viewBox={`0 0 ${CX * 2} ${CY * 2}`}>
         {/* grey base ring */}
         <circle cx={CX} cy={CY} r={R} fill={GREY} />
-        {/* blue wedge sweeping in */}
+        {/* electric-blue wedge sweeping in */}
         {angle > 0.2 && (
-          <path d={wedge(0, angle)} fill={ACCENT} style={{ filter: "drop-shadow(0 0 22px rgba(45,91,255,0.45))" }} />
+          <path
+            d={wedge(0, angle)}
+            fill={colors.accent}
+            style={{ filter: "drop-shadow(0 0 22px rgba(45,91,255,0.5))" }}
+          />
         )}
         {/* white center badge */}
-        <circle cx={CX} cy={CY} r={R * 0.5 * badgePop} fill="#fff" />
+        <circle cx={CX} cy={CY} r={R * 0.5 * badgePop} fill={colors.surface} />
         <text
           x={CX}
           y={CY + 26}
@@ -60,7 +64,7 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
           fontWeight={800}
           fontSize={96}
           letterSpacing="-3px"
-          fill="#0E1116"
+          fill={colors.fg}
           opacity={badgePop}
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
@@ -71,8 +75,8 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
       {/* legend */}
       <div style={{ display: "flex", gap: 40, marginTop: 36 }}>
         {[
-          { c: ACCENT, label: blueLabel, v: pct },
-          { c: GREY, label: greyLabel, v: 100 - pct },
+          { c: colors.accent, label: blueLabel, v: pct, text: colors.fg },
+          { c: GREY, label: greyLabel, v: 100 - pct, text: colors.dim },
         ].map((row) => (
           <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 22, height: 22, borderRadius: 6, background: row.c }} />
@@ -80,7 +84,7 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
               style={{
                 fontFamily: monoFont,
                 fontSize: 40,
-                color: "rgba(255,255,255,0.82)",
+                color: row.text,
                 fontVariantNumeric: "tabular-nums",
               }}
             >

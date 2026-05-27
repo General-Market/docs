@@ -24,7 +24,7 @@ const NODE_H = 176;
 type RGB = readonly [number, number, number];
 const DIM: RGB = [110, 114, 122]; // colors.dim   #6E727A
 const FG: RGB = [10, 10, 10]; // colors.fg    #0A0A0A
-const ACCENT: RGB = [0, 82, 255]; // colors.accent #0052FF
+const ACCENT: RGB = [45, 91, 255]; // colors.accent #2D5BFF
 const mix = (a: RGB, b: RGB, t: number): string =>
   `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
 
@@ -108,8 +108,8 @@ const Node: React.FC<{
       justifyContent: "center",
       gap: 22,
       background: colors.surface,
-      border: `1.5px solid ${active > 0.02 ? `rgba(0,82,255,${(0.25 + 0.6 * active).toFixed(3)})` : colors.rule}`,
-      boxShadow: `0 18px 44px rgba(10,12,20,0.12)${active > 0.02 ? `, 0 0 ${(56 * active).toFixed(0)}px rgba(0,82,255,${(0.36 * active).toFixed(3)})` : ""}`,
+      border: `1.5px solid ${active > 0.02 ? `rgba(45, 91, 255,${(0.25 + 0.6 * active).toFixed(3)})` : colors.rule}`,
+      boxShadow: `0 18px 44px rgba(10,12,20,0.12)${active > 0.02 ? `, 0 0 ${(56 * active).toFixed(0)}px rgba(45, 91, 255,${(0.36 * active).toFixed(3)})` : ""}`,
       transform: `scale(${(1 + 0.035 * active).toFixed(3)})`,
     }}
   >
@@ -179,7 +179,7 @@ export const LiquidityLoop: React.FC = () => {
           style={{
             color: colors.accent,
             textShadow:
-              "0 0 26px rgba(91,134,255,0.55), 0 0 10px rgba(0,82,255,0.45)",
+              "0 0 26px rgba(91,134,255,0.55), 0 0 10px rgba(45, 91, 255,0.45)",
           }}
         >
           Death Spiral
@@ -207,7 +207,7 @@ export const LiquidityLoop: React.FC = () => {
           strokeWidth={4}
           strokeLinecap="round"
           markerEnd="url(#ah)"
-          style={{ color: topColor, filter: topActive ? "drop-shadow(0 0 10px rgba(0,82,255,0.5))" : undefined }}
+          style={{ color: topColor, filter: topActive ? "drop-shadow(0 0 10px rgba(45, 91, 255,0.5))" : undefined }}
         />
         <path
           d={botPath}
@@ -216,17 +216,17 @@ export const LiquidityLoop: React.FC = () => {
           strokeWidth={4}
           strokeLinecap="round"
           markerEnd="url(#ah)"
-          style={{ color: botColor, filter: botActive ? "drop-shadow(0 0 10px rgba(0,82,255,0.5))" : undefined }}
+          style={{ color: botColor, filter: botActive ? "drop-shadow(0 0 10px rgba(45, 91, 255,0.5))" : undefined }}
         />
         {tok && (
           <g opacity={tokOp}>
-            <circle cx={tok[0]} cy={tok[1]} r={28} fill="rgba(0,82,255,0.16)" />
+            <circle cx={tok[0]} cy={tok[1]} r={28} fill="rgba(45, 91, 255,0.16)" />
             <circle
               cx={tok[0]}
               cy={tok[1]}
               r={13}
               fill={colors.accent}
-              style={{ filter: `drop-shadow(0 0 16px rgba(0,82,255,0.7))` }}
+              style={{ filter: `drop-shadow(0 0 16px rgba(45, 91, 255,0.7))` }}
             />
           </g>
         )}

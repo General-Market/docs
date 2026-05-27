@@ -1,6 +1,6 @@
 import React from "react";
 import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { C, EASE, font, monoFont, PANEL_L } from "./theme";
+import { accentCardGlow, C, EASE, font, monoFont, PANEL_L } from "./theme";
 import type { Protocol } from "./data";
 import { TvlChart } from "./chart";
 
@@ -120,9 +120,9 @@ export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
             height: 104,
             borderRadius: "50%",
             overflow: "hidden",
-            background: "#fff",
-            border: `1px solid ${C.rule}`,
-            boxShadow: "0 10px 30px rgba(10,12,20,0.16)",
+            background: C.surface,
+            border: `1.5px solid ${C.accent}`,
+            boxShadow: accentCardGlow(40, 0.22),
             flexShrink: 0,
             transform: `scale(${interpolate(frame - 8, [0, 12], [0.86, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out }).toFixed(3)})`,
           }}

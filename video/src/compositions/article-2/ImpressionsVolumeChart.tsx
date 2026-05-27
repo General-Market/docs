@@ -14,7 +14,7 @@ import {
   X_TICKS,
   Y_TICKS,
 } from "./data";
-import { ACCENT, INK_SOFT, NAVY } from "./theme";
+import { colors } from "../anticheat/theme";
 import { font, monoFont } from "../../common/fonts";
 
 const PL = 320; // plot left
@@ -28,7 +28,7 @@ const px = (nx: number) => PL + nx * PW;
 const py = (ny: number) => PB - ny * PH;
 
 export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
-  background = NAVY,
+  background = colors.bg,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -81,7 +81,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             fontWeight: 800,
             fontSize: 66,
             letterSpacing: "-1.4px",
-            color: "#fff",
+            color: colors.fg,
           }}
         >
           Attention moves volume.
@@ -90,7 +90,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           style={{
             fontFamily: monoFont,
             fontSize: 28,
-            color: "rgba(255,255,255,0.62)",
+            color: colors.dim,
             marginTop: 12,
             letterSpacing: "-0.2px",
           }}
@@ -113,7 +113,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             x2={PR}
             y1={py(ny)}
             y2={py(ny)}
-            stroke="rgba(255,255,255,0.07)"
+            stroke="rgba(10,10,12,0.06)"
             strokeWidth={1}
             opacity={axisDraw}
           />
@@ -125,7 +125,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             x2={px(nx)}
             y1={PT}
             y2={PB}
-            stroke="rgba(255,255,255,0.07)"
+            stroke="rgba(10,10,12,0.06)"
             strokeWidth={1}
             opacity={axisDraw}
           />
@@ -137,7 +137,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           y1={PB}
           x2={PR}
           y2={PB}
-          stroke="rgba(255,255,255,0.35)"
+          stroke={colors.ruleStrong}
           strokeWidth={2}
           pathLength={1}
           strokeDasharray={1}
@@ -148,7 +148,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           y1={PB}
           x2={PL}
           y2={PT}
-          stroke="rgba(255,255,255,0.35)"
+          stroke={colors.ruleStrong}
           strokeWidth={2}
           pathLength={1}
           strokeDasharray={1}
@@ -161,7 +161,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             key={`xt${i}`}
             x={px(nx)}
             y={PB + 44}
-            fill="rgba(255,255,255,0.6)"
+            fill={colors.dim}
             fontFamily={monoFont}
             fontSize={26}
             textAnchor="middle"
@@ -175,7 +175,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             key={`yt${i}`}
             x={PL - 26}
             y={py(ny) + 9}
-            fill="rgba(255,255,255,0.6)"
+            fill={colors.dim}
             fontFamily={monoFont}
             fontSize={26}
             textAnchor="end"
@@ -189,7 +189,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
         <text
           x={(PL + PR) / 2}
           y={PB + 96}
-          fill="rgba(255,255,255,0.5)"
+          fill={colors.dim}
           fontFamily={monoFont}
           fontSize={26}
           textAnchor="middle"
@@ -200,7 +200,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
         <text
           x={104}
           y={(PT + PB) / 2}
-          fill="rgba(255,255,255,0.5)"
+          fill={colors.dim}
           fontFamily={monoFont}
           fontSize={26}
           textAnchor="middle"
@@ -216,13 +216,13 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           y1={py(FIT_FROM[1])}
           x2={px(FIT_TO[0])}
           y2={py(FIT_TO[1])}
-          stroke={ACCENT}
+          stroke={colors.accent}
           strokeWidth={6}
           strokeLinecap="round"
           pathLength={1}
           strokeDasharray={1}
           strokeDashoffset={1 - lineDraw}
-          style={{ filter: `drop-shadow(0 0 12px rgba(45,91,255,0.5))` }}
+          style={{ filter: `drop-shadow(0 0 12px rgba(45,91,255,0.55))` }}
         />
 
         {/* scatter points */}
@@ -235,15 +235,24 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             durationInFrames: 20,
           });
           const r = 11 * s;
+          const op = Math.min(1, s);
           return (
-            <circle
-              key={`p${i}`}
-              cx={px(nx)}
-              cy={py(ny)}
-              r={Math.max(0, r)}
-              fill="#fff"
-              opacity={0.92 * Math.min(1, s)}
-            />
+            <g key={`p${i}`} opacity={op}>
+              <circle
+                cx={px(nx)}
+                cy={py(ny)}
+                r={Math.max(0, r * 1.9)}
+                fill="rgba(91,134,255,0.16)"
+              />
+              <circle
+                cx={px(nx)}
+                cy={py(ny)}
+                r={Math.max(0, r)}
+                fill={colors.accent}
+                opacity={0.92}
+                style={{ filter: `drop-shadow(0 0 9px rgba(45,91,255,0.55))` }}
+              />
+            </g>
           );
         })}
       </svg>
@@ -256,7 +265,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           top: PT + 24,
           opacity: chipOp,
           paddingLeft: 22,
-          borderLeft: `4px solid ${ACCENT}`,
+          borderLeft: `4px solid ${colors.accent}`,
         }}
       >
         <div
@@ -264,7 +273,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             fontFamily: font,
             fontWeight: 800,
             fontSize: 42,
-            color: "#fff",
+            color: colors.fg,
             letterSpacing: "-0.6px",
           }}
         >
@@ -274,7 +283,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           style={{
             fontFamily: monoFont,
             fontSize: 24,
-            color: INK_SOFT,
+            color: colors.dim,
             marginTop: 8,
           }}
         >

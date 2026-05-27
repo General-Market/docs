@@ -1,5 +1,5 @@
 import React from "react";
-import { C, font, monoFont } from "./theme";
+import { accentStrokeGlow, C, font, monoFont } from "./theme";
 import type { Protocol } from "./data";
 
 type Props = {
@@ -47,7 +47,7 @@ export const TvlChart: React.FC<Props> = ({ p, progress, x, y, w, h }) => {
     y: pts[fi0].y + (pts[fi1].y - pts[fi0].y) * ft,
   };
   const pastPeak = progress * (n - 1) >= peakIdx;
-  const frontColor = pastPeak ? C.down : C.blue;
+  const frontColor = pastPeak ? C.down : C.accent;
 
   const uid = p.id.replace(/[^a-z0-9]/gi, "");
   const peakShown = progress * (n - 1) >= peakIdx + 1;
@@ -57,9 +57,9 @@ export const TvlChart: React.FC<Props> = ({ p, progress, x, y, w, h }) => {
     <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       <defs>
         <linearGradient id={`area-${uid}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(0,113,227,0.30)" />
-          <stop offset="55%" stopColor="rgba(110,91,255,0.16)" />
-          <stop offset="100%" stopColor="rgba(242,86,107,0.06)" />
+          <stop offset="0%" stopColor="rgba(45,91,255,0.30)" />
+          <stop offset="55%" stopColor="rgba(45,91,255,0.12)" />
+          <stop offset="100%" stopColor="rgba(242,86,107,0.08)" />
         </linearGradient>
         <clipPath id={`rev-${uid}`}>
           <rect x={x} y={y - 60} width={revW} height={h + 120} />
@@ -74,16 +74,16 @@ export const TvlChart: React.FC<Props> = ({ p, progress, x, y, w, h }) => {
 
       <g clipPath={`url(#rev-${uid})`}>
         <path d={areaPath} fill={`url(#area-${uid})`} />
-        {/* rise (blue) then fall (red) */}
-        <path d={linePath(0, peakIdx)} fill="none" stroke={C.blue} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+        {/* rise (accent + glow) then fall (red collapse) */}
+        <path d={linePath(0, peakIdx)} fill="none" stroke={C.accent} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" style={{ filter: accentStrokeGlow(0.55) }} />
         <path d={linePath(peakIdx, n - 1)} fill="none" stroke={C.down} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
       </g>
 
       {/* peak marker */}
       {peakShown && (
         <g opacity={Math.min(1, (progress * (n - 1) - peakIdx) / 4)}>
-          <line x1={pts[peakIdx].x} y1={pts[peakIdx].y} x2={pts[peakIdx].x} y2={base} stroke={C.blue} strokeWidth={1} strokeDasharray="3 5" opacity={0.5} />
-          <circle cx={pts[peakIdx].x} cy={pts[peakIdx].y} r={6} fill={C.blue} />
+          <line x1={pts[peakIdx].x} y1={pts[peakIdx].y} x2={pts[peakIdx].x} y2={base} stroke={C.accent} strokeWidth={1} strokeDasharray="3 5" opacity={0.5} />
+          <circle cx={pts[peakIdx].x} cy={pts[peakIdx].y} r={6} fill={C.accent} style={{ filter: accentStrokeGlow(0.6) }} />
           <text x={pts[peakIdx].x} y={pts[peakIdx].y - 26} textAnchor="middle" fontFamily={font} fontSize={40} fontWeight={800} letterSpacing="-0.02em" fill={C.text}>
             {p.peakLabel}
           </text>

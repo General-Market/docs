@@ -1,8 +1,9 @@
 import React from "react";
 import { AbsoluteFill, interpolate, Sequence, useCurrentFrame } from "remotion";
 import {
-  BG_GRADIENT,
+  ACCENT_TEXT_GLOW,
   C,
+  colors,
   EASE,
   font,
   FPS,
@@ -13,30 +14,22 @@ import {
   TOTAL_FRAMES,
   W,
 } from "./theme";
+import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 import { PROTOCOLS, TOTAL_RAISED_LABEL } from "./data";
 import { Rail } from "./Rail";
 import { Slide } from "./Slide";
 import { BrandMark } from "../../components/BrandMark";
 
+// The brand's base world: light #F0F2F4 ground, an animated blue dot-grid. The
+// reel is 60fps but DotGrid's drift assumes 30fps, so a low speed keeps the
+// grid from racing. The dot-grid IS the ground — no gradient, no scanlines.
 const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
-  <AbsoluteFill style={{ background: BG_GRADIENT, fontFamily: font }}>
+  <AbsoluteFill
+    style={{ backgroundColor: colors.bg, fontFamily: font, overflow: "hidden" }}
+  >
+    <DotGrid speed={0.5} />
+    <DotGridVignette intensity={0.22} />
     {children}
-    <AbsoluteFill
-      style={{
-        background:
-          "repeating-linear-gradient(0deg, rgba(10,12,20,0.028) 0px, rgba(10,12,20,0.028) 1px, transparent 1px, transparent 3px)",
-        mixBlendMode: "multiply",
-        opacity: 0.5,
-        pointerEvents: "none",
-      }}
-    />
-    <AbsoluteFill
-      style={{
-        background:
-          "radial-gradient(120% 120% at 42% 42%, rgba(10,12,20,0) 58%, rgba(10,12,20,0.10) 100%)",
-        pointerEvents: "none",
-      }}
-    />
   </AbsoluteFill>
 );
 
@@ -78,7 +71,7 @@ const Intro: React.FC = () => {
       <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", color: C.text, lineHeight: 0.98, marginTop: 18, filter: focusPull(frame, 6) }}>
         They raised the money.
       </div>
-      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 0.98, marginTop: 4, background: "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", filter: focusPull(frame, 12) }}>
+      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 0.98, marginTop: 4, color: colors.accent, textShadow: ACCENT_TEXT_GLOW, filter: focusPull(frame, 12) }}>
         They couldn&rsquo;t keep the liquidity.
       </div>
     </div>
@@ -95,7 +88,7 @@ const Outro: React.FC = () => {
       <div style={{ fontFamily: font, fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em", color: C.dim, lineHeight: 1.05, marginTop: 22, filter: focusPull(frame, 8) }}>
 Across {PROTOCOLS.length} perps protocols. The liquidity left anyway.
       </div>
-      <div style={{ fontFamily: font, fontSize: 54, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.18, marginTop: 30, color: C.downDeep, filter: focusPull(frame, 16) }}>
+      <div style={{ fontFamily: font, fontSize: 54, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.18, marginTop: 30, color: colors.accent, textShadow: ACCENT_TEXT_GLOW, filter: focusPull(frame, 16) }}>
         Rented liquidity leaves. Owned liquidity compounds.
       </div>
       <div style={{ fontFamily: monoFont, fontSize: 18, fontWeight: 500, color: C.faint, marginTop: 36 }}>

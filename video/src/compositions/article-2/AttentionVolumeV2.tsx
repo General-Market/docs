@@ -3,6 +3,8 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage } from "./ArticlePage";
 import { ImpressionsVolumeChart } from "./ImpressionsVolumeChart";
 import { FPS, H, W, articleZoom } from "./theme";
+import { colors } from "../anticheat/theme";
+import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 import { BrandMark } from "../../components/BrandMark";
 
 const V2_TOTAL = 240;
@@ -62,8 +64,10 @@ export const AttentionVolumeV2: React.FC = () => {
   });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <BrandMark surface="dark" />
+    <AbsoluteFill style={{ backgroundColor: colors.bg }}>
+      <DotGrid />
+      <DotGridVignette intensity={0.22} />
+      <BrandMark surface="light" />
       <AbsoluteFill style={{ transform: `scale(${bgZoom})`, transformOrigin: "center" }}>
         <ArticlePage
           scroll={scroll}
@@ -78,7 +82,6 @@ export const AttentionVolumeV2: React.FC = () => {
           style={{
             opacity: graphOp,
             transform: `scale(${graphScale})`,
-            background: "rgba(9,11,16,0.70)",
           }}
         >
           <ImpressionsVolumeChart background="transparent" />

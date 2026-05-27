@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, articleZoom } from "../article-2/theme";
+import { articleZoom } from "../article-2/theme";
+import { colors } from "../anticheat/theme";
 import { font, monoFont } from "../../common/fonts";
 import { ProofArticle } from "./ProofArticle";
 import { HeroPie } from "./HeroPie";
@@ -13,8 +14,6 @@ const HeroChart: React.FC<{ hero: Hero }> = ({ hero }) =>
   ) : (
     <HeroWaffle filled={hero.filled} total={hero.total} />
   );
-
-const BG = "#05070c";
 
 // Proof phrases underline after their scroll step settles.
 const MARK_TIMES = [92, 140];
@@ -93,7 +92,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
   });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill>
       <AbsoluteFill style={{ transform: `scale(${bgZoom})`, transformOrigin: "center" }}>
         <ProofArticle
           brand={screen.brand}
@@ -108,8 +107,8 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
         />
       </AbsoluteFill>
 
-      {/* dim scrim under the hero chart */}
-      {scrimOp > 0.001 && <AbsoluteFill style={{ background: BG, opacity: scrimOp }} />}
+      {/* scrim under the hero chart — paints the light ground so the focus-pull works */}
+      {scrimOp > 0.001 && <AbsoluteFill style={{ background: colors.bg, opacity: scrimOp }} />}
 
       {/* hero chart */}
       {heroOp > 0.001 && (
@@ -128,8 +127,9 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
           <div
             style={{
               fontFamily: font,
+              fontWeight: 800,
               fontSize: 44,
-              color: "rgba(255,255,255,0.76)",
+              color: colors.fg,
               marginTop: 44,
               maxWidth: 1240,
               textAlign: "center",
@@ -142,7 +142,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
         </AbsoluteFill>
       )}
 
-      {/* source citation chip during the proof phase */}
+      {/* source citation chip — white surface card, electric-blue left rim + glow */}
       {sourceOp > 0.001 && (
         <div
           style={{
@@ -150,13 +150,14 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
             left: 48,
             bottom: 64,
             opacity: sourceOp,
-            borderLeft: `4px solid ${ACCENT}`,
+            borderLeft: `4px solid ${colors.accent}`,
             fontFamily: monoFont,
             fontSize: 26,
-            color: "rgba(20,24,29,0.82)",
-            background: "rgba(255,255,255,0.78)",
-            borderRadius: 4,
+            color: colors.dim,
+            background: colors.surface,
+            borderRadius: 6,
             padding: "10px 18px",
+            boxShadow: "0 8px 24px rgba(10,12,20,0.10), 0 0 22px rgba(45,91,255,0.18)",
             zIndex: 40,
           }}
         >

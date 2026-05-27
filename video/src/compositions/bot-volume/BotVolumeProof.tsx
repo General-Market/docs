@@ -3,19 +3,21 @@ import { AbsoluteFill, Sequence } from "remotion";
 import { DataProofScreen } from "./DataProofScreen";
 import { SCREENS, SCREEN_DUR } from "./screens";
 import { FPS, H, W } from "../article-2/theme";
+import { colors } from "../anticheat/theme";
+import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 import { BrandMark } from "../../components/BrandMark";
-
-const BG = "#05070c";
 
 /** All three data→proof screens, hard-cut back to back. */
 export const BotVolumeProof: React.FC = () => (
-  <AbsoluteFill style={{ backgroundColor: BG }}>
+  <AbsoluteFill style={{ backgroundColor: colors.bg }}>
+    <DotGrid />
+    <DotGridVignette intensity={0.22} />
     {SCREENS.map((screen, i) => (
       <Sequence key={screen.id} from={i * SCREEN_DUR} durationInFrames={SCREEN_DUR}>
         <DataProofScreen screen={screen} />
       </Sequence>
     ))}
-    <BrandMark surface="dark" />
+    <BrandMark surface="light" />
   </AbsoluteFill>
 );
 
@@ -32,9 +34,11 @@ export const botVolumeProofMeta = {
 export const botVolumeScreenMetas = SCREENS.map((screen) => ({
   id: screen.id,
   component: () => (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill style={{ backgroundColor: colors.bg }}>
+      <DotGrid />
+      <DotGridVignette intensity={0.22} />
       <DataProofScreen screen={screen} />
-      <BrandMark surface="dark" />
+      <BrandMark surface="light" />
     </AbsoluteFill>
   ),
   durationInFrames: SCREEN_DUR,

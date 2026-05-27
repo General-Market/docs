@@ -1,13 +1,13 @@
 import React from "react";
 import { interpolate, useCurrentFrame } from "remotion";
-import { ACCENT } from "../article-2/theme";
+import { colors } from "../anticheat/theme";
 import { font, monoFont } from "../../common/fonts";
 
 const COLS = 20;
 const CELL = 58;
 const ICON_W = 38;
 const ICON_H = 46;
-const GREY = "rgba(255,255,255,0.16)";
+const GREY = "rgba(10,10,12,0.12)";
 
 /** Simple person glyph — head + shoulders. */
 const Person: React.FC<{ color: string }> = ({ color }) => (
@@ -39,7 +39,7 @@ export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled
             fontSize: 130,
             lineHeight: 1,
             letterSpacing: "-5px",
-            color: "#fff",
+            color: colors.fg,
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -50,7 +50,7 @@ export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled
             fontFamily: monoFont,
             fontWeight: 700,
             fontSize: 56,
-            color: "rgba(255,255,255,0.55)",
+            color: colors.dim,
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -66,8 +66,8 @@ export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled
           placeItems: "center",
           padding: 28,
           borderRadius: 26,
-          border: "1px solid rgba(255,255,255,0.16)",
-          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(10,10,12,0.10)",
+          background: "rgba(255,255,255,0.45)",
         }}
       >
         {Array.from({ length: rows * COLS }).map((_, i) => {
@@ -78,7 +78,7 @@ export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled
           const op = isBlue ? (lit ? 1 : 0.12) : 1;
           return (
             <span key={i} style={{ opacity: op, transition: "none" }}>
-              <Person color={isBlue ? ACCENT : GREY} />
+              <Person color={isBlue ? colors.accent : GREY} />
             </span>
           );
         })}
