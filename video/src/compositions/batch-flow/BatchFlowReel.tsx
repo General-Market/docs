@@ -1,11 +1,12 @@
 import React from "react";
-import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
+import { interpolate, useCurrentFrame } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import { BrandMark } from "../../components/BrandMark";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
-import { LineRow, Packet } from "./flow";
+import { Packet } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
-import { GlassFlow, GlassLine, GlassQuestion } from "./concepts";
+import { GlassQuestion } from "./concepts";
+import { SettleGraph } from "./graph";
 import { DayTimeline, PersonIcon, SourceStack, TradeFan } from "./throughput";
 import {
   BATCHES_PER_DAY,
@@ -17,11 +18,6 @@ import {
   THROUGHPUT_SOURCES,
   THROUGHPUT_TOTAL,
   TRADER_NAMES,
-  YOUR_COLLECT,
-  YOUR_NET,
-  YOUR_STAKE,
-  YOUR_WINS,
-  yourReturn,
 } from "./data";
 
 // BatchFlowReel — ONE continuous element handed down the whole pipeline, all in
@@ -89,10 +85,7 @@ const T = {
   gather: [0, 0] as [number, number], // five packets collapse into the pool
   unfold: [0, 0] as [number, number], // the pool unfolds into ten lines
   linesHold: 0,
-  line: [0, 0] as [number, number], // the oracle's line — glass beat at BX
-  settle: [0, 0] as [number, number],
-  travel2: [0, 0] as [number, number],
-  flow: [0, 0] as [number, number], // losers pay winners — glass beat at DX
+  settle: [0, 0] as [number, number], // the oracle sweep settles every node
   payoutHold: 0,
   payoutOut: [0, 0] as [number, number], // payout fades, camera leaves DX → MX1
   trade: [0, 0] as [number, number], // one person fires one trade @ MX1
@@ -109,12 +102,9 @@ T.poolHold = T.travel1[1] + sec(1.1);
 T.gather = [T.poolHold, T.poolHold + sec(0.9)];
 T.unfold = [T.gather[1] + sec(0.25), T.gather[1] + sec(0.25) + sec(1.5)];
 T.linesHold = T.unfold[1] + sec(0.7);
-T.line = [T.linesHold + sec(0.3), T.linesHold + sec(0.3) + sec(2.8)];
-T.settle = [T.line[1] + sec(0.5), T.line[1] + sec(0.5) + sec(3.0)];
-T.travel2 = [T.settle[1] + sec(0.6), T.settle[1] + sec(2.8)];
-T.flow = [T.travel2[1] + sec(0.3), T.travel2[1] + sec(0.3) + sec(2.9)];
-T.payoutHold = T.flow[1] + sec(2.2);
-T.payoutOut = [T.payoutHold + sec(0.4), T.payoutHold + sec(0.4) + sec(1.9)];
+T.settle = [T.linesHold + sec(0.4), T.linesHold + sec(0.4) + sec(4.8)]; // the oracle sweep
+T.payoutHold = T.settle[1] + sec(1.6);
+T.payoutOut = [T.payoutHold + sec(0.4), T.payoutHold + sec(0.4) + sec(1.7)];
 T.trade = [T.payoutOut[1] - sec(0.6), T.payoutOut[1] + sec(1.3)];
 T.fanFly = [T.trade[1] + sec(0.2), T.trade[1] + sec(0.2) + sec(1.6)];
 T.fan = [T.fanFly[0] + sec(0.5), T.fanFly[1] + sec(1.7)];
@@ -128,10 +118,12 @@ const TOTAL = T.tenM[1] + sec(1.8);
 // across the throughput stations — and at the end pulls back and pans down to
 // frame the ten-source stack whole.
 const camera = (frame: number): { x: number; y: number; scale: number } => {
+  // AX (dashboard) → BX (the graph: pool, settle and payout all live here) →
+  // MX1/MX2/MX3 (the throughput climax). No DX detour — the payout is the hub.
   const x = interpolate(
     frame,
-    [T.travel1[0], T.travel1[1], T.travel2[0], T.travel2[1], T.payoutOut[0], T.payoutOut[1], T.fanFly[0], T.fanFly[1], T.dayFly[0], T.dayFly[1]],
-    [AX, BX, BX, DX, DX, MX1, MX1, MX2, MX2, MX3],
+    [T.travel1[0], T.travel1[1], T.payoutOut[0], T.payoutOut[1], T.fanFly[0], T.fanFly[1], T.dayFly[0], T.dayFly[1]],
+    [AX, BX, BX, MX1, MX1, MX2, MX2, MX3],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
   );
   const y = interpolate(frame, [T.zoom[0], T.zoom[1]], [CY, STACK_CAM_Y], {
@@ -146,20 +138,6 @@ const camera = (frame: number): { x: number; y: number; scale: number } => {
   });
   return { x, y, scale };
 };
-
-const heroNumber = (size: number): React.CSSProperties => ({
-  fontFamily: font,
-  fontSize: size,
-  fontWeight: 800,
-  letterSpacing: "-0.035em",
-  lineHeight: 0.95,
-  fontVariantNumeric: "tabular-nums",
-  background: PILL_GRADIENT,
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-  filter: "drop-shadow(0 14px 36px rgba(94,120,255,0.4))",
-});
 
 const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text: string; until?: number }> = ({ frame, x, y, at, text, until }) => {
   const op = Math.min(ci(frame, at, at + 12, 0, 1), until ? ci(frame, until - 12, until, 1, 0) : 1);
@@ -193,7 +171,6 @@ const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text:
 
 export const BatchFlowReel: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const { x: camX, y: camY, scale } = camera(frame);
   const tx = W / 2 - camX * scale;
   const ty = H / 2 - camY * scale;
@@ -251,35 +228,22 @@ export const BatchFlowReel: React.FC = () => {
     ci(frame, T.gather[1] - sec(0.05), T.gather[1] + sec(0.05), 1, 0),
   );
 
-  // ── Stage 3→4: the pool box morphs into a header as the lines unfold ───────
-  const poolMorph = ci(frame, T.unfold[0], T.unfold[0] + sec(0.55), 0, 1, EASE.inOut);
-  const poolBoxY = lerp(CY, CY - 322, poolMorph);
-  const poolBoxScale = lerp(1, 0.6, poolMorph);
+  // ── Stage 3: the POOL box catches the packets, then dissolves into the hub ──
   const poolBoxOp = Math.min(
     ci(frame, T.travel1[0], T.travel1[0] + sec(0.4), 0, 1),
-    ci(frame, T.travel2[0], T.travel2[0] + sec(0.4), 1, 0),
+    ci(frame, T.unfold[0], T.unfold[0] + sec(0.45), 1, 0),
   );
 
-  // ── Concept 2: the oracle's line — glass beat at BX, before the lines settle.
-  // The matched lines dim back while the line beat plays, then return to settle.
-  const glLineReveal = ci(frame, T.line[0], T.line[0] + sec(1.4), 0, 1, EASE.out);
-  const glLineOp = Math.min(ci(frame, T.line[0], T.line[0] + sec(0.4), 0, 1), ci(frame, T.line[1] - sec(0.3), T.line[1], 1, 0));
-  const lineDim = 1 - 0.85 * Math.min(ci(frame, T.line[0] - sec(0.3), T.line[0] + sec(0.2), 0, 1), ci(frame, T.line[1] - sec(0.2), T.line[1] + sec(0.3), 1, 0));
-
-  // ── Stage 4–5: the ten matched lines unfold downward, then settle ──────────
-  const rowsUnfold = ci(frame, T.unfold[0], T.unfold[0] + sec(1.2), 0, 1, EASE.out);
-  const rowsBase = Math.min(ci(frame, T.unfold[0], T.unfold[0] + sec(0.3), 0, 1), ci(frame, T.travel2[0], T.travel2[1], 1, 0));
-  const rowsOp = rowsBase * lineDim;
-
-  // ── Concept 3: losers pay the winners — glass beat at DX, before the payout ─
-  const glFlowReveal = ci(frame, T.flow[0], T.flow[0] + sec(1.0), 0, 1, EASE.out);
-  const glFlow = ci(frame, T.flow[0] + sec(0.4), T.flow[1] - sec(0.2), 0, 1, EASE.inOut);
-  const glFlowOp = Math.min(ci(frame, T.flow[0], T.flow[0] + sec(0.4), 0, 1), ci(frame, T.flow[1] - sec(0.3), T.flow[1], 1, 0));
-
-  // ── Stage 6: the payout — winning lines collect (after the flow beat) ───────
-  const collected = ci(frame, T.flow[1], T.payoutHold - sec(0.4), 0, YOUR_COLLECT, EASE.out);
-  const payoutOp = Math.min(ci(frame, T.flow[1] - sec(0.2), T.flow[1] + sec(0.5), 0, 1), ci(frame, T.payoutOut[0], T.payoutOut[0] + sec(0.6), 1, 0));
-  const netOp = ci(frame, T.payoutHold - sec(1.0), T.payoutHold - sec(0.2), 0, 1);
+  // ── Stage 4–6: the pool unfolds into the batch graph; one oracle sweep
+  // settles every node; the hub counts what You collect. The old oracle-line
+  // and losers-pay cards are gone — both ideas now live on the graph itself. ──
+  const graphOp = Math.min(
+    ci(frame, T.unfold[0], T.unfold[0] + sec(0.4), 0, 1),
+    ci(frame, T.payoutOut[0], T.payoutOut[0] + sec(0.6), 1, 0),
+  );
+  const graphUnfold = ci(frame, T.unfold[0], T.unfold[1], 0, 1, EASE.out);
+  const graphSweep = ci(frame, T.linesHold, T.settle[1] - sec(0.2), 0, 1, EASE.inOut);
+  const graphNet = ci(frame, T.payoutHold - sec(0.8), T.payoutHold, 0, 1);
 
   // ── Throughput 1 — one person fires one trade @ MX1 ────────────────────────
   const personIn = ci(frame, T.payoutOut[1] - sec(0.9), T.payoutOut[1] - sec(0.1), 0, 1, EASE.out);
@@ -417,15 +381,15 @@ export const BatchFlowReel: React.FC = () => {
           </div>
         )}
 
-        {/* Stage 3 — the POOL box: catches the packets, then morphs into the
-            header above the lines */}
+        {/* Stage 3 — the POOL box: catches the packets, then dissolves into the
+            graph hub at the same spot */}
         {poolBoxOp > 0.01 && (
           <div
             style={{
               position: "absolute",
               left: BX,
-              top: poolBoxY,
-              transform: `translate(-50%,-50%) scale(${poolBoxScale.toFixed(3)})`,
+              top: CY,
+              transform: "translate(-50%,-50%)",
               width: 460,
               height: 150,
               borderRadius: 24,
@@ -445,52 +409,11 @@ export const BatchFlowReel: React.FC = () => {
           </div>
         )}
 
-        {/* Stage 4–5 — the ten matched lines unfold downward, then settle */}
-        {rowsOp > 0.01 && (
-          <div style={{ position: "absolute", left: BX, top: CY - 250, transform: "translate(-50%, 0)", opacity: rowsOp, maxHeight: (rowsUnfold * 600).toFixed(0) + "px", overflow: "hidden", zIndex: 6 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {MARKETS.map((_m, i) => {
-                const reveal = Math.min(1, spring({ fps, frame: frame - (T.unfold[0] + sec(0.2) + i * 3), config: { damping: 16, stiffness: 120, mass: 0.6 }, durationInFrames: 18 }));
-                const settle = ci(frame, T.settle[0] + i * 9, T.settle[0] + i * 9 + sec(0.5), 0, 1, EASE.inOut);
-                return <LineRow key={i} index={i} barW={440} nameW={220} reveal={reveal} settle={settle} highlightYou />;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Concept 2 — the oracle's line, in glass, at BX */}
-        {glLineOp > 0.01 && (
-          <div style={{ position: "absolute", left: BX, top: CY, transform: "translate(-50%,-50%)", opacity: glLineOp, zIndex: 20 }}>
-            <GlassLine reveal={glLineReveal} />
-          </div>
-        )}
-
-        {/* Stage 6 — payout: the ten result cards + the collected total */}
-        {payoutOp > 0.01 && (
-          <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", textAlign: "center", opacity: payoutOp }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 22 }}>
-              {MARKETS.map((m, i) => {
-                const won = m.you === m.outcome;
-                const r = Math.min(1, spring({ fps, frame: frame - (T.flow[1] + sec(0.1) + i * 4), config: { damping: 15, stiffness: 130, mass: 0.6 }, durationInFrames: 20 }));
-                return (
-                  <div key={i} style={{ width: 124, padding: "12px 8px 10px", borderRadius: 13, background: "linear-gradient(160deg, rgba(255,255,255,0.66), rgba(255,255,255,0.4))", border: `1.5px solid ${won ? C.up : "rgba(255,255,255,0.6)"}`, boxShadow: won ? `0 12px 28px ${C.up}3D, inset 0 1px 0 rgba(255,255,255,0.85)` : "0 8px 20px rgba(70,74,140,0.12), inset 0 1px 0 rgba(255,255,255,0.8)", opacity: r, transform: `translateY(${((1 - r) * 14).toFixed(1)}px)` }}>
-                    <div style={{ fontFamily: font, fontSize: 24, fontWeight: 800, color: m.you === "up" ? C.up : C.down }}>{m.you === "up" ? "▲" : "▼"}</div>
-                    <div style={{ fontFamily: font, fontSize: 26, fontWeight: 800, color: won ? C.up : C.down, margin: "3px 0 2px" }}>{won ? "✓" : "✗"}</div>
-                    <div style={{ fontFamily: monoFont, fontSize: 15, fontWeight: 700, color: won ? C.text : C.faint }}>{won ? `+$${yourReturn(i).toFixed(2)}` : "—"}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ fontFamily: monoFont, fontSize: 26, fontWeight: 700, letterSpacing: "0.04em", color: C.dim }}>{YOUR_WINS} OF 10 LINES WON</div>
-            <div style={{ ...heroNumber(150), marginTop: 4 }}>${collected.toFixed(2)}</div>
-            <div style={{ fontFamily: font, fontSize: 38, fontWeight: 700, color: C.up, opacity: netOp, marginTop: 6 }}>collected — net +${YOUR_NET.toFixed(2)} on ${YOUR_STAKE}</div>
-          </div>
-        )}
-
-        {/* Concept 3 — losers pay the winners, in glass, at DX (before payout) */}
-        {glFlowOp > 0.01 && (
-          <div style={{ position: "absolute", left: DX, top: CY, transform: "translate(-50%,-50%)", opacity: glFlowOp, zIndex: 20 }}>
-            <GlassFlow reveal={glFlowReveal} flow={glFlow} />
+        {/* Stage 4–6 — the batch graph: pool unfolds into ten linked nodes, one
+            oracle sweep settles them all, the hub counts what You collect */}
+        {graphOp > 0.01 && (
+          <div style={{ position: "absolute", left: BX, top: CY, transform: "translate(-50%,-50%)", opacity: graphOp, zIndex: 10 }}>
+            <SettleGraph unfold={graphUnfold} sweep={graphSweep} showNet={graphNet} />
           </div>
         )}
 
@@ -533,7 +456,8 @@ export const BatchFlowReel: React.FC = () => {
         <Caption frame={frame} x={AX} y={CY + 470} at={SEL_START - sec(0.1)} text="Pick up or down on ten markets" until={T.pickEnd} />
         <Caption frame={frame} x={AX} y={CY + 300} at={lerp(T.pickEnd, T.mergeEnd, 0.45)} text="Ten calls — one packet" until={T.travel1[0] + sec(0.6)} />
         <Caption frame={frame} x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
-        <Caption frame={frame} x={BX} y={CY + 330} at={T.settle[0] + sec(0.4)} text="Every line matched, then settled" until={T.travel2[0]} />
+        <Caption frame={frame} x={BX} y={CY - 470} at={T.linesHold - sec(0.3)} text="One oracle settles the whole batch" until={T.settle[1] - sec(0.2)} />
+        <Caption frame={frame} x={BX} y={CY - 470} at={T.settle[1]} text="Losers pay winners — your seven" until={T.payoutOut[0]} />
         <Caption frame={frame} x={MX2} y={CY - 300} at={T.fan[0] + sec(0.2)} text="One trade → 10,000 lines" until={T.dayFly[0]} />
         <Caption frame={frame} x={MX3} y={CY + 300} at={T.day[0] + sec(0.3)} text="Same engine. Ten different sources." until={T.zoom[0]} />
       </div>
