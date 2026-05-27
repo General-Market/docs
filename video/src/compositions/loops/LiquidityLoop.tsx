@@ -1,7 +1,14 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { ACCENT, FPS, H, NAVY, W } from "../article-2/theme";
+import { C } from "../batch-flow/theme";
 import { font, monoFont } from "../../common/fonts";
+import { BrandMark } from "../../components/BrandMark";
+
+// The brand's pastel-glass world (BatchFlowReel / PerpsGraveyard), not the old
+// dark "death spiral" mood — the grimness lives in the diagram, not the lights.
+const FPS = 30;
+const W = 1920;
+const H = 1080;
 
 // One full lap of the cycle = the whole composition, so playback loops seamlessly.
 const PERIOD = 120;
@@ -10,6 +17,17 @@ const A = { cx: 560, cy: 540 };
 const B = { cx: 1360, cy: 540 };
 const NODE_W = 460;
 const NODE_H = 168;
+
+const BG_GRADIENT = "linear-gradient(135deg, #DCE6FF 0%, #E7E3FF 52%, #F2E4F1 100%)";
+
+// Colour mixing on the light ground — states ease between grey (resting) and
+// azure (active) rather than fading white opacity over black.
+type RGB = readonly [number, number, number];
+const DIM: RGB = [90, 91, 106]; // C.dim  #5A5B6A
+const INK: RGB = [29, 29, 31]; // C.text #1D1D1F
+const AZURE: RGB = [0, 113, 227]; // C.blue #0071E3
+const mix = (a: RGB, b: RGB, t: number): string =>
+  `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
 
 // Two directed edges between the states, as cubic-bézier control points.
 type Pt = readonly [number, number];
@@ -53,7 +71,7 @@ const smooth = (x: number) => {
 
 const Icon: React.FC<{ type: "droplet" | "users"; color: string }> = ({ type, color }) =>
   type === "droplet" ? (
-    <svg width={42} height={42} viewBox="0 0 24 24" fill="none">
+    <svg width={44} height={44} viewBox="0 0 24 24" fill="none">
       <path
         d="M12 3 C12 3 5.5 10.2 5.5 15 a6.5 6.5 0 0 0 13 0 C18.5 10.2 12 3 12 3 Z"
         stroke={color}
@@ -61,7 +79,7 @@ const Icon: React.FC<{ type: "droplet" | "users"; color: string }> = ({ type, co
       />
     </svg>
   ) : (
-    <svg width={50} height={42} viewBox="0 0 28 24" fill="none">
+    <svg width={52} height={44} viewBox="0 0 28 24" fill="none">
       <circle cx={10} cy={8} r={4} stroke={color} strokeWidth={1.8} />
       <path d="M3 21 C3 16 6 14.5 10 14.5 C14 14.5 17 16 17 21" stroke={color} strokeWidth={1.8} />
       <circle cx={20} cy={9} r={3.2} stroke={color} strokeWidth={1.8} />
@@ -69,6 +87,8 @@ const Icon: React.FC<{ type: "droplet" | "users"; color: string }> = ({ type, co
     </svg>
   );
 
+// A frosted-glass pill on the pastel ground; the azure rim + glow rise with the
+// pulse, the way the BatchFlowReel nodes light as the camera reaches them.
 const Node: React.FC<{
   x: number;
   y: number;
@@ -87,21 +107,23 @@ const Node: React.FC<{
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: 18,
-      background: `rgba(45,91,255,${0.04 + 0.13 * active})`,
-      border: `2px solid rgba(45,91,255,${0.18 + 0.62 * active})`,
-      boxShadow: active > 0.02 ? `0 0 ${46 * active}px rgba(45,91,255,${0.5 * active})` : "none",
-      transform: `scale(${1 + 0.045 * active})`,
+      gap: 20,
+      background: `rgba(255,255,255,${(0.55 + 0.12 * active).toFixed(3)})`,
+      border: `2px solid ${active > 0.02 ? `rgba(0,113,227,${(0.28 + 0.55 * active).toFixed(3)})` : "rgba(60,60,110,0.18)"}`,
+      boxShadow: `0 14px 34px rgba(10,12,20,0.10)${active > 0.02 ? `, 0 0 ${(52 * active).toFixed(0)}px rgba(0,113,227,${(0.3 * active).toFixed(3)})` : ""}`,
+      backdropFilter: "saturate(180%) blur(20px)",
+      WebkitBackdropFilter: "saturate(180%) blur(20px)",
+      transform: `scale(${(1 + 0.04 * active).toFixed(3)})`,
     }}
   >
-    <Icon type={icon} color={`rgba(255,255,255,${0.6 + 0.4 * active})`} />
+    <Icon type={icon} color={mix(DIM, AZURE, active)} />
     <div
       style={{
         fontFamily: font,
         fontWeight: 800,
         fontSize: 50,
         letterSpacing: "-0.02em",
-        color: `rgba(255,255,255,${0.72 + 0.28 * active})`,
+        color: mix(DIM, INK, Math.max(active, 0.35)),
       }}
     >
       {label}
@@ -131,17 +153,37 @@ export const LiquidityLoop: React.FC = () => {
     tokOp = Math.min(smooth(t / 0.12), smooth((1 - t) / 0.12));
   }
 
-  const topColor = topActive ? ACCENT : "rgba(255,255,255,0.4)";
-  const botColor = botActive ? ACCENT : "rgba(255,255,255,0.4)";
+  const topColor = topActive ? C.blue : C.rule;
+  const botColor = botActive ? C.blue : C.rule;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: NAVY }}>
+    <AbsoluteFill style={{ background: BG_GRADIENT, fontFamily: font }}>
+      {/* soft azure bloom at the loop's centre */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(900px 520px at 50% 52%, rgba(45,91,255,0.10), transparent 70%)",
+            "radial-gradient(900px 520px at 50% 52%, rgba(0,113,227,0.07), transparent 70%)",
         }}
       />
+      {/* faint paper scanline + vignette — the PerpsGraveyard ground */}
+      <AbsoluteFill
+        style={{
+          background:
+            "repeating-linear-gradient(0deg, rgba(10,12,20,0.028) 0px, rgba(10,12,20,0.028) 1px, transparent 1px, transparent 3px)",
+          mixBlendMode: "multiply",
+          opacity: 0.5,
+          pointerEvents: "none",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(120% 120% at 42% 42%, rgba(10,12,20,0) 58%, rgba(10,12,20,0.10) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <BrandMark surface="light" />
 
       <div
         style={{
@@ -150,10 +192,10 @@ export const LiquidityLoop: React.FC = () => {
           width: W,
           textAlign: "center",
           fontFamily: monoFont,
-          fontSize: 26,
-          letterSpacing: "6px",
+          fontSize: 24,
+          letterSpacing: "0.34em",
           fontWeight: 700,
-          color: "rgba(255,255,255,0.45)",
+          color: C.faint,
         }}
       >
         THE DEATH SPIRAL
@@ -178,6 +220,7 @@ export const LiquidityLoop: React.FC = () => {
           fill="none"
           stroke="currentColor"
           strokeWidth={3.5}
+          strokeLinecap="round"
           markerEnd="url(#ah)"
           style={{ color: topColor }}
         />
@@ -186,18 +229,19 @@ export const LiquidityLoop: React.FC = () => {
           fill="none"
           stroke="currentColor"
           strokeWidth={3.5}
+          strokeLinecap="round"
           markerEnd="url(#ah)"
           style={{ color: botColor }}
         />
         {tok && (
           <g opacity={tokOp}>
-            <circle cx={tok[0]} cy={tok[1]} r={26} fill="rgba(45,91,255,0.22)" />
+            <circle cx={tok[0]} cy={tok[1]} r={26} fill="rgba(0,113,227,0.18)" />
             <circle
               cx={tok[0]}
               cy={tok[1]}
               r={12}
-              fill={ACCENT}
-              style={{ filter: `drop-shadow(0 0 14px ${ACCENT})` }}
+              fill={C.blue}
+              style={{ filter: `drop-shadow(0 0 14px rgba(0,113,227,0.6))` }}
             />
           </g>
         )}
@@ -210,10 +254,11 @@ export const LiquidityLoop: React.FC = () => {
           width: W,
           top: 286,
           textAlign: "center",
-          fontFamily: font,
-          fontSize: 25,
+          fontFamily: monoFont,
+          fontSize: 24,
           fontWeight: 600,
-          color: topColor,
+          letterSpacing: "0.02em",
+          color: topActive ? C.blue : C.dim,
         }}
       >
         traders leave
@@ -225,10 +270,11 @@ export const LiquidityLoop: React.FC = () => {
           width: W,
           top: 762,
           textAlign: "center",
-          fontFamily: font,
-          fontSize: 25,
+          fontFamily: monoFont,
+          fontSize: 24,
           fontWeight: 600,
-          color: botColor,
+          letterSpacing: "0.02em",
+          color: botActive ? C.blue : C.dim,
         }}
       >
         makers leave
@@ -246,16 +292,12 @@ export const LiquidityLoop: React.FC = () => {
           fontFamily: font,
           fontSize: 34,
           fontWeight: 600,
-          letterSpacing: "-0.3px",
+          letterSpacing: "-0.01em",
         }}
       >
-        <span style={{ color: `rgba(255,255,255,${0.4 + 0.55 * pulseA})` }}>
-          No liquidity, no users.
-        </span>
-        <span style={{ color: "rgba(255,255,255,0.2)" }}>&nbsp;&nbsp;</span>
-        <span style={{ color: `rgba(255,255,255,${0.4 + 0.55 * pulseB})` }}>
-          No users, no liquidity.
-        </span>
+        <span style={{ color: mix(DIM, AZURE, pulseA) }}>No liquidity, no users.</span>
+        <span style={{ color: "rgba(60,60,110,0.2)" }}>&nbsp;&nbsp;</span>
+        <span style={{ color: mix(DIM, AZURE, pulseB) }}>No users, no liquidity.</span>
       </div>
     </AbsoluteFill>
   );
