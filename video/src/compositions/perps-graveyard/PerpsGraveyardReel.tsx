@@ -4,7 +4,6 @@ import {
   BG_GRADIENT,
   C,
   EASE,
-  EDGE,
   font,
   FPS,
   H,
@@ -41,44 +40,62 @@ const Stage: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
   </AbsoluteFill>
 );
 
-const beatFade = (frame: number, dur: number) =>
-  interpolate(frame, [0, EDGE, dur - EDGE, dur], [0, 1, 1, 0], {
+// Focus-pull: blur(px → 0) over `dur` frames, no opacity, no Y. (style-table §11)
+const focusPull = (frame: number, delay: number, fromBlur = 10, dur = 14) => {
+  const b = interpolate(frame - delay, [0, dur], [fromBlur, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+  return `blur(${b.toFixed(2)}px)`;
+};
+
+// Wipe-on: scaleX(0 → 1) from the left, no opacity. (style-table §11)
+const wipeOn = (frame: number, delay: number, dur = 14) =>
+  interpolate(frame - delay, [0, dur], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
   });
 
-const Intro: React.FC<{ dur: number }> = ({ dur }) => {
+const Intro: React.FC = () => {
   const frame = useCurrentFrame();
-  const fade = beatFade(frame, dur);
-  const y = interpolate(frame, [0, 18], [18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
   return (
-    <div style={{ position: "absolute", left: PANEL_L, top: 380, maxWidth: 1180, opacity: fade, transform: `translateY(${y.toFixed(1)}px)` }}>
-      <div style={{ fontFamily: monoFont, fontSize: 24, fontWeight: 700, letterSpacing: "0.2em", color: C.faint }}>
+    <div style={{ position: "absolute", left: PANEL_L, top: 380, maxWidth: 1180 }}>
+      <div
+        style={{
+          fontFamily: monoFont,
+          fontSize: 48,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          color: C.faint,
+          transform: `scaleX(${wipeOn(frame, 0).toFixed(3)})`,
+          transformOrigin: "left center",
+        }}
+      >
         THE&nbsp;PERPS&nbsp;GRAVEYARD
       </div>
-      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", color: C.text, lineHeight: 0.98, marginTop: 18 }}>
+      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", color: C.text, lineHeight: 0.98, marginTop: 18, filter: focusPull(frame, 6) }}>
         They raised the money.
       </div>
-      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 0.98, marginTop: 4, background: "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+      <div style={{ fontFamily: font, fontSize: 116, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 0.98, marginTop: 4, background: "linear-gradient(95deg, #0071E3 0%, #5E78FF 52%, #9E7BFF 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", filter: focusPull(frame, 12) }}>
         They couldn&rsquo;t keep the liquidity.
       </div>
     </div>
   );
 };
 
-const Outro: React.FC<{ dur: number }> = ({ dur }) => {
+const Outro: React.FC = () => {
   const frame = useCurrentFrame();
-  const fade = interpolate(frame, [0, EDGE, dur], [0, 1, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const y = interpolate(frame, [0, 20], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
   return (
-    <div style={{ position: "absolute", left: PANEL_L, top: 360, maxWidth: 1180, opacity: fade, transform: `translateY(${y.toFixed(1)}px)` }}>
-      <div style={{ fontFamily: font, fontSize: 132, fontWeight: 800, letterSpacing: "-0.04em", color: C.text, lineHeight: 0.96 }}>
+    <div style={{ position: "absolute", left: PANEL_L, top: 360, maxWidth: 1180 }}>
+      <div style={{ fontFamily: font, fontSize: 132, fontWeight: 800, letterSpacing: "-0.04em", color: C.text, lineHeight: 0.96, filter: focusPull(frame, 0) }}>
         {TOTAL_RAISED_LABEL}+ raised.
       </div>
-      <div style={{ fontFamily: font, fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em", color: C.dim, lineHeight: 1.05, marginTop: 22 }}>
+      <div style={{ fontFamily: font, fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em", color: C.dim, lineHeight: 1.05, marginTop: 22, filter: focusPull(frame, 8) }}>
 Across {PROTOCOLS.length} perps protocols. The liquidity left anyway.
       </div>
-      <div style={{ fontFamily: font, fontSize: 40, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.2, marginTop: 30, color: C.downDeep }}>
+      <div style={{ fontFamily: font, fontSize: 54, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.18, marginTop: 30, color: C.downDeep, filter: focusPull(frame, 16) }}>
         Rented liquidity leaves. Owned liquidity compounds.
       </div>
       <div style={{ fontFamily: monoFont, fontSize: 18, fontWeight: 500, color: C.faint, marginTop: 36 }}>
@@ -95,19 +112,19 @@ export const PerpsGraveyardReel: React.FC = () => (
       if (slot.kind === "intro")
         return (
           <Sequence key={i} from={slot.from} durationInFrames={slot.dur} name="intro">
-            <Intro dur={slot.dur} />
+            <Intro />
           </Sequence>
         );
       if (slot.kind === "outro")
         return (
           <Sequence key={i} from={slot.from} durationInFrames={slot.dur} name="outro">
-            <Outro dur={slot.dur} />
+            <Outro />
           </Sequence>
         );
       const p = PROTOCOLS[slot.protoIdx];
       return (
         <Sequence key={i} from={slot.from} durationInFrames={slot.dur} name={p.id}>
-          <Slide p={p} dur={slot.dur} />
+          <Slide p={p} />
         </Sequence>
       );
     })}

@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, SANS_TEXT, articleZoom } from "../article-2/theme";
+import { ACCENT, articleZoom } from "../article-2/theme";
+import { font, monoFont } from "../../common/fonts";
 import { ProofArticle } from "./ProofArticle";
 import { HeroPie } from "./HeroPie";
 import { HeroWaffle } from "./HeroWaffle";
@@ -126,7 +127,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
           <HeroChart hero={screen.hero} />
           <div
             style={{
-              fontFamily: SANS_TEXT,
+              fontFamily: font,
               fontSize: 44,
               color: "rgba(255,255,255,0.76)",
               marginTop: 44,
@@ -150,7 +151,7 @@ export const DataProofScreen: React.FC<{ screen: ProofScreen }> = ({ screen }) =
             bottom: 64,
             opacity: sourceOp,
             borderLeft: `4px solid ${ACCENT}`,
-            fontFamily: SANS_TEXT,
+            fontFamily: monoFont,
             fontSize: 26,
             color: "rgba(20,24,29,0.82)",
             background: "rgba(255,255,255,0.78)",

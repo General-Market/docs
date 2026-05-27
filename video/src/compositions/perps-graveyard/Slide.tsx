@@ -1,23 +1,30 @@
 import React from "react";
-import { interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { C, EASE, EDGE, font, monoFont, PANEL_L } from "./theme";
+import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { C, EASE, font, monoFont, PANEL_L } from "./theme";
 import type { Protocol } from "./data";
 import { TvlChart } from "./chart";
 
-const appear = (frame: number, delay: number, dur = 14) =>
-  interpolate(frame - delay, [0, dur], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-
-const rise = (frame: number, delay: number, dist = 16, dur = 16) =>
-  interpolate(frame - delay, [0, dur], [dist, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
-
-export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const fade = interpolate(frame, [0, EDGE, dur - EDGE, dur], [0, 1, 1, 0], {
+// Focus-pull: blur(px → 0), no opacity, no Y. For text + counting numbers. (§11)
+const focusPull = (frame: number, delay: number, fromBlur = 10, dur = 14) => {
+  const b = interpolate(frame - delay, [0, dur], [fromBlur, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: EASE.out,
   });
+  return `blur(${b.toFixed(2)}px)`;
+};
+
+// Wipe-on: scaleX(0 → 1) from the left, no opacity. For tracked-caps labels. (§11)
+const wipeOn = (frame: number, delay: number, dur = 14) =>
+  interpolate(frame - delay, [0, dur], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+
+export const Slide: React.FC<{ p: Protocol }> = ({ p }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
   // Raised number — count up, stable unit so it doesn't flicker K↔M mid-count.
   const raiseSpring = spring({ fps, frame: frame - 8, config: { damping: 16, stiffness: 120, mass: 0.8 }, durationInFrames: 30 });
@@ -46,20 +53,33 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
   const chartW = 1140;
   const chartH = 348;
 
+  // Drawdown number tracks the chart sweep, sharpening as it counts up.
+  const ddBlur = interpolate(progress, [0.05, 0.25], [10, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+  const ddLabelWipe = interpolate(progress, [0.08, 0.28], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+
   return (
-    <div style={{ position: "absolute", inset: 0, opacity: fade }}>
+    <div style={{ position: "absolute", inset: 0 }}>
       {/* eyebrow */}
       <div
         style={{
           position: "absolute",
           left: PANEL_L,
-          top: 96,
+          top: 80,
           fontFamily: monoFont,
-          fontSize: 20,
+          fontSize: 40,
           fontWeight: 700,
-          letterSpacing: "0.18em",
+          letterSpacing: "0.12em",
           color: C.faint,
-          opacity: appear(frame, 0),
+          transform: `scaleX(${wipeOn(frame, 0).toFixed(3)})`,
+          transformOrigin: "left center",
         }}
       >
         {p.model.replace(/ /g, " ")}&nbsp;·&nbsp;PERP&nbsp;DEX
@@ -70,15 +90,14 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
         style={{
           position: "absolute",
           left: PANEL_L,
-          top: 128,
+          top: 134,
           fontFamily: font,
           fontSize: 96,
           fontWeight: 800,
           letterSpacing: "-0.035em",
           color: C.text,
           lineHeight: 1,
-          opacity: appear(frame, 2),
-          transform: `translateY(${rise(frame, 2).toFixed(1)}px)`,
+          filter: focusPull(frame, 2),
         }}
       >
         {p.name}
@@ -93,8 +112,6 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
           display: "flex",
           alignItems: "center",
           gap: 30,
-          opacity: appear(frame, 8),
-          transform: `translateY(${rise(frame, 8, 14).toFixed(1)}px)`,
         }}
       >
         <div
@@ -107,12 +124,23 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
             border: `1px solid ${C.rule}`,
             boxShadow: "0 10px 30px rgba(10,12,20,0.16)",
             flexShrink: 0,
+            transform: `scale(${interpolate(frame - 8, [0, 12], [0.86, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out }).toFixed(3)})`,
           }}
         >
-          <img src={staticFile(`defi-flows/logos/${p.id}.jpg`)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <Img src={staticFile(`defi-flows/logos/${p.id}.jpg`)} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
         <div>
-          <div style={{ fontFamily: monoFont, fontSize: 19, fontWeight: 700, letterSpacing: "0.16em", color: C.faint }}>
+          <div
+            style={{
+              fontFamily: monoFont,
+              fontSize: 48,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              color: C.faint,
+              transform: `scaleX(${wipeOn(frame, 8).toFixed(3)})`,
+              transformOrigin: "left center",
+            }}
+          >
             {p.raised != null ? "RAISED" : "FUNDING"}
           </div>
           <div
@@ -124,6 +152,7 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
               color: C.text,
               lineHeight: 0.96,
               fontVariantNumeric: "tabular-nums",
+              filter: focusPull(frame, 10),
             }}
           >
             {raisedShown}
@@ -136,7 +165,7 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
         style={{
           position: "absolute",
           left: PANEL_L,
-          top: 432,
+          top: 444,
           maxWidth: 1130,
           fontFamily: font,
           fontSize: 38,
@@ -144,8 +173,7 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
           letterSpacing: "-0.012em",
           color: C.dim,
           lineHeight: 1.22,
-          opacity: appear(frame, 16),
-          transform: `translateY(${rise(frame, 16, 12).toFixed(1)}px)`,
+          filter: focusPull(frame, 16),
         }}
       >
         {p.cause}
@@ -159,15 +187,25 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
         style={{
           position: "absolute",
           left: chartX + chartW + 40,
-          top: chartY + 78,
+          top: chartY + 60,
           width: 320,
-          opacity: interpolate(progress, [0.05, 0.25], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
         }}
       >
-        <div style={{ fontFamily: font, fontSize: 132, fontWeight: 800, letterSpacing: "-0.04em", color: C.down, lineHeight: 0.9, fontVariantNumeric: "tabular-nums" }}>
+        <div style={{ fontFamily: font, fontSize: 132, fontWeight: 800, letterSpacing: "-0.04em", color: C.down, lineHeight: 0.9, fontVariantNumeric: "tabular-nums", filter: `blur(${ddBlur.toFixed(2)}px)` }}>
           −{ddShown}%
         </div>
-        <div style={{ fontFamily: monoFont, fontSize: 19, fontWeight: 700, letterSpacing: "0.1em", color: C.faint, marginTop: 12 }}>
+        <div
+          style={{
+            fontFamily: monoFont,
+            fontSize: 54,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            color: C.faint,
+            marginTop: 14,
+            transform: `scaleX(${ddLabelWipe.toFixed(3)})`,
+            transformOrigin: "left center",
+          }}
+        >
           TVL FROM PEAK
         </div>
       </div>
@@ -183,7 +221,8 @@ export const Slide: React.FC<{ p: Protocol; dur: number }> = ({ p, dur }) => {
           fontWeight: 500,
           letterSpacing: "0.01em",
           color: C.faint,
-          opacity: appear(frame, 30) * 0.95,
+          transform: `scaleX(${wipeOn(frame, 30).toFixed(3)})`,
+          transformOrigin: "left center",
         }}
       >
         * TVL: DefiLlama — {p.name} · Funding: {p.fundSrc}

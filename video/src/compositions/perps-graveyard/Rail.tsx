@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import {
   BUBBLE_D,
   C,
@@ -113,7 +113,7 @@ export const Rail: React.FC = () => {
               opacity: lit ? 1 : 0.4,
             }}
           >
-            <img
+            <Img
               src={staticFile(`defi-flows/logos/${p.id}.jpg`)}
               alt={p.name}
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

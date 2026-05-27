@@ -19,10 +19,11 @@ export const SANS = `${INTER}, "SF Pro Display", "Helvetica Neue", Arial, sans-s
 export const SANS_TEXT = `${INTER}, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
 export const SERIF = 'Georgia, "Times New Roman", Times, serif';
 
-// Accent — one knob for every mark + line. Currently blue (was orange).
-export const ACCENT = "#0A84FF";
-export const ACCENT_HL = "rgba(10, 132, 255, 0.40)";
-export const ACCENT_SOFT = "rgba(10, 132, 255, 0.28)";
+// Accent — one knob for every mark + line. GM Electric, the canonical data
+// accent from the style table (migrated from iOS systemBlue #0A84FF).
+export const ACCENT = "#2D5BFF";
+export const ACCENT_HL = "rgba(45, 91, 255, 0.40)";
+export const ACCENT_SOFT = "rgba(45, 91, 255, 0.28)";
 
 // Bloomberg page palette
 export const INK = "#16181D";

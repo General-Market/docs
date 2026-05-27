@@ -59,7 +59,7 @@ export const PANEL_R = 1610; // right edge before the rail gutter
 export const INTRO_SEC = 2.4;
 export const SLIDE_SEC = 4.2;
 export const OUTRO_SEC = 3.4;
-export const OVERLAP = 12; // cross-dissolve between beats
+export const OVERLAP = 0; // hard cuts — beats are back-to-back (no cross-dissolve)
 export const EDGE = 12; // per-beat fade length
 export const ACTIVATE_DELAY = 7; // frames after a slide starts before its bubble lights
 

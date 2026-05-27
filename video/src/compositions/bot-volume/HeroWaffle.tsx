@@ -1,6 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame } from "remotion";
-import { ACCENT, SANS } from "../article-2/theme";
+import { ACCENT } from "../article-2/theme";
+import { font, monoFont } from "../../common/fonts";
 
 const COLS = 20;
 const CELL = 58;
@@ -31,10 +32,28 @@ export const HeroWaffle: React.FC<{ filled: number; total: number }> = ({ filled
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 30 }}>
-        <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: 150, lineHeight: 1, letterSpacing: "-5px", color: "#fff" }}>
+        <span
+          style={{
+            fontFamily: font,
+            fontWeight: 800,
+            fontSize: 130,
+            lineHeight: 1,
+            letterSpacing: "-5px",
+            color: "#fff",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           {shown}
         </span>
-        <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 56, color: "rgba(255,255,255,0.55)" }}>
+        <span
+          style={{
+            fontFamily: monoFont,
+            fontWeight: 700,
+            fontSize: 56,
+            color: "rgba(255,255,255,0.55)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           / {total}
         </span>
       </div>

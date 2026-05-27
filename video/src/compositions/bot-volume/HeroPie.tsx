@@ -1,6 +1,7 @@
 import React from "react";
 import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { ACCENT, SANS, SANS_TEXT } from "../article-2/theme";
+import { ACCENT } from "../article-2/theme";
+import { font, monoFont } from "../../common/fonts";
 
 const R = 230;
 const CX = 280;
@@ -47,7 +48,7 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
         <circle cx={CX} cy={CY} r={R} fill={GREY} />
         {/* blue wedge sweeping in */}
         {angle > 0.2 && (
-          <path d={wedge(0, angle)} fill={ACCENT} style={{ filter: "drop-shadow(0 0 22px rgba(10,132,255,0.45))" }} />
+          <path d={wedge(0, angle)} fill={ACCENT} style={{ filter: "drop-shadow(0 0 22px rgba(45,91,255,0.45))" }} />
         )}
         {/* white center badge */}
         <circle cx={CX} cy={CY} r={R * 0.5 * badgePop} fill="#fff" />
@@ -55,12 +56,13 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
           x={CX}
           y={CY + 26}
           textAnchor="middle"
-          fontFamily={SANS}
+          fontFamily={font}
           fontWeight={800}
           fontSize={96}
           letterSpacing="-3px"
           fill="#0E1116"
           opacity={badgePop}
+          style={{ fontVariantNumeric: "tabular-nums" }}
         >
           {shown}%
         </text>
@@ -74,7 +76,14 @@ export const HeroPie: React.FC<{ pct: number; blueLabel: string; greyLabel: stri
         ].map((row) => (
           <div key={row.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 22, height: 22, borderRadius: 6, background: row.c }} />
-            <span style={{ fontFamily: SANS_TEXT, fontSize: 32, color: "rgba(255,255,255,0.82)" }}>
+            <span
+              style={{
+                fontFamily: monoFont,
+                fontSize: 40,
+                color: "rgba(255,255,255,0.82)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               {row.label} · {row.v}%
             </span>
           </div>

@@ -14,7 +14,8 @@ import {
   X_TICKS,
   Y_TICKS,
 } from "./data";
-import { ACCENT, INK_SOFT, NAVY, SANS, SANS_TEXT } from "./theme";
+import { ACCENT, INK_SOFT, NAVY } from "./theme";
+import { font, monoFont } from "../../common/fonts";
 
 const PL = 320; // plot left
 const PR = 1620; // plot right
@@ -39,7 +40,8 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
     interpolate(frame, [180, 200], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
   );
 
-  const titleY = interpolate(frame, [0, 10], [26, 0], {
+  // Heading sharpens in on a focus-pull — no fade-up-from-below.
+  const titleBlur = interpolate(frame, [0, 14], [10, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
@@ -70,12 +72,12 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           position: "absolute",
           left: 80,
           top: 86,
-          transform: `translateY(${titleY}px)`,
+          filter: titleBlur > 0.1 ? `blur(${titleBlur.toFixed(2)}px)` : undefined,
         }}
       >
         <div
           style={{
-            fontFamily: SANS,
+            fontFamily: font,
             fontWeight: 800,
             fontSize: 66,
             letterSpacing: "-1.4px",
@@ -86,7 +88,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
         </div>
         <div
           style={{
-            fontFamily: SANS_TEXT,
+            fontFamily: monoFont,
             fontSize: 28,
             color: "rgba(255,255,255,0.62)",
             marginTop: 12,
@@ -160,7 +162,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             x={px(nx)}
             y={PB + 44}
             fill="rgba(255,255,255,0.6)"
-            fontFamily={SANS_TEXT}
+            fontFamily={monoFont}
             fontSize={26}
             textAnchor="middle"
             opacity={axisDraw}
@@ -174,7 +176,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
             x={PL - 26}
             y={py(ny) + 9}
             fill="rgba(255,255,255,0.6)"
-            fontFamily={SANS_TEXT}
+            fontFamily={monoFont}
             fontSize={26}
             textAnchor="end"
             opacity={axisDraw}
@@ -188,7 +190,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           x={(PL + PR) / 2}
           y={PB + 96}
           fill="rgba(255,255,255,0.5)"
-          fontFamily={SANS_TEXT}
+          fontFamily={monoFont}
           fontSize={26}
           textAnchor="middle"
           opacity={axisDraw}
@@ -199,7 +201,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           x={104}
           y={(PT + PB) / 2}
           fill="rgba(255,255,255,0.5)"
-          fontFamily={SANS_TEXT}
+          fontFamily={monoFont}
           fontSize={26}
           textAnchor="middle"
           transform={`rotate(-90 104 ${(PT + PB) / 2})`}
@@ -220,7 +222,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
           pathLength={1}
           strokeDasharray={1}
           strokeDashoffset={1 - lineDraw}
-          style={{ filter: `drop-shadow(0 0 12px rgba(10,132,255,0.5))` }}
+          style={{ filter: `drop-shadow(0 0 12px rgba(45,91,255,0.5))` }}
         />
 
         {/* scatter points */}
@@ -259,7 +261,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
       >
         <div
           style={{
-            fontFamily: SANS,
+            fontFamily: font,
             fontWeight: 800,
             fontSize: 42,
             color: "#fff",
@@ -270,7 +272,7 @@ export const ImpressionsVolumeChart: React.FC<{ background?: string }> = ({
         </div>
         <div
           style={{
-            fontFamily: SANS_TEXT,
+            fontFamily: monoFont,
             fontSize: 24,
             color: INK_SOFT,
             marginTop: 8,
