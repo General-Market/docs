@@ -3,7 +3,7 @@ import { interpolate, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { FIELD_BG, Stage } from "./chrome";
 import { BrandMark } from "../../components/BrandMark";
 import { C, EASE, font, FPS, H, monoFont, PILL_GRADIENT, sec, W } from "./theme";
-import { LineRow, Packet, TraderChip } from "./flow";
+import { LineRow, Packet } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
 import { GlassFlow, GlassLine, GlassQuestion } from "./concepts";
 import { DayTimeline, PersonIcon, SourceStack, TradeFan } from "./throughput";
@@ -71,6 +71,14 @@ const ci = (
 const OPEN_Q: [number, number] = [sec(0.3), sec(3.0)]; // glass "one question" builds, holds at AX
 const SEL_START = sec(3.5);
 const SEL_STEP = sec(0.42);
+
+// The opening question is a blown-up Fartcoin card; at ~3s it shrinks into the
+// dashboard's slot-0 (Fartcoin) position and the chrome assembles around it —
+// a morph, not a crossfade. FC_* is that slot's centre in board coordinates.
+const FC_O = cardOrigin(0);
+const FC_X = AX - W / 2 + FC_O.x + CARD_W / 2;
+const FC_Y = FC_O.y + CARD_H / 2;
+const Q_MORPH: [number, number] = [OPEN_Q[1] - sec(0.5), OPEN_Q[1] + sec(0.4)];
 
 // ── beats (frames @60fps) — deliberately uneven lengths ──────────────────────
 const T = {
@@ -190,10 +198,16 @@ export const BatchFlowReel: React.FC = () => {
   const tx = W / 2 - camX * scale;
   const ty = H / 2 - camY * scale;
 
-  // ── Concept 1: one question — a single binary call, in glass, at AX ────────
+  // ── Concept 1: one question — a blown-up Fartcoin card morphing into slot 0 ─
   const qReveal = ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(1.0), 0, 1, EASE.out);
-  const qOp = Math.min(ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(0.4), 0, 1), ci(frame, OPEN_Q[1] - sec(0.1), OPEN_Q[1] + sec(0.4), 1, 0));
-  const qScale = lerp(1, 0.94, ci(frame, OPEN_Q[1] - sec(0.3), OPEN_Q[1] + sec(0.3), 0, 1, EASE.inOut));
+  const morphP = ci(frame, Q_MORPH[0], Q_MORPH[1], 0, 1, EASE.inOut);
+  const qx = lerp(AX, FC_X, morphP);
+  const qy = lerp(CY, FC_Y, morphP);
+  const qScale = lerp(1, CARD_W / 820, morphP); // 820 = GlassQuestion panel width
+  const qOp = Math.min(
+    ci(frame, OPEN_Q[0], OPEN_Q[0] + sec(0.4), 0, 1),
+    ci(frame, lerp(Q_MORPH[0], Q_MORPH[1], 0.5), lerp(Q_MORPH[0], Q_MORPH[1], 0.92), 1, 0),
+  );
 
   // ── Stage 1: the live dashboard, cursor picking ten markets ────────────────
   const picks = MARKETS.map((m, i) => (frame >= SEL_START + i * SEL_STEP ? m.you : null));
@@ -209,11 +223,12 @@ export const BatchFlowReel: React.FC = () => {
   const activeIndex = frame < SEL_START ? null : Math.min(MARKETS.length - 1, Math.round((frame - SEL_START) / SEL_STEP));
   const cursorVisible = frame > SEL_START - sec(0.2) && frame < T.pickEnd;
 
-  // dashboard fades in after the question, recedes as the merge begins
-  const dashIn = ci(frame, OPEN_Q[1] - sec(0.2), OPEN_Q[1] + sec(0.5), 0, 1, EASE.out);
+  // the chrome assembles around the morphing card; slot-0 lands as the question
+  // vanishes; the whole panel recedes once the merge begins
+  const dashBuild = ci(frame, Q_MORPH[0] + sec(0.1), OPEN_Q[1] + sec(0.5), 0, 1, EASE.out);
+  const slot0Reveal = ci(frame, lerp(Q_MORPH[0], Q_MORPH[1], 0.62), Q_MORPH[1], 0, 1, EASE.out);
   const dashMerge = frame < T.pickEnd ? 1 : ci(frame, T.pickEnd, lerp(T.pickEnd, T.mergeEnd, 0.5), 1, 0, EASE.inOut);
-  const dashChromeOp = Math.min(dashIn, dashMerge);
-  const dashScale = lerp(0.96, 1, dashIn);
+  const dashChromeOp = frame < Q_MORPH[0] - sec(0.1) ? 0 : dashMerge;
 
   // ── Stage 1→2: the MERGE — the ten picked cards collapse into one packet ────
   const cardsMerging = frame >= T.pickEnd && frame < T.mergeEnd;
@@ -221,13 +236,13 @@ export const BatchFlowReel: React.FC = () => {
   const cardDur = sec(0.85);
   const packetBloom = ci(frame, lerp(T.pickEnd, T.mergeEnd, 0.42), T.mergeEnd, 0, 1, EASE.out);
 
-  // ── Stage 3: You + four traders fly into the pool ──────────────────────────
-  const RX = 380;
-  const RY = 255;
-  const ringPos = (k: number): { x: number; y: number } => {
-    const ang = (k / N_TRADERS) * Math.PI * 2 - Math.PI / 2;
-    return { x: BX + Math.cos(ang) * RX, y: CY + Math.sin(ang) * RY };
-  };
+  // ── Stage 3: You + four traders fly into a clean row above the pool ─────────
+  // Five separated columns — person glyph over the trader's packet — with You
+  // centred. Nothing overlaps the POOL box, which sits below to catch them.
+  const COLGAP = 332;
+  const SLOT = [2, 1, 0, 3, 4]; // trader index → column (You centred)
+  const ROW_Y = CY - 268;
+  const rowPos = (k: number): { x: number; y: number } => ({ x: BX + (SLOT[k] - 2) * COLGAP, y: ROW_Y });
   const gatherP = ci(frame, T.gather[0], T.gather[1], 0, 1, EASE.inOut);
   const arrivedCount =
     1 + [1, 2, 3, 4].filter((k) => ci(frame, T.travel1[0] + k * sec(0.18), T.travel1[1], 0, 1) >= 1).length;
@@ -310,18 +325,19 @@ export const BatchFlowReel: React.FC = () => {
         {/* flow spine */}
         <div style={{ position: "absolute", left: AX, top: CY - 1, width: MX2 - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
 
-        {/* Concept 1 — one question, in glass, at AX */}
-        {qOp > 0.01 && (
-          <div style={{ position: "absolute", left: AX, top: CY, transform: `translate(-50%,-50%) scale(${qScale.toFixed(3)})`, opacity: qOp, zIndex: 45 }}>
-            <GlassQuestion reveal={qReveal} />
+        {/* Stage 1 — the real dashboard, full-frame, centred on AX; assembles
+            around the Fartcoin slot the question morphs into */}
+        {dashChromeOp > 0.01 && (
+          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashChromeOp }}>
+            <ProductUI picks={picks} activeIndex={activeIndex} build={dashBuild} slot0Reveal={slot0Reveal} />
+            {cursorVisible ? <Cursor x={cursorX} y={cursorY} click={click} /> : null}
           </div>
         )}
 
-        {/* Stage 1 — the real dashboard, full-frame, centred on AX */}
-        {dashChromeOp > 0.01 && (
-          <div style={{ position: "absolute", left: AX - W / 2, top: 0, width: W, height: H, opacity: dashChromeOp, transform: `scale(${dashScale.toFixed(3)})`, transformOrigin: "center center" }}>
-            <ProductUI picks={picks} activeIndex={activeIndex} />
-            {cursorVisible ? <Cursor x={cursorX} y={cursorY} click={click} /> : null}
+        {/* Concept 1 — one question, a blown-up Fartcoin card, morphing into slot 0 */}
+        {qOp > 0.01 && (
+          <div style={{ position: "absolute", left: qx, top: qy, transform: `translate(-50%,-50%) scale(${qScale.toFixed(3)})`, opacity: qOp, zIndex: 45 }}>
+            <GlassQuestion reveal={qReveal} />
           </div>
         )}
 
@@ -350,39 +366,51 @@ export const BatchFlowReel: React.FC = () => {
           </div>
         )}
 
-        {/* Stage 3 — You + four traders fly into the pool, then gather in ───── */}
+        {/* Stage 3 — You + four traders fly into a row, then gather into the pool */}
         {poolPacketsOp > 0.01 && (
           <div style={{ opacity: poolPacketsOp }}>
             {[0, 1, 2, 3, 4].map((k) => {
-              const ring = ringPos(k);
+              const row = rowPos(k);
+              const isYou = k === 0;
+              const col = TRADER_COLORS[k];
               const arrive = ci(frame, T.travel1[0] + k * sec(0.18), T.travel1[1], 0, 1, EASE.inOut);
-              // You (k=0) enters from the dashboard at AX; the others sweep in from far out.
-              const entry =
-                k === 0
-                  ? { x: AX, y: CY }
-                  : { x: BX + (ring.x - BX) * 2.4, y: CY + (ring.y - CY) * 2.4 };
-              let x = lerp(entry.x, ring.x, arrive);
-              let y = lerp(entry.y, ring.y, arrive);
-              let s = k === 0 ? lerp(1.0, 0.66, arrive) : 0.6;
+              // You enters from the dashboard at AX; the others drop in from above.
+              const entry = isYou ? { x: AX, y: CY } : { x: row.x, y: row.y - 460 };
+              let x = lerp(entry.x, row.x, arrive);
+              let y = lerp(entry.y, row.y, arrive);
+              let s = isYou ? 1.0 : 0.96;
+              let op = 1;
               if (gatherP > 0) {
-                x = lerp(ring.x, BX, gatherP);
-                y = lerp(ring.y, CY, gatherP);
+                x = lerp(row.x, BX, gatherP);
+                y = lerp(row.y, CY, gatherP);
                 s = lerp(s, 0.16, gatherP);
+                op = 1 - gatherP * 0.92;
               }
-              const op = gatherP > 0 ? 1 - gatherP * 0.92 : 1;
-              return (
-                <div key={`pk-${k}`} style={{ position: "absolute", left: x, top: y, transform: `translate(-50%,-50%) scale(${s.toFixed(3)})`, opacity: op, zIndex: k === 0 ? 12 : 10 }}>
-                  <Packet picks={TRADER_TICKETS[k]} label={TRADER_NAMES[k]} glow={TRADER_COLORS[k]} w={k === 0 ? 320 : 210} />
-                </div>
+              // the glyph appears just after the column arrives, recedes on gather
+              const glyphOp = Math.min(
+                ci(frame, T.travel1[0] + k * sec(0.18) + sec(0.25), T.travel1[0] + k * sec(0.18) + sec(0.65), 0, 1),
+                1 - gatherP,
               );
-            })}
-            {/* trader chips ring */}
-            {[1, 2, 3, 4].map((k) => {
-              const ring = ringPos(k);
-              const chipOp = Math.min(ci(frame, T.travel1[0] + sec(0.3), T.travel1[0] + sec(0.7), 0, 1), 1 - gatherP);
               return (
-                <div key={`c${k}`} style={{ position: "absolute", left: ring.x, top: ring.y - 150, transform: "translate(-50%,-50%) scale(0.82)", opacity: chipOp }}>
-                  <TraderChip name={TRADER_NAMES[k]} color={TRADER_COLORS[k]} />
+                <div
+                  key={`tr-${k}`}
+                  style={{
+                    position: "absolute",
+                    left: x,
+                    top: y,
+                    transform: `translate(-50%,-50%) scale(${s.toFixed(3)})`,
+                    opacity: op,
+                    zIndex: isYou ? 14 : 11,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 16,
+                  }}
+                >
+                  <div style={{ opacity: glyphOp, display: "flex", justifyContent: "center" }}>
+                    <PersonIcon size={isYou ? 96 : 78} accent={col} />
+                  </div>
+                  <Packet picks={TRADER_TICKETS[k]} label={TRADER_NAMES[k]} glow={col} w={isYou ? 300 : 210} />
                 </div>
               );
             })}

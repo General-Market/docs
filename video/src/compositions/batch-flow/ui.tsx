@@ -1,5 +1,5 @@
 import React from "react";
-import { C, font, monoFont, PILL_GRADIENT } from "./theme";
+import { C, EASE, font, monoFont, PILL_GRADIENT } from "./theme";
 import { glassCard, glassPanel } from "./chrome";
 import { MARKETS, type Market } from "./data";
 
@@ -401,26 +401,64 @@ export const Cursor: React.FC<{ x: number; y: number; click: number }> = ({ x, y
 );
 
 // ── the assembled dashboard ───────────────────────────────────────────────
+//
+// `build` (0..1) assembles the chrome around the Fartcoin card instead of
+// fading the whole panel in: the header drops, the chart and panels rise, the
+// nine other cards pop in with a stagger. `slot0Reveal` brings the Fartcoin
+// card itself in — it's the handoff target the opening question morphs into,
+// so the question vanishes exactly as this card lands.
+
+const clamp01 = (t: number): number => Math.max(0, Math.min(1, t));
+
 export const ProductUI: React.FC<{
   picks: ("up" | "down" | null)[];
   activeIndex: number | null;
   confirmGlow?: number;
-}> = ({ picks, activeIndex, confirmGlow = 0 }) => (
-  <>
-    <Header />
-    <BigChart />
-    <div style={{ position: "absolute", left: 24, top: 474, fontFamily: font, fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", color: C.dim }}>
-      TOP 10 BY PRICE
-    </div>
-    {MARKETS.map((m, i) => {
-      const o = cardOrigin(i);
-      return (
-        <div key={i} style={{ position: "absolute", left: o.x, top: o.y }}>
-          <MarketCard market={m} index={i} picked={picks[i] ?? null} active={activeIndex === i} />
-        </div>
-      );
-    })}
-    <RoundPanel />
-    <StakePanel confirmGlow={confirmGlow} />
-  </>
-);
+  build?: number;
+  slot0Reveal?: number;
+}> = ({ picks, activeIndex, confirmGlow = 0, build = 1, slot0Reveal = 1 }) => {
+  const win = (s: number, e: number): number => EASE.out(clamp01((build - s) / (e - s)));
+  const hE = win(0, 0.35);
+  const cE = win(0.08, 0.5);
+  const rE = win(0.3, 0.7);
+  const sE = win(0.4, 0.78);
+  const lE = win(0.2, 0.5);
+  return (
+    <>
+      <div style={{ position: "absolute", inset: 0, opacity: hE, transform: `translateY(${(-72 * (1 - hE)).toFixed(1)}px)` }}>
+        <Header />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: cE, transformOrigin: "center center", transform: `translateY(${(44 * (1 - cE)).toFixed(1)}px) scale(${(0.95 + 0.05 * cE).toFixed(3)})` }}>
+        <BigChart />
+      </div>
+      <div style={{ position: "absolute", left: 24, top: 474, fontFamily: font, fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", color: C.dim, opacity: lE }}>
+        TOP 10 BY PRICE
+      </div>
+      {MARKETS.map((m, i) => {
+        const o = cardOrigin(i);
+        const e = i === 0 ? slot0Reveal : win(0.24 + i * 0.045, 0.24 + i * 0.045 + 0.4);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: o.x,
+              top: o.y,
+              opacity: e,
+              transformOrigin: "center center",
+              transform: `translateY(${(22 * (1 - e)).toFixed(1)}px) scale(${(0.88 + 0.12 * e).toFixed(3)})`,
+            }}
+          >
+            <MarketCard market={m} index={i} picked={picks[i] ?? null} active={activeIndex === i} />
+          </div>
+        );
+      })}
+      <div style={{ position: "absolute", inset: 0, opacity: rE, transform: `translateX(${(96 * (1 - rE)).toFixed(1)}px)` }}>
+        <RoundPanel />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: sE, transform: `translateX(${(96 * (1 - sE)).toFixed(1)}px)` }}>
+        <StakePanel confirmGlow={confirmGlow} />
+      </div>
+    </>
+  );
+};
