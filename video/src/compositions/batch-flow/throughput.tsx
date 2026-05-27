@@ -1,6 +1,8 @@
 import React from "react";
-import { C, EASE, font, monoFont, PILL_GRADIENT } from "./theme";
+import { interpolate } from "remotion";
+import { C, EASE, font, PILL_GRADIENT } from "./theme";
 import { glassCard } from "./chrome";
+import { BATCHES_PER_DAY, LINES_PER_BATCH, THROUGHPUT_SOURCES, THROUGHPUT_TOTAL } from "./data";
 
 // The throughput climax, in the reel's frosted-glass language: one person makes
 // one trade; that trade fans into ten thousand settled lines; a day repeats it a
@@ -10,16 +12,6 @@ import { glassCard } from "./chrome";
 const clamp01 = (t: number): number => Math.max(0, Math.min(1, t));
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 export const commas = (n: number): string => Math.round(n).toLocaleString("en-US");
-
-const rng = (seed: number): (() => number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
 
 const heroText = (size: number): React.CSSProperties => ({
   fontFamily: font,
@@ -56,178 +48,159 @@ export const PersonIcon: React.FC<{ size?: number; accent?: string }> = ({ size 
   </div>
 );
 
-// ── One trade → ten thousand lines ────────────────────────────────────────────
-// `reveal` (0..1) extends the fan outward and fades in the multitude behind it;
-// `count` is the number the reel ticks to 10,000 under the fan.
-export const TradeFan: React.FC<{ reveal: number; count: number }> = ({ reveal, count }) => {
-  const W = 900;
-  const Hc = 560;
-  const ox = 44;
-  const oy = Hc * 0.40;
-  const tipX = W - 56;
-  const midX = ox + (tipX - ox) * 0.40;
-  const N1 = 7;
-  const N2 = 7;
-  const M = N1 * N2;
-  const branchHalf = Hc * 0.27;
-  const endHalf = Hc * 0.36;
+// ── The climax as ONE continuous pull-back ────────────────────────────────────
+// A vertical three-level tree the camera only ever zooms OUT of: one trade fans
+// into a 10,000-line graph (a transaction); that whole graph becomes one cell of
+// a hundred (a day → 1,000,000); that field becomes one of ten sources
+// (→ 10,000,000). Self-similar hub-and-spokes at every level; detail cross-fades
+// by zoom so the eye always reads a connected graph, never three separate scenes.
 
-  const t1 = EASE.out(clamp01(reveal / 0.42));
-  const t2 = EASE.out(clamp01((reveal - 0.26) / 0.52));
-  const hazeT = clamp01((reveal - 0.5) / 0.5);
+const climaxRng = (seed: number): (() => number) => {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
 
-  const mainY = (i: number): number => oy + ((i - (N1 - 1) / 2) / ((N1 - 1) / 2)) * branchHalf;
-  const endY = (k: number): number => oy + ((k - (M - 1) / 2) / ((M - 1) / 2)) * endHalf;
+export const ThroughputClimax: React.FC<{ grow: number }> = ({ grow }) => {
+  const BOX_W = 1760;
+  const BOX_H = 1080;
+  const cxs = BOX_W / 2;
+  const cys = 600;
 
-  const rnd = rng(7);
-  const haze = Array.from({ length: 240 }, () => {
-    const fx = 0.46 + rnd() * 0.6;
-    const x = ox + (tipX - ox) * fx;
-    const spreadAtX = endHalf * clamp01((x - ox) / (tipX - ox)) * 1.04;
-    const y = oy + (rnd() * 2 - 1) * spreadAtX;
-    return { x, y, len: 5 + rnd() * 11, o: 0.08 + rnd() * 0.2 };
+  // world geometry — the focus chain runs straight up (-y) from the root
+  const RW = 3600; // root → source
+  const RF = 1040; // source → day
+  const RC = 250; // day → leaf
+  const NS = THROUGHPUT_SOURCES.length; // ten sources
+  const ND = 10; // days drawn per source (representative of 100)
+  const NL = 46; // leaves drawn for the focus transaction (representative of 10,000)
+  const focusSourceY = -RW;
+  const focusDayY = -RW - RF;
+
+  // camera pulls back along the chain; zoom shrinks (log-smooth)
+  const clampEase = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const, easing: EASE.inOut };
+  // Camera holds on the focus cell while it fans to 10,000, then pulls back to
+  // the day field, then to the ten-source world — aligned to the counter tiers.
+  const camY = interpolate(grow, [0, 0.35, 0.7, 1], [focusDayY, focusDayY, focusSourceY, 0], clampEase);
+  const z = Math.exp(interpolate(grow, [0, 0.35, 0.7, 1], [Math.log(1.3), Math.log(1.3), Math.log(0.42), Math.log(0.1)], clampEase));
+  const sx = (wx: number): number => cxs + z * wx;
+  const sy = (wy: number): number => cys + z * (wy - camY);
+  const nr = (base: number): number => Math.max(1.4, base * z);
+  const ew = (base: number): number => Math.max(0.5, base * z);
+
+  // level-of-detail: which tier of the tree is drawn, cross-fading by zoom
+  const leafOp = clamp01(1 - (grow - 0.4) / 0.12);
+  const fieldOp = clamp01((grow - 0.38) / 0.12) * clamp01(1 - (grow - 0.76) / 0.12);
+  const worldOp = clamp01((grow - 0.68) / 0.14);
+
+  const sources = THROUGHPUT_SOURCES.map((s, i) => {
+    const ang = (-90 + i * (360 / NS)) * (Math.PI / 180);
+    return { ...s, i, x: Math.cos(ang) * RW, y: Math.sin(ang) * RW, isFocus: i === 0 };
   });
+  const focusDays = Array.from({ length: ND }, (_, j) => {
+    const ang = (-90 + j * (360 / ND)) * (Math.PI / 180);
+    return { j, x: Math.cos(ang) * RF, y: focusSourceY + Math.sin(ang) * RF, isFocus: j === 0 };
+  });
+  const focusDay = { x: 0, y: focusDayY };
+  const leafRnd = climaxRng(7);
+  const leaves = Array.from({ length: NL }, () => {
+    const ang = leafRnd() * Math.PI * 2;
+    const rr = RC * (0.55 + leafRnd() * 0.55);
+    return { x: focusDay.x + Math.cos(ang) * rr, y: focusDay.y + Math.sin(ang) * rr };
+  });
+  const leafGrow = clamp01((grow - 0.04) / 0.26);
+
+  const count =
+    grow < 0.34
+      ? interpolate(grow, [0.02, 0.34], [1, LINES_PER_BATCH], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out })
+      : grow < 0.7
+        ? interpolate(grow, [0.34, 0.7], [LINES_PER_BATCH, LINES_PER_BATCH * BATCHES_PER_DAY], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out })
+        : interpolate(grow, [0.7, 1], [LINES_PER_BATCH * BATCHES_PER_DAY, THROUGHPUT_TOTAL], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.out });
+  const label = grow < 0.4 ? "One transaction → 10,000 lines" : grow < 0.72 ? "× 100 batches a day" : "Ten sources · one engine";
 
   return (
-    <div style={{ position: "relative", width: W, height: Hc }}>
-      <svg width={W} height={Hc} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        {haze.map((h, i) => (
-          <line key={`h${i}`} x1={h.x} y1={h.y} x2={h.x + h.len} y2={h.y} stroke={C.blue} strokeWidth={2} strokeLinecap="round" opacity={h.o * hazeT} />
-        ))}
-        {Array.from({ length: M }, (_, k) => {
-          const parent = Math.floor(k / N2);
-          const px = midX;
-          const py = mainY(parent);
-          const ex = lerp(px, tipX, t2);
-          const ey = lerp(py, endY(k), t2);
-          return <line key={`e${k}`} x1={px} y1={py} x2={ex} y2={ey} stroke={C.violet} strokeWidth={1.6} strokeLinecap="round" opacity={0.5 * t2} />;
-        })}
-        {Array.from({ length: N1 }, (_, i) => {
-          const bx = lerp(ox, midX, t1);
-          const by = lerp(oy, mainY(i), t1);
-          return <line key={`m${i}`} x1={ox} y1={oy} x2={bx} y2={by} stroke={C.blue} strokeWidth={3.2} strokeLinecap="round" opacity={0.6 * t1} />;
-        })}
-        <circle cx={ox} cy={oy} r={13} fill={C.blue} />
-        <circle cx={ox} cy={oy} r={13 + 12 * (1 - t1)} fill="none" stroke={C.blue} strokeWidth={2} opacity={0.5 * (1 - t1)} />
+    <div style={{ position: "relative", width: BOX_W, height: BOX_H }}>
+      {/* counter + label, fixed at the top */}
+      <div style={{ position: "absolute", left: BOX_W / 2, top: 0, transform: "translateX(-50%)", textAlign: "center", zIndex: 5 }}>
+        <div style={heroText(132)}>{commas(count)}</div>
+        <div style={{ marginTop: 12, display: "inline-flex", padding: "11px 28px", borderRadius: 999, background: PILL_GRADIENT, fontFamily: font, fontSize: 30, fontWeight: 800, color: "#fff", boxShadow: "0 14px 34px rgba(94,120,255,0.4)" }}>{label}</div>
+      </div>
+
+      <svg width={BOX_W} height={BOX_H} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+        {/* WORLD — root → ten sources, each carrying a faint day-ring */}
+        {worldOp > 0.01 && (
+          <g opacity={worldOp}>
+            {sources.map((s) => (
+              <line key={`rs${s.i}`} x1={sx(0)} y1={sy(0)} x2={sx(s.x)} y2={sy(s.y)} stroke="rgba(0,113,227,0.32)" strokeWidth={ew(2.4)} strokeLinecap="round" />
+            ))}
+            {sources.map((s) => {
+              const rnd = climaxRng(s.i * 17 + 3);
+              return Array.from({ length: 8 }, (_, d) => {
+                const ang = (d / 8) * Math.PI * 2 + rnd();
+                const dx = s.x + Math.cos(ang) * RF * 0.5;
+                const dy = s.y + Math.sin(ang) * RF * 0.5;
+                return <circle key={`sd${s.i}-${d}`} cx={sx(dx)} cy={sy(dy)} r={nr(6)} fill={s.color} opacity={0.6} />;
+              });
+            })}
+            {sources.map((s) => (
+              <circle key={`s${s.i}`} cx={sx(s.x)} cy={sy(s.y)} r={nr(s.isFocus ? 20 : 16)} fill={s.color} stroke="#fff" strokeWidth={ew(2)} />
+            ))}
+            <circle cx={sx(0)} cy={sy(0)} r={nr(24)} fill={C.blue} stroke="#fff" strokeWidth={ew(2.5)} />
+          </g>
+        )}
+
+        {/* FIELD — focus source → its day-ring (each day a small fan) */}
+        {fieldOp > 0.01 && (
+          <g opacity={fieldOp}>
+            {focusDays.map((d) => (
+              <line key={`fd${d.j}`} x1={sx(0)} y1={sy(focusSourceY)} x2={sx(d.x)} y2={sy(d.y)} stroke="rgba(0,113,227,0.3)" strokeWidth={ew(2)} strokeLinecap="round" />
+            ))}
+            {focusDays.map((d) => {
+              if (d.isFocus) return null;
+              const rnd = climaxRng(d.j * 13 + 1);
+              return Array.from({ length: 6 }, (_, l) => {
+                const ang = (l / 6) * Math.PI * 2 + rnd();
+                const lx = d.x + Math.cos(ang) * RC * 0.5;
+                const ly = d.y + Math.sin(ang) * RC * 0.5;
+                return <circle key={`dl${d.j}-${l}`} cx={sx(lx)} cy={sy(ly)} r={nr(4.5)} fill={C.violet} opacity={0.55} />;
+              });
+            })}
+            {focusDays.map((d) => (
+              <circle key={`fdn${d.j}`} cx={sx(d.x)} cy={sy(d.y)} r={nr(d.isFocus ? 14 : 11)} fill={d.isFocus ? C.blue : "#7C89B8"} stroke="#fff" strokeWidth={ew(1.6)} />
+            ))}
+            <circle cx={sx(0)} cy={sy(focusSourceY)} r={nr(18)} fill={C.blue} stroke="#fff" strokeWidth={ew(2)} />
+          </g>
+        )}
+
+        {/* CELL — the focus transaction: one node fans into its 10,000 lines */}
+        {leafOp > 0.01 && (
+          <g opacity={leafOp}>
+            {leaves.map((lf, k) => {
+              const ex = lerp(focusDay.x, lf.x, leafGrow);
+              const ey = lerp(focusDay.y, lf.y, leafGrow);
+              return <line key={`le${k}`} x1={sx(focusDay.x)} y1={sy(focusDay.y)} x2={sx(ex)} y2={sy(ey)} stroke="rgba(110,91,255,0.42)" strokeWidth={ew(1.8)} strokeLinecap="round" />;
+            })}
+            {leaves.map((lf, k) => {
+              const ex = lerp(focusDay.x, lf.x, leafGrow);
+              const ey = lerp(focusDay.y, lf.y, leafGrow);
+              return <circle key={`ln${k}`} cx={sx(ex)} cy={sy(ey)} r={nr(7)} fill={C.blue} opacity={0.85} />;
+            })}
+            <circle cx={sx(focusDay.x)} cy={sy(focusDay.y)} r={nr(16)} fill={C.blue} stroke="#fff" strokeWidth={ew(2.5)} />
+          </g>
+        )}
       </svg>
-      <div style={{ position: "absolute", left: W / 2, top: Hc - 4, transform: "translateX(-50%)", textAlign: "center" }}>
-        <div style={heroText(146)}>{commas(count)}</div>
-        <div style={{ fontFamily: monoFont, fontSize: 25, fontWeight: 700, letterSpacing: "0.05em", color: C.dim, marginTop: 6 }}>
-          lines settled · one transaction
-        </div>
-      </div>
-    </div>
-  );
-};
 
-// ── A day repeats it a hundred times ─────────────────────────────────────────
-// `stamps` (0..100) lights the day's batches left→right; `product` is the
-// running total the reel ticks to 1,000,000.
-export const DayTimeline: React.FC<{ stamps: number; product: number }> = ({ stamps, product }) => {
-  const W = 1240;
-  const axisY = 360;
-  const x0 = 70;
-  const x1 = W - 70;
-  const N = 100;
-  const lit = Math.floor(clamp01(stamps / N) * N + 0.0001);
-  const xAt = (i: number): number => x0 + (i / (N - 1)) * (x1 - x0);
-  const ticks = [0, 25, 50, 75, 99];
-  const labels = ["00:00", "06:00", "12:00", "18:00", "24:00"];
-
-  return (
-    <div style={{ position: "relative", width: W, height: 520 }}>
-      <div style={{ position: "absolute", left: W / 2, top: 18, transform: "translateX(-50%)", textAlign: "center" }}>
-        <div style={heroText(132)}>{commas(product)}</div>
-        <div style={{ fontFamily: monoFont, fontSize: 25, fontWeight: 700, letterSpacing: "0.05em", color: C.dim, marginTop: 6 }}>
-          settlements today
-        </div>
-      </div>
-      <svg width={W} height={520} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        <line x1={x0} y1={axisY} x2={x1} y2={axisY} stroke={C.rule} strokeWidth={2} />
-        {Array.from({ length: N }, (_, i) => {
-          const x = xAt(i);
-          const on = i < lit;
-          const col = on ? C.blue : "rgba(60,64,130,0.16)";
-          const h = on ? 34 : 16;
-          return (
-            <g key={i}>
-              <line x1={x} y1={axisY} x2={x} y2={axisY - h} stroke={col} strokeWidth={2.4} strokeLinecap="round" opacity={on ? 1 : 0.7} />
-              {on ? <circle cx={x} cy={axisY - h - 5} r={2.8} fill={C.blue} /> : null}
-            </g>
-          );
-        })}
-        {ticks.map((i, j) => (
-          <text key={j} x={xAt(i)} y={axisY + 32} textAnchor="middle" fontFamily={monoFont} fontSize={20} fontWeight={700} fill={C.faint}>
-            {labels[j]}
-          </text>
-        ))}
-      </svg>
-      <div style={{ position: "absolute", left: W / 2, top: axisY + 80, transform: "translateX(-50%)" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 12, padding: "12px 28px", borderRadius: 999, background: PILL_GRADIENT, fontFamily: font, fontSize: 30, fontWeight: 800, color: "#fff", boxShadow: "0 14px 34px rgba(94,120,255,0.4)" }}>
-          × 100 batches a day
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Ten sources, each running the same machine ───────────────────────────────
-// `rise` (0..1) brings rows 1..n in beneath the live row; `total` is the grand
-// total the reel ticks to 10,000,000. `liveName` marks the source already shown.
-export type ThroughputSource = { name: string; color: string };
-
-export const SourceStack: React.FC<{
-  sources: ThroughputSource[];
-  rise: number;
-  total: number;
-  perSource: number;
-}> = ({ sources, rise, total, perSource }) => {
-  const ROWH = 132;
-  const rowW = 940;
-  return (
-    <div style={{ position: "relative", width: rowW, height: sources.length * ROWH }}>
-      {/* the grand total, above the stack */}
-      <div style={{ position: "absolute", left: rowW / 2, top: -240, transform: "translateX(-50%)", textAlign: "center" }}>
-        <div style={heroText(176)}>{commas(total)}</div>
-        <div style={{ fontFamily: monoFont, fontSize: 30, fontWeight: 700, letterSpacing: "0.07em", color: C.dim, marginTop: 8 }}>
-          SETTLEMENTS · A DAY
-        </div>
-      </div>
-      {sources.map((s, i) => {
-        const isLive = i === 0;
-        const appear = isLive ? 1 : clamp01((rise - (i - 1) * 0.06) / 0.4);
-        const e = EASE.out(appear);
-        return (
-          <div
-            key={s.name}
-            style={{
-              position: "absolute",
-              left: 0,
-              top: i * ROWH,
-              width: rowW,
-              height: ROWH - 18,
-              opacity: e,
-              transform: `translateX(${((1 - e) * 60).toFixed(1)}px)`,
-              ...glassCard(20),
-              border: `2px solid ${isLive ? s.color : "rgba(255,255,255,0.6)"}`,
-              boxShadow: isLive
-                ? `0 18px 44px ${s.color}3D, 0 0 46px ${s.color}33, inset 0 1px 0 rgba(255,255,255,0.85)`
-                : "0 10px 28px rgba(70,74,140,0.14), inset 0 1px 0 rgba(255,255,255,0.8)",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 30px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div style={{ width: 22, height: 22, borderRadius: 999, background: s.color, boxShadow: `0 4px 12px ${s.color}88`, marginRight: 20 }} />
-            <div style={{ fontFamily: font, fontSize: 36, fontWeight: 800, color: C.text, width: 320 }}>{s.name}</div>
-            <div style={{ fontFamily: monoFont, fontSize: 26, fontWeight: 700, color: C.faint, flex: 1 }}>10,000 × 100</div>
-            <div style={{ fontFamily: monoFont, fontSize: 34, fontWeight: 800, color: isLive ? s.color : C.dim, fontVariantNumeric: "tabular-nums" }}>
-              {commas(perSource)}
-            </div>
+      {/* source names, at world scale */}
+      {worldOp > 0.01 &&
+        sources.map((s) => (
+          <div key={`sl${s.i}`} style={{ position: "absolute", left: sx(s.x), top: sy(s.y) + nr(16) + 9, transform: "translate(-50%,0)", opacity: worldOp, fontFamily: font, fontSize: 17, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>
+            {s.name}
           </div>
-        );
-      })}
+        ))}
     </div>
   );
 };

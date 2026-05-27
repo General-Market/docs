@@ -7,18 +7,8 @@ import { Packet } from "./flow";
 import { CARD_H, CARD_W, cardButtonPos, cardOrigin, Cursor, MarketCard, ProductUI } from "./ui";
 import { GlassQuestion } from "./concepts";
 import { SettleGraph } from "./graph";
-import { DayTimeline, PersonIcon, SourceStack, TradeFan } from "./throughput";
-import {
-  BATCHES_PER_DAY,
-  LINES_PER_BATCH,
-  MARKETS,
-  N_TRADERS,
-  PER_SOURCE_PER_DAY,
-  PICKS_BY_MARKET,
-  THROUGHPUT_SOURCES,
-  THROUGHPUT_TOTAL,
-  TRADER_NAMES,
-} from "./data";
+import { PersonIcon, ThroughputClimax } from "./throughput";
+import { MARKETS, N_TRADERS, PICKS_BY_MARKET, TRADER_NAMES } from "./data";
 
 // BatchFlowReel — ONE continuous element handed down the whole pipeline, all in
 // the same frosted-glass world. The three explainer ideas are adapted INTO the
@@ -40,18 +30,10 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 // ── the track the camera flies over ──────────────────────────────────────────
 const AX = 1000; // one question → dashboard → merge → packet
-const BX = 3120; // pool → gather → unfold → the line → settle
-const DX = 5240; // losers pay winners → payout
-const MX1 = DX + 1500; // one person, one trade
-const MX2 = MX1 + 1500; // the trade fans into 10,000 lines
-const MX3 = MX2 + 1700; // a day repeats it ×100, then ten sources pull into view
+const BX = 3120; // pool → gather → settle graph → payout → the climax (same spot)
+const CX = BX; // the climax grows out of the settled hub — no pan, no blank gap
 const CY = 540;
-const TRACK_W = MX3 + 1500;
-
-// The closing pull-back: the camera dezooms and pans down so the ten-source
-// stack (row 0 lands at CY, nine more fall below it) frames whole.
-const ZOOM_SCALE = 0.6;
-const STACK_CAM_Y = 980;
+const TRACK_W = BX + 1700;
 
 const ci = (
   frame: number,
@@ -87,14 +69,8 @@ const T = {
   linesHold: 0,
   settle: [0, 0] as [number, number], // the oracle sweep settles every node
   payoutHold: 0,
-  payoutOut: [0, 0] as [number, number], // payout fades, camera leaves DX → MX1
-  trade: [0, 0] as [number, number], // one person fires one trade @ MX1
-  fanFly: [0, 0] as [number, number], // camera MX1 → MX2, the trade travels
-  fan: [0, 0] as [number, number], // 1 trade → 10,000 lines @ MX2
-  dayFly: [0, 0] as [number, number], // camera MX2 → MX3
-  day: [0, 0] as [number, number], // ×100 batches a day → 1,000,000 @ MX3
-  zoom: [0, 0] as [number, number], // pull back: nine more sources fall in
-  tenM: [0, 0] as [number, number], // grand total → 10,000,000
+  payoutOut: [0, 0] as [number, number], // payout fades, camera pans BX → CX
+  climax: [0, 0] as [number, number], // one continuous growing-graph pull-back
 };
 T.mergeEnd = T.pickEnd + sec(1.5);
 T.travel1 = [T.mergeEnd, T.mergeEnd + sec(2.4)];
@@ -105,38 +81,19 @@ T.linesHold = T.unfold[1] + sec(0.7);
 T.settle = [T.linesHold + sec(0.4), T.linesHold + sec(0.4) + sec(4.8)]; // the oracle sweep
 T.payoutHold = T.settle[1] + sec(1.6);
 T.payoutOut = [T.payoutHold + sec(0.4), T.payoutHold + sec(0.4) + sec(1.7)];
-T.trade = [T.payoutOut[1] - sec(0.6), T.payoutOut[1] + sec(1.3)];
-T.fanFly = [T.trade[1] + sec(0.2), T.trade[1] + sec(0.2) + sec(1.6)];
-T.fan = [T.fanFly[0] + sec(0.5), T.fanFly[1] + sec(1.7)];
-T.dayFly = [T.fan[1] + sec(0.5), T.fan[1] + sec(0.5) + sec(1.6)];
-T.day = [T.dayFly[0] + sec(0.5), T.dayFly[1] + sec(1.9)];
-T.zoom = [T.day[1] + sec(0.7), T.day[1] + sec(0.7) + sec(2.3)];
-T.tenM = [T.zoom[0] + sec(0.9), T.zoom[1] + sec(1.1)];
-const TOTAL = T.tenM[1] + sec(1.8);
+T.climax = [T.payoutHold + sec(0.5), T.payoutHold + sec(0.5) + sec(10.5)];
+const TOTAL = T.climax[1] + sec(1.4);
 
-// Camera rides the element along x — to the pool, to the payout, then right
-// across the throughput stations — and at the end pulls back and pans down to
-// frame the ten-source stack whole.
+// AX (dashboard) → BX (the graph: pool, settle and payout all live here) → CX
+// (the throughput climax). The climax does its own internal zoom-out, so the
+// board camera just pans across and holds — it never zooms or pans down again.
 const camera = (frame: number): { x: number; y: number; scale: number } => {
-  // AX (dashboard) → BX (the graph: pool, settle and payout all live here) →
-  // MX1/MX2/MX3 (the throughput climax). No DX detour — the payout is the hub.
-  const x = interpolate(
-    frame,
-    [T.travel1[0], T.travel1[1], T.payoutOut[0], T.payoutOut[1], T.fanFly[0], T.fanFly[1], T.dayFly[0], T.dayFly[1]],
-    [AX, BX, BX, MX1, MX1, MX2, MX2, MX3],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE.inOut },
-  );
-  const y = interpolate(frame, [T.zoom[0], T.zoom[1]], [CY, STACK_CAM_Y], {
+  const x = interpolate(frame, [T.travel1[0], T.travel1[1]], [AX, BX], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE.inOut,
   });
-  const scale = interpolate(frame, [T.zoom[0], T.zoom[1]], [1, ZOOM_SCALE], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE.inOut,
-  });
-  return { x, y, scale };
+  return { x, y: CY, scale: 1 };
 };
 
 const Caption: React.FC<{ frame: number; x: number; y: number; at: number; text: string; until?: number }> = ({ frame, x, y, at, text, until }) => {
@@ -245,28 +202,10 @@ export const BatchFlowReel: React.FC = () => {
   const graphSweep = ci(frame, T.linesHold, T.settle[1] - sec(0.2), 0, 1, EASE.inOut);
   const graphNet = ci(frame, T.payoutHold - sec(0.8), T.payoutHold, 0, 1);
 
-  // ── Throughput 1 — one person fires one trade @ MX1 ────────────────────────
-  const personIn = ci(frame, T.payoutOut[1] - sec(0.9), T.payoutOut[1] - sec(0.1), 0, 1, EASE.out);
-  const personOp = Math.min(personIn, ci(frame, T.fanFly[0] + sec(0.5), T.fanFly[1], 1, 0));
-  // the fired trade travels MX1 → MX2 during the fly, becoming the fan's origin
-  const tradeFly = ci(frame, T.fanFly[0], T.fanFly[1], 0, 1, EASE.inOut);
-  const tradeDotX = lerp(MX1 + 150, MX2 - 410, tradeFly);
-  const tradeDotOp = Math.min(ci(frame, T.trade[1] - sec(0.5), T.trade[1], 0, 1), ci(frame, T.fanFly[1] - sec(0.2), T.fanFly[1], 1, 0));
-
-  // ── Throughput 2 — the trade fans into 10,000 lines @ MX2 ──────────────────
-  const fanReveal = ci(frame, T.fan[0], T.fan[1] - sec(0.3), 0, 1, EASE.out);
-  const fanCount = ci(frame, T.fan[0] + sec(0.3), T.fan[1] - sec(0.2), 0, LINES_PER_BATCH, EASE.out);
-  const fanOp = Math.min(ci(frame, T.fan[0] - sec(0.2), T.fan[0] + sec(0.4), 0, 1), ci(frame, T.dayFly[0] + sec(0.4), T.dayFly[1], 1, 0));
-
-  // ── Throughput 3 — a day repeats it ×100 → 1,000,000 @ MX3 ─────────────────
-  const dayStamps = ci(frame, T.day[0], T.day[1] - sec(0.3), 0, BATCHES_PER_DAY, EASE.out);
-  const dayProduct = ci(frame, T.day[0] + sec(0.2), T.day[1] - sec(0.2), 0, PER_SOURCE_PER_DAY, EASE.out);
-  const dayOp = Math.min(ci(frame, T.day[0] - sec(0.2), T.day[0] + sec(0.4), 0, 1), ci(frame, T.zoom[0], T.zoom[0] + sec(0.6), 1, 0));
-
-  // ── Throughput 4 — pull back: ten sources, grand total → 10,000,000 ────────
-  const sourceRise = ci(frame, T.zoom[0] + sec(0.3), T.zoom[1], 0, 1, EASE.out);
-  const grandTotal = ci(frame, T.tenM[0], T.tenM[1], PER_SOURCE_PER_DAY, THROUGHPUT_TOTAL, EASE.out);
-  const stackOp = ci(frame, T.zoom[0], T.zoom[0] + sec(0.5), 0, 1);
+  // ── The throughput climax — one continuous growing-graph pull-back @ CX ─────
+  const climaxGrow = ci(frame, T.climax[0], T.climax[1], 0, 1);
+  // fades in exactly as the settle graph fades out, both at BX — the hub crosses
+  const climaxOp = ci(frame, T.climax[0] - sec(0.1), T.climax[0] + sec(0.5), 0, 1);
 
   return (
     <Stage>
@@ -287,7 +226,7 @@ export const BatchFlowReel: React.FC = () => {
         }}
       >
         {/* flow spine */}
-        <div style={{ position: "absolute", left: AX, top: CY - 1, width: MX2 - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
+        <div style={{ position: "absolute", left: AX, top: CY - 1, width: BX - AX, height: 2, background: "linear-gradient(90deg, rgba(0,113,227,0.3), rgba(158,123,255,0.3))", opacity: 0.45 }} />
 
         {/* Stage 1 — the real dashboard, full-frame, centred on AX; assembles
             around the Fartcoin slot the question morphs into */}
@@ -417,38 +356,12 @@ export const BatchFlowReel: React.FC = () => {
           </div>
         )}
 
-        {/* Throughput 1 — one person, one trade @ MX1 */}
-        {personOp > 0.01 && (
-          <div style={{ position: "absolute", left: MX1, top: CY, transform: "translate(-50%,-50%)", opacity: personOp, zIndex: 18, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <PersonIcon />
-            <div style={{ marginTop: 24, fontFamily: font, fontSize: 42, fontWeight: 800, letterSpacing: "-0.02em", color: C.text }}>One trade</div>
-          </div>
-        )}
-        {/* the fired trade — a glowing packet that travels MX1 → MX2 */}
-        {tradeDotOp > 0.01 && (
-          <div style={{ position: "absolute", left: tradeDotX, top: CY, transform: "translate(-50%,-50%)", opacity: tradeDotOp, zIndex: 22 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 999, background: PILL_GRADIENT, boxShadow: "0 0 28px rgba(94,120,255,0.7), 0 8px 20px rgba(94,120,255,0.5)" }} />
-          </div>
-        )}
-
-        {/* Throughput 2 — the trade fans into 10,000 lines @ MX2 */}
-        {fanOp > 0.01 && (
-          <div style={{ position: "absolute", left: MX2 - 450, top: CY, transform: "translate(0,-40%)", opacity: fanOp, zIndex: 16 }}>
-            <TradeFan reveal={fanReveal} count={fanCount} />
-          </div>
-        )}
-
-        {/* Throughput 3 — a day repeats it ×100 → 1,000,000 @ MX3 */}
-        {dayOp > 0.01 && (
-          <div style={{ position: "absolute", left: MX3, top: CY, transform: "translate(-50%,-50%)", opacity: dayOp, zIndex: 14 }}>
-            <DayTimeline stamps={dayStamps} product={dayProduct} />
-          </div>
-        )}
-
-        {/* Throughput 4 — pull back: ten sources, grand total → 10,000,000 @ MX3 */}
-        {stackOp > 0.01 && (
-          <div style={{ position: "absolute", left: MX3, top: CY, transform: "translate(-50%,-57px)", opacity: stackOp, zIndex: 12 }}>
-            <SourceStack sources={THROUGHPUT_SOURCES} rise={sourceRise} total={grandTotal} perSource={PER_SOURCE_PER_DAY} />
+        {/* The throughput climax — one continuous growing-graph pull-back @ CX:
+            one trade → a 10,000-node graph → one cell of a hundred → one of ten
+            sources → 10,000,000. The component runs its own internal zoom-out. */}
+        {climaxOp > 0.01 && (
+          <div style={{ position: "absolute", left: CX, top: CY, transform: "translate(-50%,-50%)", opacity: climaxOp, zIndex: 12 }}>
+            <ThroughputClimax grow={climaxGrow} />
           </div>
         )}
 
@@ -458,8 +371,6 @@ export const BatchFlowReel: React.FC = () => {
         <Caption frame={frame} x={BX} y={CY + 320} at={T.poolHold - sec(0.4)} text="Everyone sends the same packet" until={T.gather[0]} />
         <Caption frame={frame} x={BX} y={CY - 470} at={T.linesHold - sec(0.3)} text="One oracle settles the whole batch" until={T.settle[1] - sec(0.2)} />
         <Caption frame={frame} x={BX} y={CY - 470} at={T.settle[1]} text="Losers pay winners — your seven" until={T.payoutOut[0]} />
-        <Caption frame={frame} x={MX2} y={CY - 300} at={T.fan[0] + sec(0.2)} text="One trade → 10,000 lines" until={T.dayFly[0]} />
-        <Caption frame={frame} x={MX3} y={CY + 300} at={T.day[0] + sec(0.3)} text="Same engine. Ten different sources." until={T.zoom[0]} />
       </div>
     </Stage>
   );
