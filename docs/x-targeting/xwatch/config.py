@@ -47,10 +47,13 @@ def twitter_key() -> str:
     legacy = Path("/tmp/.twapi_key")  # the twapi.py wrapper's key file, if still around
     if legacy.exists():
         return legacy.read_text().strip()
-    raise SystemExit(
-        "missing TWITTERAPI_API_KEY — set it in xwatch/.env "
-        "(or restore /tmp/.twapi_key for the local wrapper)"
-    )
+    # No key — return empty so the daemon stays up and reports it on Telegram
+    # rather than crashing mid-scan. has_twitter_key() gates the spend paths.
+    return ""
+
+
+def has_twitter_key() -> bool:
+    return bool(twitter_key())
 
 
 def telegram_token() -> str:

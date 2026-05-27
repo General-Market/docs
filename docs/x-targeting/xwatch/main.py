@@ -17,6 +17,12 @@ from .tg import Telegram
 
 log = logging.getLogger("xwatch")
 
+NO_KEY_NOTICE = (
+    "⚠️ <b>TWITTERAPI_API_KEY is not set</b>, so X scans are disabled.\n"
+    "Paste your twitterapi.io key into <code>xwatch/.env</code> and restart.\n"
+    "Telegram commands keep working in the meantime."
+)
+
 
 def _setup_logging() -> None:
     logging.basicConfig(
@@ -47,10 +53,14 @@ class Daemon:
         return scan.twitter.today_spend_usd(), scan.twitter.calls_today()
 
     def calibrate(self) -> str:
+        if not config.has_twitter_key():
+            return NO_KEY_NOTICE
         c = scan.calibrate(self.settings)
         return scan.format_calibration(c, self.settings)
 
     def scan_now(self, *, automatic: bool = False) -> str:
+        if not config.has_twitter_key():
+            return NO_KEY_NOTICE
         if automatic and not _under_cap(self.settings):
             return f"Skipped — daily cap ${self.settings['daily_cap_usd']} reached."
         fresh, status = scan.run_scan(self.settings, self.seen)
@@ -88,7 +98,9 @@ class Daemon:
             )
         )
 
-        if not config.CALIBRATED_FLAG.exists():
+        if not config.has_twitter_key():
+            self.tg.send(NO_KEY_NOTICE)
+        elif not config.CALIBRATED_FLAG.exists():
             log.info("first run — calibrating")
             self.tg.send("First run — calibrating to recommend a threshold…")
             self.tg.send(self.calibrate())
@@ -118,6 +130,7 @@ class Daemon:
             ] * 60
             if (
                 due
+                and config.has_twitter_key()
                 and not self.settings["paused"]
                 and _within_window(self.settings)
             ):

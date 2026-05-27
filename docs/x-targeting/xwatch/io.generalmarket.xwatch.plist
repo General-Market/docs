@@ -6,16 +6,17 @@
     <key>Label</key>
     <string>io.generalmarket.xwatch</string>
 
+    <!-- Runs from ~/Library/Application Support, NOT the repo: ~/Downloads is a
+         TCC-protected folder that launchd may not read. install.sh deploys a
+         copy here. The launcher pins sys.path from its own location. -->
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/python3</string>
-        <string>-m</string>
-        <string>xwatch.main</string>
+        <string>/Users/maxguillabert/Library/Application Support/xwatch/run_xwatch.py</string>
     </array>
 
-    <!-- parent of the xwatch package, so `-m xwatch.main` resolves -->
     <key>WorkingDirectory</key>
-    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting</string>
+    <string>/Users/maxguillabert/Library/Application Support/xwatch</string>
 
     <!-- keep it alive around the clock: commands work any hour;
          the daemon itself only SCANS inside the 10:00–22:00 window -->
@@ -25,9 +26,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting/xwatch/state/xwatch.out.log</string>
+    <string>/Users/maxguillabert/Library/Application Support/xwatch/xwatch/state/xwatch.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/maxguillabert/Downloads/index/docs/x-targeting/xwatch/state/xwatch.err.log</string>
+    <string>/Users/maxguillabert/Library/Application Support/xwatch/xwatch/state/xwatch.err.log</string>
 
     <key>ThrottleInterval</key>
     <integer>30</integer>

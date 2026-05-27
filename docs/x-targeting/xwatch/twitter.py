@@ -23,8 +23,11 @@ CREDITS_PER_USD = 100_000
 
 
 def _get(path: str, params: dict, timeout: int = 30):
+    key = config.twitter_key()
+    if not key:
+        return 0, {"error": "no TWITTERAPI_API_KEY set"}
     url = BASE + path + ("?" + urllib.parse.urlencode(params) if params else "")
-    req = urllib.request.Request(url, headers={"X-API-Key": config.twitter_key()})
+    req = urllib.request.Request(url, headers={"X-API-Key": key})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.load(r)

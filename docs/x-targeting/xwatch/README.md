@@ -47,20 +47,31 @@ the laptop is.
 3. **Say hello to the bot once.** In Telegram, open your new bot and send `/start`
    — Telegram will not deliver messages to a bot you have never opened.
 
-4. **Smoke-test before installing as a daemon.**
+4. **Install the always-on job.**
    ```bash
-   cd /Users/maxguillabert/Downloads/index/docs/x-targeting
-   python3 -m xwatch.main
+   bash /Users/maxguillabert/Downloads/index/docs/x-targeting/xwatch/install.sh
    ```
-   You should get an "xwatch online" message and, on the very first run, a
-   calibration report. `Ctrl-C` to stop.
+   To stop it: `launchctl bootout gui/$(id -u)/io.generalmarket.xwatch`
 
-5. **Install the always-on job.**
-   ```bash
-   cp xwatch/io.generalmarket.xwatch.plist ~/Library/LaunchAgents/
-   launchctl load ~/Library/LaunchAgents/io.generalmarket.xwatch.plist
-   ```
-   To stop it: `launchctl unload ~/Library/LaunchAgents/io.generalmarket.xwatch.plist`
+> **Why an installer, not a plain `launchctl load`?** This repo lives in
+> `~/Downloads`, a macOS TCC-protected folder that launchd is *not* allowed to
+> read — a LaunchAgent pointed there dies with `Operation not permitted`. So
+> `install.sh` copies the code and your `.env` into
+> `~/Library/Application Support/xwatch/` (ordinary app data, readable by
+> launchd) and loads the job from there. The repo stays the source of truth.
+
+### Applying the twitterapi.io key (or any code change)
+
+The daemon runs from the *deployed copy*, so after editing the repo:
+
+```bash
+# 1. paste your key into the repo .env
+#    TWITTERAPI_API_KEY=...
+# 2. redeploy + restart
+bash xwatch/install.sh
+```
+
+The bot will calibrate on its first run *with a key* and start scanning.
 
 ---
 
@@ -117,16 +128,21 @@ balance — is the twitterapi.io dashboard.
 ## Files
 
 ```
-xwatch/
-  main.py        daemon loop: long-poll Telegram + timed scans
-  scan.py        query building, ranking, calibration, message formatting
-  twitter.py     advanced_search client + cost ledger
-  tg.py          Telegram Bot API over stdlib urllib
-  commands.py    every /command and the settings it mutates
-  config.py      env, defaults, JSON state persistence
-  .env           your secrets (git-ignored)
-  state/         settings.json, seen.json, offset, ledger — all git-ignored
-  io.generalmarket.xwatch.plist   launchd job
+docs/x-targeting/
+  run_xwatch.py    launcher — pins sys.path, the daemon's entry point
+  xwatch/
+    main.py        daemon loop: long-poll Telegram + timed scans
+    scan.py        query building, ranking, calibration, message formatting
+    twitter.py     advanced_search client + cost ledger
+    tg.py          Telegram Bot API over stdlib urllib
+    commands.py    every /command and the settings it mutates
+    config.py      env, defaults, JSON state persistence
+    .env           your secrets (git-ignored)
+    state/         settings.json, seen.json, offset, ledger, logs (git-ignored)
+    install.sh     deploy to ~/Library/Application Support + load the job
+    io.generalmarket.xwatch.plist   launchd job (paths point at the deploy dir)
 ```
 
-No third-party packages. System `python3` (3.9+) is enough.
+Deployed (running) copy lives at `~/Library/Application Support/xwatch/`. The
+logs are in its `xwatch/state/`. No third-party packages — system `python3`
+(3.9+) is enough.
