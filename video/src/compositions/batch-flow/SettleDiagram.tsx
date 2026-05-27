@@ -94,16 +94,15 @@ const T = {
   resolveStart: sec(14.6),
   resolveStep: sec(0.15),
   resolveDur: sec(0.5),
-  panTable: [sec(16.8), sec(18.2)] as [number, number],
-  tableStart: sec(18.3),
-  tableStep: sec(0.2),
-  tableDur: sec(0.5),
-  totals: [sec(20.9), sec(21.9)] as [number, number],
-  allHold: [sec(22.0), sec(22.8)] as [number, number], // hold on every trader
-  isolate: [sec(22.9), sec(24.4)] as [number, number], // close on only your P&L
-  youPulse: [sec(24.0), sec(24.8)] as [number, number],
+  panTable: [sec(16.8), sec(18.4)] as [number, number], // every trader, all at once
+  tableStart: sec(16.9),
+  tableStep: sec(0.13),
+  tableDur: sec(0.4),
+  zoomYou: [sec(19.2), sec(20.2)] as [number, number], // hold on all, then zoom onto You (~20s)
+  totals: [sec(22.0), sec(23.0)] as [number, number], // the sum arrives as we reach it
+  youPulse: [sec(23.4), sec(24.4)] as [number, number],
 };
-const TOTAL = sec(26.0);
+const TOTAL = sec(25.8);
 const CLICK = T.click;
 // the tenth line sits dead-centre when the camera dives onto it — the click
 // target and the origin of the click's burst.
@@ -125,9 +124,11 @@ const KEYS: Key[] = [
   { at: T.pullBack[1], cx: 700, cy: 540, scale: 1.16 }, // resolve
   { at: T.panTable[0], cx: 700, cy: 540, scale: 1.16 },
   { at: T.panTable[1], cx: TABLE_CX - 120, cy: 540, scale: 1.0 }, // every trader
-  { at: T.isolate[0], cx: TABLE_CX - 120, cy: 540, scale: 1.0 },
-  { at: T.isolate[1], cx: YOU_CX + 26, cy: 540, scale: 1.62 }, // only your P&L
-  { at: TOTAL, cx: YOU_CX + 26, cy: 540, scale: 1.62 },
+  { at: T.zoomYou[0], cx: TABLE_CX - 120, cy: 540, scale: 1.0 },
+  { at: T.zoomYou[1], cx: YOU_CX, cy: 300, scale: 1.85 }, // zoom onto You (top, ~20s)
+  { at: T.totals[1], cx: YOU_CX, cy: 700, scale: 1.85 }, // slide down through your P&L
+  { at: T.youPulse[1], cx: YOU_CX, cy: 845, scale: 1.9 }, // land on the sum
+  { at: TOTAL, cx: YOU_CX, cy: 845, scale: 1.9 },
 ];
 const cameraAt = (frame: number): { cx: number; cy: number; scale: number } => {
   if (frame <= KEYS[0].at) return KEYS[0];
@@ -636,8 +637,8 @@ export const SettleDiagram: React.FC = () => {
 
   const tableAppear = ci(frame, T.panTable[0], T.panTable[1], 0, 1, EASE.out);
   const totalsReveal = ci(frame, T.totals[0], T.totals[1], 0, 1, EASE.out);
-  const isolate = ci(frame, T.isolate[0], T.isolate[1], 0, 1, EASE.inOut);
-  const othersDim = 1 - isolate * 0.86; // fade every trader but You at the close
+  const isolate = ci(frame, T.zoomYou[0], T.zoomYou[1], 0, 1, EASE.inOut);
+  const othersDim = 1 - isolate * 0.86; // fade every trader but You as we zoom in
   const youPulse = ci(frame, T.youPulse[0], (T.youPulse[0] + T.youPulse[1]) / 2, 0, 1) * ci(frame, (T.youPulse[0] + T.youPulse[1]) / 2, T.youPulse[1], 1, 0);
 
   const tagOp = ci(frame, sec(0.2), sec(0.8), 0, 1) * (1 - ci(frame, T.diveIn[0], T.diveIn[1], 0, 1)) + ci(frame, T.pullBack[0], T.pullBack[1], 0, 1) * (1 - isolate);
