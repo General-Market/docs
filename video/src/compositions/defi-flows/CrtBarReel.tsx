@@ -1,8 +1,8 @@
-// Winners-only bar chart in the RetailPnLMarketsReel cathode style: a light
-// ruled screen bowed by a barrel filter, bold centered title, neon columns
-// rising above backlit logo cards, snow / scanlines / VCR band, and an
-// electric-blue RGB border. Chrome is copied (not imported) from
-// RetailPnLMarketsReel so this stays stable while that file keeps moving.
+// Winners-only bar chart in a light, glass-on-tube style: a faintly ruled screen
+// bowed by a barrel filter, bold centered title, neon columns rising above
+// backlit logo cards, soft snow + scanlines + VCR band. The harsh vertical RGB
+// bands and the CRT power-off were removed (they read as ugly on Twitter); the
+// winning column carries an accelerating field of upward chevrons.
 
 import React from "react";
 import {
@@ -24,7 +24,6 @@ const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 60;
 const DURATION = 320;
-const SHUTDOWN_FRAMES = 28;
 
 const BG_GRADIENT = "radial-gradient(ellipse 120% 95% at 50% 18%, #FFFFFF 0%, #FBFCFE 62%, #F2F5F8 100%)";
 const PALETTE = {
@@ -87,7 +86,7 @@ const SCREEN_MASK = "radial-gradient(ellipse 99% 99% at 50% 50%, #000 0%, #000 7
 const SnowStatic: React.FC = () => {
   const frame = useCurrentFrame();
   return (
-    <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.16, mixBlendMode: "overlay" }}>
+    <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.05, mixBlendMode: "overlay" }}>
       <filter id="crtb-snow">
         <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} seed={frame % 256} stitchTiles="stitch" />
         <feColorMatrix type="saturate" values="0" />
@@ -97,7 +96,7 @@ const SnowStatic: React.FC = () => {
   );
 };
 
-const VCR_BAND_H = 110;
+const VCR_BAND_H = 64;
 const VCRBand: React.FC = () => {
   const frame = useCurrentFrame();
   const y = ((frame * 7) % (HEIGHT + VCR_BAND_H)) - VCR_BAND_H;
@@ -107,33 +106,24 @@ const VCRBand: React.FC = () => {
         <feTurbulence type="turbulence" baseFrequency="0.012 0.6" numOctaves={2} seed={frame % 256} stitchTiles="stitch" />
         <feColorMatrix type="saturate" values="0" />
         <feComponentTransfer>
-          <feFuncA type="linear" slope="2.2" intercept="-0.78" />
+          <feFuncA type="linear" slope="2.2" intercept="-0.82" />
         </feComponentTransfer>
       </filter>
-      <rect x={0} y={y} width="100%" height={VCR_BAND_H} filter="url(#crtb-vcr)" opacity={0.45} />
+      <rect x={0} y={y} width="100%" height={VCR_BAND_H} filter="url(#crtb-vcr)" opacity={0.12} />
     </svg>
   );
 };
 
-const Scanlines: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      pointerEvents: "none",
-      mixBlendMode: "multiply",
-      backgroundImage:
-        "linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.11) 50%), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.012), rgba(0,0,255,0.04))",
-      backgroundSize: "100% 3px, 4px 100%",
-    }}
-  />
-);
+// No scanlines — fine horizontal lines alias into ugly banding under Twitter
+// compression. The tube identity now rides on the barrel + soft vignette alone.
 
 const CRTVignette: React.FC = () => (
   <AbsoluteFill
     style={{
       pointerEvents: "none",
       borderRadius: 26,
-      background: "radial-gradient(ellipse 88% 90% at 50% 50%, transparent 70%, rgba(0,0,0,0.08) 90%, rgba(0,0,0,0.22) 100%)",
-      boxShadow: "inset 0 0 90px 16px rgba(0,0,0,0.16)",
+      background: "radial-gradient(ellipse 90% 92% at 50% 50%, transparent 74%, rgba(0,0,0,0.05) 90%, rgba(0,0,0,0.15) 100%)",
+      boxShadow: "inset 0 0 80px 14px rgba(0,0,0,0.1)",
     }}
   />
 );
@@ -144,15 +134,69 @@ const AXIS_GUTTER = 96;
 const PLOT_L = MARGIN + AXIS_GUTTER; // 176
 const PLOT_R = WIDTH - MARGIN; // 1840
 const PLOT_W = PLOT_R - PLOT_L;
-const BASE_Y = 690; // column baseline
-const COL_TOP = 300; // tallest column top
-const MAX_H = BASE_Y - COL_TOP; // 390
-const LOGO_SIZE = 132;
-const COL_W_CAP = 168;
+const COL_TOP = 326; // tallest column top
+const BASE_Y = 706; // column baseline
+const MAX_H = BASE_Y - COL_TOP; // 380
+
+// Fewer winners → fatter columns and bigger logos, filling the width.
+const layoutFor = (n: number) => {
+  const slot = PLOT_W / n;
+  const colCap = n <= 3 ? 248 : n <= 4 ? 220 : n <= 6 ? 190 : 168;
+  const logoCap = n <= 3 ? 212 : n <= 4 ? 188 : n <= 6 ? 166 : 142;
+  return {
+    slot,
+    colW: Math.min(slot * 0.5, colCap),
+    logoSize: Math.min(slot * 0.7, logoCap),
+  };
+};
 
 const fmtAxis = (t: number, mode: FlowMode): string => {
   if (Math.abs(t) < 1e-9) return mode === "pct" ? "0%" : "$0";
   return mode === "pct" ? `${+t.toFixed(0)}%` : fmtUSD(t);
+};
+
+// Accelerating field of upward chevrons inside the winning column. The scroll
+// speed ramps with t², so the column reads as taking off.
+const ChevronField: React.FC<{ x: number; top: number; colW: number; h: number; local: number; fps: number }> = ({
+  x,
+  top,
+  colW,
+  h,
+  local,
+  fps,
+}) => {
+  if (h < 14) return null;
+  const tile = Math.min(92, Math.max(52, colW * 0.44));
+  const arm = tile * 0.46;
+  const thick = tile * 0.3;
+  const inset = colW * 0.17;
+  const cx = x + colW / 2;
+  const lx = x + inset;
+  const rx = x + colW - inset;
+
+  const t = Math.max(0, (local - 6) / fps);
+  const dist = 90 * t + 0.5 * 300 * t * t; // v0=90 px/s, a=300 px/s²
+  const shift = ((dist % tile) + tile) % tile;
+  const build = Math.min(1, t * 1.4);
+
+  const rows: React.ReactNode[] = [];
+  const count = Math.ceil(h / tile) + 3;
+  for (let k = -1; k < count; k++) {
+    const yTip = top + h - k * tile - shift;
+    const yArm = yTip + arm;
+    const frac = (yTip - top) / h; // 0 at top, 1 at baseline
+    const op = interpolate(frac, [0, 0.13, 1], [0, 0.4, 0.18], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) * build;
+    if (op <= 0.01) continue;
+    rows.push(
+      <path
+        key={k}
+        d={`M ${lx} ${yArm} L ${cx} ${yTip} L ${rx} ${yArm} L ${rx} ${yArm + thick} L ${cx} ${yTip + thick} L ${lx} ${yArm + thick} Z`}
+        fill="#FFFFFF"
+        opacity={op}
+      />,
+    );
+  }
+  return <>{rows}</>;
 };
 
 const Column: React.FC<{
@@ -161,11 +205,12 @@ const Column: React.FC<{
   isTop: boolean;
   centerX: number;
   colW: number;
+  logoSize: number;
   scaleTop: number;
   mode: FlowMode;
   color: string;
   logoBase: string;
-}> = ({ row, index, isTop, centerX, colW, scaleTop, mode, color, logoBase }) => {
+}> = ({ row, index, isTop, centerX, colW, logoSize, scaleTop, mode, color, logoBase }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const start = 24 + index * 8;
@@ -179,24 +224,40 @@ const Column: React.FC<{
   const h = (v / scaleTop) * MAX_H * grow;
   const top = BASE_Y - h;
   const x = centerX - colW / 2;
-  const crownPulse = isTop ? 1 + 0.05 * Math.sin(Math.max(0, local - 46) / 11) : 1;
+  const rx = Math.min(14, colW * 0.12);
   const valOpacity = interpolate(grow, [0.3, 0.6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const clipId = `crtb-clip-${row.id.replace(/[^a-z0-9]/gi, "-")}`;
+
+  // One-time card entrance — no continuous bob.
+  const cardIn = spring({ frame: local, fps, config: { damping: 18, stiffness: 120, mass: 0.6 }, durationInFrames: 26 });
 
   return (
     <>
       {/* neon glow behind the column */}
-      <rect x={x} y={top} width={colW} height={h} rx={14} fill={color} opacity={0.4 + 0.4 * flash} filter="url(#crtb-bar-glow)" />
+      <rect x={x} y={top} width={colW} height={h} rx={rx} fill={color} opacity={0.4 + 0.4 * flash} filter="url(#crtb-bar-glow)" />
       {/* the column */}
-      <rect x={x} y={top} width={colW} height={h} rx={14} fill={color} />
-      <rect x={x} y={top} width={colW} height={h} rx={14} fill="url(#crtb-bar-sheen)" />
+      <rect x={x} y={top} width={colW} height={h} rx={rx} fill={color} />
+      <rect x={x} y={top} width={colW} height={h} rx={rx} fill="url(#crtb-bar-sheen)" />
+
+      {/* accelerating chevrons — winner only */}
+      {isTop ? (
+        <>
+          <clipPath id={clipId}>
+            <rect x={x} y={top} width={colW} height={h} rx={rx} />
+          </clipPath>
+          <g clipPath={`url(#${clipId})`}>
+            <ChevronField x={x} top={top} colW={colW} h={h} local={local} fps={fps} />
+          </g>
+        </>
+      ) : null}
 
       {/* value on top */}
       <text
         x={centerX}
-        y={top - 26}
+        y={top - 28}
         textAnchor="middle"
         fontFamily={INTER}
-        fontSize={isTop ? 60 : 46}
+        fontSize={isTop ? 64 : 46}
         fontWeight={800}
         letterSpacing="-0.02em"
         fill={color}
@@ -205,26 +266,53 @@ const Column: React.FC<{
       >
         {fmtValue(v * grow, mode)}
       </text>
-      {isTop ? (
-        <text x={centerX} y={top - 96} textAnchor="middle" fontSize={52} opacity={valOpacity}>
-          👑
-        </text>
-      ) : null}
-
-      {/* logo card with cathodic backlight, centered at the baseline */}
-      <foreignObject x={centerX - LOGO_SIZE / 2} y={BASE_Y + 26} width={LOGO_SIZE} height={LOGO_SIZE + 96}>
-        <div style={{ width: LOGO_SIZE, transform: `scale(${crownPulse})`, transformOrigin: "50% 0%" }}>
-          <div style={{ position: "relative", width: LOGO_SIZE, height: LOGO_SIZE }}>
-            <Img
-              src={staticFile(`${logoBase}/${row.id}.jpg`)}
-              alt=""
-              style={{ position: "absolute", left: "-32%", top: "-26%", width: "164%", height: "164%", objectFit: "contain", filter: "blur(34px) saturate(2.2) brightness(1.15)", opacity: 0.5 + 0.35 * flash }}
+      {/* logo card with a clean colour bloom backlight, centered at the baseline */}
+      <foreignObject x={centerX - logoSize / 2} y={BASE_Y + 20} width={logoSize} height={logoSize + 106}>
+        <div style={{ width: logoSize, opacity: cardIn }}>
+          <div style={{ position: "relative", width: logoSize, height: logoSize, transform: `scale(${(0.92 + 0.08 * cardIn).toFixed(3)})`, transformOrigin: "50% 50%" }}>
+            {/* backlight: a radial bloom in the column's colour, not the blurred logo */}
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "48%",
+                width: "170%",
+                height: "170%",
+                transform: "translate(-50%, -50%)",
+                borderRadius: "50%",
+                filter: "blur(16px)",
+                opacity: 0.55 + 0.3 * flash,
+                background: `radial-gradient(circle, ${color}cc 0%, ${color}55 34%, ${color}00 70%)`,
+              }}
             />
-            <div style={{ position: "absolute", inset: 0, borderRadius: 30, background: "rgba(255,255,255,0.96)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18, boxShadow: "0 16px 40px -24px rgba(0,0,0,0.8)" }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: logoSize * 0.22,
+                background: "rgba(255,255,255,0.97)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: logoSize * 0.13,
+                boxShadow: "0 18px 44px -22px rgba(0,0,0,0.85)",
+              }}
+            >
               <Img src={staticFile(`${logoBase}/${row.id}.jpg`)} alt={row.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
             </div>
           </div>
-          <div style={{ marginTop: 14, textAlign: "center", fontFamily: INTER, fontSize: 28, fontWeight: 700, letterSpacing: "-0.01em", color: PALETTE.text, lineHeight: 1.05 }}>
+          <div
+            style={{
+              marginTop: 14,
+              textAlign: "center",
+              fontFamily: INTER,
+              fontSize: Math.max(22, Math.min(32, Math.round(logoSize * 0.16))),
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              color: PALETTE.text,
+              lineHeight: 1.05,
+            }}
+          >
             {row.name}
           </div>
         </div>
@@ -243,8 +331,7 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
   const step = niceStep(maxV);
   const scaleTop = Math.ceil((maxV * 1.05) / step) * step;
 
-  const slot = PLOT_W / n;
-  const colW = Math.min(COL_W_CAP, slot * 0.42);
+  const { slot, colW, logoSize } = layoutFor(n);
   const centerX = (i: number) => PLOT_L + slot * (i + 0.5);
   const yFor = (val: number) => BASE_Y - (val / scaleTop) * MAX_H;
   const ticks: number[] = [];
@@ -253,18 +340,14 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
   const windowLabel = dataset.eyebrow.includes("24") ? "last 24 hours" : "last 7 days";
   const subtitle = `${mode === "pct" ? "Biggest TVL growth" : "Biggest net inflow"} · ${windowLabel}`;
 
-  // CRT power-off at the end.
-  const shutdownStart = DURATION - SHUTDOWN_FRAMES - 1;
-  const sd = frame >= shutdownStart ? Math.min(1, (frame - shutdownStart) / SHUTDOWN_FRAMES) : 0;
   const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-  const sdScaleY = interpolate(sd, [0, 0.42, 1], [1, 0.006, 0.006], clamp);
-  const sdScaleX = interpolate(sd, [0, 0.66, 1], [1, 1, 0.002], clamp);
-  const sdBright = interpolate(sd, [0, 0.1, 0.42, 0.7, 1], [1, 1.9, 3.2, 2, 1], clamp);
-  const sdOpacity = interpolate(sd, [0.86, 1], [1, 0], clamp);
-
   const headerEnter = interpolate(frame, [0, 22], [0, 1], { ...clamp, easing: EASE.out });
   const landFlash = Math.max(0, 1 - (frame - (24 + (n - 1) * 8)) / 8);
-  const borderOff = 4 + 8 * Math.max(0, landFlash);
+
+  // Soft bloom hold on the ending — no power-off collapse.
+  const endStart = DURATION - 40;
+  const bloom = Math.sin(interpolate(frame, [endStart, DURATION - 1], [0, 1], clamp) * Math.PI);
+  const winnerX = centerX(0);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
@@ -272,10 +355,8 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
         style={{
           background: BG_GRADIENT,
           fontFamily: INTER,
-          transform: `scale(${(1.02 * sdScaleX).toFixed(4)}, ${(1.02 * sdScaleY).toFixed(4)})`,
+          transform: "scale(1.02)",
           transformOrigin: "50% 50%",
-          filter: `brightness(${sdBright.toFixed(2)})`,
-          opacity: sdOpacity,
         }}
       >
         <svg width={0} height={0} style={{ position: "absolute" }}>
@@ -301,11 +382,11 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
           </AbsoluteFill>
 
           {/* Header */}
-          <div style={{ position: "absolute", top: 44, left: 0, width: "100%", textAlign: "center", opacity: headerEnter }}>
-            <div style={{ fontFamily: INTER, fontSize: 104, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.0, color: PALETTE.text, whiteSpace: "nowrap" }}>
+          <div style={{ position: "absolute", top: 40, left: 0, width: "100%", textAlign: "center", opacity: headerEnter }}>
+            <div style={{ fontFamily: INTER, fontSize: 100, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.0, color: PALETTE.text, whiteSpace: "nowrap" }}>
               {dataset.title}
             </div>
-            <div style={{ marginTop: 6, fontFamily: INTER, fontSize: 44, fontWeight: 700, letterSpacing: "-0.01em", color: PALETTE.textDim }}>
+            <div style={{ marginTop: 6, fontFamily: INTER, fontSize: 42, fontWeight: 700, letterSpacing: "-0.01em", color: PALETTE.textDim }}>
               {subtitle}
             </div>
           </div>
@@ -335,6 +416,7 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
                 isTop={i === 0}
                 centerX={centerX(i)}
                 colW={colW}
+                logoSize={logoSize}
                 scaleTop={scaleTop}
                 mode={mode}
                 color={NEON[i % NEON.length]}
@@ -343,31 +425,34 @@ export const CrtBarReel: React.FC<{ dataset: FlowDataset }> = ({ dataset }) => {
             ))}
           </svg>
 
-          {/* Source — bottom-left */}
-          <div style={{ position: "absolute", top: HEIGHT - 70, left: MARGIN, width: PLOT_R - MARGIN, fontFamily: INTER, fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: PALETTE.textVeryDim }}>
+          {/* Source — bottom-left, dropped to the very edge */}
+          <div style={{ position: "absolute", top: HEIGHT - 32, left: MARGIN, width: PLOT_R - MARGIN, fontFamily: INTER, fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: PALETTE.textVeryDim }}>
             Source: {dataset.source}  ·  as of {dataset.asof}
           </div>
         </AbsoluteFill>
 
         {/* Soft screen glare */}
-        <AbsoluteFill style={{ pointerEvents: "none", mixBlendMode: "screen", background: "linear-gradient(122deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 22%, transparent 40%)" }} />
+        <AbsoluteFill style={{ pointerEvents: "none", mixBlendMode: "screen", background: "linear-gradient(122deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 22%, transparent 40%)" }} />
+
+        {/* Ending bloom — a soft lift centered on the winner */}
+        {bloom > 0.001 ? (
+          <AbsoluteFill
+            style={{
+              pointerEvents: "none",
+              mixBlendMode: "screen",
+              opacity: 0.16 * bloom,
+              background: `radial-gradient(ellipse 70% 80% at ${((winnerX / WIDTH) * 100).toFixed(1)}% 52%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)`,
+            }}
+          />
+        ) : null}
 
         <SnowStatic />
         <VCRBand />
-        <Scanlines />
         <CRTVignette />
 
-        {/* Electric-blue RGB split glitch on the border */}
-        <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, pointerEvents: "none", mixBlendMode: "multiply", opacity: 0.32 }}>
-          {(
-            [
-              ["#27D6FF", borderOff, borderOff],
-              ["#2E7BFF", 0, 0],
-              ["#6A5CFF", -borderOff, -borderOff],
-            ] as const
-          ).map(([stroke, ox, oy]) => (
-            <rect key={stroke} x={4} y={4} width={WIDTH - 8} height={HEIGHT - 8} rx={16} fill="none" stroke={stroke} strokeWidth={5} transform={`translate(${ox}, ${oy})`} />
-          ))}
+        {/* Single clean electric-blue border — no RGB split, no vertical bands */}
+        <svg width={WIDTH} height={HEIGHT} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <rect x={5} y={5} width={WIDTH - 10} height={HEIGHT - 10} rx={16} fill="none" stroke="#2D5BFF" strokeWidth={4} opacity={0.34 + 0.4 * landFlash} />
         </svg>
       </AbsoluteFill>
     </AbsoluteFill>
