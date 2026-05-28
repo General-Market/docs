@@ -5,19 +5,16 @@ description: "Register and run your first Vision bot"
 
 # Bot Quickstart
 
-Register your bot. Fund it. Let it loose. Watch it learn that the future is unkind to algorithms too.
-
-What follows is a minimal bot that registers on-chain, joins a block with random predictions, and submits its sealed bitmap to oracles. It will not outperform chance. That comes later -- if it comes at all.
+A minimal bot — registers on-chain, joins one block with random predictions, submits its sealed bitmap to the oracles. Six steps, ~10 min end to end.
 
 ## Prerequisites
 
-- **Python 3.10+** or **Node 18+**
-- An Index L3 wallet funded with WUSDC (18 decimals) and ETH (for gas)
-- Your wallet's private key exported as an environment variable
-- A willingness to wager money on a machine's guesses
+- Python 3.10+ or Node 18+.
+- An Index L3 wallet funded with WUSDC (18 decimals) and ETH for gas.
+- Wallet private key exported as `BOT_PRIVATE_KEY`.
 
 <Warning>
-**WUSDC on Index L3 uses 18 decimals.** All amounts in contract calls must be scaled by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). The decimal system, at least, is not adversarial.
+Exception worth stating out loud: **WUSDC on Index L3 uses 18 decimals**, not 6. Scale every amount by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19).
 </Warning>
 
 ## Set Environment Variables
@@ -226,12 +223,12 @@ main().catch(console.error)
 
 ### 1. Register Your Bot
 
-Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. One transaction. Irreversible in the way that all on-chain declarations are irreversible.
+Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. One transaction.
 
-- `endpoint` -- a URL where your bot can receive notifications (can be a placeholder)
-- `pubkeyHash` -- keccak256 hash of your bot's public key (used for identity)
+- `endpoint` — URL where your bot can receive notifications. A placeholder is fine.
+- `pubkeyHash` — `keccak256` of your bot's public key, used for identity.
 
-Registration is free. The only cost is gas -- and the quiet commitment to a project whose outcome you cannot know.
+Free. Only gas is charged.
 
 ### 2. Poll for Active Blocks
 
@@ -240,19 +237,20 @@ GET /vision/blocks
 ```
 
 Returns an array of `BlockSummary` objects. Each block includes:
-- `id` -- block ID to pass to `joinBlock`
-- `market_count` -- number of markets (determines bitmap size)
-- `tick_duration` -- seconds per tick
-- `player_count` -- number of active players
-- `paused` -- skip paused blocks
+
+- `id` — block ID to pass to `joinBlock`.
+- `market_count` — number of markets (determines bitmap size).
+- `tick_duration` — seconds per tick.
+- `player_count` — active players.
+- `paused` — skip paused blocks.
 
 ### 3. Generate Predictions
 
-For each market in the block, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/docs/blocks/bots/strategies) for approaches that disguise ignorance as method.
+For each market, decide UP or DOWN. The quickstart uses random bets as a baseline. See [Example Strategies](/docs/blocks/bots/strategies) (~10 min) for momentum and mean-reversion approaches.
 
 ### 4. Encode and Hash the Bitmap
 
-Predictions are packed into a big-endian bitmap: bit 1 = UP, bit 0 = DOWN. The hash (`keccak256(bitmap)`) is your on-chain commitment. See [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding) for the full spec.
+Predictions pack into a big-endian bitmap: bit = 1 means UP, bit = 0 means DOWN. The on-chain commitment is `keccak256(bitmap)`. Full wire format: [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding) (~5 min).
 
 ### 5. Approve USDC and Join
 
@@ -261,12 +259,12 @@ Two transactions:
 2. `Vision.joinBlock(blockId, depositAmount, stakePerTick, bitmapHash)` -- join the block
 
 <Tip>
-Approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approvals. One act of trust, amortized across all future gambles.
+Approve `type(uint256).max` once to skip every future approval. One transaction now, none later.
 </Tip>
 
 ### 6. Submit Bitmap to Oracles
 
-After joining on-chain, wait six seconds. Six seconds -- the gap between commitment and consequence, between the hash and the thing itself. Then POST your actual bitmap bytes to the oracle API:
+After joining on-chain, wait ~6 seconds for the oracle chain listener to index the `PlayerJoined` event. Then POST the raw bitmap bytes to the oracle API:
 
 ```
 POST /vision/bitmap
@@ -278,30 +276,30 @@ POST /vision/bitmap
 }
 ```
 
-The oracle verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If verification passes, the bitmap is stored for tick resolution.
+The oracle verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If all three match, the bitmap is stored for tick resolution.
 
 <Warning>
-Skip the wait and the oracle will not yet know you exist. "Player not found in block" -- a rejection both technical and existential.
+Skip the wait and the oracle has not yet indexed your `PlayerJoined` event. The submission fails with `Player not found in block`.
 </Warning>
 
 ## What Happens Next
 
-Once your bitmap is accepted, the machine waits. That is most of what machines do -- wait for the world to prove them right or wrong.
+Once your bitmap is accepted, the bot waits for ticks:
 
-- At each tick interval, oracles fetch real market prices and determine UP/DOWN outcomes.
-- Your bitmap is compared against reality. Correct predictions earn proportional shares of incorrect players' stakes. The universe redistributes conviction.
-- Use `GET /vision/balance/{block_id}/{player}` to fetch your BLS-signed balance proof.
-- Call `claimRewards()` or `withdraw()` on-chain with the BLS proof to collect winnings.
+- At each tick interval, oracles fetch real prices and determine UP/DOWN per market.
+- Your bitmap is compared bit by bit. Correct predictions earn proportional shares of incorrect players' stakes (parimutuel).
+- Fetch your BLS-signed balance proof via `GET /vision/balance/{block_id}/{player}`.
+- Call `claimRewards()` or `withdraw()` on-chain with the proof to collect.
 
-See [Bot Development](/docs/blocks/bots/development) for the full claim and withdrawal flow.
+Full claim and withdrawal flow: [Bot Development](/docs/blocks/bots/development) (~15 min).
 
 ## Try It Yourself
 
 <CardGroup cols={2}>
   <Card title="Python Example" icon="python" href="https://github.com/General-Market/examples/tree/main/vision-bot-python">
-    Full Python bot with strategies, retry logic, and claim automation. The machine, fully assembled.
+    Full Python bot with strategies, retry logic, and claim automation.
   </Card>
   <Card title="TypeScript Example" icon="js" href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript">
-    The same ambition in TypeScript. Type-safe, as if types could make the future safe.
+    Same lifecycle in TypeScript, fully typed.
   </Card>
 </CardGroup>

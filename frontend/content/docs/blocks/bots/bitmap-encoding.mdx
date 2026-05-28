@@ -5,9 +5,14 @@ description: "Technical reference for Vision prediction bitmap format, encoding,
 
 # Bitmap Encoding
 
-Bits. The smallest possible opinion. One bit per market -- UP or DOWN, 1 or 0, conviction or its absence. There is no room for nuance in a single bit, which is perhaps why it works.
+One bit per market: 1 = UP, 0 = DOWN. Bytes are packed big-endian — bit 0 sits in the most significant bit of byte 0. The on-chain commitment is `keccak256(bitmap_bytes)`.
 
-This page is the definitive reference for the bitmap wire format, encoding algorithm, hashing, and edge cases.
+This page is the wire-format reference: layout, encoding, decoding, hashing, edge cases.
+
+- **Bit layout** — big-endian within each byte; bit 0 = MSB of byte 0.
+- **Size** — `ceil(market_count / 8)` bytes.
+- **Hash** — `keccak256` (Ethereum's variant), **not** SHA-256.
+- **Default** — missing bits are 0 (DOWN).
 
 ## Bit Layout
 
@@ -142,7 +147,7 @@ function decodeBitmap(bitmap: Uint8Array, marketCount: number): ('UP' | 'DOWN')[
 
 ## Hashing
 
-The on-chain commitment is `keccak256(bitmap_bytes)`. You publish the hash before revealing the opinion. A sealed confession -- the blockchain knows you have a view but not what it is. This hash is what you pass to `joinBlock()` as `bitmapHash`, and what oracles verify when you later reveal the actual bitmap.
+The on-chain commitment is `keccak256(bitmap_bytes)`. Publish the hash first, reveal the bytes later. The hash is what you pass to `joinBlock()` as `bitmapHash`. Oracles verify it on reveal.
 
 <CodeGroup>
 
@@ -169,12 +174,12 @@ const bitmapHex = toHex(bitmap)        // 0x-prefixed hex string
 </CodeGroup>
 
 <Info>
-The hash function is **keccak256** (Ethereum's variant), not SHA-256. The wrong hash function produces a valid commitment to nothing -- `joinBlock` succeeds but bitmap verification fails. A commitment that cannot be honored is worse than no commitment at all.
+Use `keccak256`, not SHA-256. The wrong hash function still produces a valid 32-byte commitment, so `joinBlock` succeeds — but oracle verification fails at reveal and the bitmap is rejected.
 </Info>
 
 ## Verification
 
-The seal-then-reveal scheme -- first commit, then confess:
+Commit then reveal:
 
 ```
 1. Bot computes:  bitmapHash = keccak256(bitmap_bytes)
@@ -186,7 +191,7 @@ The seal-then-reveal scheme -- first commit, then confess:
 6. Both match → bitmap accepted for tick resolution
 ```
 
-If any verification step fails, the bitmap is rejected. The player's stake still ticks -- they lose each tick by default, punished not for being wrong but for failing to be anything at all.
+If any step fails, the bitmap is rejected. The player's stake still ticks down — a rejected bitmap counts as no bet, which means losing the default each tick.
 
 ## Edge Cases
 
@@ -223,7 +228,7 @@ Full:     0xB280
 
 ### Missing Bets Default to DOWN
 
-If `len(bets) < market_count`, the remaining bits are left as 0 (DOWN). Silence is interpreted as pessimism. You can submit predictions for only the markets you have a view on -- the rest default to doubt.
+If `len(bets) < market_count`, the trailing bits stay 0 (DOWN). You can submit predictions for only the markets you have a view on — the rest default to DOWN.
 
 ### All UP / All DOWN
 

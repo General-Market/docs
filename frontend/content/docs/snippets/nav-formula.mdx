@@ -5,5 +5,17 @@
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-Where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is computed identically on-chain, in oracle nodes, and in the frontend. See [DTFs](/index/concepts/itps) for the full pricing model.
+**Inputs**
+
+- `qty[i]` — fixed per-share quantity of asset `i`.
+- `price[i]` — current market price of asset `i` (18 decimals).
+- `1e18` — scaling factor that normalizes 18-decimal arithmetic back to a USD-denominated NAV.
+
+**Worked example** — a two-asset index, 1 share:
+
+- `qty[0] = 0.5e18` (0.5 BTC), `price[0] = 60_000e18` → `0.5 * 60_000 = 30_000`.
+- `qty[1] = 2e18` (2 ETH), `price[1] = 3_000e18` → `2 * 3_000 = 6_000`.
+- `NAV = (30_000e18 + 6_000e18) / 1e18 = 36_000`.
+
+NAV is computed identically on-chain, in oracle nodes, and in the frontend. See [DTFs](/index/concepts/itps) for the full pricing model.
 </Note>

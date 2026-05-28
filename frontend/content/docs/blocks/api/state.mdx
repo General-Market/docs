@@ -5,7 +5,7 @@ description: "Query the full state of a single prediction block"
 
 # Block State
 
-The complete state of a single block -- every player, every balance, every commitment. A snapshot of collective conviction at one moment in time.
+This page returns the complete state of a single block — every player, balance, stake, and bitmap status.
 
 ---
 
@@ -13,7 +13,7 @@ The complete state of a single block -- every player, every balance, every commi
 
 `GET /vision/block/{id}/state`
 
-Returns every player's position, balance, and bitmap status. Live data from the in-memory tick scheduler -- the truth, as of right now.
+This endpoint returns every player's position, balance, and bitmap status. Data comes live from the in-memory tick scheduler.
 
 <ParamField path="id" type="number" required>
   The block ID to query. Must be a valid, existing block.
@@ -117,7 +117,7 @@ for (const player of state.players) {
 | `has_bitmap` | boolean | Whether the player has submitted a bitmap for the current tick |
 
 <Warning>
-Players with `has_bitmap: false` forfeit their stake without participating in outcomes. To have no opinion is not to be safe -- it is to lose by default.
+Players with `has_bitmap: false` forfeit their stake for the tick without participating in outcomes. No bitmap is a loss by default.
 </Warning>
 
 ### Errors

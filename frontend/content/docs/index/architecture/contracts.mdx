@@ -5,9 +5,14 @@ description: "On-chain contract architecture for the Index protocol"
 
 # On-Chain Contract Architecture
 
-The contracts are the truth. Everything else is commentary.
+7,300 lines of Solidity on the Index L3 (Arbitrum Orbit) plus a smaller surface on Settlement. UUPS proxies (Universal Upgradeable Proxy Standard from OpenZeppelin), BLS signature verification on every state-changing path. No test modes, no owner overrides.
 
-7,300 lines of Solidity on an Arbitrum Orbit L3. UUPS proxies. BLS verification on every path that matters. No test modes, no owner overrides -- because the moment you add a bypass, you have admitted the system does not believe in itself.
+Key terms used below:
+
+- **DTF** — Dex Traded Fund. An on-chain ETF whose share token tracks a fixed inventory of underlying assets.
+- **NAV** — Net Asset Value. Per-share value of a DTF.
+- **BLS** — A pairing-based signature scheme; the aggregated signature of `ceil(2n/3)` oracle nodes authorises any state change.
+- **UUPS proxy** — Upgrade pattern where the proxy address is permanent and only the implementation behind it changes.
 
 ## DTF Core Contracts
 
@@ -41,14 +46,14 @@ The contracts are the truth. Everything else is commentary.
 ## Storage Layout
 
 <Info>
-  `IndexStorage.sol` holds `_itpInventory[itpId]` -- the fixed per-share quantities for each asset. Set at creation. Changed only on rebalance. Buy and sell do not touch it. This is the invariant that makes everything else possible.
+  `IndexStorage.sol` holds `_itpInventory[itpId]` — the fixed per-share quantities for each asset. Set at creation, changed only on rebalance. Buy and sell mint or burn shares proportionally and never touch inventory. This is the invariant the rest of the system depends on.
 </Info>
 
-All upgradeable contracts use UUPS proxies (OpenZeppelin 5.x). Storage slots are managed to survive upgrades. The proxy address is permanent. Only the implementation changes.
+All upgradeable contracts use UUPS proxies (OpenZeppelin 5.x). Storage slots survive upgrades. The proxy address is permanent; only the implementation changes.
 
 ## DTF NAV Pricing Model
 
-Every DTF starts at \$1. Then the market takes over. The price drifts as underlying assets move -- this is the point.
+A DTF starts at \$1. NAV drifts as the underlying assets move — that drift is the product.
 
 ```solidity
 // At creation (or rebalance), weights become fixed quantities:
@@ -58,24 +63,28 @@ qty[i] = (weight[i] * 1e18) / price[i]
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-**Invariants -- violate any of these and the system is lying:**
+The four invariants:
+
 - Per-share quantities live in `_itpInventory`. They change only on rebalance.
 - Buy and sell mint or burn shares proportionally. They never touch quantities.
-- Rebalance preserves NAV: `qty_new[i] = (w_new[i] * currentNAV) / price[i]`
+- Rebalance preserves NAV: `qty_new[i] = (w_new[i] * currentNAV) / price[i]`.
 - NAV drifts from \$1 as underlying prices move. Drift is the product, not a bug.
 
 ## BLS Signature Security
 
-Every state change that matters requires cryptographic proof that the machines agreed. There is no alternative path.
+Every state-changing call verifies an aggregated BLS signature against the public key stored in `OracleRegistry.sol`. There is no fallback path.
 
 <Warning>
-  BLS verification is **never bypassed**. No test modes. No `onlyOwner` overrides. No `aggregatedPubkey.length == 0` short circuits. If BLS is in the way, fix the BLS pipeline. Do not carve a hole in the wall.
+  BLS verification is **never bypassed**. No test modes, no `onlyOwner` override, no `aggregatedPubkey.length == 0` short-circuit. If BLS is blocking development, fix the BLS pipeline — generate proper test keys, register them, compute valid signatures.
 </Warning>
 
-- **Curve:** BN254 (alt_bn128) -- precompiles at `0x06`, `0x07`, `0x08`
-- **Threshold:** `ceil(2n/3)` of registered oracle nodes
-- **Key management:** Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation
-- **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBlock()`, before any state change
+| Property | Value |
+|---|---|
+| Curve | BN254 (alt_bn128) |
+| Precompiles | `0x06` (add), `0x07` (mul), `0x08` (pairing) |
+| Threshold | `ceil(2n/3)` of registered oracle nodes |
+| Key storage | Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation |
+| Verification site | `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBlock()` |
 
 ## DTF Order Lifecycle
 
@@ -83,7 +92,7 @@ Every state change that matters requires cryptographic proof that the machines a
 
 ## Vision Prediction Market Contracts
 
-Vision turns opinions into positions and positions into outcomes. Parimutuel -- winners take from losers, and the pool does not lie about who was right.
+Vision is a parimutuel prediction market on L3. Users stake USDC on outcomes; winners split the pool proportional to their stake.
 
 | Contract | Description |
 |---|---|

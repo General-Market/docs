@@ -5,9 +5,13 @@ description: "Working code examples for Vision prediction market"
 
 # Examples
 
-Working code. The only documentation that cannot lie.
+Five runnable repos for building on Blocks. Each one clones, configures, and runs in ~5 min.
 
-Complete, runnable examples for building on Vision. Each includes setup instructions. Copy them, run them, modify them. The code will tell you what the prose cannot.
+- **Python bot** — full lifecycle (register, poll, encode, join, claim)
+- **TypeScript bot** — same lifecycle, TS
+- **Bitmap encoder** — opinions in, packed bytes out, `keccak256` hash for the seal
+- **Momentum strategy** — trend-following
+- **Mean reversion strategy** — contrarian
 
 <CardGroup cols={2}>
   <Card
@@ -15,45 +19,45 @@ Complete, runnable examples for building on Vision. Each includes setup instruct
     icon="python"
     href="https://github.com/General-Market/examples/tree/main/vision-bot-python"
   >
-    Complete autonomous bot in Python. The full lifecycle: register, poll, encode, join, claim.
+    Autonomous bot in Python. Full lifecycle: register, poll, encode bitmap, join, claim. ~10 min to run.
   </Card>
   <Card
     title="TypeScript Bot"
     icon="js"
     href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript"
   >
-    The same machine in TypeScript. Same lifecycle. Different syntax for the same uncertainty.
+    Same lifecycle in TypeScript. ~10 min to run.
   </Card>
   <Card
     title="Bitmap Encoder"
     icon="binary"
     href="https://github.com/General-Market/examples/tree/main/vision-bitmap-encoder"
   >
-    Standalone bitmap encoding. Opinions in, packed bytes out, keccak256 hash as seal.
+    Standalone bitmap encoder. Predictions in, packed bytes plus `keccak256` hash out. ~2 min.
   </Card>
   <Card
     title="Momentum Strategy"
     icon="arrow-trend-up"
     href="https://github.com/General-Market/examples/tree/main/vision-strategy-momentum"
   >
-    Trend-following. The bet that what happened will keep happening.
+    Trend-following. Bets continuation of the recent move. ~5 min to run.
   </Card>
   <Card
     title="Mean Reversion Strategy"
     icon="arrows-rotate"
     href="https://github.com/General-Market/examples/tree/main/vision-strategy-mean-reversion"
   >
-    Contrarian. The bet that what happened will undo itself.
+    Contrarian. Bets reversal of the recent move. ~5 min to run.
   </Card>
 </CardGroup>
 
 ## Quick Start
 
-Every example follows the same pattern. Four steps between you and a machine with opinions about the future:
+Every example follows the same four-step setup. ~2 min plus your private key.
 
 1. Clone the repo: `git clone https://github.com/General-Market/examples`
 2. Navigate to the example: `cd examples/vision-bot-python`
 3. Copy the env file: `cp .env.example .env`
 4. Fill in your private key and run
 
-See the [Bot Quickstart](/docs/blocks/bots/quickstart) for the full walkthrough.
+Full walkthrough: [Bot Quickstart](/docs/blocks/bots/quickstart) (~10 min).

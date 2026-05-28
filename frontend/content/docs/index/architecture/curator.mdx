@@ -5,15 +5,20 @@ description: "Oracle NAV collection, Morpho allocation, and health monitoring â€
 
 # Curator Service
 
-The curator watches everything. It intervenes only when necessary. The best curators are the ones you forget exist.
+The Curator is the Rust service that connects BLS-signed oracle prices to Morpho lending markets on Settlement.
 
-A Rust service that bridges BLS consensus and Morpho lending. It collects signed NAV prices from oracles, pushes them to on-chain oracles, rebalances vault capital, monitors health factors, and serves lending quotes. Four jobs. One process. Silent until something goes wrong.
+It does four things:
+
+- Collects BLS-signed NAV (Net Asset Value) from the oracle nodes and pushes it to `ITPNAVOracle` on-chain.
+- Rebalances vault supply across Morpho markets toward target utilization.
+- Monitors borrower health factors, oracle freshness, and vault metrics, then fires alerts.
+- Serves the lending Quote API to the frontend.
 
 <CuratorServiceMap />
 
 ## Operational Modes
 
-The Curator supports four mutually exclusive launch modes selected by CLI flags:
+The Curator supports four mutually exclusive launch modes, selected by CLI flag:
 
 | Mode | Flag | Description |
 |---|---|---|
@@ -28,7 +33,7 @@ The Curator supports four mutually exclusive launch modes selected by CLI flags:
 
 ## Oracle Collector
 
-The primary function. Poll the oracles. Validate consensus. Aggregate signatures. Push to chain. Repeat. The oracle is only as fresh as the last push.
+The default mode. The loop is: poll the oracles, validate that they agree, aggregate their BLS signatures, push the result to `ITPNAVOracle`, repeat.
 
 ### NAV Oracle Flow
 
@@ -36,7 +41,7 @@ The primary function. Poll the oracles. Validate consensus. Aggregate signatures
 
 ### Consensus Validation
 
-No price reaches the oracle without unanimous agreement from a quorum. Disagreement is rejection.
+Every responding oracle in the quorum must agree on price and cycle number. Any disagreement aborts the push.
 
 | Check | Requirement | Error |
 |---|---|---|
@@ -55,7 +60,7 @@ No price reaches the oracle without unanimous agreement from a quorum. Disagreem
 
 ## Allocation Bot
 
-Capital must go where it is needed. The allocation bot watches utilization across all markets and moves USDC accordingly. It respects concentration limits because unchecked optimism is how vaults fail.
+The allocation bot rebalances USDC across Morpho markets to keep utilization inside the target band, subject to per-tier concentration caps.
 
 ### Utilization Targets
 
@@ -70,7 +75,7 @@ Capital must go where it is needed. The allocation bot watches utilization acros
 
 ### Risk Tiers
 
-Every DTF market is assigned a risk tier that controls maximum concentration (percentage of vault assets allowed in that market):
+Each DTF market has a risk tier. The tier sets the maximum share of vault assets allowed in that market.
 
 <CuratorRiskTiers />
 
@@ -86,7 +91,7 @@ Each cycle follows this sequence:
 
 ## Health Monitor
 
-The health monitor scans everything, constantly, looking for the thing that is about to go wrong. It generates structured reports. It classifies alerts by severity. It sends them to Telegram. Vigilance is the only strategy against entropy.
+The health monitor scans borrower positions, oracle freshness, mirror sync, and vault metrics on a fixed cadence, classifies findings by severity and category, and routes them to Telegram or structured logs.
 
 ### Monitoring Loop
 
@@ -94,7 +99,7 @@ The health monitor scans everything, constantly, looking for the thing that is a
 
 ### Alert System
 
-Alerts are classified by severity and category:
+Each alert carries one severity and one category.
 
 | Severity | Meaning | Example |
 |---|---|---|
@@ -115,7 +120,7 @@ Alerts are classified by severity and category:
 
 ### Oracle Freshness Cadences
 
-A stale oracle is a lying oracle. Each risk tier defines the maximum acceptable age:
+Each risk tier defines the maximum acceptable age for the NAV oracle backing that market. Past the cap, the oracle counts as stale and the market is degraded.
 
 | Tier | Max Staleness | Description |
 |---|---|---|
@@ -126,7 +131,7 @@ A stale oracle is a lying oracle. Each risk tier defines the maximum acceptable 
 
 ### Crisis Levels
 
-Four states, each worse than the last. The crisis level feeds into the Quote API and Allocation Bot. A market in EMERGENCY does not receive new capital.
+Four states. The current crisis level feeds the Quote API and the Allocation Bot. A market in EMERGENCY receives no new capital.
 
 <CuratorCrisisLevels />
 
@@ -136,7 +141,7 @@ Four states, each worse than the last. The crisis level feeds into the Quote API
 
 ## Quote API
 
-A lending quote is a promise with conditions. The Quote API computes the conditions -- rate, health factor requirement, calldata -- and returns them. The borrower decides whether to accept.
+The Quote API returns a borrow rate, a required health factor, and ready-to-submit calldata for a lending request.
 
 ### Quote Flow
 
@@ -144,7 +149,7 @@ A lending quote is a promise with conditions. The Quote API computes the conditi
 
 ### SERM (Shared Exposure Rate Model)
 
-Risk has a price. The SERM algorithm computes it by weighing utilization, volatility, concentration, liquidity, and tier -- then producing a single number: the borrow rate.
+SERM computes the borrow rate from five inputs: global utilization, per-asset stress, collateral concentration, liquidity, and tier premium.
 
 ```
     rate = kink(global_util) * (1 + stress * 0.5) * (1 + concentration) * liquidity_mult + tier_premium
@@ -172,7 +177,7 @@ Rate parameters:
 
 ## Shared State (Unified Mode)
 
-Four tasks in one process need to share what they know. `SharedCuratorState` -- an `Arc<RwLock<>>` -- is the shared memory. Writers produce. Readers consume. The lock mediates.
+In unified mode, the four tasks read and write a single `SharedCuratorState` (`Arc<RwLock<>>`). One writer per field, multiple readers.
 
 <CuratorSharedState />
 
@@ -212,7 +217,7 @@ Four tasks in one process need to share what they know. `SharedCuratorState` -- 
 
 ## Alerting
 
-Alerts fire on transitions, not on every scan. A market that has been in crisis for an hour does not need to announce it every five minutes. The dispatcher remembers what it already said.
+The alert dispatcher fires on state transitions, not on every scan. A market that has been in crisis for an hour is not re-announced every five minutes.
 
 <CuratorAlertDispatcher />
 
@@ -222,6 +227,6 @@ Alerts fire on transitions, not on every scan. A market that has been in crisis 
 
 ## End-to-End Data Flow
 
-From oracle NAV computation to a lending quote in the user's browser. Every arrow is a dependency. Every dependency is a risk.
+From oracle NAV computation to a lending quote rendered in the browser.
 
 <CuratorEndToEndFlow />

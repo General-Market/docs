@@ -5,9 +5,19 @@ description: "Developer guide for adding new data sources to Vision — from API
 
 # Adding a Data Source
 
-You want to add a new way to measure the world. Here is how. The world will not thank you.
+Adding a new source = implement one Rust trait, wire it into the data-node, deploy the on-chain block pool, register in the frontend. ~2 hours end-to-end for a simple HTTP API.
 
-Every source follows the same pattern: implement a Rust trait, wire it into the data-node, deploy on-chain block pools, register in the frontend. The wiring is mechanical. The hard part is deciding **what to track and how to split feeds** -- which numbers deserve to become markets, and which are better left unobserved.
+**Steps**
+
+- **Step 0** — design the feed (what to track, static vs dynamic discovery, sync interval)
+- **Step 1** — implement `MarketDataSource` trait in Rust
+- **Step 2** — write the config JSON
+- **Step 3** — register in data-node (`mod.rs`, `main.rs`, `api.rs`, optional API key wiring)
+- **Step 4** — add to `DeployAllVisionBlocks.s.sol`
+- **Step 5** — frontend wiring (`market-categories.ts`, `sources.ts`, logo, grid, modal)
+- **Step 6** — compile checks and curl the live API
+
+The mechanics are routine. The hard part is choosing *what* to track and how to split it into markets.
 
 ## Pipeline Overview
 
@@ -21,7 +31,7 @@ Every source follows the same pattern: implement a Rust trait, wire it into the 
 
 ## Step 0: Design Your Data Feed
 
-Before writing code, answer these questions. The code is the easy part -- the epistemology is hard.
+Answer three design questions before writing code.
 
 ### What number changes and is fun to watch?
 
@@ -410,7 +420,7 @@ cd frontend && npx tsc --noEmit
 
 ## Common Pitfalls
 
-Every source developer makes the same mistakes. The mistakes are not difficult to avoid -- they are difficult to take seriously until they have bitten you.
+The same mistakes recur. Take this list seriously the first time.
 
 <PitfallsList />
 
@@ -418,6 +428,6 @@ Every source developer makes the same mistakes. The mistakes are not difficult t
 
 ## Checklist
 
-Copy this into your PR description and check off items as you go:
+Copy into your PR description and tick as you go.
 
 <NewSourceChecklist />

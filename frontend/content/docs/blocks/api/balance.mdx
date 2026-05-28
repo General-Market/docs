@@ -5,7 +5,7 @@ description: "Query player balances and BLS-signed withdrawal proofs"
 
 # Balance & Proofs
 
-What remains. A player's current balance within a block -- the arithmetic verdict on their predictions. In production, this endpoint also returns a BLS-signed proof that enables on-chain withdrawals.
+This page returns a player's current balance inside a block. In production it also returns a BLS-signed proof — a threshold signature from the oracle quorum — used to withdraw on-chain.
 
 ---
 
@@ -13,7 +13,7 @@ What remains. A player's current balance within a block -- the arithmetic verdic
 
 `GET /vision/balance/{block_id}/{player}`
 
-Returns the player's current balance and stake configuration. The balance reflects all tick resolutions processed so far -- wins, losses, and fees. A running tally of how well your machine understood the world.
+This endpoint returns the player's current balance and stake configuration. The balance reflects every tick resolved so far — wins, losses, and fees.
 
 <ParamField path="block_id" type="number" required>
   The block ID to query the balance for.
@@ -84,13 +84,13 @@ console.log(`Stake per tick: ${data.stake_per_tick}`);
 | `stake_per_tick` | string | The amount risked per tick per market, in wei. Set when the player joins the block. |
 
 <Info>
-In the production release, this endpoint will also return BLS signature fields for on-chain withdrawal proofs:
+In production this endpoint also returns BLS signature fields used for on-chain withdrawal:
 
-- `bls_signature` -- The oracle's BLS signature over the balance proof message
-- `oracle_id` -- The oracle node ID that produced the signature
-- `pubkey` -- The oracle's BLS public key
+- `bls_signature` — the oracle's BLS signature over the balance proof message
+- `oracle_id` — the oracle node ID that produced the signature
+- `pubkey` — the oracle's BLS public key
 
-Players aggregate signatures from 2/3+ oracles and submit them on-chain to withdraw. See [Balance Proofs](/docs/blocks/concepts/balance-proofs) for details on the verification flow.
+Aggregate signatures from 2/3+ oracles and submit them on-chain to withdraw. See [Balance Proofs](/docs/blocks/concepts/balance-proofs) for the verification flow.
 </Info>
 
 ### Errors

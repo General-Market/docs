@@ -5,7 +5,7 @@ description: "Key terms and definitions"
 
 # Glossary
 
-Every system invents its own language. This is the dictionary. Learn it once; the rest of the documentation will make sense.
+Plain definitions for every protocol-specific term. Use this page to decode acronyms and contract names that appear in the rest of the documentation.
 
 <dl>
 
@@ -35,7 +35,7 @@ The total value of all underlying assets held within a DTF, calculated as the su
 
 ### Backing Invariant
 
-The rule that no DTF shares may be minted without confirmed backing. Every minted share must be 1:1 backed by its underlying tokens. `completeBuyOrder` on the Settlement chain (which releases USDC to the AP for asset purchases) must succeed before shares are minted on L3. If `completeBuyOrder` fails, the entire order is rolled back and no shares are minted. An unbacked DTF is the single worst failure mode in the protocol.
+The rule that no DTF shares may be minted without confirmed backing. Every minted share must be 1:1 backed by its underlying tokens. `completeBuyOrder` on the Settlement chain (which releases USDC to the AP for asset purchases) must succeed before shares are minted on L3. If `completeBuyOrder` fails, the entire order is rolled back and no shares are minted. An unbacked DTF is the worst failure mode the protocol guards against.
 
 ### BLS (Boneh-Lynn-Shacham)
 

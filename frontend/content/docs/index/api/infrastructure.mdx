@@ -5,7 +5,15 @@ description: "Deployment config, explorer health, testnet faucet, market history
 
 # Infrastructure Endpoints
 
-The plumbing. Contract addresses, health checks, testnet faucet, market history, and the catch-all proxy. Not glamorous. Essential.
+Contract addresses, health checks, testnet faucet, market history, and the catch-all data-node proxy.
+
+| Endpoint | Returns |
+|---|---|
+| `/deployment` | Contract addresses from a deployment JSON |
+| `/explorer/health` | Consensus, peer, and throughput metrics |
+| `/market/history` | Historical prices for one source + asset |
+| `/faucet` | Mints testnet USDC + optional gas drip |
+| `/dn/{...path}` | Catch-all data-node proxy (supports SSE) |
 
 ```
   +------------------------------------------------------------------+
@@ -31,7 +39,7 @@ The plumbing. Contract addresses, health checks, testnet faucet, market history,
 
 ## Get Deployment Config
 
-Where the contracts live. The frontend reads this at runtime to know which addresses to call.
+Returns the contract addresses for the requested deployment JSON. The frontend reads this at runtime to know which addresses to call.
 
 ```
 GET /api/deployment?file={filename}
@@ -96,11 +104,13 @@ print(deployment["contracts"]["Index"])
 | `400` | Invalid or missing `file` parameter |
 | `404` | Deployment file not found on server |
 
+Next: [Get Explorer Health](#get-explorer-health) for runtime consensus metrics.
+
 ---
 
 ## Get Explorer Health
 
-Consensus metrics, peer counts, order throughput. The pulse of the system. Token-authenticated, but the proxy handles that for you.
+Returns consensus metrics, peer counts, and order throughput. Token-authenticated; the proxy injects the `EXPLORER_TOKEN` server-side.
 
 ```
 GET /api/explorer/health?endpoint={endpoint}&range={range}
@@ -215,11 +225,13 @@ print(f"Consensus success: {network['consensus_success_total']}")
 | `502` | Data-node upstream unavailable |
 | `503` | `EXPLORER_TOKEN` not configured on server |
 
+Next: [Get Market Price History](#get-market-price-history) for asset-level series.
+
 ---
 
 ## Get Market Price History
 
-Historical prices for a specific source and asset. The raw material for charts and analysis.
+Returns historical USD prices for one source and asset as `{timestamp, value}` points.
 
 ```
 GET /api/market/history?source={source}&asset={assetId}&from={ts}&to={ts}
@@ -290,11 +302,13 @@ history = resp.json()
   Responses are cached at the CDN for 60 seconds with a 5-minute stale-while-revalidate window.
 </Note>
 
+Next: [Testnet Faucet](#testnet-faucet) to fund a test wallet.
+
 ---
 
 ## Testnet Faucet
 
-Free money. Testnet only. Mints USDC on L3 and optionally drips gas on Settlement.
+Mints testnet USDC on L3 and optionally drips Sonic native token for settlement gas. Testnet only.
 
 ```
 POST /api/faucet
@@ -384,11 +398,13 @@ result = resp.json()
   L3 USDC uses **18 decimals** (not 6). The faucet handles this conversion internally. The `amount` parameter is in human-readable USDC (e.g., `"1000"` = 1000 USDC).
 </Warning>
 
+Next: [Data Node Proxy](#data-node-proxy-catch-all) for any data-node route without a dedicated wrapper.
+
 ---
 
 ## Data Node Proxy (Catch-All)
 
-Everything that does not have its own route goes through here. Transparent pass-through to the data node, with SSE streaming support.
+Forwards any path under `/api/dn/` to the data node, query string intact. Supports SSE streaming for backtest progress and other long-running endpoints.
 
 ```
 GET /api/dn/{...path}
@@ -436,3 +452,5 @@ Behaviors:
 | `200` | Upstream response forwarded successfully |
 | `502` | Data-node unreachable or timed out |
 | Other | Upstream HTTP status forwarded as-is |
+
+Next: [API Endpoints Index](/index/api/overview) for the full route map.

@@ -5,9 +5,7 @@ description: "Vision.sol, BotRegistry, and BettingLib — function signatures, e
 
 # Vision Smart Contracts
 
-The contracts. What is true on-chain. Everything else is opinion.
-
-Vision's on-chain layer consists of three contracts deployed on the Index L3 (Chain ID `111222333`). All state-changing operations on `Vision.sol` are gated by BLS signature verification from oracle consensus. There are no admin overrides -- not because the builders are virtuous, but because the code does not permit it.
+Vision's on-chain layer is three contracts deployed on Index L3 (chain ID `111222333`). Every state-changing operation on `Vision.sol` is gated by BLS signature verification from oracle consensus. There are no admin overrides — the code does not permit them.
 
 ```
  +====================================================================+
@@ -65,7 +63,7 @@ The main contract inherits from `ReentrancyGuard` and `BLSVerifier`. It manages 
 
 ### Block Lifecycle
 
-A block is a continuous prediction market tied to a real-world data source. Each block operates on a tick-based clock -- predictions lock before each tick resolves. Time, sliced into intervals of judgment:
+A block is a continuous prediction market tied to a real-world data source. Each block runs on a tick-based clock — predictions lock before each tick resolves.
 
 ```
   createBlock()                                       Time
@@ -843,7 +841,7 @@ Every BLS-gated function uses a unique domain tag in its signed message to preve
 
 ## Solvency Invariants
 
-Three invariants that must hold at all times. The contract's promises, expressed in mathematics rather than language:
+Three invariants must hold at all times:
 
 ```
   INVARIANT 1:  USDC.balanceOf(this) >= totalRealBalance

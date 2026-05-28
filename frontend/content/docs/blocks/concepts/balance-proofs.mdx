@@ -3,7 +3,13 @@ title: "Balance Proofs"
 description: "How BLS-signed balance proofs enable trustless claiming and withdrawal in Vision"
 ---
 
-Three machines sign your balance. If two agree, you can claim. Trust is a threshold, not an emotion. This is the architecture of belief in a system where nobody trusts anyone -- and that, paradoxically, is what makes it trustworthy.
+Two of three oracles must sign your balance before the contract pays out. That signature is a BLS (Boneh-Lynn-Shacham) threshold signature — multiple partial signatures aggregated into one proof.
+
+- Off-chain: oracles compute your balance from tick results, sign it
+- On-chain: you submit the aggregated signature, the contract verifies and pays
+- Fee: 0.05% on profits only, applied at claim or withdrawal
+- Guards: no double-claim, no out-of-range ticks, no insolvent payout
+- BLS verification is never bypassed — not in dev, not in tests
 
 ## Quick Start: Check Your Balance
 
@@ -21,16 +27,16 @@ To claim on-chain, you need BLS-signed proofs from 2/3+ oracles. See [Bot Develo
 
 ## Why Off-Chain Balance Tracking?
 
-Resolving every tick on-chain for every player in every market would be ruinously expensive. Gas costs would devour the stakes before anyone could win them. So Vision uses a hybrid architecture -- the pragmatist's compromise between idealism and reality:
+Resolving every tick on-chain for every player would cost more in gas than the stakes themselves. Vision splits the work:
 
-- **On-chain**: Deposits, withdrawals, bitmap commitments, and BLS-verified claims.
-- **Off-chain**: Tick resolution, bitmap reveals, balance computation, and BLS signing.
+- **On-chain**: deposits, withdrawals, bitmap commitments, BLS-verified claims
+- **Off-chain**: tick resolution, bitmap reveals, balance computation, BLS signing
 
-The contract does not know each player's balance after every tick. It trusts the oracle consensus: if 2/3+ of registered oracles agree on a player's balance, the contract accepts it. This is not blind faith. It is mathematics with a quorum.
+The contract does not store per-tick balances. It accepts whatever number 2/3+ of registered oracles sign — the BLS threshold is the source of truth.
 
 ## BLS Signature Flow
 
-The balance proof lifecycle follows 5 steps. Each step is a negotiation between a player who wants money and machines that require proof. The machines always win this negotiation.
+The balance proof lifecycle has 5 steps: request, compute, sign, aggregate, verify.
 
 ### Step 1: Player Requests Balance Proof
 
@@ -57,17 +63,17 @@ In the full implementation, each oracle returns a partial BLS signature. The pla
 
 ### Step 2: Oracles Compute Balance
 
-Each oracle independently computes your balance. Three machines, working alone, arriving at the same number -- or not. The process:
+Each oracle independently computes your balance:
 
 1. Tracks all tick results since the player's last claim.
 2. Sums deposits + winnings - losses - fees.
 3. Arrives at the player's `newBalance`.
 
-Since all oracles run the same deterministic resolution logic on the same price feeds and bitmaps, they should arrive at the same balance. When they do, it is consensus. When they do not, something is broken.
+All oracles run the same deterministic resolution logic on the same price feeds and bitmaps. Agreement means consensus. Disagreement means a bug — investigate.
 
 ### Step 3: Oracles BLS-Sign the Balance
 
-Each oracle signs the following message. The signature is the oracle's attestation: *I have computed this balance and I stake my cryptographic identity on it*:
+Each oracle signs this message. The signature is the oracle's cryptographic attestation that the computed balance is correct:
 
 ```solidity
 bytes32 message = keccak256(abi.encode(
@@ -86,7 +92,7 @@ The player collects BLS partial signatures from at least 2/3 of registered oracl
 
 ### Step 4: Player Aggregates and Submits
 
-The player aggregates the partial BLS signatures into a single aggregated signature and submits it on-chain. Multiple voices, fused into one proof:
+The player aggregates the partial BLS signatures into a single signature and submits it on-chain:
 
 ```solidity
 function claimRewards(
@@ -100,14 +106,14 @@ function claimRewards(
 
 ### Step 5: Contract Verifies and Pays
 
-The contract performs its final duty -- verification followed by payment, or verification followed by silence:
+The contract verifies the signature and either pays or rejects:
 
-1. Reconstructs the same message hash from the parameters.
+1. Reconstructs the message hash from the submitted parameters.
 2. Verifies the aggregated BLS signature against the oracle registry's aggregated public key.
 3. If valid:
    - Compares `newBalance` to `oldBalance`.
-   - If `newBalance > oldBalance`: computes winnings, deducts the 0.05% fee, and transfers the payout.
-   - If `newBalance <= oldBalance`: records the loss (balance decreased), no payout.
+   - If `newBalance > oldBalance`: computes winnings, deducts the 0.05% fee, transfers the payout.
+   - If `newBalance <= oldBalance`: records the loss, no payout.
 4. Updates `position.lastClaimedTick = toTick`.
 
 ```solidity
@@ -121,12 +127,18 @@ if (newBalance > oldBalance) {
 ```
 
 <Warning>
-BLS verification is never bypassed. Not in local development, not in tests, not anywhere. If BLS verification is blocking your workflow, fix the BLS pipeline -- do not add bypass flags. There are no shortcuts in cryptography. There are only correct implementations and broken ones.
+BLS verification is never bypassed. Not in local development, not in tests, not anywhere. If BLS verification blocks your workflow, fix the BLS pipeline — do not add bypass flags.
 </Warning>
 
 ## Claiming vs. Withdrawing
 
-Two doors out. One lets you take your winnings and stay. The other lets you take everything and leave. Both require proof that the money is yours:
+Two exit paths. `claimRewards` takes winnings and keeps your position open. `withdraw` takes everything and closes it. Both require a BLS proof.
+
+| Action | Keeps position? | Fee basis | BLS action tag |
+|---|---|---|---|
+| `claimRewards` | Yes | winnings since last claim | `"CLAIM"` |
+| `withdraw` | No | total profit since first deposit | `"WITHDRAW"` |
+| `forceWithdraw` | No (oracle-initiated) | total profit | `"FORCE_WITHDRAW"` |
 
 ### Claiming (Partial)
 
@@ -168,7 +180,7 @@ On withdrawal:
 
 ### Force Withdraw
 
-Oracles can force-withdraw a player via BLS consensus. This is the protocol's version of being asked to leave -- polite, cryptographically verified, and final:
+Oracles can force-withdraw a player via BLS consensus. Used when a position must be closed by the protocol — final and cryptographically verified:
 
 ```solidity
 function forceWithdraw(
@@ -183,7 +195,7 @@ The BLS message uses the `"FORCE_WITHDRAW"` action tag. This is an oracle-level 
 
 ## Claim Guards
 
-The contract enforces several safety checks. Every guard is a lesson learned from the history of broken protocols:
+The contract enforces these safety checks. Each one reverts with a specific error:
 
 | Check | Error | Description |
 |-------|-------|-------------|
@@ -195,7 +207,7 @@ The contract enforces several safety checks. Every guard is a lesson learned fro
 
 ## Code Example: Requesting a Proof
 
-Here is a complete example of requesting a balance proof and submitting a claim. The code is straightforward. The money it moves is real:
+A complete example — request a balance proof from oracles, aggregate signatures, submit the claim on-chain:
 
 ```typescript
 import { ethers } from "ethers";
@@ -246,5 +258,5 @@ async function claimRewards(
 ```
 
 <Tip>
-In practice, the Vision frontend and bot SDK handle BLS aggregation automatically. You do not need to implement BLS signature aggregation from scratch unless building a custom integration. The complexity is real, but it is hidden. Most beautiful things are.
+The Vision frontend and bot SDK handle BLS aggregation for you. Implement aggregation from scratch only if building a custom integration. See [Bot Development](/docs/blocks/bots/development) (~10 min read).
 </Tip>

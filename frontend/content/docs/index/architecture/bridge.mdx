@@ -5,9 +5,14 @@ description: "Cross-chain bridge between Index L3 and Settlement -- buy/sell flo
 
 # Bridge Architecture
 
-The bridge exists because assets live on one chain and users live on another. Geography, even digital, is a curse.
+The bridge moves USDC and DTF shares between L3 and Settlement, enforcing one rule: no DTF share is minted without confirmed underlying collateral.
 
-Two chains. Different trust models. Different decimal conventions. The bridge reconciles them while enforcing the one rule that cannot be broken: no DTF shares are minted without confirmed collateral. Everything else is negotiable. This is not.
+Key terms:
+
+- **L3** — Index's Arbitrum Orbit chain, 18-decimal USDC.
+- **Settlement** — Arbitrum, 6-decimal USDC, where bridged DTF shares live as ERC-20s.
+- **AP** — Authorized Participant. The keeper that executes the asset purchase on Bitget after USDC is released.
+- **BLS quorum** — `ceil(2n/3)` aggregated signatures from registered oracle nodes; required for every state-changing bridge call.
 
 ## Chain Overview
 
@@ -15,60 +20,60 @@ Two chains. Different trust models. Different decimal conventions. The bridge re
 
 ## Contract Layout
 
-Five contracts. Three on Settlement, two on L3. Each holds custody of something the others need.
+Five contracts hold the bridge: three on Settlement, two on L3.
 
 <BridgeContractLayout />
 
 <Info>
-All bridge contracts use the UUPS proxy pattern (OpenZeppelin 5.x). Every state-changing bridge operation requires a valid aggregated BLS signature from the oracle nodes -- there are no admin bypasses.
+All bridge contracts use the UUPS proxy pattern (OpenZeppelin 5.x). Every state-changing bridge operation requires a valid aggregated BLS signature from the oracle nodes. There are no admin bypasses.
 </Info>
 
 ## Decimal Conversion
 
-Six decimals on one side. Eighteen on the other. The bridge converts at the boundary. Get this wrong and users receive 1e12x too much or too little.
+The bridge converts decimals at the chain boundary: 6 on Settlement, 18 on L3.
 
 <BridgeDecimalConversion />
 
 <Warning>
-Never assume USDC is 6 decimals everywhere. L3 uses 18-decimal USDC. Mixing up decimals in bridge logic would mean users receive 1e12x too much or too little.
+USDC is not 6 decimals everywhere. L3 uses 18-decimal USDC. A decimal mismatch in bridge logic ships users 1e12× too much or too little.
 </Warning>
 
 ## Bridge Buy Flow
 
-Ten steps. Four BLS consensus rounds. Two chains. One invariant: USDC must be released to the AP before shares are minted. Always.
+Ten steps, four BLS consensus rounds, two chains. The invariant: USDC must reach the AP on Settlement before any share is minted on L3.
 
 <BridgeBuyFlow />
 
 <Warning>
-**The Backing Invariant:** `completeBuyOrder` on Settlement MUST succeed BEFORE `mintBridgedShares` is called. If `completeBuyOrder` fails (gas issue, revert, timeout), the entire order is rolled back via `refundBuyOrder` -- USDC is returned to the user and no shares are minted anywhere. There is no optimistic minting.
+**The Backing Invariant:** `completeBuyOrder` on Settlement must succeed before `mintBridgedShares` is called. If `completeBuyOrder` fails (gas, revert, timeout), the order is rolled back via `refundBuyOrder` — USDC returns to the user and zero shares are minted. There is no optimistic minting.
 </Warning>
 
 ### Crash Recovery
 
-Machines crash. The question is not whether, but when. The `pendingMints` mapping in SettlementBridgeCustody is the recovery anchor. On restart, oracles query it to find orders where USDC was released but `BridgedITP` was not yet minted, then resume.
+`pendingMints` in `SettlementBridgeCustody` is the recovery anchor. On restart, oracles query it to find orders where USDC was released but `BridgedITP` was not yet minted, then resume.
 
 <BridgeCrashRecovery />
 
 ## Bridge Sell Flow
 
-The reverse. Burn the tokens, return the USDC. Same number of steps, same number of consensus rounds, same refusal to compromise on backing.
+The reverse path: burn the L3 share, return the USDC on Settlement. Same step count, same BLS rounds, same backing rule.
 
 <BridgeSellFlow />
 
 ### Failed Sell Recovery
 
-If `BridgedITP` is burned but the L3 fill never completes, the user's tokens are gone with no USDC to show for it. This cannot stand. A safety valve exists:
+If `BridgedITP` is burned but the L3 fill never completes, the user is left with neither token nor USDC. The safety-valve recovery path returns the shares.
 
 <BridgeFailedSellRecovery />
 
 ## The Backing Invariant
 
-The single most important property of the entire protocol. Not the most interesting. Not the most clever. The most important. Every minted DTF share must be 1:1 backed by underlying assets. Without this, everything else is theater.
+Every minted DTF share is 1:1 backed by underlying assets. The bridge is the contract that enforces this.
 
 <BridgeBackingInvariant />
 
 <Warning>
-**Never mint DTF shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` instead -- USDC goes back to the user, zero shares minted. An unbacked DTF is worse than stuck orders, worse than slow consensus, worse than any other failure mode.
+**Never mint DTF shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` — USDC returns to the user, zero shares are minted.
 </Warning>
 
 ## Order Lifecycle on the Bridge
@@ -77,14 +82,14 @@ The single most important property of the entire protocol. Not the most interest
 
 ## Replay Protection
 
-Every operation is recorded so it cannot happen twice. The mappings are the protocol's memory of what it has already done.
+Each operation is recorded once. The replay-protection mappings reject a second submission of the same order.
 
 <BridgeReplayProtection />
 
 ## Timing
 
-Ninety seconds, end to end. Not fast. But correct -- and correctness is not negotiable here.
+End-to-end bridge buy flow: ~90 seconds. Each of the four BLS rounds requires `ceil(2n/3)` of the registered oracle nodes to sign.
 
 <BridgeTiming />
 
-The sell flow takes the same time. Each round requires BLS signature aggregation from `ceil(2n/3)` registered oracle nodes. Patience is the price of integrity.
+The sell flow takes the same time. For the full order lifecycle on the protocol side, see [Order Lifecycle](/index/architecture/overview#order-lifecycle).

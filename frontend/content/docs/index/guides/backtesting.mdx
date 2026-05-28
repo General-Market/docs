@@ -3,39 +3,50 @@ title: "Backtesting"
 description: "Simulate portfolio performance with historical data before deploying a DTF"
 ---
 
-Backtesting shows what would have happened. It says nothing about what will happen. This is its only honest feature.
+Simulate a basket strategy against historical data, then deploy the result as a live Dex Traded Fund (DTF — a tokenized basket of crypto assets, like an on-chain ETF). ~5 min for one run, ~15 min for a sweep.
 
-The engine simulates portfolio performance from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live Dex Traded Fund (DTF) -- from the UI or API.
+**Prereqs:**
+- A category in mind (Layer 1s, DeFi, AI, Memecoins, etc.)
+- A weighting scheme (equal, market cap, momentum — full list below)
+- A rebalance cadence (days, or a drift threshold)
+
+**What you get:** total return, Sharpe ratio, max drawdown, NAV chart, final holdings — plus a one-click Deploy button.
 
 <Warning>
-**Past performance does not guarantee future results.** The past is a story you tell yourself to justify a decision you have already made. Backtesting cannot account for future market conditions, liquidity changes, or black swan events. See [Risks](/index/guides/risks) before committing capital.
+**Past performance does not guarantee future results.** Backtesting cannot account for future market conditions, liquidity changes, or black swan events. Read [Risks](/index/guides/risks) before committing capital.
 </Warning>
 
 ---
 
 ## Backtesting via the UI
 
-Navigate to the **Backtest** section. The interface is simple. The questions it raises are not.
+Open the **Backtest** section. Three steps to a result.
 
 <Steps>
-  <Step title="Select a Category">
-    Choose an asset category to define the token universe. Layer 1s, DeFi Blue Chips, AI Tokens, Memecoins, Made in China, and 50+ more from CoinGecko and DefiLlama.
+  <Step title="Step 1: Select a category">
+    Pick an asset category. Layer 1s, DeFi Blue Chips, AI Tokens, Memecoins, Made in China — 50+ available from CoinGecko and DefiLlama.
 
-    Only coins listed on Bitget at some point are eligible. A backtest on untradeable assets is fiction, not simulation.
+    Eligibility: only coins listed on Bitget at some point. Untradeable assets are excluded by design.
   </Step>
 
-  <Step title="Configure Parameters">
-    | Parameter | Description | Example |
+  <Step title="Step 2: Configure parameters">
+    Set five values. Defaults work for a first pass.
+
+    | Parameter | What it does | Example |
     |-----------|-------------|---------|
     | **Top N** | Number of assets by market cap | `10` |
-    | **Weighting** | Allocation scheme (see below) | `mcap` |
+    | **Weighting** | Allocation scheme (table below) | `mcap` |
     | **Rebalance** | Days between rebalances | `30` |
     | **Fee** | Simulated trading fee per rebalance | `0.1%` |
     | **Spread** | Slippage multiplier | `1.0` |
   </Step>
 
-  <Step title="Run & Review">
-    Click **Run Backtest**. Results include total return, Sharpe ratio, max drawdown, annualized return, a NAV chart, and final holdings. The numbers look definitive. They describe the past with perfect hindsight.
+  <Step title="Step 3: Run and review">
+    Click **Run Backtest**. ~3 sec for a cached config, ~10–30 sec for a fresh run.
+
+    Output: total return, Sharpe ratio, max drawdown, annualized return, NAV chart, final holdings.
+
+    Next step: open the [Sweep section](#sweep-mode) to compare configurations, or jump to [Deploy as DTF](#deploy-as-dtf).
   </Step>
 </Steps>
 
@@ -43,11 +54,11 @@ Navigate to the **Backtest** section. The interface is simple. The questions it 
 
 ## Backtesting via the API
 
-All simulation endpoints are **GET** requests with query parameters. No authentication required. The data is public. The conclusions you draw from it are yours alone.
+All simulation endpoints are **GET** requests with query parameters. No authentication required. Data is public.
 
 **Base URL:** `https://generalmarket.io/api`
 
-### Run a Single Backtest
+### Run a single backtest
 
 <CodeGroup>
 
@@ -135,7 +146,7 @@ console.log(`Run ID: ${result.run_id}`);
 ```
 </Expandable>
 
-### Query Parameters
+### Query parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -195,7 +206,7 @@ console.log(`Run ID: ${result.run_id}`);
 
 ## Sweep Mode
 
-Sweep mode tests many configurations at once. It varies one parameter and streams results for each variant. It is the fastest way to discover that most configurations perform similarly -- and that the few that don't are probably overfitting.
+Sweep mode varies one parameter across many values and streams results for each variant. Use it to scan a parameter space in a single call.
 
 **Sweep dimensions:** `top_n`, `weighting`, `rebalance`, `category`, `threshold`
 
@@ -266,14 +277,14 @@ data: {"type":"result","run_id":4824,"config":{"top_n":20,...},"stats":{...}}
 | `threshold` | Drift rebalance bands | 3%, 5%, 10%, 15%, 20% |
 
 <Tip>
-One call tests all variants. Results stream back as they complete. The temptation is to pick the best-performing result. The discipline is to ask why it performed best and whether that reason will persist.
+One call tests all variants. Results stream as they complete. Avoid cherry-picking the highest-return variant — ask why it performed best and whether that reason will hold out of sample.
 </Tip>
 
 ---
 
 ## Fetch Holdings from a Backtest
 
-After running a backtest, fetch the portfolio composition. These are the holdings that survived:
+After running a backtest, fetch the final portfolio composition by `run_id`.
 
 <CodeGroup>
 
@@ -296,7 +307,7 @@ Pass an optional `date` parameter (YYYY-MM-DD) to get holdings at a specific reb
 
 ## Compare Benchmarks
 
-Fetch BTC and ETH price series normalized to 1.0 at the start date. Every strategy must answer one question: did it beat holding BTC? Most do not.
+Fetch BTC and ETH price series normalized to 1.0 at the start date. Use them as a baseline — every strategy has to answer one question: did it beat holding BTC?
 
 ```bash
 curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
@@ -306,11 +317,11 @@ curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
 
 ## Market Signal Integrations
 
-Layer additional signals into any backtest. More signals do not mean more clarity. But they do mean more data:
+Layer additional signals onto any backtest. Three are supported.
 
-### Fear & Greed Index
+### Fear & Greed Index (FNG)
 
-Shift allocation between crypto and stablecoins based on market sentiment. Fear and greed are the only two emotions the market has. The index measures the ratio.
+Shift allocation between crypto and stablecoins based on the FNG index (0 = extreme fear, 100 = extreme greed).
 
 ```bash
 curl "https://generalmarket.io/api/sim/run?\
@@ -318,11 +329,14 @@ category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30&\
 fng_mode=both&fng_fear_threshold=25&fng_greed_threshold=75&fng_cash_pct=0.4"
 ```
 
-When FNG > 75 (greed), 40% of the portfolio moves to stables. When FNG < 25 (fear), fully deployed in crypto. The algorithm does what you cannot: sell into euphoria.
+**Behavior:**
+- FNG > 75 (greed) → 40% of portfolio moves to stables.
+- FNG < 25 (fear) → fully deployed in crypto.
+- Between thresholds → no change.
 
 ### BTC/ETH Dominance
 
-Adjust crypto allocation based on Bitcoin or Ethereum dominance trends.
+Adjust crypto allocation based on Bitcoin or Ethereum market-cap dominance trends.
 
 ```bash
 curl "https://generalmarket.io/api/sim/run?\
@@ -332,7 +346,7 @@ dom_mode=btc&dom_lookback=30"
 
 ### VC Funding Filter
 
-Filter assets by venture capital backing. Smart money is not always smart. But it is always funded:
+Filter the eligible universe by venture-capital backing — specific investors, minimum round size, or round types.
 
 ```bash
 curl "https://generalmarket.io/api/sim/run?\
@@ -344,11 +358,11 @@ vc_mode=include&vc_investors=a16z,paradigm&vc_min_amount_m=10"
 
 ## Understanding Results
 
-Numbers do not lie. But they omit. The metrics below tell you what happened. They do not tell you what it felt like to live through it.
+Seven metrics, one NAV series. Read them together.
 
-### Key Metrics
+### Key metrics
 
-| Metric | What It Tells You |
+| Metric | What it tells you |
 |--------|-------------------|
 | **Total Return %** | Cumulative gain/loss over the full period |
 | **Annualized Return** | Return normalized to a yearly rate |
@@ -358,64 +372,72 @@ Numbers do not lie. But they omit. The metrics below tell you what happened. The
 | **Total Trades** | Number of individual asset trades executed |
 | **Total Delistings** | Assets removed mid-backtest (delisted from exchange) |
 
-### What the NAV Series Represents
+### What the NAV series represents
 
-The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of `3.12` means 212% return from the start date. A straight line on the chart. In reality, each day between 1.0 and 3.12 was a decision not to sell.
+NAV (Net Asset Value) = portfolio value per share. The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of `3.12` means 212% return from the start date.
+
+Next: [Deploy as DTF](#deploy-as-dtf).
 
 ---
 
 ## Deploy as DTF
 
-A backtest that looks good enough becomes a live DTF with one click. The transition from simulation to reality is instant. The consequences are not.
+Turn a backtest into a live DTF in three clicks. ~2 min including wallet confirmation.
 
 <Steps>
-  <Step title="Review Final Holdings">
-    Check the holdings table. Confirm the weights match your thesis. The thesis looked good in simulation. It has not yet met the market.
+  <Step title="Step 1: Review final holdings">
+    Open the holdings table from the backtest results. Confirm the weights match your thesis before going on-chain.
   </Step>
 
-  <Step title="Click Deploy Index">
-    The button pre-fills the DTF creation form with the backtested assets and weights. One click from history to the present.
+  <Step title="Step 2: Click Deploy Index">
+    The button pre-fills the DTF creation form with the backtested assets and weights from the final rebalance.
   </Step>
 
-  <Step title="Confirm On-Chain">
-    Add a name. Confirm the transaction. The strategy is now live. It belongs to reality now, not to the past.
+  <Step title="Step 3: Confirm on-chain">
+    Add a name and description. Confirm the transaction in your wallet. ~30 sec to confirm.
+
+    Result: the DTF is live on the **Markets** page. Buyers can trade it immediately. See [Create a DTF](/index/guides/create-itp) for the full creation flow.
   </Step>
 </Steps>
 
 <Warning>
-The deployed DTF uses the weights from the final rebalance. It does **not** auto-rebalance. The backtest rebalanced for you. Reality will not.
+The deployed DTF uses the weights from the final rebalance. It does **not** auto-rebalance. You must trigger every rebalance manually — see [Rebalancing](/index/guides/rebalancing).
 </Warning>
 
 ---
 
 ## Checklist: Running an Honest Backtest
 
+Seven habits. Apply each before treating a result as conclusive.
+
 <Steps>
-  <Step title="Pick a Category That Matches Your Thesis">
-    Do not backtest "all crypto" if you want a DeFi strategy. Narrower categories give cleaner signal. Broader categories give cleaner conscience.
+  <Step title="Step 1: Pick a category that matches your thesis">
+    Do not backtest "all crypto" for a DeFi strategy. Use the narrowest category that still contains your universe.
   </Step>
 
-  <Step title="Start with Equal Weight">
-    Equal weight is the fairest baseline. If mcap-weighted cannot beat equal-weighted, concentration is hurting you. Equal weight is the null hypothesis. Beat it before you complicate things.
+  <Step title="Step 2: Start with equal weight">
+    Equal weight is the null hypothesis. If a market-cap or momentum scheme cannot beat equal-weight, the added complexity earned nothing.
   </Step>
 
-  <Step title="Use Realistic Fees">
-    Default fee is 0.1%. If you are trading illiquid altcoins, bump `spread_multiplier` to 2.0+. Underestimating fees is the most common backtesting lie. It is also the most flattering.
+  <Step title="Step 3: Use realistic fees">
+    Default fee is 0.1%. For illiquid altcoins, set `spread_multiplier` to 2.0 or higher. Default fees are the most common source of inflated backtest returns.
   </Step>
 
-  <Step title="Run a Sweep Before Committing">
-    Use `sweep=top_n` and `sweep=weighting` to find optimal params. Do not cherry-pick the one configuration that looks best. That is not analysis. It is self-deception with a chart.
+  <Step title="Step 4: Run a sweep before committing">
+    Use `sweep=top_n` and `sweep=weighting` to map the parameter space. Treat any single best-performing config with suspicion until a sweep confirms it.
   </Step>
 
-  <Step title="Check Drawdown, Not Just Return">
-    A 500% return with -90% max drawdown means you would have watched 90% of your money disappear at some point. The return is theoretical. The drawdown was lived.
+  <Step title="Step 5: Check drawdown, not just return">
+    A 500% return with -90% max drawdown means a 90% loss was lived through. Drawdown is the metric you would have felt in real time.
   </Step>
 
-  <Step title="Look at Delistings">
-    High `total_delistings` means the category contains flaky assets. The backtest handles this gracefully. Live trading does not.
+  <Step title="Step 6: Look at delistings">
+    High `total_delistings` means the category contains flaky assets. The backtest handles delistings cleanly; live trading does not.
   </Step>
 
-  <Step title="Compare Against BTC">
-    If your strategy cannot beat holding BTC on a risk-adjusted basis (Sharpe), the complexity adds nothing. BTC is the benchmark. Everything else is a bet against simplicity.
+  <Step title="Step 7: Compare against BTC">
+    If your strategy cannot beat BTC on a risk-adjusted basis (Sharpe ratio), the complexity adds nothing. BTC is the benchmark.
+
+    Next: [Deploy as DTF](#deploy-as-dtf) or read [Risks](/index/guides/risks).
   </Step>
 </Steps>

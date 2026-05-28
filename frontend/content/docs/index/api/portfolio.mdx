@@ -5,17 +5,23 @@ description: "User portfolio tracking and trade history"
 
 # Portfolio Endpoints
 
-Your positions, your history, your profit and loss. The wallet address is the only identity the protocol recognizes.
+Three endpoints keyed by wallet address.
+
+| Endpoint | Returns |
+|---|---|
+| `/portfolio` | Current DTF positions, total value, total PnL |
+| `/portfolio/history` | Portfolio value over time |
+| `/portfolio/trades` | Every buy and sell on-chain |
 
 ---
 
 ## Get Portfolio Summary
 
+Returns all DTF positions, total value, and profit/loss for a wallet.
+
 <ParamField query="address" type="string" required>
   User wallet address (e.g., `0x...`).
 </ParamField>
-
-All Dex Traded Fund (DTF) positions, total value, and profit/loss for a wallet. The numbers do not flatter.
 
 <CodeGroup>
 ```bash cURL
@@ -97,15 +103,17 @@ portfolio = resp.json()
 | `pnl_usd` | number | Unrealized profit/loss in USD |
 | `pnl_pct` | number | Unrealized profit/loss as a percentage |
 
+Next: [Get Portfolio History](#get-portfolio-history) for the time series.
+
 ---
 
 ## Get Portfolio History
 
+Returns portfolio value in USD over time as `{timestamp, value_usd}` points.
+
 <ParamField query="address" type="string" required>
   User wallet address (e.g., `0x...`).
 </ParamField>
-
-Portfolio value over time. The chart you will either celebrate or avoid looking at.
 
 <CodeGroup>
 ```bash cURL
@@ -149,15 +157,17 @@ history = resp.json()
 | `timestamp` | number | Unix timestamp of the data point |
 | `value_usd` | number | Total portfolio value in USD at that point in time |
 
+Next: [Get Trade History](#get-trade-history) for individual fills.
+
 ---
 
 ## Get Trade History
 
+Returns every buy and sell for a wallet, with tx hash, shares, price, and fee.
+
 <ParamField query="address" type="string" required>
   User wallet address (e.g., `0x...`).
 </ParamField>
-
-Every trade. Every fill. Every fee. The ledger does not forget.
 
 <CodeGroup>
 ```bash cURL
@@ -222,3 +232,5 @@ trades = resp.json()
 | `price_per_share` | number | Execution price per share in USD |
 | `total_usd` | number | Total trade value in USD |
 | `fee_usd` | number | Fee charged in USD |
+
+Next: [Simulation API](/index/api/simulation) to backtest strategies.

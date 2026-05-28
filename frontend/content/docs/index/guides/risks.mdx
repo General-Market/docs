@@ -5,117 +5,175 @@ description: "What to understand before buying, creating, or lending against DTF
 
 # Risks
 
-This section exists because honesty is cheaper than lawsuits. Everything here can lose you money. We built it anyway.
+Every way you can lose money on a Dex Traded Fund (DTF — a tokenized basket of crypto assets, like an on-chain ETF). Read before committing capital.
 
-Dex Traded Funds (DTFs) track baskets of crypto assets. They are not risk-free. Nothing in crypto is. This page covers every material risk. Read it before committing capital. You will not read it. But it will exist for when things go wrong.
+**Risk categories:**
+- [Market risks](#market-risks) — price exposure to the underlying basket.
+- [Structural risks](#structural-risks) — DTF lifecycle and protocol design.
+- [Smart contract risks](#smart-contract-risks) — code, oracle, and bridge.
+- [Lending risks](#lending-risks-morpho) — borrowing against DTF shares on Morpho.
+
+Each risk below follows the same shape: what it is, how it can affect you, how to mitigate it.
 
 ---
 
 ## Market Risks
 
-### NAV Fluctuation
+### NAV fluctuation
 
-The NAV floats with the prices of underlying assets. If the basket drops 50%, your DTF is worth 50% less. There is no floor. There is no guaranteed value. The market does not owe you anything.
+**What it is.** The NAV (Net Asset Value — portfolio value per share) tracks the prices of the underlying assets:
 
 ```
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-The NAV formula is transparent and deterministic. The market it tracks is neither.
+**How it can affect you.** If the basket drops 50%, your DTF is worth 50% less. There is no floor and no guaranteed value.
 
-### Concentration Risk
+**How to mitigate.** Size your position to what you can afford to lose. Diversify across uncorrelated DTFs. Read the holdings before buying.
 
-A DTF with three tokens is a bet on three things. If one collapses, the impact is a third of your position. Market-cap-weighted DTFs naturally concentrate into the largest assets. Concentration is conviction. Conviction is risk by another name.
+### Concentration risk
 
-<Tip>
-Use equal-weight or capped-market-cap strategies to limit single-asset exposure. The backtesting engine lets you compare concentration vs. diversification. The data will show you what you do not want to see.
-</Tip>
+**What it is.** A DTF with few tokens concentrates exposure into a small number of bets. Market-cap-weighted DTFs naturally concentrate into the largest assets.
+
+**How it can affect you.** A single asset collapsing has an outsized impact on your position. A three-token DTF puts ~33% at risk per asset.
+
+**How to mitigate.** Use equal-weight or capped-market-cap strategies. Compare concentration vs. diversification via [Backtesting](/index/guides/backtesting).
 
 ### Drawdown
 
-Crypto markets routinely experience -50% to -80% drawdowns. A DTF holding altcoins can draw down further. Check `max_drawdown_pct` from backtesting before deploying. It tells you the worst historical pain. The next drawdown may be worse. History is a lower bound on suffering, not an upper bound.
+**What it is.** Peak-to-trough decline. Crypto markets routinely see -50% to -80% drawdowns.
+
+**How it can affect you.** Your position can drop further than the broader market if the basket holds altcoins. Historical drawdowns are a lower bound, not an upper bound.
+
+**How to mitigate.** Check `max_drawdown_pct` from backtests before deploying or buying. Size positions for the worst historical case.
 
 ### Delistings
 
-If an asset gets delisted from exchanges, it becomes illiquid. The DTF still holds it. The price feed may freeze or drop to zero. A dead asset in a live basket is a wound that does not heal.
+**What it is.** An asset is removed from supporting exchanges and becomes illiquid.
+
+**How it can affect you.** The DTF still holds the delisted asset; its price feed may freeze or drop to zero. The position cannot be cleanly exited.
+
+**How to mitigate.** Prefer large-cap assets with broad exchange coverage. Monitor `total_delistings` in backtests — high values signal a flaky category.
 
 ---
 
 ## Structural Risks
 
-### No Auto-Rebalance
+### No auto-rebalance
 
-After deploying a DTF, it does **not** auto-rebalance. The quantities are fixed until someone triggers a rebalance. If nobody rebalances, the DTF drifts from its target weights indefinitely. The protocol does not maintain your thesis. You do.
+**What it is.** Deployed DTFs do **not** auto-rebalance. Quantities are fixed until the deployer triggers a manual rebalance.
 
-### Rebalance Costs
+**How it can affect you.** Effective weights drift from target weights as prices move. The DTF you bought may no longer match its stated thesis.
 
-Each rebalance incurs trading fees and gas. Frequent rebalancing in volatile markets erodes returns. The backtesting engine's `total_fees_pct` metric shows cumulative fee impact. Maintaining precision is expensive. Neglecting it is also expensive. Choose your expense.
+**How to mitigate.** Check rebalance history on the DTF detail page before buying. Avoid DTFs with no rebalance activity over long periods. If you are the deployer, see [Rebalancing](/index/guides/rebalancing).
 
-### Price Feed Risk
+### Rebalance costs
 
-DTF NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be wrong. The oracle nodes enforce a 0.1% price tolerance. This catches most deviations. Not all.
+**What it is.** Each rebalance incurs trading fees and gas. The AP (Authorized Participant — the off-chain fill agent) pays exchange fees on every delta trade.
+
+**How it can affect you.** Frequent rebalancing in volatile markets erodes returns. Total cost shows up in the `total_fees_pct` backtest metric.
+
+**How to mitigate.** Rebalance on drift thresholds (5–10%) rather than tight calendar cadences. Verify the deployer's stated cadence before buying.
+
+### Price feed risk
+
+**What it is.** NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node.
+
+**How it can affect you.** A stale or manipulated feed produces an incorrect NAV. Trades execute at the wrong price.
+
+**How to mitigate.** Oracle nodes enforce a 0.1% price tolerance, which catches most deviations. Larger deviations can still slip through — prefer DTFs with major assets that have many independent price sources.
 
 ---
 
 ## Smart Contract Risks
 
-### BLS Consensus Dependency
+### BLS consensus dependency
 
-All DTF operations require BLS multi-signature consensus from the oracle set. If fewer than 2/3 of oracles are online, nothing processes. The protocol does not halt. It waits. Your money waits with it.
+**What it is.** All DTF operations require BLS (Boneless–Lynn–Shacham — a multi-signature consensus scheme) signatures from at least 2/3 of the oracle set.
 
-### Contract Bugs
+**How it can affect you.** If fewer than 2/3 of oracles are online, trades and rebalances stall. Funds are not lost, but they are not movable until quorum returns.
 
-The smart contracts are deployed code. Code has bugs. Bugs in financial contracts can result in loss of funds. Review the [contract architecture](/index/architecture/contracts). The code is the only promise the protocol makes. It is the only promise it can break.
+**How to mitigate.** Avoid time-sensitive trading during oracle outages. Monitor protocol status before placing large orders.
 
-### Bridge Risk
+### Contract bugs
 
-The bridge introduces trust assumptions. Bridge failures or exploits can result in depegged collateral. Every bridge in crypto is a liability. This one is no exception.
+**What it is.** Smart contracts are deployed code. Bugs in deployed code can be exploited.
+
+**How it can affect you.** A bug in the contract logic can result in partial or total loss of funds in affected positions.
+
+**How to mitigate.** Review the [contract architecture](/index/architecture/contracts). Limit exposure to amounts you can afford to lose entirely. Bug impact is capped at the deposited amount.
+
+### Bridge risk
+
+**What it is.** The cross-chain bridge between L3 (the protocol's own Layer 3 chain) and Settlement has its own trust assumptions and attack surface.
+
+**How it can affect you.** A bridge exploit or failure can depeg collateral, freezing or destroying value held in transit.
+
+**How to mitigate.** Prefer native L3 operations where possible. Avoid keeping large amounts in transit across the bridge longer than necessary.
 
 ---
 
 ## Lending Risks (Morpho)
 
+Morpho is the lending protocol used for borrowing USDC against DTF collateral on Settlement.
+
 ### Liquidation
 
-If you borrow USDC against DTF collateral, you are subject to liquidation when the DTF's value drops below the required health factor. Crypto moves fast. Liquidation moves faster. Monitor positions or accept the consequences of not monitoring them.
+**What it is.** Forced sale of your collateral when the borrowed position's health drops below threshold.
 
-### Health Factor
+**How it can affect you.** If the DTF used as collateral drops in value, the position is liquidated automatically. You lose collateral at a discount to market.
+
+**How to mitigate.** Keep a health factor buffer well above 1.0 (1.5x or higher). Monitor positions continuously. Crypto can move faster than you can react.
+
+### Health factor
+
+**What it is.** The ratio that determines whether your borrow position is safe:
 
 ```
 health_factor = (collateral_value * LTV) / debt
 ```
 
-When `health_factor < 1.0`, the position is liquidatable. There is no grace period. There is no warning. There is only math.
+LTV = Loan-To-Value, set per Morpho market.
 
-### Oracle Risk
+**How it can affect you.** When `health_factor < 1.0`, the position is immediately liquidatable. No grace period, no warning.
 
-Morpho relies on oracle prices. If oracle prices diverge from market reality, liquidations fire incorrectly -- or fail to fire when they should. The oracle is a mirror. Sometimes the mirror lies.
+**How to mitigate.** Borrow conservatively — target a health factor of at least 1.5x. Set price alerts on the collateral DTF.
+
+### Oracle risk (Morpho)
+
+**What it is.** Morpho uses oracle prices to compute collateral value and trigger liquidations.
+
+**How it can affect you.** If oracle prices diverge from real market prices, liquidations can fire incorrectly — or fail to fire when they should. Either case can cost you.
+
+**How to mitigate.** Use larger health factor buffers for DTFs with volatile or thinly traded assets. Avoid extreme LTVs.
 
 ---
 
 ## Checklist: Before Buying a DTF
 
-Five steps. Each one is an opportunity to change your mind. After the fifth, the money is committed.
+Five steps. ~10 min total.
 
 <Steps>
-  <Step title="Read the Holdings">
-    Check what assets are in the basket. A "DeFi Index" could hold anything. The name is a label. The holdings are the truth.
+  <Step title="Step 1: Read the holdings">
+    Open the DTF's detail page. Read every asset in the basket. The name describes intent; the holdings describe reality.
   </Step>
 
-  <Step title="Check the Backtest">
-    Run or review a backtest with the same category and weighting strategy. Pay attention to max drawdown and Sharpe ratio. Total return is the number that seduces. Drawdown is the number that destroys.
+  <Step title="Step 2: Check the backtest">
+    Run or review a backtest with the same category and weighting strategy. See [Backtesting](/index/guides/backtesting).
+
+    Focus on max drawdown and Sharpe ratio — not total return.
   </Step>
 
-  <Step title="Understand the Rebalance Schedule">
-    Who triggers rebalances? How often? A DTF with no rebalance activity drifts from its target allocation. Drift is neglect made visible.
+  <Step title="Step 3: Understand the rebalance schedule">
+    Check rebalance history on the detail page. A DTF with no recent rebalance activity has drifted from its target allocation.
   </Step>
 
-  <Step title="Size Your Position">
-    Do not put more into a DTF than you can afford to lose entirely. Start small. Scale up after observing the product across market conditions. Conviction should be earned, not assumed.
+  <Step title="Step 4: Size your position">
+    Do not put more into a DTF than you can afford to lose entirely. Start small. Scale up after observing the product across market conditions.
   </Step>
 
-  <Step title="Monitor After Buying">
-    Check the NAV periodically. The portfolio page shows current value, PnL, and asset breakdown. Set your own stop-loss. The protocol will not set one for you.
+  <Step title="Step 5: Monitor after buying">
+    Check NAV periodically on the **Portfolio** page (current value, PnL, asset breakdown). Set your own stop-loss — the protocol does not enforce one.
   </Step>
 </Steps>
 
@@ -123,27 +181,35 @@ Five steps. Each one is an opportunity to change your mind. After the fifth, the
 
 ## Checklist: Before Creating a DTF
 
-Creating a DTF is irreversible. These steps exist to slow you down. Slowness before deployment is a virtue. After deployment, it is too late.
+Five steps. ~30 min total. DTF creation is irreversible — verify each step before deploying.
 
 <Steps>
-  <Step title="Backtest the Strategy">
-    Use the [backtesting guide](/index/guides/backtesting) to simulate performance. Run a sweep across weighting strategies and top_n values. The backtest will not predict the future. It will expose the weaknesses of your thesis.
+  <Step title="Step 1: Backtest the strategy">
+    Use [Backtesting](/index/guides/backtesting) to simulate performance. Run a sweep across weighting strategies and `top_n` values.
+
+    A backtest does not predict the future. It surfaces weaknesses in the thesis.
   </Step>
 
-  <Step title="Check Asset Availability">
-    All assets must have active price feeds. Use `/sim/categories` to see the tradeable universe. A DTF containing an untradeable asset is a promise that cannot be kept.
+  <Step title="Step 2: Check asset availability">
+    All assets must have active price feeds. Hit `/sim/categories` to see the tradeable universe. Untradeable assets cannot be deployed.
   </Step>
 
-  <Step title="Set Realistic Fees">
-    Use `spread_multiplier: 2.0` for illiquid altcoins. The default 0.1% underestimates real-world slippage on thin order books. Optimism in fee estimates is the most expensive form of optimism.
+  <Step title="Step 3: Set realistic fees">
+    Use `spread_multiplier: 2.0` for illiquid altcoins. The default 0.1% underestimates real-world slippage on thin order books.
   </Step>
 
-  <Step title="Plan Your Rebalance Cadence">
-    Decide upfront how often you will rebalance. Monthly is common. Threshold-based (drift > 5%) is more efficient but requires active monitoring. Choose a cadence you will actually maintain. Ambitious cadences that lapse are worse than modest ones that hold.
+  <Step title="Step 4: Plan your rebalance cadence">
+    Decide upfront how often you will rebalance.
+    - Monthly: simple to maintain.
+    - Threshold-based (drift > 5%): more efficient, requires monitoring.
+
+    Choose a cadence you will actually hold.
   </Step>
 
-  <Step title="Communicate to Buyers">
-    Add a clear name and description. Buyers need to understand the thesis without reading the contract. Most will not read the description either. But the ones who do are the ones who stay.
+  <Step title="Step 5: Communicate to buyers">
+    Write a clear name and description. Buyers need to understand the thesis without reading the contract.
+
+    Next: [Create a DTF](/index/guides/create-itp).
   </Step>
 </Steps>
 
@@ -151,7 +217,7 @@ Creating a DTF is irreversible. These steps exist to slow you down. Slowness bef
 
 ## Risk Summary
 
-Every row in this table is a way to lose money. The severity column tells you how much. The mitigation column tells you how to lose less. Neither column tells you how to lose nothing.
+Eight rows. Severity = potential impact. Mitigation = the action that reduces it.
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
@@ -163,3 +229,5 @@ Every row in this table is a way to lose money. The severity column tells you ho
 | Contract bug | Low | Limited to deposited amount |
 | Lending liquidation | **High** | Monitor health factor, keep buffer above 1.5x |
 | Bridge risk | Medium | Prefer native assets where possible |
+
+Next: [Buy & Sell DTFs](/index/guides/buy-sell) to place your first trade, or [Create a DTF](/index/guides/create-itp) to deploy one.

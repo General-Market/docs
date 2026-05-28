@@ -3,9 +3,14 @@ title: "Create a DTF"
 description: "Design and deploy a custom Dex Traded Fund on General Market"
 ---
 
-You are about to create a financial product. The market will price it. The market has no feelings about your intentions.
+Deploy a custom Dex Traded Fund (DTF — a tokenized basket of crypto assets, like an on-chain ETF) in one transaction. ~5 min from asset picking to live market.
 
-A Dex Traded Fund (DTF) is a tokenized basket of crypto assets -- an on-chain ETF. You choose the assets, set the weights, and deploy in a single transaction. After that, anyone can buy and sell shares. The product is no longer yours. It belongs to the market.
+**Prereqs:**
+- A Web3 wallet with USDC for gas on the Index L3
+- An asset selection and target weights (5–50 assets recommended)
+- A name and description for the DTF
+
+**What you get:** a live market on the **Markets** page that anyone can trade. You earn fees on every buy and sell.
 
 <Snippet file="chain-info.mdx" />
 
@@ -13,15 +18,17 @@ A Dex Traded Fund (DTF) is a tokenized basket of crypto assets -- an on-chain ET
 
 ## Step-by-Step Creation
 
-<Steps>
-  <Step title="Select Assets">
-    Choose from **100+ available crypto tokens**. They are organized by category (Layer 1, DeFi, AI, Memecoins, etc.).
+Four steps. ~5 min total.
 
-    The protocol imposes no minimum or maximum count. A well-diversified DTF holds between 5 and 50 assets. Diversification is the admission that you do not know which one will fail.
+<Steps>
+  <Step title="Step 1: Select assets">
+    Pick from **100+ available crypto tokens**, organized by category (Layer 1, DeFi, AI, Memecoins, etc.).
+
+    No minimum or maximum count enforced by the protocol. Well-diversified DTFs hold between 5 and 50 assets.
   </Step>
 
-  <Step title="Set Weights">
-    Assign a percentage weight to each asset. Weights must sum to exactly **100%**. The weights are your thesis expressed as numbers.
+  <Step title="Step 2: Set weights">
+    Assign a percentage weight to each asset. Weights must sum to exactly **100%**.
 
     | Asset | Weight |
     |-------|--------|
@@ -30,25 +37,25 @@ A Dex Traded Fund (DTF) is a tokenized basket of crypto assets -- an on-chain ET
     | SOL   | 20%    |
 
     <Tip>
-    The **Equal Weight** button distributes weights evenly. It is the most honest allocation -- the one that admits you have no edge. Fine-tune from there.
+    Click **Equal Weight** to distribute evenly across all selected assets, then fine-tune. Equal weight is the cleanest baseline.
     </Tip>
   </Step>
 
-  <Step title="Add Metadata">
-    Give the DTF a name and description. Buyers will read the name. Some will read the description. Few will read the holdings. Name it well.
-    - **Website URL** -- link to a project page, blog post, or research document
-    - **YouTube video** -- embed an explainer or thesis video on the DTF's market page
+  <Step title="Step 3: Add metadata">
+    Give the DTF a name and description. Two optional fields support discovery:
+    - **Website URL** — link to a project page, blog post, or research document.
+    - **YouTube video** — embed an explainer or thesis video on the DTF's market page.
   </Step>
 
-  <Step title="Deploy">
-    Click **Create DTF**. One transaction. One confirmation. After this, there is no undo.
+  <Step title="Step 4: Deploy">
+    Click **Create DTF**. Confirm the transaction in your wallet. ~30 sec to confirm.
 
-    The deployment transaction:
-    1. Registers the DTF on the Index contract on L3
-    2. Converts percentage weights into fixed per-share quantities
-    3. Sets the initial NAV to **$1.00**
+    The deployment transaction does three things:
+    1. Registers the DTF on the Index contract on L3.
+    2. Converts percentage weights into fixed per-share quantities.
+    3. Sets the initial NAV (Net Asset Value — portfolio value per share) to **$1.00**.
 
-    The DTF is live. It appears on the **Markets** page. The market begins forming an opinion.
+    Result: the DTF appears on the **Markets** page and is tradeable immediately.
   </Step>
 </Steps>
 
@@ -56,47 +63,51 @@ A Dex Traded Fund (DTF) is a tokenized basket of crypto assets -- an on-chain ET
 
 ## How Weights Become Quantities
 
-Weights are intentions. Quantities are commitments. At creation, the protocol converts one into the other:
+At creation, the protocol converts your percentage weights into fixed per-share asset quantities. Quantities are what gets stored on-chain — weights are derived from them.
 
 <WeightToQuantity />
 
-These quantities define how much of each asset one DTF share represents. They are stored on-chain and **do not change** unless the creator triggers a rebalance. The quantities are permanent. The prices are not.
+These quantities define how much of each asset one DTF share represents. They **do not change** unless the creator triggers a rebalance — see [Rebalancing](/index/guides/rebalancing).
 
 ### Example
 
-Suppose a DTF is created with 100 assets, all equally weighted at 1%, and every asset is priced at $1.00:
+A DTF with 100 assets, all equally weighted at 1%, every asset priced at $1.00:
 
 <NavDecomposition />
 
-Each share of the DTF holds 0.01 of each token. The NAV starts at exactly $1.00:
+Each share holds 0.01 of each token. Initial NAV = $1.00:
 
 <Snippet file="nav-formula.mdx" />
 
-As asset prices move, the NAV drifts from $1.00. That drift is the entire point. You built the basket. The market decides what it is worth.
+As asset prices move, NAV moves with them. That is the design: the basket is fixed, the value is not.
 
 <Info>
-The NAV formula is identical everywhere: on-chain in the Index contract, in the oracle nodes, and in the frontend. Quantities are the source of truth. Weights are a memory.
+The NAV formula is identical in three places — the Index contract on L3, the oracle nodes, and the frontend. Quantities are the source of truth. Weights are derived.
 </Info>
 
 ---
 
 ## Deployer Fees
 
-The deployer earns a fee on every buy and sell transaction. Design a good index and the market pays you. Design a bad one and nobody trades it. The incentive is simple. The execution is not.
+You earn a fee on every buy and sell of your DTF.
 
-Fees are denominated in USDC and credited to the deployer's wallet automatically as trades settle.
+- Denominated in USDC.
+- Credited to the deployer's wallet automatically as trades settle.
+- No claim transaction needed.
 
 ---
 
 ## After Deployment
 
-The DTF is live. What you intended no longer matters. What you built does.
+Once the transaction confirms, four things are true:
 
-- The DTF appears on the **Markets** page alongside all other DTFs
-- Anyone with USDC can buy and sell shares
-- Real-time NAV, price charts, and trading volume are visible on the DTF's detail page
-- The deployer earns fees on every trade
+- The DTF appears on the **Markets** page alongside all other DTFs.
+- Anyone with USDC can buy and sell shares.
+- Real-time NAV, price charts, and trading volume are visible on the DTF's detail page.
+- The deployer earns fees on every trade.
 
 <Note>
-DTF creation is irreversible. Verify the asset selection and weights before deploying. You can rebalance weights later. You cannot delete the DTF. What is deployed stays deployed.
+DTF creation is irreversible. Verify asset selection and weights before deploying. You can rebalance weights later — see [Rebalancing](/index/guides/rebalancing) — but you cannot delete the DTF.
 </Note>
+
+Next: [Rebalancing](/index/guides/rebalancing) to adjust weights over time, or [Risks](/index/guides/risks) for what can go wrong.

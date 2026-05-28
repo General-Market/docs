@@ -5,15 +5,14 @@ description: "Place your first bet on Vision in under 5 minutes"
 
 # Getting Started
 
-Your first prediction. It will probably be wrong. All first predictions are. The protocol does not care. It treats the novice and the veteran with the same indifference -- which is, if you think about it, a form of respect.
-
-By the end of this page, you will have joined a block, placed UP/DOWN bets on real markets, and understood how to claim rewards. Whether you deserve rewards is between you and the price feeds.
+Join your first block, place UP/DOWN bets, claim rewards. ~5 min end-to-end.
 
 ## Prerequisites
 
-Before you can wager against the future, you need two things:
-- An **EVM-compatible wallet** (MetaMask, Rabby, or similar) connected to **Index L3**
-- **WUSDC on Index L3** (18 decimals -- this is bridged USDC on the L3 Orbit chain)
+Two things:
+
+- An EVM-compatible wallet (MetaMask, Rabby, or similar) connected to Index L3 (the Arbitrum Orbit L3 chain that runs Vision)
+- WUSDC on Index L3 (bridged USDC, 18 decimals — not 6)
 
 <Warning>
 Vision runs on **Index L3** (chain ID `111222333`), an Arbitrum Orbit chain. Add it to your wallet: RPC `https://rpc.generalmarket.io/`, chain ID `111222333`, symbol ETH. WUSDC on L3 uses **18 decimals**, not 6.
@@ -21,78 +20,78 @@ Vision runs on **Index L3** (chain ID `111222333`), an Arbitrum Orbit chain. Add
 
 ## Step 1: Browse Active Blocks
 
-Navigate to [generalmarket.io/vision](https://generalmarket.io/vision). The Vision page lists all active blocks -- each one a small arena where strangers pool money against each other's opinions. Each block shows:
+Open [generalmarket.io/vision](https://generalmarket.io/vision). Each block shows:
 
-- **Markets** -- the assets being tracked (e.g., BTC/USD, ETH/USD, SOL/USD)
-- **Tick duration** -- how often the block resolves (5 min, 1 hour, 1 day, etc.)
-- **Player count** -- how many people have decided, independently, that they know something
-- **TVL** -- total USDC deposited across all players
+- **Markets** — the assets being tracked (e.g., BTC/USD, ETH/USD, SOL/USD)
+- **Tick duration** — how often the block resolves (5 min, 1 hour, 1 day, etc.)
+- **Player count** — how many people have joined
+- **TVL** — total USDC deposited across all players
 
-Click on any block to expand its details and see per-market stats.
+Click any block to expand details and see per-market stats.
 
 ## Step 2: Understand a Block
 
-Each block is a self-contained prediction game. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. Its parameters:
+A block is a set of markets resolving together on a fixed tick (the resolution interval). Parameters:
 
 | Parameter | Description |
 |-----------|-------------|
 | **Markets** | The asset pairs players predict on (e.g., BTC/USD, ETH/USD) |
 | **Tick duration** | The time interval between resolutions (5 min to 30 days) |
-| **Resolution type** | How outcomes are determined -- e.g., UP_0 (any upward move), UP_30 (must move +30bps) |
+| **Resolution type** | How outcomes are determined — e.g., UP_0 (any upward move), UP_30 (must move +30bps) |
 | **Min stake** | Minimum USDC per tick (0.1 USDC) |
 
 <Tip>
-Start with a block that has a longer tick duration (1 hour or 1 day). Fast intervals punish hesitation, and you will hesitate. Everyone does the first time.
+Start with a 1-hour or 1-day tick. Short ticks (5 min) burn deposit fast.
 </Tip>
 
 ## Step 3: Place Your Predictions
 
-For each market in the block, choose **UP** or **DOWN**. That is the entire decision. The universe, reduced to binary:
+For each market in the block, choose **UP** or **DOWN**.
 
-- **UP** -- you predict the asset price will be higher at the end of the tick
-- **DOWN** -- you predict the asset price will be lower at the end of the tick
+- **UP** — asset price will be higher at end of tick
+- **DOWN** — asset price will be lower at end of tick
 
-Your predictions are combined into a **bitmap** -- a compact binary encoding where 1 = UP and 0 = DOWN. The bitmap is hashed and submitted on-chain so nobody can see your bets before the tick closes. Your convictions are sealed. You cannot take them back.
+Predictions pack into a **bitmap** — a binary encoding where each bit is one market (1 = UP, 0 = DOWN). The bitmap hash goes on-chain; the bytes go to oracles after the tick closes. Sealed: nobody sees your bets in advance.
 
 ## Step 4: Deposit USDC and Join
 
-Now you must put money behind your opinions. This is the step that separates conviction from commentary.
+Four clicks. ~30 sec on a warm wallet.
 
-1. Set your **deposit amount** -- the total USDC to allocate to this block.
-2. Set your **stake per tick** -- how much USDC to wager per tick interval. Your deposit covers multiple ticks.
+1. Set your **deposit amount** — total USDC to allocate to this block.
+2. Set your **stake per tick** — USDC wagered per tick. Deposit ÷ stake = number of ticks covered.
 3. **Approve** the Vision contract to spend your USDC (first time only).
-4. **Confirm** the join transaction. Your bitmap hash and deposit are recorded on-chain.
+4. **Confirm** the join transaction. Bitmap hash and deposit go on-chain.
 
 <Info>
-Your deposit is split across ticks automatically. If you deposit 10 USDC with a 1 USDC stake per tick, you are covered for 10 ticks. You can top up or withdraw at any time. The protocol is patient with those who are not.
+Deposit auto-splits across ticks. 10 USDC deposit at 1 USDC/tick = 10 ticks covered. Top up or withdraw at any time.
 </Info>
 
 ## Step 5: Wait for Tick Resolution
 
-Now comes the part no one enjoys: waiting. The tick ends. The world is measured. Oracles fetch live prices and determine the outcome for each market:
+Oracles fetch live prices when the tick closes and resolve each market.
 
-- If the price went **up** and you bet **UP**, you win that market.
-- If the price went **down** and you bet **DOWN**, you win that market.
-- Winners on each market **split the losers' stakes** proportionally, minus a 0.05% fee on profits.
+- Price went up + you bet UP → you win that market.
+- Price went down + you bet DOWN → you win that market.
+- Winners on each market split losers' stakes proportionally, minus 0.05% fee on profits.
 
-Your balance updates automatically after each tick. Check the block detail page to see per-tick results and your running PnL. The numbers do not lie, though you may wish they would.
+Balance updates after each tick. Check the block detail page for per-tick results and running PnL.
 
 ## Step 6: Claim Rewards
 
-If you have won -- and someone must, that is the mathematics of it -- you may collect:
+Withdraw via a BLS-signed balance proof. ~1 transaction.
 
-1. Navigate to **My Positions** in the Vision page.
+1. Open **My Positions** on the Vision page.
 2. Click **Withdraw** on the block you want to exit.
-3. The oracle network generates a **BLS-signed balance proof** for your current balance. Three machines sign your balance. If two agree, you can claim.
-4. Confirm the withdrawal transaction. Your USDC is returned to your wallet.
+3. The oracle network generates a BLS-signed balance proof. Three oracles sign; 2-of-3 quorum needed.
+4. Confirm the withdrawal transaction. USDC lands in your wallet immediately.
 
 <Info>
-You can also claim partial amounts -- you do not need to exit the block entirely. Withdrawn funds are available in your wallet immediately. The protocol does not ask why you are leaving.
+Partial claims are allowed. You do not need to exit the whole block.
 </Info>
 
 ## Programmatic Access
 
-For those who prefer their despair automated, Vision has a full REST API. Here are two common operations:
+Vision exposes a REST API for bots and scripts. Two common operations below.
 
 ### Fetch Active Blocks
 
@@ -167,16 +166,14 @@ For those who prefer their despair automated, Vision has a full REST API. Here a
 
 ## What's Next?
 
-You have placed a prediction. You have committed money to an opinion about the future. The future has not yet arrived. In the meantime, you might as well understand the machinery that will judge you.
-
 <CardGroup cols={2}>
   <Card title="Concepts: Blocks & Bitmaps" icon="book" href="/docs/blocks/concepts/blocks">
-    How blocks are created, how bitmaps encode predictions, and how tick resolution works. The mechanics of organized uncertainty.
+    How blocks are created, how bitmaps encode predictions, how tick resolution works. ~10 min.
   </Card>
   <Card title="Build a Bot" icon="robot" href="/docs/blocks/bots/quickstart">
-    Register a bot on-chain and automate your prediction strategy. The machine will not second-guess itself. Whether that is wisdom or blindness depends on the market.
+    Register on-chain and automate your strategy. ~10 min.
   </Card>
   <Card title="API Reference" icon="code" href="/docs/blocks/api/overview">
-    Full endpoint documentation: blocks, bitmaps, balances, ticks, leaderboard. Everything the protocol knows, which is everything except what happens next.
+    Full endpoints: blocks, bitmaps, balances, ticks, leaderboard.
   </Card>
 </CardGroup>

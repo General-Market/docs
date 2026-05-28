@@ -5,7 +5,14 @@ description: "Next-tick betting model, two-slot bitmap engine, parimutuel resolu
 
 # Continuous Betting
 
-You bet on what happens next. Not what is happening now — that would be too easy, and too exploitable. During tick N, you are placing bets for tick N+1. By the time your bet becomes active, the universe has moved on. You are always one step behind reality and one step ahead of your commitment. This is the design.
+You bet on tick N+1 during tick N. Your bet is committed before the prices that resolve it are known. That gap is what makes the market unexploitable.
+
+- **Tick** — one resolution cycle. Duration set per source (60s to 30 days).
+- **Bitmap** — packed bytes, one bit per market (1 = UP, 0 = DOWN).
+- **Parimutuel** — winners split the losers' pool, no house edge.
+- **BLS** — Boneh-Lynn-Shacham signatures, aggregable across oracles.
+
+You do not pay to sit out. Absence is free; only an active bitmap is at risk.
 
 ## Tick Lifecycle
 
@@ -14,34 +21,39 @@ You bet on what happens next. Not what is happening now — that would be too ea
 </Frame>
 
 <Info>
-  Not betting is free. If you submit no bitmap during a tick, you simply sit out the next one. Your balance is untouched. The protocol does not punish absence — only incorrect presence.
+  Submit no bitmap during a tick and you sit out the next one. Balance untouched. Only an active bitmap is at risk.
 </Info>
 
 ## Two-Slot Bitmap Model
 
-Each player in each block has two slots. One is being resolved. One is being written to. They swap at every tick boundary. The simplicity is structural. The correctness depends on it.
+Each player has two bitmap slots per block. One is being resolved. One is being written to. They swap at every tick boundary.
 
 <Frame>
   <img src="/images/vision/two-slot-bitmap.svg" alt="Two-slot bitmap engine — pending slot for next tick, active slot resolving now, with config-safe decoding using stored config_hash" />
 </Frame>
 
 <Warning>
-  The `config_hash` stored per bitmap is what prevents market-order scrambling. Without it, a config update between submission and resolution could decode bit 0 as "BTC-USD" when the player meant "ETH-USD." The bitmap is a sealed envelope — the config_hash is the key that opens it correctly.
+  Each bitmap stores the `config_hash` it was submitted under. Without that, a config update between submission and resolution could decode bit 0 as `BTC-USD` when the player meant `ETH-USD`. The hash is the key that decodes the bitmap correctly.
 </Warning>
 
 ## Commit-Reveal Scheme
 
-Nobody sees your bets before you commit them on-chain. The protocol enforces this with the same tool cryptography always uses against curiosity: a hash function.
+No one sees your bets before you commit them on-chain. You commit `keccak256(bitmap)` first, then reveal the raw bytes to the oracles.
 
 <Frame>
   <img src="/images/vision/commit-reveal.svg" alt="Commit-reveal flow — player commits keccak256 hash on-chain, reveals bitmap bytes to oracles, hash verification prevents tampering" />
 </Frame>
 
-Two reveal strategies exist. The frontend reveals immediately after commit — simpler UX, equally safe because the hash locks the commitment. Bots reveal near the tick boundary — maximum privacy, since other participants cannot see positions until the last moment. Both strategies are equally secure. Delayed reveal is a privacy optimization, not a security difference.
+Two reveal patterns exist:
+
+- **Frontend** — reveal immediately after commit. Simpler UX. The hash locks the commitment, so security is identical.
+- **Bots** — reveal near the tick boundary. Other participants cannot see positions until the last moment.
+
+Both are equally secure. Late reveal is a privacy optimization, not a stronger guarantee.
 
 ## Tick Resolution
 
-When a tick ends, the oracles awaken. They fetch real prices, compare them to player bitmaps, compute payouts, and sign the result. The process is deterministic — three independent machines must arrive at the same answer, or nothing happens.
+When a tick ends, oracles fetch real prices, compare them to player bitmaps, compute payouts, and sign the result. The pipeline is deterministic — three oracles must reach the same answer or nothing settles.
 
 <Frame>
   <img src="/images/vision/resolution.svg" alt="Resolution pipeline — three oracles independently fetch prices, decode bitmaps, run parimutuel matching, BLS sign, then aggregate at tick boundary" />
@@ -49,7 +61,7 @@ When a tick ends, the oracles awaken. They fetch real prices, compare them to pl
 
 ### Parimutuel Settlement
 
-Winners split the losers' stakes. There is no house. There is no edge. There is only the collective judgment of strangers, expressed in USDC, settled by mathematics.
+Winners split the losers' stakes. No house, no fixed odds. The pool is all stake submitted for the tick:
 
 | Element | Detail |
 |---|---|
@@ -62,7 +74,7 @@ Winners split the losers' stakes. There is no house. There is no edge. There is 
 
 ## Config Orchestration
 
-Markets change. New sources appear. Dead markets get removed. The config orchestrator runs every tick, polling the data-node for recommendations and proposing updates through BLS consensus. No human intervention. No frontend deploys. A new data source enters the system and exits as a live market.
+The config orchestrator runs every tick. It polls the data-node for recommendations and proposes updates through BLS consensus. A new data source becomes a live market without human intervention or a frontend deploy.
 
 <Frame>
   <img src="/images/vision/config-pipeline.svg" alt="Config orchestration — data-node generates recommendations, orchestrator proposes via BLS, auto-creation pipeline from config to live market in 8 steps" />
@@ -80,7 +92,7 @@ Markets change. New sources appear. Dead markets get removed. The config orchest
 
 ## Dynamic Source Registry
 
-The frontend has zero hardcoded source knowledge. Every source name, logo, category, and prefix comes from the data-node API. The contract between the backend and the interface is a single endpoint. Everything else follows.
+The frontend hardcodes no source data. Every name, logo, category, and prefix comes from the data-node API. One endpoint is the entire contract between backend and frontend.
 
 | Removed | Replaced by |
 |---|---|
@@ -95,12 +107,12 @@ The frontend has zero hardcoded source knowledge. Every source name, logo, categ
 | Manual block registration | `BlockCreated` auto-detect |
 
 <Info>
-  Adding a new source = data-node config only. Zero frontend deploys. The `useSourceRegistry()` hook caches aggressively (SWR, 5-minute revalidation). Source metadata changes rarely. The hook returns stale data while revalidating, so the grid never flashes empty.
+  Adding a new source = data-node config only. No frontend deploy needed. The `useSourceRegistry()` hook uses SWR with 5-minute revalidation; source metadata rarely changes. Stale-while-revalidate keeps the grid from flashing empty.
 </Info>
 
 ## Tick Scheduling
 
-Each config defines the next tick's duration. The data-node controls pacing per source. Fast-moving markets get shorter ticks. Slow-moving ones get longer. The change takes effect at the next tick boundary — never mid-tick.
+Each config defines the next tick's duration. The data-node sets pacing per source: shorter ticks for fast-moving markets, longer for slow ones. Changes apply at the next tick boundary, never mid-tick.
 
 ```
 next_settlement_time = tick_start_time + tickDuration
@@ -112,17 +124,17 @@ When a new config is promoted at a tick boundary:
 3. Next tick starts with the **new** `tickDuration`
 4. Settlement for the new tick = `now + new_tickDuration`
 
-Config promotion happens **after** bitmap flip. Active bitmaps are always decoded with their stored config. Config updates only affect bitmaps submitted after the promotion.
+Config promotion happens **after** the bitmap flip. Active bitmaps always decode with their stored config. Config updates only affect bitmaps submitted after promotion.
 
 ## Cross-Oracle Bitmap Gossip
 
-Before resolution, oracles verify they agree on which players are in the active set. If one oracle missed a reveal, it requests the missing bitmap from peers. Resolution proceeds only with the intersection confirmed by all oracles.
+Before resolution, oracles verify they agree on the active player set. If one oracle missed a reveal, it requests the missing bitmap from peers. Resolution only proceeds on the intersection confirmed by all oracles.
 
-The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs)`. All oracles must produce an identical bitmap set hash, or consensus fails — the tick is skipped, no PnL applied. Divergence is visible. Visibility is the first line of defense.
+The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs)`. All oracles must produce the same hash. If they diverge, the tick is skipped and no PnL is applied.
 
 ## Fund Safety
 
-The contract holds the money. The oracles compute the outcomes. Neither trusts the other. Every interaction crosses a verification boundary.
+The contract holds the money. Oracles compute the outcomes. Every interaction crosses a verification boundary.
 
 <Frame>
   <img src="/images/vision/security-boundaries.svg" alt="Fund safety matrix — player controls, oracle controls, and what oracles cannot do" />
@@ -140,5 +152,5 @@ The contract holds the money. The oracles compute the outcomes. Neither trusts t
 | **Sit-out** | No active bitmap = no risk | Absence is safe |
 
 <Warning>
-  With 2-of-3 BLS threshold, two colluding oracles can selectively exclude players from resolution. The `bitmap_set_hash` in BLS messages makes this auditable — anyone can compare the signed set against on-chain committed hashes. The attack is visible. Visibility is the first line of defense.
+  Exception worth stating out loud: at the 2-of-3 BLS threshold, two colluding oracles can selectively exclude players from resolution. The `bitmap_set_hash` in BLS messages makes the exclusion auditable — anyone can compare the signed set against on-chain committed hashes. The attack is detectable on-chain.
 </Warning>

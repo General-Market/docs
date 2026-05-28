@@ -5,7 +5,7 @@ description: "Submit prediction bitmaps off-chain to the oracle"
 
 # Bitmap Submission
 
-Reveal what you committed to. Submit your prediction bitmap to the oracle node. The bitmap must match the keccak256 hash you sealed on-chain -- the moment where commitment becomes confession.
+This page submits your prediction bitmap to the oracle. A bitmap is the bit-packed array of UP/DOWN predictions for the markets in a block. The bitmap you send must match the keccak256 hash you sealed on-chain.
 
 ---
 
@@ -13,7 +13,7 @@ Reveal what you committed to. Submit your prediction bitmap to the oracle node. 
 
 `POST /vision/bitmap`
 
-Submits a player's prediction bitmap off-chain. The oracle verifies that:
+This endpoint submits a player's prediction bitmap off-chain. The oracle verifies that:
 
 1. The player is registered in the specified block.
 2. `keccak256(bitmap_bytes)` matches the `expected_hash`.
@@ -124,11 +124,11 @@ console.log(await res.json());
 | `404` | Player is not registered in the specified block |
 
 <Info>
-You must commit your bitmap hash on-chain **before** submitting the actual bitmap to this endpoint. The typical flow is:
+Commit your bitmap hash on-chain **before** posting the raw bitmap here. The flow:
 
-1. Encode your predictions into a bitmap (see [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding))
-2. Call `joinBlock(blockId, deposit, stakePerTick, keccak256(bitmap))` on-chain
-3. Submit the raw bitmap to `POST /vision/bitmap`
+1. Encode your predictions into a bitmap (see [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding)).
+2. Call `joinBlock(blockId, deposit, stakePerTick, keccak256(bitmap))` on-chain.
+3. POST the raw bitmap to `/vision/bitmap`.
 
-If you need to update your predictions, call `updateBitmapHash(blockId, newHash)` on-chain first, then resubmit.
+To update predictions, call `updateBitmapHash(blockId, newHash)` on-chain first, then resubmit.
 </Info>

@@ -5,13 +5,18 @@ description: "Vision prediction market REST API reference"
 
 # Vision API
 
-The API is public. No authentication. No rate limiting. We trust you. This may be a mistake.
+The Vision API is public. No authentication. No rate limits. Use it to list blocks, submit bitmaps, query balances, backtest strategies, and read tick history.
 
-Use it to list blocks, submit bitmaps, query balances, backtest strategies, and read tick history. Everything the prediction market knows, it will tell you.
+Key terms:
+
+- **Block** — a set of markets that resolve together on a shared tick schedule.
+- **Tick** — one resolution event for a block.
+- **Bitmap** — a bit-packed array of UP/DOWN predictions, one bit per market.
+- **BLS** — Boneh-Lynn-Shacham threshold signatures, used by the oracle quorum to sign withdrawal proofs.
 
 ## Architecture
 
-Vision API routes are split across two proxy targets depending on the type of data:
+Vision routes split across two proxy targets depending on the data:
 
 ```
                             +------------------------------+
@@ -67,11 +72,11 @@ All Vision endpoints are served under:
 https://generalmarket.io/api/vision
 ```
 
-Requests are proxied to the oracle node running Vision on port 10001, or to the data-node on port 8200 for snapshot data.
+Requests are proxied to the oracle node on port 10001, or to the data-node on port 8200 for snapshot data.
 
 ## Authentication
 
-None. The Vision API is **public**. Player identity is determined by Ethereum addresses passed as parameters. No keys, no tokens, no gatekeepers. The data belongs to everyone -- the losses, unfortunately, are personal.
+None. The Vision API is **public**. Player identity is determined by the Ethereum address passed as a parameter. No keys, no tokens.
 
 ## Endpoints
 
@@ -131,7 +136,7 @@ Ethereum addresses in responses are formatted as checksummed hex strings with th
 
 ## Rate Limits
 
-There are currently no rate limits. Generosity, or negligence -- the distinction matters less than you think.
+There are currently no rate limits.
 
 ## Quick Start
 

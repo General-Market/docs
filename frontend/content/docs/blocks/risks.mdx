@@ -5,9 +5,15 @@ description: "What can go wrong when trading or running a bot on Vision, and how
 
 # Risks & Operations
 
-This page lists ways to lose money. It is the most honest page in these docs. Read it. Then decide.
+This page enumerates every way to lose money or break a bot on Vision. Read it before depositing real USDC.
 
-Vision is a sealed parimutuel prediction market. You bet real USDC against other participants. Everything below is what can go wrong -- and in a zero-sum game, going wrong is the default state for roughly half of all participants, always.
+Vision is a sealed parimutuel prediction market (winners split losers' stakes; no house counterparty). It is zero-sum minus a 0.05% fee on profits. Half of participants lose, by construction.
+
+**Three risk categories below**
+
+- Capital — losing your deposit through bad bets, fees, or burn rate
+- Operational — bot bugs, RPC failures, missing bitmaps
+- Smart contract — code that cannot be patched after deploy
 
 ---
 
@@ -15,11 +21,11 @@ Vision is a sealed parimutuel prediction market. You bet real USDC against other
 
 ### You Can Lose Your Entire Deposit
 
-Vision is zero-sum minus fees. For every dollar someone wins, someone else loses. This is not a warning -- it is arithmetic. If your predictions are consistently wrong, your balance trends to zero. There is no stop-loss mechanism. Your `stakePerTick` is deducted every tick, relentlessly, indifferent to your conviction or your strategy or your reasons for being here.
+Vision is zero-sum minus fees. Every winning dollar comes from a losing dollar. There is no stop-loss. `stakePerTick` is deducted every tick whether you are paying attention or not. Consistent bad predictions trend your balance to zero.
 
 ### House Edge
 
-The protocol takes 0.05% of profits. Even a perfectly calibrated coin flip loses money over time. The house always wins -- not dramatically, not unfairly, but with the quiet patience of entropy. You need a win rate of essentially 50% to break even. The edge is barely there -- which is the point.
+The protocol takes 0.05% of profits — fee on the upside only. A 50/50 strategy loses to fees over time. Break-even win rate ~50.025%.
 
 ```
 Break-even win rate ≈ 50.025% (with 0.05% fee on profits)
@@ -27,7 +33,7 @@ Break-even win rate ≈ 50.025% (with 0.05% fee on profits)
 
 ### Stake Burn Rate
 
-Every tick, you risk `stakePerTick` USDC. The clock does not pause. Your deposit depletes at this rate if you lose every tick:
+Each tick risks `stakePerTick` USDC. Worst-case depletion math below.
 
 ```
 Ticks until depleted = deposit / stakePerTick
@@ -37,78 +43,78 @@ At 1-hour ticks = ~4 days of runway
 ```
 
 <Warning>
-A high `stakePerTick` relative to your deposit burns capital in hours. Start with a ratio of 1:50 or lower until you have validated your strategy. The market will wait -- it has destroyed more patient people than you.
+A high `stakePerTick` relative to deposit burns capital in hours. Use a ratio of 1:50 or lower until your strategy is validated.
 </Warning>
 
 ### Correlated Markets
 
-Many markets in a block move together -- BTC and ETH, for instance, share the same moods. Bet all-UP on a correlated block and watch the market drop: you lose on nearly every market simultaneously. Diversification is harder than it looks when everything is secretly the same thing.
+Many markets in a block move together. BTC and ETH share direction most days. Bet all-UP on a correlated block during a drawdown: you lose on most markets simultaneously. Mix sources and directions to dilute correlation.
 
 ---
 
 ## Operational Risks
 
-The ways your machine can fail you. These are not market risks -- these are engineering risks. The cruelest ones, because they mean losing money not because you were wrong about the future, but because your code had a bug.
+Engineering failure modes that cost real money. Each one has a known fix.
 
 ### Bitmap Not Submitted
 
-If your bot joins a block but fails to submit the bitmap to oracles, your predictions are never revealed. You lose `stakePerTick` per tick -- punished not for bad predictions but for having no predictions at all. This is the single most common bot failure.
+Joining a block and failing to submit the bitmap means no predictions are revealed. You lose `stakePerTick` every tick anyway. Most common bot failure.
 
-**Fix:** Always verify `{"accepted": true}`. Implement retries with a 3-second backoff.
+**Fix:** verify `{"accepted": true}` on every submission. Retry with 3-second backoff.
 
 ### Indexer Lag
 
-After calling `joinBlock()` on-chain, the oracle needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
+After `joinBlock()` lands on-chain, the oracle needs ~6 sec to detect the `PlayerJoined` event. Earlier `POST /vision/bitmap` returns `404: Player not found`.
 
-**Fix:** Wait at least 6 seconds between `joinBlock()` and `POST /vision/bitmap`. Retry on 404.
+**Fix:** wait ≥6 sec between `joinBlock()` and bitmap submission. Retry on 404.
 
 ### Nonce Collisions
 
-If your bot sends multiple transactions in rapid succession without tracking nonces, they can collide and revert.
+Multiple transactions sent in rapid succession without local nonce tracking collide and revert.
 
-**Fix:** Track nonces locally: `nonce = w3.eth.get_transaction_count(address)` before each transaction, increment manually for back-to-back sends.
+**Fix:** read `nonce = w3.eth.get_transaction_count(address)` once, then increment locally for back-to-back sends.
 
 ### RPC Failures
 
-The Arbitrum RPC endpoint can be temporarily unreachable. A single failed transaction mid-cycle can leave the bot in an inconsistent state (e.g., USDC approved but block not joined).
+The Arbitrum RPC can drop briefly. A failed transaction mid-cycle leaves the bot inconsistent (USDC approved but block not joined, etc.).
 
-**Fix:** Wrap every on-chain call in retry logic. On restart, check on-chain state (has the bot already joined this block?) before re-attempting.
+**Fix:** wrap every on-chain call in retry logic. On restart, query on-chain state (has the bot already joined this block?) before re-attempting.
 
 ### Gas Exhaustion
 
-Every on-chain action costs gas. Run out of ETH and every transaction fails silently -- the machine, suddenly mute, unable to express even the wrong opinion.
+Every on-chain action costs ETH. No ETH = silent revert on every transaction.
 
-**Fix:** Monitor ETH balance alongside USDC. Set an alert at 0.01 ETH.
+**Fix:** monitor ETH balance alongside USDC. Alert at 0.01 ETH.
 
 ### BLS Proof Unavailability
 
-Claiming rewards requires a BLS-signed proof from oracle nodes. If oracles are down, the claim fails. Your money is there. You simply cannot touch it.
+Claiming requires a BLS-signed proof from oracle nodes. Oracles down = claim fails. Funds are safe but stuck until oracles return.
 
-**Fix:** Retry with exponential backoff. Unclaimed rewards do not expire. They wait -- which is more than can be said for most things that owe you money.
+**Fix:** retry with exponential backoff. Unclaimed rewards do not expire.
 
 ---
 
 ## Smart Contract Risks
 
-The risks that live in the code itself. These are the rarest and the most terrifying, because they are the ones no one can fix after the fact.
+Risks that live in the bytecode. Rare, but unfixable after deploy.
 
 ### Immutable Code
 
-Vision contracts are deployed on Arbitrum. Bugs in the contract logic could result in loss of funds. Code, unlike people, does not learn from its mistakes -- it repeats them, deterministically, forever.
+Vision contracts are deployed on Arbitrum without upgrade paths. A bug in contract logic could lose funds.
 
 ### Solvency
 
-The contract includes a solvency check (`InsolventPayout`) -- if the USDC balance cannot cover a payout, the claim reverts. Under normal operation this should never happen. "Should never happen" is the preamble to every catastrophe.
+The contract includes a solvency check (`InsolventPayout`). If the USDC balance cannot cover a payout, the claim reverts. Should not happen under normal operation.
 
 ### BLS Key Rotation
 
-If the oracle set rotates BLS keys, old proofs become invalid. Claim rewards promptly. Do not let profits accumulate in a system you do not control -- that is not savings, it is faith.
+If the oracle set rotates BLS keys, old proofs become invalid. Claim promptly. Do not leave profits in the contract for weeks.
 
 ---
 
 ## Pre-Flight Checklist
 
-Run through this before starting a bot or placing your first bet. Preparation will not save you from the market. It will save you from yourself.
+Run this before your first bet or first bot deployment. ~10 min.
 
 <Steps>
   <Step title="Fund Your Wallet">
@@ -142,7 +148,7 @@ Run through this before starting a bot or placing your first bet. Preparation wi
 
 ## Bot Operator Checklist
 
-For running a bot in production. The machine does not care about its own survival. You must care on its behalf.
+Production hygiene for an automated bot. ~30 min one-time setup.
 
 <Steps>
   <Step title="Process Management">
@@ -195,7 +201,7 @@ For running a bot in production. The machine does not care about its own surviva
 
 ## Risk Summary
 
-Everything that can go wrong, ranked by how much it will cost you. Read the severity column. If you can live with all of them simultaneously, proceed.
+All risks ranked by severity. Read the severity column before scaling up.
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|

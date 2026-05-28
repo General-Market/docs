@@ -5,9 +5,17 @@ description: "Blocks — sealed bets across 90+ data sources. Predators excluded
 
 # Blocks
 
-You think a German train will be late. It will be. The question is whether the seal holds long enough for you to be right alone. Welcome to Blocks.
+Blocks is a sealed-bet venue across 90+ real-world data feeds. Pick UP or DOWN, commit on-chain, win the losers' pool minus a 0.05% fee.
 
-Blocks is a sealed-bet venue. Pick a number, pick a side, seal the commitment. Nobody sees the bet until the market closes. Nobody can run ahead of it. Nobody can fade it on entry. Nobody can buy your decision off your broker. The mechanism is older than electricity. The novelty is having one that still works.
+**Key facts**
+
+- **Sealed commitments.** You submit `keccak256(bitmap)` on-chain. Your bet stays private until the tick (the resolution window) closes.
+- **Parimutuel payout.** Winners on each market split the losers' stakes proportionally. No house, no counterparty.
+- **90+ sources.** Crypto, weather, trains, earthquakes, GitHub, npm, Twitch, Steam, flights, nuclear reactors, ice cream machines.
+- **BLS-verified resolution.** Three oracles fetch real data; a 2-of-3 aggregated BLS signature finalizes the result.
+- **0.05% fee on profits only.** Break-even ~50.025%.
+
+Jump in: [Getting Started](/blocks/getting-started) (~5 min).
 
 <Frame>
   <img src="/images/blocks/blocks-overview.svg" alt="Blocks overview — fifteen sources arranged in a 3×5 grid, each tile showing source name and current block count: Crypto 9,963, Weather 161,125, Trains 1,200, Quakes 300, GitHub 1,500, npm 9,183, Twitch 57,523, Movies 37,502, Steam 5,000, Flights 2,400, Stocks 3,200, Reddit 4,800, DeFi 2,100, Buoys 850, Nuclear 63. Footer: 90+ sources, 400,000+ blocks, sealed commitments." />
@@ -15,84 +23,84 @@ Blocks is a sealed-bet venue. Pick a number, pick a side, seal the commitment. N
 
 ## Each market thins the predators
 
-Spot is the open field. Every extraction works there. Cross-venue arbitrage, frontrunning, stop hunting, orderflow buying, spoofing, latency races, insider trading, toxic-flow making — eight strategies, all profitable, all at the expense of someone who showed up to take a directional view.
+Blocks refuses every standard extraction strategy by construction, not by policy. Spot is exposed to all eight; perps to seven; options to six; Blocks to zero.
 
-Perpetuals refuse one of them. Options refuse two more. Blocks refuses all of them. Not by policy — by construction.
+Extraction strategies blocked: cross-venue arbitrage, frontrunning, stop hunting, orderflow buying, spoofing, latency races, insider trading, toxic-flow making.
 
 <Frame>
   <img src="/images/blocks/predator-matrix.svg" alt="Predator extraction matrix — nine strategies across four venues (SPOT, PERPS, OPTIONS, BLOCKS). Spot is vulnerable to all eight predator strategies; perps refuses cross-venue arbitrage; options refuses stop-and-liquidation hunting in addition; Blocks refuses all eight by construction. The final row, directional bets, is the only honest activity and is possible at every venue. Eight ways to lose, one bet that still works." />
 </Frame>
 
-The bets are sealed before they exist on-chain. There is no orderbook to spoof, no mempool to scan, no broker to pay for the flow. Resolution comes from external data verified by an oracle network with BLS aggregate signatures. Winners split the losers' stakes minus a 0.05% fee. The pool is parimutuel. There is no counterparty to fade you, because there is no counterparty.
+Bets are sealed before they hit the chain. No orderbook to spoof, no mempool to scan, no broker to sell your flow. Resolution comes from external data verified by BLS aggregate signatures (one short signature standing in for many oracles). Winners split the losers' pool minus 0.05%. The pool is parimutuel — no counterparty to fade you, because there is no counterparty.
 
 ## How a block resolves
 
-Four steps separate you from the consequences of your convictions.
+Four steps, from browse to claim.
 
 <Frame>
   <img src="/images/blocks/four-steps.svg" alt="The four steps — Browse, Seal, Resolve, Claim. Step 1 Browse: pick a batch from 90+ source categories like Crypto, Weather, Trains, Quakes. Step 2 Seal: bet UP or DOWN per market, sealed as keccak256(bitmap) on-chain so nobody can see your block until the tick closes. Step 3 Resolve: tick ends, oracles fetch real data, winners split the losers' stakes under 2-of-3 consensus. Step 4 Claim: withdraw winnings with a BLS-verified balance proof, any time, no lockup." />
 </Frame>
 
 <Info>
-Your blocks are **sealed** — you submit a hash of your bitmap on-chain, then reveal the bytes to oracles off-chain after the tick closes. Nobody can see or copy your bets in advance. Your folly is your own until the moment of reckoning.
+Your blocks are **sealed**. You submit a hash of your bitmap (your UP/DOWN votes packed into bits) on-chain, then reveal the bytes to oracles off-chain after the tick closes. Nobody sees or copies your bets in advance.
 </Info>
 
 ## Why this and not the alternatives
 
-Most venues let you take a directional view and then quietly sell the right to copy it. Blocks does not — because the act of placing a block is encrypted. The architecture refuses the abuse, rather than promising not to commit it.
+Other venues let you take a directional view and then sell the right to copy it. Blocks cannot — placing a block is encrypted at the protocol level.
 
 <CardGroup cols={2}>
   <Card title="90+ Data Sources" icon="database">
-    Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. Anything that produces a number. See the [full source directory](/blocks/concepts/sources).
+    Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. See the [full source directory](/blocks/concepts/sources).
   </Card>
   <Card title="Sealed Commitments" icon="lock">
-    Players submit `keccak256(bitmap)` on-chain before revealing actual bets to oracles. No mempool exposure, no copying, no fading. Your mistakes are at least original.
+    Players submit `keccak256(bitmap)` on-chain, then reveal bytes to oracles after the tick closes. No mempool exposure, no copying, no fading.
   </Card>
   <Card title="Bot-Friendly" icon="robot">
-    Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically. Delegate your hubris to a machine — it will lose money faster and without complaint.
+    Free on-chain registration via `registerBot()`. Poll batches, encode bitmaps, join programmatically. Python and TypeScript examples shipped.
   </Card>
   <Card title="Low Fees" icon="percent">
-    0.05% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
+    0.05% on profits only. Lose and pay nothing extra.
   </Card>
   <Card title="BLS-Verified Claims" icon="shield-check">
-    Every claim and withdrawal requires a valid aggregated BLS signature from the oracle network. Trust is a threshold, not an emotion.
+    Every claim and withdrawal carries an aggregated BLS signature (one short signature from the oracle quorum).
   </Card>
   <Card title="Points (Season 1)" icon="star">
-    Earn points for every tick you participate in. Season 1 is live. Points accrue for presence, not for being right. The protocol rewards those who show up.
+    Earn points per tick of participation. Season 1 is live. Points accrue for participation, not for being right.
   </Card>
   <Card title="Flexible Batches" icon="layer-group">
-    Anyone can create a batch with custom market selections, tick durations (5 minutes to 30 days), and resolution types. The freedom to construct your own instrument of ruin.
+    Anyone creates a batch with custom market selection, tick duration (5 min to 30 days), and resolution type.
   </Card>
   <Card title="Backtesting" icon="clock-rotate-left">
-    Test your strategies against historical data before committing real USDC. The past is the only place where certainty exists, and even there it is debatable.
+    Run your strategy against historical tick data before committing USDC. See [strategies](/docs/blocks/bots/strategies#backtesting).
   </Card>
 </CardGroup>
 
 ## What can you bet on?
 
-The breadth is the point. Anything that produces a number can become a block. Each one a small confession that someone, somewhere, believes they know what happens next:
+Anything that produces a number can become a block. The breadth is the point. Twelve current examples below.
 
 <Frame>
   <img src="/images/blocks/example-questions.svg" alt="Twelve example questions paired with their source identifiers — Will Bitcoin be higher in 5 minutes (crypto_BTC-USD), will it rain more in Tokyo tomorrow (weather_tokyo), will an earthquake hit California (earthquake_calif), will the Northern Line have disruptions (tfl_tube_northern), will Counter-Strike 2 gain players (steam_cs2), will npm react downloads increase (npm_react), will McDonald's ice cream break in Chicago (mcbroken_chicago), will this GitHub repo get more stars (github_rust-lang), will Deutsche Bahn trains be late in Berlin (db_trains_berlin), will Palo Verde nuclear output change (nrc_palo-verde-1), will wave height increase at buoy 41002 (ndbc_41002), will LA air quality worsen (airnow_los-angeles)." />
 </Frame>
 
-Every block follows the same mechanic. A data source produces a number. You bet UP or DOWN. The outcome is resolved from real-world data. The universe does not care about your block. It moves, or it does not. You are paid accordingly.
+Every block runs the same mechanic. Source produces a number. You bet UP or DOWN. Real-world data resolves the outcome. Winners take the losers' stake.
 
 ## The data pipeline
 
-Ninety-eight APIs feed numbers into a Rust process that feeds them into a database that feeds them into smart contracts that redistribute money between strangers. The architecture is sound. The premise is absurd. Both things are true.
+Ninety-eight external APIs feed a single Rust process; the process writes to Postgres; three oracles read snapshots and resolve ticks with BLS consensus; smart contracts redistribute USDC.
 
 <Frame>
   <img src="/images/blocks/data-pipeline.svg" alt="Data pipeline — external APIs (CoinGecko, USGS, TfL, GitHub, NDBC, and 85 others) feed into a single Rust data node that collects via HTTP, validates with bounds and staleness checks, and stores time-series rows in Postgres. Three independent oracles read snapshots, resolve ticks, BLS-sign their result, and reach 2-of-3 consensus. Smart contracts: VisionPool.sol holds sealed bitmaps, VisionClaim.sol verifies BLS claims, VisionReserve.sol custodies the parimutuel USDC pool." />
 </Frame>
 
 <Info>
-The on-chain contracts retain their original `Vision*` names from the protocol's earlier identity. The product is Blocks; the bytecode remembers.
+**Naming exception.** On-chain contracts keep their original `Vision*` names from an earlier protocol identity. Product surface = Blocks. Bytecode = Vision. They are the same system.
 </Info>
 
 ## Who is Blocks for?
 
-Everyone who has ever looked at a number and felt, with irrational certainty, that they knew which way it would go next.
+Four audiences. Pick the row that matches you and jump.
 
 <Frame>
   <img src="/images/blocks/audience-table.svg" alt="Who is Blocks for — four audiences and their use cases. Bot developers: build automated block-betting strategies with full API access, programmatic bitmap encoding, and a Python framework. Manual traders: browse batches in the web UI, pick UP or DOWN, deposit USDC, no coding required. Quant researchers: backtest bitmap strategies against historical tick data across 90+ sources before committing capital. Refugees from spot, perps, and options: anyone tired of paying the predator tax on every directional view." />
@@ -100,25 +108,23 @@ Everyone who has ever looked at a number and felt, with irrational certainty, th
 
 ## Quick links
 
-You have read this far, which means either curiosity or recklessness. Both are welcome here.
-
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="rocket" href="/blocks/getting-started">
-    Your first block. It will probably be wrong. All first blocks are.
+    Join your first block. ~5 min.
   </Card>
   <Card title="Data Sources" icon="database" href="/blocks/concepts/sources">
-    Ninety-eight ways to measure the world. The absurdity is the point.
+    Full source directory — crypto, weather, trains, GitHub, and 86 more.
   </Card>
   <Card title="Batches & Bitmaps" icon="book" href="/blocks/concepts/batches">
-    How markets are grouped, blocks encoded, and outcomes determined.
+    How markets are grouped, bitmaps encoded, outcomes resolved. ~10 min read.
   </Card>
   <Card title="Build a Bot" icon="robot" href="/blocks/bots/quickstart">
-    Automate your strategy. The machine will not hesitate where you would.
+    Register on-chain and automate. ~10 min.
   </Card>
   <Card title="Points & Rewards" icon="star" href="/blocks/concepts/points">
-    Points accrue for participation, not for being right. Presence is its own reward.
+    How Season 1 points accrue per tick of participation.
   </Card>
   <Card title="API Reference" icon="code" href="/blocks/api/overview">
-    The full endpoint documentation, for those who prefer to commune with the protocol directly.
+    Full REST endpoint reference.
   </Card>
 </CardGroup>

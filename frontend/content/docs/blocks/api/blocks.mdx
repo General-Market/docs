@@ -5,7 +5,7 @@ description: "List active blocks and supported markets"
 
 # Blocks & Markets
 
-What is there to bet on, and who is already betting. Two endpoints, two answers.
+Two endpoints. One lists active blocks. One lists the markets a block can include. A block is a set of markets that resolve together on a tick schedule.
 
 ---
 
@@ -13,7 +13,7 @@ What is there to bet on, and who is already betting. Two endpoints, two answers.
 
 `GET /vision/blocks`
 
-Returns all active blocks with live player counts and TVL. Ordered by block ID descending, capped at 100. The arena, enumerated.
+This endpoint returns all active blocks with live player counts and TVL. Ordered by block ID descending, capped at 100.
 
 <Tabs>
 <Tab title="cURL">
@@ -92,7 +92,7 @@ for (const block of blocks) {
 
 `GET /vision/markets`
 
-Returns the oracle-curated whitelist of supported markets. The menu of measurable things.
+This endpoint returns the oracle-curated whitelist of markets that blocks can include.
 
 <Tabs>
 <Tab title="cURL">

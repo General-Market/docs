@@ -3,7 +3,7 @@ title: "Fees"
 description: "How Vision's fee structure works -- 0.05% on profits only"
 ---
 
-0.05% on profits only. Losers pay nothing. This is the closest thing to justice a financial protocol can offer. The tax falls only on those who have something to be taxed. The rest are left alone with their losses, which is kindness of a sort. Five basis points -- barely a touch, the smallest tax mathematics permits before disappearing entirely.
+0.05% on profits only. Losers pay nothing. The fee applies at claim or withdrawal, computed on the gain above what you deposited.
 
 ## Fee Summary
 
@@ -33,7 +33,7 @@ uint256 public constant BPS_DENOMINATOR = 10000;     // Basis point denominator
 
 ## Fee Formula
 
-When a player claims rewards and their new balance exceeds their old balance, the protocol takes its share. The arithmetic is clean. Five basis points, applied to profits, never to principal:
+When `newBalance > oldBalance`, the protocol takes 5 basis points of the gain. Principal is never touched:
 
 ```
 winnings = newBalance - oldBalance
@@ -43,7 +43,7 @@ payout = winnings - fee
 
 ### Worked Example
 
-A player has a current balance of 100 USDC and wins 20 USDC across several ticks. Here is what the protocol keeps and what the player receives -- the small toll exacted on fortune:
+A player has a balance of 100 USDC and wins 20 USDC across several ticks:
 
 ```
 oldBalance = 100,000,000  (100 USDC, 6 decimals)
@@ -57,12 +57,12 @@ payout     = 20,000,000 - 10,000 = 19,990,000          (19.99 USDC)
 The player receives **19.99 USDC** in profit. The protocol accumulates **0.01 USDC** in fees.
 
 <Info>
-Fees are calculated in USDC with 6 decimal places. The integer division means sub-cent amounts are truncated (rounded down), slightly favoring the player. Even the rounding errors are merciful.
+Fees are calculated in USDC with 6 decimal places. Integer division truncates sub-cent amounts, which slightly favors the player.
 </Info>
 
 ## When Fees Apply
 
-Fees appear at two moments: when you claim your winnings, and when you leave. Both are moments of accounting -- the protocol tallies what you earned and takes its fraction. Only its fraction. Never more.
+Fees apply at two moments: `claimRewards` (fee on the gain since last claim) and `withdraw` (fee on total profit since first deposit).
 
 ### On Claim
 
@@ -82,7 +82,7 @@ If `newBalance <= oldBalance`, the player lost money over the claim period. No f
 
 ### On Withdrawal
 
-When a player calls `withdraw` to exit a block, the fee is computed on **total profit** over the lifetime of the position:
+`withdraw` exits the block. The fee is computed on **total profit** over the position's full lifetime:
 
 ```solidity
 uint256 totalDeposited = position.totalDeposited;
@@ -91,7 +91,7 @@ uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
 uint256 payout = finalBalance - fee;
 ```
 
-This means the fee on withdrawal considers the entire history, not just the latest claim window.
+The withdrawal fee covers the entire history, not just the latest claim window.
 
 ### Withdrawal Example
 
@@ -108,18 +108,18 @@ payout  = 650,000,000 - 75,000 = 649,925,000          (649.925 USDC)
 
 ## Losers Pay Nothing
 
-If a player's balance decreases over a tick (or over their entire position lifetime), **no fee is charged**. The fee only applies to positive winnings. Loss is its own punishment. The protocol does not add to it.
+If a player's balance decreases over a tick — or over the entire position lifetime — **no fee is charged**. The fee only applies to positive gains.
 
-- If you deposit 100 USDC and your balance drops to 80 USDC, you withdraw 80 USDC with no fee.
-- If you deposit 100 USDC, it goes to 50 USDC, then recovers to 110 USDC, you only pay fees on the 10 USDC profit when you claim or withdraw.
+- Deposit 100 USDC, balance drops to 80, you withdraw 80 with no fee.
+- Deposit 100, it dips to 50, recovers to 110: you pay fees on the 10 USDC profit only.
 
 <Tip>
-Fees are never applied to your deposited principal, only to gains above it. The protocol only charges for the privilege of being right. Being wrong is free.
+Fees are never applied to deposited principal — only to gains above it.
 </Tip>
 
 ## Minimum Stake
 
-To join a block, the player's `stakePerTick` must be at least `MIN_STAKE_PER_TICK`. Ten cents. The price of admission to a prediction market. The price of having an opinion and backing it with something other than words:
+To join a block, `stakePerTick` must be at least `MIN_STAKE_PER_TICK` — 0.1 USDC:
 
 ```solidity
 uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
@@ -131,7 +131,7 @@ uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
 | USDC decimals | 6 |
 | Minimum deposit | Must be >= stakePerTick |
 
-This minimum prevents dust attacks and ensures each player has a meaningful stake in the game.
+The minimum prevents dust attacks and ensures every player has a meaningful stake.
 
 <Warning>
 If `stakePerTick` is less than `MIN_STAKE_PER_TICK`, the `joinBlock` call reverts with `StakeBelowMinimum`. If the initial deposit is less than `stakePerTick`, it reverts with `InsufficientDeposit`.
@@ -139,7 +139,7 @@ If `stakePerTick` is less than `MIN_STAKE_PER_TICK`, the `joinBlock` call revert
 
 ## Fee Collection
 
-Accumulated fees are held in the Vision contract until the designated `feeCollector` address calls `collectFees`. The fees sit there, accruing, waiting -- the protocol's quiet tax on the perpetual optimism of its participants:
+Accumulated fees are held in the Vision contract until the designated `feeCollector` address calls `collectFees`:
 
 ```solidity
 function collectFees() external {
@@ -163,4 +163,4 @@ Every claim and withdrawal includes a solvency check to ensure the contract can 
 if (USDC.balanceOf(address(this)) < payout + accumulatedFees) revert InsolventPayout();
 ```
 
-This prevents a scenario where payouts exceed the contract's actual USDC holdings. The contract will not promise what it cannot deliver. In this it is more honest than most institutions.
+This prevents payouts from exceeding the contract's actual USDC holdings. Reverts with `InsolventPayout` if violated.

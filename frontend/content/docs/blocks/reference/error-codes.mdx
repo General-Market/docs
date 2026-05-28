@@ -5,9 +5,7 @@ description: "Vision smart contract error codes with actionable resolutions"
 
 # Error Codes
 
-The many ways a transaction can fail. Each error is the contract saying no -- and unlike human refusals, these come with exact reasons and actionable fixes.
-
-Vision uses named errors in `IVision.sol` and numbered errors (`E200+`) in `ErrorsLib.sol`. Each entry below includes the revert condition and a concrete fix.
+Vision uses named errors in `IVision.sol` and numbered errors (`E200+`) in `ErrorsLib.sol`. Each entry below states the revert condition and the fix.
 
 <Info>
 Custom errors are decoded from transaction revert data using the contract ABI. If you see a raw hex revert, decode it with `decodeErrorResult` from viem or ethers to get the error name.
@@ -19,7 +17,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBlockMarkets`.
 
-**Fix:** Request a fresh balance proof from `GET /vision/balance/{blockId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `111222333`).
+**Fix:** Fetch a fresh balance proof from `GET /vision/balance/{blockId}/{player}` immediately before submitting the transaction. Proofs go stale when oracles rotate keys or the aggregated public key in the OracleRegistry changes. If the error persists, verify the chain ID in the signed message matches `111222333`.
 
 ---
 
@@ -29,7 +27,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The provided `blockId` does not correspond to any created block. Specifically, `block.creator == address(0)`.
 
-**Fix:** Verify the block ID is correct by calling `getBlock(blockId)` first. Block IDs are sequential integers starting from 0. If you are using a block ID from the API, confirm it matches the chain you are connected to. A block ID valid on one chain will not exist on another.
+**Fix:** Call `getBlock(blockId)` to confirm the block exists. Block IDs are sequential integers from 0. A block ID is chain-specific — verify it matches the chain you are connected to.
 
 ---
 
@@ -37,7 +35,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A player tries to call `joinBlock` on a block that has been paused by the oracle network.
 
-**Fix:** The block has been temporarily suspended by oracle consensus (via BLS-signed `pause`). Wait for the oracles to unpause the block. You can monitor block status by polling `getBlock(blockId)` and checking the `paused` field. If you believe the pause is in error, contact the block creator or the oracle operators.
+**Fix:** Wait for oracle consensus to unpause the block. Poll `getBlock(blockId)` and read the `paused` field. If the pause looks wrong, contact the block creator or oracle operators.
 
 ---
 
@@ -45,7 +43,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A block creation is attempted with a `sourceId` that already has an associated block.
 
-**Fix:** Each source can only have one block. Check if a block already exists for this source by looking up the sourceId mapping. If you need to update the block configuration, use `updateBlockConfig` on the existing block instead of creating a new one.
+**Fix:** Each source can only have one block. Look up the existing block via the sourceId mapping. To change its configuration, call `updateBlockConfig` on the existing block.
 
 ---
 
@@ -58,7 +56,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 - `setBlockMetadata`: caller is not the block creator.
 - `collectFees`: caller is not the designated `feeCollector` address.
 
-**Fix:** Ensure you are calling the function from the correct address. For block operations, only the address that created the block can update its markets or metadata. For fee collection, only the `feeCollector` address (set at contract deployment) can call `collectFees`. If you need to act on behalf of a block creator, the creator must submit the transaction themselves.
+**Fix:** Call from the authorized address. Only the block creator can update its markets or metadata. Only the `feeCollector` address (set at deployment) can call `collectFees`. To act for a block creator, the creator must submit the transaction themselves.
 
 ---
 
@@ -66,9 +64,9 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 ### InsufficientDeposit
 
-**Reverts when:** The `depositAmount` passed to `joinBlock` is less than the `stakePerTick` value. Every player must deposit at least one tick's worth of stake.
+**Reverts when:** The `depositAmount` passed to `joinBlock` is less than `stakePerTick`. Every player must deposit at least one tick's worth of stake.
 
-**Fix:** Increase the `depositAmount` so it is at least equal to `stakePerTick`. For example, if your `stakePerTick` is 1,000,000 (1 USDC), your deposit must be at least 1,000,000. It is recommended to deposit enough to cover multiple ticks so your position does not immediately run out of balance.
+**Fix:** Set `depositAmount >= stakePerTick`. If `stakePerTick` is 1,000,000 (1 USDC), deposit at least 1,000,000. Deposit enough for multiple ticks so the position survives past tick 1.
 
 ---
 
@@ -76,7 +74,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `stakePerTick` value passed to `joinBlock` is less than `MIN_STAKE_PER_TICK` (100,000 = 0.1 USDC with 6 decimals).
 
-**Fix:** Set `stakePerTick` to at least `100000` (0.1 USDC). The minimum exists to prevent dust attacks. If you want a small position, 0.1 USDC per tick is the floor.
+**Fix:** Set `stakePerTick >= 100000` (0.1 USDC). The minimum blocks dust attacks. 0.1 USDC per tick is the floor.
 
 ---
 
@@ -84,7 +82,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The amount passed to `withdrawBalance` or `withdrawToSettlement` exceeds the caller's available balance in the contract.
 
-**Fix:** Check your current balance by calling `getPosition(blockId, yourAddress)` and reading the `balance` field. Only withdraw up to that amount. If you recently claimed rewards, the balance may have changed.
+**Fix:** Call `getPosition(blockId, yourAddress)` and read the `balance` field. Withdraw up to that amount. Recent claims may have shifted the balance — re-read before retrying.
 
 ---
 
@@ -92,7 +90,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A zero amount is passed to `depositBalance`, `withdrawBalance`, or `withdrawToSettlement`.
 
-**Fix:** Provide a non-zero amount. The minimum meaningful deposit is the `stakePerTick` value for your block.
+**Fix:** Pass a non-zero amount. The minimum meaningful deposit is `stakePerTick`.
 
 ---
 
@@ -102,7 +100,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A player tries to call `joinBlock` for a block they have already joined. Checked by `_positions[blockId][msg.sender].stakePerTick != 0`.
 
-**Fix:** You can only join a block once per address. If you need to increase your balance, call `deposit(blockId, amount)` instead. If you need to change your bitmap, call `updateBitmap(blockId, newBitmapHash)`. If you want to rejoin after leaving, you must first call `withdraw` to clear your position.
+**Fix:** One join per address per block. To top up balance, call `deposit(blockId, amount)`. To change predictions, call `updateBitmap(blockId, newBitmapHash)`. To rejoin after leaving, call `withdraw` first to clear the position.
 
 ---
 
@@ -110,7 +108,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A player tries to call `deposit`, `updateBitmap`, `claimRewards`, or `withdraw` on a block they have not joined. Checked by `_positions[blockId][msg.sender].stakePerTick == 0`.
 
-**Fix:** Call `joinBlock` first before performing any player operations. Verify you are connected with the same wallet address that joined the block. If you previously withdrew from the block, your position was deleted and you must rejoin with `joinBlock`.
+**Fix:** Call `joinBlock` before any player operation. Confirm the connected wallet is the address that joined. A prior `withdraw` deletes the position — rejoin via `joinBlock`.
 
 ---
 
@@ -120,7 +118,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `fromTick` parameter in `claimRewards` is less than or equal to the player's `lastClaimedTick` (when `lastClaimedTick != 0`). This prevents double-claiming the same tick range.
 
-**Fix:** Read the player's current position with `getPosition(blockId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the oracle API, request a balance proof for the tick range starting after your last claimed tick.
+**Fix:** Call `getPosition(blockId, playerAddress)` and read `lastClaimedTick`. Set `fromTick = lastClaimedTick + 1`. If using the oracle API, request the balance proof for the range starting after the last claimed tick.
 
 ---
 
@@ -128,7 +126,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `toTick` parameter in `claimRewards` is less than `fromTick`.
 
-**Fix:** Ensure `toTick >= fromTick`. A single-tick claim uses `fromTick == toTick`. If you are computing tick ranges programmatically, add a guard: `if (toTick < fromTick) throw new Error("Invalid tick range")`.
+**Fix:** Ensure `toTick >= fromTick`. A single-tick claim uses `fromTick == toTick`. Guard programmatic range math: `if (toTick < fromTick) throw new Error("Invalid tick range")`.
 
 ---
 
@@ -136,7 +134,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `tickDuration` parameter in `createBlock` is either `0` or greater than `MAX_TICK_DURATION` (30 days = 2,592,000 seconds).
 
-**Fix:** Set `tickDuration` to a value between 1 second and 2,592,000 seconds (30 days). Common values: 300 (5 minutes), 3600 (1 hour), 86400 (1 day). The tick duration is immutable after block creation, so choose carefully.
+**Fix:** Set `tickDuration` between 1 and 2,592,000 seconds (30 days). Common values: 300 (5 min), 3600 (1 h), 86400 (1 day). The value is immutable after creation — choose carefully.
 
 ---
 
@@ -144,7 +142,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A player attempts to place a bet or update their position during the lock window at the end of a tick. The lock window starts at `tickEnd - lockOffset` seconds before the tick boundary.
 
-**Fix:** Wait until the current tick ends and the next tick begins before submitting your transaction. The lock window prevents last-second position changes that could exploit information asymmetry. You can check the current tick timing by computing `block.timestamp % tickDuration` relative to the `lockOffset`.
+**Fix:** Wait for the next tick to start, then submit. The lock window blocks last-second position changes that would exploit information asymmetry. Check timing via `block.timestamp % tickDuration` against `lockOffset`.
 
 ---
 
@@ -152,7 +150,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `lockOffset` parameter is greater than or equal to `tickDuration`. The lock window cannot be longer than the tick itself.
 
-**Fix:** Set `lockOffset` to a value strictly less than `tickDuration`. For example, if your tick duration is 300 seconds (5 minutes), a lock offset of 60 seconds (1 minute) means positions are locked for the final minute of each tick.
+**Fix:** Set `lockOffset < tickDuration`. With `tickDuration = 300` (5 min) and `lockOffset = 60`, positions lock for the final minute of each tick.
 
 ---
 
@@ -162,7 +160,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The Vision contract does not hold enough USDC to cover the payout plus accumulated fees. Checked by `USDC.balanceOf(address(this)) < payout + accumulatedFees`.
 
-**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the oracles. Do not retry the transaction -- report the issue to the protocol operators with the block ID, your address, and the claim parameters.
+**Fix:** Critical solvency failure. Under normal operation this never fires — loser deposits fund winner payouts. If you see it, suspect a bug in oracle balance-proof computation. Do not retry. Report to protocol operators with the block ID, your address, and the claim parameters.
 
 ---
 
@@ -172,7 +170,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A deposit has already been processed (`depositProcessed[depositId]` is already `true`). This is replay protection for deposit crediting.
 
-**Fix:** This deposit has already been credited to the user's balance. No action is needed. If you believe the deposit was not actually credited, check the transaction history for the original processing transaction.
+**Fix:** The deposit is already credited. No action needed. If you doubt that, check transaction history for the original processing tx.
 
 ---
 
@@ -180,7 +178,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** A zero address (`address(0)`) is passed to `creditBalance` or similar functions that require a valid user address.
 
-**Fix:** Provide a valid non-zero Ethereum address.
+**Fix:** Pass a non-zero Ethereum address.
 
 ---
 
@@ -190,7 +188,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `marketIds` and `resolutionTypes` arrays passed to `createBlock` or `updateBlockMarkets` have different lengths.
 
-**Fix:** Ensure both arrays are the same length. Each market needs exactly one resolution type. For example, if you have 5 market IDs, you must provide exactly 5 resolution types. Double-check your array construction -- a common mistake is appending to one array but not the other.
+**Fix:** Both arrays must have the same length. Each market needs exactly one resolution type — 5 market IDs require 5 resolution types. A common mistake is appending to one array but not the other.
 
 ---
 
@@ -200,7 +198,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** An address calls `registerBot` but is already registered in the bot registry. Checked by `_bots[msg.sender].isActive || _botIndex[msg.sender] != 0`.
 
-**Fix:** Each address can only register one bot. If you need to update your bot's endpoint or public key hash, call `deregisterBot()` first, then call `registerBot` again with the new parameters.
+**Fix:** One bot per address. To update endpoint or public key hash, call `deregisterBot()` first, then `registerBot` with the new parameters.
 
 ---
 
@@ -208,7 +206,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** An address calls `deregisterBot` but is not registered or has already been deregistered. Checked by `!bot.isActive`.
 
-**Fix:** Verify your address is registered by calling `getAllActiveBots()` and checking if your address appears in the returned array. If you have already deregistered, you cannot deregister again. To re-register, call `registerBot` with your new endpoint and public key hash.
+**Fix:** Call `getAllActiveBots()` and confirm your address appears. A deregistered address cannot deregister again. To re-register, call `registerBot` with the new endpoint and public key hash.
 
 ---
 
@@ -229,7 +227,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 | Image URL | 256 |
 | Deployer name | 64 |
 
-Note: The limit is in **bytes**, not characters. Multi-byte characters (e.g., CJK, emoji) consume 2-4 bytes each. Use `new TextEncoder().encode(str).length` in JavaScript to check the byte length before submitting.
+Limits are in **bytes**, not characters. Multi-byte characters (CJK, emoji) cost 2–4 bytes each. Check byte length in JavaScript via `new TextEncoder().encode(str).length` before submitting.
 
 ---
 
@@ -288,7 +286,7 @@ These numbered errors are defined in `ErrorsLib.sol` and are used by the bilater
 
 ## Decoding Errors in the Frontend
 
-Custom errors are decoded using the contract ABI. Here is an example using viem:
+Decode custom errors against the contract ABI. Example using viem:
 
 ```typescript
 import { decodeErrorResult } from "viem";
@@ -309,7 +307,7 @@ try {
 
 ## Decoding Errors in Python
 
-For bots written in Python using web3.py:
+For bots on web3.py:
 
 ```python
 from web3 import Web3

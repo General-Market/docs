@@ -5,15 +5,26 @@ description: "Backtest index strategies against historical data"
 
 # Simulation API
 
-Hindsight as a service. Run backtests against crypto data from 2020 to today. The results are always instructive and never actionable -- past performance guarantees nothing except the knowledge that you could have done better.
+Backtest (simulate an index strategy against historical price data) crypto indices from 2020 to today.
 
 All GET requests. No authentication. **Base URL:** `https://generalmarket.io/api`
+
+| Endpoint | Returns |
+|---|---|
+| `/sim/categories` | All categories you can backtest |
+| `/sim/run` | One backtest result (cached when possible) |
+| `/sim/run-stream` | Same as `/sim/run`, streamed via SSE |
+| `/sim/sweep-stream` | Vary one parameter, hold the rest constant |
+| `/sim/holdings` | Holdings on a specific rebalance date |
+| `/sim/compare` | Multiple runs, overlaid |
+| `/sim/results` | Cached results, optionally filtered |
+| `/sim/benchmarks` | BTC and ETH normalized to 1.0 |
 
 ---
 
 ## List Categories
 
-The universe of things you can backtest.
+Returns every category that can be backtested, with coin count and source.
 
 ```
 GET /sim/categories
@@ -51,11 +62,13 @@ categories.forEach(c => console.log(`${c.id} — ${c.name} (${c.coin_count} coin
 ```
 </Expandable>
 
+Next: [Run Backtest](#run-backtest) to simulate one strategy.
+
 ---
 
 ## Run Backtest
 
-One simulation. One set of parameters. Cached when possible, computed when not.
+Returns one backtest result for a fixed parameter set. Cached when possible, computed when not.
 
 ```
 GET /sim/run
@@ -178,11 +191,13 @@ console.log(`Run #${result.run_id}: ${result.stats.total_return_pct}% return`);
 | `cached` | bool | Whether the result was served from cache |
 | `computed_in_ms` | int | Computation time (0 if cached) |
 
+Next: [Run Backtest (Streaming)](#run-backtest-streaming) to watch progress.
+
 ---
 
 ## Run Backtest (Streaming)
 
-Same simulation, but streamed. Watch the backtest compute in real time.
+Returns the same result as `/sim/run`, streamed via Server-Sent Events with progress updates.
 
 ```
 GET /sim/run-stream
@@ -238,11 +253,13 @@ es.onmessage = (e) => {
 | `result` | Same as `/sim/run` response | Final result |
 | `error` | `error` | Error message if simulation fails |
 
+Next: [Sweep Stream](#sweep-stream) to vary one parameter at a time.
+
 ---
 
 ## Sweep Stream
 
-Vary one parameter, hold the rest constant. See what matters and what does not.
+Returns a stream of backtests varying one parameter (`sweep` dimension) while holding the rest constant.
 
 ```
 GET /sim/sweep-stream
@@ -280,11 +297,13 @@ sweep=rebalance&category_id=layer-1&top_n=10&weighting=mcap"
 | `weighting` | All available schemes (11 base + 9 DeFi for `dl-*` categories) |
 | `rebalance` | 14d, 30d, 60d, 90d, 180d + drift bands at 3%, 5%, 10%, 15% |
 
+Next: [Get Holdings](#get-holdings) to inspect a single rebalance.
+
 ---
 
 ## Get Holdings
 
-What the backtest was holding at any point in time.
+Returns the asset list, weights, and prices the backtest held on a specific rebalance (periodic reset of basket weights) date.
 
 ```
 GET /sim/holdings
@@ -307,11 +326,13 @@ for h in resp.json()["holdings"]:
 ```
 </CodeGroup>
 
+Next: [Compare Runs](#compare-runs) to overlay multiple backtests.
+
 ---
 
 ## Compare Runs
 
-Multiple backtests, overlaid. The comparison is the point.
+Returns NAV series for multiple runs in one response, ready to overlay on a chart.
 
 ```
 GET /sim/compare
@@ -325,11 +346,13 @@ GET /sim/compare
 curl "https://generalmarket.io/api/sim/compare?run_ids=4821,4822,4823"
 ```
 
+Next: [List Cached Results](#list-cached-results) to browse precomputed runs.
+
 ---
 
 ## List Cached Results
 
-Everything the engine has already computed. Filtered by category if you wish.
+Returns every backtest result already computed, optionally filtered by category.
 
 ```
 GET /sim/results
@@ -343,11 +366,13 @@ GET /sim/results
 curl "https://generalmarket.io/api/sim/results?category_id=layer-1"
 ```
 
+Next: [Get Benchmarks](#get-benchmarks) for BTC and ETH reference series.
+
 ---
 
 ## Get Benchmarks
 
-BTC and ETH, normalized to 1.0 at the start date. The benchmarks against which every strategy is judged.
+Returns BTC and ETH price series normalized to 1.0 at the start date, ready to overlay on a backtest chart.
 
 ```
 GET /sim/benchmarks
@@ -361,3 +386,5 @@ GET /sim/benchmarks
 ```bash
 curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
 ```
+
+Next: [Morpho Endpoints](/index/api/morpho) for lending against DTF shares.

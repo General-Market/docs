@@ -3,17 +3,22 @@ title: "Data Sources"
 description: "90+ real-world data sources powering Vision prediction markets — from earthquakes to ice cream machines"
 ---
 
-Ninety-eight ways to measure the world. Earthquakes. Ice cream machines. Train delays. The percentage of broken McDonald's soft-serve dispensers in a city you have never visited. The disruption level of a metro line in a country where you do not live. The number of stars on a GitHub repository written in a language you do not speak. The absurdity is the point. Every number is a market. Every market is a question. Every question has exactly two answers, and one of them is wrong.
+Vision tracks 90+ external data sources across 16 categories — crypto prices, train delays, earthquake magnitudes, GitHub stars, broken ice-cream machines, transit disruption scores, and more. Each source produces a numeric value; each value can back a UP/DOWN/FLAT market.
+
+- **Sources:** 90+, in `data-node/src/market_data/sources/`
+- **Categories:** 16 (Finance, Economic, Regulatory, Tech, Entertainment, Geophysical, Transport, Academic, Nature, Space, etc.)
+- **Update frequency:** ~1 minute to weekly, per source
+- **Adding one:** 6 files must be updated — see [Adding a Data Source](https://github.com/generalmarket/index/blob/main/data-node/ADDING_A_DATA_SOURCE.md) (~30 min)
 
 ## The Data Pipeline
 
-Every prediction market on Vision is backed by a real-world data source. The Data Node collects, validates, and serves price feeds from 90+ external APIs. The infrastructure is serious. What it measures is often not.
+Every Vision market is backed by a real-world data source. The Data Node collects, validates, and serves price feeds from 90+ external APIs.
 
 <DataPipelineFull />
 
 ## Source Categories at a Glance
 
-Vision sources span 16 categories. Crypto is the least interesting one. The real edge is in the places nobody else is looking -- the buoy readings, the nuclear reactor outputs, the disruption scores of transit systems in cities that run on bureaucratic inertia.
+Vision sources span 16 categories. The edge tends to live in the less-watched ones — buoy readings, nuclear reactor outputs, transit disruption scores.
 
 <SourceCategoryMap />
 
@@ -162,15 +167,15 @@ Vision sources span 16 categories. Crypto is the least interesting one. The real
 
 ## How Sources Become Markets
 
-A source produces a numeric value. Any numeric value. The temperature in Fahrenheit, the number of active wildfires, the Kp index of geomagnetic storms. The protocol does not distinguish between the profound and the trivial. It treats them all with the same mechanical impartiality. Players predict whether the value goes UP or DOWN (or stays FLAT) over a tick period.
+A source produces a numeric value — temperature, wildfire count, Kp index, anything measurable. Players predict whether the value goes UP, DOWN, or stays FLAT over a tick period. The protocol treats every numeric input the same way.
 
 <SourceToMarketFlow />
 
-The same pattern works for every source -- whether the "price" is Bitcoin in USD, an earthquake magnitude, the number of broken McDonald's ice cream machines in Chicago, or the disruption level on the London Underground. The machinery does not know what it is measuring. It only knows the number went up, or it went down, or it stayed the same. In this, it resembles the universe itself.
+The same pattern works for every source. The Data Node returns a number; the oracle compares start price to end price; the resolution type decides UP/DOWN/FLAT.
 
 ## Market ID Convention
 
-Every market has a string ID formed from its source prefix and asset name. A naming convention for the measurable world:
+Every market has a string ID formed from its source prefix and asset name:
 
 <MarketIdConvention />
 
@@ -178,7 +183,7 @@ The prefix determines which source and category the market belongs to. The front
 
 ## Source Implementation
 
-Each source is a Rust module in the Data Node implementing the `MarketDataSource` trait. Rust was chosen because it does not forgive mistakes, which is appropriate for code that handles other people's money:
+Each source is a Rust module in the Data Node implementing the `MarketDataSource` trait:
 
 ```rust
 pub trait MarketDataSource: Send + Sync {
@@ -223,7 +228,7 @@ Each source has:
 
 ## Rate Limiting
 
-Every source has built-in rate limiting to respect upstream API constraints. The Data Node uses a sliding-window rate limiter that automatically backs off when limits are approached. Even greed has a clock.
+Every source has built-in rate limiting. The Data Node uses a sliding-window limiter that automatically backs off as upstream limits are approached.
 
 ```
     ┌──────────────────────────────────────────────────────────┐
@@ -243,7 +248,7 @@ Every source has built-in rate limiting to respect upstream API constraints. The
 
 ## Adding a New Source
 
-If ninety-eight ways to measure the world are not enough, you can add more. See [Adding a Data Source](https://github.com/generalmarket/index/blob/main/data-node/ADDING_A_DATA_SOURCE.md) for the full guide. The short version:
+See [Adding a Data Source](https://github.com/generalmarket/index/blob/main/data-node/ADDING_A_DATA_SOURCE.md) (~30 min) for the full guide. The six steps:
 
 1. Create `data-node/src/config/yoursource.json` with asset definitions
 2. Implement `MarketDataSource` in `data-node/src/market_data/sources/yoursource/client.rs`

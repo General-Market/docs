@@ -5,7 +5,15 @@ description: "The complete journey of a Vision block — from raw market data th
 
 # Block Lifecycle
 
-A block is born from data, consecrated by consensus, inhabited by strangers, and dissolved by mathematics. Nine phases. Three machines that must agree. One contract that trusts none of them. This is the full ceremony, end to end.
+A Vision block runs through nine phases — from raw price ingestion to on-chain settlement. Three oracles must agree at every step. The contract verifies their agreement before any state changes.
+
+- **Phases 1–2** — data-node fetches prices and proposes a block config every 60s.
+- **Phases 3–4** — oracles discover the config, BLS-sign it, create the block on L3.
+- **Phase 5** — players join with a sealed bitmap commitment (`keccak256`).
+- **Phases 6–8** — oracles resolve each tick, BLS-sign the settlement, contract pays out.
+- **Phase 9** — settlement outcomes feed back into the next threshold calibration.
+
+**BLS** = Boneh-Lynn-Shacham, a signature scheme where signatures aggregate into one. **keccak256** = Ethereum's hash function. **Bitmap** = packed prediction bits, one per market.
 
 <BlockLifecycleDiagram />
 
@@ -13,28 +21,28 @@ A block is born from data, consecrated by consensus, inhabited by strangers, and
 
 ## Phase 1: Market Data Ingestion
 
-The data-node polls the world. One hundred sources — CoinGecko, weather APIs, FRED, Bloomberg, transit networks, election trackers — each on its own schedule. A `SyncEngine` per source, staggered startup, rate-limited, circuit-broken. The data arrives and is stored in two places:
+The data-node polls roughly 100 external sources — CoinGecko, weather APIs, FRED, Bloomberg, transit networks, election trackers — each on its own schedule. One `SyncEngine` per source, staggered, rate-limited, circuit-broken. Each row lands in two tables:
 
-- **`market_prices`** — complete price history, 365-day retention
-- **`market_prices_latest`** — deduplicated snapshot, one row per (source, asset_id), indexed for fast reads
+- **`market_prices`** — full history, 365-day retention.
+- **`market_prices_latest`** — deduplicated snapshot, one row per `(source, asset_id)`, indexed for fast reads.
 
-Each oracle runs its own data-node instance. They poll the same APIs, store their own copies, compute their own snapshots. Three independent databases. If one data-node hallucinates a price, the other two ignore it. Paranoia, distributed across machines.
+Each oracle runs its own data-node instance. Three independent databases polling the same APIs. If one data-node returns a bad price, the other two outvote it.
 
-A fourth data-node, read-only, serves the frontend and bot APIs. It holds no signing authority. It cannot influence resolution.
+A fourth read-only data-node serves the frontend and bot APIs. It holds no signing key and cannot influence resolution.
 
 ---
 
 ## Phase 2: Block Config Generation
 
-Every 60 seconds, the `BlockEngine` wakes and builds a recommended config for each source. The work is threshold calibration — computing the price-change boundary that splits outcomes 50/50.
+Every 60 seconds the `BlockEngine` builds a recommended config per source. The work is threshold calibration — finding the price-change boundary that splits outcomes 50/50.
 
 ### Three-Stage Threshold Computation
 
-The engine wants a threshold where half of future ticks resolve UP and half resolve DOWN. It tries three methods, falling through on failure:
+The engine wants half of future ticks to resolve UP, half DOWN. It tries four methods, falling through on failure.
 
-**Stage 1 — Median of Past Settlements.** Query the `block_settlements` table for the last N actual price changes per asset. Take the median (`PERCENTILE_CONT(0.5)`). The median is 50/50 by construction: half of future values should exceed it, half should not. This is the primary method, and when data exists, it is remarkably accurate.
+**Stage 1 — median of past settlements.** Query `block_settlements` for the last N actual price changes per asset. Take the median (`PERCENTILE_CONT(0.5)`). Half of future values should exceed it, half should not. Primary method when history exists.
 
-**Stage 2 — Last Settlement Change.** If no settlement history exists, use the most recent block's actual price change and apply volatility bands:
+**Stage 2 — last settlement change.** No history yet. Use the most recent block's actual change and apply volatility bands:
 
 | Change | Resolution | Threshold |
 |--------|-----------|-----------|
@@ -43,18 +51,19 @@ The engine wants a threshold where half of future ticks resolve UP and half reso
 | 3–30% | `up_300` | 300 bps |
 | > 30% | `up_3000` | 3000 bps |
 
-**Stage 3 — 24h Price History.** If settlement history is empty, compute the 24-hour high/low range and apply the same volatility bands.
+**Stage 3 — 24h price history.** No settlement history at all. Compute the 24-hour high/low range and apply the same bands.
 
-**Stage 4 — Source Default.** Last resort. Use the source's hardcoded `zero_trend_type` and minimum threshold.
+**Stage 4 — source default.** Last resort. Use the source's hardcoded `zero_trend_type` and minimum threshold.
 
 ### Healthy Asset Selection
 
-Not every asset makes the cut. The engine queries `market_prices_latest` for assets with:
-- A price fresher than 10× the source's sync interval
-- A value greater than zero
-- Sorted by `asset_id` for deterministic ordering
+The engine reads `market_prices_latest` and keeps only assets that pass three filters:
 
-Maximum 8,192 markets per block (the on-chain bitmap is 1,024 bytes).
+- Price fresher than 10× the source's sync interval.
+- Price greater than zero.
+- Sorted by `asset_id` (deterministic ordering across oracles).
+
+Cap: 8,192 markets per block. The on-chain bitmap is 1,024 bytes.
 
 ### Config Hash
 
@@ -66,25 +75,25 @@ markets_root  = keccak256(concat(sorted(market_hashes)))
 config_hash   = keccak256(abi.encode(source_id, tick_duration, lock_offset, markets_root))
 ```
 
-This hash is what the oracles sign. Any difference in market selection, ordering, or threshold produces a different hash, and consensus fails. Determinism is not optional.
+Oracles sign this hash. Any difference in market selection, ordering, or threshold produces a different hash, and consensus fails.
 
 ---
 
 ## Phase 3: Oracle Discovers Config
 
-The oracle's lifecycle manager runs a per-source heartbeat, staggered across sources to prevent thundering herd. Each heartbeat:
+The oracle's lifecycle manager runs one heartbeat per source, staggered to avoid a thundering herd. Each heartbeat:
 
-1. **Fetches** the latest recommended config from `GET /blocks/recommended`
-2. **Extracts** the `config_hash`, `tick_duration`, `lock_offset`, and full market list
-3. **Records** intent in the `vision_block_lifecycle` Postgres table
+1. Fetches the latest recommended config from `GET /blocks/recommended`.
+2. Extracts `config_hash`, `tick_duration`, `lock_offset`, and the full market list.
+3. Records intent in the `vision_block_lifecycle` Postgres table.
 
-The previous block — the one that was active during the last heartbeat — now becomes the block to resolve. A new block creation is attempted simultaneously. The system breathes in two directions: creating the next round while settling the last.
+Every heartbeat does two things at once: it creates the next block, and it resolves the previous one.
 
 ---
 
 ## Phase 4: BLS Consensus and On-Chain Creation
 
-Only the leader oracle (node index 0) submits on-chain. The others co-sign.
+Only the leader (node index 0) submits on-chain. The other oracles co-sign.
 
 ### Leader Flow
 
@@ -105,9 +114,9 @@ Only the leader oracle (node index 0) submits on-chain. The others co-sign.
 
 3. **Broadcast** a `VisionCreateBlockProposal` via P2P to all followers.
 
-4. **Collect co-signs.** Wait up to 30 seconds. Each follower verifies the proposal independently — same config hash, same parameters — and sends back a BLS signature. The leader collects them until the threshold is met: `ceil(2n/3)`. With three oracles, that is two signatures.
+4. **Collect co-signs.** Wait up to 30 seconds. Each follower verifies the proposal independently — same config hash, same parameters — and returns a BLS signature. The leader collects them until threshold is met: `ceil(2n/3)`. With three oracles, that is two signatures.
 
-5. **Aggregate.** All collected signatures are merged into a single aggregated BLS signature. A signer bitmask records which oracles participated.
+5. **Aggregate.** Collected signatures merge into a single aggregated BLS signature. A signer bitmask records which oracles participated.
 
 6. **Submit on-chain:**
    ```solidity
@@ -117,11 +126,11 @@ Only the leader oracle (node index 0) submits on-chain. The others co-sign.
    )
    ```
 
-7. **Parse receipt.** The `BlockCreated` event in the transaction receipt contains the on-chain `blockId` — the block's permanent identity.
+7. **Parse receipt.** The `BlockCreated` event contains the on-chain `blockId` — the block's permanent ID.
 
 ### Follower Flow
 
-Followers do not submit. They receive the leader's P2P proposal, verify it against their own data-node's recommended config, sign if it matches, and send the signature back. After the leader submits, each follower's chain listener detects the `BlockCreated` event on L3 and registers the block in its local scheduler.
+Followers never submit. They receive the leader's P2P proposal, verify it against their own data-node's recommended config, sign if it matches, and send the signature back. Once the leader submits, each follower's chain listener detects the `BlockCreated` event on L3 and registers the block in its local scheduler.
 
 ---
 
@@ -133,11 +142,11 @@ A player calls `joinBlockDirect` on the Vision contract:
 vision.joinBlockDirect(blockId, configHash, depositAmount, stakePerTick, bitmapHash)
 ```
 
-- USDC is transferred from the player's wallet to the contract
-- The `bitmapHash` is a `keccak256` commitment — the player's predictions, sealed
-- The lock window enforces timing: no joins during the final `lockOffset` seconds of a tick
+- USDC moves from the player's wallet to the contract.
+- `bitmapHash` is a `keccak256` commitment — the predictions, sealed.
+- The lock window blocks joins during the final `lockOffset` seconds of a tick.
 
-The oracle's chain listener detects the `PlayerJoined` event and registers the player in the in-memory scheduler. The player then submits the actual bitmap bytes to the oracle API (`POST /vision/bitmap`), where the hash is verified against the on-chain commitment.
+The oracle's chain listener detects the `PlayerJoined` event and registers the player in the in-memory scheduler. The player then submits the raw bitmap bytes to the oracle API (`POST /vision/bitmap`); the oracle hashes them and checks against the on-chain commitment.
 
 ### Two-Slot Bitmap Model
 
@@ -148,15 +157,15 @@ Each player has two bitmap slots per block:
 | **Pending** | Where new bitmap submissions land during the current tick |
 | **Active** | Where the resolver reads from at tick boundary |
 
-At every tick boundary, pending is promoted to active. A player who submits nothing keeps their previous bitmap. A player who never submitted is voided — full deposit refund, no participation.
+At every tick boundary, pending promotes to active. A player who submits nothing keeps the previous bitmap. A player who never submitted is voided — full deposit refund, no participation.
 
-Each bitmap carries a `config_hash`. This ensures that a config update between submission and resolution cannot scramble market positions. Bit 0 is always the market the player intended, regardless of what the current config says.
+Each bitmap carries its own `config_hash`. A config update between submission and resolution cannot scramble market positions: bit 0 stays the market the player intended.
 
 ---
 
 ## Phase 6: Tick Resolution
 
-When the heartbeat fires and a `previous_block_id` is ready for resolution, the oracle runs a deterministic pipeline.
+When the heartbeat fires and a `previous_block_id` is ready, the oracle runs a deterministic six-step pipeline.
 
 ### Step 1: Gather State
 
@@ -168,9 +177,9 @@ scheduler.get_block_state(block_id) → (Block, Vec<PlayerPosition>)
 
 The oracle queries the data-node for the market config (`GET /blocks/config/:hash`) and a price snapshot (`GET /vision/snapshot`). For each market:
 
-- **End price**: the latest value from the snapshot, scaled to 18 decimals
-- **Start price**: derived from `change_pct`: `start = end / (1 + change_pct / 100)`
-- **Staleness check**: if the price timestamp is older than the configured threshold, the market is cancelled — all players refunded for that market
+- **End price** — latest snapshot value, scaled to 18 decimals.
+- **Start price** — derived from `change_pct`: `start = end / (1 + change_pct / 100)`.
+- **Staleness check** — if the price timestamp is older than the threshold, the market is cancelled and all players refunded for that market.
 
 ### Step 3: Bitmap Flip
 
@@ -178,26 +187,26 @@ The oracle queries the data-node for the market config (`GET /blocks/config/:has
 bitmap_store.flip(block_id)
 ```
 
-Pending bitmaps merge into active. Players with new submissions get updated predictions. Players without submissions keep their previous bitmap.
+Pending bitmaps merge into active. New submissions overwrite. No submission = keep the previous bitmap.
 
 ### Step 4: Per-Market Resolution
 
-For each market in the block:
+For each market:
 
-1. **Compute percent change** from start to end price (integer basis points)
-2. **Apply resolution type** + threshold to determine outcome: Up, Down, Flat, or Cancelled
-3. **Decode each player's bitmap bit** for this market index (1 = UP, 0 = DOWN)
-4. **Compute flat stake**: each player's `deposit / num_markets` per market. Remainder is redistributed one extra unit to the first N markets.
+1. Compute percent change from start to end price (integer basis points).
+2. Apply resolution type + threshold to determine outcome: Up, Down, Flat, or Cancelled.
+3. Decode each player's bitmap bit for this market index (1 = UP, 0 = DOWN).
+4. Compute the flat stake: `deposit / num_markets` per market. Remainder is redistributed one extra unit to the first N markets.
 
 ### Step 5: Parimutuel Side Matching
 
-For markets with a clear winner:
+Parimutuel = winners split the losers' pool. No house, no fixed odds. For markets with a clear winner:
 
-1. Split players into winners (correct side) and losers (wrong side)
-2. `matched = min(winner_total, loser_total)`
-3. Winners receive: their matched stake back, plus a proportional share of the losers' matched pool
-4. Losers forfeit their matched stake; unmatched excess is refunded
-5. Edge cases — all same side, all losers, flat, cancelled — produce full refunds
+1. Split players into winners (correct side) and losers (wrong side).
+2. `matched = min(winner_total, loser_total)`.
+3. Winners receive their matched stake back, plus a proportional share of the losers' matched pool.
+4. Losers forfeit their matched stake; unmatched excess is refunded.
+5. Edge cases — all same side, all losers, flat, cancelled — all produce full refunds.
 
 ```
 Example: UP pool = 300 USDC, DOWN pool = 100 USDC, outcome = UP
@@ -208,7 +217,7 @@ Losers receive 0
 Unmatched UP excess (200) refunded to UP players proportionally
 ```
 
-The total payout always equals the total deposits. No USDC is created or destroyed. Money changes hands. That is all a market does.
+Total payout always equals total deposits. No USDC is created or destroyed.
 
 ### Step 6: Aggregate Settlement
 
@@ -229,7 +238,7 @@ RoundSettlement {
 }
 ```
 
-Every oracle computes this independently. Same config, same prices, same bitmaps, same integer arithmetic. The results must be identical. If they are not, nothing happens — which is the only safe response to disagreement.
+Every oracle computes this independently. Same config, same prices, same bitmaps, same integer arithmetic — the results must be identical. If they are not, nothing settles.
 
 ---
 
@@ -261,7 +270,7 @@ Each oracle signs the settlement independently and contributes to a shared aggre
    - Execute `settleBlock` on-chain
    - Mark `submitted = true`
 
-The `players_hash` check is a guard against divergence. If two oracles computed different payouts — different prices, different bitmap sets, different resolution — their hashes will not match. The second oracle skips signing rather than corrupt the aggregated signature. Silence, in cryptography, is a form of honesty.
+The `players_hash` check is a guard against divergence. If two oracles compute different payouts — different prices, different bitmap sets, different resolution — their hashes will not match. The second oracle skips signing rather than corrupt the aggregated signature.
 
 ---
 
@@ -314,9 +323,9 @@ POST /blocks/settlement
 }
 ```
 
-These records land in the `block_settlements` table. The next time the `BlockEngine` runs (within 60 seconds), it reads the median of accumulated settlements and recalibrates thresholds for the next block.
+These records land in the `block_settlements` table. The next `BlockEngine` cycle (within 60s) reads the median of accumulated settlements and recalibrates thresholds for the next block.
 
-The loop closes. Outcomes inform future thresholds. Thresholds shape future outcomes. The system learns what 50/50 means for each asset — not through theory, but through the accumulated evidence of what actually happened. Empiricism, running on a 60-second cycle.
+Outcomes inform future thresholds. The system learns what 50/50 means for each asset from observed history, on a 60-second loop.
 
 ---
 
@@ -364,7 +373,7 @@ The loop closes. Outcomes inform future thresholds. Thresholds shape future outc
 | `vision_settlement_proofs` | BLS aggregation state (hash, sig, bitmap, submitted) | Forever |
 | `vision_bitmaps` | Bitmap storage (block, player, bytes, hash) | Forever |
 
-On crash recovery, the oracle loads all non-settled blocks and all positions with balance > 0 from these tables. The in-memory state is rebuilt from Postgres. The machine forgets nothing that matters.
+On crash recovery, the oracle loads all non-settled blocks and all positions with balance > 0 from these tables. In-memory state rebuilds from Postgres.
 
 ---
 

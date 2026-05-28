@@ -3,63 +3,64 @@ title: "Buy & Sell DTFs"
 description: "How to buy and sell Dex Traded Funds on General Market"
 ---
 
-Buying is an act of faith. Selling is an act of clarity. Both cost gas.
+Buy or sell a Dex Traded Fund (DTF — a tokenized basket of crypto assets, like an on-chain ETF) in one wallet flow. ~3–5 min end to end.
 
-## Prerequisites
-
-You need three things. Without them, the market does not know you exist.
-
-- A Web3 wallet (e.g. MetaMask) connected to General Market
-- USDC in your wallet on a supported network (Arbitrum, Base, or the Index L3)
-- Enough USDC to cover the purchase amount plus gas fees
+**Prereqs:**
+- A Web3 wallet (e.g. MetaMask) connected to [generalmarket.io](https://generalmarket.io)
+- USDC in your wallet on Arbitrum, Base, or the Index L3 (the protocol's own Layer 3 chain)
+- Enough USDC to cover the trade amount plus gas
 
 <Snippet file="chain-info.mdx" />
 
 <Tip>
-You do not need to be on the Index L3 to trade. The protocol bridges USDC from Arbitrum or Base to the L3 and back. The complexity is hidden from you. The gas is not.
+You do not need to be on the Index L3 to trade. The protocol bridges USDC from Arbitrum or Base to the L3 and back automatically. You pay gas on whichever chain you start from.
 </Tip>
 
 ---
 
 ## Buying a DTF
 
-Navigate to the **Markets** page. Choose the Dex Traded Fund (DTF) you want to own. Click **Buy**. The modal opens. The rest is commitment.
+Open the **Markets** page. Pick a DTF. Click **Buy**. Three steps follow.
 
 <Steps>
-  <Step title="Enter Amount">
-    Type the USDC amount. The estimated number of DTF shares appears below, calculated from the current NAV. The number looks precise. It is an estimate.
+  <Step title="Step 1: Enter amount">
+    Type the USDC amount. The estimated number of DTF shares appears below, calculated from the current NAV (Net Asset Value — portfolio value per share).
+
+    The share count is an estimate. Final fill price is set at execution.
   </Step>
 
-  <Step title="Configure Slippage">
-    Set a slippage tolerance. This is the price deviation you are willing to accept between the quote and the execution. The market moves while you hesitate. See [slippage settings](#slippage-settings) below.
+  <Step title="Step 2: Configure slippage">
+    Set a slippage tolerance — the price deviation you accept between quote and execution. See [Slippage settings](#slippage-settings) below.
+
+    Default is 1.0% (Normal). For volatile or low-liquidity DTFs, raise it to Relaxed (3.0%).
   </Step>
 
-  <Step title="Submit Order">
+  <Step title="Step 3: Submit order">
     The wallet prompts twice:
-    1. **Approve** the USDC spend allowance (first time only, or if the amount exceeds the previous approval)
-    2. **Confirm** the buy transaction, which locks USDC into the BridgeProxy contract
+    1. **Approve** the USDC spend allowance (first time only, or if the amount exceeds the previous approval).
+    2. **Confirm** the buy transaction, which locks USDC into the BridgeProxy contract.
 
-    After confirmation, the order enters the pipeline. You have made your decision. The machines take over.
+    Result: the order enters the processing pipeline. ~2–8 min until shares appear. See the pipeline table below.
   </Step>
 </Steps>
 
-### Order Processing Pipeline
+### Order processing pipeline
 
-After submission, the order passes through three stages. Each one is visible. None of them can be rushed.
+Three stages, all automatic after Step 3. Status visible on the **Portfolio** page.
 
-| Stage | What Happens | Status |
-|-------|-------------|--------|
-| **Submit** | USDC spend approved and order submitted to BridgeProxy on L1/L2 | Wallet confirmation |
-| **Process** | USDC bridges to L3, order is relayed, blocked by oracle nodes via BLS consensus, and the Authorized Participant (AP) fills the underlying assets on exchanges | Automatic -- takes 1-5 minutes |
-| **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, and DTF shares minted to the buyer's wallet | Automatic -- takes 1-3 minutes |
+| Stage | What happens | Status | Time |
+|-------|-------------|--------|------|
+| **Submit** | USDC spend approved and order submitted to BridgeProxy on L1/L2 | Wallet confirmation | ~30 sec |
+| **Process** | USDC bridges to L3, order is relayed, blocked by oracle nodes via BLS (Boneless–Lynn–Shacham — a multi-signature consensus scheme), AP (Authorized Participant — the off-chain fill agent) buys underlying assets on exchanges | Automatic | 1–5 min |
+| **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, DTF shares minted to the buyer's wallet | Automatic | 1–3 min |
 
 <Info>
-Order processing is fully automatic after submission. Close the modal. Walk away. The order does not need your attention. It needs the oracles' signatures. Track progress on the **Portfolio** page if waiting is unbearable.
+Order processing is fully automatic after Step 3. Close the modal — the order does not need your attention. Track progress on the **Portfolio** page.
 </Info>
 
-### Real-Time Order Tracking
+### Real-time order tracking
 
-The UI streams live status updates via Server-Sent Events (SSE). You watch the progress bar move. It is not watching you back.
+The UI streams live status updates via Server-Sent Events (SSE). Three signals are exposed:
 
 - Current processing step and stage
 - Estimated time remaining
@@ -69,54 +70,54 @@ The UI streams live status updates via Server-Sent Events (SSE). You watch the p
 
 ## Selling a DTF
 
-Selling is simpler than buying. You already know what you own. The only question is whether the price has taught you anything. Go to the **Portfolio** page or the DTF's market page and click **Sell**.
+Open the **Portfolio** page or the DTF's market page. Click **Sell**. Three steps, same shape as buying.
 
 <Steps>
-  <Step title="Enter Share Amount">
-    Enter the number of DTF shares to sell. Click **Max** to liquidate the entire position. The estimated USDC proceeds are calculated from the current NAV. The word "estimated" is doing a lot of work in that sentence.
+  <Step title="Step 1: Enter share amount">
+    Type the number of DTF shares to sell, or click **Max** to liquidate the full position. Estimated USDC proceeds appear below, calculated from the current NAV. Final amount depends on execution price.
   </Step>
 
-  <Step title="Configure Slippage">
-    Set the slippage tolerance. Same mechanics as buying. Prices move while the sell order is being processed. The tolerance is your margin of acceptance.
+  <Step title="Step 2: Configure slippage">
+    Same mechanics as buying — set the tolerance for price movement between quote and fill. See [Slippage settings](#slippage-settings).
   </Step>
 
-  <Step title="Submit Sell Order">
-    The wallet prompts for:
-    1. **Approve** the DTF share transfer (first time only per DTF)
-    2. **Confirm** the sell transaction
+  <Step title="Step 3: Submit sell order">
+    The wallet prompts twice:
+    1. **Approve** the DTF share transfer (first time only per DTF).
+    2. **Confirm** the sell transaction.
 
-    The sell order enters the same three-stage pipeline (Submit, Process, Deliver). At the end, USDC returns to your wallet. The position is gone.
+    Result: order enters the same three-stage pipeline (Submit → Process → Deliver). USDC arrives in your wallet after Deliver completes. ~2–8 min total.
   </Step>
 </Steps>
 
 <Warning>
-Sell orders go through the same bridge and settlement pipeline as buy orders. USDC proceeds arrive after processing completes. A few minutes. Longer than you want, shorter than you fear.
+Sell orders use the same bridge and settlement pipeline as buys. USDC proceeds arrive after processing completes — typically 2–8 minutes.
 </Warning>
 
 ---
 
 ## Slippage Settings
 
-Slippage is the distance between the price you saw and the price you got. The market moved while you were deciding. Three presets:
+Slippage = the gap between the price you saw at quote and the price you got at execution. Three presets cover most cases.
 
-| Setting | Tolerance | Best For |
+| Setting | Tolerance | Best for |
 |---------|-----------|----------|
 | **Tight** | 0.3% | Stable, high-liquidity DTFs |
 | **Normal** | 1.0% | Most orders (default) |
 | **Relaxed** | 3.0% | Volatile or low-liquidity DTFs, large orders |
 
 <Tip>
-If an order fails due to slippage, the escrowed USDC is returned automatically. Nothing is lost except the gas and the moment. Retry with a higher tolerance or wait for calmer markets. Calm markets are not guaranteed.
+If an order fails due to slippage, escrowed USDC is returned automatically — you only lose the gas. Retry with a higher tolerance, or wait for calmer market conditions.
 </Tip>
 
 ---
 
 ## Price History Chart
 
-Each DTF has a price chart showing NAV over time. You will study it before buying. You will study it after selling. In neither case will it tell you what to do next.
-
-The NAV is computed from the DTF's fixed per-share asset quantities and live prices:
+Every DTF has a price chart showing NAV over time. NAV is computed from the DTF's fixed per-share asset quantities and live prices:
 
 <Snippet file="nav-formula.mdx" />
 
-The chart supports multiple time ranges (24h, 7d, 30d, 90d, 1y, All) and updates in real time. The longer the time range, the more the past looks inevitable.
+Chart supports six time ranges — 24h, 7d, 30d, 90d, 1y, All — and updates in real time.
+
+Next: [Settlement Chain](/index/guides/settlement) explains the two-chain architecture, or read [Risks](/index/guides/risks) before sizing up.

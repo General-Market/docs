@@ -5,39 +5,48 @@ description: "Complete architecture overview of General Market — all component
 
 # System Architecture
 
-Eight services. Two chains. Twenty-nine contracts. Built by people who could not stop building.
+Eight services, two chains, twenty-nine contracts — vertically integrated from data ingestion to settlement.
 
-General Market is what happens when you refuse to depend on anyone else's infrastructure. Dex Traded Funds (DTFs) and prediction markets, vertically integrated from data ingestion to settlement, coordinated through BLS consensus because trust is a luxury the chain cannot afford.
+Index runs Dex Traded Funds (DTFs — on-chain ETFs that rebalance per BLS-signed oracle prices) and parimutuel prediction markets on the same stack. Every state change passes through BLS consensus (a threshold signature scheme where `ceil(2n/3)` oracle nodes must agree before the chain accepts the block).
+
+Key terms used throughout this page:
+
+- **L3** — Index's Arbitrum Orbit chain (custom Layer 3, gas token GM, 18-decimal USDC).
+- **Settlement** — Arbitrum (standard 6-decimal USDC), where DTF shares live as ERC-20s.
+- **AP** — Authorized Participant. The keeper that executes asset trades on Bitget after the oracles confirm a block.
+- **NAV** — Net Asset Value. The per-share value of a DTF, computed from fixed inventory and current prices.
 
 <OverviewSystemArch />
 
 
 ## Component Summary
 
+The protocol is built from eight services. Each has one job.
+
 <CardGroup cols={2}>
   <Card title="Oracle Nodes (3x)" icon="server">
-    Three Rust nodes that agree every second. Round-robin leaders, BLS multi-party signing, Byzantine fault tolerance. They block orders, sign them, and submit confirmed blocks on-chain. One second per cycle. No exceptions.
+    Three Rust nodes run a 1-second consensus cycle. Round-robin leader, BLS partial signatures, `ceil(2n/3)` threshold. They block orders, sign them, and submit confirmed blocks on-chain.
   </Card>
   <Card title="AP / Keeper" icon="gears">
-    Watches on-chain `TradeRequest` events, executes the corresponding trades on Bitget, confirms fills with BLS signatures. Also relays bridge operations. It knows nothing about the oracles -- by design.
+    Watches on-chain `TradeRequest` events, executes the matching trades on Bitget, confirms fills with BLS signatures. Also relays bridge operations. The AP has no direct channel to the oracles — see FR13 below.
   </Card>
   <Card title="Data Node" icon="database">
-    90+ sources reduced to rows in PostgreSQL. CoinGecko, Binance, earthquake feeds, train delays. REST + SSE on port 8200. Powers NAV computation, backtesting, and every price the protocol touches.
+    90+ sources written to PostgreSQL — CoinGecko, Binance, earthquake feeds, train delays. REST + SSE on port 8200. Feeds NAV computation, backtesting, and every price the protocol uses.
   </Card>
   <Card title="Curator" icon="eye">
-    Collects NAV from oracles, pushes it to the on-chain oracle, rebalances Morpho lending allocations, monitors health factors. The best curators are the ones you forget exist.
+    Collects NAV from oracles, pushes it to the on-chain oracle, rebalances Morpho lending allocations, monitors health factors. Runs silently until a metric breaches threshold.
   </Card>
   <Card title="Next.js Frontend" icon="browser">
-    The surface the user touches. Trading, prediction markets, explorer, points, learning content. Deployed on Vercel. Consumes Data Node APIs via SSE streaming.
+    The user surface: trading, prediction markets, explorer, points, learning content. Deployed on Vercel. Consumes Data Node APIs over SSE.
   </Card>
   <Card title="Vision Bot" icon="robot">
-    Python. Strategy framework. Automated bets on Vision blocks through the BotRegistry. The machine does not hesitate.
+    Python strategy framework. Places automated bets on Vision blocks through the on-chain `BotRegistry`.
   </Card>
   <Card title="Social Bot" icon="twitter">
-    Monitors 98 real-world data sources for anomalies -- transport delays, power outages, earthquakes. Detects the abnormal. Posts to Twitter/X. The world is always breaking somewhere.
+    Watches 98 real-world data sources for anomalies — transport delays, power outages, earthquakes — and posts them to Twitter/X.
   </Card>
   <Card title="Smart Contracts" icon="file-contract">
-    29 Solidity contracts across two chains. UUPS proxies. BLS verification on every critical path. No test modes. No bypasses. The contracts are the truth.
+    29 Solidity contracts across two chains. UUPS proxies. BLS verification on every critical path. No test modes, no admin bypasses.
   </Card>
 </CardGroup>
 
@@ -45,12 +54,15 @@ General Market is what happens when you refuse to depend on anyone else's infras
 
 ## Two Chains, One Protocol
 
-Two chains because one was not enough and three would have been vanity. Each chain has a role. Each chain has its own decimal convention. Mixing them up is the kind of mistake that costs money.
+The protocol runs on two chains because each one solves a problem the other cannot.
+
+- **L3** owns the hot path: 1-second order blocking, Vision tick resolution, NAV oracle updates. Near-zero gas, fully controlled sequencer.
+- **Settlement (Arbitrum)** owns composability: DTF shares as ERC-20, Morpho collateral, standard wallet UX.
 
 <OverviewTwoChains />
 
 <Warning>
-  **L3 and Settlement use different USDC decimals.** L3 uses 18-decimal USDC (GM token). Settlement uses standard 6-decimal USDC. Never assume 6 decimals everywhere -- always check which chain a value originates from.
+  **L3 and Settlement use different USDC decimals.** L3 uses 18-decimal USDC. Settlement uses standard 6-decimal USDC. Always check which chain a value originates from before passing it to a contract call.
 </Warning>
 
 ### Why Two Chains?
@@ -62,47 +74,47 @@ Two chains because one was not enough and three would have been vanity. Each cha
 | **Composability** | Limited (custom chain) | Full Arbitrum DeFi ecosystem |
 | **User access** | Via frontend or bots | Direct wallet interaction |
 
-L3 handles the operations that must be cheap -- order blocking at 1-second cycles, Vision tick resolution. Settlement provides what L3 cannot: composability. DTF shares become standard ERC-20s on Arbitrum, usable as Morpho collateral. Geography, even digital, is a constraint you work around rather than wish away.
+L3 handles operations that must be cheap. Settlement handles operations that must be composable. DTF shares minted on L3 cross the bridge and become ERC-20 collateral inside Morpho lending markets. See [Bridge Architecture](/index/architecture/bridge) for the cross-chain flow.
 
 ---
 
 ## Data Flow
 
-The world generates data. The protocol consumes it. What remains is a price.
+Every price in the system enters through the Data Node and leaves through one of three consumers.
 
 <OverviewDataFlow />
 
 <Info>
-  The Data Node serves two masters with one database: crypto prices for the oracles (NAV computation), and real-world data (transport delays, power outages, weather) for Vision resolution and Social Bot anomaly detection.
+  The Data Node serves two roles from one database: crypto prices for the oracles (used in NAV computation), and real-world data (transport delays, power outages, weather) for Vision resolution and Social Bot anomaly detection.
 </Info>
 
 ---
 
 ## Order Lifecycle
 
-A buy order passes through five hands before it becomes shares in a wallet. Each hand verifies the one before it. Trust no one -- verify everything.
+A buy order passes through five steps before it becomes shares in a wallet. Each step verifies the one before it.
 
 <OverviewOrderLifecycle />
 
 <Warning>
-  **Oracle-AP isolation (FR13):** Oracle nodes cannot communicate directly with the AP. The AP discovers confirmed blocks exclusively through on-chain `TradeRequest` events. This architectural boundary prevents collusion between consensus participants and the trade executor.
+  **Oracle-AP isolation (FR13):** Oracle nodes have no direct channel to the AP. The AP discovers confirmed blocks only through on-chain `TradeRequest` events. This boundary prevents collusion between consensus participants and the trade executor.
 </Warning>
 
 ### Bridge Order Flow
 
-When a user submits from Settlement instead of L3, the order crosses chains. The pipeline is the same. The geography is different.
+A user submitting from Settlement instead of L3 routes through the bridge. The pipeline is the same; the entry point differs.
 
 <OverviewBridgeOrderFlow />
 
 <Tip>
-  Bridged DTF shares on Arbitrum are standard ERC-20 tokens. They can be used as collateral in Morpho lending markets via the `ITPNAVOracle` which provides on-chain NAV pricing.
+  Bridged DTF shares on Arbitrum are standard ERC-20 tokens. They can be used as collateral in Morpho lending markets through `ITPNAVOracle`, which provides on-chain NAV pricing.
 </Tip>
 
 ---
 
 ## Vision Market Lifecycle
 
-Vision is a parimutuel prediction market. Users stake opinions. The world resolves them. Winners take from losers. The protocol takes 0.05%.
+Vision is a parimutuel prediction market: users stake on outcomes, the world resolves them, winners split the pool, the protocol takes 0.05%.
 
 <OverviewVisionLifecycle />
 
@@ -110,13 +122,11 @@ Vision is a parimutuel prediction market. Users stake opinions. The world resolv
 
 ## Service Connectivity Map
 
-Everything talks to everything else, through carefully constrained channels. The constraints are the architecture.
+Every service-to-service link uses a fixed protocol and a fixed purpose. The table below is the full list.
 
 <OverviewConnectivityMap />
 
 ### Connection Types
-
-Every arrow is a protocol. Every protocol is a boundary. Every boundary exists because someone once violated it.
 
 | From | To | Protocol | Purpose |
 |---|---|---|---|
@@ -140,7 +150,7 @@ Every arrow is a protocol. Every protocol is a boundary. Every boundary exists b
 
 ## Infrastructure Layout
 
-One VPS runs everything that matters. Vercel serves the face. Mintlify serves the explanation. The machine does not care about your organizational chart.
+The backend runs on one VPS. The frontend runs on Vercel. The docs run on Mintlify.
 
 <OverviewInfrastructure />
 
@@ -148,7 +158,7 @@ One VPS runs everything that matters. Vercel serves the face. Mintlify serves th
 
 ## Contract Inventory
 
-Twenty-nine contracts. Eight modules. Two chains. The taxonomy exists for humans. The EVM does not care.
+Twenty-nine contracts, eight modules, two chains. Grouped by responsibility.
 
 | Module | Contracts | Chain |
 |---|---|---|
@@ -170,7 +180,7 @@ Twenty-nine contracts. Eight modules. Two chains. The taxonomy exists for humans
 
 ## Technology Stack
 
-Four languages. Each chosen for what it does well. Rust for everything that must not fail. Solidity for everything that must not lie. Python for everything that must adapt. TypeScript for everything the user sees.
+Four languages, one per layer: Rust for the backend services, Solidity for the contracts, Python for the bots, TypeScript for the frontend.
 
 <OverviewTechStack />
 

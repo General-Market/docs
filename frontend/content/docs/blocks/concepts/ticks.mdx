@@ -3,11 +3,17 @@ title: "Ticks"
 description: "How tick-based resolution cycles work in Vision"
 ---
 
-Every ten minutes, the world is measured. Prices move or they do not. Winners are paid with losers' money. The protocol takes 0.05%. Time continues.
+A tick is a discrete time window — the block's `tickDuration` (1 second to 30 days). At the end of every tick, the oracle resolves every market and redistributes the pot.
+
+- **Resolution cycle:** fetch prices → determine UP/DOWN/FLAT → match winners against losers → update balances → BLS-sign → submit on-chain
+- **Side matching:** parimutuel (mutual betting — winners split the losers' pot proportionally)
+- **Reveal window:** default 600s. Miss it and you are voided for that tick
+- **Multipliers:** early commitment + persistence boost effective stake, capped at balance
+- **Six possible outcomes per market:** Up, Down, Flat, Cancelled, AllSameSide, AllLosers (last four refund all stakes)
 
 ## What Happens Every Tick
 
-Every tick, the system resolves all markets in a block. It is a small reckoning, repeated endlessly:
+Every tick, the system resolves all markets in a block:
 
 1. Fetch start/end prices for each market
 2. Determine outcome (UP / DOWN / FLAT)
@@ -19,7 +25,7 @@ Check your balance after resolution: `GET /vision/balance/{blockId}/{playerAddre
 
 ## What Is a Tick?
 
-A tick is a discrete time window -- a unit of waiting. The block's `tickDuration` defines how long each window lasts. Tick numbering starts from `createdAtTick` (the tick number when the block was created). Time is sliced into intervals, and in each interval, reality delivers its verdict.
+A tick is a discrete time window. The block's `tickDuration` (in seconds) sets the length. Tick numbering starts from `createdAtTick` — the tick number when the block was created.
 
 ```
 Tick N starts at: (createdAtTick + N) * tickDuration
@@ -40,7 +46,7 @@ Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp /
 
 ## Resolution Cycle
 
-When a tick becomes due for resolution, the oracle engine runs its pipeline. It is mechanical, deterministic, and utterly fair -- which is to say, it has no mercy:
+When a tick is due, the oracle engine runs a deterministic pipeline:
 
 <TickResolutionFlow />
 
@@ -68,7 +74,7 @@ When a tick becomes due for resolution, the oracle engine runs its pipeline. It 
 
 ## Market Outcomes
 
-Each market in a tick resolves to one of six outcomes. Most are self-explanatory. All are final:
+Each market in a tick resolves to one of six outcomes:
 
 | Outcome | Meaning | Effect |
 |---------|---------|--------|
@@ -81,7 +87,7 @@ Each market in a tick resolves to one of six outcomes. Most are self-explanatory
 
 ### Parimutuel Side Matching
 
-For markets with a clear winner (Up or Down), the parimutuel matching algorithm distributes the pot. The word "parimutuel" comes from the French -- *pari mutuel*, mutual betting. Everyone stakes against everyone. The house merely facilitates the redistribution of confidence:
+For markets with a clear winner (Up or Down), the parimutuel algorithm (parimutuel = mutual betting; winners split the losers' pool proportional to stake) distributes the pot:
 
 1. Split players into UP and DOWN sides based on their bitmap bits.
 2. Compute total effective stake for each side.
@@ -108,24 +114,24 @@ DOWN player (100 stake):
 ```
 
 <Info>
-The total payout across all players always equals the total effective stakes. No USDC is created or destroyed during matching -- it is purely redistributed between winners and losers. Money does not appear or vanish. It merely changes hands, as it has always done.
+Total payout always equals total effective stakes. No USDC is created or destroyed — it is purely redistributed between winners and losers.
 </Info>
 
 ### AllSameSide
 
-If every player in a market picks the same side, there are no opponents to match against. All stakes are returned as a full refund. Unanimity, it turns out, is unprofitable. A market needs disagreement to function. Without dissent, there is no game -- only a crowd pointing in the same direction, which is not a market but a procession.
+If every player in a market picks the same side, there are no opponents to match. All stakes are refunded. A parimutuel market needs disagreement — without two sides, there is no pot.
 
 ### AllLosers
 
-If a resolution type with a threshold (e.g., UP_30) produces a result where neither threshold is met in either direction, the outcome is `Flat` and everyone is refunded. The `AllLosers` outcome is a separate edge case handled in the matching algorithm for robustness.
+If a resolution type with a threshold (e.g., `UP_30`) returns a result where neither side's threshold is met, the outcome is `Flat` and all stakes are refunded. `AllLosers` is a separate edge case kept in the matching algorithm for robustness.
 
 ## Multipliers
 
-Vision rewards the early and the persistent. Those who commit before the tick opens, and those who stay through many ticks, receive amplified stakes. Loyalty and punctuality -- the only virtues a protocol can measure:
+Two multipliers amplify the stake before parimutuel matching: early commitment and persistence. Both are capped — see below.
 
 ### Early Multiplier
 
-Rewards those who commit before the tick opens. The earlier you arrive, the more your stake is amplified. Conviction rewarded, hesitation penalized:
+Rewards committing before the tick opens. The earlier you join, the more your stake is amplified:
 
 ```
 early_mult = 1 + min(time_before_tick, tick_duration)^2 / tick_duration^2
@@ -140,7 +146,7 @@ early_mult = 1 + min(time_before_tick, tick_duration)^2 / tick_duration^2
 
 ### Commitment Multiplier
 
-Rewards those who stay. The logarithmic curve means that persistence is rewarded but never extravagantly -- a slow, asymptotic acknowledgment that you are still here:
+Rewards staying through many ticks. The curve is logarithmic — persistence is rewarded, but the marginal gain shrinks over time:
 
 ```
 commitment_mult = log10(ticks_committed + offset)
@@ -161,7 +167,7 @@ With the default offset of 9:
 effective_stake = stake_per_tick * early_mult * commitment_mult
 ```
 
-The effective stake is capped at the player's current balance. A player cannot risk more than they have deposited. The protocol, unlike life, will not let you lose what you do not have.
+Effective stake is capped at the player's current balance. You cannot risk more than you have deposited.
 
 ## Commitment Offset
 
@@ -169,7 +175,7 @@ The default **commitment offset** is 9. This parameter shifts the commitment mul
 
 ## Reveal Window
 
-After a tick ends, there is a pause. Ten minutes of grace. Oracles wait for the **reveal window** (default: 600 seconds) before resolving. This gives players time to submit their bitmap reveals to oracles.
+After a tick ends, oracles wait the **reveal window** (default 600 seconds) before resolving. The window gives players time to submit their bitmap reveals.
 
 ```
 Tick ends at: T
@@ -178,7 +184,7 @@ Resolution happens after: T + 600 seconds
 ```
 
 <Warning>
-If a player does not reveal their bitmap before the reveal window closes, they are voided for that tick. Their balance is unchanged, but they miss out on potential winnings. The protocol does not wait.
+If a player does not reveal their bitmap before the window closes, they are voided for that tick. Balance unchanged, no winnings.
 </Warning>
 
 After the reveal window expires, bitmaps become public and can be queried via the API:
@@ -187,4 +193,4 @@ After the reveal window expires, bitmaps become public and can be queried via th
 GET /vision/reveal/{block_id}/{tick_id}
 ```
 
-This only returns data after the reveal deadline has passed. Before that, the endpoint returns `403 Forbidden`. Some things are not yet ready to be known.
+This endpoint only returns data after the reveal deadline. Before that, it returns `403 Forbidden`.

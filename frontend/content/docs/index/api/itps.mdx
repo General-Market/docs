@@ -5,17 +5,25 @@ description: "DTF pricing, NAV, and ranking data"
 
 # DTF Endpoints
 
-A Dex Traded Fund (DTF) is a basket of assets with a price. These endpoints tell you what that price is, what it was, and what the basket contains. The rest is your decision.
+A Dex Traded Fund (DTF — basket of on-chain assets with one NAV per share) is priced, ranked, and snapshotted through these endpoints.
+
+| Endpoint | Returns |
+|---|---|
+| `/itp-price` | Current NAV, asset count, AUM for one DTF |
+| `/nav-series` | NAV time series over a range |
+| `/aum-ranking` | All DTFs ranked by AUM |
+| `/snapshot` | Holdings, weights, quantities for one DTF or all |
+| `/itp-enrichment` | NAV plus CoinGecko, DeFiLlama, and founder aggregates |
 
 ---
 
 ## Get DTF Price / NAV
 
+Returns the current NAV (Net Asset Value — `sum(qty * price) / 1e18`) per share, priced asset count, and AUM in USD. Tries the data node first; falls back to on-chain `Index.getITPState()` if the data node fails or returns zero.
+
 <ParamField query="itp_id" type="string" required>
   The on-chain DTF identifier (hex address, e.g., `0x...`).
 </ParamField>
-
-Returns the current NAV per share, priced asset count, and AUM. Tries the data node first; falls back to on-chain if needed.
 
 <CodeGroup>
 ```bash cURL
@@ -68,7 +76,7 @@ data = resp.json()
   NAV is computed as `sum(qty[i] * price[i]) / 1e18` where quantities are the fixed per-share amounts stored on-chain. See the pricing model documentation for details.
 </Note>
 
-**Dual-source resolution -- the API trusts no single source:**
+**Dual-source resolution:**
 
 ```
   Request: GET /api/itp-price?itp_id=0x...
@@ -90,9 +98,13 @@ data = resp.json()
   The "source" field in the response indicates which path was used.
 ```
 
+Next: [Get NAV Time Series](#get-nav-time-series) for historical NAV.
+
 ---
 
 ## Get NAV Time Series
+
+Returns NAV per share over a time range as `{timestamp, nav}` points.
 
 <ParamField query="itp_id" type="string" required>
   The on-chain DTF identifier.
@@ -101,8 +113,6 @@ data = resp.json()
 <ParamField query="range" type="string" required>
   Time range for the series. One of: `1d`, `7d`, `30d`, `90d`, `1y`.
 </ParamField>
-
-NAV over time. The chart tells the story. The numbers are the evidence.
 
 <CodeGroup>
 ```bash cURL
@@ -146,11 +156,13 @@ series = resp.json()
 | `timestamp` | number | Unix timestamp of the data point |
 | `nav` | number | NAV per share at that point in time |
 
+Next: [Get AUM Ranking](#get-aum-ranking) to compare DTFs by size.
+
 ---
 
 ## Get AUM Ranking
 
-All DTFs, ranked by AUM. The market votes with capital.
+Returns every DTF ranked by AUM (Assets Under Management — total USD value of all shares outstanding).
 
 <CodeGroup>
 ```bash cURL
@@ -205,11 +217,13 @@ ranking = resp.json()
 | `total_supply` | string | Total shares outstanding in wei |
 | `asset_count` | number | Number of assets in the basket |
 
+Next: [Get Snapshot](#get-snapshot) to inspect basket composition.
+
 ---
 
 ## Get Snapshot
 
-The current state of a DTF -- or all of them. Weights, quantities, NAV, supply.
+Returns current state for one DTF or all of them: weights, quantities, prices, NAV, supply.
 
 <ParamField query="itp_id" type="string">
   Optional. When provided, the endpoint returns the snapshot for only the specified DTF.
@@ -269,11 +283,13 @@ itp_snapshot = resp.json()
 ```
 </Expandable>
 
+Next: [Get DTF Enrichment](#get-dtf-enrichment) for founder, TVL, and funding aggregates.
+
 ---
 
 ## Get DTF Enrichment
 
-Beyond prices: who founded the projects in this basket, how much venture money they raised, what their TVL looks like, and how the market values them. Four upstream sources, aggregated into one response.
+Returns holdings plus aggregated founder demographics, DeFiLlama TVL, and venture funding rounds. Aggregates four upstream sources: data node snapshot, CoinGecko market data, DeFiLlama protocols and raises, and a local founders lookup.
 
 ```
 GET /api/itp-enrichment?itp_id={itp_id}
@@ -460,3 +476,5 @@ for h in data["holdings"][:5]:
 <Note>
   Enrichment results are cached at the CDN for 5 minutes when meaningful data is available. Empty results (no holdings found) are not cached.
 </Note>
+
+Next: [Portfolio Endpoints](/index/api/portfolio) to track per-wallet positions.

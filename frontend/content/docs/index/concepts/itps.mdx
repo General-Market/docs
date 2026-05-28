@@ -5,7 +5,12 @@ description: "How DTFs work -- the on-chain equivalent of ETFs"
 
 # Dex Traded Funds (DTFs)
 
-A Dex Traded Fund (DTF) is a basket. Like all baskets, it holds things that will disappoint you at different rates. The virtue of the basket is that the disappointments cancel each other out — sometimes. The NAV tells you how the cancellation is going.
+A DTF (Dex Traded Fund) is a tokenized basket of up to 100 crypto assets with fixed per-share quantities, priced by a single number called NAV (Net Asset Value).
+
+- Holds 1–100 assets with defined weights
+- Each share = fixed quantities of each underlying asset
+- Implements ERC-4626 (the standard vault interface)
+- Deployer earns fees; protocol mints/burns shares 1:1 against backing
 
 ## Quick Start: Buy a DTF
 
@@ -17,7 +22,7 @@ curl https://generalmarket.io/api/prices/{itpId}
 index.submitOrder(itpId, usdcAmount, OrderType.BUY)
 ```
 
-See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
+See [Buy & Sell Guide](/index/guides/buy-sell) (~5 min) for the full step-by-step.
 
 ## DTF Lifecycle
 
@@ -25,20 +30,20 @@ See [Buy & Sell Guide](/index/guides/buy-sell) for the full step-by-step.
 
 ## What Makes Up a DTF
 
-A DTF is four things. No more.
+Four components:
 
-- **A basket of assets** -- up to 100 crypto assets with defined weights
-- **Fixed per-share quantities** -- each share represents a fixed amount of each underlying asset
-- **An ERC-4626 vault token** -- the standard vault interface, so it composes with everything else in DeFi
-- **A deployer** -- the address that built the basket and earns fees for the trouble
+- **Basket of assets** — up to 100 crypto assets with defined weights
+- **Fixed per-share quantities** — each share represents a fixed amount of each underlying asset
+- **ERC-4626 vault token** — standard vault interface, composes with the rest of DeFi
+- **Deployer** — the address that built the basket and collects fees
 
 <Info>
-Up to **100 assets** per basket. You can build a market-wide index or a narrow conviction play. The protocol does not judge your allocation. The market will.
+Up to **100 assets** per basket. Build a market-wide index or a narrow conviction play. The protocol does not gate allocation choices.
 </Info>
 
 ## NAV Pricing
 
-Every DTF has a **Net Asset Value (NAV)**. It is the fair value of one share, computed from the prices of everything inside the basket. NAV is the only number that matters. It is also the only number that never stops moving.
+NAV (Net Asset Value) is the fair value of one share, computed from the prices of every asset inside the basket. It is the single number that drives every buy and every sell.
 
 ### NAV Computation Formula
 
@@ -49,13 +54,13 @@ NAV = sum(qty[i] * price[i]) / 1e18
 Where:
 - `qty[i]` is the fixed per-share quantity of asset `i`
 - `price[i]` is the current market price of asset `i`
-- The division by `1e18` normalizes to a human-readable value
+- Division by `1e18` normalizes to a human-readable value
 
-The same formula runs on-chain in `Index.sol`, off-chain in the oracle nodes, and in the frontend. Three places, one truth. If they ever disagree, something is very wrong.
+The same formula runs in three places: on-chain in `Index.sol`, off-chain in the oracle nodes, and in the frontend. If the three ever disagree, the protocol is broken.
 
 ## DTF Creation: How Quantities Are Set
 
-Every DTF begins its life worth exactly **$1** (`1e18` in contract math). A deployer chooses weights. The protocol converts those weights into fixed per-share quantities. From this moment on, the dollar figure is a memory. The quantities are the reality.
+Every DTF launches at exactly **$1** per share (`1e18` in contract math). The deployer chooses weights. The protocol converts weights into fixed per-share quantities. From that point, the quantities — not the dollar figure — are the truth.
 
 ```solidity
 qty[i] = (weight[i] * 1e18) / price[i]
@@ -63,7 +68,7 @@ qty[i] = (weight[i] * 1e18) / price[i]
 
 ### Three-Asset Creation Example
 
-Three assets, equal weight. The most optimistic allocation: the belief that you cannot choose, so you choose equally.
+Three assets, equal weight:
 
 | Asset | Weight | Price | Quantity per Share |
 |-------|--------|-------|--------------------|
@@ -71,7 +76,7 @@ Three assets, equal weight. The most optimistic allocation: the belief that you 
 | ETH | 33.33% | $3,000 | 0.000111100 ETH |
 | SOL | 33.34% | $100 | 0.003334000 SOL |
 
-At creation, NAV = $1.00. Each share represents exactly these quantities. The precision is comforting. The future will not be.
+At creation, NAV = $1.00. Each share represents exactly these quantities.
 
 ```solidity
 NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
@@ -81,21 +86,19 @@ NAV = (0.000006666 * 50000) + (0.000111100 * 3000) + (0.003334000 * 100)
 
 ## DTF Key Invariants
 
-Three rules. They do not bend.
+Three rules that hold without exception:
 
 <Note>
-**Quantities only change on rebalance.** Buying and selling does not alter per-share quantities. Buy/sell mints or burns shares proportionally. The basket composition stays the same. This is the invariant that makes everything else possible.
+**Quantities only change on rebalance.** Buying and selling does not alter per-share quantities. Buy/sell mints or burns shares proportionally. The basket composition stays the same.
 </Note>
 
-1. **Buy/sell = mint/burn shares.** You buy $100 at NAV $1.05, you receive ~95.24 shares. The quantities per share do not move.
-
-2. **NAV drifts from $1 over time.** The basket appreciates, NAV rises. The basket falls, NAV falls. This is the point. A DTF that stays at $1 forever has failed at its only job.
-
-3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` is the canonical truth. Everything else is a reflection.
+1. **Buy/sell = mint/burn shares.** Buy $100 at NAV $1.05, receive ~95.24 shares. Per-share quantities do not move.
+2. **NAV drifts from $1 over time.** Basket appreciates, NAV rises. Basket falls, NAV falls. That is the *point*.
+3. **Quantities are stored on-chain.** The `_itpInventory` mapping in `IndexStorage.sol` is canonical. Everything else mirrors it.
 
 ## DTF Rebalancing
 
-A rebalance reshuffles the deck without changing the value of the hand. New quantities, same NAV. The deployer adjusts the composition — the value per share does not flinch.
+A rebalance changes per-share quantities to match new target weights while preserving NAV at the moment of rebalance. New composition, same share price.
 
 ### Rebalance Quantity Formula
 
@@ -110,7 +113,7 @@ Where:
 
 ### Rebalance Worked Example
 
-Time passes. Prices move. BTC rises to $60,000, ETH to $3,500, SOL to $120. The DTF's NAV is now:
+Prices move: BTC to $60,000, ETH to $3,500, SOL to $120. NAV updates:
 
 ```solidity
 NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
@@ -118,7 +121,7 @@ NAV = (0.000006666 * 60000) + (0.000111100 * 3500) + (0.003334000 * 120)
     = $1.1889
 ```
 
-The deployer decides the future looks different. New weights: BTC 50%, ETH 30%, SOL 20%.
+The deployer sets new weights: BTC 50%, ETH 30%, SOL 20%.
 
 | Asset | New Weight | Price | New Quantity |
 |-------|-----------|-------|-------------|
@@ -135,29 +138,29 @@ NAV = (0.000009908 * 60000) + (0.000101906 * 3500) + (0.001981500 * 120)
 ```
 
 <Warning>
-NAV is preserved. Exposure is not. After a rebalance, you hold the same dollar value but a different bet on the future. The value did not change. The conviction did.
+NAV is preserved across a rebalance. Exposure is not. You hold the same dollar value but a different bet going forward.
 </Warning>
 
 ## DTF ERC-4626 Vault Tokens
 
-Every DTF is an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault. A standard interface. Standards are dull. They are also the reason your tokens work everywhere.
+Every DTF implements [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) (~2 min). Standard interface, full DeFi composability.
 
-- **Fungible** -- all shares of the same DTF are identical. Your share and my share are the same share.
-- **Transferable** -- send DTF tokens to any address. Ownership is portable.
-- **Collateralizable** -- use DTF tokens as collateral in [lending markets](/index/concepts/lending). Borrow against what you believe in.
-- **18 decimals** -- matching ERC-20 conventions. Precision beyond what any human needs.
+- **Fungible** — all shares of the same DTF are identical
+- **Transferable** — send DTF tokens to any address
+- **Collateralizable** — use as collateral in [lending markets](/index/concepts/lending) (~3 min)
+- **18 decimals** — matching ERC-20 conventions
 
 ## Technical Details
 
-Where the formula lives, for those who need to see the source. Trust, but verify. Or rather — do not trust, and verify.
+Where the formula lives in code:
 
 ### Implementation Reference
 
 | Layer | Location | Function |
 |-------|----------|----------|
-| Contract | `Index.sol` | `createITP()` -- computes initial quantities from weights and prices |
-| Contract | `Index.sol` | `_getCurrentPrice()` -- computes NAV from stored inventory |
-| Contract | `Index.sol` | `updateWeights()` -- rebalance: recalculates quantities preserving NAV |
-| Storage | `IndexStorage.sol` | `_itpInventory[itpId]` -- canonical per-share quantities |
-| Oracle | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
+| Contract | `Index.sol` | `createITP()` — computes initial quantities from weights and prices |
+| Contract | `Index.sol` | `_getCurrentPrice()` — computes NAV from stored inventory |
+| Contract | `Index.sol` | `updateWeights()` — rebalance: recalculates quantities preserving NAV |
+| Storage | `IndexStorage.sol` | `_itpInventory[itpId]` — canonical per-share quantities |
+| Oracle | `nav.rs` | `calculate_nav()` — reads inventory via `getITPState` |
 | Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy DTFs |

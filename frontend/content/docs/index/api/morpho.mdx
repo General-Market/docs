@@ -5,7 +5,15 @@ description: "Lending position, market data, vault info, and history endpoints"
 
 # Morpho Endpoints
 
-Lending is borrowing against the future. These endpoints show you the terms, the position, and how close you are to losing it.
+Morpho (permissionless lending protocol) endpoints for borrowing USDC against DTF shares on L3.
+
+| Endpoint | Returns |
+|---|---|
+| `/morpho-position` | Position + market state in one call |
+| `/user-state` | Wallet balances and Morpho allowances |
+| `/morpho-history` | Every deposit, withdraw, borrow, repay |
+
+Real-time updates ship over SSE on `user-positions` and `oracle-prices` streams.
 
 <MorphoApiOverview />
 
@@ -13,7 +21,7 @@ Lending is borrowing against the future. These endpoints show you the terms, the
 
 ## Architecture
 
-Two channels: REST for snapshots, SSE for real-time updates. Both read from the same on-chain Morpho Blue state on L3.
+REST for snapshots, SSE for real-time updates. Both read the same on-chain Morpho Blue state on L3.
 
 <MorphoArchitecture />
 
@@ -21,7 +29,7 @@ Two channels: REST for snapshots, SSE for real-time updates. Both read from the 
 
 ## Get Lending Position
 
-Position and market state in one call. Collateral, debt, oracle price, and the computed limits that tell you how much room you have left.
+Returns collateral, debt, oracle price, and the borrow and withdraw limits in one call.
 
 <ParamField query="user" type="string" required>
   User wallet address (e.g., `0x...`). Pass `0x0000...0000` to get market state only.
@@ -94,11 +102,13 @@ position = resp.json()
   `healthFactor = (collateral * oraclePrice / 1e36 * LLTV / 1e18) / debtAmount`
 </Warning>
 
+Next: [Get User State](#get-user-state) for balances and allowances.
+
 ---
 
 ## Get User State
 
-Balances and allowances. What you have, and what you have authorized Morpho to touch.
+Returns USDC and DTF balances plus Morpho allowances for the wallet.
 
 <ParamField query="address" type="string" required>
   User wallet address.
@@ -149,11 +159,13 @@ const state = await res.json();
   All values on L3 use **18 decimal** USDC (not 6 decimals like on Ethereum mainnet or Arbitrum). See the [USDC Decimals](/index/concepts/lending#usdc-decimals) section.
 </Note>
 
+Next: [Get Lending History](#get-lending-history) for the full on-chain log.
+
 ---
 
 ## Get Lending History
 
-Every deposit, withdrawal, borrow, and repayment. Indexed from on-chain logs. The chain remembers what you did.
+Returns every deposit, withdrawal, borrow, and repayment for the wallet, indexed from on-chain logs.
 
 <ParamField query="address" type="string" required>
   User wallet address.
@@ -230,17 +242,19 @@ history = resp.json()
 | `block_number` | number | L3 block number |
 | `timestamp` | number | Unix timestamp (0 if unavailable) |
 
+Next: [Vault Deposit and Withdraw Flow](#vault-deposit-and-withdraw-flow) for the supply side.
+
 ---
 
 ## Vault Deposit and Withdraw Flow
 
-Deposit USDC. Receive vault shares. The vault lends your capital across Morpho markets. You earn yield. You bear risk. The two are inseparable.
+Deposit USDC, receive vault shares. The vault lends across Morpho markets and accrues interest into the share price.
 
 <MorphoVaultFlow />
 
 ### Vault Contract Calls
 
-Standard ERC4626. The interface is familiar. The risk is your own.
+Standard ERC4626 interface.
 
 | Function | Description |
 |----------|-------------|
@@ -259,7 +273,7 @@ The vault's `totalAssets` includes USDC currently lent out to borrowers. If util
 
 ## Curator Allocation Bot
 
-The bot that moves capital where it is needed. It monitors utilization, respects concentration caps, and rebalances without asking permission.
+The curator (off-chain agent that rebalances vault capital across markets) monitors utilization, respects concentration caps, and rebalances without on-chain governance.
 
 <MorphoCuratorBot />
 
@@ -280,7 +294,7 @@ Each DTF market is assigned a risk tier that caps the maximum percentage of vaul
 
 ## Interest Rate Model (CuratorRateIRM)
 
-Most DeFi rate models compute on-chain. This one delegates to an off-chain curator that runs the SERM algorithm -- because the inputs (volatility, stress, liquidity) are too complex for a pure on-chain computation. The curator pushes. The contract stores. Morpho reads.
+The CuratorRateIRM (interest rate model fed by an off-chain curator running the SERM algorithm) delegates rate computation to the curator. Inputs include volatility, stress, and liquidity. The curator pushes the rate, the contract stores it, and Morpho reads it on every borrow.
 
 <MorphoCuratorRateIRM />
 
@@ -302,14 +316,14 @@ If the curator bot goes offline for more than 48 hours, the punitive rate (100% 
 
 ## Liquidation Mechanics
 
-When the health factor drops to 1.0, the position is exposed. Anyone can liquidate it. No warning, no grace period. The math is the only judge.
+Once the health factor drops below 1.0, the position becomes liquidatable. Any address can call `liquidate()`. No warning, no grace period.
 
 <MorphoLiquidationFlow />
 
 ### Key Liquidation Rules
 
 - **Partial, not full**: Only enough collateral is seized to bring the health factor back above 1.0. The borrower keeps the rest.
-- **Anyone can liquidate**: Liquidation is permissionless -- any address can call `liquidate()` on Morpho Blue.
+- **Anyone can liquidate**: Liquidation is permissionless — any address can call `liquidate()` on Morpho Blue.
 - **Liquidation bonus**: The liquidator receives collateral at a discount (bonus percentage set per market).
 - **No grace period**: Once HF < 1.0, liquidation is immediate.
 - **Oracle-dependent**: The health factor is computed using the `ITPNAVOracle` price. If the oracle price is stale (> 365 days), the `price()` call reverts and liquidation is blocked.
@@ -318,7 +332,7 @@ When the health factor drops to 1.0, the position is exposed. Anyone can liquida
 
 ## DTF Collateral and NAV Oracle
 
-DTF shares are collateral. The oracle that prices them is BLS-verified and oracle-signed. If the oracle lies, liquidations break. So it does not lie.
+DTF shares serve as collateral. The `ITPNAVOracle` prices them, signed by the oracle quorum and BLS-verified at 2/3 threshold.
 
 <MorphoNAVOracle />
 
@@ -351,7 +365,7 @@ The `ITPNAVOracle` uses Morpho's 36-decimal price convention:
 
 ## Health Factor Monitoring
 
-The health factor is one number. Above 1.0, you are solvent. Below 1.0, you are exposed. Everything else is commentary on that single ratio.
+The health factor is a single ratio. Above 1.0 the position is safe; below 1.0 it is liquidatable.
 
 <MorphoHealthFactor />
 
@@ -390,7 +404,7 @@ const healthFactor = Number(maxBorrow) / Number(debt);
 
 ## SSE Real-Time Streams
 
-Polling is asking the same question repeatedly. SSE is being told the answer when it changes.
+Server-Sent Events push updates the moment on-chain state changes — no polling required.
 
 ### `user-positions` Stream
 
@@ -420,6 +434,8 @@ Pushes the latest NAV oracle price and borrow rate whenever they update.
 
 ### Data Priority
 
-Three sources, in order of preference. The fastest wins. The slowest is the fallback of last resort.
+Three sources in order of preference: SSE first, REST second, direct on-chain RPC last.
 
 <MorphoDataPriority />
+
+Next: [Infrastructure Endpoints](/index/api/infrastructure) for deployment config, faucet, and the data-node proxy.

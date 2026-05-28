@@ -5,17 +5,24 @@ description: "Real-time and historical asset price data"
 
 # Price Endpoints
 
-Prices. The only fact the market agrees on, and only for an instant. Four endpoints, each with a different tradeoff between freshness and speed.
+Four endpoints, ranked by freshness vs latency.
+
+| Endpoint | Use for |
+|---|---|
+| `/price` | Single asset, most current |
+| `/prices` | All assets, array form |
+| `/latest-prices` | All assets, map keyed by ticker |
+| `/fast-prices` | Cached, UI display, may lag a few seconds |
 
 ---
 
 ## Get Single Asset Price
 
+Returns the latest USD price for one ticker, with source and timestamp.
+
 <ParamField query="asset" type="string" required>
   Asset ticker symbol (e.g., `BTC`, `ETH`, `SOL`).
 </ParamField>
-
-One asset. One price. The source and timestamp are included so you know where the number came from and how old it is.
 
 <CodeGroup>
 ```bash cURL
@@ -53,11 +60,13 @@ data = resp.json()
 | `timestamp` | number | Unix timestamp of the price update |
 | `source` | string | Data source that provided the price |
 
+Need every asset at once? See [Get All Latest Prices](#get-all-latest-prices).
+
 ---
 
 ## Get All Latest Prices
 
-Every supported asset. One call.
+Returns every supported asset as an array of `{asset, price}` objects.
 
 <CodeGroup>
 ```bash cURL
@@ -93,11 +102,13 @@ data = resp.json()
 | `asset` | string | Asset ticker symbol |
 | `price` | number | Latest price in USD |
 
+Prefer a ticker-keyed map? See [Get Latest Prices (Bulk Map)](#get-latest-prices-bulk-map).
+
 ---
 
 ## Get Latest Prices (Bulk Map)
 
-Same data as `/prices`, but keyed by ticker for direct lookup. Use this when you know what you are looking for.
+Returns the same data as `/prices`, keyed by ticker for direct lookup.
 
 <CodeGroup>
 ```bash cURL
@@ -133,11 +144,13 @@ print(price_map["BTC"])  # 97432.15
 
 Keys are tickers. Values are USD prices.
 
+For lower latency at the cost of freshness, see [Get Fast Prices](#get-fast-prices).
+
 ---
 
 ## Get Fast Prices
 
-Cached. Possibly a few seconds stale. Faster to serve. Use this for UI display and order previews -- not for final execution pricing.
+Returns cached USD prices for every supported asset. May lag real-time by a few seconds. Use for UI display and order previews — not final execution pricing.
 
 <CodeGroup>
 ```bash cURL
@@ -169,5 +182,5 @@ prices = resp.json()
 </Expandable>
 
 <Note>
-  Fast prices are cached and may lag behind real-time prices by a few seconds. Use `/price?asset=X` when the most current price for a specific asset is needed.
+  Fast prices are cached and may lag real-time by a few seconds. Use [`/price?asset=X`](#get-single-asset-price) when current price for a specific asset is required.
 </Note>

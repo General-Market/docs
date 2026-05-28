@@ -5,7 +5,15 @@ description: "Five layers, three independent data nodes, BLS consensus, and a sm
 
 # Architecture
 
-A prediction market is a stack of responsibilities, each delegated to the layer least likely to abuse it. Vision distributes trust across five layers. No single component controls the outcome. The architecture is redundant not because redundancy is fashionable, but because trust concentrated is trust misplaced.
+Vision splits the prediction-market stack into five layers. No single component controls outcomes.
+
+- **External data** — 98 APIs polled independently.
+- **Data pipeline** — four data-node instances (three per-oracle, one read-only).
+- **BLS consensus** — three oracles, threshold = `ceil(2n/3)` = 2.
+- **L3 blockchain** — three contracts on Arbitrum Orbit (Vision, VisionReserve, OracleRegistry).
+- **Frontend** — read-only, no signing authority.
+
+**BLS** = Boneh-Lynn-Shacham signatures. They aggregate: many oracle signatures collapse into one for on-chain verification.
 
 <Frame>
   <img src="/images/vision/protocol-stack.svg" alt="Vision Protocol Stack — five layers from external data through L3 blockchain, data pipeline, BLS consensus, to frontend interface" />
@@ -13,33 +21,33 @@ A prediction market is a stack of responsibilities, each delegated to the layer 
 
 ## Data Node Independence
 
-Each oracle operates its own data-node instance. They poll the same 98 APIs, store their own copies, compute their own snapshots. If one data-node fails, two others still reach consensus. If all three disagree about a price, no tick resolves. This is the cost of not trusting anyone — you must verify everything three times.
+Each oracle runs its own data-node. The three instances poll the same 98 APIs, store their own copies, compute their own snapshots. If one fails, the other two still reach consensus. If all three disagree on a price, the tick does not resolve.
 
-A fourth data-node, read-only, serves the frontend and bot APIs. It holds no signing authority. It cannot influence resolution. It merely reports what the protocol has decided.
+A fourth read-only data-node serves the frontend and bot APIs. It holds no signing authority and cannot influence resolution.
 
 <Frame>
   <img src="/images/vision/data-nodes.svg" alt="Four independent data nodes — one per oracle plus a read-only frontend instance, all polling the same 98 external APIs" />
 </Frame>
 
 <Info>
-  Data-node independence means a single compromised data source cannot alter outcomes. Each oracle computes prices from its own database, and BLS consensus rejects disagreement. The protocol is as paranoid as its architecture suggests.
+  A single compromised data source cannot alter outcomes. Each oracle computes prices from its own database, and BLS consensus rejects disagreement.
 </Info>
 
 ## Contract Architecture
 
-Three contracts. Clear separation. The money never touches the logic.
+Three contracts, strict separation. The money sits in one. The logic lives in another. The keys live in a third.
 
 <Frame>
   <img src="/images/vision/contracts.svg" alt="L3 contract architecture — Vision.sol for block logic, VisionReserve for USDC custody, OracleRegistry for BLS key management" />
 </Frame>
 
 <Warning>
-  `VisionReserve` is the only contract that holds USDC. Vision.sol cannot move funds directly -- it calls the reserve, which verifies the caller. The separation exists to ensure a bug in block logic cannot drain the treasury. Paranoia, in contract design, is a virtue.
+  `VisionReserve` is the only contract that holds USDC. `Vision.sol` cannot move funds directly — it calls the reserve, which verifies the caller. A bug in block logic therefore cannot drain the treasury.
 </Warning>
 
 ## BLS Consensus Model
 
-Nothing happens without agreement. Tick resolution, config updates, balance proofs, block creation — every protocol action requires an aggregated BLS signature from a quorum of oracles. The threshold is `ceil(2n/3)`. With three oracles, that means two must agree. A single dissenter blocks nothing. Two dissenters block everything.
+Every state-changing action requires an aggregated BLS signature from a quorum of oracles: tick resolution, config updates, balance proofs, block creation. Threshold = `ceil(2n/3)`. With three oracles, two must agree. One dissenter blocks nothing. Two dissenters block everything.
 
 <Frame>
   <img src="/images/vision/bls-consensus.svg" alt="BLS consensus flow — three oracles sign independently, signatures aggregate, Vision.sol verifies against registered pubkeys" />
@@ -47,7 +55,7 @@ Nothing happens without agreement. Tick resolution, config updates, balance proo
 
 ## Security Boundaries
 
-Trust is not a feeling. It is a line drawn between what you control and what you don't. Every boundary in this system is enforced by either cryptography or smart contract logic — never by good intentions.
+Every boundary in the system is enforced by either cryptography or smart-contract logic, never by convention. The diagram below shows what the player controls, what the oracles control, and what oracles cannot do.
 
 <Frame>
   <img src="/images/vision/security-boundaries.svg" alt="Trust boundaries — player controls (on-chain, trustless) vs oracle controls (BLS consensus) vs what oracles cannot do" />
@@ -69,5 +77,5 @@ Trust is not a feeling. It is a line drawn between what you control and what you
 | **Data Node** | 98-source collection, PostgreSQL storage, REST + WS + SSE serving |
 
 <Info>
-  Each oracle runs co-located with its own data-node process. They share a VPS but not a database. The frontend data-node is a separate, read-only instance that serves public API traffic without interfering with oracle data pipelines.
+  Each oracle is co-located with its own data-node process. They share a VPS but not a database. The frontend data-node is a separate read-only instance serving public API traffic, isolated from oracle data pipelines.
 </Info>

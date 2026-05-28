@@ -5,9 +5,11 @@ description: "Architecture and concepts for building autonomous Vision predictio
 
 # Bot Overview
 
-You are building a machine to make predictions about the future. The machine will be wrong. But it will be wrong faster than you, and that is enough.
+A Vision bot joins prediction blocks, submits sealed bitmaps, and claims rewards on a loop, without human intervention. Registration is free and requires no collateral. The full lifecycle is a few API calls plus a handful of on-chain transactions.
 
-A Vision bot joins prediction blocks, submits sealed bitmaps, and claims rewards without human intervention. Registration is free, requires no collateral. The full lifecycle reduces to a few API calls and on-chain transactions -- an almost insulting simplicity for a task of such metaphysical ambition.
+- **Bitmap** — packed prediction bytes, 1 bit per market.
+- **keccak256** — Ethereum's hash function, used for the bitmap commitment.
+- **BLS** — Boneh-Lynn-Shacham signatures; oracles sign balance proofs you use to claim.
 
 ## Architecture
 
@@ -15,19 +17,19 @@ A Vision bot joins prediction blocks, submits sealed bitmaps, and claims rewards
 
 ## What a Vision Bot Does
 
-The lifecycle of a bot is the lifecycle of hope, compressed into code:
+The bot loop has eight steps:
 
-1. **Registers** on the Vision contract (one-time, free, no collateral).
-2. **Polls** the oracle API for active blocks.
-3. **Generates predictions** -- UP or DOWN for each market in a block.
-4. **Encodes** predictions into a packed bitmap and hashes it with keccak256.
-5. **Joins** the block on-chain with a USDC deposit and the sealed bitmap hash.
-6. **Reveals** the actual bitmap bytes to oracle nodes off-chain.
-7. **Claims rewards** periodically using BLS-signed balance proofs from oracles.
-8. **Withdraws** remaining balance when exiting a block.
+1. **Register** on the Vision contract (one-time, free, no collateral).
+2. **Poll** the oracle API for active blocks.
+3. **Generate predictions** — UP or DOWN for each market.
+4. **Encode** predictions into a packed bitmap and hash with `keccak256`.
+5. **Join** the block on-chain with a USDC deposit and the sealed bitmap hash.
+6. **Reveal** the raw bitmap bytes to oracle nodes off-chain.
+7. **Claim rewards** periodically using BLS-signed balance proofs from oracles.
+8. **Withdraw** remaining balance when exiting a block.
 
 <Info>
-Registration is **free**. Calling `registerBot()` costs only gas. No staking, no collateral. You deposit USDC only when joining a block -- the moment you decide your machine's opinions are worth money.
+Registration is **free**. `registerBot()` costs only gas. No staking, no collateral. USDC is deposited only when joining a specific block.
 </Info>
 
 ## Environment Variables
@@ -43,7 +45,7 @@ Registration is **free**. Calling `registerBot()` costs only gas. No staking, no
 | `POLL_INTERVAL` | No | `30` | Seconds between block polling cycles |
 
 <Warning>
-**WUSDC on Index L3 uses 18 decimals.** Multiply token amounts by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). Getting this wrong deposits dust or reverts -- the machine's first lesson in precision.
+Exception worth stating out loud: **WUSDC on Index L3 uses 18 decimals**, not 6. Multiply token amounts by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). Wrong scaling either deposits dust or reverts the tx.
 </Warning>
 
 ## Contract Details
@@ -58,7 +60,7 @@ Registration is **free**. Calling `registerBot()` costs only gas. No staking, no
 
 ## Bot Registration
 
-Registration stores a public metadata struct on-chain. The blockchain remembers your bot existed. Whether that is a comfort or an indictment depends on performance:
+Registration stores a public metadata struct on-chain:
 
 ```solidity
 struct Bot {
@@ -75,12 +77,12 @@ Call `registerBot(endpoint, pubkeyHash)` once. Call `deregisterBot()` to remove 
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/docs/blocks/bots/quickstart">
-    Register, fund, and unleash your first bot in under 10 minutes.
+    Register, fund, and run a first bot. ~10 min.
   </Card>
   <Card title="Bitmap Encoding" icon="binary" href="/docs/blocks/bots/bitmap-encoding">
-    Bits. The smallest possible opinion. The full encoding spec.
+    Wire format reference: layout, encoding, hashing. ~5 min.
   </Card>
   <Card title="Example Strategies" icon="brain" href="/docs/blocks/bots/strategies">
-    Three theories about the future expressed in code. All wrong. Some useful.
+    Random, momentum, mean reversion — code and backtest API. ~10 min.
   </Card>
 </CardGroup>

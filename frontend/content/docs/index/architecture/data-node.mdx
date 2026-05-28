@@ -5,9 +5,14 @@ description: "90+ data source aggregation, market data API, backtesting engine, 
 
 # Data Node
 
-Ninety-one sources. One database. The world reduced to rows.
+The Data Node is the Rust service that feeds every other component a price.
 
-76,000 lines of Rust that watch earthquakes, train delays, crypto prices, Congressional stock trades, and McDonald's ice cream machine outages -- then store the results in PostgreSQL and serve them through 50+ endpoints. Every price the protocol touches passes through this service. It is the single data backbone for frontend, oracles, Vision, and the explorer. If it stops, everything stops.
+- **Inputs:** 91 external sources (CoinGecko, Binance, USGS earthquakes, Deutsche Bahn delays, and 87 more) plus 8 internal collectors that poll L3 and Settlement.
+- **Storage:** PostgreSQL, 25 migrations, 15+ tables.
+- **Outputs:** 50+ REST endpoints, a WebSocket feed for Vision prices, and an SSE stream for backtester results — all on port 8200.
+- **Consumers:** frontend, oracle nodes, Vision bots, Social Bot, explorer.
+
+If the Data Node stops, every other service stops with it.
 
 <DataNodeOverview />
 
@@ -26,7 +31,7 @@ Ninety-one sources. One database. The world reduced to rows.
 
 ## Collector Architecture
 
-Every source is an independent Tokio task. When one panics, `spawn_resilient` restarts it. The source does not know it died. All writes flow through a shared `BlockWriter` channel that coalesces inserts -- because PostgreSQL has limits, even if the world does not.
+Each source runs as an independent Tokio task. `spawn_resilient` restarts a task on panic. All writes pass through one `BlockWriter` channel that coalesces inserts before they reach PostgreSQL.
 
 <DataNodeCollectorArchitecture />
 
@@ -39,7 +44,7 @@ Each `SyncEngine` owns:
 
 ### Internal Collectors
 
-Beyond the 91 external sources, the data node runs its own collectors -- polling chains, computing NAV, tracking oracle health. The system watches itself.
+In addition to the 91 external sources, the Data Node runs internal collectors that poll the L3 and Settlement chains, compute NAV, and track oracle health.
 
 | Collector | Module | Responsibility | Poll Interval |
 |---|---|---|---|
@@ -59,7 +64,7 @@ Beyond the 91 external sources, the data node runs its own collectors -- polling
 
 ### Chain Pollers Detail
 
-Two chains, polled simultaneously. The results are cached in memory and served by the API. The chain is the source of truth; the cache is the speed.
+Both chains are polled in parallel. Results land in an in-memory cache, which the API serves directly. The chain is the source of truth; the cache exists for read latency.
 
 <DataNodeChainPollers />
 
@@ -67,7 +72,7 @@ Two chains, polled simultaneously. The results are cached in memory and served b
 
 ## The 91 Market Data Sources
 
-Every source has its own Rust client, config JSON, and SyncEngine. Sixteen categories. From the Federal Reserve to Chaturbate. The protocol does not judge what is tradeable.
+Each source has a Rust client, a config JSON, and a `SyncEngine`. They are grouped into 16 categories.
 
 ### Finance & Markets
 
@@ -232,7 +237,7 @@ Every source has its own Rust client, config JSON, and SyncEngine. Sixteen categ
 
 ## Database Schema
 
-Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil record of every feature that survived.
+25 migrations, 15+ tables, grouped into 5 functional clusters.
 
 <DataNodeSchema />
 
@@ -263,7 +268,7 @@ Twenty-five migrations. Fifteen tables. Five groups. The schema is a fossil reco
 
 ## REST API
 
-Axum. 50+ endpoints. Six groups. CORS and gzip via Tower middleware. The API returns data. What you do with it is your problem.
+The HTTP layer runs on Axum: 50+ endpoints across six functional groups, with CORS and gzip handled by Tower middleware.
 
 ### Pricing & NAV
 
@@ -375,7 +380,7 @@ Explorer endpoints require a `x-explorer-token` header. Authentication uses SHA-
 
 ## WebSocket Support
 
-Subscribe to block IDs. Receive prices as they arrive. Unsubscribe when you have had enough.
+The Vision WebSocket lets a client subscribe to Vision block IDs and receive prices as each source ticks.
 
 <DataNodeWebSocketFlow />
 
@@ -388,16 +393,16 @@ Subscribe to block IDs. Receive prices as they arrive. Unsubscribe when you have
 
 ## Simulation Engine
 
-2,759 lines that answer the question every investor asks after the fact: "What if I had done it differently?"
+The backtester is a 2,759-line module that runs historical DTF strategies against cached market data.
 
-- **Category-based selection** — pick from CoinGecko or DeFi Llama categories
-- **Market cap weighting** — equal weight, cap-weighted, or inverse-cap
-- **Rebalance schedules** — daily, weekly, monthly, or custom
-- **Benchmark comparison** — BTC, ETH, S&P 500 overlays
-- **Parameter sweeps** — grid search over rebalance frequency and weighting schemes
-- **SSE streaming** — results stream to the frontend as they compute
+- **Category-based selection** — pick from CoinGecko or DeFi Llama categories.
+- **Market cap weighting** — equal weight, cap-weighted, or inverse-cap.
+- **Rebalance schedules** — daily, weekly, monthly, or custom.
+- **Benchmark comparison** — BTC, ETH, S&P 500 overlays.
+- **Parameter sweeps** — grid search over rebalance frequency and weighting schemes.
+- **SSE streaming** — results stream to the frontend as they compute.
 
-The `SimDataCache` loads into memory at startup and reloads every 24 hours. Everything the backtester needs, always warm:
+The `SimDataCache` loads into memory at startup and reloads every 24 hours.
 
 <DataNodeSimDataCache />
 
@@ -406,7 +411,7 @@ The `SimDataCache` loads into memory at startup and reloads every 24 hours. Ever
 ## NAV Computation
 
 <Info>
-The same formula as `Index.sol._getCurrentPrice()`. The Data Node reads `_itpInventory` directly from L3. One formula. Two implementations. They must agree.
+The Data Node uses the same NAV formula as `Index.sol._getCurrentPrice()` and reads `_itpInventory` directly from L3. Both implementations must agree; mismatch is a bug.
 </Info>
 
 For each DTF:
@@ -415,15 +420,15 @@ For each DTF:
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-Where `qty[i]` is the per-share quantity from `_itpInventory[itpId]` on-chain, and `price[i]` is the latest validated price from the data pipeline.
+`qty[i]` is the per-share quantity from `_itpInventory[itpId]` on-chain. `price[i]` is the latest validated price from the data pipeline.
 
-The chain poller reads inventory via `getITPState()`, multiplies by prices, caches in `ChainCache`. The API serves it. Sub-second latency.
+The chain poller reads inventory via `getITPState()`, multiplies by prices, caches the result in `ChainCache`. The API serves it. Sub-second latency end to end.
 
 ---
 
 ## CLI Reference
 
-Six subcommands. One binary. Most of the time you only need `serve`.
+Six subcommands ship in one binary. In production you only need `serve`.
 
 ```
     data-node
@@ -437,7 +442,7 @@ Six subcommands. One binary. Most of the time you only need `serve`.
 
 ### `serve`
 
-The only command that matters in production. Starts the HTTP server and all collectors.
+Starts the HTTP server and every collector. This is the only command that runs in production.
 
 | Flag | Env Var | Default | Description |
 |---|---|---|---|
@@ -477,7 +482,7 @@ Fetches Bitget spot listing and delisting dates and stores them in the `bitget_l
 
 ## Deployment
 
-One binary. One VPS. Behind nginx. The simplicity is earned.
+One binary, one VPS, behind nginx.
 
 | Property | Detail |
 |---|---|

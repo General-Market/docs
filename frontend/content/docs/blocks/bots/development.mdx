@@ -5,9 +5,16 @@ description: "Build automated Vision trading bots with the Python framework — 
 
 # Bot Development
 
-The framework has four modules. Core, Chain, Feed, Tracker. Four ways to interact with uncertainty.
+The Vision Bot Python framework (`vision-bot/`) handles RPC calls, bitmap encoding, and position tracking. You write one method: `predict(markets) -> list["UP" | "DOWN"]`.
 
-The Vision Bot Python framework (`vision-bot/`) does the tedious work -- RPC calls, bitmap encoding, position tracking -- so you can focus on the only part that matters: the `predict()` method. One function. A list of markets in, a list of UP/DOWN strings out. Everything else is plumbing around that single act of hubris.
+The framework has four modules:
+
+- **Core** — bitmap encoding, `Strategy` ABC, `RiskCheck`.
+- **Chain** — `Executor` for on-chain reads/writes, oracle discovery, bitmap submission.
+- **Feed** — WebSocket price feed with HTTP fallback.
+- **Tracker** — position lifecycle, auto-claim, auto-withdraw, PnL persistence.
+
+Each module is one file in `vision-bot/framework/`.
 
 ## Framework Architecture
 
@@ -42,7 +49,7 @@ The Vision Bot Python framework (`vision-bot/`) does the tedious work -- RPC cal
     +-------------------------------------------------------------------+
 ```
 
-Four modules, one responsibility each. Separation of concerns -- that dream of order imposed upon chaos:
+Four modules, one responsibility each:
 
 | Module | File | Role |
 |--------|------|------|
@@ -53,11 +60,11 @@ Four modules, one responsibility each. Separation of concerns -- that dream of o
 
 ## Core Components
 
-### core.py -- Primitives and Strategy ABC
+### core.py — Primitives and Strategy ABC
 
-The core module provides three things: bitmap helpers, the `Strategy` base class, and `RiskCheck`. The alphabet of prediction -- encoding, commitment, and the illusion of control.
+The core module exposes three things: bitmap helpers, the `Strategy` base class, and `RiskCheck`.
 
-**Bitmap encoding** converts a list of `"UP"` / `"DOWN"` strings into packed bytes. Each prediction is one bit (1 = UP, 0 = DOWN), big-endian order:
+**Bitmap encoding** converts a list of `"UP"` / `"DOWN"` strings into packed bytes. One prediction = one bit. 1 = UP, 0 = DOWN. Big-endian within each byte:
 
 ```python
 from framework.core import encode_bitmap, hash_bitmap
@@ -77,7 +84,7 @@ bm_hash = hash_bitmap(bitmap)           # keccak256(bitmap) -> bytes32
   +---+---+---+---+---+---+---+---+
 ```
 
-**Strategy ABC** -- every strategy must subclass `Strategy` and implement `predict()`. One method. The rest is ceremony:
+**Strategy ABC** — every strategy subclasses `Strategy` and implements `predict()`. One method, list in, list out:
 
 ```python
 from framework.core import Strategy
@@ -103,9 +110,9 @@ risk.record_join(block_id=1, deposit=50 * 10**18)
 risk.record_exit(block_id=1)
 ```
 
-### chain.py -- Executor and On-Chain Interaction
+### chain.py — Executor and On-Chain Interaction
 
-The `Executor` class wraps all contract calls behind a clean interface. One wallet, two contracts -- Vision and USDC. The bridge between your intentions and the immutable record of their consequences.
+`Executor` wraps every contract call behind one interface. One wallet, two contracts — Vision and USDC.
 
 ```
     Executor
@@ -131,7 +138,7 @@ The `Executor` class wraps all contract calls behind a clean interface. One wall
 ```
 
 <Warning>
-Vision runs on L3 where **USDC uses 18 decimals**, not 6. A 10 USDC deposit is `10 * 10**18`, not `10 * 10**6`. The framework handles this with `DECIMALS = 18`. Get it wrong and you deposit dust -- twelve orders of magnitude between intention and reality.
+Exception worth stating out loud: Vision runs on L3 where **USDC uses 18 decimals**, not 6. A 10 USDC deposit is `10 * 10**18`, not `10 * 10**6`. The framework sets `DECIMALS = 18`. Get the scaling wrong and you deposit dust — twelve orders of magnitude off.
 </Warning>
 
 Key chain functions beyond the Executor:
@@ -144,9 +151,9 @@ Key chain functions beyond the Executor:
 | `submit_bitmap(oracle_urls, player, block_id, bitmap, bitmap_hash)` | POST bitmap to all oracles with retry |
 | `discover_oracles(mode, static_urls, w3)` | Resolve oracle endpoints (static list or on-chain registry) |
 
-### feed.py -- Real-Time Price Feed
+### feed.py — Real-Time Price Feed
 
-`VisionFeed` maintains a background WebSocket connection to the data-node, receiving live market prices. The world, streaming in as numbers. It auto-reconnects with exponential backoff and falls back to HTTP -- because the connection to reality is always intermittent.
+`VisionFeed` keeps a background WebSocket open to the data-node for live prices. It auto-reconnects with exponential backoff (1s → 30s max) and falls back to HTTP when the socket is down.
 
 ```
     +------------------+       WebSocket        +------------+
@@ -182,9 +189,9 @@ prices = feed.prices("1")
 # {"bitcoin": {"price": 67234.5, "change_pct": 2.1, "volume_24h": 1234567}}
 ```
 
-### tracker.py -- Position Lifecycle
+### tracker.py — Position Lifecycle
 
-The `Tracker` monitors all active positions each poll cycle. It fetches balances, computes PnL, auto-claims rewards, auto-withdraws depleted positions. It is the accountant -- the one who tallies what the strategist refuses to see.
+`Tracker` runs every poll cycle. It fetches balances, computes PnL, auto-claims rewards above the threshold, and auto-withdraws positions that fall below the floor.
 
 ```
     Tracker.check_all()  (called every poll cycle)
@@ -221,7 +228,7 @@ Key config knobs:
 
 ## Bot Lifecycle
 
-Poll. Predict. Join. Monitor. Claim. Sleep. Repeat. The main loop in `bot.py` calls `run_cycle()` on a fixed interval. The lifecycle of a bot is the lifecycle of hope -- endlessly renewed, endlessly tested:
+Poll → Predict → Join → Monitor → Claim → Sleep. The main loop in `bot.py` calls `run_cycle()` every `poll_interval` seconds.
 
 ```
     +============================================================+
@@ -258,29 +265,30 @@ Poll. Predict. Join. Monitor. Claim. Sleep. Repeat. The main loop in `bot.py` ca
 
 ### Phase 1: Poll
 
-Each cycle begins with the question: what is there to bet on? The framework tries three sources in order:
+Find candidate blocks. The framework tries three sources in order:
 
-1. **Oracle API** -- `GET /vision/blocks`
-2. **vision-blocks.json** -- static file from contract deployment
-3. **On-chain scan** -- read `nextBlockId()` and iterate
+1. **Oracle API** — `GET /vision/blocks`.
+2. **`vision-blocks.json`** — static file from contract deployment.
+3. **On-chain scan** — read `nextBlockId()` and iterate.
 
-Blocks are filtered by:
-- Already joined (`tracker.active_ids`)
-- Already joined on-chain (previous run)
-- Block paused
-- `block_ids` allowlist (if set)
-- `min_block_id` floor
-- `max_blocks` capacity
+Then filter:
+
+- Already joined (`tracker.active_ids`).
+- Already joined on-chain in a previous run.
+- Block paused.
+- `block_ids` allowlist (if set).
+- `min_block_id` floor.
+- `max_blocks` capacity reached.
 
 ### Phase 2: Predict
 
-The moment of truth -- or rather, the moment of opinion. For each eligible block, the framework fetches the market list, subscribes to the WebSocket feed for live prices, and calls `strategy.predict(markets)`.
+For each eligible block, the framework fetches the market list, subscribes to the WebSocket feed for live prices, and calls `strategy.predict(markets)`.
 
-The returned `["UP", "DOWN", ...]` list is encoded into a bitmap and hashed. Your theory about the future, compressed into bits.
+The returned `["UP", "DOWN", ...]` list is encoded into a bitmap and hashed with `keccak256`.
 
 ### Phase 3: Join
 
-Joining requires four transactions -- the bureaucracy of commitment, all handled automatically:
+Joining is four transactions, handled automatically:
 
 ```
     USDC.approve(Vision, amount)
@@ -303,19 +311,20 @@ Joining requires four transactions -- the bureaucracy of commitment, all handled
 
 ### Phase 4: Monitor
 
-`tracker.check_all()` runs every cycle. The reckoning:
-- Fetches current balance from oracle API
-- Computes PnL = current_balance - deposited. A number that tells you everything and nothing.
-- Auto-claims if profitable (requires BLS signature from oracle)
-- Auto-withdraws if balance too low -- the machine knows when to quit, which is more than most of us can say
+`tracker.check_all()` runs every cycle:
+
+- Fetch current balance from the oracle API.
+- Compute PnL = `current_balance - deposited`.
+- Auto-claim if profit exceeds `claim_above` (requires a BLS signature from the oracle).
+- Auto-withdraw if balance falls below `withdraw_below`.
 
 ### Phase 5: Sleep
 
-The bot sleeps for `poll_interval` seconds (default 30), then loops. Even machines need intervals of non-existence.
+Sleep for `poll_interval` seconds (default 30), then loop.
 
 ## Strategy Development
 
-A strategy is a theory about the future expressed in code. All theories about the future are wrong. Some are useful. Here is how to write yours.
+A strategy is a Python class with a `predict()` method. The framework finds it by name and instantiates it on startup.
 
 ### Creating a New Strategy
 
@@ -342,9 +351,9 @@ class MeanReversionStrategy(Strategy):
         return bets
 ```
 
-2. Set `strategy = "mean-reversion"` in your `config.toml` (or `STRATEGY` env var).
+2. Set `strategy = "mean-reversion"` in your `config.toml` (or the `STRATEGY` env var).
 
-That is all. The loader in `core.py` scans every module in `strategies/`, finds the class whose `name` matches, and instantiates it. Your conviction, summoned by a string.
+The loader in `core.py` scans every module in `strategies/`, finds the class whose `name` matches, and instantiates it.
 
 ### Strategy Stack
 
@@ -386,9 +395,9 @@ That is all. The loader in `core.py` scans every module in `strategies/`, finds 
 
 ### The `predict()` Contract
 
-Your `predict()` method receives a list of market dicts and must return a list of `"UP"` or `"DOWN"` strings, one per market, in the same order. Binary. No nuance, no hedging, no "perhaps." The market demands a verdict.
+`predict()` receives a list of market dicts and returns one string per market — `"UP"` or `"DOWN"` — in the same order.
 
-**Input** -- each market dict:
+**Input** — each market dict:
 
 ```python
 {
@@ -400,24 +409,24 @@ Your `predict()` method receives a list of market dicts and must return a list o
 }
 ```
 
-**Output** -- list of strings:
+**Output** — list of strings:
 
 ```python
 ["UP", "DOWN", "UP", "UP", "DOWN", "UP", ...]
 ```
 
-The framework handles everything after `predict()` returns: encoding, hashing, on-chain submission, bitmap reveal. You provide the opinion. The machine provides the consequences.
+The framework handles everything after `predict()` returns: encoding, hashing, on-chain submission, bitmap reveal.
 
 ### Bundled Strategies
 
 | Name | Logic |
 |------|-------|
-| `random` | `random.choice(["UP", "DOWN"])` for each market. Baseline. |
+| `random` | `random.choice(["UP", "DOWN"])` per market. Baseline. |
 | `momentum` | UP if `change >= 0`, else DOWN. Follow the trend. |
 
 ### Using the Feed in Strategies
 
-For strategies that need historical data, the `VisionFeed` is available in the bot's main loop. To access it from your strategy, you can accept it as a constructor argument:
+Strategies that need historical data can accept `VisionFeed` as a constructor argument. The bot's main loop passes it through:
 
 ```python
 class HistoryStrategy(Strategy):
@@ -443,7 +452,7 @@ class HistoryStrategy(Strategy):
 
 ### config.toml
 
-The framework loads configuration from `config.toml` with environment variable overrides. Here is the full reference:
+The framework loads configuration from `config.toml`. Every value can be overridden by an environment variable. Full reference:
 
 ```toml
 # Strategy
@@ -488,7 +497,7 @@ pnl_file = "pnl.json"
 
 ### Environment Variable Overrides
 
-Every config key can be overridden with an environment variable:
+Every config key has an env var equivalent. Env vars win when both are set:
 
 ```
     config.toml                     Environment Variable
@@ -513,11 +522,9 @@ Every config key can be overridden with an environment variable:
     +----------------------------+
 ```
 
-Env vars always win over config.toml values.
-
 ### markets.json
 
-The `markets.json` file maps sources to their market configurations. It is consumed by the deployment scripts and data-node, not directly by the bot. The bot fetches market lists dynamically via `fetch_block_config()`.
+`markets.json` maps sources to their market configurations. It feeds the deployment scripts and the data-node — the bot itself fetches market lists dynamically via `fetch_block_config()`.
 
 ```json
 {
@@ -537,11 +544,11 @@ The `markets.json` file maps sources to their market configurations. It is consu
 
 ## Risk Management
 
-Risk management is the discipline of acknowledging that you might be wrong -- permanently and at scale.
+The bot enforces two hard limits before joining any block. If either fails, the block is skipped.
 
 ### RiskCheck
 
-The `RiskCheck` class enforces two hard limits that cannot be bypassed:
+`RiskCheck` enforces two limits:
 
 ```
     RiskCheck
@@ -571,7 +578,7 @@ The `RiskCheck` class enforces two hard limits that cannot be bypassed:
 
 ### Additional Safety Checks in bot.py
 
-Beyond `RiskCheck`, the main loop applies several more guards before joining a block:
+The main loop applies eight more guards before joining a block:
 
 ```
     New block candidate
@@ -599,12 +606,12 @@ Beyond `RiskCheck`, the main loop applies several more guards before joining a b
 ```
 
 <Warning>
-**Capital is at risk.** Every USDC deposited is staked against other players. If your predictions are consistently wrong, your balance trends to zero. The `auto_withdraw` feature exits positions before they are fully depleted, but losses are real, irreversible, and indifferent to your intentions.
+**Capital is at risk.** Every USDC deposited is staked against other players. Consistently wrong predictions drive the balance toward zero. `auto_withdraw` exits positions before depletion, but losses are real and irreversible.
 </Warning>
 
 ### Recommended Risk Settings
 
-For a new bot with limited capital -- which is to say, a bot whose failures you can still afford:
+New bot, small capital — losses you can absorb while testing:
 
 ```toml
 deposit = 5            # Small deposits while testing
@@ -617,7 +624,7 @@ claim_above = 3        # Claim small profits early
 withdraw_below = 2     # Cut losses quickly
 ```
 
-For a production bot with a proven strategy (a phrase one should utter with appropriate skepticism):
+Production bot, strategy with measured edge:
 
 ```toml
 deposit = 50
@@ -719,12 +726,12 @@ When the bot starts, it logs all active configuration:
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/docs/blocks/bots/quickstart">
-    Ten minutes from nothing to a machine with opinions about the future.
+    Register, fund, and run a first bot. ~10 min.
   </Card>
   <Card title="Bitmap Encoding" icon="binary" href="/docs/blocks/bots/bitmap-encoding">
-    The bit-level encoding spec. Opinions, reduced to their atomic form.
+    Wire format reference: layout, encoding, hashing. ~5 min.
   </Card>
   <Card title="Strategies" icon="brain" href="/docs/blocks/bots/strategies">
-    Momentum, mean reversion, random. Three ways to be wrong with style.
+    Random, momentum, mean reversion — code and backtest API. ~10 min.
   </Card>
 </CardGroup>

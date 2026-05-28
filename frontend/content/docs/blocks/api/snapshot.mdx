@@ -5,7 +5,7 @@ description: "Market price snapshots and source metadata for Vision"
 
 # Snapshot Endpoints
 
-The world, frozen at an instant. Market price snapshots and source health metadata -- the raw material from which predictions are made and against which they are judged.
+Two endpoints. One returns the current price/value for every market asset. One returns the health and asset counts for each data source feeding those prices.
 
 ```
   Snapshot data flow:
@@ -33,7 +33,7 @@ The world, frozen at an instant. Market price snapshots and source health metada
 
 ## Get Market Snapshot
 
-Current price/value data for market assets. The present, quantified.
+This endpoint returns current price/value data for market assets across all sources, or for one named source.
 
 ```
 GET /api/vision/snapshot
@@ -169,7 +169,7 @@ for p in crypto["prices"][:5]:
 
 ## Get Source Metadata
 
-Health status, asset counts, and sync timing for all data sources. A diagnostic of the machinery that watches the world.
+This endpoint returns health status, asset counts, and sync timing for every data source.
 
 ```
 GET /api/vision/snapshot/meta

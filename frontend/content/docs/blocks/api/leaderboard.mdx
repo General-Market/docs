@@ -5,7 +5,7 @@ description: "Player rankings across all Vision blocks"
 
 # Leaderboard
 
-Who has been least wrong. The global player leaderboard, ranked by PnL across all Vision blocks.
+The global player leaderboard, ranked by PnL — current balance minus initial deposit — across every Vision block.
 
 ---
 
@@ -13,7 +13,7 @@ Who has been least wrong. The global player leaderboard, ranked by PnL across al
 
 `GET /vision/leaderboard`
 
-Returns player rankings aggregated across all active blocks. Ranked by total PnL -- current balance minus initial deposit. The hierarchy of those who have, so far, been more right than wrong.
+This endpoint returns player rankings aggregated across all active blocks, sorted by total PnL descending.
 
 <Tabs>
 <Tab title="cURL">
@@ -108,7 +108,7 @@ for (const entry of data.leaderboard.slice(0, 10)) {
 | `largestPortfolio` | number | Largest number of markets in any single block the player joined |
 
 <Info>
-Computed in real-time from in-memory positions and Postgres deposit records. Rankings update after every tick resolution. Fame is transient -- one bad tick can rearrange the hierarchy.
+Computed in real-time from in-memory positions and Postgres deposit records. Rankings update after every tick resolution.
 </Info>
 
 <Note>

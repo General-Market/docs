@@ -5,9 +5,7 @@ description: "Smart contract error codes reference"
 
 # Smart Contract Error Codes
 
-Every error has a code. The code tells you what went wrong. It does not tell you why you tried.
-
-Custom Solidity errors for gas-efficient reverts. All defined in `ErrorsLib.sol`. Format: `EXXX_Name(params)`.
+Custom Solidity errors for gas-efficient reverts, defined in `ErrorsLib.sol`. Format: `EXXX_Name(params)`. Use this page to look up what a revert means.
 
 ## Order Errors (E001 - E012)
 
@@ -331,7 +329,7 @@ Errors for the V5 sell flow: burn sequencing, remint delays, and minimum sell am
 
 ## Decoding Errors in the Frontend
 
-The ABI decodes the error. The developer decides what to tell the user.
+Use viem's `decodeErrorResult` against the Index ABI to recover the error name and arguments from a failed transaction.
 
 ```typescript
 import { decodeErrorResult } from "viem";

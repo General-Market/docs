@@ -3,9 +3,14 @@ title: "Rebalancing"
 description: "Change DTF asset weights while preserving NAV — formula, worked examples, and step-by-step guide"
 ---
 
-Rebalancing preserves NAV. It does not preserve hope. The weights change. The disappointment is redistributed.
+Change a DTF's asset weights without changing the NAV (Net Asset Value — portfolio value per share). ~3 min from clicking Rebalance to oracle settlement.
 
-A Dex Traded Fund's (DTF) per-share quantities are fixed at creation. As prices move, the actual dollar weight of each asset drifts from the original target. Rebalancing lets the deployer reassign weights -- and even add or remove assets -- while keeping the NAV per share unchanged.
+**Prereqs:**
+- You are the deployer of the DTF (only the deployer can rebalance).
+- Your wallet is on the Settlement chain — see [Settlement](/index/guides/settlement).
+- A target weight set that sums to exactly 100%, with each asset ≥ 0.25%.
+
+**What it does:** recomputes per-share asset quantities so the basket matches new target weights. NAV per share is preserved exactly; only exposure changes.
 
 <Snippet file="chain-info.mdx" />
 
@@ -13,7 +18,7 @@ A Dex Traded Fund's (DTF) per-share quantities are fixed at creation. As prices 
 
 ## What Is Rebalancing?
 
-Rebalancing recalculates per-share quantities so the basket matches new target weights. The invariant is absolute: **NAV does not change**. You rearrange the furniture. The room stays the same size.
+Rebalancing recalculates per-share quantities so the basket matches new target weights. The invariant: **NAV per share does not change**. Exposure shifts; value per share stays exactly where it was.
 
 ```text
  ┌─────────────────────────────────────────────────────────────────────┐
@@ -34,13 +39,13 @@ Rebalancing recalculates per-share quantities so the basket matches new target w
  └─────────────────────────────────────────────────────────────────────┘
 ```
 
-Quantities are the only thing stored on-chain (in `_itpInventory`). Buying and selling shares never touch quantities -- they mint or burn proportionally. Only a rebalance changes quantities. Everything else is noise around this fact.
+Quantities are the only state stored on-chain (in `_itpInventory`). Buys and sells mint or burn shares proportionally — they never touch quantities. Only a rebalance does.
 
 ---
 
 ## Why Rebalance?
 
-Prices move. Weights drift. The index you created stops being the index you intended. This is not a flaw. It is the cost of having a thesis in a market that does not share it.
+Prices move. The dollar weight of each asset drifts from its target. After enough drift, the DTF no longer matches the thesis you deployed.
 
 ```text
   CREATION (all prices = $1)           6 MONTHS LATER
@@ -58,12 +63,12 @@ Prices move. Weights drift. The index you created stops being the index you inte
                                         the deployer's thesis.
 ```
 
-Reasons to rebalance:
+Four reasons to rebalance:
 
-- **Weight drift** -- prices moved enough that effective weights diverge from targets
-- **Thesis change** -- you want to increase exposure to one sector and reduce another
-- **Asset rotation** -- remove a delisted or underperforming token, add a new one
-- **Scheduled discipline** -- some deployers rebalance on a fixed cadence, monthly or quarterly, because discipline is cheaper than judgment
+- **Weight drift** — prices moved enough that effective weights diverge from targets.
+- **Thesis change** — you want more exposure to one sector and less to another.
+- **Asset rotation** — remove a delisted or underperforming token, add a new one.
+- **Scheduled discipline** — some deployers rebalance on a fixed cadence (monthly, quarterly) to avoid discretionary timing.
 
 ---
 
@@ -86,13 +91,13 @@ The core formula recalculates quantities from the new weights and the current NA
   └─────────────────────────────────────────────────┘
 ```
 
-The formula is the same as at creation, except `currentNAV` replaces the initial `1e18` ($1.00). The math guarantees NAV preservation. New quantities, multiplied by current prices and summed, yield the same NAV. Arithmetic does not lie. It is the only participant that does not.
+The formula is identical to the one used at creation, except `currentNAV` replaces the initial `1e18` ($1.00). New quantities × current prices × summed = same NAV. The arithmetic guarantees preservation.
 
 ---
 
 ## NAV Preservation: Worked Example
 
-A proof. Not a promise -- a proof.
+A three-asset DTF, before and after a rebalance. NAV stays constant within rounding precision.
 
 ### Setup
 
@@ -145,7 +150,7 @@ The deployer changes weights to BTC 50%, ETH 30%, SOL 20%:
   └──────────────────────────────────────────────────────────┘
 ```
 
-NAV preserved within rounding precision. Shareholders hold the same dollar value per share. Only the exposure changes. The value stays. The conviction shifts.
+NAV preserved within rounding precision. Each share holds the same dollar value before and after the rebalance — only exposure shifts.
 
 ```text
   BEFORE                              AFTER
@@ -161,17 +166,19 @@ NAV preserved within rounding precision. Shareholders hold the same dollar value
 
 ## Rebalancing Step-by-Step (UI)
 
+Six steps. ~3 min from clicking Rebalance to AP settlement starting.
+
 <Steps>
-  <Step title="Open the Rebalance Modal">
-    Navigate to the DTF's detail page. If you are the deployer, the **Rebalance** button appears in the management section. Click it to open the rebalance modal.
+  <Step title="Step 1: Open the rebalance modal">
+    Open the DTF's detail page. If you are the deployer, the **Rebalance** button appears in the management section. Click it.
 
     <Note>
-    Only the deployer's wallet can initiate a rebalance. The button does not appear for other users. You created this. You maintain it. No one else will.
+    Only the deployer's wallet can initiate a rebalance. The button does not appear for other users.
     </Note>
   </Step>
 
-  <Step title="Adjust Weights">
-    The modal shows every asset with its current weight. Edit the percentages. Weights must sum to exactly **100%**. The contract enforces what your spreadsheet does not.
+  <Step title="Step 2: Adjust weights">
+    The modal lists every current asset with its weight. Edit the percentages. Weights must sum to exactly **100%** — the contract rejects any other total.
 
     ```text
      ┌─────────────────────────────────────────────┐
@@ -188,14 +195,16 @@ NAV preserved within rounding precision. Shareholders hold the same dollar value
     ```
   </Step>
 
-  <Step title="Add or Remove Assets (Optional)">
+  <Step title="Step 3: Add or remove assets (optional)">
     Use the search bar to add new assets. To remove one, set its weight to 0% or click remove.
 
-    The contract supports adding and removing in a single transaction. One rebalance. One decision. All consequences at once.
+    Add and remove are supported in the same rebalance — one transaction handles all changes.
   </Step>
 
-  <Step title="Submit the Request">
-    Click **Rebalance**. The wallet prompts for a transaction on the Settlement chain. This calls `requestRebalance` on the BridgeProxy, which emits a `RebalanceRequested` event. The event is heard by machines. They do not hesitate.
+  <Step title="Step 4: Submit the request">
+    Click **Rebalance**. The wallet prompts for a transaction on the Settlement chain.
+
+    What this does: calls `requestRebalance` on the BridgeProxy, which emits a `RebalanceRequested` event. Oracles pick up the event automatically.
 
     ```text
      ┌──────────────────────────────────────────────────────────┐
@@ -234,21 +243,25 @@ NAV preserved within rounding precision. Shareholders hold the same dollar value
     ```
   </Step>
 
-  <Step title="Wait for Execution">
-    Oracle nodes detect the event, validate the new weights, fetch current prices, and reach BLS consensus. Once consensus is achieved, the oracles call `rebalance()` on L3 with the aggregated BLS signature. You wait. The oracles compute.
+  <Step title="Step 5: Wait for oracle execution">
+    Oracle nodes detect the event, validate the new weights, fetch current prices, and reach BLS (Boneless–Lynn–Shacham — a multi-signature consensus scheme) consensus. ~1–2 min.
 
-    The on-chain `rebalance()` function:
-    1. Snapshots old inventory
-    2. Removes assets (if any indices specified)
-    3. Adds new assets (if any addresses specified)
-    4. Validates weights sum to 100% and each weight >= 0.25%
-    5. Computes new quantities: `qty[i] = (weight[i] * NAV) / price[i]`
-    6. Emits `Rebalanced` event with final state
-    7. Emits `AssetTradeRequest` events for each inventory delta
+    Once consensus is reached, the oracles call `rebalance()` on L3 with the aggregated BLS signature. The on-chain function does seven things in order:
+    1. Snapshots old inventory.
+    2. Removes assets (if any indices specified).
+    3. Adds new assets (if any addresses specified).
+    4. Validates weights sum to 100% and each weight ≥ 0.25%.
+    5. Computes new quantities: `qty[i] = (weight[i] * NAV) / price[i]`.
+    6. Emits a `Rebalanced` event with final state.
+    7. Emits `AssetTradeRequest` events for each inventory delta.
   </Step>
 
-  <Step title="AP Settles Trades">
-    The Authorized Participant (AP) receives `AssetTradeRequest` events and executes the trades to align actual holdings with the new quantities. Assets with increased quantities are bought. Assets with decreased quantities are sold. The portfolio becomes what you said it should be.
+  <Step title="Step 6: AP settles trades">
+    The AP (Authorized Participant — the off-chain fill agent) reads `AssetTradeRequest` events and executes trades on exchanges to align physical holdings with the new quantities.
+
+    - Assets with increased quantities → bought.
+    - Assets with decreased quantities → sold.
+    - Settlement time varies with delta size and asset liquidity.
   </Step>
 </Steps>
 
@@ -256,7 +269,7 @@ NAV preserved within rounding precision. Shareholders hold the same dollar value
 
 ## On-Chain Mechanics
 
-The rebalance logic lives in `RebalanceLib.sol`, called via `delegatecall` from `Investment`. The contract does not negotiate. It computes:
+The rebalance logic lives in `RebalanceLib.sol`, called via `delegatecall` from `Investment`. Eight steps run atomically:
 
 ```text
   ┌──────────────────────────────────────────────────────────┐
@@ -290,9 +303,9 @@ The rebalance logic lives in `RebalanceLib.sol`, called via `delegatecall` from 
   └──────────────────────────────────────────────────────────┘
 ```
 
-### Asset Trade Deltas
+### Asset trade deltas
 
-After computing new quantities, the contract compares old vs. new inventory and emits `AssetTradeRequest` events. The delta is the distance between what you had and what you wanted:
+After computing new quantities, the contract compares old vs. new inventory and emits one `AssetTradeRequest` event per asset. The delta tells the AP what to buy and what to sell.
 
 ```text
   Asset   Old Qty       New Qty       Delta         Action
@@ -302,7 +315,7 @@ After computing new quantities, the contract compares old vs. new inventory and 
   SOL     0.003334000   0.001981500   -0.001352500  SELL
 ```
 
-The AP executes these deltas. Physical backing aligns with on-chain inventory. Theory meets reality at the exchange.
+The AP executes these deltas on exchanges. Physical backing is brought back in line with on-chain inventory.
 
 ---
 
@@ -324,21 +337,21 @@ The AP executes these deltas. Physical backing aligns with on-chain inventory. T
   └─────────────────────────────────────────────────┘
 ```
 
-`requestRebalance()` is technically permissionless. Anyone can emit the event. But the oracle nodes verify the caller is the DTF's deployer before signing. The door is open. The bouncer is not.
+`requestRebalance()` is technically permissionless — anyone can call it. The oracle nodes then verify the caller is the DTF's deployer before signing. Non-deployer calls fail at the oracle layer.
 
 <Warning>
-BLS signature verification is never bypassed. Not in local dev. Not in tests. Not anywhere. This is not a policy. It is a constraint that cannot be removed without destroying the protocol.
+BLS signature verification is never bypassed — not in local dev, not in tests, not anywhere. Removing it would break the security model of the protocol.
 </Warning>
 
 ---
 
 ## When to Rebalance
 
-There is no right answer. Only tradeoffs. Each strategy is a different way of being wrong:
+Four common strategies. Pick one based on how active you want to be.
 
-| Strategy | Description | Typical Cadence |
+| Strategy | Description | Typical cadence |
 |----------|-------------|-----------------|
-| **Threshold-based** | Rebalance when any asset's effective weight deviates by more than X% from target | When drift > 5-10% |
+| **Threshold-based** | Rebalance when any asset's effective weight deviates by more than X% from target | Drift > 5–10% |
 | **Calendar-based** | Rebalance on a fixed schedule regardless of drift | Monthly or quarterly |
 | **Event-driven** | Rebalance in response to market events (delistings, new token launches, thesis changes) | As needed |
 | **Hybrid** | Calendar-based with threshold overrides for large moves | Monthly + 10% drift trigger |
@@ -368,13 +381,13 @@ There is no right answer. Only tradeoffs. Each strategy is a different way of be
 
 ## Costs of Rebalancing
 
-Rebalancing is not free. Nothing is free. The question is whether the cost of rebalancing is less than the cost of drift:
+Three cost categories. The trade-off: cost of rebalancing vs. cost of drifting away from the target.
 
 | Cost | Description |
 |------|-------------|
 | **Gas** | The `requestRebalance()` transaction on Settlement costs gas. The `rebalance()` execution on L3 is paid by oracles. |
-| **Trading fees** | The AP must buy and sell assets to match the new inventory. Each trade incurs exchange fees and slippage. |
-| **Spread/slippage** | Larger inventory deltas mean larger trades, which may move the market -- especially for less liquid assets. |
+| **Trading fees** | The AP buys and sells assets to match the new inventory. Each trade incurs exchange fees and slippage. |
+| **Spread/slippage** | Larger inventory deltas mean larger trades, which can move the market — especially for less liquid assets. |
 
 ```text
   ┌──────────────────────────────────────────────────────┐
@@ -394,21 +407,21 @@ Rebalancing is not free. Nothing is free. The question is whether the cost of re
 ```
 
 <Tip>
-For most DTFs, rebalance when any asset drifts more than 5-10% from target weight. This is the compromise between precision and cost. Perfection would require infinite rebalances. Negligence requires zero. The answer is somewhere between the two.
+For most DTFs, rebalance when any asset drifts more than 5–10% from target weight. This balances precision against gas + trading costs.
 </Tip>
 
 ---
 
 ## Constraints
 
-The contract enforces what judgment cannot:
+The contract rejects any rebalance that violates one of the following:
 
-- **Minimum weight**: Each asset must have at least **0.25%** weight (25e14 in contract math)
-- **Weight sum**: Weights must sum to exactly **100%** (1e18)
-- **No zero prices**: Every asset must have a non-zero price at rebalance time
-- **No duplicate assets**: Cannot add an asset that already exists in the basket
-- **Remove indices descending**: When removing multiple assets, indices must be sorted in descending order (the contract uses swap-and-pop)
-- **DTF must be active**: Cannot rebalance a paused or inactive DTF
+- **Minimum weight**: each asset must have at least **0.25%** weight (25e14 in contract math).
+- **Weight sum**: weights must sum to exactly **100%** (1e18).
+- **No zero prices**: every asset must have a non-zero price at rebalance time.
+- **No duplicate assets**: cannot add an asset that already exists in the basket.
+- **Remove indices descending**: when removing multiple assets, indices must be sorted in descending order (the contract uses swap-and-pop).
+- **DTF must be active**: cannot rebalance a paused or inactive DTF.
 
 ---
 

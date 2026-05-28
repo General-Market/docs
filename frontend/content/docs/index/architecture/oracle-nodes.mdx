@@ -5,19 +5,17 @@ description: "BLS consensus nodes that block orders and coordinate execution"
 
 # Oracle Nodes
 
-Three machines agree every second. This is more than most committees achieve in a year.
+Three Rust services run the consensus layer. They batch pending orders into blocks, sign them with BLS partial signatures, aggregate, and submit the confirmed block to L3. One cycle per second.
 
-Written in Rust (68K LOC), the oracle nodes are the consensus layer of the protocol. They block orders, coordinate BLS signing across peers, and submit confirmed blocks on-chain. One-second cycles. Round-robin leaders. No meetings.
+The five obligations run every cycle:
 
-## What They Do
+- Collect pending orders from `Index.sol`.
+- Propose a block and coordinate BLS partial-signature exchange.
+- Submit the confirmed block on-chain with the aggregated signature.
+- Trigger rebalancing when DTF weights are updated.
+- Maintain price consensus for NAV computation.
 
-Five obligations, repeated every second, without complaint:
-
-- Collect pending orders from the Index contract
-- Propose blocks and coordinate BLS multi-party signing
-- Submit confirmed blocks on-chain with aggregated signatures
-- Trigger rebalancing when DTF weights are updated
-- Maintain price consensus for NAV computation
+The codebase is 68K LOC of Rust.
 
 ## Key Modules
 
@@ -34,17 +32,17 @@ Five obligations, repeated every second, without complaint:
 
 ## Consensus Flow
 
-Agreement is not optional. The protocol requires it on every block.
+Every block requires `ceil(2n/3)` aggregated BLS signatures before it can be confirmed on-chain.
 
 <OracleConsensusFlow />
 
 <Info>
-  The BLS threshold of `ceil(2n/3)` ensures Byzantine fault tolerance — the oracle nodes can tolerate up to `floor((n-1)/3)` malicious or offline oracle nodes while still making progress.
+  A threshold of `ceil(2n/3)` provides Byzantine fault tolerance: the protocol still makes progress with up to `floor((n-1)/3)` malicious or offline oracle nodes.
 </Info>
 
 ## Cycle Timing
 
-One second. Five phases. 200 milliseconds each. The precision is not aspirational -- it is enforced.
+The 1-second cycle splits into five 200ms phases, each with one job.
 
 | Phase | Duration | Action |
 |---|---|---|
@@ -58,9 +56,7 @@ One second. Five phases. 200 milliseconds each. The precision is not aspirationa
 
 ## Leader Election
 
-Round-robin. Deterministic. Based on the node's index in `OracleRegistry.sol`. The leader rotates every second.
-
-The leader builds the proposal, aggregates signatures, and submits the block. If a leader fails, the cycle is lost and the next leader takes over. No negotiation. No second chances.
+The leader rotates every cycle, round-robin, ordered by the node's index in `OracleRegistry.sol`. The current leader builds the proposal, aggregates partial signatures, and submits the block. A failed leader loses the cycle; the next leader takes over on the next tick.
 
 ## Peer-to-Peer Transport
 
@@ -69,17 +65,17 @@ The leader builds the proposal, aggregates signatures, and submits the block. If
 | **Transport** | TCP with TLS |
 | **Discovery** | Static config + on-chain registry via `OracleRegistry.sol` |
 | **Messages** | Block proposals, BLS partial signatures, heartbeats |
-| **Serialization** | Binary, because latency is not negotiable |
+| **Serialization** | Binary format, minimises serialisation latency on the consensus path |
 
-Persistent connections to all peers. Automatic reconnection. The P2P layer handles the messiness of networks so the consensus layer does not have to.
+Connections to peers are persistent and reconnect automatically. The P2P layer handles network-level retries so the consensus layer does not.
 
 ## Netting Engine
 
-A buyer and a seller of the same asset in the same block cancel each other out. Only the remainder reaches the exchange. This is not clever -- it is obvious. But obvious things must still be built.
+A buyer and a seller of the same asset in the same block offset each other. Only the net delta is sent to the AP for execution on Bitget.
 
-- **Order netting** -- buy and sell for the same asset offset, reducing net AP execution
-- **USDT pair routing** -- when direct pairs are unavailable
-- **Rebalance deltas** -- on weight change, computes the minimal trades to move from old quantities to new while preserving NAV
+- **Order netting** — buy and sell on the same asset offset, reducing the AP's execution size.
+- **USDT pair routing** — used when a direct asset/USDC pair is unavailable on Bitget.
+- **Rebalance deltas** — on weight change, computes the minimal trade set to move from old to new quantities while preserving NAV.
 
 ## BLS Details
 
@@ -92,15 +88,15 @@ A buyer and a seller of the same asset in the same block cancel each other out. 
 | **Verification** | On-chain via `BLSLib.sol` against the stored aggregated public key |
 
 <Warning>
-  BLS verification is **never bypassed** — not in local development, not in tests, not anywhere. If BLS is blocking development, the correct approach is to fix the BLS pipeline (generate proper test keys, register them in OracleRegistry, compute valid signatures), not to add bypass logic.
+  BLS verification is **never bypassed** — not in local development, not in tests, not anywhere. If BLS is blocking development, fix the pipeline: generate proper test keys, register them in `OracleRegistry`, compute valid signatures.
 </Warning>
 
 ## Security: AP Isolation (FR13)
 
-The oracles and the AP do not talk. They cannot. This is not a limitation -- it is the architecture.
+Oracle nodes have no direct communication channel to the AP. The AP discovers confirmed blocks only through on-chain `TradeRequest` events.
 
 <Warning>
-  Oracle nodes **cannot communicate directly** with the AP. The AP discovers confirmed blocks exclusively through on-chain `TradeRequest` events. This boundary exists because if the signers and the executor could coordinate off-chain, the system would have a single point of collusion.
+  The boundary prevents collusion: if signers and the trade executor could coordinate off-chain, the system would have a single point of compromise.
 </Warning>
 
 <OracleApIsolation />

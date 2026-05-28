@@ -5,22 +5,19 @@ description: "Introduction to the General Market API"
 
 # API Endpoints Index
 
-The API returns JSON. It does not return meaning. That is your problem.
+JSON over HTTPS. No authentication on read endpoints.
 
-Read access to prices, Dex Traded Fund (DTF) NAV, portfolios, backtesting, and lending positions. No authentication for read endpoints. No opinions in the response body.
+Read access to prices, Dex Traded Fund (DTF — basket of on-chain assets with one NAV) shares, portfolios, backtests, and lending positions.
 
 ## Architecture
 
-Every request from the browser passes through a Next.js proxy. The browser never touches the backend directly. This is not paranoia -- it is HTTPS.
+Every browser request passes through a Next.js proxy. The browser never touches the backend directly. The data node speaks HTTP; the browser demands HTTPS; the proxy resolves the contradiction.
 
 <OverviewArchitecture />
 
-**Why the proxy layer?**
+**Proxy layer flow:**
 
 ```
-  The data node speaks HTTP. The browser demands HTTPS.
-  Mixed content is blocked. The proxy resolves the contradiction.
-
             Browser ---- HTTPS ----> /api/itp-price
                                          |
                                      (server-side)
@@ -56,7 +53,7 @@ The data node runs on port 8200 behind this proxy. All paths in this reference a
 
 ## Response Format
 
-JSON. No wrappers. No envelopes. The data is the response.
+JSON. No wrappers, no envelopes. The data is the response.
 
 ```json
 {
@@ -76,7 +73,7 @@ Errors return an HTTP status code and a JSON body with `error`:
 
 ## Authentication
 
-None. Read endpoints are public. The explorer health endpoint uses a server-side token, injected by the proxy -- invisible to callers.
+None. Read endpoints are public. The explorer health endpoint uses a server-side token injected by the proxy — invisible to callers.
 
 ## Rate Limiting
 
@@ -112,22 +109,22 @@ Vision-specific routes (see [Vision API Reference](/vision/api/overview)):
 
 <CardGroup cols={2}>
   <Card title="Prices" icon="chart-line" href="/index/api/prices">
-    What things cost right now. Single assets, bulk fetches, low-latency trading prices.
+    Single asset, bulk fetch, cached fast-path. Latest USD prices for every supported ticker.
   </Card>
   <Card title="DTFs" icon="layer-group" href="/index/api/itps">
-    NAV, enrichment data, AUM rankings, state snapshots. The index products, dissected.
+    NAV, AUM rankings, holdings snapshots, founder and TVL enrichment.
   </Card>
   <Card title="Portfolio" icon="wallet" href="/index/api/portfolio">
-    Positions, historical value, trade history. A record of your decisions and their consequences.
+    Positions, historical value, trade history — keyed by wallet address.
   </Card>
   <Card title="Simulation" icon="flask" href="/index/api/simulation">
-    Backtesting engine. Ask what would have happened. The answer is always humbling.
+    Backtest engine. Run, stream, sweep, compare. Historical data from 2020.
   </Card>
   <Card title="Morpho" icon="building-columns" href="/index/api/morpho">
-    Lending positions and history. Borrow against your DTF shares. Monitor your health factor.
+    Lending positions, market state, history. Borrow against DTF shares; monitor health factor.
   </Card>
   <Card title="Infrastructure" icon="server" href="/index/api/infrastructure">
-    Deployment config, explorer health, testnet faucet, data-node proxy. The plumbing.
+    Deployment config, explorer health, testnet faucet, data-node catch-all proxy.
   </Card>
 </CardGroup>
 

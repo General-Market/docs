@@ -5,14 +5,12 @@ description: "Deployed contract addresses on Index L3 and Settlement"
 
 # Deployed Contract Addresses
 
-The addresses are the protocol. Everything else -- the code, the documentation, the diagrams -- is explanation. These are the facts on-chain, across two chains.
+Live contract addresses across L3 (Chain ID `111222333`) and Settlement (Chain ID `14601`). Source of truth is `deployments/active-deployment.json`; this page is a convenience copy.
 
 <ContractAddressesRegistry />
 
 <Warning>
-  Contract addresses are loaded from `deployments/active-deployment.json` and may differ between
-  environments (testnet, staging, production). Always verify addresses against the active deployment
-  file before interacting with contracts directly.
+Contract addresses are loaded from `deployments/active-deployment.json` and may differ between environments (testnet, staging, production). Verify against the active deployment file before interacting with contracts directly.
 </Warning>
 
 ## Network Information
@@ -104,13 +102,11 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 
 ### From the Deployment File
 
-The deployment JSON is the source of truth. This page is a convenience.
+The deployment JSON is the source of truth, updated by deploy scripts after each deployment.
 
 ```bash
 cat deployments/active-deployment.json
 ```
-
-Updated by deploy scripts after each deployment.
 
 ### In the Frontend
 
@@ -124,9 +120,9 @@ const oracleRegistry = deployment.contracts.OracleRegistry;
 
 ### Adding to a Wallet
 
-To interact with the Index L3 chain from a wallet like MetaMask:
+To interact with the Index L3 chain from a wallet like MetaMask (~2 min):
 
-1. Open your wallet's network settings
+1. Open your wallet's network settings.
 2. Add a custom network with the following details:
    - **Network Name**: Index L3
    - **RPC URL**: `https://rpc.generalmarket.io/`
@@ -135,4 +131,4 @@ To interact with the Index L3 chain from a wallet like MetaMask:
 
 ## Contract Upgrade Policy
 
-UUPS proxies. The addresses on this page are permanent. Only the implementation behind them changes. The proxy is the identity; the implementation is the behavior.
+All contracts use UUPS (Universal Upgradeable Proxy Standard) proxies. The addresses on this page are permanent; only the implementation behind each proxy changes on upgrade.

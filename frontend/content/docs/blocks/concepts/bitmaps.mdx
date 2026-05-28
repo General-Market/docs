@@ -3,7 +3,13 @@ title: "Bitmaps"
 description: "How player predictions are encoded as bit-packed bitmaps in Vision"
 ---
 
-Your predictions are encoded in bits. One means up. Zero means down. The universe, reduced to binary. This is not a metaphor -- it is literally how the contract stores your opinion about the future of Bitcoin, the weather in Tokyo, and the disruption level of the Northern Line.
+A bitmap (a bit-packed array of UP/DOWN predictions) encodes one bet per market in a block. `1` = UP, `0` = DOWN.
+
+- Commit on-chain: only the keccak256 hash (`bitmapHash`) is stored
+- Reveal off-chain: send the actual bytes to oracles via `POST /vision/bitmap`
+- Size: `ceil(marketCount / 8)` bytes — 5 markets = 1 byte
+- Order: big-endian within each byte (bit 0 = MSB of byte 0)
+- Miss the reveal window: you are voided for that tick — no win, no loss
 
 ## Quick Start: Encode a Bitmap
 
@@ -34,7 +40,7 @@ See [Bitmap Encoding](/docs/blocks/bots/bitmap-encoding) for the full encoding g
 
 ## Sealed Commitment
 
-Bitmaps are committed on-chain as a **keccak256 hash** before the actual bitmap bytes are revealed. Nobody can see your predictions. Nobody can copy them. Your beliefs are sealed inside a hash, invisible until the moment they are judged. There is a dignity in this -- the dignity of a private wager.
+Bitmaps are committed on-chain as a **keccak256 hash** before the bytes are revealed. The hash hides your predictions until reveal time — nobody can see them, nobody can copy them.
 
 ### Commitment Flow
 
@@ -57,7 +63,7 @@ The keccak256 hash of the submitted bitmap bytes must match the on-chain `bitmap
 
 ## Reveal Process
 
-After committing the hash on-chain, the player must reveal the actual bitmap bytes to oracles before the tick resolves. The sealed prediction becomes public. What was private becomes shared. What was hope becomes arithmetic.
+After the on-chain hash commit, send the bitmap bytes to oracles before the tick resolves. Miss this window and the position is voided for that tick.
 
 ### Submitting to Oracles
 
@@ -96,7 +102,7 @@ Players can update their bitmap at any time by calling `updateBitmap(blockId, ne
 
 ### Bit Packing Specification
 
-The encoding is precise. Each bit occupies an exact position. There is no ambiguity, no room for interpretation. In a world of shifting prices and uncertain outcomes, at least the encoding is certain. Bitmaps use **big-endian bit ordering** within each byte:
+Bitmaps use **big-endian bit ordering** within each byte:
 
 - Bit 0 = most significant bit (MSB) of byte 0
 - Bit 7 = least significant bit (LSB) of byte 0
@@ -205,24 +211,20 @@ function getBit(bitmap: Uint8Array, index: number): boolean {
 
 ### Edge Cases
 
-Every system has edges. The interesting question is what happens when you reach them.
-
 #### Unused Bits
 
-If the number of markets does not fill the last byte, unused bits are padded with `0`. These unused bits are ignored during resolution -- they do not count as DOWN predictions.
+If the number of markets does not fill the last byte, unused bits are padded with `0`. They are ignored during resolution — they do not count as DOWN predictions.
 
-For example, a block with 3 markets only uses bits 0-2 of byte 0. Bits 3-7 are ignored regardless of their value. Silence is not an opinion.
+A block with 3 markets only uses bits 0-2 of byte 0. Bits 3-7 are ignored regardless of their value.
 
 #### Unrevealed Bitmaps
 
-If a player commits a bitmap hash on-chain but fails to reveal the actual bytes to oracles before resolution, the player is **voided** for that tick. They committed to having an opinion but never shared it. Voided players:
+If a player commits a hash on-chain but fails to reveal the bytes before resolution, the player is **voided** for that tick. Voided players:
 
 - Do not participate in side matching for any market.
-- Keep their balance unchanged (delta = 0) -- they neither win nor lose.
-- Are listed in the tick result's `voided_players` array.
-
-The voided player is the person who raises their hand in class but has nothing to say. The protocol notes their presence and moves on.
+- Keep their balance unchanged (delta = 0) — no win, no loss.
+- Appear in the tick result's `voided_players` array.
 
 #### Empty Block
 
-If a block has zero markets (`marketIds` is empty), the bitmap is 0 bytes. This is a valid but degenerate case -- no markets resolve and all players' balances remain unchanged. A game with no questions has no losers, which is also a way of having no winners.
+If a block has zero markets (`marketIds` is empty), the bitmap is 0 bytes. No markets resolve, all balances are unchanged. Valid but degenerate.
