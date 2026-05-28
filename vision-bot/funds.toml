@@ -2196,7 +2196,7 @@ name = "Oddsmith"
 symbol = "ODSM"
 vault = "0x17B13f351869eA10Be772AAed2Bc230aaE50149F"  # SHARED with Unlock — pending vault deploy
 sources = ["defillama-prediction-market"]
-strategy = "biased"
+strategy = "bullish"
 [funds.params]
 
 [[funds]]

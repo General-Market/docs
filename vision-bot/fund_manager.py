@@ -1528,7 +1528,17 @@ def main():
             )
             continue
         vault_exec = VaultExecutor(executor, vault_addr, factory_addr)
-        strategy = load_strategy(fund_cfg["strategy"], fund_cfg.get("params"))
+        # A typo in funds.toml (e.g. "biased" instead of "bullish") used to
+        # kill the entire bot at startup, taking every other fund with it.
+        # Skip the broken entry loudly and let the rest of the fleet run.
+        try:
+            strategy = load_strategy(fund_cfg["strategy"], fund_cfg.get("params"))
+        except ValueError as e:
+            log.error(
+                "Fund %s has invalid strategy %r — skipping. (%s)",
+                fund_cfg.get("name"), fund_cfg.get("strategy"), e,
+            )
+            continue
         state = FundState(fund_cfg, vault_exec, strategy)
         funds.append(state)
         log.info(
