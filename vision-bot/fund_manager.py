@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from framework.core import encode_bitmap, hash_bitmap, load_strategy
+from framework.core import encode_bitmap, hash_bitmap, load_strategy, MAX_BITMAP_BITS
 from framework.chain import (
     BitmapSubmitError,
     Executor,
@@ -1178,6 +1178,20 @@ def run_cycle(
             continue
         market_ids = [m["assetId"] for m in batch_cfg["markets"]]
         market_count = len(market_ids)
+
+        # Cap-guard. Some sources (notably chaturbate) grow past the fixed
+        # bitmap ceiling. The encoder refuses to truncate — and rightly so.
+        # Skip the batch with a loud warning instead of letting the
+        # ValueError kill the whole cycle and starve every other vault of
+        # snapshots. The durable fix is to cap the source upstream in the
+        # data-node batch builder.
+        if market_count > MAX_BITMAP_BITS:
+            log.warning(
+                "Batch %d source=%s skipped: %d markets exceeds bitmap "
+                "ceiling %d — cap the source upstream",
+                batch_id, source_name, market_count, MAX_BITMAP_BITS,
+            )
+            continue
 
         # Get prices ONCE per batch. Subscribe lazily and remember.
         bid_str = str(batch_id)
