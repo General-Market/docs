@@ -137,7 +137,7 @@ export const BusinessTile: React.FC<{
         )}
       </div>
       {label && (
-        <div style={{ fontFamily: monoFont, fontSize: 24, fontWeight: 700, letterSpacing: "0.1em", color: C.dim }}>{BIZ[kind].label}</div>
+        <div style={{ fontFamily: monoFont, fontSize: 28, fontWeight: 700, letterSpacing: "0.1em", color: C.dim }}>{BIZ[kind].label}</div>
       )}
     </div>
   );
@@ -164,7 +164,7 @@ export const BrokerTile: React.FC<{ size?: number; label?: boolean }> = ({ size 
         <path d="M12 11.4l-1 1.3 1 4.6 1-4.6z" fill={C.teal} stroke={C.teal} strokeWidth={1.2} />
       </svg>
     </div>
-    {label && <div style={{ fontFamily: monoFont, fontSize: 24, fontWeight: 700, letterSpacing: "0.1em", color: C.dim }}>BROKER</div>}
+    {label && <div style={{ fontFamily: monoFont, fontSize: 28, fontWeight: 700, letterSpacing: "0.1em", color: C.dim }}>BROKER</div>}
   </div>
 );
 
@@ -196,10 +196,10 @@ export const FlowBox: React.FC<{ title: string; sub?: string; accent?: string; w
       padding: "0 20px",
     }}
   >
-    <div style={{ fontFamily: font, fontSize: big ? 50 : 38, fontWeight: 800, letterSpacing: "-0.02em", color: C.text, textAlign: "center", lineHeight: 1.04 }}>
+    <div style={{ fontFamily: font, fontSize: big ? 52 : 40, fontWeight: 800, letterSpacing: "-0.02em", color: C.text, textAlign: "center", lineHeight: 1.04 }}>
       {title}
     </div>
-    {sub && <div style={{ fontFamily: monoFont, fontSize: 24, fontWeight: 700, letterSpacing: "0.04em", color: accent }}>{sub}</div>}
+    {sub && <div style={{ fontFamily: monoFont, fontSize: 26, fontWeight: 700, letterSpacing: "0.04em", color: accent }}>{sub}</div>}
   </div>
 );
 
@@ -235,7 +235,7 @@ export const Kicker: React.FC<{ text: string; color?: string }> = ({ text, color
       background: "rgba(255,255,255,0.6)",
       border: `1.5px solid ${color}44`,
       fontFamily: monoFont,
-      fontSize: 26,
+      fontSize: 28,
       fontWeight: 700,
       letterSpacing: "0.16em",
       color,
@@ -245,62 +245,148 @@ export const Kicker: React.FC<{ text: string; color?: string }> = ({ text, color
   </div>
 );
 
-// ─── volatility chart — the heart of the "old way" beat, made legible ─────────
-// A locked FD rate (flat teal dashed) and the spot price drifting away from it
-// (red, drawn on). The shaded gap is the risk the broker must price in.
-export const VolatilityChart: React.FC<{ draw: number; w?: number; h?: number }> = ({ draw, w = 540, h = 320 }) => {
-  const padL = 18;
-  const padR = 18;
-  const lockY = h * 0.34; // the locked rate line
-  const x0 = padL;
-  const x1 = w - padR;
-  // spot wanders, then dives below the locked rate — the divergence
-  const spot: [number, number][] = [
-    [x0, lockY],
-    [x0 + (x1 - x0) * 0.18, lockY - 16],
-    [x0 + (x1 - x0) * 0.36, lockY + 8],
-    [x0 + (x1 - x0) * 0.54, lockY + 54],
-    [x0 + (x1 - x0) * 0.72, lockY + 92],
-    [x1, lockY + 150],
-  ];
-  let len = 0;
-  for (let i = 1; i < spot.length; i++) len += Math.hypot(spot[i][0] - spot[i - 1][0], spot[i][1] - spot[i - 1][1]);
-  const off = (1 - clamp01(draw)) * len;
-  const poly = spot.map((p) => p.join(",")).join(" ");
-  const last = spot[spot.length - 1];
-  // the shaded risk gap follows the drawn portion
-  const drawnEnd = lerp(x0, x1, clamp01(draw));
-  const visible = spot.filter((p) => p[0] <= drawnEnd + 1);
-  const gapArea =
-    visible.length > 1
-      ? `${x0},${lockY} ${visible.map((p) => p.join(",")).join(" ")} ${visible[visible.length - 1][0]},${lockY}`
-      : "";
+// ─── numbered step card — the "old way", told step by step ────────────────────
+export const StepCard: React.FC<{ n: number; title: string; sub?: string; tone?: string; w?: number; lit?: number }> = ({
+  n,
+  title,
+  sub,
+  tone = C.teal,
+  w = 560,
+  lit = 0,
+}) => (
+  <div
+    style={{
+      ...glass(20),
+      width: w,
+      padding: "20px 26px",
+      display: "flex",
+      alignItems: "center",
+      gap: 22,
+      border: `2px solid ${lit > 0.5 ? tone : "rgba(255,255,255,0.74)"}`,
+      boxShadow: lit > 0.5 ? `0 14px 36px rgba(60,66,130,0.16), 0 0 40px ${tone}40` : "0 14px 36px rgba(60,66,130,0.14), inset 0 1px 0 rgba(255,255,255,0.9)",
+      boxSizing: "border-box",
+    }}
+  >
+    <div style={{ flex: "0 0 auto", width: 56, height: 56, borderRadius: "50%", background: tone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font, fontSize: 30, fontWeight: 800, color: "#fff", boxShadow: `0 6px 18px ${tone}55` }}>
+      {n}
+    </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ fontFamily: font, fontSize: 30, fontWeight: 700, color: C.text, lineHeight: 1.12 }}>{title}</div>
+      {sub && <div style={{ fontFamily: font, fontSize: 24, fontWeight: 600, color: C.dim, lineHeight: 1.12 }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+// a small label pill rendered inside SVG (text + rect)
+const ChartTag: React.FC<{ x: number; y: number; text: string; color: string; anchor: "start" | "end" | "middle" }> = ({ x, y, text, color, anchor }) => {
+  const w = text.length * 12.4 + 26;
+  const rx = anchor === "end" ? x - w : anchor === "middle" ? x - w / 2 : x;
+  const tx = anchor === "end" ? x - 13 : anchor === "middle" ? x : x + 13;
   return (
-    <svg width={w} height={h} style={{ overflow: "visible" }}>
-      <defs>
-        <linearGradient id="vol-gap" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.bad} stopOpacity={0.26} />
-          <stop offset="100%" stopColor={C.bad} stopOpacity={0.04} />
-        </linearGradient>
-      </defs>
-      {/* shaded risk */}
-      {gapArea && <polygon points={gapArea} fill="url(#vol-gap)" />}
-      {/* locked FD rate */}
-      <line x1={x0} y1={lockY} x2={x1} y2={lockY} stroke={C.teal} strokeWidth={4} strokeDasharray="12 9" strokeLinecap="round" />
-      <text x={x0} y={lockY - 16} fontFamily={monoFont} fontSize={24} fontWeight={700} fill={C.teal}>
-        Locked FD rate
+    <g>
+      <rect x={rx} y={y - 25} width={w} height={34} rx={9} fill="#fff" stroke={color} strokeWidth={1.5} opacity={0.97} />
+      <text x={tx} y={y - 1} textAnchor={anchor} fontFamily={font} fontSize={22} fontWeight={700} fill={color}>
+        {text}
       </text>
-      {/* spot */}
-      <polyline points={poly} fill="none" stroke={C.bad} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={len} strokeDashoffset={off} />
-      {draw > 0.5 && (
-        <>
-          <circle cx={last[0]} cy={last[1]} r={7} fill={C.bad} stroke="#fff" strokeWidth={2.5} opacity={clamp01((draw - 0.5) * 2)} />
-          <text x={last[0]} y={last[1] + 34} textAnchor="end" fontFamily={monoFont} fontSize={24} fontWeight={700} fill={C.bad} opacity={clamp01((draw - 0.5) * 2)}>
-            Spot drifts
-          </text>
-        </>
-      )}
-    </svg>
+    </g>
+  );
+};
+
+// ─── payoff panel — the two ways to deliver a forward, on one payoff graph ─────
+// X = rate at settlement, Y = the value the business actually receives. A grey
+// diagonal is the UNHEDGED swing; the dashed line is the fair locked rate. The
+// delivered forward is flat (the swing is gone). The difference between the two
+// modes is HOW it's delivered:
+//   • premium — the broker forecasts the move and charges for it; the delivered
+//     line sits below fair by a guessed PREMIUM, fuzzy with forecast risk.
+//   • ndf — only the cash difference settles, exactly; delivered sits ON fair.
+export const PayoffPanel: React.FC<{ mode: "premium" | "ndf"; w?: number }> = ({ mode, w = 680 }) => {
+  const ndf = mode === "ndf";
+  const tone = ndf ? C.good : C.bad;
+  const cw = w;
+  const ch = 320;
+  const padL = 56;
+  const padR = 26;
+  const padT = 18;
+  const padB = 54;
+  const x0 = padL;
+  const x1 = cw - padR;
+  const y0 = ch - padB;
+  const y1 = padT;
+  const fairY = lerp(y1, y0, 0.34);
+  const deliveredY = ndf ? fairY : fairY + 78;
+  const uid = mode;
+  return (
+    <div
+      style={{
+        ...glass(24),
+        width: w,
+        padding: "22px 24px 24px",
+        border: `2.5px solid ${tone}`,
+        boxShadow: `0 16px 44px rgba(60,66,130,0.16), 0 0 46px ${tone}2e, inset 0 1px 0 rgba(255,255,255,0.9)`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 2 }}>
+        <div style={{ width: 16, height: 16, borderRadius: "50%", background: tone }} />
+        <div style={{ fontFamily: font, fontSize: 32, fontWeight: 800, color: C.text, letterSpacing: "-0.01em" }}>
+          {ndf ? "Spot + NDF" : "Forward + premium"}
+        </div>
+        <div style={{ marginLeft: "auto", fontFamily: monoFont, fontSize: 22, fontWeight: 700, letterSpacing: "0.08em", color: tone }}>
+          {ndf ? "SETTLE EXACT" : "THE OLD WAY"}
+        </div>
+      </div>
+      <svg width={cw} height={ch} style={{ overflow: "visible" }}>
+        <defs>
+          <marker id={`pf-axis-${uid}`} markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1,1 L7,4.5 L1,8" fill="none" stroke={C.faint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </marker>
+        </defs>
+        {/* axes */}
+        <line x1={x0} y1={y0} x2={x0} y2={y1 - 12} stroke={C.faint} strokeWidth={3} strokeLinecap="round" markerEnd={`url(#pf-axis-${uid})`} />
+        <line x1={x0} y1={y0} x2={x1 + 12} y2={y0} stroke={C.faint} strokeWidth={3} strokeLinecap="round" markerEnd={`url(#pf-axis-${uid})`} />
+        <text x={x0 - 14} y={y1 - 18} textAnchor="start" fontFamily={monoFont} fontSize={24} fontWeight={700} fill={C.dim}>Your value</text>
+        <text x={x1 + 8} y={y0 + 40} textAnchor="end" fontFamily={monoFont} fontSize={24} fontWeight={700} fill={C.dim}>Rate at settlement →</text>
+        {/* fair locked rate — the reference */}
+        <line x1={x0} y1={fairY} x2={x1} y2={fairY} stroke="rgba(60,64,110,0.34)" strokeWidth={2.5} strokeDasharray="9 8" />
+        <ChartTag x={x1 - 6} y={fairY - 8} text="fair rate" color={C.dim} anchor="end" />
+        {/* unhedged swing — what they'd suffer with no hedge */}
+        <line x1={x0} y1={y0 - 10} x2={x1} y2={y1 + 22} stroke="rgba(60,64,110,0.30)" strokeWidth={3} strokeDasharray="2 9" strokeLinecap="round" />
+        <text x={x1 - 4} y={y1 + 16} textAnchor="end" fontFamily={font} fontSize={22} fontWeight={700} fill={C.faint}>no hedge: swings</text>
+
+        {mode === "premium" ? (
+          <>
+            {/* the guessed premium wedge between fair and delivered */}
+            <rect x={x0} y={fairY} width={x1 - x0} height={deliveredY - fairY} fill={C.bad} opacity={0.14} />
+            {/* forecast-risk band around delivered */}
+            <line x1={x0} y1={deliveredY - 24} x2={x1} y2={deliveredY - 24} stroke={C.bad} strokeWidth={2} strokeDasharray="6 8" opacity={0.5} />
+            <line x1={x0} y1={deliveredY + 24} x2={x1} y2={deliveredY + 24} stroke={C.bad} strokeWidth={2} strokeDasharray="6 8" opacity={0.5} />
+            {/* delivered (below fair, worse) */}
+            <line x1={x0} y1={deliveredY} x2={x1} y2={deliveredY} stroke={C.bad} strokeWidth={6} strokeLinecap="round" />
+            <circle cx={x1} cy={deliveredY} r={7} fill={C.bad} stroke="#fff" strokeWidth={2.5} />
+            <ChartTag x={(x0 + x1) / 2} y={(fairY + deliveredY) / 2 + 6} text="PREMIUM — guessed" color={C.bad} anchor="middle" />
+          </>
+        ) : (
+          <>
+            {/* the difference settles in cash → delivered sits exactly on fair */}
+            <line x1={x1 - 70} y1={y1 + 30} x2={x1 - 70} y2={fairY} stroke={C.good} strokeWidth={3} strokeDasharray="5 6" />
+            <ChartTag x={x1 - 70} y={(y1 + 30 + fairY) / 2} text="Δ settles in cash" color={C.good} anchor="middle" />
+            <line x1={x0} y1={deliveredY} x2={x1} y2={deliveredY} stroke={C.good} strokeWidth={6} strokeLinecap="round" />
+            <circle cx={x1} cy={deliveredY} r={7} fill={C.good} stroke="#fff" strokeWidth={2.5} />
+          </>
+        )}
+      </svg>
+      <div style={{ fontFamily: font, fontSize: 27, fontWeight: 600, color: C.dim, lineHeight: 1.22 }}>
+        {ndf ? (
+          <>Only the <span style={{ color: C.good, fontWeight: 800 }}>cash difference</span> settles — exact. No premium to forecast.</>
+        ) : (
+          <>The broker <span style={{ color: C.bad, fontWeight: 800 }}>forecasts the move</span> and charges for it. Guess wrong → lose the deal or lose money.</>
+        )}
+      </div>
+    </div>
   );
 };
 

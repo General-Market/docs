@@ -29,9 +29,9 @@ import {
   FlowBox,
   glass,
   Kicker,
+  PayoffPanel,
   place,
   Speech,
-  VolatilityChart,
 } from "./parts";
 import { Bloom, breathe, clamp01, flash, lerp, pop, punchAt, RingPop } from "./motion";
 
@@ -83,33 +83,49 @@ const WantBeat: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ── BEAT 2 — the old way: hedge with spot, but spot drifts (made clear) ────────
+// ── BEAT 2 — the slide: two ways to deliver the forward, on a payoff graph ─────
+const StepChip: React.FC<{ n: number; text: string }> = ({ n, text }) => (
+  <div style={{ ...glass(999), padding: "10px 22px 10px 12px", display: "flex", alignItems: "center", gap: 13 }}>
+    <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.teal, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font, fontSize: 26, fontWeight: 800 }}>{n}</div>
+    <div style={{ fontFamily: font, fontSize: 29, fontWeight: 700, color: C.text }}>{text}</div>
+  </div>
+);
+
 const HedgeBeat: React.FC<{ frame: number }> = ({ frame }) => {
   const at = beatArrival("hedge");
   return (
     <Cell keyName="hedge">
-      <At x={W / 2} y={110}>
-        <Kicker text="THE OLD WAY" />
+      <At x={W / 2} y={92}>
+        <Kicker text="DELIVERING THE FORWARD — TWO WAYS" />
       </At>
-      <At x={300} y={420} scale={pop(frame, at)}>
-        <BrokerTile size={188} />
-      </At>
-      {/* broker sells the FD, then must hold a spot hedge while price moves */}
-      <At x={300} y={600}>
-        <div style={{ fontFamily: font, fontSize: 28, fontWeight: 700, color: C.dim, width: 320, textAlign: "center" }}>
-          The broker locks your rate, then hedges in spot
+      {/* the step lead-in */}
+      <At x={W / 2} y={196}>
+        <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+          <StepChip n={1} text="Lock the rate" />
+          <div style={{ fontFamily: font, fontSize: 34, fontWeight: 800, color: C.faint }}>→</div>
+          <StepChip n={2} text="Cover the move to settlement" />
+          <div style={{ fontFamily: font, fontSize: 34, fontWeight: 800, color: C.faint }}>→</div>
+          <StepChip n={3} text="Two ways:" />
         </div>
       </At>
-      <Bloom x={1130} y={520} r={300} color={C.badSoft} op={0.4 + 0.25 * flash(frame, at + sec(0.4), 60)} />
-      <At x={1130} y={500} scale={pop(frame, at + 6)}>
-        <div style={{ ...glass(22), padding: "26px 30px 18px" }}>
-          <VolatilityChart draw={1} w={560} h={330} />
-        </div>
+      {/* left — the old way: guess the band, charge a premium */}
+      <Bloom x={530} y={620} r={360} color={C.badSoft} op={0.32 + 0.2 * flash(frame, at + sec(0.3), 60)} />
+      <At x={530} y={628} scale={pop(frame, at + 4)}>
+        <PayoffPanel mode="premium" w={690} />
       </At>
-      <At x={1130} y={840}>
-        <div style={{ ...glass(16), padding: "16px 30px", border: `1.5px solid ${C.bad}55`, fontFamily: font, fontSize: 28, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 10 }}>
-          Spot drifts from the locked rate → the broker eats the
-          <span style={{ color: C.bad, fontWeight: 800 }}>volatility</span>
+      {/* vs */}
+      <At x={W / 2} y={612} z={6} scale={pop(frame, at + 10)}>
+        <div style={{ ...glass(999), width: 84, height: 84, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.faint}55`, fontFamily: font, fontSize: 34, fontWeight: 800, color: C.dim }}>vs</div>
+      </At>
+      {/* right — the CRX way: the difference settles exactly */}
+      <Bloom x={1390} y={620} r={360} color={C.goodSoft} op={0.32 + 0.25 * flash(frame, at + sec(0.7), 60)} />
+      <At x={1390} y={628} scale={pop(frame, at + 14)}>
+        <PayoffPanel mode="ndf" w={690} />
+      </At>
+      {/* the line that lands it */}
+      <At x={W / 2} y={1004}>
+        <div style={{ fontFamily: font, fontSize: 30, fontWeight: 700, color: C.text }}>
+          A forward built on a <span style={{ color: C.bad, fontWeight: 800 }}>forecast</span> is fragile — the NDF <span style={{ color: C.good, fontWeight: 800 }}>settles the difference</span> instead of pricing it.
         </div>
       </At>
     </Cell>

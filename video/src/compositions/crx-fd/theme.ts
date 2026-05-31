@@ -16,7 +16,7 @@ export const H = 1080;
 export const sec = (s: number): number => Math.round(s * FPS);
 
 // minimum on-screen type — nothing reads smaller than this
-export const MIN_FONT = 24;
+export const MIN_FONT = 28;
 
 export const TEAL_GRADIENT = "linear-gradient(95deg, #2AD4BB 0%, #1CC8C6 52%, #19B6DD 100%)";
 
@@ -76,12 +76,12 @@ export const cellCenter = (key: BeatKey): [number, number] => {
 };
 
 export const BEATS: { key: BeatKey; seconds: number }[] = [
-  { key: "want", seconds: 1.9 },
-  { key: "hedge", seconds: 3.1 },
+  { key: "want", seconds: 2.0 },
+  { key: "hedge", seconds: 5.2 },
   { key: "expensive", seconds: 2.3 },
-  { key: "crx", seconds: 3.4 },
+  { key: "crx", seconds: 3.6 },
   { key: "happy", seconds: 2.0 },
-  { key: "result", seconds: 2.7 },
+  { key: "result", seconds: 2.8 },
 ];
 
 export const TRANSITION = sec(0.72); // snappy pan between cells
