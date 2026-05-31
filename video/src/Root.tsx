@@ -125,6 +125,7 @@ import { blockTradingExileMeta } from "./compositions/block-trading/BlockTrading
 import { parimutuelExplainerMeta } from "./compositions/parimutuel/ParimutuelExplainer";
 import { batchFlowReelMeta } from "./compositions/batch-flow/BatchFlowReel";
 import { settleDiagramMeta } from "./compositions/batch-flow/SettleDiagram";
+import { crxForwardDiagramMeta } from "./compositions/crx-fd/CRXForwardDiagram";
 import { strategyFlipDiagramMeta } from "./compositions/batch-flow/StrategyFlipDiagram";
 import { finiteLiquidityMeta } from "./compositions/article-2/FiniteLiquidity";
 import { technicalOverloadMeta } from "./compositions/article-2/TechnicalOverload";
@@ -266,6 +267,14 @@ export const RemotionRoot: React.FC = () => {
           fps={settleDiagramMeta.fps}
           width={settleDiagramMeta.width}
           height={settleDiagramMeta.height}
+        />
+        <Composition
+          id={crxForwardDiagramMeta.id}
+          component={crxForwardDiagramMeta.component}
+          durationInFrames={crxForwardDiagramMeta.durationInFrames}
+          fps={crxForwardDiagramMeta.fps}
+          width={crxForwardDiagramMeta.width}
+          height={crxForwardDiagramMeta.height}
         />
         <Composition
           id={liquidityLoopMeta.id}
