@@ -60,7 +60,7 @@ def test_check_all_updates_pnl():
     tracker, _, _ = make_tracker({"auto_claim": False, "auto_withdraw": False})
     tracker.on_join(1, 10_000_000, b"\x00", ["BTC-UP"])
 
-    with patch.object(tracker, "_fetch_balance", return_value=15_000_000):
+    with patch.object(tracker, "_fetch_balance", return_value=(15_000_000, False)):
         tracker.check_all()
 
     assert tracker._positions[1]["balance"] == 15_000_000
@@ -73,7 +73,7 @@ def test_check_all_handles_api_errors():
     tracker, _, _ = make_tracker({"auto_claim": False, "auto_withdraw": False})
     tracker.on_join(1, 10_000_000, b"\x00", ["BTC-UP"])
 
-    with patch.object(tracker, "_fetch_balance", return_value=None):
+    with patch.object(tracker, "_fetch_balance", return_value=(None, False)):
         tracker.check_all()  # Should not crash
 
     # Balance and pnl unchanged

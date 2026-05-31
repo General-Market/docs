@@ -111,7 +111,7 @@ class Tracker:
 
         to_remove = []
         for batch_id, pos in list(self._positions.items()):
-            balance = self._fetch_balance(batch_id)
+            balance, settled = self._fetch_balance(batch_id)
             if balance is not None:
                 pos["balance"] = balance
                 # The oracle's /vision/balance endpoint reports the running NET
@@ -123,12 +123,24 @@ class Tracker:
                 # formula becomes wrong and the bot will look richer than it is.
                 pos["pnl"] = balance - pos["deposited"]
 
+            # A settled round is final — its balance can never change again.
+            # Retire it now, whatever the size. The old code only consulted the
+            # settled flag for positions that had already bled below the withdraw
+            # floor, so settled break-evens and winners were never removed and
+            # `active` grew without bound — thousands of dead entries, each
+            # re-serialised and fsynced every cycle.
+            if settled:
+                log.info("Batch %d settled (final: %d) — retiring to history", batch_id, pos["balance"])
+                to_remove.append(batch_id)
+                continue
+
             # Auto-claim check
             claim_threshold = self._config.get("claim_above", 5) * self._usdc_unit
             if self._config.get("auto_claim", True) and pos["pnl"] > claim_threshold:
                 self._try_claim(batch_id, pos)
 
-            # Auto-withdraw check
+            # Auto-withdraw check — safety net for a position bleeding toward zero
+            # that the oracle has not yet flagged settled.
             withdraw_threshold = self._config.get("withdraw_below", 2) * self._usdc_unit
             if self._config.get("auto_withdraw", True) and pos["balance"] < withdraw_threshold:
                 withdrawn = self._try_withdraw(batch_id, pos)
@@ -390,17 +402,24 @@ class Tracker:
             log.warning("Batch %d: withdraw check failed: %s", batch_id, e)
             return False
 
-    def _fetch_balance(self, batch_id: int) -> int | None:
-        """GET /vision/balance/{batch_id}/{player}, round-robin across oracles."""
+    def _fetch_balance(self, batch_id: int) -> tuple[int | None, bool]:
+        """GET /vision/balance/{batch_id}/{player}, round-robin across oracles.
+
+        Returns (balance, settled). balance is None when the oracle is
+        unreachable or omits it; settled is True once the round is final. The
+        settled flag rides along with the balance so check_all retires a closed
+        position in the same request instead of polling the endpoint twice."""
         player = self._executor.bot_addr
         data = self._oracle_get(f"/vision/balance/{batch_id}/{player}")
         if data is None:
-            return None
+            return None, False
+        settled = bool(data.get("settled", False))
         val = data.get("balance")
         try:
-            return int(val) if val is not None else None
+            balance = int(val) if val is not None else None
         except (TypeError, ValueError):
-            return None
+            balance = None
+        return balance, settled
 
     @property
     def active_ids(self) -> set[int]:
