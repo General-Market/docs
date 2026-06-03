@@ -1,4 +1,9 @@
-"""Watches Telegram for replies to forwarded messages and applies commands.
+"""Owns the bot's single getUpdates consumer: logs group messages and applies commands.
+
+This is the *only* place allowed to long-poll getUpdates — Telegram delivers
+each update to one consumer, so a second poller would steal updates. Every
+group/supergroup message is handed to `group_log.record_message` first; the
+reply-command logic below runs on top of the same stream.
 
 The only commands today are `ban` and `mute`, both addressed at Gmail
 forwards by replying to (or quoting) the original Telegram notification.
@@ -19,7 +24,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from . import blocklist, forwarded_index
+from . import blocklist, forwarded_index, group_log
 from .config import Config
 from .gmail_poller import trash_sender_messages
 from .telegram_client import Telegram
@@ -88,6 +93,11 @@ async def poll_commands_loop(cfg: Config, tg: Telegram) -> None:
                     offset = max(offset, update_id + 1)
 
                 msg = u.get("message") or {}
+
+                # Transcribe every group message before the command filter below
+                # drops everything that isn't a reply-command.
+                group_log.record_message(msg)
+
                 reply = msg.get("reply_to_message")
                 if not reply:
                     continue

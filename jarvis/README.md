@@ -8,8 +8,20 @@ One Python process. Three watchers + a command listener. One Telegram chat (Max)
 | Discord | Discord bot in *General Market* server, channel `#general` | Every human message in that one channel | none — websocket, no replay |
 | Gmail | IMAP at `imap.gmail.com` for `max@generalmarket.io` | New unread mail, **minus** outreach/warmup spam **and** anything on the runtime ban/mute list | `state/gmail.json` |
 | Commands | Telegram getUpdates long-poll | Acts on `ban`/`mute` replies to Gmail forwards | `state/forwarded.json`, `state/blocklist.json` |
+| Group log | Telegram getUpdates long-poll (same consumer) | Transcribes every group/supergroup message Jarvis receives | `state/group_log.jsonl` |
 
 Polling, not webhooks. No frontend changes. No Dokploy redeploys.
+
+## Group message logging
+
+Jarvis appends every message it receives in a **group or supergroup** to `state/group_log.jsonl` (one JSON object per line: `ts`, `chat_id`, `chat_title`, `from`, `username`, `message_id`, `reply_to`, `text`). Private DMs with the bot and channel posts are skipped.
+
+**This needs a BotFather toggle to capture ordinary chatter.** Telegram only delivers normal group messages to a bot when privacy mode is OFF or the bot is a group admin:
+
+1. Message **@BotFather** → `/setprivacy` → pick the Jarvis bot → **Disable**.
+2. **Re-add the bot to the group** — the privacy change only applies to groups joined *after* the toggle.
+
+With privacy mode ON (the default), the logger still runs but only ever sees commands, `@mentions`, and replies to the bot. The capture is wired into the single `getUpdates` consumer in `command_poller.py`; there is intentionally no second poller.
 
 ## Reply commands (Gmail only, today)
 
@@ -87,7 +99,8 @@ jarvis/
   waitlist.py          # Postgres submissions poll
   discord_bridge.py    # discord.py client on one channel
   gmail_poller.py      # IMAP poll + outreach filter + ban/mute filter + trash
-  command_poller.py    # Telegram getUpdates → ban/mute reply commands
+  command_poller.py    # Telegram getUpdates → group logging + ban/mute reply commands
+  group_log.py         # appends every group message to state/group_log.jsonl
   blocklist.py         # runtime ban/mute list, persisted to state/blocklist.json
   forwarded_index.py   # telegram_msg_id → source mapping, capped LRU on disk
   get_chat_id.py       # one-shot helper to discover TELEGRAM_CHAT_ID
@@ -168,8 +181,9 @@ To temporarily disable a watcher, add `-e DISCORD_ENABLED=false` or `-e GMAIL_EN
 | `gmail.json` | `{"max_uid": <int>}` | If you wipe this, next start does a bootstrap (forwards nothing once) |
 | `forwarded.json` | `{telegram_msg_id: {source, sender_email, ...}}`, last 500 | Replies to older messages will get "I don't remember that" |
 | `blocklist.json` | `{banned_emails: [...], muted_emails: [...]}` | Hand-edit to undo a ban or mute, or to seed a list |
+| `group_log.jsonl` | one JSON object per line, one per group message | Append-only transcript; delete to start a fresh log |
 
-Removing all four files and restarting is the clean way to "start watching from now."
+Removing the four JSON files and restarting is the clean way to "start watching from now." `group_log.jsonl` is an append-only record — it is never read back, so it grows until you delete or rotate it.
 
 ---
 
