@@ -1,4 +1,5 @@
 import { Easing, interpolate } from "remotion";
+import { buildCamera } from "./camera";
 import type {
   Candle,
   ChartData,
@@ -11,31 +12,26 @@ import type {
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
 /* ------------------------------------------------------------------ *
- * Pick the god candle: the biggest single-candle up-move that is recent
- * and well-traded, sitting on a flat-ish base (so the chart reads flat→boom).
+ * Find the parabola: the global peak, then walk back to the foot of the run
+ * (~1/9 of the peak) and frame the whole flat-base → vertical-blow-off shape.
  * ------------------------------------------------------------------ */
-export function chooseGodCandle(candles: Candle[]): number {
-  const vols = candles.map((c) => c.v).sort((a, b) => a - b);
-  const volFloor = vols[Math.floor(vols.length * 0.6)] ?? 0;
-  let best = -1;
-  let bestScore = 0;
-  for (let i = Math.floor(candles.length * 0.5); i < candles.length; i++) {
-    const c = candles[i];
-    if (c.o <= 0 || c.v < volFloor) continue;
-    const gain = c.c / c.o; // close/open
-    const range = c.h / Math.max(1e-12, c.l);
-    const score = gain * 1.6 + range; // favour a strong close + a tall wick
-    if (score > bestScore) {
-      bestScore = score;
-      best = i;
-    }
-  }
-  return best < 0 ? candles.length - 2 : best;
+export function chooseParabola(candles: Candle[]): {
+  startIdx: number;
+  peakIdx: number;
+  endIdx: number;
+} {
+  const lim = Math.floor(candles.length * 0.92);
+  let peakIdx = 1;
+  for (let i = 1; i < lim; i++) if (candles[i].h > candles[peakIdx].h) peakIdx = i;
+  // Frame the WHOLE parabola: a long flat base running far to the left, then
+  // the vertical blow-off into the peak near the right edge. End AT the peak
+  // so the live edge dwells at the all-time high (no long post-peak decline).
+  const startIdx = Math.max(0, peakIdx - 150);
+  const endIdx = Math.min(candles.length - 1, peakIdx + 1);
+  return { startIdx, peakIdx, endIdx };
 }
 
-/* ------------------------------------------------------------------ *
- * Deterministic RNG + nice ladder.
- * ------------------------------------------------------------------ */
+/* ---- deterministic RNG + nice ladder -------------------------------- */
 function lcg(seed: number) {
   let s = seed >>> 0;
   return () => {
@@ -43,15 +39,13 @@ function lcg(seed: number) {
     return s / 4294967296;
   };
 }
-
 function niceStep(range: number): number {
   const raw = range / 6;
   const mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, raw))));
-  const norm = raw / mag;
-  const step = norm >= 5 ? 5 : norm >= 2.5 ? 2.5 : norm >= 2 ? 2 : norm >= 1 ? 1 : 0.5;
+  const n = raw / mag;
+  const step = n >= 5 ? 5 : n >= 2.5 ? 2.5 : n >= 2 ? 2 : n >= 1 ? 1 : 0.5;
   return step * mag;
 }
-
 function buildLadder(min: number, max: number): number[] {
   const step = niceStep(max - min);
   if (!Number.isFinite(step) || step <= 0) return [];
@@ -61,205 +55,170 @@ function buildLadder(min: number, max: number): number[] {
   return out;
 }
 
-/* ------------------------------------------------------------------ *
- * Discrete camera — TradingView gestures: hold, dezoom, hold, zoom, hold,
- * one slight side-scroll, settle. Equal consecutive values = a hold.
- * ------------------------------------------------------------------ */
-type Key = { t: number; v: number };
-const EASE = Easing.bezier(0.4, 0, 0.2, 1);
-
-function keyed(p: number, keys: Key[]): number {
-  if (p <= keys[0].t) return keys[0].v;
-  for (let i = 1; i < keys.length; i++) {
-    if (p <= keys[i].t) {
-      const a = keys[i - 1];
-      const b = keys[i];
-      if (a.v === b.v) return a.v; // hold
-      const local = clamp01((p - a.t) / (b.t - a.t));
-      return interpolate(EASE(local), [0, 1], [a.v, b.v]);
-    }
-  }
-  return keys[keys.length - 1].v;
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function fakeTrader(rng: () => number): string {
+  const ch = () => B58[Math.floor(rng() * B58.length)];
+  return `${ch()}${ch()}${ch()}${ch()}…${ch()}${ch()}${ch()}${ch()}`;
 }
-
-// visible candle count (zoom). Lower = zoomed in.
-const ZOOM: Key[] = [
-  { t: 0, v: 30 },
-  { t: 0.12, v: 30 },
-  { t: 0.24, v: 50 }, // dezoom out
-  { t: 0.42, v: 50 },
-  { t: 0.54, v: 26 }, // zoom in
-  { t: 0.7, v: 26 },
-  { t: 0.78, v: 32 }, // tiny breath
-  { t: 1, v: 27 },
-];
-// god-candle distance from the right edge, in candle-units. Always > 0 and well
-// under viewCount, so the god candle is NEVER scrolled out of view — the camera
-// just nudges it across (one slight side-scroll) and settles it back.
-const GODX: Key[] = [
-  { t: 0, v: 4 },
-  { t: 0.6, v: 4 },
-  { t: 0.7, v: 8 },
-  { t: 0.86, v: 8 },
-  { t: 0.95, v: 4 },
-  { t: 1, v: 4 },
-];
-
-/* ------------------------------------------------------------------ *
- * The macro skeleton of the forming god candle: flat base, exponential boom,
- * wick pullback to the real close. The live price is a random walk PULLED
- * toward this skeleton — the skeleton gives the shape, the walk gives the feel.
- * No time compression: one candle, formed live.
- * ------------------------------------------------------------------ */
-function godTrend(q: number, o: number, h: number, c: number): number {
-  if (q < 0.3) return o; // flat base
-  if (q < 0.85) {
-    const r = (q - 0.3) / 0.55;
-    return o + (h - o) * Math.pow(r, 2.3); // slow, then vertical — exponential
-  }
-  const r = (q - 0.85) / 0.15;
-  return h + (c - h) * Easing.out(Easing.ease)(r); // settle to close
-}
-
-const fmtTrader = (a: string) =>
-  a && a.length > 9 ? `${a.slice(0, 4)}…${a.slice(-4)}` : a || "—";
 
 /* ------------------------------------------------------------------ */
 export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
-  const { candles } = data;
+  const { candles, ticks } = data;
   const mp = data.token.mcapPerPrice || 1;
-  const g = cfg.godIdx;
-  const god = candles[g];
+  const { startIdx, peakIdx, endIdx } = chooseParabola(candles);
 
-  // launch = lowest mcap before the god candle; peak = highest reached up to
-  // and including it. Both use only past/present data, so Peak ≥ the live top.
-  let launchLow = candles[0].l;
-  let peakHigh = candles[0].h;
-  for (let i = 0; i <= g; i++) {
-    launchLow = Math.min(launchLow, candles[i].l);
-    peakHigh = Math.max(peakHigh, candles[i].h);
+  // The whole parabola must already be on screen at frame 0. The flat base
+  // (startIdx → foot of the blow-off) is present from the start; only the
+  // final few candles of the vertical part PRINT in over the first ~40% of
+  // the clip, after which the live edge dwells at the peak and chops.
+  const H0 = Math.max(startIdx + 1, peakIdx - 6);
+
+  // prefix max-high (mcap) over the slice → dynamic Peak as the blow-off prints
+  const prefMaxHigh: number[] = [];
+  let run = 0;
+  for (let i = startIdx; i <= endIdx; i++) {
+    run = Math.max(run, candles[i].h);
+    prefMaxHigh[i] = run;
   }
-  const launchMcap = launchLow * mp;
-  const peakMultiple = (peakHigh * mp) / launchMcap;
+
+  const launchMcap = candles[startIdx].l * mp;
+  const entryIdx = startIdx + 12;
+  const entryMcap = candles[entryIdx].l * mp;
+
+  // Fill the plot width: viewCount ≈ slice length + a small right-edge gap, so
+  // the whole parabola spans the plot. The camera's parasite zoom only breathes
+  // gently around "the whole parabola fits".
+  const sliceLen = endIdx - startIdx + 1;
+  const rightGap = 6;
+  const fitView = sliceLen + rightGap;
+  const camera = buildCamera({
+    totalFrames: cfg.totalFrames,
+    fps: cfg.fps,
+    viewCountRange: [fitView * 0.98, fitView * 1.12],
+  });
 
   const rng = lcg(0x9e3779b1);
-  const traderPool = data.trades.map((t) => t.trader).filter(Boolean);
-  let tp = 0;
-  const pickTrader = () => {
-    const a = traderPool.length
-      ? traderPool[(tp = (tp + Math.floor(rng() * 7) + 1) % traderPool.length)]
-      : "So1ana";
-    return fmtTrader(a);
-  };
-
   const frames: FrameView[] = [];
 
-  // forming-candle running extents + eased axis state
-  let liveHi = god.o;
-  let liveLo = god.o;
-  let prevPrice = god.o;
-
-  // random-walk state for the live price (the "real trading feel")
-  let price = god.o;
+  // live edge + eased axis state
+  let price = candles[H0].o;
   let lastStep = 0;
-  let volEnv = 1; // volatility-cluster envelope, itself a slow random walk
-  let dispMin = Math.min(god.l, candles[g - 1]?.l ?? god.l) * mp;
-  let dispMax = god.o * mp;
+  let volEnv = 1;
+  let formingInt = -1;
+  let fHi = price;
+  let fLo = price;
+  let prevPrice = price;
+  let dispMin = candles[startIdx].l * mp;
+  let dispMax = candles[H0].h * mp;
+  let holders = 1400;
 
-  const tape: (TapeRow & { birthFrame: number })[] = [];
-  let lastFillFrame = -999;
-  let fillSeq = 0;
+  const headEase = Easing.bezier(0.3, 0, 0.4, 1);
 
   for (let f = 0; f < cfg.totalFrames; f++) {
     const p = f / (cfg.totalFrames - 1);
 
-    // live price = random walk pulled toward the macro skeleton. Jagged steps,
-    // volatility clustering (bursts/stalls), short-term mean reversion (chop)
-    // and occasional jumps — the continuous-time-random-walk look of a tape.
-    const trend = godTrend(p, god.o, god.h, god.c);
-    const regime = p < 0.3 ? 0.3 : p < 0.85 ? 1 : 0.5; // calm base, wild boom
-    volEnv += (rng() - 0.5) * 0.5; // cluster: vol drifts up and down
-    volEnv = Math.max(0.45, Math.min(1.9, volEnv));
+    // The whole base is already framed at frame 0; only the final few candles
+    // of the blow-off print in over the first ~40%. After that the live edge
+    // dwells at endIdx (≈ peak) and just chops. Motion is front-loaded.
+    const head =
+      p <= 0.4
+        ? interpolate(headEase(p / 0.4), [0, 1], [H0, endIdx])
+        : endIdx;
+    const headInt = Math.min(endIdx, Math.floor(head));
+    const frac = head - headInt;
+
+    if (headInt !== formingInt) {
+      formingInt = headInt;
+      fHi = candles[headInt].o;
+      fLo = candles[headInt].o;
+    }
+
+    // forming-candle close path + real-trading chop (random walk pulled to it)
+    const cand = candles[headInt];
+    const trendClose =
+      cand.o + (cand.c - cand.o) * Easing.out(Easing.ease)(clamp01(frac));
+    const regime = p < 0.4 ? 1 : 0.62;
+    volEnv = Math.max(0.45, Math.min(1.9, volEnv + (rng() - 0.5) * 0.5));
     const vol = regime * volEnv;
     let step = (rng() * 2 - 1) * vol * price * 0.0065;
-    step -= 0.45 * lastStep; // negative autocorrelation → flicker / chop
-    if (rng() > 0.945) step *= 3.6; // jump (the spurts that throw wicks)
-    if (rng() < 0.3) step *= 0.14; // stall (waiting time between trades)
+    step -= 0.45 * lastStep; // chop / mean reversion
+    if (rng() > 0.945) step *= 3.6; // jumps throw the wicks
+    if (rng() < 0.3) step *= 0.14; // stalls
     lastStep = step;
-    const pull = 0.09 + 0.11 * regime; // anchor to the skeleton so it still booms
-    price = Math.max(god.l * 0.7, price + step + (trend - price) * pull);
+    const pull = 0.1 + 0.12 * regime;
+    price = Math.max(cand.l * 0.7, price + step + (trendClose - price) * pull);
+    fHi = Math.max(fHi, price);
+    fLo = Math.min(fLo, price);
 
-    liveHi = Math.max(liveHi, price);
-    liveLo = Math.min(liveLo, price);
     const liveMcap = price * mp;
     const tickUp = price >= prevPrice;
     prevPrice = price;
 
-    // camera — god candle anchored a few candles from the right edge, always
-    // in view; a slight side-scroll nudges it across and back.
-    const viewCount = keyed(p, ZOOM);
-    const godX = keyed(p, GODX);
-    const viewRight = g + godX;
+    const maxHigh = Math.max(prefMaxHigh[headInt] ?? cand.h, fHi);
+    const peakMultiple = (maxHigh * mp) / launchMcap;
+    holders += rng() > 0.7 ? 1 : 0;
 
-    // visible candles (history static, god candle forming at index g)
+    // camera — zoomed out to frame the whole parabola; edge near the right
+    const { viewCount, godX } = camera[f];
+    const viewRight = headInt + frac + godX;
+
+    // visible candles
     const viewCandles: ViewCandle[] = [];
-    const lo = Math.max(0, Math.ceil(viewRight - viewCount) - 1);
+    const lo = Math.max(startIdx, Math.ceil(viewRight - viewCount) - 1);
     let tMin = Infinity;
     let tMax = -Infinity;
     let liveX: number | null = null;
-    for (let i = lo; i <= g; i++) {
+    for (let i = lo; i <= headInt; i++) {
       const x = viewRight - i;
-      if (x < -0.5 || x > viewCount + 1) continue;
-      const forming = i === g;
+      if (x < -1 || x > viewCount + 1) continue;
+      const forming = i === headInt;
       const o = candles[i].o * mp;
       const c = (forming ? price : candles[i].c) * mp;
-      const h = (forming ? liveHi : candles[i].h) * mp;
-      const l = (forming ? liveLo : candles[i].l) * mp;
+      const h = (forming ? fHi : candles[i].h) * mp;
+      const l = (forming ? fLo : candles[i].l) * mp;
       viewCandles.push({ o, h, l, c, x, forming });
       tMin = Math.min(tMin, l);
       tMax = Math.max(tMax, h);
       if (forming) liveX = x;
     }
     if (!Number.isFinite(tMin)) {
-      tMin = liveLo * mp;
-      tMax = liveHi * mp;
+      tMin = fLo * mp;
+      tMax = fHi * mp;
     }
 
-    // autoscale: ease toward padded bounds (tight on the base, expands on boom)
-    const pad = (tMax - tMin) * 0.16 + tMax * 0.001;
+    // autoscale: ease toward padded bounds (floor near 0 → "$—")
+    const pad = (tMax - tMin) * 0.14 + tMax * 0.001;
     const targetMax = tMax + pad;
-    const targetMin = Math.max(0, tMin - pad * 0.5);
-    const k = 0.12;
-    dispMax += (targetMax - dispMax) * k;
-    dispMin += (targetMin - dispMin) * k;
+    const targetMin = Math.max(0, tMin - pad * 1.4);
+    dispMax += (targetMax - dispMax) * 0.12;
+    dispMin += (targetMin - dispMin) * 0.12;
 
-    // tape: dense during the boom, sparse on the flat
-    const booming = p > 0.3 && p < 0.92;
-    const fillGap = booming ? 5 + Math.floor(rng() * 6) : 22 + Math.floor(rng() * 18);
-    if (f - lastFillFrame >= fillGap) {
-      lastFillFrame = f;
-      const buy = booming ? rng() > 0.12 : rng() > 0.5;
-      const big = rng() > 0.88;
-      const usd = (big ? 150 + rng() * 1200 : 6 + rng() * 220) * (booming ? 1.6 : 1);
-      tape.unshift({
-        key: `f${fillSeq++}`,
-        kind: buy ? "buy" : "sell",
-        usd,
-        mcap: liveMcap,
-        trader: pickTrader(),
-        ageSec: 0,
-        birthFrame: f,
-      });
-      if (tape.length > 7) tape.pop();
+    // entry diamond marker (green), anchored at the base
+    const entryX = viewRight - entryIdx;
+    const entry =
+      entryX >= 0 && entryX <= viewCount
+        ? { mcap: entryMcap, vx: entryX }
+        : null;
+
+    // real trade tape — stream the real recent ticks newest-first
+    const tape: TapeRow[] = [];
+    if (ticks.length) {
+      const headTick = Math.floor(p * (ticks.length - 1));
+      const tr = lcg(0x1234 + headTick);
+      for (let k = 0; k < 7; k++) {
+        const idx = headTick - k;
+        if (idx < 0) break;
+        const t = ticks[idx];
+        tape.push({
+          key: `t${idx}`,
+          kind: t.kind,
+          usd: t.usd,
+          mcap: t.price * mp,
+          trader: fakeTrader(tr),
+          ageSec: k === 0 ? 0 : k,
+        });
+      }
     }
-    const rows: TapeRow[] = tape.map((r) => ({
-      key: r.key,
-      kind: r.kind,
-      usd: r.usd,
-      mcap: r.mcap,
-      trader: r.trader,
-      ageSec: Math.round((f - r.birthFrame) / cfg.fps),
-    }));
 
     // scrolling time ticks
     const xToTime = (vx: number) => {
@@ -270,15 +229,16 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
         d.getMinutes(),
       ).padStart(2, "0")}`;
     };
-    const axisTimes = [0.15, 0.5, 0.85].map((fr) => ({
-      label: xToTime(fr * viewCount),
-      vx: fr * viewCount,
+    const axisTimes = [0.16, 0.5, 0.84].map((r) => ({
+      label: xToTime(r * viewCount),
+      vx: r * viewCount,
     }));
 
     frames.push({
       mcap: liveMcap,
-      multiple: liveMcap / launchMcap,
+      multiple: liveMcap / entryMcap,
       peakMultiple,
+      holders,
       scaleMin: dispMin,
       scaleMax: dispMax,
       ladder: buildLadder(dispMin, dispMax),
@@ -287,9 +247,10 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
       liveMcap,
       liveUp: tickUp,
       liveX,
-      tfLabel: "1m",
+      entry,
+      tfLabel: "15s",
       axisTimes,
-      tape: rows,
+      tape,
     });
   }
 
@@ -303,7 +264,12 @@ export function mcapLabel(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
+export function mcapFull(v: number): string {
+  return `$${Math.round(v).toLocaleString("en-US")}`;
+}
+
 export function ladderLabel(v: number): string {
+  if (v <= 0) return "$—";
   if (v >= 1e6) return `$${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)}M`;
   if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toFixed(0)}`;

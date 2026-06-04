@@ -1,29 +1,33 @@
 /**
- * Axiom / pump.fun token-screen palette + type, sampled pixel-for-pixel from the
- * reference recording. These are not invented numbers — they come from the frame.
+ * Axiom token-screen palette + type, matched to the reference. The "Peak" badge
+ * is purple, the green is a mint, the live/sell red is a bright TradingView red.
+ * One typeface (Inter) for everything; tables use tabular figures.
  */
+import { loadFont } from "@remotion/google-fonts/Inter";
+
+const { fontFamily } = loadFont();
+
 export const C = {
-  bg: "#080a0d",
-  bgPanel: "#0c0f14",
-  bgRow: "#0a0d12",
+  bg: "#07080a",
+  bgPanel: "#0c0e12",
+  bgRow: "#0a0c10",
   hairline: "#171b22",
-  green: "#34da89",
+  green: "#3fd98a",
   greenDim: "#1f7a4d",
-  greenBar: "#33d988",
-  red: "#d6283a",
+  greenBar: "#2fcf86",
+  red: "#f0334a",
   redDim: "#7a2230",
-  peak: "#46e3c8",
+  peak: "#c04dff", // purple Peak badge
   text: "#f5f6f8",
   textMute: "#8b93a1",
   textFaint: "#5b626e",
   pill: "#0b0e13",
 } as const;
 
-// Axiom uses a clean grotesk for UI and a tabular mono for numbers.
-export const FONT_UI =
-  '-apple-system, "SF Pro Display", "Inter", "Helvetica Neue", sans-serif';
-export const FONT_MONO =
-  '"SF Mono", "JetBrains Mono", ui-monospace, "Menlo", monospace';
+export const FONT_UI = fontFamily;
+// Numbers use the same face with tabular figures; callers add
+// fontVariantNumeric: "tabular-nums" where alignment matters.
+export const FONT_MONO = fontFamily;
 
 /** 9:16 portrait, matched to the reference framing. */
 export const W = 1080;

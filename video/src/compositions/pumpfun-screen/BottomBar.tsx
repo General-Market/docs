@@ -12,10 +12,10 @@ export const BottomBar: React.FC = () => (
   >
     <div
       style={{
-        flex: 1.4,
+        flex: 1.5,
         height: 78,
         borderRadius: 18,
-        background: C.greenBar,
+        background: C.green,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -26,7 +26,7 @@ export const BottomBar: React.FC = () => (
         fontWeight: 700,
       }}
     >
-      ⬗ Buy
+      ◆ Buy
     </div>
     <div
       style={{

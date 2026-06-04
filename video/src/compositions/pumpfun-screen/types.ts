@@ -14,16 +14,35 @@ export interface RawTrade {
   trader: string;
 }
 
+export interface PriceTick {
+  t: number;
+  price: number; // token price in USD
+  usd: number;
+  kind: "buy" | "sell";
+}
+
+export interface PumpWindow {
+  startT: number;
+  endT: number;
+  basePrice: number;
+  peakPrice: number;
+}
+
 export interface ChartData {
   token: {
     name: string;
     symbol: string;
     avatar: string | null;
     mcapPerPrice: number;
-    poolCreatedAt?: string;
+  };
+  pool: {
+    liquidityUsd: number;
+    reserveBase: number | null;
+    reserveQuote: number | null;
   };
   candles: Candle[];
-  trades: RawTrade[];
+  ticks: PriceTick[];
+  pumpWindow: PumpWindow;
   fetchedAt: string;
   source: string;
 }
@@ -48,10 +67,17 @@ export interface TapeRow {
   ageSec: number;
 }
 
+/** The green diamond entry marker on its vertical dotted line. */
+export interface EntryMarker {
+  mcap: number; // y position (the entry mcap)
+  vx: number; // x in candle-units from the right edge
+}
+
 export interface FrameView {
   mcap: number;
-  multiple: number;
-  peakMultiple: number;
+  multiple: number; // current mcap / entry, green counter
+  peakMultiple: number; // DYNAMIC — ticks up as new highs print
+  holders: number;
   scaleMin: number;
   scaleMax: number;
   ladder: number[];
@@ -60,6 +86,7 @@ export interface FrameView {
   liveMcap: number;
   liveUp: boolean;
   liveX: number | null;
+  entry: EntryMarker | null;
   tfLabel: string;
   axisTimes: { label: string; vx: number }[];
   tape: TapeRow[];
@@ -68,5 +95,4 @@ export interface FrameView {
 export interface EngineConfig {
   totalFrames: number;
   fps: number;
-  godIdx: number;
 }

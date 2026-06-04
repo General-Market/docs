@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { C, FONT_MONO, FONT_UI, FPS, H, W } from "./theme";
-import { buildTimeline, chooseGodCandle } from "./engine";
+import { buildTimeline } from "./engine";
 import { Header } from "./Header";
 import { CandleChart } from "./CandleChart";
 import { TradeTape } from "./TradeTape";
@@ -49,15 +49,9 @@ const TfRow: React.FC<{ tf: string }> = ({ tf }) => (
 
 export const PumpFunScreen: React.FC = () => {
   const frame = useCurrentFrame();
-  const godIdx = useMemo(() => chooseGodCandle(data.candles), []);
   const timeline = useMemo(
-    () =>
-      buildTimeline(data, {
-        totalFrames: DURATION,
-        fps: FPS,
-        godIdx,
-      }),
-    [godIdx],
+    () => buildTimeline(data, { totalFrames: DURATION, fps: FPS }),
+    [],
   );
   const view = timeline[Math.min(frame, timeline.length - 1)];
 

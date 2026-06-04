@@ -14,16 +14,27 @@ const Cell: React.FC<{
   <span
     style={{
       flex,
-      textAlign: align,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: align === "right" ? "flex-end" : "flex-start",
+      gap: 8,
       color,
       fontFamily: FONT_MONO,
       fontSize: 25,
+      fontVariantNumeric: "tabular-nums",
       whiteSpace: "nowrap",
       overflow: "hidden",
     }}
   >
     {children}
   </span>
+);
+
+/** Tiny grey holder dot drawn after the trader handle. */
+const HolderDot: React.FC = () => (
+  <svg width={20} height={20} viewBox="0 0 20 20" style={{ flexShrink: 0 }}>
+    <circle cx={10} cy={10} r={8} fill="none" stroke={C.textFaint} strokeWidth={1.5} />
+  </svg>
 );
 
 export const TradeTape: React.FC<{ view: FrameView }> = ({ view }) => {
@@ -33,16 +44,29 @@ export const TradeTape: React.FC<{ view: FrameView }> = ({ view }) => {
       <div
         style={{
           display: "flex",
-          gap: 34,
+          alignItems: "center",
+          gap: 30,
           paddingBottom: 14,
           borderBottom: `1px solid ${C.hairline}`,
         }}
       >
-        <span style={{ color: C.text, fontFamily: FONT_UI, fontSize: 26, fontWeight: 600 }}>
+        <span
+          style={{ color: C.text, fontFamily: FONT_UI, fontSize: 26, fontWeight: 600 }}
+        >
           Trades
         </span>
-        <span style={{ color: C.textMute, fontFamily: FONT_UI, fontSize: 26 }}>
-          Holders (3,599)
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: C.textMute,
+            fontFamily: FONT_UI,
+            fontSize: 26,
+          }}
+        >
+          Holders ({view.holders.toLocaleString()})
+          <span style={{ fontSize: 22 }}>All ⇅</span>
         </span>
         <span style={{ color: C.textMute, fontFamily: FONT_UI, fontSize: 26 }}>
           Top Trades
@@ -51,10 +75,10 @@ export const TradeTape: React.FC<{ view: FrameView }> = ({ view }) => {
 
       {/* column heads */}
       <div style={{ display: "flex", padding: "14px 0 6px" }}>
-        <Cell flex={1.1} color={C.textFaint}>Age</Cell>
-        <Cell flex={1.6} color={C.textFaint}>USD</Cell>
-        <Cell flex={1.3} color={C.textFaint}>MCap</Cell>
-        <Cell flex={1.7} align="right" color={C.textFaint}>Trader</Cell>
+        <Cell flex={1.1} color={C.textFaint}>Age ⌄</Cell>
+        <Cell flex={1.6} color={C.textFaint}>USD ⇄</Cell>
+        <Cell flex={1.4} color={C.textFaint}>Market Cap</Cell>
+        <Cell flex={1.7} align="right" color={C.textFaint}>Trader ▽</Cell>
       </div>
 
       {/* rows */}
@@ -75,8 +99,11 @@ export const TradeTape: React.FC<{ view: FrameView }> = ({ view }) => {
               <Cell flex={1.6} color={col}>
                 {r.kind === "buy" ? "↑" : "↓"} ${r.usd.toFixed(2)}
               </Cell>
-              <Cell flex={1.3} color={C.textMute}>{mcapLabel(r.mcap)}</Cell>
-              <Cell flex={1.7} align="right" color={C.textMute}>{r.trader}</Cell>
+              <Cell flex={1.4} color={C.textMute}>{mcapLabel(r.mcap)}</Cell>
+              <Cell flex={1.7} align="right" color={C.textMute}>
+                {r.trader}
+                <HolderDot />
+              </Cell>
             </div>
           );
         })}
