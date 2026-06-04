@@ -93,28 +93,29 @@ const ZOOM: Key[] = [
   { t: 0.78, v: 32 }, // tiny breath
   { t: 1, v: 27 },
 ];
-// horizontal nudge in candle-units (one slight side-scroll and back).
-const PAN: Key[] = [
-  { t: 0, v: 0 },
-  { t: 0.6, v: 0 },
-  { t: 0.7, v: 7 },
-  { t: 0.86, v: 7 },
-  { t: 0.95, v: 0 },
-  { t: 1, v: 0 },
+// god-candle distance from the right edge, in candle-units. Always > 0 and well
+// under viewCount, so the god candle is NEVER scrolled out of view — the camera
+// just nudges it across (one slight side-scroll) and settles it back.
+const GODX: Key[] = [
+  { t: 0, v: 4 },
+  { t: 0.6, v: 4 },
+  { t: 0.7, v: 8 },
+  { t: 0.86, v: 8 },
+  { t: 0.95, v: 4 },
+  { t: 1, v: 4 },
 ];
 
 /* ------------------------------------------------------------------ *
- * Real-time god-candle price path: flat base, exponential boom, wick pullback
- * to the real close. No time compression — one candle, formed live.
+ * The macro skeleton of the forming god candle: flat base, exponential boom,
+ * wick pullback to the real close. The live price is a random walk PULLED
+ * toward this skeleton — the skeleton gives the shape, the walk gives the feel.
+ * No time compression: one candle, formed live.
  * ------------------------------------------------------------------ */
-function godPrice(q: number, o: number, h: number, c: number): number {
-  if (q < 0.3) {
-    return o * (1 + 0.015 * Math.sin(q * 33)); // flat chop around the open
-  }
+function godTrend(q: number, o: number, h: number, c: number): number {
+  if (q < 0.3) return o; // flat base
   if (q < 0.85) {
     const r = (q - 0.3) / 0.55;
-    const e = Math.pow(r, 2.3); // slow, then vertical — exponential
-    return o + (h - o) * e;
+    return o + (h - o) * Math.pow(r, 2.3); // slow, then vertical — exponential
   }
   const r = (q - 0.85) / 0.15;
   return h + (c - h) * Easing.out(Easing.ease)(r); // settle to close
@@ -151,13 +152,17 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
     return fmtTrader(a);
   };
 
-  const RIGHT_PAD = 3;
   const frames: FrameView[] = [];
 
   // forming-candle running extents + eased axis state
   let liveHi = god.o;
   let liveLo = god.o;
   let prevPrice = god.o;
+
+  // random-walk state for the live price (the "real trading feel")
+  let price = god.o;
+  let lastStep = 0;
+  let volEnv = 1; // volatility-cluster envelope, itself a slow random walk
   let dispMin = Math.min(god.l, candles[g - 1]?.l ?? god.l) * mp;
   let dispMax = god.o * mp;
 
@@ -168,21 +173,33 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
   for (let f = 0; f < cfg.totalFrames; f++) {
     const p = f / (cfg.totalFrames - 1);
 
-    // live price of the one forming candle (+ small real-time tick jitter)
-    const base = godPrice(p, god.o, god.h, god.c);
-    const vol = p > 0.3 && p < 0.85 ? 0.02 : 0.006;
-    const jitter = 1 + vol * Math.sin(f * 0.9) * (0.5 + rng() * 0.5);
-    const price = Math.max(god.l * 0.6, base * jitter);
+    // live price = random walk pulled toward the macro skeleton. Jagged steps,
+    // volatility clustering (bursts/stalls), short-term mean reversion (chop)
+    // and occasional jumps — the continuous-time-random-walk look of a tape.
+    const trend = godTrend(p, god.o, god.h, god.c);
+    const regime = p < 0.3 ? 0.3 : p < 0.85 ? 1 : 0.5; // calm base, wild boom
+    volEnv += (rng() - 0.5) * 0.5; // cluster: vol drifts up and down
+    volEnv = Math.max(0.45, Math.min(1.9, volEnv));
+    const vol = regime * volEnv;
+    let step = (rng() * 2 - 1) * vol * price * 0.0065;
+    step -= 0.45 * lastStep; // negative autocorrelation → flicker / chop
+    if (rng() > 0.945) step *= 3.6; // jump (the spurts that throw wicks)
+    if (rng() < 0.3) step *= 0.14; // stall (waiting time between trades)
+    lastStep = step;
+    const pull = 0.09 + 0.11 * regime; // anchor to the skeleton so it still booms
+    price = Math.max(god.l * 0.7, price + step + (trend - price) * pull);
+
     liveHi = Math.max(liveHi, price);
     liveLo = Math.min(liveLo, price);
     const liveMcap = price * mp;
     const tickUp = price >= prevPrice;
     prevPrice = price;
 
-    // camera
+    // camera — god candle anchored a few candles from the right edge, always
+    // in view; a slight side-scroll nudges it across and back.
     const viewCount = keyed(p, ZOOM);
-    const pan = keyed(p, PAN);
-    const viewRight = g + RIGHT_PAD - pan;
+    const godX = keyed(p, GODX);
+    const viewRight = g + godX;
 
     // visible candles (history static, god candle forming at index g)
     const viewCandles: ViewCandle[] = [];
