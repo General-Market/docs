@@ -132,6 +132,7 @@ import { technicalOverloadMeta } from "./compositions/article-2/TechnicalOverloa
 import { asphyxiationByWinnersMeta } from "./compositions/article-2/AsphyxiationByWinners";
 import { perpsGraveyardReelMeta } from "./compositions/perps-graveyard/PerpsGraveyardReel";
 import { anticheatEditMeta } from "./compositions/anticheat-edit/AntiCheatEditComposition";
+import { pumpFunScreenMeta } from "./compositions/pumpfun-screen/PumpFunScreen";
 import { attentionVolumeV2Meta } from "./compositions/article-2/AttentionVolumeV2";
 import { marketCostScaleMeta } from "./compositions/article-2/MarketCostScale";
 import { marketUniverseScaleMeta } from "./compositions/article-2/MarketUniverseScale";
@@ -183,6 +184,14 @@ export const RemotionRoot: React.FC = () => {
         fps={anticheatEditMeta.fps}
         width={anticheatEditMeta.width}
         height={anticheatEditMeta.height}
+      />
+      <Composition
+        id={pumpFunScreenMeta.id}
+        component={pumpFunScreenMeta.component}
+        durationInFrames={pumpFunScreenMeta.durationInFrames}
+        fps={pumpFunScreenMeta.fps}
+        width={pumpFunScreenMeta.width}
+        height={pumpFunScreenMeta.height}
       />
       <Composition
         id={tierListReelMeta.id}
