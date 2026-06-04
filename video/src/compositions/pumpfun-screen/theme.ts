@@ -5,16 +5,21 @@
  */
 import { loadFont } from "@remotion/google-fonts/Inter";
 
-const { fontFamily } = loadFont();
+const { fontFamily, waitUntilDone } = loadFont("normal", {
+  subsets: ["latin"],
+  weights: ["400", "500", "600", "700", "800"],
+});
+
+export const FONT_READY = waitUntilDone; // () => Promise<void>
 
 export const C = {
   bg: "#07080a",
   bgPanel: "#0c0e12",
   bgRow: "#0a0c10",
   hairline: "#171b22",
-  green: "#3fd98a",
+  green: "#2fe3a6",
   greenDim: "#1f7a4d",
-  greenBar: "#2fcf86",
+  greenBar: "#2fe3a6",
   red: "#f0334a",
   redDim: "#7a2230",
   peak: "#c04dff", // purple Peak badge

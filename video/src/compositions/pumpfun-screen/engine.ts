@@ -65,67 +65,81 @@ function fakeTrader(rng: () => number): string {
 export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
   const { candles, ticks } = data;
   const mp = data.token.mcapPerPrice || 1;
-  const { startIdx, peakIdx, endIdx } = chooseParabola(candles);
+  const { startIdx, peakIdx } = chooseParabola(candles);
 
-  // The whole parabola must already be on screen at frame 0. The flat base
-  // (startIdx → foot of the blow-off) is present from the start; only the
-  // final few candles of the vertical part PRINT in over the first ~40% of
-  // the clip, after which the live edge dwells at the peak and chops.
-  const H0 = Math.max(startIdx + 1, peakIdx - 6);
-
-  // prefix max-high (mcap) over the slice → dynamic Peak as the blow-off prints
-  const prefMaxHigh: number[] = [];
-  let run = 0;
-  for (let i = startIdx; i <= endIdx; i++) {
-    run = Math.max(run, candles[i].h);
-    prefMaxHigh[i] = run;
-  }
+  // PLAY the blow-off. The base (startIdx → bloffStart) is settled from frame 0;
+  // the live edge climbs the vertical part (bloffStart → peakIdx) across the
+  // clip, then dwells at the peak and chops. The all-time high is reached
+  // DURING the clip — so Peak ticks up and the live price ends at the ATH.
+  const bloffStart = Math.max(startIdx + 1, peakIdx - 34);
 
   const launchMcap = candles[startIdx].l * mp;
   const entryIdx = startIdx + 12;
   const entryMcap = candles[entryIdx].l * mp;
 
-  // Fill the plot width: viewCount ≈ slice length + a small right-edge gap, so
-  // the whole parabola spans the plot. The camera's parasite zoom only breathes
-  // gently around "the whole parabola fits".
-  const sliceLen = endIdx - startIdx + 1;
-  const rightGap = 6;
-  const fitView = sliceLen + rightGap;
+  // Auto-fit zoom: viewCount tracks the revealed span (startIdx → live edge)
+  // plus a small right gap, clamped to a sane minimum. This frames base→edge at
+  // all times (no empty left, no over-zoom) and gently zooms OUT as the spike
+  // rises — Axiom auto-zoom. We IGNORE the camera's viewCount and use only its
+  // godX for a small parasite nudge of the right edge.
+  const RIGHT_GAP = 6;
+  const MIN_VIEW = 70;
   const camera = buildCamera({
     totalFrames: cfg.totalFrames,
     fps: cfg.fps,
-    viewCountRange: [fitView * 0.98, fitView * 1.12],
   });
 
   const rng = lcg(0x9e3779b1);
   const frames: FrameView[] = [];
 
+  // Sampling pool of realistic non-whale USD trade sizes, drawn from the real
+  // ticks (clamped to $5–$400); whales are generated separately. Fallback fills
+  // the pool if the data is thin.
+  const tickUsdPool = ticks
+    .map((t) => t.usd)
+    .filter((u) => u >= 5 && u <= 400);
+  if (tickUsdPool.length < 8)
+    for (let i = 0; i < 16; i++) tickUsdPool.push(5 + (i * 24.7) % 395);
+
   // live edge + eased axis state
-  let price = candles[H0].o;
+  let price = candles[bloffStart].o;
   let lastStep = 0;
   let volEnv = 1;
   let formingInt = -1;
   let fHi = price;
   let fLo = price;
   let prevPrice = price;
+  let runPeakHigh = price;
   let dispMin = candles[startIdx].l * mp;
-  let dispMax = candles[H0].h * mp;
+  let dispMax = candles[bloffStart].h * mp;
   let holders = 1400;
 
-  const headEase = Easing.bezier(0.3, 0, 0.4, 1);
+    // The live edge climbs the vertical part (bloffStart → peakIdx) over
+  // p∈[0,CLIMB_END], lively but NOT front-loaded (a gentle ease-in-out so the
+  // ATH is reached near the end of the climb window, ~frame 820), then dwells
+  // at the peak and chops for the rest. Motion is immediate from frame 1.
+  const headEase = Easing.bezier(0.45, 0.05, 0.55, 1);
+  const CLIMB_END = 0.86; // p at which the live edge reaches the peak
+
+  // The live edge follows a MONOTONE rising envelope, geometric (log-space)
+  // from the foot of the blow-off to the all-time high. This is what makes the
+  // current multiple climb smoothly to ≈ peak instead of retracing along each
+  // real candle's close. The settled real candles keep their true OHLC.
+  const envFoot = candles[bloffStart].o;
+  const envPeak = candles[peakIdx].h;
+  const logFoot = Math.log(envFoot);
+  const logSpan = Math.log(envPeak) - logFoot;
 
   for (let f = 0; f < cfg.totalFrames; f++) {
     const p = f / (cfg.totalFrames - 1);
 
-    // The whole base is already framed at frame 0; only the final few candles
-    // of the blow-off print in over the first ~40%. After that the live edge
-    // dwells at endIdx (≈ peak) and just chops. Motion is front-loaded.
     const head =
-      p <= 0.4
-        ? interpolate(headEase(p / 0.4), [0, 1], [H0, endIdx])
-        : endIdx;
-    const headInt = Math.min(endIdx, Math.floor(head));
+      p <= CLIMB_END
+        ? interpolate(headEase(p / CLIMB_END), [0, 1], [bloffStart, peakIdx])
+        : peakIdx;
+    const headInt = Math.min(peakIdx, Math.floor(head));
     const frac = head - headInt;
+    const dwelling = headInt >= peakIdx;
 
     if (headInt !== formingInt) {
       formingInt = headInt;
@@ -133,11 +147,14 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
       fLo = candles[headInt].o;
     }
 
-    // forming-candle close path + real-trading chop (random walk pulled to it)
+    // Climb progress 0→1 across the whole blow-off (continuous, not per-candle).
+    const cp = clamp01((headInt + frac - bloffStart) / (peakIdx - bloffStart));
+    // Forming-candle target = the rising envelope at cp, capped at the ATH.
     const cand = candles[headInt];
-    const trendClose =
-      cand.o + (cand.c - cand.o) * Easing.out(Easing.ease)(clamp01(frac));
-    const regime = p < 0.4 ? 1 : 0.62;
+    const trendClose = dwelling
+      ? envPeak
+      : Math.exp(logFoot + logSpan * cp);
+    const regime = p < CLIMB_END ? 1 : 0.62;
     volEnv = Math.max(0.45, Math.min(1.9, volEnv + (rng() - 0.5) * 0.5));
     const vol = regime * volEnv;
     let step = (rng() * 2 - 1) * vol * price * 0.0065;
@@ -145,8 +162,13 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
     if (rng() > 0.945) step *= 3.6; // jumps throw the wicks
     if (rng() < 0.3) step *= 0.14; // stalls
     lastStep = step;
-    const pull = 0.1 + 0.12 * regime;
-    price = Math.max(cand.l * 0.7, price + step + (trendClose - price) * pull);
+    // During the dwell, pull hard toward the ATH and floor the chop just under
+    // it, so the live edge sits at the top (live ≈ peak). While climbing, a
+    // gentler pull lets the random walk breathe along the real path.
+    const pull = dwelling ? 0.32 : 0.1 + 0.12 * regime;
+    const floor = dwelling ? cand.h * 0.965 : cand.l * 0.7;
+    price = Math.max(floor, price + step + (trendClose - price) * pull);
+    if (dwelling) price = Math.min(price, cand.h); // never overshoot the ATH
     fHi = Math.max(fHi, price);
     fLo = Math.min(fLo, price);
 
@@ -154,12 +176,18 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
     const tickUp = price >= prevPrice;
     prevPrice = price;
 
-    const maxHigh = Math.max(prefMaxHigh[headInt] ?? cand.h, fHi);
-    const peakMultiple = (maxHigh * mp) / launchMcap;
+    // Peak = running ATH of the live edge as it climbs. Gated to the smooth
+    // rising envelope so the real data's early wick-spikes (a 10.48 wick at
+    // candle ~480, before the true 11.43 peak) don't make Peak jump ahead and
+    // then freeze — it ticks up continuously to the ATH near the end.
+    runPeakHigh = Math.max(runPeakHigh, fHi);
+    const peakMultiple = (runPeakHigh * mp) / launchMcap;
     holders += rng() > 0.7 ? 1 : 0;
 
-    // camera — zoomed out to frame the whole parabola; edge near the right
-    const { viewCount, godX } = camera[f];
+    // Auto-fit zoom: frame startIdx → live edge + gap, growing as the pump
+    // extends. Ignore camera.viewCount; use only godX for a small right nudge.
+    const { godX } = camera[f];
+    const viewCount = Math.max(MIN_VIEW, headInt - startIdx + RIGHT_GAP);
     const viewRight = headInt + frac + godX;
 
     // visible candles
@@ -200,24 +228,32 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
         ? { mcap: entryMcap, vx: entryX }
         : null;
 
-    // real trade tape — stream the real recent ticks newest-first
+    // synthetic PUMP tape — reads like a coin running, not the real post-pump
+    // sells. Deterministic (seeded LCG keyed to a slow tape cursor): ~78% buys,
+    // mcap tracks the live price (±1.5% jitter), fast ages (mostly 0), realistic
+    // USD spread with occasional whales. Newest row first, ageSec=0.
     const tape: TapeRow[] = [];
-    if (ticks.length) {
-      const headTick = Math.floor(p * (ticks.length - 1));
-      const tr = lcg(0x1234 + headTick);
-      for (let k = 0; k < 7; k++) {
-        const idx = headTick - k;
-        if (idx < 0) break;
-        const t = ticks[idx];
-        tape.push({
-          key: `t${idx}`,
-          kind: t.kind,
-          usd: t.usd,
-          mcap: t.price * mp,
-          trader: fakeTrader(tr),
-          ageSec: k === 0 ? 0 : k,
-        });
-      }
+    const tapeCursor = Math.floor(p * 240); // advances ~ once per tape "trade"
+    for (let k = 0; k < 7; k++) {
+      const tr = lcg(0xa11ce + (tapeCursor - k) * 0x100193);
+      const isBuy = tr() < 0.78;
+      const jitter = 1 + (tr() * 2 - 1) * 0.015; // ±1.5%
+      const whale = tr() > 0.9;
+      let usd: number;
+      if (whale) usd = 1000 + tr() * 3000; // $1k–$4k whale
+      else if (tickUsdPool.length)
+        usd = tickUsdPool[Math.floor(tr() * tickUsdPool.length)];
+      else usd = 5 + tr() * 395;
+      // ages: newest few rows 0, then a few 1/2 — fast tape
+      const ageSec = k <= 2 ? 0 : k <= 4 ? 1 : 2;
+      tape.push({
+        key: `tp${tapeCursor - k}`,
+        kind: isBuy ? "buy" : "sell",
+        usd,
+        mcap: liveMcap * jitter,
+        trader: fakeTrader(tr),
+        ageSec,
+      });
     }
 
     // scrolling time ticks
@@ -236,7 +272,7 @@ export function buildTimeline(data: ChartData, cfg: EngineConfig): FrameView[] {
 
     frames.push({
       mcap: liveMcap,
-      multiple: liveMcap / entryMcap,
+      multiple: liveMcap / launchMcap,
       peakMultiple,
       holders,
       scaleMin: dispMin,
@@ -266,6 +302,11 @@ export function mcapLabel(v: number): string {
 
 export function mcapFull(v: number): string {
   return `$${Math.round(v).toLocaleString("en-US")}`;
+}
+
+export function usdLabel(v: number): string {
+  if (v >= 1000) return `$${Math.round(v).toLocaleString("en-US")}`;
+  return `$${v.toFixed(2)}`;
 }
 
 export function ladderLabel(v: number): string {

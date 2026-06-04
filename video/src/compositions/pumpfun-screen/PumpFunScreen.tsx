@@ -1,6 +1,11 @@
 import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_MONO, FONT_UI, FPS, H, W } from "./theme";
+import {
+  AbsoluteFill,
+  continueRender,
+  delayRender,
+  useCurrentFrame,
+} from "remotion";
+import { C, FONT_MONO, FONT_READY, FONT_UI, FPS, H, W } from "./theme";
 import { buildTimeline } from "./engine";
 import { Header } from "./Header";
 import { CandleChart } from "./CandleChart";
@@ -49,6 +54,10 @@ const TfRow: React.FC<{ tf: string }> = ({ tf }) => (
 
 export const PumpFunScreen: React.FC = () => {
   const frame = useCurrentFrame();
+  const [handle] = React.useState(() => delayRender("inter-font"));
+  React.useEffect(() => {
+    FONT_READY().then(() => continueRender(handle));
+  }, [handle]);
   const timeline = useMemo(
     () => buildTimeline(data, { totalFrames: DURATION, fps: FPS }),
     [],

@@ -130,8 +130,13 @@ export const Header: React.FC<{ data: ChartData; view: FrameView }> = ({
               fontFamily: FONT_UI,
               fontSize: 56,
               fontWeight: 800,
-              lineHeight: 1,
+              lineHeight: "56px",
               fontVariantNumeric: "tabular-nums",
+              display: "inline-block",
+              textAlign: "right",
+              minWidth: 158,
+              textShadow:
+                "0 0 22px rgba(192,77,255,0.65), 0 0 8px rgba(192,77,255,0.5)",
             }}
           >
             {view.peakMultiple.toFixed(1)}x
@@ -154,8 +159,9 @@ export const Header: React.FC<{ data: ChartData; view: FrameView }> = ({
             fontSize: 52,
             fontWeight: 700,
             letterSpacing: -1,
-            lineHeight: 1,
+            lineHeight: "52px",
             fontVariantNumeric: "tabular-nums",
+            display: "inline-block",
           }}
         >
           {mcapFull(view.mcap)}
@@ -166,8 +172,9 @@ export const Header: React.FC<{ data: ChartData; view: FrameView }> = ({
             fontFamily: FONT_UI,
             fontSize: 28,
             fontWeight: 600,
-            lineHeight: 1,
+            lineHeight: "28px",
             fontVariantNumeric: "tabular-nums",
+            display: "inline-block",
           }}
         >
           {view.multiple.toFixed(1)}x ↑

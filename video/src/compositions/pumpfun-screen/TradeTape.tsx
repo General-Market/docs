@@ -5,6 +5,9 @@ import type { FrameView } from "./types";
 
 const ageLabel = (s: number) => (s <= 0 ? "now" : `${s}s`);
 
+const usdLabel = (v: number) =>
+  v >= 1000 ? `$${Math.round(v).toLocaleString("en-US")}` : `$${v.toFixed(2)}`;
+
 const Cell: React.FC<{
   children: React.ReactNode;
   flex: number;
@@ -97,7 +100,7 @@ export const TradeTape: React.FC<{ view: FrameView }> = ({ view }) => {
             >
               <Cell flex={1.1} color={C.textMute}>{ageLabel(r.ageSec)}</Cell>
               <Cell flex={1.6} color={col}>
-                {r.kind === "buy" ? "↑" : "↓"} ${r.usd.toFixed(2)}
+                {r.kind === "buy" ? "↑" : "↓"} {usdLabel(r.usd)}
               </Cell>
               <Cell flex={1.4} color={C.textMute}>{mcapLabel(r.mcap)}</Cell>
               <Cell flex={1.7} align="right" color={C.textMute}>

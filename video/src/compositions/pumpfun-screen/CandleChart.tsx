@@ -25,6 +25,7 @@ export const CandleChart: React.FC<{
   const cw = Math.max(2, (plotW / view.viewCount) * 0.6);
 
   const liveY = yOf(view.liveMcap);
+  const liveColor = view.liveUp ? C.green : C.red;
   const entryX = view.entry ? xOf(view.entry.vx) : null;
   const refreshCx = PLOT_L + plotW / 2;
   const refreshCy = plotH - 150;
@@ -38,15 +39,19 @@ export const CandleChart: React.FC<{
       shapeRendering="crispEdges"
     >
       <defs>
-        <filter id="entryGlow" x="-150%" y="-150%" width="400%" height="400%">
-          <feGaussianBlur stdDeviation="6" />
+        <filter id="entryGlow" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="7" />
         </filter>
+        <radialGradient id="entryHalo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={C.green} stopOpacity={0.55} />
+          <stop offset="100%" stopColor={C.green} stopOpacity={0} />
+        </radialGradient>
       </defs>
 
       <g
-        transform={`translate(${PLOT_L + 8}, ${plotH - 104}) scale(2)`}
-        fill="#d4d7dc"
-        opacity={0.45}
+        transform={`translate(${PLOT_L + 8}, ${plotH - 92}) scale(2.6)`}
+        fill="#e9ebee"
+        opacity={0.9}
       >
         <path d="M0 0 H20 V5.5 H12.8 V22 H7.2 V5.5 H0 Z" />
         <path d="M23 22 L30 0 H36 L29 22 Z" />
@@ -131,20 +136,66 @@ export const CandleChart: React.FC<{
             y2={plotH - 6}
             stroke={C.green}
             strokeWidth={2}
-            strokeDasharray="2 8"
-            opacity={0.8}
+            strokeDasharray="2 9"
+            opacity={0.9}
           />
-          <g transform={`translate(${entryX}, 40) rotate(45)`}>
-            <rect
-              x={-18}
-              y={-18}
-              width={36}
-              height={36}
-              fill={C.green}
-              opacity={0.45}
-              filter="url(#entryGlow)"
-            />
-            <rect x={-15} y={-15} width={30} height={30} fill={C.green} />
+          <g transform={`translate(${entryX}, 42)`}>
+            <circle r={34} fill="url(#entryHalo)" />
+            {(() => {
+              const w = 22;
+              const cy = 6;
+              const top = -16;
+              const bottom = 26;
+              const gem = `M${-w} ${cy} L${-w * 0.62} ${top} L${w * 0.62} ${top} L${w} ${cy} L0 ${bottom} Z`;
+              const facet = C.bg;
+              return (
+                <>
+                  <path
+                    d={gem}
+                    fill={C.green}
+                    opacity={0.5}
+                    filter="url(#entryGlow)"
+                  />
+                  <path d={gem} fill={C.green} />
+                  <line
+                    x1={-w}
+                    y1={cy}
+                    x2={w}
+                    y2={cy}
+                    stroke={facet}
+                    strokeWidth={1.4}
+                    opacity={0.55}
+                  />
+                  <line
+                    x1={-w * 0.62}
+                    y1={top}
+                    x2={0}
+                    y2={bottom}
+                    stroke={facet}
+                    strokeWidth={1.4}
+                    opacity={0.55}
+                  />
+                  <line
+                    x1={w * 0.62}
+                    y1={top}
+                    x2={0}
+                    y2={bottom}
+                    stroke={facet}
+                    strokeWidth={1.4}
+                    opacity={0.55}
+                  />
+                  <line
+                    x1={0}
+                    y1={top}
+                    x2={0}
+                    y2={bottom}
+                    stroke={facet}
+                    strokeWidth={1.4}
+                    opacity={0.4}
+                  />
+                </>
+              );
+            })()}
           </g>
         </g>
       )}
@@ -154,7 +205,7 @@ export const CandleChart: React.FC<{
         x2={plotR}
         y1={liveY}
         y2={liveY}
-        stroke={C.red}
+        stroke={liveColor}
         strokeWidth={1.5}
         strokeDasharray="7 7"
         opacity={0.9}
@@ -191,12 +242,12 @@ export const CandleChart: React.FC<{
           width={LADDER_W - 6}
           height={42}
           rx={6}
-          fill={C.red}
+          fill={liveColor}
         />
         <text
           x={plotR + (LADDER_W - 6) / 2 + 2}
           y={liveY + 9}
-          fill={C.text}
+          fill={view.liveUp ? C.bg : C.text}
           fontFamily={FONT_MONO}
           fontSize={25}
           fontWeight={700}
