@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import fcntl
 import os
+import signal
 import sys
 import time
 import urllib.request
@@ -68,13 +69,23 @@ def _get(path: str, params: dict | None = None, timeout: int = 30):
     if params:
         url += "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"X-API-Key": key()})
+    old_handler = signal.getsignal(signal.SIGALRM)
+
+    def _timeout(_signum, _frame):
+        raise TimeoutError(f"hard timeout after {timeout}s")
+
     try:
+        signal.signal(signal.SIGALRM, _timeout)
+        signal.alarm(timeout + 5)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
         return e.code, json.load(e) if e.fp else {"error": e.reason}
     except (TimeoutError, OSError) as e:
         return 408, {"error": f"timeout/network: {e}"}
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def balance() -> tuple[int, int]:
@@ -163,6 +174,8 @@ def metered_call(label: str, path: str, params: dict | None,
     before = total_credits()
     print(f"  ↳ {label}  bal_before={before}  est={estimate}c", file=sys.stderr)
     status, body = _get(path, params)
+    if isinstance(body, dict) and status >= 400:
+        body["_http_status"] = status
     after = total_credits()
     delta = before - after
     count = 0
@@ -660,6 +673,7 @@ def cmd_advsearch(query: str, query_type: str = "Latest", cell: str | None = Non
         return
     total, total_new, cursor = 0, 0, ""
     completed_pages = 0
+    failed = False
     known_ids = {r.get("tweet_id") for r in _load_jsonl(TWEETS)}
     for page in range(pages):
         params = {"query": query, "queryType": query_type}
@@ -674,8 +688,10 @@ def cmd_advsearch(query: str, query_type: str = "Latest", cell: str | None = Non
         tweets = data.get("tweets", []) if isinstance(data, dict) else (body.get("tweets") or [])
         if not tweets and body.get("tweets"):
             tweets = body.get("tweets") or []
-        if body.get("status") not in (None, "success") and not tweets:
+        api_failed = body.get("_http_status", 200) >= 400 or body.get("status") not in (None, "success")
+        if api_failed and not tweets:
             print(json.dumps(body, indent=2))
+            failed = True
             break
         if not tweets:
             break
@@ -692,6 +708,10 @@ def cmd_advsearch(query: str, query_type: str = "Latest", cell: str | None = Non
         if page_new / max(1, len(tweets)) < min_new_ratio:
             print(f"  ↳ diminishing returns ({page_new}/{len(tweets)} new) — stop paginating", file=sys.stderr)
             break
+    if failed:
+        print(f"search failed before completion [{query_type}] {query!r}; not logging cache hit", file=sys.stderr)
+        print(f"failed after {total} tweets, {total_new} new [{query_type}] {query!r}")
+        return
     log_search(query, query_type, cell, total, total_new, completed_pages)
     print(f"got {total} tweets, {total_new} new [{query_type}] {query!r}")
 
