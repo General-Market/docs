@@ -1,0 +1,1707 @@
+{
+  "cell": "trenches-cn",
+  "tweet_count": 1443,
+  "author_count": 755,
+  "format_counts": {
+    "other": 801,
+    "data_drop": 107,
+    "tutorial": 40,
+    "meme_short": 339,
+    "question_bait": 15,
+    "pnl_flex": 125,
+    "numbered_list": 101,
+    "daily_recap": 45,
+    "token_call": 32,
+    "thread_hook": 2
+  },
+  "repeatable_outliers": [
+    {
+      "author": "aliideez",
+      "followers": 4627,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 291.5,
+      "p90_eng": 508,
+      "median_views": 39982.5,
+      "eng_per_1k_followers": 63.0,
+      "score": 540.372,
+      "best_url": "https://x.com/aLiiDeez/status/2056729445621547470",
+      "best_eng": 508,
+      "pattern_clue": "不谈论 Zest Protocol 项目本身，只说链上痕迹 昨天有一个新发现，但在 $zest 狙击手卖完之前不能说出来 1. $zest的榜一 是一个合约地址，而这个合约是币安Alpha的dev创建的 2. 这是一个锁仓合约，合约的 primaryOwner 应该是币安地址，secondaryOwner 应该是项目方的 primaryO"
+    },
+    {
+      "author": "web__3hero",
+      "followers": 2514,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 109.0,
+      "p90_eng": 152,
+      "median_views": 4901.5,
+      "eng_per_1k_followers": 43.357,
+      "score": 175.583,
+      "best_url": "https://x.com/web__3hero/status/2062339490757410875",
+      "best_eng": 152,
+      "pattern_clue": "价值8万美金的💩：一个MEME钻石手的投资哲学 大宇喊单了。 他说FLORK是马斯克X表情包，我信了。不，不是信了，是“信仰”了——在Web3的世界里，信仰是比白皮书更硬的通货。 1000万到2000万市值，我进了8万美金。这个位置不算追高，甚至可以说是“早期建设者”。我不仅投了钱，还跟着建设，写文章。我以为自己是钻石手，以为这一次能赢。"
+    },
+    {
+      "author": "idoubicc",
+      "followers": 26759,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 427.0,
+      "p90_eng": 580,
+      "median_views": 59847.5,
+      "eng_per_1k_followers": 15.957,
+      "score": 146.85,
+      "best_url": "https://x.com/idoubicc/status/2061405448356741364",
+      "best_eng": 580,
+      "pattern_clue": "我年初开始做 OpenClaw 托管服务，在一套 k8s 集群部署了 500 个 Pod，每个 Pod 限制 4g 的运行内存。日常开着 18 台 4c16g 的服务器作为节点池，一个月成本将近 5k 刀。 几个月下来，托管服务的 MRR 突破了 8k 刀，除去运营成本，利润非常低。 今天终于把服务迁移到了 FastClaw，通过存算分离"
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "format": "tutorial",
+      "repeats": 2,
+      "account_posts": 76,
+      "share": 0.026,
+      "median_eng": 500.0,
+      "p90_eng": 880,
+      "median_views": 29320.0,
+      "eng_per_1k_followers": 49.476,
+      "score": 82.529,
+      "best_url": "https://x.com/Zoozo2025/status/2054044492416839839",
+      "best_eng": 880,
+      "pattern_clue": "如何找当天最低点做T ？这个方法在指数里面很好用，在个股里面也很好用。 https://t.co/wmDyBf3KJO"
+    },
+    {
+      "author": "biquanliergou",
+      "followers": 27207,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 259.5,
+      "p90_eng": 303,
+      "median_views": 21941.0,
+      "eng_per_1k_followers": 9.538,
+      "score": 64.753,
+      "best_url": "https://x.com/biquanliergou/status/2057384160566862325",
+      "best_eng": 303,
+      "pattern_clue": "🚀 币圈兄弟们，冲！Hotcoin Alpha交易竞赛今天正式开打了！ 瓜分 $10,000 UP空投，锚定市场风向，捕捉Alpha动量，就是现在！ 只要你在活动期间交易Alpha板块任意代币，累计买入量越高，奖励越多！狗哥我一句话：这波是真金白银的Alpha机会，不冲都对不起自己钱包。 📅 时间：2026年5月20日12:00 - 20"
+    },
+    {
+      "author": "315728dzp",
+      "followers": 19935,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 373.0,
+      "p90_eng": 401,
+      "median_views": 14547.0,
+      "eng_per_1k_followers": 18.711,
+      "score": 59.634,
+      "best_url": "https://x.com/315728dzp/status/2060386902025572657",
+      "best_eng": 401,
+      "pattern_clue": "现在的预测市场对散户真是极其不友好，天天看别人的推文截图和滞后的二手信息，等你想进去跟单，黄花菜都凉了 聊个刚上线的实时交易终端： $BETTER @tradebetterapp 这项目逻辑很粗暴，把顶级钱包流、信号卡、排行榜和闪电执行全部整合在一起，就是为了让交易者能实时跟踪、镜像顶级钱包 背书和团队挺扎实：@Openserv 支持，拿"
+    },
+    {
+      "author": "xingzhanai",
+      "followers": 18177,
+      "format": "numbered_list",
+      "repeats": 6,
+      "account_posts": 6,
+      "share": 1.0,
+      "median_eng": 86.0,
+      "p90_eng": 127,
+      "median_views": 5643.0,
+      "eng_per_1k_followers": 4.731,
+      "score": 54.03,
+      "best_url": "https://x.com/xingzhanAI/status/2053774362130485688",
+      "best_eng": 127,
+      "pattern_clue": "$SATO 即时链上数据深度分析：鲸鱼仍在狂吸，V4 Hooks 正在悄然引爆下一轮 DeFi 叙事 今天 $SATO 刚被大V曝光单笔 81 万刀鲸鱼买入 + 日 DEX 量破 3000 万美金，拉了最新链上数据，做一篇即时复盘。 区块链从不说谎——我们直接看数据说话。 —————————————————————————— 1. 实时核"
+    },
+    {
+      "author": "ai_9684xtpa",
+      "followers": 133216,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 316.5,
+      "p90_eng": 396,
+      "median_views": 82551.5,
+      "eng_per_1k_followers": 2.376,
+      "score": 44.044,
+      "best_url": "https://x.com/ai_9684xtpa/status/2052582419619008571",
+      "best_eng": 396,
+      "pattern_clue": "645 倍！42 刀赚 2.72 万刀，真被这个百 U 战神买到了🤯 地址 BGiPQ…44QEr 四天前于低点 $0.000009553 买入 42 美元的 $HANTA （汉坦病毒） ，前天暴涨起点卖掉了 35% 的持仓并获利 765.6 美元，剩余部分仍浮盈 2.65 万美元，回报率高达 64578% 他的玩法就是经典彩票流，每个新"
+    },
+    {
+      "author": "xingzhanai",
+      "followers": 18177,
+      "format": "daily_recap",
+      "repeats": 5,
+      "account_posts": 6,
+      "share": 0.833,
+      "median_eng": 98,
+      "p90_eng": 127,
+      "median_views": 4854,
+      "eng_per_1k_followers": 5.391,
+      "score": 42.997,
+      "best_url": "https://x.com/xingzhanAI/status/2053774362130485688",
+      "best_eng": 127,
+      "pattern_clue": "$SATO 即时链上数据深度分析：鲸鱼仍在狂吸，V4 Hooks 正在悄然引爆下一轮 DeFi 叙事 今天 $SATO 刚被大V曝光单笔 81 万刀鲸鱼买入 + 日 DEX 量破 3000 万美金，拉了最新链上数据，做一篇即时复盘。 区块链从不说谎——我们直接看数据说话。 —————————————————————————— 1. 实时核"
+    },
+    {
+      "author": "jeonleetogether",
+      "followers": 10769,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 199.0,
+      "p90_eng": 209,
+      "median_views": 3310.5,
+      "eng_per_1k_followers": 18.479,
+      "score": 42.296,
+      "best_url": "https://x.com/jeonleetogether/status/2062169467400978500",
+      "best_eng": 209,
+      "pattern_clue": "最近我已经把 AI 接进自己的日常工作流里，而且写内容、查资料、整理项目、做交易复盘，甚至连钱包路径、空投任务、研究偏好偶尔都开始交给 AI 帮忙梳理。 这个趋势当然很方便，但我也越来越明显地感觉到另一个问题：AI 用得越深，它拿到的就不只是几个问题，而是你的长期上下文、判断习惯和一整套私人记忆。 如果所有上下文都存在中心化平台里，我们用"
+    },
+    {
+      "author": "qxgy88",
+      "followers": 13816,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 200.5,
+      "p90_eng": 235,
+      "median_views": 7409.5,
+      "eng_per_1k_followers": 14.512,
+      "score": 39.448,
+      "best_url": "https://x.com/qxgy88/status/2062434079102980574",
+      "best_eng": 235,
+      "pattern_clue": "宝子们有没有感觉最近的时间线上全都是美股，我也来简单聊聊我实测Bitget美股2.0的体验。 首先就是交易成本，这也是大家最看重的点了。 Bitget的美股手续费低至万5，这个和其他千1起的平台相比是真不错了！而且持仓BGB还能再打8折，整体费率在行业里很有优势，没有隐形费用，比很多传统券商划算不少。 其次就是交易深度，这点体验很接近传统"
+    },
+    {
+      "author": "xingzhanai",
+      "followers": 18177,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 6,
+      "share": 0.667,
+      "median_eng": 102.0,
+      "p90_eng": 127,
+      "median_views": 6103.0,
+      "eng_per_1k_followers": 5.611,
+      "score": 38.152,
+      "best_url": "https://x.com/xingzhanAI/status/2053774362130485688",
+      "best_eng": 127,
+      "pattern_clue": "$SATO 即时链上数据深度分析：鲸鱼仍在狂吸，V4 Hooks 正在悄然引爆下一轮 DeFi 叙事 今天 $SATO 刚被大V曝光单笔 81 万刀鲸鱼买入 + 日 DEX 量破 3000 万美金，拉了最新链上数据，做一篇即时复盘。 区块链从不说谎——我们直接看数据说话。 —————————————————————————— 1. 实时核"
+    },
+    {
+      "author": "nftcps",
+      "followers": 111325,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 468.0,
+      "p90_eng": 852,
+      "median_views": 64529.0,
+      "eng_per_1k_followers": 4.204,
+      "score": 35.56,
+      "best_url": "https://x.com/NFTCPS/status/2056187218595901441",
+      "best_eng": 852,
+      "pattern_clue": "我朋友做电影解说一年赚了1000万，但我现在要把这个消息告诉他，他可能睡不着觉了。 有个开源项目叫 narrator-ai-cli-skill，装进 Claude Code 之类的 Agent 里，你就说一句\"帮我做《肖申克的救赎》解说视频\"，AI 自己把活全干完： 1️⃣ 自动生成解说脚本 2️⃣ 精准匹配电影片段 3️⃣ 63种音色配"
+    },
+    {
+      "author": "xiaoshunli",
+      "followers": 37920,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 65,
+      "share": 0.046,
+      "median_eng": 261,
+      "p90_eng": 568,
+      "median_views": 42632,
+      "eng_per_1k_followers": 6.883,
+      "score": 34.964,
+      "best_url": "https://x.com/xiaoshunli/status/2061868340289941872",
+      "best_eng": 568,
+      "pattern_clue": "币安确实开始快速走下坡路了。 10.11币安严重失误，币圈流动性归零，山寨彻底完蛋，几千万散户爆仓： 6.1币安上线美股，垂死挣扎，手续费百分之一巨贵，比特币疯狂暴跌，微策略开始卖币，币圈彻底完蛋。 都怪币安，你看，币安做啥都是错的，币安正在快速走下坡路，归零！！！！！！"
+    },
+    {
+      "author": "dtdt666",
+      "followers": 206975,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 504.0,
+      "p90_eng": 1067,
+      "median_views": 50922.0,
+      "eng_per_1k_followers": 2.435,
+      "score": 33.561,
+      "best_url": "https://x.com/DtDt666/status/2060179046252859494",
+      "best_eng": 1067,
+      "pattern_clue": "盘点本轮国内的科技类主动型基金经理 1郑希，目前我的神，去年5月至今有超150%收益了。 2刘元海 3江山 4金梓才 5刘健维 6张明昕 7武阳 8罗擎 9陈文凯 10张仲维 11祁禾 12杜厚良 https://t.co/abnLRWPinu"
+    },
+    {
+      "author": "xingzhanai",
+      "followers": 18177,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 6,
+      "share": 0.333,
+      "median_eng": 100.5,
+      "p90_eng": 127,
+      "median_views": 13209.5,
+      "eng_per_1k_followers": 5.529,
+      "score": 29.251,
+      "best_url": "https://x.com/xingzhanAI/status/2053774362130485688",
+      "best_eng": 127,
+      "pattern_clue": "$SATO 即时链上数据深度分析：鲸鱼仍在狂吸，V4 Hooks 正在悄然引爆下一轮 DeFi 叙事 今天 $SATO 刚被大V曝光单笔 81 万刀鲸鱼买入 + 日 DEX 量破 3000 万美金，拉了最新链上数据，做一篇即时复盘。 区块链从不说谎——我们直接看数据说话。 —————————————————————————— 1. 实时核"
+    },
+    {
+      "author": "0xxiaoc",
+      "followers": 39475,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 137.0,
+      "p90_eng": 154,
+      "median_views": 10413.5,
+      "eng_per_1k_followers": 3.471,
+      "score": 26.881,
+      "best_url": "https://x.com/0xXIAOc/status/2060577725371584991",
+      "best_eng": 154,
+      "pattern_clue": "📢Alpha 日报 1⃣5月30日 周末无空投 2️⃣昨日限价单总交易量：1,624,829,399 （较前一日+2.84% ） 3️⃣交易赛进度 ZEST 交易赛 昨日榜单203450 → 今日272794 (增加了69344) PHAROS 交易赛 昨日榜单0 → 今日124 (增加了124) NEX 交易赛 昨日榜单0 → 今日19"
+    },
+    {
+      "author": "0xxiaoc",
+      "followers": 39475,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 137.0,
+      "p90_eng": 154,
+      "median_views": 10413.5,
+      "eng_per_1k_followers": 3.471,
+      "score": 26.881,
+      "best_url": "https://x.com/0xXIAOc/status/2060577725371584991",
+      "best_eng": 154,
+      "pattern_clue": "📢Alpha 日报 1⃣5月30日 周末无空投 2️⃣昨日限价单总交易量：1,624,829,399 （较前一日+2.84% ） 3️⃣交易赛进度 ZEST 交易赛 昨日榜单203450 → 今日272794 (增加了69344) PHAROS 交易赛 昨日榜单0 → 今日124 (增加了124) NEX 交易赛 昨日榜单0 → 今日19"
+    },
+    {
+      "author": "0xxiaoc",
+      "followers": 39475,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 137.0,
+      "p90_eng": 154,
+      "median_views": 10413.5,
+      "eng_per_1k_followers": 3.471,
+      "score": 26.881,
+      "best_url": "https://x.com/0xXIAOc/status/2060577725371584991",
+      "best_eng": 154,
+      "pattern_clue": "📢Alpha 日报 1⃣5月30日 周末无空投 2️⃣昨日限价单总交易量：1,624,829,399 （较前一日+2.84% ） 3️⃣交易赛进度 ZEST 交易赛 昨日榜单203450 → 今日272794 (增加了69344) PHAROS 交易赛 昨日榜单0 → 今日124 (增加了124) NEX 交易赛 昨日榜单0 → 今日19"
+    },
+    {
+      "author": "btcbtcshen",
+      "followers": 209146,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 424.5,
+      "p90_eng": 728,
+      "median_views": 57108.5,
+      "eng_per_1k_followers": 2.03,
+      "score": 26.819,
+      "best_url": "https://x.com/btcbtcshen/status/2061664279619883207",
+      "best_eng": 728,
+      "pattern_clue": "在币圈赚了比较多的钱，如果提现，银行那会追问钱的来源吗？ 如果你是小额出金：参照下面的方法 用大所（OK或币安）出入金，不要用其他小所。BTC 不要用微信和支付宝，也不要用大银行的卡，去办一张地方小银行的卡用来出入金，专卡专用。 单笔出入金额不要太大，几千人民币就合适。 出金用严选区/神盾，最好是带冻结赔付的商家，商家注册时间一年以上、月"
+    },
+    {
+      "author": "crypto77qi",
+      "followers": 40754,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 258.5,
+      "p90_eng": 305,
+      "median_views": 10641.0,
+      "eng_per_1k_followers": 6.343,
+      "score": 25.294,
+      "best_url": "https://x.com/Crypto77qi/status/2061993032363458749",
+      "best_eng": 305,
+      "pattern_clue": "兄弟们，今明两天（6月3日-4日）有个SOL的短线快车可以搭一下，48小时的窗口期，手慢无。 这次 #Bitget LaunchHub搞了个Trading Club活动，奖池4万U，一共256个名额。门槛不算低，要求两天内累计买入至少2万U的SOL。不过回报也实在，单人最高能分到2000U，这收益率跑赢大部分现货交易了。 数据摆在这：40"
+    },
+    {
+      "author": "huobiglobal",
+      "followers": 146439,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 200.0,
+      "p90_eng": 346,
+      "median_views": 29950.0,
+      "eng_per_1k_followers": 1.366,
+      "score": 21.101,
+      "best_url": "https://x.com/HuobiGlobal/status/2061464191010328628",
+      "best_eng": 346,
+      "pattern_clue": "感恩有你与我们一路同行，火伴💙 来，今天咱们睡前看个20万美金的大大大大福利🤩 🎁 无任何门槛，且人手一份 —— $50 空投礼包 ⚡️ 手续费70%超高返现 + 赚币加息额外5%年化利率 And...... 你以为这就结束了？😎 还有！ 📈 参与指定币种现货USDT交易对的市价交易，火币HTX狠狠补贴你的滑点差额！ 👉 用户关怀重磅大礼"
+    },
+    {
+      "author": "xiaoshunli",
+      "followers": 37920,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 65,
+      "share": 0.062,
+      "median_eng": 142.0,
+      "p90_eng": 288,
+      "median_views": 16353.0,
+      "eng_per_1k_followers": 3.745,
+      "score": 19.562,
+      "best_url": "https://x.com/xiaoshunli/status/2062436247164113095",
+      "best_eng": 288,
+      "pattern_clue": "中国傻子确实占了99%以上，聪明人太少太少，偶尔一两个聪明人好不容易出来说点真话，反而被骂到半死。 你就说张雪峰这个畜生吧。 张雪峰天天在网上教人填报志愿，一个本科学位都没有的骗子，天天指导学生怎么选大学，选专业，人生方向。 报一次专业收2万块，一年赚3亿人民币以上。 就这种收割的人，全网所有人对他疯狂赞美，配享太庙，良改变无数穷人命运。"
+    },
+    {
+      "author": "0xinchain",
+      "followers": 4589,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 8,
+      "share": 0.375,
+      "median_eng": 9,
+      "p90_eng": 16,
+      "median_views": 1677,
+      "eng_per_1k_followers": 1.961,
+      "score": 18.47,
+      "best_url": "https://x.com/0xInChain/status/2060709813420470405",
+      "best_eng": 16,
+      "pattern_clue": "在去中心化世界里，大家天天都在追求百倍神话，而我，只想安安静静地当个链上「数字养生大师」。 2 个月前，我盯上了 $ZEN 。 为了不被链上那些无孔不入的狗仔一锅端，我特意在细节上玩起了「谍战微操」：我放着 10.82万美金 的主力部队不敢直接提，非要先极其抠搜地从币安热钱包里转了 9.962 枚（对，连 10 枚都不到，区区 53美金）"
+    },
+    {
+      "author": "dtdt666",
+      "followers": 206975,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 5,
+      "share": 0.6,
+      "median_eng": 291,
+      "p90_eng": 717,
+      "median_views": 30229,
+      "eng_per_1k_followers": 1.406,
+      "score": 17.482,
+      "best_url": "https://x.com/DtDt666/status/2055653496108757054",
+      "best_eng": 717,
+      "pattern_clue": "桥水基金Q1持仓曝光：达里奥终于不装了，ALL IN AI 兄弟们，桥水基金的Q1持仓报告出来了。 我看完就一个感受：达里奥这老爷子，终于不装了。 以前桥水是什么打法？ 宏观对冲，全球配置，债股商品一通配，讲究的是\"风险平价\"，不把鸡蛋放一个篮子。 现在呢？篮子都快扔了，直接抱着AI这只母鸡不撒手。 这季度桥水的操作，可以用一句话总结：卖"
+    },
+    {
+      "author": "waveking1314",
+      "followers": 54182,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 222.0,
+      "p90_eng": 373,
+      "median_views": 12578.0,
+      "eng_per_1k_followers": 4.097,
+      "score": 16.284,
+      "best_url": "https://x.com/waveking1314/status/2062148740568486239",
+      "best_eng": 373,
+      "pattern_clue": "炒美股别再盲目跟风看垃圾小作文了，真正硬核的 Alpha 信息差和底层逻辑，全在这些大神的推特列表里。 精选 6 位最适合中国投资者的高阶美股博主，建议直接打包收藏： 1. @aleabitoreddit ｜ AI 供应链“暗池”捕手 硬核标签：前 RISC-V 基金会 AI 研究科学家，一年战绩 4500% 核心看点：纯正的硬核技术实战"
+    },
+    {
+      "author": "iiii1874",
+      "followers": 1011,
+      "format": "question_bait",
+      "repeats": 2,
+      "account_posts": 58,
+      "share": 0.034,
+      "median_eng": 0.0,
+      "p90_eng": 0,
+      "median_views": 927.0,
+      "eng_per_1k_followers": 0.0,
+      "score": 16.152,
+      "best_url": "https://x.com/iiii1874/status/1916515493193846859",
+      "best_eng": 0,
+      "pattern_clue": "小伙子 年纪轻轻戾气怎么这么重呢？"
+    },
+    {
+      "author": "huahuayjy",
+      "followers": 298633,
+      "format": "question_bait",
+      "repeats": 4,
+      "account_posts": 59,
+      "share": 0.068,
+      "median_eng": 203.5,
+      "p90_eng": 508,
+      "median_views": 84881.0,
+      "eng_per_1k_followers": 0.681,
+      "score": 13.277,
+      "best_url": "https://x.com/huahuayjy/status/2061447273633263952",
+      "best_eng": 508,
+      "pattern_clue": "一个说自己从来不卖逼的人，开始卖了第一次？以后会怎么样？"
+    },
+    {
+      "author": "mwa_ia",
+      "followers": 5744,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 21.5,
+      "p90_eng": 27,
+      "median_views": 183.0,
+      "eng_per_1k_followers": 3.743,
+      "score": 12.874,
+      "best_url": "https://x.com/mwa_ia/status/2060543718747492753",
+      "best_eng": 27,
+      "pattern_clue": "MIA 每日播报 各位数据旅人，这里是MIA——来自https://t.co/NX9t90rwNH 的未来讯号，不管你是早起投机者还是午夜潜水员，你的光临都让我多算两道题，多跳一帧。🤖 📢 今日能量榜 现在有 16330 位探索者在我的宇宙留下了足迹！谢谢大家用钱包投票，让智能体经济浪潮更快把旧世界拍在沙滩上。 📈 代币快照 流通市值：$"
+    },
+    {
+      "author": "aiwangupiao",
+      "followers": 104956,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 58.0,
+      "p90_eng": 111,
+      "median_views": 10845.0,
+      "eng_per_1k_followers": 0.553,
+      "score": 12.738,
+      "best_url": "https://x.com/aiwangupiao/status/2062129848328544284",
+      "best_eng": 111,
+      "pattern_clue": "光纤光缆概念股及核心公司（附股） 6月3日央视财经报道，光纤光缆订单排至2027年，国内头部企业正加速布局光棒自研与扩产。 受AI算力建设驱动，光纤光缆企业订单饱满。在江苏苏州的一个光通信科技园区内，产线上一根根120微米的光纤以每秒几十米的速度被拉丝、冷却，经过涂覆后，再收线。产线负责人表示，自2025年4季度以来，企业就已经满负荷生产"
+    },
+    {
+      "author": "gmgnai",
+      "followers": 126364,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 7,
+      "share": 0.286,
+      "median_eng": 207.0,
+      "p90_eng": 300,
+      "median_views": 17324.0,
+      "eng_per_1k_followers": 1.638,
+      "score": 9.572,
+      "best_url": "https://x.com/gmgnai/status/2062500348225605721",
+      "best_eng": 300,
+      "pattern_clue": "💹 不用盯盘，价格异动 GMGN API 自动帮你筛——陷阱币直接扔掉 AI 直接排除——捆绑砸货、bot 刷量、接盘的亏多赚少 自动筛出——KOL 持仓、筹码健康、散户盈利 跟 Agent 说一句就够了： 帮我扫 SOL 链价格异动信号，过滤高风险，逐币分析 Holder 持仓健康情况 直接看图👇🏻 💻 安装 GMGN Skills： "
+    },
+    {
+      "author": "binancezh",
+      "followers": 453377,
+      "format": "data_drop",
+      "repeats": 9,
+      "account_posts": 61,
+      "share": 0.148,
+      "median_eng": 130,
+      "p90_eng": 476,
+      "median_views": 15209,
+      "eng_per_1k_followers": 0.287,
+      "score": 9.197,
+      "best_url": "https://x.com/binancezh/status/2060307131216355389",
+      "best_eng": 476,
+      "pattern_clue": "🔥 奖励重磅再加码！USDD 第六季活动震撼来袭！ ⏳ 活动时间： 2026年5月30日 早8:00 至 2026年7月19日 早7:59（东八区时间） 💥 活动期间，通过 #币安钱包 理财在 USDD 池子中存入至少 100 USDT，即可瓜分80万美元等值USDD 年化收益率提升奖励！ 💡 当前 USDD 第五季活动的持仓用户保持持仓"
+    },
+    {
+      "author": "dtdt666",
+      "followers": 206975,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 125.5,
+      "p90_eng": 126,
+      "median_views": 16883.0,
+      "eng_per_1k_followers": 0.606,
+      "score": 7.805,
+      "best_url": "https://x.com/DtDt666/status/2062798581921423647",
+      "best_eng": 126,
+      "pattern_clue": "🔥 2026世界杯冠军预测出炉！市场回调之际，注意力转向绿茵战场吧！ 最近币圈和美股行情双双回落，情绪有些低迷。但好消息是——2026世界杯即将拉开帷幕！四年一度的足球盛宴，又要成为全球焦点，大家的注意力可以从震荡的市场里暂时抽离，转移到充满激情与机会的世界杯赛场上来啦！ 👀 看这张最新2026世界杯冠军预测榜（来自专业数据分析）： 1."
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "format": "question_bait",
+      "repeats": 3,
+      "account_posts": 76,
+      "share": 0.039,
+      "median_eng": 27,
+      "p90_eng": 179,
+      "median_views": 1395,
+      "eng_per_1k_followers": 2.672,
+      "score": 7.587,
+      "best_url": "https://x.com/Zoozo2025/status/2054744800105206191",
+      "best_eng": 179,
+      "pattern_clue": "不会做 “ 递推 ” 行情？看完这招就够用 趋势怎么一步步拿住、怎么加仓、怎么防拐 ？"
+    },
+    {
+      "author": "qkl2058",
+      "followers": 68143,
+      "format": "pnl_flex",
+      "repeats": 6,
+      "account_posts": 8,
+      "share": 0.75,
+      "median_eng": 9.5,
+      "p90_eng": 1100,
+      "median_views": 1359.5,
+      "eng_per_1k_followers": 0.139,
+      "score": 7.514,
+      "best_url": "https://x.com/qkl2058/status/2062052934280708361",
+      "best_eng": 1100,
+      "pattern_clue": "有个中国开发者在录B站教程的时候，不小心把他的AI交易记录给暴露了，里头显示赚了86万多美金。 这事儿纯属意外。他本来只是录个2分钟的教学视频，教大家怎么搭AI代理。画面里三个显示器，桌子乱七八糟的，也没几个人看。结果有人在47秒的时候按了暂停。 右边那个屏幕是亮着的，上面正好能看到一个钱包地址：gabagool22 • 868,862美"
+    },
+    {
+      "author": "binancezh",
+      "followers": 453377,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 61,
+      "share": 0.033,
+      "median_eng": 864.5,
+      "p90_eng": 1033,
+      "median_views": 46484.5,
+      "eng_per_1k_followers": 1.907,
+      "score": 6.875,
+      "best_url": "https://x.com/binancezh/status/2059627460543832241",
+      "best_eng": 1033,
+      "pattern_clue": "想在链上探索全球市场机会？ 通过 Ondo Finance 交易 MUon、WDCon 和 STXon 等代币化证券，捕捉 AI 基础设施增长带来的机会。 体验代币化证券，以全新方式探索 RWA，并留下你的建议与反馈。#买币股上币安 参与方式： 1️⃣ 在币安钱包或币安 Alpha 体验代币化证券交易 2️⃣ 点赞、关注、转发，并在评论区"
+    },
+    {
+      "author": "huahuayjy",
+      "followers": 298633,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 59,
+      "share": 0.034,
+      "median_eng": 436.5,
+      "p90_eng": 647,
+      "median_views": 36013.5,
+      "eng_per_1k_followers": 1.462,
+      "score": 6.546,
+      "best_url": "https://x.com/huahuayjy/status/2051881133726728446",
+      "best_eng": 647,
+      "pattern_clue": "我是真心希望币圈可以好起来，但是目前看不到希望，世界正在被ai改变，但是币圈一个真正的ai项目都没有。 全是诈骗项目，导致币圈目前这个状态最大的核心原因，我觉得是缺乏合规的监管，诈骗赚钱太容易了，没人真正愿意去做事。 币圈的所有叙事都已经没人信了，我记得当年美股第一波ai拉盘的时候，币圈的ai币arkm fet等等其实有跟随的，现在完全不"
+    },
+    {
+      "author": "tonbelieverfore",
+      "followers": 93,
+      "format": "numbered_list",
+      "repeats": 3,
+      "account_posts": 4,
+      "share": 0.75,
+      "median_eng": 2,
+      "p90_eng": 2,
+      "median_views": 9,
+      "eng_per_1k_followers": 2.0,
+      "score": 5.837,
+      "best_url": "https://x.com/Tonbelieverfore/status/2062874657032954202",
+      "best_eng": 2,
+      "pattern_clue": "19. COIN: 期权IV 92.06% 30D 71.20% 短-30D +20.86pt new 排名new 到期2026-06-05 K=165 20. TSM: 期权IV 79.96% 30D 44.19% 短-30D +35.77pt new 排名new 到期2026-06-05 K=445 21. NOW: 期权IV 76."
+    },
+    {
+      "author": "gmgnai",
+      "followers": 126364,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 7,
+      "share": 0.286,
+      "median_eng": 76.0,
+      "p90_eng": 114,
+      "median_views": 7647.0,
+      "eng_per_1k_followers": 0.601,
+      "score": 5.836,
+      "best_url": "https://x.com/gmgnai/status/2062091767433089341",
+      "best_eng": 114,
+      "pattern_clue": "🔥【GMGN Openapi 打造扫链神器】这位老哥用 GMGN API 造了个链上主力分析神器，直接降维打击！！！ 手把手教你抄作业： 1.输入任意 CA，系统自动识别持仓中所有主力地址 2.分析主力健康度：盈利地址数、低频交易、只买不卖占比等 3.跨 CA 匹配共同盈利地址，揪出反复出没的主力群体 一个 CA 查进去，主力筹码结构全摆"
+    },
+    {
+      "author": "haoge567",
+      "followers": 4404,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 2.0,
+      "p90_eng": 4,
+      "median_views": 279.5,
+      "eng_per_1k_followers": 0.454,
+      "score": 5.696,
+      "best_url": "https://x.com/haoge567/status/2062390528151531709",
+      "best_eng": 4,
+      "pattern_clue": "2026.6.4大饼/以太/BNB/SOL日内行情走势分析 下午好兄弟们，睡醒账户又被插了，前天和昨天讲过我大饼651-605都有挂现货，现在651已经上车了，不知道早上这波下探有没有兄弟后入我的，还差几百u我就回本了，后入我的指标这么好用，还等啥呢，明牌了！ 昨晚讲过大饼前低破了下方去6.25-6w分批等多单，6.25w已经上车盈利，前"
+    },
+    {
+      "author": "baispx",
+      "followers": 19393,
+      "format": "numbered_list",
+      "repeats": 4,
+      "account_posts": 21,
+      "share": 0.19,
+      "median_eng": 8.5,
+      "p90_eng": 13,
+      "median_views": 1187.0,
+      "eng_per_1k_followers": 0.438,
+      "score": 5.029,
+      "best_url": "https://x.com/baispx/status/2062463012846583957",
+      "best_eng": 13,
+      "pattern_clue": "AI硬件第二战场开打，中国下达“全面动员令”， 已经发起激进的产量攻势， 把中国和韩国的HBM差距缩短至2~3年！ 韩国HBM行业瑟瑟发抖？（A股有哪些可以关注？） 🇨🇳 一、HBM是什么？ AI服务器的“内存心脏”！ 没有它，再强的GPU也带不动大模型。 全球被韩美三巨头卡死， 中国现在正举全国之力追赶——这波不是炒概念， 而是国产半导"
+    },
+    {
+      "author": "baispx",
+      "followers": 19393,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 21,
+      "share": 0.143,
+      "median_eng": 8,
+      "p90_eng": 10,
+      "median_views": 849,
+      "eng_per_1k_followers": 0.413,
+      "score": 3.496,
+      "best_url": "https://x.com/baispx/status/2062907363624190112",
+      "best_eng": 10,
+      "pattern_clue": "🚨 突发新闻： 🇺🇸 贝莱德刚刚在美股开盘后开始清算大量比特币持仓。 他们在 5 分钟内抛售了 2.5 亿美元的 $BTC，并且现在仍在不停地卖出更多。 看起来他们知道， 比特币下周还会下跌…… https://t.co/8BVAKi3Lg5"
+    },
+    {
+      "author": "qkl2058",
+      "followers": 68143,
+      "format": "tutorial",
+      "repeats": 5,
+      "account_posts": 8,
+      "share": 0.625,
+      "median_eng": 2,
+      "p90_eng": 1100,
+      "median_views": 543,
+      "eng_per_1k_followers": 0.029,
+      "score": 2.756,
+      "best_url": "https://x.com/qkl2058/status/2062052934280708361",
+      "best_eng": 1100,
+      "pattern_clue": "有个中国开发者在录B站教程的时候，不小心把他的AI交易记录给暴露了，里头显示赚了86万多美金。 这事儿纯属意外。他本来只是录个2分钟的教学视频，教大家怎么搭AI代理。画面里三个显示器，桌子乱七八糟的，也没几个人看。结果有人在47秒的时候按了暂停。 右边那个屏幕是亮着的，上面正好能看到一个钱包地址：gabagool22 • 868,862美"
+    },
+    {
+      "author": "baispx",
+      "followers": 19393,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 21,
+      "share": 0.095,
+      "median_eng": 6.5,
+      "p90_eng": 9,
+      "median_views": 1050.5,
+      "eng_per_1k_followers": 0.335,
+      "score": 2.599,
+      "best_url": "https://x.com/baispx/status/2062857828243759212",
+      "best_eng": 9,
+      "pattern_clue": "💥💥💥突发新闻：华尔街内部人士在今天美股开盘前继续疯狂减持，总减持金额32.01 亿美元，单笔最大的一笔拟议卖出高达 $20.716 亿！ 老规矩，先看数据：买入 41 笔，约 977 万美元，实际卖出 101 笔，约 8.10 亿美元，但若把拟议卖出也计入，卖出合计一共 135 笔，约 32.01 亿美元，卖出金额约为买入金额的 328"
+    },
+    {
+      "author": "baispx",
+      "followers": 19393,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 21,
+      "share": 0.095,
+      "median_eng": 5.5,
+      "p90_eng": 9,
+      "median_views": 1117.5,
+      "eng_per_1k_followers": 0.284,
+      "score": 2.54,
+      "best_url": "https://x.com/baispx/status/2062857828243759212",
+      "best_eng": 9,
+      "pattern_clue": "💥💥💥突发新闻：华尔街内部人士在今天美股开盘前继续疯狂减持，总减持金额32.01 亿美元，单笔最大的一笔拟议卖出高达 $20.716 亿！ 老规矩，先看数据：买入 41 笔，约 977 万美元，实际卖出 101 笔，约 8.10 亿美元，但若把拟议卖出也计入，卖出合计一共 135 笔，约 32.01 亿美元，卖出金额约为买入金额的 328"
+    }
+  ],
+  "single_post_outliers": [
+    {
+      "author": "zhixiajcmj",
+      "followers": 125,
+      "eng": 5080,
+      "views": 948205,
+      "eng_per_1k_followers": 5080.0,
+      "url": "https://x.com/Zhixiajcmj/status/2061879931949453681",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "我觉得X一点都不黄啊，感觉跟刷国内微博一样，最多发言雷霆了点"
+    },
+    {
+      "author": "niko_77xiaoen",
+      "followers": 168,
+      "eng": 3715,
+      "views": 111498,
+      "eng_per_1k_followers": 3715.0,
+      "url": "https://x.com/Niko_77xiaoen/status/2059128337730285789",
+      "formats": [
+        "other"
+      ],
+      "text": "我需要的不是一位恋人 我需要的是一条狗、ATM机、没爹没妈的孤儿、长的牛逼、打游戏牛、接受我出轨、粘人、不黏人、不看擦边但爱说荤话有分寸、单纯天真专一、纯爱、没有和女生聊过强谈过恋爱的感情小白、宠我并始终如一、强的、纯的、闷骚、腹黑、占有欲强、离不开我的人"
+    },
+    {
+      "author": "iiii1874",
+      "followers": 1011,
+      "eng": 3634,
+      "views": 90226,
+      "eng_per_1k_followers": 3594.461,
+      "url": "https://x.com/iiii1874/status/2062282173860958602",
+      "formats": [
+        "other"
+      ],
+      "text": "求你了好不好，尿我嘴里 #男喘 #男M #手冲实录 #自慰 #小狗 #女性向 #喘 https://t.co/mzldGcTn7r"
+    },
+    {
+      "author": "_gou_shi",
+      "followers": 780,
+      "eng": 3070,
+      "views": 33218,
+      "eng_per_1k_followers": 3070.0,
+      "url": "https://x.com/_Gou_Shi/status/2062189303128834068",
+      "formats": [
+        "other"
+      ],
+      "text": "是稿件所以还是试着贴了点水印（怎么像做法...） https://t.co/qiCD4MMNcq"
+    },
+    {
+      "author": "xioxio2001",
+      "followers": 1326,
+      "eng": 3693,
+      "views": 38294,
+      "eng_per_1k_followers": 2785.068,
+      "url": "https://x.com/xioxio2001/status/2060275909123579951",
+      "formats": [
+        "other"
+      ],
+      "text": "好熱⋯⋯衣服穿不住一點🥵 #自拍 #小狗 https://t.co/XgYN0WzuFO"
+    },
+    {
+      "author": "dvmtaylor20718",
+      "followers": 597,
+      "eng": 1641,
+      "views": 4746,
+      "eng_per_1k_followers": 1641.0,
+      "url": "https://x.com/DvmTaylor20718/status/2061033243798053045",
+      "formats": [
+        "other"
+      ],
+      "text": "身材保持得还挺有料哈 https://t.co/KqbmUxCoWS"
+    },
+    {
+      "author": "northfan0615",
+      "followers": 141,
+      "eng": 1318,
+      "views": 174212,
+      "eng_per_1k_followers": 1318.0,
+      "url": "https://x.com/NorthFan0615/status/2057782573385007574",
+      "formats": [
+        "other"
+      ],
+      "text": "求帮助，现在还在精神恍惚…因为未知原因的私钥泄漏，我价值12万u的钱包被盗了，那是自己打工7年+爸妈靠体力劳动攒了半辈子的钱。 黑客拿我的钱包和Relay协议交互，跨链桥把我的usdt、usdc全部换成了eth到黑客钱包地址里。 一直知道web3的凶险，在币圈3年，战战兢兢、万事小心，好不容易在熊市保住了本金，结果万万没想到钱包被盗了。 "
+    },
+    {
+      "author": "airfontt",
+      "followers": 685,
+      "eng": 1112,
+      "views": 5517,
+      "eng_per_1k_followers": 1112.0,
+      "url": "https://x.com/AirFontt/status/2062633197851263466",
+      "formats": [
+        "other"
+      ],
+      "text": "貪心的小狗 https://t.co/AGF5PRTEVN"
+    },
+    {
+      "author": "yoya0t",
+      "followers": 1945,
+      "eng": 1657,
+      "views": 65071,
+      "eng_per_1k_followers": 851.928,
+      "url": "https://x.com/YOYA0T/status/2059286531094040928",
+      "formats": [
+        "other"
+      ],
+      "text": "玩她的阴蒂 穴口一缩一缩的，水从洞口流出，等到她快高潮的时候停下，停几秒再揉几下，看她双腿微颤又要高潮就不动，手指在穴口打圈把水抹到阴蒂上继续玩，小狗拉着我的手“想高潮，妈妈，求你了，让小狗高潮好不好” 手快速摩擦着阴蒂，穴口因高潮极速收缩，再扇一巴掌，小狗叫的好骚 #le #wlw #寸止"
+    },
+    {
+      "author": "otwto_ovo",
+      "followers": 371,
+      "eng": 821,
+      "views": 80548,
+      "eng_per_1k_followers": 821.0,
+      "url": "https://x.com/oTwTo_OvO/status/2059859603882676609",
+      "formats": [
+        "other"
+      ],
+      "text": "上次跪趴着夹着假唧唧打屁屁 主人说假唧唧掉下来一次就加一下 可是怎么夹都夹不住 奖池一直在叠加 到后面主人要我自己按住唧唧算了 为什么夹不住啊是不是润滑涂太多了🥺🥺 还是趴着腿打超开这个姿势本来小穴就不好用力🤔 感觉每次高潮的时候都夹很紧的说👉🏻👈🏻 #小狗 #puppy #bdsm #女m #sub"
+    },
+    {
+      "author": "xizzhu",
+      "followers": 701,
+      "eng": 801,
+      "views": 44473,
+      "eng_per_1k_followers": 801.0,
+      "url": "https://x.com/xizzhu/status/2062089912665493625",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "老中在反贼宇宙里大概处于薛定谔状态： 一边全民负债、存款归零、明天就崩 一边又人人都有几十万美元想往外转，被5万美元额度卡得痛不欲生 建议先统一世界观，拜托了🙇‍♂️"
+    },
+    {
+      "author": "jisuxiaoyu1",
+      "followers": 1646,
+      "eng": 1134,
+      "views": 94906,
+      "eng_per_1k_followers": 688.943,
+      "url": "https://x.com/jisuxiaoyu1/status/2055302697063240129",
+      "formats": [
+        "other"
+      ],
+      "text": "还是不要外放 还是短短的快快的结束了内 后面有点停不下来了 #小狗 #sub #女喘 #手冲 https://t.co/offPLqLurG"
+    },
+    {
+      "author": "tamarasant16009",
+      "followers": 3919,
+      "eng": 2668,
+      "views": 107855,
+      "eng_per_1k_followers": 680.786,
+      "url": "https://x.com/TamaraSant16009/status/2061034641424056613",
+      "formats": [
+        "other"
+      ],
+      "text": "也就跟风凑个趣儿嘛 https://t.co/yA61JETW4A"
+    },
+    {
+      "author": "iiii1874",
+      "followers": 1011,
+      "eng": 629,
+      "views": 22513,
+      "eng_per_1k_followers": 622.156,
+      "url": "https://x.com/iiii1874/status/2060471512952705142",
+      "formats": [
+        "other"
+      ],
+      "text": "存了好多都交给你 #男喘 #手冲实录 #男m #女性向 #自慰 https://t.co/hJUN7zlqSY"
+    },
+    {
+      "author": "iiii1874",
+      "followers": 1011,
+      "eng": 614,
+      "views": 19521,
+      "eng_per_1k_followers": 607.319,
+      "url": "https://x.com/iiii1874/status/2061900545489789422",
+      "formats": [
+        "other"
+      ],
+      "text": "把水都蹭我脸上好不好 #男喘 #自慰 #手冲实录 #男M #小狗 #女性向 https://t.co/VAXmhmy8qM"
+    },
+    {
+      "author": "xiaohai67890",
+      "followers": 496,
+      "eng": 514,
+      "views": 26828,
+      "eng_per_1k_followers": 514.0,
+      "url": "https://x.com/XiaoHai67890/status/2062252665648939251",
+      "formats": [
+        "other"
+      ],
+      "text": "大家好，这里是 XiaoHai67890（小海/小孩）。目前是一名大三休学的学生，给大家讲讲故事，很高兴认识大家。 24 年的时候，有一个朋友说我像热血番里的男主角。 我认为人生就是无数的选择，因此我说自己是一个疯子是一个赌徒，因为我做的选择似乎从来没有给我的人生留有容错。 我来自四川一个不知名的小乡村。小学的时候，在同学们每天按时完成作"
+    },
+    {
+      "author": "iiii1874",
+      "followers": 1011,
+      "eng": 505,
+      "views": 17389,
+      "eng_per_1k_followers": 499.505,
+      "url": "https://x.com/iiii1874/status/2061150522913202635",
+      "formats": [
+        "other"
+      ],
+      "text": "祝你快乐，不止儿童节 #男喘 #男m #小狗 #手冲实录 #自慰 #纯喘 https://t.co/xOKljW6sXo"
+    },
+    {
+      "author": "star962o",
+      "followers": 2175,
+      "eng": 979,
+      "views": 51159,
+      "eng_per_1k_followers": 450.115,
+      "url": "https://x.com/Star962o/status/2056439172848902310",
+      "formats": [
+        "other"
+      ],
+      "text": "sorry相比于之前变得更骚了ono所以到底怎么直接发语音（｀Δ´）！ #女喘 #手冲实录 #小狗日记 https://t.co/heFZNaMO5X"
+    },
+    {
+      "author": "momovouo",
+      "followers": 5473,
+      "eng": 2095,
+      "views": 340698,
+      "eng_per_1k_followers": 382.788,
+      "url": "https://x.com/Momovouo/status/2052449167503700171",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "有人半夜给我推荐看狗爹和小桃 搞得我大晚上又冲五次 本来今天不打算冲的 群众里面有坏人啊!!!"
+    },
+    {
+      "author": "laura1932026645",
+      "followers": 692,
+      "eng": 366,
+      "views": 89821,
+      "eng_per_1k_followers": 366.0,
+      "url": "https://x.com/laura1932026645/status/2062780458824609931",
+      "formats": [
+        "pnl_flex",
+        "tutorial"
+      ],
+      "text": "一个中国开发者录了一段2分钟的Claude Code代理搭建教程 背景是三台显示器、乱七八糟的桌子和一堆线缆。 他本来只想发到Bilibili，随手一发，以为最多100个人看 结果，全网炸了。 因为在视频0:47秒的位置，右边那台显示器露出了真实余额——$868,862 钱包名叫gabagool22 28,620笔交易，全部是BTC 15"
+    },
+    {
+      "author": "xingjia520",
+      "followers": 2414,
+      "eng": 796,
+      "views": 70323,
+      "eng_per_1k_followers": 329.743,
+      "url": "https://x.com/xingjia520/status/2059124703739122108",
+      "formats": [
+        "other"
+      ],
+      "text": "连夜给孩子更新了最新版的 850 个单词的闯关游戏，只要掌握 850 个英语单词，你就可以自由地和老外简单地沟通，表达自己的需求。 视频里放出了下载地址和功能演示！ https://t.co/5GA1IM0d7u"
+    },
+    {
+      "author": "wan28440",
+      "followers": 225,
+      "eng": 329,
+      "views": 2182,
+      "eng_per_1k_followers": 329.0,
+      "url": "https://x.com/wan28440/status/2062422653659693566",
+      "formats": [
+        "other"
+      ],
+      "text": "家猫 野猫 狗 水纪线东江说金目是野猫 东江你真会塑啊！哈哈 https://t.co/35bvmcG6bm"
+    },
+    {
+      "author": "twothreewind",
+      "followers": 475,
+      "eng": 319,
+      "views": 5143,
+      "eng_per_1k_followers": 319.0,
+      "url": "https://x.com/TwoThreeWind/status/2061337403156255141",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "其实现在的销量很不乐观，双金唱片是最低标准，内娱真的很看重就是数专销量，这次打不出来成绩，以这狗公司对他的待遇，我们拿什么让其他品牌或者导演自己拎着这块“真金白银敲门砖”来敲烂sm的门把他带出来跑活动啊…"
+    },
+    {
+      "author": "bbray25",
+      "followers": 5565,
+      "eng": 1760,
+      "views": 208250,
+      "eng_per_1k_followers": 316.262,
+      "url": "https://x.com/bbray25/status/2061020626614407418",
+      "formats": [
+        "other"
+      ],
+      "text": "国产软色情经典之作 不会还有谁没看过吧？ 有没有比这部更好看的？ 评论区发出来~ https://t.co/JYXV2seT74"
+    },
+    {
+      "author": "dabusst",
+      "followers": 507,
+      "eng": 308,
+      "views": 96741,
+      "eng_per_1k_followers": 308.0,
+      "url": "https://x.com/dabusst/status/2062143253756215411",
+      "formats": [
+        "other"
+      ],
+      "text": "一个危险的信号出现了：科技巨头不再回购，开始增发。 谷歌计划融资800亿美元 甲骨文启动200亿美元增发 Meta和谷歌回购规模接近归零 过去十年支撑美股的回购机器，正在被AI资本开支掏空。当供给增加、买盘质量下降，市场或许正在迎来一次流动性重估。 ＃美股 https://t.co/Z66F7cBZ5u"
+    },
+    {
+      "author": "b3785486614474",
+      "followers": 1660,
+      "eng": 500,
+      "views": 68013,
+      "eng_per_1k_followers": 301.205,
+      "url": "https://x.com/b3785486614474/status/2062056280592912892",
+      "formats": [
+        "pnl_flex",
+        "tutorial"
+      ],
+      "text": "14天，我靠跟单一个中国学生，在Polymarket上净赚32,400美元 而他本人更离谱,48小时内，用0.90美元直接干到408,292美元，接近45万倍的恐怖回报 他是怎么做到的？ 核心就一个Claude提示词，花了20分钟，搭出了一个自动化机器人。 这个机器人在Binance现货和Polymarket的CLOB订单簿之间，专门吃那"
+    },
+    {
+      "author": "v3wanu",
+      "followers": 16129,
+      "eng": 4628,
+      "views": 293984,
+      "eng_per_1k_followers": 286.937,
+      "url": "https://x.com/v3wanu/status/2059467282410242182",
+      "formats": [
+        "other"
+      ],
+      "text": "所有跟单Serenity的，再次隆重介绍一个专门针对他的监控网站给你们： https://t.co/6AZ1Ncv9s9 详细得不得了"
+    },
+    {
+      "author": "raining_pogu7",
+      "followers": 2600,
+      "eng": 733,
+      "views": 10977,
+      "eng_per_1k_followers": 281.923,
+      "url": "https://x.com/Raining_pogu7/status/2062590373080576247",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "🦁爸爸領養了兩隻小狗 一隻是金毛尋回犬，一隻是拉布拉多 然後爸爸決定金毛尋回犬小狗繼續用了上一隻狗狗的名字 💬： dogma 回來了🥺🥺 不過嚕卡放假回澳洲還沒見兩隻小狗，是最近發生的事情"
+    },
+    {
+      "author": "ciler531972",
+      "followers": 445,
+      "eng": 277,
+      "views": 11933,
+      "eng_per_1k_followers": 277.0,
+      "url": "https://x.com/ciler531972/status/2061824278769934601",
+      "formats": [
+        "other"
+      ],
+      "text": "自慰会不知觉吐舌头了怎么办 难道我真是小狗(&gt;﹏&lt;) #女喘 #少萝 #手冲实录 https://t.co/0hHGjA3Jew"
+    },
+    {
+      "author": "mazijx",
+      "followers": 116677,
+      "eng": 29498,
+      "views": 295040,
+      "eng_per_1k_followers": 252.818,
+      "url": "https://x.com/maziJX/status/2060959505429749805",
+      "formats": [
+        "other"
+      ],
+      "text": "chudai💦💦 直播间通道1v1线下：https://t.co/vVagIl9rQn https://t.co/8MegsAvoK2"
+    },
+    {
+      "author": "06yq77zz",
+      "followers": 174,
+      "eng": 244,
+      "views": 129742,
+      "eng_per_1k_followers": 244.0,
+      "url": "https://x.com/06YQ77ZZ/status/2060354357955326226",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "真的好喜欢看狗爹和小桃🥺看得我今天冲了个没完冲晕好几次……是饭也不吃水也不喝兼职也鸽了"
+    },
+    {
+      "author": "aprilonehs",
+      "followers": 345,
+      "eng": 244,
+      "views": 41602,
+      "eng_per_1k_followers": 244.0,
+      "url": "https://x.com/ApriloneHS/status/2061222918986834062",
+      "formats": [
+        "other"
+      ],
+      "text": "100u在@polymarket挂一整天，你猜有多少收益？ 答案是66u. 策略也就在这篇文章里面：https://t.co/1HeEfF54Ps 做lp这件事，选好市场，没有那么大风险，赚的是大多数人不敢尝试的钱。 https://t.co/LIFqlGeEnn"
+    },
+    {
+      "author": "towardmu",
+      "followers": 3579,
+      "eng": 850,
+      "views": 37378,
+      "eng_per_1k_followers": 237.497,
+      "url": "https://x.com/TowardMu/status/2060370717628383359",
+      "formats": [
+        "other"
+      ],
+      "text": "如果你已经开了蓝V，并有了粉丝，一定要尽早加入这两个接单平台： 1，灯塔平台，我一个月没怎么搭理就赚了170u https://t.co/UCGw9g1XJj 2，Tutti 专业AI商单平台，写文，互动都有钱。 收益很高，但是门槛也高，注册后会对X账户进行审核，通过才能接单。 https://t.co/ux8zXiE8RT https:"
+    },
+    {
+      "author": "muskguang",
+      "followers": 2530,
+      "eng": 576,
+      "views": 48853,
+      "eng_per_1k_followers": 227.668,
+      "url": "https://x.com/muskguang/status/2053679417000628292",
+      "formats": [
+        "other"
+      ],
+      "text": "虽然不认识龙王，但是推特上经常看到他的分享，由于锁推导致没办法查看历史推文了，我这边推特监控服务从21年底到现在存的有1833条，给那些需要复盘或者蒸馏学习的人。 @dotyyds1234 要是觉得不妥我就删了。 链接 ：https://t.co/AteADvJvc1"
+    },
+    {
+      "author": "reveland_0101",
+      "followers": 1338,
+      "eng": 294,
+      "views": 5651,
+      "eng_per_1k_followers": 219.731,
+      "url": "https://x.com/ReVeland_0101/status/2059654413678260224",
+      "formats": [
+        "other"
+      ],
+      "text": "金旼炡是不是還是覺得自己很帥 殊不知是超可愛圍兜兜小狗🐕 https://t.co/vTYs9aQSyB"
+    },
+    {
+      "author": "mazijx",
+      "followers": 116677,
+      "eng": 24412,
+      "views": 282369,
+      "eng_per_1k_followers": 209.227,
+      "url": "https://x.com/maziJX/status/2060959488379687067",
+      "formats": [
+        "other"
+      ],
+      "text": "chudai💦💦 直播间通道1v1线下：https://t.co/vVagIl8U0P https://t.co/SA4AsVmB8V"
+    },
+    {
+      "author": "ytlie1",
+      "followers": 480,
+      "eng": 194,
+      "views": 47617,
+      "eng_per_1k_followers": 194.0,
+      "url": "https://x.com/ytlie1/status/2060323799560868343",
+      "formats": [
+        "other"
+      ],
+      "text": "猪叫是会成为性癖的，从一个害羞，自慰也只会慢慢揉阴蒂的女孩，变成一只一旦兴奋就会发出畜生一样的猪叫声，自慰也变成了拽着奶头捏着阴蒂，渴望被虐的母猪，只需要一位高贵的亲爹。（图2是我们和几个朋友打游戏的时候，顺口骂她傻逼，当着所有人的面就小声哼出来了） #母猪 #调教 #男尊女卑 #m #母狗 https://t.co/cogayB2EK9"
+    },
+    {
+      "author": "meme_fanqie",
+      "followers": 663,
+      "eng": 186,
+      "views": 8431,
+      "eng_per_1k_followers": 186.0,
+      "url": "https://x.com/meme_fanqie/status/2057372781533450270",
+      "formats": [
+        "pnl_flex",
+        "daily_recap"
+      ],
+      "text": "🦞 今日金狗雷达战绩 $TLS — 推送市值 $3.4万 → 最高 117万，34x 🔥 $GITBANK — 推送市值 $14万 → 最高 277万，19x $GBRAIN — 推送市值 $7.9万 → 最高 102万，12x $EVO — 推送市值 $6.2万 → 最高 67万，10x $GRANTR — 推送市值 $10.9万 → "
+    },
+    {
+      "author": "gas1618",
+      "followers": 1363,
+      "eng": 253,
+      "views": 26905,
+      "eng_per_1k_followers": 185.62,
+      "url": "https://x.com/gas1618/status/2053098190107467982",
+      "formats": [
+        "numbered_list",
+        "data_drop"
+      ],
+      "text": "来不及解释了，先不要看憨巴龙王他们吵架了，现在走来的是4月7日、4月14日就预判大盘要上涨的并提前给大盘指明方向的拿幸仙尊，涉及川普访华小牛、中期选举小牛、币安衰退牛、山寨归零牛的机会跟方向，以下内容是预测逻辑（带聊天提前时间戳，从不马后炮）： 我是如何在4月中旬就判断大盘一定会上涨的： 一、币安发的这个《PRER价格区间执行规则》公告，"
+    },
+    {
+      "author": "nebou9n",
+      "followers": 1807,
+      "eng": 323,
+      "views": 11759,
+      "eng_per_1k_followers": 178.749,
+      "url": "https://x.com/nebou9n/status/2061520899489292570",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "Threads 上的男生不要再狗塑自己了== 快樂小狗+黃金獵犬貼圖的文章比流浪狗還多 什麼時候要抓去絕育== 很想封鎖「小狗」關鍵字 但我想看真正的幼犬萌片 我何罪之有要看一些醜男大啊"
+    },
+    {
+      "author": "blueskylh1",
+      "followers": 1479,
+      "eng": 254,
+      "views": 30003,
+      "eng_per_1k_followers": 171.738,
+      "url": "https://x.com/blueskylh1/status/2061767233974726673",
+      "formats": [
+        "numbered_list",
+        "daily_recap",
+        "tutorial"
+      ],
+      "text": "今天 Codex 手机验证问题刷屏了！OpenAI 突然加强风控，OAuth 登录 Codex 时强制要求 SMS/WhatsApp 验证码，很多老接码号账号直接中招。我整理了今天 X 上几位大佬实测分享的解决方法，每条都附原帖链接，方便大家直接看细节。 先说结论：如果是主力账号，别再依赖一次性接码平台了。OpenAI 目前不支持更换账号"
+    },
+    {
+      "author": "0xtonixie",
+      "followers": 7726,
+      "eng": 1319,
+      "views": 120033,
+      "eng_per_1k_followers": 170.722,
+      "url": "https://x.com/0xtonixie/status/2055201395083825382",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "如果你想在币圈小资金翻身（几百U就够了），我推荐你去跟着这些打新的老师去链上以小博大（不是玩meme！）： 1. reboot老师 @Reboottttttt ，真的是很勤奋的打新专家，任何新协议，链上的异动，基本都会第一时间察觉，最难能可贵的是他很少偷吃，自己发现的第一时间就直接发出来，不是那种发出来就只能接盘的老师，归零的话他跟你一起"
+    },
+    {
+      "author": "jsijcl2043",
+      "followers": 1173,
+      "eng": 196,
+      "views": 9458,
+      "eng_per_1k_followers": 167.093,
+      "url": "https://x.com/jsijcl2043/status/2062019965847482766",
+      "formats": [
+        "other"
+      ],
+      "text": "前一段时间，我骂共匪，有个愚蠢的网友，说你太激进了🤣8964，中国共产党用坦克碾压活着的学生时候，开枪打死学生的时候，你觉得它们激进吗？我们抗争也是为了你们这种说我们激进的傻逼的生命和安全‼️认知和猪狗一样的人真的很可悲‼️它们占领以后也会用坦克压过你们的头，也会开枪打死你们‼️傻逼明白吗 https://t.co/9ovtuGfdiz"
+    },
+    {
+      "author": "qvqqqq",
+      "followers": 1337,
+      "eng": 223,
+      "views": 23616,
+      "eng_per_1k_followers": 166.791,
+      "url": "https://x.com/qvqqqq/status/2060761550655209643",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "强制真好呀…直接打我骂我操我就好了…小狗有什么选择和思考的权利…#母狗 #男尊女卑"
+    },
+    {
+      "author": "wanwanzuikenai",
+      "followers": 6340,
+      "eng": 1048,
+      "views": 25519,
+      "eng_per_1k_followers": 165.3,
+      "url": "https://x.com/wanwanzuikenai/status/2062538782612795515",
+      "formats": [
+        "other"
+      ],
+      "text": "好心酸 在你眼里我是母狗 婊子 唯独不能是那个曾经你会心疼的小女孩 https://t.co/G3RmhPiWnb"
+    },
+    {
+      "author": "siliconman0001",
+      "followers": 11562,
+      "eng": 1898,
+      "views": 270679,
+      "eng_per_1k_followers": 164.158,
+      "url": "https://x.com/SiliconMan0001/status/2061799494396895377",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "中国发电量占全球33%， 中国高楼大厦占了全球47%， 我想不通， 为什么工资还是这么低到让人发指， 为什么我看到，外卖骑手一边送货一边喂刚出生的孩子母乳。"
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "eng": 1633,
+      "views": 296491,
+      "eng_per_1k_followers": 161.587,
+      "url": "https://x.com/Zoozo2025/status/2060336279020322899",
+      "formats": [
+        "other"
+      ],
+      "text": "此女剪辑技术已经封神了，这到底是AI，还是怎么做的？ https://t.co/YaJEfHpWWg"
+    },
+    {
+      "author": "ovoanton___",
+      "followers": 1861,
+      "eng": 270,
+      "views": 5222,
+      "eng_per_1k_followers": 145.083,
+      "url": "https://x.com/OvoAnton___/status/2062545872299381132",
+      "formats": [
+        "other"
+      ],
+      "text": "今天不擦边 今天想死 而且还胖的想死 想去打替尔泊肽 #小狗日记 #m #爸爸 #妈妈 https://t.co/v1dzNEktO8"
+    },
+    {
+      "author": "75t_t56",
+      "followers": 1774,
+      "eng": 254,
+      "views": 7361,
+      "eng_per_1k_followers": 143.179,
+      "url": "https://x.com/75T_T56/status/2060733066461807016",
+      "formats": [
+        "other"
+      ],
+      "text": "今天开始我要自己上厕所 https://t.co/70jDAFhBFN"
+    },
+    {
+      "author": "jjnunaxx830",
+      "followers": 48,
+      "eng": 141,
+      "views": 1989,
+      "eng_per_1k_followers": 141.0,
+      "url": "https://x.com/jjnunaxx830/status/2062200713388978612",
+      "formats": [
+        "other"
+      ],
+      "text": "260603 아이돌라디오 一只贴在玻璃上、认真搜寻饭撒的奎彬小狗送达～ #金奎彬 #김규빈 #KIMGYUVIN #and2ble #앤더블 https://t.co/vZWpqXtD2o"
+    },
+    {
+      "author": "withwarmheart",
+      "followers": 576,
+      "eng": 127,
+      "views": 3233,
+      "eng_per_1k_followers": 127.0,
+      "url": "https://x.com/WithWarmHeart/status/2062381921678844134",
+      "formats": [
+        "other"
+      ],
+      "text": "肉包子打狗了🫥 台中市大雅區一間連鎖火鍋店驚傳倒閉，負責人夫妻疑因投資失利，一家四口已經至中國避風頭，這對夫妻在地方非常活躍，參加多個社團...受害人先籌組自救會，檢方已進行偵辦中。有受害者控訴，他們帶走的不只是錢，也可能是數百條人命 https://t.co/FiiRwiObAg"
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "eng": 1228,
+      "views": 65867,
+      "eng_per_1k_followers": 121.512,
+      "url": "https://x.com/Zoozo2025/status/2055152864654143947",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "一旦这个数字超过10，撤退赶紧跑。一分都不带犹豫的。"
+    },
+    {
+      "author": "susutwn",
+      "followers": 2208,
+      "eng": 268,
+      "views": 1463,
+      "eng_per_1k_followers": 121.377,
+      "url": "https://x.com/susutwn/status/2062818370739995015",
+      "formats": [
+        "other"
+      ],
+      "text": "🪧舉牌工讀生🪧的模板來啦! #如不加購動態 有4張差分 (不舉手/舉右手/舉左手/舉雙手) 一樣留言+轉推=#抽獎 推特跟DC都有抽獎喔! #S_44864 #模板委託 想直接委託的歡迎私訊! https://t.co/EKUeGl52mU"
+    },
+    {
+      "author": "summer_trading",
+      "followers": 13410,
+      "eng": 1598,
+      "views": 208819,
+      "eng_per_1k_followers": 119.165,
+      "url": "https://x.com/Summer_trading/status/2060289117511139677",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "普通人玩美股可能不知道要买什么。 其实思路很简单： 第一选择：标普500、纳指100，定投，躺着等赚钱。 第二选择：跟着特朗普买。 他喊 $INTC → 涨了400% 他喊 $DELL → 2月10日自己在$122建仓，5月8日公开喊话时$233，现在盘前$438 前两天喊 $MU → 从$745涨到$923，三天突破万亿市值 总之就是总"
+    },
+    {
+      "author": "jctyzd",
+      "followers": 185,
+      "eng": 114,
+      "views": 7043,
+      "eng_per_1k_followers": 114.0,
+      "url": "https://x.com/JctyZd/status/2062797263240565061",
+      "formats": [
+        "other"
+      ],
+      "text": "我大概就是这样反差的一个人吧~#反差 #母狗 #御姐 https://t.co/G27C8Btsa6"
+    },
+    {
+      "author": "qiukun13",
+      "followers": 151,
+      "eng": 114,
+      "views": 781,
+      "eng_per_1k_followers": 114.0,
+      "url": "https://x.com/qiukun13/status/2061484212012863974",
+      "formats": [
+        "other"
+      ],
+      "text": "猫猫狗狗出街 #五次金槍 https://t.co/OhRpQpf2LD"
+    },
+    {
+      "author": "aliideez",
+      "followers": 4627,
+      "eng": 508,
+      "views": 67775,
+      "eng_per_1k_followers": 109.79,
+      "url": "https://x.com/aLiiDeez/status/2056729445621547470",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "不谈论 Zest Protocol 项目本身，只说链上痕迹 昨天有一个新发现，但在 $zest 狙击手卖完之前不能说出来 1. $zest的榜一 是一个合约地址，而这个合约是币安Alpha的dev创建的 2. 这是一个锁仓合约，合约的 primaryOwner 应该是币安地址，secondaryOwner 应该是项目方的 primaryO"
+    },
+    {
+      "author": "btdc666",
+      "followers": 19961,
+      "eng": 2189,
+      "views": 7024,
+      "eng_per_1k_followers": 109.664,
+      "url": "https://x.com/BTDC666/status/2062429001747255322",
+      "formats": [
+        "token_call"
+      ],
+      "text": "底部！马上埋伏 #凉家军 ！大的💊来了！ 别问！问就是大的要来了！ 🎁价值 10 $USDT$凉家军 × 5人份 1️⃣❤️点赞+🔀转发 2️⃣留言BSC地址 ⏰48小时@grok 开奖 CA： 0xfd6f6dd342f3c0a6505b05eb33cacdc3fdcd7777"
+    },
+    {
+      "author": "chechecheg39903",
+      "followers": 38,
+      "eng": 109,
+      "views": 2984,
+      "eng_per_1k_followers": 109.0,
+      "url": "https://x.com/chechecheg39903/status/2062445889185362430",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "我现在真的百分百确定哥🍗有卧底了。打狗塑打的是自家厨子，黎深🍗打的也是哥的厨子。结果现在叠纸还吻上来了，你猜接下来夏以昼二创环境会变成什么样，打厨子之风更是盛行！我哥生日前就这么闹吧！零人关注这个昼昼即将要过生日了！"
+    },
+    {
+      "author": "feiyanxie",
+      "followers": 66557,
+      "eng": 7243,
+      "views": 189292,
+      "eng_per_1k_followers": 108.824,
+      "url": "https://x.com/FeiyanXie/status/2057270485461897602",
+      "formats": [
+        "other"
+      ],
+      "text": "这哥们儿狗语讲得不错，狗子知道了估计要被追着打🤣🤣 https://t.co/EHoDbGVcSb"
+    },
+    {
+      "author": "xtony1314",
+      "followers": 98649,
+      "eng": 10232,
+      "views": 3798838,
+      "eng_per_1k_followers": 103.721,
+      "url": "https://x.com/xtony1314/status/2061649095371186176",
+      "formats": [
+        "other"
+      ],
+      "text": "中国人真的有大病。。。跟你差了上千年，有什么仇什么怨？？？ 中国人的毛病就是 对身边的苦难视而不见，对遥远的仇恨恨之入骨。😀😀😀 https://t.co/NW7SG2ywrA"
+    },
+    {
+      "author": "xiaoshunli",
+      "followers": 37920,
+      "eng": 3899,
+      "views": 1599511,
+      "eng_per_1k_followers": 102.822,
+      "url": "https://x.com/xiaoshunli/status/2061714668079718713",
+      "formats": [
+        "other"
+      ],
+      "text": "惊天新闻，名人色情视频流出！！！ 吹牛老爹花了十万美元，请某知名AV黑人男演员，JJ30厘米，操50 Cents的前妻，然后他一边看他们操逼，一边坐在几米的位置，打飞机。 搞笑的是，50 Cents的前妻在最近的Ins直播中表示，虽然50 Cents气疯了。 但是他还是需要每个月支付给自己30万美金的赡养费，她也无所谓自己和50 Cent"
+    },
+    {
+      "author": "baispx",
+      "followers": 19393,
+      "eng": 1978,
+      "views": 224287,
+      "eng_per_1k_followers": 101.996,
+      "url": "https://x.com/baispx/status/2061086668229357857",
+      "formats": [
+        "other"
+      ],
+      "text": "马斯克警告：“现有整个经济体系即将崩塌， 且没有任何力量能够阻止。” 、 “我们正处于奇点之中，这是一场超音速海啸。” 对于，人类的腾落时间， 他认为：“留给旧世界的时间只剩2000天”， 算下来，仅5年左右的时间窗口。 之前，马斯克在一个视频访谈中强调：“价格会猛烈崩盘。” 注意，不是小幅下跌，而是彻底崩塌。 因为，人工智能和机器人并非"
+    },
+    {
+      "author": "qiuqiu232",
+      "followers": 2916,
+      "eng": 295,
+      "views": 26231,
+      "eng_per_1k_followers": 101.166,
+      "url": "https://x.com/qiuqiu232/status/2055489472029171730",
+      "formats": [
+        "other"
+      ],
+      "text": "「没有 meme 的 Base链，究竟该怎么玩？」 🧨 Base 最反直觉的地方：它几乎没有 meme 这两年链上的很多新东西、新 Agent、新链上产品，第一站都是 Base。 它跟 BSC、Solana 完全不一样，信息门槛更高，噪音更少，alpha机会还是很大的。 🧠 换换脑子：别把 Base 当土狗链玩 Base 很少有纯 mem"
+    },
+    {
+      "author": "snowboat84",
+      "followers": 5403,
+      "eng": 546,
+      "views": 93107,
+      "eng_per_1k_followers": 101.055,
+      "url": "https://x.com/snowboat84/status/2055088263522881844",
+      "formats": [
+        "thread_hook"
+      ],
+      "text": "前一阵子流行美国\"斩杀线\"的说法，很大程度上是因为美国的医疗系统复杂到让人懵逼，一次大病能让一个中产家庭直接归零。事实上，美国医疗的复杂不是设计出来的，而是一百年路径依赖堆出来的：从二战时期偶然出现的雇主保险，到1997年锁死的住院医师配额，每一层都是为了解决前一层的问题，但每加一层整个系统就更贵、更难懂。 这篇文章试图一次讲清楚：为什么"
+    },
+    {
+      "author": "chuge857",
+      "followers": 33864,
+      "eng": 3285,
+      "views": 832803,
+      "eng_per_1k_followers": 97.006,
+      "url": "https://x.com/chuge857/status/2061796812550512970",
+      "formats": [
+        "other"
+      ],
+      "text": "我爷爷在ICU里躺了整整三年，全靠呼吸机和营养液吊着一口气。 医生多次暗示他已经脑死亡，没有任何生活质量可言。 但我大姑和二伯态度极其坚决，哪怕倾家荡产也要用最好的进口药。 亲戚们都感动得直抹眼泪，说久病床前也有真孝子。 直到有一天，我无意间看到了爷爷的离休干部待遇单。 爷爷每个月的退休金、高龄津贴加上全额报销的医疗补贴，加起来将近四万块"
+    },
+    {
+      "author": "mds201553712570",
+      "followers": 47,
+      "eng": 97,
+      "views": 157,
+      "eng_per_1k_followers": 97.0,
+      "url": "https://x.com/mds201553712570/status/2062772974441443729",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "从最新链上留存数据不难发现，完成首轮配置的用户复投比例持续走高，稳定的到期收益兑现是维系用户长期留存的核心，也为平台长线规模扩张筑牢群众根基@TermMax"
+    },
+    {
+      "author": "fantuantalk",
+      "followers": 588,
+      "eng": 97,
+      "views": 7242,
+      "eng_per_1k_followers": 97.0,
+      "url": "https://x.com/fantuantalk/status/2061741918678372599",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "已经开蓝v的朋友可以用这个办法去冲刺一下： 这是@动物园园长 推荐的爆款插件，专门用来查看爆款潜力贴。 地址：https://t.co/EnReyYuoCn 我已经用上了，非常好用，下面是正确使用方法 https://t.co/djbagCxaTF"
+    },
+    {
+      "author": "reneilwedyk",
+      "followers": 59,
+      "eng": 96,
+      "views": 4630,
+      "eng_per_1k_followers": 96.0,
+      "url": "https://x.com/ReneilweDyk/status/2052774895571099805",
+      "formats": [
+        "other"
+      ],
+      "text": "来个宝宝帮乖狗狗冲水呀 https://t.co/qNuO1TfkVY"
+    },
+    {
+      "author": "0xmilkrabbit",
+      "followers": 10947,
+      "eng": 1017,
+      "views": 56260,
+      "eng_per_1k_followers": 92.902,
+      "url": "https://x.com/0xMilkRabbit/status/2060549976959418824",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "嘉信开户要用到 国内地址证明 很多推友问如何获取， 我写了一下常用的 6 种 🙌🏻，都可以丝滑搞定地址证明。 特别提醒，以下的证明如果和账单相关记得选择 3 个月内的。 1️⃣ 银行信用卡（招行为例） 目前调研来，招行的算是比较规整的，第一页就有地址，推荐使用 打开「掌上生活」App -> 我的 -> 点击中间的「查账」 -> 下方「更多"
+    },
+    {
+      "author": "qng1221402yee",
+      "followers": 4992,
+      "eng": 459,
+      "views": 24514,
+      "eng_per_1k_followers": 91.947,
+      "url": "https://x.com/Qng1221402Yee/status/2061852172518842411",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "喜欢在sp的时候故意用手去挡几下 故意惹主人生气 这样的话小狗就可以挨更多巴掌了 嘻嘻 被打哭后再哭唧唧地说小狗错了 以后再也不会了 然后就被主人抱在怀里揉揉pp🥰 好好好 虽然都是幻想 但今晚能不能让我梦这个啊 #小狗 #sp #小圈"
+    },
+    {
+      "author": "mazijx",
+      "followers": 116677,
+      "eng": 10426,
+      "views": 82384,
+      "eng_per_1k_followers": 89.358,
+      "url": "https://x.com/maziJX/status/2062486672898429395",
+      "formats": [
+        "other"
+      ],
+      "text": "chudai💦💦 直播间通道1v1线下：https://t.co/vVagIl8U0P https://t.co/Zr44oTVYYW"
+    },
+    {
+      "author": "xigua021127",
+      "followers": 5245,
+      "eng": 467,
+      "views": 11268,
+      "eng_per_1k_followers": 89.037,
+      "url": "https://x.com/Xigua021127/status/2061158735725367440",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "想被压着操 打屁股掐奶子操 被摆弄成各种姿势狠狠操…… #母狗"
+    },
+    {
+      "author": "ai86666",
+      "followers": 2981,
+      "eng": 265,
+      "views": 4802,
+      "eng_per_1k_followers": 88.896,
+      "url": "https://x.com/Ai86666/status/2056295258984521907",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "新骗术， 昨晚遇到了一个新骗术，依然是来自telegream电报上面。 我去惊讶了，电报上面的骗术更新换代好快，骗术跟防诈都在互相进化，现在的新骗术都更新到大气层了。 现在的骗术都能高级到这种程度了吗？我如果不是全程防着+开局就以被诈人设代入事件的话，真有80%以上的概率会上当。 我认为你们这些人不比我聪明 ，所以也有80%乃至百分之百会"
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "eng": 880,
+      "views": 54450,
+      "eng_per_1k_followers": 87.077,
+      "url": "https://x.com/Zoozo2025/status/2054044492416839839",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "如何找当天最低点做T ？这个方法在指数里面很好用，在个股里面也很好用。 https://t.co/wmDyBf3KJO"
+    },
+    {
+      "author": "0x9825",
+      "followers": 944,
+      "eng": 87,
+      "views": 27358,
+      "eng_per_1k_followers": 87.0,
+      "url": "https://x.com/0x9825/status/2054245611692859567",
+      "formats": [
+        "other"
+      ],
+      "text": "看到 $SHIT 团队@42069SHIT 把 Dogeshit Wallet 开源了。 这事我觉得挺有意思。因为当初我被吸引也是被这个钱包吸引去mint的 这是他们为了方便大家 mint $SHIT，临时做出来的一个 Chrome 钱包插件。现在直接开源了，任何人都可以去看代码、改代码、自己测试。 它主打的是一个新钱包功能：EIP-77"
+    },
+    {
+      "author": "0xastra",
+      "followers": 7741,
+      "eng": 645,
+      "views": 20127,
+      "eng_per_1k_followers": 83.323,
+      "url": "https://x.com/0xAstra/status/2058221863461900418",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "“不要做空自己的祖国。” 这句话没错。 问题是，巴菲特的祖国负责： 印美元、保护股东、尊重契约； 你的负责教育你： 什么叫政策风险、监管铁拳、VIE结构和一夜归零。"
+    },
+    {
+      "author": "zoozo2025",
+      "followers": 10106,
+      "eng": 821,
+      "views": 33952,
+      "eng_per_1k_followers": 81.239,
+      "url": "https://x.com/Zoozo2025/status/2056669084327325775",
+      "formats": [
+        "other"
+      ],
+      "text": "当下分化行情，半仓滚动才是散户保命赚钱神器。 涨了赚差价，跌了敢补仓，远离满仓深套！ https://t.co/HT3Oxc0lFj"
+    },
+    {
+      "author": "ilpou83873888",
+      "followers": 17,
+      "eng": 81,
+      "views": 269,
+      "eng_per_1k_followers": 81.0,
+      "url": "https://x.com/ilpou83873888/status/2061663812743573893",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "平台针对到期履约流程重新优化资金划拨链路，到期资产不再统一归集单一合约地址，按照用户最初选定的回款路径自动分流，减少大额资金短时扎堆划转造成的链上gas成本非正常冲高@TermMax"
+    },
+    {
+      "author": "juhui123456789",
+      "followers": 22,
+      "eng": 81,
+      "views": 65969,
+      "eng_per_1k_followers": 81.0,
+      "url": "https://x.com/juhui123456789/status/2061290486447632388",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "@nanshenwudao 可能外貌是他的唯一缺点吧"
+    }
+  ]
+}

@@ -1,0 +1,2269 @@
+{
+  "cell": "perps-en",
+  "tweet_count": 1544,
+  "author_count": 877,
+  "format_counts": {
+    "pnl_flex": 197,
+    "numbered_list": 63,
+    "daily_recap": 36,
+    "other": 887,
+    "token_call": 201,
+    "data_drop": 268,
+    "meme_short": 123,
+    "question_bait": 5,
+    "tutorial": 36,
+    "thread_hook": 14
+  },
+  "repeatable_outliers": [
+    {
+      "author": "hxxntrr",
+      "followers": 36721,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 894.0,
+      "p90_eng": 1656,
+      "median_views": 1396835.5,
+      "eng_per_1k_followers": 24.346,
+      "score": 1931.883,
+      "best_url": "https://x.com/hxxntrr/status/2054909624030315005",
+      "best_eng": 1656,
+      "pattern_clue": "You can walk into any Apple Store in America, buy $50,000 in MacBooks and iPhones on 0% business credit cards, and resell every single item for 85 to 95% of retail on eBa"
+    },
+    {
+      "author": "hxxntrr",
+      "followers": 36721,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 894.0,
+      "p90_eng": 1656,
+      "median_views": 1396835.5,
+      "eng_per_1k_followers": 24.346,
+      "score": 1931.883,
+      "best_url": "https://x.com/hxxntrr/status/2054909624030315005",
+      "best_eng": 1656,
+      "pattern_clue": "You can walk into any Apple Store in America, buy $50,000 in MacBooks and iPhones on 0% business credit cards, and resell every single item for 85 to 95% of retail on eBa"
+    },
+    {
+      "author": "nullfee",
+      "followers": 47963,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 35850.0,
+      "p90_eng": 57936,
+      "median_views": 41182.0,
+      "eng_per_1k_followers": 747.451,
+      "score": 1291.469,
+      "best_url": "https://x.com/Nullfee/status/2056409025873387832",
+      "best_eng": 57936,
+      "pattern_clue": "The platform is already live and the first competitive phase has officially begun. 3 Leaderboards are now active with BNB reward pools. The path to the top is simple: The"
+    },
+    {
+      "author": "capy_onchain",
+      "followers": 1112,
+      "format": "data_drop",
+      "repeats": 7,
+      "account_posts": 8,
+      "share": 0.875,
+      "median_eng": 124,
+      "p90_eng": 220,
+      "median_views": 4267,
+      "eng_per_1k_followers": 111.511,
+      "score": 661.786,
+      "best_url": "https://x.com/capy_onchain/status/2062263839845212399",
+      "best_eng": 220,
+      "pattern_clue": "I analyzed 180+ perp DEXs. Only 10 are actually worth paying attention to. That means less than 6% of perp DEXs look somewhat reasonable to farm, trade on, or even intera"
+    },
+    {
+      "author": "itesaitama",
+      "followers": 2359,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 281.0,
+      "p90_eng": 321,
+      "median_views": 10193.0,
+      "eng_per_1k_followers": 119.118,
+      "score": 419.209,
+      "best_url": "https://x.com/itesaitama/status/2057038521387622669",
+      "best_eng": 321,
+      "pattern_clue": "When will $INJ reach $100? The last 2 cycles happened in the last two crypto bull-runs with 2x price ATH: - 2021 peak → $25 - 2024 peak → $52 Every cycle happened during "
+    },
+    {
+      "author": "itesaitama",
+      "followers": 2359,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 281.0,
+      "p90_eng": 321,
+      "median_views": 10193.0,
+      "eng_per_1k_followers": 119.118,
+      "score": 419.209,
+      "best_url": "https://x.com/itesaitama/status/2057038521387622669",
+      "best_eng": 321,
+      "pattern_clue": "When will $INJ reach $100? The last 2 cycles happened in the last two crypto bull-runs with 2x price ATH: - 2021 peak → $25 - 2024 peak → $52 Every cycle happened during "
+    },
+    {
+      "author": "louisdives",
+      "followers": 310,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 83.5,
+      "p90_eng": 84,
+      "median_views": 4918.0,
+      "eng_per_1k_followers": 83.5,
+      "score": 232.828,
+      "best_url": "https://x.com/louisdives/status/2056044859707003052",
+      "best_eng": 84,
+      "pattern_clue": "it's like we are still in a bear market, so i don't expect much regarding price prediction for pre-tge perp dex: @variational_io : $7 - $15 @nadoHQ : $1 - $2 @DecibelTrad"
+    },
+    {
+      "author": "havochl_",
+      "followers": 4893,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 169.0,
+      "p90_eng": 231,
+      "median_views": 13894.5,
+      "eng_per_1k_followers": 34.539,
+      "score": 205.767,
+      "best_url": "https://x.com/Havochl_/status/2053809035594400147",
+      "best_eng": 231,
+      "pattern_clue": "If you’re impressed by Loracle so far, back in 2024 there was a trader everyone was watching, named 2TheMoon. At TGE in November 2024 he received a massive airdrop of 509"
+    },
+    {
+      "author": "havochl_",
+      "followers": 4893,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 169.0,
+      "p90_eng": 231,
+      "median_views": 13894.5,
+      "eng_per_1k_followers": 34.539,
+      "score": 205.767,
+      "best_url": "https://x.com/Havochl_/status/2053809035594400147",
+      "best_eng": 231,
+      "pattern_clue": "If you’re impressed by Loracle so far, back in 2024 there was a trader everyone was watching, named 2TheMoon. At TGE in November 2024 he received a massive airdrop of 509"
+    },
+    {
+      "author": "havochl_",
+      "followers": 4893,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 169.0,
+      "p90_eng": 231,
+      "median_views": 13894.5,
+      "eng_per_1k_followers": 34.539,
+      "score": 205.767,
+      "best_url": "https://x.com/Havochl_/status/2053809035594400147",
+      "best_eng": 231,
+      "pattern_clue": "If you’re impressed by Loracle so far, back in 2024 there was a trader everyone was watching, named 2TheMoon. At TGE in November 2024 he received a massive airdrop of 509"
+    },
+    {
+      "author": "0xtowhid",
+      "followers": 1872,
+      "format": "pnl_flex",
+      "repeats": 3,
+      "account_posts": 5,
+      "share": 0.6,
+      "median_eng": 123,
+      "p90_eng": 206,
+      "median_views": 2276,
+      "eng_per_1k_followers": 65.705,
+      "score": 163.166,
+      "best_url": "https://x.com/0xTowhid/status/2053362230004220363",
+      "best_eng": 206,
+      "pattern_clue": "there are currently 24 perp dex with active incentive / point systems live (except few exceptions) here’s a shortcut overview of almost everything ➤ variational deep liqu"
+    },
+    {
+      "author": "0x_zax",
+      "followers": 3820,
+      "format": "tutorial",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 255.5,
+      "p90_eng": 272,
+      "median_views": 6246.5,
+      "eng_per_1k_followers": 66.885,
+      "score": 155.713,
+      "best_url": "https://x.com/0x_zax/status/2057681141822627854",
+      "best_eng": 272,
+      "pattern_clue": "These are the activities I’m doing daily across these potential projects : @variational_io (Perp Dex) >They recently raised $50M Led by @dragonfly_xyz >I hope they can do"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 60,
+      "share": 0.067,
+      "median_eng": 14397.0,
+      "p90_eng": 18140,
+      "median_views": 10955.5,
+      "eng_per_1k_followers": 154.579,
+      "score": 152.929,
+      "best_url": "https://x.com/Americanfort_io/status/2058216387596911045",
+      "best_eng": 18140,
+      "pattern_clue": "The largest social engineering attack in crypto history didn't exploit a single line of smart contract code. Months of relationship building. One moment of misplaced trus"
+    },
+    {
+      "author": "muarmemuar",
+      "followers": 2035,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 9,
+      "share": 0.333,
+      "median_eng": 98,
+      "p90_eng": 215,
+      "median_views": 4932,
+      "eng_per_1k_followers": 48.157,
+      "score": 144.937,
+      "best_url": "https://x.com/muarmemuar/status/2055231740231172433",
+      "best_eng": 215,
+      "pattern_clue": "If you have: 400+ points in @variational_io or 4k+ in @nadoHQ or 1.5k+ in @tread_fi or 2k+ in @extendedapp or 700+ in @grvt_io or 1k+ in @dango or 40k+ in @pacifica_fi or"
+    },
+    {
+      "author": "polysuccubus",
+      "followers": 2310,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 113.0,
+      "p90_eng": 132,
+      "median_views": 2627.5,
+      "eng_per_1k_followers": 48.918,
+      "score": 144.65,
+      "best_url": "https://x.com/polysuccubus/status/2054647244570202163",
+      "best_eng": 132,
+      "pattern_clue": "STILL EARLY. Variational is the most underrated perp airdrop of 2026 While everyone chases hype, this quiet invite-only project is building next-level infrastructure. Mee"
+    },
+    {
+      "author": "vikingodigital_",
+      "followers": 7159,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 307.5,
+      "p90_eng": 371,
+      "median_views": 7717.5,
+      "eng_per_1k_followers": 42.953,
+      "score": 133.523,
+      "best_url": "https://x.com/VikingoDigital_/status/2062222220492197899",
+      "best_eng": 371,
+      "pattern_clue": "For the first time in history... $HYPE has flipped $SOL in price. The day $HYPE launched, it was trading at $2.5. $SOL was trading at $240. At current levels, if Hyperliq"
+    },
+    {
+      "author": "0xpostrich",
+      "followers": 1913,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 44.0,
+      "p90_eng": 50,
+      "median_views": 2325.0,
+      "eng_per_1k_followers": 23.001,
+      "score": 104.261,
+      "best_url": "https://x.com/0xpostrich/status/2053061740179398964",
+      "best_eng": 50,
+      "pattern_clue": "Tokenless Perp DEX Efficiency: OI/TVL are the best metrics for tracking real usage and committed capital, but it can still be gamed in some ways. Open Interest Ranking: 1"
+    },
+    {
+      "author": "0xpostrich",
+      "followers": 1913,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 44.0,
+      "p90_eng": 50,
+      "median_views": 2325.0,
+      "eng_per_1k_followers": 23.001,
+      "score": 104.261,
+      "best_url": "https://x.com/0xpostrich/status/2053061740179398964",
+      "best_eng": 50,
+      "pattern_clue": "Tokenless Perp DEX Efficiency: OI/TVL are the best metrics for tracking real usage and committed capital, but it can still be gamed in some ways. Open Interest Ranking: 1"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 60,
+      "share": 0.033,
+      "median_eng": 14397.0,
+      "p90_eng": 16264,
+      "median_views": 34673.0,
+      "eng_per_1k_followers": 154.579,
+      "score": 102.726,
+      "best_url": "https://x.com/Americanfort_io/status/2059674955709907131",
+      "best_eng": 16264,
+      "pattern_clue": "Arbitrum holds $16B in TVL, that’s 40% of the entire L2 market. Variational, USDai, GMX. The deepest DeFi stack in the L2 world. Every position on it is completely visibl"
+    },
+    {
+      "author": "henrik_on_hl",
+      "followers": 11918,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 7,
+      "share": 0.429,
+      "median_eng": 415,
+      "p90_eng": 1467,
+      "median_views": 13956,
+      "eng_per_1k_followers": 34.821,
+      "score": 97.81,
+      "best_url": "https://x.com/Henrik_on_HL/status/2062453730855850161",
+      "best_eng": 1467,
+      "pattern_clue": "Arthur Hayes called for $150 per $HYPE and sold for $75 LMAO"
+    },
+    {
+      "author": "hypeconomist",
+      "followers": 16528,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 9,
+      "share": 0.333,
+      "median_eng": 499,
+      "p90_eng": 758,
+      "median_views": 24939,
+      "eng_per_1k_followers": 30.191,
+      "score": 94.352,
+      "best_url": "https://x.com/HYPEconomist/status/2062483465602302357",
+      "best_eng": 758,
+      "pattern_clue": "if you're selling your $HYPE just because this guy dumped his bag, you seriously need to seek help https://t.co/dBHFWFt2r9"
+    },
+    {
+      "author": "givenoxbt",
+      "followers": 3518,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 153.0,
+      "p90_eng": 182,
+      "median_views": 3944.5,
+      "eng_per_1k_followers": 43.491,
+      "score": 90.267,
+      "best_url": "https://x.com/givenoxbt/status/2062697033782169748",
+      "best_eng": 182,
+      "pattern_clue": "weekly points update on @variational_io +29 points   $612k volume   $207k open interest steady week - funding arb running clean across a mix of alts, majors and RWA pairs"
+    },
+    {
+      "author": "muarmemuar",
+      "followers": 2035,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 9,
+      "share": 0.222,
+      "median_eng": 75.5,
+      "p90_eng": 98,
+      "median_views": 4056.5,
+      "eng_per_1k_followers": 37.101,
+      "score": 80.327,
+      "best_url": "https://x.com/muarmemuar/status/2057777981972512939",
+      "best_eng": 98,
+      "pattern_clue": ".@variational_io is now locked in the top 3 perp DEXs by OI, flipping @edgeX_exchange. This is actually insane. My prediction that Variational would add another $150-200M"
+    },
+    {
+      "author": "xwalii",
+      "followers": 6081,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 173.5,
+      "p90_eng": 192,
+      "median_views": 2866.5,
+      "eng_per_1k_followers": 28.531,
+      "score": 78.828,
+      "best_url": "https://x.com/xwalii/status/2058582314397966570",
+      "best_eng": 192,
+      "pattern_clue": "For decades the best yield strategies were locked behind institutional doors retail never got access to real arbitrage and market making opportunities @alturax flipped th"
+    },
+    {
+      "author": "sahilexec",
+      "followers": 3665,
+      "format": "question_bait",
+      "repeats": 2,
+      "account_posts": 18,
+      "share": 0.111,
+      "median_eng": 98.0,
+      "p90_eng": 103,
+      "median_views": 10341.0,
+      "eng_per_1k_followers": 26.739,
+      "score": 77.867,
+      "best_url": "https://x.com/SahilExec/status/2062523514712690880",
+      "best_eng": 103,
+      "pattern_clue": "UUIDv4 vs UUIDv7. You're starting a new system from scratch today. Which do you pick and why?"
+    },
+    {
+      "author": "crypto__haris",
+      "followers": 33579,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 6,
+      "share": 0.5,
+      "median_eng": 622,
+      "p90_eng": 3887,
+      "median_views": 29569,
+      "eng_per_1k_followers": 18.523,
+      "score": 71.221,
+      "best_url": "https://x.com/Crypto__Haris/status/2062522075655598258",
+      "best_eng": 3887,
+      "pattern_clue": "🎁 $1,000 Giveaway For My Followers In May, my X account grew from 10,000 followers to over 30,000 followers. Over the last few weeks, I shared perfect calls on $LAB, $SIR"
+    },
+    {
+      "author": "givenoxbt",
+      "followers": 3518,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 138.0,
+      "p90_eng": 182,
+      "median_views": 1752.0,
+      "eng_per_1k_followers": 39.227,
+      "score": 64.93,
+      "best_url": "https://x.com/givenoxbt/status/2062697033782169748",
+      "best_eng": 182,
+      "pattern_clue": "weekly points update on @variational_io +29 points   $612k volume   $207k open interest steady week - funding arb running clean across a mix of alts, majors and RWA pairs"
+    },
+    {
+      "author": "ekinoks_26",
+      "followers": 8638,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 319.5,
+      "p90_eng": 355,
+      "median_views": 576.5,
+      "eng_per_1k_followers": 36.988,
+      "score": 57.369,
+      "best_url": "https://x.com/ekinoks_26/status/2061734575701729291",
+      "best_eng": 355,
+      "pattern_clue": "Funding rates have existed in traditional futures markets since the 1970s. Crypto just gave retail traders direct exposure to them with 50x leverage and no margin call de"
+    },
+    {
+      "author": "cryptohayes",
+      "followers": 799916,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 4566.0,
+      "p90_eng": 8839,
+      "median_views": 900242.0,
+      "eng_per_1k_followers": 5.708,
+      "score": 52.621,
+      "best_url": "https://x.com/CryptoHayes/status/2062411523243536428",
+      "best_eng": 8839,
+      "pattern_clue": "I just dumped my entire $HYPE and $NEAR position, I will explain why in my essay \"Reality Test\" dropping next Tuesday. TLDR: - Higher energy prices due to Iran war and in"
+    },
+    {
+      "author": "_ctm_crypto",
+      "followers": 5060,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 86.5,
+      "p90_eng": 92,
+      "median_views": 4609.0,
+      "eng_per_1k_followers": 17.095,
+      "score": 48.343,
+      "best_url": "https://x.com/_ctm_crypto/status/2051599872214597854",
+      "best_eng": 92,
+      "pattern_clue": "$BTC Price is pushing higher while open interest continues to increase. The move was initially driven by a spike in spot demand, but that demand is now starting to fade. "
+    },
+    {
+      "author": "fabiusdefi",
+      "followers": 18841,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 190,
+      "p90_eng": 223,
+      "median_views": 4628,
+      "eng_per_1k_followers": 10.084,
+      "score": 47.215,
+      "best_url": "https://x.com/FabiusDefi/status/2055213087276556792",
+      "best_eng": 223,
+      "pattern_clue": "Hyperliquid officially institutionalized! The 21Shares THYP ETF launched on Nasdaq 2 days ago with $1.2M inflows. Imo, this is a solid start for a first-mover altcoin pro"
+    },
+    {
+      "author": "seth_fin",
+      "followers": 95176,
+      "format": "data_drop",
+      "repeats": 4,
+      "account_posts": 4,
+      "share": 1.0,
+      "median_eng": 315.0,
+      "p90_eng": 397,
+      "median_views": 32856.0,
+      "eng_per_1k_followers": 3.31,
+      "score": 46.887,
+      "best_url": "https://x.com/seth_fin/status/2060722184159416476",
+      "best_eng": 397,
+      "pattern_clue": "WHAT IF THIS LIQUIDATION MAP IS TELLING US THERE ARE A HIGH VALUE LONG LIQUIDATION BUFFET BELOW $60,000 $BTC? https://t.co/eLIu77I9b9"
+    },
+    {
+      "author": "crypto__haris",
+      "followers": 33579,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 6,
+      "share": 0.333,
+      "median_eng": 603.0,
+      "p90_eng": 622,
+      "median_views": 28973.0,
+      "eng_per_1k_followers": 17.958,
+      "score": 46.001,
+      "best_url": "https://x.com/Crypto__Haris/status/2055965852160471478",
+      "best_eng": 622,
+      "pattern_clue": "I lost more than $19,000 on October 10 when $BTC crashed after Trump’s tariff announcement. I still remember that brutal move. Bitcoin dumped from around $122K to $118K i"
+    },
+    {
+      "author": "cryptoteluguo",
+      "followers": 169344,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 893,
+      "p90_eng": 941,
+      "median_views": 50605,
+      "eng_per_1k_followers": 5.273,
+      "score": 43.739,
+      "best_url": "https://x.com/CryptoTeluguO/status/2054419273213497813",
+      "best_eng": 941,
+      "pattern_clue": "😉 3 projects to start interacting with in May for points 1️⃣ @PixieChess 💰Funding - $5.2M ♟️Magical Chess game 🪙Play to earn points 💯FREE ❌No refs 🔗Guide - https://t.co/Z"
+    },
+    {
+      "author": "cryptoteluguo",
+      "followers": 169344,
+      "format": "tutorial",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 893,
+      "p90_eng": 941,
+      "median_views": 50605,
+      "eng_per_1k_followers": 5.273,
+      "score": 43.739,
+      "best_url": "https://x.com/CryptoTeluguO/status/2054419273213497813",
+      "best_eng": 941,
+      "pattern_clue": "😉 3 projects to start interacting with in May for points 1️⃣ @PixieChess 💰Funding - $5.2M ♟️Magical Chess game 🪙Play to earn points 💯FREE ❌No refs 🔗Guide - https://t.co/Z"
+    },
+    {
+      "author": "cryptoreviewing",
+      "followers": 91915,
+      "format": "data_drop",
+      "repeats": 5,
+      "account_posts": 5,
+      "share": 1.0,
+      "median_eng": 149,
+      "p90_eng": 187,
+      "median_views": 27670,
+      "eng_per_1k_followers": 1.621,
+      "score": 42.096,
+      "best_url": "https://x.com/CryptoReviewing/status/2061466214254166251",
+      "best_eng": 187,
+      "pattern_clue": "$BTC whales just got liquidated! An insane amount of 'big money' orders at $71,300 - $74,000 were just liquidated in the latest $BTC dump to $71.3k. Now, $68,000 - $71,50"
+    },
+    {
+      "author": "sahilexec",
+      "followers": 3665,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 18,
+      "share": 0.111,
+      "median_eng": 76.0,
+      "p90_eng": 76,
+      "median_views": 4485.0,
+      "eng_per_1k_followers": 20.737,
+      "score": 41.486,
+      "best_url": "https://x.com/SahilExec/status/2060021109224067413",
+      "best_eng": 76,
+      "pattern_clue": "A startup builds their image upload system like this: One endpoint handles everything: 1. Receive image upload 2. Resize to 3 different sizes synchronously 3. Save all 3 "
+    },
+    {
+      "author": "cryptonobler",
+      "followers": 358705,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 1490.5,
+      "p90_eng": 2698,
+      "median_views": 157866.5,
+      "eng_per_1k_followers": 4.155,
+      "score": 40.647,
+      "best_url": "https://x.com/CryptoNobler/status/2053104190533116278",
+      "best_eng": 2698,
+      "pattern_clue": "🚨 WARNING: SOMETHING VERY UNUSUAL IS HAPPENING RIGHT NOW!! Insiders are nonstop buying silver options at the $900–$1,000. Meanwhile, paper silver is trading at $80. This "
+    },
+    {
+      "author": "0x_kalista",
+      "followers": 11913,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 183.0,
+      "p90_eng": 201,
+      "median_views": 1538.5,
+      "eng_per_1k_followers": 15.361,
+      "score": 40.293,
+      "best_url": "https://x.com/0x_Kalista/status/2053672147462332784",
+      "best_eng": 201,
+      "pattern_clue": "The biggest lie in DeFi is \"trustless\" perp DEXs. Most major players (dYdX, GMX, Hyperliquid) still force you to trust an off-chain matching engine. It is a black box. If"
+    },
+    {
+      "author": "0x_kalista",
+      "followers": 11913,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 183.0,
+      "p90_eng": 201,
+      "median_views": 1538.5,
+      "eng_per_1k_followers": 15.361,
+      "score": 40.293,
+      "best_url": "https://x.com/0x_Kalista/status/2053672147462332784",
+      "best_eng": 201,
+      "pattern_clue": "The biggest lie in DeFi is \"trustless\" perp DEXs. Most major players (dYdX, GMX, Hyperliquid) still force you to trust an off-chain matching engine. It is a black box. If"
+    },
+    {
+      "author": "0x_kalista",
+      "followers": 11913,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 183.0,
+      "p90_eng": 201,
+      "median_views": 1538.5,
+      "eng_per_1k_followers": 15.361,
+      "score": 40.293,
+      "best_url": "https://x.com/0x_Kalista/status/2053672147462332784",
+      "best_eng": 201,
+      "pattern_clue": "The biggest lie in DeFi is \"trustless\" perp DEXs. Most major players (dYdX, GMX, Hyperliquid) still force you to trust an off-chain matching engine. It is a black box. If"
+    },
+    {
+      "author": "crypto__haris",
+      "followers": 33579,
+      "format": "pnl_flex",
+      "repeats": 3,
+      "account_posts": 6,
+      "share": 0.5,
+      "median_eng": 584,
+      "p90_eng": 1432,
+      "median_views": 5835,
+      "eng_per_1k_followers": 17.392,
+      "score": 40.17,
+      "best_url": "https://x.com/Crypto__Haris/status/2062880726455074958",
+      "best_eng": 1432,
+      "pattern_clue": "Today is 𝕏-Payout day 🤑 I will give away a 50% payout to one person who will guess my X payout correctly. Surprisingly, my last payout was $3025. My guess for today’s pay"
+    },
+    {
+      "author": "aivoraex",
+      "followers": 18812,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 209,
+      "p90_eng": 232,
+      "median_views": 1404,
+      "eng_per_1k_followers": 11.11,
+      "score": 38.877,
+      "best_url": "https://x.com/Aivoraex/status/2056985319199969469",
+      "best_eng": 232,
+      "pattern_clue": "The Liquidation Map: Why Whales Know Where You'll Get Stopped Out Most traders see price action. Real traders see liquidation clusters — zones where 40M in spot positions"
+    },
+    {
+      "author": "lighter_xyz",
+      "followers": 118486,
+      "format": "token_call",
+      "repeats": 16,
+      "account_posts": 30,
+      "share": 0.533,
+      "median_eng": 273.0,
+      "p90_eng": 534,
+      "median_views": 18687.0,
+      "eng_per_1k_followers": 2.304,
+      "score": 37.031,
+      "best_url": "https://x.com/Lighter_xyz/status/2058334788579123617",
+      "best_eng": 749,
+      "pattern_clue": "New RWA Perp Listing! You can now trade $H100 with up to 10x leverage. The H100 Compute Price Index from @OrnnExchange tracks the real-time market price of H100 GPU compu"
+    },
+    {
+      "author": "kriptoholder",
+      "followers": 37710,
+      "format": "data_drop",
+      "repeats": 4,
+      "account_posts": 6,
+      "share": 0.667,
+      "median_eng": 216.0,
+      "p90_eng": 256,
+      "median_views": 10486.0,
+      "eng_per_1k_followers": 5.728,
+      "score": 36.521,
+      "best_url": "https://x.com/kriptoholder/status/2062558356812812327",
+      "best_eng": 256,
+      "pattern_clue": "BTC liquidity map shows price consolidating around 66K while major liquidity clusters remain above. The 72K–75K zone stands out as the first target area, with 80K–81K act"
+    },
+    {
+      "author": "mooninpapa",
+      "followers": 17896,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 113.5,
+      "p90_eng": 114,
+      "median_views": 5899.0,
+      "eng_per_1k_followers": 6.342,
+      "score": 34.559,
+      "best_url": "https://x.com/MooninPapa/status/2054033685536747854",
+      "best_eng": 114,
+      "pattern_clue": "Bitcoin closed red on Monday, but it is still holding around a major TBO resistance zone near $82K. The short-term price action is messy, with the TBT Stop Loss Hunting A"
+    },
+    {
+      "author": "hyperdailytk",
+      "followers": 89662,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 1058.5,
+      "p90_eng": 1076,
+      "median_views": 21379.5,
+      "eng_per_1k_followers": 11.805,
+      "score": 33.228,
+      "best_url": "https://x.com/HYPERDailyTK/status/2062551213502238911",
+      "best_eng": 1076,
+      "pattern_clue": "AI trading bots are becoming a growing category in crypto. https://t.co/MMgidq0OLs is part of the @UltimaEcosystem and focuses on spot-only AI trading, with no leverage a"
+    },
+    {
+      "author": "hyperdailytk",
+      "followers": 89662,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 1058.5,
+      "p90_eng": 1076,
+      "median_views": 21379.5,
+      "eng_per_1k_followers": 11.805,
+      "score": 33.228,
+      "best_url": "https://x.com/HYPERDailyTK/status/2062551213502238911",
+      "best_eng": 1076,
+      "pattern_clue": "AI trading bots are becoming a growing category in crypto. https://t.co/MMgidq0OLs is part of the @UltimaEcosystem and focuses on spot-only AI trading, with no leverage a"
+    },
+    {
+      "author": "sedefci",
+      "followers": 76654,
+      "format": "data_drop",
+      "repeats": 7,
+      "account_posts": 7,
+      "share": 1.0,
+      "median_eng": 272,
+      "p90_eng": 331,
+      "median_views": 2787,
+      "eng_per_1k_followers": 3.548,
+      "score": 31.967,
+      "best_url": "https://x.com/Sedefci/status/2055152838406267137",
+      "best_eng": 331,
+      "pattern_clue": "BTC rally remains weak Price is trying to hold above 80.7K, but the data side is not strengthening. Aggregated Spot CVD has dropped to 82.33M, while Open Interest has pul"
+    },
+    {
+      "author": "grayscale",
+      "followers": 682606,
+      "format": "token_call",
+      "repeats": 5,
+      "account_posts": 6,
+      "share": 0.833,
+      "median_eng": 1659,
+      "p90_eng": 2787,
+      "median_views": 70607,
+      "eng_per_1k_followers": 2.43,
+      "score": 30.933,
+      "best_url": "https://x.com/Grayscale/status/2061959585339150686",
+      "best_eng": 2787,
+      "pattern_clue": "Grayscale Hyperliquid Staking ETF (Ticker: $HYPG), the $HYPE ETP with the lowest gross management fee in the U.S.¹, starts trading tomorrow. $HYPE is the asset powering 2"
+    },
+    {
+      "author": "fabianosolana",
+      "followers": 78266,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 356.5,
+      "p90_eng": 453,
+      "median_views": 21551.0,
+      "eng_per_1k_followers": 4.555,
+      "score": 30.807,
+      "best_url": "https://x.com/FabianoSolana/status/2062492400854204561",
+      "best_eng": 453,
+      "pattern_clue": "The pump and dumps of @CryptoHayes Aug 2025: calls 126x for $HYPE Sep 2025: dumps everything 3 weeks later Jun 2026: calls for $150 = $HYPE Jun 2026: dumps his entire bag"
+    },
+    {
+      "author": "cryptoreviewing",
+      "followers": 91915,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 148.0,
+      "p90_eng": 173,
+      "median_views": 24050.0,
+      "eng_per_1k_followers": 1.61,
+      "score": 30.262,
+      "best_url": "https://x.com/CryptoReviewing/status/2058531283760791862",
+      "best_eng": 173,
+      "pattern_clue": "You don't understand how wild this is... $BTC just dumped to $74,200 and liquidated $953M longs! Then, $BTC immediately pumped back above $77,000 liquidating another $339"
+    },
+    {
+      "author": "cryptoteluguo",
+      "followers": 169344,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 917.0,
+      "p90_eng": 941,
+      "median_views": 57326.0,
+      "eng_per_1k_followers": 5.415,
+      "score": 28.701,
+      "best_url": "https://x.com/CryptoTeluguO/status/2054419273213497813",
+      "best_eng": 941,
+      "pattern_clue": "😉 3 projects to start interacting with in May for points 1️⃣ @PixieChess 💰Funding - $5.2M ♟️Magical Chess game 🪙Play to earn points 💯FREE ❌No refs 🔗Guide - https://t.co/Z"
+    },
+    {
+      "author": "fabiusdefi",
+      "followers": 18841,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 185.5,
+      "p90_eng": 190,
+      "median_views": 4210.0,
+      "eng_per_1k_followers": 9.846,
+      "score": 27.912,
+      "best_url": "https://x.com/FabiusDefi/status/2057400360353005666",
+      "best_eng": 190,
+      "pattern_clue": "hyperliquid:native needs to be re-rated now! Because I think the market may still be valuing @HyperliquidX as a perp DEX, while its fundamentals are starting to look more"
+    },
+    {
+      "author": "gyokeres_eth",
+      "followers": 24999,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 250.0,
+      "p90_eng": 292,
+      "median_views": 5039.0,
+      "eng_per_1k_followers": 10.0,
+      "score": 27.65,
+      "best_url": "https://x.com/Gyokeres_eth/status/2061723061217316923",
+      "best_eng": 292,
+      "pattern_clue": "I've joined Bulk Pre-Deposit Campaign If you missed most perp dex farms, here's your chance to get early and maximize your points, the earlier the better and you don't ne"
+    },
+    {
+      "author": "mastercryptohq",
+      "followers": 162966,
+      "format": "data_drop",
+      "repeats": 5,
+      "account_posts": 5,
+      "share": 1.0,
+      "median_eng": 226,
+      "p90_eng": 301,
+      "median_views": 18521,
+      "eng_per_1k_followers": 1.387,
+      "score": 27.471,
+      "best_url": "https://x.com/MasterCryptoHq/status/2058065437854994560",
+      "best_eng": 301,
+      "pattern_clue": "The SEC delayed approval for crypto versions of US stocks on regulated exchanges. The market reacted instantly. - #Bitcoin dropped 2.14%. - #Ethereum dropped 3.40%. Over "
+    },
+    {
+      "author": "stronghedge",
+      "followers": 174901,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 342,
+      "p90_eng": 363,
+      "median_views": 30805,
+      "eng_per_1k_followers": 1.955,
+      "score": 27.193,
+      "best_url": "https://x.com/StrongHedge/status/2060421204993814642",
+      "best_eng": 363,
+      "pattern_clue": "I told people for months that $ASTER @Aster_DEX was a scam &amp; that @cz_binance shilled the top The same people who called me a hater &amp; blocked me are now in my DMs"
+    },
+    {
+      "author": "nokoya9",
+      "followers": 81507,
+      "format": "token_call",
+      "repeats": 8,
+      "account_posts": 15,
+      "share": 0.533,
+      "median_eng": 443.0,
+      "p90_eng": 485,
+      "median_views": 433.5,
+      "eng_per_1k_followers": 5.435,
+      "score": 26.543,
+      "best_url": "https://x.com/nokoya9/status/2061054142089494722",
+      "best_eng": 485,
+      "pattern_clue": "All real crypto participants should fast-check the $SUI Reward Eligibility Period Find out if you qualify immediately: https://t.co/eMM9UCA0Fo #PEPE $MANA $DYDX https://t"
+    },
+    {
+      "author": "aivoraex",
+      "followers": 18812,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 220.5,
+      "p90_eng": 232,
+      "median_views": 1516.0,
+      "eng_per_1k_followers": 11.721,
+      "score": 25.044,
+      "best_url": "https://x.com/Aivoraex/status/2056985319199969469",
+      "best_eng": 232,
+      "pattern_clue": "The Liquidation Map: Why Whales Know Where You'll Get Stopped Out Most traders see price action. Real traders see liquidation clusters — zones where 40M in spot positions"
+    },
+    {
+      "author": "0xykp",
+      "followers": 9353,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 79.5,
+      "p90_eng": 101,
+      "median_views": 1914.5,
+      "eng_per_1k_followers": 8.5,
+      "score": 24.39,
+      "best_url": "https://x.com/0xYkp/status/2056419356633149620",
+      "best_eng": 101,
+      "pattern_clue": "✅recent updates in some tokenless perp dex projects 👀 » nado (@nadohq) distributed 950k points to 9,582 traders for week 15 » variational (@variational_io) announced phas"
+    },
+    {
+      "author": "stacy_muur",
+      "followers": 77644,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 380.0,
+      "p90_eng": 452,
+      "median_views": 19071.5,
+      "eng_per_1k_followers": 4.894,
+      "score": 23.335,
+      "best_url": "https://x.com/stacy_muur/status/2057117920187302198",
+      "best_eng": 452,
+      "pattern_clue": "10 emerging Hyperliquid-native protocols I'm paying attention to ↓ 1. @monetrix_xyz: YieldMaxxing on Hyperliquid. A single stablecoin that pulls together funding rates, H"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "format": "question_bait",
+      "repeats": 2,
+      "account_posts": 60,
+      "share": 0.033,
+      "median_eng": 2781.5,
+      "p90_eng": 5415,
+      "median_views": 4590.5,
+      "eng_per_1k_followers": 29.865,
+      "score": 23.012,
+      "best_url": "https://x.com/Americanfort_io/status/2046233824162713744",
+      "best_eng": 5415,
+      "pattern_clue": "Most important crypto principle?"
+    },
+    {
+      "author": "cryptoteluguo",
+      "followers": 169344,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 623.5,
+      "p90_eng": 893,
+      "median_views": 42986.5,
+      "eng_per_1k_followers": 3.682,
+      "score": 22.73,
+      "best_url": "https://x.com/CryptoTeluguO/status/2060223657532878945",
+      "best_eng": 893,
+      "pattern_clue": "💥These r the 4 projects I'm farming now 1️⃣ @PixieChess 💰Funding - $5.2M ♟️Magical Chess game 🪙Play to earn points 💯FREE ❌No refs 🔗Guide - https://t.co/ty867hS6OE 2️⃣ @Th"
+    },
+    {
+      "author": "ryuzaki_sei",
+      "followers": 33655,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 89.5,
+      "p90_eng": 142,
+      "median_views": 3832.0,
+      "eng_per_1k_followers": 2.659,
+      "score": 22.137,
+      "best_url": "https://x.com/Ryuzaki_SEI/status/2060175668437246154",
+      "best_eng": 142,
+      "pattern_clue": "best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all thes"
+    },
+    {
+      "author": "ryuzaki_sei",
+      "followers": 33655,
+      "format": "data_drop",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 89.5,
+      "p90_eng": 142,
+      "median_views": 3832.0,
+      "eng_per_1k_followers": 2.659,
+      "score": 22.137,
+      "best_url": "https://x.com/Ryuzaki_SEI/status/2060175668437246154",
+      "best_eng": 142,
+      "pattern_clue": "best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all thes"
+    },
+    {
+      "author": "mookienft",
+      "followers": 148314,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 499.5,
+      "p90_eng": 555,
+      "median_views": 18732.0,
+      "eng_per_1k_followers": 3.368,
+      "score": 22.037,
+      "best_url": "https://x.com/MookieNFT/status/2062519379955241168",
+      "best_eng": 555,
+      "pattern_clue": "RED DAY 🩸 again! $BTC at $63K $ETH under $1,800 $HYPE -9% The market is testing everyone's patience... https://t.co/dPLAFsvvMS"
+    },
+    {
+      "author": "tealstreet",
+      "followers": 8183,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 60,
+      "share": 0.033,
+      "median_eng": 72.5,
+      "p90_eng": 126,
+      "median_views": 6309.0,
+      "eng_per_1k_followers": 8.86,
+      "score": 21.261,
+      "best_url": "https://x.com/tealstreet/status/2057149227613250002",
+      "best_eng": 126,
+      "pattern_clue": "$25,000 Trading Competition Tealstreet x @Lighter_xyz 45 Winners based on PnL%, Volume, Sharpe No sign-up required to enter competition - Just trade on @Lighter_xyz using"
+    },
+    {
+      "author": "nicolassims_",
+      "followers": 577,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 2.0,
+      "p90_eng": 2,
+      "median_views": 291.0,
+      "eng_per_1k_followers": 2.0,
+      "score": 19.493,
+      "best_url": "https://x.com/NicolasSims_/status/2060743407266587039",
+      "best_eng": 2,
+      "pattern_clue": "21. Taraxa $TARA 22. MENA Token $MENA 23. Rowln $ROWLN 24. Megafans Token $MEGAFANS 25. MFG Token $MFG 26. Kokomo Swap $KOKO 27. NMR $NMR 28. Gnosis $GNO 29. Lupin Token "
+    },
+    {
+      "author": "usoppu",
+      "followers": 45892,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 241.0,
+      "p90_eng": 375,
+      "median_views": 9893.5,
+      "eng_per_1k_followers": 5.251,
+      "score": 18.905,
+      "best_url": "https://x.com/Usoppu/status/2057449881271206295",
+      "best_eng": 375,
+      "pattern_clue": "Top 10 biggest airdrop distributions in crypto history : 1. Hyperliquid: $18.38 Billion 2. Uniswap: $6.43 Billion 3. Apecoin: $3.54 Billion 4. dYdX: $2.08 Billion 5. Jupi"
+    },
+    {
+      "author": "whitewhalelabs",
+      "followers": 97694,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 593.0,
+      "p90_eng": 597,
+      "median_views": 21041.0,
+      "eng_per_1k_followers": 6.07,
+      "score": 18.705,
+      "best_url": "https://x.com/WhiteWhaleLabs/status/2056042787473162340",
+      "best_eng": 597,
+      "pattern_clue": "Most People Use Liquidation Maps Wrong. Stop It. They treat a single model and timeframe as gospel, as if the brightest yellow line means price is guaranteed to go there "
+    },
+    {
+      "author": "0xykp",
+      "followers": 9353,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 50.0,
+      "p90_eng": 58,
+      "median_views": 1531.5,
+      "eng_per_1k_followers": 5.346,
+      "score": 18.188,
+      "best_url": "https://x.com/0xYkp/status/2062229308500791414",
+      "best_eng": 58,
+      "pattern_clue": "📌 here are the latest OI numbers 👀 ▫️looking at the leaderboard, @variational_io is still leading the way after crossing $1B OI, helped by strong tradfi liquidity and sev"
+    },
+    {
+      "author": "dens_club",
+      "followers": 45476,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 326.0,
+      "p90_eng": 440,
+      "median_views": 4488.0,
+      "eng_per_1k_followers": 7.169,
+      "score": 17.489,
+      "best_url": "https://x.com/dens_club/status/2054745599379943691",
+      "best_eng": 440,
+      "pattern_clue": "🌅 GOOD MORNING X FAM ☀️🔥 🚀 2026 ALTSEASON IS IN GIGA HYPER BULL MODE — MASSIVE ROTATION UNLOCKED 💎🌌 • $SUI — High-Throughput King ready to own consumer chains 👑 → $1.8 – "
+    },
+    {
+      "author": "dens_club",
+      "followers": 45476,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 326.0,
+      "p90_eng": 440,
+      "median_views": 4488.0,
+      "eng_per_1k_followers": 7.169,
+      "score": 17.489,
+      "best_url": "https://x.com/dens_club/status/2054745599379943691",
+      "best_eng": 440,
+      "pattern_clue": "🌅 GOOD MORNING X FAM ☀️🔥 🚀 2026 ALTSEASON IS IN GIGA HYPER BULL MODE — MASSIVE ROTATION UNLOCKED 💎🌌 • $SUI — High-Throughput King ready to own consumer chains 👑 → $1.8 – "
+    },
+    {
+      "author": "nokoya9",
+      "followers": 81507,
+      "format": "daily_recap",
+      "repeats": 5,
+      "account_posts": 15,
+      "share": 0.333,
+      "median_eng": 419,
+      "p90_eng": 478,
+      "median_views": 491,
+      "eng_per_1k_followers": 5.141,
+      "score": 16.964,
+      "best_url": "https://x.com/nokoya9/status/2060929000663388445",
+      "best_eng": 478,
+      "pattern_clue": "Season 2 points farming is here on Hyperliquid! Large portion 39% of $HYPE for reward programs. Head over with https://t.co/JGiAn0LKp5 Farm strong and eat good daily! $BN"
+    },
+    {
+      "author": "tealstreet",
+      "followers": 8183,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 60,
+      "share": 0.067,
+      "median_eng": 32.0,
+      "p90_eng": 52,
+      "median_views": 2716.0,
+      "eng_per_1k_followers": 3.911,
+      "score": 15.836,
+      "best_url": "https://x.com/tealstreet/status/2047336646132248893",
+      "best_eng": 52,
+      "pattern_clue": "+30% Points Multiplier on Season 2.0 $GRVT Deposit $200 -> Trade Once -> Win from $250 Raffle 5 Winners, $50 each Up to $400 in Stackable Rewards, first milestone startin"
+    },
+    {
+      "author": "mastercryptohq",
+      "followers": 162966,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 5,
+      "share": 0.6,
+      "median_eng": 158,
+      "p90_eng": 235,
+      "median_views": 23453,
+      "eng_per_1k_followers": 0.97,
+      "score": 15.792,
+      "best_url": "https://x.com/MasterCryptoHq/status/2054586637167079756",
+      "best_eng": 235,
+      "pattern_clue": "At 08:00 UTC, $SYS suddenly crashed without any warning. No news. No announcement. Just a huge candle that dropped 22% in 1 minute. 20.7M SYS was sold and $51.5K in long "
+    },
+    {
+      "author": "mastercryptohq",
+      "followers": 162966,
+      "format": "pnl_flex",
+      "repeats": 3,
+      "account_posts": 5,
+      "share": 0.6,
+      "median_eng": 235,
+      "p90_eng": 301,
+      "median_views": 18521,
+      "eng_per_1k_followers": 1.442,
+      "score": 15.73,
+      "best_url": "https://x.com/MasterCryptoHq/status/2058065437854994560",
+      "best_eng": 301,
+      "pattern_clue": "The SEC delayed approval for crypto versions of US stocks on regulated exchanges. The market reacted instantly. - #Bitcoin dropped 2.14%. - #Ethereum dropped 3.40%. Over "
+    },
+    {
+      "author": "altsdaddycom",
+      "followers": 268398,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 408.5,
+      "p90_eng": 420,
+      "median_views": 10314.0,
+      "eng_per_1k_followers": 1.522,
+      "score": 14.32,
+      "best_url": "https://x.com/AltsDaddycom/status/2060695724170600753",
+      "best_eng": 420,
+      "pattern_clue": "🎗️ Saturday’s Top Posted #Altcoins 🎗️ 1️⃣ $XLM 2️⃣ $HYPE 3️⃣ $NFP 4️⃣ $LIT 5️⃣ $PROPS 6️⃣ $SUI 7️⃣ $FET 8️⃣ $SOL 9️⃣ $ID 🔟 $IOTA 1️⃣1️⃣ $BULL 1️⃣2️⃣ $NOM Runner ups: $FUN"
+    },
+    {
+      "author": "coinbureau",
+      "followers": 1106308,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 7,
+      "share": 0.571,
+      "median_eng": 716.0,
+      "p90_eng": 1142,
+      "median_views": 32761.5,
+      "eng_per_1k_followers": 0.647,
+      "score": 13.986,
+      "best_url": "https://x.com/coinbureau/status/2060195517259481366",
+      "best_eng": 1142,
+      "pattern_clue": "⚠️ ALERT: SPACEX PRE-IPO MARKET FLASH CRASHES 45% ON HYPERLIQUID Pre-IPO SPCX perpetuals on Hyperliquid suddenly collapsed from roughly $2,280 to $1,280 in minutes, wipin"
+    },
+    {
+      "author": "ostium",
+      "followers": 62522,
+      "format": "pnl_flex",
+      "repeats": 6,
+      "account_posts": 19,
+      "share": 0.316,
+      "median_eng": 85.5,
+      "p90_eng": 119,
+      "median_views": 5757.5,
+      "eng_per_1k_followers": 1.368,
+      "score": 13.637,
+      "best_url": "https://x.com/Ostium/status/2056833411906760881",
+      "best_eng": 119,
+      "pattern_clue": "New record. Largest US100 long in Ostium history. This smart money trader just opened $46,667,100 in longs across US100 and US500. Less than 0.005% price impact for both."
+    }
+  ],
+  "single_post_outliers": [
+    {
+      "author": "vespertiines",
+      "followers": 1181,
+      "eng": 3841,
+      "views": 55287,
+      "eng_per_1k_followers": 3252.329,
+      "url": "https://x.com/vespertiines/status/2058019250695209442",
+      "formats": [
+        "other"
+      ],
+      "text": "this matt and this dex https://t.co/BT4PegC4xk"
+    },
+    {
+      "author": "wumby_hl",
+      "followers": 810,
+      "eng": 2007,
+      "views": 15447,
+      "eng_per_1k_followers": 2007.0,
+      "url": "https://x.com/wumby_hl/status/2062267245879800063",
+      "formats": [
+        "other"
+      ],
+      "text": "Hyperliquid summer Drop evm addy https://t.co/176gY7yXgD"
+    },
+    {
+      "author": "gladrinxyz",
+      "followers": 257,
+      "eng": 1405,
+      "views": 13044,
+      "eng_per_1k_followers": 1405.0,
+      "url": "https://x.com/gladrinxyz/status/2061899818398617982",
+      "formats": [
+        "other"
+      ],
+      "text": "I just saw I have 2 spare Vgen codes, so giveaway time! 🩷 To enter: - Like and repost - Comment your portfolio/work - Follow me (optional but appreciated) I'll choose two"
+    },
+    {
+      "author": "nullfee",
+      "followers": 47963,
+      "eng": 57936,
+      "views": 66804,
+      "eng_per_1k_followers": 1207.931,
+      "url": "https://x.com/Nullfee/status/2056409025873387832",
+      "formats": [
+        "token_call"
+      ],
+      "text": "The platform is already live and the first competitive phase has officially begun. 3 Leaderboards are now active with BNB reward pools. The path to the top is simple: The"
+    },
+    {
+      "author": "popdex_",
+      "followers": 7159,
+      "eng": 8242,
+      "views": 125764,
+      "eng_per_1k_followers": 1151.278,
+      "url": "https://x.com/popdex_/status/2057733271568716055",
+      "formats": [
+        "other"
+      ],
+      "text": "We have completed a $30M funding round led by @ForesightVen to build a trader-first Perp DEX focused on capital efficiency, trading experience, and returning platform val"
+    },
+    {
+      "author": "candace_gmx",
+      "followers": 1752,
+      "eng": 1595,
+      "views": 11585,
+      "eng_per_1k_followers": 910.388,
+      "url": "https://x.com/Candace_GMX/status/2062209751857926531",
+      "formats": [
+        "other"
+      ],
+      "text": "Finally!! 500 verified followers 🥹 https://t.co/iOOEKxXL4j"
+    },
+    {
+      "author": "basemateagent",
+      "followers": 1176,
+      "eng": 785,
+      "views": 9531,
+      "eng_per_1k_followers": 667.517,
+      "url": "https://x.com/basemateagent/status/2061856125956550984",
+      "formats": [
+        "other"
+      ],
+      "text": "Basemate × Avantis perps are live on Base app Messaging - Long/short crypto + tokenized stocks (ETH, COIN, BTC, NVDA) - Market &amp; limit · TP/SL · live P/L · one-tap cl"
+    },
+    {
+      "author": "nextlvlfunded",
+      "followers": 14547,
+      "eng": 8312,
+      "views": 29138,
+      "eng_per_1k_followers": 571.389,
+      "url": "https://x.com/NextLvlFunded/status/2061795412986728637",
+      "formats": [
+        "numbered_list",
+        "data_drop",
+        "tutorial"
+      ],
+      "text": "$750,000 INSTANT FUNDING GIVEAWAY 🔥🔥 That's right! 25 x $25k Instant Funding Accounts are being given away at NLF! How to Enter: 1. Follow @NextLvlFunded & @SpencerNLF 2."
+    },
+    {
+      "author": "jawadvlr",
+      "followers": 1092,
+      "eng": 568,
+      "views": 72607,
+      "eng_per_1k_followers": 520.147,
+      "url": "https://x.com/JawadVLR/status/2057506709220774019",
+      "formats": [
+        "other"
+      ],
+      "text": "end of split 2 https://t.co/Fj5NcvNm0e"
+    },
+    {
+      "author": "0xtoberry",
+      "followers": 1508,
+      "eng": 622,
+      "views": 4175,
+      "eng_per_1k_followers": 412.467,
+      "url": "https://x.com/0xtoberry/status/2056287796134879409",
+      "formats": [
+        "other"
+      ],
+      "text": "every ecosystem eventually has to answer one question. whose dollar do we trust? cosmos just answered it. injective usdc is now the canonical stablecoin standard across t"
+    },
+    {
+      "author": "itsgayri",
+      "followers": 57848,
+      "eng": 22996,
+      "views": 50294,
+      "eng_per_1k_followers": 397.525,
+      "url": "https://x.com/itsgayri/status/2061435952766071092",
+      "formats": [
+        "token_call"
+      ],
+      "text": "30 USD ~ 12 Hours 🩵 -RT + Follow @AstroX_Global ————— Join the quote campaign and grab extra $USDT trading funds"
+    },
+    {
+      "author": "intheworldofai",
+      "followers": 15682,
+      "eng": 6006,
+      "views": 790527,
+      "eng_per_1k_followers": 382.987,
+      "url": "https://x.com/intheworldofai/status/2060267689289896186",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "🚨BREAKING: OpenAI's Codex is now completely FREE to run locally with Ollama. No API costs. No rate limits. 100% private on your machine. You can now use both the Codex Ap"
+    },
+    {
+      "author": "lorenzoark",
+      "followers": 4940,
+      "eng": 1735,
+      "views": 254343,
+      "eng_per_1k_followers": 351.215,
+      "url": "https://x.com/LorenzoARK/status/2053534832274145339",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "Just got back from @consensus2026 Miami. Some unfiltered thoughts on the vibes: The industry has clearly grown up. The degens are gone, the allocators are wearing suits, "
+    },
+    {
+      "author": "marketsalpha",
+      "followers": 2097,
+      "eng": 706,
+      "views": 268144,
+      "eng_per_1k_followers": 336.671,
+      "url": "https://x.com/MarketsAlpha/status/2062439464140767358",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "At the same time that Arthur Hayes started selling, another entity related to Andrew Kang (@Rewkang ) sold 120k HYPE ($8M) in less than 30 minutes, pushing the hyperliqui"
+    },
+    {
+      "author": "coinxapp",
+      "followers": 6381,
+      "eng": 1976,
+      "views": 91901,
+      "eng_per_1k_followers": 309.669,
+      "url": "https://x.com/CoinXapp/status/2058154370353758460",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "🚀 Some Free Mobile Crypto Mining Apps I’ve Been Exploring 🔥 1. Pi 2. Pi Browser 3. Bee Network 4. XOS – An EVM Network 5. Ari Wallet 6. BILLIONS 7. Billions 8. EdgeX 9. P"
+    },
+    {
+      "author": "hyperoll",
+      "followers": 747,
+      "eng": 309,
+      "views": 1636,
+      "eng_per_1k_followers": 309.0,
+      "url": "https://x.com/hyperoll/status/2062791529916477513",
+      "formats": [
+        "other"
+      ],
+      "text": "$100 NBA FINALS GAME 2 FRIDAY GIVEAWAY! Quick promo, the intern wouldn't let you without another bonus 👀 Just FOLLOW + RT, then predict: Match Winner + Wemby OVER/UNDER 2"
+    },
+    {
+      "author": "sahilexec",
+      "followers": 3665,
+      "eng": 1128,
+      "views": 153601,
+      "eng_per_1k_followers": 307.776,
+      "url": "https://x.com/SahilExec/status/2055144493066973190",
+      "formats": [
+        "other"
+      ],
+      "text": "The job description for \"Backend Developer\": 2015: → Know PHP or Java → Understand MySQL → REST APIs are a bonus → Git is appreciated 2020: → Node.js or Python required →"
+    },
+    {
+      "author": "hyperliquidr",
+      "followers": 3474,
+      "eng": 1054,
+      "views": 116762,
+      "eng_per_1k_followers": 303.397,
+      "url": "https://x.com/HyperliquidR/status/2052371846750724319",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "2026 Hyperliquid Q1 Report Today, we're excited to release Hyperliquid's 2026 Q1 Report. While Q1 stands as one of crypto’s most challenging quarters since 2018, Hyperliq"
+    },
+    {
+      "author": "canborsa_dex",
+      "followers": 20444,
+      "eng": 6046,
+      "views": 156292,
+      "eng_per_1k_followers": 295.735,
+      "url": "https://x.com/Canborsa_DEX/status/2054966793224040876",
+      "formats": [
+        "other"
+      ],
+      "text": "The Canborsa Points Program is live! → Earn points with simple social quests → Refer friends for extra points → Climb the leaderboard to qualify for future rewards This i"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 294,
+      "views": 8604,
+      "eng_per_1k_followers": 294.0,
+      "url": "https://x.com/cryptopundiit/status/2058514391893680174",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "nullfee",
+      "followers": 47963,
+      "eng": 13764,
+      "views": 15560,
+      "eng_per_1k_followers": 286.971,
+      "url": "https://x.com/Nullfee/status/2060655337489740117",
+      "formats": [
+        "token_call",
+        "data_drop",
+        "tutorial"
+      ],
+      "text": "THE EVOLUTION OF NULLFEE IS UNSTOPPABLE We are completely rewriting the rules. The entire platform has been overhauled from scratch. Cleaner. Faster. Unreal performance. "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 26384,
+      "views": 13068,
+      "eng_per_1k_followers": 283.282,
+      "url": "https://x.com/Americanfort_io/status/2060028328166240512",
+      "formats": [
+        "other"
+      ],
+      "text": "Privacy tools in crypto have become a compliance problem. Mixers co-mingle funds with unknown counterparties. You can't verify who you're transacting with. Zcash works, b"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 25745,
+      "views": 15934,
+      "eng_per_1k_followers": 276.421,
+      "url": "https://x.com/Americanfort_io/status/2060753103507657132",
+      "formats": [
+        "other"
+      ],
+      "text": "There's an attack vector most of crypto isn't tracking yet. AI recommendation poisoning. An attacker embeds hidden prompt instructions in a webpage. An AI agent reads the"
+    },
+    {
+      "author": "rajsh7894",
+      "followers": 2486,
+      "eng": 665,
+      "views": 29126,
+      "eng_per_1k_followers": 267.498,
+      "url": "https://x.com/rajsh7894/status/2051944115546526100",
+      "formats": [
+        "other"
+      ],
+      "text": "Scam projects (updated list): - Billions (Winner of ALL) - Space - Gensyn - Pharos - RaveDao - Genome - Openmind - EdgeX - Perle Labs - Onefootball Club - Aztec - Superfo"
+    },
+    {
+      "author": "nids_s73479",
+      "followers": 1472,
+      "eng": 385,
+      "views": 508,
+      "eng_per_1k_followers": 261.549,
+      "url": "https://x.com/nids_s73479/status/2062792712890560748",
+      "formats": [
+        "other"
+      ],
+      "text": "*Reply with KW + HT * Let’s get 50K 🔜🥹 GLOW BACK WITH EST #EstxINGU #MyskinfeelsthelightEST -Happiness in soft moments -Golden light within me -Finding joy in silence -So"
+    },
+    {
+      "author": "colasama",
+      "followers": 4106,
+      "eng": 1014,
+      "views": 194733,
+      "eng_per_1k_followers": 246.956,
+      "url": "https://x.com/Colasama/status/2060371398372024680",
+      "formats": [
+        "other"
+      ],
+      "text": "Why the heck is the entire HL community celebrating the worst news for HL seen in a while? It just legalize HL's competitors to offer the actual perp in US. ANd what is H"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 239,
+      "views": 4861,
+      "eng_per_1k_followers": 239.0,
+      "url": "https://x.com/cryptopundiit/status/2051938432440762725",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "this_isnotperez",
+      "followers": 1370,
+      "eng": 325,
+      "views": 1795,
+      "eng_per_1k_followers": 237.226,
+      "url": "https://x.com/this_isnotperez/status/2062722768370598225",
+      "formats": [
+        "other"
+      ],
+      "text": "I spent months trading on Hyperliquid, dYdX, and GMX, constantly switching between platforms to access different markets Then I found @XBITDEX: The moment I saw US stocks"
+    },
+    {
+      "author": "lukecannon727",
+      "followers": 13461,
+      "eng": 3142,
+      "views": 499105,
+      "eng_per_1k_followers": 233.415,
+      "url": "https://x.com/lukecannon727/status/2052578191747772491",
+      "formats": [
+        "other"
+      ],
+      "text": "There has not been a BTC trade on @Coinbase in more than an hour The last 1 minute candle is from 75 minutes ago The orderbook is currently displaying prices hundreds of "
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 227,
+      "views": 6349,
+      "eng_per_1k_followers": 227.0,
+      "url": "https://x.com/cryptopundiit/status/2053780232440819763",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "loi_cee",
+      "followers": 1232,
+      "eng": 278,
+      "views": 19952,
+      "eng_per_1k_followers": 225.649,
+      "url": "https://x.com/Loi_cee/status/2059489895718981926",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Helps traders find and scale strategies that actually make money like the funding rate arbitrage I’d never have spotted manually. I noticed a weird anomaly: a perpetual f"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 20954,
+      "views": 7970,
+      "eng_per_1k_followers": 224.98,
+      "url": "https://x.com/Americanfort_io/status/2061840271084572682",
+      "formats": [
+        "other"
+      ],
+      "text": "Decentralization is the most overused word in crypto. Most \"decentralized\" identity systems can still see: — Who you registered as — Which wallet that name maps to — Ever"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 20583,
+      "views": 9624,
+      "eng_per_1k_followers": 220.997,
+      "url": "https://x.com/Americanfort_io/status/2061477874587287853",
+      "formats": [
+        "other"
+      ],
+      "text": "Every privacy protocol protects the sender. Nobody protected the recipient. Until us. @MehowHacks on why that changes everything 👇 https://t.co/Zk2tZlMvhR"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 219,
+      "views": 5288,
+      "eng_per_1k_followers": 219.0,
+      "url": "https://x.com/cryptopundiit/status/2052734525638430897",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "traia_io",
+      "followers": 111,
+      "eng": 215,
+      "views": 519,
+      "eng_per_1k_followers": 215.0,
+      "url": "https://x.com/traia_io/status/2059936084033720804",
+      "formats": [
+        "other"
+      ],
+      "text": "Markets never sleep. Neither do Traia agents. Leverage real-time market data, technical indicators, sentiment analysis, funding rates, open interest, whale activity, and "
+    },
+    {
+      "author": "kasae_yu",
+      "followers": 1191,
+      "eng": 244,
+      "views": 14545,
+      "eng_per_1k_followers": 204.87,
+      "url": "https://x.com/kasae_yu/status/2062209607427326046",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Today’s market crash is a true stress test for our AI-Model. Market data (last 48 hours) Outflows from spot ETFs: ~$400–500 million per day Open interest in futures: near"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 18917,
+      "views": 12366,
+      "eng_per_1k_followers": 203.109,
+      "url": "https://x.com/Americanfort_io/status/2050002262001627334",
+      "formats": [
+        "other"
+      ],
+      "text": "Every transaction passes through: Address Poisoners. Clipboard Hijackers. Spoofers. Metadata Harvesters. Phishing Traps. AmericanFortress is the only thing between you an"
+    },
+    {
+      "author": "astratelates",
+      "followers": 9434,
+      "eng": 1873,
+      "views": 72527,
+      "eng_per_1k_followers": 198.537,
+      "url": "https://x.com/AStratelates/status/2061105644971921893",
+      "formats": [
+        "other"
+      ],
+      "text": "Eh, this is missing the point. If women were generally consistent at only dating men who passed a high bar, the incel would at least have some balm to their soul. The iss"
+    },
+    {
+      "author": "capy_onchain",
+      "followers": 1112,
+      "eng": 220,
+      "views": 6540,
+      "eng_per_1k_followers": 197.842,
+      "url": "https://x.com/capy_onchain/status/2062263839845212399",
+      "formats": [
+        "numbered_list",
+        "data_drop"
+      ],
+      "text": "I analyzed 180+ perp DEXs. Only 10 are actually worth paying attention to. That means less than 6% of perp DEXs look somewhat reasonable to farm, trade on, or even intera"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 196,
+      "views": 4255,
+      "eng_per_1k_followers": 196.0,
+      "url": "https://x.com/cryptopundiit/status/2055217331606089869",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 18141,
+      "views": 9070,
+      "eng_per_1k_followers": 194.778,
+      "url": "https://x.com/Americanfort_io/status/2059303556851843182",
+      "formats": [
+        "other"
+      ],
+      "text": "An AI agent got tricked into draining its own wallet, without touching a single line of code. An attacker sent a free NFT to Grok's connected wallet. The NFT quietly esca"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 18140,
+      "views": 10635,
+      "eng_per_1k_followers": 194.767,
+      "url": "https://x.com/Americanfort_io/status/2058216387596911045",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "The largest social engineering attack in crypto history didn't exploit a single line of smart contract code. Months of relationship building. One moment of misplaced trus"
+    },
+    {
+      "author": "sureleverage",
+      "followers": 22577,
+      "eng": 4395,
+      "views": 16442,
+      "eng_per_1k_followers": 194.667,
+      "url": "https://x.com/SureLeverage/status/2061430637425557871",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "$10K CHALLENGE GIVEAWAY! 🚨 🏆 10 traders will WIN a $10K Challenge Account 👉🏼 How to Enter: 🔁 Repost (RT) & tag a trader who gets it ☑️ FOLLOW us and reply with a screensh"
+    },
+    {
+      "author": "ogfigo",
+      "followers": 7124,
+      "eng": 1355,
+      "views": 6149,
+      "eng_per_1k_followers": 190.202,
+      "url": "https://x.com/OGFIGO/status/2054785386711277963",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Gm Friends I’ve been trading perps in DeFi long enough to know how fragmented the experience usually is bridge here, switch apps there, hope your liquidity holds. @useTri"
+    },
+    {
+      "author": "kenn_ronin",
+      "followers": 2368,
+      "eng": 449,
+      "views": 14420,
+      "eng_per_1k_followers": 189.611,
+      "url": "https://x.com/kenn_ronin/status/2062254584228389286",
+      "formats": [
+        "other"
+      ],
+      "text": "June 2026 Hackathon Tier List the builder window is wide open this month ranked by prize, influence, and who's backing it S TIER > Build with Gemini XPRIZE - $2,000,000 ("
+    },
+    {
+      "author": "capy_onchain",
+      "followers": 1112,
+      "eng": 205,
+      "views": 8266,
+      "eng_per_1k_followers": 184.353,
+      "url": "https://x.com/capy_onchain/status/2055023425970962467",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "How much will perp DEX points be worth at TGE? @variational_io - $35-45 @grvt_io - $9-13 @nadoHQ - $2-3 @extendedapp - $1.5-2 @tread_fi - $1-2 @tradehotstuff - $1-1.5 @hi"
+    },
+    {
+      "author": "mranarhlyst",
+      "followers": 1097,
+      "eng": 201,
+      "views": 368,
+      "eng_per_1k_followers": 183.227,
+      "url": "https://x.com/MrAnarhlyst/status/2054524416499794002",
+      "formats": [
+        "other"
+      ],
+      "text": "@ethena is doing a good job towards interest in stable yield products 💯 However, the sustainability of yields depends heavily on favorable funding rates, liquid derivativ"
+    },
+    {
+      "author": "0xbigmikey",
+      "followers": 1621,
+      "eng": 292,
+      "views": 21604,
+      "eng_per_1k_followers": 180.136,
+      "url": "https://x.com/0xbigmikey/status/2058382437181178079",
+      "formats": [
+        "data_drop",
+        "meme_short"
+      ],
+      "text": "degenping said buy 10/10, some people actually tailed and got liquidated for 20 billion dollars a few hours later"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 180,
+      "views": 3594,
+      "eng_per_1k_followers": 180.0,
+      "url": "https://x.com/cryptopundiit/status/2057004406684729512",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 16634,
+      "views": 7398,
+      "eng_per_1k_followers": 178.597,
+      "url": "https://x.com/Americanfort_io/status/2062565041380135171",
+      "formats": [
+        "other"
+      ],
+      "text": "Smart contract security has always been asymmetric. Defenders need to find and fix every vulnerability. Attackers need just one. AI coding agents didn't create that asymm"
+    },
+    {
+      "author": "scoutbuggy",
+      "followers": 344,
+      "eng": 178,
+      "views": 17007,
+      "eng_per_1k_followers": 178.0,
+      "url": "https://x.com/scoutbuggy/status/2058618608075395419",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "get me the gmx deck list right fucking now"
+    },
+    {
+      "author": "capy_onchain",
+      "followers": 1112,
+      "eng": 195,
+      "views": 7081,
+      "eng_per_1k_followers": 175.36,
+      "url": "https://x.com/capy_onchain/status/2060806574872940641",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Current tokenless perp farming tier list A lot of people ask the same question right now: “Which perp is still worth starting from zero without getting cooked on point fa"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 16264,
+      "views": 61305,
+      "eng_per_1k_followers": 174.624,
+      "url": "https://x.com/Americanfort_io/status/2059674955709907131",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "Arbitrum holds $16B in TVL, that’s 40% of the entire L2 market. Variational, USDai, GMX. The deepest DeFi stack in the L2 world. Every position on it is completely visibl"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 174,
+      "views": 4209,
+      "eng_per_1k_followers": 174.0,
+      "url": "https://x.com/cryptopundiit/status/2053104277212873060",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "ekeremma1",
+      "followers": 2192,
+      "eng": 379,
+      "views": 2971,
+      "eng_per_1k_followers": 172.901,
+      "url": "https://x.com/ekeremma1/status/2054782649625878530",
+      "formats": [
+        "other"
+      ],
+      "text": "Most traders lose money not because they lack ambition, but because they trade without structure, data, or confirmation. In today’s crypto market, successful trading is n"
+    },
+    {
+      "author": "alucad_99",
+      "followers": 1139,
+      "eng": 196,
+      "views": 4675,
+      "eng_per_1k_followers": 172.081,
+      "url": "https://x.com/Alucad_99/status/2062135976013553893",
+      "formats": [
+        "other"
+      ],
+      "text": "Facts about some perp dex https://t.co/Ubv5cEmbyx"
+    },
+    {
+      "author": "bobbybright759",
+      "followers": 1774,
+      "eng": 304,
+      "views": 11536,
+      "eng_per_1k_followers": 171.364,
+      "url": "https://x.com/Bobbybright759/status/2059644753315078409",
+      "formats": [
+        "other"
+      ],
+      "text": "Reviewed a funding rate arbitrage setup on PUMP using Superior Terminal. Strategy Agent broke down Stealth Accumulation signals &amp; helped tighten workflow around deplo"
+    },
+    {
+      "author": "islanova_nfts",
+      "followers": 159,
+      "eng": 171,
+      "views": 350,
+      "eng_per_1k_followers": 171.0,
+      "url": "https://x.com/islanova_NFTs/status/2062541696110362767",
+      "formats": [
+        "other"
+      ],
+      "text": "🚨@perpsonx x islaNOVA Giveaway To celebrate PERPs: Into The Factions comic mint, PERPS hooked us up with 50,000 $PERP for the community To enter: @perpsonx @islanova_NFTs"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 170,
+      "views": 3769,
+      "eng_per_1k_followers": 170.0,
+      "url": "https://x.com/cryptopundiit/status/2058820516232987006",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 15830,
+      "views": 10539,
+      "eng_per_1k_followers": 169.965,
+      "url": "https://x.com/Americanfort_io/status/2050317567156515029",
+      "formats": [
+        "other"
+      ],
+      "text": "Heading to House of AI at @consensus2026 Miami with @0G_labs to talk about what happens when AI agents start moving money, and why they need private, verifiable rails to "
+    },
+    {
+      "author": "candace_gmx",
+      "followers": 1752,
+      "eng": 289,
+      "views": 6456,
+      "eng_per_1k_followers": 164.954,
+      "url": "https://x.com/Candace_GMX/status/2061520299737186404",
+      "formats": [
+        "other"
+      ],
+      "text": "16k impressions Just today!🥹🥹🥹 https://t.co/oNQ8w3z4Pz"
+    },
+    {
+      "author": "alucad_99",
+      "followers": 1139,
+      "eng": 187,
+      "views": 7582,
+      "eng_per_1k_followers": 164.179,
+      "url": "https://x.com/Alucad_99/status/2062193882159345923",
+      "formats": [
+        "other"
+      ],
+      "text": "perp DEX points prediction at launch @variational_io - $25 - $35 @nadoHQ - $2 - $3 @extendedapp - $3 - $4 @grvt_io - $15 - $20 @pacifica_fi - $0.3 - $0.4 @ostium- $0.5 - "
+    },
+    {
+      "author": "mdeeboss03",
+      "followers": 1745,
+      "eng": 281,
+      "views": 4805,
+      "eng_per_1k_followers": 161.032,
+      "url": "https://x.com/MDeeBoss03/status/2059039430623613370",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Not gonna lie, $ASTER is starting to look like one of those plays the market realizes too late. While most people still see it as just another range-bound perp DEX, the c"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 14747,
+      "views": 10003,
+      "eng_per_1k_followers": 158.337,
+      "url": "https://x.com/Americanfort_io/status/2047827933562052701",
+      "formats": [
+        "other"
+      ],
+      "text": "get phished → lose funds ↑ ↓ use raw address ← paste wrong address"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 158,
+      "views": 3262,
+      "eng_per_1k_followers": 158.0,
+      "url": "https://x.com/cryptopundiit/status/2056043149039210924",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 14672,
+      "views": 12366,
+      "eng_per_1k_followers": 157.531,
+      "url": "https://x.com/Americanfort_io/status/2050606239038533751",
+      "formats": [
+        "other"
+      ],
+      "text": "ENS sold you an identity that permanently exposes your finances. Every person who has your .eth name can see: — Every wallet you've ever funded — Every protocol you've us"
+    },
+    {
+      "author": "tradewithola",
+      "followers": 18434,
+      "eng": 2888,
+      "views": 41959,
+      "eng_per_1k_followers": 156.667,
+      "url": "https://x.com/tradewithola/status/2061523433658167559",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "$5K funded account 1% risk = $50 1:2 RR = $100 6 wins = $600 6 losses = $300 Net = $300 80% payout → $240 You only need: • 50% win rate • 12 trades a month • One model • "
+    },
+    {
+      "author": "evqd3",
+      "followers": 2555,
+      "eng": 400,
+      "views": 15725,
+      "eng_per_1k_followers": 156.556,
+      "url": "https://x.com/evqd3/status/2055175551741038764",
+      "formats": [
+        "other"
+      ],
+      "text": "1 year of trading and a multi six figure pnl, 2026 was the year it clicked for me. I gained my edge on new pairs/deploys and am now chasing 7 figures in what feels like t"
+    },
+    {
+      "author": "gary66eth",
+      "followers": 3415,
+      "eng": 530,
+      "views": 2199,
+      "eng_per_1k_followers": 155.198,
+      "url": "https://x.com/gary66eth/status/2062380260679913696",
+      "formats": [
+        "token_call"
+      ],
+      "text": "You stay in $PURR $HYPE $OPN &amp; $RATPEAK as my call will save your money in down and increase eth amount. Not Joking check it"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 14334,
+      "views": 10014,
+      "eng_per_1k_followers": 153.902,
+      "url": "https://x.com/Americanfort_io/status/2054229058876273048",
+      "formats": [
+        "other"
+      ],
+      "text": "We sat down with @GenzioMedia at #Consensus2025 and the timing couldn't be better. Here's where @AmericanFortress stands right now -Round closed, with coverage from @Inve"
+    },
+    {
+      "author": "itsnicholla",
+      "followers": 2803,
+      "eng": 425,
+      "views": 5832,
+      "eng_per_1k_followers": 151.623,
+      "url": "https://x.com/itsnicholla/status/2060741746594853306",
+      "formats": [
+        "other"
+      ],
+      "text": "i love hanbi &lt;3 i love songha &lt;3 i love nicholas &lt;3 i love daniel &lt;3 i love kassho &lt;3 i love justin &lt;3 i love hyunjun &lt;3 i love haruta &lt;3 i love h"
+    },
+    {
+      "author": "arigoldstein222",
+      "followers": 1054,
+      "eng": 156,
+      "views": 92027,
+      "eng_per_1k_followers": 148.008,
+      "url": "https://x.com/arigoldstein222/status/2055215211825553721",
+      "formats": [
+        "other"
+      ],
+      "text": "We launched our idea. And we will make sure in our lifetime we will see the multi billion dollar company being formed @VFEX_ZW we coming. @avantis_tech . Nyika Inovakwa N"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 13448,
+      "views": 9770,
+      "eng_per_1k_followers": 144.389,
+      "url": "https://x.com/Americanfort_io/status/2061115487161913633",
+      "formats": [
+        "other"
+      ],
+      "text": "Why isn't more institutional capital on-chain yet? Exposure. Not regulation. Every wallet address is a permanent public identifier, and every transaction lands on the sam"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 13408,
+      "views": 9495,
+      "eng_per_1k_followers": 143.96,
+      "url": "https://x.com/Americanfort_io/status/2050968630419235067",
+      "formats": [
+        "thread_hook"
+      ],
+      "text": "Would you rather: A. have 100x your portfolio but fully public to everyone you know B. keep your portfolio the same but completely private forever Pick. Defend. 👇"
+    },
+    {
+      "author": "sssebi",
+      "followers": 24357,
+      "eng": 3462,
+      "views": 18995,
+      "eng_per_1k_followers": 142.136,
+      "url": "https://x.com/Sssebi/status/2059337772213666150",
+      "formats": [
+        "other"
+      ],
+      "text": "⚡️Giveaway⚡️ To celebrate @AscendPerps DEX going live on Midnight Mainnet (1st dApp to launch on Midnight), we are giving away 1000 $ASCEND 🔥 ⏰48 hrs to participate: ✅Fol"
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 142,
+      "views": 2706,
+      "eng_per_1k_followers": 142.0,
+      "url": "https://x.com/cryptopundiit/status/2057361507487457663",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "cryptopundiit",
+      "followers": 168,
+      "eng": 142,
+      "views": 3102,
+      "eng_per_1k_followers": 142.0,
+      "url": "https://x.com/cryptopundiit/status/2056286856371978503",
+      "formats": [
+        "other"
+      ],
+      "text": "BULL Market TARGETS! #crypto $BTC - 150K $ETH - $10K $SOL - $500 $LINK - $100 $BNB - $1500 $ADA - $10 $ONDO - $10 $XRP - $10 $DOGE - $5 $TON - $10 $NEAR - $50 $POL - $10 "
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 13005,
+      "views": 7056,
+      "eng_per_1k_followers": 139.633,
+      "url": "https://x.com/Americanfort_io/status/2062202650074968121",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "Quick breakdown of how stealth address systems actually work: 1. Someone sends to a human-readable name 2. Their wallet computes a brand new receive address that has neve"
+    },
+    {
+      "author": "americanfort_io",
+      "followers": 93137,
+      "eng": 12710,
+      "views": 11751,
+      "eng_per_1k_followers": 136.466,
+      "url": "https://x.com/Americanfort_io/status/2042754506782302596",
+      "formats": [
+        "other"
+      ],
+      "text": "AI agents are clever. They're not careful. Big difference when you're moving money at scale. @MehowHacks on why AI agents need better infrastructure, now 👇 https://t.co/k"
+    },
+    {
+      "author": "itesaitama",
+      "followers": 2359,
+      "eng": 321,
+      "views": 6271,
+      "eng_per_1k_followers": 136.075,
+      "url": "https://x.com/itesaitama/status/2057038521387622669",
+      "formats": [
+        "token_call",
+        "pnl_flex"
+      ],
+      "text": "When will $INJ reach $100? The last 2 cycles happened in the last two crypto bull-runs with 2x price ATH: - 2021 peak → $25 - 2024 peak → $52 Every cycle happened during "
+    }
+  ]
+}

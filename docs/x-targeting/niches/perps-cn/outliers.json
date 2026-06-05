@@ -1,0 +1,1415 @@
+{
+  "cell": "perps-cn",
+  "tweet_count": 371,
+  "author_count": 289,
+  "format_counts": {
+    "data_drop": 100,
+    "pnl_flex": 81,
+    "numbered_list": 58,
+    "other": 163,
+    "meme_short": 27,
+    "daily_recap": 22,
+    "tutorial": 19,
+    "thread_hook": 2,
+    "token_call": 8,
+    "question_bait": 3
+  },
+  "repeatable_outliers": [
+    {
+      "author": "vanisaxxm",
+      "followers": 9719,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 4,
+      "share": 0.5,
+      "median_eng": 134.0,
+      "p90_eng": 136,
+      "median_views": 22090.0,
+      "eng_per_1k_followers": 13.787,
+      "score": 95.446,
+      "best_url": "https://x.com/vanisaxxm/status/2054917291448627702",
+      "best_eng": 136,
+      "pattern_clue": "绕了一圈，Hyperliquid的稳定币路径又回到了USDC。 Coinbase接手USDH，USDC将取代HL上的稳定币主导地位。 同时，这些USDC的储备资产收益，将有90%会分给Hyperliquid协议，用于 $HYPE代币回购、社区资金等。 HL尽早接受了事实： 链上交易所可以自己做撮合、做清算、做 L1，甚至做一套金融系统。 "
+    },
+    {
+      "author": "dashubtc",
+      "followers": 20441,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 535.5,
+      "p90_eng": 591,
+      "median_views": 16123.5,
+      "eng_per_1k_followers": 26.197,
+      "score": 92.524,
+      "best_url": "https://x.com/dashubtc/status/2062324704120045766",
+      "best_eng": 591,
+      "pattern_clue": "市场一路狂欢，人人都在喊继续涨？ 如果你觉得热度已经有点过头了，可以看看 TermMax Alpha 上的这个机会👇 🎯 做空 $SPYon @ 680 美元 只需要： ✅ 支付一小笔权利金 ✅ 跌破 680 美元即可获利 ✅ 最坏情况仅损失权利金 📅 到期日：6 月 19 日 没有追加保证金。 没有爆仓风险。 不用盯盘担心被插针。 本质"
+    },
+    {
+      "author": "xx03199",
+      "followers": 12914,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 317.5,
+      "p90_eng": 329,
+      "median_views": 3712.0,
+      "eng_per_1k_followers": 24.586,
+      "score": 64.224,
+      "best_url": "https://x.com/xx03199/status/2056282679365284277",
+      "best_eng": 329,
+      "pattern_clue": "我在以前的推文中就说过，Gate 伴我穿越两轮牛熊，我对 Gate 是有感情在里面的，并且一直有使用和关心产品的迭代。 最近我就有关注到，就在 5 月 6 日，Gate 把 TradFi 板块升级了，现在直接改名叫 CFD 合约，和永续、现货并列成三大交易场景。 简单点说，CFD 就是差价合约： 你不用真的去买股票、黄金、外汇这些东西，只"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "format": "data_drop",
+      "repeats": 5,
+      "account_posts": 11,
+      "share": 0.455,
+      "median_eng": 230,
+      "p90_eng": 333,
+      "median_views": 2183,
+      "eng_per_1k_followers": 20.848,
+      "score": 55.119,
+      "best_url": "https://x.com/HyperEVM_CN/status/2062462751164043544",
+      "best_eng": 333,
+      "pattern_clue": "<Felix深度用户体验活动> Felix 是HyperEVM 生态里非常重要的 DeFi 金融服务平台，定位是一个由稳定币驱动的链上金融账户。DeFiLlama 显示 Felix 当前 TVL 约 136.8M美元，在HyperEVM生态中排行第六，是少见的从刚起步就认真做事的项目。 体验范围包括但不限于： - FELIX 借贷功能 -"
+    },
+    {
+      "author": "webktsr",
+      "followers": 40107,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 451,
+      "p90_eng": 595,
+      "median_views": 11420,
+      "eng_per_1k_followers": 11.245,
+      "score": 53.859,
+      "best_url": "https://x.com/webktsr/status/2056582985688707514",
+      "best_eng": 595,
+      "pattern_clue": "姐妹们，昨天Binance刚把BTCUSD1永续上线，我刷广场时停下来多看了两眼。 大家聊这个新pair的已经分成两拨了。 一拨还在讨论上线新鲜事，另一拨老玩家已经开始研究那个99.99%的抵押比例。 因为真正玩合约的都清楚，影响仓位体验的，很多时候不是方向对不对，而是交易所到底认不认你手里的钱。 USD1这次最抓人的地方，就在这。 在P"
+    },
+    {
+      "author": "crypto_pumpman",
+      "followers": 35109,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 321.5,
+      "p90_eng": 331,
+      "median_views": 19900.5,
+      "eng_per_1k_followers": 9.157,
+      "score": 52.631,
+      "best_url": "https://x.com/crypto_pumpman/status/2062494559964414375",
+      "best_eng": 331,
+      "pattern_clue": "🔶 马上就是我入驻「币安广场」的第三个年头，从为爱发电的创作者，到区块链 TOP 100，回顾 币安广场 与 我 的共同成长之路 2023年的泵泵还是一个用碎片时间，时不时在推特上，分享一些图文交互教程的普通创作者 不为盈利，甚至有没有人看也无所谓，纯粹的兴趣使然 直到一个叫 滢哥捡到一个BNB @yingbinance 的人，给我发了一"
+    },
+    {
+      "author": "crypto_pumpman",
+      "followers": 35109,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 321.5,
+      "p90_eng": 331,
+      "median_views": 19900.5,
+      "eng_per_1k_followers": 9.157,
+      "score": 52.631,
+      "best_url": "https://x.com/crypto_pumpman/status/2062494559964414375",
+      "best_eng": 331,
+      "pattern_clue": "🔶 马上就是我入驻「币安广场」的第三个年头，从为爱发电的创作者，到区块链 TOP 100，回顾 币安广场 与 我 的共同成长之路 2023年的泵泵还是一个用碎片时间，时不时在推特上，分享一些图文交互教程的普通创作者 不为盈利，甚至有没有人看也无所谓，纯粹的兴趣使然 直到一个叫 滢哥捡到一个BNB @yingbinance 的人，给我发了一"
+    },
+    {
+      "author": "zhuahua1",
+      "followers": 23365,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 224.5,
+      "p90_eng": 274,
+      "median_views": 12697.5,
+      "eng_per_1k_followers": 9.608,
+      "score": 51.629,
+      "best_url": "https://x.com/zhuahua1/status/2062764596574966179",
+      "best_eng": 274,
+      "pattern_clue": "当红炸子鸡Serenity @aleabitoreddit 是何方神圣？寻找你的紫苏叶 2026年3月，X上出现了一个匿名账号，写了四个字：\"我不买NVDA。\" 然后他亮出了自己的持仓——一只瑞典小公司，股价在两个月内涨了近20倍。全网开始扒他是谁的时候，他的账面上已经多了好几个零。 这不是幸存者偏差。这是一套可以被拆解的方法论。 一、他"
+    },
+    {
+      "author": "pjjin574832",
+      "followers": 18398,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 324.0,
+      "p90_eng": 371,
+      "median_views": 3802.5,
+      "eng_per_1k_followers": 17.611,
+      "score": 48.77,
+      "best_url": "https://x.com/pjjin574832/status/2062745216650764688",
+      "best_eng": 371,
+      "pattern_clue": "昨天BTC直接跌破6.2W，是不是很多DeFi玩家被动爆仓，面对这种未知风险，@TermMaxFi 上线的 V2 Roll 和 Alpha Put 两个新功能，恰好直击这个痛点，把应对市场不确定性的主动权，100%交回到了用户手里。 简单来说，V2 Roll 解决的是时间问题。以前仓位到期就像走到了终点，逼着你立刻做决定。现在有了 V2 "
+    },
+    {
+      "author": "pwenzhen76938",
+      "followers": 32722,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 4,
+      "share": 0.75,
+      "median_eng": 332,
+      "p90_eng": 334,
+      "median_views": 10442,
+      "eng_per_1k_followers": 10.146,
+      "score": 44.236,
+      "best_url": "https://x.com/PWenzhen76938/status/2055462930175725856",
+      "best_eng": 334,
+      "pattern_clue": "最近我看稳定币，越来越不看谁故事讲得大 因为这个赛道已经不缺故事了。 >真正稀缺的是： 它有没有被放进真实交易路径里 所以BTCUSD1永续合约这件事，我不会只看100x杠杆。 更值得看的，是USD1进入了： ➢报价货币 ➢保证金 ➢抵押品 ➢Portfolio Margin 这不是简单上线一个交易对 而是它开始进入交易结算路径。 >So"
+    },
+    {
+      "author": "web3annie",
+      "followers": 60368,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 149.0,
+      "p90_eng": 245,
+      "median_views": 30456.0,
+      "eng_per_1k_followers": 2.468,
+      "score": 37.266,
+      "best_url": "https://x.com/web3annie/status/2060662611394580569",
+      "best_eng": 245,
+      "pattern_clue": "今日 Web4 信息差： 1. 新股神 Serenity：没卖一股，还在加仓！ $SIVE Q1 2026 财报出了！营收：$610万，同比-22%，但CPO需求强 2. $HYPE 再创新高 $67，合约之父 Arthur Hayes：到 $150！Hyperliquid 在和 ICE 合作，纳斯达克也想做合约？顶级球星汤普森 50x "
+    },
+    {
+      "author": "web3annie",
+      "followers": 60368,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 149.0,
+      "p90_eng": 245,
+      "median_views": 30456.0,
+      "eng_per_1k_followers": 2.468,
+      "score": 37.266,
+      "best_url": "https://x.com/web3annie/status/2060662611394580569",
+      "best_eng": 245,
+      "pattern_clue": "今日 Web4 信息差： 1. 新股神 Serenity：没卖一股，还在加仓！ $SIVE Q1 2026 财报出了！营收：$610万，同比-22%，但CPO需求强 2. $HYPE 再创新高 $67，合约之父 Arthur Hayes：到 $150！Hyperliquid 在和 ICE 合作，纳斯达克也想做合约？顶级球星汤普森 50x "
+    },
+    {
+      "author": "web3annie",
+      "followers": 60368,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 149.0,
+      "p90_eng": 245,
+      "median_views": 30456.0,
+      "eng_per_1k_followers": 2.468,
+      "score": 37.266,
+      "best_url": "https://x.com/web3annie/status/2060662611394580569",
+      "best_eng": 245,
+      "pattern_clue": "今日 Web4 信息差： 1. 新股神 Serenity：没卖一股，还在加仓！ $SIVE Q1 2026 财报出了！营收：$610万，同比-22%，但CPO需求强 2. $HYPE 再创新高 $67，合约之父 Arthur Hayes：到 $150！Hyperliquid 在和 ICE 合作，纳斯达克也想做合约？顶级球星汤普森 50x "
+    },
+    {
+      "author": "scarlettweb3",
+      "followers": 40003,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 313.5,
+      "p90_eng": 377,
+      "median_views": 7766.0,
+      "eng_per_1k_followers": 7.837,
+      "score": 31.989,
+      "best_url": "https://x.com/ScarlettWeb3/status/2052717675915460812",
+      "best_eng": 377,
+      "pattern_clue": "Ethena 最近干了两件事，一件进攻，一件防守 一件让你多赚钱，一件让你不亏钱 @ethena ⚒️先说多赚钱的进攻： USDe 开始吃黄金的收益了，持有 USDe 拿收益 🤔 收益从哪来？简单说就是 Ethena 一手买现货一手做空永续合约，中间的差价就是你的收益。以前 Ethena 只在 BTC 和 ETH 上做这件事。 但问题是 "
+    },
+    {
+      "author": "mr_qiang777",
+      "followers": 15123,
+      "format": "data_drop",
+      "repeats": 3,
+      "account_posts": 5,
+      "share": 0.6,
+      "median_eng": 103,
+      "p90_eng": 129,
+      "median_views": 4378,
+      "eng_per_1k_followers": 6.811,
+      "score": 30.712,
+      "best_url": "https://x.com/Mr_qiang777/status/2062071360617341377",
+      "best_eng": 129,
+      "pattern_clue": "6月3日 加密行情分析‼️ 【反抽二次探底】⚠️ 策略：✅下跌趋势没有后扭转✅ 1️⃣【BTC】等数字，抄底看你的想象空间 开仓：65222,64000 止损：65221,63999 止盈：88000📈 【ETH】等数字 开仓：1700 止损：1699 止盈：4999📈 2️⃣ 【ETH &BTC】构建最后下跌中枢，跌的太多有反抽，注意是"
+    },
+    {
+      "author": "cheesybun0211",
+      "followers": 35195,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 218.5,
+      "p90_eng": 294,
+      "median_views": 6892.5,
+      "eng_per_1k_followers": 6.208,
+      "score": 28.797,
+      "best_url": "https://x.com/CheesyBun0211/status/2055899224915738818",
+      "best_eng": 294,
+      "pattern_clue": "宝子们，周末愉快呀~明天币安就要正式上线 BTCUSD1 永续合约啦！ 最高能开到 100 倍杠杆，还是美元保证金形式，平时爱玩合约的朋友又多了一个交易选择了 除了上新合约上线，还有个变动，USD1 现在在币安合约里抵押等级直接拉到最高，组合保证金折算比例达到 99.99% 现在手里拿着的 USD1 用处越来越多了，不仅能拿来当做交易的结"
+    },
+    {
+      "author": "love_doge123",
+      "followers": 44631,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 254.0,
+      "p90_eng": 302,
+      "median_views": 8734.0,
+      "eng_per_1k_followers": 5.691,
+      "score": 28.185,
+      "best_url": "https://x.com/love_doge123/status/2062060440629518487",
+      "best_eng": 302,
+      "pattern_clue": "🎒BP 1天拉翻倍了~ 5天拉到怀疑人生，第一天买入，到今天回本挣钱是73天。 💹Backpack 终于找到了属于它自己的灵魂，血统纯正，美资券商。 大部分交易所的美股产品，本质上有三种： 1. CFD（差价合约） 你买的不是股票。 2.Tokenized Stock 你拿到的是某种映射权益。 3. 平台内部记账 资产最终依赖平台信用。 "
+    },
+    {
+      "author": "guomin184935",
+      "followers": 63799,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 310.5,
+      "p90_eng": 373,
+      "median_views": 19470.0,
+      "eng_per_1k_followers": 4.867,
+      "score": 25.331,
+      "best_url": "https://x.com/Guomin184935/status/2059527620795245036",
+      "best_eng": 373,
+      "pattern_clue": "币安 @binance 上线 USD1/BTC 永续合约，很多人关注点错了。 要知道，保证金是交易所风控的核心。 一旦保证金资产出问题（脱锚、流动性枯竭），整个衍生品系统都会崩。所以交易所对保证金资产的选择，极其谨慎。 USDT 用了8年才建立起这个信任。 USDC 背后站着 Coinbase 和 Circle。 但币安还是上了 USD1"
+    },
+    {
+      "author": "qinbafrank",
+      "followers": 138197,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 210.0,
+      "p90_eng": 266,
+      "median_views": 38016.5,
+      "eng_per_1k_followers": 1.52,
+      "score": 24.923,
+      "best_url": "https://x.com/qinbafrank/status/2062005668299911589",
+      "best_eng": 266,
+      "pattern_clue": "都在说美股吸血币市，其实加密资产形态的合规化对传统金融巨头的冲击也在同步发生。华尔街的传统金融交易平台巨头们，正在集体遭遇了一场来自加密货币世界的“降维打击”，可以说是比特币永续期货冲击了传统金融交易巨头。本周内全球衍生品交易的两大百年巨头——芝加哥商品交易所集团（CME）和芝加哥期权交易所（Cboe）的股价双双录得闪崩： Cboe 单周"
+    },
+    {
+      "author": "lubijiaocheng",
+      "followers": 25517,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 254.0,
+      "p90_eng": 285,
+      "median_views": 2756.5,
+      "eng_per_1k_followers": 9.954,
+      "score": 24.014,
+      "best_url": "https://x.com/lubijiaocheng/status/2062449648279920741",
+      "best_eng": 285,
+      "pattern_clue": "昨晚盯盘盯到有点麻，$BTC 一周砸了十几个点，恐慌指数都干到 Extreme Fear，群里不是割肉就是装死。说实话，这种行情里我反而更愿意看那些“能解决真实需求”的 DeFi，而不是只会喊口号的叙事盘。 @TermMaxFi 最近我重点翻了下 TermMax，越看越觉得它很适合现在这个市场情绪：不确定性高、波动大、大家都想降风险。Te"
+    },
+    {
+      "author": "guomin184935",
+      "followers": 63799,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 272.0,
+      "p90_eng": 296,
+      "median_views": 14996.5,
+      "eng_per_1k_followers": 4.263,
+      "score": 21.693,
+      "best_url": "https://x.com/Guomin184935/status/2057402282053083427",
+      "best_eng": 296,
+      "pattern_clue": "Tesla @Tesla IPO 时 $17，现在涨了近 300 倍。 现在 SpaceX 估值 1.5 万亿，还没上市，但 Bitget @bitget 已经让你能交易了，盘前 $200 左右，想象空间巨大！ / 传统券商 → 等 IPO 吧，散户没份额 Robinhood → 可能给你一点，看运气 Bitget → SPCXUSDT "
+    },
+    {
+      "author": "mr_qiang777",
+      "followers": 15123,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 107.0,
+      "p90_eng": 120,
+      "median_views": 4303.0,
+      "eng_per_1k_followers": 7.075,
+      "score": 20.065,
+      "best_url": "https://x.com/Mr_qiang777/status/2060252973025104222",
+      "best_eng": 120,
+      "pattern_clue": "5月29日 加密行情分析 ‼️ 【反抽再跌】 策略：✅下跌没有后扭转，今博反抽✅ 1️⃣ 大盘 【BTC ETH】当前关键支撑位： 【BTC】博反抽 开仓：73500附近。 止损：73100 止盈：74100 【ETH】博反抽 开仓：2010附近 止损：1995 止盈：2030 多空双吃，空单开仓逻辑见一下文字描述： 2️⃣ 【ETH &"
+    },
+    {
+      "author": "mr_qiang777",
+      "followers": 15123,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 5,
+      "share": 0.4,
+      "median_eng": 116.0,
+      "p90_eng": 129,
+      "median_views": 3803.0,
+      "eng_per_1k_followers": 7.67,
+      "score": 19.752,
+      "best_url": "https://x.com/Mr_qiang777/status/2062071360617341377",
+      "best_eng": 129,
+      "pattern_clue": "6月3日 加密行情分析‼️ 【反抽二次探底】⚠️ 策略：✅下跌趋势没有后扭转✅ 1️⃣【BTC】等数字，抄底看你的想象空间 开仓：65222,64000 止损：65221,63999 止盈：88000📈 【ETH】等数字 开仓：1700 止损：1699 止盈：4999📈 2️⃣ 【ETH &BTC】构建最后下跌中枢，跌的太多有反抽，注意是"
+    },
+    {
+      "author": "gcfno2",
+      "followers": 222,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 0.0,
+      "p90_eng": 0,
+      "median_views": 98.0,
+      "eng_per_1k_followers": 0.0,
+      "score": 4.845,
+      "best_url": "https://x.com/gcfno2/status/2061999602824626368",
+      "best_eng": 0,
+      "pattern_clue": "坚持更新 2026 06 03 sh.600255 10.03%   profit: 10.76 👉 理由: 完美多头排列 + 60日均线上方   强量换手（量比2.9 换手11.8%）   涨停基因 x1   RSI健康(58.3) sh.601101 0.15%   profit: -2.00 👉 理由: 完美多头排列 + 60日均线"
+    },
+    {
+      "author": "de_vannd",
+      "followers": 4,
+      "format": "tutorial",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 0.0,
+      "p90_eng": 0,
+      "median_views": 54.0,
+      "eng_per_1k_followers": 0.0,
+      "score": 2.67,
+      "best_url": "https://x.com/de_vannd/status/2061737029696901606",
+      "best_eng": 0,
+      "pattern_clue": "↩🩳🚈 点主页链接进群💁带单群 高返佣 二饼 币圈 合约 借贷协议🪓草莓软糖🎍ADA合规运营🥀微信公众号🏯区块链自媒体 免费策略单，老师直播技术指标教学 https://t.co/fMKMQ11db6"
+    },
+    {
+      "author": "zhihongdaoren1",
+      "followers": 727,
+      "format": "question_bait",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 0.0,
+      "p90_eng": 0,
+      "median_views": 6.0,
+      "eng_per_1k_followers": 0.0,
+      "score": 0.297,
+      "best_url": "https://x.com/zhihongdaoren1/status/2062911292269285525",
+      "best_eng": 0,
+      "pattern_clue": "你是不是已经满仓冲进去了？敢不敢晒出你的持仓成本，看看谁才是那个试图与政策博弈的“天字号”接盘侠？"
+    }
+  ],
+  "single_post_outliers": [
+    {
+      "author": "kukuli69",
+      "followers": 381,
+      "eng": 1225,
+      "views": 6145,
+      "eng_per_1k_followers": 1225.0,
+      "url": "https://x.com/kukuli69/status/2062192349300863483",
+      "formats": [
+        "other"
+      ],
+      "text": "是委托！ 感谢单主让我带薪吃饭🍚 仕事絵 https://t.co/2cEpQ77yBM"
+    },
+    {
+      "author": "belouga2000",
+      "followers": 1106,
+      "eng": 1005,
+      "views": 70386,
+      "eng_per_1k_followers": 908.68,
+      "url": "https://x.com/belouga2000/status/2060729156921589865",
+      "formats": [
+        "other"
+      ],
+      "text": "这个指数特别权威 我说低于30%就可以考虑买入了 低于20%就大买特卖 低于15%必须全仓杠杆 去年我就和我朋友讲 我也抄底了VRT,英伟达,特斯拉,苹果的call 因为那时候上下波动很大 我想玩点T 结果无一例外全部卖飞 我朋友和我一样烂泥扶不上墙 这一波都不能翻身 能怪谁 https://t.co/5dVnAigig4"
+    },
+    {
+      "author": "ellieorange8",
+      "followers": 3370,
+      "eng": 406,
+      "views": 77629,
+      "eng_per_1k_followers": 120.475,
+      "url": "https://x.com/Ellieorange8/status/2062663939796734161",
+      "formats": [
+        "other"
+      ],
+      "text": "我算是亲眼看到，中年女性失业的困境，可能比外界想象的要沉重得多。 一个朋友的姐姐，82年出生，今年44岁，北科大热力学硕士。她保养得当、外形端庄，完全不像同龄人。2024年春天被裁，到现在快两年了——一份工作都没找到。 起初我还劝她放宽要求、别纠结待遇，后来才发现这话有多苍白。她早就不挑，说只要够基本生活费就愿意干，可两年投了几百封简历，"
+    },
+    {
+      "author": "danguz1936",
+      "followers": 42,
+      "eng": 94,
+      "views": 105,
+      "eng_per_1k_followers": 94.0,
+      "url": "https://x.com/danguz1936/status/2062764906815140203",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "复盘TermMax上线以来的安全履历，全周期未曾出现合约被盗资产失窃事故，完善的漏洞赏金计划持续调动白帽审计积极性，稳健安全表现打消保守型资金入场的核心安全顾虑@TermMax"
+    },
+    {
+      "author": "xiaoji0403",
+      "followers": 14387,
+      "eng": 1352,
+      "views": 147659,
+      "eng_per_1k_followers": 93.974,
+      "url": "https://x.com/XiaoJi0403/status/2062420759809548392",
+      "formats": [
+        "other"
+      ],
+      "text": "表哥42岁还单着，前天亲戚介绍了个对象。女方40岁，丈夫车祸去世，人带着12岁的儿子和10岁的女儿，挺不容易的。 两人见面聊得不错，可女方提出，希望表哥把孩子当亲生的养，婚后不再生育，彩礼要68000元，也不办婚礼，找个时间直接住一起。 表哥一听，啥也没说，站起来就走。介绍人赶紧追上去问。表哥叹口气说：这彩礼一给钱就没了。还得供俩孩子读书"
+    },
+    {
+      "author": "0xmilkrabbit",
+      "followers": 10947,
+      "eng": 1012,
+      "views": 217406,
+      "eng_per_1k_followers": 92.445,
+      "url": "https://x.com/0xMilkRabbit/status/2062091509332332616",
+      "formats": [
+        "other"
+      ],
+      "text": "不用去抢 QDII 纳指额度了！ 这是除 QDII 外， 国内另一种「合规投资美股」的方式。 不仅可以享受 300 万投资美股的额度， 连资金结汇回境也是合规的😼。 之前介绍了国内， 可以通过支付宝 QDII 丝滑投资美股， 但现阶段，很多家都限额， 每天十块百块，拉满也才 1000 的。 不少推友担心定投还好，后面有好机会，要抄底的时候"
+    },
+    {
+      "author": "uecyz14322884",
+      "followers": 46,
+      "eng": 91,
+      "views": 115,
+      "eng_per_1k_followers": 91.0,
+      "url": "https://x.com/uecyz14322884/status/2062773429150142668",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "细看TermMax近期官方社交披露的费率分层新规，平台摒弃统一扣费模式，依照持仓存续时长划分阶梯标准，短期周转与长期驻守两类参与者能适配各自成本，精细化定价思路让不同资金周期的群体都能找到适配空间@TermMax"
+    },
+    {
+      "author": "suwanyu7777",
+      "followers": 10479,
+      "eng": 929,
+      "views": 134933,
+      "eng_per_1k_followers": 88.653,
+      "url": "https://x.com/suwanyu7777/status/2060342449286029323",
+      "formats": [
+        "other"
+      ],
+      "text": "就在我剪视频的时候，Beep @0xbeepit已经在 Bitget Wallet上线活动了！ 这次有两个亮点： 首个Agent雇佣限时免费，持续到 6 月 9 日。 Beep现在支持两类全委托Agent： 一类是基于Polymarket的预测市场交易Agent； 一类是基于Hyperliquid的链上合约交易Agent。 加起来覆盖加密"
+    },
+    {
+      "author": "qiuqiu232",
+      "followers": 2916,
+      "eng": 248,
+      "views": 8744,
+      "eng_per_1k_followers": 85.048,
+      "url": "https://x.com/qiuqiu232/status/2062074089699975570",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "迟到3个月，万亿大反攻 最抗揍的币安要翻盘了吗？ 2019年9月，币安上线了合约平台。 只有一个BTC/USDT永续合约，界面简陋，深度一般，最高20倍杠杆。 而当时的BitMEX已经跑了三年永续合约，OKEx也早了一年。 市场的第一反应是「币安来晚了」，舆论方向大概是： 这时候才做合约，还能有什么花样 现货交易所搞杠杆，迟早出事 不就是"
+    },
+    {
+      "author": "b3785486614474",
+      "followers": 1660,
+      "eng": 132,
+      "views": 9623,
+      "eng_per_1k_followers": 79.518,
+      "url": "https://x.com/b3785486614474/status/2062346404190986686",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "一个被全球赌场集体封杀的顶级量化，最后用AI在Polymarket上完成了史诗级逆袭 他在菲律宾博彩集团做定价量化时，因为模型太准，被直接限注到每单只能下2美元。赌场一边偷偷用他的模型赚钱，一边把他所有账号全部封死。 他没有废话，直接往Polymarket里存了4000美元，把自己用Claude开发的量化代理系统怼了上去。 84天后，账户"
+    },
+    {
+      "author": "qeykg93969138",
+      "followers": 31,
+      "eng": 77,
+      "views": 139,
+      "eng_per_1k_followers": 77.0,
+      "url": "https://x.com/qeykg93969138/status/2062773435609329947",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "官推放出和境外智能资管工具的对接进展，外部程序化策略端口正式对外开放，专业资金管理人可通过自研程序批量调度仓位，接口开放有效激活机构侧批量配置资产的需求@TermMax"
+    },
+    {
+      "author": "ilavarasan2510",
+      "followers": 35,
+      "eng": 77,
+      "views": 67,
+      "eng_per_1k_followers": 77.0,
+      "url": "https://x.com/ilavarasan2510/status/2062766025331097652",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "聚焦TermMax Alpha板块最新盘面数据，依托币安上新币种前置杠杆交易优势，该分区近两月日均交易量稳步走高，独有的前置保费风控实现无清算杠杆，仅亏损前置成本的规则，完美规避新币种上线阶段极端插针爆仓风险@TermMax"
+    },
+    {
+      "author": "cryptorounder",
+      "followers": 3690,
+      "eng": 266,
+      "views": 14926,
+      "eng_per_1k_followers": 72.087,
+      "url": "https://x.com/CryptoRounder/status/2062451994229354600",
+      "formats": [
+        "token_call"
+      ],
+      "text": "先放我的结论： $MSTR 不会死， $STRC 不是 $LUNA 。现在只有一个问题，什么时候抄底 $MSTR 和 $BTC ，就看 mNAV，现在是 0.83，历史最低是 0.51。0.51 什么意思？BTC 已经崩了，买 MSTR 还能买到 5 折的 BTC。等 BTC 打针，梭哈 MSTR 长期看涨期权，LEAPS Call！ “"
+    },
+    {
+      "author": "eurling12",
+      "followers": 37,
+      "eng": 71,
+      "views": 67,
+      "eng_per_1k_followers": 71.0,
+      "url": "https://x.com/eurling12/status/2062764935378325823",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "跟踪BNB链Alpha专区用户结构变化，短线投机者与现货持仓大户占比逐步均衡，持仓用户存入原生代币参与双投金库赚取年化收益，多类用户需求共存助力专区流动性长期保持稳健充沛状态@TermMax"
+    },
+    {
+      "author": "zhongying14",
+      "followers": 3611,
+      "eng": 227,
+      "views": 9358,
+      "eng_per_1k_followers": 62.863,
+      "url": "https://x.com/zhongying14/status/2062509734708568534",
+      "formats": [
+        "other"
+      ],
+      "text": "婚纱照第3弹，盖茨比风格古堡婚纱照 万元预算能拍吗 GPT Image 2提示词分析👇 【总控提示词+单张提示词】 请基于用户上传的两位成年人清晰生活照，生成一张「Gatsby 风格 / 1920s Art Deco 风格」的超高预算婚纱写真。 请严格保留两个人的真实身份特征，包括脸型、五官比例、眼睛、鼻子、嘴唇、肤色、年龄感、发际线、发"
+    },
+    {
+      "author": "zzc_ae",
+      "followers": 5556,
+      "eng": 282,
+      "views": 48777,
+      "eng_per_1k_followers": 50.756,
+      "url": "https://x.com/zzc_ae/status/2055018095199269259",
+      "formats": [
+        "token_call"
+      ],
+      "text": "hype的新发射台官方关注有背书 项目方：@altdotfun 网站：https://t.co/T2OwNFSBdY 目前稳定下来了 主要玩法就是“杠杆背书Meme币” 这一点很新颖，把传统https://t.co/ZeUIUG81hn式一键发币和Hyperliquid永续合约（perps）+ 杠杆结合起来了 目前龙头 hype底池 市值"
+    },
+    {
+      "author": "kimm_wei",
+      "followers": 5379,
+      "eng": 256,
+      "views": 94521,
+      "eng_per_1k_followers": 47.592,
+      "url": "https://x.com/kimm_wei/status/2060405332032319841",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "6月份美股，加密货币都会暴跌，等待抄底美股～～"
+    },
+    {
+      "author": "spicycandy00",
+      "followers": 10245,
+      "eng": 460,
+      "views": 9009,
+      "eng_per_1k_followers": 44.9,
+      "url": "https://x.com/spicycandy00/status/2062382722476339376",
+      "formats": [
+        "numbered_list",
+        "daily_recap",
+        "tutorial"
+      ],
+      "text": "YouTube 美股优质博主推荐（一） 今天整理了10个超棒的美股YouTube博主，干货满满，各种风格都有！新手老手都能找到适合自己的，可以收藏起来慢慢看哦 1. 美投讲美股 (MeiTouJun) 深入浅出，用动画+故事讲知识，体系超完整 新手入门首选！宏观+个股全覆盖，期权、AI科技、医疗、中概股啥都有 链接：https://t.c"
+    },
+    {
+      "author": "orange_xxyy",
+      "followers": 9388,
+      "eng": 419,
+      "views": 16253,
+      "eng_per_1k_followers": 44.631,
+      "url": "https://x.com/orange_xxyy/status/2058726270251548857",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "不是，这哥们儿是会玩的😂 TermMax 不是让你追最高 APR 的工具， 而是让你睡得着觉的工具。 别人在 100 倍杠杆、 meme 币、永续合约里梭哈的时候， @TermMaxFi 把你的本金锁在固定利率里，每天安安静静给你打收益。 不需要盯盘、 没有无常损失、 没有清算风险、 也没有“昨天还 40% 今天剩 8%”的惊吓。 牛市里"
+    },
+    {
+      "author": "gamefilabs",
+      "followers": 10261,
+      "eng": 456,
+      "views": 25022,
+      "eng_per_1k_followers": 44.44,
+      "url": "https://x.com/GameFiLabs/status/2061054969135210503",
+      "formats": [
+        "numbered_list",
+        "data_drop"
+      ],
+      "text": "昨天用 Claude Opus 4.8 帮我完善了一个币安永续合约自动交易系统，彻底解决了我之前一直头疼的几个量化老问题。 以前手动平仓后，数据库经常和实际持仓不同步；多信号源一起用的时候，止盈止损策略经常打架；开仓决策也容易被各种旧评分干扰…… 这次让 4.8 严格按我的需求重构后，效果非常明显： 核心解决的三大痛点： 1⃣实时持仓同步"
+    },
+    {
+      "author": "sodislikea",
+      "followers": 12237,
+      "eng": 534,
+      "views": 8784,
+      "eng_per_1k_followers": 43.638,
+      "url": "https://x.com/sodislikea/status/2061636273077731335",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "最近几周，我的交易方式彻底升级了。以前在传统平台交易，受监管影响，经常被动操作，总感觉机会总是错过。后来我尝试了 Binance、Bitget 和 Hyperliquid，但多平台切换太麻烦，盯盘压力大。 用了 @vergex_ai 后，体验完全不同。它把多平台流动性聚合，内置 AI Agent 可以自动调仓和管理风险。我只做最终决策，操"
+    },
+    {
+      "author": "zhongying14",
+      "followers": 3611,
+      "eng": 156,
+      "views": 18232,
+      "eng_per_1k_followers": 43.201,
+      "url": "https://x.com/zhongying14/status/2062558868152922348",
+      "formats": [
+        "other"
+      ],
+      "text": "来个小众的婚纱照，不敢给妈妈看的那种 禁欲系 成人向 满屏性张力，眼神动作都是拉扯 这组情绪和互动感都比较强烈 快来二创！（我的GPT出不来大扔子） GPT Image 2提示词分享👇 请基于用户上传的两位成年情侣清晰生活照，生成高预算、电影感、禁欲系情侣写真。 请严格保留两个人的真实身份特征，包括脸型、五官比例、眼睛、鼻子、嘴唇、肤色、"
+    },
+    {
+      "author": "cherrypayment",
+      "followers": 6128,
+      "eng": 248,
+      "views": 22615,
+      "eng_per_1k_followers": 40.47,
+      "url": "https://x.com/cherryPayment/status/2062540444165140989",
+      "formats": [
+        "numbered_list",
+        "pnl_flex",
+        "daily_recap"
+      ],
+      "text": "今天有时间来看看 $xfab 这家公司 他是一家欧洲泛欧交易所巴黎板块（XFAB）上市的专注于模拟/混合信号技术的特色晶圆代工厂 1. 首先看看他的财报，他们Q1 2026 营收2.058亿美元，超出指引区间，这一点很棒，其中最吸引我的是微系统与光子学创纪录3370万美元，同比+42%，并且宽禁带（SiC+GaN）同比+152%，SiC晶"
+    },
+    {
+      "author": "gamefilabs",
+      "followers": 10261,
+      "eng": 410,
+      "views": 22058,
+      "eng_per_1k_followers": 39.957,
+      "url": "https://x.com/GameFiLabs/status/2061607606666588317",
+      "formats": [
+        "other"
+      ],
+      "text": "昨天我分享了用 @ZenMuxAI 接入 Claude Opus 4.8（Bedrock）帮我优化币安永续合约自动交易系统的事。 实际跑下来感觉挺靠谱的，尤其是风控和单腿失败处理那块，确实帮我把几个容易踩的坑提前看到了。谢谢大家这段时间的留言和鼓励！ 有朋友还特意私信给我分享了一个多模型对比的帖子，我马上就去试了试。今天干脆在 @ZenM"
+    },
+    {
+      "author": "web4miko",
+      "followers": 42013,
+      "eng": 1643,
+      "views": 314278,
+      "eng_per_1k_followers": 39.107,
+      "url": "https://x.com/web4miko/status/2051214067612733874",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "币圈的群，我只认五个。 第一个群 就是是杀破狼 @wolfyxbt 的狼家军。收费标准 0 群里上到百亿富豪孙宇晨 @justinsuntron ，中到各大交易所负责人，大小 kol。下到长期陪伴的狼仔忠实粉丝，甚至外卖员选手，还掺杂着数十个亿万富翁，车头。其乐融融。 逢年过节，各大交易所不来狼家军群里发个红包，那就是工作没到位，kpi "
+    },
+    {
+      "author": "till_okb",
+      "followers": 7384,
+      "eng": 279,
+      "views": 6348,
+      "eng_per_1k_followers": 37.784,
+      "url": "https://x.com/Till_okb/status/2052184462738518312",
+      "formats": [
+        "other"
+      ],
+      "text": "OKX 最新发布的《Beyond Crypto》释放了重磅信号： ✅ 美股链上化： OKX @okx 与 Ondo @OndoFinance 合作，引入 263 种美股资产 ✅ 衍生品升级： 股票永续合约池扩大，覆盖半导体巨头及美股七巨头 ✅ 先行者策略： 即将支持 OpenAI、SpaceX 等独角兽公司的 Pre-IPO 交易 从交易"
+    },
+    {
+      "author": "foliage_et",
+      "followers": 9596,
+      "eng": 355,
+      "views": 81389,
+      "eng_per_1k_followers": 36.995,
+      "url": "https://x.com/Foliage_et/status/2060582278011764771",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "6 月 1 日币安的大更新，我认为很有可能就是一姐前两天提到的：美股券商通道上线。 如果这个猜测成真，那它和目前币圈里的“美股交易”其实有本质区别。 目前大家在链上交易美股，主要有两种形式： 🔸Tokenized Stock（代币化股票） 🔸Pre-IPO 永续合约 优点很明显：USDT 直接买，7×24 小时交易，非常方便。 但问题也同"
+    },
+    {
+      "author": "misstang1102",
+      "followers": 11543,
+      "eng": 426,
+      "views": 14959,
+      "eng_per_1k_followers": 36.905,
+      "url": "https://x.com/Misstang1102/status/2062076498170032431",
+      "formats": [
+        "other"
+      ],
+      "text": "连续打卡 @TermMaxFi 的第148天。🐬 今天这行情是真的跌麻了。😂打开行情软件一看，绿的没几个，红的倒是一大片。前几天大家还在讨论突破，今天又开始讨论支撑位了。🤣 不过这种行情也让我想到一个问题：如果觉得市场后面还有下跌空间，又不想直接开高风险合约，该怎么办？ 以前很多人的选择可能只有两个。要么继续硬扛。要么直接清仓观望。但最近"
+    },
+    {
+      "author": "artofspecuycky",
+      "followers": 20810,
+      "eng": 728,
+      "views": 89815,
+      "eng_per_1k_followers": 34.983,
+      "url": "https://x.com/ArtofSpecuycky/status/2062333906230391138",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "标普九连阳终结，多个信号同时出现，这次回调值得认真对待 今天标普500收盘下跌56点，跌幅0.74%，终结了九连阳。 本周周线已经变成阴线。更值得注意的是今天的K线形态——高开低走阴线，全天没有任何下影线支撑，说明从开盘到收盘一直在卖，没有抄底盘进场。这是近期以来最难看的一根K线。 今天大跌的原因不止一个 有人问我是不是因为日本央行鹰派导"
+    },
+    {
+      "author": "btcniumowang",
+      "followers": 16408,
+      "eng": 514,
+      "views": 15396,
+      "eng_per_1k_followers": 31.326,
+      "url": "https://x.com/Btcniumowang/status/2060172522935435435",
+      "formats": [
+        "other"
+      ],
+      "text": "TermMax 每日话题： （ 也算是好起来了，看着多空比，再看下方的大户持仓多空比。 ） AI现在已经开始出现一个特别明显的分水岭： 👉 有些人是在用AI。 👉 还有些人，已经开始“靠AI赚钱”。 这两者差别特别大，前者是： 问问题、写文案、做总结。 后者已经开始： AI跑信息流、AI做数据分析、AI盯市场、AI自动执行。 很多人现在还"
+    },
+    {
+      "author": "evancrypto17",
+      "followers": 7591,
+      "eng": 236,
+      "views": 35434,
+      "eng_per_1k_followers": 31.089,
+      "url": "https://x.com/EvanCrypto17/status/2053745545454444994",
+      "formats": [
+        "other"
+      ],
+      "text": "当币圈人可以星际穿越，看见过去的自己 ： 2024 年，Hyperliquid 和 Backpack 我选择了？ 2025 年，Opinion 预测市场首个代币，我参与吗？ 2025 年 12 月， Space ICO， 我打了嘛？ 现在，在 Predict 和 Polymarket 之间，我提醒我自己，这次该选择相信谁？"
+    },
+    {
+      "author": "nangongyuan",
+      "followers": 16831,
+      "eng": 521,
+      "views": 100016,
+      "eng_per_1k_followers": 30.955,
+      "url": "https://x.com/nangongyuan/status/2061437654517035132",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "全世界只有我一个人看不懂Hyperliquid吗？ 一条新链，一个新交易所，居然这么多人无条件信任，把大量的资金转移到上面。 还没有经历黑客的洗礼，还没有经历几轮牛熊的考验。 似乎也没有顶级机构背书。"
+    },
+    {
+      "author": "wangchangfu88",
+      "followers": 15790,
+      "eng": 488,
+      "views": 70478,
+      "eng_per_1k_followers": 30.906,
+      "url": "https://x.com/wangchangfu88/status/2062721065944543552",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "现在普通人唯一能翻身的机会 就是这轮熊市底部，抄底加密货币"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 333,
+      "views": 3119,
+      "eng_per_1k_followers": 30.185,
+      "url": "https://x.com/HyperEVM_CN/status/2062462751164043544",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "<Felix深度用户体验活动> Felix 是HyperEVM 生态里非常重要的 DeFi 金融服务平台，定位是一个由稳定币驱动的链上金融账户。DeFiLlama 显示 Felix 当前 TVL 约 136.8M美元，在HyperEVM生态中排行第六，是少见的从刚起步就认真做事的项目。 体验范围包括但不限于： - FELIX 借贷功能 -"
+    },
+    {
+      "author": "anchornode",
+      "followers": 8070,
+      "eng": 241,
+      "views": 5357,
+      "eng_per_1k_followers": 29.864,
+      "url": "https://x.com/AnchorNode/status/2062056411753009282",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "兄弟们，最近各大加密交易所上线了股票类等传统金融的产品。但是有94%的加密股票业务，全捆绑在同一家公司身上 先说一个数字94%。 Binance、Kraken、Bitget、KuCoin、BingX 你在这五家交易所上买特斯拉和英伟达，底层走的都是同一家券商Alpaca Securities。 Alpaca出问题，这五家的股票业务得一起停"
+    },
+    {
+      "author": "evancrypto17",
+      "followers": 7591,
+      "eng": 226,
+      "views": 7267,
+      "eng_per_1k_followers": 29.772,
+      "url": "https://x.com/EvanCrypto17/status/2056965726314062052",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "早上起床就被 Lighter 的涨幅震惊了，LIT 连续两天涨幅榜前 3 ，很久没这样的推背感，而且是逆势硬拉。 Hyperliquid 知名交易员 Loracle 第二大仓位也做多 LIT。 找来找去，没找到原因，数据没变好，也没利好，就是硬涨。最有可能的原因，就是 Layer2 机构 L2BEAT 发了这样一个报告 —— Lighte"
+    },
+    {
+      "author": "dashubtc",
+      "followers": 20441,
+      "eng": 591,
+      "views": 16602,
+      "eng_per_1k_followers": 28.912,
+      "url": "https://x.com/dashubtc/status/2062324704120045766",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "市场一路狂欢，人人都在喊继续涨？ 如果你觉得热度已经有点过头了，可以看看 TermMax Alpha 上的这个机会👇 🎯 做空 $SPYon @ 680 美元 只需要： ✅ 支付一小笔权利金 ✅ 跌破 680 美元即可获利 ✅ 最坏情况仅损失权利金 📅 到期日：6 月 19 日 没有追加保证金。 没有爆仓风险。 不用盯盘担心被插针。 本质"
+    },
+    {
+      "author": "boywus",
+      "followers": 9760,
+      "eng": 276,
+      "views": 40168,
+      "eng_per_1k_followers": 28.279,
+      "url": "https://x.com/Boywus/status/2054072709336924327",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "分享最近一个年化50%，容量$2M起步的策略是如何来的： 在TradiFi热刚刚开始的时候，每家交易所都开始上传统资产，最先上的就是 XAUUSDT，由于普通永续合约有基础利率（这里可以看 @yhaiyang 和 @agintender 的内容），默认是 0.01%/8h，年化10%。 有某家交易所把黄金的基础利率也设置成了这个数值，但是"
+    },
+    {
+      "author": "bjrya39878759",
+      "followers": 7506,
+      "eng": 201,
+      "views": 7178,
+      "eng_per_1k_followers": 26.779,
+      "url": "https://x.com/bjrya39878759/status/2062424927115079954",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "哎呀，最近Bitget的美股2.0搞得我挺上头的，我直接把APP升级到2.84.0（统一账户的记得切回经典账户），然后跑去试了试rToken美股现货。 说实话，我平时以前是富途交易美股，这次纯好奇去对比一下，下面是我的真实体验分享。 先说交易流程，真的简单到爆。顶部直接搜股票名或者代码，比如我搜索了（美光），点进去就是行情—股票—现货，或"
+    },
+    {
+      "author": "dov_wo",
+      "followers": 33334,
+      "eng": 886,
+      "views": 50758,
+      "eng_per_1k_followers": 26.579,
+      "url": "https://x.com/dov_wo/status/2056191731738214835",
+      "formats": [
+        "other"
+      ],
+      "text": "去迈阿密参加了Consensus大会，几乎没什么中国人 以下是Crypto西方的状况： 共识在哪？ Zcash是美国的新共识，naval+a16z+multicoin，至于为什么我会单开一个帖子/视频来讲，估计短期不会结束 公链 - 在把Monad/megaeth 对标成当年sui/aptos双雄，钱都很多，各有优劣。谁是 - Canto"
+    },
+    {
+      "author": "xx03199",
+      "followers": 12914,
+      "eng": 329,
+      "views": 4077,
+      "eng_per_1k_followers": 25.476,
+      "url": "https://x.com/xx03199/status/2056282679365284277",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "我在以前的推文中就说过，Gate 伴我穿越两轮牛熊，我对 Gate 是有感情在里面的，并且一直有使用和关心产品的迭代。 最近我就有关注到，就在 5 月 6 日，Gate 把 TradFi 板块升级了，现在直接改名叫 CFD 合约，和永续、现货并列成三大交易场景。 简单点说，CFD 就是差价合约： 你不用真的去买股票、黄金、外汇这些东西，只"
+    },
+    {
+      "author": "igeekbb",
+      "followers": 81286,
+      "eng": 2038,
+      "views": 625922,
+      "eng_per_1k_followers": 25.072,
+      "url": "https://x.com/igeekbb/status/2061751968885100991",
+      "formats": [
+        "other"
+      ],
+      "text": "才知道峰哥卖了光模块抄底大消费去了。哈哈哈，峰哥到现在都以为，别人是因为他有智慧关注他的。 https://t.co/txemwqD3hb"
+    },
+    {
+      "author": "mnmn94253156337",
+      "followers": 8480,
+      "eng": 211,
+      "views": 1566,
+      "eng_per_1k_followers": 24.882,
+      "url": "https://x.com/mnmn94253156337/status/2057667254947643436",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "这两年合约市场卷得很凶 刚看完 CoinGecko 这份《2026 State of Crypto Perpetuals Report》，Gate 有两个数据我觉得挺值得拿出来说一下： 一个是永续合约持仓份额到了 11.8%，排全球中心化交易平台第三，只在 Binance 和 Bybit 后面 另一个是从 2025 年到现在，Gate 新"
+    },
+    {
+      "author": "xx03199",
+      "followers": 12914,
+      "eng": 306,
+      "views": 3347,
+      "eng_per_1k_followers": 23.695,
+      "url": "https://x.com/xx03199/status/2059471268118990891",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "最近的行情太磨人了，虽然美股 AI 交易仍然火热，但 BTC 一直在 7.6-7.8 万刀附近反复震荡，地狱级难度操作啊，方向看对了也没用，中间一波插针就把仓位干爆了。 现在有个新的玩法了， Jasper Vault 的 PP（Perpetual Protect，永续合约保护），直接把合约交易的痛点解决了。 PP 的逻辑很简单： 你继续做"
+    },
+    {
+      "author": "dashubtc",
+      "followers": 20441,
+      "eng": 480,
+      "views": 15645,
+      "eng_per_1k_followers": 23.482,
+      "url": "https://x.com/dashubtc/status/2062103705441501236",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "2026年初，我收到富途的邮件——相信很多老股民都收到了同样的通知：监管整治落地，内地存量用户两年内只能卖出、不能买入。我当时账户里还有将近18万港币的腾讯、美团和几只REITs，钱必须走，但往哪走？ 我身边几个玩得大的朋友，早就挪去了币圈。过去我总觉得加密市场太野，但眼下没有更好的选择。于是花了两周时间清仓港股，换成了U，开启了我今年最"
+    },
+    {
+      "author": "0xjason",
+      "followers": 12726,
+      "eng": 295,
+      "views": 1479,
+      "eng_per_1k_followers": 23.181,
+      "url": "https://x.com/0xJason/status/2062749227705651473",
+      "formats": [
+        "other"
+      ],
+      "text": "最近 Hype 频频新高 让杰哥也一直在做 perp 相关 toekn 的交易。如此高频的节奏离不开我最近在用的这个好工具 xBubble @dappOS_com 他能够很快的并且深度的帮我整理数据📊和信息并且给出深刻的数据 Insight！ 虽然之前 perp 的叙事被浇了一盆冷水 但是我一直在用 xbubble 在跟踪着 哪些项目背后"
+    },
+    {
+      "author": "wealthcode99978",
+      "followers": 14509,
+      "eng": 333,
+      "views": 21810,
+      "eng_per_1k_followers": 22.951,
+      "url": "https://x.com/WealthCode99978/status/2062334025612525818",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "🎯 你的加仓方式，决定了你能承受多大的风险 大多数人加仓都搞反了。看一个真实例子就懂。 大多数人的悲剧 看到好机会就梭哈 → 形态还没走稳就满仓 → 一跌就慌 → 割肉后又追高。每一步都反向操作。 正确方法：用数字说话 第一批：买100股 @ $100，成本$10,000 股票涨到$150，浮盈$5,000。关键动作——上移止损到$140"
+    },
+    {
+      "author": "absnn355",
+      "followers": 6630,
+      "eng": 150,
+      "views": 7626,
+      "eng_per_1k_followers": 22.624,
+      "url": "https://x.com/absnn355/status/2062399110460891576",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "刚组建了一个 uPEG 大户群（持仓 10 个以上）。 我们会陆续组织线下沙龙、聚餐、闭门讨论等活动，目标是把核心持有者和长期主义者聚在一起，一起 building uPEG 的未来。 符合条件的家人们，欢迎私聊我验证进群。 让我们一起把 uPEG 建设得更好。 @unipegv4 ethereum:0x44b28991b167582f1"
+    },
+    {
+      "author": "formnoshape",
+      "followers": 19775,
+      "eng": 447,
+      "views": 35623,
+      "eng_per_1k_followers": 22.604,
+      "url": "https://x.com/formnoshape/status/2060584477525733442",
+      "formats": [
+        "other"
+      ],
+      "text": "上证指数重要分析，你也可以信赖周期！抄底时间到？ 按照周期模型，一个月前发帖提及：上证4月底5月底小调整，然后强势震荡，6月初前后还会有调整。现在看来，上证基本在按照模型预期在走，特别是现在6月初前后，确实迎来了调整。 下面直接说下步走势分析： 第一阶段：谷底筑底期，开启反弹（6月初前后—6月下旬/7月上旬） 如图1，市场谷底在0526-"
+    },
+    {
+      "author": "cappschool",
+      "followers": 16888,
+      "eng": 381,
+      "views": 8329,
+      "eng_per_1k_followers": 22.56,
+      "url": "https://x.com/CappSchool/status/2062104115870564623",
+      "formats": [
+        "other"
+      ],
+      "text": "过去几年，不少内地的高净值交易者习惯把富途、老虎这类传统美港股平台当成资金的避风港。但随着监管靴子彻底落地，这些平台进入了“只能卖、不能买”的清退倒计时。两年的缓冲期看着长，但对专业资金来说，躺在里边等死等于浪费时间资产。大家唯一的共识就是：必须给这笔庞大的存量资金找到新出路。 于是，市场迎来了第二波震荡——顶级交易平台的抢客大战。 资金"
+    },
+    {
+      "author": "daweifs",
+      "followers": 7301,
+      "eng": 162,
+      "views": 7535,
+      "eng_per_1k_followers": 22.189,
+      "url": "https://x.com/daweifs/status/2062075686618304787",
+      "formats": [
+        "numbered_list",
+        "data_drop"
+      ],
+      "text": "🔥 $50,000 USDC总奖池来袭，Bullbit旗舰 Bull Rush 交易大赛正式开启！ 兄弟们，Bullbit AI Perp DEX 这波TGE前活动真挺猛的，正好赶上链上实测窗口！ 活动时间：5月28日 - 6月23日（26天冲刺期） 双榜单比拼（总奖金38k USDC）： 1、累计交易量榜（刷量党福音） 2、收益率PNL"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 240,
+      "views": 5851,
+      "eng_per_1k_followers": 21.755,
+      "url": "https://x.com/HyperEVM_CN/status/2055875642617704463",
+      "formats": [
+        "token_call"
+      ],
+      "text": "5月17日 Hyperliquid EVM 日报： - Hyperliquid 团队与政策制定者讨论链上衍生品监管路径 - Unit 与 Hyperliquid Strategies 联合推出 validator - $BASED 与 $HYPE 现已可直接在 Based Card 中消费 - Altura:围绕 AVLT 的新市场规模已"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 239,
+      "views": 2318,
+      "eng_per_1k_followers": 21.664,
+      "url": "https://x.com/HyperEVM_CN/status/2059478832504287382",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "5月27日 Hyperliquid EVM 日报： - Hyperliquid：USDT 已在测试网上启用为可借资产 - Liquid：Co-Invest 在ChatGPT 和 Claude 上线 - SEDA：披露 24/7 市场相关 oracle 数据，包括 170 亿美元支持交易量 - TradeXYZ：BlackBerry 股票标"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 230,
+      "views": 2183,
+      "eng_per_1k_followers": 20.848,
+      "url": "https://x.com/HyperEVM_CN/status/2060216056288088189",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "5月29日 Hyperliquid EVM 日报： - Hyperwave：Hyperwave Prime 上线,提供许可型 vault 基础设施 - TradeXYZ：Quantinuum Pre-IPO Perpetual 市场已上线 - liquid：支持 Opus 4.8，可在 Claude 内生成交易想法并执行交易 - Outc"
+    },
+    {
+      "author": "btcniumowang",
+      "followers": 16408,
+      "eng": 342,
+      "views": 17590,
+      "eng_per_1k_followers": 20.843,
+      "url": "https://x.com/Btcniumowang/status/2057727411509481510",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "刚刚刷到 CoinGecko 《2026 年加密货币永续合约行业报告》，把从 CEX 到 DEX 的合约数据都拉了一遍。 我其实有点意外，以前大家聊合约平台，基本就是三大所这些名字轮着出现，但这次有个变化还挺值得聊的—— Gate 的永续合约持仓份额悄悄爬到了 11.8%，排在行业第三，仅次于 Binance 和 Bybit。 尤其是持仓"
+    },
+    {
+      "author": "zhuren1992",
+      "followers": 16162,
+      "eng": 336,
+      "views": 28041,
+      "eng_per_1k_followers": 20.79,
+      "url": "https://x.com/zhuren1992/status/2062360445718340042",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "救命，最近天天跟家里刚出生的吞金兽斗智斗勇，不是在换尿布就是在喂奶，感觉自己的CPU都快被这无规律的哭声干烧了。 昨天好不容易把娃哄睡，百忙之中打开手机，结果发现隔壁老王天天在群里晒收益率，尾巴都快翘到天上去了。 气得我一边给娃刷着奶瓶，一边连夜去扒了这个让他装杯的项目，原来是 @BullbitDEXHQ 正在搞的 BULL RUSH 交"
+    },
+    {
+      "author": "zhuifei008",
+      "followers": 8662,
+      "eng": 177,
+      "views": 15312,
+      "eng_per_1k_followers": 20.434,
+      "url": "https://x.com/zhuifei008/status/2062388153068253551",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "刚刚被一个朋友的电话吵醒，这个朋友也是推特上认识，这一年以来一直和我玩税币，她自己也有地推，像人生k线当时都是20万左右私聊发的，屎壳郎15万市值发的，还有一些标基本都是私聊，大约赚了10几万u吧，总之收益很不错，她周边的朋友也赚钱了，刚刚和我说最近在做合约，全都爆仓了，有些时候我真很不理解，明明有稳定盈利的事情，为什么要玩不熟悉的赛道，"
+    },
+    {
+      "author": "pjjin574832",
+      "followers": 18398,
+      "eng": 371,
+      "views": 2832,
+      "eng_per_1k_followers": 20.165,
+      "url": "https://x.com/pjjin574832/status/2062745216650764688",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "昨天BTC直接跌破6.2W，是不是很多DeFi玩家被动爆仓，面对这种未知风险，@TermMaxFi 上线的 V2 Roll 和 Alpha Put 两个新功能，恰好直击这个痛点，把应对市场不确定性的主动权，100%交回到了用户手里。 简单来说，V2 Roll 解决的是时间问题。以前仓位到期就像走到了终点，逼着你立刻做决定。现在有了 V2 "
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 216,
+      "views": 5293,
+      "eng_per_1k_followers": 19.579,
+      "url": "https://x.com/HyperEVM_CN/status/2055502315835297826",
+      "formats": [
+        "other"
+      ],
+      "text": "5月16日 Hyperliquid EVM 日报： - Hyperliquid 核心团队赴华盛顿，与政策制定者讨论链上衍生品监管路径 - HypurrFi 宣布逐步关闭，并将 Prime / Yield 市场迁移至 Euler - Outcome：HIP-4 上线 14 天，Outcome 贡献 150 万美元 - HIP-4 测试网上出"
+    },
+    {
+      "author": "cryptounaa",
+      "followers": 8108,
+      "eng": 152,
+      "views": 4384,
+      "eng_per_1k_followers": 18.747,
+      "url": "https://x.com/CryptoUnaa/status/2058518210224549939",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "预测市场可以玩杠杆了！ 当其他预测市场目前还停留在现货逻辑，XBIT @XBITDEX_ZH 创新推出预测市场杠杆交易： • 不使用传统永续合约，而是用独立杠杆借贷 + 外部真实成交机制（100 USDC + 5倍杠杆 = 外部下500 USDC 真实单) • 没有 funding rate，只有借贷利息 • 针对预测市场特性重新设计风控"
+    },
+    {
+      "author": "btcniumowang",
+      "followers": 16408,
+      "eng": 301,
+      "views": 94418,
+      "eng_per_1k_followers": 18.345,
+      "url": "https://x.com/Btcniumowang/status/2061735320769409048",
+      "formats": [
+        "other"
+      ],
+      "text": "实话，我之前对美股合约一直有点犹豫，主要就是时间对不上。白天上班盯不了盘，晚上到家美股早收盘了，等周末复盘已经黄花菜都凉了。 结果前几天试了下火币那个美股合约，第一个反应是： 怎么没人早告诉我？ 凌晨两点我想起来了，打开手机就能开仓。 周六早上出个什么消息，直接就能操作。不用等什么开盘竞价，也不用担心睡觉时候错过行情。 7×24小时，确实"
+    },
+    {
+      "author": "xamiguo",
+      "followers": 9671,
+      "eng": 175,
+      "views": 4846,
+      "eng_per_1k_followers": 18.095,
+      "url": "https://x.com/xamiguo/status/2062580240577429982",
+      "formats": [
+        "other"
+      ],
+      "text": "最近发现中文区不少朋友都在捡猴子。 本来还在观望，结果今天 ETH 跌成这样，索性也跟着抄了一把 MAYC。 算是双重抄底了： 一边抄以太， 一边抄 JPEG。 熊市最有意思的地方就是，当大家都在讨论价格的时候，总有人开始默默收集自己喜欢的东西。 刚换上新头像，看着还挺顺眼。 如果你也是猴子，欢迎互关，一起熬过这个周期。🐵🫡 https:"
+    },
+    {
+      "author": "bydaotina",
+      "followers": 12524,
+      "eng": 223,
+      "views": 5796,
+      "eng_per_1k_followers": 17.806,
+      "url": "https://x.com/bydaoTina/status/2062868314247086234",
+      "formats": [
+        "numbered_list",
+        "pnl_flex"
+      ],
+      "text": "去中心化步入深水区：为什么 2026 年的加密市场不再相信故事，只臣服于「流动性霸权」？ 如果我们仔细观察今年全球数字经济的历史性拐点，会发现一个残酷的事实：市场已经对那些光鲜亮丽、包装着宏大叙事却毫无链上流动性支撑的假空气项目彻底免疫了。 历经代际革命，我们正在从价值互联WEB3，迅速迈向由 AI 原生驱动、资产自主运行的 WEB4 智"
+    },
+    {
+      "author": "joakja",
+      "followers": 22642,
+      "eng": 390,
+      "views": 6461,
+      "eng_per_1k_followers": 17.225,
+      "url": "https://x.com/joakja/status/2061838124100038704",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "高考的同学们记得挂好止盈止损 别高考的时候手机振动 提示你永续合约全仓仓位强平通知 然后被当成作弊处理还爆仓 那你只能在复读的等待中度过牛市了"
+    },
+    {
+      "author": "yuren477",
+      "followers": 10200,
+      "eng": 175,
+      "views": 41115,
+      "eng_per_1k_followers": 17.157,
+      "url": "https://x.com/yuren477/status/2060980718948553021",
+      "formats": [
+        "other"
+      ],
+      "text": "空了一点bnb，所有下跌趋势里的反弹都是做空机会。也不认为会吸走hyperliquid多少流动性，护城河不一样。 https://t.co/8K90Das540"
+    },
+    {
+      "author": "rayrayweb5",
+      "followers": 22215,
+      "eng": 366,
+      "views": 22138,
+      "eng_per_1k_followers": 16.475,
+      "url": "https://x.com/rayrayweb5/status/2061822433162924413",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "最近越来越觉得世界是个巨大 TradFi 台子😆 股票的风吹来了 #GateStocks ～Gate 现在也可以直接交易股票和ETF资产了，会派真实股息，而且没有合约的持仓成本（没有永续合约的资金费率和CFD 的隔夜费） 还有几个功能细节挺实用的： 1️⃣支持智能检索。一个搜索栏能管所有，比如搜“存储”就能自动跳出dram和海力士的上新公"
+    },
+    {
+      "author": "molly9975019573",
+      "followers": 13939,
+      "eng": 228,
+      "views": 10799,
+      "eng_per_1k_followers": 16.357,
+      "url": "https://x.com/Molly9975019573/status/2062164980678770903",
+      "formats": [
+        "numbered_list",
+        "pnl_flex"
+      ],
+      "text": "论AI Trading哪家强，得看看 @vergex_ai . 1.Verge X与中国大模型第一股智谱 https://t.co/MTLoFwbxO9合作 2.Vergex 获得 Vertex 支持,CZ书中多次提及 3WorldClaw 特朗普家族与 VergeX AI 战略合作 好了实力先摆出来，接下来好好聊聊这个AI到底有哪些优势"
+    },
+    {
+      "author": "0xcrypto_max",
+      "followers": 18516,
+      "eng": 298,
+      "views": 73577,
+      "eng_per_1k_followers": 16.094,
+      "url": "https://x.com/0xcrypto_max/status/2054942351471354342",
+      "formats": [
+        "numbered_list",
+        "daily_recap"
+      ],
+      "text": "太牛逼了TradeXYZ团队，我必须狠狠宣传它 前几天决定狠狠研究美股的时候已经把账户给开好了，今天看到CBRS准备上市到处找有没有盘前可以交易 找了半天在币圈找到了，hyperliquid是个伟大的产品，我这次才真正地理解到，完全卓越 至于这次买CBRS的理由我想的很简单： 1.这东西直接跟openai挂钩了 这里x佬写的很清楚 htt"
+    },
+    {
+      "author": "coinwzh",
+      "followers": 69045,
+      "eng": 1057,
+      "views": 5146,
+      "eng_per_1k_followers": 15.309,
+      "url": "https://x.com/CoinWZH/status/2060571905480954332",
+      "formats": [
+        "other"
+      ],
+      "text": "【每周有奖问答】🎁 ❓问题：CoinW 已上线的 $SPCX 永续合约，最高支持多少倍杠杆？ 1⃣关注 @CoinWZH +转发 2⃣评论留下答案和UID 💰抽3名获胜者空投50 USDT赠金奖励！ ⭐️祝好运！ https://t.co/i28vquhqUJ"
+    },
+    {
+      "author": "zijing",
+      "followers": 21113,
+      "eng": 321,
+      "views": 15242,
+      "eng_per_1k_followers": 15.204,
+      "url": "https://x.com/zijing/status/2062488494673662380",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "BP 证券来了😎刚官宣了美股产品，总得来说就是四个字「合规拉满」 区别于币圈市场上主流的套壳产品， @Backpack_CN 这次的美股用的是 DTCC 结算，享受 UCC 第 8 条保护，这就跟在 IBKR 和嘉信持有股票一样了，用户买到的是享有同等法律权利的真股权 🔅捋了捋有以下几个看点： 1⃣合规底子极硬 采用纽约州法律框架，DTC"
+    },
+    {
+      "author": "pjjin574832",
+      "followers": 18398,
+      "eng": 277,
+      "views": 4773,
+      "eng_per_1k_followers": 15.056,
+      "url": "https://x.com/pjjin574832/status/2062517735587029312",
+      "formats": [
+        "data_drop",
+        "tutorial"
+      ],
+      "text": "现在币圈什么最热，无疑是链上美股，说到链上交易美股，我第一时间就想到了Bitget，链上股票交易，Bitget可以说是币圈第一个吃螃蟹的交易所，这几天深度体验了Bitget美股2.0，聊聊我的最直观的感受。 老实说，第一眼看到万5的手续费我就愣了一下，富途虽然便宜，但这个数字还是有点意外。更绝的是，如果你手里有点BGB，还能再打8折，这样"
+    },
+    {
+      "author": "hyperevm_cn",
+      "followers": 11032,
+      "eng": 166,
+      "views": 4000,
+      "eng_per_1k_followers": 15.047,
+      "url": "https://x.com/HyperEVM_CN/status/2056223418878718282",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "5月18日 Hyperliquid EVM 日报： - Hyperliquid：SpaceX Pre-IPO 永续市场已上线 - TradeXYZ：SPCX 市场上线，初始参考价格为 150 美元 - Liquidiction：下一轮一周期 HIP-4 Battle 将于明日开启 - HIP-4 的 7200 名交易者累计产生 2000 "
+    },
+    {
+      "author": "cryptopilot3226",
+      "followers": 34897,
+      "eng": 521,
+      "views": 10474,
+      "eng_per_1k_followers": 14.93,
+      "url": "https://x.com/CryptoPilot3226/status/2060934307586404416",
+      "formats": [
+        "other"
+      ],
+      "text": "在阿根廷线下门店，用户直接使用 River 发行的稳定币 satUSD 购买披萨，无需现金、银行卡或银行系统，商户可即时收到本地货币 ARS，支付体验与日常消费一致，真实展现了加密支付的落地价值。 借此案例，分析近期 River @RiverdotInc 与 Hyperliquid @HyperliquidX 的合作。 市场多将 $RIV"
+    },
+    {
+      "author": "daidaibtc",
+      "followers": 44397,
+      "eng": 662,
+      "views": 31196,
+      "eng_per_1k_followers": 14.911,
+      "url": "https://x.com/daidaibtc/status/2060238765424361975",
+      "formats": [
+        "other"
+      ],
+      "text": "如果自以为能看出趋势，我觉得一定要养成鼓起勇气逼迫自己早点重仓的行为习惯，而不是在主升加速的时候东买西买的习惯，前者由于大额利润可以完全躺掉尾部风险，而后者恰好就是亏大钱的时候。我只做到了早点，没能做到重仓，3月抄底ewy和中韩 2x海力士就是的，每天都在买，但还是原生家庭的问题了。如果我和川沐一样重仓，现在就不会焦虑了。"
+    },
+    {
+      "author": "webktsr",
+      "followers": 40107,
+      "eng": 595,
+      "views": 11491,
+      "eng_per_1k_followers": 14.835,
+      "url": "https://x.com/webktsr/status/2056582985688707514",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "姐妹们，昨天Binance刚把BTCUSD1永续上线，我刷广场时停下来多看了两眼。 大家聊这个新pair的已经分成两拨了。 一拨还在讨论上线新鲜事，另一拨老玩家已经开始研究那个99.99%的抵押比例。 因为真正玩合约的都清楚，影响仓位体验的，很多时候不是方向对不对，而是交易所到底认不认你手里的钱。 USD1这次最抓人的地方，就在这。 在P"
+    },
+    {
+      "author": "weiyux2021",
+      "followers": 53257,
+      "eng": 773,
+      "views": 37724,
+      "eng_per_1k_followers": 14.515,
+      "url": "https://x.com/weiyux2021/status/2062718293064966587",
+      "formats": [
+        "numbered_list",
+        "pnl_flex"
+      ],
+      "text": "其实大环境越差，越要反其道而行之 1、有人在国内闲鱼和拼多多低价收二手iPhone、华为旧机，简单刷机+换壳后， 挂到东南亚Shopee和Lazada卖，单机赚30-80美金，一个月出货600多台，纯利轻松过万刀。 2、有人刷海外设计师平台（Behance、Dribbble），把欧美最新潮流配色+穿搭手稿下载下来， 用AI翻译成中文+排版"
+    },
+    {
+      "author": "dabai00001",
+      "followers": 11289,
+      "eng": 162,
+      "views": 21838,
+      "eng_per_1k_followers": 14.35,
+      "url": "https://x.com/dabai00001/status/2062711915659530595",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "圆满完成港美股的开户目标： 已经完成了所有的开户目标，其中港股3家，美股4 家（含 BIT）开户。 最后一个第一证券，也在昨天收到了可入金的通知。入2500美元，报销25美元的电汇费。汇入大于1万 才能全额申请补贴，没有太多诚意。 第一证券的入金没有嘉信友好，必须要通过电汇方式才行，也无法绑定Wise。没有美国银行卡，不能使用ACH。入金"
+    },
+    {
+      "author": "greenhandwe",
+      "followers": 28063,
+      "eng": 402,
+      "views": 20236,
+      "eng_per_1k_followers": 14.325,
+      "url": "https://x.com/greenhandwe/status/2061765465572246007",
+      "formats": [
+        "other"
+      ],
+      "text": "做合约最烦的不是没行情，是行情太多看不过来。 BTC动了，ETH在拉，山寨突然异动，切来切去等你看清楚，行情已经走完了。 最近在用 WEEX 新出的「桌面直播模式」，一屏同时盯 20 个币，TradingView 图表直接内嵌，下单、仓位、订单簿随手切。 不用再开十几个标签页来回跳了。 现在市场AI、RWA、Meme、链上美股轮着动，很多"
+    },
+    {
+      "author": "lllddd8888",
+      "followers": 11118,
+      "eng": 159,
+      "views": 10747,
+      "eng_per_1k_followers": 14.301,
+      "url": "https://x.com/lllddd8888/status/2062406213716074722",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "世界杯引爆预测赛道，XBIT杠杆预测或是优质早期机会 传统永续合约赛道红利渐退，加密预测市场却势头迅猛。Polymarket年成交达数十亿美元，Kalshi周成交量从1亿飙升至30亿，已然成为圈内新晋热门赛道。 2026世界杯将至，48支球队、104场赛事，势必引爆预测市场流量。但Polymarket等主流平台仅支持1:1单向押注，只能被"
+    },
+    {
+      "author": "0xyi666",
+      "followers": 22508,
+      "eng": 314,
+      "views": 8983,
+      "eng_per_1k_followers": 13.951,
+      "url": "https://x.com/0xYi666/status/2056209030457196687",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "🚨 USD1 重磅升级！币安首推 BTCUSD1 永续合约，交易闭环彻底打通！🦅 最近币圈又炸锅了！稳定币新星 USD1 直接在币安实现“三合一”大突破，从此一个 USD1 就能搞定计价、保证金、抵押品全部流程。 这就形成了一个完整交易闭环，在币安这个顶级平台里，USD1从“存币”变成了“交易底层货币”，流动性会更强、场景会更多。 这对 "
+    }
+  ]
+}

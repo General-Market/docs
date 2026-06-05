@@ -1,0 +1,1604 @@
+{
+  "cell": "trenches-en",
+  "tweet_count": 1374,
+  "author_count": 867,
+  "format_counts": {
+    "other": 749,
+    "thread_hook": 17,
+    "numbered_list": 24,
+    "tutorial": 25,
+    "meme_short": 305,
+    "pnl_flex": 93,
+    "data_drop": 61,
+    "token_call": 202,
+    "daily_recap": 16,
+    "question_bait": 2
+  },
+  "repeatable_outliers": [
+    {
+      "author": "degenwifstache",
+      "followers": 4580,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 942.0,
+      "p90_eng": 1086,
+      "median_views": 24987.0,
+      "eng_per_1k_followers": 205.677,
+      "score": 619.941,
+      "best_url": "https://x.com/DegenWifStache/status/2054588888455561566",
+      "best_eng": 1086,
+      "pattern_clue": "Here are 69 reasons why $TROLL is going to $69: 1. If you show troll face to anyone in the world, there's a high chance they will recognize it right away 2. Elon Musk cal"
+    },
+    {
+      "author": "mntrenches",
+      "followers": 6254,
+      "format": "thread_hook",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 949.0,
+      "p90_eng": 967,
+      "median_views": 7585.0,
+      "eng_per_1k_followers": 151.743,
+      "score": 321.318,
+      "best_url": "https://x.com/Mntrenches/status/2062218489444847997",
+      "best_eng": 967,
+      "pattern_clue": "Drop your Solana address 👇"
+    },
+    {
+      "author": "mustofa8514_",
+      "followers": 2378,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 103.5,
+      "p90_eng": 118,
+      "median_views": 4276.0,
+      "eng_per_1k_followers": 43.524,
+      "score": 168.282,
+      "best_url": "https://x.com/Mustofa8514_/status/2056948757334507698",
+      "best_eng": 118,
+      "pattern_clue": "WHAT HAPPENED WITH $VIRL TODAY👀 +44% in 24H ~$2M volume on just ~$1.75M MC. That kind of rotation usually means fresh eyes are entering. Narrative is also clean: AI + vir"
+    },
+    {
+      "author": "stitchdegen",
+      "followers": 11330,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 348,
+      "p90_eng": 511,
+      "median_views": 14905,
+      "eng_per_1k_followers": 30.715,
+      "score": 158.112,
+      "best_url": "https://x.com/stitchdegen/status/2057012868990558705",
+      "best_eng": 511,
+      "pattern_clue": "Overall, $SOL ecosystem looks pretty solid today so I’m gonna make a memecoin recap for today boys Just a note : I’ll only be covering projects that I personally see pote"
+    },
+    {
+      "author": "exonyte_",
+      "followers": 1924,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 115.5,
+      "p90_eng": 124,
+      "median_views": 1667.0,
+      "eng_per_1k_followers": 60.031,
+      "score": 149.601,
+      "best_url": "https://x.com/eXonyte_/status/2049282324827697488",
+      "best_eng": 124,
+      "pattern_clue": "15 Live Tools - All primed and working 👁️‍🗨️ and.. the absolute data and Ai hungry beast \"Oracle Vision\" drops soon… With a few dozen paying happy clients using the tools"
+    },
+    {
+      "author": "julianjackhamer",
+      "followers": 12915,
+      "format": "numbered_list",
+      "repeats": 3,
+      "account_posts": 4,
+      "share": 0.75,
+      "median_eng": 889,
+      "p90_eng": 953,
+      "median_views": 2311,
+      "eng_per_1k_followers": 68.835,
+      "score": 140.352,
+      "best_url": "https://x.com/JulianJackhamer/status/2062535350501749023",
+      "best_eng": 953,
+      "pattern_clue": "GIVING AWAY 0.1 $SOL NOW 🚨 $10 can be yours 💸 To enter: 1️⃣ Like &amp; RT 2️⃣ Follow @JulianJackhamer + @Spumpio 3️⃣ Drop your $SOL wallet 👇 https://t.co/eQyPzdqod4"
+    },
+    {
+      "author": "stitchdegen",
+      "followers": 11330,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 340.5,
+      "p90_eng": 348,
+      "median_views": 15896.0,
+      "eng_per_1k_followers": 30.053,
+      "score": 99.943,
+      "best_url": "https://x.com/stitchdegen/status/2062172678698733641",
+      "best_eng": 348,
+      "pattern_clue": "$MAGPIE is one of the most interesting projects I'm watching right now, so let's take a closer look at it 1 : What is MAGPIE? $MAGPIE is not just another memecoin It's a "
+    },
+    {
+      "author": "stitchdegen",
+      "followers": 11330,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 340.5,
+      "p90_eng": 348,
+      "median_views": 15896.0,
+      "eng_per_1k_followers": 30.053,
+      "score": 99.943,
+      "best_url": "https://x.com/stitchdegen/status/2062172678698733641",
+      "best_eng": 348,
+      "pattern_clue": "$MAGPIE is one of the most interesting projects I'm watching right now, so let's take a closer look at it 1 : What is MAGPIE? $MAGPIE is not just another memecoin It's a "
+    },
+    {
+      "author": "stitchdegen",
+      "followers": 11330,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 422.0,
+      "p90_eng": 511,
+      "median_views": 13083.0,
+      "eng_per_1k_followers": 37.246,
+      "score": 99.891,
+      "best_url": "https://x.com/stitchdegen/status/2057012868990558705",
+      "best_eng": 511,
+      "pattern_clue": "Overall, $SOL ecosystem looks pretty solid today so I’m gonna make a memecoin recap for today boys Just a note : I’ll only be covering projects that I personally see pote"
+    },
+    {
+      "author": "spoiledbyspoily",
+      "followers": 7629,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 122.0,
+      "p90_eng": 177,
+      "median_views": 10684.0,
+      "eng_per_1k_followers": 15.992,
+      "score": 80.514,
+      "best_url": "https://x.com/SpoiledBySpoily/status/2059181884341383542",
+      "best_eng": 177,
+      "pattern_clue": "Spoily's top 10 Memecoins Conviction List $BUTTCOIN $14M   target: $25B   Bigger than Doge, Real Creator behind it, Best Memecoin $ASTEROID $88M   target: $35B   Elons li"
+    },
+    {
+      "author": "hijabieth",
+      "followers": 59102,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 1113.0,
+      "p90_eng": 1600,
+      "median_views": 26472.5,
+      "eng_per_1k_followers": 18.832,
+      "score": 64.738,
+      "best_url": "https://x.com/HijabiEth/status/2053087256651628603",
+      "best_eng": 1600,
+      "pattern_clue": "$HANTA hit +10,000% on https://t.co/dyAxNJ2LjW 🧫 Peak was $17M mcap. -Narrative is still alive post-correction. -CT never wastes a headline -Fill Bags to your will. 📍 CA:"
+    },
+    {
+      "author": "mrsolexpert_1",
+      "followers": 64053,
+      "format": "token_call",
+      "repeats": 7,
+      "account_posts": 67,
+      "share": 0.104,
+      "median_eng": 818,
+      "p90_eng": 916,
+      "median_views": 46815,
+      "eng_per_1k_followers": 12.771,
+      "score": 52.045,
+      "best_url": "https://x.com/Mrsolexpert_1/status/2056226504170951068",
+      "best_eng": 916,
+      "pattern_clue": "Discover $WOKEVAC 👈 Hidden Gem 🔥 x1000 Potential 🚀 Meme power is building fast 👀💎 Strong community + massive viral energy 💯 Be ready… $WOKEVAC 👈 ready to explode 🌕🚀 Tired"
+    },
+    {
+      "author": "cryptoking_2020",
+      "followers": 103264,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 713,
+      "p90_eng": 793,
+      "median_views": 37950,
+      "eng_per_1k_followers": 6.905,
+      "score": 50.948,
+      "best_url": "https://x.com/CryptoKing_2020/status/2052853361809260901",
+      "best_eng": 793,
+      "pattern_clue": "$CyberShiba FAM 🐶⚡ A new cyber-themed meme energy is starting to build around $CyberShiba — early eyes are watching as momentum slowly forms. Fresh narrative. Strong meme"
+    },
+    {
+      "author": "ry_king4252",
+      "followers": 40578,
+      "format": "token_call",
+      "repeats": 4,
+      "account_posts": 65,
+      "share": 0.062,
+      "median_eng": 849.0,
+      "p90_eng": 983,
+      "median_views": 33002.5,
+      "eng_per_1k_followers": 20.923,
+      "score": 47.056,
+      "best_url": "https://x.com/ry_king4252/status/2059115775395541237",
+      "best_eng": 983,
+      "pattern_clue": "👶👹 $BABYTROLL is waking up… and the charts are starting to feel it already 🚀 This isn’t just another meme coin — this is the next viral Solana monster preparing for a cra"
+    },
+    {
+      "author": "mrrbitcoin",
+      "followers": 64010,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 278,
+      "p90_eng": 284,
+      "median_views": 19720,
+      "eng_per_1k_followers": 4.343,
+      "score": 39.96,
+      "best_url": "https://x.com/MrrBitcoin/status/2047185990373031961",
+      "best_eng": 284,
+      "pattern_clue": "Hunting for the next 100x gem? 💎👀 Take a look at $LARP on Solana 🔥 CA: HtHknhf3sFPMnEyz8EszVvjGs4pU8fFZXuqTN5C5pump https://t.co/2IHM2f4rhg Charts starting to get interes"
+    },
+    {
+      "author": "100xcryptogems_",
+      "followers": 143880,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 843.5,
+      "p90_eng": 988,
+      "median_views": 33512.5,
+      "eng_per_1k_followers": 5.863,
+      "score": 32.281,
+      "best_url": "https://x.com/100xCryptoGems_/status/2059362527213916248",
+      "best_eng": 988,
+      "pattern_clue": "🚨 STOP SCROLLING 🚨 $GAY is absolutely EXPLODING right now 💥 The memes are insane, the community is wild, and the chart is looking ready for a violent send 🚀🌕 Smart money "
+    },
+    {
+      "author": "_shadow36",
+      "followers": 170038,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 1108.0,
+      "p90_eng": 1338,
+      "median_views": 29280.0,
+      "eng_per_1k_followers": 6.516,
+      "score": 30.805,
+      "best_url": "https://x.com/_Shadow36/status/2061470060590309746",
+      "best_eng": 1338,
+      "pattern_clue": "The mythical 69m bottom🤯 Only occurs once in a milenium A clean 100x to 6.9b Not many understand this. Few. $Troll https://t.co/yywjwfs2N0"
+    },
+    {
+      "author": "9io_dev",
+      "followers": 156,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 4,
+      "share": 1.0,
+      "median_eng": 7.0,
+      "p90_eng": 9,
+      "median_views": 66.0,
+      "eng_per_1k_followers": 7.0,
+      "score": 26.699,
+      "best_url": "https://x.com/9io_Dev/status/2061491675982188630",
+      "best_eng": 9,
+      "pattern_clue": "📡 SMART MONEY RADAR · Daily 🟢 RISK-ON · 54% buy pressure ⚠️ SYS buying (contra signal): TRUMP, RENDER, JTO ✅ Bullish for retail (SYS selling): USDG, USD1, RENDER 109 move"
+    },
+    {
+      "author": "all3in4out",
+      "followers": 25059,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 8,
+      "share": 0.25,
+      "median_eng": 349.5,
+      "p90_eng": 359,
+      "median_views": 10077.0,
+      "eng_per_1k_followers": 13.947,
+      "score": 26.26,
+      "best_url": "https://x.com/All3in4out/status/2062312373281788295",
+      "best_eng": 359,
+      "pattern_clue": "GMGN CT ☕️ A lot of people eventually realize the thing that killed them in DeFi wasn’t being wrong. It was running out of time. The market actually came back.Their thesi"
+    },
+    {
+      "author": "badattrading_",
+      "followers": 53708,
+      "format": "token_call",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 94.0,
+      "p90_eng": 144,
+      "median_views": 10227.0,
+      "eng_per_1k_followers": 1.75,
+      "score": 25.142,
+      "best_url": "https://x.com/badattrading_/status/2058960222316626316",
+      "best_eng": 144,
+      "pattern_clue": "$SQUIDWARD (CA EGuzeLqKoQAbdwMpG31neYNtFQ8KH8midraQrJQZpump) doesn't have snipers and insiders per devsnightmare. lexaproside.sol (not Lexapro), WilliamsSeminem, Sheep, J"
+    },
+    {
+      "author": "badattrading_",
+      "followers": 53708,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 5,
+      "share": 0.8,
+      "median_eng": 94.0,
+      "p90_eng": 144,
+      "median_views": 10227.0,
+      "eng_per_1k_followers": 1.75,
+      "score": 25.142,
+      "best_url": "https://x.com/badattrading_/status/2058960222316626316",
+      "best_eng": 144,
+      "pattern_clue": "$SQUIDWARD (CA EGuzeLqKoQAbdwMpG31neYNtFQ8KH8midraQrJQZpump) doesn't have snipers and insiders per devsnightmare. lexaproside.sol (not Lexapro), WilliamsSeminem, Sheep, J"
+    },
+    {
+      "author": "all3in4out",
+      "followers": 25059,
+      "format": "tutorial",
+      "repeats": 2,
+      "account_posts": 8,
+      "share": 0.25,
+      "median_eng": 297.0,
+      "p90_eng": 359,
+      "median_views": 10165.0,
+      "eng_per_1k_followers": 11.852,
+      "score": 24.487,
+      "best_url": "https://x.com/All3in4out/status/2062312373281788295",
+      "best_eng": 359,
+      "pattern_clue": "GMGN CT ☕️ A lot of people eventually realize the thing that killed them in DeFi wasn’t being wrong. It was running out of time. The market actually came back.Their thesi"
+    },
+    {
+      "author": "pumpfuneco",
+      "followers": 39438,
+      "format": "data_drop",
+      "repeats": 7,
+      "account_posts": 64,
+      "share": 0.109,
+      "median_eng": 231,
+      "p90_eng": 786,
+      "median_views": 4871,
+      "eng_per_1k_followers": 5.857,
+      "score": 19.019,
+      "best_url": "https://x.com/PumpfunEco/status/2054926752074604638",
+      "best_eng": 786,
+      "pattern_clue": "Most traded pump fun coins over the last 24 hours by volume 👇 $TROLL $10.9M $Fartcoin $7.66M $RKC $7.18M $WORLDCUP $5.08M $HANTA $3.63M https://t.co/VZOMjdzmmv"
+    },
+    {
+      "author": "xrp_avengers",
+      "followers": 80674,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 189,
+      "p90_eng": 533,
+      "median_views": 2867,
+      "eng_per_1k_followers": 2.343,
+      "score": 17.999,
+      "best_url": "https://x.com/XRP_Avengers/status/2054136790445850988",
+      "best_eng": 533,
+      "pattern_clue": "Exciting news alert! The CEO of Mastercard has just announced that Ripple is set to replace Swift. Talks are already underway to utilize #XRPL for transactions. The #XRPL"
+    },
+    {
+      "author": "cokiramirez",
+      "followers": 932547,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 913.5,
+      "p90_eng": 1327,
+      "median_views": 95961.0,
+      "eng_per_1k_followers": 0.98,
+      "score": 17.938,
+      "best_url": "https://x.com/cokiramirez/status/2053799113343283621",
+      "best_eng": 1327,
+      "pattern_clue": "$Trump80th 👀🇺🇸 early meme coins move the fastest when community gets active 🔥 ⚡ strong meme narrative 🚀 solana energy building 💎 still early X link https://t.co/6Lr9Y1G73"
+    },
+    {
+      "author": "pumpfuneco",
+      "followers": 39438,
+      "format": "pnl_flex",
+      "repeats": 9,
+      "account_posts": 64,
+      "share": 0.141,
+      "median_eng": 122,
+      "p90_eng": 349,
+      "median_views": 4051,
+      "eng_per_1k_followers": 3.093,
+      "score": 16.207,
+      "best_url": "https://x.com/PumpfunEco/status/2061559117177565282",
+      "best_eng": 349,
+      "pattern_clue": "These pump fun coins are gaining momentum! 🔥 $Percolator +49% $COPPERINU +31% $TripleT +15% $USDUC +13% $LMAO! +11% https://t.co/iJ9rwo2rBy"
+    },
+    {
+      "author": "gem_insider",
+      "followers": 167198,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 464.0,
+      "p90_eng": 803,
+      "median_views": 20418.0,
+      "eng_per_1k_followers": 2.775,
+      "score": 16.125,
+      "best_url": "https://x.com/gem_insider/status/2061645227514089699",
+      "best_eng": 803,
+      "pattern_clue": "wtffff i just posted about the announcement yesterday & $AMERICA pumped 50% overnight!! 😱 i'm not going to pretend that's a coincidence. the market is finally reading wha"
+    },
+    {
+      "author": "pumpfuneco",
+      "followers": 39438,
+      "format": "token_call",
+      "repeats": 7,
+      "account_posts": 64,
+      "share": 0.109,
+      "median_eng": 122,
+      "p90_eng": 214,
+      "median_views": 3701,
+      "eng_per_1k_followers": 3.093,
+      "score": 13.585,
+      "best_url": "https://x.com/PumpfunEco/status/2061683077785481427",
+      "best_eng": 214,
+      "pattern_clue": "JUST IN: $three hits a new all-time high of $5M market cap! 🔥 https://t.co/UOQNm805FR"
+    },
+    {
+      "author": "1000xalphapicks",
+      "followers": 1426,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 5.0,
+      "p90_eng": 7,
+      "median_views": 52.5,
+      "eng_per_1k_followers": 3.506,
+      "score": 10.551,
+      "best_url": "https://x.com/1000XALPHAPICKS/status/2062870961540534393",
+      "best_eng": 7,
+      "pattern_clue": "$FINE printing again 🚀📈 +132.14% secured 💰 TG stays winning 🍾🔥 CA: CPV5kijeSj5ns5vWgH7attMfhKGQLaen2wXeqCDjpump #Solana #Crypto https://t.co/WiEYmMuOoh"
+    },
+    {
+      "author": "madapescall",
+      "followers": 83714,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 73.0,
+      "p90_eng": 74,
+      "median_views": 2602.5,
+      "eng_per_1k_followers": 0.872,
+      "score": 10.067,
+      "best_url": "https://x.com/madapescall/status/2059217701349015928",
+      "best_eng": 74,
+      "pattern_clue": "$PEPEWIFHAT - on SOL. OG. ''First Pepe on Pumpfun (Possibly launched by Pumpfun)'' Good branding and ticker. Degen. Always do your own research. Ad https://t.co/0b7Gpvrip"
+    },
+    {
+      "author": "alphaanalysisog",
+      "followers": 11430,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 10,
+      "share": 0.4,
+      "median_eng": 3.0,
+      "p90_eng": 7,
+      "median_views": 1784.5,
+      "eng_per_1k_followers": 0.262,
+      "score": 9.173,
+      "best_url": "https://x.com/alphaanalysisog/status/2062147444432060737",
+      "best_eng": 7,
+      "pattern_clue": "2nd JUNE TOP GEM ALERT. 🚨 $SOL777 4x 🔥 $97.4K To $410.5K $GYM 8x 🔥 $31.6K To $243.0K $Reeve 3x 🔥 $45.1K To $139.6K $DATBIHGAH 9x 🔥 $96.8K To $909.8K $HUNTER 3x 🔥 $32.6K T"
+    },
+    {
+      "author": "oxansemsol",
+      "followers": 61182,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 60.5,
+      "p90_eng": 61,
+      "median_views": 51.0,
+      "eng_per_1k_followers": 0.989,
+      "score": 8.459,
+      "best_url": "https://x.com/oxansemsol/status/2062876369223315855",
+      "best_eng": 61,
+      "pattern_clue": "I told you to buy $SOLDONTRUG at 30k mcap ( it did 15x ) Now buy this SATOSHI LGNS Only 7 k marketcap We are shilling now, don’t join late Ca 7F1VxXEXd5QANh65TsXJsXDqcoQs"
+    },
+    {
+      "author": "memx_caller",
+      "followers": 3628,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 3.5,
+      "p90_eng": 6,
+      "median_views": 451.5,
+      "eng_per_1k_followers": 0.965,
+      "score": 7.95,
+      "best_url": "https://x.com/memx_caller/status/2060380232821964824",
+      "best_eng": 6,
+      "pattern_clue": "$MOMO Gsks4bWgKUCaBA6yzQSrBCAmbLbEtLEHXMMaUshxpump #Eth #memecoin #memecoin1000x https://t.co/s690ohhj0P"
+    },
+    {
+      "author": "denverowense",
+      "followers": 254,
+      "format": "token_call",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 1.5,
+      "p90_eng": 3,
+      "median_views": 12.0,
+      "eng_per_1k_followers": 1.5,
+      "score": 4.575,
+      "best_url": "https://x.com/DenverOwense/status/2062871262666666401",
+      "best_eng": 3,
+      "pattern_clue": "💡 Sm💰 buys-&gt;11.85SOL 🚀 ├💎 : $SUMA ├💹 CA: 3jowraQBjdoCHGGxNfBPTLG4tvCmEUyJj8fhTSyVu3ii ├💯 Cap : 14.9M ├Energetic, supportive, and creative... 🤖 Check 👉 https://t.co/l7Z"
+    },
+    {
+      "author": "alphaanalysisog",
+      "followers": 11430,
+      "format": "token_call",
+      "repeats": 9,
+      "account_posts": 10,
+      "share": 0.9,
+      "median_eng": 0,
+      "p90_eng": 31,
+      "median_views": 224,
+      "eng_per_1k_followers": 0.0,
+      "score": 1.895,
+      "best_url": "https://x.com/alphaanalysisog/status/2061289983445754112",
+      "best_eng": 31,
+      "pattern_clue": "🚨 MEMECOIN GEM UPDATES $SOLANA 🚀 4x From Private Gem Alert. MC: 37.3k to 158k 💊 Contract: GofmJoa598m6f67PS3mszhRSDf5hJWP972EGmAn9pump 🐸 GMGN: https://t.co/HAx9Onv5ps 🤖 M"
+    },
+    {
+      "author": "autorunsol",
+      "followers": 5871,
+      "format": "token_call",
+      "repeats": 13,
+      "account_posts": 16,
+      "share": 0.812,
+      "median_eng": 0,
+      "p90_eng": 1,
+      "median_views": 93,
+      "eng_per_1k_followers": 0.0,
+      "score": 1.646,
+      "best_url": "https://x.com/AutorunSOL/status/2060773645052494118",
+      "best_eng": 1,
+      "pattern_clue": "⭐ An Axiom trader just made +1.48 SOL ($126) PNL on $MATCHA! H1B9mTERFwAsch9zC9dDLGmxokAsNHkDy9LRVB5ipump 💎 Trade memecoins on Axiom – https://t.co/03kGM6wZXi 📌 For more "
+    },
+    {
+      "author": "nexusnautitw1t",
+      "followers": 179,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 4,
+      "share": 0.75,
+      "median_eng": 0,
+      "p90_eng": 0,
+      "median_views": 3,
+      "eng_per_1k_followers": 0.0,
+      "score": 0.156,
+      "best_url": "https://x.com/NexusNautitw1t/status/2062876109423751654",
+      "best_eng": 0,
+      "pattern_clue": "real ones score before they ape. $Willow 👇 2VkpEcZ7zUVWZ8RUPuhKjaARw2vPUnhV2dcmco7spump https://t.co/5nZzrmO2HG"
+    },
+    {
+      "author": "thr3shold4qzd",
+      "followers": 208,
+      "format": "token_call",
+      "repeats": 3,
+      "account_posts": 3,
+      "share": 1.0,
+      "median_eng": 0,
+      "p90_eng": 0,
+      "median_views": 1,
+      "eng_per_1k_followers": 0.0,
+      "score": 0.062,
+      "best_url": "https://x.com/Thr3shold4qzd/status/2062881843847004609",
+      "best_eng": 0,
+      "pattern_clue": "fade the shills, trust the scan. $MIM 89BZ5RU212yKr3iFdJHyn3ZsR37bS4s8TbmVb2yApump https://t.co/PvQUfS4PVD"
+    }
+  ],
+  "single_post_outliers": [
+    {
+      "author": "_iamhabeeb",
+      "followers": 3383,
+      "eng": 41275,
+      "views": 211271,
+      "eng_per_1k_followers": 12200.709,
+      "url": "https://x.com/_iamhabeeb/status/2061120207154708859",
+      "formats": [
+        "tutorial",
+        "meme_short"
+      ],
+      "text": "i go later guide gan, i believe in myself dię"
+    },
+    {
+      "author": "pumqfum",
+      "followers": 1676,
+      "eng": 11226,
+      "views": 23764,
+      "eng_per_1k_followers": 6698.091,
+      "url": "https://x.com/pumqfum/status/2062618364854374453",
+      "formats": [
+        "token_call"
+      ],
+      "text": "@Pumpfun The community is encouraged to select the date for the next $PUMP rewards round. All who vote actively will unlock extra allocation upon launch. Learn more: http"
+    },
+    {
+      "author": "neesh774",
+      "followers": 4091,
+      "eng": 24015,
+      "views": 2436102,
+      "eng_per_1k_followers": 5870.203,
+      "url": "https://x.com/Neesh774/status/2061477313020116998",
+      "formats": [
+        "other"
+      ],
+      "text": "\"What makes yours better\" i'm never deleting this app https://t.co/fOy3TSUjZ2"
+    },
+    {
+      "author": "orevazsn",
+      "followers": 39703,
+      "eng": 133286,
+      "views": 2091861,
+      "eng_per_1k_followers": 3357.076,
+      "url": "https://x.com/OrevaZSN/status/2061060249209974804",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "App idea: Shazam but for the sound my car is making."
+    },
+    {
+      "author": "utdzaa",
+      "followers": 3667,
+      "eng": 11438,
+      "views": 451384,
+      "eng_per_1k_followers": 3119.171,
+      "url": "https://x.com/UtdZaa/status/2062627593535566228",
+      "formats": [
+        "other"
+      ],
+      "text": "Dear @UTDTrey, I used to tweet for myself with barely anyone seeing my posts. Then one day you replied to one of them, and somehow that made me relevant fr 😭 5M impressio"
+    },
+    {
+      "author": "gminoprio",
+      "followers": 2712,
+      "eng": 6591,
+      "views": 1421316,
+      "eng_per_1k_followers": 2430.31,
+      "url": "https://x.com/gminoprio/status/2062566824437588312",
+      "formats": [
+        "other"
+      ],
+      "text": "They literally just made the black mirror episode https://t.co/u3j5A8OmAq"
+    },
+    {
+      "author": "enddotfun",
+      "followers": 8003,
+      "eng": 14759,
+      "views": 58649,
+      "eng_per_1k_followers": 1844.183,
+      "url": "https://x.com/enddotfun/status/2061947209097064625",
+      "formats": [
+        "other"
+      ],
+      "text": "➡️ $1000 FLASH GIVEAWAY! - LIKE / RT / FOLLOW @endfunmoments - MUST REPLY YOUR SOL ADDRESS Rolling in 48 hours! 5 winners of $200 USD! https://t.co/61XiRA0rUv"
+    },
+    {
+      "author": "jordantra",
+      "followers": 817,
+      "eng": 1656,
+      "views": 85210,
+      "eng_per_1k_followers": 1656.0,
+      "url": "https://x.com/JordanTRA/status/2062621354042822844",
+      "formats": [
+        "other"
+      ],
+      "text": "@Pumpfun \"So we watched this movie and thought it would be a good idea\" https://t.co/RmdsM8Mffi"
+    },
+    {
+      "author": "xeffy_io",
+      "followers": 124856,
+      "eng": 165553,
+      "views": 483230,
+      "eng_per_1k_followers": 1325.951,
+      "url": "https://x.com/Xeffy_io/status/2061007479996383477",
+      "formats": [
+        "token_call"
+      ],
+      "text": "Xeffy's Community MiniApp has launched! 🚀 Join us: https://t.co/hmAJIkcSfD Access the Xeffy app, become an early contributor, and contribute to RWA mass adoption! Early p"
+    },
+    {
+      "author": "hthieblot",
+      "followers": 57748,
+      "eng": 67989,
+      "views": 4622991,
+      "eng_per_1k_followers": 1177.339,
+      "url": "https://x.com/hthieblot/status/2062037035918180574",
+      "formats": [
+        "question_bait",
+        "meme_short"
+      ],
+      "text": "Anyone who surfed the early web between 1995-2010. What’s the one website/app you still think about?"
+    },
+    {
+      "author": "fotiadynata",
+      "followers": 615,
+      "eng": 879,
+      "views": 10056,
+      "eng_per_1k_followers": 879.0,
+      "url": "https://x.com/fotiadynata/status/2056921311981797740",
+      "formats": [
+        "other"
+      ],
+      "text": "phainaxa giveaway alert! I will be giving away one (1) bundle for one person. rules : - rt &amp; like only (no need to follow) - not phainaxa antis (I'll check🤨) - must b"
+    },
+    {
+      "author": "gravitycircuit",
+      "followers": 18195,
+      "eng": 13428,
+      "views": 244497,
+      "eng_per_1k_followers": 738.005,
+      "url": "https://x.com/GravityCircuit/status/2061508097588212189",
+      "formats": [
+        "other"
+      ],
+      "text": "To go along with the sequel announcement: for a limited time, the first game is free to grab on Steam! 🎮 ✨That's FREE as in F-R-E-E, no strings attached!✨ Claim the game "
+    },
+    {
+      "author": "pumpfuneco",
+      "followers": 39438,
+      "eng": 28907,
+      "views": 12196306,
+      "eng_per_1k_followers": 732.973,
+      "url": "https://x.com/PumpfunEco/status/2062557311739039784",
+      "formats": [
+        "other"
+      ],
+      "text": "RT @Pumpfun: Introducing pump fun GO: Pay ANYONE to do ANYTHING Create &amp; complete bounties for ANY task and leverage the power of humans &amp;…"
+    },
+    {
+      "author": "mclovinxbt",
+      "followers": 2444,
+      "eng": 1783,
+      "views": 7676,
+      "eng_per_1k_followers": 729.542,
+      "url": "https://x.com/mclovinxbt/status/2062244657849905153",
+      "formats": [
+        "other"
+      ],
+      "text": "Let’s do a 1 sol giveaway to 2 people Make sure you are following @mclovinxbt Tag 2 friends as a bonus entry, winner chosen in 24h ⏰ https://t.co/KmxveddCUP"
+    },
+    {
+      "author": "bumbl3_bri3",
+      "followers": 1102,
+      "eng": 740,
+      "views": 9430,
+      "eng_per_1k_followers": 671.506,
+      "url": "https://x.com/Bumbl3_bri3/status/2061627592331972672",
+      "formats": [
+        "other"
+      ],
+      "text": "Alright I've added the first three emote packs I've made to my VGen if anyone would like to check it out! I've even added them as a bundle for 20% off for those who're in"
+    },
+    {
+      "author": "macesendu",
+      "followers": 377,
+      "eng": 645,
+      "views": 40191,
+      "eng_per_1k_followers": 645.0,
+      "url": "https://x.com/MaceSendu/status/2062558869088526747",
+      "formats": [
+        "other"
+      ],
+      "text": "@Pumpfun This definitely can’t go wrong LMAO! https://t.co/Zhk5WkNw3U"
+    },
+    {
+      "author": "realvinnyvh",
+      "followers": 4925,
+      "eng": 2839,
+      "views": 17354,
+      "eng_per_1k_followers": 576.447,
+      "url": "https://x.com/RealVinnyVH/status/2060444176693465297",
+      "formats": [
+        "pnl_flex",
+        "thread_hook"
+      ],
+      "text": "HAPPY FRIDAY GIVEAWAY!! 🎉 2x$15 SOL   Rolling in 3 days 🗓️ 3 winners if I get to 5k followers by Monday. -Follow @RealVinnyVH -Like &amp; RT -Turn on notifications 🔔 DROP"
+    },
+    {
+      "author": "ppcysemi",
+      "followers": 620,
+      "eng": 543,
+      "views": 2033,
+      "eng_per_1k_followers": 543.0,
+      "url": "https://x.com/ppcysemi/status/2060692643232067846",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "วันนี้ที่รอคอย llจก 50 แฟนลิ้วรีเลยย 🥳 #บนลวพ"
+    },
+    {
+      "author": "meaningfulbuddy",
+      "followers": 920,
+      "eng": 478,
+      "views": 18505,
+      "eng_per_1k_followers": 478.0,
+      "url": "https://x.com/MeaningfulBuddy/status/2062613290744774853",
+      "formats": [
+        "other"
+      ],
+      "text": "@Pumpfun This is so fucking stupid in virtually unlimited ways… please immediately make this illegal The age of assholes everywhere is upon us"
+    },
+    {
+      "author": "thewattenhofer",
+      "followers": 2020,
+      "eng": 913,
+      "views": 169586,
+      "eng_per_1k_followers": 451.98,
+      "url": "https://x.com/TheWattenhofer/status/2053188053926068688",
+      "formats": [
+        "other"
+      ],
+      "text": "We just had the first successful Alpenswitch on our Alpenglow community cluster! The @solana finalization time improved 100x. Thanks to everybody participating. Watch it "
+    },
+    {
+      "author": "mrwinify",
+      "followers": 12305,
+      "eng": 5334,
+      "views": 21568,
+      "eng_per_1k_followers": 433.482,
+      "url": "https://x.com/MrWinify/status/2060411371360055592",
+      "formats": [
+        "other"
+      ],
+      "text": "$500 LuckyCoin X Winify Community Giveaway 5 Winners   $100 #SOL each, sent to your addy. ✅Follow me, @WinifyGG &amp; @luckycoin_com ✅Retweet ✅Tag 2 🗓️Rolls on the 10th o"
+    },
+    {
+      "author": "cryptobeast_7",
+      "followers": 2056,
+      "eng": 884,
+      "views": 28518,
+      "eng_per_1k_followers": 429.961,
+      "url": "https://x.com/CryptoBeast_7/status/2054242018260570413",
+      "formats": [
+        "other"
+      ],
+      "text": "A fresh wallet funded by a $10M+ whale wallet is now nonstop aping into $TROLL - Multiple buys - Fresh wallet - Smart money flowing quietly People still think this is jus"
+    },
+    {
+      "author": "vveefo",
+      "followers": 44847,
+      "eng": 19259,
+      "views": 7285278,
+      "eng_per_1k_followers": 429.438,
+      "url": "https://x.com/vveefo/status/2061771965468205112",
+      "formats": [
+        "other"
+      ],
+      "text": "this guy threatened to kill a goldfish if his pumpfun coin didn’t go to 1 million marketcap it end up going to 7 million he made $255.000 🥹 https://t.co/IW99Dsq5Rc"
+    },
+    {
+      "author": "lmfaovenom",
+      "followers": 942,
+      "eng": 410,
+      "views": 13919,
+      "eng_per_1k_followers": 410.0,
+      "url": "https://x.com/lmfaovenom/status/2055631801196884046",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "If you’re in crypto right now & reading this post then you should make atleast six figures within the next year And if you don’t then you’re genuinely a failure bc its so"
+    },
+    {
+      "author": "filipsmemecabal",
+      "followers": 1087,
+      "eng": 438,
+      "views": 8720,
+      "eng_per_1k_followers": 402.944,
+      "url": "https://x.com/FilipsMemeCabal/status/2052815530877128843",
+      "formats": [
+        "other"
+      ],
+      "text": "Set a reminder for my upcoming Space! https://t.co/LIIVYEpdvB $GAYTES - PILL GAYTES ON SOLANA. #Solana #pumpfun #community @PillGaytes"
+    },
+    {
+      "author": "s_agarwal0402",
+      "followers": 648,
+      "eng": 383,
+      "views": 16437,
+      "eng_per_1k_followers": 383.0,
+      "url": "https://x.com/S_Agarwal0402/status/2062848323426640201",
+      "formats": [
+        "other"
+      ],
+      "text": "Excited to launch https://t.co/3sOvW8qoW0 Draft an all-time team from random IPL teams, and try to go unbeaten in the league stage. Inspired by the viral 82-0 app https:/"
+    },
+    {
+      "author": "xeffy_io",
+      "followers": 124856,
+      "eng": 47069,
+      "views": 48106,
+      "eng_per_1k_followers": 376.986,
+      "url": "https://x.com/Xeffy_io/status/2062783946954527223",
+      "formats": [
+        "other"
+      ],
+      "text": "Xeffy Mini App Surpasses 100K Users! 🔥 Various updates are coming soon!! https://t.co/F2KePkD8bS"
+    },
+    {
+      "author": "daylybread",
+      "followers": 739,
+      "eng": 361,
+      "views": 4939,
+      "eng_per_1k_followers": 361.0,
+      "url": "https://x.com/DaylyBread/status/2062190310369702394",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Every day, billions of people buy food. Coffee. Bread. Rice. Snacks. Fast food. What feels like a simple meal is actually one of the biggest industries on Earth. And yet,"
+    },
+    {
+      "author": "thisisseunn",
+      "followers": 12428,
+      "eng": 4430,
+      "views": 20915,
+      "eng_per_1k_followers": 356.453,
+      "url": "https://x.com/thisisseunn/status/2062225272116547873",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "$50 SOL Giveaway - Follow @Voltlx 🔔 - like + rt + Comment SOL wallet Winners 24hrs."
+    },
+    {
+      "author": "yugomarsal",
+      "followers": 4260,
+      "eng": 1482,
+      "views": 15729,
+      "eng_per_1k_followers": 347.887,
+      "url": "https://x.com/yugomarsal/status/2061723167077417441",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "i need to onboard as many new people as possible to TON drop your wallet address, will send some TON for trenching"
+    },
+    {
+      "author": "thememeshunterx",
+      "followers": 9534,
+      "eng": 3077,
+      "views": 581640,
+      "eng_per_1k_followers": 322.74,
+      "url": "https://x.com/thememeshunterx/status/2062603165522874495",
+      "formats": [
+        "other"
+      ],
+      "text": "Wow this new @Pumpfun update is insane This guy just opened a $690K bounty Should I try it?? 🤯 https://t.co/f7Oc1vctqN"
+    },
+    {
+      "author": "magicmadhouse",
+      "followers": 24984,
+      "eng": 8006,
+      "views": 120875,
+      "eng_per_1k_followers": 320.445,
+      "url": "https://x.com/magicmadhouse/status/2052783782004961576",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "🚨5x POKEMON ASCENDED HEROES BOOSTER BUNDLE GIVEAWAY🚨 How to enter: Follow @MagicMadhouse Like & Repost/Retweet this post Tag a friend UK ONLY Please Read: We will be givi"
+    },
+    {
+      "author": "idrawsol2",
+      "followers": 272,
+      "eng": 307,
+      "views": 17149,
+      "eng_per_1k_followers": 307.0,
+      "url": "https://x.com/idrawsol2/status/2062510267766919567",
+      "formats": [
+        "token_call"
+      ],
+      "text": "Solana is going to 0. The trenches need a new animal runner. A pig. A pig pegged to the dollar. peg. peg is pegged to the dollar but peg &gt; dollar The main USDC animal "
+    },
+    {
+      "author": "tegbotsystem",
+      "followers": 540,
+      "eng": 292,
+      "views": 2820,
+      "eng_per_1k_followers": 292.0,
+      "url": "https://x.com/tegbotsystem/status/2055679105387921904",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "🚀 INTRODUCING #TEGTREND, REAL VISIBILITY FOR REAL PROJECTS Promote your token directly inside Telegram communities using the official #TEGBOTS Trending System ⚡ 📈 Get FRE"
+    },
+    {
+      "author": "damola_88",
+      "followers": 1780,
+      "eng": 513,
+      "views": 4861,
+      "eng_per_1k_followers": 288.202,
+      "url": "https://x.com/Damola_88/status/2057365632526553453",
+      "formats": [
+        "other"
+      ],
+      "text": "On May 22, 2026 in Almaty, Kazakhstan at the Swissôtel Wellness Resort Alatau. The @Solana Summit by @SuperteamKZ is shaping up to be one of the most important Solana-foc"
+    },
+    {
+      "author": "chartup_io",
+      "followers": 4461,
+      "eng": 1265,
+      "views": 7080,
+      "eng_per_1k_followers": 283.569,
+      "url": "https://x.com/chartup_io/status/2061866026594091011",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "ChartUp: Top-rated Solana volume bot and developer tools for DEX liquidity, maker activity, and holder management: ➡️ Jito Volume Bot ➡️ Organic Volume Bot ➡️ Fast/Organi"
+    },
+    {
+      "author": "tinychubsx",
+      "followers": 1072,
+      "eng": 300,
+      "views": 1432,
+      "eng_per_1k_followers": 279.851,
+      "url": "https://x.com/TinychubsX/status/2059346315327275246",
+      "formats": [
+        "pnl_flex",
+        "data_drop",
+        "thread_hook"
+      ],
+      "text": "Adrena Overview @AdrenaProtocol is a Solana-based peer-to-pool perpetual and spot DEX offering up to 100x leverage, zero price impact through oracle pricing, and no liqui"
+    },
+    {
+      "author": "just_johnny4",
+      "followers": 4504,
+      "eng": 1225,
+      "views": 11481,
+      "eng_per_1k_followers": 271.98,
+      "url": "https://x.com/just_johnny4/status/2056965390224289817",
+      "formats": [
+        "other"
+      ],
+      "text": "Kazakhstan is about to host one of the most important @solana gatherings to date, where the conversation moves beyond hype and into real economic infrastructure. On Frida"
+    },
+    {
+      "author": "lyxxarc",
+      "followers": 12660,
+      "eng": 3175,
+      "views": 20815,
+      "eng_per_1k_followers": 250.79,
+      "url": "https://x.com/LyxxArc/status/2061772351390265669",
+      "formats": [
+        "other"
+      ],
+      "text": "$30 in $SOL‼️ •Follow @TrapstarXBT 🛎 RT/Like/drop $SOL addys (24 Hours) ————— [Paid Promotion   NFA   DYOR]"
+    },
+    {
+      "author": "trendotch",
+      "followers": 2732,
+      "eng": 675,
+      "views": 72488,
+      "eng_per_1k_followers": 247.072,
+      "url": "https://x.com/trendotch/status/2057419132144902468",
+      "formats": [
+        "other"
+      ],
+      "text": "Memecoins are outdated. The trenches are ready to evolve, so we’re building the largest Attention Market on @solana. A new environment, where Bundlers, Multi-Wallets, Mul"
+    },
+    {
+      "author": "degenwifstache",
+      "followers": 4580,
+      "eng": 1086,
+      "views": 16799,
+      "eng_per_1k_followers": 237.118,
+      "url": "https://x.com/DegenWifStache/status/2054588888455561566",
+      "formats": [
+        "numbered_list",
+        "token_call",
+        "pnl_flex",
+        "daily_recap",
+        "data_drop"
+      ],
+      "text": "Here are 69 reasons why $TROLL is going to $69: 1. If you show troll face to anyone in the world, there's a high chance they will recognize it right away 2. Elon Musk cal"
+    },
+    {
+      "author": "perpadfun",
+      "followers": 1607,
+      "eng": 368,
+      "views": 115599,
+      "eng_per_1k_followers": 228.998,
+      "url": "https://x.com/perpadfun/status/2059192164916068511",
+      "formats": [
+        "other"
+      ],
+      "text": "60+ new markets are live on @perpadfun Degen Mode with leverage up to 100x. Every tokens perp position is now backed by @Solana's perps router @ImperialPerps 👑◎ One unifi"
+    },
+    {
+      "author": "thisisseunn",
+      "followers": 12428,
+      "eng": 2750,
+      "views": 9701,
+      "eng_per_1k_followers": 221.275,
+      "url": "https://x.com/thisisseunn/status/2062551417739411861",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "$20 SOL Giveaway - Follow @K_Qagency 🔔 - like + rt + Comment SOL wallet Winners 12h."
+    },
+    {
+      "author": "cryptohako",
+      "followers": 27309,
+      "eng": 5948,
+      "views": 34259,
+      "eng_per_1k_followers": 217.804,
+      "url": "https://x.com/cryptohako/status/2060876647641894954",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "$100 SOL GIVEAWAY - like, rt &amp; follow @RealFish - drop sol addy 2 winner get $50 in 24 hours."
+    },
+    {
+      "author": "dexblocker",
+      "followers": 3015,
+      "eng": 634,
+      "views": 1541,
+      "eng_per_1k_followers": 210.282,
+      "url": "https://x.com/DexBlocker/status/2058146257286332494",
+      "formats": [
+        "data_drop"
+      ],
+      "text": "Just registered for the Solana Summit Germany After reviewing the schedule, it’s tough to call this \"just another crypto conference.\" On June 13, Berlin will host those w"
+    },
+    {
+      "author": "paperapefun",
+      "followers": 97,
+      "eng": 203,
+      "views": 2269,
+      "eng_per_1k_followers": 203.0,
+      "url": "https://x.com/PaperApeFun/status/2061965498162508011",
+      "formats": [
+        "other"
+      ],
+      "text": "every cycle the same thing happens millions of new people discover crypto, ape into a coin they found 30 seconds ago, lose money, and leave thinking the whole space is a "
+    },
+    {
+      "author": "askarimetals",
+      "followers": 1768,
+      "eng": 354,
+      "views": 34898,
+      "eng_per_1k_followers": 200.226,
+      "url": "https://x.com/AskariMetals/status/2062082896459125189",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "May was a productive month for Askari Metals (ASX: AS2) as we continued advancing exploration activities across the Uis Project in Namibia. ➤ High-grade polymetallic resu"
+    },
+    {
+      "author": "officialpetpeto",
+      "followers": 66,
+      "eng": 196,
+      "views": 2797,
+      "eng_per_1k_followers": 196.0,
+      "url": "https://x.com/OfficialPetpeto/status/2047729738693714416",
+      "formats": [
+        "other"
+      ],
+      "text": "$PETO just launched 🚀 Fair launch. No insiders. Community driven. You’re still early 👀 Now Live on https://t.co/jotzzF0jG2 #PETO #memecoin #crypto #solana #100x #altcoins"
+    },
+    {
+      "author": "solanaswaggy",
+      "followers": 3669,
+      "eng": 696,
+      "views": 7839,
+      "eng_per_1k_followers": 189.697,
+      "url": "https://x.com/SolanaSwaggy/status/2052743242878165428",
+      "formats": [
+        "other"
+      ],
+      "text": "Day 90 - Made 42 SOL! AMAZING DAY! Cooked most of it on \"Aliens are real\" i called this even before they releazed the UFO Files, chat cooked aswell today, SO GRATEFUL! 🙏💙"
+    },
+    {
+      "author": "bull_100x",
+      "followers": 194,
+      "eng": 188,
+      "views": 24944,
+      "eng_per_1k_followers": 188.0,
+      "url": "https://x.com/Bull_100X/status/2061771581538656506",
+      "formats": [
+        "other"
+      ],
+      "text": "@solana yeah you're right https://t.co/uiYJcf73Nz"
+    },
+    {
+      "author": "xiamthereaper",
+      "followers": 2914,
+      "eng": 545,
+      "views": 1957,
+      "eng_per_1k_followers": 187.028,
+      "url": "https://x.com/xIamTheReaper/status/2062861542920528201",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "drop sol addy real quick #giveaway"
+    },
+    {
+      "author": "pampammonad",
+      "followers": 258,
+      "eng": 185,
+      "views": 2871,
+      "eng_per_1k_followers": 185.0,
+      "url": "https://x.com/PamPamMonad/status/2060742203937345887",
+      "formats": [
+        "token_call",
+        "data_drop"
+      ],
+      "text": "PamPam 48h post launch details: ✅ Every day a New ATH - 109k MC so far ✅ Bulliest chart and healthiest PA possible ✅ Dev wallet supply (currently holding 12,200$) locked "
+    },
+    {
+      "author": "offchainsol",
+      "followers": 1072,
+      "eng": 198,
+      "views": 1286,
+      "eng_per_1k_followers": 184.701,
+      "url": "https://x.com/OffChainSol/status/2062100630983107056",
+      "formats": [
+        "other"
+      ],
+      "text": "Gm $Offchain community, Day 42 of building in public on @PumpFun. Today we will be showing two next big features coming into the offchain extension. One is related to Off"
+    },
+    {
+      "author": "paladinofcrypto",
+      "followers": 365,
+      "eng": 181,
+      "views": 5058,
+      "eng_per_1k_followers": 181.0,
+      "url": "https://x.com/PaladinofCrypto/status/2057273854880350573",
+      "formats": [
+        "token_call",
+        "daily_recap"
+      ],
+      "text": "@MustStopMurad’s Top 10 Crypto Picks vs. $UFD In January 2025, Murad published his Top 10 memecoin picks, positioning them for the “gigantic parabolic moves” of the cycle"
+    },
+    {
+      "author": "degenwifstache",
+      "followers": 4580,
+      "eng": 798,
+      "views": 33175,
+      "eng_per_1k_followers": 174.236,
+      "url": "https://x.com/DegenWifStache/status/2055557791675514904",
+      "formats": [
+        "token_call"
+      ],
+      "text": "The Simpsons predicted $TROLL will hit $1 On April 13 2025, exactly 7 days before TROLL bonded on Pumpfun, The Simpsons released an episode called \"P.S. I Hate You\" In th"
+    },
+    {
+      "author": "wrss29",
+      "followers": 5645,
+      "eng": 976,
+      "views": 219174,
+      "eng_per_1k_followers": 172.896,
+      "url": "https://x.com/wrss29/status/2061887170089046460",
+      "formats": [
+        "other"
+      ],
+      "text": "I’ve been drained of $112,708. Earlier this morning, I received a random notification on my phone from Phantom, indicating that I had sent out 1,483 SOL to an address I d"
+    },
+    {
+      "author": "engrlance_ceo",
+      "followers": 3850,
+      "eng": 641,
+      "views": 16815,
+      "eng_per_1k_followers": 166.494,
+      "url": "https://x.com/Engrlance_CEO/status/2057053339821498465",
+      "formats": [
+        "thread_hook"
+      ],
+      "text": "🇰🇿 Solana Summit Kazakhstan Full Thread Breakdown 📍 May 22, 2026   Almaty, Kazakhstan 📍 Swissôtel Wellness Resort Alatau @solana Summit @SuperteamKZ is set to become the "
+    },
+    {
+      "author": "endfunmoments",
+      "followers": 2433,
+      "eng": 403,
+      "views": 4051,
+      "eng_per_1k_followers": 165.639,
+      "url": "https://x.com/endfunmoments/status/2062754351920132420",
+      "formats": [
+        "thread_hook"
+      ],
+      "text": "PICK YOUR PLUG 😎 for the ENTIRE month of June we will be giving away SOL DAILY pick your character from the thread 👇 set it as your X pfp engage daily with @endfunmoments"
+    },
+    {
+      "author": "shapeshifter608",
+      "followers": 2148,
+      "eng": 346,
+      "views": 3386,
+      "eng_per_1k_followers": 161.08,
+      "url": "https://x.com/shapeshifter608/status/2057457803233509559",
+      "formats": [
+        "token_call",
+        "tutorial"
+      ],
+      "text": "naming the next 100x isn’t about chasing hype or noise it’s about recognizing the projects that move with quiet conviction. on the solana chain, franco stanco $FST is sho"
+    },
+    {
+      "author": "syndexbot",
+      "followers": 51,
+      "eng": 161,
+      "views": 3118,
+      "eng_per_1k_followers": 161.0,
+      "url": "https://x.com/SYNDExbot/status/2061417144508612824",
+      "formats": [
+        "other"
+      ],
+      "text": "Looking for 5 founder beta testers for SYNDEx. Need active Solana meme traders using Axiom/BullX/Photon/Trojan/BONKbot/GMGN. Test alerts, wallet flow, buys/sells, receipt"
+    },
+    {
+      "author": "mntrenches",
+      "followers": 6254,
+      "eng": 967,
+      "views": 8872,
+      "eng_per_1k_followers": 154.621,
+      "url": "https://x.com/Mntrenches/status/2062218489444847997",
+      "formats": [
+        "thread_hook",
+        "meme_short"
+      ],
+      "text": "Drop your Solana address 👇"
+    },
+    {
+      "author": "rawwilson1",
+      "followers": 1549,
+      "eng": 239,
+      "views": 1903,
+      "eng_per_1k_followers": 154.293,
+      "url": "https://x.com/RawWilson1/status/2062589234171482422",
+      "formats": [
+        "other"
+      ],
+      "text": "These two new Strider Combat Task Force Skin Bundle are dangerous   Ines &amp; Hailey😮‍💨 [4K - check video’s settings] https://t.co/j03GNT6I65"
+    },
+    {
+      "author": "degentoolshq",
+      "followers": 453,
+      "eng": 154,
+      "views": 3461,
+      "eng_per_1k_followers": 154.0,
+      "url": "https://x.com/degentoolshq/status/2062190439386493072",
+      "formats": [
+        "other"
+      ],
+      "text": "We’re excited to announce our partnership with @DaemonTerminal the ai-native solana workspace bringing a real dev environment into degentools v2. what started as a launch"
+    },
+    {
+      "author": "cryptotarzan19",
+      "followers": 1168,
+      "eng": 176,
+      "views": 4276,
+      "eng_per_1k_followers": 150.685,
+      "url": "https://x.com/Cryptotarzan19/status/2056256996236566903",
+      "formats": [
+        "token_call"
+      ],
+      "text": "Markets are still pricing $ETH as a speculative tech asset. In reality, Ethereum is increasingly becoming the financial settlement and coordination layer for: - Tokenized"
+    },
+    {
+      "author": "nexatwosay",
+      "followers": 1638,
+      "eng": 245,
+      "views": 368,
+      "eng_per_1k_followers": 149.573,
+      "url": "https://x.com/nexaTwosay/status/2059470661953946099",
+      "formats": [
+        "other"
+      ],
+      "text": "Good Morning my x Friend ☕ Gmgn @NomismaNetwork Today begins with new hope @useTria x @quipnetwork Bullish @3look_io x @sleepagotchi enjoy day https://t.co/NsachgZkvr"
+    },
+    {
+      "author": "mntrenches",
+      "followers": 6254,
+      "eng": 931,
+      "views": 6298,
+      "eng_per_1k_followers": 148.865,
+      "url": "https://x.com/Mntrenches/status/2062590384891699546",
+      "formats": [
+        "thread_hook",
+        "meme_short"
+      ],
+      "text": "Drop your Solana address 👇"
+    },
+    {
+      "author": "kxrnel",
+      "followers": 1349,
+      "eng": 200,
+      "views": 6640,
+      "eng_per_1k_followers": 148.258,
+      "url": "https://x.com/kxrnel/status/2052411043998036006",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "The Market Layer Thesis complete @jito_sol built the highway for @solana's internet capital markets. Now with @jtx_trade , it can close the loop between infrastructure an"
+    },
+    {
+      "author": "beta_arena_io",
+      "followers": 1552,
+      "eng": 226,
+      "views": 4925,
+      "eng_per_1k_followers": 145.619,
+      "url": "https://x.com/beta_arena_io/status/2062850369969922461",
+      "formats": [
+        "other"
+      ],
+      "text": "📉 Market in fear mode Fear & Greed Index: 12 - extreme fear. Weekly moves: BTC −15% ETH −16.4% SOL −19.1% XRP −14.1% BNB −7.4% Altcoins are under pressure, with the marke"
+    },
+    {
+      "author": "reycvonsol",
+      "followers": 132,
+      "eng": 142,
+      "views": 1638,
+      "eng_per_1k_followers": 142.0,
+      "url": "https://x.com/REYCVonSol/status/2062547111585980748",
+      "formats": [
+        "other"
+      ],
+      "text": "NO VC. NO INSIDERS. NO TEAM ALLOCATION. Just a community and a dream. 🚀 $[TOKEN] is LIVE on https://t.co/YxAjhQ5JPd 🔥 HGZH2v9ghMKvV5zhLFxet4xfYW3bM2P7sPMkh4ujpump The jou"
+    },
+    {
+      "author": "dexblocker",
+      "followers": 3015,
+      "eng": 423,
+      "views": 1432,
+      "eng_per_1k_followers": 140.299,
+      "url": "https://x.com/DexBlocker/status/2056631612385948091",
+      "formats": [
+        "other"
+      ],
+      "text": "Seats are free, but interest in this event is growing quickly. If you're curious about where RWAs, institutions and onchain finance are headed, consider securing a spot b"
+    },
+    {
+      "author": "talkingbendev",
+      "followers": 135,
+      "eng": 140,
+      "views": 916,
+      "eng_per_1k_followers": 140.0,
+      "url": "https://x.com/TalkingBenDev/status/2055907379342918111",
+      "formats": [
+        "other"
+      ],
+      "text": "First and foremost I want to thank God for giving me such an amazing opportunity. I also want to thank my friends and family for being on this journey with me. With that "
+    },
+    {
+      "author": "ownershipfm",
+      "followers": 1333,
+      "eng": 184,
+      "views": 23047,
+      "eng_per_1k_followers": 138.035,
+      "url": "https://x.com/ownershipfm/status/2061880298195886589",
+      "formats": [
+        "other"
+      ],
+      "text": "Ownership Forum #2. 4th June. 2:30PM UTC. In collaboration with @blocmates, we're hosting a live roundtable with the industry leaders shaping internet capital markets on "
+    },
+    {
+      "author": "lyxxarc",
+      "followers": 12660,
+      "eng": 1635,
+      "views": 9267,
+      "eng_per_1k_followers": 129.147,
+      "url": "https://x.com/LyxxArc/status/2061177785658249428",
+      "formats": [
+        "other"
+      ],
+      "text": "$25 in $SOL‼️ •Follow @JJChizzy 🛎 RT/Like/drop $SOL addys (24 Hours) ————— [Paid Promotion   NFA   DYOR]"
+    },
+    {
+      "author": "fomo_gg",
+      "followers": 5314,
+      "eng": 673,
+      "views": 45154,
+      "eng_per_1k_followers": 126.647,
+      "url": "https://x.com/Fomo_gg/status/2047330575422570502",
+      "formats": [
+        "other"
+      ],
+      "text": "did fomotaur just outrun the IRS? 👁️ good thing meme coins exist not financial advice. #Solana #crypto #memecoin #fomotaur #SIEYOW https://t.co/mRnsC32LLN"
+    },
+    {
+      "author": "000xy_0",
+      "followers": 273,
+      "eng": 126,
+      "views": 2693,
+      "eng_per_1k_followers": 126.0,
+      "url": "https://x.com/000xy_0/status/2062454496291168662",
+      "formats": [
+        "other"
+      ],
+      "text": "I just made the first @a1lon9 agent on https://t.co/NnVyP2Zkw6 shouldn't we send an agent related to the trenches??? here's the link: https://t.co/kF4s0Qc1EL https://t.co"
+    },
+    {
+      "author": "ademolabegone",
+      "followers": 4800,
+      "eng": 602,
+      "views": 33933,
+      "eng_per_1k_followers": 125.417,
+      "url": "https://x.com/ademolabegone/status/2059648627786600598",
+      "formats": [
+        "other"
+      ],
+      "text": "berlin is about to become europe’s web3 hotspot this june solana summit germany lands on june 13, 2026 🇩🇪 this isn’t just another crypto event. it’s where the next wave o"
+    },
+    {
+      "author": "solojayq",
+      "followers": 10144,
+      "eng": 1270,
+      "views": 284295,
+      "eng_per_1k_followers": 125.197,
+      "url": "https://x.com/SoloJayQ/status/2060994854532919811",
+      "formats": [
+        "pnl_flex",
+        "data_drop"
+      ],
+      "text": "BullX is officially dead. They just announced on Discord that the app will go on \"Pause\" starting June 1st. (We all know what that means) If you’re still one of the last "
+    },
+    {
+      "author": "shayenesha",
+      "followers": 210,
+      "eng": 125,
+      "views": 8352,
+      "eng_per_1k_followers": 125.0,
+      "url": "https://x.com/ShayeneSha/status/2058977679664206253",
+      "formats": [
+        "other"
+      ],
+      "text": "I've earned $447.53 on @BagsApp to fund my project. Thanks for the support! https://t.co/MsPmgUlNYH"
+    },
+    {
+      "author": "moonshot6666",
+      "followers": 1133,
+      "eng": 141,
+      "views": 7289,
+      "eng_per_1k_followers": 124.448,
+      "url": "https://x.com/moonshot6666/status/2062184534800810358",
+      "formats": [
+        "other"
+      ],
+      "text": "We have some big product announcements today. It's an uber exciting moment for us and the features are phenomenal. But instead of boring you with another quote tweet, I w"
+    },
+    {
+      "author": "solanaswaggy",
+      "followers": 3669,
+      "eng": 456,
+      "views": 6347,
+      "eng_per_1k_followers": 124.285,
+      "url": "https://x.com/SolanaSwaggy/status/2055637114511859834",
+      "formats": [
+        "other"
+      ],
+      "text": "Day 96 - Made 11 SOL! There was a lot of animal runners today, sadly there were not really good narratives tho! Still happy with the performance, the grind continues! 😎 J"
+    }
+  ]
+}

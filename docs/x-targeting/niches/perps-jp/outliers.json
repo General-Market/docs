@@ -1,0 +1,1143 @@
+{
+  "cell": "perps-jp",
+  "tweet_count": 927,
+  "author_count": 689,
+  "format_counts": {
+    "other": 563,
+    "numbered_list": 31,
+    "daily_recap": 14,
+    "data_drop": 39,
+    "token_call": 8,
+    "pnl_flex": 41,
+    "tutorial": 17,
+    "meme_short": 251,
+    "question_bait": 7,
+    "thread_hook": 1
+  },
+  "repeatable_outliers": [
+    {
+      "author": "ntm73dollyen",
+      "followers": 208,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 92.5,
+      "p90_eng": 110,
+      "median_views": 6367.0,
+      "eng_per_1k_followers": 92.5,
+      "score": 474.68,
+      "best_url": "https://x.com/ntm73dollyen/status/2062443003705520378",
+      "best_eng": 110,
+      "pattern_clue": "【この後ドル円は新規失業保険申請件数で“上昇予想”】 本日のこの後のドル円は、 新規失業保険申請件数で「上昇する」と考えています🤔 新規失業保険申請件数は、 アメリカで新しく失業保険を申請した人の数です。 数字が少ないほど 「雇用はまだ強い」 数字が多いほど 「雇用が弱くなっている」 と判断されます。 現在のドル円は159.86円前後。 "
+    },
+    {
+      "author": "ntm73dollyen",
+      "followers": 208,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 92.5,
+      "p90_eng": 110,
+      "median_views": 6367.0,
+      "eng_per_1k_followers": 92.5,
+      "score": 474.68,
+      "best_url": "https://x.com/ntm73dollyen/status/2062443003705520378",
+      "best_eng": 110,
+      "pattern_clue": "【この後ドル円は新規失業保険申請件数で“上昇予想”】 本日のこの後のドル円は、 新規失業保険申請件数で「上昇する」と考えています🤔 新規失業保険申請件数は、 アメリカで新しく失業保険を申請した人の数です。 数字が少ないほど 「雇用はまだ強い」 数字が多いほど 「雇用が弱くなっている」 と判断されます。 現在のドル円は159.86円前後。 "
+    },
+    {
+      "author": "corenona",
+      "followers": 2236,
+      "format": "daily_recap",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 259.5,
+      "p90_eng": 263,
+      "median_views": 9203.0,
+      "eng_per_1k_followers": 116.055,
+      "score": 314.139,
+      "best_url": "https://x.com/corenona/status/2062114926299406569",
+      "best_eng": 263,
+      "pattern_clue": "20年の投資経験を持つ。 毎日、日本株市場で「明日注目の銘柄」を紹介している。複雑な理論は語らず、資産を増やすことだけに集中している。 だからこそ、こう言いたい：👉 高値で焦って買い増ししなくてよかった。 日経平均株価が初めて【6万8402円】を突破し、TOPIXも4000ポイントを超えたこの歴史的な瞬間に。 市場資金を完全に独占している"
+    },
+    {
+      "author": "corenona",
+      "followers": 2236,
+      "format": "numbered_list",
+      "repeats": 2,
+      "account_posts": 3,
+      "share": 0.667,
+      "median_eng": 197.5,
+      "p90_eng": 263,
+      "median_views": 7203.0,
+      "eng_per_1k_followers": 88.327,
+      "score": 243.858,
+      "best_url": "https://x.com/corenona/status/2062114926299406569",
+      "best_eng": 263,
+      "pattern_clue": "20年の投資経験を持つ。 毎日、日本株市場で「明日注目の銘柄」を紹介している。複雑な理論は語らず、資産を増やすことだけに集中している。 だからこそ、こう言いたい：👉 高値で焦って買い増ししなくてよかった。 日経平均株価が初めて【6万8402円】を突破し、TOPIXも4000ポイントを超えたこの歴史的な瞬間に。 市場資金を完全に独占している"
+    },
+    {
+      "author": "cosmo20199",
+      "followers": 5116,
+      "format": "pnl_flex",
+      "repeats": 2,
+      "account_posts": 2,
+      "share": 1.0,
+      "median_eng": 99.0,
+      "p90_eng": 128,
+      "median_views": 17056.5,
+      "eng_per_1k_followers": 19.351,
+      "score": 204.3,
+      "best_url": "https://x.com/cosmo20199/status/2062385680668651781",
+      "best_eng": 128,
+      "pattern_clue": "これは洞察力の鋭い強烈な記事。 BTCが何で下がるのか？と思う人はもはや少ないかもしれませんが NEARやVVVの流れや漠然と考えていたことも言語化されていて、この先の地図として理解の深まる素晴らしい記事。クリプトに興味ある人はどぞ 「今年、ビットコインは2つの仕事を失った。AIがマクロを奪った。 ドルがマネーを奪った。」 「BTCは死ん"
+    },
+    {
+      "author": "nishi8malert",
+      "followers": 5752,
+      "format": "data_drop",
+      "repeats": 10,
+      "account_posts": 10,
+      "share": 1.0,
+      "median_eng": 20.5,
+      "p90_eng": 34,
+      "median_views": 1422.5,
+      "eng_per_1k_followers": 3.564,
+      "score": 50.54,
+      "best_url": "https://x.com/Nishi8mAlert/status/2062323738759070080",
+      "best_eng": 274,
+      "pattern_clue": "📊 BTC清算予兆モニター $64,230 🔴 $63,000 一次トリガー $63M 🔴 $56,000 最大クラスター $121M 🟢 $67,000 上値の壁 $41M $63,000割れで約$63Mのロング清算が点火しやすい水準。 ※清算予測・投資助言ではありません #BTC #Hyperliquid #清算 https://t."
+    },
+    {
+      "author": "nishi8malert",
+      "followers": 5752,
+      "format": "pnl_flex",
+      "repeats": 4,
+      "account_posts": 10,
+      "share": 0.4,
+      "median_eng": 16.0,
+      "p90_eng": 21,
+      "median_views": 1910.0,
+      "eng_per_1k_followers": 2.782,
+      "score": 22.563,
+      "best_url": "https://x.com/Nishi8mAlert/status/2062355280789451204",
+      "best_eng": 21,
+      "pattern_clue": "🚨 𝗕𝗧𝗖緊急暴騰速報📈 1分で0.73%上昇 (11:06 JST) 📈 BTCは$61,880.60で1分間に+0.73%の上昇を見せました。 市場は$63,000を割り込み、「Crypto Winter」入りとの見方も出ています。 過去2時間で7億ドルのロング清算が発生し、下落を増幅した可能性があります。 #BTC #Bitcoin"
+    },
+    {
+      "author": "hiropi_fx",
+      "followers": 49806,
+      "format": "data_drop",
+      "repeats": 5,
+      "account_posts": 7,
+      "share": 0.714,
+      "median_eng": 41,
+      "p90_eng": 86,
+      "median_views": 6162,
+      "eng_per_1k_followers": 0.823,
+      "score": 17.998,
+      "best_url": "https://x.com/hiropi_fx/status/2051124346945667336",
+      "best_eng": 86,
+      "pattern_clue": "BTCUSDT180日の縦玉清算マップです。先ほど8万ドルを一瞬超えました。80700ドル付近までつけると、売り方はほぼ全滅です。間も無くTOPをつける可能性が出てきます。イラン戦争への前進期待でここ数日買われていたのでしょう。利食いも入りそうです。さらにNETベースでもロングとショートが逆転しそう。 https://t.co/V0YSP"
+    },
+    {
+      "author": "fx45540575",
+      "followers": 12359,
+      "format": "question_bait",
+      "repeats": 2,
+      "account_posts": 19,
+      "share": 0.105,
+      "median_eng": 34.0,
+      "p90_eng": 36,
+      "median_views": 1793.5,
+      "eng_per_1k_followers": 2.751,
+      "score": 7.088,
+      "best_url": "https://x.com/FX45540575/status/2062383481313980521",
+      "best_eng": 36,
+      "pattern_clue": "ええっと 地盤いくら買っても張り付くんですが？ もうやめといたほうがよいですか？"
+    },
+    {
+      "author": "kaiun69",
+      "followers": 46522,
+      "format": "data_drop",
+      "repeats": 2,
+      "account_posts": 6,
+      "share": 0.333,
+      "median_eng": 28.0,
+      "p90_eng": 33,
+      "median_views": 1888.0,
+      "eng_per_1k_followers": 0.602,
+      "score": 4.748,
+      "best_url": "https://x.com/kaiun69/status/2062801072620786073",
+      "best_eng": 33,
+      "pattern_clue": "暗号通貨市場から、わずか1ヶ月足らずで6350億ドル以上が吹き飛ばされる！ 過去1時間で5億ドル以上の暗号通貨清算が発生ロングポジションが4億5000万ドルを占める！ https://t.co/1Pjrx9h1Lt"
+    }
+  ],
+  "single_post_outliers": [
+    {
+      "author": "cheeeeeeset",
+      "followers": 876,
+      "eng": 108035,
+      "views": 8778231,
+      "eng_per_1k_followers": 108035.0,
+      "url": "https://x.com/cheeeeeeset/status/2061288994609242199",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "うちの新卒の子ぜんぜん電話対応してないから少し観察したら、他の人が取った直後に受話器をあげることによって対応しようとしました☺︎を醸し出す高等テクニックを使用してて笑った"
+    },
+    {
+      "author": "wxh3y7",
+      "followers": 2629,
+      "eng": 95287,
+      "views": 398347,
+      "eng_per_1k_followers": 36244.58,
+      "url": "https://x.com/wxh3y7/status/2061709566073827710",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "ほんと通って欲しくない法案は爆速で通り 通って欲しい法案は見送る 自民党滅んで欲しい"
+    },
+    {
+      "author": "mina19970203",
+      "followers": 1108,
+      "eng": 39465,
+      "views": 2426487,
+      "eng_per_1k_followers": 35618.231,
+      "url": "https://x.com/mina19970203/status/2060331067945476146",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "ぶっちゃけ、人が一番嫉妬するのは、タワマンや高級車持ちじゃない。 「何で稼いでるか謎だけど、平日の昼間から ずっと暇そうに暮らしてる人」だよね。"
+    },
+    {
+      "author": "mochiosan55",
+      "followers": 37,
+      "eng": 15857,
+      "views": 626982,
+      "eng_per_1k_followers": 15857.0,
+      "url": "https://x.com/mochiosan55/status/2062797662051819596",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "まーーじでｺﾚ。 やらない人は本当にずっとやらない。 でも後からだいたい あの時やっとけばよかったって言ってる。 後悔するくらいなら、 少しでも早くやった方がいい。 時間だけは返ってこない。人生は短い。"
+    },
+    {
+      "author": "babao_fan",
+      "followers": 23951,
+      "eng": 165844,
+      "views": 8789639,
+      "eng_per_1k_followers": 6924.304,
+      "url": "https://x.com/babao_fan/status/2061285309560860679",
+      "formats": [
+        "other"
+      ],
+      "text": "代わりに自分がすっぴんのピグレットを公開します。 貴方のすっぴんピグレットは大事な人のために取っておいてください。 https://t.co/Wy1VdMKtjN"
+    },
+    {
+      "author": "texyantexyan_p",
+      "followers": 1330,
+      "eng": 6574,
+      "views": 1223561,
+      "eng_per_1k_followers": 4942.857,
+      "url": "https://x.com/texyantexyan_p/status/2061082903862448402",
+      "formats": [
+        "other"
+      ],
+      "text": "私事にはなりますが、大学を出て、会社を立ち上げて、2026年5月で4期を終えて、年商35億、300人企業まではどうにか来ることが出来ました。 神崎蘭子に、星井美希に見合うような人でいたい。 そんな想いで、自分が夢をまず語れること、夢を叶えるために動ける自分になるためにやってきたこの数年、"
+    },
+    {
+      "author": "n3umu",
+      "followers": 20754,
+      "eng": 99748,
+      "views": 1652093,
+      "eng_per_1k_followers": 4806.206,
+      "url": "https://x.com/N3umu/status/2062732146134196488",
+      "formats": [
+        "other"
+      ],
+      "text": "どんな人間が住んでるの？ https://t.co/o7BtuEJnGy"
+    },
+    {
+      "author": "tokumei_6_6",
+      "followers": 7198,
+      "eng": 32264,
+      "views": 751451,
+      "eng_per_1k_followers": 4482.356,
+      "url": "https://x.com/tokumei_6_6/status/2060569706260791739",
+      "formats": [
+        "other"
+      ],
+      "text": "おっ 愉快動物餅やん 好きなんだよな〜 愉快動物餅 https://t.co/Ynw7JAnE7f"
+    },
+    {
+      "author": "colleenmchugh15",
+      "followers": 422,
+      "eng": 3621,
+      "views": 12908,
+      "eng_per_1k_followers": 3621.0,
+      "url": "https://x.com/ColleenMcHugh15/status/2060715269249753335",
+      "formats": [
+        "other"
+      ],
+      "text": "武器を理解している爆ヌーさん https://t.co/b298FKJAV6"
+    },
+    {
+      "author": "torekanain",
+      "followers": 4831,
+      "eng": 15257,
+      "views": 281756,
+      "eng_per_1k_followers": 3158.145,
+      "url": "https://x.com/Torekanain/status/2060230242531520963",
+      "formats": [
+        "numbered_list",
+        "tutorial"
+      ],
+      "text": "㊗️トレカナインオープン記念㊗️ トレカナイン×トレカ屋JINstudio 爆アド袋プレゼント企画🎁 ポケカ袋、ワンピ袋をそれぞれ抽選で1名様にプレゼント致します✨ ✅応募方法 ①トレカナイン＠Torekanain 、トレカ屋ジンスタジオ＠torekayaJINをフォロー ②リポスト＆👍 ③欲しい賞を返信 6月7日〆切 https://t"
+    },
+    {
+      "author": "n3umu",
+      "followers": 20754,
+      "eng": 62340,
+      "views": 6038918,
+      "eng_per_1k_followers": 3003.758,
+      "url": "https://x.com/N3umu/status/2062080516124447222",
+      "formats": [
+        "other"
+      ],
+      "text": "5分キスしたときの男性。 https://t.co/3OAA89UKRD"
+    },
+    {
+      "author": "cos_lovme",
+      "followers": 1561,
+      "eng": 4276,
+      "views": 216364,
+      "eng_per_1k_followers": 2739.27,
+      "url": "https://x.com/cos_lovme/status/2060615302082375935",
+      "formats": [
+        "other"
+      ],
+      "text": "目の下の涙袋爆誕させたいならこれ見ながらすると大体は間違えずにできます。保存❕保存❕ https://t.co/XB12PhrNIh"
+    },
+    {
+      "author": "eraitencho",
+      "followers": 39394,
+      "eng": 90691,
+      "views": 5114410,
+      "eng_per_1k_followers": 2302.153,
+      "url": "https://x.com/eraitencho/status/2062269594371580139",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "今日謎の宗教団体の教祖の人と会ってたのだけど、株式会社として統合失調症患者50人と共同生活して食費とか経費に計上してたら税務署から「あなたのやってることは宗教なので宗教法人にしてください」って言われて教祖になったっていってて笑った"
+    },
+    {
+      "author": "fattaillabs",
+      "followers": 3720,
+      "eng": 7466,
+      "views": 373966,
+      "eng_per_1k_followers": 2006.989,
+      "url": "https://x.com/FatTailLabs/status/2061473442999001593",
+      "formats": [
+        "other"
+      ],
+      "text": "実はこれ、外国人にはあまり知られてないんだけど、韓国人はワッフルメーカーを買っても、キムチチヂミやキムチチャーハンを作るマシンにしてしまうんだよ。 たぶん韓国人にたこ焼き機を普及させたら、「キムチ焼き」っていう魔改造グルメを爆誕させてしまうだろうな…😇😇😇 https://t.co/VjjhUIzUzt"
+    },
+    {
+      "author": "zetu_rrr",
+      "followers": 50740,
+      "eng": 83379,
+      "views": 839403,
+      "eng_per_1k_followers": 1643.26,
+      "url": "https://x.com/zetu_rrr/status/2061108258455359540",
+      "formats": [
+        "other"
+      ],
+      "text": "遺族年金が2028年から打ち切りになる で 同時に走ってる負担増がこれ 2026年4月 子育て支援金 2027年1月 防衛増税 2027年9月 厚生年金保険料UP 2028年4月 遺族年金カット＋寡婦加算廃止 2年で増税3本＋給付削減 取るもは全部増やして 返すものだけ減らす おかしくない？ で 決めたやつは寝てる↓ https://t."
+    },
+    {
+      "author": "mattariver2",
+      "followers": 45915,
+      "eng": 68626,
+      "views": 1893120,
+      "eng_per_1k_followers": 1494.631,
+      "url": "https://x.com/mattariver2/status/2061446422357258584",
+      "formats": [
+        "other"
+      ],
+      "text": "あーあ、乗っ取られた… 【悲報】武田薬品工業、韓国系アメリカ人がＣＥＯに https://t.co/d4QsiY04VP"
+    },
+    {
+      "author": "tokumei_6_6",
+      "followers": 7198,
+      "eng": 9661,
+      "views": 2216348,
+      "eng_per_1k_followers": 1342.178,
+      "url": "https://x.com/tokumei_6_6/status/2062838842189893913",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "日本語には「大量のうんこを出す時の効果音」と「薬物でハイになっている状態」の両方を言い表す言葉がある。"
+    },
+    {
+      "author": "jojo_en_jokalbi",
+      "followers": 572,
+      "eng": 1262,
+      "views": 32180,
+      "eng_per_1k_followers": 1262.0,
+      "url": "https://x.com/jojo_en_jokalbi/status/2060543855121088825",
+      "formats": [
+        "other"
+      ],
+      "text": "🟩🟩🟩🟩🟩💚加💚🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🍀藤🍀🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🐸大🐸🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🍏樹🍏🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🌿に🌿🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩📗投📗🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🟢票🟢🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🥝し🥝🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🥒よ🥒🟩🟩🟩🟩🟩 🟩🟩🟩🟩🟩🦚う🦚🟩🟩🟩🟩🟩"
+    },
+    {
+      "author": "mayochan_025",
+      "followers": 6542,
+      "eng": 7290,
+      "views": 662682,
+      "eng_per_1k_followers": 1114.338,
+      "url": "https://x.com/Mayochan_025/status/2062034085447688424",
+      "formats": [
+        "tutorial"
+      ],
+      "text": "この方のチークのやり方が参考になりすぎる...💞 チークの入れ方でここまで顔変わるのやばい。 今日真似してみたんだけどまじで爆盛れしたww https://t.co/6O1nzLmG9U"
+    },
+    {
+      "author": "okugaikoukok",
+      "followers": 42790,
+      "eng": 40747,
+      "views": 13420868,
+      "eng_per_1k_followers": 952.255,
+      "url": "https://x.com/okugaikoukok/status/2060908139663524127",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "【お願い】 私ごとで恐縮ですが、皆様が「買ったらQOL爆上がりした」ものを教えていただけないでしょうか... 日々を豊かにするための買い物の参考にしたいのです... 除湿機"
+    },
+    {
+      "author": "izumi_sunagawa",
+      "followers": 59091,
+      "eng": 55592,
+      "views": 233043,
+      "eng_per_1k_followers": 940.786,
+      "url": "https://x.com/Izumi_Sunagawa/status/2062394455639130362",
+      "formats": [
+        "other"
+      ],
+      "text": "偽札を作っても不起訴。 114億円分の覚醒剤を密輸しても不起訴。 白タクやっても不起訴。 盗んだ車を隠していても不起訴。 偽造クレカで高額な買い物をしても不起訴。 集団万引きしても不起訴。 警察官のフリして高齢者から900万円以上を騙し取っても不起訴。 来日外国人の不起訴件数は、 2015年の約7,901件から、 2024年は10,300"
+    },
+    {
+      "author": "shachikusaboten",
+      "followers": 1537,
+      "eng": 1401,
+      "views": 202840,
+      "eng_per_1k_followers": 911.516,
+      "url": "https://x.com/shachikusaboten/status/2061225855792423087",
+      "formats": [
+        "other"
+      ],
+      "text": "ワイもそうだが、 若く億り人なった人の傾向はこれ。 ◽️元々そこそこの現金保有 ◽️コロナ前後の2019-2021にぶちこんでる ◽️インデックス（米国系が多め、だんだんみんなオルカンにシフトしてる） ◽️入金額が毎月30-50くらい この辺は30代から40前半で億ってる。"
+    },
+    {
+      "author": "akutan_bot",
+      "followers": 46037,
+      "eng": 40577,
+      "views": 3940110,
+      "eng_per_1k_followers": 881.4,
+      "url": "https://x.com/akutan_bot/status/2062091606321401930",
+      "formats": [
+        "other"
+      ],
+      "text": "これで何のアニメかわかった人は猛者 https://t.co/LbP2eOyFY8"
+    },
+    {
+      "author": "salon_koichi_n",
+      "followers": 1141,
+      "eng": 978,
+      "views": 132881,
+      "eng_per_1k_followers": 857.143,
+      "url": "https://x.com/salon_koichi_n/status/2060293345432453563",
+      "formats": [
+        "other"
+      ],
+      "text": "10年相場を見てきた。 こういう地獄の下げは 爆益の前しかない https://t.co/nRBTuJKeNg"
+    },
+    {
+      "author": "mirei_neko1",
+      "followers": 774,
+      "eng": 760,
+      "views": 105767,
+      "eng_per_1k_followers": 760.0,
+      "url": "https://x.com/Mirei_neko1/status/2062646157738951092",
+      "formats": [
+        "other"
+      ],
+      "text": "ビットコインの底が確定。 #BTC は歴史的な大急騰を起こします。 ここで #Bitcoin を可能な限り積み立てしなければいけない、その衝撃的な理由をお伝えします👇 https://t.co/YdSjYIkxqt"
+    },
+    {
+      "author": "sona_nn77",
+      "followers": 1362,
+      "eng": 1002,
+      "views": 567078,
+      "eng_per_1k_followers": 735.683,
+      "url": "https://x.com/sona_nn77/status/2051815207429976068",
+      "formats": [
+        "other"
+      ],
+      "text": "遂に億りました！！ 2024年から本格的に投資を始め、NVDA信用全力2階建てで8,000万まで到達するも、その後追証損切りで1,500万まで減らすなど、退場寸前を3度ほど経験。 ハイリスク投資は継続しながらも徐々にコツを掴み、ようやく節目に到達しました。 (※ヒートマップはカビュウの仕様で信用分込) https://t.co/VjtEL"
+    },
+    {
+      "author": "diet_bijolife",
+      "followers": 4419,
+      "eng": 3176,
+      "views": 103368,
+      "eng_per_1k_followers": 718.715,
+      "url": "https://x.com/diet_bijolife/status/2061793020819968214",
+      "formats": [
+        "other"
+      ],
+      "text": "寝る前にこれしてるだけで、骨盤整ってお腹めっちゃ凹んだwwwww https://t.co/KTS3I3ZaKp"
+    },
+    {
+      "author": "zetu_rrr",
+      "followers": 50740,
+      "eng": 35934,
+      "views": 249974,
+      "eng_per_1k_followers": 708.199,
+      "url": "https://x.com/zetu_rrr/status/2060638503231467597",
+      "formats": [
+        "other"
+      ],
+      "text": "『412万人突破×犯罪33%増をなぜ報じない？』 移民反対デモ 報道しない自由がエグすぎる 2025年10月に全国16カ所で一斉開催 2026年3月には18カ所に拡大 東京、大阪、名古屋、神戸、熊本と主要都市を網羅 参加者は数千人規模 特定の政党や団体が主導してない自然発生型 で 大手テレビの報道はほぼゼロ 確認できたのは地方紙が数紙と一"
+    },
+    {
+      "author": "meiluza",
+      "followers": 474,
+      "eng": 688,
+      "views": 3075,
+      "eng_per_1k_followers": 688.0,
+      "url": "https://x.com/Meiluza/status/2060498665672724490",
+      "formats": [
+        "other"
+      ],
+      "text": "𝑉𝑖𝑣ゃん ! こんにちは、今日は良い日です🌱ᵕ̈𓂃ෆ˚今日を楽しみましょう⋆🌱° https://t.co/hmvadVIi0u"
+    },
+    {
+      "author": "3haon_v",
+      "followers": 492,
+      "eng": 574,
+      "views": 89538,
+      "eng_per_1k_followers": 574.0,
+      "url": "https://x.com/3Haon_v/status/2062367850145452485",
+      "formats": [
+        "other"
+      ],
+      "text": "ビットコインは2022年を再現してます。 フラクタルは完全に一致。全8フェーズ。毎回まったく同じシーケンス。 今はフェーズ5目前。 最悪の時期はもうすぐ終わる。 残されたのは、揉み合い。下落。仕込み。そして爆発的な上昇。 2022年には、フェーズ8で数ヶ月で2倍になりました。 #Bitcoin #BTC https://t.co/jChA"
+    },
+    {
+      "author": "investormm",
+      "followers": 233037,
+      "eng": 128454,
+      "views": 12001080,
+      "eng_per_1k_followers": 551.217,
+      "url": "https://x.com/investorMM/status/2060362392010441029",
+      "formats": [
+        "other"
+      ],
+      "text": "【暇】宝くじで2億3千万円を当てた23歳マック店員、大富豪生活に飽きて18ヶ月でマックに復帰 ■🇬🇧イギリス・ルーク(23) ・マクドナルドで働きながら「約2億3千万円」の特大当選 ・即退職し、豪邸購入や豪華バカンスなど富豪ライフを満喫 →しかし18ヶ月後、「暇すぎて死ぬ」「職場の仲間が恋しい」と家族の猛反対を押し切りマックへ復職 ・時給"
+    },
+    {
+      "author": "misojiyuu",
+      "followers": 57571,
+      "eng": 31630,
+      "views": 11502665,
+      "eng_per_1k_followers": 549.409,
+      "url": "https://x.com/misojiyuu/status/2062008592866369973",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "書いた人19歳だったのか。 天才じゃないか、嫉妬するわ。"
+    },
+    {
+      "author": "under202",
+      "followers": 587,
+      "eng": 485,
+      "views": 20512,
+      "eng_per_1k_followers": 485.0,
+      "url": "https://x.com/under202/status/2062072392604856469",
+      "formats": [
+        "other"
+      ],
+      "text": "6年前、テスラに100万円入れた人。 今は“億”の世界。 でも実際は、その時に100万円を株へ入れられた人自体が少ない。 私もNISAで40万円分買ったテスラは、 6年ちょっとで800万円になりました。 そして今、また見つけました。 あの頃のテスラにそっくりな 超低位株です⤵️ https://t.co/yG2wyiKPBZ"
+    },
+    {
+      "author": "pondorunohito",
+      "followers": 3105,
+      "eng": 1339,
+      "views": 208267,
+      "eng_per_1k_followers": 431.24,
+      "url": "https://x.com/pondorunohito/status/2059874207681691804",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "キオクシア午後の下げ全モwwwww 800万円損切りしたワイwwwww 涙で画面が見えんwwwww"
+    },
+    {
+      "author": "fujishu5",
+      "followers": 575,
+      "eng": 424,
+      "views": 23141,
+      "eng_per_1k_followers": 424.0,
+      "url": "https://x.com/fujishu5/status/2062121996859895924",
+      "formats": [
+        "other"
+      ],
+      "text": "🚀朗報‼️朗報 ‼️ SpaceX、IPO前倒し！ 6月12日ナスダック上場。 宇宙経済に巨額資金流入→需要爆発！ 資金の行き先 宇宙・防衛：三菱重工／IHI 衛星通信：NEC／東邦鉛 光通信：フジクラ／古河電工 宇宙関連：ispace／QPS研究所 半導体：キオクシア 今年はマジで「億り人量産年」になるかも"
+    },
+    {
+      "author": "sky1855961",
+      "followers": 2513,
+      "eng": 1007,
+      "views": 76938,
+      "eng_per_1k_followers": 400.716,
+      "url": "https://x.com/Sky1855961/status/2062132032625623515",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "🔥寄り付きの戦略例 銘柄: ソフトバンクグループ 銘柄: フジクラ 📕チェック①(寄り前) 成り買いと成り売りの数を確認 買いが2倍以上は買い目線 買いが2倍以下は売り目線 ソフバンは買いが約1.4倍(売り目線) フジクラは買いが約2.1倍(買い目線) 📕チェック②(寄り前) overとunderの数を確認 underの数が多ければ買い "
+    },
+    {
+      "author": "mimi34_alive",
+      "followers": 206,
+      "eng": 391,
+      "views": 851,
+      "eng_per_1k_followers": 391.0,
+      "url": "https://x.com/mimi34_ALIVE/status/2062802610206453819",
+      "formats": [
+        "other"
+      ],
+      "text": "🔥 285A キオクシア爆上げ中！ AIメモリでヤバい勢い🚀 株価7.7万台！年初来高値8.3万目前 AI需要爆発でNAND最強銘柄が熱すぎる🔥 今買うか？ホールドか？ コメントで教えてくれ！👇 #キオクシア #285A #AI株 #半導体 #爆益 https://t.co/TcHwygOEAC"
+    },
+    {
+      "author": "fukuda_sfire",
+      "followers": 1640,
+      "eng": 608,
+      "views": 81302,
+      "eng_per_1k_followers": 370.732,
+      "url": "https://x.com/fukuda_sfire/status/2059924891005039045",
+      "formats": [
+        "other"
+      ],
+      "text": "｢インデックス投資で億り人なんて所詮は夢｣と思っている人、複利の力は侮れませんよ。25歳の普通のサラリーマンでも、毎月5万円をS&amp;P500に投資して年利5%で30年運用すれば55歳になっている可能性が高いことは歴史が証明しています。"
+    },
+    {
+      "author": "taku9100",
+      "followers": 545,
+      "eng": 365,
+      "views": 4530,
+      "eng_per_1k_followers": 365.0,
+      "url": "https://x.com/taku9100/status/2062406944359612709",
+      "formats": [
+        "other"
+      ],
+      "text": "2年前、キオクシアに50万円投資した人は今、“億り人”です。 でもその時に買えた人は本当に少なかった。 私もNISAで80万円分のキオクシアを買い、 わずか1年ちょっとで**600万円**に増えました。 そして今、再び同じチャンスが来ています。 まだ誰も注目していない、超低位の半導体株です。 https://t.co/AXb3Qe5GRu"
+    },
+    {
+      "author": "fg9jgxfh9ef0m28",
+      "followers": 1038,
+      "eng": 354,
+      "views": 2756,
+      "eng_per_1k_followers": 341.04,
+      "url": "https://x.com/fG9jGxfh9ef0m28/status/2062017636788269446",
+      "formats": [
+        "other"
+      ],
+      "text": "朗報朗報‼️ AI資金ルートが変わる。 OpenAI上場観測、ARM急騰、 AIデータセンター需要が爆発。 需要爆発→電力不足→設備投資拡大 資金はどこへ向かうか👇 AI本命：ソフトバンクG／キオクシア 半導体：東京エレクトロン／アドバンテスト 電線：フジクラ／古河電工 電力：東京電力HD／九州電力 重工：三菱重工業／IHI 今年はマジで"
+    },
+    {
+      "author": "2580ys11",
+      "followers": 13521,
+      "eng": 4487,
+      "views": 344267,
+      "eng_per_1k_followers": 331.854,
+      "url": "https://x.com/2580ys11/status/2062782950027198767",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "消費税ゼロの時代を知ってる人に聞きたい 日本はどうやって回ってたの？ 本気で不思議なんだけど"
+    },
+    {
+      "author": "hibitti",
+      "followers": 5201,
+      "eng": 1690,
+      "views": 232690,
+      "eng_per_1k_followers": 324.938,
+      "url": "https://x.com/hibitti/status/2059789984421531754",
+      "formats": [
+        "other"
+      ],
+      "text": "キオクシア続落で含み損1000万切った これが追証の力よ https://t.co/I394xE70gD"
+    },
+    {
+      "author": "hibitti",
+      "followers": 5201,
+      "eng": 1656,
+      "views": 133903,
+      "eng_per_1k_followers": 318.4,
+      "url": "https://x.com/hibitti/status/2060256113778741715",
+      "formats": [
+        "other"
+      ],
+      "text": "キオクシア空売り 逆7バガー達成！ 追証14回目確定！ https://t.co/h8arsvDLp2"
+    },
+    {
+      "author": "zetu_rrr",
+      "followers": 50740,
+      "eng": 16153,
+      "views": 118149,
+      "eng_per_1k_followers": 318.348,
+      "url": "https://x.com/zetu_rrr/status/2060304298022424656",
+      "formats": [
+        "other"
+      ],
+      "text": "『神社にゴミ捨てても被害者が片づける国』 富士吉田の稲荷社に580kgの不法投棄がヤバすぎる 扉のガラスをぶち割って社の中にゴミを詰め込んでた 日用品、未開封の弁当、家電 近くにはナンバー外した車2台が4年前から放置 もう何年も前からゴミ捨て場にされてた で地元住民が3日がかりで撤去したんだけど ここからが本当にエグい 日本の廃棄物処理法"
+    },
+    {
+      "author": "rinaa030303",
+      "followers": 1264,
+      "eng": 395,
+      "views": 1429,
+      "eng_per_1k_followers": 312.5,
+      "url": "https://x.com/rinaa030303/status/2062719200846827823",
+      "formats": [
+        "other"
+      ],
+      "text": "2月間保有していた村田製作所(6981)株を全て売却しました。 2月前に4,920円で12000株買いました。 つい数日前、株価は11,125円に達した。 迷わず全額売却しました！ そして今——また見つけました。 あの時の村田製作所にそっくりな超低位株です。 このタイミングでポジションを構築すれば、将来の巨大な成長の波に乗るチャンスがあり"
+    },
+    {
+      "author": "misaki_freelife",
+      "followers": 1264,
+      "eng": 390,
+      "views": 43038,
+      "eng_per_1k_followers": 308.544,
+      "url": "https://x.com/misaki_freelife/status/2061402880427299077",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "株クラ見ていて、薄々わかってはいたんだけど。 億り人とか資産5000万達成した方々、元々お金持ちだったのでは？最初の種銭の出所が知りたいです！"
+    },
+    {
+      "author": "narimu_kabu",
+      "followers": 1428,
+      "eng": 385,
+      "views": 1565,
+      "eng_per_1k_followers": 269.608,
+      "url": "https://x.com/narimu_kabu/status/2062798360655142935",
+      "formats": [
+        "other"
+      ],
+      "text": "株を30年やってきたから、もう一度だけ言う。 ・新NISAはつみたて投資枠から埋めろ ・毎月自動積立、感情で投資するな ・証券口座はSBIか楽天に統一する ・オルカンかS&P500だ、浮気するな ・一括投資やめろ、ドルコストが最強 ・成長投資枠は後回し、欲張るな ・現金は金利0.4％以上の口座や ・クレカ積立しろ、ポイントはタダ金 ・生活"
+    },
+    {
+      "author": "goluten",
+      "followers": 1450,
+      "eng": 385,
+      "views": 5929,
+      "eng_per_1k_followers": 265.517,
+      "url": "https://x.com/goluten/status/2062790004242600140",
+      "formats": [
+        "other"
+      ],
+      "text": "昨日は結婚記念日。 相場を見てなかったんだけど、 キオクシア（285A）が爆騰😳 1年前に2,435円で1,400株購入。 今日77,540円で全売却 利益は9,836万3,000円💥 結局、 勝つ人ほどシンプル。 良い銘柄を見つけて、 あとは待つだけ。 今後も日本株情報を発信します📩 https://t.co/bLgZFWIB3y"
+    },
+    {
+      "author": "marugoto_banan2",
+      "followers": 724,
+      "eng": 265,
+      "views": 31235,
+      "eng_per_1k_followers": 265.0,
+      "url": "https://x.com/marugoto_banan2/status/2062005846545252705",
+      "formats": [
+        "numbered_list",
+        "daily_recap"
+      ],
+      "text": "📊 今日の結果（6/2）🔥🔥 🇯🇵日本株 📷－70,630円 🟢・パワーエックス －52,950 🟢・村田製作所 －22,150 🟢・スカパーJSAT －41,900 🟢・古河電工 ＋44,500🔥 🟢・フジクラ ＋5,470 🟢・三菱重工業 ＋3,300 🟢・アストロスケール ＋1,340 🟢・ソフトバンク －5,050 🟢・TDK －"
+    },
+    {
+      "author": "manilametr1376",
+      "followers": 615,
+      "eng": 264,
+      "views": 11260,
+      "eng_per_1k_followers": 264.0,
+      "url": "https://x.com/ManilaMetr1376/status/2062838052628971650",
+      "formats": [
+        "other"
+      ],
+      "text": "@buzznews09 コロナの時と同じ コロナの時に1人10万円ずつ配るために770億円を使った日本政府 まず「サ協」と言う天下り団体に770億円を渡す 770億円の内の5％を「サ協」が抜き、広告代理店に委託 その金を564社に委託（9次下請けまである） 下請けが1割ずつ抜き国民は残った10万円を頂く（返還w）"
+    },
+    {
+      "author": "oyamada_maki",
+      "followers": 23360,
+      "eng": 5837,
+      "views": 240740,
+      "eng_per_1k_followers": 249.872,
+      "url": "https://x.com/oyamada_maki/status/2062102648631779349",
+      "formats": [
+        "other"
+      ],
+      "text": "高市早苗陣営が誹謗中傷動画量産に関わっていた決定的な証拠＝Zoom会議音声を週刊文春が公開しました。 高市政権も終わりムードが漂っている中、水を差すようですが、おそらく高市早苗陣営は沈まないと思います。 ここまでの流れは、高市も秘書の木下剛志も予測済みで覚悟は決めているはずです。 おそらく、文春にリークを続けているのは、SANAE TOK"
+    },
+    {
+      "author": "mashima_sherry",
+      "followers": 1831,
+      "eng": 454,
+      "views": 2824,
+      "eng_per_1k_followers": 247.952,
+      "url": "https://x.com/Mashima_Sherry/status/2062861084026081756",
+      "formats": [
+        "other"
+      ],
+      "text": "SAKAMOTO DAYS 38日目19:00時点▷▶︎▷26.00億円(推定) 現時点単日興行収入▷▶︎0.05億円(推定) 本日観客動員数▷▶︎▷約0.3万人(推定) 累計観客動員数▷▶︎▷約188.0万人(推定) 推定上、26億円を突破に！ #SAKAMOTODAYS #興行収入"
+    },
+    {
+      "author": "yuki____323",
+      "followers": 736,
+      "eng": 235,
+      "views": 13060,
+      "eng_per_1k_followers": 235.0,
+      "url": "https://x.com/yuki____323/status/2062750517961580751",
+      "formats": [
+        "other"
+      ],
+      "text": "🔥 285A キオクシア爆上げ中！ AIメモリでヤバい勢い🚀 株価7.7万台！年初来高値8.3万目前 AI需要爆発でNAND最強銘柄が熱すぎる🔥 今買うか？ホールドか？ コメントで教えてくれ！👇 #キオクシア #285A #AI株 #半導体 #爆益"
+    },
+    {
+      "author": "r157546792",
+      "followers": 1233,
+      "eng": 286,
+      "views": 14187,
+      "eng_per_1k_followers": 231.955,
+      "url": "https://x.com/R157546792/status/2061970192834740702",
+      "formats": [
+        "other"
+      ],
+      "text": "2年前、キオクシアに50万円入れた人。🤑 今は“億”の世界に… でも実際、あのタイミングで買えた人はほんの一握り。 俺もNISAで80万円分買って、 1年ちょっとで600万円になりました。 そして今、また見つけました。 キオクシアがまだ注目される前のような、 超低位の半導体関連株… これから来るやつは、静かに仕込むしかない🔥 あなたは今、"
+    },
+    {
+      "author": "kawayaso615",
+      "followers": 1706,
+      "eng": 391,
+      "views": 2941,
+      "eng_per_1k_followers": 229.191,
+      "url": "https://x.com/kawayaso615/status/2062814429931245754",
+      "formats": [
+        "other"
+      ],
+      "text": "昨日は結婚記念日。 相場を見てなかったんだけど、 キオクシア（285A）が爆騰😳 1年前に2,435円で1,400株購入。 今日77,540円で全売却 利益は9,836万3,000円💥 結局、 勝つ人ほどシンプル。 良い銘柄を見つけて、 あとは待つだけ。 今後も日本株情報を発信します📩 https://t.co/M4oyFKN7hI"
+    },
+    {
+      "author": "junchann0202",
+      "followers": 24683,
+      "eng": 5600,
+      "views": 34062,
+      "eng_per_1k_followers": 226.877,
+      "url": "https://x.com/junchann0202/status/2056613580301328609",
+      "formats": [
+        "other"
+      ],
+      "text": "以下の記事で明治天皇の玄孫・竹田恒泰氏に降りかかった仮想通貨トラブルを報じた。 【独自】「明治天皇の玄孫」竹田恒泰が2億3000万円の仮想通貨トラブルを抱えていた 実は上記の記事で竹田氏と写真におさまる人物こそが松井氏だというのだ。 @gendai_biz https://t.co/b4LAChc51x #現代ビジネス"
+    },
+    {
+      "author": "zetu_rrr",
+      "followers": 50740,
+      "eng": 11488,
+      "views": 176221,
+      "eng_per_1k_followers": 226.409,
+      "url": "https://x.com/zetu_rrr/status/2060324892206358857",
+      "formats": [
+        "other"
+      ],
+      "text": "『アッラーのほかに神はなし』 日本の神社でアザーン叫んだ男がエグすぎる まず何が起きたか 神社の鐘楼で梵鐘を撞いた直後にイスラム教のアザーンを大声で唱えた しかも境内をパノラマ撮影しながら動画をSNSに投稿 アザーンの中身はこれ 「アッラーフ・アクバル（神は偉大なり）」 「ハイヤ・アラス・サラー（礼拝に来たれ）」 「ラー・イラーハ・イッラ"
+    },
+    {
+      "author": "chome2xx",
+      "followers": 18187,
+      "eng": 4023,
+      "views": 275030,
+      "eng_per_1k_followers": 221.202,
+      "url": "https://x.com/chome2xx/status/2062824352140468485",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "ビットコインの暴落理由がこれなのは非常に面白い、イーロン・マスクが「エネルギーこそ真の通貨」と言った意味がよくわかる"
+    },
+    {
+      "author": "km4847on4847",
+      "followers": 1096,
+      "eng": 236,
+      "views": 970,
+      "eng_per_1k_followers": 215.328,
+      "url": "https://x.com/km4847on4847/status/2062845727215428019",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "朗報！！朗報！！ 緊急速報やで！！！ 死ぬほど大事だから何度でも言います。 第𝟏位：NTT（9432）→ 133円は必ず購入 第𝟐位：任天堂（7974）→ 7,498円 必ず買い 第𝟑位：ソレイジア (4597)→ 21円で必ず買い 第𝟒位：東京電力（9501）→ 510円 必ず買い 第𝟓位：サンリオ（8136）→ 853円で必ず買い 第"
+    },
+    {
+      "author": "3haon_v",
+      "followers": 492,
+      "eng": 207,
+      "views": 8470,
+      "eng_per_1k_followers": 207.0,
+      "url": "https://x.com/3Haon_v/status/2061208504241881450",
+      "formats": [
+        "other"
+      ],
+      "text": "6月、ついに始まる。ビットコイン史上最大の強気相場。 こうなれば最高なんだけど。現実は… #Bitcoin #BTC https://t.co/aMBWqepS3j"
+    },
+    {
+      "author": "sdhfirfcek",
+      "followers": 905,
+      "eng": 206,
+      "views": 1158,
+      "eng_per_1k_followers": 206.0,
+      "url": "https://x.com/sdhfirfcek/status/2062808378481746210",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "1株で17倍！？大化け株トップ9がヤバい…今すぐ狙える爆益銘柄✨ 今週注目の少額投資株を最新更新！（2026年6月時点参考） 第9位: アドバンテスト（6857） 約19,720円 → 32,400円（約4ヶ月） 第8位: ユニチカ(3103) 約287円 → 4,380円（約3-4ヶ月） 第7位: 川崎汽船(9107) 約2,158円 "
+    },
+    {
+      "author": "n3umu",
+      "followers": 20754,
+      "eng": 4186,
+      "views": 494203,
+      "eng_per_1k_followers": 201.696,
+      "url": "https://x.com/N3umu/status/2062854293645074559",
+      "formats": [
+        "other"
+      ],
+      "text": "このTシャツを着て婚姻届を提出できるメンタル多分日本一 https://t.co/iycJjCCUxc"
+    },
+    {
+      "author": "babukokila",
+      "followers": 2136,
+      "eng": 426,
+      "views": 1640,
+      "eng_per_1k_followers": 199.438,
+      "url": "https://x.com/BabuKokila/status/2062868593021509941",
+      "formats": [
+        "numbered_list"
+      ],
+      "text": "今年59歳で、株を30年続けており、月収は1500万円です、 悪いことは言わない。 もし一生株式投資を続けるつもりなら、 必ず注意すべきことがあります。 ①.任天堂，三井金属，良品計画，トヨタ自動車：業界のリーダー銘柄は、長期保有すべきです。 ②.東京電力 ，サンリオ，三菱UFJ：安定成長型の銘柄は、頻繁に売買する必要はありません。 ③."
+    },
+    {
+      "author": "eritarosu1107",
+      "followers": 1797,
+      "eng": 357,
+      "views": 5648,
+      "eng_per_1k_followers": 198.664,
+      "url": "https://x.com/eritarosu1107/status/2062108044360908816",
+      "formats": [
+        "other"
+      ],
+      "text": "キオクシア上場時にNISAで240万円購入していたら、今は約1億1,600万円。 配当5％なら、毎年500万円の非課税収入も見えてくる。 2年前に少額投資した人も、今は“億”の世界。 私も1,000万円分を購入し、1年ちょっとで3,000万円に。 そして今、また見つけました。 キオクシアが注目される前の空気に似た、超低位半導体株です。"
+    },
+    {
+      "author": "nekoloverisako",
+      "followers": 547,
+      "eng": 197,
+      "views": 40331,
+      "eng_per_1k_followers": 197.0,
+      "url": "https://x.com/nekoloverisako/status/2061966593870246372",
+      "formats": [
+        "other"
+      ],
+      "text": "エスクリプトエナジー、損切りしました。 最後の瞬間は1円2円上がったところでそんな変わらないか、、とぷつんと糸が切れたように手放しました。 去年、沖縄に向かう飛行機に乗る前に買って沖縄に着いた頃に＋20万円になってたあの高揚感は忘れません。 最強でした。 そして、最恐でもありました。 https://t.co/zg9qMrE1fm"
+    },
+    {
+      "author": "aliceneoww",
+      "followers": 628,
+      "eng": 192,
+      "views": 127262,
+      "eng_per_1k_followers": 192.0,
+      "url": "https://x.com/AliceNeoww/status/2062334929338572874",
+      "formats": [
+        "other"
+      ],
+      "text": "@oreteki_douga 投機筋が半導体銘柄を買いあさる→無茶上げしてそれに個人が反応して買う→その後急落→追証防止のために他の銘柄も売られる→全体的に下がる→今後新規上場する大型銘柄の買い付けのために投機筋の資金作り→前からあった銘柄の旬が終わってやはり売られる(今ここ)"
+    },
+    {
+      "author": "wrrgfjghjlkjkl",
+      "followers": 354,
+      "eng": 191,
+      "views": 323,
+      "eng_per_1k_followers": 191.0,
+      "url": "https://x.com/wrrgfjghjlkjkl/status/2062848708077871510",
+      "formats": [
+        "other"
+      ],
+      "text": "2013年、キーエンスを買った人——億り人 2016年、レーザーテックを買った人——億り人 2022年、東京エレクトロンを買った人——億り人 2025年、フジクラを買った人——億り人 2026年前半、キオクシアを買った人——億り人 そして2026年後半—— 次の主役候補は、すでに動き始めている。 気付いた人から先に動く📩 https://"
+    },
+    {
+      "author": "salon_koichi_n",
+      "followers": 1141,
+      "eng": 217,
+      "views": 685,
+      "eng_per_1k_followers": 190.184,
+      "url": "https://x.com/salon_koichi_n/status/2062867930472387027",
+      "formats": [
+        "other"
+      ],
+      "text": "10年相場を見てきた。 こういう地獄の下げは 爆益の前しかない https://t.co/tPLqnCRlun"
+    },
+    {
+      "author": "gold_hukuoka",
+      "followers": 1271,
+      "eng": 238,
+      "views": 25342,
+      "eng_per_1k_followers": 187.254,
+      "url": "https://x.com/gold_hukuoka/status/2060201901157974035",
+      "formats": [
+        "pnl_flex"
+      ],
+      "text": "仮想通貨トレーダーのみんな 有益情報の時間だよ ビットコインこの形だけ覚えておけ👍 1: トップからの暴落 (-54%) → 完了 2: $82Kでの強気トラップ → 完了 3: $72Kでの偽のサポート → 現在ここ 4: 最終的な弱気トラップ → 想定 いいね保存していつでも 見返せるよう（＾ω＾） #BTC https://t.co"
+    },
+    {
+      "author": "takumi_gold_",
+      "followers": 455,
+      "eng": 187,
+      "views": 1146,
+      "eng_per_1k_followers": 187.0,
+      "url": "https://x.com/Takumi_GOLD_/status/2062855308637344209",
+      "formats": [
+        "other"
+      ],
+      "text": "過去に経験した話なんですけど。 40連勝後2連敗してしまった事があったんです。たったの2連敗です。 その負けで離れた人は100人近く居ました。40連勝した後の2連敗でそこまでの人が離れていきました。 もちろん負ける僕が悪いのは分かっています。 正直めちゃくちゃびっくりしました。 勝ちだけを求める人が大半なのも分かっているんです。負けたら怒"
+    },
+    {
+      "author": "ea9mob8l3ymact5",
+      "followers": 776,
+      "eng": 180,
+      "views": 499,
+      "eng_per_1k_followers": 180.0,
+      "url": "https://x.com/Ea9MOb8l3YmAcT5/status/2062844585324478593",
+      "formats": [
+        "other"
+      ],
+      "text": "2013年 キーエンス → 億万長者 2016年 レーザーテック → 億万長者 2022年 東京エレクトロン → 億万長者 2025年 フジクラ → 億万長者 2026年前半 キオクシア → 億万長者 もう分かるだろう。 「このタイミングで買う人」が、次の富を手にする。 そして2026年後半―― 次の主役は、もう動き始めている。 まだ名前"
+    },
+    {
+      "author": "zetu_rrr",
+      "followers": 50740,
+      "eng": 9035,
+      "views": 98912,
+      "eng_per_1k_followers": 178.065,
+      "url": "https://x.com/zetu_rrr/status/2062738709284553102",
+      "formats": [
+        "other"
+      ],
+      "text": "畝本直美検事総長 「しっかりと役割を果たしていきたい」 就任以降の実績 裏金議員16人→不起訴 検事正性暴力の共犯→不起訴 不起訴の理由→非公開 もっとある これが日本の検察トップ しっかり不起訴を果たしてる https://t.co/8BZ6hdnckz"
+    },
+    {
+      "author": "jacktodaieigo",
+      "followers": 16116,
+      "eng": 2844,
+      "views": 10969827,
+      "eng_per_1k_followers": 176.471,
+      "url": "https://x.com/jacktodaieigo/status/2062113871230624063",
+      "formats": [
+        "other"
+      ],
+      "text": "【ご報告】 この度、私チェンジャックは、 大学時に起業し5年間代表を務めてきた 会社を売却することになりました。 自動車整備業界の補助金コンサルの会社です。 金額は買い手のこともあり具体的には言えませんが、数億円規模です。 「売却」と聞くとネガティブに 感じる方もいるかもしれません。 でも、僕にとってこれは「終わり」ではなく、「次への扉」"
+    },
+    {
+      "author": "n3umu",
+      "followers": 20754,
+      "eng": 3640,
+      "views": 392528,
+      "eng_per_1k_followers": 175.388,
+      "url": "https://x.com/N3umu/status/2061299730500775966",
+      "formats": [
+        "other"
+      ],
+      "text": "パラグライダー体験中にクロコンドルと触れ合う男性奇跡の体験過ぎる… https://t.co/2nxf8sndTb"
+    },
+    {
+      "author": "n3umu",
+      "followers": 20754,
+      "eng": 3527,
+      "views": 387739,
+      "eng_per_1k_followers": 169.943,
+      "url": "https://x.com/N3umu/status/2061932910861820062",
+      "formats": [
+        "other"
+      ],
+      "text": "台風えぐい。浜松駅前やべえー。 https://t.co/D48vhX0pQ1"
+    },
+    {
+      "author": "pawapuroketan",
+      "followers": 3162,
+      "eng": 517,
+      "views": 33856,
+      "eng_per_1k_followers": 163.504,
+      "url": "https://x.com/pawapuroketan/status/2058881486909243887",
+      "formats": [
+        "other"
+      ],
+      "text": "少し炎上するかもしれませんが、 長く相場にいるので、 老婆心ながら忠告させていただきたい。 こういう相場こそ、 冷静になる必要があります。 フルレバをすると もうフルレバが当たり前になってしまい、 元に戻れません。 何十万も何百万も稼がないと、 欲が満たされなくなります。 昔の私がそうでした。 信用フルレバで何百万も儲けて、 下落が始まっ"
+    },
+    {
+      "author": "fireeeeeeeeerif",
+      "followers": 10320,
+      "eng": 1679,
+      "views": 539024,
+      "eng_per_1k_followers": 162.694,
+      "url": "https://x.com/FIREEEEEEEEERIF/status/2057957999252238393",
+      "formats": [
+        "other"
+      ],
+      "text": "信用取引をしないのは明確な機会損失です。素人が「信用取引は悪」と刷り込まれていて可哀想。暴落がきても追証にならない程度の余裕を持った運用であれば何の問題もない。 特別に僕の信用ポジションを大公開します。 https://t.co/9ibcTtMlix"
+    },
+    {
+      "author": "ukjd0425",
+      "followers": 1453,
+      "eng": 226,
+      "views": 812,
+      "eng_per_1k_followers": 155.54,
+      "url": "https://x.com/ukjd0425/status/2062776833977057656",
+      "formats": [
+        "other"
+      ],
+      "text": "🔥 285A キオクシア爆上げ中！ AIメモリでヤバい勢い🚀 株価7.7万台！年初来高値8.3万目前 AI需要爆発でNAND最強銘柄が熱すぎる🔥 今買うか？ホールドか？ コメントで教えてくれ！👇 #キオクシア #285A #AI株 #半導体 #爆益 https://t.co/9LLR7wa5H6"
+    },
+    {
+      "author": "8slov8y6",
+      "followers": 406,
+      "eng": 153,
+      "views": 476,
+      "eng_per_1k_followers": 153.0,
+      "url": "https://x.com/8slov8y6/status/2062729016881320322",
+      "formats": [
+        "meme_short"
+      ],
+      "text": "💥三菱重工業 Ihiの子会社不祥事は痛手。 キオクシア⤴️ で三菱さん⤵️ になるならさっさと損切り。 どこまで下がるか分からないから。 任天堂と同じ。"
+    },
+    {
+      "author": "kazuma_btc",
+      "followers": 1307,
+      "eng": 198,
+      "views": 26615,
+      "eng_per_1k_followers": 151.492,
+      "url": "https://x.com/kazuma_btc/status/2062689355807011091",
+      "formats": [
+        "other"
+      ],
+      "text": "ビットコイン、まだ終わってない。 今回の暴落は サイクル底へ向かう通過点。 本番はここから始まる。 #Bitcoin #仮想通貨 https://t.co/s7shwN11Ks"
+    }
+  ]
+}
