@@ -66,10 +66,8 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
           <DocsSidebar titleMap={titleMap} />
         </aside>
         <main className="docs-main">{children}</main>
-        <aside className="docs-ai-sidebar" aria-label="Ask AI about the documentation">
-          <DocsAskPanel />
-        </aside>
       </div>
+      <DocsAskPanel />
     </div>
   )
 }

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { loadAllSummaries } from '@/lib/docs/mdx'
 import { flattenSlugs, pageHref } from '@/lib/docs/nav'
+import {
+  forwardDocsPromptToCrm,
+  saveDocsPrompt,
+  type DocsAskMessage,
+  type DocsAskSource,
+} from '@/lib/docs/ask-store'
 
 type RankedDoc = {
   slug: string
@@ -52,7 +58,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  let body: { question?: unknown; path?: unknown }
+  let body: { question?: unknown; path?: unknown; messages?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -61,6 +67,7 @@ export async function POST(req: NextRequest) {
 
   const question = typeof body.question === 'string' ? body.question.trim() : ''
   const path = typeof body.path === 'string' ? body.path : ''
+  const messages = cleanMessages(body.messages)
 
   if (question.length < 2) {
     return NextResponse.json({ error: 'Ask a longer question.' }, { status: 400 })
@@ -75,24 +82,51 @@ export async function POST(req: NextRequest) {
 
   const upstream = process.env.DOCS_AI_URL || process.env.DOCS_ASK_URL
   if (upstream) {
-    const upstreamAnswer = await askUpstream(upstream, question, path, sources)
+    const upstreamAnswer = await askUpstream(upstream, question, path, sources, messages)
     if (upstreamAnswer) {
-      return NextResponse.json({ ...upstreamAnswer, sources, mode: 'ai' })
+      return respondAndRecord(req, {
+        question,
+        answer: upstreamAnswer.answer,
+        mode: 'ai',
+        path,
+        sources,
+        messages,
+      })
     }
   }
 
   if (process.env.OPENAI_API_KEY) {
-    const answer = await askOpenAI(question, path, rankedDocs)
+    const answer = await askOpenAI(question, path, rankedDocs, messages)
     if (answer) {
-      return NextResponse.json({ answer, sources, mode: 'ai' })
+      return respondAndRecord(req, { question, answer, mode: 'ai', path, sources, messages })
     }
   }
 
-  return NextResponse.json({
+  return respondAndRecord(req, {
+    question,
     answer: fallbackAnswer(rankedDocs),
     sources,
     mode: 'search',
+    path,
+    messages,
   })
+}
+
+async function respondAndRecord(
+  req: NextRequest,
+  payload: {
+    question: string
+    answer: string
+    mode: 'ai' | 'search'
+    path: string
+    sources: DocsAskSource[]
+    messages: DocsAskMessage[]
+  },
+) {
+  const record = { ...payload, ...requestMeta(req) }
+  const id = await saveDocsPrompt(record)
+  void forwardDocsPromptToCrm({ ...record, id })
+  return NextResponse.json({ id, answer: payload.answer, sources: payload.sources, mode: payload.mode })
 }
 
 async function findRelevantDocs(question: string, path: string): Promise<RankedDoc[]> {
@@ -130,13 +164,14 @@ async function askUpstream(
   upstream: string,
   question: string,
   path: string,
-  sources: Array<{ title: string; href: string }>,
+  sources: DocsAskSource[],
+  messages: DocsAskMessage[],
 ) {
   try {
     const res = await fetch(upstream, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, path, sources }),
+      body: JSON.stringify({ question, path, sources, messages }),
       signal: AbortSignal.timeout(45_000),
     })
     if (!res.ok) return null
@@ -148,14 +183,25 @@ async function askUpstream(
   }
 }
 
-async function askOpenAI(question: string, path: string, docs: RankedDoc[]): Promise<string | null> {
-  const model = process.env.DOCS_AI_MODEL || process.env.OPENAI_MODEL || 'gpt-5.4-mini'
+async function askOpenAI(
+  question: string,
+  path: string,
+  docs: RankedDoc[],
+  messages: DocsAskMessage[],
+): Promise<string | null> {
+  const model = process.env.DOCS_AI_MODEL || process.env.OPENAI_MODEL
+  if (!model) return null
+
   const context = docs
     .map((doc, index) => {
       const excerpt = doc.plainText.slice(0, 1800)
       return `[${index + 1}] ${doc.title}\nURL: ${doc.href}\n${excerpt}`
     })
     .join('\n\n')
+  const transcript = messages
+    .slice(-8)
+    .map(message => `${message.role}: ${message.content}`)
+    .join('\n')
 
   try {
     const res = await fetch('https://api.openai.com/v1/responses', {
@@ -169,7 +215,7 @@ async function askOpenAI(question: string, path: string, docs: RankedDoc[]): Pro
         max_output_tokens: 700,
         instructions:
           'You answer General Market documentation questions. Use only the provided docs context. Front-load the answer. Use bullets for lists of three or more items. If the docs context is insufficient, say what is missing. Do not invent endpoints, contract names, numbers, or behavior.',
-        input: `Current page: ${path || '/docs'}\nQuestion: ${question}\n\nDocs context:\n${context}`,
+        input: `Current page: ${path || '/docs'}\nQuestion: ${question}\n\nRecent chat:\n${transcript || '(none)'}\n\nDocs context:\n${context}`,
       }),
       signal: AbortSignal.timeout(45_000),
     })
@@ -209,6 +255,33 @@ function fallbackAnswer(docs: RankedDoc[]): string {
 
   const titles = docs.slice(0, 3).map(doc => doc.title).join(', ')
   return `AI is not configured yet. The closest docs are ${titles}.`
+}
+
+function cleanMessages(value: unknown): DocsAskMessage[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map(item => {
+      if (!item || typeof item !== 'object') return null
+      const role = 'role' in item && item.role === 'assistant' ? 'assistant' : 'user'
+      const content = 'content' in item && typeof item.content === 'string'
+        ? item.content.trim().slice(0, 2_000)
+        : ''
+      return content ? { role, content } : null
+    })
+    .filter((item): item is DocsAskMessage => item !== null)
+    .slice(-12)
+}
+
+function requestMeta(req: NextRequest) {
+  return {
+    ip:
+      req.headers.get('cf-connecting-ip') ||
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      'unknown',
+    ua: (req.headers.get('user-agent') || '').slice(0, 500),
+    referer: (req.headers.get('referer') || '').slice(0, 500),
+  }
 }
 
 function tokenize(input: string): string[] {
