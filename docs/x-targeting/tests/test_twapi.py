@@ -41,3 +41,19 @@ def test_project_budget_math(tmp_path, monkeypatch):
         assert e.code == 2
     # small estimate passes
     twapi.check_budget(10_000)
+
+
+def test_query_hash_canonicalizes_whitespace():
+    a = twapi.query_hash("pumpfun  lang:zh   min_faves:50", "Top")
+    b = twapi.query_hash("pumpfun lang:zh min_faves:50", "Top")
+    c = twapi.query_hash("pumpfun lang:zh min_faves:50", "Latest")
+    assert a == b
+    assert a != c
+
+
+def test_search_dedup_blocks_within_ttl(tmp_path, monkeypatch):
+    searches = tmp_path / "searches.jsonl"
+    monkeypatch.setattr(twapi, "SEARCHES", searches)
+    twapi.log_search("foo lang:ja", "Top", cell="perps-jp", n_tweets=20, n_new=20)
+    assert twapi.search_done_recently("foo  lang:ja", "Top", ttl_days=7) is True
+    assert twapi.search_done_recently("foo lang:ja", "Latest", ttl_days=7) is False

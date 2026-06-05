@@ -34,11 +34,13 @@ ROOT = Path("/Users/maxguillabert/Downloads/index/docs/x-targeting")
 CACHE = ROOT / "cache"
 LEDGER = CACHE / "twapi-ledger.jsonl"
 BUDGET_FILE = ROOT / "niches" / "budget.json"
+SEARCHES = CACHE / "searches.jsonl"
 PROFILES = CACHE / "profiles.jsonl"
 TWEETS = CACHE / "tweets.jsonl"
 HARD_CAP_USD = 1.00  # set by user — never spend more in one session
 CREDITS_PER_USD = 100_000
 LOCK_FILE = CACHE / ".cache.lock"
+SEARCH_TTL_DAYS = 7
 
 
 @contextmanager
@@ -175,6 +177,10 @@ def metered_call(label: str, path: str, params: dict | None,
                 if isinstance(data.get(k), list):
                     count = len(data[k])
                     break
+        for k in ("tweets", "followings", "followers", "users"):
+            if isinstance(body.get(k), list):
+                count = len(body[k])
+                break
     row = {
         "ts": now_iso(),
         "label": label,
@@ -208,6 +214,43 @@ def _write_jsonl(p: Path, rows: list[dict]) -> None:
     with p.open("w") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+def query_hash(query: str, query_type: str) -> str:
+    import hashlib
+    canon = " ".join(query.split()) + "|" + query_type
+    return hashlib.sha256(canon.encode()).hexdigest()[:16]
+
+
+def log_search(query: str, query_type: str, cell: str | None,
+               n_tweets: int, n_new: int, pages: int = 1) -> None:
+    with cache_lock():
+        SEARCHES.parent.mkdir(parents=True, exist_ok=True)
+        with SEARCHES.open("a") as f:
+            f.write(json.dumps({
+                "qhash": query_hash(query, query_type),
+                "query": " ".join(query.split()),
+                "query_type": query_type,
+                "cell": cell,
+                "pages": pages,
+                "n_tweets": n_tweets,
+                "n_new": n_new,
+                "fetched_at": now_iso(),
+            }, ensure_ascii=False) + "\n")
+
+
+def search_done_recently(query: str, query_type: str, ttl_days: int = SEARCH_TTL_DAYS) -> bool:
+    h = query_hash(query, query_type)
+    for row in _load_jsonl(SEARCHES):
+        if row.get("qhash") != h:
+            continue
+        try:
+            t = datetime.fromisoformat(row["fetched_at"])
+            if (datetime.now(timezone.utc) - t).days < ttl_days:
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def _upsert_profile_unlocked(twapi_user: dict, followed_by: str | None = None) -> None:
@@ -594,22 +637,50 @@ def cmd_probe(handle: str, days: int = 14):
         }, indent=2))
 
 
-def cmd_advsearch(query: str, max_results: int = 20):
-    body = metered_call(
-        f"advsearch:{query[:30]}", "/twitter/tweet/advanced_search",
-        {"query": query, "queryType": "Latest"},
-        estimate=15 * 20,
-    )
-    if body.get("status") == "success":
+def cmd_advsearch(query: str, query_type: str = "Latest", cell: str | None = None,
+                  pages: int = 1, force: bool = False, min_new_ratio: float = 0.2):
+    """Paginated advanced search with query-level dedup and a diminishing-returns guard."""
+    if not force and search_done_recently(query, query_type):
+        print(f"  ↳ SEARCH CACHE HIT [{query_type}] {query!r} — ran <{SEARCH_TTL_DAYS}d ago, skipping (use --force)",
+              file=sys.stderr)
+        print("cache-hit 0 new")
+        return
+    total, total_new, cursor = 0, 0, ""
+    completed_pages = 0
+    known_ids = {r.get("tweet_id") for r in _load_jsonl(TWEETS)}
+    for page in range(pages):
+        params = {"query": query, "queryType": query_type}
+        if cursor:
+            params["cursor"] = cursor
+        body = metered_call(
+            f"advsearch[{cell or '-'}]:{query[:40]}:p{page}", "/twitter/tweet/advanced_search",
+            params, estimate=15 * 20,
+        )
+        completed_pages += 1
         data = body.get("data") or {}
-        tweets = data.get("tweets", []) if isinstance(data, dict) else []
-        n_new = upsert_tweets(tweets, source="twapi-advsearch")
-        print(f"got {len(tweets)} tweets, {n_new} new")
-        for t in tweets[:10]:
-            a = (t.get("author") or {}).get("userName")
-            print(f"  @{a}\t♥{t.get('likeCount',0)}  {(t.get('text') or '')[:120]}")
-    else:
-        print(json.dumps(body, indent=2))
+        tweets = data.get("tweets", []) if isinstance(data, dict) else (body.get("tweets") or [])
+        if not tweets and body.get("tweets"):
+            tweets = body.get("tweets") or []
+        if body.get("status") not in (None, "success") and not tweets:
+            print(json.dumps(body, indent=2))
+            break
+        if not tweets:
+            break
+        page_new = sum(1 for t in tweets if str(t.get("id")) not in known_ids)
+        for t in tweets:
+            known_ids.add(str(t.get("id")))
+        n_new = upsert_tweets(tweets, source=f"sweep-{cell}" if cell else "twapi-advsearch", cell=cell)
+        total += len(tweets)
+        total_new += n_new
+        cursor = body.get("next_cursor") or data.get("next_cursor") or ""
+        has_next = body.get("has_next_page", data.get("has_next_page", bool(cursor)))
+        if not cursor or not has_next:
+            break
+        if page_new / max(1, len(tweets)) < min_new_ratio:
+            print(f"  ↳ diminishing returns ({page_new}/{len(tweets)} new) — stop paginating", file=sys.stderr)
+            break
+    log_search(query, query_type, cell, total, total_new, completed_pages)
+    print(f"got {total} tweets, {total_new} new [{query_type}] {query!r}")
 
 
 def cmd_spent():
@@ -654,10 +725,17 @@ def main():
             m = int(sys.argv[sys.argv.index("--max") + 1])
         cmd_followers(sys.argv[2], m)
     elif cmd == "advsearch":
-        m = 20
-        if "--max" in sys.argv:
-            m = int(sys.argv[sys.argv.index("--max") + 1])
-        cmd_advsearch(sys.argv[2], m)
+        def _flag(name, default=None, cast=str):
+            if name in sys.argv:
+                return cast(sys.argv[sys.argv.index(name) + 1])
+            return default
+        cmd_advsearch(
+            sys.argv[2],
+            query_type=_flag("--type", "Latest"),
+            cell=_flag("--cell"),
+            pages=_flag("--pages", 1, int),
+            force="--force" in sys.argv,
+        )
     elif cmd == "spent":
         cmd_spent()
     else:
