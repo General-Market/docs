@@ -1,4 +1,4 @@
-# score	handle	total_eng	n_tweets	followers
+# score	handle	total_eng	n_tweets	followers	note
 101399	@nullfee	71700	2	47963
 85757	@aster_dex	15657	30	308135
 66422	@lighter_xyz	12127	30	118486
@@ -19,3 +19,6 @@
 7908	@avantisfi	1977	16	103991
 7376	@edgex_exchange	2788	7	53598
 6658	@samuelxeus	4708	2	259073
+0	@vooi_io	0	0	182211	graph-pass
+0	@InsilicoTrading	0	0	34818	graph-pass
+0	@tealstreet	0	0	8183	graph-pass

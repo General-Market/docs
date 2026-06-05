@@ -1,4 +1,4 @@
-# score	handle	total_eng	n_tweets	followers
+# score	handle	total_eng	n_tweets	followers	note
 7081	@hyperevm_cn	2135	11	11032
 2670	@btcniumowang	1335	4	16408
 2354	@pwenzhen76938	1177	4	32722
@@ -19,3 +19,6 @@
 910	@vanisaxxm	455	4	9719
 909	@crypto_pumpman	643	2	35109
 907	@formnoshape	641	2	19775
+0	@BroLeon	0	0	115440	graph-pass
+0	@Metabape	0	0	26510	graph-pass
+0	@Ccweb3hub	0	0	13564	graph-pass

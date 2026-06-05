@@ -1,4 +1,4 @@
-# score	handle	total_eng	n_tweets	followers
+# score	handle	total_eng	n_tweets	followers	note
 71498	@giyommigirl	50557	2	5122
 19692	@hanrorock	11369	3	2763
 17928	@ilpyung98	2615	47	9970
@@ -19,3 +19,4 @@
 1508	@m00chi_ya	1066	2	2569
 1242	@whitepeach	439	8	17809
 1237	@semicon_player	505	6	52325
+0	@IPALAU1	0	0	7953	graph-pass
