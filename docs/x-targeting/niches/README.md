@@ -7,10 +7,12 @@ Six cells, one directory each. Per cell:
 - `authors.tsv`   — ranked authors harvested from the sweep.
 - `formats.json`  — machine output of format_miner.py.
 - `formats.md`    — human-readable format ranking with exemplars.
+- `replicability.md` — account-level repeated-format stats for that cell.
 
 Cross-cell deliverables live in `/marketing/niche-research/`:
 - `<cell>.md`            — niche map per cell
 - `format-playbook.md`   — replicable content-format bank
+- `replicability-report.md` — cross-cell account × format recurrence report
 
 Budget: `budget.json` here is the single source of truth, enforced by twapi.py.
 Plan: `docs/superpowers/plans/2026-06-05-niche-research-engine.md`.
