@@ -17,8 +17,8 @@ Usage:
 from __future__ import annotations
 import json
 import fcntl
+import multiprocessing as mp
 import os
-import signal
 import sys
 import time
 import urllib.request
@@ -38,6 +38,7 @@ BUDGET_FILE = ROOT / "niches" / "budget.json"
 SEARCHES = CACHE / "searches.jsonl"
 PROFILES = CACHE / "profiles.jsonl"
 TWEETS = CACHE / "tweets.jsonl"
+BALANCE_CACHE = CACHE / ".last_balance.json"
 HARD_CAP_USD = 1.00  # set by user — never spend more in one session
 CREDITS_PER_USD = 100_000
 LOCK_FILE = CACHE / ".cache.lock"
@@ -64,34 +65,48 @@ def key():
     return KEY_FILE.read_text().strip()
 
 
+def _get_worker(url: str, api_key: str, timeout: int, q) -> None:
+    req = urllib.request.Request(url, headers={"X-API-Key": api_key})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            q.put((r.status, json.load(r)))
+    except urllib.error.HTTPError as e:
+        q.put((e.code, json.load(e) if e.fp else {"error": e.reason}))
+    except (TimeoutError, OSError) as e:
+        q.put((408, {"error": f"timeout/network: {e}"}))
+
+
 def _get(path: str, params: dict | None = None, timeout: int = 30):
     url = BASE + path
     if params:
         url += "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"X-API-Key": key()})
-    old_handler = signal.getsignal(signal.SIGALRM)
-
-    def _timeout(_signum, _frame):
-        raise TimeoutError(f"hard timeout after {timeout}s")
-
-    try:
-        signal.signal(signal.SIGALRM, _timeout)
-        signal.alarm(timeout + 5)
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.status, json.load(r)
-    except urllib.error.HTTPError as e:
-        return e.code, json.load(e) if e.fp else {"error": e.reason}
-    except (TimeoutError, OSError) as e:
-        return 408, {"error": f"timeout/network: {e}"}
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, old_handler)
+    ctx = mp.get_context("fork")
+    q = ctx.Queue(maxsize=1)
+    p = ctx.Process(target=_get_worker, args=(url, key(), timeout, q))
+    p.start()
+    p.join(timeout + 5)
+    if p.is_alive():
+        p.terminate()
+        p.join(2)
+        return 408, {"error": f"timeout/network: hard timeout after {timeout}s"}
+    if q.empty():
+        return 408, {"error": "timeout/network: worker exited without response"}
+    return q.get()
 
 
 def balance() -> tuple[int, int]:
     """Returns (recharge_credits, bonus_credits)."""
-    _, body = _get("/oapi/my/info")
-    return body.get("recharge_credits", 0), body.get("total_bonus_credits", 0)
+    status, body = _get("/oapi/my/info")
+    if status == 200 and "recharge_credits" in body:
+        r = int(body.get("recharge_credits", 0))
+        b = int(body.get("total_bonus_credits", 0))
+        BALANCE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        BALANCE_CACHE.write_text(json.dumps({"recharge_credits": r, "bonus_credits": b, "ts": now_iso()}))
+        return r, b
+    if BALANCE_CACHE.exists():
+        cached = json.loads(BALANCE_CACHE.read_text())
+        return int(cached.get("recharge_credits", 0)), int(cached.get("bonus_credits", 0))
+    raise RuntimeError(f"balance unavailable: status={status} body={body}")
 
 
 def total_credits() -> int:
