@@ -299,6 +299,21 @@ def _upsert_profile_unlocked(twapi_user: dict, followed_by: str | None = None) -
         created_apify = t.strftime("%a %b %d %H:%M:%S +0000 %Y")
     except Exception:
         created_apify = created_iso
+    followers = twapi_user.get("followers")
+    if followers is None:
+        followers = twapi_user.get("followers_count")
+    following = twapi_user.get("following")
+    if following is None:
+        following = twapi_user.get("following_count", twapi_user.get("friends_count"))
+    statuses = twapi_user.get("statusesCount")
+    if statuses is None:
+        statuses = twapi_user.get("statuses_count")
+    media = twapi_user.get("mediaCount")
+    if media is None:
+        media = twapi_user.get("media_tweets_count", twapi_user.get("media_count"))
+    favourites = twapi_user.get("favouritesCount")
+    if favourites is None:
+        favourites = twapi_user.get("favourites_count")
     new = {
         "screen_name": sn,
         "name": twapi_user.get("name"),
@@ -308,11 +323,11 @@ def _upsert_profile_unlocked(twapi_user: dict, followed_by: str | None = None) -
         "location": twapi_user.get("location"),
         "verified": twapi_user.get("isBlueVerified") or twapi_user.get("isVerified"),
         "verified_type": twapi_user.get("verifiedType"),
-        "followers_count": twapi_user.get("followers"),
-        "friends_count": twapi_user.get("following"),
-        "favourites_count": twapi_user.get("favouritesCount"),
-        "statuses_count": twapi_user.get("statusesCount"),  # api-ninja stripped this
-        "media_count": twapi_user.get("mediaCount"),
+        "followers_count": followers,
+        "friends_count": following,
+        "favourites_count": favourites,
+        "statuses_count": statuses,  # api-ninja stripped this
+        "media_count": media,
         "pinned_tweet_ids": twapi_user.get("pinnedTweetIds"),
         "created_at": created_apify,
         "created_iso": created_iso,
@@ -619,15 +634,16 @@ def cmd_followings(handle: str, max_results: int = 200):
             print(json.dumps(body, indent=2))
             break
         data = body.get("data") or {}
-        batch = data.get("followings", []) if isinstance(data, dict) else []
+        batch = body.get("followings") or (data.get("followings", []) if isinstance(data, dict) else [])
         if not batch:
             print("  (no more)")
             break
         for u in batch:
-            upsert_profile(u)
+            upsert_profile(u, followed_by=handle.lstrip("@"))
         fetched.extend(batch)
         cursor = body.get("next_cursor") or data.get("next_cursor") or ""
-        if not cursor or not data.get("has_next_page", True):
+        has_next = body.get("has_next_page", data.get("has_next_page", True) if isinstance(data, dict) else True)
+        if not cursor or not has_next:
             break
         if session_spent_credits() > HARD_CAP_USD * CREDITS_PER_USD * 0.8:
             print(f"  (approaching cap, stop at {len(fetched)})", file=sys.stderr)

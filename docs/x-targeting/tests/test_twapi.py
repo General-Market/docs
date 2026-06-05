@@ -57,3 +57,50 @@ def test_search_dedup_blocks_within_ttl(tmp_path, monkeypatch):
     twapi.log_search("foo lang:ja", "Top", cell="perps-jp", n_tweets=20, n_new=20)
     assert twapi.search_done_recently("foo  lang:ja", "Top", ttl_days=7) is True
     assert twapi.search_done_recently("foo lang:ja", "Latest", ttl_days=7) is False
+
+
+def test_followings_accepts_top_level_response(tmp_path, monkeypatch):
+    monkeypatch.setattr(twapi, "PROFILES", tmp_path / "profiles.jsonl")
+    monkeypatch.setattr(twapi, "LOCK_FILE", tmp_path / ".cache.lock")
+    monkeypatch.setattr(twapi, "session_spent_credits", lambda: 0)
+
+    def fake_metered_call(label, path, params, estimate=0):
+        return {
+            "status": "success",
+            "followings": [
+                {"userName": "edge_a", "id": "1", "followers": 1234},
+                {"userName": "edge_b", "id": "2", "followers": 5678},
+            ],
+            "has_next_page": False,
+            "next_cursor": "",
+        }
+
+    monkeypatch.setattr(twapi, "metered_call", fake_metered_call)
+    twapi.cmd_followings("source_handle", max_results=200)
+
+    rows = [json.loads(l) for l in (tmp_path / "profiles.jsonl").read_text().splitlines() if l.strip()]
+    by_name = {r["screen_name"]: r for r in rows}
+    assert by_name["edge_a"]["followed_by"] == ["source_handle"]
+    assert by_name["edge_b"]["followed_by"] == ["source_handle"]
+
+
+def test_upsert_profile_accepts_snake_case_counts(tmp_path, monkeypatch):
+    monkeypatch.setattr(twapi, "PROFILES", tmp_path / "profiles.jsonl")
+    monkeypatch.setattr(twapi, "LOCK_FILE", tmp_path / ".cache.lock")
+
+    twapi.upsert_profile({
+        "userName": "snake_counts",
+        "id": "1",
+        "followers_count": 12345,
+        "following_count": 67,
+        "favourites_count": 89,
+        "statuses_count": 1011,
+        "media_tweets_count": 12,
+    })
+
+    row = json.loads((tmp_path / "profiles.jsonl").read_text().splitlines()[0])
+    assert row["followers_count"] == 12345
+    assert row["friends_count"] == 67
+    assert row["favourites_count"] == 89
+    assert row["statuses_count"] == 1011
+    assert row["media_count"] == 12
