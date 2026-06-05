@@ -33,6 +33,7 @@ KEY_FILE = Path("/tmp/.twapi_key")
 ROOT = Path("/Users/maxguillabert/Downloads/index/docs/x-targeting")
 CACHE = ROOT / "cache"
 LEDGER = CACHE / "twapi-ledger.jsonl"
+BUDGET_FILE = ROOT / "niches" / "budget.json"
 PROFILES = CACHE / "profiles.jsonl"
 TWEETS = CACHE / "tweets.jsonl"
 HARD_CAP_USD = 1.00  # set by user — never spend more in one session
@@ -117,13 +118,40 @@ def session_spent_credits() -> int:
         return 0
 
 
+def project_spent_credits() -> int:
+    """Project spend = spent_locked + (baseline - current balance)."""
+    b = json.loads(BUDGET_FILE.read_text())
+    r, bo = balance()
+    return b.get("spent_locked_credits", 0) + max(0, b["baseline_credits"] - (r + bo))
+
+
 def check_budget(estimate_credits: int = 0) -> None:
+    if BUDGET_FILE.exists():
+        b = json.loads(BUDGET_FILE.read_text())
+        cap_credits = int(b["cap_usd"] * CREDITS_PER_USD)
+        spent = project_spent_credits()
+        if spent + estimate_credits > cap_credits:
+            print(f"BUDGET BREACH: project spent={spent}c (${spent/CREDITS_PER_USD:.2f}), "
+                  f"would-add={estimate_credits}c, cap=${b['cap_usd']}", file=sys.stderr)
+            sys.exit(2)
+        return
     spent = session_spent_credits()
     cap_credits = int(HARD_CAP_USD * CREDITS_PER_USD)
     if spent + estimate_credits > cap_credits:
         print(f"BUDGET BREACH: spent={spent}, would-add={estimate_credits}, cap={cap_credits} (${HARD_CAP_USD})",
               file=sys.stderr)
         sys.exit(2)
+
+
+def cmd_rebase():
+    """After a credit top-up: fold spend-so-far into spent_locked and reset baseline."""
+    b = json.loads(BUDGET_FILE.read_text())
+    r, bo = balance()
+    current = r + bo
+    b["spent_locked_credits"] = b.get("spent_locked_credits", 0) + max(0, b["baseline_credits"] - current)
+    b["baseline_credits"] = current
+    BUDGET_FILE.write_text(json.dumps(b, indent=2))
+    print(json.dumps({"rebased": True, **b}, indent=2))
 
 
 def metered_call(label: str, path: str, params: dict | None,
@@ -302,7 +330,7 @@ def upsert_tweets(tweets: list[dict], source: str = "twapi", cell: str | None = 
 def cmd_balance():
     r, b = balance()
     spent = session_spent_credits()
-    print(json.dumps({
+    out = {
         "recharge_credits": r,
         "bonus_credits": b,
         "total": r + b,
@@ -310,7 +338,13 @@ def cmd_balance():
         "session_spent_credits": spent,
         "session_spent_usd": round(spent / CREDITS_PER_USD, 4),
         "cap_usd": HARD_CAP_USD,
-    }, indent=2))
+    }
+    if BUDGET_FILE.exists():
+        spent_p = project_spent_credits()
+        cap = json.loads(BUDGET_FILE.read_text())["cap_usd"]
+        out["project_spent_usd"] = round(spent_p / CREDITS_PER_USD, 4)
+        out["project_cap_usd"] = cap
+    print(json.dumps(out, indent=2))
 
 
 PROFILE_TTL_DAYS = 14
@@ -600,6 +634,8 @@ def main():
     cmd = sys.argv[1]
     if cmd == "balance":
         cmd_balance()
+    elif cmd == "rebase":
+        cmd_rebase()
     elif cmd == "userinfo":
         cmd_userinfo(sys.argv[2])
     elif cmd == "lasttweets":
