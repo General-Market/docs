@@ -4,12 +4,12 @@ A motif passes the strong bar when it has at least 50 posts, 20 accounts, and 10
 
 | motif | strong | posts | accounts | dates | date range | cells | median eng/views |
 |---|---|---:|---:|---:|---|---|---:|
-| venue_risk_data_drop | yes | 784 | 562 | 66 | 2026-03-09 → 2026-06-05 | perps-cn:126, perps-en:423, perps-jp:50, perps-kr:45, trenches-cn:96, trenches-en:44 | 166.5 / 6092.0 |
-| wallet_tool_signal | yes | 568 | 386 | 55 | 2026-03-06 → 2026-06-05 | perps-cn:18, perps-en:25, perps-jp:8, perps-kr:32, trenches-cn:223, trenches-en:262 | 128.0 / 5778.0 |
-| bounded_downside_mechanic | yes | 415 | 335 | 53 | 2026-03-22 → 2026-06-05 | perps-cn:20, perps-en:224, perps-jp:21, perps-kr:29, trenches-cn:15, trenches-en:106 | 200 / 6579 |
-| liquidation_trigger_card | yes | 392 | 268 | 60 | 2026-03-22 → 2026-06-05 | perps-cn:32, perps-en:204, perps-jp:70, perps-kr:60, trenches-cn:18, trenches-en:8 | 99.5 / 3722.0 |
-| numbered_market_rule | yes | 214 | 171 | 36 | 2026-03-22 → 2026-06-05 | perps-cn:39, perps-en:35, perps-jp:13, perps-kr:52, trenches-cn:65, trenches-en:10 | 139.0 / 6920.5 |
-| copytrade_teacher_group | yes | 129 | 100 | 33 | 2026-03-25 → 2026-06-05 | perps-cn:29, perps-en:11, perps-kr:13, trenches-cn:66, trenches-en:10 | 123 / 7249 |
+| venue_risk_data_drop | yes | 927 | 663 | 83 | 2026-02-06 → 2026-06-05 | perps-cn:180, perps-en:491, perps-jp:68, perps-kr:50, trenches-cn:94, trenches-en:44 | 136 / 4854 |
+| wallet_tool_signal | yes | 584 | 400 | 61 | 2026-02-20 → 2026-06-05 | perps-cn:31, perps-en:25, perps-jp:10, perps-kr:35, trenches-cn:221, trenches-en:262 | 126.0 / 5778.0 |
+| bounded_downside_mechanic | yes | 452 | 364 | 59 | 2026-02-10 → 2026-06-05 | perps-cn:27, perps-en:243, perps-jp:29, perps-kr:32, trenches-cn:15, trenches-en:106 | 171.0 / 5502.0 |
+| liquidation_trigger_card | yes | 428 | 293 | 67 | 2026-02-10 → 2026-06-05 | perps-cn:41, perps-en:220, perps-jp:77, perps-kr:64, trenches-cn:18, trenches-en:8 | 81.0 / 3000.0 |
+| numbered_market_rule | yes | 237 | 191 | 44 | 2026-02-07 → 2026-06-05 | perps-cn:50, perps-en:40, perps-jp:19, perps-kr:54, trenches-cn:64, trenches-en:10 | 126 / 6432 |
+| copytrade_teacher_group | yes | 132 | 103 | 34 | 2026-03-25 → 2026-06-05 | perps-cn:32, perps-en:11, perps-kr:13, trenches-cn:66, trenches-en:10 | 113.0 / 7213.5 |
 
 ## venue_risk_data_drop
 

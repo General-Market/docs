@@ -1,0 +1,13 @@
+# cell	query	types	note
+perps-cn	资金费套利 币安 合约	Both	CN funding-arb + Binance perps
+perps-cn	资金费套利 Hyperliquid	Both	CN funding-arb + Hyperliquid
+perps-cn	资金费率套利 合约	Both	CN funding-rate arb + perps
+perps-cn	基差交易 币安 合约	Both	CN basis trade + Binance perps
+perps-cn	基差交易 Hyperliquid	Both	CN basis trade + Hyperliquid
+perps-cn	正套 反套 合约	Both	CN cash-and-carry directional pair language
+perps-cn	市场中性 合约 资金费	Both	CN market-neutral + funding
+perps-cn	Delta中性 合约 资金费	Both	CN delta-neutral + funding
+perps-cn	德尔塔中性 合约	Both	CN delta-neutral native spelling
+perps-cn	搬砖 资金费率 合约	Both	CN arbitrage slang + funding
+perps-cn	资金费率 搬砖 币安	Both	CN Binance funding-rate spread
+perps-cn	永续 基差 套利	Both	CN perp basis arb

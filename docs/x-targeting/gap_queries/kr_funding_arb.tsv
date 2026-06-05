@@ -1,0 +1,13 @@
+# cell	query	types	note
+perps-kr	펀딩비 차익거래	Both	KR funding-rate arb
+perps-kr	펀딩비 아비트라지	Both	KR funding-rate arb loanword
+perps-kr	펀딩비 델타중립	Both	KR funding + delta-neutral
+perps-kr	델타중립 선물	Both	KR delta-neutral futures
+perps-kr	현선물 차익	Both	KR spot/futures arbitrage
+perps-kr	선물 현물 차익	Both	KR futures/spot arbitrage
+perps-kr	베이시스 거래 코인	Both	KR basis trade crypto
+perps-kr	베이시스 차익 코인	Both	KR basis arbitrage crypto
+perps-kr	무기한 선물 펀딩비 차익	Both	KR perp funding arb
+perps-kr	하이퍼리퀴드 펀딩비 차익	Both	Hyperliquid KR funding arb
+perps-kr	Hyperliquid 펀딩비 차익	Both	Hyperliquid mixed KR funding arb
+perps-kr	마이너스 펀딩비 차익	Both	negative funding KR arb

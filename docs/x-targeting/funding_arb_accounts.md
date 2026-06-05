@@ -4,30 +4,38 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 
 | language | matching posts | accounts | regular mentioners | clean regular accounts | strong clean accounts |
 |---|---:|---:|---:|---:|---:|
-| en | 209 | 140 | 14 | 4 | 1 |
-| zh | 36 | 33 | 1 | 0 | 0 |
-| ja | 27 | 26 | 0 | 0 | 0 |
-| ko | 41 | 21 | 3 | 0 | 0 |
+| en | 264 | 179 | 19 | 7 | 2 |
+| zh | 81 | 72 | 3 | 0 | 0 |
+| ja | 103 | 90 | 2 | 0 | 0 |
+| ko | 54 | 26 | 3 | 0 | 0 |
 
 ## en
 
 | account | posts | broad arb | clean arb | dates | median eng/views | confidence | examples |
 |---|---:|---:|---:|---:|---:|---|---|
+| @ryuzaki_sei (33655) | 8 | 8 | 8 | 8 | 93.0 / 3683.5 | high | [1](https://x.com/Ryuzaki_SEI/status/2032254521574113414) [2](https://x.com/Ryuzaki_SEI/status/2060175668437246154) [3](https://x.com/Ryuzaki_SEI/status/2062693990848508388) |
 | @vooi_io (182211) | 9 | 8 | 7 | 9 | 77 / 5242 | high | [1](https://twitter.com/vooi_io/status/2034612529578512663) [2](https://x.com/vooi_io/status/2048742259659595803) [3](https://x.com/vooi_io/status/2049399739666288884) |
-| @ryuzaki_sei (33655) | 4 | 4 | 4 | 4 | 89.5 / 3832.0 | high | [1](https://x.com/Ryuzaki_SEI/status/2060175668437246154) [2](https://x.com/Ryuzaki_SEI/status/2062693990848508388) [3](https://x.com/Ryuzaki_SEI/status/2057382897569706336) |
 | @mmenyene_c (6678) | 3 | 3 | 3 | 3 | 332 / 4768 | high | [1](https://x.com/Mmenyene_C/status/2057338985601536047) [2](https://x.com/Mmenyene_C/status/2056253194188083456) [3](https://x.com/Mmenyene_C/status/2055719864707219928) |
 | @sammymzy (12677) | 3 | 3 | 3 | 3 | 215 / 4896 | high | [1](https://x.com/SammyMzy/status/2055715384049684643) [2](https://x.com/SammyMzy/status/2056821366675190186) [3](https://x.com/SammyMzy/status/2058666300709515599) |
+| @reya_xyz (78417) | 3 | 3 | 3 | 3 | 146 / 4222 | high | [1](https://x.com/reya_xyz/status/2056672407604412605) [2](https://x.com/reya_xyz/status/2059652860112158828) [3](https://twitter.com/reya_xyz/status/1970188066645295369) |
+| @mozifinance (61731) | 3 | 3 | 3 | 2 | 12 / 263 | high | [1](https://x.com/mozifinance/status/2062762165468364917) [2](https://x.com/mozifinance/status/2056588837204410649) [3](https://x.com/mozifinance/status/2062762171684257968) |
+| @usenami_io (22) | 3 | 3 | 3 | 3 | 1 / 50 | high | [1](https://x.com/usenami_io/status/2046469055062917472) [2](https://x.com/usenami_io/status/2062036684355858593) [3](https://x.com/usenami_io/status/2062761495893803158) |
 | @loristools (3734) | 9 | 2 | 2 | 8 | 65 / 6389 | medium | [1](https://x.com/LorisTools/status/2054192741127458889) [2](https://x.com/LorisTools/status/2054207320653955445) [3](https://twitter.com/LorisTools/status/2027537156701335705) |
+| @neutrafinance (17080) | 3 | 2 | 2 | 3 | 88 / 1315 | medium | [1](https://x.com/NeutraFinance/status/2062229208500257088) [2](https://x.com/NeutraFinance/status/2049767081462116603) [3](https://x.com/NeutraFinance/status/2050129270060511313) |
 | @krowncryptocave (110138) | 6 | 0 | 0 | 6 | 169.5 / 7184.5 | medium | [1](https://x.com/KrownCryptoCave/status/2058221628442767768) [2](https://x.com/KrownCryptoCave/status/2057470592060895401) [3](https://x.com/KrownCryptoCave/status/2059294554084491421) |
 | @azharthegreat (1986) | 5 | 4 | 0 | 3 | 0 / 16 | medium | [1](https://x.com/Azharthegreat/status/2055892748465524871) [2](https://x.com/Azharthegreat/status/2056785182842106008) [3](https://x.com/Azharthegreat/status/2056649196850020449) |
 | @cryptorover (1594025) | 4 | 3 | 0 | 4 | 906.0 / 67747.5 | medium | [1](https://x.com/cryptorover/status/2047384509696335993) [2](https://x.com/cryptorover/status/2052639888218992819) [3](https://x.com/cryptorover/status/2045088454565117986) |
 | @cryptotice_ (325996) | 4 | 3 | 0 | 4 | 255.5 / 15224.5 | medium | [1](https://x.com/CryptoTice_/status/2047593891361169709) [2](https://x.com/CryptoTice_/status/2048824503220703349) [3](https://x.com/CryptoTice_/status/2062232848711688220) |
 | @ekinoks_26 (8652) | 3 | 1 | 0 | 3 | 355 / 516 | medium | [1](https://x.com/ekinoks_26/status/2054798481819070780) [2](https://x.com/ekinoks_26/status/2061734575701729291) [3](https://x.com/ekinoks_26/status/2062862486718582801) |
 | @peter_thoc (180132) | 3 | 2 | 0 | 3 | 207 / 7893 | medium | [1](https://x.com/Peter_thoc/status/2044370650945786026) [2](https://x.com/Peter_thoc/status/2044050393848852790) [3](https://x.com/Peter_thoc/status/2052033178869825567) |
-| @_ctm_crypto (5061) | 3 | 0 | 0 | 3 | 101 / 8535 | medium | [1](https://x.com/_ctm_crypto/status/2056425049461059708) [2](https://x.com/_ctm_crypto/status/2049103174464651717) [3](https://x.com/_ctm_crypto/status/2052404952358600872) |
-| @darklord_gr (0) | 3 | 0 | 0 | 3 | 9 / 258 | medium | [1](https://x.com/DarkLord_gr/status/2055808272507269609) [2](https://x.com/DarkLord_gr/status/2056495553593442703) [3](https://x.com/DarkLord_gr/status/2055072676977524871) |
-| @laevitas1 (25003) | 3 | 1 | 0 | 3 | 3 / 774 | medium | [1](https://twitter.com/laevitas1/status/2052126991902536147) [2](https://twitter.com/laevitas1/status/2043697668313022620) [3](https://twitter.com/laevitas1/status/2052823353849733618) |
-| @x_four_iv (50891) | 2 | 2 | 2 | 2 | 293.0 / 10858.5 | near-miss | [1](https://x.com/X_Four_iv/status/2060732946798321665) [2](https://x.com/X_Four_iv/status/2061023122447598062) |
+
+### @ryuzaki_sei
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 209 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2032254521574113414) | best week in @variational_io for points 🪂 234 points from $3.6M volume trading eth, zec, sol and sui and big position of xrp for a week. you can do it too do delta neutral with extended perp so you can get both the big airdrops which will h |
+| 142 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2060175668437246154) | best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all these trading, sol & hype with extended perp & xau, xag with ostium perp.  |
+| 125 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2062693990848508388) | Biggest points cook in @variational_io 🪂 237 points from $2.9M volume by trading xau, cl, $hype, $sol & zec pair this week pnl is about $4.1k + $390 in funding fees my strategy: doing delta neutral with extended perp which gives me the oppo |
 
 ### @vooi_io
 
@@ -36,14 +44,6 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 | 558 | - | [post](https://twitter.com/vooi_io/status/2034612529578512663) | What do you think of a nice APR strategy? No 🧢 Meet VOOI Funding Radar - where @HyperliquidX, @Lighter_xyz and @Aster_DEX perps are scanned to capture imbalances automatically 👇🏻 → Select asset and size → Check the funding arb rates and ~AP |
 | 213 | - | [post](https://x.com/vooi_io/status/2048742259659595803) | VOOI has joined @Lighter_xyz Partner Attribution Program Since integrating Lighter last December, VOOI has processed over $1.1B in cumulative trading volume on the venue - making VOOI the #1 Lighter builder by volume Partner Attribution mak |
 | 83 | - | [post](https://x.com/vooi_io/status/2049399739666288884) | trade[XYZ] @tradexyz HIP-3 markets - now live on VOOI Ultra The biggest RWA markets issuer - trade[XYZ] - powers onchain 24/7 trading commodities equities, indices, commodities, and FX + Discover unique funding rates, consistently mispriced |
-
-### @ryuzaki_sei
-
-| eng | cell | example | clue |
-|---:|---|---|---|
-| 142 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2060175668437246154) | best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all these trading, sol & hype with extended perp & xau, xag with ostium perp.  |
-| 109 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2062693990848508388) | Biggest points cook in @variational_io 🪂 237 points from $2.9M volume by trading xau, cl, $hype, $sol & zec pair this week pnl is about $4.1k + $390 in funding fees my strategy: doing delta neutral with extended perp which gives me the oppo |
-| 70 | perps-en | [post](https://x.com/Ryuzaki_SEI/status/2057382897569706336) | full guide + best strategy to farm @variational_io perp points 🪂 variational raised $50M funding from dragonfly which is huge for perp & total funding is now $61.8M i farmed 4151 points here my strategy and lot of important tips how to star |
 
 ### @mmenyene_c
 
@@ -61,6 +61,30 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 | 215 | perps-en | [post](https://x.com/SammyMzy/status/2056821366675190186) | Depositing into a single vault and having your capital automatically split across market making, funding rate arbitrage and real-world asset strategies is not something most retail investors had access to before That’s institutional-grade e |
 | 183 | perps-en | [post](https://x.com/SammyMzy/status/2058666300709515599) | . @alturax yield doesn’t come from thin air and this breakdown explains exactly why Three strategies running simultaneously, delta-neutral market making capturing bid-ask spreads without directional exposure, funding rate and basis arbitrag |
 
+### @reya_xyz
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 161 | perps-en | [post](https://x.com/reya_xyz/status/2056672407604412605) | The SEC is moving to legalise tokenized stock trading onchain. That accelerates two things: broader global access to equities, and the viability of RWA perps at scale, especially those wanting to run the basis trade, holding the tokenized e |
+| 146 | perps-en | [post](https://x.com/reya_xyz/status/2059652860112158828) | Earlier this month, we released spot on the trade screen. Why does that matter to you? Basis traders: spot on the Reya trade screen means you can long spot, short perp, and use the spot as collateral for the perp. Funding captured. Capital  |
+| 65 | - | [post](https://twitter.com/reya_xyz/status/1970188066645295369) | Find your next funding arb opportunity on Reya with @FundingLighter community bot. |
+
+### @mozifinance
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 28 | perps-en | [post](https://x.com/mozifinance/status/2062762165468364917) | 🧵 Hidden PerpDEX Strategy Thread 1/3 You don't have to predict whether the market goes up or down to make money in crypto. Most people don't know that. The ones who do are quietly running funding rate arbitrage; and it's one of the most con |
+| 12 | perps-en | [post](https://x.com/mozifinance/status/2056588837204410649) | What you get inside: 💻Funding rate arb scanner — 2,600%+ APR spreads showing up live right now. Cross-venue arbitrage that most traders don't even know exists. 🖱️One-click execution across every integrated DEX. See an opportunity on Hyperli |
+| 4 | perps-en | [post](https://x.com/mozifinance/status/2062762171684257968) | Thread 3/3 This is exactly what MOZI was built for. The funding arb scanner shows rate differences across Hyperliquid, Lighter, and Aster in real time. When a spread opens up, click trade both sides auto-populate on one screen. Long on one  |
+
+### @usenami_io
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 4 | perps-en | [post](https://x.com/usenami_io/status/2046469055062917472) | Funding Rate Arbitrage / 06:00 UTC Scanning major CEX + DEX in real-time 1. 𝗦𝗧𝗔𝗕𝗟𝗘 Long Hyperliquid (-206.7%) / Short Phemex (+5.5%) Spread: 212.2% APR 2. 𝗨𝗠𝗔 Long Binance (-374.9%) / Short BingX (-222.3%) Spread: 152.6% APR 3. 𝗣𝗧𝗕 Long KuC |
+| 1 | perps-en | [post](https://x.com/usenami_io/status/2062036684355858593) | DeFi vs CeFi Funding Rates Decentralized (DEX) and centralized (CEX) exchanges often show different funding rates for the same asset. Why they differ: → Different user bases and liquidity → Different rate calculation methods → DEX rates rea |
+| 1 | perps-en | [post](https://x.com/usenami_io/status/2062761495893803158) | How to Profit from Funding Rate Arbitrage Funding rate arbitrage = profit from rate differences between exchanges. Strategy: 1. Find an asset with HIGH positive rate on Exchange A 2. Find the SAME asset with LOW/negative rate on Exchange B  |
+
 ### @loristools
 
 | eng | cell | example | clue |
@@ -69,36 +93,15 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 | 140 | - | [post](https://x.com/LorisTools/status/2054207320653955445) | RT @sam_battenally: I've said it before, and I'll say it again Perp funding rate is an incredible mechanism. And it's particularly interes… |
 | 84 | - | [post](https://twitter.com/LorisTools/status/2027537156701335705) | Trade is Now Live in Private Beta on @LorisTools • 1-Click Cross-Exchange Funding Arb - Live on Hyperliquid and Extended, more venues coming soon • Randomized Hidden TWAPs - Amounts and intervals randomized with offchain execution logic • C |
 
-### @krowncryptocave
-
-| eng | cell | example | clue |
-|---:|---|---|---|
-| 185 | perps-en | [post](https://x.com/KrownCryptoCave/status/2058221628442767768) | bitcoin:native down 3% from yesterday. funding rates still positive. not good for next week boolahs https://t.co/BAn8Ttct8A |
-| 172 | perps-en | [post](https://x.com/KrownCryptoCave/status/2057470592060895401) | bitcoin:native leverage funding rates maintaining the most consistently positive streak in months. imo this rally will fail, short term downside bias remains https://t.co/PsyKDEleB3 |
-| 172 | perps-en | [post](https://x.com/KrownCryptoCave/status/2059294554084491421) | bitcoin:native funding rates still remain positive despite Bitcoins short term downtrend. likely lower before the next major low is found https://t.co/1M2Y1E1dHa |
-
-### @azharthegreat
-
-| eng | cell | example | clue |
-|---:|---|---|---|
-| 1 | - | [post](https://x.com/Azharthegreat/status/2055892748465524871) | BTC -1.13% on the day but still hasn’t fully lost the range. Most see positive funding and assume strength. Reality is the upper third held firm while the breakdown never completed. Price is stuck deciding inside balance, not trending. Head |
-| 0 | - | [post](https://x.com/Azharthegreat/status/2056785182842106008) | BTC still trapped in the 76.1k-77.3k box on light volume. Most read this as boring chop. But positive funding at 0.56bps while vol stays compressed? That's longs paying to stay in while nothing expands. Fuel, not strength. Middle of range h |
-| 0 | - | [post](https://x.com/Azharthegreat/status/2056649196850020449) | BTC +0.02% on the day, sitting in the upper half of its range. Most see positive funding and call it strength. Reality is longs paying early before the market has accepted higher prices. The middle is still holding. No clean follow-through. |
-
-### @cryptorover
-
-| eng | cell | example | clue |
-|---:|---|---|---|
-| 1342 | perps-en | [post](https://x.com/cryptorover/status/2047384509696335993) | EXTREMELY negative funding for Bitcoin. This is insane. https://t.co/PoXpI1W68V |
-| 1077 | perps-en | [post](https://x.com/cryptorover/status/2052639888218992819) | $BTC funding rates flip positive again. Traders are flipping bullish on Bitcoin. https://t.co/nnyfQAbvpI |
-| 735 | perps-en | [post](https://x.com/cryptorover/status/2045088454565117986) | Extremely negative funding rates for Bitcoin. Traders are MASSIVELY shorting the $BTC pump. https://t.co/QsUBghRL9x |
-
 ## zh
 
 | account | posts | broad arb | clean arb | dates | median eng/views | confidence | examples |
 |---|---:|---:|---:|---:|---:|---|---|
 | @lubijiaocheng (25517) | 3 | 2 | 2 | 3 | 225 / 3219 | medium | [1](https://x.com/lubijiaocheng/status/2061703888395219375) [2](https://x.com/lubijiaocheng/status/2062427708290932845) [3](https://x.com/lubijiaocheng/status/2062812177531310330) |
-| @webktsr (40107) | 2 | 1 | 0 | 2 | 414.0 / 11366.5 | near-miss | [1](https://x.com/webktsr/status/2056582985688707514) [2](https://x.com/webktsr/status/2062710375062323557) |
+| @webktsr (40105) | 3 | 2 | 1 | 3 | 405 / 11539 | medium | [1](https://x.com/webktsr/status/2056582985688707514) [2](https://x.com/webktsr/status/2056213071773962438) [3](https://x.com/webktsr/status/2062710375062323557) |
+| @fanfanboruo (58) | 4 | 0 | 0 | 1 | 1.0 / 65.0 | medium | [1](https://x.com/fanfanboruo/status/2062494407933493503) [2](https://x.com/fanfanboruo/status/2062424079999844643) [3](https://x.com/fanfanboruo/status/2062496882560258508) |
+| @bongquotes_ (62459) | 2 | 0 | 0 | 1 | 0.5 / 150.0 | near-miss | [1](https://x.com/bongquotes_/status/2062814938356396503) [2](https://x.com/bongquotes_/status/2062814922552283357) |
+| @hashnewshk (23451) | 2 | 0 | 0 | 1 | 0.0 / 159.0 | near-miss | [1](https://x.com/HashNewsHK/status/2062859547149209747) [2](https://x.com/HashNewsHK/status/2062851993971109937) |
 
 ### @lubijiaocheng
 
@@ -113,13 +116,96 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 | eng | cell | example | clue |
 |---:|---|---|---|
 | 595 | perps-cn | [post](https://x.com/webktsr/status/2056582985688707514) | 姐妹们，昨天Binance刚把BTCUSD1永续上线，我刷广场时停下来多看了两眼。 大家聊这个新pair的已经分成两拨了。 一拨还在讨论上线新鲜事，另一拨老玩家已经开始研究那个99.99%的抵押比例。 因为真正玩合约的都清楚，影响仓位体验的，很多时候不是方向对不对，而是交易所到底认不认你手里的钱。 USD1这次最抓人的地方，就在这。 在Portfolio Margin体系里，它现在是最高 tier。理论上1万USD1能贡献接近9999美元的保证金容量，基本1比1计入。 新手可 |
-| 233 | perps-cn | [post](https://x.com/webktsr/status/2062710375062323557) | 早呀，姐妹们！ 很多人看到 @worldlibertyfi 和 Binance 最近这条消息，第一眼就只记住四个字：0挂单费。 我一开始也一样，刷过去就觉得省钱了呗。 后来我把费率表和交易模型仔仔细细算了一遍，才发现真正有意思的不是省了多少钱，而是Binance到底为什么愿意让你省这笔。 规则已经确认了USD1保证金永续合约Maker费率直接0%，普通用户到VIP3的Taker费率从0.05%降到0.04%，VIP4到VIP9还能多拿45%吃单折扣，BTCUSD1这些品种已经 |
+| 405 | perps-cn | [post](https://x.com/webktsr/status/2056213071773962438) | 早呀早呀，姐妹们！ 离 $BTC USD1正式上线不到6小时啦！我刚把这套合约机制又看了遍，感觉 #USD1 这次的位置跟以前真不一样了。 以前它虽然能转能存能结算，但真要开仓的大家还是习惯切回USDT。这次直接全用USD1报价、保证金、抵押品，一步就到了交易核心。 Binance给的待遇也超给力，Portfolio Margin里已拉到99.99%，基本跟USDT、USDC一个级别。你钱包里的USD1现在大部分价值都能直接顶保证金，少了一次换币摩擦。行情一快，同样的钱仓位空 |
+| 260 | perps-cn | [post](https://x.com/webktsr/status/2062710375062323557) | 早呀，姐妹们！ 很多人看到 @worldlibertyfi 和 Binance 最近这条消息，第一眼就只记住四个字：0挂单费。 我一开始也一样，刷过去就觉得省钱了呗。 后来我把费率表和交易模型仔仔细细算了一遍，才发现真正有意思的不是省了多少钱，而是Binance到底为什么愿意让你省这笔。 规则已经确认了USD1保证金永续合约Maker费率直接0%，普通用户到VIP3的Taker费率从0.05%降到0.04%，VIP4到VIP9还能多拿45%吃单折扣，BTCUSD1这些品种已经 |
+
+### @fanfanboruo
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 1 | perps-cn | [post](https://x.com/fanfanboruo/status/2062494407933493503) | @heyibinance 合格个狗日，币安联合LAB的庄家用资金费率收割散户，一小时一次的资金费率1%超过3天了，真是把用户当猪 |
+| 1 | perps-cn | [post](https://x.com/fanfanboruo/status/2062424079999844643) | @heyibinance 币安请严查LAB利用你们平台一个小时一次的资金费率的BUG收割散户 |
+| 1 | perps-cn | [post](https://x.com/fanfanboruo/status/2062496882560258508) | 狗日的中心化交易所，联合LAB的庄家用资金费率收割散户，一小时一次的资金费率1%超过3天了，真是把用户当猪，这把爆仓了，这辈子就结束了，要疯了，币圈被LAB搞成诈骗场了，不是赌博，是赤裸裸的诈骗 |
+
+### @bongquotes_
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 1 | perps-cn | [post](https://x.com/bongquotes_/status/2062814938356396503) | 合约市场最残酷的真相：你亏的从来不是行情，是不懂规则 送给所有长期在合约市场挣扎的交易者： 如果你做合约一直反复亏损、持续交学费，不是你看不懂K线，也不是你运气不好，而是你从始至终，都没看懂合约这场游戏的底层规则。 几乎所有人都经历过这种绝望的闭环： 单子一进场，行情立刻反向； 咬牙止损离场，走势马上按自己预判的方向走； 好不容易看对一次大趋势，最后却依旧落得亏损、甚至爆仓。 久而久之，大家都会疑惑：为什么市场总是精准针对我？ 今天说一句最真实、也最扎心的大实话：市场从来不会 |
+| 0 | perps-cn | [post](https://x.com/bongquotes_/status/2062814922552283357) | 合约市场最残酷的真相：你亏的从来不是行情，是不懂规则 送给所有长期在合约市场挣扎的交易者： 如果你做合约一直反复亏损、持续交学费，不是你看不懂K线，也不是你运气不好，而是你从始至终，都没看懂合约这场游戏的底层规则。 几乎所有人都经历过这种绝望的闭环： 单子一进场，行情立刻反向； 咬牙止损离场，走势马上按自己预判的方向走； 好不容易看对一次大趋势，最后却依旧落得亏损、甚至爆仓。 久而久之，大家都会疑惑：为什么市场总是精准针对我？ 今天说一句最真实、也最扎心的大实话：市场从来不会 |
+
+### @hashnewshk
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 0 | perps-cn | [post](https://x.com/HashNewsHK/status/2062859547149209747) | 当资金费率全线转负，期权偏斜度却飙升至30%，市场在定价的不是简单的涨跌，而是一种结构性的防御姿态。 Glassnode数据显示，比特币1周隐含波动率逼近60%，25D偏斜度一度达30%，看跌期权占期权费交易量的31.5%。做市商在6.5万美元附近堆积空头Gamma，价格波动可能被放大。与此同时，主流CEX和DEX资金费率同步转负，显示永续合约市场普遍看空。 两个信号指向同一个结论：交易者正在为下行支付高额保费，而非押注反弹。这与ETF资金结束流出形成反差——现货市场略有回暖 |
+| 0 | perps-cn | [post](https://x.com/HashNewsHK/status/2062851993971109937) | 资金费率全面转负，比特币逼近6.1万美元——这不是一次普通回调。 Coinglass数据显示，主流CEX和DEX资金费率已低于0.005%，市场重回显著看空。上一次出现这种结构，还是在2024年7月。当时比特币从6.5万跌至5.4万，用了三周。 但这次更复杂。Zcash漏洞引发隐私币信任危机，AI板块持续吸走流动性，ETF连续13日流出44亿美元后虽有小幅回流，但结构性问题未解。灰度直言，比特币需要“其他买家”才能找到可持续底部——暗示Strategy等机构增持能力已达瓶颈。 |
 
 ## ja
 
 | account | posts | broad arb | clean arb | dates | median eng/views | confidence | examples |
 |---|---:|---:|---:|---:|---:|---|---|
-| @eureka_cm (515) | 2 | 2 | 1 | 1 | 0.0 / 31.0 | near-miss | [1](https://x.com/eureka_cm/status/2062946256922742958) [2](https://x.com/eureka_cm/status/2062946383095804362) |
+| @nyatoyoshikatsu (139) | 4 | 4 | 2 | 2 | 5.0 / 295.0 | medium | [1](https://x.com/nyatoyoshikatsu/status/2062758229315326063) [2](https://x.com/nyatoyoshikatsu/status/2059822263751540883) [3](https://x.com/nyatoyoshikatsu/status/2062734285996691838) |
+| @shogun_sy (104) | 3 | 3 | 2 | 1 | 3 / 145 | medium | [1](https://x.com/SHOGUN_SY/status/2062833756357189779) [2](https://x.com/SHOGUN_SY/status/2062833587724947547) [3](https://x.com/SHOGUN_SY/status/2062833873663447449) |
+| @happynapx (607) | 2 | 2 | 2 | 2 | 9.0 / 1801.5 | near-miss | [1](https://x.com/happynapx/status/2040777977479520366) [2](https://x.com/happynapx/status/2041479149500719309) |
+| @ut_kabu (109) | 2 | 2 | 2 | 2 | 2.5 / 69.5 | near-miss | [1](https://x.com/ut_kabu/status/2057227375503667705) [2](https://x.com/ut_kabu/status/2056512906800644512) |
+| @cosmo20199 (5117) | 2 | 1 | 1 | 2 | 101.0 / 17723.5 | near-miss | [1](https://x.com/cosmo20199/status/2062385680668651781) [2](https://x.com/cosmo20199/status/2046732714749935887) |
+| @yoshihiko_ickw (916) | 2 | 2 | 1 | 2 | 16.0 / 705.5 | near-miss | [1](https://x.com/Yoshihiko_ICKW/status/2060905190686101945) [2](https://x.com/Yoshihiko_ICKW/status/2022441403679482120) |
+| @k_koga555 (925) | 2 | 1 | 1 | 2 | 5.0 / 585.0 | near-miss | [1](https://x.com/k_koga555/status/2056862778019975606) [2](https://x.com/k_koga555/status/2040677268192915804) |
+| @eureka_cm (515) | 2 | 2 | 1 | 1 | 0.0 / 44.0 | near-miss | [1](https://x.com/eureka_cm/status/2062946256922742958) [2](https://x.com/eureka_cm/status/2062946383095804362) |
+| @chives_vtuber (20603) | 2 | 2 | 0 | 2 | 178.5 / 21419.5 | near-miss | [1](https://x.com/Chives_VTuber/status/2045877204337484269) [2](https://x.com/Chives_VTuber/status/2046601369344422192) |
+| @alternative498 (473) | 2 | 0 | 0 | 2 | 6.5 / 162.5 | near-miss | [1](https://x.com/Alternative498/status/2062532813250048078) [2](https://x.com/Alternative498/status/2061642278981288075) |
+
+### @nyatoyoshikatsu
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 9 | perps-jp | [post](https://x.com/nyatoyoshikatsu/status/2062758229315326063) | @kei_toshi__ 日経平均と日経先物の間に130円ぐらいの価格差が出て、裁定業者は高い日経現物を売って先物を買っています。このためで日経にすぐ影響が出る株の現物が売られています。 普段はこんなに乱暴な捌きをしませんが、来週はメジャーSQですから、急いで投げ売りをしている模様。SQすぎたらよくなると思います |
+| 8 | perps-jp | [post](https://x.com/nyatoyoshikatsu/status/2059822263751540883) | TOPIX先物は3910、現物は3907、後場寄り付きの時、裁定業者は現物を買うのか。TOPIXのコア30の構成銘柄伊藤忠三菱商事三井物産は買われるのよね。後場寄り付きでS株打診買いをしている。少しだけ高く買うことになるのか？初心者でこんな複雑なことはわからない。 #TOPIX先物 #TOPIX #商社株 https://t.co/HXPK8WcuKv |
+| 2 | perps-jp | [post](https://x.com/nyatoyoshikatsu/status/2062734285996691838) | 日経が-1.20%、日経先物は-1.61%、日経は先物より121円高いが出たので裁定業者さんは忙しくなる。現物指数を高く売って先物指数を安く買う。メジャーSQまで1週間しかないので急いで現物を売る。⇨日経指数は重たくなる。 TOPIXに間接的に影響する。でかい株を売るから当然影響出る(1) #商社株 #TOPIX https://t.co/czDWepvTZi |
+
+### @shogun_sy
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 5 | perps-jp | [post](https://x.com/SHOGUN_SY/status/2062833756357189779) | 【① 今回の高値相場が“怖く見えて、実は過去と違う理由”】 日経平均は5日終値で6万6588円、前日比▲882円（▲1.3％）。 ザラ場では一時▲1600円超まで売られたにもかかわらず、引けにかけてかなり戻しています。 4月以降の“AIラリー”局面で、日経平均が終値ベースで▲1000円超下げたのは、たった3営業日しかありません。 過去の「高値波乱」パターン（アベノミクス初期や13年5〜6月の▲2割急落）と比べると、 「高値なのに、思ったほど崩れない」＝下値抵抗力が異常に強いの |
+| 3 | perps-jp | [post](https://x.com/SHOGUN_SY/status/2062833587724947547) | 日本株「仮需崩壊」の真相 AIバブルと言われても、日経平均は6万6000円台で踏みとどまり、4月以降“1000円超の下落”はたった3営業日。 過去のアベノミクスや「高市ラリー」と違い、今回は“先物主導の仮需”ではなく、“現物個別株”が相場を押し上げています。 具体的には👇 ・裁定買い残（先物と現物の裁定取引の残高）は、4月初のピークから約4割減少 ・それでも株価は高値圏維持＝「先物頼み」ではない上昇 ・アベノミクス期のような“先物主導→一気に2割急落”パターンとは構造が違う  |
+| 2 | perps-jp | [post](https://x.com/SHOGUN_SY/status/2062833873663447449) | 【② 「仮需の山」が崩れているのに、高値を保っている理由】 5月末時点の裁定買い残は約2.26兆円。 4月初のピークから約4割減っており、「仮需の山」はすでに崩れつつあります。 アベノミクス相場や、今年2月の「高市ラリー」では、 ・日経平均が大きく上昇する局面で ・裁定買い残も4兆円近くまで一緒に積み上がる ＝典型的な「先物主導の株高」でした。 マクロ系ヘッジファンドは、世界の株や債券を比較して“その時に一番儲かるトレード”だけを取りに来るプレイヤー。 彼らが主役になると、上 |
+
+### @happynapx
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 12 | perps-jp | [post](https://x.com/happynapx/status/2040777977479520366) | 【勉強メモ】 Hyperliquid／デルタニュートラル 📈改めてポジション設定済み 📝Hyperliquid に Bitget Wallet を接続し、HYPE の以下ポジションを保有（1HYPE ≒ $35.7） 1⃣現物 (Spot) 1HYPE → Staking 2⃣永久先物 (Perps) 1HYPEショート (Isolated / 1x) --- 管理メモ ・Staking の報酬と Perps の Funding Rate (FR) を合わせて年利13%くらい |
+| 6 | perps-jp | [post](https://x.com/happynapx/status/2041479149500719309) | 【勉強メモ】 Hyperliquid／デルタニュートラル ※長くなったので新しいすれ 📝Hyperliquid に Bitget Wallet を接続し、HYPE の以下ポジションを保有（1HYPE ≒ $35.7） 1⃣現物 (Spot) 1HYPE → Staking 2⃣永久先物 (Perps) 1HYPEショート (Isolated / 1x) Staking の報酬と Perps の Funding Rate (FR) を合わせて年利13%くらいを目安に運用操作を練 |
+
+### @ut_kabu
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 3 | perps-jp | [post](https://x.com/ut_kabu/status/2057227375503667705) | おはようございます。 今日5/21の日経平均は、「上げ優勢」やと思います。 日経平均ハイブリッド予測は翌営業日60,459円(+1.10%)と上昇を示唆しており、CME先物は61,265円と現物59,804円に対して+1,461円(+2.44%)のプレミアムがついてます。この先物水準へのさや寄せ期待が最大の押し上げ要因やな。一方、5営業日で-4.55%という強い下落トレンドが継続中で、海外勢の売り圧力や裁定買い残7.27億株の3日後下落リスクが上値抑制要因として残ってます。た |
+| 2 | perps-jp | [post](https://x.com/ut_kabu/status/2056512906800644512) | おはようございます。 今日5/19の日経平均は、「上げ優勢」やと思います。 日経平均ハイブリッド予測は翌日62,092円（+2.10%）を示しており、CME先物も62,776円と現物比+358円（+0.57%）のプレミアム。海外勢は直近週（5/8週）に+1,235億円の大幅買い越しを記録しており、需給面では押し上げ要因が優勢です。一方、3日続落で-3.07%と下落ダメージが蓄積しており、AT R741円・MA25乖離+1.74%のアラート水準、そして裁定買い残7.31億株超と |
+
+### @cosmo20199
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 128 | perps-jp | [post](https://x.com/cosmo20199/status/2062385680668651781) | これは洞察力の鋭い強烈な記事。 BTCが何で下がるのか？と思う人はもはや少ないかもしれませんが NEARやVVVの流れや漠然と考えていたことも言語化されていて、この先の地図として理解の深まる素晴らしい記事。クリプトに興味ある人はどぞ 「今年、ビットコインは2つの仕事を失った。AIがマクロを奪った。 ドルがマネーを奪った。」 「BTCは死んだのではなくその役割を終えた」 「AIがリスク資本を食い尽くした」 「Hyperliquidこそ、「クリプトは死んだ」という会話を終わらせる |
+| 74 | perps-jp | [post](https://x.com/cosmo20199/status/2046732714749935887) | こんな空気の中すみませんですが HyperliquidEVMで非常に大きなアップデートがありました。 これによってhip3の石油や株等のデルタニュートラル戦略、銀や石油を24/7 でオンチェーンでより効率的になりました。 以下はAIですがメモがてら ーーーーー はい、完全にその通りです。 HIP-3のposition2 precompile（0x…802）のおかげで、 HyperEVM上のスマートコントラクトがHyperCoreのHIP-3ポジション（石油・原油、株式・株価指 |
+
+### @yoshihiko_ickw
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 20 | perps-jp | [post](https://x.com/Yoshihiko_ICKW/status/2060905190686101945) | 「暗号資産デリバティブにおける裁定機会と市場効率性の検証」を読みました。 ビットコインとイーサリアムのオプションおよび無期限先物市場は徐々に効率化しているものの、特定の条件下では依然として巨額の裁定機会が存在する！という研究です。 こちらの研究です。 Carol Alexander, Xi Chen, Jun Deng, Tianyi Wang, Arbitrage opportunities and efficiency tests in crypto derivative |
+| 12 | perps-jp | [post](https://x.com/Yoshihiko_ICKW/status/2022441403679482120) | 「Leveraged BTC Funding Carry Algorithm: A Delta-Neutral Long-Spot/Short-Future Strategy」を読みました。 年率リターン: 約16%、シャープレシオ: 6.13という驚異的な戦略です。 ビットコインの無期限先物（Perpetual）における資金調達率（FR）を、3倍レバレッジかつデルタニュートラルで「完全自動」で刈り取り続けるとどうなるか？という研究です。 こちらの研究です。 Skyler C |
+
+### @k_koga555
+
+| eng | cell | example | clue |
+|---:|---|---|---|
+| 7 | perps-jp | [post](https://x.com/k_koga555/status/2056862778019975606) | https://t.co/8H3HoFonYH 金利高騰の恐怖。米国株と仮想通貨の下落リスク高まる。 仮想通貨チャンネル - Joe Takayama #AI要約 米国株下落と暗号資産市場の見直し 🔳米国株下落の背景 米国株は下落トレンドに入りつつあり、その背景としてイラン情勢の悪化、原油価格の上昇、金利上昇、利上げ観測の再燃が意識されている 🔳米国とイランの緊張 アメリカとイランの停戦交渉が難航しており、核放棄を求めるアメリカと核開発継続を譲らないイランの主張が平行線となり |
+| 3 | perps-jp | [post](https://x.com/k_koga555/status/2040677268192915804) | https://t.co/RpOuOmI8tV 予測市場の可能性、暗号資産規制の今（月刊 Web3 Buisness Hub 2026年4月号） WebX STUDIO【仮想通貨 ブロックチェーン総合番組】 #AI要約 月刊Web3ビジネス4月回の要点 🔳番組概要 新しい経済とくださいが共同でWeb3領域の最新トレンドや企業向け論点を毎月語る番組として開始された 🔳現在の市場環境 トランプ発言やイラン情勢など外部要因で暗号資産を含む相場全体が大きく振れ業界内でも混乱やレイオフ |
 
 ### @eureka_cm
 
@@ -132,8 +218,8 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 
 | account | posts | broad arb | clean arb | dates | median eng/views | confidence | examples |
 |---|---:|---:|---:|---:|---:|---|---|
-| @whitepeach (17817) | 3 | 0 | 1 | 3 | 102 / 3767 | medium | [1](https://x.com/WhitePeach/status/2051892767148953938) [2](https://x.com/WhitePeach/status/2058287553061724571) [3](https://x.com/WhitePeach/status/2059895890710822965) |
-| @ilpyung98 (9973) | 14 | 14 | 0 | 12 | 51.5 / 2041.0 | medium | [1](https://x.com/ilpyung98/status/2055814141705920864) [2](https://x.com/ilpyung98/status/2055502113690767791) [3](https://x.com/ilpyung98/status/2061970048986841196) |
+| @whitepeach (17820) | 8 | 0 | 1 | 8 | 28.5 / 1332.5 | medium | [1](https://x.com/WhitePeach/status/2051892767148953938) [2](https://x.com/WhitePeach/status/2058287553061724571) [3](https://x.com/WhitePeach/status/2049282902933066001) |
+| @ilpyung98 (9972) | 17 | 17 | 0 | 15 | 48 / 1813 | medium | [1](https://x.com/ilpyung98/status/2055814141705920864) [2](https://x.com/ilpyung98/status/2055502113690767791) [3](https://x.com/ilpyung98/status/2061970048986841196) |
 | @t0_god (8790) | 3 | 0 | 0 | 3 | 30 / 2486 | medium | [1](https://x.com/t0_god/status/2056742250277949696) [2](https://x.com/t0_god/status/2060268303315251670) [3](https://x.com/t0_god/status/2053452172629799335) |
 | @bullishsun (2054) | 2 | 0 | 0 | 2 | 32.0 / 526.5 | near-miss | [1](https://x.com/bullishsun/status/2060597432346661079) [2](https://x.com/bullishsun/status/2062644806095106359) |
 | @tmmrwseoul (3573) | 2 | 0 | 0 | 2 | 8.0 / 313.5 | near-miss | [1](https://x.com/tmmrwseoul/status/2054019453126672692) [2](https://x.com/tmmrwseoul/status/2053577478682325484) |
@@ -145,7 +231,7 @@ Regular mentioners have at least 3 cached funding-rate posts. Clean regular acco
 |---:|---|---|---|
 | 113 | perps-kr | [post](https://x.com/WhitePeach/status/2051892767148953938) | 청산이 롱에 크게 쌓여있는데 펀비는 음수다? 이 부분에 대해서 조금 부가설명 하자면.. 청산될 롱이 많더라도 펀비는 음수일 수 있음. 펀비는 현물과 선물 간의 가격괴리로 생각해볼 수 있음. 현물 가격이 선물보다 높을 경우 롱에게 펀비를 주고, 숏에게 펀비를 떼어서 -> 선물의 가격이 현물에 붙을 수 있도록 만드는 것. 즉 펀비가 음수라는 것은 현물index쪽이 선물보다 더 강하게 매수 중이라 현물의 가격을 따라가기 위해서, 또 |
 | 102 | perps-kr | [post](https://x.com/WhitePeach/status/2058287553061724571) | 흥미로운 움직임을 지속하는 비트코인 하락에 Oi가 급상승하며 숏 유입을 보였던 비트가 74.2k까지 찍으며 롱을 100m 이상 청소하고 반등 중인데, 이제야 Spot Perp Cvd가 동반 상승 해주고 있다는 점. 그리고 하락 직후 가격대비 급등한 Oi와 쳐박은 펀딩비를 조합해보면 바닥에서 유입된 숏을 응징하기 위한 대형 베어트랩이 발동 중인 게 아닌가 예상된다. 당연한 수순인 것이 롱을 다 털어버렸으니 다음은 80k 위까지  |
-| 9 | perps-kr | [post](https://x.com/WhitePeach/status/2059895890710822965) | +그럼에도 불구하고 펀딩비는 진한 양수임 -&gt; 현선물 가격 괴리가 현물쪽의 하락이 더 거세어 펀딩비가 양수일 가능성이 있고, 롱이 비용을 내며 많이 버티고 있다고 해석해야 합리적임 |
+| 38 | perps-kr | [post](https://x.com/WhitePeach/status/2049282902933066001) | 내 일간 전략 수립 과정 나는 오전 09시(일봉마감)마다 btc와 eth를 분석한 시황노트를 올림. 내가 매일하면 좋지만 이것도 꽤나 시간 많이 잡아먹음 (타임프레임별로 드릴다운하고, oi 청산 등등 정보와 조합해서 데일리 바이어스 만들기) -> 그래서 이 짓거리를 자동으로 할 수 있도록 프롬프트를 예쁘게 짰음. 차트도 주요 타임프레임(일봉, 4h, 1h, 15m)별로 직접 그려서 OB BB FVG 표시하고, api로 oi 청 |
 
 ### @ilpyung98
 

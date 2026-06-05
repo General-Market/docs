@@ -1,0 +1,14 @@
+# cell	query	types	note
+perps-en	cross-exchange funding arb	Both	DEX funding-arb exact
+perps-en	cross exchange funding arbitrage	Both	DEX funding-arb expanded
+perps-en	delta neutral perp points	Both	DEX points farming strategy
+perps-en	funding radar Hyperliquid	Both	VOOI/Loris style funding radar
+perps-en	funding spread Hyperliquid	Both	Hyperliquid funding spread
+perps-en	funding spread Lighter	Both	Lighter funding spread
+perps-en	funding arb Lighter Hyperliquid	Both	cross-venue DEX arb
+perps-en	funding arb Aster Hyperliquid	Both	cross-venue DEX arb
+perps-en	perp funding basis trade	Both	perp funding + basis
+perps-en	perp funding cash and carry	Both	cash-and-carry perps
+perps-en	delta neutral Variational points	Both	Variational points + delta-neutral
+perps-en	delta neutral Ostium Extended	Both	Ostium/Extended strategy
+perps-en	market neutral perp points	Both	market-neutral points farming

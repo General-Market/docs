@@ -1,0 +1,13 @@
+# cell	query	types	note
+perps-jp	資金調達率 裁定	Both	JP funding-rate arbitrage
+perps-jp	資金調達率 アービトラージ	Both	JP funding-rate arb loanword
+perps-jp	資金調達率 デルタニュートラル	Both	JP funding + delta-neutral
+perps-jp	デルタニュートラル 先物	Both	JP delta-neutral futures
+perps-jp	現物 先物 裁定	Both	JP spot/futures arbitrage
+perps-jp	先物 現物 裁定	Both	JP futures/spot arbitrage
+perps-jp	Funding Rate 裁定	Both	English term used by JP accounts
+perps-jp	Funding Rate デルタニュートラル	Both	English funding + JP delta-neutral
+perps-jp	無期限先物 資金調達率 裁定	Both	JP perps funding arb
+perps-jp	ハイパーリキッド 資金調達率 裁定	Both	Hyperliquid JP funding arb
+perps-jp	Hyperliquid Funding Rate 裁定	Both	Hyperliquid English/JP mixed
+perps-jp	資金調達率 マイナス 裁定	Both	negative funding JP arb

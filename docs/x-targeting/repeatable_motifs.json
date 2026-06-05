@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-06-05T18:33:49.794584Z",
+  "generated_at": "2026-06-05T19:09:55.700588Z",
   "motifs": [
     {
       "motif": "venue_risk_data_drop",
       "description": "Venue or product post tied to a hard market/risk metric such as OI, funding, margin, liquidation, TVL, fees, revenue, or points.",
-      "posts": 784,
-      "authors": 562,
-      "days": 66,
-      "date_start": "2026-03-09",
+      "posts": 927,
+      "authors": 663,
+      "days": 83,
+      "date_start": "2026-02-06",
       "date_end": "2026-06-05",
       "cells": {
+        "perps-en": 491,
         "trenches-en": 44,
-        "perps-en": 423,
-        "perps-cn": 126,
-        "trenches-cn": 96,
-        "perps-jp": 50,
-        "perps-kr": 45
+        "perps-cn": 180,
+        "trenches-cn": 94,
+        "perps-jp": 68,
+        "perps-kr": 50
       },
-      "median_engagement": 166.5,
-      "median_views": 6092.0,
-      "p90_engagement": 541,
+      "median_engagement": 136,
+      "median_views": 4854,
+      "p90_engagement": 506,
       "strong_bar": true,
       "examples": [
         {
@@ -135,22 +135,22 @@
     {
       "motif": "wallet_tool_signal",
       "description": "Wallet/tool signal posts: tracker, smart money, top holder, insider, sniper, bundle, or terminal workflow.",
-      "posts": 568,
-      "authors": 386,
-      "days": 55,
-      "date_start": "2026-03-06",
+      "posts": 584,
+      "authors": 400,
+      "days": 61,
+      "date_start": "2026-02-20",
       "date_end": "2026-06-05",
       "cells": {
         "trenches-en": 262,
-        "perps-cn": 18,
-        "trenches-cn": 223,
-        "perps-jp": 8,
-        "perps-kr": 32,
+        "perps-cn": 31,
+        "trenches-cn": 221,
+        "perps-jp": 10,
+        "perps-kr": 35,
         "perps-en": 25
       },
-      "median_engagement": 128.0,
+      "median_engagement": 126.0,
       "median_views": 5778.0,
-      "p90_engagement": 388,
+      "p90_engagement": 389,
       "strong_bar": true,
       "examples": [
         {
@@ -266,22 +266,22 @@
     {
       "motif": "bounded_downside_mechanic",
       "description": "Posts that contrast trading with no liquidation, fixed risk, max loss, premium-only downside, or bounded loss.",
-      "posts": 415,
-      "authors": 335,
-      "days": 53,
-      "date_start": "2026-03-22",
+      "posts": 452,
+      "authors": 364,
+      "days": 59,
+      "date_start": "2026-02-10",
       "date_end": "2026-06-05",
       "cells": {
         "trenches-en": 106,
-        "perps-en": 224,
-        "perps-cn": 20,
+        "perps-en": 243,
+        "perps-cn": 27,
         "trenches-cn": 15,
-        "perps-jp": 21,
-        "perps-kr": 29
+        "perps-jp": 29,
+        "perps-kr": 32
       },
-      "median_engagement": 200,
-      "median_views": 6579,
-      "p90_engagement": 933,
+      "median_engagement": 171.0,
+      "median_views": 5502.0,
+      "p90_engagement": 859,
       "strong_bar": true,
       "examples": [
         {
@@ -397,22 +397,22 @@
     {
       "motif": "liquidation_trigger_card",
       "description": "Liquidation, margin-call, or heatmap post with a traded asset, level, long/short, OI, map, cluster, or trigger.",
-      "posts": 392,
-      "authors": 268,
-      "days": 60,
-      "date_start": "2026-03-22",
+      "posts": 428,
+      "authors": 293,
+      "days": 67,
+      "date_start": "2026-02-10",
       "date_end": "2026-06-05",
       "cells": {
-        "perps-cn": 32,
+        "perps-cn": 41,
         "trenches-cn": 18,
-        "perps-jp": 70,
-        "perps-kr": 60,
-        "perps-en": 204,
+        "perps-jp": 77,
+        "perps-kr": 64,
+        "perps-en": 220,
         "trenches-en": 8
       },
-      "median_engagement": 99.5,
-      "median_views": 3722.0,
-      "p90_engagement": 404,
+      "median_engagement": 81.0,
+      "median_views": 3000.0,
+      "p90_engagement": 397,
       "strong_bar": true,
       "examples": [
         {
@@ -528,21 +528,21 @@
     {
       "motif": "numbered_market_rule",
       "description": "Numbered market/trading rule or checklist with at least three items.",
-      "posts": 214,
-      "authors": 171,
-      "days": 36,
-      "date_start": "2026-03-22",
+      "posts": 237,
+      "authors": 191,
+      "days": 44,
+      "date_start": "2026-02-07",
       "date_end": "2026-06-05",
       "cells": {
-        "perps-en": 35,
-        "perps-cn": 39,
-        "trenches-cn": 65,
-        "perps-jp": 13,
-        "perps-kr": 52,
+        "perps-en": 40,
+        "perps-cn": 50,
+        "trenches-cn": 64,
+        "perps-jp": 19,
+        "perps-kr": 54,
         "trenches-en": 10
       },
-      "median_engagement": 139.0,
-      "median_views": 6920.5,
+      "median_engagement": 126,
+      "median_views": 6432,
       "p90_engagement": 562,
       "strong_bar": true,
       "examples": [
@@ -628,6 +628,15 @@
           "text": "<재미로 보는 투자 방법들> 1. 적당히 수익내고 싶다 : VOO 투자 2. 퇴직금을 안정적 운용하고 싶다 : SPY 투자 3. 건강한 수준의 욕심투자 하고싶다 : QLD 투자 4. 삶을 바꿔보고 싶다 : TQQQ + SOXL 투자 5. 연금받고 살고싶다 : SCHD + JEPQ 투자 6. 인생 한방이지! : 잡코인 몰빵 7. 주식으로 수익내고싶다 : 주월 몰빵 👩‍❤️‍👨"
         },
         {
+          "cell": "perps-jp",
+          "author": "nshun_free",
+          "created_at": "Mon Jun 01 10:00:28 +0000 2026",
+          "engagement": 1415,
+          "views": 5121,
+          "url": "https://x.com/nshun_free/status/2061387395711259086",
+          "text": "無在庫物販で最初にやるべき3つのこと↓ ①売れ筋商品をリサーチ →メルカリで「SOLD」検索して 需要ある商品を把握 ②出品テンプレを作る →商品説明・発送目安など パターン化すると時短に ③1日3品ずつ出品する →いきなり大量出品より 少しずつ感覚掴むのが大事 僕も最初この順番で進めて 4カ月目に月利47万円達成できました 初心者こそ基本を守ると 結果出やすいですね😊"
+        },
+        {
           "cell": "perps-kr",
           "author": "JOOWOL2",
           "created_at": "Sun May 31 13:24:30 +0000 2026",
@@ -644,36 +653,27 @@
           "views": 63617,
           "url": "https://x.com/JOOWOL2/status/2061328444294861146",
           "text": "RT @JOOWOL2: 미국주식의 레버리지는 그나마 이게 안전하고 수익성도 좋다. 1. 나스닥 : QLD, TQQQ 2. S&amp;P500 : SSO, UPRO 3. 반도체 : SOXL, USD 4. 코인 : BITU 5. 빅테크 레버리지 애매한…"
-        },
-        {
-          "cell": "trenches-cn",
-          "author": "0xtonixie",
-          "created_at": "Fri May 15 08:19:31 +0000 2026",
-          "engagement": 1319,
-          "views": 120033,
-          "url": "https://x.com/0xtonixie/status/2055201395083825382",
-          "text": "如果你想在币圈小资金翻身（几百U就够了），我推荐你去跟着这些打新的老师去链上以小博大（不是玩meme！）： 1. reboot老师 @Reboottttttt ，真的是很勤奋的打新专家，任何新协议，链上的异动，基本都会第一时间察觉，最难能可贵的是他很少偷吃，自己发现的第一时间就直接发出来，不是那种发出来就只能接盘的老师，归零的话他跟你一起归零🤣 2. 流星老师 @nuanxia001 ，也是很勤奋的博主，而且他其实会直接在很多新的发射台"
         }
       ]
     },
     {
       "motif": "copytrade_teacher_group",
       "description": "Copy-trade, teacher, trading journal, recap, or group-following content.",
-      "posts": 129,
-      "authors": 100,
-      "days": 33,
+      "posts": 132,
+      "authors": 103,
+      "days": 34,
       "date_start": "2026-03-25",
       "date_end": "2026-06-05",
       "cells": {
         "trenches-cn": 66,
-        "perps-cn": 29,
+        "perps-cn": 32,
         "perps-kr": 13,
         "trenches-en": 10,
         "perps-en": 11
       },
-      "median_engagement": 123,
-      "median_views": 7249,
-      "p90_engagement": 514,
+      "median_engagement": 113.0,
+      "median_views": 7213.5,
+      "p90_engagement": 510,
       "strong_bar": true,
       "examples": [
         {

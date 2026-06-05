@@ -1,0 +1,14 @@
+# cell	query	types	note
+perps-cn	USD1 永续	Both	CN USD1 perp mechanics
+perps-cn	BTCUSD1 永续	Both	CN BTCUSD1 perp mechanics
+perps-cn	0挂单费	Both	CN zero maker fee
+perps-cn	挂单费 0 合约	Both	CN zero maker fee + perps
+perps-cn	Portfolio Margin USD1	Both	portfolio margin USD1 mixed language
+perps-cn	抵押比例 USD1	Both	CN collateral ratio
+perps-cn	保证金容量 USD1	Both	CN margin capacity
+perps-cn	maker fee USD1	Both	maker fee USD1 mixed language
+perps-cn	Binance USD1 永续	Both	Binance USD1 perps
+perps-cn	币安 USD1 永续	Both	CN Binance USD1 perps
+perps-cn	吃单折扣 合约	Both	CN taker discount mechanics
+perps-cn	VIP 费率 合约	Both	CN VIP fee schedule mechanics
+perps-cn	Portfolio Margin 合约 抵押	Both	CN portfolio margin collateral

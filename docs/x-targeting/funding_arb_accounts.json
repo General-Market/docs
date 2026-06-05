@@ -1,13 +1,74 @@
 {
-  "generated_at": "2026-06-05T18:35:41.491894Z",
+  "generated_at": "2026-06-05T19:09:56.225073Z",
   "languages": {
     "en": {
-      "matching_posts": 209,
-      "matching_accounts": 140,
-      "regular_mention_accounts": 14,
-      "clean_regular_accounts": 4,
-      "strong_accounts": 1,
+      "matching_posts": 264,
+      "matching_accounts": 179,
+      "regular_mention_accounts": 19,
+      "clean_regular_accounts": 7,
+      "strong_accounts": 2,
       "accounts": [
+        {
+          "account": "ryuzaki_sei",
+          "followers": 33655,
+          "posts": 8,
+          "true_arb_posts": 8,
+          "clean_arb_posts": 8,
+          "regular": true,
+          "clean_regular": true,
+          "strong": true,
+          "confidence": "high",
+          "days": 8,
+          "date_start": "2026-02-05",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 8
+          },
+          "median_engagement": 93.0,
+          "median_views": 3683.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Mar 13 00:36:50 +0000 2026",
+              "engagement": 209,
+              "views": 4707,
+              "url": "https://x.com/Ryuzaki_SEI/status/2032254521574113414",
+              "text": "best week in @variational_io for points 🪂 234 points from $3.6M volume trading eth, zec, sol and sui and big position of xrp for a week. you can do it too do delta neutral with extended perp so you can get both the big airdrops which will h"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 29 01:45:30 +0000 2026",
+              "engagement": 142,
+              "views": 6112,
+              "url": "https://x.com/Ryuzaki_SEI/status/2060175668437246154",
+              "text": "best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all these trading, sol & hype with extended perp & xau, xag with ostium perp. "
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 00:32:25 +0000 2026",
+              "engagement": 125,
+              "views": 5031,
+              "url": "https://x.com/Ryuzaki_SEI/status/2062693990848508388",
+              "text": "Biggest points cook in @variational_io 🪂 237 points from $2.9M volume by trading xau, cl, $hype, $sol & zec pair this week pnl is about $4.1k + $390 in funding fees my strategy: doing delta neutral with extended perp which gives me the oppo"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 01 00:42:19 +0000 2026",
+              "engagement": 94,
+              "views": 3797,
+              "url": "https://x.com/Ryuzaki_SEI/status/2050012910336999868",
+              "text": "best strategy works in @variational_io 🪂 182 points from $2.84m volume by trading btc, eth, sol and hype pairs this week strategy is very simple: i am doing delta neutral with extended perp and mostly trading altcoins and joined the trading"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Feb 05 15:45:24 +0000 2026",
+              "engagement": 92,
+              "views": 3570,
+              "url": "https://x.com/Ryuzaki_SEI/status/2019437207501910285",
+              "text": "10 perps points which i am farming: in this post, updated points from last week + strategy which pairs to trade in theses perps and what's the position holds time. • @variational_io : 1066 points • @extendedapp : 9,631 points • @nadoHQ : 12"
+            }
+          ]
+        },
         {
           "account": "vooi_io",
           "followers": 182211,
@@ -66,59 +127,6 @@
               "views": 10512,
               "url": "https://x.com/vooi_io/status/2054137622725804159",
               "text": "Meet @Kinetiq_xyz HIP-3 Perp Markets - Live on VOOI Ultra → Trade and arbitrage funding rates on 24/7 stocks and exclusive assets → Ready-to-Execute trading strategies → Automated execution and Kinetiq markets exposure via VOOI MCP → Seamle"
-            }
-          ]
-        },
-        {
-          "account": "ryuzaki_sei",
-          "followers": 33655,
-          "posts": 4,
-          "true_arb_posts": 4,
-          "clean_arb_posts": 4,
-          "regular": true,
-          "clean_regular": true,
-          "strong": false,
-          "confidence": "high",
-          "days": 4,
-          "date_start": "2026-05-21",
-          "date_end": "2026-06-05",
-          "cells": {
-            "perps-en": 4
-          },
-          "median_engagement": 89.5,
-          "median_views": 3832.0,
-          "examples": [
-            {
-              "cell": "perps-en",
-              "created_at": "Fri May 29 01:45:30 +0000 2026",
-              "engagement": 142,
-              "views": 6102,
-              "url": "https://x.com/Ryuzaki_SEI/status/2060175668437246154",
-              "text": "best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all these trading, sol & hype with extended perp & xau, xag with ostium perp. "
-            },
-            {
-              "cell": "perps-en",
-              "created_at": "Fri Jun 05 00:32:25 +0000 2026",
-              "engagement": 109,
-              "views": 4248,
-              "url": "https://x.com/Ryuzaki_SEI/status/2062693990848508388",
-              "text": "Biggest points cook in @variational_io 🪂 237 points from $2.9M volume by trading xau, cl, $hype, $sol & zec pair this week pnl is about $4.1k + $390 in funding fees my strategy: doing delta neutral with extended perp which gives me the oppo"
-            },
-            {
-              "cell": "perps-en",
-              "created_at": "Thu May 21 08:48:01 +0000 2026",
-              "engagement": 70,
-              "views": 3416,
-              "url": "https://x.com/Ryuzaki_SEI/status/2057382897569706336",
-              "text": "full guide + best strategy to farm @variational_io perp points 🪂 variational raised $50M funding from dragonfly which is huge for perp & total funding is now $61.8M i farmed 4151 points here my strategy and lot of important tips how to star"
-            },
-            {
-              "cell": "perps-en",
-              "created_at": "Wed Jun 03 07:18:27 +0000 2026",
-              "engagement": 64,
-              "views": 2253,
-              "url": "https://x.com/Ryuzaki_SEI/status/2062071400064839970",
-              "text": "If you missed Hyperliquid airdrop, then don't miss @variational_io 🪂 In this post i shared how i farmed 4,359 var points, my future plans & efficient ways to get more points. $HYPE just printed a new ATH. everyone's acting like they were ea"
             }
           ]
         },
@@ -213,6 +221,142 @@
           ]
         },
         {
+          "account": "reya_xyz",
+          "followers": 78417,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 3,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 3,
+          "date_start": "2025-09-22",
+          "date_end": "2026-05-27",
+          "cells": {
+            "-": 1,
+            "perps-en": 2
+          },
+          "median_engagement": 146,
+          "median_views": 4222,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 19 09:44:47 +0000 2026",
+              "engagement": 161,
+              "views": 4222,
+              "url": "https://x.com/reya_xyz/status/2056672407604412605",
+              "text": "The SEC is moving to legalise tokenized stock trading onchain. That accelerates two things: broader global access to equities, and the viability of RWA perps at scale, especially those wanting to run the basis trade, holding the tokenized e"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed May 27 15:08:03 +0000 2026",
+              "engagement": 146,
+              "views": 3459,
+              "url": "https://x.com/reya_xyz/status/2059652860112158828",
+              "text": "Earlier this month, we released spot on the trade screen. Why does that matter to you? Basis traders: spot on the Reya trade screen means you can long spot, short perp, and use the spot as collateral for the perp. Funding captured. Capital "
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon Sep 22 18:06:54 +0000 2025",
+              "engagement": 65,
+              "views": 5627,
+              "url": "https://twitter.com/reya_xyz/status/1970188066645295369",
+              "text": "Find your next funding arb opportunity on Reya with @FundingLighter community bot."
+            }
+          ]
+        },
+        {
+          "account": "mozifinance",
+          "followers": 61731,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 3,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 2,
+          "date_start": "2026-05-19",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 12,
+          "median_views": 263,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 05:03:19 +0000 2026",
+              "engagement": 28,
+              "views": 263,
+              "url": "https://x.com/mozifinance/status/2062762165468364917",
+              "text": "🧵 Hidden PerpDEX Strategy Thread 1/3 You don't have to predict whether the market goes up or down to make money in crypto. Most people don't know that. The ones who do are quietly running funding rate arbitrage; and it's one of the most con"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 19 04:12:43 +0000 2026",
+              "engagement": 12,
+              "views": 388,
+              "url": "https://x.com/mozifinance/status/2056588837204410649",
+              "text": "What you get inside: 💻Funding rate arb scanner — 2,600%+ APR spreads showing up live right now. Cross-venue arbitrage that most traders don't even know exists. 🖱️One-click execution across every integrated DEX. See an opportunity on Hyperli"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 05:03:20 +0000 2026",
+              "engagement": 4,
+              "views": 77,
+              "url": "https://x.com/mozifinance/status/2062762171684257968",
+              "text": "Thread 3/3 This is exactly what MOZI was built for. The funding arb scanner shows rate differences across Hyperliquid, Lighter, and Aster in real time. When a spread opens up, click trade both sides auto-populate on one screen. Long on one "
+            }
+          ]
+        },
+        {
+          "account": "usenami_io",
+          "followers": 22,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 3,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 3,
+          "date_start": "2026-04-21",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 1,
+          "median_views": 50,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Apr 21 06:00:18 +0000 2026",
+              "engagement": 4,
+              "views": 55,
+              "url": "https://x.com/usenami_io/status/2046469055062917472",
+              "text": "Funding Rate Arbitrage | 06:00 UTC Scanning major CEX + DEX in real-time 1. 𝗦𝗧𝗔𝗕𝗟𝗘 Long Hyperliquid (-206.7%) / Short Phemex (+5.5%) Spread: 212.2% APR 2. 𝗨𝗠𝗔 Long Binance (-374.9%) / Short BingX (-222.3%) Spread: 152.6% APR 3. 𝗣𝗧𝗕 Long KuC"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 05:00:30 +0000 2026",
+              "engagement": 1,
+              "views": 50,
+              "url": "https://x.com/usenami_io/status/2062036684355858593",
+              "text": "DeFi vs CeFi Funding Rates Decentralized (DEX) and centralized (CEX) exchanges often show different funding rates for the same asset. Why they differ: → Different user bases and liquidity → Different rate calculation methods → DEX rates rea"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 05:00:39 +0000 2026",
+              "engagement": 1,
+              "views": 27,
+              "url": "https://x.com/usenami_io/status/2062761495893803158",
+              "text": "How to Profit from Funding Rate Arbitrage Funding rate arbitrage = profit from rate differences between exchanges. Strategy: 1. Find an asset with HIGH positive rate on Exchange A 2. Find the SAME asset with LOW/negative rate on Exchange B "
+            }
+          ]
+        },
+        {
           "account": "loristools",
           "followers": 3734,
           "posts": 9,
@@ -270,6 +414,52 @@
               "views": 10340,
               "url": "https://x.com/LorisTools/status/2050249661823303919",
               "text": "New on @LorisTools: Pairs Trading • One click, multi-leg TWAP execution. • Same- or Cross-venue: HL, HIP-3s, Binance & Extended • Live Correlation, Beta, rolling Z-Score, Coint p-value • Live Funding Spread & Portfolio Net Delta • Funding A"
+            }
+          ]
+        },
+        {
+          "account": "neutrafinance",
+          "followers": 17080,
+          "posts": 3,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-04-30",
+          "date_end": "2026-06-03",
+          "cells": {
+            "-": 2,
+            "perps-en": 1
+          },
+          "median_engagement": 88,
+          "median_views": 1315,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 17:45:32 +0000 2026",
+              "engagement": 102,
+              "views": 680,
+              "url": "https://x.com/NeutraFinance/status/2062229208500257088",
+              "text": "NeutraFi is public. We opened the front door: Launch app on https://t.co/xDtUUgZXUd, configure your account, and go. AI Robotic Trading — our autonomous desk on @HyperliquidX. Non-custodial: you connect, you fund, execution stays on the DEX"
+            },
+            {
+              "cell": "-",
+              "created_at": "Thu Apr 30 08:25:29 +0000 2026",
+              "engagement": 88,
+              "views": 2659,
+              "url": "https://x.com/NeutraFinance/status/2049767081462116603",
+              "text": "Most trading bots follow rules. Ours doesn’t. What we built is closer to a coordinated AI system than a bot — a stack of models that actually interpret the market in real time and make decisions together. At the core of the system are multi"
+            },
+            {
+              "cell": "-",
+              "created_at": "Fri May 01 08:24:42 +0000 2026",
+              "engagement": 82,
+              "views": 1315,
+              "url": "https://x.com/NeutraFinance/status/2050129270060511313",
+              "text": "Right now, NeutraFi has three main parts: Delta Neutral, Instant Trading (MM bot), and AI Robotic Trading. Delta Neutral — free point farming on perp DEXs by opening a long on one side and a short on the other. MM bot — fast, automated volu"
             }
           ]
         },
@@ -638,7 +828,7 @@
         },
         {
           "account": "darklord_gr",
-          "followers": 0,
+          "followers": 1503,
           "posts": 3,
           "true_arb_posts": 0,
           "clean_arb_posts": 0,
@@ -683,7 +873,7 @@
         },
         {
           "account": "laevitas1",
-          "followers": 25003,
+          "followers": 25012,
           "posts": 3,
           "true_arb_posts": 1,
           "clean_arb_posts": 0,
@@ -723,6 +913,51 @@
               "views": 812,
               "url": "https://twitter.com/laevitas1/status/2052823353849733618",
               "text": "Funding rates across CEXs show only Kraken positive at +0.0053%, while Binance USDT (-0.0022%), Binance USDC (-0.0041%), OKX (-0.0066%), and Bybit (-0.0150%) are negative, with Bybit the most bearish among the high-OI venues. On DeFi perps,"
+            }
+          ]
+        },
+        {
+          "account": "paladancapital",
+          "followers": 210,
+          "posts": 3,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-06-02",
+          "date_end": "2026-06-04",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 0,
+          "median_views": 51,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Jun 04 23:09:42 +0000 2026",
+              "engagement": 0,
+              "views": 34,
+              "url": "https://x.com/PaladanCapital/status/2062673175650152662",
+              "text": "📊 Daily Top Funding Rate Spreads - 2026-06-04 💡 Top opportunity: $SLX Daily Spread: 0.59%. Est. Annualized: 213.82%. Position: (bybit Long / bitget Short). Exchanges: Binance, Bybit, Bitget, Hyperliquid https://t.co/OTzUVfDWIL"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 23:09:46 +0000 2026",
+              "engagement": 0,
+              "views": 51,
+              "url": "https://x.com/PaladanCapital/status/2062310805866262728",
+              "text": "📊 Daily Top Funding Rate Spreads - 2026-06-03 💡 Top opportunity: $LAB Daily Spread: 0.65%. Est. Annualized: 235.42%. Position: (bybit Long / bitget Short). Exchanges: Binance, Bybit, Bitget, Hyperliquid https://t.co/vCtdpziyxq"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Jun 02 23:09:49 +0000 2026",
+              "engagement": 0,
+              "views": 159,
+              "url": "https://x.com/PaladanCapital/status/2061948429258064145",
+              "text": "📊 Daily Top Funding Rate Spreads - 2026-06-02 💡 Top opportunity: $LAB Daily Spread: 1.13%. Est. Annualized: 412.49%. Position: (bybit Long / bitget Short). Exchanges: Binance, Bybit, Bitget, Hyperliquid https://t.co/edaj1Y57Ae"
             }
           ]
         },
@@ -950,43 +1185,6 @@
           ]
         },
         {
-          "account": "reya_xyz",
-          "followers": 78698,
-          "posts": 2,
-          "true_arb_posts": 2,
-          "clean_arb_posts": 2,
-          "regular": false,
-          "clean_regular": false,
-          "strong": false,
-          "confidence": "near-miss",
-          "days": 2,
-          "date_start": "2025-09-22",
-          "date_end": "2026-05-19",
-          "cells": {
-            "-": 2
-          },
-          "median_engagement": 64.5,
-          "median_views": 3391.5,
-          "examples": [
-            {
-              "cell": "-",
-              "created_at": "Mon Sep 22 18:06:54 +0000 2025",
-              "engagement": 65,
-              "views": 5627,
-              "url": "https://twitter.com/reya_xyz/status/1970188066645295369",
-              "text": "Find your next funding arb opportunity on Reya with @FundingLighter community bot."
-            },
-            {
-              "cell": "-",
-              "created_at": "Tue May 19 09:44:47 +0000 2026",
-              "engagement": 64,
-              "views": 1156,
-              "url": "https://x.com/reya_xyz/status/2056672407604412605",
-              "text": "The SEC is moving to legalise tokenized stock trading onchain. That accelerates two things: broader global access to equities, and the viability of RWA perps at scale, especially those wanting to run the basis trade, holding the tokenized e"
-            }
-          ]
-        },
-        {
           "account": "arcxtrade",
           "followers": 997,
           "posts": 2,
@@ -1024,6 +1222,117 @@
           ]
         },
         {
+          "account": "shiftprotocol_",
+          "followers": 1197,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-06-02",
+          "date_end": "2026-06-03",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 25.0,
+          "median_views": 2208.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 13:01:11 +0000 2026",
+              "engagement": 48,
+              "views": 4368,
+              "url": "https://x.com/ShiftProtocol_/status/2062157651446997265",
+              "text": "Shift x Hibachi hibaUSD now integrates Hibachi’s new forex perps: EURUSD, GBPUSD, AUDUSD. Same delta-neutral engine: cross-venue arbitrage + funding arbitrage, just now crypto and FX, not crypto only. a reminder that hibaUSD also earns 30-2"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Jun 02 13:53:35 +0000 2026",
+              "engagement": 2,
+              "views": 48,
+              "url": "https://x.com/ShiftProtocol_/status/2061808447356850231",
+              "text": "@Aayyan120 @tradehotstuff @reya_xyz @hibachi_xyz @01Exchange @variational_io @risextrade And you can get even more Hibachi points with Shift’s delta neutral hibaUSD vault. Receive passive yield while earning 300% extra bonus points! Hibachi"
+            }
+          ]
+        },
+        {
+          "account": "0xlcrgs",
+          "followers": 3544,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-30",
+          "date_end": "2026-06-01",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 16.5,
+          "median_views": 510.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 30 16:07:48 +0000 2026",
+              "engagement": 30,
+              "views": 841,
+              "url": "https://x.com/0xLcrgs/status/2060755060494057676",
+              "text": ".@enterkombat mode farming points for 8 perp DEXs using delta neutral on a single UI🧑‍🌾 https://t.co/y3GstArsRV"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Mon Jun 01 14:52:59 +0000 2026",
+              "engagement": 3,
+              "views": 179,
+              "url": "https://x.com/0xLcrgs/status/2061461007973617941",
+              "text": "🚨NEW PROJECT LISTED @bulktrade mainnet pre deposits are live @nuketrade is a new funding arb protocol for hyperliquid, @pacifica_fi and @Lighter_xyz links in the comments https://t.co/PFZPmEDHDM"
+            }
+          ]
+        },
+        {
+          "account": "skyisthetaker",
+          "followers": 706,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-14",
+          "date_end": "2026-05-22",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 12.5,
+          "median_views": 212.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Apr 14 13:37:50 +0000 2026",
+              "engagement": 17,
+              "views": 327,
+              "url": "https://x.com/SkyIsTheTaker/status/2044047481818742877",
+              "text": "Extended Points Day - Week 50 Points: 244.5 Points total: 7126.6 Wallet 1. Points: 94.8 Total Points: 2574.5 Volume: $376 500 Open Interest: ~$27 000 Fees: $45.43 Holding time: ~24h Cost/Point: $0.48 Strategy: Delta neutral with Variational"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 22 12:46:51 +0000 2026",
+              "engagement": 8,
+              "views": 97,
+              "url": "https://x.com/SkyIsTheTaker/status/2057805386946650459",
+              "text": "Nado Points Week 16 Points: 81 Total: 3143 Vol: $127 388 Fee: $38.38 Cost/Point: $0.47 OI: $14 000 Holding: 24h Delta neutral with Variational. I did some volume on ETH/SOL and also few trades on boosted assets: WTI/SPY. https://t.co/MC6n6g"
+            }
+          ]
+        },
+        {
           "account": "zek_eth",
           "followers": 3218,
           "posts": 2,
@@ -1057,6 +1366,43 @@
               "views": 502,
               "url": "https://x.com/Zek_eth/status/2054588024730669291",
               "text": "Just recently I posted about how you can trade delta neutral using Perps dex and xStocks holding. xStocks points+ your favourite perp dex points (if stocks are listed) as I've said, extended and hotstuff stays at the top of my list for that"
+            }
+          ]
+        },
+        {
+          "account": "agentcanaryhq",
+          "followers": 78,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-06-04",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 1.0,
+          "median_views": 60.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Jun 04 15:15:27 +0000 2026",
+              "engagement": 2,
+              "views": 77,
+              "url": "https://x.com/agentcanaryHQ/status/2062553826083708940",
+              "text": "MARKET PULSE — Jun 4 Built for autonomous systems. Useful for humans. CRYPTO BTC: $64,273 — 1d:RISK_OFF · 4h:RISK_OFF · below $65K ETH: $1,806 · (same) SOL: $71.35 · (same) Crypto sentiment: 12 (Extreme Fear, 7d avg 21) (falling). WHALE ALE"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 15:15:23 +0000 2026",
+              "engagement": 0,
+              "views": 44,
+              "url": "https://x.com/agentcanaryHQ/status/2062916200191918187",
+              "text": "MARKET PULSE — Jun 5 Built for autonomous systems. Useful for humans. CRYPTO BTC: $62,653 — 1d:ACCUMULATION · 4h:ACCUMULATION · below $65K ETH: $1,728 — 1d:RISK_OFF · 4h:RISK_OFF SOL: $67.02 — 1d:RISK_OFF · 4h:RISK_OFF Crypto sentiment: 12 "
             }
           ]
         },
@@ -1131,43 +1477,6 @@
               "views": 2844,
               "url": "https://x.com/Gyokeres_eth/status/2057095820462190647",
               "text": "Solstice Whitepaper is live The @solsticefi whitepaper is now live with some big news: > strcUSX is the new token coming out, giving onchain holders exposure to STRC preferred shares. the yield comes from corporate dividends instead of cryp"
-            }
-          ]
-        },
-        {
-          "account": "neutrafinance",
-          "followers": 17131,
-          "posts": 2,
-          "true_arb_posts": 1,
-          "clean_arb_posts": 1,
-          "regular": false,
-          "clean_regular": false,
-          "strong": false,
-          "confidence": "near-miss",
-          "days": 2,
-          "date_start": "2026-04-30",
-          "date_end": "2026-05-01",
-          "cells": {
-            "-": 2
-          },
-          "median_engagement": 85.0,
-          "median_views": 1987.0,
-          "examples": [
-            {
-              "cell": "-",
-              "created_at": "Thu Apr 30 08:25:29 +0000 2026",
-              "engagement": 88,
-              "views": 2659,
-              "url": "https://x.com/NeutraFinance/status/2049767081462116603",
-              "text": "Most trading bots follow rules. Ours doesn’t. What we built is closer to a coordinated AI system than a bot — a stack of models that actually interpret the market in real time and make decisions together. At the core of the system are multi"
-            },
-            {
-              "cell": "-",
-              "created_at": "Fri May 01 08:24:42 +0000 2026",
-              "engagement": 82,
-              "views": 1315,
-              "url": "https://x.com/NeutraFinance/status/2050129270060511313",
-              "text": "Right now, NeutraFi has three main parts: Delta Neutral, Instant Trading (MM bot), and AI Robotic Trading. Delta Neutral — free point farming on perp DEXs by opening a long on one side and a short on the other. MM bot — fast, automated volu"
             }
           ]
         },
@@ -1507,9 +1816,9 @@
       ]
     },
     "zh": {
-      "matching_posts": 36,
-      "matching_accounts": 33,
-      "regular_mention_accounts": 1,
+      "matching_posts": 81,
+      "matching_accounts": 72,
+      "regular_mention_accounts": 3,
       "clean_regular_accounts": 0,
       "strong_accounts": 0,
       "accounts": [
@@ -1561,22 +1870,22 @@
         },
         {
           "account": "webktsr",
-          "followers": 40107,
-          "posts": 2,
-          "true_arb_posts": 1,
-          "clean_arb_posts": 0,
-          "regular": false,
+          "followers": 40105,
+          "posts": 3,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 1,
+          "regular": true,
           "clean_regular": false,
           "strong": false,
-          "confidence": "near-miss",
-          "days": 2,
-          "date_start": "2026-05-19",
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-18",
           "date_end": "2026-06-05",
           "cells": {
-            "perps-cn": 2
+            "perps-cn": 3
           },
-          "median_engagement": 414.0,
-          "median_views": 11366.5,
+          "median_engagement": 405,
+          "median_views": 11539,
           "examples": [
             {
               "cell": "perps-cn",
@@ -1588,23 +1897,441 @@
             },
             {
               "cell": "perps-cn",
+              "created_at": "Mon May 18 03:19:33 +0000 2026",
+              "engagement": 405,
+              "views": 11793,
+              "url": "https://x.com/webktsr/status/2056213071773962438",
+              "text": "早呀早呀，姐妹们！ 离 $BTC USD1正式上线不到6小时啦！我刚把这套合约机制又看了遍，感觉 #USD1 这次的位置跟以前真不一样了。 以前它虽然能转能存能结算，但真要开仓的大家还是习惯切回USDT。这次直接全用USD1报价、保证金、抵押品，一步就到了交易核心。 Binance给的待遇也超给力，Portfolio Margin里已拉到99.99%，基本跟USDT、USDC一个级别。你钱包里的USD1现在大部分价值都能直接顶保证金，少了一次换币摩擦。行情一快，同样的钱仓位空"
+            },
+            {
+              "cell": "perps-cn",
               "created_at": "Fri Jun 05 01:37:31 +0000 2026",
-              "engagement": 233,
-              "views": 11242,
+              "engagement": 260,
+              "views": 11539,
               "url": "https://x.com/webktsr/status/2062710375062323557",
               "text": "早呀，姐妹们！ 很多人看到 @worldlibertyfi 和 Binance 最近这条消息，第一眼就只记住四个字：0挂单费。 我一开始也一样，刷过去就觉得省钱了呗。 后来我把费率表和交易模型仔仔细细算了一遍，才发现真正有意思的不是省了多少钱，而是Binance到底为什么愿意让你省这笔。 规则已经确认了USD1保证金永续合约Maker费率直接0%，普通用户到VIP3的Taker费率从0.05%降到0.04%，VIP4到VIP9还能多拿45%吃单折扣，BTCUSD1这些品种已经"
+            }
+          ]
+        },
+        {
+          "account": "fanfanboruo",
+          "followers": 58,
+          "posts": 4,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 1,
+          "date_start": "2026-06-04",
+          "date_end": "2026-06-04",
+          "cells": {
+            "perps-cn": 4
+          },
+          "median_engagement": 1.0,
+          "median_views": 65.0,
+          "examples": [
+            {
+              "cell": "perps-cn",
+              "created_at": "Thu Jun 04 11:19:20 +0000 2026",
+              "engagement": 1,
+              "views": 34,
+              "url": "https://x.com/fanfanboruo/status/2062494407933493503",
+              "text": "@heyibinance 合格个狗日，币安联合LAB的庄家用资金费率收割散户，一小时一次的资金费率1%超过3天了，真是把用户当猪"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Thu Jun 04 06:39:53 +0000 2026",
+              "engagement": 1,
+              "views": 292,
+              "url": "https://x.com/fanfanboruo/status/2062424079999844643",
+              "text": "@heyibinance 币安请严查LAB利用你们平台一个小时一次的资金费率的BUG收割散户"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Thu Jun 04 11:29:10 +0000 2026",
+              "engagement": 1,
+              "views": 34,
+              "url": "https://x.com/fanfanboruo/status/2062496882560258508",
+              "text": "狗日的中心化交易所，联合LAB的庄家用资金费率收割散户，一小时一次的资金费率1%超过3天了，真是把用户当猪，这把爆仓了，这辈子就结束了，要疯了，币圈被LAB搞成诈骗场了，不是赌博，是赤裸裸的诈骗"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Thu Jun 04 11:32:00 +0000 2026",
+              "engagement": 0,
+              "views": 96,
+              "url": "https://x.com/fanfanboruo/status/2062497593557766330",
+              "text": "@heyibinance @lasertheend 请严查LAB,利用你们平台一小时一次的资金费率连续3天1%，收割散户，币安容许诈骗吗？"
+            }
+          ]
+        },
+        {
+          "account": "bongquotes_",
+          "followers": 62459,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-06-05",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-cn": 2
+          },
+          "median_engagement": 0.5,
+          "median_views": 150.0,
+          "examples": [
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 08:33:01 +0000 2026",
+              "engagement": 1,
+              "views": 165,
+              "url": "https://x.com/bongquotes_/status/2062814938356396503",
+              "text": "合约市场最残酷的真相：你亏的从来不是行情，是不懂规则 送给所有长期在合约市场挣扎的交易者： 如果你做合约一直反复亏损、持续交学费，不是你看不懂K线，也不是你运气不好，而是你从始至终，都没看懂合约这场游戏的底层规则。 几乎所有人都经历过这种绝望的闭环： 单子一进场，行情立刻反向； 咬牙止损离场，走势马上按自己预判的方向走； 好不容易看对一次大趋势，最后却依旧落得亏损、甚至爆仓。 久而久之，大家都会疑惑：为什么市场总是精准针对我？ 今天说一句最真实、也最扎心的大实话：市场从来不会"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 08:32:57 +0000 2026",
+              "engagement": 0,
+              "views": 135,
+              "url": "https://x.com/bongquotes_/status/2062814922552283357",
+              "text": "合约市场最残酷的真相：你亏的从来不是行情，是不懂规则 送给所有长期在合约市场挣扎的交易者： 如果你做合约一直反复亏损、持续交学费，不是你看不懂K线，也不是你运气不好，而是你从始至终，都没看懂合约这场游戏的底层规则。 几乎所有人都经历过这种绝望的闭环： 单子一进场，行情立刻反向； 咬牙止损离场，走势马上按自己预判的方向走； 好不容易看对一次大趋势，最后却依旧落得亏损、甚至爆仓。 久而久之，大家都会疑惑：为什么市场总是精准针对我？ 今天说一句最真实、也最扎心的大实话：市场从来不会"
+            }
+          ]
+        },
+        {
+          "account": "hashnewshk",
+          "followers": 23451,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-06-05",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-cn": 2
+          },
+          "median_engagement": 0.0,
+          "median_views": 159.0,
+          "examples": [
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 11:30:16 +0000 2026",
+              "engagement": 0,
+              "views": 148,
+              "url": "https://x.com/HashNewsHK/status/2062859547149209747",
+              "text": "当资金费率全线转负，期权偏斜度却飙升至30%，市场在定价的不是简单的涨跌，而是一种结构性的防御姿态。 Glassnode数据显示，比特币1周隐含波动率逼近60%，25D偏斜度一度达30%，看跌期权占期权费交易量的31.5%。做市商在6.5万美元附近堆积空头Gamma，价格波动可能被放大。与此同时，主流CEX和DEX资金费率同步转负，显示永续合约市场普遍看空。 两个信号指向同一个结论：交易者正在为下行支付高额保费，而非押注反弹。这与ETF资金结束流出形成反差——现货市场略有回暖"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 11:00:15 +0000 2026",
+              "engagement": 0,
+              "views": 170,
+              "url": "https://x.com/HashNewsHK/status/2062851993971109937",
+              "text": "资金费率全面转负，比特币逼近6.1万美元——这不是一次普通回调。 Coinglass数据显示，主流CEX和DEX资金费率已低于0.005%，市场重回显著看空。上一次出现这种结构，还是在2024年7月。当时比特币从6.5万跌至5.4万，用了三周。 但这次更复杂。Zcash漏洞引发隐私币信任危机，AI板块持续吸走流动性，ETF连续13日流出44亿美元后虽有小幅回流，但结构性问题未解。灰度直言，比特币需要“其他买家”才能找到可持续底部——暗示Strategy等机构增持能力已达瓶颈。"
             }
           ]
         }
       ]
     },
     "ja": {
-      "matching_posts": 27,
-      "matching_accounts": 26,
-      "regular_mention_accounts": 0,
+      "matching_posts": 103,
+      "matching_accounts": 90,
+      "regular_mention_accounts": 2,
       "clean_regular_accounts": 0,
       "strong_accounts": 0,
       "accounts": [
+        {
+          "account": "nyatoyoshikatsu",
+          "followers": 139,
+          "posts": 4,
+          "true_arb_posts": 4,
+          "clean_arb_posts": 2,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 2,
+          "date_start": "2026-05-28",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-jp": 4
+          },
+          "median_engagement": 5.0,
+          "median_views": 295.0,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 04:47:40 +0000 2026",
+              "engagement": 9,
+              "views": 1671,
+              "url": "https://x.com/nyatoyoshikatsu/status/2062758229315326063",
+              "text": "@kei_toshi__ 日経平均と日経先物の間に130円ぐらいの価格差が出て、裁定業者は高い日経現物を売って先物を買っています。このためで日経にすぐ影響が出る株の現物が売られています。 普段はこんなに乱暴な捌きをしませんが、来週はメジャーSQですから、急いで投げ売りをしている模様。SQすぎたらよくなると思います"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Thu May 28 02:21:11 +0000 2026",
+              "engagement": 8,
+              "views": 390,
+              "url": "https://x.com/nyatoyoshikatsu/status/2059822263751540883",
+              "text": "TOPIX先物は3910、現物は3907、後場寄り付きの時、裁定業者は現物を買うのか。TOPIXのコア30の構成銘柄伊藤忠三菱商事三井物産は買われるのよね。後場寄り付きでS株打診買いをしている。少しだけ高く買うことになるのか？初心者でこんな複雑なことはわからない。 #TOPIX先物 #TOPIX #商社株 https://t.co/HXPK8WcuKv"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 03:12:32 +0000 2026",
+              "engagement": 2,
+              "views": 199,
+              "url": "https://x.com/nyatoyoshikatsu/status/2062734285996691838",
+              "text": "日経が-1.20%、日経先物は-1.61%、日経は先物より121円高いが出たので裁定業者さんは忙しくなる。現物指数を高く売って先物指数を安く買う。メジャーSQまで1週間しかないので急いで現物を売る。⇨日経指数は重たくなる。 TOPIXに間接的に影響する。でかい株を売るから当然影響出る(1) #商社株 #TOPIX https://t.co/czDWepvTZi"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 04:39:30 +0000 2026",
+              "engagement": 0,
+              "views": 200,
+              "url": "https://x.com/nyatoyoshikatsu/status/2062756171493363823",
+              "text": "裁定業者さんの現物先物の間の裁定で、あちこち現物株が売られている。 もうすぐメジャーSQだからね。 SQの後は安定化になるかも。 #半導体株"
+            }
+          ]
+        },
+        {
+          "account": "shogun_sy",
+          "followers": 104,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 2,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 1,
+          "date_start": "2026-06-05",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-jp": 3
+          },
+          "median_engagement": 3,
+          "median_views": 145,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 09:47:47 +0000 2026",
+              "engagement": 5,
+              "views": 114,
+              "url": "https://x.com/SHOGUN_SY/status/2062833756357189779",
+              "text": "【① 今回の高値相場が“怖く見えて、実は過去と違う理由”】 日経平均は5日終値で6万6588円、前日比▲882円（▲1.3％）。 ザラ場では一時▲1600円超まで売られたにもかかわらず、引けにかけてかなり戻しています。 4月以降の“AIラリー”局面で、日経平均が終値ベースで▲1000円超下げたのは、たった3営業日しかありません。 過去の「高値波乱」パターン（アベノミクス初期や13年5〜6月の▲2割急落）と比べると、 「高値なのに、思ったほど崩れない」＝下値抵抗力が異常に強いの"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 09:47:07 +0000 2026",
+              "engagement": 3,
+              "views": 579,
+              "url": "https://x.com/SHOGUN_SY/status/2062833587724947547",
+              "text": "日本株「仮需崩壊」の真相 AIバブルと言われても、日経平均は6万6000円台で踏みとどまり、4月以降“1000円超の下落”はたった3営業日。 過去のアベノミクスや「高市ラリー」と違い、今回は“先物主導の仮需”ではなく、“現物個別株”が相場を押し上げています。 具体的には👇 ・裁定買い残（先物と現物の裁定取引の残高）は、4月初のピークから約4割減少 ・それでも株価は高値圏維持＝「先物頼み」ではない上昇 ・アベノミクス期のような“先物主導→一気に2割急落”パターンとは構造が違う "
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 09:48:15 +0000 2026",
+              "engagement": 2,
+              "views": 145,
+              "url": "https://x.com/SHOGUN_SY/status/2062833873663447449",
+              "text": "【② 「仮需の山」が崩れているのに、高値を保っている理由】 5月末時点の裁定買い残は約2.26兆円。 4月初のピークから約4割減っており、「仮需の山」はすでに崩れつつあります。 アベノミクス相場や、今年2月の「高市ラリー」では、 ・日経平均が大きく上昇する局面で ・裁定買い残も4兆円近くまで一緒に積み上がる ＝典型的な「先物主導の株高」でした。 マクロ系ヘッジファンドは、世界の株や債券を比較して“その時に一番儲かるトレード”だけを取りに来るプレイヤー。 彼らが主役になると、上"
+            }
+          ]
+        },
+        {
+          "account": "happynapx",
+          "followers": 607,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-05",
+          "date_end": "2026-04-07",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 9.0,
+          "median_views": 1801.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Sun Apr 05 13:06:00 +0000 2026",
+              "engagement": 12,
+              "views": 1916,
+              "url": "https://x.com/happynapx/status/2040777977479520366",
+              "text": "【勉強メモ】 Hyperliquid／デルタニュートラル 📈改めてポジション設定済み 📝Hyperliquid に Bitget Wallet を接続し、HYPE の以下ポジションを保有（1HYPE ≒ $35.7） 1⃣現物 (Spot) 1HYPE → Staking 2⃣永久先物 (Perps) 1HYPEショート (Isolated / 1x) --- 管理メモ ・Staking の報酬と Perps の Funding Rate (FR) を合わせて年利13%くらい"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Tue Apr 07 11:32:12 +0000 2026",
+              "engagement": 6,
+              "views": 1687,
+              "url": "https://x.com/happynapx/status/2041479149500719309",
+              "text": "【勉強メモ】 Hyperliquid／デルタニュートラル ※長くなったので新しいすれ 📝Hyperliquid に Bitget Wallet を接続し、HYPE の以下ポジションを保有（1HYPE ≒ $35.7） 1⃣現物 (Spot) 1HYPE → Staking 2⃣永久先物 (Perps) 1HYPEショート (Isolated / 1x) Staking の報酬と Perps の Funding Rate (FR) を合わせて年利13%くらいを目安に運用操作を練"
+            }
+          ]
+        },
+        {
+          "account": "ut_kabu",
+          "followers": 109,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-18",
+          "date_end": "2026-05-20",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 2.5,
+          "median_views": 69.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Wed May 20 22:30:02 +0000 2026",
+              "engagement": 3,
+              "views": 81,
+              "url": "https://x.com/ut_kabu/status/2057227375503667705",
+              "text": "おはようございます。 今日5/21の日経平均は、「上げ優勢」やと思います。 日経平均ハイブリッド予測は翌営業日60,459円(+1.10%)と上昇を示唆しており、CME先物は61,265円と現物59,804円に対して+1,461円(+2.44%)のプレミアムがついてます。この先物水準へのさや寄せ期待が最大の押し上げ要因やな。一方、5営業日で-4.55%という強い下落トレンドが継続中で、海外勢の売り圧力や裁定買い残7.27億株の3日後下落リスクが上値抑制要因として残ってます。た"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Mon May 18 23:10:59 +0000 2026",
+              "engagement": 2,
+              "views": 58,
+              "url": "https://x.com/ut_kabu/status/2056512906800644512",
+              "text": "おはようございます。 今日5/19の日経平均は、「上げ優勢」やと思います。 日経平均ハイブリッド予測は翌日62,092円（+2.10%）を示しており、CME先物も62,776円と現物比+358円（+0.57%）のプレミアム。海外勢は直近週（5/8週）に+1,235億円の大幅買い越しを記録しており、需給面では押し上げ要因が優勢です。一方、3日続落で-3.07%と下落ダメージが蓄積しており、AT R741円・MA25乖離+1.74%のアラート水準、そして裁定買い残7.31億株超と"
+            }
+          ]
+        },
+        {
+          "account": "cosmo20199",
+          "followers": 5117,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-21",
+          "date_end": "2026-06-04",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 101.0,
+          "median_views": 17723.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Thu Jun 04 04:07:18 +0000 2026",
+              "engagement": 128,
+              "views": 27242,
+              "url": "https://x.com/cosmo20199/status/2062385680668651781",
+              "text": "これは洞察力の鋭い強烈な記事。 BTCが何で下がるのか？と思う人はもはや少ないかもしれませんが NEARやVVVの流れや漠然と考えていたことも言語化されていて、この先の地図として理解の深まる素晴らしい記事。クリプトに興味ある人はどぞ 「今年、ビットコインは2つの仕事を失った。AIがマクロを奪った。 ドルがマネーを奪った。」 「BTCは死んだのではなくその役割を終えた」 「AIがリスク資本を食い尽くした」 「Hyperliquidこそ、「クリプトは死んだ」という会話を終わらせる"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Tue Apr 21 23:28:00 +0000 2026",
+              "engagement": 74,
+              "views": 8205,
+              "url": "https://x.com/cosmo20199/status/2046732714749935887",
+              "text": "こんな空気の中すみませんですが HyperliquidEVMで非常に大きなアップデートがありました。 これによってhip3の石油や株等のデルタニュートラル戦略、銀や石油を24/7 でオンチェーンでより効率的になりました。 以下はAIですがメモがてら ーーーーー はい、完全にその通りです。 HIP-3のposition2 precompile（0x…802）のおかげで、 HyperEVM上のスマートコントラクトがHyperCoreのHIP-3ポジション（石油・原油、株式・株価指"
+            }
+          ]
+        },
+        {
+          "account": "yoshihiko_ickw",
+          "followers": 916,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-02-13",
+          "date_end": "2026-05-31",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 16.0,
+          "median_views": 705.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Sun May 31 02:04:21 +0000 2026",
+              "engagement": 20,
+              "views": 799,
+              "url": "https://x.com/Yoshihiko_ICKW/status/2060905190686101945",
+              "text": "「暗号資産デリバティブにおける裁定機会と市場効率性の検証」を読みました。 ビットコインとイーサリアムのオプションおよび無期限先物市場は徐々に効率化しているものの、特定の条件下では依然として巨額の裁定機会が存在する！という研究です。 こちらの研究です。 Carol Alexander, Xi Chen, Jun Deng, Tianyi Wang, Arbitrage opportunities and efficiency tests in crypto derivative"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Feb 13 22:43:00 +0000 2026",
+              "engagement": 12,
+              "views": 612,
+              "url": "https://x.com/Yoshihiko_ICKW/status/2022441403679482120",
+              "text": "「Leveraged BTC Funding Carry Algorithm: A Delta-Neutral Long-Spot/Short-Future Strategy」を読みました。 年率リターン: 約16%、シャープレシオ: 6.13という驚異的な戦略です。 ビットコインの無期限先物（Perpetual）における資金調達率（FR）を、3倍レバレッジかつデルタニュートラルで「完全自動」で刈り取り続けるとどうなるか？という研究です。 こちらの研究です。 Skyler C"
+            }
+          ]
+        },
+        {
+          "account": "k_koga555",
+          "followers": 925,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-05",
+          "date_end": "2026-05-19",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 5.0,
+          "median_views": 585.0,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Tue May 19 22:21:15 +0000 2026",
+              "engagement": 7,
+              "views": 319,
+              "url": "https://x.com/k_koga555/status/2056862778019975606",
+              "text": "https://t.co/8H3HoFonYH 金利高騰の恐怖。米国株と仮想通貨の下落リスク高まる。 仮想通貨チャンネル - Joe Takayama #AI要約 米国株下落と暗号資産市場の見直し 🔳米国株下落の背景 米国株は下落トレンドに入りつつあり、その背景としてイラン情勢の悪化、原油価格の上昇、金利上昇、利上げ観測の再燃が意識されている 🔳米国とイランの緊張 アメリカとイランの停戦交渉が難航しており、核放棄を求めるアメリカと核開発継続を譲らないイランの主張が平行線となり"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Sun Apr 05 06:25:49 +0000 2026",
+              "engagement": 3,
+              "views": 851,
+              "url": "https://x.com/k_koga555/status/2040677268192915804",
+              "text": "https://t.co/RpOuOmI8tV 予測市場の可能性、暗号資産規制の今（月刊 Web3 Buisness Hub 2026年4月号） WebX STUDIO【仮想通貨 ブロックチェーン総合番組】 #AI要約 月刊Web3ビジネス4月回の要点 🔳番組概要 新しい経済とくださいが共同でWeb3領域の最新トレンドや企業向け論点を毎月語る番組として開始された 🔳現在の市場環境 トランプ発言やイラン情勢など外部要因で暗号資産を含む相場全体が大きく振れ業界内でも混乱やレイオフ"
+            }
+          ]
+        },
         {
           "account": "eureka_cm",
           "followers": 515,
@@ -1622,13 +2349,13 @@
             "perps-jp": 2
           },
           "median_engagement": 0.0,
-          "median_views": 31.0,
+          "median_views": 44.0,
           "examples": [
             {
               "cell": "perps-jp",
               "created_at": "Fri Jun 05 17:14:49 +0000 2026",
               "engagement": 0,
-              "views": 34,
+              "views": 60,
               "url": "https://x.com/eureka_cm/status/2062946256922742958",
               "text": "すると割高な先物を売ると同時に割安な現物を買う「裁定買い」取引が行われる。これは自己資金ゼロで、リスクなしに確実に儲けることができる実に美味しい取引である。名前は「さいてい」だが「最高」の取引である。"
             },
@@ -1641,34 +2368,108 @@
               "text": "しかし、対照的に、足元の株高は、株価が上がるにつれて裁定買い残が減少している。裁定買い残は4月末から4割も減少して、5月末時点では2兆2643億円に急低下した。"
             }
           ]
+        },
+        {
+          "account": "chives_vtuber",
+          "followers": 20603,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-19",
+          "date_end": "2026-04-21",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 178.5,
+          "median_views": 21419.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Sun Apr 19 14:48:30 +0000 2026",
+              "engagement": 216,
+              "views": 15461,
+              "url": "https://x.com/Chives_VTuber/status/2045877204337484269",
+              "text": "【今日新聞韭菜包｜2026.04.19】 今晚在新聞韭菜包 我們會看到以下荒謬新聞： 警察在媽祖面前被毒犯打斷鼻樑 男子為了區區二十萬津貼讓老母親化作人乾 國民黨主席把中國的高中課本買回台灣說值得學習 同一週海內外網友在台灣繪師的課本封面底下留言羨慕 以及美國總統決定不藏了 準備向全世界公開外星人檔案 1. 大甲盃無限制格鬥賽彰化街頭開打 主委今年沒去大甲媽 只有昨天去迎一下白沙屯媽回鑾 過去幾年的民生地下道都很冷靜 沒想到今年爆發衝突 大甲媽十八號下午四點半跨過大度橋進彰化"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Tue Apr 21 14:46:05 +0000 2026",
+              "engagement": 141,
+              "views": 27378,
+              "url": "https://x.com/Chives_VTuber/status/2046601369344422192",
+              "text": "【今日新聞韭菜包｜2026.04.21】 大家好這裡是熱愛人類觀察的主委 今天的懶人新聞你會看到 柯文哲被辣椒水攻擊的元凶終於抓到了 中天沒錢沒關係 主播自己接中國標案做節目罵台灣 馬防部中士抖內直播主抖到去借地下錢莊 為了還債出賣國防機密給中國 以及hololive印尼三期生 Kobo被邀請轉播英雄聯盟 結果自己根本沒在玩LoL都在聊瓦? 1. 大笨蛋 給我寫悔過書！(一個有聲音的標題) 四月十七號那天晚上 柯文哲陪台中市議員參選人劉芩妤在逢甲夜市掃街 中途眾人突然咳嗽不止"
+            }
+          ]
+        },
+        {
+          "account": "alternative498",
+          "followers": 473,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-06-02",
+          "date_end": "2026-06-04",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 6.5,
+          "median_views": 162.5,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Thu Jun 04 13:51:57 +0000 2026",
+              "engagement": 7,
+              "views": 170,
+              "url": "https://x.com/Alternative498/status/2062532813250048078",
+              "text": "先行指標のビッチちゃん🫪 売られ過ぎにも程がある状態でしたがやっと最近ずっと日足レベルで資金調達率がドマイナスでしたがやっと今日プラスに転じて底打ち感が見えて来ました🤗(資金調達率は必ずマイナスが良いワケではない良い例) https://t.co/dnd2gfmVQF"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Tue Jun 02 02:53:17 +0000 2026",
+              "engagement": 6,
+              "views": 155,
+              "url": "https://x.com/Alternative498/status/2061642278981288075",
+              "text": "ビッチは先行指標やねん🫪の確度の高さを再認識したけど🇺🇸🪙含めアルト達も今のビッチぐらい日足レベルで資金調達率マイナスとロング撤退が目に見えないと調整完了とは言えないねん🫪 我先ロングの粘りは永遠の📉を生み出すねん🫪 https://t.co/67mygquJQT"
+            }
+          ]
         }
       ]
     },
     "ko": {
-      "matching_posts": 41,
-      "matching_accounts": 21,
+      "matching_posts": 54,
+      "matching_accounts": 26,
       "regular_mention_accounts": 3,
       "clean_regular_accounts": 0,
       "strong_accounts": 0,
       "accounts": [
         {
           "account": "whitepeach",
-          "followers": 17817,
-          "posts": 3,
+          "followers": 17820,
+          "posts": 8,
           "true_arb_posts": 0,
           "clean_arb_posts": 1,
           "regular": true,
           "clean_regular": false,
           "strong": false,
           "confidence": "medium",
-          "days": 3,
-          "date_start": "2026-05-06",
+          "days": 8,
+          "date_start": "2026-04-12",
           "date_end": "2026-05-28",
           "cells": {
-            "perps-kr": 3
+            "perps-kr": 8
           },
-          "median_engagement": 102,
-          "median_views": 3767,
+          "median_engagement": 28.5,
+          "median_views": 1332.5,
           "examples": [
             {
               "cell": "perps-kr",
@@ -1688,32 +2489,48 @@
             },
             {
               "cell": "perps-kr",
-              "created_at": "Thu May 28 07:13:46 +0000 2026",
-              "engagement": 9,
-              "views": 758,
-              "url": "https://x.com/WhitePeach/status/2059895890710822965",
-              "text": "+그럼에도 불구하고 펀딩비는 진한 양수임 -&gt; 현선물 가격 괴리가 현물쪽의 하락이 더 거세어 펀딩비가 양수일 가능성이 있고, 롱이 비용을 내며 많이 버티고 있다고 해석해야 합리적임"
+              "created_at": "Wed Apr 29 00:21:32 +0000 2026",
+              "engagement": 38,
+              "views": 1452,
+              "url": "https://x.com/WhitePeach/status/2049282902933066001",
+              "text": "내 일간 전략 수립 과정 나는 오전 09시(일봉마감)마다 btc와 eth를 분석한 시황노트를 올림. 내가 매일하면 좋지만 이것도 꽤나 시간 많이 잡아먹음 (타임프레임별로 드릴다운하고, oi 청산 등등 정보와 조합해서 데일리 바이어스 만들기) -> 그래서 이 짓거리를 자동으로 할 수 있도록 프롬프트를 예쁘게 짰음. 차트도 주요 타임프레임(일봉, 4h, 1h, 15m)별로 직접 그려서 OB BB FVG 표시하고, api로 oi 청"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sun Apr 12 14:51:51 +0000 2026",
+              "engagement": 31,
+              "views": 1693,
+              "url": "https://x.com/WhitePeach/status/2043341329665773688",
+              "text": "현물 CVD와 펀딩비 보면 확실히 이더쪽은 이번 하락을 기회로 현물을 던져대고 있음. 이더는 2k 아래에서 또 매수기회 줄 것 같은데. 🥱 https://t.co/5kZR04qlu8"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Fri Apr 24 00:41:14 +0000 2026",
+              "engagement": 26,
+              "views": 1213,
+              "url": "https://x.com/WhitePeach/status/2047475922828423168",
+              "text": "선물 CVD가 주도하는 상승에서 현물 CVD는 상승과 조정을 반복. 이는 선물 주도의 랠리 사이사이마다 스팟의 시장가 매도가 보인다는 것인데 왜일까? 금번 glassnode 위클리 리포트를 보면 현재의 가격대를 다음과 같이 설명함 '핵심 수위는 7.81만달러의 True Market Mean, 8.01만달러의 단기보유자 원가, 그리고 7.5만달러 중반의 하방 가속 구간. 결론적으로 현재 상승은 “구조적 강세 복귀”보다 “수급·숏"
             }
           ]
         },
         {
           "account": "ilpyung98",
-          "followers": 9973,
-          "posts": 14,
-          "true_arb_posts": 14,
+          "followers": 9972,
+          "posts": 17,
+          "true_arb_posts": 17,
           "clean_arb_posts": 0,
           "regular": true,
           "clean_regular": false,
           "strong": false,
           "confidence": "medium",
-          "days": 12,
-          "date_start": "2026-05-05",
+          "days": 15,
+          "date_start": "2026-02-16",
           "date_end": "2026-06-03",
           "cells": {
-            "perps-kr": 14
+            "perps-kr": 17
           },
-          "median_engagement": 51.5,
-          "median_views": 2041.0,
+          "median_engagement": 48,
+          "median_views": 1813,
           "examples": [
             {
               "cell": "perps-kr",
