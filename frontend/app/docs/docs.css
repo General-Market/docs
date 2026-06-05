@@ -31,7 +31,7 @@
 
 .docs-topbar-inner {
   height: 100%;
-  max-width: var(--apple-content-wide);
+  max-width: var(--apple-shell-max);
   margin: 0 auto;
   padding: 0 22px;
   display: grid;
@@ -124,16 +124,45 @@
 }
 .docs-cta:hover { background: var(--apple-accent-hover); }
 
+@media (max-width: 700px) {
+  .docs-topbar-inner {
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .docs-brand-suffix,
+  .docs-search-trigger {
+    display: none;
+  }
+  .docs-brand-logo { gap: 8px; }
+  .docs-brand-wordmark { font-size: 15px; }
+  .docs-tabs { gap: 2px; }
+  .docs-tab {
+    padding: 6px 7px;
+    font-size: 12px;
+  }
+  .docs-cta {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
+
 /* ────────────────────────────────────────────────── shell */
 
 .docs-shell {
-  max-width: var(--apple-content-wide);
+  max-width: var(--apple-shell-max);
   margin: 0 auto;
   padding: 32px 22px 80px;
   display: grid;
-  grid-template-columns: 256px 1fr;
-  gap: 40px;
+  grid-template-columns: var(--apple-shell-left) minmax(0, var(--apple-content)) var(--apple-shell-right);
+  gap: 32px;
   align-items: start;
+}
+
+@media (max-width: 1240px) {
+  .docs-shell {
+    grid-template-columns: 220px minmax(0, var(--apple-content));
+  }
 }
 
 @media (max-width: 900px) {
@@ -159,6 +188,205 @@
 .docs-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
 
 .docs-sidebar-nav { display: flex; flex-direction: column; gap: 22px; }
+
+.docs-ai-sidebar {
+  position: sticky;
+  top: 76px;
+  align-self: start;
+  max-height: calc(100vh - 96px);
+}
+
+.docs-ask-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--apple-r-md);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.docs-ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.docs-ask-title {
+  font-family: var(--apple-font-display);
+  font-size: 17px;
+  line-height: 1.2941;
+  letter-spacing: -0.011em;
+  font-weight: 600;
+  color: var(--apple-text);
+  margin: 0;
+}
+
+.docs-ask-status {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--apple-r-pill);
+  background: var(--apple-surface);
+  color: var(--apple-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.011em;
+}
+.docs-ask-status[data-mode="ai"] {
+  background: rgba(52, 199, 89, 0.12);
+  color: rgb(36, 138, 61);
+}
+
+.docs-ask-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.docs-ask-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.011em;
+  color: var(--apple-text-secondary);
+}
+
+.docs-ask-form textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--apple-r-sm);
+  padding: 10px 12px;
+  background: var(--apple-surface);
+  color: var(--apple-text);
+  font-family: var(--apple-font-text);
+  font-size: 14px;
+  line-height: 1.4286;
+  letter-spacing: -0.005em;
+  outline: none;
+  transition: border-color 150ms var(--apple-ease-default), background 150ms var(--apple-ease-default), box-shadow 150ms var(--apple-ease-default);
+}
+.docs-ask-form textarea:focus {
+  background: #fff;
+  border-color: rgba(0, 113, 227, 0.42);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+}
+
+.docs-ask-submit {
+  appearance: none;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--apple-r-pill);
+  background: var(--apple-accent);
+  color: #fff;
+  font-family: var(--apple-font-text);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: background 150ms var(--apple-ease-default), opacity 150ms var(--apple-ease-default);
+}
+.docs-ask-submit:hover:not(:disabled) { background: var(--apple-accent-hover); }
+.docs-ask-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.docs-ask-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--apple-divider);
+}
+.docs-ask-answer p {
+  margin: 0;
+  color: var(--apple-text);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  white-space: pre-wrap;
+}
+
+.docs-ask-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.docs-ask-sources span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.011em;
+  color: var(--apple-text-secondary);
+}
+.docs-ask-sources a {
+  color: var(--apple-accent);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.3846;
+  letter-spacing: -0.005em;
+}
+.docs-ask-sources a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.docs-ask-sources small {
+  color: var(--apple-text-secondary);
+  font-size: 12px;
+}
+
+.docs-ask-starters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+.docs-ask-starters button {
+  appearance: none;
+  border: 0;
+  border-radius: var(--apple-r-sm);
+  padding: 8px 10px;
+  background: var(--apple-surface);
+  color: var(--apple-text-secondary);
+  font-family: var(--apple-font-text);
+  font-size: 13px;
+  line-height: 1.3846;
+  letter-spacing: -0.005em;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms var(--apple-ease-default), background 150ms var(--apple-ease-default);
+}
+.docs-ask-starters button:hover {
+  color: var(--apple-text);
+  background: #ececef;
+}
+
+.docs-ask-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--apple-r-sm);
+  background: rgba(255, 59, 48, 0.08);
+  color: rgb(255, 59, 48);
+  font-size: 13px;
+  line-height: 1.3846;
+}
+
+@media (max-width: 1240px) {
+  .docs-ai-sidebar {
+    grid-column: 2;
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .docs-ai-sidebar { grid-column: 1; }
+}
 
 .docs-tab-switcher {
   display: grid;

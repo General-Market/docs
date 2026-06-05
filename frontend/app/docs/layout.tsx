@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { DocsSidebar } from '@/components/docs/DocsSidebar'
+import { DocsAskPanel } from '@/components/docs/DocsAskPanel'
 import { loadAllSummaries } from '@/lib/docs/mdx'
 import { flattenSlugs } from '@/lib/docs/nav'
 import './docs.css'
@@ -65,6 +66,9 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
           <DocsSidebar titleMap={titleMap} />
         </aside>
         <main className="docs-main">{children}</main>
+        <aside className="docs-ai-sidebar" aria-label="Ask AI about the documentation">
+          <DocsAskPanel />
+        </aside>
       </div>
     </div>
   )
