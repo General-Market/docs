@@ -1,0 +1,26 @@
+# wider trenches CN — combine platform + event + behavior + pain
+pumpfun 上线 min_faves:5 lang:zh	Both	platform + listing
+pumpfun 发射 min_faves:5 lang:zh	Both	platform + launch
+pumpfun 毕业 min_faves:5 lang:zh	Both	platform + graduation
+pumpfun 外盘 min_faves:5 lang:zh	Both	platform + post-graduation trading
+pumpfun 手续费 min_faves:5 lang:zh	Top	platform + economics
+pumpfun 奖励 min_faves:5 lang:zh	Top	platform + incentives
+内盘 毕业 外盘 min_faves:5 lang:zh	Both	mechanic sequence
+开盘 砸盘 土狗 min_faves:5 lang:zh	Both	event + villain
+发射 砸盘 土狗 min_faves:5 lang:zh	Both	launch + dump
+开发者 跑路 土狗 min_faves:5 lang:zh	Both	dev rug event
+合约地址 老鼠仓 min_faves:5 lang:zh	Top	CA + insider villain
+合约地址 貔貅 min_faves:5 lang:zh	Top	CA + honeypot villain
+合约地址 捆绑 min_faves:5 lang:zh	Top	CA + bundle villain
+聪明钱 监控 min_faves:5 lang:zh	Both	wallet + monitoring
+聪明钱 跟单 钱包 min_faves:5 lang:zh	Both	wallet + copy-trade
+钱包 监控 工具 min_faves:5 lang:zh	Top	wallet + tool
+gmgn 钱包 监控 min_faves:5 lang:zh	Top	tool + wallet monitoring
+gmgn 跟单 min_faves:5 lang:zh	Top	tool + copy-trade
+kol 喊单 接盘 min_faves:10 lang:zh	Top	KOL villain
+kol 老鼠仓 min_faves:5 lang:zh	Top	KOL + insider villain
+百倍币 复盘 min_faves:5 lang:zh	Both	status + recap
+金狗 复盘 min_faves:5 lang:zh	Both	status + recap
+土狗 日报 min_faves:5 lang:zh	Both	recurring report
+土狗 教程 钱包 min_faves:5 lang:zh	Top	tutorial + wallet
+空投 任务 土狗 min_faves:5 lang:zh	Top	incentive + trench

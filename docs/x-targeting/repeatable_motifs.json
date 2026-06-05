@@ -1,0 +1,790 @@
+{
+  "generated_at": "2026-06-05T18:33:49.794584Z",
+  "motifs": [
+    {
+      "motif": "venue_risk_data_drop",
+      "description": "Venue or product post tied to a hard market/risk metric such as OI, funding, margin, liquidation, TVL, fees, revenue, or points.",
+      "posts": 784,
+      "authors": 562,
+      "days": 66,
+      "date_start": "2026-03-09",
+      "date_end": "2026-06-05",
+      "cells": {
+        "trenches-en": 44,
+        "perps-en": 423,
+        "perps-cn": 126,
+        "trenches-cn": 96,
+        "perps-jp": 50,
+        "perps-kr": 45
+      },
+      "median_engagement": 166.5,
+      "median_views": 6092.0,
+      "p90_engagement": 541,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Wed May 27 16:35:51 +0000 2026",
+          "engagement": 16264,
+          "views": 61305,
+          "url": "https://x.com/Americanfort_io/status/2059674955709907131",
+          "text": "Arbitrum holds $16B in TVL, that’s 40% of the entire L2 market. Variational, USDai, GMX. The deepest DeFi stack in the L2 world. Every position on it is completely visible: your size, entry, counterparty. Anyone with a b"
+        },
+        {
+          "cell": "perps-en",
+          "author": "popdex_",
+          "created_at": "Fri May 22 08:00:17 +0000 2026",
+          "engagement": 8242,
+          "views": 125764,
+          "url": "https://x.com/popdex_/status/2057733271568716055",
+          "text": "We have completed a $30M funding round led by @ForesightVen to build a trader-first Perp DEX focused on capital efficiency, trading experience, and returning platform value to real contributors. The funding will be used "
+        },
+        {
+          "cell": "perps-en",
+          "author": "HyperliquidX",
+          "created_at": "Mon May 11 22:49:05 +0000 2026",
+          "engagement": 6568,
+          "views": 221800,
+          "url": "https://x.com/HyperliquidX/status/2053970679846834202",
+          "text": "Congratulations to Phantom on reaching $20M in builder code revenue on Hyperliquid in under a year. Users can trade 200+ markets in the Phantom app, including crypto, indices, commodities, and more. To date, 100+ teams h"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Canborsa_DEX",
+          "created_at": "Thu May 14 16:47:17 +0000 2026",
+          "engagement": 6046,
+          "views": 156292,
+          "url": "https://x.com/Canborsa_DEX/status/2054966793224040876",
+          "text": "The Canborsa Points Program is live! → Earn points with simple social quests → Refer friends for extra points → Climb the leaderboard to qualify for future rewards This is your chance to be an early user of the first RWA"
+        },
+        {
+          "cell": "perps-en",
+          "author": "izebel_eth",
+          "created_at": "Tue May 12 20:34:24 +0000 2026",
+          "engagement": 5538,
+          "views": 879149,
+          "url": "https://x.com/izebel_eth/status/2054299171344327149",
+          "text": "proud to introduce @papertrade_xyz - a fair-launched, fully-onchain perpetuals exchange built on hyperliquid by @izebel_eth &amp; @blurr -1000x leverage -0 slippage -No funding costs -Self-bootstrapping LP coming soon. l"
+        },
+        {
+          "cell": "perps-en",
+          "author": "HyperliquidX",
+          "created_at": "Tue Jun 02 04:58:14 +0000 2026",
+          "engagement": 4883,
+          "views": 154671,
+          "url": "https://x.com/HyperliquidX/status/2061673725502861406",
+          "text": "RWA open interest on Hyperliquid reached a new ATH of $3B HIP-3 has set a new OI record every month since its launch in October 2025 https://t.co/a89wZZjyQg"
+        },
+        {
+          "cell": "perps-en",
+          "author": "StarPlatinum_",
+          "created_at": "Thu May 21 14:13:24 +0000 2026",
+          "engagement": 3550,
+          "views": 148223,
+          "url": "https://x.com/StarPlatinum_/status/2057464780307214493",
+          "text": "- the man behind hyperliquid:native - immigrant background - raised by a single mother after divorce - self-taught physics at 16 - wins gold at the International Physics Olympiad - starts trading crypto in 2019 with $10K"
+        },
+        {
+          "cell": "perps-en",
+          "author": "krugermacro",
+          "created_at": "Wed Jun 03 05:12:45 +0000 2026",
+          "engagement": 3062,
+          "views": 227032,
+          "url": "https://x.com/krugermacro/status/2062039764216476115",
+          "text": "I largely think of \"crypto\" as a failed asset class at this point. I've written about the causes multiple times. Mainly, most crypto assets are worthless, or have dreadful value accrual, and most founders have abused the"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Grayscale",
+          "created_at": "Tue Jun 02 23:54:09 +0000 2026",
+          "engagement": 2787,
+          "views": 135638,
+          "url": "https://x.com/Grayscale/status/2061959585339150686",
+          "text": "Grayscale Hyperliquid Staking ETF (Ticker: $HYPG), the $HYPE ETP with the lowest gross management fee in the U.S.¹, starts trading tomorrow. $HYPE is the asset powering 24/7 onchain markets, with @HyperliquidX driving tr"
+        },
+        {
+          "cell": "perps-en",
+          "author": "CryptoNobler",
+          "created_at": "Sat May 09 13:25:58 +0000 2026",
+          "engagement": 2698,
+          "views": 291144,
+          "url": "https://x.com/CryptoNobler/status/2053104190533116278",
+          "text": "🚨 WARNING: SOMETHING VERY UNUSUAL IS HAPPENING RIGHT NOW!! Insiders are nonstop buying silver options at the $900–$1,000. Meanwhile, paper silver is trading at $80. This means THEY EXPECT SILVER TO PUMP 1,200% OVERNIGHT."
+        },
+        {
+          "cell": "perps-en",
+          "author": "ZayedETH",
+          "created_at": "Sun May 31 15:03:23 +0000 2026",
+          "engagement": 2663,
+          "views": 75171,
+          "url": "https://x.com/ZayedETH/status/2061101240616903090",
+          "text": "Sorry to all you $HYPE fans. 😂 HyperLiquid is a bubble, and it’s about to burst. I’m going all-in on this short; my liquidation price is $85. If we hit $40, I’d easily make $1 million. I never thought making money could "
+        },
+        {
+          "cell": "perps-en",
+          "author": "AshCrypto",
+          "created_at": "Thu Jun 04 08:37:38 +0000 2026",
+          "engagement": 2128,
+          "views": 118258,
+          "url": "https://x.com/AshCrypto/status/2062453711935250759",
+          "text": "$HYPE dropped 11% in the last 4 hours, erasing over $1.5 billion in market cap and liquidating $12 million in longs. The reason for this dump is likely sudden crash in Bitcoin and Arthur Hayes saying he fully dumped his "
+        }
+      ]
+    },
+    {
+      "motif": "wallet_tool_signal",
+      "description": "Wallet/tool signal posts: tracker, smart money, top holder, insider, sniper, bundle, or terminal workflow.",
+      "posts": 568,
+      "authors": 386,
+      "days": 55,
+      "date_start": "2026-03-06",
+      "date_end": "2026-06-05",
+      "cells": {
+        "trenches-en": 262,
+        "perps-cn": 18,
+        "trenches-cn": 223,
+        "perps-jp": 8,
+        "perps-kr": 32,
+        "perps-en": 25
+      },
+      "median_engagement": 128.0,
+      "median_views": 5778.0,
+      "p90_engagement": 388,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "perps-en",
+          "author": "CryptoNobler",
+          "created_at": "Sat May 09 13:25:58 +0000 2026",
+          "engagement": 2698,
+          "views": 291144,
+          "url": "https://x.com/CryptoNobler/status/2053104190533116278",
+          "text": "🚨 WARNING: SOMETHING VERY UNUSUAL IS HAPPENING RIGHT NOW!! Insiders are nonstop buying silver options at the $900–$1,000. Meanwhile, paper silver is trading at $80. This means THEY EXPECT SILVER TO PUMP 1,200% OVERNIGHT."
+        },
+        {
+          "cell": "trenches-en",
+          "author": "lourdesanchezok",
+          "created_at": "Wed Jun 03 13:38:15 +0000 2026",
+          "engagement": 2413,
+          "views": 109646,
+          "url": "https://x.com/lourdesanchezok/status/2062166979662745789",
+          "text": "The more I look at SpeedyTurtle, the more it seems the team has been obsessed with one thing: execution quality. 🏆 SpeedyTurtle → 298 🥈 GMGN → 402 🥉 Banana Gun → 1,241 📍 Trojan → 1,507 (Benchmark Landing Index — lower is"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "0xKevin00",
+          "created_at": "Thu Jun 04 07:45:57 +0000 2026",
+          "engagement": 2021,
+          "views": 117307,
+          "url": "https://x.com/0xKevin00/status/2062440705423970399",
+          "text": "如何追踪美国政府合法老鼠仓？ $MRVL 最近两天因为黄仁勋喊单暴涨150%都知道吧 但有两个人，早在4月初就已经买在最低点了 这俩人是美国众议院金融服务委员会委员，专门负责监管AI政策， $MRVL 刚好就在管辖范围内 他们买入17天后，谷歌与Marvell合作开发定制AI芯片的消息才公开出来 这不是妥妥的老鼠仓吗，但美国证监会不管 《STOCK 法案》禁止的是利用公司内幕信息，但\"知道政策走向\"不等于\"知道内幕\"。这叫信息优势，不叫"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "Flowslikeosmo",
+          "created_at": "Mon May 18 23:57:02 +0000 2026",
+          "engagement": 1736,
+          "views": 127708,
+          "url": "https://x.com/Flowslikeosmo/status/2056524494618103846",
+          "text": "Only 35 protocols cleared $2M in monthly revenue last month. Here are the top 25 by revenue: 1. @tether $476.6m 2. @circle $191.1m 3. @HyperliquidX $48.3m 4. @Pumpfun $33.2m 5. @Polymarket $20.2m 6. @Grayscale $19.6m 7. "
+        },
+        {
+          "cell": "trenches-en",
+          "author": "mwx_ai",
+          "created_at": "Mon Apr 27 13:01:06 +0000 2026",
+          "engagement": 1682,
+          "views": 4163,
+          "url": "https://x.com/mwx_ai/status/2048749279603528089",
+          "text": "First, we showed you what narratives are forming. Then, we showed you who’s driving them. Now, you can see where the money actually moves. Introducing Smart Wallet Tracker, available in MWX Alpha beta testing. 🔹️ 10,000+"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "yoseazka",
+          "created_at": "Thu Jun 04 15:49:14 +0000 2026",
+          "engagement": 1643,
+          "views": 1672,
+          "url": "https://x.com/yoseazka/status/2062562329628430433",
+          "text": "One of the design decisions I'm most proud of in MWX Alpha is this: 🔹KOL Intelligence and Smart Wallet Tracker were never meant to be two separate features. 🔹They were meant to be two layers of the same answer. solana:Fe"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "KayTheDoc",
+          "created_at": "Tue May 26 20:58:18 +0000 2026",
+          "engagement": 1361,
+          "views": 101390,
+          "url": "https://x.com/KayTheDoc/status/2059378617650655578",
+          "text": "I just blocked Scharo broke ass motherfucker i hope you go to hell @gmgnai is this YOUR AFFILIATE? RUGGING COINS? is this what gmgn stands for shame on you https://t.co/Ty41MIm80l"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "orenjixbt",
+          "created_at": "Tue May 26 06:43:52 +0000 2026",
+          "engagement": 1348,
+          "views": 9629,
+          "url": "https://x.com/orenjixbt/status/2059163592029815061",
+          "text": "Shill me something. I have unclaimed rewards on @AxiomExchange. Gonna top blast it and give some away to my followers. https://t.co/TdQCAnr1Wm"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "NorthFan0615",
+          "created_at": "Fri May 22 11:16:11 +0000 2026",
+          "engagement": 1318,
+          "views": 174212,
+          "url": "https://x.com/NorthFan0615/status/2057782573385007574",
+          "text": "求帮助，现在还在精神恍惚…因为未知原因的私钥泄漏，我价值12万u的钱包被盗了，那是自己打工7年+爸妈靠体力劳动攒了半辈子的钱。 黑客拿我的钱包和Relay协议交互，跨链桥把我的usdt、usdc全部换成了eth到黑客钱包地址里。 一直知道web3的凶险，在币圈3年，战战兢兢、万事小心，好不容易在熊市保住了本金，结果万万没想到钱包被盗了。 我确实有用python写过一些web3脚本用来抢购defi额度啥的，但都是在本地运行，代码也是只上传"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "0xSweep",
+          "created_at": "Fri May 08 16:56:05 +0000 2026",
+          "engagement": 1267,
+          "views": 114270,
+          "url": "https://x.com/0xSweep/status/2052794681973415998",
+          "text": "Two founders blew up $3.5 BILLION of their clients money, served 4 months in prison, hid a $35 million mansion in their toddler's name and then launched their fourth comeback project In June 2022 a Singapore hedge fund c"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "0xUnihax0r",
+          "created_at": "Mon May 11 04:46:57 +0000 2026",
+          "engagement": 1156,
+          "views": 322895,
+          "url": "https://x.com/0xUnihax0r/status/2053698349338173938",
+          "text": "The current situation: - 2 wallets drained across multiple chains (ETH/Base/BSC) - Both wallets were originally created on SIGMA Telegram - Both imported into GMGN + Rabby - Drain happened manually over ~10 min - No susp"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "forallcurious",
+          "created_at": "Wed Jun 03 18:44:08 +0000 2026",
+          "engagement": 1123,
+          "views": 31736,
+          "url": "https://x.com/forallcurious/status/2062243956243796403",
+          "text": "🚨: Scientists just cut a photon into two pieces releasing an infinite swarm of particles https://t.co/dyIdDOwv6N"
+        }
+      ]
+    },
+    {
+      "motif": "bounded_downside_mechanic",
+      "description": "Posts that contrast trading with no liquidation, fixed risk, max loss, premium-only downside, or bounded loss.",
+      "posts": 415,
+      "authors": 335,
+      "days": 53,
+      "date_start": "2026-03-22",
+      "date_end": "2026-06-05",
+      "cells": {
+        "trenches-en": 106,
+        "perps-en": 224,
+        "perps-cn": 20,
+        "trenches-cn": 15,
+        "perps-jp": 21,
+        "perps-kr": 29
+      },
+      "median_engagement": 200,
+      "median_views": 6579,
+      "p90_engagement": 933,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "trenches-en",
+          "author": "Xeffy_io",
+          "created_at": "Sun May 31 08:50:49 +0000 2026",
+          "engagement": 165553,
+          "views": 483230,
+          "url": "https://x.com/Xeffy_io/status/2061007479996383477",
+          "text": "Xeffy's Community MiniApp has launched! 🚀 Join us: https://t.co/hmAJIkcSfD Access the Xeffy app, become an early contributor, and contribute to RWA mass adoption! Early participants and contributors will be provided with"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Nullfee",
+          "created_at": "Mon May 18 16:18:12 +0000 2026",
+          "engagement": 57936,
+          "views": 66804,
+          "url": "https://x.com/Nullfee/status/2056409025873387832",
+          "text": "The platform is already live and the first competitive phase has officially begun. 3 Leaderboards are now active with BNB reward pools. The path to the top is simple: The more $NONE you earn → the higher your ranking → t"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Sat May 30 16:00:01 +0000 2026",
+          "engagement": 25745,
+          "views": 15934,
+          "url": "https://x.com/Americanfort_io/status/2060753103507657132",
+          "text": "There's an attack vector most of crypto isn't tracking yet. AI recommendation poisoning. An attacker embeds hidden prompt instructions in a webpage. An AI agent reads the page during its normal workflow. The agent's memo"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Tue May 26 16:00:02 +0000 2026",
+          "engagement": 18141,
+          "views": 9070,
+          "url": "https://x.com/Americanfort_io/status/2059303556851843182",
+          "text": "An AI agent got tricked into draining its own wallet, without touching a single line of code. An attacker sent a free NFT to Grok's connected wallet. The NFT quietly escalated the wallet's permissions. The attacker then "
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Sat May 23 16:00:01 +0000 2026",
+          "engagement": 18140,
+          "views": 10635,
+          "url": "https://x.com/Americanfort_io/status/2058216387596911045",
+          "text": "The largest social engineering attack in crypto history didn't exploit a single line of smart contract code. Months of relationship building. One moment of misplaced trust. $285M drained from Drift Protocol. 76% of all 2"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Sat May 02 16:00:00 +0000 2026",
+          "engagement": 14672,
+          "views": 12366,
+          "url": "https://x.com/Americanfort_io/status/2050606239038533751",
+          "text": "ENS sold you an identity that permanently exposes your finances. Every person who has your .eth name can see: — Every wallet you've ever funded — Every protocol you've used — Exactly how much you have right now They call"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Sun May 31 16:00:00 +0000 2026",
+          "engagement": 13448,
+          "views": 9770,
+          "url": "https://x.com/Americanfort_io/status/2061115487161913633",
+          "text": "Why isn't more institutional capital on-chain yet? Exposure. Not regulation. Every wallet address is a permanent public identifier, and every transaction lands on the same ledger. Trading strategies, supplier relationshi"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Wed Jun 03 16:00:00 +0000 2026",
+          "engagement": 13005,
+          "views": 7056,
+          "url": "https://x.com/Americanfort_io/status/2062202650074968121",
+          "text": "Quick breakdown of how stealth address systems actually work: 1. Someone sends to a human-readable name 2. Their wallet computes a brand new receive address that has never existed before 3. Only the sender and recipient "
+        },
+        {
+          "cell": "perps-en",
+          "author": "intheworldofai",
+          "created_at": "Fri May 29 07:51:09 +0000 2026",
+          "engagement": 6006,
+          "views": 790527,
+          "url": "https://x.com/intheworldofai/status/2060267689289896186",
+          "text": "🚨BREAKING: OpenAI's Codex is now completely FREE to run locally with Ollama. No API costs. No rate limits. 100% private on your machine. You can now use both the Codex App and Codex CLI with powerful open-source models l"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "Pumpfun",
+          "created_at": "Mon May 11 18:01:58 +0000 2026",
+          "engagement": 5496,
+          "views": 248672,
+          "url": "https://x.com/Pumpfun/status/2053898424051765636",
+          "text": "it’s called we don't have ceilings where we're going, ever heard of it? https://t.co/jQnDvNFXTd"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Tue May 05 17:29:14 +0000 2026",
+          "engagement": 4966,
+          "views": 8409,
+          "url": "https://x.com/Americanfort_io/status/2051715859123704067",
+          "text": "Quantum computers will eventually be able to drain any wallet whose public key has been exposed on-chain. That's basically everyone. We just filed the patent to fix it and raised $8M to make sure it gets built. Quantum-r"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "Pumpfun",
+          "created_at": "Thu May 21 15:49:03 +0000 2026",
+          "engagement": 4723,
+          "views": 1035964,
+          "url": "https://x.com/Pumpfun/status/2057488852277776775",
+          "text": "Introducing USDC pairs Coin creators now have the option to launch with USDC-paired liquidity pools; for more stability, better coin distribution &amp; higher ceilings. Learn more 👇 https://t.co/2RPCXXIozY"
+        }
+      ]
+    },
+    {
+      "motif": "liquidation_trigger_card",
+      "description": "Liquidation, margin-call, or heatmap post with a traded asset, level, long/short, OI, map, cluster, or trigger.",
+      "posts": 392,
+      "authors": 268,
+      "days": 60,
+      "date_start": "2026-03-22",
+      "date_end": "2026-06-05",
+      "cells": {
+        "perps-cn": 32,
+        "trenches-cn": 18,
+        "perps-jp": 70,
+        "perps-kr": 60,
+        "perps-en": 204,
+        "trenches-en": 8
+      },
+      "median_engagement": 99.5,
+      "median_views": 3722.0,
+      "p90_engagement": 404,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "perps-en",
+          "author": "ZayedETH",
+          "created_at": "Sun May 31 15:03:23 +0000 2026",
+          "engagement": 2663,
+          "views": 75171,
+          "url": "https://x.com/ZayedETH/status/2061101240616903090",
+          "text": "Sorry to all you $HYPE fans. 😂 HyperLiquid is a bubble, and it’s about to burst. I’m going all-in on this short; my liquidation price is $85. If we hit $40, I’d easily make $1 million. I never thought making money could "
+        },
+        {
+          "cell": "perps-en",
+          "author": "AshCrypto",
+          "created_at": "Wed Jun 03 08:13:14 +0000 2026",
+          "engagement": 2404,
+          "views": 71630,
+          "url": "https://x.com/AshCrypto/status/2062085186217492925",
+          "text": "Yesterday the crypto market just had its 3rd largest liquidation event of 2026. $1.8 billion in leveraged positions got liquidated as $BTC dropped to a 2-month low and $ETH dropped to a 3-month low. And the worst part? T"
+        },
+        {
+          "cell": "perps-en",
+          "author": "AshCrypto",
+          "created_at": "Thu Jun 04 08:37:38 +0000 2026",
+          "engagement": 2128,
+          "views": 118258,
+          "url": "https://x.com/AshCrypto/status/2062453711935250759",
+          "text": "$HYPE dropped 11% in the last 4 hours, erasing over $1.5 billion in market cap and liquidating $12 million in longs. The reason for this dump is likely sudden crash in Bitcoin and Arthur Hayes saying he fully dumped his "
+        },
+        {
+          "cell": "perps-en",
+          "author": "hxxntrr",
+          "created_at": "Thu May 14 13:00:07 +0000 2026",
+          "engagement": 1656,
+          "views": 2784019,
+          "url": "https://x.com/hxxntrr/status/2054909624030315005",
+          "text": "You can walk into any Apple Store in America, buy $50,000 in MacBooks and iPhones on 0% business credit cards, and resell every single item for 85 to 95% of retail on eBay, Swappa, and Facebook Marketplace the same day. "
+        },
+        {
+          "cell": "perps-en",
+          "author": "OGFIGO",
+          "created_at": "Thu May 14 04:46:26 +0000 2026",
+          "engagement": 1355,
+          "views": 6149,
+          "url": "https://x.com/OGFIGO/status/2054785386711277963",
+          "text": "Gm Friends I’ve been trading perps in DeFi long enough to know how fragmented the experience usually is bridge here, switch apps there, hope your liquidity holds. @useTria perp DEX is the first setup in a while that actu"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "0xSweep",
+          "created_at": "Fri May 08 16:56:05 +0000 2026",
+          "engagement": 1267,
+          "views": 114270,
+          "url": "https://x.com/0xSweep/status/2052794681973415998",
+          "text": "Two founders blew up $3.5 BILLION of their clients money, served 4 months in prison, hid a $35 million mansion in their toddler's name and then launched their fourth comeback project In June 2022 a Singapore hedge fund c"
+        },
+        {
+          "cell": "perps-en",
+          "author": "Dario_Desiena",
+          "created_at": "Thu May 14 11:15:38 +0000 2026",
+          "engagement": 1151,
+          "views": 29025,
+          "url": "https://x.com/Dario_Desiena/status/2054883330709946547",
+          "text": "Transform this character into a high-end REORDER-style digital collage artwork. The uploaded character should only remain as the structural silhouette anchor. Do not preserve the original face, proportions, or clean cart"
+        },
+        {
+          "cell": "perps-en",
+          "author": "bull_bnb",
+          "created_at": "Sat May 16 19:11:51 +0000 2026",
+          "engagement": 1149,
+          "views": 65393,
+          "url": "https://x.com/bull_bnb/status/2055727948540588425",
+          "text": "Not a big fan of James Wynn. Last interaction I had with him was literally telling him: “Save the $25M and take a break.” He didn’t. He kept going and got liquidated. Then came the meme shills, the rugs, now the perp DEX"
+        },
+        {
+          "cell": "perps-en",
+          "author": "coinbureau",
+          "created_at": "Fri May 29 03:04:22 +0000 2026",
+          "engagement": 1142,
+          "views": 87904,
+          "url": "https://x.com/coinbureau/status/2060195517259481366",
+          "text": "⚠️ ALERT: SPACEX PRE-IPO MARKET FLASH CRASHES 45% ON HYPERLIQUID Pre-IPO SPCX perpetuals on Hyperliquid suddenly collapsed from roughly $2,280 to $1,280 in minutes, wiping out over $1.5 MILLION in leveraged longs across "
+        },
+        {
+          "cell": "perps-en",
+          "author": "_ik804",
+          "created_at": "Wed Jun 03 14:30:55 +0000 2026",
+          "engagement": 1140,
+          "views": 26767,
+          "url": "https://x.com/_ik804/status/2062180231230742749",
+          "text": "🔍 INSIDE — everything our ecosystem offers. Two products. One ecosystem. Most of you know 20% of it. Here's the full picture. 🏦 @Hodlbankpro — The Exchange 🔹 Spot + Perpetual Futures · 41+ pairs · High leverage 🔹 Convert"
+        },
+        {
+          "cell": "perps-en",
+          "author": "waleswoosh",
+          "created_at": "Thu May 21 15:35:44 +0000 2026",
+          "engagement": 1081,
+          "views": 49101,
+          "url": "https://x.com/waleswoosh/status/2057485501381444074",
+          "text": "MegaETH Terminal is shutting down, but we're ending the season with a banger. +29,000 points and a top #30 rank. Overall, I lost about $5k USD, with the biggest losses coming from Hitone (-$1k USD), Monster (-$1k USD) an"
+        },
+        {
+          "cell": "perps-jp",
+          "author": "angorou7",
+          "created_at": "Thu Jun 04 03:17:50 +0000 2026",
+          "engagement": 965,
+          "views": 76822,
+          "url": "https://x.com/angorou7/status/2062373232624419210",
+          "text": "ビットコインが1000万円を割りました ・米利上げ懸念の再燃 ・ストラテジーがビットコインを売却 ・ビットコインETFから記録的資金流出 ・AI関連などハイテク株への資金流出 ・レバレッジ清算の連鎖 悪材料が重なり、下落が加速しています #ビットコイン #BTC https://t.co/j7mrrIrTxX"
+        }
+      ]
+    },
+    {
+      "motif": "numbered_market_rule",
+      "description": "Numbered market/trading rule or checklist with at least three items.",
+      "posts": 214,
+      "authors": 171,
+      "days": 36,
+      "date_start": "2026-03-22",
+      "date_end": "2026-06-05",
+      "cells": {
+        "perps-en": 35,
+        "perps-cn": 39,
+        "trenches-cn": 65,
+        "perps-jp": 13,
+        "perps-kr": 52,
+        "trenches-en": 10
+      },
+      "median_engagement": 139.0,
+      "median_views": 6920.5,
+      "p90_engagement": 562,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "perps-en",
+          "author": "Americanfort_io",
+          "created_at": "Wed Jun 03 16:00:00 +0000 2026",
+          "engagement": 13005,
+          "views": 7056,
+          "url": "https://x.com/Americanfort_io/status/2062202650074968121",
+          "text": "Quick breakdown of how stealth address systems actually work: 1. Someone sends to a human-readable name 2. Their wallet computes a brand new receive address that has never existed before 3. Only the sender and recipient "
+        },
+        {
+          "cell": "perps-kr",
+          "author": "trend_tiger_",
+          "created_at": "Sat May 23 16:05:28 +0000 2026",
+          "engagement": 8093,
+          "views": 753850,
+          "url": "https://x.com/trend_tiger_/status/2058217761386672509",
+          "text": "주린이가 \"초고수익\" 내는 법 3줄 요약 1) 거래대금 상위 100 중에, 신고가를 '이제 막' 뚫은 종목 산다. (시가총액 상위 100 이내면 더 좋음) 2) 사자마자 -10% 손절 주문을 걸어둔다. 3) +20% 수익을 넘겼으면, 이제부터 20일선 이탈하면 익절한다. 댓글에서 실제 사례로 설명해드리겠습니다."
+        },
+        {
+          "cell": "perps-kr",
+          "author": "JOOWOL2",
+          "created_at": "Fri Jun 05 04:14:41 +0000 2026",
+          "engagement": 3596,
+          "views": 92131,
+          "url": "https://x.com/JOOWOL2/status/2062749927265206677",
+          "text": "RT @JOOWOL2: 주린이는 알아두면 좋을 내용들 1. 금요일 시장은 보통 안좋다 2. 월요일 시장은 보통 괜찮다 3. 호가창에 매도가 쌓이면 상승가능성 높다 4. 오전장엔 보통 강하다 5. 오후장에는 보통 약세다 6. 고점에서 거래랑 발생은…"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "JOOWOL2",
+          "created_at": "Thu Jun 04 23:38:17 +0000 2026",
+          "engagement": 3596,
+          "views": 92131,
+          "url": "https://x.com/JOOWOL2/status/2062680367740670281",
+          "text": "주린이는 알아두면 좋을 내용들 1. 금요일 시장은 보통 안좋다 2. 월요일 시장은 보통 괜찮다 3. 호가창에 매도가 쌓이면 상승가능성 높다 4. 오전장엔 보통 강하다 5. 오후장에는 보통 약세다 6. 고점에서 거래랑 발생은 좋지않다. 다들 불금보내세요♡"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "mad_dogdebt",
+          "created_at": "Wed Jun 03 09:16:33 +0000 2026",
+          "engagement": 2012,
+          "views": 121504,
+          "url": "https://x.com/mad_dogdebt/status/2062101118994481341",
+          "text": "흙수저 반지하 30만 원으로 시작해 70억 자산을 만든 주식 투자자의 핵심 비결. 주식 유튜버로 꽤나 유명한 돈의 깡패다가 이야기하는 트레이더의 성공 비결을 들어봤음. 대부분 사람들은 대단한 매매 기법이나 급등주를 잡는 비법을 찾는데, 실제로는 무조건 이거라고 함. “따는 기술보다 잃지 않는 습관이 먼저다.” 그가 전하는 시장의 본질을 3가지로 정리해 봄. 1. 수익은 운의 영역일 수 있지만"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "mad_dogdebt",
+          "created_at": "Thu May 28 13:11:59 +0000 2026",
+          "engagement": 1881,
+          "views": 162447,
+          "url": "https://x.com/mad_dogdebt/status/2059986040924917819",
+          "text": "2600만원이 19억이 된 투자법.blind 이 사람 투자 신념은 “젊을수록 레버리지에 투자하라”임. 1. 이 글쓴이는 2021년부터 월급 대부분을 3배 레버리지에 투입함. 2. 2022년 금리인상으로 -70% 개박살 3. 손절 안하고 젊을때 복구가능하다 마인드로 계속 물탐 4. 결국 수익률 700% 돌파, 자산 19억됨. 2022년 그 하락장에서 실제로 버틴 사람은 극소수였고, 심리적으로도"
+        },
+        {
+          "cell": "perps-en",
+          "author": "itsmichaelluu",
+          "created_at": "Fri Jun 05 04:50:18 +0000 2026",
+          "engagement": 1830,
+          "views": 70789,
+          "url": "https://x.com/itsmichaelluu/status/2062758891776061922",
+          "text": "When $SPY crashes 10%-20% this summer, everything will be on sale. Add these 16 stocks for the reversal of a lifetime: 1. $NOW — AI automates every enterprise workflow at scale Buy zone: $85–$100 | Near 52-week lows, mas"
+        },
+        {
+          "cell": "trenches-en",
+          "author": "Flowslikeosmo",
+          "created_at": "Mon May 18 23:57:02 +0000 2026",
+          "engagement": 1736,
+          "views": 127708,
+          "url": "https://x.com/Flowslikeosmo/status/2056524494618103846",
+          "text": "Only 35 protocols cleared $2M in monthly revenue last month. Here are the top 25 by revenue: 1. @tether $476.6m 2. @circle $191.1m 3. @HyperliquidX $48.3m 4. @Pumpfun $33.2m 5. @Polymarket $20.2m 6. @Grayscale $19.6m 7. "
+        },
+        {
+          "cell": "perps-kr",
+          "author": "JOOWOL2",
+          "created_at": "Tue May 19 04:05:40 +0000 2026",
+          "engagement": 1586,
+          "views": 63663,
+          "url": "https://x.com/JOOWOL2/status/2056587064825790579",
+          "text": "<재미로 보는 투자 방법들> 1. 적당히 수익내고 싶다 : VOO 투자 2. 퇴직금을 안정적 운용하고 싶다 : SPY 투자 3. 건강한 수준의 욕심투자 하고싶다 : QLD 투자 4. 삶을 바꿔보고 싶다 : TQQQ + SOXL 투자 5. 연금받고 살고싶다 : SCHD + JEPQ 투자 6. 인생 한방이지! : 잡코인 몰빵 7. 주식으로 수익내고싶다 : 주월 몰빵 👩‍❤️‍👨"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "JOOWOL2",
+          "created_at": "Sun May 31 13:24:30 +0000 2026",
+          "engagement": 1383,
+          "views": 63615,
+          "url": "https://x.com/JOOWOL2/status/2061076354494513475",
+          "text": "미국주식의 레버리지는 그나마 이게 안전하고 수익성도 좋다. 1. 나스닥 : QLD, TQQQ 2. S&amp;P500 : SSO, UPRO 3. 반도체 : SOXL, USD 4. 코인 : BITU 5. 빅테크 레버리지 애매한 잡주보다 억만배 낫다. 안정성, 수익성 다 낫다. 글값은 하트 부탁드립니다"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "JOOWOL2",
+          "created_at": "Mon Jun 01 06:06:13 +0000 2026",
+          "engagement": 1383,
+          "views": 63617,
+          "url": "https://x.com/JOOWOL2/status/2061328444294861146",
+          "text": "RT @JOOWOL2: 미국주식의 레버리지는 그나마 이게 안전하고 수익성도 좋다. 1. 나스닥 : QLD, TQQQ 2. S&amp;P500 : SSO, UPRO 3. 반도체 : SOXL, USD 4. 코인 : BITU 5. 빅테크 레버리지 애매한…"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "0xtonixie",
+          "created_at": "Fri May 15 08:19:31 +0000 2026",
+          "engagement": 1319,
+          "views": 120033,
+          "url": "https://x.com/0xtonixie/status/2055201395083825382",
+          "text": "如果你想在币圈小资金翻身（几百U就够了），我推荐你去跟着这些打新的老师去链上以小博大（不是玩meme！）： 1. reboot老师 @Reboottttttt ，真的是很勤奋的打新专家，任何新协议，链上的异动，基本都会第一时间察觉，最难能可贵的是他很少偷吃，自己发现的第一时间就直接发出来，不是那种发出来就只能接盘的老师，归零的话他跟你一起归零🤣 2. 流星老师 @nuanxia001 ，也是很勤奋的博主，而且他其实会直接在很多新的发射台"
+        }
+      ]
+    },
+    {
+      "motif": "copytrade_teacher_group",
+      "description": "Copy-trade, teacher, trading journal, recap, or group-following content.",
+      "posts": 129,
+      "authors": 100,
+      "days": 33,
+      "date_start": "2026-03-25",
+      "date_end": "2026-06-05",
+      "cells": {
+        "trenches-cn": 66,
+        "perps-cn": 29,
+        "perps-kr": 13,
+        "trenches-en": 10,
+        "perps-en": 11
+      },
+      "median_engagement": 123,
+      "median_views": 7249,
+      "p90_engagement": 514,
+      "strong_bar": true,
+      "examples": [
+        {
+          "cell": "trenches-cn",
+          "author": "v3wanu",
+          "created_at": "Wed May 27 02:50:37 +0000 2026",
+          "engagement": 4628,
+          "views": 293984,
+          "url": "https://x.com/v3wanu/status/2059467282410242182",
+          "text": "所有跟单Serenity的，再次隆重介绍一个专门针对他的监控网站给你们： https://t.co/6AZ1Ncv9s9 详细得不得了"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "0xKevin00",
+          "created_at": "Thu Jun 04 07:45:57 +0000 2026",
+          "engagement": 2021,
+          "views": 117307,
+          "url": "https://x.com/0xKevin00/status/2062440705423970399",
+          "text": "如何追踪美国政府合法老鼠仓？ $MRVL 最近两天因为黄仁勋喊单暴涨150%都知道吧 但有两个人，早在4月初就已经买在最低点了 这俩人是美国众议院金融服务委员会委员，专门负责监管AI政策， $MRVL 刚好就在管辖范围内 他们买入17天后，谷歌与Marvell合作开发定制AI芯片的消息才公开出来 这不是妥妥的老鼠仓吗，但美国证监会不管 《STOCK 法案》禁止的是利用公司内幕信息，但\"知道政策走向\"不等于\"知道内幕\"。这叫信息优势，不叫"
+        },
+        {
+          "cell": "perps-kr",
+          "author": "mad_dogdebt",
+          "created_at": "Wed Jun 03 09:16:33 +0000 2026",
+          "engagement": 2012,
+          "views": 121504,
+          "url": "https://x.com/mad_dogdebt/status/2062101118994481341",
+          "text": "흙수저 반지하 30만 원으로 시작해 70억 자산을 만든 주식 투자자의 핵심 비결. 주식 유튜버로 꽤나 유명한 돈의 깡패다가 이야기하는 트레이더의 성공 비결을 들어봤음. 대부분 사람들은 대단한 매매 기법이나 급등주를 잡는 비법을 찾는데, 실제로는 무조건 이거라고 함. “따는 기술보다 잃지 않는 습관이 먼저다.” 그가 전하는 시장의 본질을 3가지로 정리해 봄. 1. 수익은 운의 영역일 수 있지만"
+        },
+        {
+          "cell": "perps-cn",
+          "author": "web4miko",
+          "created_at": "Mon May 04 08:15:18 +0000 2026",
+          "engagement": 1643,
+          "views": 314278,
+          "url": "https://x.com/web4miko/status/2051214067612733874",
+          "text": "币圈的群，我只认五个。 第一个群 就是是杀破狼 @wolfyxbt 的狼家军。收费标准 0 群里上到百亿富豪孙宇晨 @justinsuntron ，中到各大交易所负责人，大小 kol。下到长期陪伴的狼仔忠实粉丝，甚至外卖员选手，还掺杂着数十个亿万富翁，车头。其乐融融。 逢年过节，各大交易所不来狼家军群里发个红包，那就是工作没到位，kpi 不饱和，颗粒度不饱满。 或者说，交易所的营销负责人没有进狼家军群，那就意味着她它不是华语主流交易所。"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "0xtonixie",
+          "created_at": "Fri May 15 08:19:31 +0000 2026",
+          "engagement": 1319,
+          "views": 120033,
+          "url": "https://x.com/0xtonixie/status/2055201395083825382",
+          "text": "如果你想在币圈小资金翻身（几百U就够了），我推荐你去跟着这些打新的老师去链上以小博大（不是玩meme！）： 1. reboot老师 @Reboottttttt ，真的是很勤奋的打新专家，任何新协议，链上的异动，基本都会第一时间察觉，最难能可贵的是他很少偷吃，自己发现的第一时间就直接发出来，不是那种发出来就只能接盘的老师，归零的话他跟你一起归零🤣 2. 流星老师 @nuanxia001 ，也是很勤奋的博主，而且他其实会直接在很多新的发射台"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "whyyoutouzhele",
+          "created_at": "Wed May 20 02:00:01 +0000 2026",
+          "engagement": 1208,
+          "views": 146453,
+          "url": "https://x.com/whyyoutouzhele/status/2056917831535808609",
+          "text": "5月18日，“耿同学”接受媒体采访时说：大家千万不要以为顶级学术期刊就不会有假论文。事实上，这些顶刊可能连原始数据都拿不到，同行评审也都是看个大概。毕竟期刊不是侦探社，不会那么细致地去看数据。除了已经曝光的，耿同学说他手里还有5个杰青。 谈起他博士突然退学的原因其实也很简单：这不是他想要科研。 至于生化领域为何是造假的重灾区，“耿同学”表示，因为国家自然基金每年的申请里，医学和生命科学占了四成，而且论文相对于其它学科，好发很多。 时间长"
+        },
+        {
+          "cell": "trenches-cn",
+          "author": "qkl2058",
+          "created_at": "Wed Jun 03 06:05:05 +0000 2026",
+          "engagement": 1100,
+          "views": 393754,
+          "url": "https://x.com/qkl2058/status/2062052934280708361",
+          "text": "有个中国开发者在录B站教程的时候，不小心把他的AI交易记录给暴露了，里头显示赚了86万多美金。 这事儿纯属意外。他本来只是录个2分钟的教学视频，教大家怎么搭AI代理。画面里三个显示器，桌子乱七八糟的，也没几个人看。结果有人在47秒的时候按了暂停。 右边那个屏幕是亮着的，上面正好能看到一个钱包地址：gabagool22 • 868,862美元利润 • 28,620次预测 • 加入时间：2025年10月 个人主页：https://t.co/"
+        },
+        {
+          "cell": "perps-en",
+          "author": "SJosephBurns",
+          "created_at": "Fri May 15 00:10:38 +0000 2026",
+          "engagement": 859,
+          "views": 47146,
+          "url": "https://x.com/SJosephBurns/status/2055078363509686581",
+          "text": "10 great trading accounts to follow on 𝕏 by trading topic.👇 Day Trading: @BearBullTraders Stock Market: @DanFitzpatrick Trading Coach: @austinsilverfx Options: @Ardi_Aaziznia Trading Journal: @tradesviz Market Analysis: "
+        },
+        {
+          "cell": "perps-en",
+          "author": "SJosephBurns",
+          "created_at": "Fri May 08 10:45:29 +0000 2026",
+          "engagement": 642,
+          "views": 35690,
+          "url": "https://x.com/SJosephBurns/status/2052701417366769692",
+          "text": "10 great trading accounts to follow on 𝕏 by trading topic.👇 Day Trading: @BearBullTraders Stock Market: @DanFitzpatrick Trading Coach: @austinsilverfx Options: @Ardi_Aaziznia Trading Journal: @tradesviz Market Analysis: "
+        },
+        {
+          "cell": "trenches-en",
+          "author": "DataC58218",
+          "created_at": "Wed Jun 03 19:16:04 +0000 2026",
+          "engagement": 632,
+          "views": 123504,
+          "url": "https://x.com/DataC58218/status/2062251993830240370",
+          "text": "Axiom affiliate @Cented7 has pulled over $ 16 Million in profits so far… …yet he still mints around 5 tokens EVERY single day and dumps them at ~4K MCAP like clockwork. Why ? Just to pocket additional $100–200 per token."
+        },
+        {
+          "cell": "perps-kr",
+          "author": "juhyeon6749",
+          "created_at": "Fri May 29 06:07:29 +0000 2026",
+          "engagement": 598,
+          "views": 35439,
+          "url": "https://x.com/juhyeon6749/status/2060241599674958323",
+          "text": "유튜버 「TQQQ미친놈」이 진짜 미친 이유 5가지 — 남들이 말리는 투자를 혼자 증명하는 중 미국주식 레버리지 TQQQ 1. SCHD 4,700주를 직접 손절했다 배당주 투자의 교과서로 불리는 SCHD를 4,700주나 들고 있다가 직접 손절. \"배당이 아니라 레버리지로 부자 된다\"는 확신 하나로 포트폴리오를 갈아엎은 결단력이 범상치 않다. 보통 사람이라면 배당 받으면서 존버하는데, 이 사람은"
+        },
+        {
+          "cell": "perps-cn",
+          "author": "webktsr",
+          "created_at": "Tue May 19 03:49:27 +0000 2026",
+          "engagement": 595,
+          "views": 11491,
+          "url": "https://x.com/webktsr/status/2056582985688707514",
+          "text": "姐妹们，昨天Binance刚把BTCUSD1永续上线，我刷广场时停下来多看了两眼。 大家聊这个新pair的已经分成两拨了。 一拨还在讨论上线新鲜事，另一拨老玩家已经开始研究那个99.99%的抵押比例。 因为真正玩合约的都清楚，影响仓位体验的，很多时候不是方向对不对，而是交易所到底认不认你手里的钱。 USD1这次最抓人的地方，就在这。 在Portfolio Margin体系里，它现在是最高 tier。理论上1万USD1能贡献接近9999美"
+        }
+      ]
+    }
+  ]
+}

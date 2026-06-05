@@ -1,0 +1,1919 @@
+{
+  "generated_at": "2026-06-05T18:35:41.491894Z",
+  "languages": {
+    "en": {
+      "matching_posts": 209,
+      "matching_accounts": 140,
+      "regular_mention_accounts": 14,
+      "clean_regular_accounts": 4,
+      "strong_accounts": 1,
+      "accounts": [
+        {
+          "account": "vooi_io",
+          "followers": 182211,
+          "posts": 9,
+          "true_arb_posts": 8,
+          "clean_arb_posts": 7,
+          "regular": true,
+          "clean_regular": true,
+          "strong": true,
+          "confidence": "high",
+          "days": 9,
+          "date_start": "2026-03-19",
+          "date_end": "2026-05-15",
+          "cells": {
+            "-": 9
+          },
+          "median_engagement": 77,
+          "median_views": 5242,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Thu Mar 19 12:46:42 +0000 2026",
+              "engagement": 558,
+              "views": 58008,
+              "url": "https://twitter.com/vooi_io/status/2034612529578512663",
+              "text": "What do you think of a nice APR strategy? No 🧢 Meet VOOI Funding Radar - where @HyperliquidX, @Lighter_xyz and @Aster_DEX perps are scanned to capture imbalances automatically 👇🏻 → Select asset and size → Check the funding arb rates and ~AP"
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon Apr 27 12:33:13 +0000 2026",
+              "engagement": 213,
+              "views": 18122,
+              "url": "https://x.com/vooi_io/status/2048742259659595803",
+              "text": "VOOI has joined @Lighter_xyz Partner Attribution Program Since integrating Lighter last December, VOOI has processed over $1.1B in cumulative trading volume on the venue - making VOOI the #1 Lighter builder by volume Partner Attribution mak"
+            },
+            {
+              "cell": "-",
+              "created_at": "Wed Apr 29 08:05:48 +0000 2026",
+              "engagement": 83,
+              "views": 7471,
+              "url": "https://x.com/vooi_io/status/2049399739666288884",
+              "text": "trade[XYZ] @tradexyz HIP-3 markets - now live on VOOI Ultra The biggest RWA markets issuer - trade[XYZ] - powers onchain 24/7 trading commodities equities, indices, commodities, and FX + Discover unique funding rates, consistently mispriced"
+            },
+            {
+              "cell": "-",
+              "created_at": "Wed Apr 22 11:02:50 +0000 2026",
+              "engagement": 81,
+              "views": 5242,
+              "url": "https://x.com/vooi_io/status/2046907574314835986",
+              "text": "VOOI doesn't stop shipping VOOI Pro and VOOI Ultra run on our own infrastructure - fully operational, no interruptions While VOOI Light migrates to a new infrastructure provider, our flagship trading apps keep shipping Here's what landed ov"
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 09:52:27 +0000 2026",
+              "engagement": 77,
+              "views": 10512,
+              "url": "https://x.com/vooi_io/status/2054137622725804159",
+              "text": "Meet @Kinetiq_xyz HIP-3 Perp Markets - Live on VOOI Ultra → Trade and arbitrage funding rates on 24/7 stocks and exclusive assets → Ready-to-Execute trading strategies → Automated execution and Kinetiq markets exposure via VOOI MCP → Seamle"
+            }
+          ]
+        },
+        {
+          "account": "ryuzaki_sei",
+          "followers": 33655,
+          "posts": 4,
+          "true_arb_posts": 4,
+          "clean_arb_posts": 4,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 4,
+          "date_start": "2026-05-21",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 4
+          },
+          "median_engagement": 89.5,
+          "median_views": 3832.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 29 01:45:30 +0000 2026",
+              "engagement": 142,
+              "views": 6102,
+              "url": "https://x.com/Ryuzaki_SEI/status/2060175668437246154",
+              "text": "best week in @variational_io points 🪂 208 points from $2.1m volume by trading xau, sol, xag and hype. focusing on rwa pairs my strategy: doing delta neutral with all these trading, sol & hype with extended perp & xau, xag with ostium perp. "
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 00:32:25 +0000 2026",
+              "engagement": 109,
+              "views": 4248,
+              "url": "https://x.com/Ryuzaki_SEI/status/2062693990848508388",
+              "text": "Biggest points cook in @variational_io 🪂 237 points from $2.9M volume by trading xau, cl, $hype, $sol & zec pair this week pnl is about $4.1k + $390 in funding fees my strategy: doing delta neutral with extended perp which gives me the oppo"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 21 08:48:01 +0000 2026",
+              "engagement": 70,
+              "views": 3416,
+              "url": "https://x.com/Ryuzaki_SEI/status/2057382897569706336",
+              "text": "full guide + best strategy to farm @variational_io perp points 🪂 variational raised $50M funding from dragonfly which is huge for perp & total funding is now $61.8M i farmed 4151 points here my strategy and lot of important tips how to star"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 07:18:27 +0000 2026",
+              "engagement": 64,
+              "views": 2253,
+              "url": "https://x.com/Ryuzaki_SEI/status/2062071400064839970",
+              "text": "If you missed Hyperliquid airdrop, then don't miss @variational_io 🪂 In this post i shared how i farmed 4,359 var points, my future plans & efficient ways to get more points. $HYPE just printed a new ATH. everyone's acting like they were ea"
+            }
+          ]
+        },
+        {
+          "account": "mmenyene_c",
+          "followers": 6678,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 3,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 3,
+          "date_start": "2026-05-16",
+          "date_end": "2026-05-21",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 332,
+          "median_views": 4768,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 21 05:53:32 +0000 2026",
+              "engagement": 457,
+              "views": 8596,
+              "url": "https://x.com/Mmenyene_C/status/2057338985601536047",
+              "text": "Your stablecoins sitting idle is a choice, but it's still a choice to make it work for you. People still think about yield in one direction which is to deposit, earn, wait. But the smartest capital in DeFi right now isn't moving in one dire"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Mon May 18 05:58:59 +0000 2026",
+              "engagement": 332,
+              "views": 4768,
+              "url": "https://x.com/Mmenyene_C/status/2056253194188083456",
+              "text": "Where trust is scarce, scrutiny is higher, and the protocols that earn genuine confidence are the ones that will carry the next era of on-chain finance. Altura is a yield protocol. But the yield is only part of the story. Let's take a look "
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 16 18:39:43 +0000 2026",
+              "engagement": 231,
+              "views": 3074,
+              "url": "https://x.com/Mmenyene_C/status/2055719864707219928",
+              "text": "One of the biggest shifts happening in DeFi right now is capital becoming more productive instead of sitting idle. With Altura’s AVLT market on Morpho, users are no longer limited to simply depositing into a vault and waiting for yield. You"
+            }
+          ]
+        },
+        {
+          "account": "sammymzy",
+          "followers": 12677,
+          "posts": 3,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 3,
+          "regular": true,
+          "clean_regular": true,
+          "strong": false,
+          "confidence": "high",
+          "days": 3,
+          "date_start": "2026-05-16",
+          "date_end": "2026-05-24",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 215,
+          "median_views": 4896,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 16 18:21:55 +0000 2026",
+              "engagement": 275,
+              "views": 3199,
+              "url": "https://x.com/SammyMzy/status/2055715384049684643",
+              "text": "The reason most people got burned by DeFi yield was never the concept, it was the execution Platforms built on token emissions and circular incentives only work when new money keeps coming in, the moment it stops, the APY collapses and you’"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 19 19:36:42 +0000 2026",
+              "engagement": 215,
+              "views": 10119,
+              "url": "https://x.com/SammyMzy/status/2056821366675190186",
+              "text": "Depositing into a single vault and having your capital automatically split across market making, funding rate arbitrage and real-world asset strategies is not something most retail investors had access to before That’s institutional-grade e"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sun May 24 21:47:48 +0000 2026",
+              "engagement": 183,
+              "views": 4896,
+              "url": "https://x.com/SammyMzy/status/2058666300709515599",
+              "text": ". @alturax yield doesn’t come from thin air and this breakdown explains exactly why Three strategies running simultaneously, delta-neutral market making capturing bid-ask spreads without directional exposure, funding rate and basis arbitrag"
+            }
+          ]
+        },
+        {
+          "account": "loristools",
+          "followers": 3734,
+          "posts": 9,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 8,
+          "date_start": "2026-02-28",
+          "date_end": "2026-05-13",
+          "cells": {
+            "-": 9
+          },
+          "median_engagement": 65,
+          "median_views": 6389,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 13:31:29 +0000 2026",
+              "engagement": 280,
+              "views": 11715,
+              "url": "https://x.com/LorisTools/status/2054192741127458889",
+              "text": "RT @risextrade: @LorisTools is now live with RISEx. Every funding rate and open interest shift, updated as it happens. https://t.co/BBzMH5G…"
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 14:29:25 +0000 2026",
+              "engagement": 140,
+              "views": 6608,
+              "url": "https://x.com/LorisTools/status/2054207320653955445",
+              "text": "RT @sam_battenally: I've said it before, and I'll say it again Perp funding rate is an incredible mechanism. And it's particularly interes…"
+            },
+            {
+              "cell": "-",
+              "created_at": "Sat Feb 28 00:11:42 +0000 2026",
+              "engagement": 84,
+              "views": 6389,
+              "url": "https://twitter.com/LorisTools/status/2027537156701335705",
+              "text": "Trade is Now Live in Private Beta on @LorisTools • 1-Click Cross-Exchange Funding Arb - Live on Hyperliquid and Extended, more venues coming soon • Randomized Hidden TWAPs - Amounts and intervals randomized with offchain execution logic • C"
+            },
+            {
+              "cell": "-",
+              "created_at": "Sat Apr 18 19:03:22 +0000 2026",
+              "engagement": 71,
+              "views": 5865,
+              "url": "https://x.com/LorisTools/status/2045578953696612790",
+              "text": "Now Live: @AftermathFi on @LorisTools • Real-time & Historical funding rates from Aftermath and 37+ other venues • Open Interest and Volume tracking to spot positioning & flows as they happen • Full historical funding charts: backtest any A"
+            },
+            {
+              "cell": "-",
+              "created_at": "Fri May 01 16:23:05 +0000 2026",
+              "engagement": 65,
+              "views": 10340,
+              "url": "https://x.com/LorisTools/status/2050249661823303919",
+              "text": "New on @LorisTools: Pairs Trading • One click, multi-leg TWAP execution. • Same- or Cross-venue: HL, HIP-3s, Binance & Extended • Live Correlation, Beta, rolling Z-Score, Coint p-value • Live Funding Spread & Portfolio Net Delta • Funding A"
+            }
+          ]
+        },
+        {
+          "account": "krowncryptocave",
+          "followers": 110138,
+          "posts": 6,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 6,
+          "date_start": "2026-05-12",
+          "date_end": "2026-05-28",
+          "cells": {
+            "perps-en": 6
+          },
+          "median_engagement": 169.5,
+          "median_views": 7184.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 23 16:20:50 +0000 2026",
+              "engagement": 185,
+              "views": 7223,
+              "url": "https://x.com/KrownCryptoCave/status/2058221628442767768",
+              "text": "bitcoin:native down 3% from yesterday. funding rates still positive. not good for next week boolahs https://t.co/BAn8Ttct8A"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 21 14:36:29 +0000 2026",
+              "engagement": 172,
+              "views": 5306,
+              "url": "https://x.com/KrownCryptoCave/status/2057470592060895401",
+              "text": "bitcoin:native leverage funding rates maintaining the most consistently positive streak in months. imo this rally will fail, short term downside bias remains https://t.co/PsyKDEleB3"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 26 15:24:16 +0000 2026",
+              "engagement": 172,
+              "views": 27524,
+              "url": "https://x.com/KrownCryptoCave/status/2059294554084491421",
+              "text": "bitcoin:native funding rates still remain positive despite Bitcoins short term downtrend. likely lower before the next major low is found https://t.co/1M2Y1E1dHa"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 19 15:03:32 +0000 2026",
+              "engagement": 167,
+              "views": 7146,
+              "url": "https://x.com/KrownCryptoCave/status/2056752622527561759",
+              "text": "bitcoin:native highest consistent funding rates in over 30 days. not good for longers https://t.co/AGXYrmd9pQ"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 28 15:23:21 +0000 2026",
+              "engagement": 156,
+              "views": 8448,
+              "url": "https://x.com/KrownCryptoCave/status/2060019102505431448",
+              "text": "bitcoin:native funding rates going more up, price going more down https://t.co/e3nzIAqk0D"
+            }
+          ]
+        },
+        {
+          "account": "azharthegreat",
+          "followers": 1986,
+          "posts": 5,
+          "true_arb_posts": 4,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-17",
+          "date_end": "2026-05-19",
+          "cells": {
+            "-": 5
+          },
+          "median_engagement": 0,
+          "median_views": 16,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Sun May 17 06:06:42 +0000 2026",
+              "engagement": 1,
+              "views": 21,
+              "url": "https://x.com/Azharthegreat/status/2055892748465524871",
+              "text": "BTC -1.13% on the day but still hasn’t fully lost the range. Most see positive funding and assume strength. Reality is the upper third held firm while the breakdown never completed. Price is stuck deciding inside balance, not trending. Head"
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 19 17:12:55 +0000 2026",
+              "engagement": 0,
+              "views": 7,
+              "url": "https://x.com/Azharthegreat/status/2056785182842106008",
+              "text": "BTC still trapped in the 76.1k-77.3k box on light volume. Most read this as boring chop. But positive funding at 0.56bps while vol stays compressed? That's longs paying to stay in while nothing expands. Fuel, not strength. Middle of range h"
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 19 08:12:33 +0000 2026",
+              "engagement": 0,
+              "views": 16,
+              "url": "https://x.com/Azharthegreat/status/2056649196850020449",
+              "text": "BTC +0.02% on the day, sitting in the upper half of its range. Most see positive funding and call it strength. Reality is longs paying early before the market has accepted higher prices. The middle is still holding. No clean follow-through."
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon May 18 13:13:10 +0000 2026",
+              "engagement": 0,
+              "views": 23,
+              "url": "https://x.com/Azharthegreat/status/2056362458269315355",
+              "text": "BTC -1.06% on the day but still hasn't fully lost the range. Most see the red candle and positive funding and call it strength. Reality is the headline move matters less than what price still hasn't done. The upper third of the range held. "
+            },
+            {
+              "cell": "-",
+              "created_at": "Sun May 17 08:39:57 +0000 2026",
+              "engagement": 0,
+              "views": 9,
+              "url": "https://x.com/Azharthegreat/status/2055931314809843912",
+              "text": "Algo's been feeding me nothing but BTC dominance charts and L2 TVL spikes all week. Crypto crowd already here, just waiting on the next funding rate flip."
+            }
+          ]
+        },
+        {
+          "account": "cryptorover",
+          "followers": 1594025,
+          "posts": 4,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 4,
+          "date_start": "2026-04-02",
+          "date_end": "2026-05-08",
+          "cells": {
+            "perps-en": 4
+          },
+          "median_engagement": 906.0,
+          "median_views": 67747.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Apr 23 18:38:00 +0000 2026",
+              "engagement": 1342,
+              "views": 276341,
+              "url": "https://x.com/cryptorover/status/2047384509696335993",
+              "text": "EXTREMELY negative funding for Bitcoin. This is insane. https://t.co/PoXpI1W68V"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 08 06:41:00 +0000 2026",
+              "engagement": 1077,
+              "views": 69736,
+              "url": "https://x.com/cryptorover/status/2052639888218992819",
+              "text": "$BTC funding rates flip positive again. Traders are flipping bullish on Bitcoin. https://t.co/nnyfQAbvpI"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Apr 17 10:34:18 +0000 2026",
+              "engagement": 735,
+              "views": 65759,
+              "url": "https://x.com/cryptorover/status/2045088454565117986",
+              "text": "Extremely negative funding rates for Bitcoin. Traders are MASSIVELY shorting the $BTC pump. https://t.co/QsUBghRL9x"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Apr 02 14:18:00 +0000 2026",
+              "engagement": 480,
+              "views": 49672,
+              "url": "https://x.com/cryptorover/status/2039708933216985395",
+              "text": "🩸 Hugely negative funding for Bitcoin. Traders remain bearish. https://t.co/q428sssoNF"
+            }
+          ]
+        },
+        {
+          "account": "cryptotice_",
+          "followers": 325996,
+          "posts": 4,
+          "true_arb_posts": 3,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 4,
+          "date_start": "2026-04-24",
+          "date_end": "2026-06-03",
+          "cells": {
+            "perps-en": 4
+          },
+          "median_engagement": 255.5,
+          "median_views": 15224.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Apr 24 08:30:00 +0000 2026",
+              "engagement": 840,
+              "views": 49502,
+              "url": "https://x.com/CryptoTice_/status/2047593891361169709",
+              "text": "BITCOIN FUNDING RATES JUST HIT EXTREME NEGATIVE LEVELS. This is insane. The entire market is positioned short right now. Every trader paying to bet against Bitcoin. But here is what 10 years of market data actually says about this moment. E"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Mon Apr 27 18:00:01 +0000 2026",
+              "engagement": 268,
+              "views": 16601,
+              "url": "https://x.com/CryptoTice_/status/2048824503220703349",
+              "text": "BITCOIN FUNDING RATES JUST HIT EXTREME NEGATIVE LEVELS AGAIN. The entire market is paying to short Bitcoin right now. This is insane. Every overleveraged short is a forced buyer on the way up. The more extreme the negative funding... The mo"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 18:00:00 +0000 2026",
+              "engagement": 243,
+              "views": 12702,
+              "url": "https://x.com/CryptoTice_/status/2062232848711688220",
+              "text": "BITCOIN DERIVATIVES ARE A TICKING TIME BOMB. Record open interest building below $70K. High funding rates refusing to reset. This is the most dangerous derivatives setup of the entire cycle. Overleveraged longs stacked on top of each other."
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sun Apr 26 18:00:00 +0000 2026",
+              "engagement": 243,
+              "views": 13848,
+              "url": "https://x.com/CryptoTice_/status/2048462111462830237",
+              "text": "INSIGHTS: Bitcoin funding rates just went deeply negative. This is not a bearish signal. This is one of the most bullish signals in crypto. Deeply negative funding means everyone is paying to be short. Everyone is positioned for a crash. Wh"
+            }
+          ]
+        },
+        {
+          "account": "ekinoks_26",
+          "followers": 8652,
+          "posts": 3,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-14",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 355,
+          "median_views": 516,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 14 05:38:29 +0000 2026",
+              "engagement": 379,
+              "views": 456,
+              "url": "https://x.com/ekinoks_26/status/2054798481819070780",
+              "text": "Running a perpetual futures protocol on-chain without an off-chain oracle approximating funding rates is a harder problem than it sounds. Perx on Nomisma is attempting exactly that. On most EVM chains, perp protocols like dYdX or GMX rely o"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Jun 02 09:00:02 +0000 2026",
+              "engagement": 355,
+              "views": 558,
+              "url": "https://x.com/ekinoks_26/status/2061734575701729291",
+              "text": "Funding rates have existed in traditional futures markets since the 1970s. Crypto just gave retail traders direct exposure to them with 50x leverage and no margin call department to call them when it goes wrong. @DonutAI's perps docs includ"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 11:41:57 +0000 2026",
+              "engagement": 327,
+              "views": 516,
+              "url": "https://x.com/ekinoks_26/status/2062862486718582801",
+              "text": "Everyone is debating which AI chatbot gives the best crypto research. Meanwhile the actual infrastructure question is sitting there ignored. @SurfAI's Surf Skill plugs directly into Claude Code, Cursor, and Codex via a single CLI install. O"
+            }
+          ]
+        },
+        {
+          "account": "peter_thoc",
+          "followers": 180132,
+          "posts": 3,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-04-14",
+          "date_end": "2026-05-06",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 207,
+          "median_views": 7893,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Apr 15 11:02:00 +0000 2026",
+              "engagement": 267,
+              "views": 7893,
+              "url": "https://x.com/Peter_thoc/status/2044370650945786026",
+              "text": "\" CRYPTO HAS TO DUMP FROM HERE \" That's what i've heard. Everyone is explaining that 'we are going down, because of the charts' i'm like ..... ' ok but what about the macro, the negative funding rates, war ending, clarity act, no long lever"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Apr 14 13:49:25 +0000 2026",
+              "engagement": 207,
+              "views": 5943,
+              "url": "https://x.com/Peter_thoc/status/2044050393848852790",
+              "text": "Crypto Breakout Starting Lots of fuel for the fire... Negative funding rates show that many shorts are stacked up against BTC... as they are liquidated and closed out, BTC forced buying will take place.. A cascade higher will begin above $7"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed May 06 14:30:09 +0000 2026",
+              "engagement": 203,
+              "views": 8089,
+              "url": "https://x.com/Peter_thoc/status/2052033178869825567",
+              "text": "Crypto Bears have no chill.. Below is the funding rates.. The red shows you that as crypto rises the short trades are piling up against long trades. IF they can't push price lower and buying continues, price will rise and cause 2 things... "
+            }
+          ]
+        },
+        {
+          "account": "_ctm_crypto",
+          "followers": 5061,
+          "posts": 3,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-04-28",
+          "date_end": "2026-05-18",
+          "cells": {
+            "perps-en": 3
+          },
+          "median_engagement": 101,
+          "median_views": 8535,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Mon May 18 17:21:52 +0000 2026",
+              "engagement": 204,
+              "views": 9716,
+              "url": "https://x.com/_ctm_crypto/status/2056425049461059708",
+              "text": "$BTC This is actually insane. While price continues to trend lower, open interest is rising again and funding rates have flipped back into positive territory. At the same time, spot CVD remains heavily negative, showing that spot participan"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue Apr 28 12:27:21 +0000 2026",
+              "engagement": 101,
+              "views": 5371,
+              "url": "https://x.com/_ctm_crypto/status/2049103174464651717",
+              "text": "$BTC Price just saw a sharp move to the downside, while funding flipped from positive back into negative territory. At the same time, open interest is rising, indicating that new positions are being added into this move. This suggests that "
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 07 15:07:27 +0000 2026",
+              "engagement": 94,
+              "views": 8535,
+              "url": "https://x.com/_ctm_crypto/status/2052404952358600872",
+              "text": "$BTC Interesting. Since the start of February, funding rates have mostly been deeply negative. But what stands out is that every time funding flipped back into positive territory, another correction followed shortly after. Now funding has o"
+            }
+          ]
+        },
+        {
+          "account": "darklord_gr",
+          "followers": 0,
+          "posts": 3,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-14",
+          "date_end": "2026-05-18",
+          "cells": {
+            "-": 3
+          },
+          "median_engagement": 9,
+          "median_views": 258,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Sun May 17 00:31:01 +0000 2026",
+              "engagement": 14,
+              "views": 258,
+              "url": "https://x.com/DarkLord_gr/status/2055808272507269609",
+              "text": "Day 200 — War day 77. Iran is charging for Hormuz. Tehran announced it will unveil a new \"management plan\" for the strait. Designated routes. Service fees. Only cooperating vessels allowed through. They are not reopening Hormuz. They are mo"
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon May 18 22:02:02 +0000 2026",
+              "engagement": 9,
+              "views": 140,
+              "url": "https://x.com/DarkLord_gr/status/2056495553593442703",
+              "text": "Day 202 — War day 79. Ceasefire expires tomorrow. Washington talks described as \"productive\" by the US side. Iran: \"We cannot trust the Americans at all.\" Both can't be right. Only 4 vessels transited Hormuz today, 4% of normal traffic. Oil"
+            },
+            {
+              "cell": "-",
+              "created_at": "Thu May 14 23:48:02 +0000 2026",
+              "engagement": 8,
+              "views": 310,
+              "url": "https://x.com/DarkLord_gr/status/2055072676977524871",
+              "text": "Day 198 — War day 75. Iran let the ships through. Trump and Xi met. Agreed: Hormuz must stay open. Xi made it official, no military support for Iran. Iran deployed Ghadir-class mini submarines inside the strait. Then quietly allowed over 30"
+            }
+          ]
+        },
+        {
+          "account": "laevitas1",
+          "followers": 25003,
+          "posts": 3,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-04-13",
+          "date_end": "2026-05-08",
+          "cells": {
+            "-": 3
+          },
+          "median_engagement": 3,
+          "median_views": 774,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Wed May 06 20:42:56 +0000 2026",
+              "engagement": 9,
+              "views": 774,
+              "url": "https://twitter.com/laevitas1/status/2052126991902536147",
+              "text": "Liquidations over the same period reached $43.7M, with shorts dominating at 86% ($37.6M). The largest single short liquidation on Binance reached $2.24M. The OI-weighted funding rate reflects a long bias across ZEC perpetual markets. https:"
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon Apr 13 14:27:48 +0000 2026",
+              "engagement": 3,
+              "views": 536,
+              "url": "https://twitter.com/laevitas1/status/2043697668313022620",
+              "text": "@Neda4_ Extreme negative funding, dominant short liquidations, and OI dynamics suggest a strong short squeeze and subsequent position unwind."
+            },
+            {
+              "cell": "-",
+              "created_at": "Fri May 08 18:50:01 +0000 2026",
+              "engagement": 2,
+              "views": 812,
+              "url": "https://twitter.com/laevitas1/status/2052823353849733618",
+              "text": "Funding rates across CEXs show only Kraken positive at +0.0053%, while Binance USDT (-0.0022%), Binance USDC (-0.0041%), OKX (-0.0066%), and Bybit (-0.0150%) are negative, with Bybit the most bearish among the high-OI venues. On DeFi perps,"
+            }
+          ]
+        },
+        {
+          "account": "x_four_iv",
+          "followers": 50891,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-30",
+          "date_end": "2026-05-31",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 293.0,
+          "median_views": 10858.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 30 14:39:55 +0000 2026",
+              "engagement": 497,
+              "views": 19706,
+              "url": "https://x.com/X_Four_iv/status/2060732946798321665",
+              "text": "Yield in DeFi shouldn’t depend on a token printer. While most protocols dilute their own holders to manufacture \"artificial APY,\" Altura uses professional market-neutral strategies. Here is a step-by-step breakdown of how the vault captures"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sun May 31 09:52:59 +0000 2026",
+              "engagement": 89,
+              "views": 2011,
+              "url": "https://x.com/X_Four_iv/status/2061023122447598062",
+              "text": "By executing delta-neutral and market-neutral strategies, the platform eliminates directional asset risk Whether the market pumps, dumps, or moves sideways, the engine is mathematically built to protect principal while harvesting steady yie"
+            }
+          ]
+        },
+        {
+          "account": "felixprotocol",
+          "followers": 22107,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-02",
+          "date_end": "2026-05-06",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 288.0,
+          "median_views": 26054.5,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Wed May 06 14:48:03 +0000 2026",
+              "engagement": 345,
+              "views": 32070,
+              "url": "https://x.com/felixprotocol/status/2052037685720596752",
+              "text": "74% APY AMD funding arb available now Buy AMD spot on Felix. Short AMD perp on @HyperliquidX Delta neutral equities funding rate arbs unlocked https://t.co/ylbnhL070S"
+            },
+            {
+              "cell": "-",
+              "created_at": "Thu Apr 02 13:51:17 +0000 2026",
+              "engagement": 231,
+              "views": 20039,
+              "url": "https://x.com/felixprotocol/status/2039702212306158013",
+              "text": "How to set up a delta-zero funding rate farm today using Felix spot equity markets? Here's a step by step of how this looks in practice using Felix spot equities and Hyperliquid HIP-3 perps: With Felix spot equity markets live, traders are "
+            }
+          ]
+        },
+        {
+          "account": "jabosiswanto94",
+          "followers": 9260,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-16",
+          "date_end": "2026-06-04",
+          "cells": {
+            "-": 1,
+            "perps-en": 1
+          },
+          "median_engagement": 255.5,
+          "median_views": 5073.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Jun 04 13:32:59 +0000 2026",
+              "engagement": 269,
+              "views": 7467,
+              "url": "https://x.com/jabosiswanto94/status/2062528038840250871",
+              "text": "in may, stablecoin yields across defi got compressed. rates dropped. tvl started bleeding out of most protocols. @alturax went the other direction. vault grew from $15m → $20m → $25m+. still going. that kind of divergence doesn't come from "
+            },
+            {
+              "cell": "-",
+              "created_at": "Sat May 16 05:38:55 +0000 2026",
+              "engagement": 242,
+              "views": 2679,
+              "url": "https://twitter.com/jabosiswanto94/status/2055523366648635706",
+              "text": "one thing that separates well-designed vaults from the rest is how composable they are over time. a vault that only does one thing hits a ceiling. @alturax was already delivering real yield from institutional strategies. market making, fund"
+            }
+          ]
+        },
+        {
+          "account": "xwalii",
+          "followers": 6081,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-16",
+          "date_end": "2026-05-24",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 173.5,
+          "median_views": 2866.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Sun May 24 16:14:05 +0000 2026",
+              "engagement": 192,
+              "views": 3676,
+              "url": "https://x.com/xwalii/status/2058582314397966570",
+              "text": "For decades the best yield strategies were locked behind institutional doors retail never got access to real arbitrage and market making opportunities @alturax flipped that model completely > funding rate arbitrage > market making > gold bu"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sat May 16 15:51:56 +0000 2026",
+              "engagement": 155,
+              "views": 2057,
+              "url": "https://x.com/xwalii/status/2055677638606475585",
+              "text": "How many DeFi protocols can say they have $8M in external markets built around them organically without any incentive to do so AVLT sits at $1.0748 today, up 7.48% since launch, backed by funding rate arbitrage, market making, and real gold"
+            }
+          ]
+        },
+        {
+          "account": "givenoxbt",
+          "followers": 3518,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-06-04",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 138.0,
+          "median_views": 1752.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 00:44:30 +0000 2026",
+              "engagement": 182,
+              "views": 2414,
+              "url": "https://x.com/givenoxbt/status/2062697033782169748",
+              "text": "weekly points update on @variational_io +29 points | $612k volume | $207k open interest steady week - funding arb running clean across a mix of alts, majors and RWA pairs. pushed more RWA volume this week to qualify for the $20k trading com"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu Jun 04 16:44:43 +0000 2026",
+              "engagement": 94,
+              "views": 1090,
+              "url": "https://x.com/givenoxbt/status/2062576291371688360",
+              "text": "the new meta isn't about finding platforms with points program... it's about finding ones where you're not getting farmed most perp platforms have been running points programs for over a year with no definite end in sight. Ostium has been r"
+            }
+          ]
+        },
+        {
+          "account": "minus1_12",
+          "followers": 1731,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-02-17",
+          "date_end": "2026-03-12",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 71.5,
+          "median_views": 4362.0,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue Feb 17 14:38:33 +0000 2026",
+              "engagement": 77,
+              "views": 5468,
+              "url": "https://x.com/minus1_12/status/2023769038401241505",
+              "text": "After talking to one of our resident basis traders: • CME futures basis competes with money market yield • Deribit futures basis competes with perpetual funding rates • Deribit funding rates were ~zero last few months • Basis compression th"
+            },
+            {
+              "cell": "-",
+              "created_at": "Thu Mar 12 10:47:35 +0000 2026",
+              "engagement": 66,
+              "views": 3256,
+              "url": "https://x.com/minus1_12/status/2032045836985602086",
+              "text": "If you sell a future against a perp, you have a delta-neutral trade that depends heavily on the index price. Contradiction? Let's take an extreme example. You sold futures at 120k spot, 8% annual basis, and entered a long perp to hedge. Whe"
+            }
+          ]
+        },
+        {
+          "account": "reya_xyz",
+          "followers": 78698,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2025-09-22",
+          "date_end": "2026-05-19",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 64.5,
+          "median_views": 3391.5,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Mon Sep 22 18:06:54 +0000 2025",
+              "engagement": 65,
+              "views": 5627,
+              "url": "https://twitter.com/reya_xyz/status/1970188066645295369",
+              "text": "Find your next funding arb opportunity on Reya with @FundingLighter community bot."
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 19 09:44:47 +0000 2026",
+              "engagement": 64,
+              "views": 1156,
+              "url": "https://x.com/reya_xyz/status/2056672407604412605",
+              "text": "The SEC is moving to legalise tokenized stock trading onchain. That accelerates two things: broader global access to equities, and the viability of RWA perps at scale, especially those wanting to run the basis trade, holding the tokenized e"
+            }
+          ]
+        },
+        {
+          "account": "arcxtrade",
+          "followers": 997,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-01-28",
+          "date_end": "2026-02-06",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 40.5,
+          "median_views": 1171.5,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Fri Feb 06 16:07:31 +0000 2026",
+              "engagement": 46,
+              "views": 1096,
+              "url": "https://twitter.com/arcxtrade/status/2019805162676826501",
+              "text": "Funding arb on low OI pairs has always meant bad spreads and slippage. ArcX just integrated @HyperliquidX . Now arb funding rates with the deepest orderbooks of them all. hyperliquid. https://t.co/HFEEwZLz0l"
+            },
+            {
+              "cell": "-",
+              "created_at": "Wed Jan 28 14:10:38 +0000 2026",
+              "engagement": 35,
+              "views": 1247,
+              "url": "https://twitter.com/arcxtrade/status/2016514257005990075",
+              "text": "a new funding arb venue is coming to arcx. one click. delta neutral. farm everything. https://t.co/BHgIUbqfVm"
+            }
+          ]
+        },
+        {
+          "account": "zek_eth",
+          "followers": 3218,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-12",
+          "date_end": "2026-05-13",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 11.5,
+          "median_views": 474.5,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 09:03:15 +0000 2026",
+              "engagement": 12,
+              "views": 447,
+              "url": "https://x.com/Zek_eth/status/2054125240247005365",
+              "text": "Just incase you are unaware, TradFi markets currently have the same trading fee structure as crypto markets on extended atm. TradFi Markets currently supported on @extendedapp >>> FX - EUR, USDJPY Commodities - XAU (Gold), XAG (Silver), XCU"
+            },
+            {
+              "cell": "-",
+              "created_at": "Wed May 13 15:42:12 +0000 2026",
+              "engagement": 11,
+              "views": 502,
+              "url": "https://x.com/Zek_eth/status/2054588024730669291",
+              "text": "Just recently I posted about how you can trade delta neutral using Perps dex and xStocks holding. xStocks points+ your favourite perp dex points (if stocks are listed) as I've said, extended and hotstuff stays at the top of my list for that"
+            }
+          ]
+        },
+        {
+          "account": "ekeremma1",
+          "followers": 2192,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-05-14",
+          "date_end": "2026-05-14",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 336.0,
+          "median_views": 2794.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 14 04:35:34 +0000 2026",
+              "engagement": 379,
+              "views": 2971,
+              "url": "https://x.com/ekeremma1/status/2054782649625878530",
+              "text": "Most traders lose money not because they lack ambition, but because they trade without structure, data, or confirmation. In today’s crypto market, successful trading is no longer about random entries or emotional decisions. 𝑰𝒕'𝒔 𝒂𝒃𝒐𝒖𝒕: ⤞ 𝑙𝑖"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Thu May 14 16:08:01 +0000 2026",
+              "engagement": 293,
+              "views": 2617,
+              "url": "https://x.com/ekeremma1/status/2054956909489221704",
+              "text": "Crypto trading is no longer just about watching candles move. The real edge comes from understanding positioning, liquidity, funding pressure, whale activity, and order flow before the market reacts and that’s exactly where 𝑪𝒐𝒊𝒏𝑨𝒏𝒌 stands o"
+            }
+          ]
+        },
+        {
+          "account": "gyokeres_eth",
+          "followers": 25018,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-18",
+          "date_end": "2026-05-20",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 200.5,
+          "median_views": 2750.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Mon May 18 15:58:05 +0000 2026",
+              "engagement": 208,
+              "views": 2657,
+              "url": "https://x.com/Gyokeres_eth/status/2056403964589969699",
+              "text": "MegaETH Apps - Gains Network @GainsNetwork_io doesn't need many explanations, it's a perp dex. But instead of matching buyers and sellers, you trade against a shared liquidity pool (the gToken vault), which is what allows leverage up to 150"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Wed May 20 13:47:17 +0000 2026",
+              "engagement": 193,
+              "views": 2844,
+              "url": "https://x.com/Gyokeres_eth/status/2057095820462190647",
+              "text": "Solstice Whitepaper is live The @solsticefi whitepaper is now live with some big news: > strcUSX is the new token coming out, giving onchain holders exposure to STRC preferred shares. the yield comes from corporate dividends instead of cryp"
+            }
+          ]
+        },
+        {
+          "account": "neutrafinance",
+          "followers": 17131,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-30",
+          "date_end": "2026-05-01",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 85.0,
+          "median_views": 1987.0,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Thu Apr 30 08:25:29 +0000 2026",
+              "engagement": 88,
+              "views": 2659,
+              "url": "https://x.com/NeutraFinance/status/2049767081462116603",
+              "text": "Most trading bots follow rules. Ours doesn’t. What we built is closer to a coordinated AI system than a bot — a stack of models that actually interpret the market in real time and make decisions together. At the core of the system are multi"
+            },
+            {
+              "cell": "-",
+              "created_at": "Fri May 01 08:24:42 +0000 2026",
+              "engagement": 82,
+              "views": 1315,
+              "url": "https://x.com/NeutraFinance/status/2050129270060511313",
+              "text": "Right now, NeutraFi has three main parts: Delta Neutral, Instant Trading (MM bot), and AI Robotic Trading. Delta Neutral — free point farming on perp DEXs by opening a long on one side and a short on the other. MM bot — fast, automated volu"
+            }
+          ]
+        },
+        {
+          "account": "cachetrading",
+          "followers": 6793,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-18",
+          "date_end": "2026-05-19",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 66.5,
+          "median_views": 2914.0,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue May 19 02:58:10 +0000 2026",
+              "engagement": 80,
+              "views": 3729,
+              "url": "https://x.com/CacheTrading/status/2056570077252862379",
+              "text": "$BTC High Leverage Pocket at 75.7k While LTF's are looking ripe for a sweep of London highs at 77.7k... Agg Funding Rates are still positive (longs paying shorts) and high leverage idiots are stacked at 75.7k... It's possible we see another"
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon May 18 15:21:53 +0000 2026",
+              "engagement": 53,
+              "views": 2099,
+              "url": "https://x.com/CacheTrading/status/2056394850631880865",
+              "text": "$BTC Aggregate Funding Rates are Upside Down Here's why high leveraged longs are ruining any chance at recovery. Right now, shorts are getting paid to hold their positions open. Yes, you heard me correctly! It's basically overconfidence in "
+            }
+          ]
+        },
+        {
+          "account": "misterrcrypto",
+          "followers": 140198,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-11",
+          "date_end": "2026-05-06",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 210.5,
+          "median_views": 12017.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Wed May 06 16:52:32 +0000 2026",
+              "engagement": 253,
+              "views": 11398,
+              "url": "https://x.com/misterrcrypto/status/2052069010754166970",
+              "text": "Bitcoin Funding Rates are flipping from deeply negative to positive. More &amp; more traders are flipping long and open interest is now at the highest level since February. We are at the range highs and only just now are people flipping bul"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Sat Apr 11 11:22:00 +0000 2026",
+              "engagement": 168,
+              "views": 12637,
+              "url": "https://x.com/misterrcrypto/status/2042926131767316599",
+              "text": "$BTC is pumping. The Coinbase Premium just reached a 3W high. Funding flipped negative. Perfect setup for a short squeeze! https://t.co/vUj4jkee2t"
+            }
+          ]
+        },
+        {
+          "account": "0xloris",
+          "followers": 14051,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-05-12",
+          "date_end": "2026-05-12",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 210.0,
+          "median_views": 9223.0,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 14:27:45 +0000 2026",
+              "engagement": 280,
+              "views": 11801,
+              "url": "https://x.com/0xLoris/status/2054206904075747827",
+              "text": "RT @risextrade: @LorisTools is now live with RISEx. Every funding rate and open interest shift, updated as it happens. https://t.co/BBzMH5G…"
+            },
+            {
+              "cell": "-",
+              "created_at": "Tue May 12 14:27:48 +0000 2026",
+              "engagement": 140,
+              "views": 6645,
+              "url": "https://x.com/0xLoris/status/2054206914347618660",
+              "text": "RT @sam_battenally: I've said it before, and I'll say it again Perp funding rate is an incredible mechanism. And it's particularly interes…"
+            }
+          ]
+        },
+        {
+          "account": "pendle_fi",
+          "followers": 160683,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-18",
+          "date_end": "2026-05-19",
+          "cells": {
+            "-": 2
+          },
+          "median_engagement": 186.0,
+          "median_views": 9751.0,
+          "examples": [
+            {
+              "cell": "-",
+              "created_at": "Tue May 19 06:02:22 +0000 2026",
+              "engagement": 186,
+              "views": 9751,
+              "url": "https://x.com/pendle_fi/status/2056616432860078498",
+              "text": "RT @pendle_fi: limUSD (Nov 2026) is now live on Pendle HyperEVM! Experience the best that @Hyperliquid has to offer - funding rates, staki…"
+            },
+            {
+              "cell": "-",
+              "created_at": "Mon May 18 18:00:19 +0000 2026",
+              "engagement": 186,
+              "views": 9751,
+              "url": "https://x.com/pendle_fi/status/2056434722000310305",
+              "text": "limUSD (Nov 2026) is now live on Pendle HyperEVM! Experience the best that @Hyperliquid has to offer - funding rates, staking, money market and upcoming primitives... All of these dynamically allocated so you can get the best risk-adjusted "
+            }
+          ]
+        },
+        {
+          "account": "philakonecrypto",
+          "followers": 184614,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-04-03",
+          "date_end": "2026-04-13",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 137.0,
+          "median_views": 14526.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Mon Apr 13 06:04:03 +0000 2026",
+              "engagement": 177,
+              "views": 20453,
+              "url": "https://x.com/PhilakoneCrypto/status/2043570894103073191",
+              "text": "#RAVE is absolutely wild. It's finishing up a 3rd larger wave. So much room for it to go. Extremely dangerous coin to trade. Negative funding fee. https://t.co/KXCs10FdyP"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Apr 03 05:04:27 +0000 2026",
+              "engagement": 97,
+              "views": 8599,
+              "url": "https://x.com/PhilakoneCrypto/status/2039932016213344433",
+              "text": "Good morning baby whales. Today I'm watching #ONT to see if a 5th wave will break out. The hourly negative funding fee could help the bulls. https://t.co/XXvF9IuE2n"
+            }
+          ]
+        },
+        {
+          "account": "cryptopicsou",
+          "followers": 181955,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-06-03",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 106.5,
+          "median_views": 13387.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Wed Jun 03 22:56:17 +0000 2026",
+              "engagement": 137,
+              "views": 22085,
+              "url": "https://x.com/CryptoPicsou/status/2062307410514231496",
+              "text": "It would be crazy to see a product capture all Hyperliquid Yield sources, especially while funding rates (perps) and HyperEVM supply rates (money markets) are going vertical. Oh wait, it already exists. It’s called $limUSD. And it’s built b"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Fri Jun 05 11:04:28 +0000 2026",
+              "engagement": 76,
+              "views": 4689,
+              "url": "https://x.com/CryptoPicsou/status/2062853054286958809",
+              "text": "hyperliquid:native funding rates are going vertical, and xHYPE ( built by @liminalmoney) has been one of the clearest winners. xHYPE holders are now earning over 14% APY on their stablecoins 👀 At the same time, limUSD continues to gain trac"
+            }
+          ]
+        },
+        {
+          "account": "ostium",
+          "followers": 62522,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-08",
+          "date_end": "2026-05-12",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 70.0,
+          "median_views": 6605.0,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 08 10:43:34 +0000 2026",
+              "engagement": 81,
+              "views": 4099,
+              "url": "https://x.com/Ostium/status/2052700934866895175",
+              "text": "Ostium has no funding rates. Rollover fees are predictable and based on the underlying market. The gateway to global markets. https://t.co/zfz0HW8KTC"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 12 22:32:16 +0000 2026",
+              "engagement": 59,
+              "views": 9111,
+              "url": "https://x.com/Ostium/status/2054328833470292450",
+              "text": "Ostium has no funding rates. We use predictable rollover fees that match the cost of holding assets in the most liquid markets. Gateway to global markets. https://t.co/p6nyBNDSQi"
+            }
+          ]
+        },
+        {
+          "account": "jamie1coutts",
+          "followers": 51289,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-04-13",
+          "date_end": "2026-04-13",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 52.0,
+          "median_views": 5264.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Mon Apr 13 01:57:01 +0000 2026",
+              "engagement": 55,
+              "views": 3417,
+              "url": "https://x.com/Jamie1Coutts/status/2043508723977724179",
+              "text": "14 episodes of sustained negative funding (≥20 days) since 2016. After the episode ended: • 30d: median +20.8%, 12/14 positive • 90d: median +43.5%, 11/14 positive The 3 closest comps to today (≥48 days of sustained negative funding): • 201"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Mon Apr 13 01:57:02 +0000 2026",
+              "engagement": 49,
+              "views": 7112,
+              "url": "https://x.com/Jamie1Coutts/status/2043508728402686354",
+              "text": "The Feb-Mar 2026 stretch was the #3 longest sustained negative funding environment in Bitcoin history. 50 days. Only the 2018 crypto winter (83d) and 2021 China ban (53d) were longer. Funding turned negative again on Apr 6. It's now at -1.7"
+            }
+          ]
+        },
+        {
+          "account": "cryptoswingsys",
+          "followers": 1751,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-08",
+          "date_end": "2026-05-12",
+          "cells": {
+            "perps-en": 2
+          },
+          "median_engagement": 21.0,
+          "median_views": 374.5,
+          "examples": [
+            {
+              "cell": "perps-en",
+              "created_at": "Fri May 08 06:39:17 +0000 2026",
+              "engagement": 23,
+              "views": 389,
+              "url": "https://x.com/CryptoSwingSys/status/2052639458663493918",
+              "text": "GM ☕️ A short-term range is starting to build here. AMDS bands have flattened out at the top - typically, when a trend is continuing strongly, these bands remain sloped in the direction of the move. The loss of slope suggests momentum is sl"
+            },
+            {
+              "cell": "perps-en",
+              "created_at": "Tue May 12 06:52:29 +0000 2026",
+              "engagement": 19,
+              "views": 360,
+              "url": "https://x.com/CryptoSwingSys/status/2054092330949374216",
+              "text": "GM☕️ AMDS bands have now flattened out at the top after a steady rise, suggesting momentum for $BTC is beginning to cool off. FSVZO bands are also tightening, reinforcing the same idea. This becomes important when looking at the liquidation"
+            }
+          ]
+        }
+      ]
+    },
+    "zh": {
+      "matching_posts": 36,
+      "matching_accounts": 33,
+      "regular_mention_accounts": 1,
+      "clean_regular_accounts": 0,
+      "strong_accounts": 0,
+      "accounts": [
+        {
+          "account": "lubijiaocheng",
+          "followers": 25517,
+          "posts": 3,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 2,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-06-02",
+          "date_end": "2026-06-05",
+          "cells": {
+            "trenches-cn": 1,
+            "perps-cn": 2
+          },
+          "median_engagement": 225,
+          "median_views": 3219,
+          "examples": [
+            {
+              "cell": "perps-cn",
+              "created_at": "Tue Jun 02 06:58:06 +0000 2026",
+              "engagement": 281,
+              "views": 3219,
+              "url": "https://x.com/lubijiaocheng/status/2061703888395219375",
+              "text": "说实话，今天看盘挺没劲的，$BTC 24h 跌了快 4%，恐惧指数还在 30 附近，市场又回到那种“追高怕被套，空仓怕踏空”的状态。以前这种时候我可能就只会刷合约、找山寨反弹，但现在我反而更愿意看一类东西：能不能把链上的资产真正用起来。 @TermMaxFi 最近翻 @TermMaxFi 的推特，我觉得它最抓人的点不是“又一个借贷协议”，而是它在做固定利率借贷 + RWA 抵押 + 多链市场聚合。尤其是他们反复提到的 $SPYon、$QQQon、$NVDAon、$AAPLon"
+            },
+            {
+              "cell": "trenches-cn",
+              "created_at": "Thu Jun 04 06:54:18 +0000 2026",
+              "engagement": 225,
+              "views": 4616,
+              "url": "https://x.com/lubijiaocheng/status/2062427708290932845",
+              "text": "这几天市场情绪真的很差，$BTC、$ETH 一根阴线下来，很多人第一反应就是撤、等、别碰。但我反而觉得，这种时候最该看的不是谁喊得最响，而是谁的产品真的能让资金安心待下来。 @alturax 我最近重点看的是 Altura。原因很简单：DeFi 的收益叙事正在变。以前大家只问“APY 有多高”，现在更现实了——收益从哪来？风险谁兜底？策略能不能持续？资金进去之后是不是透明？ Altura 吸引我的点，不是单纯把年化数字挂得很漂亮，而是它在做一件更难的事：把收益率、风控和信任放"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 08:22:02 +0000 2026",
+              "engagement": 223,
+              "views": 1362,
+              "url": "https://x.com/lubijiaocheng/status/2062812177531310330",
+              "text": "最近市场情绪真的冷。$BTC 回撤，恐惧贪婪指数打到 Extreme Fear，很多人不是不想赚钱，而是不敢再为了一个夸张 APY 把本金交给黑箱。 所以我这几天重新看了 Altura。它吸引我的，不是“收益率”三个字本身，而是它把收益和风险放在同一张桌子上。 大多数金库都在卷年化，谁高谁有流量；但真正经历过几轮 DeFi 的人都懂，高 APY 如果没有来源、没有风控、没有透明度，最后往往只是另一种风险转移。Altura 的思路更像是：用一个多策略金库，把 $USDT 存进去"
+            }
+          ]
+        },
+        {
+          "account": "webktsr",
+          "followers": 40107,
+          "posts": 2,
+          "true_arb_posts": 1,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-19",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-cn": 2
+          },
+          "median_engagement": 414.0,
+          "median_views": 11366.5,
+          "examples": [
+            {
+              "cell": "perps-cn",
+              "created_at": "Tue May 19 03:49:27 +0000 2026",
+              "engagement": 595,
+              "views": 11491,
+              "url": "https://x.com/webktsr/status/2056582985688707514",
+              "text": "姐妹们，昨天Binance刚把BTCUSD1永续上线，我刷广场时停下来多看了两眼。 大家聊这个新pair的已经分成两拨了。 一拨还在讨论上线新鲜事，另一拨老玩家已经开始研究那个99.99%的抵押比例。 因为真正玩合约的都清楚，影响仓位体验的，很多时候不是方向对不对，而是交易所到底认不认你手里的钱。 USD1这次最抓人的地方，就在这。 在Portfolio Margin体系里，它现在是最高 tier。理论上1万USD1能贡献接近9999美元的保证金容量，基本1比1计入。 新手可"
+            },
+            {
+              "cell": "perps-cn",
+              "created_at": "Fri Jun 05 01:37:31 +0000 2026",
+              "engagement": 233,
+              "views": 11242,
+              "url": "https://x.com/webktsr/status/2062710375062323557",
+              "text": "早呀，姐妹们！ 很多人看到 @worldlibertyfi 和 Binance 最近这条消息，第一眼就只记住四个字：0挂单费。 我一开始也一样，刷过去就觉得省钱了呗。 后来我把费率表和交易模型仔仔细细算了一遍，才发现真正有意思的不是省了多少钱，而是Binance到底为什么愿意让你省这笔。 规则已经确认了USD1保证金永续合约Maker费率直接0%，普通用户到VIP3的Taker费率从0.05%降到0.04%，VIP4到VIP9还能多拿45%吃单折扣，BTCUSD1这些品种已经"
+            }
+          ]
+        }
+      ]
+    },
+    "ja": {
+      "matching_posts": 27,
+      "matching_accounts": 26,
+      "regular_mention_accounts": 0,
+      "clean_regular_accounts": 0,
+      "strong_accounts": 0,
+      "accounts": [
+        {
+          "account": "eureka_cm",
+          "followers": 515,
+          "posts": 2,
+          "true_arb_posts": 2,
+          "clean_arb_posts": 1,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 1,
+          "date_start": "2026-06-05",
+          "date_end": "2026-06-05",
+          "cells": {
+            "perps-jp": 2
+          },
+          "median_engagement": 0.0,
+          "median_views": 31.0,
+          "examples": [
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 17:14:49 +0000 2026",
+              "engagement": 0,
+              "views": 34,
+              "url": "https://x.com/eureka_cm/status/2062946256922742958",
+              "text": "すると割高な先物を売ると同時に割安な現物を買う「裁定買い」取引が行われる。これは自己資金ゼロで、リスクなしに確実に儲けることができる実に美味しい取引である。名前は「さいてい」だが「最高」の取引である。"
+            },
+            {
+              "cell": "perps-jp",
+              "created_at": "Fri Jun 05 17:15:20 +0000 2026",
+              "engagement": 0,
+              "views": 28,
+              "url": "https://x.com/eureka_cm/status/2062946383095804362",
+              "text": "しかし、対照的に、足元の株高は、株価が上がるにつれて裁定買い残が減少している。裁定買い残は4月末から4割も減少して、5月末時点では2兆2643億円に急低下した。"
+            }
+          ]
+        }
+      ]
+    },
+    "ko": {
+      "matching_posts": 41,
+      "matching_accounts": 21,
+      "regular_mention_accounts": 3,
+      "clean_regular_accounts": 0,
+      "strong_accounts": 0,
+      "accounts": [
+        {
+          "account": "whitepeach",
+          "followers": 17817,
+          "posts": 3,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 1,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-06",
+          "date_end": "2026-05-28",
+          "cells": {
+            "perps-kr": 3
+          },
+          "median_engagement": 102,
+          "median_views": 3767,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Wed May 06 05:12:12 +0000 2026",
+              "engagement": 113,
+              "views": 9418,
+              "url": "https://x.com/WhitePeach/status/2051892767148953938",
+              "text": "청산이 롱에 크게 쌓여있는데 펀비는 음수다? 이 부분에 대해서 조금 부가설명 하자면.. 청산될 롱이 많더라도 펀비는 음수일 수 있음. 펀비는 현물과 선물 간의 가격괴리로 생각해볼 수 있음. 현물 가격이 선물보다 높을 경우 롱에게 펀비를 주고, 숏에게 펀비를 떼어서 -> 선물의 가격이 현물에 붙을 수 있도록 만드는 것. 즉 펀비가 음수라는 것은 현물index쪽이 선물보다 더 강하게 매수 중이라 현물의 가격을 따라가기 위해서, 또"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sat May 23 20:42:48 +0000 2026",
+              "engagement": 102,
+              "views": 3767,
+              "url": "https://x.com/WhitePeach/status/2058287553061724571",
+              "text": "흥미로운 움직임을 지속하는 비트코인 하락에 Oi가 급상승하며 숏 유입을 보였던 비트가 74.2k까지 찍으며 롱을 100m 이상 청소하고 반등 중인데, 이제야 Spot Perp Cvd가 동반 상승 해주고 있다는 점. 그리고 하락 직후 가격대비 급등한 Oi와 쳐박은 펀딩비를 조합해보면 바닥에서 유입된 숏을 응징하기 위한 대형 베어트랩이 발동 중인 게 아닌가 예상된다. 당연한 수순인 것이 롱을 다 털어버렸으니 다음은 80k 위까지 "
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Thu May 28 07:13:46 +0000 2026",
+              "engagement": 9,
+              "views": 758,
+              "url": "https://x.com/WhitePeach/status/2059895890710822965",
+              "text": "+그럼에도 불구하고 펀딩비는 진한 양수임 -&gt; 현선물 가격 괴리가 현물쪽의 하락이 더 거세어 펀딩비가 양수일 가능성이 있고, 롱이 비용을 내며 많이 버티고 있다고 해석해야 합리적임"
+            }
+          ]
+        },
+        {
+          "account": "ilpyung98",
+          "followers": 9973,
+          "posts": 14,
+          "true_arb_posts": 14,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 12,
+          "date_start": "2026-05-05",
+          "date_end": "2026-06-03",
+          "cells": {
+            "perps-kr": 14
+          },
+          "median_engagement": 51.5,
+          "median_views": 2041.0,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Sun May 17 00:54:21 +0000 2026",
+              "engagement": 74,
+              "views": 3683,
+              "url": "https://x.com/ilpyung98/status/2055814141705920864",
+              "text": "2026년 5월 16일 암호화폐 시황 1부(1/2) 비트코인이 8만 달러 심리적 지지선을 끝내 사수하지 못하며 토요일 새벽 한때 7만 7,600달러까지 흘러내렸다. 6주 연속 순유입 행진을 이어왔던 미국 현물 비트코인 ETF가 한 주 만에 약 10억 달러 순유출로 반전되면서, 그동안 시장을 떠받쳐온 기관 매수 엔진이 일시적으로 식었다는 신호가 명확해진 셈이다. 배경에는 4월 CPI(전년 동월 대비 +3.8%, 2023년 5월 "
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sat May 16 04:14:27 +0000 2026",
+              "engagement": 72,
+              "views": 3248,
+              "url": "https://x.com/ilpyung98/status/2055502113690767791",
+              "text": "2026년 5월 15일 암호화폐 마감시황 ; 호르무즈가 삼킨 클래리티 랠리 비트코인은 CLARITY Act 상원 은행위 통과 호재로 아시아·유럽 세션에 $82,000까지 반등했으나, 미국 세션 진입 직후 CPI 3.8%·PPI 6.0%의 인플레이션 충격과 파월→워시 의장 교체, 10년물 미국채 금리 4.59%(1년 최고) 급등, WTI 유가 $100 돌파가 겹치며 $78,600까지 -4% 급락 후 $79,076 부근에서 마감했"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Wed Jun 03 00:35:43 +0000 2026",
+              "engagement": 64,
+              "views": 1813,
+              "url": "https://x.com/ilpyung98/status/2061970048986841196",
+              "text": "2026년 6월 2일 암호화폐 시황 : $70K 방어선 무너졌다 비트코인이 4월 이후 처음으로 $70,000선을 잃었다. 6월 2일 BTC는 일중 $67,006까지 밀리며 24시간 약 6% 하락했고, 이더리움도 심리적 지지선이던 $2,000을 이탈해 $1,921까지 내려갔다. 이번 급락은 Strategy(구 MicroStrategy)의 4년 만의 첫 BTC 매도 공시, 11일 연속 비트코인 현물 ETF 순유출(누적 약 35억 "
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sat May 09 23:47:12 +0000 2026",
+              "engagement": 56,
+              "views": 2789,
+              "url": "https://x.com/ilpyung98/status/2053260527229644962",
+              "text": "2026년 5월 9일 암호화폐 시황 : BTC 8만 달러 위 횡보, RWA가 깃발을 든 토요일 비트코인이 $80,350 부근에서 횡보하는 가운데 RWA·DeFi·AI 섹터로의 자본 회전이 뚜렷해진 하루로 마감했다. 미국 현물 BTC ETF가 1월 이후 처음으로 주간 10억 달러를 돌파하고, S&P 500과 나스닥이 7,398·26,247로 동반 사상 최고치를 경신하면서 매크로 환경은 위험자산에 우호적으로 기울었다. 그러나 호르"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Thu May 21 23:43:59 +0000 2026",
+              "engagement": 56,
+              "views": 1396,
+              "url": "https://x.com/ilpyung98/status/2057608373743583283",
+              "text": "2026년 5월 21일 암호화폐 시장 마감 시황 — 비트코인 $77K 횡보 속 HYPE·프라이버시 코인 독주 시장 개요 5월 21일 시장은 메이저는 횡보, 알트는 분화의 전형을 보였다. 비트코인은 24시간 기준 약 -0.3~-0.7% 변동에 그친 $77,300~$77,640 박스권을 지켰고, 이더리움(-0.85%, $2,110대)과 XRP·솔라나도 1% 미만 변동에 머물러 메이저는 동력을 잃었다. 반면 시총 상위 100위권에서"
+            }
+          ]
+        },
+        {
+          "account": "t0_god",
+          "followers": 8790,
+          "posts": 3,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": true,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "medium",
+          "days": 3,
+          "date_start": "2026-05-10",
+          "date_end": "2026-05-29",
+          "cells": {
+            "perps-kr": 3
+          },
+          "median_engagement": 30,
+          "median_views": 2486,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Tue May 19 14:22:19 +0000 2026",
+              "engagement": 75,
+              "views": 3763,
+              "url": "https://x.com/t0_god/status/2056742250277949696",
+              "text": "비파 비트코인 롱 물량이 다시 증가 * 비파롱이란? 펀딩비가 있는 일반 선물 포지션(Perpetual futures)이 아닌 마진 계정 자산을 담보로 구매된 비트코인 수량을 뜻함 = 현물 담보로 레버리지 투자된 물량 4월 최고치를 넘기면서 23년 12월 이후 최고치 분배 시기만 기다린다.. https://t.co/aNYEtqdRUS"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Fri May 29 07:53:36 +0000 2026",
+              "engagement": 30,
+              "views": 2486,
+              "url": "https://x.com/t0_god/status/2060268303315251670",
+              "text": "비파 비트코인 롱 물량 또 증가 * 비파롱이란? 펀딩비가 있는 일반 선물 포지션(Perpetual futures)이 아닌 마진 계정 자산을 담보로 구매된 비트코인 수량을 뜻함 = 현물 담보로 레버리지 투자된 물량 화끈한 상승이 나오면서 롱 물량이 감소하는 시기는 도대체 언제쯤 찾아오려나.. https://t.co/Ew9YjTATOB"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sun May 10 12:28:43 +0000 2026",
+              "engagement": 27,
+              "views": 1123,
+              "url": "https://x.com/t0_god/status/2053452172629799335",
+              "text": "비트코인 비파 롱 물량은 아직 크게 감소하지 않음 * 비파롱이란? 펀딩비가 있는 일반 선물 포지션(Perpetual futures)이 아닌 마진 계정 자산을 담보로 구매된 비트코인 수량을 뜻함 = 담보 레버리지 투자 지난 달 소폭 감소를 시작했는데 다시 일부 증가하면서 횡보 추세 여전히 23년 12월 이후 최대 수준"
+            }
+          ]
+        },
+        {
+          "account": "bullishsun",
+          "followers": 2054,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-30",
+          "date_end": "2026-06-04",
+          "cells": {
+            "perps-kr": 2
+          },
+          "median_engagement": 32.0,
+          "median_views": 526.5,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Sat May 30 05:41:26 +0000 2026",
+              "engagement": 62,
+              "views": 1014,
+              "url": "https://x.com/bullishsun/status/2060597432346661079",
+              "text": "Pacifica에 Hyperliquid 사용자가 점점 몰려오고 있습니다. 하이퍼리퀴드는 지금의 퍼시피카가 존재할 수 있도록 길을 열어준 고마운 프로젝트이며, 투명한 운영과 견고한 커뮤니티를 갖춘 이상적인 암호화폐 프로젝트입니다. 인용한 글의 작성자는 Hyperliquid에서 큰 수익을 얻으신 분이고, 핵심 내용은 아래와 같습니다. 1️⃣ 팀의 빠른 피드백 반영 🔹 볼트 UI 개선 요청 🔹 펀딩비 관련 문제 제기 🔹 스케일 주문"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Thu Jun 04 21:16:58 +0000 2026",
+              "engagement": 2,
+              "views": 39,
+              "url": "https://x.com/bullishsun/status/2062644806095106359",
+              "text": "@Happyhelper7777 @pacifica_fi @pacifica_intern @_guynemer 퍼시피카 펀딩비가 한 시간 주기네요? 전략으로 트레이딩 하기 좋아보이네요🌊"
+            }
+          ]
+        },
+        {
+          "account": "tmmrwseoul",
+          "followers": 3573,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-10",
+          "date_end": "2026-05-12",
+          "cells": {
+            "perps-kr": 2
+          },
+          "median_engagement": 8.0,
+          "median_views": 313.5,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Tue May 12 02:02:54 +0000 2026",
+              "engagement": 8,
+              "views": 444,
+              "url": "https://x.com/tmmrwseoul/status/2054019453126672692",
+              "text": "원래 펀딩비나 거래수수료 신경 안 쓰는 편이고 애꿎게 날리는 손실도 크게 개의치 않는 편인데, 어제부터 작은 손실이 미친듯이 쌓이는 중... 타점이 잘 못 되었나? 그것도 아니고, 휩쏘가 너무 심한게 문제. 아예 극단적으로 1분봉 매매를 하는게 당할 일도 없고, 심적으로도 차라리 더 안정적일듯."
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Sun May 10 20:46:39 +0000 2026",
+              "engagement": 8,
+              "views": 183,
+              "url": "https://x.com/tmmrwseoul/status/2053577478682325484",
+              "text": "STOPPED OUT 애꿎은 펀딩비만 날렸네 https://t.co/IScvIBed9e"
+            }
+          ]
+        },
+        {
+          "account": "kcex_korea",
+          "followers": 3127,
+          "posts": 2,
+          "true_arb_posts": 0,
+          "clean_arb_posts": 0,
+          "regular": false,
+          "clean_regular": false,
+          "strong": false,
+          "confidence": "near-miss",
+          "days": 2,
+          "date_start": "2026-05-26",
+          "date_end": "2026-05-31",
+          "cells": {
+            "perps-kr": 2
+          },
+          "median_engagement": 7.5,
+          "median_views": 170.5,
+          "examples": [
+            {
+              "cell": "perps-kr",
+              "created_at": "Sun May 31 06:03:19 +0000 2026",
+              "engagement": 8,
+              "views": 175,
+              "url": "https://x.com/KCEX_Korea/status/2060965328662745569",
+              "text": "⚡ $HYPE $70 돌파 — 신고점 경신. 📈 볼린저 상단 $71.86, 가격은 그 위에서 움직이는 중. 💡 펀딩비 양전환(+0.0021%): 공매도 압박 해소, 매수세가 시장을 주도. 거래량은 여전히 이동평균 하회 — 추가 확인 필요. 구조는 살아있다. 먼저 무너지는 쪽이 진다. 👁️ 🚀 수수료 0% 거래 👉 https://t.co/K3yPPq1Sxf #HYPE #KCEXCrypto101 #NFA"
+            },
+            {
+              "cell": "perps-kr",
+              "created_at": "Tue May 26 05:20:45 +0000 2026",
+              "engagement": 7,
+              "views": 166,
+              "url": "https://x.com/KCEX_Korea/status/2059142674683502612",
+              "text": "$OKB 오늘 왜 12% 올랐나. OKX가 Exchange OS를 출시했고, OKB 스테이킹이 X Layer 시장 배포의 필수 조건이 됐다. 수요가 구조화됐다. 📊 4H 고점 $98.41, 볼린저 상단($88.87) 돌파. 거래량 평균의 4배. 펀딩비 +0.0050% — 롱 주도. 지지선: $83.36(중간선). 투기적 수요가 인프라 수요로 전환될 때, 시장은 보통 그 가치를 뒤늦게 따라간다. 수수료 없이 OKB 거래하기 👉 "
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

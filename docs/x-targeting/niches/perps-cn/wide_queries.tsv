@@ -1,0 +1,26 @@
+# wider perps CN — combine venue + event + behavior + pain
+Hyperliquid 上币 min_faves:5 lang:zh	Both	venue + listing
+Hyperliquid 下架 min_faves:5 lang:zh	Both	venue + delisting
+Hyperliquid 预言机 min_faves:5 lang:zh	Top	venue + oracle risk
+Hyperliquid 宕机 min_faves:5 lang:zh	Top	venue + incident
+Hyperliquid 爆仓 min_faves:5 lang:zh	Both	venue + liquidation
+Hyperliquid 资金费率 min_faves:5 lang:zh	Both	venue + funding
+Hyperliquid 排行榜 min_faves:5 lang:zh	Both	venue + leaderboard
+HYPE 回购 min_faves:5 lang:zh	Top	token economics
+HYPE 解锁 min_faves:5 lang:zh	Top	token event
+HYPE 爆仓 min_faves:5 lang:zh	Both	token + liquidation
+永续合约 上币 min_faves:5 lang:zh	Both	category + listing
+永续合约 资金费率 min_faves:5 lang:zh	Top	category + funding
+永续合约 宕机 min_faves:5 lang:zh	Top	category + incident
+爆仓 热力图 BTC min_faves:5 lang:zh	Both	risk map
+爆仓 集群 min_faves:5 lang:zh	Both	risk map
+资金费率 反转 min_faves:5 lang:zh	Top	funding signal
+负资金费率 min_faves:5 lang:zh	Top	funding signal
+持仓 暴增 BTC min_faves:5 lang:zh	Top	OI signal
+多头 拥挤 min_faves:5 lang:zh	Top	positioning signal
+空头 拥挤 min_faves:5 lang:zh	Top	positioning signal
+盘前 美股 合约 min_faves:5 lang:zh	Both	RWA event
+代币化股票 合约 min_faves:5 lang:zh	Both	RWA category
+没有爆仓 合约 min_faves:5 lang:zh	Top	bounded-risk contrast
+有限亏损 合约 min_faves:5 lang:zh	Top	bounded-risk contrast
+合约 跟单 亏损 min_faves:5 lang:zh	Both	copy-trade pain

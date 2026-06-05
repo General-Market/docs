@@ -1,0 +1,22 @@
+# wider perps KR — combine venue + event + behavior + pain
+하이퍼리퀴드 상장 min_faves:5 lang:ko	Both	venue + listing
+하이퍼리퀴드 청산 min_faves:5 lang:ko	Both	venue + liquidation
+하이퍼리퀴드 펀딩비 min_faves:5 lang:ko	Both	venue + funding
+하이퍼리퀴드 순위 min_faves:5 lang:ko	Both	venue + leaderboard
+하이퍼리퀴드 지갑 min_faves:5 lang:ko	Top	venue + wallet
+HYPE 청산 min_faves:5 lang:ko	Both	token + liquidation
+HYPE 상장 min_faves:5 lang:ko	Both	token + listing
+무기한 선물 상장 min_faves:5 lang:ko	Both	category + listing
+무기한 선물 펀딩비 min_faves:5 lang:ko	Top	category + funding
+청산맵 BTC min_faves:5 lang:ko	Both	risk map
+청산 라인 BTC min_faves:5 lang:ko	Both	risk line
+펀딩비 마이너스 min_faves:5 lang:ko	Top	funding signal
+미결제약정 급증 min_faves:5 lang:ko	Top	OI signal
+롱 포지션 과열 min_faves:5 lang:ko	Top	positioning signal
+숏 포지션 과열 min_faves:5 lang:ko	Top	positioning signal
+미국주식 선물 코인 min_faves:5 lang:ko	Both	RWA event
+토큰화 주식 선물 min_faves:5 lang:ko	Both	RWA category
+청산 없는 선물 min_faves:5 lang:ko	Top	bounded-risk contrast
+손실 제한 트레이딩 min_faves:5 lang:ko	Top	bounded-risk contrast
+선물 매매일지 손절 min_faves:5 lang:ko	Both	journal + discipline
+선물 복기 손절 min_faves:5 lang:ko	Both	recap + discipline

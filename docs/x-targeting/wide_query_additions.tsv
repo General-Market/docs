@@ -1,0 +1,44 @@
+# proposed third-pass broad query additions
+# query<TAB>cell<TAB>motif<TAB>rationale
+"bonk fun graduated" solana min_faves:10 lang:en	trenches-en	launch_to_liquidity_migration	Adjacent launchpad graduation beyond Pump.fun.
+"pumpfun migration" raydium min_faves:10 lang:en	trenches-en	platform_mechanic_recap	Broader than listing; catches migration explainers.
+"bags app launch" memecoin min_faves:10 lang:en	trenches-en	new_platform_event	New trench launch venue.
+"pumpfun exploit" signup min_faves:10 lang:en	trenches-en	platform_incident_thread	Platform failure content beyond listing.
+"bullx dead" solana min_faves:10 lang:en	trenches-en	terminal_failure_post	Terminal failure and switching behavior.
+"axiom down" solana min_faves:10 lang:en	trenches-en	outage_complaint	Uptime pain for major trench terminal.
+"gmgn" affiliate rugging min_faves:5 lang:en	trenches-en	platform_blame_post	Tool-brand trust failures and affiliate blame.
+"pumpfun rewards round" min_faves:10 lang:en	trenches-en	reward_round_call	Existing motifs show rewards-round engagement.
+"axiom" "unclaimed rewards" min_faves:10 lang:en	trenches-en	rewards_flex	Observed trench outlier phrase.
+"dexscreener" "top holders" solana min_faves:10 lang:en	trenches-en	holder_scan	Common holder-check workflow.
+"birdeye" "smart money" solana min_faves:10 lang:en	trenches-en	smart_money_workflow	Wallet-signal tools beyond GMGN/Axiom.
+"solscan" "wallet tracker" copy min_faves:10 lang:en	trenches-en	wallet_audit_workflow	Manual wallet inspection plus copy behavior.
+"cielo" "wallet alerts" crypto min_faves:10 lang:en	trenches-en	alert_setup	Wallet alert tooling.
+"top traders" "copy their wallet" min_faves:10 lang:en	perps-en	copytrade_list	Account group plus behavior.
+"crypto KOLs" "dumping on followers" min_faves:10 lang:en	trenches-en	kol_blame_thread	KOL villain behavior.
+"telegram group" perps signals min_faves:10 lang:en	perps-en	signal_group_pitch	Teacher/signal groups outside CN.
+"leaderboard traders" hyperliquid wallet min_faves:10 lang:en	perps-en	leaderboard_wallet_analysis	Public leaderboard status to wallet-following.
+"binance USD1 perpetual" min_faves:10 lang:en	perps-en	venue_product_launch	USD1 perp mechanics in EN.
+"Backpack stock futures" crypto min_faves:10 lang:en	perps-en	rwa_listing	RWA-perp expansion outside Hyperliquid.
+"Lighter RWA perp" min_faves:10 lang:en	perps-en	venue_listing_card	Lighter RWA listing recurrence.
+"hyperliquid api down" min_faves:5 lang:en	perps-en	infra_failure_report	Builder/trader pain.
+"perp dex" "failed order" min_faves:5 lang:en	perps-en	trade_execution_complaint	Execution failure across venues.
+"builder code revenue" hyperliquid min_faves:10 lang:en	perps-en	revenue_leaderboard	Ecosystem incentive economics.
+"zero maker fee" perps min_faves:10 lang:en	perps-en	fee_incentive_explainer	Fee-incentive trading hooks.
+"USD1 maker fee" perps min_faves:5 lang:en	perps-en	fee_schedule_analysis	Product-specific fee schedule.
+"arkham" hyperliquid wallet min_faves:10 lang:en	perps-en	wallet_exposure_analysis	Public wallet privacy motif into perps.
+"hummingbot" "market making" perps min_faves:5 lang:en	perps-en	bot_workflow	Bot-dev and market-making anchor.
+"tradingview" "funding rates" alert min_faves:5 lang:en	perps-en	alert_workflow	Market-data automation.
+"spot CVD" "perp CVD" BTC min_faves:10 lang:en	perps-en	cvd_action_signal	Spot/perp CVD setup.
+"open interest rising" "funding negative" BTC min_faves:10 lang:en	perps-en	squeeze_setup	OI plus funding action setup.
+"funding rates still positive" short BTC min_faves:10 lang:en	perps-en	contrarian_funding_trade	Positive funding as bearish action.
+"liquidity map" "short squeeze" BTC min_faves:20 lang:en	perps-en	liquidation_target	Map posts into action-oriented search.
+"basis trade" "delta neutral" perps min_faves:10 lang:en	perps-en	arb_strategy	Executable funding-arb adjacency.
+"volatility compression" funding BTC min_faves:10 lang:en	perps-en	breakout_setup	Options/vol framing to perp data.
+币安 USD1 永续 合约 min_faves:5 lang:zh	perps-cn	margin_product_explainer	CN margin-product explainer.
+币圈的群 老师 跟单 min_faves:5 lang:zh	trenches-cn	teacher_group_list	Group/teacher posts.
+跟着 老师 打新 链上 min_faves:5 lang:zh	trenches-cn	account_recommendation_list	Launch teacher following behavior.
+ハイパーリキッド 障害 注文 min_faves:5 lang:ja	perps-jp	outage_order_failure	JP venue failure coverage.
+ハイパーリキッド ポイント 稼ぐ min_faves:5 lang:ja	perps-jp	points_farming_guide	JP point-farming behavior.
+資金調達率 建玉 ショート min_faves:5 lang:ja	perps-jp	short_setup	JP funding plus OI action.
+코인 고수 매매일지 min_faves:5 lang:ko	perps-kr	expert_journal_discovery	KR expert journal discovery.
+펀딩비 OI 숏 min_faves:5 lang:ko	perps-kr	funding_oi_action	KR funding/OI action.

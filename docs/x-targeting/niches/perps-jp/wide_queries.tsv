@@ -1,0 +1,22 @@
+# wider perps JP — combine venue + event + behavior + pain
+ハイパーリキッド 上場 min_faves:5 lang:ja	Both	venue + listing
+ハイパーリキッド 清算 min_faves:5 lang:ja	Both	venue + liquidation
+ハイパーリキッド 資金調達率 min_faves:5 lang:ja	Both	venue + funding
+ハイパーリキッド ランキング min_faves:5 lang:ja	Both	venue + leaderboard
+ハイリキ 清算 min_faves:5 lang:ja	Both	venue abbreviation + liquidation
+HYPE 清算 min_faves:5 lang:ja	Both	token + liquidation
+HYPE 上場 min_faves:5 lang:ja	Both	token + listing
+無期限先物 上場 min_faves:5 lang:ja	Both	category + listing
+無期限先物 資金調達率 min_faves:5 lang:ja	Top	category + funding
+清算マップ BTC min_faves:5 lang:ja	Both	risk map
+清算ライン BTC min_faves:5 lang:ja	Both	risk line
+ロスカット ライン BTC min_faves:5 lang:ja	Both	risk line variant
+資金調達率 マイナス min_faves:5 lang:ja	Top	funding signal
+建玉 急増 BTC min_faves:5 lang:ja	Top	OI signal
+ロング 多すぎ min_faves:5 lang:ja	Top	positioning signal
+ショート 多すぎ min_faves:5 lang:ja	Top	positioning signal
+米国株 先物 暗号資産 min_faves:5 lang:ja	Both	RWA event
+トークン化株式 先物 min_faves:5 lang:ja	Both	RWA category
+清算なし 先物 min_faves:5 lang:ja	Top	bounded-risk contrast
+損失限定 トレード min_faves:5 lang:ja	Top	bounded-risk contrast
+トレード日記 損切り min_faves:5 lang:ja	Both	journal + discipline

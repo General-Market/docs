@@ -1,0 +1,27 @@
+# wider perps EN — combine venue + event + behavior + pain
+"hyperliquid listing" min_faves:20 lang:en	Both	venue + listing
+"hyperliquid delisting" min_faves:10 lang:en	Both	venue + delisting
+"hyperliquid oracle" min_faves:10 lang:en	Top	venue + oracle risk
+"hyperliquid outage" min_faves:10 lang:en	Top	venue + incident
+"hyperliquid liquidation" min_faves:20 lang:en	Both	venue + liquidation
+"hyperliquid funding" min_faves:20 lang:en	Both	venue + funding
+"hyperliquid points" min_faves:10 lang:en	Both	venue + incentives
+"hyperliquid leaderboard" min_faves:10 lang:en	Both	venue + status board
+"hyperliquid vault" min_faves:10 lang:en	Top	venue + vault mechanic
+"HYPE buyback" min_faves:10 lang:en	Top	token economics
+"HYPE unlock" min_faves:10 lang:en	Top	token event
+"HYPE liquidation" min_faves:10 lang:en	Both	token + liquidation
+"perp dex listing" min_faves:10 lang:en	Both	category + listing
+"perp dex points" min_faves:10 lang:en	Both	category + incentives
+"perp dex funding rates" min_faves:10 lang:en	Top	category + funding
+"perp dex outage" min_faves:10 lang:en	Top	category + incident
+"liquidation cluster" crypto min_faves:10 lang:en	Both	risk map
+"funding flipped" crypto min_faves:10 lang:en	Top	funding signal
+"negative funding" crypto min_faves:10 lang:en	Top	funding signal
+"open interest spike" crypto min_faves:10 lang:en	Top	OI signal
+"crowded long" crypto min_faves:10 lang:en	Top	positioning signal
+"crowded short" crypto min_faves:10 lang:en	Top	positioning signal
+"pre IPO perps" min_faves:10 lang:en	Both	RWA event
+"tokenized stock perps" min_faves:10 lang:en	Both	RWA category
+"no liquidation" "perps" min_faves:10 lang:en	Top	bounded-risk contrast
+"fixed risk" crypto trading min_faves:10 lang:en	Top	bounded-risk contrast

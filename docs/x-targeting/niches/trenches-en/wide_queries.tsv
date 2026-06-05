@@ -1,0 +1,26 @@
+# wider trenches EN — combine platform + event + behavior + pain
+"pumpfun listing" min_faves:20 lang:en	Both	platform + listing event
+"pump fun listing" min_faves:20 lang:en	Both	platform spelling variant + listing event
+"pumpfun graduated" min_faves:10 lang:en	Both	platform + graduation event
+"pumpfun raydium" min_faves:10 lang:en	Both	platform + graduation venue
+"pumpfun fees" min_faves:20 lang:en	Top	platform + economics
+"pumpfun rewards" min_faves:20 lang:en	Top	platform + incentives
+"pumpfun go" min_faves:20 lang:en	Both	platform + new product event
+"letsbonk listing" min_faves:10 lang:en	Both	adjacent launchpad + listing
+"bonk fun" min_faves:10 lang:en	Both	adjacent launchpad variant
+"moonshot listing" memecoin min_faves:10 lang:en	Both	adjacent app + listing
+"axiom alerts" min_faves:10 lang:en	Top	tool + workflow
+"axiom fees" min_faves:10 lang:en	Top	tool + economics
+"axiom referral" min_faves:10 lang:en	Top	tool + incentives
+"gmgn wallet" "copy" min_faves:10 lang:en	Top	tool + copy-trade behavior
+"gmgn alert" solana min_faves:10 lang:en	Top	tool + monitoring
+"photon listing" solana min_faves:10 lang:en	Top	terminal + listing behavior
+"bullx alert" min_faves:10 lang:en	Top	terminal + alert workflow
+"bonding curve" "dev sold" min_faves:10 lang:en	Both	mechanic + villain
+"graduated" "dev sold" memecoin min_faves:10 lang:en	Both	event + villain
+"top holders" "dev sold" min_faves:10 lang:en	Both	holder analysis + villain
+"no insiders" "top holders" min_faves:10 lang:en	Top	anti-insider proof
+"sniper wallets" pumpfun min_faves:10 lang:en	Top	wallet villain + platform
+"bundle detected" solana min_faves:5 lang:en	Both	bundle risk
+"lp burned" memecoin min_faves:10 lang:en	Top	safety claim
+"cto" memecoin "dev left" min_faves:10 lang:en	Top	community takeover event
