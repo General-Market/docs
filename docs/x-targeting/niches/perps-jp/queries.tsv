@@ -11,7 +11,7 @@ hyperliquid min_faves:30 lang:ja	Both	HL romaji in JP posts
 爆益 min_faves:30 lang:ja	Both	big-win culture
 養分 トレード min_faves:10 lang:ja	Top	exit-liquidity self-deprecation
 追証 min_faves:20 lang:ja	Top	margin call (CEX term, culture carryover)
-仮想通貨 トレード 手法 min_faves:20 lang:ja	Top	method/tutorial format
+仮想通貨 トレード 手法 min_faves:5 lang:ja	Top	method/tutorial format
 ビットコイン 先物 min_faves:20 lang:ja	Top	BTC futures general
 デイトレ 仮想通貨 min_faves:20 lang:ja	Top	day-trading niche
 損切り min_faves:30 lang:ja	Top	stop-loss discipline content

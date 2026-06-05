@@ -3,15 +3,15 @@
 hyperliquid min_faves:30 lang:ko	Both	HL romaji in KR posts
 무기한 선물 min_faves:10 lang:ko	Top	perpetual futures
 선물 청산 min_faves:20 lang:ko	Top	liquidation
-펀딩비 min_faves:10 lang:ko	Top	funding fee
+펀딩비 min_faves:2 lang:ko	Top	funding fee
 레버리지 코인 min_faves:20 lang:ko	Top	leverage
 롱 숏 min_faves:30 lang:ko	Both	long/short
 코인 선물 min_faves:30 lang:ko	Both	coin futures general
 김프 min_faves:30 lang:ko	Top	kimchi premium niche
 잡코인 min_faves:30 lang:ko	Top	altcoin culture
-코인 매매법 min_faves:20 lang:ko	Top	trading-method tutorial
-차트 분석 코인 min_faves:30 lang:ko	Top	chart-analysis niche
-수익 인증 코인 min_faves:30 lang:ko	Top	profit-verification format (KR-specific)
+매매 기법 min_faves:30 lang:ko	Top	trading-method tutorial (live synonym observed)
+알트장 분석 min_faves:30 lang:ko	Top	chart-analysis niche (live synonym observed)
+수익 인증 코인 min_faves:15 lang:ko	Top	profit-verification format (KR-specific)
 손절 min_faves:30 lang:ko	Top	stop-loss culture
 물타기 min_faves:20 lang:ko	Top	averaging-down culture
 코인 단타 min_faves:30 lang:ko	Top	scalping niche

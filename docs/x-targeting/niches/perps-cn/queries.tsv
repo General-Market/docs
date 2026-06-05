@@ -9,7 +9,7 @@ hyperliquid min_faves:50 lang:zh	Both	HL in CN
 合约 杠杆 min_faves:30 lang:zh	Top	leverage culture
 止盈 止损 min_faves:30 lang:zh	Top	TP/SL education niche
 仓位管理 min_faves:30 lang:zh	Top	risk-management niche
-合约 教学 min_faves:20 lang:zh	Top	tutorial format
+合约 教学 min_faves:5 lang:zh	Top	tutorial format
 山寨 合约 min_faves:20 lang:zh	Top	altcoin perps
 链上 合约 dex min_faves:20 lang:zh	Top	on-chain perps category
 大户 持仓 min_faves:30 lang:zh	Top	whale-position format

@@ -1,25 +1,25 @@
 # memecoin trenches CN — 打狗 culture. lang:zh covers zh-cn+zh-tw on X search.
 打狗 min_faves:50 lang:zh	Both	trench-trading core verb
-土狗 sol min_faves:50 lang:zh	Both	shitcoin
+冲土狗 min_faves:1 lang:zh	Both	shitcoin; live cached phrase
 金狗 min_faves:50 lang:zh	Both	golden dog = gem
-(pumpfun OR pump) 内盘 min_faves:30 lang:zh	Both	bonding curve phase
+(pumpfun OR pump) 内盘 min_faves:7 lang:zh	Both	bonding curve phase
 外盘 sol min_faves:20 lang:zh	Top	post-migration phase
 冲狗 min_faves:30 lang:zh	Both	ape-into-dogs
 聪明钱 链上 min_faves:30 lang:zh	Top	smart money tracking
 老鼠仓 min_faves:30 lang:zh	Top	insider bags
 貔貅盘 min_faves:20 lang:zh	Top	honeypot warnings
 梭哈 sol min_faves:30 lang:zh	Top	all-in culture
-狙击 pump min_faves:20 lang:zh	Top	sniping
-捆绑 检测 min_faves:10 lang:zh	Latest	bundle detection
+狙击 pump min_faves:10 lang:zh	Top	sniping
+捆绑砸货 min_faves:1 lang:zh	Latest	bundle dump risk; live cached phrase
 gmgn min_faves:30 lang:zh	Both	gmgn is CN-dominant terminal
-axiom min_faves:20 lang:zh	Top	Axiom CN reach
+链上主力 min_faves:1 lang:zh	Top	terminal workflow; live cached phrase
 钱包 跟单 min_faves:30 lang:zh	Top	wallet copytrade
 链上 复盘 min_faves:30 lang:zh	Top	on-chain recap format
-今日 金狗 min_faves:20 lang:zh	Top	daily-gem recap format
+今日 金狗 min_faves:5 lang:zh	Top	daily-gem recap format
 百倍 币 min_faves:30 lang:zh	Top	100x idiom
 归零 min_faves:50 lang:zh	Top	rug/zero culture
 撤池子 min_faves:10 lang:zh	Latest	LP pull = rug
-夹子 sol min_faves:20 lang:zh	Top	MEV sandwich bots
+狙击机器人 min_faves:1 lang:zh	Top	MEV/sniping bots; live cached phrase
 日内 sol 交易 min_faves:20 lang:zh	Top	intraday culture
 教程 打狗 min_faves:10 lang:zh	Top	tutorial format
 新币 推荐 min_faves:20 lang:zh	Latest	call format
