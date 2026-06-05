@@ -478,7 +478,8 @@ def cmd_userinfo(handle: str, force: bool = False):
         print(json.dumps(body, indent=2))
 
 
-def cmd_lasttweets(handle: str, count: int = 10, force: bool = False):
+def cmd_lasttweets(handle: str, count: int = 10, force: bool = False, pages: int = 1,
+                   cell: str | None = None):
     if not force:
         cached = _cached_tweets_fresh(handle, min_count=5)
         if cached is not None:
@@ -495,23 +496,35 @@ def cmd_lasttweets(handle: str, count: int = 10, force: bool = False):
                   file=sys.stderr)
             print(f"got {len(cached)} tweets (cache), 0 new")
             return
-    body = metered_call(
-        f"lasttweets:{handle}", "/twitter/user/last_tweets",
-        {"userName": handle.lstrip("@")},
-        estimate=15 * min(count, 20),
-    )
-    if body.get("status") == "success":
+    all_tweets, cursor = [], ""
+    for page in range(pages):
+        params = {"userName": handle.lstrip("@")}
+        if cursor:
+            params["cursor"] = cursor
+        body = metered_call(
+            f"lasttweets:{handle}:p{page}", "/twitter/user/last_tweets",
+            params,
+            estimate=15 * 20,
+        )
         data = body.get("data", {})
         tweets = data.get("tweets") if isinstance(data, dict) else (data or [])
-        if isinstance(tweets, list):
-            n_new = upsert_tweets(tweets, source=f"twapi-lasttweets-{handle}")
-            print(f"got {len(tweets)} tweets, {n_new} new to cache")
-            for t in tweets[:10]:
-                print(f"  {t.get('createdAt', '?')[:10]}  ♥{t.get('likeCount',0)} ↻{t.get('retweetCount',0)} 💬{t.get('replyCount',0)}  {(t.get('text') or '')[:100]}")
-        else:
+        if not tweets and body.get("tweets"):
+            tweets = body.get("tweets") or []
+        if body.get("status") not in (None, "success") and not tweets:
             print(json.dumps(body, indent=2))
-    else:
-        print(json.dumps(body, indent=2))
+            break
+        if not isinstance(tweets, list) or not tweets:
+            break
+        all_tweets.extend(tweets)
+        cursor = body.get("next_cursor") or (data.get("next_cursor") if isinstance(data, dict) else "") or ""
+        has_next = body.get("has_next_page", bool(cursor))
+        if not cursor or not has_next:
+            break
+    if all_tweets:
+        n_new = upsert_tweets(all_tweets, source=f"twapi-lasttweets-{handle}", cell=cell)
+        print(f"got {len(all_tweets)} tweets, {n_new} new to cache")
+        for t in all_tweets[:10]:
+            print(f"  {t.get('createdAt', '?')[:10]}  ♥{t.get('likeCount',0)} ↻{t.get('retweetCount',0)}  {(t.get('text') or '')[:100]}")
 
 
 def cmd_followers(handle: str, max_results: int = 200):
@@ -713,7 +726,9 @@ def main():
         n = 10
         if "--count" in sys.argv:
             n = int(sys.argv[sys.argv.index("--count") + 1])
-        cmd_lasttweets(sys.argv[2], n)
+        p = int(sys.argv[sys.argv.index("--pages") + 1]) if "--pages" in sys.argv else 1
+        c = sys.argv[sys.argv.index("--cell") + 1] if "--cell" in sys.argv else None
+        cmd_lasttweets(sys.argv[2], n, force="--force" in sys.argv, pages=p, cell=c)
     elif cmd == "followings":
         m = 200
         if "--max" in sys.argv:
