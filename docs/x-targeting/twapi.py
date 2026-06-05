@@ -96,7 +96,7 @@ def _get(path: str, params: dict | None = None, timeout: int = 30):
 
 def balance() -> tuple[int, int]:
     """Returns (recharge_credits, bonus_credits)."""
-    status, body = _get("/oapi/my/info")
+    status, body = _get("/oapi/my/info", timeout=5)
     if status == 200 and "recharge_credits" in body:
         r = int(body.get("recharge_credits", 0))
         b = int(body.get("total_bonus_credits", 0))
