@@ -16,12 +16,14 @@ Usage:
 """
 from __future__ import annotations
 import json
+import fcntl
 import os
 import sys
 import time
 import urllib.request
 import urllib.parse
 import urllib.error
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,6 +37,19 @@ PROFILES = CACHE / "profiles.jsonl"
 TWEETS = CACHE / "tweets.jsonl"
 HARD_CAP_USD = 1.00  # set by user — never spend more in one session
 CREDITS_PER_USD = 100_000
+LOCK_FILE = CACHE / ".cache.lock"
+
+
+@contextmanager
+def cache_lock():
+    """Exclusive lock for shared JSONL cache read-modify-write operations."""
+    LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with LOCK_FILE.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 def now_iso():
@@ -71,9 +86,10 @@ def total_credits() -> int:
 
 
 def append_ledger(row: dict) -> None:
-    LEDGER.parent.mkdir(parents=True, exist_ok=True)
-    with LEDGER.open("a") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    with cache_lock():
+        LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LEDGER.open("a") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 SESSION_START_FILE = CACHE / ".session_start_balance"
@@ -166,7 +182,7 @@ def _write_jsonl(p: Path, rows: list[dict]) -> None:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 
-def upsert_profile(twapi_user: dict, followed_by: str | None = None) -> None:
+def _upsert_profile_unlocked(twapi_user: dict, followed_by: str | None = None) -> None:
     """Merge a TwitterAPI.io profile into cache/profiles.jsonl.
 
     If followed_by is set, record that the named account follows this profile.
@@ -234,7 +250,12 @@ def upsert_profile(twapi_user: dict, followed_by: str | None = None) -> None:
     _write_jsonl(PROFILES, rows)
 
 
-def upsert_tweets(tweets: list[dict], source: str = "twapi") -> int:
+def upsert_profile(twapi_user: dict, followed_by: str | None = None) -> None:
+    with cache_lock():
+        _upsert_profile_unlocked(twapi_user, followed_by)
+
+
+def _upsert_tweets_unlocked(tweets: list[dict], source: str = "twapi", cell: str | None = None) -> int:
     """Append/update tweets in cache/tweets.jsonl, dedup by tweet_id."""
     by_id = {r.get("tweet_id"): r for r in _load_jsonl(TWEETS) if r.get("tweet_id")}
     n_new = 0
@@ -245,7 +266,7 @@ def upsert_tweets(tweets: list[dict], source: str = "twapi") -> int:
         author = (t.get("author") or {}).get("userName") or t.get("authorName")
         # Persist author's profile too if attached
         if t.get("author") and t["author"].get("userName"):
-            upsert_profile(t["author"])
+            _upsert_profile_unlocked(t["author"])
         row = {
             "tweet_id": tid,
             "screen_name": author,
@@ -261,6 +282,7 @@ def upsert_tweets(tweets: list[dict], source: str = "twapi") -> int:
             "url": t.get("url"),
             "in_reply_to_screen_name": t.get("inReplyToUserName"),
             "source_run": source,
+            "cell": cell,
             "cached_at": now_iso(),
         }
         if tid not in by_id:
@@ -268,6 +290,11 @@ def upsert_tweets(tweets: list[dict], source: str = "twapi") -> int:
         by_id[tid] = row
     _write_jsonl(TWEETS, list(by_id.values()))
     return n_new
+
+
+def upsert_tweets(tweets: list[dict], source: str = "twapi", cell: str | None = None) -> int:
+    with cache_lock():
+        return _upsert_tweets_unlocked(tweets, source, cell)
 
 
 # -- commands ---------------------------------------------------------------
@@ -602,4 +629,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(0)
