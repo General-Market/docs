@@ -1,0 +1,31 @@
+# memecoin trenches EN — platforms, culture, formats
+(pumpfun OR "pump fun") min_faves:200 lang:en	Both	platform core
+pumpfun filter:links min_faves:100 lang:en	Top	what links win
+trenches solana min_faves:100 lang:en	Both	culture core
+trenching min_faves:50 lang:en	Latest	verb form
+"bonded" pumpfun min_faves:50 lang:en	Top	bonding-curve event
+axiom trade min_faves:50 lang:en	Both	terminal: Axiom
+@AxiomExchange min_faves:50	Top	Axiom mentions
+gmgn min_faves:50 lang:en	Both	terminal: gmgn
+bullx min_faves:50 lang:en	Top	terminal: BullX
+photon sol min_faves:50 lang:en	Top	terminal: Photon
+letsbonk min_faves:50 lang:en	Both	launchpad: bonk
+believe app launch min_faves:50 lang:en	Top	launchpad: believe
+"internet capital markets" min_faves:50 lang:en	Top	ICM narrative
+bags fm min_faves:30 lang:en	Top	launchpad: bags
+moonshot listing min_faves:50 lang:en	Top	launchpad: moonshot
+memecoin gem min_faves:100 lang:en	Both	gem-caller niche
+"100x" solana min_faves:100 lang:en	Top	gem-caller hyperbole
+"next runner" sol min_faves:30 lang:en	Latest	caller idiom
+sniping pumpfun min_faves:30 lang:en	Top	sniper niche
+bundle check min_faves:30 lang:en	Top	bundler-detection niche
+"dev sold" min_faves:50 lang:en	Top	rug culture
+"top holders" sol min_faves:30 lang:en	Top	holder-analysis niche
+smart money wallet sol min_faves:50 lang:en	Top	wallet-tracking niche
+copytrading sol min_faves:30 lang:en	Top	copytrade niche
+pnl pumpfun min_faves:50 lang:en	Top	pnl-flex format
+"turned $" into sol min_faves:100 lang:en	Top	pnl story format
+memecoin daily recap min_faves:20 lang:en	Top	recap format probe
+"top 10" memecoin min_faves:50 lang:en	Top	listicle format probe
+trench bot telegram min_faves:30 lang:en	Top	TG bot niche
+solana volume bot min_faves:20 lang:en	Latest	greyzone tooling niche
