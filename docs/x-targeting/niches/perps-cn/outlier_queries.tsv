@@ -1,0 +1,17 @@
+# second-pass perps CN — copytrade, exchange mechanics, RWA, risk
+合约 带单 老师 min_faves:20 lang:zh	Both	copytrade group
+合约 复盘 日报 min_faves:10 lang:zh	Both	recurring recap
+爆仓 地图 min_faves:10 lang:zh	Top	liquidation map
+爆仓 热力图 min_faves:10 lang:zh	Top	liquidation map
+资金费率 套利 min_faves:10 lang:zh	Top	funding arb
+搬砖 合约 min_faves:10 lang:zh	Top	basis/arb adjacent
+仓位管理 教程 min_faves:20 lang:zh	Top	risk tutorial
+止损 纪律 合约 min_faves:10 lang:zh	Top	discipline format
+实盘 复盘 合约 min_faves:10 lang:zh	Both	live account recap
+跟单 平台 合约 min_faves:20 lang:zh	Top	copytrade platform
+交易所 美股 合约 min_faves:20 lang:zh	Top	tokenized stocks/RWA
+盘前 合约 美股 min_faves:10 lang:zh	Top	pre-IPO/equities
+Hyperliquid 榜单 min_faves:5 lang:zh	Top	leaderboard format
+HYPE 回购 min_faves:10 lang:zh	Top	token economics
+链上 永续 DEX min_faves:10 lang:zh	Top	perp DEX category
+合约 信息差 min_faves:20 lang:zh	Top	info-arbitrage format

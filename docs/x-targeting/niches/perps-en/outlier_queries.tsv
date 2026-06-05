@@ -1,0 +1,19 @@
+# second-pass perps EN — market structure, groups, adjacent repeatable surfaces
+"top traders" hyperliquid min_faves:20 lang:en	Top	group discovery
+"hyperliquid leaderboard" min_faves:20 lang:en	Top	leaderboard format
+"best perp dex" min_faves:30 lang:en	Top	comparison format
+"perp dex comparison" min_faves:20 lang:en	Top	comparison format
+"liquidation heatmap" crypto min_faves:30 lang:en	Both	data-drop outliers
+"liquidity map" BTC min_faves:30 lang:en	Top	data-drop outliers
+"open interest" "funding" crypto min_faves:30 lang:en	Top	market-structure data
+"funding arbitrage" "perp" min_faves:20 lang:en	Top	funding arb
+"basis trade" crypto perps min_faves:20 lang:en	Top	pro-style adjacent
+"market maker" perps min_faves:20 lang:en	Top	microstructure
+"copy trading" hyperliquid min_faves:10 lang:en	Top	copytrade workflow
+"got liquidated" "hyperliquid" min_faves:20 lang:en	Top	loss story
+"public wallet" crypto min_faves:20 lang:en	Top	privacy villain
+"tokenized stocks" perps min_faves:20 lang:en	Top	RWA expansion
+"pre IPO" hyperliquid min_faves:20 lang:en	Top	RWA/pre-IPO expansion
+"points farming" perp dex min_faves:10 lang:en	Both	points farming
+"prop firm" crypto trading min_faves:20 lang:en	Top	funded-trader adjacent
+"trading journal" crypto min_faves:20 lang:en	Top	process format

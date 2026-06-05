@@ -1,0 +1,19 @@
+# second-pass trenches EN — groups, outlier accounts, repeatable surfaces
+"who to follow" solana memecoin min_faves:20 lang:en	Top	account-list discovery
+"top accounts" solana memecoin min_faves:20 lang:en	Top	group discovery
+"daily watchlist" memecoin min_faves:20 lang:en	Both	recurring watchlist format
+"daily recap" solana memecoin min_faves:20 lang:en	Both	recurring recap format
+"smart money" memecoin wallet min_faves:30 lang:en	Top	wallet-tracking outliers
+"wallet tracker" solana min_faves:20 lang:en	Top	tool workflow
+"copy trade" solana wallet min_faves:20 lang:en	Top	copytrade workflow
+"bundle check" solana min_faves:10 lang:en	Both	bundle villain
+"dev sold" "top holders" min_faves:20 lang:en	Top	rug analysis pattern
+"no insiders" memecoin min_faves:20 lang:en	Top	anti-insider claim pattern
+"trench report" min_faves:10 lang:en	Both	named recurring report
+"100x gem" solana min_faves:50 lang:en	Top	gem-caller outliers
+"called it early" memecoin min_faves:20 lang:en	Top	status flex pattern
+"turned $50" solana min_faves:20 lang:en	Top	low-bankroll PNL story
+"CA:" pump min_faves:20 lang:en	Top	contract-address call pattern
+"axiom" "gmgn" min_faves:20 lang:en	Top	terminal comparison
+"photon" "bullx" min_faves:20 lang:en	Top	terminal comparison
+"not financial advice" memecoin min_faves:50 lang:en	Top	KOL-call surface
