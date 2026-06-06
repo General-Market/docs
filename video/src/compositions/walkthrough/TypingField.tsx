@@ -22,7 +22,7 @@ import { monoFont } from "../../common/fonts";
 
 const NEAR_BLACK = "#1D1D1F";
 
-const LEFT_PAD = 10; // px the text sits in from the field's left edge
+const LEFT_PAD = 30; // px the text sits in — clears a leading "$" glyph in the field
 const CARET_W = 2; // px caret bar width
 const BLINK_PERIOD = 30; // frames for one full blink cycle (~2/sec at 60fps)
 
@@ -64,7 +64,7 @@ export const TypingField: React.FC<{
   const caretVisible = typing && blinkOn;
 
   // Font size defaults to a comfortable fraction of the field height.
-  const fs = fontSize ?? Math.round(rect.h * 0.42);
+  const fs = fontSize ?? Math.round(rect.h * 0.52);
 
   return (
     <div

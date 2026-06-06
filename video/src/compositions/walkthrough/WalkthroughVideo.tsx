@@ -30,6 +30,8 @@ import { Callout } from "./Callout";
 import { TypingField } from "./TypingField";
 import { NumberRoll } from "./NumberRoll";
 import { NavLoadingBar } from "./NavLoadingBar";
+import { ClickPulse } from "./ClickPulse";
+import { WalletModal } from "./WalletModal";
 import { Screen } from "./Screen";
 import { SCREEN_TOP, SCREEN_LEFT, SCREEN_W } from "./geometry";
 import { STEPS, TOTAL_FRAMES, FPS, type ResolvedBeat } from "./walkthroughData";
@@ -83,11 +85,13 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
     <DotGrid intensity={0.7} speed={0.9} />
     <DotGridVignette intensity={0.24} />
 
-    <Screen image={beat.image} />
+    <Screen image={beat.image} url={beat.url} />
 
     {beat.loadBar && (
       <NavLoadingBar top={SCREEN_TOP} left={SCREEN_LEFT} width={SCREEN_W} startFrame={0} durationFrames={beat.loadBar.dur} />
     )}
+
+    {beat.clickPulse && <ClickPulse rect={beat.clickPulse.rect} atFrame={beat.clickPulse.atFrame} />}
 
     {beat.roll && (
       <NumberRoll
@@ -120,6 +124,16 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
         side={beat.callout.side}
         index={beat.callout.index}
         appearFrame={beat.callout.appearFrame}
+      />
+    )}
+
+    {beat.wallet && (
+      <WalletModal
+        action={beat.wallet.action}
+        rows={beat.wallet.rows}
+        startFrame={beat.wallet.startFrame}
+        approveFrame={beat.wallet.approveFrame}
+        confirmedFrame={beat.wallet.confirmedFrame}
       />
     )}
 

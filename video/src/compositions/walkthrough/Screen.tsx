@@ -8,8 +8,8 @@ import { Img, staticFile } from "remotion";
 import { BrowserChrome } from "./BrowserChrome";
 import { SCREEN_W, SCREEN_H, WINDOW_LEFT, WINDOW_TOP } from "./geometry";
 
-export const Screen: React.FC<{ image: string }> = ({ image }) => (
-  <BrowserChrome width={SCREEN_W} height={SCREEN_H} left={WINDOW_LEFT} top={WINDOW_TOP}>
+export const Screen: React.FC<{ image: string; url?: string }> = ({ image, url }) => (
+  <BrowserChrome width={SCREEN_W} height={SCREEN_H} left={WINDOW_LEFT} top={WINDOW_TOP} url={url}>
     <Img
       src={staticFile(image)}
       style={{ width: SCREEN_W, height: SCREEN_H, display: "block", objectFit: "cover" }}

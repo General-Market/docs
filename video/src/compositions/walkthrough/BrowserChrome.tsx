@@ -1,11 +1,12 @@
 /**
  * BrowserChrome — a faux browser window holding the screenshot.
  *
- * A rounded white surface with the three traffic-light dots, a slim address
- * bar reading `app.crxfx.com`, and a soft drop-shadow. It does not own its
- * own placement — Screen.tsx positions it in canvas space and feeds the
- * exact pixel geometry in. Children = the screenshot, laid flush below the
- * chrome bar.
+ * A rounded white surface dressed like a real macOS Chrome/Arc top: three
+ * traffic-light dots with a faint inner ring, thin back / forward / reload
+ * glyphs, a pill address bar (lock + muted scheme + dark host in Commit Mono),
+ * and a kebab on the right. It does not own its own placement — Screen.tsx
+ * positions it in canvas space and feeds the exact pixel geometry in.
+ * Children = the screenshot, laid flush below the chrome bar.
  */
 
 import React from "react";
@@ -15,17 +16,22 @@ export const CHROME_BAR_HEIGHT = 44;
 export const WINDOW_RADIUS = 16;
 
 const C = {
-  bar: "#F5F5F7",
+  bar: "#F0F0F2",
   surface: "#FFFFFF",
-  border: "rgba(0,0,0,0.08)",
-  hairline: "rgba(0,0,0,0.06)",
+  border: "rgba(0,0,0,0.10)",
+  topHairline: "rgba(255,255,255,0.65)",
+  hairline: "rgba(0,0,0,0.08)",
   addressBg: "#FFFFFF",
-  addressBorder: "rgba(0,0,0,0.07)",
-  addressText: "#5A5B6A",
-  lockTint: "#8A8B9C",
+  addressBorder: "rgba(0,0,0,0.10)",
+  scheme: "#9A9BA8",
+  host: "#2A2B33",
+  lockTint: "#3A9B5C",
+  navGlyph: "#6B6C7A",
+  kebab: "#8A8B98",
   dotRed: "#FF5F57",
   dotYellow: "#FEBC2E",
   dotGreen: "#28C840",
+  dotRing: "rgba(0,0,0,0.14)",
 };
 
 type Props = {
@@ -36,6 +42,8 @@ type Props = {
   /** Window top-left in canvas space. */
   left: number;
   top: number;
+  /** Address-bar host; the orchestrator can swap it per page. */
+  url?: string;
   children: React.ReactNode;
 };
 
@@ -46,8 +54,15 @@ const TrafficLight: React.FC<{ color: string }> = ({ color }) => (
       height: 12,
       borderRadius: 6,
       background: color,
+      boxShadow: `inset 0 0 0 0.5px ${C.dotRing}`,
     }}
   />
+);
+
+const NavIcon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    {children}
+  </svg>
 );
 
 export const BrowserChrome: React.FC<Props> = ({
@@ -55,6 +70,7 @@ export const BrowserChrome: React.FC<Props> = ({
   height,
   left,
   top,
+  url = "app.crxfx.com",
   children,
 }) => {
   return (
@@ -69,7 +85,7 @@ export const BrowserChrome: React.FC<Props> = ({
         background: C.surface,
         border: `1px solid ${C.border}`,
         boxShadow:
-          "0 2px 4px rgba(0,0,0,0.04), 0 24px 60px rgba(15,23,42,0.18), 0 8px 24px rgba(15,23,42,0.10)",
+          "0 1px 1px rgba(15,23,42,0.04), 0 10px 28px rgba(15,23,42,0.12), 0 32px 80px rgba(15,23,42,0.20)",
         overflow: "hidden",
         boxSizing: "border-box",
       }}
@@ -77,33 +93,86 @@ export const BrowserChrome: React.FC<Props> = ({
       {/* Chrome bar */}
       <div
         style={{
+          position: "relative",
           height: CHROME_BAR_HEIGHT,
           background: C.bar,
           borderBottom: `1px solid ${C.hairline}`,
+          boxShadow: `inset 0 1px 0 ${C.topHairline}`,
           display: "flex",
           alignItems: "center",
           paddingLeft: 18,
-          paddingRight: 18,
+          paddingRight: 16,
           boxSizing: "border-box",
-          gap: 16,
+          gap: 14,
         }}
       >
+        {/* Traffic lights */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <TrafficLight color={C.dotRed} />
           <TrafficLight color={C.dotYellow} />
           <TrafficLight color={C.dotGreen} />
         </div>
 
+        {/* Back / forward / reload */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            flexShrink: 0,
+            color: C.navGlyph,
+          }}
+        >
+          <NavIcon>
+            <path
+              d="M9.5 4 5.5 8l4 4"
+              stroke={C.navGlyph}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </NavIcon>
+          <NavIcon>
+            <path
+              d="M6.5 4l4 4-4 4"
+              stroke={C.navGlyph}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              opacity={0.55}
+            />
+          </NavIcon>
+          <NavIcon>
+            <path
+              d="M12.4 8a4.4 4.4 0 1 1-1.3-3.1"
+              stroke={C.navGlyph}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              fill="none"
+            />
+            <path
+              d="M12.6 3.4v2.2h-2.2"
+              stroke={C.navGlyph}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </NavIcon>
+        </div>
+
         {/* Address bar */}
         <div
           style={{
             flex: 1,
-            height: 26,
-            maxWidth: 360,
+            height: 28,
+            maxWidth: 420,
             margin: "0 auto",
             background: C.addressBg,
             border: `1px solid ${C.addressBorder}`,
-            borderRadius: 13,
+            borderRadius: 14,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -120,7 +189,7 @@ export const BrowserChrome: React.FC<Props> = ({
               y="4.6"
               width="7.8"
               height="5.4"
-              rx="1.2"
+              rx="1.3"
               fill={C.lockTint}
             />
             <path
@@ -136,15 +205,30 @@ export const BrowserChrome: React.FC<Props> = ({
               fontSize: 13,
               fontWeight: 500,
               letterSpacing: "0.005em",
-              color: C.addressText,
+              whiteSpace: "nowrap",
             }}
           >
-            app.crxfx.com
+            <span style={{ color: C.scheme }}>https://</span>
+            <span style={{ color: C.host }}>{url}</span>
           </span>
         </div>
 
-        {/* right-side spacer keeps the address bar optically centered */}
-        <div style={{ width: 44, flexShrink: 0, fontFamily: font }} />
+        {/* Kebab menu — keeps the address bar optically centered */}
+        <div
+          style={{
+            width: 24,
+            flexShrink: 0,
+            display: "flex",
+            justifyContent: "center",
+            fontFamily: font,
+          }}
+        >
+          <svg width="4" height="16" viewBox="0 0 4 16" fill={C.kebab}>
+            <circle cx="2" cy="4" r="1.5" />
+            <circle cx="2" cy="8" r="1.5" />
+            <circle cx="2" cy="12" r="1.5" />
+          </svg>
+        </div>
       </div>
 
       {/* Screenshot */}

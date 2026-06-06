@@ -8,9 +8,11 @@
  * startFrame it shows `from`; after the window it shows `to` exactly, so once the
  * roll finishes the overlay matches the screenshot seamlessly and can unmount.
  *
- * It MUST cover the static figure underneath: a solid `bg` rect is painted exactly
- * over `rect`, then the rolling number is drawn on top. Commit Mono + tabular-nums
- * keep the glyph width stable so the count doesn't jitter.
+ * It MUST cover the static figure underneath: a solid `bg` rect is painted over
+ * `rect` expanded by `bgInset` px on every side (a tiny bleed) so no static digits
+ * peek out at the edges during the roll, then the rolling number is drawn on top at
+ * the exact `rect`. Commit Mono + tabular-nums keep the glyph width stable so the
+ * count doesn't jitter, and the value is clamped so it never overshoots `to`.
  *
  * Brand: text near-black #1D1D1F by default; mono = Commit Mono.
  */
@@ -45,6 +47,7 @@ export const NumberRoll: React.FC<{
   color?: string;
   bg?: string;
   align?: "left" | "center" | "right";
+  bgInset?: number;
 }> = ({
   rect,
   to,
@@ -59,6 +62,7 @@ export const NumberRoll: React.FC<{
   color = NEAR_BLACK,
   bg = "#FFFFFF",
   align = "left",
+  bgInset = 3,
 }) => {
   const frame = useCurrentFrame();
 
@@ -74,6 +78,8 @@ export const NumberRoll: React.FC<{
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
+    // Never overshoot the target in either direction (no distracting over-count).
+    value = to >= from ? Math.min(value, to) : Math.max(value, to);
   }
 
   const justify =
@@ -84,33 +90,50 @@ export const NumberRoll: React.FC<{
         : "center";
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: rect.x,
-        top: rect.y,
-        width: rect.w,
-        height: rect.h,
-        background: bg, // masks the static figure underneath
-        display: "flex",
-        alignItems: "center",
-        justifyContent: justify,
-        boxSizing: "border-box",
-        pointerEvents: "none",
-        zIndex: 8500,
-        fontFamily: monoFont,
-        fontSize,
-        fontWeight,
-        fontVariantNumeric: "tabular-nums",
-        color,
-        lineHeight: 1,
-        whiteSpace: "pre",
-        overflow: "hidden",
-      }}
-    >
-      {prefix}
-      {formatNumber(value, decimals)}
-      {suffix}
-    </div>
+    <>
+      {/* Mask — bg rect bled out by bgInset on every side so no static digit
+          underneath peeks at the edges during the roll. */}
+      <div
+        style={{
+          position: "absolute",
+          left: rect.x - bgInset,
+          top: rect.y - bgInset,
+          width: rect.w + bgInset * 2,
+          height: rect.h + bgInset * 2,
+          background: bg,
+          pointerEvents: "none",
+          zIndex: 8500,
+        }}
+      />
+      {/* Rolling number — at the exact rect so it lands where the screenshot's
+          static figure sits. */}
+      <div
+        style={{
+          position: "absolute",
+          left: rect.x,
+          top: rect.y,
+          width: rect.w,
+          height: rect.h,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: justify,
+          boxSizing: "border-box",
+          pointerEvents: "none",
+          zIndex: 8501,
+          fontFamily: monoFont,
+          fontSize,
+          fontWeight,
+          fontVariantNumeric: "tabular-nums",
+          color,
+          lineHeight: 1,
+          whiteSpace: "pre",
+          overflow: "hidden",
+        }}
+      >
+        {prefix}
+        {formatNumber(value, decimals)}
+        {suffix}
+      </div>
+    </>
   );
 };
