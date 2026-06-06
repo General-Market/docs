@@ -13,7 +13,7 @@
 
 import manifest from "../../../public/walkthrough/taker/walkthrough-video.json";
 import { toCanvas, toCanvasPoint, WINDOW_CENTER, type Rect, type Point } from "./geometry";
-import { WALLET_APPROVE_POINT, WALLET_CONNECT_POINT } from "./WalletModal";
+import { FIREBLOCKS_APPROVE_POINT } from "./FireblocksPage";
 import { APP_FONT } from "./appFont";
 
 export type { Rect, Point } from "./geometry";
@@ -54,7 +54,7 @@ type RawBeat = {
   type?: { target: string; value: string };
   roll?: { target: string; to: number; prefix?: string; suffix?: string; decimals?: number };
   callout?: { target: string; label: string; side: Side };
-  wallet?: WalletSpec;
+  fireblocks?: WalletSpec; // switch the browser to the Fireblocks console & approve
   loading?: boolean;
   hold: number;
 };
@@ -71,14 +71,12 @@ const LOAD = 34;
 const CLICK_LOAD = 18;
 const ROLL = 26;
 const typeDur = (v: string) => Math.max(18, v.length * 2);
-// Wallet beat timeline (relative to the beat).
-const W_IN = 4; // connect modal appears
-const W_LEG1_START = 8; // cursor begins gliding to the Fireblocks row
-const W_CONNECT_CLICK = W_LEG1_START + MOVE + 4; // pick Fireblocks
-const W_CONNECT = W_CONNECT_CLICK + 8; // phase switch connect → approve
-const W_LEG2_START = 4; // (relative to W_CONNECT) cursor to Approve
-const W_APPROVE = W_CONNECT + W_LEG2_START + MOVE + CLICK_GAP; // press Approve
-const W_CONFIRMED = W_APPROVE + 26;
+// Fireblocks-approval beat: the browser switches to the Fireblocks console (a
+// new page → a page load), the cursor glides to Approve and presses it.
+const FB_LOAD = LOAD; // the Fireblocks tab loads (white + nav bar)
+const FB_CURSOR = FB_LOAD + 6; // cursor begins gliding to Approve after load
+const FB_APPROVE = FB_CURSOR + MOVE + CLICK_GAP;
+const FB_CONFIRMED = FB_APPROVE + 26;
 
 // ─── The choreography ────────────────────────────────────────────────────────
 
@@ -100,7 +98,7 @@ const CHOREO: RawStep[] = [
     beats: [
       { screen: 0, caption: "Pick the one desk you'll trade with.", loading: true, cursorTo: "select", click: true, hold: 16 },
       { screen: 1, caption: "It moves no money — one on-chain flag.", callout: { target: "noMoney", label: "No funds move", side: "left" }, cursorTo: "confirm", click: true, hold: 14 },
-      { screen: 1, caption: "Approve it through your Fireblocks wallet.", wallet: { action: "Allocate counterparty", rows: [{ label: "Network", value: NET }, { label: "Contract", value: "CRX" }, { label: "Function", value: "preAllocate" }, { label: "Counterparty", value: "Meridian FX" }, { label: "Fee", value: "~$0.00" }] }, hold: 20 },
+      { screen: 1, caption: "Approve it in the Fireblocks console.", fireblocks: { action: "Allocate counterparty", rows: [{ label: "Network", value: NET }, { label: "Contract", value: "CRX" }, { label: "Function", value: "preAllocate" }, { label: "Counterparty", value: "Meridian FX" }, { label: "Fee", value: "~$0.00" }] }, hold: 20 },
       { screen: 2, caption: "Allocated — that desk is now live.", callout: { target: "locked", label: "Your posted margin", side: "bottom" }, hold: 34 },
     ],
   },
@@ -132,7 +130,7 @@ const CHOREO: RawStep[] = [
       { screen: 0, caption: "Your maker is pricing the rate…", hold: 40 },
       { screen: 1, caption: "A firm rate comes back.", callout: { target: "rate", label: "The firm rate", side: "left" }, hold: 24 },
       { screen: 1, caption: "Lock it before it expires.", cursorTo: "lock", click: true, hold: 12 },
-      { screen: 1, caption: "Sign & bind through your Fireblocks wallet.", wallet: { action: "Sign & bind trade", rows: [{ label: "Network", value: NET }, { label: "Pair", value: "USD/INR" }, { label: "Notional", value: "$1,000,000" }, { label: "Rate", value: "84.1970" }, { label: "Function", value: "openAndBind" }] }, hold: 20 },
+      { screen: 1, caption: "Sign & bind in the Fireblocks console.", fireblocks: { action: "Sign & bind trade", rows: [{ label: "Network", value: NET }, { label: "Pair", value: "USD/INR" }, { label: "Notional", value: "$1,000,000" }, { label: "Rate", value: "84.1970" }, { label: "Function", value: "openAndBind" }] }, hold: 20 },
     ],
   },
   {
@@ -178,21 +176,15 @@ export type ResolvedBeat = {
   caption: string;
   len: number;
   loadBar?: { dur: number };
+  whiteFlash?: boolean; // a navigation → flash the content white, then reveal
   cursor?: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame?: number };
   clickPulse?: { rect: Rect; atFrame: number };
   type?: { rect: Rect; value: string; startFrame: number; dur: number; style?: OverlayStyle };
   roll?: { rect: Rect; to: number; startFrame: number; dur: number; prefix?: string; suffix?: string; decimals: number; style?: OverlayStyle };
   callout?: { rect: Rect; label: string; side: Side; appearFrame: number; index: number };
-  wallet?: {
-    action: string;
-    rows: { label: string; value: string }[];
-    startFrame: number;
-    connectFrame: number;
-    approveFrame: number;
-    confirmedFrame: number;
-    leg1: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame: number };
-    leg2: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame: number };
-  };
+  // A Fireblocks-console approval: the browser shows console.fireblocks.io and
+  // the cursor (the normal `cursor` field, single leg) presses Approve.
+  fireblocks?: { action: string; rows: { label: string; value: string }[]; approveFrame: number; confirmedFrame: number };
 };
 
 export type ResolvedStep = { name: string; title: string; durationInFrames: number; beats: ResolvedBeat[] };
@@ -214,24 +206,27 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
       return s ? { ...s, fontFamily: APP_FONT } : undefined;
     };
 
-    const isNav = prevImage !== "" && screen.image !== prevImage;
-    const loadDur = b.loading ? LOAD : isNav ? CLICK_LOAD : 0;
-    prevImage = screen.image;
-
-    // ── Wallet-approval beat: WalletConnect pick → Fireblocks approve. ──
-    if (b.wallet) {
-      const leg1 = { from: prevPoint, to: WALLET_CONNECT_POINT, startFrame: W_LEG1_START, moveDuration: MOVE, clickFrame: W_CONNECT_CLICK };
-      const leg2 = { from: WALLET_CONNECT_POINT, to: WALLET_APPROVE_POINT, startFrame: W_LEG2_START, moveDuration: MOVE, clickFrame: W_APPROVE - W_CONNECT };
-      prevPoint = WALLET_APPROVE_POINT;
+    // ── Fireblocks-console approval: the browser switches to a NEW page. ──
+    if (b.fireblocks) {
+      const cursor = { from: prevPoint, to: FIREBLOCKS_APPROVE_POINT, startFrame: FB_CURSOR, moveDuration: MOVE, clickFrame: FB_APPROVE };
+      prevPoint = FIREBLOCKS_APPROVE_POINT;
+      prevImage = ""; // leaving the app page entirely → the next app screen reloads
       return {
-        image: screen.image,
-        url: raw.url,
+        image: "",
+        url: "console.fireblocks.io",
         caption: b.caption,
-        len: W_CONFIRMED + b.hold,
-        loadBar: loadDur > 0 ? { dur: loadDur } : undefined,
-        wallet: { action: b.wallet.action, rows: b.wallet.rows, startFrame: W_IN, connectFrame: W_CONNECT, approveFrame: W_APPROVE, confirmedFrame: W_CONFIRMED, leg1, leg2 },
+        len: FB_CONFIRMED + b.hold,
+        loadBar: { dur: FB_LOAD },
+        whiteFlash: true,
+        cursor,
+        fireblocks: { action: b.fireblocks.action, rows: b.fireblocks.rows, approveFrame: FB_APPROVE, confirmedFrame: FB_CONFIRMED },
       };
     }
+
+    const isNav = prevImage !== "" && screen.image !== prevImage;
+    const loadDur = b.loading ? LOAD : isNav ? CLICK_LOAD : 0;
+    const isFirstOnPage = b.loading || isNav;
+    prevImage = screen.image;
 
     const a = loadDur;
     const lead = b.cursorTo ? MOVE : 0;
@@ -268,6 +263,7 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
       caption: b.caption,
       len: actionStart + actionDur + b.hold,
       loadBar: loadDur > 0 ? { dur: loadDur } : undefined,
+      whiteFlash: isFirstOnPage,
       cursor,
       clickPulse,
       type,

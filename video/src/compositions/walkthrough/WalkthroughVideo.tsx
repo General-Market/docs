@@ -31,9 +31,10 @@ import { TypingField } from "./TypingField";
 import { NumberRoll } from "./NumberRoll";
 import { NavLoadingBar } from "./NavLoadingBar";
 import { ClickPulse } from "./ClickPulse";
-import { WalletModal } from "./WalletModal";
+import { FireblocksPage, FIREBLOCKS_URL } from "./FireblocksPage";
+import { BrowserChrome } from "./BrowserChrome";
 import { Screen } from "./Screen";
-import { SCREEN_TOP, SCREEN_LEFT, SCREEN_W } from "./geometry";
+import { SCREEN_TOP, SCREEN_LEFT, SCREEN_W, SCREEN_H, WINDOW_LEFT, WINDOW_TOP } from "./geometry";
 import { STEPS, TOTAL_FRAMES, FPS, type ResolvedBeat } from "./walkthroughData";
 
 const GROUND = "#F0F2F4";
@@ -85,7 +86,19 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
     <DotGrid intensity={0.7} speed={0.9} />
     <DotGridVignette intensity={0.24} />
 
-    <Screen image={beat.image} url={beat.url} />
+    {/* The browser content: the app screenshot, or — for an approval — the real
+        Fireblocks console as another page (the address bar reads its URL). */}
+    {beat.fireblocks ? (
+      <BrowserChrome width={SCREEN_W} height={SCREEN_H} left={WINDOW_LEFT} top={WINDOW_TOP} url={FIREBLOCKS_URL}>
+        <FireblocksPage action={beat.fireblocks.action} rows={beat.fireblocks.rows} approveFrame={beat.fireblocks.approveFrame} confirmedFrame={beat.fireblocks.confirmedFrame} />
+      </BrowserChrome>
+    ) : (
+      <Screen image={beat.image} url={beat.url} />
+    )}
+
+    {/* A real page load: the content flashes white, then the page paints in,
+        while the Chrome load bar sweeps. No instant cut. */}
+    {beat.whiteFlash && <WhiteFlash />}
 
     {beat.loadBar && (
       <NavLoadingBar top={SCREEN_TOP} left={SCREEN_LEFT} width={SCREEN_W} startFrame={0} durationFrames={beat.loadBar.dur} />
@@ -126,41 +139,30 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
       />
     )}
 
-    {beat.wallet ? (
-      <>
-        <WalletModal
-          action={beat.wallet.action}
-          rows={beat.wallet.rows}
-          startFrame={beat.wallet.startFrame}
-          connectFrame={beat.wallet.connectFrame}
-          approveFrame={beat.wallet.approveFrame}
-          confirmedFrame={beat.wallet.confirmedFrame}
-        />
-        {/* Two cursor legs, each in its own Sequence so only one pointer is ever
-            mounted: leg 1 picks Fireblocks in the WalletConnect modal, leg 2
-            presses Approve after the modal slides to the Fireblocks panel. */}
-        <Sequence from={0} durationInFrames={beat.wallet.connectFrame} layout="none">
-          <Cursor from={beat.wallet.leg1.from} to={beat.wallet.leg1.to} startFrame={beat.wallet.leg1.startFrame} moveDuration={beat.wallet.leg1.moveDuration} clickFrame={beat.wallet.leg1.clickFrame} />
-        </Sequence>
-        <Sequence from={beat.wallet.connectFrame} layout="none">
-          <Cursor from={beat.wallet.leg2.from} to={beat.wallet.leg2.to} startFrame={beat.wallet.leg2.startFrame} moveDuration={beat.wallet.leg2.moveDuration} clickFrame={beat.wallet.leg2.clickFrame} />
-        </Sequence>
-      </>
-    ) : (
-      beat.cursor && (
-        <Cursor
-          from={beat.cursor.from}
-          to={beat.cursor.to}
-          startFrame={beat.cursor.startFrame}
-          moveDuration={beat.cursor.moveDuration}
-          clickFrame={beat.cursor.clickFrame}
-        />
-      )
+    {beat.cursor && (
+      <Cursor
+        from={beat.cursor.from}
+        to={beat.cursor.to}
+        startFrame={beat.cursor.startFrame}
+        moveDuration={beat.cursor.moveDuration}
+        clickFrame={beat.cursor.clickFrame}
+      />
     )}
 
     <LowerThird index={index} total={total} title={title} caption={beat.caption} />
   </AbsoluteFill>
 );
+
+// A browser page-load: the content area flashes white and the page fades up,
+// like a real navigation — never an instant cut.
+const WhiteFlash: React.FC = () => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(frame, [0, 5, 11], [1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (frame > 11) return null;
+  return (
+    <div style={{ position: "absolute", left: SCREEN_LEFT, top: SCREEN_TOP, width: SCREEN_W, height: SCREEN_H, background: "#ffffff", opacity, pointerEvents: "none", zIndex: 50 }} />
+  );
+};
 
 // ─── Orchestrator ────────────────────────────────────────────────────────────
 
