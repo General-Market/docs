@@ -9,11 +9,17 @@
  * down); after that the whole value holds and the caret hides.
  *
  * It overlays ON TOP of the screenshot's empty field — no background fill — so it
- * is positioned precisely inside the rect (canvas coords), left-aligned with a
- * small left pad, vertically centred. Numerals use Commit Mono so the typed value
- * reads with the app's numeric feel.
+ * sits precisely inside the rect (canvas coords), left-aligned at a fixed origin
+ * (LEFT_PAD, vertically centred). Characters are only appended, never re-laid-out,
+ * so a comma never shoves the value sideways — the reveal stays still while it
+ * grows to the right.
  *
- * Brand: text near-black #1D1D1F by default; mono = Commit Mono.
+ * To read as NATIVE to the screenshot — not pasted on top — pass `style`, the
+ * computed style captured from the real field: its fontFamily / fontSize /
+ * fontWeight / color / letterSpacing render the typed value in the field's own
+ * glyphs. `style` wins; the loose `fontSize`/`color` props are the fallback.
+ *
+ * Brand fallbacks: text near-black #1D1D1F; mono = Commit Mono.
  */
 
 import React from "react";
@@ -34,6 +40,20 @@ export const TypingField: React.FC<{
   fontSize?: number;
   color?: string;
   prefix?: string;
+  /** Override the default left pad (px). Defaults to LEFT_PAD = 30. */
+  padLeft?: number;
+  /**
+   * Computed style captured from the real screenshot field. When present, each
+   * field overrides its loose-prop equivalent so the typed value matches the
+   * field's own text exactly.
+   */
+  style?: {
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: number | string;
+    color?: string;
+    letterSpacing?: string;
+  };
 }> = ({
   rect,
   value,
@@ -42,6 +62,8 @@ export const TypingField: React.FC<{
   fontSize,
   color = NEAR_BLACK,
   prefix = "",
+  padLeft,
+  style,
 }) => {
   const frame = useCurrentFrame();
 
@@ -63,8 +85,14 @@ export const TypingField: React.FC<{
   const blinkOn = frame % BLINK_PERIOD < BLINK_PERIOD / 2;
   const caretVisible = typing && blinkOn;
 
+  // Captured style wins over the loose props; loose props are the fallback.
+  const resolvedFontFamily = style?.fontFamily ?? monoFont;
   // Font size defaults to a comfortable fraction of the field height.
-  const fs = fontSize ?? Math.round(rect.h * 0.52);
+  const fs = style?.fontSize ?? fontSize ?? Math.round(rect.h * 0.52);
+  const resolvedFontWeight = style?.fontWeight ?? 500;
+  const resolvedColor = style?.color ?? color;
+  const resolvedLetterSpacing = style?.letterSpacing;
+  const pad = padLeft ?? LEFT_PAD;
 
   return (
     <div
@@ -76,15 +104,16 @@ export const TypingField: React.FC<{
         height: rect.h,
         display: "flex",
         alignItems: "center",
-        paddingLeft: LEFT_PAD,
+        justifyContent: "flex-start",
+        paddingLeft: pad,
         boxSizing: "border-box",
         pointerEvents: "none",
         zIndex: 8500,
-        fontFamily: monoFont,
+        fontFamily: resolvedFontFamily,
         fontSize: fs,
-        fontWeight: 500,
-        fontVariantNumeric: "tabular-nums",
-        color,
+        fontWeight: resolvedFontWeight,
+        letterSpacing: resolvedLetterSpacing,
+        color: resolvedColor,
         lineHeight: 1,
         whiteSpace: "pre",
         overflow: "hidden",
@@ -100,7 +129,7 @@ export const TypingField: React.FC<{
           width: CARET_W,
           height: fs,
           marginLeft: 1,
-          background: color,
+          background: resolvedColor,
           opacity: caretVisible ? 1 : 0,
         }}
       />

@@ -1,17 +1,20 @@
 /**
  * walkthroughData — the beat timeline the engine plays.
  *
- * A step is a sequence of BEATS, each a real micro-action: the cursor glides to
- * a control, clicks (with a pulse on the control), the screen STATE changes (the
- * screenshot swaps) behind a Chrome page-load bar, a field is typed, a figure
- * rolls, an on-chain action pops a Fireblocks wallet that the cursor approves,
- * and the lower-third caption changes IN SYNC. CHOREO is hand-authored against
- * the captured manifest (walkthrough-video.json: screens + named target rects).
+ * A step is a sequence of BEATS, each a real micro-action: the cursor glides to a
+ * control, clicks (with a pulse on the control), the screen STATE changes (the
+ * screenshot swaps) behind a Chrome page-load bar, a field is typed in the app's
+ * OWN font, a figure rolls (masked with the real background), an on-chain action
+ * pops a WalletConnect→Fireblocks approval the cursor walks through, and the
+ * lower-third caption changes IN SYNC. CHOREO is hand-authored against the
+ * captured manifest (walkthrough-video.json: screens + named target rects +
+ * each target's computed style).
  */
 
 import manifest from "../../../public/walkthrough/taker/walkthrough-video.json";
 import { toCanvas, toCanvasPoint, WINDOW_CENTER, type Rect, type Point } from "./geometry";
-import { WALLET_APPROVE_POINT } from "./WalletModal";
+import { WALLET_APPROVE_POINT, WALLET_CONNECT_POINT } from "./WalletModal";
+import { APP_FONT } from "./appFont";
 
 export type { Rect, Point } from "./geometry";
 export { VIEWPORT } from "./geometry";
@@ -20,11 +23,24 @@ export const FPS = 30;
 
 // ─── Manifest types ──────────────────────────────────────────────────────────
 
-type ManifestScreen = { id: string; image: string; targets: Record<string, Rect> };
+type CapturedStyle = {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  color?: string;
+  letterSpacing?: string;
+  textAlign?: "left" | "right" | "center";
+  background?: string;
+};
+type TargetEntry = Rect & { style?: CapturedStyle };
+type ManifestScreen = { id: string; image: string; targets: Record<string, TargetEntry> };
 type ManifestStep = { name: string; screens: ManifestScreen[] };
 const STEP_BY_NAME: Record<string, ManifestStep> = Object.fromEntries(
   (manifest.steps as ManifestStep[]).map((s) => [s.name, s]),
 );
+
+/** A captured style, with the app face swapped for the loaded Hanken handle. */
+export type OverlayStyle = CapturedStyle;
 
 // ─── Authoring DSL ───────────────────────────────────────────────────────────
 
@@ -33,13 +49,13 @@ type WalletSpec = { action: string; rows: { label: string; value: string }[] };
 type RawBeat = {
   screen: number;
   caption: string;
-  cursorTo?: string; // target name → the cursor destination (and click pulse)
+  cursorTo?: string;
   click?: boolean;
-  type?: { target: string; value: string; prefix?: string };
+  type?: { target: string; value: string };
   roll?: { target: string; to: number; prefix?: string; suffix?: string; decimals?: number };
   callout?: { target: string; label: string; side: Side };
-  wallet?: WalletSpec; // pops a Fireblocks approval; the cursor approves it
-  loading?: boolean; // force a page-load bar (new page)
+  wallet?: WalletSpec;
+  loading?: boolean;
   hold: number;
 };
 type RawStep = { name: string; title: string; url: string; beats: RawBeat[] };
@@ -51,13 +67,18 @@ const CLICK_GAP = 5;
 const AFTER = 8;
 const NOCLICK_GAP = 3;
 const CALLOUT_DELAY = 6;
-const LOAD = 34; // full page-load bar (new route)
-const CLICK_LOAD = 18; // shorter bar on an in-app navigation / state change
+const LOAD = 34;
+const CLICK_LOAD = 18;
 const ROLL = 26;
-const WALLET_IN = 4; // modal slide-in start
-const WALLET_CURSOR = 10; // cursor begins gliding to Approve
-const WALLET_CONFIRM = 26; // confirming → confirmed
 const typeDur = (v: string) => Math.max(18, v.length * 2);
+// Wallet beat timeline (relative to the beat).
+const W_IN = 4; // connect modal appears
+const W_LEG1_START = 8; // cursor begins gliding to the Fireblocks row
+const W_CONNECT_CLICK = W_LEG1_START + MOVE + 4; // pick Fireblocks
+const W_CONNECT = W_CONNECT_CLICK + 8; // phase switch connect → approve
+const W_LEG2_START = 4; // (relative to W_CONNECT) cursor to Approve
+const W_APPROVE = W_CONNECT + W_LEG2_START + MOVE + CLICK_GAP; // press Approve
+const W_CONFIRMED = W_APPROVE + 26;
 
 // ─── The choreography ────────────────────────────────────────────────────────
 
@@ -79,7 +100,7 @@ const CHOREO: RawStep[] = [
     beats: [
       { screen: 0, caption: "Pick the one desk you'll trade with.", loading: true, cursorTo: "select", click: true, hold: 16 },
       { screen: 1, caption: "It moves no money — one on-chain flag.", callout: { target: "noMoney", label: "No funds move", side: "left" }, cursorTo: "confirm", click: true, hold: 14 },
-      { screen: 1, caption: "Approve it in your Fireblocks wallet.", wallet: { action: "Allocate counterparty", rows: [{ label: "Network", value: NET }, { label: "Contract", value: "CRX" }, { label: "Function", value: "preAllocate" }, { label: "Counterparty", value: "Meridian FX" }, { label: "Fee", value: "~$0.00" }] }, hold: 22 },
+      { screen: 1, caption: "Approve it through your Fireblocks wallet.", wallet: { action: "Allocate counterparty", rows: [{ label: "Network", value: NET }, { label: "Contract", value: "CRX" }, { label: "Function", value: "preAllocate" }, { label: "Counterparty", value: "Meridian FX" }, { label: "Fee", value: "~$0.00" }] }, hold: 20 },
       { screen: 2, caption: "Allocated — that desk is now live.", callout: { target: "locked", label: "Your posted margin", side: "bottom" }, hold: 34 },
     ],
   },
@@ -90,8 +111,8 @@ const CHOREO: RawStep[] = [
     beats: [
       { screen: 0, caption: "Start a hedge — what do you owe?", loading: true, cursorTo: "amount", click: true, hold: 10 },
       { screen: 0, caption: "Type the amount you owe.", type: { target: "amount", value: "1,000,000" }, hold: 20 },
-      { screen: 1, caption: "The locked value updates live.", roll: { target: "hero", to: 84315000, prefix: "₹" }, hold: 16 },
-      { screen: 1, caption: "Next.", cursorTo: "next", click: true, hold: 10 },
+      { screen: 1, caption: "Your locked value, live.", callout: { target: "hero", label: "Locked value, live", side: "left" }, hold: 26 },
+      { screen: 1, caption: "Set your settle date next.", cursorTo: "next", click: true, hold: 10 },
     ],
   },
   {
@@ -100,15 +121,7 @@ const CHOREO: RawStep[] = [
     url: "app.crxfx.com/hedge",
     beats: [
       { screen: 0, caption: "Pick when it settles.", cursorTo: "settles", callout: { target: "settles", label: "Your settle date", side: "top" }, hold: 28 },
-      { screen: 0, caption: "Next.", cursorTo: "next", click: true, hold: 10 },
-    ],
-  },
-  {
-    name: "pick-desk",
-    title: "One desk quotes you",
-    url: "app.crxfx.com/hedge",
-    beats: [
-      { screen: 0, caption: "Confirm the desk that quotes you.", cursorTo: "meridian", click: true, callout: { target: "meridian", label: "One desk, directed", side: "top" }, hold: 34 },
+      { screen: 0, caption: "Ask the desk for a firm quote.", cursorTo: "getquote", click: true, hold: 10 },
     ],
   },
   {
@@ -117,9 +130,9 @@ const CHOREO: RawStep[] = [
     url: "app.crxfx.com/hedge",
     beats: [
       { screen: 0, caption: "Your maker is pricing the rate…", hold: 40 },
-      { screen: 1, caption: "A firm rate comes back.", roll: { target: "hero", to: 84197000, prefix: "₹" }, callout: { target: "rate", label: "The firm rate", side: "left" }, hold: 24 },
+      { screen: 1, caption: "A firm rate comes back.", callout: { target: "rate", label: "The firm rate", side: "left" }, hold: 24 },
       { screen: 1, caption: "Lock it before it expires.", cursorTo: "lock", click: true, hold: 12 },
-      { screen: 1, caption: "Sign & bind in your Fireblocks wallet.", wallet: { action: "Sign & bind trade", rows: [{ label: "Network", value: NET }, { label: "Pair", value: "USD/INR" }, { label: "Notional", value: "$1,000,000" }, { label: "Rate", value: "84.1970" }, { label: "Function", value: "openAndBind" }] }, hold: 22 },
+      { screen: 1, caption: "Sign & bind through your Fireblocks wallet.", wallet: { action: "Sign & bind trade", rows: [{ label: "Network", value: NET }, { label: "Pair", value: "USD/INR" }, { label: "Notional", value: "$1,000,000" }, { label: "Rate", value: "84.1970" }, { label: "Function", value: "openAndBind" }] }, hold: 20 },
     ],
   },
   {
@@ -165,12 +178,21 @@ export type ResolvedBeat = {
   caption: string;
   len: number;
   loadBar?: { dur: number };
-  cursor: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame?: number };
+  cursor?: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame?: number };
   clickPulse?: { rect: Rect; atFrame: number };
-  type?: { rect: Rect; value: string; startFrame: number; dur: number; prefix?: string };
-  roll?: { rect: Rect; to: number; startFrame: number; dur: number; prefix?: string; suffix?: string; decimals: number; fontSize: number };
+  type?: { rect: Rect; value: string; startFrame: number; dur: number; style?: OverlayStyle };
+  roll?: { rect: Rect; to: number; startFrame: number; dur: number; prefix?: string; suffix?: string; decimals: number; style?: OverlayStyle };
   callout?: { rect: Rect; label: string; side: Side; appearFrame: number; index: number };
-  wallet?: { action: string; rows: { label: string; value: string }[]; startFrame: number; approveFrame: number; confirmedFrame: number };
+  wallet?: {
+    action: string;
+    rows: { label: string; value: string }[];
+    startFrame: number;
+    connectFrame: number;
+    approveFrame: number;
+    confirmedFrame: number;
+    leg1: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame: number };
+    leg2: { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame: number };
+  };
 };
 
 export type ResolvedStep = { name: string; title: string; durationInFrames: number; beats: ResolvedBeat[] };
@@ -185,27 +207,29 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
     const targets = screen.targets;
     const rectOf = (name: string): Rect => toCanvas(targets[name]);
     const pointOf = (name: string): Point => toCanvasPoint(targets[name]);
+    // Captured style, with the app face swapped for the loaded Hanken handle so
+    // the overlay renders in the same glyphs as the screenshot.
+    const styleOf = (name: string): OverlayStyle | undefined => {
+      const s = targets[name]?.style;
+      return s ? { ...s, fontFamily: APP_FONT } : undefined;
+    };
 
-    // A page-load bar on a forced load, or on any screen change (each click that
-    // navigates / swaps state) — the Chrome bar the user sees on every click.
     const isNav = prevImage !== "" && screen.image !== prevImage;
     const loadDur = b.loading ? LOAD : isNav ? CLICK_LOAD : 0;
     prevImage = screen.image;
 
-    // ── Wallet-approval beat: the cursor glides to Approve and confirms. ──
+    // ── Wallet-approval beat: WalletConnect pick → Fireblocks approve. ──
     if (b.wallet) {
-      const approveFrame = WALLET_CURSOR + MOVE + CLICK_GAP;
-      const confirmedFrame = approveFrame + WALLET_CONFIRM;
-      const cursor = { from: prevPoint, to: WALLET_APPROVE_POINT, startFrame: WALLET_CURSOR, moveDuration: MOVE, clickFrame: approveFrame };
+      const leg1 = { from: prevPoint, to: WALLET_CONNECT_POINT, startFrame: W_LEG1_START, moveDuration: MOVE, clickFrame: W_CONNECT_CLICK };
+      const leg2 = { from: WALLET_CONNECT_POINT, to: WALLET_APPROVE_POINT, startFrame: W_LEG2_START, moveDuration: MOVE, clickFrame: W_APPROVE - W_CONNECT };
       prevPoint = WALLET_APPROVE_POINT;
       return {
         image: screen.image,
         url: raw.url,
         caption: b.caption,
-        len: confirmedFrame + b.hold,
+        len: W_CONFIRMED + b.hold,
         loadBar: loadDur > 0 ? { dur: loadDur } : undefined,
-        cursor,
-        wallet: { action: b.wallet.action, rows: b.wallet.rows, startFrame: WALLET_IN, approveFrame, confirmedFrame },
+        wallet: { action: b.wallet.action, rows: b.wallet.rows, startFrame: W_IN, connectFrame: W_CONNECT, approveFrame: W_APPROVE, confirmedFrame: W_CONFIRMED, leg1, leg2 },
       };
     }
 
@@ -224,13 +248,12 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
     let type: ResolvedBeat["type"];
     if (b.type) {
       const d = typeDur(b.type.value);
-      type = { rect: rectOf(b.type.target), value: b.type.value, startFrame: actionStart, dur: d, prefix: b.type.prefix };
+      type = { rect: rectOf(b.type.target), value: b.type.value, startFrame: actionStart, dur: d, style: styleOf(b.type.target) };
       actionDur = Math.max(actionDur, d);
     }
     let roll: ResolvedBeat["roll"];
     if (b.roll) {
-      const rect = rectOf(b.roll.target);
-      roll = { rect, to: b.roll.to, startFrame: actionStart, dur: ROLL, prefix: b.roll.prefix, suffix: b.roll.suffix, decimals: b.roll.decimals ?? 0, fontSize: Math.round(rect.h * 0.82) };
+      roll = { rect: rectOf(b.roll.target), to: b.roll.to, startFrame: actionStart, dur: ROLL, prefix: b.roll.prefix, suffix: b.roll.suffix, decimals: b.roll.decimals ?? 0, style: styleOf(b.roll.target) };
       actionDur = Math.max(actionDur, ROLL);
     }
     let callout: ResolvedBeat["callout"];

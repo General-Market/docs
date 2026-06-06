@@ -8,13 +8,20 @@
  * startFrame it shows `from`; after the window it shows `to` exactly, so once the
  * roll finishes the overlay matches the screenshot seamlessly and can unmount.
  *
- * It MUST cover the static figure underneath: a solid `bg` rect is painted over
+ * It MUST cover the static figure underneath: a solid mask rect is painted over
  * `rect` expanded by `bgInset` px on every side (a tiny bleed) so no static digits
  * peek out at the edges during the roll, then the rolling number is drawn on top at
- * the exact `rect`. Commit Mono + tabular-nums keep the glyph width stable so the
- * count doesn't jitter, and the value is clamped so it never overshoots `to`.
+ * the exact `rect`. tabular-nums keeps the glyph width stable so the count doesn't
+ * jitter, and the value is clamped so it never overshoots `to`.
  *
- * Brand: text near-black #1D1D1F by default; mono = Commit Mono.
+ * To read as NATIVE to the screenshot — not pasted on top — pass `style`, the
+ * computed style captured from the real element: its fontFamily / fontSize /
+ * fontWeight / color / letterSpacing / textAlign drive the glyphs, and its
+ * `background` becomes the exact mask colour so the patch blends into the card.
+ * `style` always wins; the loose `fontSize`/`color`/`bg`/`align` props remain as
+ * fallbacks for callers that have no captured style.
+ *
+ * Brand fallbacks: text near-black #1D1D1F; mono = Commit Mono; mask = white.
  */
 
 import React from "react";
@@ -42,12 +49,26 @@ export const NumberRoll: React.FC<{
   prefix?: string;
   suffix?: string;
   decimals?: number;
-  fontSize: number;
+  fontSize?: number;
   fontWeight?: number;
   color?: string;
   bg?: string;
   align?: "left" | "center" | "right";
   bgInset?: number;
+  /**
+   * Computed style captured from the real screenshot element. When present, each
+   * field overrides its loose-prop equivalent so the rolling number matches the
+   * card exactly. `background` is the mask colour painted behind the digits.
+   */
+  style?: {
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: number | string;
+    color?: string;
+    letterSpacing?: string;
+    textAlign?: "left" | "right" | "center";
+    background?: string;
+  };
 }> = ({
   rect,
   to,
@@ -63,8 +84,18 @@ export const NumberRoll: React.FC<{
   bg = "#FFFFFF",
   align = "left",
   bgInset = 3,
+  style,
 }) => {
   const frame = useCurrentFrame();
+
+  // Captured style wins over the loose props; loose props are the fallback.
+  const resolvedFontFamily = style?.fontFamily ?? monoFont;
+  const resolvedFontSize = style?.fontSize ?? fontSize ?? 38;
+  const resolvedFontWeight = style?.fontWeight ?? fontWeight;
+  const resolvedColor = style?.color ?? color;
+  const resolvedLetterSpacing = style?.letterSpacing;
+  const resolvedAlign = style?.textAlign ?? align;
+  const resolvedMask = style?.background ?? bg;
 
   const local = frame - startFrame;
   let value: number;
@@ -83,16 +114,16 @@ export const NumberRoll: React.FC<{
   }
 
   const justify =
-    align === "left"
+    resolvedAlign === "left"
       ? "flex-start"
-      : align === "right"
+      : resolvedAlign === "right"
         ? "flex-end"
         : "center";
 
   return (
     <>
-      {/* Mask — bg rect bled out by bgInset on every side so no static digit
-          underneath peeks at the edges during the roll. */}
+      {/* Mask — the card's own background, bled out by bgInset on every side so no
+          static digit underneath peeks at the edges during the roll. */}
       <div
         style={{
           position: "absolute",
@@ -100,13 +131,13 @@ export const NumberRoll: React.FC<{
           top: rect.y - bgInset,
           width: rect.w + bgInset * 2,
           height: rect.h + bgInset * 2,
-          background: bg,
+          background: resolvedMask,
           pointerEvents: "none",
           zIndex: 8500,
         }}
       />
       {/* Rolling number — at the exact rect so it lands where the screenshot's
-          static figure sits. */}
+          static figure sits, rendered in the screenshot's own glyphs. */}
       <div
         style={{
           position: "absolute",
@@ -120,11 +151,13 @@ export const NumberRoll: React.FC<{
           boxSizing: "border-box",
           pointerEvents: "none",
           zIndex: 8501,
-          fontFamily: monoFont,
-          fontSize,
-          fontWeight,
+          fontFamily: resolvedFontFamily,
+          fontSize: resolvedFontSize,
+          fontWeight: resolvedFontWeight,
+          letterSpacing: resolvedLetterSpacing,
           fontVariantNumeric: "tabular-nums",
-          color,
+          color: resolvedColor,
+          textAlign: resolvedAlign,
           lineHeight: 1,
           whiteSpace: "pre",
           overflow: "hidden",

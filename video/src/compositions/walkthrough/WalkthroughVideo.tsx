@@ -102,8 +102,7 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
         prefix={beat.roll.prefix}
         suffix={beat.roll.suffix}
         decimals={beat.roll.decimals}
-        fontSize={beat.roll.fontSize}
-        align="left"
+        style={beat.roll.style}
       />
     )}
 
@@ -113,7 +112,7 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
         value={beat.type.value}
         startFrame={beat.type.startFrame}
         durationFrames={beat.type.dur}
-        prefix={beat.type.prefix}
+        style={beat.type.style}
       />
     )}
 
@@ -127,23 +126,37 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
       />
     )}
 
-    {beat.wallet && (
-      <WalletModal
-        action={beat.wallet.action}
-        rows={beat.wallet.rows}
-        startFrame={beat.wallet.startFrame}
-        approveFrame={beat.wallet.approveFrame}
-        confirmedFrame={beat.wallet.confirmedFrame}
-      />
+    {beat.wallet ? (
+      <>
+        <WalletModal
+          action={beat.wallet.action}
+          rows={beat.wallet.rows}
+          startFrame={beat.wallet.startFrame}
+          connectFrame={beat.wallet.connectFrame}
+          approveFrame={beat.wallet.approveFrame}
+          confirmedFrame={beat.wallet.confirmedFrame}
+        />
+        {/* Two cursor legs, each in its own Sequence so only one pointer is ever
+            mounted: leg 1 picks Fireblocks in the WalletConnect modal, leg 2
+            presses Approve after the modal slides to the Fireblocks panel. */}
+        <Sequence from={0} durationInFrames={beat.wallet.connectFrame} layout="none">
+          <Cursor from={beat.wallet.leg1.from} to={beat.wallet.leg1.to} startFrame={beat.wallet.leg1.startFrame} moveDuration={beat.wallet.leg1.moveDuration} clickFrame={beat.wallet.leg1.clickFrame} />
+        </Sequence>
+        <Sequence from={beat.wallet.connectFrame} layout="none">
+          <Cursor from={beat.wallet.leg2.from} to={beat.wallet.leg2.to} startFrame={beat.wallet.leg2.startFrame} moveDuration={beat.wallet.leg2.moveDuration} clickFrame={beat.wallet.leg2.clickFrame} />
+        </Sequence>
+      </>
+    ) : (
+      beat.cursor && (
+        <Cursor
+          from={beat.cursor.from}
+          to={beat.cursor.to}
+          startFrame={beat.cursor.startFrame}
+          moveDuration={beat.cursor.moveDuration}
+          clickFrame={beat.cursor.clickFrame}
+        />
+      )
     )}
-
-    <Cursor
-      from={beat.cursor.from}
-      to={beat.cursor.to}
-      startFrame={beat.cursor.startFrame}
-      moveDuration={beat.cursor.moveDuration}
-      clickFrame={beat.cursor.clickFrame}
-    />
 
     <LowerThird index={index} total={total} title={title} caption={beat.caption} />
   </AbsoluteFill>
