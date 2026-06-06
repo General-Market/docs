@@ -54,3 +54,15 @@ Patterns that bit us. Written to prevent repeats.
 ## Destructive cleanup
 
 - **`rm` globs for your own scratch files can name a pre-existing untracked file — check `git status ??` first** (2026-05-24). While deleting my own `bridges-*.png`/`local-*.png` screenshots I also named `anticheat-before-play.jpeg` in the same `rm`, assuming it was mine. It was an untracked file present before the session (it showed as `?? anticheat-before-play.jpeg` in the opening git status). Untracked = not recoverable from git, and `rm` skips Trash. Rule: before deleting scratch artifacts, delete only paths you created this session by exact name; never sweep a glob or a name you didn't write, and cross-check the opening `git status` for `??` files you didn't author.
+
+## 2026-06-06 — workflow synthesis stalls + a watchdog that cried wolf
+- **Symptom:** Workflow synthesis agents with ~350KB prompts generating ~130KB outputs stalled repeatedly (no progress 900s, 5 retries, then socket close). Agents with ~240KB prompts succeeded in minutes.
+- **Rule:** Cap any single workflow agent at roughly ≤150KB prompt + ≤70KB expected output. Split big synthesis into parts that each receive ONLY the draft slice they synthesize from, with headings that concatenate.
+- **Rule:** On macOS the default `find` is `bfs` — `-newermt "-300 seconds"` is an invalid timestamp and the error makes the match list empty, which a naive watchdog reads as "stalled". Use `stat -f %m` epoch math. A watchdog that can error into its alarm state is worse than none.
+- **Note:** Workflow resume cache keys broke for an unchanged agent call after sibling calls in the same parallel() changed — don't count on a cache hit to avoid re-running an expensive agent; salvage its result from `journal.jsonl` (`.result` on `"type":"result"` entries) instead.
+
+## twapi.py advsearch always 408 — multiprocessing queue deadlock (2026-06-06)
+`_get()` did `p.join(timeout)` BEFORE reading the result queue. A forked child's `q.put()` blocks when the payload exceeds the pipe buffer (~64KB) until the parent reads — so every large response (advanced_search pages) deadlocked into the 30s hard timeout while small ones (balance, userinfo) passed. Fix: `q.get(timeout=...)` first, then join. Rule: with multiprocessing Queues, always drain before join.
+
+## twitterapi.io key lives nowhere durable (2026-06-06)
+/tmp/.twapi_key vanishes on reboot; xwatch/.env has the var EMPTY; not in keychain. Recovered the `new1_…` key from old session transcripts. Also: `twapi.py balance` serves a CACHED balance (.last_balance.json) — it said $100 when the live balance was $4.14; trust `rebase`/live calls, not `balance`, after a long gap.

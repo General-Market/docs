@@ -84,14 +84,21 @@ def _get(path: str, params: dict | None = None, timeout: int = 30):
     q = ctx.Queue(maxsize=1)
     p = ctx.Process(target=_get_worker, args=(url, key(), timeout, q))
     p.start()
-    p.join(timeout + 5)
-    if p.is_alive():
-        p.terminate()
-        p.join(2)
-        return 408, {"error": f"timeout/network: hard timeout after {timeout}s"}
-    if q.empty():
+    # Read the queue BEFORE joining: a child q.put() of a payload larger than
+    # the pipe buffer blocks until the parent reads, so join-first deadlocks
+    # on any big response (e.g. advanced_search pages).
+    try:
+        result = q.get(timeout=timeout + 5)
+    except Exception:
+        result = None
+    if result is None:
+        if p.is_alive():
+            p.terminate()
+            p.join(2)
+            return 408, {"error": f"timeout/network: hard timeout after {timeout}s"}
         return 408, {"error": "timeout/network: worker exited without response"}
-    return q.get()
+    p.join(2)
+    return result
 
 
 def balance() -> tuple[int, int]:

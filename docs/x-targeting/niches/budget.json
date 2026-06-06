@@ -1,7 +1,7 @@
 {
   "cap_usd": 15.0,
-  "baseline_credits": 10210000,
-  "spent_locked_credits": 0,
+  "baseline_credits": 413982,
+  "spent_locked_credits": 9796018,
   "started": "2026-06-05T00:00:00Z",
   "note": "Project budget for niche-research. twapi.py enforces. After a top-up run: python3 twapi.py rebase"
 }
