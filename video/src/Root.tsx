@@ -152,6 +152,8 @@ import { financeChartsReelMeta } from "./compositions/finance-charts/FinanceChar
 import { financeChartsCompareMeta } from "./compositions/finance-charts/FinanceChartsCompare";
 import { morphoCuratorsMeta } from "./compositions/morpho-curators/MorphoCuratorsComposition";
 import { flowMetas, winnersMetas } from "./compositions/defi-flows/datasets";
+import { walkthroughTakerMeta } from "./compositions/walkthrough/WalkthroughVideo";
+import { TOTAL_FRAMES as WALKTHROUGH_TAKER_FRAMES } from "./compositions/walkthrough/walkthroughData";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -200,6 +202,17 @@ export const RemotionRoot: React.FC = () => {
         fps={tierListReelMeta.fps}
         width={tierListReelMeta.width}
         height={tierListReelMeta.height}
+      />
+      <Composition
+        id={walkthroughTakerMeta.id}
+        component={walkthroughTakerMeta.component}
+        durationInFrames={walkthroughTakerMeta.durationInFrames}
+        fps={walkthroughTakerMeta.fps}
+        width={walkthroughTakerMeta.width}
+        height={walkthroughTakerMeta.height}
+        calculateMetadata={async () => ({
+          durationInFrames: WALKTHROUGH_TAKER_FRAMES,
+        })}
       />
       <Folder name="Article-2">
         <Composition
