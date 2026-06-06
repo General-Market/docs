@@ -20,6 +20,8 @@ import React from "react";
 import {
   AbsoluteFill,
   Sequence,
+  Img as RemImg,
+  staticFile,
   interpolate,
   useCurrentFrame,
 } from "remotion";
@@ -28,14 +30,18 @@ import { DotGrid, DotGridVignette } from "../anticheat/DotGrid";
 import { Cursor } from "./Cursor";
 import { Callout } from "./Callout";
 import { TypingField } from "./TypingField";
-import { NumberRoll } from "./NumberRoll";
 import { NavLoadingBar } from "./NavLoadingBar";
 import { ClickPulse } from "./ClickPulse";
 import { FireblocksPage, FIREBLOCKS_URL } from "./FireblocksPage";
-import { BrowserChrome } from "./BrowserChrome";
-import { Screen } from "./Screen";
+import { BrowserChrome, type ChromeTab } from "./BrowserChrome";
 import { SCREEN_TOP, SCREEN_LEFT, SCREEN_W, SCREEN_H, WINDOW_LEFT, WINDOW_TOP } from "./geometry";
 import { STEPS, TOTAL_FRAMES, FPS, type ResolvedBeat } from "./walkthroughData";
+
+// The two browser tabs, drawn on every beat; the active one swaps the page.
+const TABS = (active: 0 | 1): ChromeTab[] => [
+  { title: "CRX — app.crxfx.com", active: active === 0, favicon: "#2D5BFF", url: "app.crxfx.com" },
+  { title: "Fireblocks Console", active: active === 1, favicon: "#F5A623", url: FIREBLOCKS_URL },
+];
 
 const GROUND = "#F0F2F4";
 const INK = "#1D1D1F";
@@ -86,38 +92,31 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
     <DotGrid intensity={0.7} speed={0.9} />
     <DotGridVignette intensity={0.24} />
 
-    {/* The browser content: the app screenshot, or — for an approval — the real
-        Fireblocks console as another page (the address bar reads its URL). */}
-    {beat.fireblocks ? (
-      <BrowserChrome width={SCREEN_W} height={SCREEN_H} left={WINDOW_LEFT} top={WINDOW_TOP} url={FIREBLOCKS_URL}>
+    {/* The browser, with two tabs (CRX + Fireblocks). The content is the app
+        screenshot, or — once the Fireblocks tab is active — the real console. */}
+    <BrowserChrome
+      width={SCREEN_W}
+      height={SCREEN_H}
+      left={WINDOW_LEFT}
+      top={WINDOW_TOP}
+      tabs={TABS(beat.activeTab)}
+      activeTab={beat.activeTab}
+    >
+      {beat.fireblocks ? (
         <FireblocksPage action={beat.fireblocks.action} rows={beat.fireblocks.rows} approveFrame={beat.fireblocks.approveFrame} confirmedFrame={beat.fireblocks.confirmedFrame} />
-      </BrowserChrome>
-    ) : (
-      <Screen image={beat.image} url={beat.url} />
-    )}
+      ) : (
+        <ScreenImg image={beat.image} />
+      )}
+    </BrowserChrome>
 
-    {/* A real page load: the content flashes white, then the page paints in,
-        while the Chrome load bar sweeps. No instant cut. */}
-    {beat.whiteFlash && <WhiteFlash />}
-
+    {/* The page-load: the content flashes white and paints in, while the Chrome
+        load bar sweeps — timed to start when the page actually swaps. */}
+    {beat.whiteFlash && <WhiteFlash at={beat.whiteFlash.at} />}
     {beat.loadBar && (
-      <NavLoadingBar top={SCREEN_TOP} left={SCREEN_LEFT} width={SCREEN_W} startFrame={0} durationFrames={beat.loadBar.dur} />
+      <NavLoadingBar top={SCREEN_TOP} left={SCREEN_LEFT} width={SCREEN_W} startFrame={beat.loadBar.at} durationFrames={beat.loadBar.dur} />
     )}
 
     {beat.clickPulse && <ClickPulse rect={beat.clickPulse.rect} atFrame={beat.clickPulse.atFrame} />}
-
-    {beat.roll && (
-      <NumberRoll
-        rect={beat.roll.rect}
-        to={beat.roll.to}
-        startFrame={beat.roll.startFrame}
-        durationFrames={beat.roll.dur}
-        prefix={beat.roll.prefix}
-        suffix={beat.roll.suffix}
-        decimals={beat.roll.decimals}
-        style={beat.roll.style}
-      />
-    )}
 
     {beat.type && (
       <TypingField
@@ -139,26 +138,40 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
       />
     )}
 
+    {/* The tab-switch leg (its own pointer), then the main cursor leg. Two legs,
+        one pointer at a time, so the hand visibly clicks the tab then the
+        control — the "click between each" that makes the switch feel real. */}
+    {beat.tabLeg && (
+      <Sequence from={0} durationInFrames={beat.cursor ? beat.cursor.startFrame : beat.len} layout="none">
+        <Cursor from={beat.tabLeg.from} to={beat.tabLeg.to} startFrame={beat.tabLeg.startFrame} moveDuration={beat.tabLeg.moveDuration} clickFrame={beat.tabLeg.clickFrame} />
+      </Sequence>
+    )}
     {beat.cursor && (
-      <Cursor
-        from={beat.cursor.from}
-        to={beat.cursor.to}
-        startFrame={beat.cursor.startFrame}
-        moveDuration={beat.cursor.moveDuration}
-        clickFrame={beat.cursor.clickFrame}
-      />
+      <Sequence from={beat.tabLeg ? beat.cursor.startFrame : 0} layout="none">
+        <Cursor
+          from={beat.cursor.from}
+          to={beat.cursor.to}
+          startFrame={beat.tabLeg ? 0 : beat.cursor.startFrame}
+          moveDuration={beat.cursor.moveDuration}
+          clickFrame={beat.cursor.clickFrame != null ? (beat.tabLeg ? beat.cursor.clickFrame - beat.cursor.startFrame : beat.cursor.clickFrame) : undefined}
+        />
+      </Sequence>
     )}
 
     <LowerThird index={index} total={total} title={title} caption={beat.caption} />
   </AbsoluteFill>
 );
 
-// A browser page-load: the content area flashes white and the page fades up,
-// like a real navigation — never an instant cut.
-const WhiteFlash: React.FC = () => {
+// The screenshot, sized to the browser content area.
+const ScreenImg: React.FC<{ image: string }> = ({ image }) => (
+  <RemImg src={staticFile(image)} style={{ width: SCREEN_W, height: SCREEN_H, display: "block", objectFit: "cover" }} />
+);
+
+// A browser page-load veil over the content area, starting at `at`.
+const WhiteFlash: React.FC<{ at: number }> = ({ at }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 5, 11], [1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  if (frame > 11) return null;
+  const opacity = interpolate(frame, [at, at + 5, at + 11], [1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (frame < at || frame > at + 11) return null;
   return (
     <div style={{ position: "absolute", left: SCREEN_LEFT, top: SCREEN_TOP, width: SCREEN_W, height: SCREEN_H, background: "#ffffff", opacity, pointerEvents: "none", zIndex: 50 }} />
   );
