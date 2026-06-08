@@ -19,6 +19,15 @@
  * fontWeight / color / letterSpacing render the typed value in the field's own
  * glyphs. `style` wins; the loose `fontSize`/`color` props are the fallback.
  *
+ * A real input field shows a placeholder (a faint "0", "0.00", "Amount…") while
+ * empty. The screenshot baked that placeholder in — so when we type over it the
+ * placeholder would peek out beside the real value. NEVER show a placeholder
+ * above the real value: when the captured `style.background` is known, we paint
+ * a mask of the field's own background from the text origin to the right edge,
+ * covering the baked placeholder while leaving any fixed prefix glyph (a leading
+ * "$" sitting left of the pad) untouched. The mask appears the instant typing
+ * begins, so the field reads exactly as the user's real keystrokes would.
+ *
  * Brand fallbacks: text near-black #1D1D1F; mono = Commit Mono.
  */
 
@@ -28,7 +37,11 @@ import { monoFont } from "../../common/fonts";
 
 const NEAR_BLACK = "#1D1D1F";
 
-const LEFT_PAD = 30; // px the text sits in — clears a leading "$" glyph in the field
+// Where the typed value's left edge sits inside the captured field rect. The
+// manifest rect is the field's text box, and its placeholder ("0", "0.00", …)
+// is left-aligned at the rect's left edge — so the real value must start there
+// too, replacing the placeholder rather than indenting past it.
+const LEFT_PAD = 2;
 const CARET_W = 2; // px caret bar width
 const BLINK_PERIOD = 30; // frames for one full blink cycle (~2/sec at 60fps)
 
@@ -53,6 +66,8 @@ export const TypingField: React.FC<{
     fontWeight?: number | string;
     color?: string;
     letterSpacing?: string;
+    /** The field's own background — painted as a mask over the baked placeholder. */
+    background?: string;
   };
 }> = ({
   rect,
@@ -94,45 +109,69 @@ export const TypingField: React.FC<{
   const resolvedLetterSpacing = style?.letterSpacing;
   const pad = padLeft ?? LEFT_PAD;
 
+  // The field's baked-in placeholder must never show beside the real value. Once
+  // typing has begun, mask the WHOLE field rect with the field's own background,
+  // then render the real value on top — the placeholder cannot peek out at any
+  // edge. With no captured background we can't mask cleanly, so the fallback is
+  // no mask (the field is assumed empty).
+  const maskBg = style?.background;
+  const showMask = maskBg != null && local > 0;
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: rect.x,
-        top: rect.y,
-        width: rect.w,
-        height: rect.h,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        paddingLeft: pad,
-        boxSizing: "border-box",
-        pointerEvents: "none",
-        zIndex: 8500,
-        fontFamily: resolvedFontFamily,
-        fontSize: fs,
-        fontWeight: resolvedFontWeight,
-        letterSpacing: resolvedLetterSpacing,
-        color: resolvedColor,
-        lineHeight: 1,
-        whiteSpace: "pre",
-        overflow: "hidden",
-      }}
-    >
-      <span>
-        {prefix}
-        {shown}
-      </span>
-      <span
+    <>
+      {showMask && (
+        <div
+          style={{
+            position: "absolute",
+            left: rect.x,
+            top: rect.y,
+            width: rect.w,
+            height: rect.h,
+            background: maskBg,
+            pointerEvents: "none",
+            zIndex: 8499,
+          }}
+        />
+      )}
+      <div
         style={{
-          display: "inline-block",
-          width: CARET_W,
-          height: fs,
-          marginLeft: 1,
-          background: resolvedColor,
-          opacity: caretVisible ? 1 : 0,
+          position: "absolute",
+          left: rect.x,
+          top: rect.y,
+          width: rect.w,
+          height: rect.h,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingLeft: pad,
+          boxSizing: "border-box",
+          pointerEvents: "none",
+          zIndex: 8500,
+          fontFamily: resolvedFontFamily,
+          fontSize: fs,
+          fontWeight: resolvedFontWeight,
+          letterSpacing: resolvedLetterSpacing,
+          color: resolvedColor,
+          lineHeight: 1,
+          whiteSpace: "pre",
+          overflow: "hidden",
         }}
-      />
-    </div>
+      >
+        <span>
+          {prefix}
+          {shown}
+        </span>
+        <span
+          style={{
+            display: "inline-block",
+            width: CARET_W,
+            height: fs,
+            marginLeft: 1,
+            background: resolvedColor,
+            opacity: caretVisible ? 1 : 0,
+          }}
+        />
+      </div>
+    </>
   );
 };

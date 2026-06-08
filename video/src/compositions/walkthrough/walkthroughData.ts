@@ -2,18 +2,33 @@
  * walkthroughData — the beat timeline the engine plays.
  *
  * A step is a sequence of BEATS, each a real micro-action: the cursor glides to a
- * control, presses it (a click pulse + cursor dip), and the screen STATE changes
- * behind a white page-load. The browser carries two TABS — CRX and Fireblocks —
- * and an on-chain action is approved by clicking the Fireblocks tab, approving in
- * the real console, then clicking back to the CRX tab. A field types in the app's
- * own font; the lower-third caption changes IN SYNC with each action. CHOREO is
- * hand-authored against the captured manifest (walkthrough-video.json: screens +
- * named target rects + each target's computed style).
+ * control, presses it (a click pulse + cursor dip), and the page updates. Four
+ * invariants the engine enforces so a beat can never read wrong:
+ *
+ *   1. AFFORDANCE BEFORE INTERACTION. A beat's callout (the ring + explanation)
+ *      springs in as soon as the page is ready — BEFORE the cursor moves to act
+ *      on the control, never after the click.
+ *   2. THE NEXT PAGE IS RESOLVED BEFORE THE CLICK. A tab switch is a swap from
+ *      one fully-resolved PageView to another at a known frame; before the click
+ *      the previous page shows, after it the destination — the click can never
+ *      land on a page that is already its own destination (the CRX↔Fireblocks bug).
+ *   3. NAV vs IN-PAGE. Only a `nav` beat (or returning from the Fireblocks tab)
+ *      reloads — white veil + load bar. A screenshot changing is NOT inferred as
+ *      a reload: picking a calendar day or validating a field updates in place.
+ *   4. REAL PROPS, NO PLACEHOLDER. A typed field masks its baked-in placeholder
+ *      and renders the real value at the field's own text origin (TypingField).
+ *
+ * The browser carries two TABS — CRX and Fireblocks; an on-chain action is
+ * approved by clicking the Fireblocks tab, approving in the real console, then
+ * clicking back to the CRX tab. A field types in the app's own font; the
+ * lower-third caption changes IN SYNC with each action. CHOREO is hand-authored
+ * against the captured manifest (walkthrough-video.json: screens + named target
+ * rects + each target's computed style).
  */
 
 import manifest from "../../../public/walkthrough/taker/walkthrough-video.json";
 import { toCanvas, toCanvasPoint, WINDOW_CENTER, type Rect, type Point } from "./geometry";
-import { FIREBLOCKS_APPROVE_POINT } from "./FireblocksPage";
+import { FIREBLOCKS_APPROVE_POINT, FIREBLOCKS_URL as FB_URL } from "./FireblocksPage";
 import { tabCenter } from "./BrowserChrome";
 import { APP_FONT } from "./appFont";
 
@@ -58,7 +73,14 @@ type RawBeat = {
   type?: { target: string; value: string };
   callout?: { target: string; label: string; side: Side };
   fireblocks?: WalletSpec; // click the Fireblocks tab, approve in the console
-  loading?: boolean;
+  /**
+   * This beat NAVIGATES to a new page (a real reload): white page-load veil +
+   * sweeping load bar. Omit it for an IN-PAGE action — picking a calendar day,
+   * a field validating, a quote arriving — where the screenshot updates but the
+   * page does NOT reload. The engine never infers a reload from a screenshot
+   * change; only `nav` (or returning from the Fireblocks tab) reloads.
+   */
+  nav?: boolean;
   hold: number;
 };
 type RawStep = { name: string; title: string; url: string; beats: RawBeat[] };
@@ -69,16 +91,17 @@ const MOVE = 22; // cursor glide to a control (a touch quicker = snappier)
 const CLICK_GAP = 4; // press lands this soon after arrival
 const SETTLE = 7; // beat holds this long after the press before the cut
 const WHITE = 12; // white page-load veil
-const TAB_HOLD = 6; // beat holds after a tab click before the page swaps
 const CALLOUT_DELAY = 5;
-const ROLL_NA = 0;
 const typeDur = (v: string) => Math.max(16, v.length * 2);
-// Fireblocks approval timeline (within the fireblocks beat).
-const FB_TAB_CLICK = MOVE + CLICK_GAP; // click the Fireblocks tab
-const FB_PAGE = FB_TAB_CLICK + TAB_HOLD; // console paints (white-load)
-const FB_APPROVE = FB_PAGE + WHITE + MOVE + CLICK_GAP; // glide to Approve & press
-const FB_CONFIRMED = FB_APPROVE + 24;
-void ROLL_NA;
+// Fireblocks approval timeline (frames within the fireblocks beat). The tab is
+// clicked, and the page SWAPS at that exact frame — the white-load veils the
+// swap, then the cursor glides to Approve. (See TAB_SWAP in the resolver: the
+// tab click and the page swap are the same instant, so the click can never land
+// on a page that is already the destination.)
+const FB_TAB_CLICK = MOVE + CLICK_GAP; // click the Fireblocks tab → page swaps here
+const FB_APPROVE_MOVE = FB_TAB_CLICK + WHITE; // after the console paints, glide to Approve
+const FB_APPROVE = FB_APPROVE_MOVE + MOVE + CLICK_GAP; // press Approve
+const FB_CONFIRMED = FB_APPROVE + 24; // the button flips green
 
 // ─── The choreography ────────────────────────────────────────────────────────
 
@@ -89,7 +112,7 @@ const CHOREO: RawStep[] = [
     title: "Fund your balance",
     url: "app.crxfx.com/collateral",
     beats: [
-      { screen: 0, caption: "Your collateral — ready to post as margin.", loading: true, callout: { target: "total", label: "Posted, haircut-adjusted", side: "bottom" }, hold: 40 },
+      { screen: 0, caption: "Your collateral — ready to post as margin.", nav: true, callout: { target: "total", label: "Posted, haircut-adjusted", side: "bottom" }, hold: 40 },
       { screen: 0, caption: "Deposit adds more, anytime.", cursorTo: "deposit", click: true, hold: 14 },
     ],
   },
@@ -98,10 +121,10 @@ const CHOREO: RawStep[] = [
     title: "Pick your counterparty",
     url: "app.crxfx.com/counterparties",
     beats: [
-      { screen: 0, caption: "Pick the one desk you'll trade with.", loading: true, cursorTo: "select", click: true, hold: 14 },
+      { screen: 0, caption: "Pick the one desk you'll trade with.", nav: true, cursorTo: "select", click: true, hold: 14 },
       { screen: 1, caption: "It moves no money — one on-chain flag.", callout: { target: "noMoney", label: "No funds move", side: "left" }, cursorTo: "confirm", click: true, hold: 14 },
       { screen: 1, caption: "Approve it in your Fireblocks console.", fireblocks: { action: "Allocate counterparty", rows: [{ label: "Network", value: NET }, { label: "Contract", value: "CRX" }, { label: "Function", value: "preAllocate" }, { label: "Counterparty", value: "Meridian FX" }, { label: "Fee", value: "~$0.00" }] }, hold: 18 },
-      { screen: 2, caption: "Allocated — that desk is now live.", loading: true, callout: { target: "locked", label: "Your posted margin", side: "bottom" }, hold: 32 },
+      { screen: 2, caption: "Allocated — that desk is now live.", nav: true, callout: { target: "locked", label: "Your posted margin", side: "bottom" }, hold: 32 },
     ],
   },
   {
@@ -109,7 +132,7 @@ const CHOREO: RawStep[] = [
     title: "Say what to hedge",
     url: "app.crxfx.com/new-hedge",
     beats: [
-      { screen: 0, caption: "Start a hedge — what do you owe?", loading: true, cursorTo: "amount", click: true, hold: 8 },
+      { screen: 0, caption: "Start a hedge — what do you owe?", nav: true, cursorTo: "amount", click: true, hold: 8 },
       { screen: 0, caption: "Type the amount you owe.", type: { target: "amount", value: "1,000,000" }, hold: 18 },
       { screen: 1, caption: "Your locked value, live.", callout: { target: "hero", label: "Locked value, live", side: "left" }, hold: 24 },
       { screen: 1, caption: "Now set the settle date.", cursorTo: "next", click: true, hold: 8 },
@@ -120,7 +143,7 @@ const CHOREO: RawStep[] = [
     title: "Choose the settle date",
     url: "app.crxfx.com/new-hedge",
     beats: [
-      { screen: 0, caption: "Pick the day it settles.", loading: true, cursorTo: "day", click: true, hold: 10 },
+      { screen: 0, caption: "Pick the day it settles.", nav: true, cursorTo: "day", click: true, hold: 10 },
       { screen: 1, caption: "Settles June 24.", callout: { target: "settles", label: "Your settle date", side: "top" }, hold: 22 },
       { screen: 1, caption: "Ask the desk for a firm quote.", cursorTo: "getquote", click: true, hold: 8 },
     ],
@@ -130,7 +153,7 @@ const CHOREO: RawStep[] = [
     title: "Get a firm quote",
     url: "app.crxfx.com/new-hedge",
     beats: [
-      { screen: 0, caption: "Your maker is pricing the rate…", loading: true, hold: 36 },
+      { screen: 0, caption: "Your maker is pricing the rate…", nav: true, hold: 36 },
       { screen: 1, caption: "A firm rate comes back.", callout: { target: "rate", label: "The firm rate", side: "left" }, hold: 22 },
       { screen: 1, caption: "Lock it before it expires.", cursorTo: "lock", click: true, hold: 10 },
       { screen: 1, caption: "Sign & bind in your Fireblocks console.", fireblocks: { action: "Sign & bind trade", rows: [{ label: "Network", value: NET }, { label: "Pair", value: "USD/INR" }, { label: "Notional", value: "$1,000,000" }, { label: "Rate", value: "84.1970" }, { label: "Function", value: "openAndBind" }] }, hold: 18 },
@@ -141,7 +164,7 @@ const CHOREO: RawStep[] = [
     title: "Your rate is locked",
     url: "app.crxfx.com/new-hedge",
     beats: [
-      { screen: 0, caption: "Locked — settles in USDC, whatever the market does.", loading: true, cursorTo: "hero", callout: { target: "hero", label: "Locked", side: "left" }, hold: 48 },
+      { screen: 0, caption: "Locked — settles in USDC, whatever the market does.", nav: true, cursorTo: "hero", callout: { target: "hero", label: "Locked", side: "left" }, hold: 48 },
     ],
   },
   {
@@ -149,7 +172,7 @@ const CHOREO: RawStep[] = [
     title: "Watch the position",
     url: "app.crxfx.com/positions",
     beats: [
-      { screen: 0, caption: "Watch it live — locked rate vs the mark.", loading: true, callout: { target: "pnl", label: "Live P&L", side: "left" }, hold: 26 },
+      { screen: 0, caption: "Watch it live — locked rate vs the mark.", nav: true, callout: { target: "pnl", label: "Live P&L", side: "left" }, hold: 26 },
       { screen: 0, caption: "Margin health, live.", cursorTo: "health", callout: { target: "health", label: "Healthy", side: "bottom" }, hold: 28 },
     ],
   },
@@ -158,7 +181,7 @@ const CHOREO: RawStep[] = [
     title: "It settles itself",
     url: "app.crxfx.com/activity",
     beats: [
-      { screen: 0, caption: "At maturity it settles itself.", loading: true, callout: { target: "settled", label: "Settled at the fixing", side: "right" }, hold: 44 },
+      { screen: 0, caption: "At maturity it settles itself.", nav: true, callout: { target: "settled", label: "Settled at the fixing", side: "right" }, hold: 44 },
     ],
   },
 ];
@@ -167,12 +190,27 @@ const CHOREO: RawStep[] = [
 
 type Leg = { from: Point; to: Point; startFrame: number; moveDuration: number; clickFrame?: number };
 
+/**
+ * What the browser's content area shows. The engine resolves the WHOLE page —
+ * a CRX screenshot or the live Fireblocks console — ahead of time, so it is
+ * never inferred at render. A tab switch is a swap from one resolved PageView to
+ * another at a known frame; the next page is already chosen, so a click can
+ * never land on a page that is already its own destination.
+ */
+export type PageView =
+  | { kind: "image"; image: string }
+  | { kind: "fireblocks"; action: string; rows: { label: string; value: string }[]; approveFrame: number; confirmedFrame: number };
+
+/** A page+tab swap that happens at `atFrame` — before it, `beforeView`/`beforeTab` show. */
+export type PageSwitch = { atFrame: number; beforeView: PageView; beforeTab: 0 | 1 };
+
 export type ResolvedBeat = {
-  image: string;
+  view: PageView; // the page after any switch (the beat's resting page)
   url: string;
   caption: string;
   len: number;
-  activeTab: 0 | 1; // which browser tab is in front (0 CRX, 1 Fireblocks)
+  activeTab: 0 | 1; // tab in front after any switch (0 CRX, 1 Fireblocks)
+  pageSwitch?: PageSwitch; // present when this beat flips tabs mid-beat
   loadBar?: { dur: number; at: number };
   whiteFlash?: { at: number };
   tabLeg?: Leg; // a first cursor leg that clicks a tab to switch pages
@@ -180,14 +218,14 @@ export type ResolvedBeat = {
   clickPulse?: { rect: Rect; atFrame: number };
   type?: { rect: Rect; value: string; startFrame: number; dur: number; style?: OverlayStyle };
   callout?: { rect: Rect; label: string; side: Side; appearFrame: number; index: number };
-  fireblocks?: { action: string; rows: { label: string; value: string }[]; approveFrame: number; confirmedFrame: number };
 };
 
 export type ResolvedStep = { name: string; title: string; durationInFrames: number; beats: ResolvedBeat[] };
 
 let prevPoint: Point = WINDOW_CENTER;
-let prevImage = "";
+let prevImage = ""; // the CRX page currently loaded (the one we'd leave on a tab switch)
 let prevTab: 0 | 1 = 0;
+let prevWallet: WalletSpec = { action: "", rows: [] }; // the last Fireblocks approval, for the tab-back view
 
 const resolveStep = (raw: RawStep): ResolvedStep => {
   const m = STEP_BY_NAME[raw.name];
@@ -202,41 +240,58 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
     };
 
     // ── Fireblocks approval: click the Fireblocks tab → console → Approve. ──
+    // The page swaps from the CRX page we were on to the console AT the tab
+    // click, so the previous page is CRX and the click lands on Fireblocks.
     if (b.fireblocks) {
+      const leftCrxImage = prevImage; // the CRX page in front before the switch
       const tabLeg: Leg = { from: prevPoint, to: FB_TAB, startFrame: 0, moveDuration: MOVE, clickFrame: FB_TAB_CLICK };
-      const cursor: Leg = { from: FB_TAB, to: FIREBLOCKS_APPROVE_POINT, startFrame: FB_PAGE + WHITE, moveDuration: MOVE, clickFrame: FB_APPROVE };
+      const cursor: Leg = { from: FB_TAB, to: FIREBLOCKS_APPROVE_POINT, startFrame: FB_APPROVE_MOVE, moveDuration: MOVE, clickFrame: FB_APPROVE };
+      const view: PageView = { kind: "fireblocks", action: b.fireblocks.action, rows: b.fireblocks.rows, approveFrame: FB_APPROVE, confirmedFrame: FB_CONFIRMED };
       prevPoint = FIREBLOCKS_APPROVE_POINT;
       prevImage = ""; // the next CRX page reloads after we tab back
       prevTab = 1;
+      prevWallet = { action: b.fireblocks.action, rows: b.fireblocks.rows };
       return {
-        image: "",
-        url: "console.fireblocks.io",
+        view,
+        url: FB_URL,
         caption: b.caption,
         len: FB_CONFIRMED + b.hold,
         activeTab: 1,
-        whiteFlash: { at: FB_PAGE },
-        loadBar: { dur: WHITE + 18, at: FB_PAGE },
+        // Before the tab click: still the CRX page on the CRX tab.
+        pageSwitch: {
+          atFrame: FB_TAB_CLICK,
+          beforeView: leftCrxImage ? { kind: "image", image: leftCrxImage } : view,
+          beforeTab: 0,
+        },
+        whiteFlash: { at: FB_TAB_CLICK },
+        loadBar: { dur: WHITE + 18, at: FB_TAB_CLICK },
         tabLeg,
         cursor,
-        fireblocks: { action: b.fireblocks.action, rows: b.fireblocks.rows, approveFrame: FB_APPROVE, confirmedFrame: FB_CONFIRMED },
       };
     }
 
-    // Returning to the CRX tab after a Fireblocks approval is a real click too.
+    // Returning to the CRX tab after a Fireblocks approval is a real click too:
+    // the page swaps from the (confirmed) console back to the CRX page AT the
+    // tab click. The console we left shows in its confirmed state until then.
     const needTabBack = prevTab === 1;
     const tabBack: Leg | undefined = needTabBack
       ? { from: prevPoint, to: CRX_TAB, startFrame: 0, moveDuration: MOVE, clickFrame: FB_TAB_CLICK }
       : undefined;
-    const base = needTabBack ? FB_TAB_CLICK + TAB_HOLD : 0; // page work begins after the tab-back
+    // A reload happens ONLY on a navigation (`nav`) or a tab-back — NOT because
+    // the screenshot changed. An in-page action swaps the screenshot with no veil.
+    const showLoad = !!b.nav || needTabBack;
+    // The swap/veil instant: a tab-back swaps at the tab click; a fresh nav at 0.
+    const swapAt = needTabBack ? FB_TAB_CLICK : 0;
 
-    const isNav = prevImage !== "" && screen.image !== prevImage;
-    const showLoad = b.loading || isNav || needTabBack;
+    const view: PageView = { kind: "image", image: screen.image };
+    const pageSwitch: PageSwitch | undefined = needTabBack
+      ? { atFrame: FB_TAB_CLICK, beforeView: { kind: "fireblocks", action: prevWallet.action, rows: prevWallet.rows, approveFrame: -1, confirmedFrame: -1 }, beforeTab: 1 }
+      : undefined;
+
     prevImage = screen.image;
     prevTab = 0;
 
-    const flashAt = base;
-    const loadStart = base;
-    const a = base + (showLoad ? WHITE : 0); // action begins after the white-load
+    const a = swapAt + (showLoad ? WHITE : 0); // the page is ready (action begins) after the veil
     const lead = b.cursorTo ? MOVE : 0;
     const clickFrame = b.click ? a + lead + CLICK_GAP : undefined;
     const actionStart = a + lead + (b.click ? SETTLE : 0);
@@ -257,18 +312,22 @@ const resolveStep = (raw: RawStep): ResolvedStep => {
     }
     let callout: ResolvedBeat["callout"];
     if (b.callout) {
-      callout = { rect: rectOf(b.callout.target), label: b.callout.label, side: b.callout.side, appearFrame: actionStart + CALLOUT_DELAY, index: bi + 1 };
+      // The affordance/explanation appears as soon as the page is ready — BEFORE
+      // the cursor moves to act on it — so the viewer is shown what the control is
+      // before it is clicked, never after.
+      callout = { rect: rectOf(b.callout.target), label: b.callout.label, side: b.callout.side, appearFrame: a + CALLOUT_DELAY, index: bi + 1 };
       actionDur = Math.max(actionDur, 20);
     }
 
     return {
-      image: screen.image,
+      view,
       url: raw.url,
       caption: b.caption,
       len: actionStart + actionDur + b.hold,
       activeTab: 0,
-      whiteFlash: showLoad ? { at: flashAt } : undefined,
-      loadBar: showLoad ? { dur: WHITE + 14, at: loadStart } : undefined,
+      pageSwitch,
+      whiteFlash: showLoad ? { at: swapAt } : undefined,
+      loadBar: showLoad ? { dur: WHITE + 14, at: swapAt } : undefined,
       tabLeg: tabBack,
       cursor,
       clickPulse,

@@ -35,7 +35,7 @@ import { ClickPulse } from "./ClickPulse";
 import { FireblocksPage, FIREBLOCKS_URL } from "./FireblocksPage";
 import { BrowserChrome, type ChromeTab } from "./BrowserChrome";
 import { SCREEN_TOP, SCREEN_LEFT, SCREEN_W, SCREEN_H, WINDOW_LEFT, WINDOW_TOP } from "./geometry";
-import { STEPS, TOTAL_FRAMES, FPS, type ResolvedBeat } from "./walkthroughData";
+import { STEPS, TOTAL_FRAMES, FPS, type ResolvedBeat, type PageView } from "./walkthroughData";
 
 // The two browser tabs, drawn on every beat; the active one swaps the page.
 const TABS = (active: 0 | 1): ChromeTab[] => [
@@ -82,12 +82,31 @@ const LowerThird: React.FC<{ index: number; total: number; title: string; captio
 
 // ─── One beat ────────────────────────────────────────────────────────────────
 
+// The browser's content area for a resolved page. Whichever page the engine
+// chose — a CRX screenshot or the live console — it is rendered here; the beat
+// never decides between them at draw time.
+const PageContent: React.FC<{ view: PageView }> = ({ view }) =>
+  view.kind === "fireblocks" ? (
+    <FireblocksPage action={view.action} rows={view.rows} approveFrame={view.approveFrame} confirmedFrame={view.confirmedFrame} />
+  ) : (
+    <ScreenImg image={view.image} />
+  );
+
 const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; title: string }> = ({
   beat,
   index,
   total,
   title,
-}) => (
+}) => {
+  const frame = useCurrentFrame();
+  // The page + active tab are resolved per frame from the beat's pageSwitch. The
+  // next page is already chosen; the swap only REVEALS it at the click frame, so
+  // before the switch the previous page shows and after it the destination does.
+  const switched = beat.pageSwitch ? frame >= beat.pageSwitch.atFrame : true;
+  const view: PageView = switched ? beat.view : beat.pageSwitch!.beforeView;
+  const activeTab: 0 | 1 = switched ? beat.activeTab : beat.pageSwitch!.beforeTab;
+
+  return (
   <AbsoluteFill style={{ background: GROUND }}>
     <DotGrid intensity={0.7} speed={0.9} />
     <DotGridVignette intensity={0.24} />
@@ -99,14 +118,10 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
       height={SCREEN_H}
       left={WINDOW_LEFT}
       top={WINDOW_TOP}
-      tabs={TABS(beat.activeTab)}
-      activeTab={beat.activeTab}
+      tabs={TABS(activeTab)}
+      activeTab={activeTab}
     >
-      {beat.fireblocks ? (
-        <FireblocksPage action={beat.fireblocks.action} rows={beat.fireblocks.rows} approveFrame={beat.fireblocks.approveFrame} confirmedFrame={beat.fireblocks.confirmedFrame} />
-      ) : (
-        <ScreenImg image={beat.image} />
-      )}
+      <PageContent view={view} />
     </BrowserChrome>
 
     {/* The page-load: the content flashes white and paints in, while the Chrome
@@ -142,7 +157,7 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
         one pointer at a time, so the hand visibly clicks the tab then the
         control — the "click between each" that makes the switch feel real. */}
     {beat.tabLeg && (
-      <Sequence from={0} durationInFrames={beat.cursor ? beat.cursor.startFrame : beat.len} layout="none">
+      <Sequence durationInFrames={beat.cursor ? beat.cursor.startFrame : beat.len} layout="none">
         <Cursor from={beat.tabLeg.from} to={beat.tabLeg.to} startFrame={beat.tabLeg.startFrame} moveDuration={beat.tabLeg.moveDuration} clickFrame={beat.tabLeg.clickFrame} />
       </Sequence>
     )}
@@ -160,7 +175,8 @@ const BeatScene: React.FC<{ beat: ResolvedBeat; index: number; total: number; ti
 
     <LowerThird index={index} total={total} title={title} caption={beat.caption} />
   </AbsoluteFill>
-);
+  );
+};
 
 // The screenshot, sized to the browser content area.
 const ScreenImg: React.FC<{ image: string }> = ({ image }) => (
