@@ -13,11 +13,12 @@
 #   brew install pngpaste
 #
 # Take the screenshot with Cmd-Ctrl-Shift-4 (copies region to clipboard),
-# then run this command. The file lands next to AIRPLANE.md, where the
-# work program already references it.
+# then run this command. The file lands in the CURRENT folder — so cd to
+# wherever the .md you are documenting lives, then run `shot`. Works for
+# every .md in every repo, not just AIRPLANE.md.
 
 set -euo pipefail
-cd "$(dirname "$0")"
+# Write into the folder you invoke from, not the script's own folder.
 
 arg="${1:-}"
 case "$arg" in
@@ -54,4 +55,16 @@ APPLESCRIPT
 fi
 
 bytes=$(stat -f%z "$name")
-echo "shot: wrote $name ($(printf "%'d" "$bytes") bytes)"
+
+# Which image-blocked AIRPLANE task this shot unlocks.
+case "$name" in
+  image.png|image-1.png) hint="unblocks A1 — cal.com form mockup" ;;
+  image-2.png)           hint="unblocks A2 — openfx blocks to replicate" ;;
+  image-6.png)           hint="unblocks C15 — the duplicated flow section" ;;
+  image-11.png)          hint="unblocks C4 — the confusing section" ;;
+  image-13.png)          hint="unblocks C3 — what value CRX gives the desk" ;;
+  image-14.png)          hint="unblocks C8 — which two to remove from rfq-flow" ;;
+  *)                     hint="" ;;
+esac
+
+echo "shot: wrote $name ($(printf "%'d" "$bytes") bytes)${hint:+  —  $hint}"
