@@ -1,7 +1,7 @@
 {
-  "cap_usd": 1.0,
-  "baseline_credits": 407097,
+  "cap_usd": 4.0,
+  "baseline_credits": 395240,
   "spent_locked_credits": 0,
   "started": "2026-06-08T00:00:00Z",
-  "note": "F2 copy-trading research — task-scoped $1 cap, separate from shared niches/budget.json"
+  "note": "F2 copy-trading research — $4 cap, baseline rebased to live balance 2026-06-08. Per-call delta is unreliable (balance endpoint lags); absolute balance-delta is truth."
 }
