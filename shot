@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# shot — write the screenshot currently on the clipboard to a real PNG file.
+#
+# A plain .md file cannot hold a pasted image. Paste into this instead.
+#
+#   ./shot           -> image.png       (the bare name AIRPLANE.md uses)
+#   ./shot 7         -> image-7.png
+#   ./shot 21        -> image-21.png
+#   ./shot cover     -> cover.png        (any name also works)
+#
+# No dependency required — uses macOS AppleScript to pull the clipboard PNG.
+# If pngpaste is installed it is used instead (slightly faster); install with:
+#   brew install pngpaste
+#
+# Take the screenshot with Cmd-Ctrl-Shift-4 (copies region to clipboard),
+# then run this command. The file lands next to AIRPLANE.md, where the
+# work program already references it.
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+arg="${1:-}"
+case "$arg" in
+  "")            name="image.png" ;;
+  *[!0-9]*)      name="${arg%.png}.png" ;;   # a word -> word.png
+  *)             name="image-${arg}.png" ;;   # a number -> image-N.png
+esac
+
+if command -v pngpaste >/dev/null 2>&1; then
+  if ! pngpaste "$name" 2>/dev/null; then
+    echo "shot: clipboard has no image. Take a screenshot with Cmd-Ctrl-Shift-4 first." >&2
+    exit 1
+  fi
+else
+  # Pure-macOS fallback: extract «class PNGf» from the clipboard via AppleScript.
+  if ! osascript - "$PWD/$name" <<'APPLESCRIPT' 2>/dev/null
+on run argv
+  set outPath to item 1 of argv
+  try
+    set pngData to (the clipboard as «class PNGf»)
+  on error
+    error "no-image"
+  end try
+  set fp to open for access (POSIX file outPath) with write permission
+  set eof fp to 0
+  write pngData to fp
+  close access fp
+end run
+APPLESCRIPT
+  then
+    echo "shot: clipboard has no image. Take a screenshot with Cmd-Ctrl-Shift-4 first." >&2
+    exit 1
+  fi
+fi
+
+bytes=$(stat -f%z "$name")
+echo "shot: wrote $name ($(printf "%'d" "$bytes") bytes)"

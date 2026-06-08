@@ -143,3 +143,6 @@ jarvis/.venv/
 jarvis/state/*.json
 jarvis/__pycache__/
 jarvis/**/__pycache__/
+
+# AIRPLANE work-program screenshots captured via ./shot — local scratch, do not commit
+/image*.png
