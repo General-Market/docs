@@ -24,13 +24,14 @@ if [[ ! -s /tmp/.twapi_key ]]; then
 fi
 
 if [[ "$FORCE" != "1" && -f "$OUT_FILE" ]]; then
-  if python3 - "$OUT_FILE" <<'PY'
+  if python3 - "$OUT_FILE" "$MAX_QUEUE" <<'PY'
 import json
 import sys
 
 path = sys.argv[1]
+max_queue = int(sys.argv[2])
 rows = [json.loads(line) for line in open(path) if line.strip()]
-complete = len(rows) > 0 and all(
+complete = len(rows) >= max_queue and all(
     "handle" in row
     and "tweet_url" in row
     and "bot_risk" in row
@@ -59,6 +60,7 @@ python3 "$ROOT_DIR/docs/x-targeting/engagement_queue/find_engagement_queue.py" \
   --pages "${X_ENGAGEMENT_PAGES:-3}" \
   --around-handles "${X_ENGAGEMENT_AROUND_HANDLES:-10}" \
   --around-pages "${X_ENGAGEMENT_AROUND_PAGES:-1}" \
+  --allow-adjacent-fallback \
   --max-queue "$MAX_QUEUE" \
   --max-bot-risk "${X_ENGAGEMENT_MAX_BOT_RISK:-2}" \
   --budget-usd "${X_ENGAGEMENT_BUDGET_USD:-10}"
