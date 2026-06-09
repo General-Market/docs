@@ -67,7 +67,9 @@ PY
     --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
     --budget-usd "${X_ARTICLE_BUDGET_USD:-25}"
 
-  # By-likes companion (free, no API) — emits by-likes.md next to report.md.
+  # Ranking companions (free, no API) — by-likes.md + by-views.md next to report.md.
   python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
     --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" || true
+  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
+    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" --sort views || true
 done 2>&1 | tee -a "$LOG_DIR/$DATE_UTC.log"

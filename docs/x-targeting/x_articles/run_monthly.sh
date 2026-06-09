@@ -43,4 +43,5 @@ for niche in $NICHES; do
     --author-min-age-hours 4 \
     --budget-usd "$BUDGET_USD"
   python3 "$RANKER" --niche "$niche" --date "$DATE_UTC" --top "$max_articles" --window "last 30 days"
+  python3 "$RANKER" --niche "$niche" --date "$DATE_UTC" --top "$max_articles" --window "last 30 days" --sort views
 done 2>&1 | tee -a "$LOG_DIR/monthly-$DATE_UTC.log"

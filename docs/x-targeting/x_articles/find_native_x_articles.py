@@ -33,8 +33,20 @@ AI_TERMS = (
     "llm",
     "claude",
     "gpt",
+    "chatgpt",
+    "openai",
+    "anthropic",
+    "gemini",
+    "grok",
+    "deepseek",
+    "copilot",
     "autonomous",
     "machine learning",
+    "deep learning",
+    "neural",
+    "transformer",
+    "scaling law",
+    "semiconductor",
 )
 
 CRYPTO_TERMS = (
@@ -760,7 +772,20 @@ def main() -> None:
             print(f"  ↳ STOP ladder: {len(by_title)} distinct qualified articles >= max {args.max_articles}", file=sys.stderr)
             break
 
-    articles = sorted(by_title.values(), key=lambda a: (a.score, a.engagement, a.views), reverse=True)[: args.max_articles]
+    # Final cut: top by like-weighted score, UNIONED with the top by raw views.
+    # Views and likes diverge hard on announcement-style Articles (29M views can
+    # carry 3k likes); a score-only cut silently drops the view giants.
+    by_score = sorted(by_title.values(), key=lambda a: (a.score, a.engagement, a.views), reverse=True)
+    by_views = sorted(by_title.values(), key=lambda a: (a.views, a.score), reverse=True)
+    view_slots = max(1, args.max_articles // 5)
+    chosen: dict[str, NativeArticle] = {}
+    for a in by_views[:view_slots]:
+        chosen[a.tweet_id] = a
+    for a in by_score:
+        if len(chosen) >= args.max_articles:
+            break
+        chosen.setdefault(a.tweet_id, a)
+    articles = sorted(chosen.values(), key=lambda a: (a.score, a.engagement, a.views), reverse=True)
     rows = []
     for article in articles:
         row = asdict(article)
