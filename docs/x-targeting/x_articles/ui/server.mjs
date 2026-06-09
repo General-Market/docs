@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const port = Number(process.env.PORT || 3000);
+const host = process.env.HOST || "127.0.0.1";
 
 function readJsonl(file) {
   if (!fs.existsSync(file)) return [];
@@ -230,6 +231,7 @@ const server = http.createServer((req, res) => {
   res.end(html);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`X Article Radar: http://localhost:${port}`);
+server.listen(port, host, () => {
+  const displayHost = host === "0.0.0.0" ? "localhost" : host;
+  console.log(`X Article Radar: http://${displayHost}:${port}`);
 });
