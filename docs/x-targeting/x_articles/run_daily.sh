@@ -6,8 +6,13 @@ KEY_SECRET_FILE="${TWITTERAPI_KEY_FILE:-/root/.secrets/twitterapi_io_key}"
 NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun hyperliquid}"
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
-MAX_ARTICLES="${X_ARTICLE_MAX_ARTICLES:-20}"
+MAX_ARTICLES="${X_ARTICLE_MAX_ARTICLES:-40}"
 FORCE="${X_ARTICLE_FORCE:-0}"
+# High-population niches (broad AI / crypto / markets) hold far more than 20 native
+# Articles a day. A low cap stops the ladder early (find_native_x_articles.py:753),
+# so the long tail — and its outliers — is never seen. These get a deeper cap.
+BROAD_NICHES="${X_ARTICLE_BROAD_NICHES:-ai trading crypto polymarket pumpfun prediction-markets}"
+BROAD_MAX="${X_ARTICLE_BROAD_MAX:-50}"
 
 mkdir -p "$LOG_DIR"
 
@@ -21,9 +26,15 @@ if [[ ! -s /tmp/.twapi_key ]]; then
 fi
 
 for niche in $NICHES; do
+  # Deeper cap + pagination for high-population niches so the ladder is not
+  # truncated at the default before the long tail is reached.
+  niche_max="$MAX_ARTICLES"; niche_pages="${X_ARTICLE_PAGES:-5}"
+  if [[ " $BROAD_NICHES " == *" $niche "* ]]; then
+    niche_max="$BROAD_MAX"; niche_pages="${X_ARTICLE_BROAD_PAGES:-8}"
+  fi
   out_file="$ROOT_DIR/docs/x-targeting/x_articles/$DATE_UTC/$niche/articles.jsonl"
   if [[ "$FORCE" != "1" && -f "$out_file" ]]; then
-    if python3 - "$out_file" "$MAX_ARTICLES" <<'PY'
+    if python3 - "$out_file" "$niche_max" <<'PY'
 import json
 import sys
 
@@ -48,15 +59,15 @@ PY
     --niche "$niche" \
     --date "$DATE_UTC" \
     --lookback-hours 24 \
-    --pages "${X_ARTICLE_PAGES:-5}" \
+    --pages "$niche_pages" \
     --search-mode "${X_ARTICLE_SEARCH_MODE:-both}" \
     --like-thresholds "${X_ARTICLE_LIKE_THRESHOLDS:-5000,2000,1000,500,250,100,50,20,10}" \
-    --max-articles "$MAX_ARTICLES" \
+    --max-articles "$niche_max" \
     --min-article-age-hours "${X_ARTICLE_MIN_ARTICLE_AGE_HOURS:-4}" \
     --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
     --budget-usd "${X_ARTICLE_BUDGET_USD:-25}"
 
   # By-likes companion (free, no API) — emits by-likes.md next to report.md.
   python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
-    --niche "$niche" --date "$DATE_UTC" --top "$MAX_ARTICLES" --window "last 24 hours" || true
+    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" || true
 done 2>&1 | tee -a "$LOG_DIR/$DATE_UTC.log"
