@@ -31,7 +31,7 @@ from pathlib import Path
 
 BASE = "https://api.twitterapi.io"
 KEY_FILE = Path("/tmp/.twapi_key")
-ROOT = Path("/Users/maxguillabert/Downloads/index/docs/x-targeting")
+ROOT = Path(__file__).resolve().parent
 CACHE = ROOT / "cache"
 LEDGER = CACHE / "twapi-ledger.jsonl"
 BUDGET_FILE = ROOT / "niches" / "budget.json"
