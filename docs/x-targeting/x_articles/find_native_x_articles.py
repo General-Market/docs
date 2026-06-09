@@ -266,6 +266,12 @@ NICHE_CONFIG = {
     },
 }
 
+# 30-day deep variants of every daily niche: same filter and queries, a separate
+# slug so the monthly page lives next to the daily one in the UI. Run these with
+# --lookback-hours 720. (The Hyperliquid -30d niches above are bespoke and skipped.)
+for _base in ("trading-ai", "ai", "trading", "crypto", "prediction-markets", "polymarket", "pumpfun"):
+    NICHE_CONFIG[f"{_base}-30d"] = dict(NICHE_CONFIG[_base])
+
 
 @dataclass
 class NativeArticle:
