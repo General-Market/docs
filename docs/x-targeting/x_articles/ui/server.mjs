@@ -134,7 +134,7 @@ const html = String.raw`<!doctype html>
     </header>
     <section class="summary">
       <div class="metric"><div class="label">Articles</div><div class="value" id="countMetric">0</div></div>
-      <div class="metric"><div class="label">Top engagement</div><div class="value" id="engMetric">0</div></div>
+      <div class="metric"><div class="label">Top outlier</div><div class="value" id="engMetric">0x</div></div>
       <div class="metric"><div class="label">Niche</div><div class="value" id="nicheMetric">-</div></div>
     </section>
     <section id="content"></section>
@@ -183,7 +183,7 @@ const html = String.raw`<!doctype html>
       const articles = data.articles || [];
       document.getElementById("jsonLink").href = url;
       document.getElementById("countMetric").textContent = fmt.format(articles.length);
-      document.getElementById("engMetric").textContent = fmt.format(articles[0]?.engagement || 0);
+      document.getElementById("engMetric").textContent = formatLift(articles[0]?.views_vs_author_avg || 0);
       document.getElementById("nicheMetric").textContent = state.niche;
       renderTable(articles);
     }
@@ -194,16 +194,23 @@ const html = String.raw`<!doctype html>
         content.innerHTML = '<div class="empty">No articles for this date and niche.</div>';
         return;
       }
-      content.innerHTML = '<table><thead><tr><th>#</th><th>Article</th><th>Author</th><th>Eng</th><th>Views</th><th>Score</th></tr></thead><tbody>' +
+      content.innerHTML = '<table><thead><tr><th>#</th><th>Article</th><th>Author</th><th>Eng</th><th>Views</th><th>Views/1k followers</th><th>Vs last 10</th><th>Score</th></tr></thead><tbody>' +
         articles.map((a, i) => '<tr>' +
           '<td class="rank">' + (i + 1) + '</td>' +
           '<td><a class="title" href="' + escapeHtml(a.article_url || a.tweet_url) + '" target="_blank" rel="noreferrer">' + escapeHtml(a.title || "Untitled") + '</a><div class="preview">' + escapeHtml(a.preview_text || "") + '</div></td>' +
           '<td><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a></td>' +
           '<td class="num">' + fmt.format(a.engagement || 0) + '</td>' +
           '<td class="num">' + fmt.format(a.views || 0) + '</td>' +
+          '<td class="num">' + fmt.format(Math.round(a.views_per_1k_followers || 0)) + '</td>' +
+          '<td class="num">' + formatLift(a.views_vs_author_avg || 0) + '</td>' +
           '<td class="num">' + fmt.format(Math.round(a.score || 0)) + '</td>' +
         '</tr>').join("") +
         '</tbody></table>';
+    }
+
+    function formatLift(value) {
+      const n = Number(value || 0);
+      return n ? n.toFixed(n >= 10 ? 1 : 2) + 'x' : '-';
     }
 
     function escapeHtml(value) {

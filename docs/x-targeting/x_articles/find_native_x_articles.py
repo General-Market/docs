@@ -37,6 +37,27 @@ AI_TERMS = (
     "machine learning",
 )
 
+CRYPTO_TERMS = (
+    "crypto",
+    "defi",
+    "onchain",
+    "blockchain",
+    "web3",
+    "perp",
+    "perps",
+    "dex",
+    "token",
+)
+
+PREDICTION_MARKET_TERMS = (
+    "polymarket",
+    "prediction",
+    "prediction market",
+    "kalshi",
+    "forecast",
+    "betting market",
+)
+
 MARKET_TERMS = (
     "trading",
     "trade",
@@ -58,6 +79,29 @@ MARKET_TERMS = (
     "banking",
     "liquidity",
 )
+
+NICHE_CONFIG = {
+    "trading-ai": {
+        "match_all": (AI_TERMS, MARKET_TERMS),
+        "keyword_query": "(AI OR agent OR agents OR LLM) (trading OR trader OR quant OR market OR markets OR portfolio OR crypto OR DeFi OR perp OR prediction)",
+    },
+    "ai": {
+        "match_any": AI_TERMS,
+        "keyword_query": "(AI OR agent OR agents OR agentic OR LLM OR Claude OR GPT OR autonomous)",
+    },
+    "trading": {
+        "match_any": MARKET_TERMS,
+        "keyword_query": "(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity)",
+    },
+    "crypto": {
+        "match_any": CRYPTO_TERMS,
+        "keyword_query": "(crypto OR DeFi OR onchain OR blockchain OR Web3 OR perp OR perps OR DEX OR token)",
+    },
+    "prediction-markets": {
+        "match_any": PREDICTION_MARKET_TERMS,
+        "keyword_query": "(Polymarket OR Kalshi OR prediction OR forecast OR betting market)",
+    },
+}
 
 
 @dataclass
@@ -161,12 +205,20 @@ def to_article(tweet: dict, query_label: str) -> NativeArticle | None:
 
 
 def matches_niche(article: NativeArticle, niche: str) -> bool:
-    if niche != "trading-ai":
-        return True
+    config = NICHE_CONFIG.get(niche)
+    if not config:
+        raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
     text = f"{article.title} {article.preview_text}".lower()
-    has_ai = any(term in text for term in AI_TERMS)
-    has_market = any(term in text for term in MARKET_TERMS)
-    return has_ai and has_market
+    if "match_all" in config:
+        return all(any(term_in_text(term, text) for term in terms) for terms in config["match_all"])
+    return any(term_in_text(term, text) for term in config["match_any"])
+
+
+def term_in_text(term: str, text: str) -> bool:
+    term = term.lower()
+    if " " in term:
+        return term in text
+    return re.search(rf"\b{re.escape(term)}\b", text) is not None
 
 
 def title_key(title: str) -> str:
@@ -184,40 +236,32 @@ def parse_thresholds(value: str) -> list[int]:
 
 
 def keyword_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
-    if niche != "trading-ai":
-        raise ValueError(f"Unsupported niche: {niche}")
+    config = NICHE_CONFIG.get(niche)
+    if not config:
+        raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
+    keyword_query = config["keyword_query"]
     return [
         (
             "broad-native-top",
-            f"(AI OR agent OR agents OR LLM OR trading OR trader OR quant OR crypto OR DeFi OR perp OR market OR markets OR prediction) url:x.com/i/article since:{since_date} -is:retweet",
+            f"{keyword_query} url:x.com/i/article since:{since_date} -is:retweet",
             "Top",
         ),
         (
-            "ai-trading-native-top",
-            f"(AI OR agent OR agents OR LLM) (trading OR trader OR quant OR market OR markets OR portfolio) url:x.com/i/article since:{since_date} -is:retweet",
+            "keyword-native-top",
+            f"{keyword_query} url:x.com/i/article since:{since_date} -is:retweet min_faves:5",
             "Top",
         ),
         (
-            "crypto-agent-native-top",
-            f"(crypto OR DeFi OR onchain OR perp OR prediction) (AI OR agent OR agents OR LLM) url:x.com/i/article since:{since_date} -is:retweet",
-            "Top",
-        ),
-        (
-            "market-native-top",
-            f"(market OR markets OR trading OR trader OR portfolio OR quant) (AI OR agent OR agents OR LLM) url:x.com/i/article since:{since_date} -is:retweet min_faves:5",
-            "Top",
-        ),
-        (
-            "native-latest",
-            f"(AI OR agent OR agents OR LLM OR trading OR trader OR quant OR crypto OR DeFi OR perp OR market OR markets OR prediction) url:x.com/i/article since:{since_date} -is:retweet",
+            "keyword-native-latest",
+            f"{keyword_query} url:x.com/i/article since:{since_date} -is:retweet",
             "Latest",
         ),
     ]
 
 
 def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
-    if niche != "trading-ai":
-        raise ValueError(f"Unsupported niche: {niche}")
+    if niche not in NICHE_CONFIG:
+        raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
     return [
         (
             f"likes-gte-{threshold}",
@@ -226,6 +270,67 @@ def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> 
         )
         for threshold in thresholds
     ]
+
+
+def parse_tweets(body: dict) -> list[dict]:
+    data = body.get("data") or {}
+    return body.get("tweets") or (data.get("tweets", []) if isinstance(data, dict) else []) or []
+
+
+def author_recent_tweets(handle: str, raw_dir: Path, reuse_raw: bool) -> list[dict]:
+    label = slug(handle)
+    path = raw_dir / "authors" / f"{label}.json"
+    if reuse_raw and path.exists():
+        return parse_tweets(json.loads(path.read_text()))
+    if reuse_raw:
+        return []
+    body = twapi.metered_call(
+        f"xarticles:author-baseline:{handle}",
+        "/twitter/user/last_tweets",
+        {"userName": handle.lstrip("@")},
+        estimate=15 * 20,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(body, ensure_ascii=False, indent=2))
+    return parse_tweets(body)
+
+
+def average_last_views(tweets: list[dict], article_tweet_id: str, min_age_hours: int, now: datetime) -> float:
+    views: list[int] = []
+    for tweet in tweets:
+        tweet_id = str(tweet.get("id") or "")
+        if tweet_id == article_tweet_id:
+            continue
+        created = parse_x_date(tweet.get("createdAt") or "")
+        if created and created > now - timedelta(hours=min_age_hours):
+            continue
+        value = safe_int(tweet.get("viewCount"))
+        if value <= 0:
+            continue
+        views.append(value)
+        if len(views) >= 10:
+            break
+    if not views:
+        return 0.0
+    return round(sum(views) / len(views), 3)
+
+
+def enrich_outlier_metrics(article: NativeArticle, raw_dir: Path, reuse_raw: bool, min_age_hours: int, now: datetime) -> dict:
+    avg_views = average_last_views(author_recent_tweets(article.author, raw_dir, reuse_raw), article.tweet_id, min_age_hours, now)
+    views_per_1k_followers = 0.0
+    if article.author_followers > 0:
+        views_per_1k_followers = round(article.views * 1000 / article.author_followers, 3)
+    views_vs_author_avg = 0.0
+    if avg_views > 0:
+        views_vs_author_avg = round(article.views / avg_views, 3)
+    outlier_score = round((views_vs_author_avg * 100) + views_per_1k_followers + article.engagement_per_1k_views, 3)
+    return {
+        "author_avg_views_last10": avg_views,
+        "author_avg_views_min_age_hours": min_age_hours,
+        "views_per_1k_followers": views_per_1k_followers,
+        "views_vs_author_avg": views_vs_author_avg,
+        "outlier_score": outlier_score,
+    }
 
 
 def build_queries(niche: str, since_date: str, search_mode: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
@@ -254,7 +359,7 @@ def metered_search(query: str, query_type: str, pages: int, label: str, raw_dir:
         raw_dir.mkdir(parents=True, exist_ok=True)
         (raw_dir / f"{slug(label)}-p{page}.json").write_text(json.dumps(body, ensure_ascii=False, indent=2))
         data = body.get("data") or {}
-        batch = body.get("tweets") or (data.get("tweets", []) if isinstance(data, dict) else [])
+        batch = parse_tweets(body)
         if not batch:
             break
         tweets.extend(batch)
@@ -273,7 +378,7 @@ def raw_search(label: str, pages: int, raw_dir: Path) -> list[dict]:
             continue
         body = json.loads(path.read_text())
         data = body.get("data") or {}
-        tweets.extend(body.get("tweets") or (data.get("tweets", []) if isinstance(data, dict) else []) or [])
+        tweets.extend(parse_tweets(body))
     return tweets
 
 
@@ -284,7 +389,7 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 def report_md(
-    articles: list[NativeArticle],
+    articles: list[dict],
     all_tweets: int,
     started_at: datetime,
     cutoff: datetime,
@@ -295,13 +400,13 @@ def report_md(
     search_mode: str,
 ) -> str:
     spend = max(0, balance_before - balance_after)
-    domains = Counter(a.author for a in articles)
-    clusters: dict[str, list[NativeArticle]] = {}
+    domains = Counter(a.get("author") for a in articles)
+    clusters: dict[str, list[dict]] = {}
     for article in articles:
-        clusters.setdefault(title_key(article.title), []).append(article)
+        clusters.setdefault(title_key(article.get("title") or ""), []).append(article)
     repeated = sorted(
         [items for items in clusters.values() if len(items) > 1],
-        key=lambda items: (sum(a.engagement for a in items), len(items)),
+        key=lambda items: (sum(safe_int(a.get("engagement")) for a in items), len(items)),
         reverse=True,
     )
     lines = [
@@ -311,14 +416,15 @@ def report_md(
         "",
         f"Stored **{len(articles)} native X Articles** from **{all_tweets} searched tweets** since `{cutoff.isoformat()}`.",
         f"Search mode: **{search_mode}**.",
+        "Freshness rule: Article and author baseline posts must be at least **4 hours old**.",
         "",
-        "| rank | X Article | author | X signal | score | next action |",
-        "|---:|---|---|---:|---:|---|",
+        "| rank | X Article | author | X signal | score | views/followers | vs author avg | next action |",
+        "|---:|---|---|---:|---:|---:|---:|---|",
     ]
     for idx, a in enumerate(articles[:25], 1):
-        title = a.title.replace("|", "\\|") or a.article_url
+        title = (a.get("title") or a.get("article_url") or "").replace("|", "\\|")
         lines.append(
-            f"| {idx} | [{title}]({a.article_url or a.tweet_url}) | [@{a.author}](https://x.com/{a.author}) | {a.engagement} eng / {a.views} views / {a.engagement_per_1k_views} eng per 1k views | {a.score:.1f} | Read and extract pattern (~5 min) |"
+            f"| {idx} | [{title}]({a.get('article_url') or a.get('tweet_url')}) | [@{a.get('author')}](https://x.com/{a.get('author')}) | {safe_int(a.get('engagement'))} eng / {safe_int(a.get('views'))} views / {a.get('engagement_per_1k_views', 0)} eng per 1k views | {float(a.get('score') or 0):.1f} | {a.get('views_per_1k_followers', 0)} per 1k | {a.get('views_vs_author_avg', 0)}x | Read and extract pattern (~5 min) |"
         )
 
     lines.extend([
@@ -330,6 +436,9 @@ def report_md(
         "- Distinct Article = normalized title; if several URLs share the same title, the highest-scoring copy is kept.",
         "- Engagement = likes + retweets + replies + quotes + bookmarks.",
         "- Score = weighted engagement + capped views bonus.",
+        "- Views/followers = Article views per 1,000 creator followers.",
+        "- Vs author avg = Article views divided by the creator's average views over their previous 10 mature posts.",
+        "- Mature post = at least 4 hours old, so brand-new posts do not drag down the creator average.",
         "- Weighted engagement gives retweets and quotes 2x weight because they distribute the article.",
         "",
         "Therefore: this report ranks native X Articles inside the searched niche surface, not external links.",
@@ -343,11 +452,11 @@ def report_md(
     ])
     if repeated:
         for items in repeated[:10]:
-            best = max(items, key=lambda a: a.score)
-            total_eng = sum(a.engagement for a in items)
-            title = best.title.replace("|", "\\|")
+            best = max(items, key=lambda a: float(a.get("score") or 0))
+            total_eng = sum(safe_int(a.get("engagement")) for a in items)
+            title = (best.get("title") or "").replace("|", "\\|")
             lines.append(
-                f"| [{title}]({best.article_url or best.tweet_url}) | {len(items)} | {total_eng} | [@{best.author}](https://x.com/{best.author}) | Audit duplicate accounts (~5 min) |"
+                f"| [{title}]({best.get('article_url') or best.get('tweet_url')}) | {len(items)} | {total_eng} | [@{best.get('author')}](https://x.com/{best.get('author')}) | Audit duplicate accounts (~5 min) |"
             )
     else:
         lines.append("| None | 0 | 0 | - | No duplicate-title campaign found |")
@@ -370,6 +479,8 @@ def report_md(
         "|---|---:|",
     ])
     for author, count in domains.most_common(20):
+        if not author:
+            continue
         lines.append(f"| [@{author}](https://x.com/{author}) | {count} |")
 
     lines.extend([
@@ -395,11 +506,14 @@ def main() -> None:
     parser.add_argument("--search-mode", choices=("regressive-likes", "keyword", "both"), default="both")
     parser.add_argument("--like-thresholds", default="5000,2000,1000,500,250,100,50,20,10")
     parser.add_argument("--max-articles", type=int, default=20)
+    parser.add_argument("--min-article-age-hours", type=int, default=4)
+    parser.add_argument("--author-min-age-hours", type=int, default=4)
     parser.add_argument("--reuse-raw", action="store_true")
     args = parser.parse_args()
 
     started_at = utc_now()
     cutoff = started_at - timedelta(hours=args.lookback_hours)
+    mature_article_cutoff = started_at - timedelta(hours=args.min_article_age_hours)
     since_date = cutoff.strftime("%Y-%m-%d")
     out_dir = OUT_ROOT / args.date / args.niche
     raw_dir = out_dir / "raw"
@@ -433,7 +547,7 @@ def main() -> None:
                 continue
             seen_tweets.add(tweet_id)
             created = parse_x_date(tweet.get("createdAt") or "")
-            if not created or created < cutoff:
+            if not created or created < cutoff or created > mature_article_cutoff:
                 continue
             article = to_article(tweet, label)
             if not article:
@@ -460,13 +574,14 @@ def main() -> None:
         row["weighted_engagement"] = article.weighted_engagement
         row["engagement_per_1k_views"] = article.engagement_per_1k_views
         row["score"] = article.score
+        row.update(enrich_outlier_metrics(article, raw_dir, args.reuse_raw, args.author_min_age_hours, started_at))
         rows.append(row)
 
     write_jsonl(out_dir / "articles.jsonl", rows)
     write_jsonl(out_dir / f"articles-{started_at.strftime('%Y%m%dT%H%M%SZ')}.jsonl", rows)
 
     balance_after = twapi.total_credits()
-    report = report_md(articles, all_tweets, started_at, cutoff, args.niche, balance_before, balance_after, queries, args.search_mode)
+    report = report_md(rows, all_tweets, started_at, cutoff, args.niche, balance_before, balance_after, queries, args.search_mode)
     (out_dir / "report.md").write_text(report)
 
     print(json.dumps({
@@ -475,7 +590,7 @@ def main() -> None:
         "out_dir": str(out_dir),
         "tweets": all_tweets,
         "native_x_articles": len(articles),
-        "top": asdict(articles[0]) if articles else None,
+        "top": rows[0] if rows else None,
     }, ensure_ascii=False, indent=2))
 
 
