@@ -173,7 +173,17 @@ def title_key(title: str) -> str:
     return re.sub(r"\s+", " ", title.strip().lower())
 
 
-def build_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
+def parse_thresholds(value: str) -> list[int]:
+    out: list[int] = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        out.append(int(part))
+    return sorted(set(out), reverse=True)
+
+
+def keyword_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
     if niche != "trading-ai":
         raise ValueError(f"Unsupported niche: {niche}")
     return [
@@ -203,6 +213,29 @@ def build_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
             "Latest",
         ),
     ]
+
+
+def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
+    if niche != "trading-ai":
+        raise ValueError(f"Unsupported niche: {niche}")
+    return [
+        (
+            f"likes-gte-{threshold}",
+            f"min_faves:{threshold} url:x.com/i/article since:{since_date} -is:retweet",
+            "Top",
+        )
+        for threshold in thresholds
+    ]
+
+
+def build_queries(niche: str, since_date: str, search_mode: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
+    if search_mode == "keyword":
+        return keyword_queries(niche, since_date)
+    if search_mode == "regressive-likes":
+        return likes_ladder_queries(niche, since_date, thresholds)
+    if search_mode == "both":
+        return likes_ladder_queries(niche, since_date, thresholds) + keyword_queries(niche, since_date)
+    raise ValueError(f"Unsupported search mode: {search_mode}")
 
 
 def metered_search(query: str, query_type: str, pages: int, label: str, raw_dir: Path) -> list[dict]:
@@ -259,6 +292,7 @@ def report_md(
     balance_before: int,
     balance_after: int,
     queries: list[tuple[str, str, str]],
+    search_mode: str,
 ) -> str:
     spend = max(0, balance_before - balance_after)
     domains = Counter(a.author for a in articles)
@@ -275,7 +309,8 @@ def report_md(
         "",
         "## TL;DR",
         "",
-        f"Found **{len(articles)} native X Articles** from **{all_tweets} searched tweets** since `{cutoff.isoformat()}`.",
+        f"Stored **{len(articles)} native X Articles** from **{all_tweets} searched tweets** since `{cutoff.isoformat()}`.",
+        f"Search mode: **{search_mode}**.",
         "",
         "| rank | X Article | author | X signal | score | next action |",
         "|---:|---|---|---:|---:|---|",
@@ -291,6 +326,8 @@ def report_md(
         "## Ranking Rule",
         "",
         "- Native X Article = tweet payload has non-null `article` metadata.",
+        "- Regressive likes mode searches broad native X Articles from high `min_faves` thresholds downward, then applies niche classification locally.",
+        "- Distinct Article = normalized title; if several URLs share the same title, the highest-scoring copy is kept.",
         "- Engagement = likes + retweets + replies + quotes + bookmarks.",
         "- Score = weighted engagement + capped views bonus.",
         "- Weighted engagement gives retweets and quotes 2x weight because they distribute the article.",
@@ -355,6 +392,9 @@ def main() -> None:
     parser.add_argument("--lookback-hours", type=int, default=24)
     parser.add_argument("--pages", type=int, default=4)
     parser.add_argument("--budget-usd", type=float, default=25.0)
+    parser.add_argument("--search-mode", choices=("regressive-likes", "keyword", "both"), default="both")
+    parser.add_argument("--like-thresholds", default="5000,2000,1000,500,250,100,50,20,10")
+    parser.add_argument("--max-articles", type=int, default=20)
     parser.add_argument("--reuse-raw", action="store_true")
     args = parser.parse_args()
 
@@ -374,9 +414,11 @@ def main() -> None:
     }, indent=2))
     twapi.BUDGET_FILE = budget_path
 
-    queries = build_queries(args.niche, since_date)
+    thresholds = parse_thresholds(args.like_thresholds)
+    queries = build_queries(args.niche, since_date, args.search_mode, thresholds)
     seen_tweets: set[str] = set()
     by_article_url: dict[str, NativeArticle] = {}
+    by_title: dict[str, NativeArticle] = {}
     all_tweets = 0
 
     for label, query, qtype in queries:
@@ -398,12 +440,19 @@ def main() -> None:
                 continue
             if not matches_niche(article, args.niche):
                 continue
-            key = article.article_url or article.tweet_url
-            existing = by_article_url.get(key)
-            if not existing or article.score > existing.score:
-                by_article_url[key] = article
+            url_key = article.article_url or article.tweet_url
+            title_dedupe_key = title_key(article.title) or url_key
+            existing_url = by_article_url.get(url_key)
+            if not existing_url or article.score > existing_url.score:
+                by_article_url[url_key] = article
+            existing_title = by_title.get(title_dedupe_key)
+            if not existing_title or article.score > existing_title.score:
+                by_title[title_dedupe_key] = article
+        if len(by_title) >= args.max_articles:
+            print(f"  ↳ STOP ladder: {len(by_title)} distinct qualified articles >= max {args.max_articles}", file=sys.stderr)
+            break
 
-    articles = sorted(by_article_url.values(), key=lambda a: (a.score, a.engagement, a.views), reverse=True)
+    articles = sorted(by_title.values(), key=lambda a: (a.score, a.engagement, a.views), reverse=True)[: args.max_articles]
     rows = []
     for article in articles:
         row = asdict(article)
@@ -417,7 +466,7 @@ def main() -> None:
     write_jsonl(out_dir / f"articles-{started_at.strftime('%Y%m%dT%H%M%SZ')}.jsonl", rows)
 
     balance_after = twapi.total_credits()
-    report = report_md(articles, all_tweets, started_at, cutoff, args.niche, balance_before, balance_after, queries)
+    report = report_md(articles, all_tweets, started_at, cutoff, args.niche, balance_before, balance_after, queries, args.search_mode)
     (out_dir / "report.md").write_text(report)
 
     print(json.dumps({
