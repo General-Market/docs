@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-/home/max/index}"
 KEY_SECRET_FILE="${TWITTERAPI_KEY_FILE:-/root/.secrets/twitterapi_io_key}"
-NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun}"
+NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun hyperliquid}"
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
 MAX_ARTICLES="${X_ARTICLE_MAX_ARTICLES:-20}"
@@ -55,4 +55,8 @@ PY
     --min-article-age-hours "${X_ARTICLE_MIN_ARTICLE_AGE_HOURS:-4}" \
     --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
     --budget-usd "${X_ARTICLE_BUDGET_USD:-25}"
+
+  # By-likes companion (free, no API) — emits by-likes.md next to report.md.
+  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
+    --niche "$niche" --date "$DATE_UTC" --top "$MAX_ARTICLES" --window "last 24 hours" || true
 done 2>&1 | tee -a "$LOG_DIR/$DATE_UTC.log"

@@ -103,6 +103,90 @@ MARKET_TERMS = (
     "liquidity",
 )
 
+# Distinctive Hyperliquid vocabulary. Bare "hype" is excluded because it collides
+# with the English word; the token is matched as the cashtag "$hype" instead
+# (see term_in_text for the cashtag branch).
+HYPERLIQUID_CORE_TERMS = (
+    "hyperliquid",
+    "hyperliquidx",
+    "hyperevm",
+    "hyper evm",
+    "hypercore",
+    "hyperunit",
+    "hyperbft",
+    "hip-1",
+    "hip-2",
+    "hip-3",
+    "hip1",
+    "hip2",
+    "hip3",
+    "hlp",
+    "purr",
+    "$hype",
+    "$purr",
+)
+
+# Apps and protocols building on Hyperliquid / HyperEVM.
+HYPERLIQUID_ECO_TERMS = (
+    "hyperbeat",
+    "felix",
+    "hypurrfi",
+    "hyperlend",
+    "kinetiq",
+    "hyperdrive",
+    "hyperswap",
+    "hybra",
+    "sentiment",
+    "kittenswap",
+    "hyperbloom",
+    "liminal",
+    "valantis",
+)
+
+HYPERLIQUID_TERMS = HYPERLIQUID_CORE_TERMS + HYPERLIQUID_ECO_TERMS
+
+HIP3_TERMS = (
+    "hip-3",
+    "hip3",
+    "builder-deployed",
+    "builder deployed",
+    "builder code",
+    "builder codes",
+    "permissionless perp",
+    "permissionless perps",
+    "permissionless listing",
+    "permissionless market",
+    "deployer auction",
+)
+
+HYPEREVM_TERMS = (
+    "hyperevm",
+    "hyper evm",
+    "hypercore",
+    "hyperliquid evm",
+    "evmify",
+    "precompile",
+    "corewriter",
+) + HYPERLIQUID_ECO_TERMS
+
+HL_DEFI_TERMS = (
+    "hlp",
+    "hlp vault",
+    "liquidity provider vault",
+    "vault",
+    "lending",
+    "looping",
+    "sthype",
+    "lst",
+    "liquid staking",
+) + HYPERLIQUID_ECO_TERMS
+
+# Shared X-search recall query for the Hyperliquid ecosystem.
+HYPERLIQUID_QUERY = (
+    '(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit '
+    'OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR)'
+)
+
 NICHE_CONFIG = {
     "trading-ai": {
         "match_all": (AI_TERMS, MARKET_TERMS),
@@ -131,6 +215,31 @@ NICHE_CONFIG = {
     "pumpfun": {
         "match_any": PUMPFUN_TERMS,
         "keyword_query": "(pump.fun OR pumpfun OR \"pump fun\" OR memecoin OR memecoins OR \"meme coin\" OR launchpad OR \"bonding curve\" OR LetsBonk OR bonkfun)",
+    },
+    "hyperliquid": {
+        "match_any": HYPERLIQUID_TERMS,
+        "keyword_query": HYPERLIQUID_QUERY,
+        "likes_prefix": HYPERLIQUID_QUERY,
+    },
+    "hyperliquid-30d": {
+        "match_any": HYPERLIQUID_TERMS,
+        "keyword_query": HYPERLIQUID_QUERY,
+        "likes_prefix": HYPERLIQUID_QUERY,
+    },
+    "hip3-30d": {
+        "match_any": HIP3_TERMS,
+        "keyword_query": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"permissionless perp\" OR \"deployer auction\") (Hyperliquid OR HyperCore OR perp OR perps OR market)",
+        "likes_prefix": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"deployer auction\")",
+    },
+    "hyperevm-30d": {
+        "match_any": HYPEREVM_TERMS,
+        "keyword_query": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq)",
+        "likes_prefix": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq)",
+    },
+    "hl-defi-30d": {
+        "match_any": HL_DEFI_TERMS,
+        "keyword_query": "(HLP OR \"HLP vault\" OR Hyperliquid OR HyperEVM) (vault OR lending OR looping OR staking OR LST OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq)",
+        "likes_prefix": "(\"HLP vault\" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive)",
     },
 }
 
@@ -247,7 +356,9 @@ def matches_niche(article: NativeArticle, niche: str) -> bool:
 
 def term_in_text(term: str, text: str) -> bool:
     term = term.lower()
-    if " " in term:
+    if term.startswith("$") or " " in term or "-" in term or "." in term:
+        # Cashtags ($hype) and multi-token / punctuated terms (hip-3, pump.fun) lose
+        # their boundary under \b, so fall back to substring matching.
         return term in text
     return re.search(rf"\b{re.escape(term)}\b", text) is not None
 
@@ -291,12 +402,18 @@ def keyword_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
 
 
 def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
-    if niche not in NICHE_CONFIG:
+    config = NICHE_CONFIG.get(niche)
+    if not config:
         raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
+    # A narrow niche scopes the likes ladder to its own keywords so the high-faves
+    # pull is spent inside the niche instead of across the whole platform. Broad
+    # niches keep the platform-wide ladder and rely on the local classifier.
+    prefix = config.get("likes_prefix")
+    scope = f"{prefix} " if prefix else ""
     return [
         (
             f"likes-gte-{threshold}",
-            f"min_faves:{threshold} url:x.com/i/article since:{since_date} -is:retweet",
+            f"{scope}min_faves:{threshold} url:x.com/i/article since:{since_date} -is:retweet",
             "Top",
         )
         for threshold in thresholds
