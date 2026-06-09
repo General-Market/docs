@@ -81,7 +81,7 @@ const html = String.raw`<!doctype html>
     h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: 0; }
     .sub { margin-top: 8px; color: #6e6e73; font-size: 17px; max-width: 734px; }
     .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    select, .linkButton {
+    select {
       height: 38px;
       border: 1px solid #d2d2d7;
       background: #fff;
@@ -89,7 +89,6 @@ const html = String.raw`<!doctype html>
       border-radius: 8px;
       padding: 0 12px;
     }
-    .linkButton { display: inline-flex; align-items: center; cursor: pointer; }
     .summary {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -99,23 +98,41 @@ const html = String.raw`<!doctype html>
     .metric { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 14px 16px; }
     .metric .label { color: #86868b; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; }
     .metric .value { margin-top: 4px; font-size: 24px; line-height: 1.1666; font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; overflow: hidden; }
-    th, td { text-align: left; padding: 13px 14px; border-bottom: 1px solid #e8e8ed; vertical-align: top; }
-    th { color: #6e6e73; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; background: #fbfbfd; }
-    tr:last-child td { border-bottom: 0; }
-    .rank { color: #86868b; width: 48px; }
+    .list { display: grid; gap: 10px; }
+    .article {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 14px;
+      background: #fff;
+      border: 1px solid #e8e8ed;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .rank { color: #86868b; font-variant-numeric: tabular-nums; }
     .title { font-weight: 600; line-height: 1.2105; }
     .preview { color: #6e6e73; font-size: 14px; margin-top: 5px; max-width: 560px; }
-    .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .byline { margin-top: 7px; color: #6e6e73; font-size: 14px; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(118px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .pill {
+      border: 1px solid #e8e8ed;
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #fbfbfd;
+      min-width: 0;
+    }
+    .pill .label { color: #86868b; font-size: 11px; text-transform: uppercase; letter-spacing: .012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pill .value { margin-top: 3px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .empty { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 24px; color: #6e6e73; }
     @media (max-width: 760px) {
       header { align-items: stretch; flex-direction: column; }
       .summary { grid-template-columns: 1fr; }
-      table, thead, tbody, th, td, tr { display: block; }
-      thead { display: none; }
-      tr { border-bottom: 1px solid #e8e8ed; padding: 12px 0; }
-      td { border: 0; padding: 6px 14px; }
-      .rank { width: auto; }
+      .article { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -129,7 +146,6 @@ const html = String.raw`<!doctype html>
       <div class="controls">
         <select id="dateSelect" aria-label="Date"></select>
         <select id="nicheSelect" aria-label="Niche"></select>
-        <a class="linkButton" id="jsonLink" href="#" target="_blank" rel="noreferrer">JSON</a>
       </div>
     </header>
     <section class="summary">
@@ -181,7 +197,6 @@ const html = String.raw`<!doctype html>
       const url = "/api/articles?date=" + encodeURIComponent(state.date) + "&niche=" + encodeURIComponent(state.niche);
       const data = await fetch(url).then((r) => r.json());
       const articles = data.articles || [];
-      document.getElementById("jsonLink").href = url;
       document.getElementById("countMetric").textContent = fmt.format(articles.length);
       document.getElementById("engMetric").textContent = formatLift(articles[0]?.views_vs_author_avg || 0);
       document.getElementById("nicheMetric").textContent = state.niche;
@@ -194,18 +209,25 @@ const html = String.raw`<!doctype html>
         content.innerHTML = '<div class="empty">No articles for this date and niche.</div>';
         return;
       }
-      content.innerHTML = '<table><thead><tr><th>#</th><th>Article</th><th>Author</th><th>Eng</th><th>Views</th><th>Views/1k followers</th><th>Vs last 10</th><th>Score</th></tr></thead><tbody>' +
-        articles.map((a, i) => '<tr>' +
-          '<td class="rank">' + (i + 1) + '</td>' +
-          '<td><a class="title" href="' + escapeHtml(a.article_url || a.tweet_url) + '" target="_blank" rel="noreferrer">' + escapeHtml(a.title || "Untitled") + '</a><div class="preview">' + escapeHtml(a.preview_text || "") + '</div></td>' +
-          '<td><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a></td>' +
-          '<td class="num">' + fmt.format(a.engagement || 0) + '</td>' +
-          '<td class="num">' + fmt.format(a.views || 0) + '</td>' +
-          '<td class="num">' + fmt.format(Math.round(a.views_per_1k_followers || 0)) + '</td>' +
-          '<td class="num">' + formatLift(a.views_vs_author_avg || 0) + '</td>' +
-          '<td class="num">' + fmt.format(Math.round(a.score || 0)) + '</td>' +
-        '</tr>').join("") +
-        '</tbody></table>';
+      content.innerHTML = '<div class="list">' + articles.map((a, i) => '<article class="article">' +
+        '<div class="rank">#' + (i + 1) + '</div>' +
+        '<div>' +
+          '<a class="title" href="' + escapeHtml(a.article_url || a.tweet_url) + '" target="_blank" rel="noreferrer">' + escapeHtml(a.title || "Untitled") + '</a>' +
+          '<div class="preview">' + escapeHtml(a.preview_text || "") + '</div>' +
+          '<div class="byline"><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a> · ' + fmt.format(a.author_followers || 0) + ' followers</div>' +
+          '<div class="metrics">' +
+            metricPill("Vs creator avg", formatLift(a.views_vs_author_avg || 0)) +
+            metricPill("Views / 1k followers", fmt.format(Math.round(a.views_per_1k_followers || 0))) +
+            metricPill("Creator avg views", fmt.format(Math.round(a.author_avg_views_last10 || 0))) +
+            metricPill("Article views", fmt.format(a.views || 0)) +
+            metricPill("Engagement", fmt.format(a.engagement || 0)) +
+          '</div>' +
+        '</div>' +
+      '</article>').join("") + '</div>';
+    }
+
+    function metricPill(label, value) {
+      return '<div class="pill"><div class="label">' + escapeHtml(label) + '</div><div class="value">' + escapeHtml(value) + '</div></div>';
     }
 
     function formatLift(value) {
