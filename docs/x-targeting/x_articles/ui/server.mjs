@@ -76,7 +76,7 @@ const html = String.raw`<!doctype html>
     button, select { font: inherit; }
     a { color: #0071e3; text-decoration: none; }
     a:hover { color: #0066cc; text-decoration: underline; }
-    .shell { max-width: 1068px; margin: 0 auto; padding: 32px 20px 56px; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 32px 20px 56px; }
     header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
     h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: 0; }
     .sub { margin-top: 8px; color: #6e6e73; font-size: 17px; max-width: 734px; }
@@ -98,41 +98,23 @@ const html = String.raw`<!doctype html>
     .metric { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 14px 16px; }
     .metric .label { color: #86868b; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; }
     .metric .value { margin-top: 4px; font-size: 24px; line-height: 1.1666; font-weight: 700; }
-    .list { display: grid; gap: 10px; }
-    .article {
-      display: grid;
-      grid-template-columns: 44px minmax(0, 1fr);
-      gap: 14px;
-      background: #fff;
-      border: 1px solid #e8e8ed;
-      border-radius: 8px;
-      padding: 14px;
-    }
-    .rank { color: #86868b; font-variant-numeric: tabular-nums; }
+    .tableWrap { overflow-x: auto; border: 1px solid #e8e8ed; border-radius: 8px; background: #fff; }
+    table { width: 100%; min-width: 1180px; border-collapse: collapse; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #e8e8ed; vertical-align: top; }
+    th { color: #6e6e73; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; background: #fbfbfd; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    .rank { color: #86868b; width: 52px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .articleCell { min-width: 360px; max-width: 560px; }
     .title { font-weight: 600; line-height: 1.2105; }
     .preview { color: #6e6e73; font-size: 14px; margin-top: 5px; max-width: 560px; }
     .byline { margin-top: 7px; color: #6e6e73; font-size: 14px; }
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(118px, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .pill {
-      border: 1px solid #e8e8ed;
-      border-radius: 8px;
-      padding: 9px 10px;
-      background: #fbfbfd;
-      min-width: 0;
-    }
-    .pill .label { color: #86868b; font-size: 11px; text-transform: uppercase; letter-spacing: .012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pill .value { margin-top: 3px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .metricNum { font-size: 18px; font-weight: 700; color: #1d1d1f; }
+    .muted { color: #86868b; font-size: 13px; }
     .empty { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 24px; color: #6e6e73; }
     @media (max-width: 760px) {
       header { align-items: stretch; flex-direction: column; }
       .summary { grid-template-columns: 1fr; }
-      .article { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -146,6 +128,13 @@ const html = String.raw`<!doctype html>
       <div class="controls">
         <select id="dateSelect" aria-label="Date"></select>
         <select id="nicheSelect" aria-label="Niche"></select>
+        <select id="rankSelect" aria-label="Rank by">
+          <option value="lift">Rank by: Vs creator avg</option>
+          <option value="followers">Rank by: Views / 1k followers</option>
+          <option value="engRate">Rank by: Engagement rate</option>
+          <option value="views">Rank by: Article views</option>
+          <option value="score">Rank by: Raw score</option>
+        </select>
       </div>
     </header>
     <section class="summary">
@@ -156,7 +145,7 @@ const html = String.raw`<!doctype html>
     <section id="content"></section>
   </main>
   <script>
-    const state = { index: [], date: "", niche: "" };
+    const state = { index: [], date: "", niche: "", rankBy: "lift", articles: [] };
     const fmt = new Intl.NumberFormat();
 
     async function loadIndex() {
@@ -187,6 +176,12 @@ const html = String.raw`<!doctype html>
         state.niche = nicheSelect.value;
         await loadArticles();
       };
+      const rankSelect = document.getElementById("rankSelect");
+      rankSelect.value = state.rankBy;
+      rankSelect.onchange = () => {
+        state.rankBy = rankSelect.value;
+        renderTable(sortedArticles(state.articles));
+      };
     }
 
     async function loadArticles() {
@@ -196,11 +191,28 @@ const html = String.raw`<!doctype html>
       }
       const url = "/api/articles?date=" + encodeURIComponent(state.date) + "&niche=" + encodeURIComponent(state.niche);
       const data = await fetch(url).then((r) => r.json());
-      const articles = data.articles || [];
+      state.articles = data.articles || [];
+      const articles = sortedArticles(state.articles);
       document.getElementById("countMetric").textContent = fmt.format(articles.length);
       document.getElementById("engMetric").textContent = formatLift(articles[0]?.views_vs_author_avg || 0);
       document.getElementById("nicheMetric").textContent = state.niche;
       renderTable(articles);
+    }
+
+    function sortedArticles(articles) {
+      const rankers = {
+        lift: (a) => Number(a.views_vs_author_avg || 0),
+        followers: (a) => Number(a.views_per_1k_followers || 0),
+        engRate: (a) => engagementRate(a),
+        views: (a) => Number(a.views || 0),
+        score: (a) => Number(a.score || 0),
+      };
+      const ranker = rankers[state.rankBy] || rankers.lift;
+      return [...articles].sort((a, b) => {
+        const primary = ranker(b) - ranker(a);
+        if (primary) return primary;
+        return Number(b.score || 0) - Number(a.score || 0);
+      });
     }
 
     function renderTable(articles) {
@@ -209,30 +221,36 @@ const html = String.raw`<!doctype html>
         content.innerHTML = '<div class="empty">No articles for this date and niche.</div>';
         return;
       }
-      content.innerHTML = '<div class="list">' + articles.map((a, i) => '<article class="article">' +
-        '<div class="rank">#' + (i + 1) + '</div>' +
-        '<div>' +
-          '<a class="title" href="' + escapeHtml(a.article_url || a.tweet_url) + '" target="_blank" rel="noreferrer">' + escapeHtml(a.title || "Untitled") + '</a>' +
-          '<div class="preview">' + escapeHtml(a.preview_text || "") + '</div>' +
-          '<div class="byline"><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a> · ' + fmt.format(a.author_followers || 0) + ' followers</div>' +
-          '<div class="metrics">' +
-            metricPill("Vs creator avg", formatLift(a.views_vs_author_avg || 0)) +
-            metricPill("Views / 1k followers", fmt.format(Math.round(a.views_per_1k_followers || 0))) +
-            metricPill("Creator avg views", fmt.format(Math.round(a.author_avg_views_last10 || 0))) +
-            metricPill("Article views", fmt.format(a.views || 0)) +
-            metricPill("Engagement", fmt.format(a.engagement || 0)) +
-          '</div>' +
-        '</div>' +
-      '</article>').join("") + '</div>';
-    }
-
-    function metricPill(label, value) {
-      return '<div class="pill"><div class="label">' + escapeHtml(label) + '</div><div class="value">' + escapeHtml(value) + '</div></div>';
+      content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
+        '<th>Rank</th><th>Article tweet</th><th>Author</th><th>Vs creator avg</th><th>Views / 1k followers</th><th>Creator avg views</th><th>Article views</th><th>Eng rate</th><th>Raw score</th>' +
+        '</tr></thead><tbody>' +
+        articles.map((a, i) => '<tr>' +
+          '<td class="rank">#' + (i + 1) + '</td>' +
+          '<td class="articleCell"><a class="title" href="' + escapeHtml(a.article_url || a.tweet_url) + '" target="_blank" rel="noreferrer">' + escapeHtml(a.title || "Untitled") + '</a><div class="preview">' + escapeHtml(a.preview_text || "") + '</div><div class="byline"><a href="' + escapeHtml(a.tweet_url || a.article_url) + '" target="_blank" rel="noreferrer">tweet</a></div></td>' +
+          '<td><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a><div class="muted">' + fmt.format(a.author_followers || 0) + ' followers</div></td>' +
+          '<td class="num"><span class="metricNum">' + formatLift(a.views_vs_author_avg || 0) + '</span></td>' +
+          '<td class="num"><span class="metricNum">' + fmt.format(Math.round(a.views_per_1k_followers || 0)) + '</span></td>' +
+          '<td class="num">' + fmt.format(Math.round(a.author_avg_views_last10 || 0)) + '</td>' +
+          '<td class="num">' + fmt.format(a.views || 0) + '</td>' +
+          '<td class="num"><span class="metricNum">' + formatPercent(engagementRate(a)) + '</span></td>' +
+          '<td class="num">' + fmt.format(Math.round(a.score || 0)) + '</td>' +
+        '</tr>').join("") + '</tbody></table></div>';
     }
 
     function formatLift(value) {
       const n = Number(value || 0);
       return n ? n.toFixed(n >= 10 ? 1 : 2) + 'x' : '-';
+    }
+
+    function engagementRate(article) {
+      const views = Number(article.views || 0);
+      if (!views) return 0;
+      return Number(article.engagement || 0) / views * 100;
+    }
+
+    function formatPercent(value) {
+      const n = Number(value || 0);
+      return n ? n.toFixed(n >= 10 ? 1 : 2) + '%' : '-';
     }
 
     function escapeHtml(value) {
