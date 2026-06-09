@@ -557,7 +557,7 @@ const html = String.raw`<!doctype html>
         return;
       }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
-        '<th>Rank</th><th>Candidate</th><th>Source tweet</th><th>Draft reply</th>' +
+        '<th>Rank</th><th>Candidate</th><th>Source tweet</th>' +
         engagementSortHeader("score", "Score") +
         engagementSortHeader("engRate", "Eng rate") +
         engagementSortHeader("followers", "Followers") +
@@ -568,7 +568,6 @@ const html = String.raw`<!doctype html>
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
           '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(relativeAge(row.created_at)) + ' | ' + escapeHtml(sourceLabel(row)) + ' | ' + escapeHtml(row.created_at || "") + '</div></td>' +
-          '<td class="articleCell">' + escapeHtml(row.reply_draft || row.reply_angle || "") + '</td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(row.rank_score || 0)) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(row.engagement_rate || 0) + '</span><div class="muted">' + fmt.format(row.engagement || 0) + ' eng</div></td>' +
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
