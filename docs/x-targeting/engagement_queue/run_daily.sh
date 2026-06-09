@@ -31,7 +31,12 @@ import sys
 path = sys.argv[1]
 rows = [json.loads(line) for line in open(path) if line.strip()]
 complete = len(rows) > 0 and all(
-    "handle" in row and "tweet_url" in row and "bot_risk" in row and "reply_angle" in row
+    "handle" in row
+    and "tweet_url" in row
+    and "bot_risk" in row
+    and "lookback_hours" in row
+    and "data_hook" in row
+    and "reply_draft" in row
     for row in rows
 )
 sys.exit(0 if complete else 1)
@@ -47,7 +52,7 @@ echo "[$(date -u --iso-8601=seconds)] fetch target=$TARGET date=$DATE_UTC"
 python3 "$ROOT_DIR/docs/x-targeting/engagement_queue/find_engagement_queue.py" \
   --target "$TARGET" \
   --date "$DATE_UTC" \
-  --lookback-days "${X_ENGAGEMENT_LOOKBACK_DAYS:-3}" \
+  --lookback-hours "${X_ENGAGEMENT_LOOKBACK_HOURS:-24}" \
   --target-posts "${X_ENGAGEMENT_TARGET_POSTS:-8}" \
   --pages "${X_ENGAGEMENT_PAGES:-3}" \
   --max-queue "$MAX_QUEUE" \

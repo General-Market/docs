@@ -290,7 +290,7 @@ const html = String.raw`<!doctype html>
       document.getElementById("engagementControls").classList.toggle("hidden", !isEngagement);
       document.getElementById("pageTitle").textContent = isEngagement ? "Engagement Queue" : "X Article Radar";
       document.getElementById("pageSub").textContent = isEngagement
-        ? "15 daily manual reply targets from people already engaging with the seed account."
+        ? "15 recent data-led replies to shift the account graph toward @100xgemfinder."
         : "Native X Articles grouped by date and niche. Click the title to open the Article on X.";
       if (isEngagement) renderEngagementTable(sortedQueue(state.queue));
       else renderArticleTable(sortedArticles(state.articles));
@@ -439,14 +439,14 @@ const html = String.raw`<!doctype html>
 
     function renderEngagementTable(queue) {
       const top = queue[0] || {};
-      setMetrics("Daily replies", fmt.format(queue.length), "Top score", fmt.format(Math.round(top.rank_score || 0)), "Seed", state.target ? "@" + state.target : "-");
+      setMetrics("Recent replies", fmt.format(queue.length), "Lookback", (top.lookback_hours || 24) + "h", "Seed", state.target ? "@" + state.target : "-");
       const content = document.getElementById("content");
       if (!queue.length) {
         content.innerHTML = '<div class="empty">No engagement queue for this date and target.</div>';
         return;
       }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
-        '<th>Rank</th><th>Candidate</th><th>Source tweet</th><th>Reply angle</th>' +
+        '<th>Rank</th><th>Candidate</th><th>Source tweet</th><th>Data hook</th><th>Draft reply</th>' +
         engagementSortHeader("score", "Score") +
         engagementSortHeader("engRate", "Eng rate") +
         engagementSortHeader("followers", "Followers") +
@@ -457,7 +457,8 @@ const html = String.raw`<!doctype html>
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
           '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml((row.reasons || []).slice(0, 3).join(" | ")) + '</div></td>' +
-          '<td class="articleCell">' + escapeHtml(row.reply_angle || "") + '</td>' +
+          '<td class="articleCell">' + escapeHtml(row.data_hook || row.reply_angle || "") + '</td>' +
+          '<td class="articleCell">' + escapeHtml(row.reply_draft || row.reply_angle || "") + '</td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(row.rank_score || 0)) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(row.engagement_rate || 0) + '</span><div class="muted">' + fmt.format(row.engagement || 0) + ' eng</div></td>' +
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
