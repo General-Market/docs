@@ -28,7 +28,7 @@ fi
 cat > "$ENV_FILE" <<EOF
 ROOT_DIR=$ROOT_DIR
 TWITTERAPI_KEY_FILE=$KEY_SECRET_FILE
-X_ARTICLE_NICHES=trading-ai ai trading crypto prediction-markets
+X_ARTICLE_NICHES=trading-ai ai trading crypto prediction-markets polymarket pumpfun
 X_ARTICLE_PAGES=5
 X_ARTICLE_SEARCH_MODE=both
 X_ARTICLE_MAX_ARTICLES=20

@@ -58,6 +58,29 @@ PREDICTION_MARKET_TERMS = (
     "betting market",
 )
 
+POLYMARKET_TERMS = (
+    "polymarket",
+    "poly market",
+    "prediction market",
+    "prediction markets",
+    "pm market",
+)
+
+PUMPFUN_TERMS = (
+    "pump.fun",
+    "pumpfun",
+    "pump fun",
+    "memecoin",
+    "memecoins",
+    "meme coin",
+    "meme coins",
+    "launchpad",
+    "bonding curve",
+    "solana launch",
+    "letsbonk",
+    "bonkfun",
+)
+
 MARKET_TERMS = (
     "trading",
     "trade",
@@ -100,6 +123,14 @@ NICHE_CONFIG = {
     "prediction-markets": {
         "match_any": PREDICTION_MARKET_TERMS,
         "keyword_query": "(Polymarket OR Kalshi OR prediction OR forecast OR betting market)",
+    },
+    "polymarket": {
+        "match_any": POLYMARKET_TERMS,
+        "keyword_query": "(Polymarket OR \"poly market\" OR \"prediction market\" OR \"prediction markets\")",
+    },
+    "pumpfun": {
+        "match_any": PUMPFUN_TERMS,
+        "keyword_query": "(pump.fun OR pumpfun OR \"pump fun\" OR memecoin OR memecoins OR \"meme coin\" OR launchpad OR \"bonding curve\" OR LetsBonk OR bonkfun)",
     },
 }
 

@@ -102,6 +102,20 @@ const html = String.raw`<!doctype html>
     table { width: 100%; min-width: 1180px; border-collapse: collapse; }
     th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #e8e8ed; vertical-align: top; }
     th { color: #6e6e73; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; background: #fbfbfd; white-space: nowrap; }
+    .sortHead {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      letter-spacing: inherit;
+      padding: 0;
+      text-align: left;
+      text-transform: inherit;
+    }
+    .sortHead.active { color: #1d1d1f; }
+    .sortHead.active::after { content: " ↓"; }
     tr:last-child td { border-bottom: 0; }
     .rank { color: #86868b; width: 52px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .articleCell { min-width: 360px; max-width: 560px; }
@@ -222,7 +236,12 @@ const html = String.raw`<!doctype html>
         return;
       }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
-        '<th>Rank</th><th>Article tweet</th><th>Author</th><th>Vs creator avg</th><th>Views / 1k followers</th><th>Article views</th><th>Eng rate</th><th>Raw score</th>' +
+        '<th>Rank</th><th>Article tweet</th><th>Author</th>' +
+        sortHeader("lift", "Vs creator avg") +
+        sortHeader("followers", "Views / 1k followers") +
+        sortHeader("views", "Article views") +
+        sortHeader("engRate", "Eng rate") +
+        sortHeader("score", "Raw score") +
         '</tr></thead><tbody>' +
         articles.map((a, i) => '<tr>' +
           '<td class="rank">#' + (i + 1) + '</td>' +
@@ -234,6 +253,18 @@ const html = String.raw`<!doctype html>
           '<td class="num"><span class="metricNum">' + formatPercent(engagementRate(a)) + '</span></td>' +
           '<td class="num">' + fmt.format(Math.round(a.score || 0)) + '</td>' +
         '</tr>').join("") + '</tbody></table></div>';
+      content.querySelectorAll("[data-rank]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.rankBy = button.getAttribute("data-rank");
+          document.getElementById("rankSelect").value = state.rankBy;
+          renderTable(sortedArticles(state.articles));
+        });
+      });
+    }
+
+    function sortHeader(rankBy, label) {
+      const active = state.rankBy === rankBy ? " active" : "";
+      return '<th><button class="sortHead' + active + '" data-rank="' + rankBy + '">' + escapeHtml(label) + '</button></th>';
     }
 
     function formatLift(value) {
