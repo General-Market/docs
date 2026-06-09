@@ -11,6 +11,7 @@ const engagementRoot = path.join(xTargetingRoot, "engagement_queue");
 const repoRoot = path.resolve(xTargetingRoot, "../..");
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
+const defaultEngagementTargets = ["100xgemfinder", "chinadegen"];
 let refreshInFlight = null;
 
 function readJsonl(file) {
@@ -105,13 +106,26 @@ function getEngagementQueue(url) {
   };
 }
 
-function refreshEngagementQueue() {
+function safeTarget(value) {
+  const fallback = defaultEngagementTargets[0];
+  const target = (value || fallback).replace(/^@/, "").toLowerCase();
+  if (!/^[a-zA-Z0-9_]+$/.test(target)) return fallback;
+  return target;
+}
+
+function refreshEngagementQueue(targetValue) {
   if (refreshInFlight) return refreshInFlight;
+  const target = safeTarget(targetValue);
   const script = path.join(engagementRoot, "run_daily.sh");
   refreshInFlight = new Promise((resolve) => {
     const child = spawn("bash", [script], {
       cwd: repoRoot,
-      env: { ...process.env, ROOT_DIR: repoRoot },
+      env: {
+        ...process.env,
+        ROOT_DIR: repoRoot,
+        X_ENGAGEMENT_TARGET: target,
+        X_ENGAGEMENT_MAX_BOT_RISK: target === "chinadegen" ? "0" : (process.env.X_ENGAGEMENT_MAX_BOT_RISK || "2"),
+      },
     });
     let output = "";
     const append = (chunk) => {
@@ -292,6 +306,8 @@ const html = String.raw`<!doctype html>
     <section id="content"></section>
   </main>
   <script>
+    const defaultTargets = ["100xgemfinder", "chinadegen"];
+    const initialParams = new URLSearchParams(window.location.search);
     const state = {
       mode: window.location.pathname.startsWith("/engagement") ? "engagement" : "articles",
       index: [],
@@ -301,7 +317,7 @@ const html = String.raw`<!doctype html>
       articles: [],
       engagementIndex: [],
       engagementDate: "",
-      target: "",
+      target: normalizeTarget(initialParams.get("target")) || "",
       engagementRankBy: "score",
       queue: [],
     };
@@ -325,8 +341,12 @@ const html = String.raw`<!doctype html>
     async function loadEngagementIndex() {
       state.engagementIndex = await fetch("/api/engagement/index").then((r) => r.json());
       const firstDate = state.engagementIndex[0];
-      state.engagementDate = firstDate?.date || "";
-      state.target = firstDate?.targets?.[0]?.target || "";
+      state.engagementDate = state.engagementDate || firstDate?.date || "";
+      const dateEntry = state.engagementIndex.find((d) => d.date === state.engagementDate) || firstDate;
+      const availableTargets = [...defaultTargets, ...(dateEntry?.targets || []).map((t) => t.target)];
+      if (!state.target || !availableTargets.includes(state.target)) {
+        state.target = dateEntry?.targets?.[0]?.target || defaultTargets[0] || "";
+      }
       renderEngagementControls();
       await loadEngagementQueue();
     }
@@ -339,7 +359,7 @@ const html = String.raw`<!doctype html>
       document.getElementById("engagementControls").classList.toggle("hidden", !isEngagement);
       document.getElementById("pageTitle").textContent = isEngagement ? "Engagement Queue" : "X Article Radar";
       document.getElementById("pageSub").textContent = isEngagement
-        ? "Recent data-led replies from the graph around @100xgemfinder."
+        ? "Recent data-led replies from the selected target graph."
         : "Native X Articles grouped by date and niche. Click the title to open the Article on X.";
       if (isEngagement) renderEngagementTable(sortedQueue(state.queue));
       else renderArticleTable(sortedArticles(state.articles));
@@ -378,17 +398,22 @@ const html = String.raw`<!doctype html>
       dateSelect.value = state.engagementDate;
       const dateEntry = state.engagementIndex.find((d) => d.date === state.engagementDate);
       const targetSelect = document.getElementById("targetSelect");
-      targetSelect.innerHTML = (dateEntry?.targets || []).map((t) => '<option value="' + t.target + '">@' + t.target + ' (' + t.count + ')</option>').join("");
+      const targetMap = new Map(defaultTargets.map((target) => [target, { target, count: 0 }]));
+      for (const target of (dateEntry?.targets || [])) targetMap.set(target.target, target);
+      const targets = [...targetMap.values()];
+      targetSelect.innerHTML = targets.map((t) => '<option value="' + t.target + '">@' + t.target + ' (' + t.count + ')</option>').join("");
       targetSelect.value = state.target;
       dateSelect.onchange = async () => {
         state.engagementDate = dateSelect.value;
         const next = state.engagementIndex.find((d) => d.date === state.engagementDate);
-        state.target = next?.targets?.[0]?.target || "";
+        const nextTargets = [...defaultTargets, ...(next?.targets || []).map((t) => t.target)];
+        if (!nextTargets.includes(state.target)) state.target = next?.targets?.[0]?.target || defaultTargets[0] || "";
         renderEngagementControls();
         await loadEngagementQueue();
       };
       targetSelect.onchange = async () => {
         state.target = targetSelect.value;
+        updateEngagementUrl();
         await loadEngagementQueue();
       };
       const rankSelect = document.getElementById("engRankSelect");
@@ -407,9 +432,9 @@ const html = String.raw`<!doctype html>
         button.disabled = true;
         button.classList.add("loading");
         text.textContent = "Refreshing";
-        status.textContent = "Checking today's queue";
+        status.textContent = "Checking today's queue for @" + state.target;
         try {
-          const result = await fetch("/api/engagement/refresh", { method: "POST" }).then((r) => r.json());
+          const result = await fetch("/api/engagement/refresh?target=" + encodeURIComponent(state.target), { method: "POST" }).then((r) => r.json());
           status.textContent = result.ok ? "Done" : "Refresh failed";
           await loadEngagementIndex();
           state.mode = "engagement";
@@ -475,6 +500,17 @@ const html = String.raw`<!doctype html>
         if (primary) return primary;
         return Number(b.rank_score || 0) - Number(a.rank_score || 0);
       });
+    }
+
+    function normalizeTarget(value) {
+      const target = String(value || "").replace(/^@/, "").toLowerCase();
+      return /^[a-zA-Z0-9_]+$/.test(target) ? target : "";
+    }
+
+    function updateEngagementUrl() {
+      if (state.mode !== "engagement" || !state.target) return;
+      const next = "/engagement?target=" + encodeURIComponent(state.target);
+      window.history.replaceState({}, "", next);
     }
 
     function renderArticleTable(articles) {
@@ -635,7 +671,7 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "method not allowed" }));
       return;
     }
-    const result = await refreshEngagementQueue();
+    const result = await refreshEngagementQueue(url.searchParams.get("target"));
     res.writeHead(result.ok ? 200 : 500, { "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify(result));
     return;

@@ -49,16 +49,37 @@ BOT_TERMS = (
     "airdrop",
     "giveaway",
     "claim now",
+    "claim",
     "private tg",
     "tg members",
     "telegram",
     "join telegram",
     "signal group",
     "signals",
+    "promote",
+    "promoted",
+    "promotion",
+    "boost",
+    "let's collab",
+    "lets collab",
+    "collab",
+    "let's chat",
+    "lets chat",
+    "dm",
     "dm for promo",
     "paid promo",
     "collab manager",
     "ambassador",
+    "influencer",
+    "business",
+    "invester",
+    "cashback",
+    "rewards",
+    "available now",
+    "app store",
+    "google play",
+    "winners",
+    "invite-only",
 )
 
 ENGLISH_SIGNAL_TERMS = (
@@ -296,6 +317,10 @@ def bot_risk(c: Candidate) -> tuple[int, list[str]]:
     text = f"{c.text} {c.bio}".lower()
     reasons: list[str] = []
     risk = 0
+    words = re.findall(r"[a-zA-Z0-9]{2,}", c.text)
+    if len(words) < 3:
+        risk += 2
+        reasons.append("low-context text")
     if c.followers < 25:
         risk += 2
         reasons.append("tiny account")
@@ -308,6 +333,9 @@ def bot_risk(c: Candidate) -> tuple[int, list[str]]:
     if len(re.findall(r"https?://|t\.co/", c.text)) >= 2:
         risk += 1
         reasons.append("link flood")
+    if len(re.findall(r"@", c.text)) >= 3:
+        risk += 1
+        reasons.append("mention flood")
     if re.search(r"[a-zA-Z]{3,}\d{5,}|[a-zA-Z0-9_]{18,}", c.handle):
         risk += 1
         reasons.append("random-looking handle")
@@ -385,8 +413,8 @@ def reply_angle(c: Candidate) -> str:
     return "token selection, risk, or timing"
 
 
-def data_hook(c: Candidate) -> str:
-    graph = graph_phrase(c)
+def data_hook(c: Candidate, target_handle: str) -> str:
+    graph = graph_phrase(c, target_handle)
     if c.views > 0 and c.engagement > 0:
         label = "action" if c.engagement == 1 else "actions"
         return f"{graph}. Context: {c.engagement} {label} on {fmt_num(c.views)} views"
@@ -418,25 +446,27 @@ def metric_phrase(c: Candidate) -> str:
     return "a fresh reply in this pocket"
 
 
-def graph_phrase(c: Candidate) -> str:
+def graph_phrase(c: Candidate, target_handle: str) -> str:
+    target = target_handle.lstrip("@")
     if c.source == "around" and c.seed_handle and c.around_reply_to:
         return f"graph path: @{c.seed_handle} engaged 100x, then @{c.handle} replied to @{c.around_reply_to}"
     if c.source == "around" and c.seed_handle:
         return f"graph path: @{c.seed_handle} engaged 100x, then @{c.handle} kept replying in-niche"
     if c.source == "reply":
-        return f"graph path: @{c.handle} directly replied under @100xgemfinder"
+        return f"graph path: @{c.handle} directly replied under @{target}"
     if c.source == "mention":
-        return f"graph path: @{c.handle} directly mentioned @100xgemfinder"
+        return f"graph path: @{c.handle} directly mentioned @{target}"
     return f"graph path: @{c.handle} is in the adjacent 100x niche"
 
 
-def source_phrase(c: Candidate) -> str:
+def source_phrase(c: Candidate, target_handle: str) -> str:
+    target = target_handle.lstrip("@")
     if c.source == "around" and c.seed_handle:
         return f"I found this through @{c.seed_handle}'s recent replies"
     if c.source == "reply":
-        return "You already showed up under 100x"
+        return f"You already showed up under @{target}"
     if c.source == "mention":
-        return "You already mentioned 100x"
+        return f"You already mentioned @{target}"
     return "This is in the same 100x discovery pocket"
 
 
@@ -617,13 +647,14 @@ def main() -> None:
                 score, _ = score_candidate(candidate)
                 if score <= 0:
                     continue
-                existing = by_handle.get(f"around:{candidate.source_tweet_id}")
+                handle_key = candidate.handle.lower()
+                existing = by_handle.get(handle_key)
                 if not existing:
-                    by_handle[f"around:{candidate.source_tweet_id}"] = candidate
+                    by_handle[handle_key] = candidate
                     continue
                 existing_score, _ = score_candidate(existing)
                 if score > existing_score:
-                    by_handle[f"around:{candidate.source_tweet_id}"] = candidate
+                    by_handle[handle_key] = candidate
             if len(by_handle) >= args.max_queue:
                 break
 
@@ -695,7 +726,7 @@ def main() -> None:
             "bot_risk_reasons": risk_reasons,
             "reasons": reasons,
             "reply_angle": reply_angle(candidate),
-            "data_hook": data_hook(candidate),
+            "data_hook": data_hook(candidate, target_handle),
             "reply_draft": reply_draft(candidate),
             "draft_schema_version": DRAFT_SCHEMA_VERSION,
         })
