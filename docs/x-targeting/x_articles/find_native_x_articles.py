@@ -477,14 +477,36 @@ def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> 
     # niches keep the platform-wide ladder and rely on the local classifier.
     prefix = config.get("likes_prefix")
     scope = f"{prefix} " if prefix else ""
-    return [
-        (
-            f"likes-gte-{threshold}",
-            f"{scope}min_faves:{threshold} url:x.com/i/article since:{since_date} -is:retweet",
-            "Top",
-        )
-        for threshold in thresholds
-    ]
+    out: list[tuple[str, str, str]] = []
+    for threshold in thresholds:
+        query = f"{scope}min_faves:{threshold} url:x.com/i/article since:{since_date} -is:retweet"
+        out.append((f"likes-gte-{threshold}", query, "Top"))
+        # Top and Latest are near-disjoint result surfaces at the same floor
+        # (6/59 overlap measured) — each yields different view giants. Duplicate
+        # the giant-bearing rungs; sub-100 rungs only pad thin niches.
+        if threshold >= 100:
+            out.append((f"likes-gte-{threshold}-latest", query, "Latest"))
+    return out
+
+
+RT_THRESHOLDS = (500, 200, 100)
+
+
+def retweet_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
+    # The single best generic operator for view giants (measured): min_retweets:500
+    # surfaced 18 Articles over 1M views in 2 pages, max 30.8M. Retweets track reach
+    # for announcement-style Articles whose like counts stay modest.
+    config = NICHE_CONFIG.get(niche)
+    if not config:
+        raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
+    prefix = config.get("likes_prefix")
+    scope = f"{prefix} " if prefix else ""
+    out: list[tuple[str, str, str]] = []
+    for threshold in thresholds:
+        query = f"{scope}min_retweets:{threshold} url:x.com/i/article since:{since_date} -is:retweet"
+        out.append((f"rt-gte-{threshold}", query, "Top"))
+        out.append((f"rt-gte-{threshold}-latest", query, "Latest"))
+    return out
 
 
 def replies_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
@@ -576,8 +598,12 @@ def build_queries(niche: str, since_date: str, search_mode: str, thresholds: lis
     if search_mode == "regressive-likes":
         return likes_ladder_queries(niche, since_date, thresholds)
     if search_mode == "both":
+        # Retweet ladder first: it is the densest source of view giants, and the
+        # ladder stops early once max_articles is reached — giants must be fetched
+        # before that gate can close.
         return (
-            likes_ladder_queries(niche, since_date, thresholds)
+            retweet_ladder_queries(niche, since_date, list(RT_THRESHOLDS))
+            + likes_ladder_queries(niche, since_date, thresholds)
             + replies_ladder_queries(niche, since_date, list(REPLY_THRESHOLDS))
             + keyword_queries(niche, since_date)
         )
