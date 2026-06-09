@@ -117,9 +117,11 @@ HYPERLIQUID_CORE_TERMS = (
     "hip-1",
     "hip-2",
     "hip-3",
+    "hip-4",
     "hip1",
     "hip2",
     "hip3",
+    "hip4",
     "hlp",
     "purr",
     "$hype",
@@ -131,17 +133,31 @@ HYPERLIQUID_ECO_TERMS = (
     "hyperbeat",
     "felix",
     "hypurrfi",
+    "hypurr",
     "hyperlend",
     "kinetiq",
     "hyperdrive",
     "hyperswap",
     "hybra",
-    "sentiment",
     "kittenswap",
     "hyperbloom",
+    "hypernova",
+    "nova markets",
     "liminal",
     "valantis",
 )
+# 'sentiment' (a minor HyperEVM lending app) was dropped: the bare English word
+# "market sentiment" appears in too many unrelated crypto articles to be a safe term.
+
+# Token-context patterns: bare "HYPE" collides with the English word, so it only
+# counts when it sits next to a token signal (HYPE ETF, HYPE tokenomics, …).
+HYPERLIQUID_TOKEN_PATTERNS = (
+    r"\bhype\s*(etf|token|tokenomics|ath|buyback|staking|airdrop|treasury|price)",
+)
+
+# A native Article from one of these handles is in-niche even when the title is
+# language-ambiguous (e.g. @HyperEVM_CN posting "<Hypernova研报>").
+HYPERLIQUID_AUTHOR_REGEX = r"hyperliquid|hyperevm|hypurr|hyperbeat|hyperlend|kinetiq|hyperswap|hyperbloom"
 
 HYPERLIQUID_TERMS = HYPERLIQUID_CORE_TERMS + HYPERLIQUID_ECO_TERMS
 
@@ -183,8 +199,9 @@ HL_DEFI_TERMS = (
 
 # Shared X-search recall query for the Hyperliquid ecosystem.
 HYPERLIQUID_QUERY = (
-    '(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit '
-    'OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR)'
+    '(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit '
+    'OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova '
+    'OR HyperBloom OR $PURR)'
 )
 
 NICHE_CONFIG = {
@@ -220,11 +237,15 @@ NICHE_CONFIG = {
         "match_any": HYPERLIQUID_TERMS,
         "keyword_query": HYPERLIQUID_QUERY,
         "likes_prefix": HYPERLIQUID_QUERY,
+        "token_patterns": HYPERLIQUID_TOKEN_PATTERNS,
+        "author_regex": HYPERLIQUID_AUTHOR_REGEX,
     },
     "hyperliquid-30d": {
         "match_any": HYPERLIQUID_TERMS,
         "keyword_query": HYPERLIQUID_QUERY,
         "likes_prefix": HYPERLIQUID_QUERY,
+        "token_patterns": HYPERLIQUID_TOKEN_PATTERNS,
+        "author_regex": HYPERLIQUID_AUTHOR_REGEX,
     },
     "hip3-30d": {
         "match_any": HIP3_TERMS,
@@ -233,13 +254,15 @@ NICHE_CONFIG = {
     },
     "hyperevm-30d": {
         "match_any": HYPEREVM_TERMS,
-        "keyword_query": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq)",
-        "likes_prefix": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq)",
+        "keyword_query": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova OR HyperBloom)",
+        "likes_prefix": "(HyperEVM OR \"Hyper EVM\" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova)",
+        "author_regex": HYPERLIQUID_AUTHOR_REGEX,
     },
     "hl-defi-30d": {
         "match_any": HL_DEFI_TERMS,
         "keyword_query": "(HLP OR \"HLP vault\" OR Hyperliquid OR HyperEVM) (vault OR lending OR looping OR staking OR LST OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq)",
         "likes_prefix": "(\"HLP vault\" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive)",
+        "author_regex": HYPERLIQUID_AUTHOR_REGEX,
     },
 }
 
@@ -350,8 +373,20 @@ def matches_niche(article: NativeArticle, niche: str) -> bool:
         raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
     text = f"{article.title} {article.preview_text}".lower()
     if "match_all" in config:
-        return all(any(term_in_text(term, text) for term in terms) for terms in config["match_all"])
-    return any(term_in_text(term, text) for term in config["match_any"])
+        if all(any(term_in_text(term, text) for term in terms) for terms in config["match_all"]):
+            return True
+    elif any(term_in_text(term, text) for term in config["match_any"]):
+        return True
+    # Token-context patterns catch ambiguous tokens (bare HYPE) only beside a signal.
+    for pattern in config.get("token_patterns", ()):
+        if re.search(pattern, text, re.I):
+            return True
+    # A native Article from a clearly in-niche handle counts even when the title is
+    # language-ambiguous (a Chinese research-report title under @HyperEVM_CN).
+    author_regex = config.get("author_regex")
+    if author_regex and re.search(author_regex, article.author or "", re.I):
+        return True
+    return False
 
 
 def term_in_text(term: str, text: str) -> bool:
@@ -360,7 +395,11 @@ def term_in_text(term: str, text: str) -> bool:
         # Cashtags ($hype) and multi-token / punctuated terms (hip-3, pump.fun) lose
         # their boundary under \b, so fall back to substring matching.
         return term in text
-    return re.search(rf"\b{re.escape(term)}\b", text) is not None
+    # ASCII boundaries instead of \b: \b fails when a latin term is flanked by CJK
+    # characters (both sides are \w, so no boundary), which silently drops Chinese
+    # and Japanese articles that embed a word like "Hyperliquid". This still blocks
+    # mid-word English matches ("ai" in "air") because the flanks are ASCII letters.
+    return re.search(rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])", text) is not None
 
 
 def title_key(title: str) -> str:

@@ -2,37 +2,37 @@
 
 ## TL;DR
 
-Stored **59 native X Articles** from **1365 searched tweets** since `2026-05-10T21:39:28.501974+00:00`.
+Stored **94 native X Articles** from **1585 searched tweets** since `2026-05-10T22:03:22.477007+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
 | rank | X Article | author | X signal | score | views/followers | vs author avg | next action |
 |---:|---|---|---:|---:|---:|---:|---|
-| 1 | [用 Codex 撸出 24/7 交易的 Trading Agent](https://x.com/i/article/2059162867828711425) | [@MossAI_CN](https://x.com/MossAI_CN) | 2146 eng / 151969 views / 14.121 eng per 1k views | 2411.7 | 98234.648 per 1k | 108.302x | Read and extract pattern (~5 min) |
-| 2 | [Travix 2026: The Agentic Omnibooker for Global Derivatives ](https://x.com/i/article/2055140625952264192) | [@Travix_fi](https://x.com/Travix_fi) | 1317 eng / 104699 views / 12.579 eng per 1k views | 2029.9 | 62806.839 per 1k | 36.458x | Read and extract pattern (~5 min) |
-| 3 | [How $HYPE Hits $150+](https://x.com/i/article/2054915599533264896) | [@0xpostrich](https://x.com/0xpostrich) | 159 eng / 36841 views / 4.316 eng per 1k views | 187.3 | 19098.497 per 1k | 22.618x | Read and extract pattern (~5 min) |
-| 4 | [The Inscription Layer of Hyperliquid](https://x.com/i/article/2056287039918632960) | [@hyperinals](https://x.com/hyperinals) | 46 eng / 16807 views / 2.737 eng per 1k views | 58.6 | 32762.183 per 1k | 11.884x | Read and extract pattern (~5 min) |
-| 5 | [<alt.fun早期研报>](https://x.com/i/article/2055175349995278336) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 227 eng / 24813 views / 9.148 eng per 1k views | 257.3 | 2377.863 per 1k | 9.577x | Read and extract pattern (~5 min) |
-| 6 | [How to Maximize kPoints: Full Guide for Beginners & Advanced Farmers](https://x.com/i/article/2059939995666821125) | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 68 eng / 17503 views / 3.885 eng per 1k views | 77.8 | 3805.0 per 1k | 9.175x | Read and extract pattern (~5 min) |
-| 7 | [<Liminal 赔率拆解>](https://x.com/i/article/2054550454261170176) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 104 eng / 19579 views / 5.312 eng per 1k views | 113.5 | 1876.282 per 1k | 7.557x | Read and extract pattern (~5 min) |
-| 8 | [万字拆解 OKX Exchange OS：一场只许成功不许失败的战争](https://x.com/i/article/2059129053052067840) | [@punk2898](https://x.com/punk2898) | 488 eng / 103666 views / 4.707 eng per 1k views | 601.6 | 1180.679 per 1k | 6.177x | Read and extract pattern (~5 min) |
-| 9 | [HIP-4: A New Way To Express A Bet](https://x.com/i/article/2059670053096730626) | [@Delphi_Digital](https://x.com/Delphi_Digital) | 506 eng / 41747 views / 12.121 eng per 1k views | 564.9 | 64.824 per 1k | 4.719x | Read and extract pattern (~5 min) |
-| 10 | [A new era for Hyperliquid stablecoins: Thank you for using USDH.](https://x.com/i/article/2054881656985534464) | [@nativemarkets](https://x.com/nativemarkets) | 1416 eng / 354569 views / 3.994 eng per 1k views | 1764.0 | 50030.902 per 1k | 4.645x | Read and extract pattern (~5 min) |
-| 11 | [<Liminal 实操指南>](https://x.com/i/article/2053452923108270080) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 114 eng / 11942 views / 9.546 eng per 1k views | 120.0 | 1144.418 per 1k | 4.609x | Read and extract pattern (~5 min) |
-| 12 | [Euler Brings HyperEVM Market Coverage In-House](https://x.com/i/article/2055292794982318080) | [@eulerfinance](https://x.com/eulerfinance) | 96 eng / 30800 views / 3.117 eng per 1k views | 123.3 | 429.029 per 1k | 4.064x | Read and extract pattern (~5 min) |
-| 13 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 1941 views / 2.576 eng per 1k views | 6.6 | 30.462 per 1k | 3.477x | Read and extract pattern (~5 min) |
-| 14 | [qVAULT Opens Early Access, Giving Hyperliquid Holders Post-Quantum Self-Custody ](https://x.com/i/article/2064330903992647680) | [@qlabsofficial](https://x.com/qlabsofficial) | 139 eng / 13444 views / 10.339 eng per 1k views | 173.5 | 859.701 per 1k | 3.439x | Read and extract pattern (~5 min) |
-| 15 | [海力士开盘前最后2分钟，TradeXYZ让价格精确到只差0.13% ](https://x.com/i/article/2063917633871704064) | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 28 eng / 27462 views / 1.02 eng per 1k views | 44.2 | 315.438 per 1k | 3.151x | Read and extract pattern (~5 min) |
-| 16 | [Markets by Kinetiq "The App of All Finance"](https://x.com/i/article/2058590177191235584) | [@VikingoDigital_](https://x.com/VikingoDigital_) | 213 eng / 42661 views / 4.993 eng per 1k views | 254.2 | 5907.907 per 1k | 3.048x | Read and extract pattern (~5 min) |
-| 17 | [How Hyperliquid built a financial operating system one layer at a time](https://x.com/i/article/2058102373986238464) | [@Baheet_](https://x.com/Baheet_) | 129 eng / 5097 views / 25.309 eng per 1k views | 139.7 | 886.127 per 1k | 2.802x | Read and extract pattern (~5 min) |
-| 18 | [Why Hyperliquid won, and why the story still has legs from a marketing perspective](https://x.com/i/article/2057374836855308288) | [@minstrell_](https://x.com/minstrell_) | 258 eng / 11146 views / 23.147 eng per 1k views | 262.7 | 353.034 per 1k | 2.53x | Read and extract pattern (~5 min) |
-| 19 | [<PaperTrade 深层研报>](https://x.com/i/article/2054468496235589633) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 140 eng / 6155 views / 22.746 eng per 1k views | 150.1 | 589.842 per 1k | 2.376x | Read and extract pattern (~5 min) |
-| 20 | [Maxi or Diversified? The Positioning Decision That Could Make (or Cost) You Thousands](https://x.com/i/article/2062553549796470784) | [@El__khalil](https://x.com/El__khalil) | 169 eng / 2842 views / 59.465 eng per 1k views | 188.9 | 669.494 per 1k | 2.339x | Read and extract pattern (~5 min) |
-| 21 | [Hyperliquid on DeFi Saver: Better Tools for Traders, Better Hedges for Farmers](https://x.com/i/article/2062458522206453760) | [@todayindefi](https://x.com/todayindefi) | 4 eng / 1385 views / 2.888 eng per 1k views | 5.5 | 80.271 per 1k | 2.306x | Read and extract pattern (~5 min) |
-| 22 | [Nova Markets: The Missing Layer in Hyperliquid's Stack  ](https://x.com/i/article/2054959242843398144) | [@Baheet_](https://x.com/Baheet_) | 104 eng / 3904 views / 26.639 eng per 1k views | 115.3 | 678.72 per 1k | 2.146x | Read and extract pattern (~5 min) |
-| 23 | [Hyperliquid Through a TradFi Lens: Weekend Markets, Builder Codes, and Transparent Rules](https://x.com/i/article/2057781060952363008) | [@HyperliquidR](https://x.com/HyperliquidR) | 270 eng / 42011 views / 6.427 eng per 1k views | 333.0 | 12065.192 per 1k | 1.991x | Read and extract pattern (~5 min) |
-| 24 | [Báo cáo Research $HYPE ](https://x.com/i/article/2063573444630077440) | [@lan89677745](https://x.com/lan89677745) | 4 eng / 61 views / 65.574 eng per 1k views | 4.0 | 86.895 per 1k | 1.778x | Read and extract pattern (~5 min) |
-| 25 | [Leftcurve Report  : A new Launchpad on Hyperliquid](https://x.com/i/article/2055677327745470464) | [@StarkCrypto3](https://x.com/StarkCrypto3) | 18 eng / 6259 views / 2.876 eng per 1k views | 21.1 | 812.541 per 1k | 1.753x | Read and extract pattern (~5 min) |
+| 1 | [Hyperliquid: How 11 people built crypto's most important exchange](https://x.com/i/article/2062508197085159424) | [@cryptodotnews](https://x.com/cryptodotnews) | 55 eng / 397407 views / 0.138 eng per 1k views | 160.0 | 3318.888 per 1k | 177.755x | Read and extract pattern (~5 min) |
+| 2 | [用 Codex 撸出 24/7 交易的 Trading Agent](https://x.com/i/article/2059162867828711425) | [@MossAI_CN](https://x.com/MossAI_CN) | 2146 eng / 151969 views / 14.121 eng per 1k views | 2411.7 | 98234.648 per 1k | 108.302x | Read and extract pattern (~5 min) |
+| 3 | [How $HYPE Hits $150+](https://x.com/i/article/2054915599533264896) | [@0xpostrich](https://x.com/0xpostrich) | 159 eng / 36842 views / 4.316 eng per 1k views | 187.3 | 19089.119 per 1k | 22.562x | Read and extract pattern (~5 min) |
+| 4 | [Introducing Hypurr World Cup Edition :  528 NFTs, 48 nations, $1,500+ in rewards  🏆](https://x.com/i/article/2059967422413570056) | [@MixemaCrypto](https://x.com/MixemaCrypto) | 380 eng / 44930 views / 8.458 eng per 1k views | 421.0 | 31529.825 per 1k | 18.356x | Read and extract pattern (~5 min) |
+| 5 | [HYPE買っておけば良さそう。](https://x.com/i/article/2063586200632639488) | [@saizyo_crypto](https://x.com/saizyo_crypto) | 121 eng / 33746 views / 3.586 eng per 1k views | 141.2 | 2134.742 per 1k | 12.121x | Read and extract pattern (~5 min) |
+| 6 | [<alt.fun早期研报>](https://x.com/i/article/2055175349995278336) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 227 eng / 24813 views / 9.148 eng per 1k views | 257.3 | 2375.814 per 1k | 9.575x | Read and extract pattern (~5 min) |
+| 7 | [How to Maximize kPoints: Full Guide for Beginners & Advanced Farmers](https://x.com/i/article/2059939995666821125) | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 68 eng / 17509 views / 3.884 eng per 1k views | 77.8 | 3806.304 per 1k | 9.1x | Read and extract pattern (~5 min) |
+| 8 | [<Liminal 赔率拆解>](https://x.com/i/article/2054550454261170176) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 104 eng / 19579 views / 5.312 eng per 1k views | 113.5 | 1874.665 per 1k | 7.555x | Read and extract pattern (~5 min) |
+| 9 | [万字拆解 OKX Exchange OS：一场只许成功不许失败的战争](https://x.com/i/article/2059129053052067840) | [@punk2898](https://x.com/punk2898) | 488 eng / 103666 views / 4.707 eng per 1k views | 601.6 | 1180.679 per 1k | 6.163x | Read and extract pattern (~5 min) |
+| 10 | [HIP-4: A New Way To Express A Bet](https://x.com/i/article/2059670053096730626) | [@Delphi_Digital](https://x.com/Delphi_Digital) | 506 eng / 41747 views / 12.121 eng per 1k views | 564.9 | 64.803 per 1k | 4.896x | Read and extract pattern (~5 min) |
+| 11 | [株クラがHyperliquidを始めるべき理由｜S&P500もTSLAも24時間取引できる時代](https://x.com/i/article/2063766396816003072) | [@houseki_kirei](https://x.com/houseki_kirei) | 80 eng / 8741 views / 9.152 eng per 1k views | 89.9 | 3137.473 per 1k | 4.692x | Read and extract pattern (~5 min) |
+| 12 | [A new era for Hyperliquid stablecoins: Thank you for using USDH.](https://x.com/i/article/2054881656985534464) | [@nativemarkets](https://x.com/nativemarkets) | 1416 eng / 354589 views / 3.993 eng per 1k views | 1764.0 | 50033.724 per 1k | 4.641x | Read and extract pattern (~5 min) |
+| 13 | [Meme season on Hyperliquid](https://x.com/i/article/2055607074080350208) | [@Rekt_Zerker](https://x.com/Rekt_Zerker) | 398 eng / 23073 views / 17.25 eng per 1k views | 439.7 | 5418.741 per 1k | 4.636x | Read and extract pattern (~5 min) |
+| 14 | [<Liminal 实操指南>](https://x.com/i/article/2053452923108270080) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 114 eng / 11942 views / 9.546 eng per 1k views | 120.0 | 1143.432 per 1k | 4.608x | Read and extract pattern (~5 min) |
+| 15 | [HYPE 的 2028：600 美元只是起点？](https://x.com/i/article/2059939883968581633) | [@0xmediaco](https://x.com/0xmediaco) | 22 eng / 3094 views / 7.111 eng per 1k views | 26.0 | 98.667 per 1k | 3.906x | Read and extract pattern (~5 min) |
+| 16 | [6 月 6 日｜加密圈财经日报・深耕 HYPE/Hyperliquid](https://x.com/i/article/2063243930075095040) | [@Resonance88888](https://x.com/Resonance88888) | 2 eng / 750 views / 2.667 eng per 1k views | 2.2 | 9259.259 per 1k | 3.775x | Read and extract pattern (~5 min) |
+| 17 | [HIP-4 vs. Kalshi vs. Polymarket: We're Just Getting Started ](https://x.com/i/article/2054148665527459840) | [@blocmates](https://x.com/blocmates) | 182 eng / 14956 views / 12.169 eng per 1k views | 200.0 | 174.583 per 1k | 3.534x | Read and extract pattern (~5 min) |
+| 18 | [qVAULT Opens Early Access, Giving Hyperliquid Holders Post-Quantum Self-Custody ](https://x.com/i/article/2064330903992647680) | [@qlabsofficial](https://x.com/qlabsofficial) | 139 eng / 13514 views / 10.286 eng per 1k views | 173.5 | 864.066 per 1k | 3.454x | Read and extract pattern (~5 min) |
+| 19 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 1981 views / 2.524 eng per 1k views | 6.7 | 31.091 per 1k | 3.38x | Read and extract pattern (~5 min) |
+| 20 | [海力士开盘前最后2分钟，TradeXYZ让价格精确到只差0.13% ](https://x.com/i/article/2063917633871704064) | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 28 eng / 27517 views / 1.018 eng per 1k views | 44.2 | 316.069 per 1k | 3.152x | Read and extract pattern (~5 min) |
+| 21 | [nest: the next phase for HyperEVM ](https://x.com/i/article/2061879351377907712) | [@_Telaga_](https://x.com/_Telaga_) | 146 eng / 7410 views / 19.703 eng per 1k views | 170.5 | 9125.616 per 1k | 3.151x | Read and extract pattern (~5 min) |
+| 22 | [Prediction Leverage Is Becoming the New Battlefield](https://x.com/i/article/2054205493833515008) | [@XBITDEX](https://x.com/XBITDEX) | 186 eng / 8450 views / 22.012 eng per 1k views | 209.8 | 210.723 per 1k | 3.069x | Read and extract pattern (~5 min) |
+| 23 | [Markets by Kinetiq "The App of All Finance"](https://x.com/i/article/2058590177191235584) | [@VikingoDigital_](https://x.com/VikingoDigital_) | 213 eng / 43017 views / 4.952 eng per 1k views | 254.3 | 5958.033 per 1k | 3.057x | Read and extract pattern (~5 min) |
+| 24 | [How Hyperliquid built a financial operating system one layer at a time](https://x.com/i/article/2058102373986238464) | [@Baheet_](https://x.com/Baheet_) | 129 eng / 5143 views / 25.083 eng per 1k views | 139.7 | 894.124 per 1k | 2.813x | Read and extract pattern (~5 min) |
+| 25 | [$STONKS on @altdotfun : The First Real Shot at a Billion-Dollar Finance Meme ](https://x.com/i/article/2055665451582038016) | [@EzBruv](https://x.com/EzBruv) | 150 eng / 15909 views / 9.429 eng per 1k views | 172.3 | 3258.705 per 1k | 2.644x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -61,51 +61,46 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 | label | type | query |
 |---|---|---|
-| `likes-gte-5000` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:5000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2000` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:2000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1000` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:1000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-500` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:500 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-250` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:250 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-100` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:100 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-50` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:50 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-25` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:25 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-10` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:10 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-5` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:5 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:2 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) min_faves:1 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `broad-native-top` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `keyword-native-top` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet min_faves:5` |
-| `keyword-native-latest` | `Latest` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-100` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:100 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-50` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:50 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-25` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:25 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-10` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:10 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-5` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:5 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-2` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:2 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `likes-gte-1` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) min_faves:1 url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `broad-native-top` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `keyword-native-top` | `Top` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet min_faves:5` |
+| `keyword-native-latest` | `Latest` | `(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR $PURR) url:x.com/i/article since:2026-05-10 -is:retweet` |
 
 ## Author Map
 
 | author | native Articles found |
 |---|---:|
-| [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 6 |
+| [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 8 |
+| [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) | 3 |
 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 2 |
 | [@Baheet_](https://x.com/Baheet_) | 2 |
+| [@PANewsCN](https://x.com/PANewsCN) | 2 |
+| [@giant_cutie](https://x.com/giant_cutie) | 2 |
+| [@BitFrogOfficial](https://x.com/BitFrogOfficial) | 2 |
+| [@stoic_research](https://x.com/stoic_research) | 2 |
+| [@cryptodotnews](https://x.com/cryptodotnews) | 1 |
 | [@MossAI_CN](https://x.com/MossAI_CN) | 1 |
-| [@Travix_fi](https://x.com/Travix_fi) | 1 |
 | [@0xpostrich](https://x.com/0xpostrich) | 1 |
-| [@hyperinals](https://x.com/hyperinals) | 1 |
+| [@MixemaCrypto](https://x.com/MixemaCrypto) | 1 |
+| [@saizyo_crypto](https://x.com/saizyo_crypto) | 1 |
 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 1 |
 | [@punk2898](https://x.com/punk2898) | 1 |
 | [@Delphi_Digital](https://x.com/Delphi_Digital) | 1 |
+| [@houseki_kirei](https://x.com/houseki_kirei) | 1 |
 | [@nativemarkets](https://x.com/nativemarkets) | 1 |
-| [@eulerfinance](https://x.com/eulerfinance) | 1 |
-| [@qlabsofficial](https://x.com/qlabsofficial) | 1 |
-| [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 1 |
-| [@VikingoDigital_](https://x.com/VikingoDigital_) | 1 |
-| [@minstrell_](https://x.com/minstrell_) | 1 |
-| [@El__khalil](https://x.com/El__khalil) | 1 |
-| [@todayindefi](https://x.com/todayindefi) | 1 |
-| [@HyperliquidR](https://x.com/HyperliquidR) | 1 |
-| [@lan89677745](https://x.com/lan89677745) | 1 |
+| [@Rekt_Zerker](https://x.com/Rekt_Zerker) | 1 |
+| [@0xmediaco](https://x.com/0xmediaco) | 1 |
 
 ## Spend
 
-- Balance before: `10002744` credits.
-- Balance after: `9956094` credits.
-- Apparent spend: `46650` credits = `$0.4665`.
+- Balance before: `9900129` credits.
+- Balance after: `9853434` credits.
+- Apparent spend: `46695` credits = `$0.4669`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.
