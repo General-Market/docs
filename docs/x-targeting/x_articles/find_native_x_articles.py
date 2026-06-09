@@ -438,6 +438,7 @@ def report_md(
         "- Score = weighted engagement + capped views bonus.",
         "- Views/followers = Article views per 1,000 creator followers.",
         "- Vs author avg = Article views divided by the creator's average views over their previous 10 mature posts.",
+        "- Final rows are sorted by author-average lift, then follower-normalized reach, then raw score.",
         "- Mature post = at least 4 hours old, so brand-new posts do not drag down the creator average.",
         "- Weighted engagement gives retweets and quotes 2x weight because they distribute the article.",
         "",
@@ -576,6 +577,14 @@ def main() -> None:
         row["score"] = article.score
         row.update(enrich_outlier_metrics(article, raw_dir, args.reuse_raw, args.author_min_age_hours, started_at))
         rows.append(row)
+    rows.sort(
+        key=lambda row: (
+            float(row.get("views_vs_author_avg") or 0),
+            float(row.get("views_per_1k_followers") or 0),
+            float(row.get("score") or 0),
+        ),
+        reverse=True,
+    )
 
     write_jsonl(out_dir / "articles.jsonl", rows)
     write_jsonl(out_dir / f"articles-{started_at.strftime('%Y%m%dT%H%M%SZ')}.jsonl", rows)
