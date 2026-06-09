@@ -222,7 +222,7 @@ const html = String.raw`<!doctype html>
         return;
       }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
-        '<th>Rank</th><th>Article tweet</th><th>Author</th><th>Vs creator avg</th><th>Views / 1k followers</th><th>Creator avg views</th><th>Article views</th><th>Eng rate</th><th>Raw score</th>' +
+        '<th>Rank</th><th>Article tweet</th><th>Author</th><th>Vs creator avg</th><th>Views / 1k followers</th><th>Article views</th><th>Eng rate</th><th>Raw score</th>' +
         '</tr></thead><tbody>' +
         articles.map((a, i) => '<tr>' +
           '<td class="rank">#' + (i + 1) + '</td>' +
@@ -230,7 +230,6 @@ const html = String.raw`<!doctype html>
           '<td><a href="https://x.com/' + escapeHtml(a.author) + '" target="_blank" rel="noreferrer">@' + escapeHtml(a.author) + '</a><div class="muted">' + fmt.format(a.author_followers || 0) + ' followers</div></td>' +
           '<td class="num"><span class="metricNum">' + formatLift(a.views_vs_author_avg || 0) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(a.views_per_1k_followers || 0)) + '</span></td>' +
-          '<td class="num">' + fmt.format(Math.round(a.author_avg_views_last10 || 0)) + '</td>' +
           '<td class="num">' + fmt.format(a.views || 0) + '</td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(engagementRate(a)) + '</span></td>' +
           '<td class="num">' + fmt.format(Math.round(a.score || 0)) + '</td>' +
