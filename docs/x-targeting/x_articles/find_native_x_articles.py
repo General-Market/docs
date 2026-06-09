@@ -59,6 +59,16 @@ CRYPTO_TERMS = (
     "perps",
     "dex",
     "token",
+    # The platform's densest high-view crypto class was absent from the list, so
+    # Articles like Saylor's "Four Ideologies of Bitcoin" (1.5M views) were dropped.
+    # "eth" is safe under the ASCII-boundary matcher (no match inside "method").
+    "bitcoin",
+    "btc",
+    "ethereum",
+    "eth",
+    "stablecoin",
+    "satoshi",
+    "solana",
 )
 
 PREDICTION_MARKET_TERMS = (
@@ -477,6 +487,25 @@ def likes_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> 
     ]
 
 
+def replies_ladder_queries(niche: str, since_date: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
+    # Views and likes diverge: a 1.9M-view Article can carry 2k likes but 600 replies.
+    # A min_faves ladder never fetches those view giants; a min_replies ladder does.
+    # Replies are the engagement axis least correlated with likes (measured).
+    config = NICHE_CONFIG.get(niche)
+    if not config:
+        raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
+    prefix = config.get("likes_prefix")
+    scope = f"{prefix} " if prefix else ""
+    return [
+        (
+            f"replies-gte-{threshold}",
+            f"{scope}min_replies:{threshold} url:x.com/i/article since:{since_date} -is:retweet",
+            "Top",
+        )
+        for threshold in thresholds
+    ]
+
+
 def parse_tweets(body: dict) -> list[dict]:
     data = body.get("data") or {}
     return body.get("tweets") or (data.get("tweets", []) if isinstance(data, dict) else []) or []
@@ -538,13 +567,20 @@ def enrich_outlier_metrics(article: NativeArticle, raw_dir: Path, reuse_raw: boo
     }
 
 
+REPLY_THRESHOLDS = (2000, 500, 100, 25)
+
+
 def build_queries(niche: str, since_date: str, search_mode: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
     if search_mode == "keyword":
         return keyword_queries(niche, since_date)
     if search_mode == "regressive-likes":
         return likes_ladder_queries(niche, since_date, thresholds)
     if search_mode == "both":
-        return likes_ladder_queries(niche, since_date, thresholds) + keyword_queries(niche, since_date)
+        return (
+            likes_ladder_queries(niche, since_date, thresholds)
+            + replies_ladder_queries(niche, since_date, list(REPLY_THRESHOLDS))
+            + keyword_queries(niche, since_date)
+        )
     raise ValueError(f"Unsupported search mode: {search_mode}")
 
 
@@ -708,6 +744,10 @@ def main() -> None:
     parser.add_argument("--date", default=utc_now().strftime("%Y-%m-%d"))
     parser.add_argument("--lookback-hours", type=int, default=24)
     parser.add_argument("--pages", type=int, default=4)
+    # >1M-view Articles are spread across the full search depth, not front-loaded.
+    # Latest is the better net (it surfaced the 47M-view max on page 6). Paginate it
+    # far deeper than the Top/ladder families, which thin out fast.
+    parser.add_argument("--latest-pages", type=int, default=12)
     parser.add_argument("--budget-usd", type=float, default=25.0)
     parser.add_argument("--search-mode", choices=("regressive-likes", "keyword", "both"), default="both")
     parser.add_argument("--like-thresholds", default="5000,2000,1000,500,250,100,50,20,10")
@@ -742,8 +782,9 @@ def main() -> None:
     all_tweets = 0
 
     for label, query, qtype in queries:
-        print(f"\n### {label} [{qtype}] {query}", file=sys.stderr)
-        source = raw_search(label, args.pages, raw_dir) if args.reuse_raw else metered_search(query, qtype, args.pages, label, raw_dir)
+        pages = args.latest_pages if qtype == "Latest" else args.pages
+        print(f"\n### {label} [{qtype}] x{pages}p {query}", file=sys.stderr)
+        source = raw_search(label, pages, raw_dir) if args.reuse_raw else metered_search(query, qtype, pages, label, raw_dir)
         if args.reuse_raw:
             print(f"  ↳ RAW REUSE {label}: {len(source)} tweets", file=sys.stderr)
         all_tweets += len(source)
