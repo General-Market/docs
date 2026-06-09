@@ -521,7 +521,7 @@ const html = String.raw`<!doctype html>
         return;
       }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
-        '<th>Rank</th><th>Candidate</th><th>Source tweet</th><th>Data hook</th><th>Draft reply</th>' +
+        '<th>Rank</th><th>Candidate</th><th>Posted</th><th>Source tweet</th><th>Graph hook</th><th>Draft reply</th>' +
         engagementSortHeader("score", "Score") +
         engagementSortHeader("engRate", "Eng rate") +
         engagementSortHeader("followers", "Followers") +
@@ -531,6 +531,7 @@ const html = String.raw`<!doctype html>
         queue.map((row, i) => '<tr>' +
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
+          '<td class="num"><span class="metricNum">' + escapeHtml(relativeAge(row.created_at)) + '</span><div class="muted">' + escapeHtml(row.created_at || "") + '</div></td>' +
           '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(sourceLabel(row)) + ' | ' + escapeHtml((row.reasons || []).slice(0, 3).join(" | ")) + '</div></td>' +
           '<td class="articleCell">' + escapeHtml(row.data_hook || row.reply_angle || "") + '</td>' +
           '<td class="articleCell">' + escapeHtml(row.reply_draft || row.reply_angle || "") + '</td>' +
@@ -561,6 +562,16 @@ const html = String.raw`<!doctype html>
     function sourceLabel(row) {
       if (row.source === "around" && row.seed_handle) return "around @" + row.seed_handle;
       return row.source || "";
+    }
+
+    function relativeAge(value) {
+      const ts = Date.parse(value || "");
+      if (!Number.isFinite(ts)) return "-";
+      const minutes = Math.max(0, Math.round((Date.now() - ts) / 60000));
+      if (minutes < 60) return minutes + "m ago";
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return hours + "h ago";
+      return Math.round(hours / 24) + "d ago";
     }
 
     function articleSortHeader(rankBy, label) {

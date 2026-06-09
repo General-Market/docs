@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 import twapi  # noqa: E402
 
 OUT_ROOT = Path(__file__).resolve().parent
+DRAFT_SCHEMA_VERSION = 4
 
 NICHE_TERMS = (
     "100x",
@@ -385,24 +386,100 @@ def reply_angle(c: Candidate) -> str:
 
 
 def data_hook(c: Candidate) -> str:
+    graph = graph_phrase(c)
     if c.views > 0 and c.engagement > 0:
-        return f"{c.engagement_rate}% engagement on {c.views} views"
+        label = "action" if c.engagement == 1 else "actions"
+        return f"{graph}. Context: {c.engagement} {label} on {fmt_num(c.views)} views"
     if c.followers > 0:
-        return f"{c.followers} followers, already active around the seed account"
-    return "fresh reply around the seed account"
+        return f"{graph}. Context: {fmt_num(c.followers)} followers"
+    return graph
+
+
+def fmt_num(value: int) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}k"
+    return str(value)
+
+
+def draft_variant(c: Candidate) -> int:
+    raw = c.source_tweet_id or c.handle
+    return sum(ord(char) for char in raw) % 10
+
+
+def metric_phrase(c: Candidate) -> str:
+    if c.views > 0 and c.engagement > 0:
+        return f"{c.engagement_rate}% ER on {fmt_num(c.views)} views"
+    if c.likes or c.replies:
+        return f"{c.likes} likes and {c.replies} replies"
+    if c.followers:
+        return f"{fmt_num(c.followers)} followers"
+    return "a fresh reply in this pocket"
+
+
+def graph_phrase(c: Candidate) -> str:
+    if c.source == "around" and c.seed_handle and c.around_reply_to:
+        return f"graph path: @{c.seed_handle} engaged 100x, then @{c.handle} replied to @{c.around_reply_to}"
+    if c.source == "around" and c.seed_handle:
+        return f"graph path: @{c.seed_handle} engaged 100x, then @{c.handle} kept replying in-niche"
+    if c.source == "reply":
+        return f"graph path: @{c.handle} directly replied under @100xgemfinder"
+    if c.source == "mention":
+        return f"graph path: @{c.handle} directly mentioned @100xgemfinder"
+    return f"graph path: @{c.handle} is in the adjacent 100x niche"
+
+
+def source_phrase(c: Candidate) -> str:
+    if c.source == "around" and c.seed_handle:
+        return f"I found this through @{c.seed_handle}'s recent replies"
+    if c.source == "reply":
+        return "You already showed up under 100x"
+    if c.source == "mention":
+        return "You already mentioned 100x"
+    return "This is in the same 100x discovery pocket"
 
 
 def reply_draft(c: Candidate) -> str:
     text = c.text.lower()
+    metric = metric_phrase(c)
+    graph = graph_phrase(c)
+    variant = draft_variant(c)
     if "gem" in text or "100x" in text or "moon" in text:
-        return "I usually separate gems by holder growth, liquidity depth, and how clean the first pullback is. What filter makes you pass even when the upside looks obvious?"
+        templates = [
+            f"{graph}. Not judging this by views; the useful signal is that this sits in the same discovery lane. What is your first filter before calling it a gem?",
+            f"{graph}. I would treat this as algo training for the 100x pocket, but only if the filter is real. Do you trust holder growth or liquidity depth first?",
+            f"{graph}. {metric} is just context; the graph match is the point. What data makes you trust a gem before it is obvious?",
+        ]
+        return templates[variant % len(templates)]
     if "pump" in text or "memecoin" in text or "launch" in text:
-        return "For new launches I care more about holder velocity vs volume than the first candle. Which datapoint tells you it is not just a fast pump?"
+        templates = [
+            f"{graph}. The graph fit matters more than raw reach here. For launches, do you check holder velocity or repeat wallets first?",
+            f"{graph}. This is the kind of reply trail that should skew the account toward launch discovery. What separates a real launch from a fast pump for you?",
+            f"{graph}. {metric} is secondary; I would want sell pressure vs new holders next. What datapoint would make you skip it?",
+        ]
+        return templates[variant % len(templates)]
     if "entry" in text or "chart" in text or "target" in text:
-        return "The setup only matters if invalidation is clear. What level or onchain signal would prove this trade wrong for you?"
+        templates = [
+            f"{graph}. Good account-graph match; now the trade still needs invalidation. What level proves the setup wrong for you?",
+            f"{graph}. I would pair the entry with a hard invalidation signal. Is yours price structure, liquidity loss, or wallet exits?",
+            f"{graph}. {metric} is not the edge; the exit rule is. What would make you cut it fast?",
+        ]
+        return templates[variant % len(templates)]
     if "wallet" in text or "smart money" in text:
-        return "Wallet flow is useful, but I weight repeat buyers higher than one big entry. Which wallet behavior do you trust most before entering?"
-    return "I would turn this into a filter: liquidity, holder growth, volume quality, then invalidation. Which one do you weight most before taking a position?"
+        templates = [
+            f"{graph}. For this niche I weight repeat buyers higher than one big wallet print. Which wallet behavior do you trust before entering?",
+            f"{graph}. Smart money only helps if it repeats. Do you care more about fresh wallets, size, or follow-on buys?",
+            f"{graph}. {metric} is only context; wallet quality matters more than wallet size. What pattern makes it actionable?",
+        ]
+        return templates[variant % len(templates)]
+    templates = [
+        f"{graph}. I would turn this into a filter: liquidity, holder growth, volume quality, then invalidation. Which one matters most here?",
+        f"{graph}. The point is the account neighborhood, not big numbers. What data would make you move from watchlist to entry?",
+        f"{graph}. {metric} is just context. Do you judge this setup by wallet flow, liquidity, or how clean the pullback is?",
+        f"{graph}. If you had to reduce this to one measurable edge, would it be volume quality, holder growth, or liquidity staying put?",
+    ]
+    return templates[variant % len(templates)]
 
 
 def main() -> None:
@@ -621,6 +698,7 @@ def main() -> None:
             "reply_angle": reply_angle(candidate),
             "data_hook": data_hook(candidate),
             "reply_draft": reply_draft(candidate),
+            "draft_schema_version": DRAFT_SCHEMA_VERSION,
         })
     rows.sort(key=lambda row: (row["rank_score"], row["engagement_rate"], row["followers"]), reverse=True)
     rows = rows[: args.max_queue]

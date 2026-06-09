@@ -38,6 +38,7 @@ complete = len(rows) > 0 and all(
     and "lookback_hours" in row
     and "data_hook" in row
     and "reply_draft" in row
+    and row.get("draft_schema_version") == 4
     for row in rows
 )
 sys.exit(0 if complete else 1)
