@@ -34,6 +34,7 @@ complete = len(rows) > 0 and all(
     "handle" in row
     and "tweet_url" in row
     and "bot_risk" in row
+    and "source_strategy" in row
     and "lookback_hours" in row
     and "data_hook" in row
     and "reply_draft" in row
@@ -55,6 +56,8 @@ python3 "$ROOT_DIR/docs/x-targeting/engagement_queue/find_engagement_queue.py" \
   --lookback-hours "${X_ENGAGEMENT_LOOKBACK_HOURS:-24}" \
   --target-posts "${X_ENGAGEMENT_TARGET_POSTS:-8}" \
   --pages "${X_ENGAGEMENT_PAGES:-3}" \
+  --around-handles "${X_ENGAGEMENT_AROUND_HANDLES:-10}" \
+  --around-pages "${X_ENGAGEMENT_AROUND_PAGES:-1}" \
   --max-queue "$MAX_QUEUE" \
   --max-bot-risk "${X_ENGAGEMENT_MAX_BOT_RISK:-2}" \
   --budget-usd "${X_ENGAGEMENT_BUDGET_USD:-10}"

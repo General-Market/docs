@@ -3,12 +3,13 @@ set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-/root/index}"
 SERVICE_NAME="x-engagement-queue"
+TIMER_NAME="$SERVICE_NAME.timer"
 
 chmod 755 "$ROOT_DIR/docs/x-targeting/engagement_queue/run_daily.sh"
 
 cat > "/etc/systemd/system/$SERVICE_NAME.service" <<EOF
 [Unit]
-Description=X engagement queue daily fetch
+Description=X engagement queue manual fetch
 After=network-online.target
 Wants=network-online.target
 
@@ -21,19 +22,8 @@ Environment=X_ENGAGEMENT_MAX_QUEUE=15
 ExecStart=$ROOT_DIR/docs/x-targeting/engagement_queue/run_daily.sh
 EOF
 
-cat > "/etc/systemd/system/$SERVICE_NAME.timer" <<EOF
-[Unit]
-Description=Run X engagement queue daily
-
-[Timer]
-OnCalendar=*-*-* 10:15:00 UTC
-Persistent=true
-RandomizedDelaySec=900
-
-[Install]
-WantedBy=timers.target
-EOF
+systemctl disable --now "$TIMER_NAME" >/dev/null 2>&1 || true
+rm -f "/etc/systemd/system/$TIMER_NAME"
 
 systemctl daemon-reload
-systemctl enable --now "$SERVICE_NAME.timer"
-systemctl list-timers "$SERVICE_NAME.timer" --no-pager
+systemctl status "$SERVICE_NAME.service" --no-pager || true

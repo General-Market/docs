@@ -1,14 +1,17 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const xTargetingRoot = path.resolve(__dirname, "../..");
 const engagementRoot = path.join(xTargetingRoot, "engagement_queue");
+const repoRoot = path.resolve(xTargetingRoot, "../..");
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
+let refreshInFlight = null;
 
 function readJsonl(file) {
   if (!fs.existsSync(file)) return [];
@@ -102,6 +105,32 @@ function getEngagementQueue(url) {
   };
 }
 
+function refreshEngagementQueue() {
+  if (refreshInFlight) return refreshInFlight;
+  const script = path.join(engagementRoot, "run_daily.sh");
+  refreshInFlight = new Promise((resolve) => {
+    const child = spawn("bash", [script], {
+      cwd: repoRoot,
+      env: { ...process.env, ROOT_DIR: repoRoot },
+    });
+    let output = "";
+    const append = (chunk) => {
+      output = (output + chunk.toString()).slice(-12000);
+    };
+    child.stdout.on("data", append);
+    child.stderr.on("data", append);
+    child.on("error", (error) => {
+      resolve({ ok: false, code: 1, output: error.message });
+    });
+    child.on("close", (code) => {
+      resolve({ ok: code === 0, code, output });
+    });
+  }).finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
 const html = String.raw`<!doctype html>
 <html lang="en">
 <head>
@@ -126,6 +155,8 @@ const html = String.raw`<!doctype html>
     .topActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
     .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .tab {
+      display: inline-flex;
+      align-items: center;
       border: 1px solid #d2d2d7;
       background: #fff;
       color: #1d1d1f;
@@ -133,7 +164,9 @@ const html = String.raw`<!doctype html>
       cursor: pointer;
       height: 38px;
       padding: 0 14px;
+      text-decoration: none;
     }
+    .tab:hover { text-decoration: none; }
     .tab.active { background: #1d1d1f; border-color: #1d1d1f; color: #fff; }
     .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     select {
@@ -144,6 +177,31 @@ const html = String.raw`<!doctype html>
       border-radius: 8px;
       padding: 0 12px;
     }
+    .refreshButton {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      border: 1px solid #0071e3;
+      background: #0071e3;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+    .refreshButton:disabled { cursor: wait; opacity: .72; }
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,.48);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .refreshButton.loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .refreshStatus { color: #6e6e73; font-size: 13px; }
     .hidden { display: none; }
     .summary {
       display: grid;
@@ -199,8 +257,8 @@ const html = String.raw`<!doctype html>
     </header>
     <section class="topActions">
       <div class="tabs">
-        <button class="tab active" id="articleTab" type="button">Article Radar</button>
-        <button class="tab" id="engagementTab" type="button">Engagement Queue</button>
+        <a class="tab active" id="articleTab" href="/">Article Radar</a>
+        <a class="tab" id="engagementTab" href="/engagement">Engagement Queue</a>
       </div>
       <div class="controls" id="articleControls">
         <select id="dateSelect" aria-label="Date"></select>
@@ -222,6 +280,8 @@ const html = String.raw`<!doctype html>
           <option value="followers">Rank by: Followers</option>
           <option value="botRisk">Rank by: Lowest bot risk</option>
         </select>
+        <button class="refreshButton" id="refreshEngagementButton" type="button"><span class="spinner"></span><span id="refreshEngagementText">Refresh today</span></button>
+        <span class="refreshStatus" id="refreshStatus"></span>
       </div>
     </section>
     <section class="summary">
@@ -233,7 +293,7 @@ const html = String.raw`<!doctype html>
   </main>
   <script>
     const state = {
-      mode: "articles",
+      mode: window.location.pathname.startsWith("/engagement") ? "engagement" : "articles",
       index: [],
       date: "",
       niche: "",
@@ -249,7 +309,7 @@ const html = String.raw`<!doctype html>
 
     async function boot() {
       await Promise.all([loadArticleIndex(), loadEngagementIndex()]);
-      bindTabs();
+      bindRefresh();
       renderMode();
     }
 
@@ -271,17 +331,6 @@ const html = String.raw`<!doctype html>
       await loadEngagementQueue();
     }
 
-    function bindTabs() {
-      document.getElementById("articleTab").onclick = () => {
-        state.mode = "articles";
-        renderMode();
-      };
-      document.getElementById("engagementTab").onclick = () => {
-        state.mode = "engagement";
-        renderMode();
-      };
-    }
-
     function renderMode() {
       const isEngagement = state.mode === "engagement";
       document.getElementById("articleTab").classList.toggle("active", !isEngagement);
@@ -290,7 +339,7 @@ const html = String.raw`<!doctype html>
       document.getElementById("engagementControls").classList.toggle("hidden", !isEngagement);
       document.getElementById("pageTitle").textContent = isEngagement ? "Engagement Queue" : "X Article Radar";
       document.getElementById("pageSub").textContent = isEngagement
-        ? "15 recent data-led replies to shift the account graph toward @100xgemfinder."
+        ? "Recent data-led replies from the graph around @100xgemfinder."
         : "Native X Articles grouped by date and niche. Click the title to open the Article on X.";
       if (isEngagement) renderEngagementTable(sortedQueue(state.queue));
       else renderArticleTable(sortedArticles(state.articles));
@@ -347,6 +396,31 @@ const html = String.raw`<!doctype html>
       rankSelect.onchange = () => {
         state.engagementRankBy = rankSelect.value;
         renderEngagementTable(sortedQueue(state.queue));
+      };
+    }
+
+    function bindRefresh() {
+      const button = document.getElementById("refreshEngagementButton");
+      const text = document.getElementById("refreshEngagementText");
+      const status = document.getElementById("refreshStatus");
+      button.onclick = async () => {
+        button.disabled = true;
+        button.classList.add("loading");
+        text.textContent = "Refreshing";
+        status.textContent = "Checking today's queue";
+        try {
+          const result = await fetch("/api/engagement/refresh", { method: "POST" }).then((r) => r.json());
+          status.textContent = result.ok ? "Done" : "Refresh failed";
+          await loadEngagementIndex();
+          state.mode = "engagement";
+          renderMode();
+        } catch (error) {
+          status.textContent = "Refresh failed";
+        } finally {
+          button.disabled = false;
+          button.classList.remove("loading");
+          text.textContent = "Refresh today";
+        }
       };
     }
 
@@ -439,7 +513,8 @@ const html = String.raw`<!doctype html>
 
     function renderEngagementTable(queue) {
       const top = queue[0] || {};
-      setMetrics("Recent replies", fmt.format(queue.length), "Lookback", (top.lookback_hours || 24) + "h", "Seed", state.target ? "@" + state.target : "-");
+      const aroundCount = queue.filter((row) => row.source === "around").length;
+      setMetrics("Recent replies", fmt.format(queue.length), "Around graph", fmt.format(aroundCount), "Seed", state.target ? "@" + state.target : "-");
       const content = document.getElementById("content");
       if (!queue.length) {
         content.innerHTML = '<div class="empty">No engagement queue for this date and target.</div>';
@@ -456,14 +531,14 @@ const html = String.raw`<!doctype html>
         queue.map((row, i) => '<tr>' +
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
-          '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml((row.reasons || []).slice(0, 3).join(" | ")) + '</div></td>' +
+          '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(sourceLabel(row)) + ' | ' + escapeHtml((row.reasons || []).slice(0, 3).join(" | ")) + '</div></td>' +
           '<td class="articleCell">' + escapeHtml(row.data_hook || row.reply_angle || "") + '</td>' +
           '<td class="articleCell">' + escapeHtml(row.reply_draft || row.reply_angle || "") + '</td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(row.rank_score || 0)) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(row.engagement_rate || 0) + '</span><div class="muted">' + fmt.format(row.engagement || 0) + ' eng</div></td>' +
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
           '<td class="num">' + fmt.format(row.bot_risk || 0) + '<div class="muted">' + escapeHtml((row.bot_risk_reasons || []).join(" | ") || "clean") + '</div></td>' +
-          '<td><a href="' + escapeHtml(row.target_tweet_url || "") + '" target="_blank" rel="noreferrer">target</a><div class="muted">' + escapeHtml(row.source || "") + '</div></td>' +
+          '<td><a href="' + escapeHtml(row.target_tweet_url || "") + '" target="_blank" rel="noreferrer">target</a><div class="muted">' + escapeHtml(row.around_reply_to ? "replying to @" + row.around_reply_to : row.source || "") + '</div></td>' +
         '</tr>').join("") + '</tbody></table></div>';
       content.querySelectorAll("[data-engagement-rank]").forEach((button) => {
         button.addEventListener("click", () => {
@@ -481,6 +556,11 @@ const html = String.raw`<!doctype html>
       document.getElementById("metricTwo").textContent = valueTwo;
       document.getElementById("metricThreeLabel").textContent = labelThree;
       document.getElementById("metricThree").textContent = valueThree;
+    }
+
+    function sourceLabel(row) {
+      if (row.source === "around" && row.seed_handle) return "around @" + row.seed_handle;
+      return row.source || "";
     }
 
     function articleSortHeader(rankBy, label) {
@@ -518,7 +598,7 @@ const html = String.raw`<!doctype html>
 </body>
 </html>`;
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname === "/api/index" || url.pathname === "/api/article/index") {
     res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
@@ -538,6 +618,17 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/api/engagement/queue") {
     res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify(getEngagementQueue(url)));
+    return;
+  }
+  if (url.pathname === "/api/engagement/refresh") {
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "method not allowed" }));
+      return;
+    }
+    const result = await refreshEngagementQueue();
+    res.writeHead(result.ok ? 200 : 500, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(result));
     return;
   }
   res.writeHead(200, { "content-type": "text/html; charset=utf-8" });

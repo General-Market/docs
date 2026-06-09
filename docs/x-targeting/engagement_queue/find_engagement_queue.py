@@ -92,6 +92,11 @@ ADJACENT_QUERIES = (
     '("holder growth" OR liquidity OR volume) (memecoin OR solana OR pumpfun OR gem)',
 )
 
+AROUND_QUERY_TERMS = (
+    "100x OR x100 OR gem OR gems OR alpha OR pumpfun OR pump.fun OR memecoin OR memecoins "
+    "OR solana OR crypto OR degen OR liquidity OR holder OR wallet OR entry OR chart"
+)
+
 
 def install_key_from_secret() -> None:
     key_secret = Path(os.environ.get("TWITTERAPI_KEY_FILE", "/root/.secrets/twitterapi_io_key"))
@@ -120,6 +125,9 @@ class Candidate:
     views: int
     source: str
     bio: str = ""
+    seed_handle: str = ""
+    seed_tweet_url: str = ""
+    around_reply_to: str = ""
 
     @property
     def engagement(self) -> int:
@@ -224,7 +232,24 @@ def author_handle(tweet: dict) -> str:
     return author.get("userName") or tweet.get("authorName") or ""
 
 
-def to_candidate(tweet: dict, target_tweet: dict, source: str) -> Candidate | None:
+def reply_target(tweet: dict, fallback: dict) -> dict:
+    reply_to_id = str(tweet.get("inReplyToId") or "")
+    reply_to_user = tweet.get("inReplyToUsername") or ""
+    if reply_to_id and reply_to_user:
+        return {
+            "id": reply_to_id,
+            "url": f"https://x.com/{reply_to_user}/status/{reply_to_id}",
+        }
+    return fallback
+
+
+def to_candidate(
+    tweet: dict,
+    target_tweet: dict,
+    source: str,
+    seed_handle: str = "",
+    seed_tweet_url: str = "",
+) -> Candidate | None:
     handle = author_handle(tweet)
     if not handle:
         return None
@@ -248,6 +273,9 @@ def to_candidate(tweet: dict, target_tweet: dict, source: str) -> Candidate | No
         views=safe_int(tweet.get("viewCount")),
         source=source,
         bio=author.get("description") or "",
+        seed_handle=seed_handle,
+        seed_tweet_url=seed_tweet_url,
+        around_reply_to=tweet.get("inReplyToUsername") or "",
     )
 
 
@@ -303,6 +331,10 @@ def english_enough(text: str) -> bool:
     return hits >= 2 and ascii_ratio >= 0.88
 
 
+def niche_enough(text: str) -> bool:
+    return term_hits(text, NICHE_TERMS) > 0
+
+
 def score_candidate(c: Candidate) -> tuple[float, list[str]]:
     risk, risk_reasons = bot_risk(c)
     text = f"{c.text} {c.bio}"
@@ -317,6 +349,8 @@ def score_candidate(c: Candidate) -> tuple[float, list[str]]:
         score += 200
     elif c.source == "mention":
         score += 150
+    elif c.source == "around":
+        score += 120
     score -= risk * 25
     reasons = []
     if niche_hits:
@@ -327,6 +361,8 @@ def score_candidate(c: Candidate) -> tuple[float, list[str]]:
         reasons.append("replied to target")
     elif c.source == "mention":
         reasons.append("mentioned target")
+    elif c.source == "around":
+        reasons.append(f"around @{c.seed_handle}" if c.seed_handle else "around seed engager")
     elif c.source == "adjacent":
         reasons.append("adjacent 100x niche")
     if c.verified:
@@ -379,6 +415,9 @@ def main() -> None:
     parser.add_argument("--lookback-days", type=int, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--target-posts", type=int, default=8)
     parser.add_argument("--pages", type=int, default=3)
+    parser.add_argument("--around-handles", type=int, default=10)
+    parser.add_argument("--around-pages", type=int, default=1)
+    parser.add_argument("--allow-adjacent-fallback", action="store_true")
     parser.add_argument("--max-queue", type=int, default=15)
     parser.add_argument("--max-bot-risk", type=int, default=2)
     parser.add_argument("--budget-usd", type=float, default=10.0)
@@ -454,7 +493,65 @@ def main() -> None:
                     by_handle[candidate.handle.lower()] = candidate
 
     context_tweet = target_tweets[0] if target_tweets else {}
+    seed_candidates = sorted(
+        [c for c in by_handle.values() if c.source in {"reply", "mention"}],
+        key=lambda c: score_candidate(c)[0],
+        reverse=True,
+    )[: args.around_handles]
+
     if len(by_handle) < args.max_queue:
+        for seed in seed_candidates:
+            query = f"from:{seed.handle} ({AROUND_QUERY_TERMS}) since:{since_date} filter:replies -is:retweet"
+            for tweet in metered_search(
+                f"around-{seed.handle}",
+                query,
+                "Latest",
+                args.around_pages,
+                raw_dir,
+                args.reuse_raw,
+            ):
+                tweet_id = str(tweet.get("id") or "")
+                if not tweet_id or tweet_id in seen_tweets:
+                    continue
+                seen_tweets.add(tweet_id)
+                text = tweet.get("text") or ""
+                if target_handle.lower() in text.lower():
+                    continue
+                if not english_enough(text):
+                    continue
+                if not niche_enough(text):
+                    continue
+                created = parse_x_date(tweet.get("createdAt") or "")
+                if not created or created < cutoff:
+                    continue
+                candidate = to_candidate(
+                    tweet,
+                    reply_target(tweet, context_tweet),
+                    "around",
+                    seed_handle=seed.handle,
+                    seed_tweet_url=seed.source_tweet_url,
+                )
+                if not candidate:
+                    continue
+                if candidate.handle.lower() == target_handle.lower():
+                    continue
+                risk, _ = bot_risk(candidate)
+                if risk > args.max_bot_risk:
+                    continue
+                score, _ = score_candidate(candidate)
+                if score <= 0:
+                    continue
+                existing = by_handle.get(f"around:{candidate.source_tweet_id}")
+                if not existing:
+                    by_handle[f"around:{candidate.source_tweet_id}"] = candidate
+                    continue
+                existing_score, _ = score_candidate(existing)
+                if score > existing_score:
+                    by_handle[f"around:{candidate.source_tweet_id}"] = candidate
+            if len(by_handle) >= args.max_queue:
+                break
+
+    if args.allow_adjacent_fallback and len(by_handle) < args.max_queue:
         for idx, base_query in enumerate(ADJACENT_QUERIES):
             query = f"{base_query} since:{since_date} -is:retweet"
             for tweet in metered_search(f"adjacent-{idx}", query, "Latest", args.pages, raw_dir, args.reuse_raw):
@@ -500,6 +597,10 @@ def main() -> None:
             "following": candidate.following,
             "verified": candidate.verified,
             "source": candidate.source,
+            "source_strategy": "second_degree" if candidate.source == "around" else candidate.source,
+            "seed_handle": candidate.seed_handle,
+            "seed_tweet_url": candidate.seed_tweet_url,
+            "around_reply_to": candidate.around_reply_to,
             "tweet_url": candidate.source_tweet_url,
             "target_tweet_url": candidate.target_tweet_url,
             "text": candidate.text,
@@ -535,6 +636,7 @@ def main() -> None:
         "lookback_hours": args.lookback_hours,
         "cutoff_utc": cutoff.isoformat(),
         "target_posts": len(target_tweets),
+        "around_handles": len(seed_candidates),
         "candidates": len(by_handle),
         "queue": len(rows),
         "out_dir": str(out_dir),
@@ -551,7 +653,8 @@ def strategy_md(target: str, max_queue: int, lookback_hours: int) -> str:
 - Do {max_queue} manual replies per day.
 - Only use tweets from the last {lookback_hours} hours.
 - Reply to people who already replied to, quoted, or mentioned @{target}'s current posts.
-- If direct volume is too low, fill the queue with fresh adjacent 100x/gem/pumpfun conversations.
+- If direct volume is too low, inspect where those engagers are replying now and enter those conversations.
+- Around-search is also niche-gated so random social replies do not enter the queue.
 - Prefer accounts with niche language, visible traction, and low bot risk.
 - Do not automate posting. Use the queue as a human checklist.
 
