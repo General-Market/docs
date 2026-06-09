@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 import twapi  # noqa: E402
 
 OUT_ROOT = Path(__file__).resolve().parent
-DRAFT_SCHEMA_VERSION = 4
+DRAFT_SCHEMA_VERSION = 6
 
 NICHE_TERMS = (
     "100x",
@@ -443,41 +443,40 @@ def source_phrase(c: Candidate) -> str:
 def reply_draft(c: Candidate) -> str:
     text = c.text.lower()
     metric = metric_phrase(c)
-    graph = graph_phrase(c)
     variant = draft_variant(c)
     if "gem" in text or "100x" in text or "moon" in text:
         templates = [
-            f"{graph}. Not judging this by views; the useful signal is that this sits in the same discovery lane. What is your first filter before calling it a gem?",
-            f"{graph}. I would treat this as algo training for the 100x pocket, but only if the filter is real. Do you trust holder growth or liquidity depth first?",
-            f"{graph}. {metric} is just context; the graph match is the point. What data makes you trust a gem before it is obvious?",
+            f"@{c.handle} not judging this by views; the useful signal is that this sits in the same discovery lane. What is your first filter before calling it a gem?",
+            f"@{c.handle} this is the right 100x pocket, but the filter still matters. Do you trust holder growth or liquidity depth first?",
+            f"@{c.handle} {metric} is just context here. What data makes you trust a gem before it is obvious?",
         ]
         return templates[variant % len(templates)]
     if "pump" in text or "memecoin" in text or "launch" in text:
         templates = [
-            f"{graph}. The graph fit matters more than raw reach here. For launches, do you check holder velocity or repeat wallets first?",
-            f"{graph}. This is the kind of reply trail that should skew the account toward launch discovery. What separates a real launch from a fast pump for you?",
-            f"{graph}. {metric} is secondary; I would want sell pressure vs new holders next. What datapoint would make you skip it?",
+            f"@{c.handle} this is the right launch-discovery pocket. For launches, do you check holder velocity or repeat wallets first?",
+            f"@{c.handle} this is exactly the kind of conversation I want more of in the feed. What separates a real launch from a fast pump for you?",
+            f"@{c.handle} {metric} is secondary; I would want sell pressure vs new holders next. What datapoint would make you skip it?",
         ]
         return templates[variant % len(templates)]
     if "entry" in text or "chart" in text or "target" in text:
         templates = [
-            f"{graph}. Good account-graph match; now the trade still needs invalidation. What level proves the setup wrong for you?",
-            f"{graph}. I would pair the entry with a hard invalidation signal. Is yours price structure, liquidity loss, or wallet exits?",
-            f"{graph}. {metric} is not the edge; the exit rule is. What would make you cut it fast?",
+            f"@{c.handle} good account-graph match; now the trade still needs invalidation. What level proves the setup wrong for you?",
+            f"@{c.handle} I would pair the entry with a hard invalidation signal. Is yours price structure, liquidity loss, or wallet exits?",
+            f"@{c.handle} {metric} is not the edge; the exit rule is. What would make you cut it fast?",
         ]
         return templates[variant % len(templates)]
     if "wallet" in text or "smart money" in text:
         templates = [
-            f"{graph}. For this niche I weight repeat buyers higher than one big wallet print. Which wallet behavior do you trust before entering?",
-            f"{graph}. Smart money only helps if it repeats. Do you care more about fresh wallets, size, or follow-on buys?",
-            f"{graph}. {metric} is only context; wallet quality matters more than wallet size. What pattern makes it actionable?",
+            f"@{c.handle} for this niche I weight repeat buyers higher than one big wallet print. Which wallet behavior do you trust before entering?",
+            f"@{c.handle} smart money only helps if it repeats. Do you care more about fresh wallets, size, or follow-on buys?",
+            f"@{c.handle} {metric} is only context; wallet quality matters more than wallet size. What pattern makes it actionable?",
         ]
         return templates[variant % len(templates)]
     templates = [
-        f"{graph}. I would turn this into a filter: liquidity, holder growth, volume quality, then invalidation. Which one matters most here?",
-        f"{graph}. The point is the account neighborhood, not big numbers. What data would make you move from watchlist to entry?",
-        f"{graph}. {metric} is just context. Do you judge this setup by wallet flow, liquidity, or how clean the pullback is?",
-        f"{graph}. If you had to reduce this to one measurable edge, would it be volume quality, holder growth, or liquidity staying put?",
+        f"@{c.handle} I would turn this into a filter: liquidity, holder growth, volume quality, then invalidation. Which one matters most here?",
+        f"@{c.handle} the point is the account neighborhood, not big numbers. What data would make you move from watchlist to entry?",
+        f"@{c.handle} {metric} is just context. Do you judge this setup by wallet flow, liquidity, or how clean the pullback is?",
+        f"@{c.handle} if you had to reduce this to one measurable edge, would it be volume quality, holder growth, or liquidity staying put?",
     ]
     return templates[variant % len(templates)]
 
