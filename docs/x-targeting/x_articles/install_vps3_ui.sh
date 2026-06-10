@@ -45,7 +45,9 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now x-article-radar-ui.service
+systemctl enable x-article-radar-ui.service
+# restart (not just enable --now) so an already-running service loads new code + env
+systemctl restart x-article-radar-ui.service
 systemctl status x-article-radar-ui.service --no-pager -l
 
 echo "public UI: http://159.195.77.160:$PORT"

@@ -1,7 +1,7 @@
 # Codex reply drafts in the Engagement Queue — design
 
 **Date:** 2026-06-10
-**Status:** approved, ready to plan
+**Status:** SHIPPED + verified live on VPS3 (commit b3b7b1b88)
 **Surface:** `docs/x-targeting/x_articles/ui/server.mjs` (the "X Research Ops" UI on VPS3 `159.195.77.160:3010`)
 
 ## TL;DR
@@ -107,6 +107,16 @@ page load
 The radar UI systemd service (`x-article-radar-ui.service`) runs as **root**, `WorkingDirectory=/root/index`. Codex needs an authenticated home. Point the spawn at **`/opt/docsai/.codex`** (the family-chat / docs-AI login — the "codex key") via `HOME`/`CODEX_HOME`.
 
 **Confirm on VPS3 before shipping:** `/opt/docsai/.codex` is readable by root and `codex exec` succeeds from that home. If not, fall back to root's own `~/.codex` login. Make the homes overridable via service env (`CODEX_HOME`, `CODEX_HOME_DIR`, `CODEX_BIN`, `CODEX_MODEL`) with the `/opt/docsai` values as defaults — the install script sets them.
+
+**Verified live (2026-06-10):** codex runs as root against `/opt/docsai/.codex` with network on (`codex exec -m gpt-5.5 … pong` → exit 0). `/usr/bin/codex` is on root's PATH. A real draft on a live `chinadegen` row took ~12s and web-searched the BTC drawdown to correct the tweet's own claim.
+
+### Deploy (the real path — `/root/index` is NOT a git repo)
+
+The box copies the tree in; it does not `git pull`. To deploy:
+
+1. `scp` the changed files to `vps3:/root/index/...` (`ssh vps3` = `root@159.195.77.160:3189`).
+2. `ssh vps3 'bash /root/index/docs/x-targeting/x_articles/install_vps3_ui.sh'` — rewrites the unit (with `CODEX_*` env), `daemon-reload`, **restart** (the script now restarts, not just `enable --now`, so running code reloads).
+3. Verify: `curl :3010/api/engagement/drafts?...` returns JSON, not the HTML fallback.
 
 ## Testing
 

@@ -66,3 +66,25 @@ Patterns that bit us. Written to prevent repeats.
 
 ## twitterapi.io key lives nowhere durable (2026-06-06)
 /tmp/.twapi_key vanishes on reboot; xwatch/.env has the var EMPTY; not in keychain. Recovered the `new1_…` key from old session transcripts. Also: `twapi.py balance` serves a CACHED balance (.last_balance.json) — it said $100 when the live balance was $4.14; trust `rebase`/live calls, not `balance`, after a long gap.
+
+## 2026-06-06 — green build ≠ visible change (CRX wave 1 sidebar)
+- **Symptom:** 11-agent build wave shipped, tsc 0 + npm build 0, CD OK — and the user saw "no changes." The wiring agent added `section` to nav.ts and even exported `groupedNav()`, but `Sidebar.tsx` (the renderer) was in NO stream's file list, so the rail kept rendering the flat list. Data changed, renderer didn't, build green, UI identical.
+- **Rule:** a compile gate proves nothing about visibility. After any UI wave, verify the RENDERED surface (Playwright screenshot or DOM probe of the live page) against the spec's "first sight" before telling the user it shipped.
+- **Rule:** when a workflow plan partitions files, explicitly ask "who renders this data?" for every data-model change — the consumer must be in someone's file list, or the change is invisible by construction.
+- **Probe trick:** content-addressed chunk hash on the live site + grep for a string that exists ONLY in the new commit (`git grep <string> <old-sha>` to prove absence) — confirms which build is serving without SSH.
+
+## 2026-06-06 — `git commit --only -- <paths>` silently skips UNTRACKED files
+- **Symptom:** Committed `-- frontend/app/landing-dev-2` after creating `HeroRibbon.tsx`; the commit shipped page.tsx importing a file that never landed → every CD build of that sha failed with module-not-found. `--only` limits to *tracked* changes at those paths; a brand-new file needs `git add` first.
+- **Rule:** when a commit includes a NEW file, `git add <file>` explicitly, then check `git show HEAD --stat` lists it before claiming shipped (the stat check already existed for the sweep gotcha — it also catches this).
+
+## 2026-06-06 — crx-mono frontend CD fails silently on ANY session's lint error; build log is discarded
+- **Symptom:** cd.log says only `frontend: FAILED — retries next tick`, on loop, for every commit. Cause was another session's committed `react/no-unescaped-entities` ESLint *error* (next build treats it as fatal) in `components/docs/diagrams.tsx` — unrelated commits all fail from then on. The post-commit hook runs cd.sh with `>/dev/null 2>&1`, so the real build error lands nowhere.
+- **Repro/diagnose:** `ssh vps3 'bash /opt/crxfx/crxfx-remote-build.sh' 2>&1 | grep Error` — source is already rsync'd; the script is flock-serialized so it's safe alongside CD retries. (`/opt/crxfx/deploy.log` is STALE — synchronous CD builds don't write it.)
+- **Rule:** tsc-clean ≠ deployable; the docker build also runs ESLint as fatal. After pushing frontend, watch cd.log for the `OK <sha>` line of YOUR sha before claiming deployed.
+
+## 2026-06-10 — VPS3 `/root/index` is NOT a git repo; systemd `enable --now` ≠ restart
+- **Symptom:** pushed code to `mono main`, but the X-targeting radar UI on VPS3 kept running the old `server.mjs`. Two compounding causes.
+- **`/root/index` has no `.git`** — the box receives the tree by copy, not `git pull`. Deploying X-targeting tooling to VPS3 = `scp` the changed files to `vps3:/root/index/...` (`ssh vps3` = `root@159.195.77.160:3189`). A `git pull` there fails with "not a git repository."
+- **`systemctl enable --now <svc>` does nothing if the service is already active** — it neither restarts nor reloads. The unit file + on-disk code were new, but the running PID was 17h old. Always `systemctl restart` after copying new code. `install_vps3_ui.sh` now restarts explicitly.
+- **Verify the process, not the unit:** `systemctl show -p MainPID,ExecMainStartTimestamp --value <svc>` — a stale timestamp means the new code never loaded. Or probe a new endpoint: old code returns the HTML fallback, new code returns JSON.
+- **Codex as root against the docsai login works:** `HOME=/opt/docsai CODEX_HOME=/opt/docsai/.codex /usr/bin/codex exec -m gpt-5.5 --sandbox workspace-write -c sandbox_workspace_write.network_access=true -c tools.web_search=true` → exit 0. Root reads docsai's 0600 `auth.json` through perms. Bubblewrap-not-on-PATH warning is harmless (bundled fallback).
