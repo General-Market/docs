@@ -12,11 +12,13 @@ from datetime import datetime, timezone
 from . import hl_filter
 
 _TWITTER_URL = re.compile(r"https?://(?:www\.|mobile\.)?(?:x\.com|twitter\.com|t\.co|nitter\.\S+)/\S+", re.I)
+_TWITTER_BARE = re.compile(r"\b(?:t\.co|x\.com|twitter\.com|nitter\.[a-z.]+)\b", re.I)
 
 
 def _strip_twitter(text: str) -> str:
-    """Remove any twitter/X link from text; collapse the gap it leaves."""
+    """Remove any twitter/X link or bare domain mention; Telegram linkifies bare 't.co' too."""
     cleaned = _TWITTER_URL.sub("", text or "")
+    cleaned = _TWITTER_BARE.sub("", cleaned)
     return re.sub(r"[ \t]{2,}", " ", cleaned)
 
 

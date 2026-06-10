@@ -154,6 +154,8 @@ class Daemon:
         return outliers
 
     def _spawn_enrich(self, hit: dict, subs: list[int]) -> None:
+        if not enrich.worth_enriching(hit.get("text", "")):
+            return  # no checkable claim (image/link/meme) — don't waste a codex run
         task = asyncio.create_task(self._enrich_and_send(hit, subs))
         self._enrich_tasks.add(task)
         task.add_done_callback(self._enrich_tasks.discard)

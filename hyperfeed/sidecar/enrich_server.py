@@ -35,20 +35,27 @@ WORKSPACE.mkdir(parents=True, exist_ok=True)
 # codex is heavy; serialize runs so concurrent outliers queue rather than fork a swarm.
 _lock = threading.Lock()
 
-PROMPT = """You are fact-checking a Hyperliquid / crypto tweet for a professional trading audience.
+PROMPT = """You decide whether a Hyperliquid/crypto tweet makes a CONCRETE, CHECKABLE factual claim, and if so you verify it on the web for a professional trading audience.
 
 Tweet by @{handle}:
 \"\"\"{text}\"\"\"
 
-Search the web NOW for current, specific data that CONFIRMS or DISPUTES the concrete claims in this tweet.
-Then reply in EXACTLY this shape, plain text, under 600 characters total:
+STEP 1 — judge. If the tweet has no specific verifiable factual claim — it is an image/meme,
+an opinion, hype, a greeting (gm), a question, price vibes, an emoji/one-liner, or just a link —
+reply with EXACTLY one word and nothing else: SKIP
 
-STANCE: one of CONFIRMS / DISPUTES / ADDS CONTEXT
-WHY: 2-3 sentences of the most useful corroborating or contradicting facts.
-SOURCES: 1-3 items, each as "<who said it> — <publication/handle>: <url>".
+STEP 2 — only if there IS a concrete claim (a number, an event, a launch, a record, a named
+fact, a comparison), search the web NOW and reply in EXACTLY this shape, under 600 characters:
+STANCE: CONFIRMS / DISPUTES / ADDS CONTEXT / UNVERIFIED
+WHY: 2-3 sentences of the most useful facts that confirm or contradict the claim.
+SOURCES: 1-3 items, each as "<who said it> — <publication>: <url>".
 
-Rules: state only what a source supports. Attribute every fact to who said it. If you cannot
-verify the claim on the web, set STANCE: UNVERIFIED and say what is missing. Be neutral and concise."""
+Hard rules:
+- Never comment on whether a link or image was accessible. If you cannot see linked media, that is SKIP, not a finding.
+- Never invent a search from a hashtag, meme word, or vibe. Only verify an explicit factual claim.
+- Never write the words t.co, x.com, or twitter, and never include a link to them.
+- Attribute every fact to who said it. UNVERIFIED only for a REAL claim you could not confirm — one line on what's missing.
+- Be neutral and concise."""
 
 
 def run_codex(text: str, handle: str) -> dict:
@@ -87,6 +94,13 @@ def run_codex(text: str, handle: str) -> dict:
                 pass
     if not answer:
         return {"ok": False, "reason": "empty"}
+    head = answer.strip().upper()
+    if head == "SKIP" or head.startswith("SKIP"):
+        return {"ok": False, "reason": "skip"}   # no real claim — bot sends nothing
+    # A model that ignored the rules and talked about link/image access = no usable claim.
+    low = answer.lower()
+    if "stance:" not in low or any(p in low for p in ("not publicly accessible", "could not access", "link resolves", "image/status")):
+        return {"ok": False, "reason": "no_claim"}
     return {"ok": True, "text": answer}
 
 
