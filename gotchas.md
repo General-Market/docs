@@ -95,3 +95,13 @@ Patterns that bit us. Written to prevent repeats.
 - **Fix:** `metered_call` now retries transient statuses (408/429/5xx) with 2/5/15/30/60s backoff and RAISES if the failure persists — the run dies loudly instead of laundering an outage into empty data. (`run_monthly.sh`/`run_daily.sh` are `set -e`, so the loop aborts.)
 - **Rule:** any wrapper that maps transport failure to an in-band "empty result" will eventually launder an outage into plausible-looking data. Errors must stay out-of-band (raise / non-zero exit), and "0 results" from a query that found hundreds yesterday is a red flag, not a finding.
 - **Detection:** ledger rows with `spent=0c count=0` arriving milliseconds apart = local failure, not thin data. `grep '"status": 408' cache/twapi-ledger.jsonl`.
+
+## 2026-06-10 — clipboard copy silently fails over plain HTTP
+- **Symptom:** a "copy to clipboard" button does nothing on an internal tool served over `http://<ip>:<port>` (the X engagement radar UI on VPS3:3010). Reported twice as "copy doesn't work".
+- **Three compounding causes:**
+  1. **`navigator.clipboard` is undefined in an insecure context.** It requires HTTPS or `localhost`/`127.0.0.1`. Over plain HTTP to an IP, `window.isSecureContext === false` and the async Clipboard API doesn't exist. Must fall back to `document.execCommand("copy")`.
+  2. **`execCommand("copy")` needs a FOCUSED document.** If you `window.open(tweet)` first and copy second, the new tab steals focus and the copy fails. Copy FIRST (synchronously, in the click gesture), open second.
+  3. **Safari/WebKit refuse to copy from an `opacity:0` / off-screen textarea.** Select the actual VISIBLE textarea, or a 1px on-screen temp node — not a hidden one.
+- **Plus a red herring:** the page is one server-rendered HTML blob with no cache headers, so the browser served the OLD JS after a redeploy. Add `Cache-Control: no-store` and hard-refresh once.
+- **Verify for real:** click the button, then paste (`Meta+v`) into a fresh textarea and read its value back — don't trust `execCommand` returning `true`, and you can't read `navigator.clipboard` back over HTTP. (Playwright paste-back confirmed 52 chars round-tripped.)
+- **Real fix when possible:** serve the tool over HTTPS so `navigator.clipboard` just works. execCommand is deprecated and a moving target.
