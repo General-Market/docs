@@ -5,6 +5,11 @@ ROOT_DIR="${ROOT_DIR:-/root/index}"
 SERVICE="/etc/systemd/system/x-article-radar-ui.service"
 PORT="${X_ARTICLE_UI_PORT:-3010}"
 HOST="${X_ARTICLE_UI_HOST:-0.0.0.0}"
+# Codex reply drafts — reuse the family-chat / docs-AI login on VPS3.
+CODEX_BIN="${CODEX_BIN:-codex}"
+CODEX_MODEL="${CODEX_MODEL:-gpt-5.5}"
+CODEX_HOME="${CODEX_HOME:-/opt/docsai/.codex}"
+CODEX_HOME_DIR="${CODEX_HOME_DIR:-/opt/docsai}"
 
 if [[ $EUID -ne 0 ]]; then
   echo "run as root on VPS3" >&2
@@ -27,6 +32,10 @@ Type=simple
 WorkingDirectory=$ROOT_DIR
 Environment=HOST=$HOST
 Environment=PORT=$PORT
+Environment=CODEX_BIN=$CODEX_BIN
+Environment=CODEX_MODEL=$CODEX_MODEL
+Environment=CODEX_HOME=$CODEX_HOME
+Environment=CODEX_HOME_DIR=$CODEX_HOME_DIR
 ExecStart=/usr/bin/env node $ROOT_DIR/docs/x-targeting/x_articles/ui/server.mjs
 Restart=always
 RestartSec=5

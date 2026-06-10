@@ -145,6 +145,180 @@ function refreshEngagementQueue(targetValue) {
   return refreshInFlight;
 }
 
+// ─────────────────────────── codex reply drafts (network on, same login family-chat uses)
+const CODEX_BIN = process.env.CODEX_BIN || "codex";
+const CODEX_MODEL = process.env.CODEX_MODEL || "gpt-5.5";
+const CODEX_HOME = process.env.CODEX_HOME || "/opt/docsai/.codex";
+const CODEX_HOME_DIR = process.env.CODEX_HOME_DIR || "/opt/docsai";
+const DRAFT_TIMEOUT_MS = Number(process.env.DRAFT_TIMEOUT_MS || 90000);
+const DRAFT_KILL_GRACE_MS = 4000;
+const MAX_CONCURRENT_DRAFTS = Number(process.env.MAX_CONCURRENT_DRAFTS || 2);
+const codexScratch = path.join(__dirname, ".codex-scratch");
+const replyPromptFile = path.join(engagementRoot, "reply_prompt.md");
+const codexPath = (process.env.PATH || "") + ":/usr/local/bin:/usr/bin:/bin:/opt/docsai/.local/bin";
+try { fs.mkdirSync(codexScratch, { recursive: true }); } catch {}
+
+function tweetIdFromUrl(url) {
+  const m = /status\/(\d+)/.exec(String(url || ""));
+  if (m) return m[1];
+  return String(url || "").replace(/[^a-zA-Z0-9]/g, "").slice(-32);
+}
+
+function engagementDir(date, target) {
+  return path.join(engagementRoot, date, target.toLowerCase());
+}
+
+function readDrafts(date, target) {
+  return readJsonl(path.join(engagementDir(date, target), "drafts.jsonl"));
+}
+
+function draftsMap(date, target) {
+  const map = {};
+  for (const row of readDrafts(date, target)) {
+    if (row && row.tweet_id) map[row.tweet_id] = row; // last write wins
+  }
+  return map;
+}
+
+function appendDraft(date, target, record) {
+  const dir = engagementDir(date, target);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(path.join(dir, "drafts.jsonl"), JSON.stringify(record) + "\n");
+}
+
+function findQueueRow(date, target, tweetId) {
+  const rows = readJsonl(path.join(engagementDir(date, target), "queue.jsonl"));
+  return rows.find((row) => tweetIdFromUrl(row.tweet_url) === tweetId) || null;
+}
+
+function buildDraftPrompt(row) {
+  let rules = "";
+  try { rules = fs.readFileSync(replyPromptFile, "utf8").trim(); } catch {}
+  const metrics = [];
+  if (row.views) metrics.push(row.views + " views");
+  if (row.engagement_rate) metrics.push(row.engagement_rate + "% engagement rate");
+  if (row.likes) metrics.push(row.likes + " likes");
+  if (row.replies) metrics.push(row.replies + " replies");
+  if (row.followers) metrics.push(row.followers + " followers");
+  const lines = [
+    rules,
+    "",
+    "## This tweet",
+    "",
+    "Author: @" + (row.handle || "") + (row.name ? " (" + row.name + ")" : ""),
+    metrics.length ? "Metrics: " + metrics.join(", ") : "",
+    row.reply_angle ? "Suggested angle: " + row.reply_angle : "",
+    row.data_hook ? "Graph context: " + row.data_hook : "",
+    "",
+    "Tweet text:",
+    row.text || "(no text)",
+    "",
+    "Write the reply now. Reply text only.",
+  ].filter((line) => line !== "");
+  return lines.join("\n");
+}
+
+let draftCounter = 0;
+function runCodexDraft(prompt) {
+  return new Promise((resolve) => {
+    const ansFile = path.join(codexScratch, ".draft-" + Date.now().toString(36) + "-" + (draftCounter++) + ".txt");
+    const args = [
+      "exec",
+      "-m",
+      CODEX_MODEL,
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+      "-c",
+      "tools.web_search=true",
+      "-o",
+      ansFile,
+      "-C",
+      codexScratch,
+    ];
+    const child = spawn(CODEX_BIN, args, {
+      cwd: codexScratch,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { PATH: codexPath, HOME: CODEX_HOME_DIR, CODEX_HOME },
+    });
+    child.stdin.on("error", () => {});
+    child.stdin.write(prompt);
+    child.stdin.end();
+    let timedOut = false;
+    let tail = "";
+    const swallow = (chunk) => { tail = (tail + chunk.toString()).slice(-2000); };
+    child.stdout.on("data", swallow);
+    child.stderr.on("data", swallow);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+      setTimeout(() => { if (!child.killed) child.kill("SIGKILL"); }, DRAFT_KILL_GRACE_MS).unref();
+    }, DRAFT_TIMEOUT_MS);
+    timer.unref();
+    child.on("error", () => { clearTimeout(timer); resolve({ ok: false, reason: "spawn" }); });
+    child.on("close", () => {
+      clearTimeout(timer);
+      let answer = "";
+      try { answer = fs.readFileSync(ansFile, "utf8").trim(); } catch {}
+      try { fs.unlinkSync(ansFile); } catch {}
+      if (timedOut) return resolve({ ok: false, reason: "timeout" });
+      if (!answer) return resolve({ ok: false, reason: "empty" });
+      resolve({ ok: true, answer });
+    });
+  });
+}
+
+let activeDrafts = 0;
+const draftWaiters = [];
+function acquireDraftSlot() {
+  if (activeDrafts < MAX_CONCURRENT_DRAFTS) { activeDrafts++; return Promise.resolve(); }
+  return new Promise((res) => draftWaiters.push(res));
+}
+function releaseDraftSlot() {
+  activeDrafts = Math.max(0, activeDrafts - 1);
+  const next = draftWaiters.shift();
+  if (next) { activeDrafts++; next(); }
+}
+
+const draftInFlight = new Map();
+function draftReply(date, target, tweetId, force) {
+  const key = date + "|" + target + "|" + tweetId;
+  if (!force) {
+    const cached = draftsMap(date, target)[tweetId];
+    if (cached) return Promise.resolve({ ok: true, draft: cached.draft, cached: true });
+  }
+  if (draftInFlight.has(key)) return draftInFlight.get(key);
+  const job = (async () => {
+    const row = findQueueRow(date, target, tweetId);
+    if (!row) return { ok: false, reason: "not_found" };
+    await acquireDraftSlot();
+    try {
+      const result = await runCodexDraft(buildDraftPrompt(row));
+      if (!result.ok) return { ok: false, reason: result.reason };
+      appendDraft(date, target, { tweet_id: tweetId, draft: result.answer, created_at: new Date().toISOString(), model: CODEX_MODEL });
+      return { ok: true, draft: result.answer, cached: false };
+    } finally {
+      releaseDraftSlot();
+    }
+  })();
+  draftInFlight.set(key, job);
+  return job.finally(() => draftInFlight.delete(key));
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve) => {
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+      if (data.length > 1_000_000) req.destroy();
+    });
+    req.on("end", () => { try { resolve(JSON.parse(data || "{}")); } catch { resolve({}); } });
+    req.on("error", () => resolve({}));
+  });
+}
+
 const html = String.raw`<!doctype html>
 <html lang="en">
 <head>
@@ -255,6 +429,45 @@ const html = String.raw`<!doctype html>
     .metricNum { font-size: 18px; font-weight: 700; color: #1d1d1f; }
     .muted { color: #86868b; font-size: 13px; }
     .empty { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 24px; color: #6e6e73; }
+    .draftBtn {
+      height: 32px;
+      border: 1px solid #d2d2d7;
+      background: #fff;
+      color: #1d1d1f;
+      border-radius: 8px;
+      padding: 0 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .draftBtn:hover { background: #f5f5f7; }
+    .draftRow > td { background: #fbfbfd; }
+    .draftBox { display: flex; flex-direction: column; gap: 10px; max-width: 680px; }
+    textarea.draftText {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+      line-height: 1.4;
+      resize: vertical;
+      color: #1d1d1f;
+    }
+    textarea.draftText:focus { outline: none; border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,.18); }
+    .draftMeta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .charCount { font-variant-numeric: tabular-nums; color: #86868b; font-size: 13px; }
+    .charCount.over { color: #e30000; font-weight: 600; }
+    .draftAction {
+      height: 32px;
+      border: 1px solid #d2d2d7;
+      background: #fff;
+      color: #1d1d1f;
+      border-radius: 8px;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+    .draftAction:hover { background: #f5f5f7; }
+    .draftStatus { font-size: 13px; color: #6e6e73; }
     @media (max-width: 760px) {
       header, .topActions { align-items: stretch; flex-direction: column; }
       .summary { grid-template-columns: 1fr; }
@@ -320,6 +533,7 @@ const html = String.raw`<!doctype html>
       target: normalizeTarget(initialParams.get("target")) || "",
       engagementRankBy: "score",
       queue: [],
+      drafts: {},
     };
     const fmt = new Intl.NumberFormat();
 
@@ -468,6 +682,7 @@ const html = String.raw`<!doctype html>
       const url = "/api/engagement/queue?date=" + encodeURIComponent(state.engagementDate) + "&target=" + encodeURIComponent(state.target);
       const data = await fetch(url).then((r) => r.json());
       state.queue = data.queue || [];
+      state.drafts = await fetch("/api/engagement/drafts?date=" + encodeURIComponent(state.engagementDate) + "&target=" + encodeURIComponent(state.target)).then((r) => r.json()).catch(() => ({}));
       if (state.mode === "engagement") renderEngagementTable(sortedQueue(state.queue));
     }
 
@@ -563,8 +778,9 @@ const html = String.raw`<!doctype html>
         engagementSortHeader("followers", "Followers") +
         engagementSortHeader("botRisk", "Bot risk") +
         '<th>Target post</th>' +
+        '<th>Reply</th>' +
         '</tr></thead><tbody>' +
-        queue.map((row, i) => '<tr>' +
+        queue.map((row, i) => { const tweetId = tweetIdFromUrl(row.tweet_url); const hasDraft = !!state.drafts[tweetId]; return '<tr data-tweet-id="' + escapeHtml(tweetId) + '">' +
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
           '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(relativeAge(row.created_at)) + ' | ' + escapeHtml(sourceLabel(row)) + ' | ' + escapeHtml(row.created_at || "") + '</div></td>' +
@@ -573,13 +789,18 @@ const html = String.raw`<!doctype html>
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
           '<td class="num">' + fmt.format(row.bot_risk || 0) + '<div class="muted">' + escapeHtml((row.bot_risk_reasons || []).join(" | ") || "clean") + '</div></td>' +
           '<td><a href="' + escapeHtml(row.target_tweet_url || "") + '" target="_blank" rel="noreferrer">target</a><div class="muted">' + escapeHtml(row.around_reply_to ? "replying to @" + row.around_reply_to : row.source || "") + '</div></td>' +
-        '</tr>').join("") + '</tbody></table></div>';
+          '<td>' + (tweetId ? '<button class="draftBtn" data-draft-id="' + escapeHtml(tweetId) + '">' + (hasDraft ? 'Show draft' : 'Draft reply') + '</button>' : '<span class="muted">-</span>') + '</td>' +
+        '</tr>' +
+        (tweetId ? '<tr class="draftRow hidden" data-draft-row="' + escapeHtml(tweetId) + '"><td colspan="9"></td></tr>' : ''); }).join("") + '</tbody></table></div>';
       content.querySelectorAll("[data-engagement-rank]").forEach((button) => {
         button.addEventListener("click", () => {
           state.engagementRankBy = button.getAttribute("data-engagement-rank");
           document.getElementById("engRankSelect").value = state.engagementRankBy;
           renderEngagementTable(sortedQueue(state.queue));
         });
+      });
+      content.querySelectorAll(".draftBtn").forEach((button) => {
+        button.addEventListener("click", () => onDraftClick(button.getAttribute("data-draft-id")));
       });
     }
 
@@ -633,6 +854,96 @@ const html = String.raw`<!doctype html>
       return n ? n.toFixed(n >= 10 ? 1 : 2) + '%' : '-';
     }
 
+    function tweetIdFromUrl(url) {
+      const m = /status\/(\d+)/.exec(String(url || ""));
+      if (m) return m[1];
+      return String(url || "").replace(/[^a-zA-Z0-9]/g, "").slice(-32);
+    }
+
+    function autoGrow(ta) {
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
+    }
+
+    function setDraftStatus(cell, text) {
+      let status = cell.querySelector(".draftStatus");
+      if (!status) {
+        cell.innerHTML = '<div class="draftBox"><div class="draftMeta"><span class="draftStatus muted"></span></div></div>';
+        status = cell.querySelector(".draftStatus");
+      }
+      status.textContent = text;
+    }
+
+    function markDraftButton(tweetId) {
+      const button = document.querySelector('.draftBtn[data-draft-id="' + tweetId + '"]');
+      if (button) button.textContent = "Show draft";
+    }
+
+    function renderDraftBox(cell, tweetId, text, statusText) {
+      cell.innerHTML = '<div class="draftBox">' +
+        '<textarea class="draftText"></textarea>' +
+        '<div class="draftMeta">' +
+          '<span class="charCount"></span>' +
+          '<button class="draftAction draftCopy">Copy</button>' +
+          '<button class="draftAction draftRegen">Regenerate</button>' +
+          '<span class="draftStatus muted"></span>' +
+        '</div>' +
+      '</div>';
+      const ta = cell.querySelector(".draftText");
+      const count = cell.querySelector(".charCount");
+      const status = cell.querySelector(".draftStatus");
+      ta.value = text || "";
+      status.textContent = statusText || "";
+      const update = () => {
+        const n = ta.value.length;
+        count.textContent = n + "/280";
+        count.classList.toggle("over", n > 280);
+        autoGrow(ta);
+        if (state.drafts[tweetId]) state.drafts[tweetId].draft = ta.value;
+      };
+      ta.addEventListener("input", update);
+      update();
+      cell.querySelector(".draftCopy").addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); }
+        status.textContent = "copied";
+      });
+      cell.querySelector(".draftRegen").addEventListener("click", () => generateDraft(tweetId, cell, true));
+    }
+
+    async function generateDraft(tweetId, cell, force) {
+      setDraftStatus(cell, force ? "regenerating — codex is searching the web (~10–30s)" : "writing — codex is searching the web (~10–30s)");
+      try {
+        const res = await fetch("/api/engagement/draft", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ date: state.engagementDate, target: state.target, tweet_id: tweetId, force: !!force }),
+        }).then((r) => r.json());
+        if (res && res.ok) {
+          state.drafts[tweetId] = { tweet_id: tweetId, draft: res.draft };
+          renderDraftBox(cell, tweetId, res.draft, res.cached ? "saved draft" : "drafted");
+          markDraftButton(tweetId);
+        } else {
+          renderDraftBox(cell, tweetId, "", "draft failed (" + ((res && res.reason) || "error") + ") — edit or Regenerate");
+        }
+      } catch (e) {
+        renderDraftBox(cell, tweetId, "", "draft failed — edit or Regenerate");
+      }
+    }
+
+    async function onDraftClick(tweetId) {
+      const rowEl = document.querySelector('[data-draft-row="' + tweetId + '"]');
+      if (!rowEl) return;
+      const cell = rowEl.firstElementChild;
+      const willShow = rowEl.classList.contains("hidden");
+      rowEl.classList.toggle("hidden");
+      if (!willShow) return;
+      if (rowEl.dataset.loaded === "1") return;
+      rowEl.dataset.loaded = "1";
+      const cached = state.drafts[tweetId];
+      if (cached) { renderDraftBox(cell, tweetId, cached.draft, "saved draft"); return; }
+      await generateDraft(tweetId, cell, false);
+    }
+
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
@@ -672,6 +983,39 @@ const server = http.createServer(async (req, res) => {
     }
     const result = await refreshEngagementQueue(url.searchParams.get("target"));
     res.writeHead(result.ok ? 200 : 500, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(result));
+    return;
+  }
+  if (url.pathname === "/api/engagement/drafts") {
+    const date = url.searchParams.get("date");
+    const target = url.searchParams.get("target");
+    if (!date || !target || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^[a-zA-Z0-9_]+$/.test(target)) {
+      res.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "invalid date or target" }));
+      return;
+    }
+    res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(draftsMap(date, target.toLowerCase())));
+    return;
+  }
+  if (url.pathname === "/api/engagement/draft") {
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "method not allowed" }));
+      return;
+    }
+    const body = await readJsonBody(req);
+    const date = String(body.date || "");
+    const target = String(body.target || "").replace(/^@/, "").toLowerCase();
+    const tweetId = String(body.tweet_id || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^[a-zA-Z0-9_]+$/.test(target) || !/^[a-zA-Z0-9]+$/.test(tweetId)) {
+      res.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "invalid date, target, or tweet_id" }));
+      return;
+    }
+    const result = await draftReply(date, target, tweetId, !!body.force);
+    const status = result.ok ? 200 : result.reason === "not_found" ? 404 : 500;
+    res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify(result));
     return;
   }
