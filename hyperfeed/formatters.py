@@ -48,6 +48,16 @@ def format_followed(hit: dict) -> str:
     )
 
 
+def format_enrichment(hit: dict, verdict: str) -> str:
+    """Follow-up to an outlier alert: the codex web-search fact-check, sources included."""
+    handle = html.escape(hit["handle"])
+    body = html.escape(verdict.strip())[:3500]
+    return (
+        f"🔎 <b>Fact-check</b> · @{handle} (codex + web)\n"
+        f"{body}"
+    )
+
+
 def format_status(
     *,
     subscriber_count: int,

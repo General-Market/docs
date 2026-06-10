@@ -1,0 +1,23 @@
+[Unit]
+Description=hyperfeed enrichment — codex web-search fact-check for outlier tweets
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=docsai
+Environment=CODEX_HOME=/opt/docsai/.codex
+Environment=HOME_DIR=/opt/docsai
+Environment=CODEX_MODEL=gpt-5.5
+Environment=WORKSPACE=/opt/hyperfeed-enrich/workspace
+Environment=BIND_ADDR=172.17.0.1
+Environment=PORT=8092
+Environment=CODEX_TIMEOUT_S=150
+ExecStart=/usr/bin/env python3 /opt/hyperfeed-enrich/enrich_server.py
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -14,7 +14,7 @@ import logging
 import signal
 from datetime import datetime, timezone
 
-from . import calibrate, commands, config, formatters, harvest, scan, store
+from . import calibrate, commands, config, enrich, formatters, harvest, scan, store
 from .telegram_client import Telegram
 from .twitter import Twitter
 
@@ -39,6 +39,8 @@ class Daemon:
         self.seen: dict = store.prune_seen(store.load_seen(), cfg.seen_max_age_hours)
         self.last_scan_dt: datetime | None = None
         self._calib_lock = asyncio.Lock()
+        self._enrich_sem = asyncio.Semaphore(max(1, cfg.enrich_max_concurrency))
+        self._enrich_tasks: set[asyncio.Task] = set()
 
     # -- helpers used by commands -------------------------------------------
     def _fired_today(self) -> int:
@@ -131,6 +133,8 @@ class Daemon:
             if c["tier"] == "outlier" and not state.get("outlier"):
                 if subs:
                     await self.tg.broadcast(subs, formatters.format_alert(c), html=True)
+                    if self.cfg.enrich_enabled:
+                        self._spawn_enrich(c, list(subs))   # web-search fact-check, sent as a follow-up
                 store.append_fired({**c, "fired_at": now_iso})
                 state["outlier"] = now_iso
                 outliers += 1
@@ -146,6 +150,27 @@ class Daemon:
         if outliers or followed:
             log.info("scan sent %d outlier(s) + %d followed to %d subscribers", outliers, followed, len(subs))
         return outliers
+
+    def _spawn_enrich(self, hit: dict, subs: list[int]) -> None:
+        task = asyncio.create_task(self._enrich_and_send(hit, subs))
+        self._enrich_tasks.add(task)
+        task.add_done_callback(self._enrich_tasks.discard)
+
+    async def _enrich_and_send(self, hit: dict, subs: list[int]) -> None:
+        """Best-effort: web-search the outlier, then send a sourced follow-up. Never blocks the scan."""
+        try:
+            async with self._enrich_sem:
+                verdict = await enrich.enrich(
+                    self.cfg.enrich_url, self.cfg.enrich_timeout_s,
+                    text=hit.get("text", ""), handle=hit.get("handle", ""),
+                )
+            if verdict:
+                await self.tg.broadcast(subs, formatters.format_enrichment(hit, verdict), html=True)
+                log.info("enriched outlier @%s", hit.get("handle"))
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            log.warning("enrichment task failed: %s", e)
 
     async def maybe_recalibrate(self) -> None:
         computed = self.calibration.get("computed_at")
@@ -230,7 +255,9 @@ async def _main() -> None:
         await asyncio.wait([done, *tasks], return_when=asyncio.FIRST_COMPLETED)
         for t in tasks:
             t.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        for t in list(daemon._enrich_tasks):
+            t.cancel()
+        await asyncio.gather(*tasks, *daemon._enrich_tasks, return_exceptions=True)
         log.info("hyperfeed stopped")
 
 
