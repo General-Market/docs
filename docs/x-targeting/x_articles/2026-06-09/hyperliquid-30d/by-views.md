@@ -3,7 +3,7 @@
 ## TL;DR
 
 **100 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **13,218 likes**, **2,140,721 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+Combined: **13,369 likes**, **2,145,015 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -53,54 +53,54 @@ Combined: **13,218 likes**, **2,140,721 views**. Native X Article = a tweet whos
 | 44 | 5,143 | 74 | 7 | 11 | [@Baheet_](https://x.com/Baheet_) (5,752) | [How Hyperliquid built a financial operating system one layer at a time](https://x.com/i/article/2058102373986238464) |
 | 45 | 3,904 | 71 | 9 | 8 | [@Baheet_](https://x.com/Baheet_) (5,752) | [Nova Markets: The Missing Layer in Hyperliquid's Stack](https://x.com/i/article/2054959242843398144) |
 | 46 | 3,845 | 135 | 22 | 57 | [@giant_cutie](https://x.com/giant_cutie) (6,121) | [Hyperliquid has been sued by two major traditional exchanges!](https://x.com/i/article/2055500001057677312) |
-| 47 | 3,685 | 23 | 2 | 9 | [@EvanCrypto17](https://x.com/EvanCrypto17) (7,624) | [Lighter vs Hyperliquid，LIT 合理价格是多少？](https://x.com/i/article/2062363708626722816) |
-| 48 | 3,654 | 55 | 2 | 86 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Felix项目研报>](https://x.com/i/article/2055994878182719488) |
-| 49 | 3,625 | 31 | 9 | 5 | [@PDmytriiev](https://x.com/PDmytriiev) (1,014) | [Hyperliquid US ETF Landscape](https://x.com/i/article/2063240163963080705) |
-| 50 | 3,518 | 22 | 1 | 1 | [@munji33](https://x.com/munji33) (1,559) | [Why I Bought $PUMP](https://x.com/i/article/2063679804969570304) |
-| 51 | 3,462 | 64 | 0 | 53 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Hypernova研报>](https://x.com/i/article/2061351914013646848) |
-| 52 | 3,094 | 14 | 1 | 0 | [@0xmediaco](https://x.com/0xmediaco) (31,358) | [HYPE 的 2028：600 美元只是起点？](https://x.com/i/article/2059939883968581633) |
-| 53 | 2,858 | 76 | 0 | 52 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<limUSD：Hyperliquid 原生收益的USD版本>](https://x.com/i/article/2063859764774449152) |
-| 54 | 2,843 | 100 | 16 | 40 | [@El__khalil](https://x.com/El__khalil) (4,245) | [Maxi or Diversified? The Positioning Decision That Could Make (or Cost) You Thousands](https://x.com/i/article/2062553549796470784) |
-| 55 | 2,727 | 61 | 2 | 48 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Nova Markets 项目研报>](https://x.com/i/article/2060273351067844608) |
-| 56 | 2,572 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,718) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
-| 57 | 2,557 | 72 | 13 | 20 | [@redstone_defi](https://x.com/redstone_defi) (236,705) | [RedStone Monthly Digest - May 2026](https://x.com/i/article/2062180809155485696) |
-| 58 | 2,241 | 24 | 9 | 4 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HIP-3: Tesla, oro y el S&P 500 on-chain](https://x.com/i/article/2053423770539294722) |
-| 59 | 1,992 | 38 | 8 | 6 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HyperBFT: 200K órdenes por segundo on-chain](https://x.com/i/article/2053439859834986496) |
-| 60 | 1,981 | 2 | 0 | 2 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,717) | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) |
-| 61 | 1,966 | 17 | 1 | 1 | [@SmaeiliVahid](https://x.com/SmaeiliVahid) (3,912) | [No Lend, No Borrow: Collateral Strategies on Solana vs. Hyperliquid in 2026](https://x.com/i/article/2059909019381166081) |
-| 62 | 1,804 | 160 | 15 | 30 | [@HYPERPEPS](https://x.com/HYPERPEPS) (2,589) | [The AI layer Hyperliquid was missing.](https://x.com/i/article/2064389896786059264) |
-| 63 | 1,720 | 43 | 2 | 26 | [@defiufo](https://x.com/defiufo) (10,641) | [Hypernova Just Raised $3M to Bring Prop Trading On-Chain](https://x.com/i/article/2062536680834289665) |
-| 64 | 1,559 | 20 | 7 | 4 | [@a1research__](https://x.com/a1research__) (10,147) | [Nova: Where New Hyperliquid Markets Are Born](https://x.com/i/article/2061498902784708608) |
-| 65 | 1,540 | 351 | 26 | 78 | [@ilies_larbi](https://x.com/ilies_larbi) (7,353) | [TradFi Perps Are Starting To Look Like A Retail Slaughterhouse](https://x.com/i/article/2062128532810309632) |
-| 66 | 1,385 | 3 | 0 | 0 | [@todayindefi](https://x.com/todayindefi) (17,254) | [Hyperliquid on DeFi Saver: Better Tools for Traders, Better Hedges for Farmers](https://x.com/i/article/2062458522206453760) |
-| 67 | 1,174 | 6 | 1 | 0 | [@ponyo_fp](https://x.com/ponyo_fp) (7,005) | [Can Hyperliquid’s Weekend Trading Predict Monday Opens for Korean Stocks?](https://x.com/i/article/2064245850701000704) |
-| 68 | 1,091 | 2 | 0 | 0 | [@CryptoTaxSucks](https://x.com/CryptoTaxSucks) (18,530) | [Perps Just Got A Tax Break, But Is Hyperliquid Excluded?](https://x.com/i/article/2064127274463666176) |
-| 69 | 1,015 | 55 | 10 | 7 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [Hyperliquid 101: el L1 hecho para trading](https://x.com/i/article/2052720170674601988) |
-| 70 | 884 | 21 | 2 | 7 | [@0xRedGojo](https://x.com/0xRedGojo) (215) | [The next wave of trading isn’t just markets… it’s market creation. 🧵](https://x.com/i/article/2063561125979906048) |
-| 71 | 875 | 199 | 31 | 64 | [@giant_cutie](https://x.com/giant_cutie) (6,121) | [The US is opening up perpetual contracts! Hyperliquid could become a primary target...](https://x.com/i/article/2060589883497017345) |
-| 72 | 860 | 5 | 0 | 0 | [@GoodCryptoApp](https://x.com/GoodCryptoApp) (111,048) | [Hyperliquid: The Best Trading Platform of 2026? Read a detailed Hyperliquid project overview](https://x.com/i/article/2062179882159734784) |
-| 73 | 805 | 6 | 1 | 1 | [@CoinWInsightEN](https://x.com/CoinWInsightEN) (11,461) | [“Web3 Pre-IPO: On-Chain Reconfiguration of Primary Markets and the Liquidity Revolution” Volume 2](https://x.com/i/article/2063951049216716800) |
-| 74 | 750 | 2 | 0 | 0 | [@Resonance88888](https://x.com/Resonance88888) (81) | [6 月 6 日｜加密圈财经日报・深耕 HYPE/Hyperliquid](https://x.com/i/article/2063243930075095040) |
-| 75 | 716 | 0 | 0 | 6 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperEVM: The App Store for On-Chain Finance](https://x.com/i/article/2063185801580613632) |
-| 76 | 613 | 1 | 1 | 0 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperCore: The Order Book That Belongs to No One](https://x.com/i/article/2063185672316342272) |
-| 77 | 487 | 4 | 0 | 1 | [@SwftCoin](https://x.com/SwftCoin) (79,975) | [Today’s Top Crypto Headlines (June 05, 2026)](https://x.com/i/article/2062913112047796224) |
-| 78 | 446 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,812) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
-| 79 | 408 | 4 | 0 | 1 | [@longpratas](https://x.com/longpratas) (5,446) | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) |
-| 80 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
-| 81 | 383 | 2 | 1 | 0 | [@euromandriver](https://x.com/euromandriver) (8,966) | [Top 6 Decentralized Perpetual Futures Platforms in 2026](https://x.com/i/article/2063576839855960064) |
-| 82 | 376 | 2 | 0 | 0 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,717) | [Citrini puts Hyperliquid on watch as HYPE jumps over 10% from Sunday lows](https://x.com/i/article/2064063945829236736) |
-| 83 | 374 | 1 | 0 | 0 | [@woleswoosh](https://x.com/woleswoosh) (17,211) | [Grayscale Hyperliquid Staking ETP (HYPG) Launch](https://x.com/i/article/2062004056084865024) |
-| 84 | 346 | 9 | 1 | 6 | [@hypurrworld](https://x.com/hypurrworld) (64) | [Welcome to Hypurr World](https://x.com/i/article/2063998533121048576) |
-| 85 | 293 | 7 | 4 | 2 | [@AtlasHL](https://x.com/AtlasHL) (447) | [Atlas Marketplace keeps growing](https://x.com/i/article/2063655114431213568) |
-| 86 | 215 | 0 | 0 | 0 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,717) | [Hyperliquid Policy Center and Paradigm urge Treasury to narrow stablecoin rules for DeFi](https://x.com/i/article/2064437650908717056) |
-| 87 | 188 | 3 | 0 | 1 | [@AveaiGlobal](https://x.com/AveaiGlobal) (8,637) | [Hyperliquid HIP-4 Outcome Contracts Explained](https://x.com/i/article/2064045196984438784) |
-| 88 | 171 | 2 | 2 | 0 | [@dannatafinanza](https://x.com/dannatafinanza) (22) | [HYPE no cotiza como un token DeFi. Cotiza como una bolsa de valores](https://x.com/i/article/2063740180024995842) |
-| 89 | 170 | 3 | 0 | 0 | [@verticalfunded](https://x.com/verticalfunded) (2,525) | [$HYPE: the crypto set to target $150 in 2026 amid a full bear market!!!](https://x.com/i/article/2064056702530387969) |
-| 90 | 151 | 8 | 0 | 3 | [@hypermes_](https://x.com/hypermes_) (8) | [Why Hyperliquid perps need a reasoning agent, not a trading bot](https://x.com/i/article/2064396266553876480) |
-| 91 | 140 | 5 | 0 | 1 | [@coin_gabbar_](https://x.com/coin_gabbar_) (6,106) | [Grayscale HYPE ETF Launches on Nasdaq With 0.29% Fee](https://x.com/i/article/2063177869690593280) |
-| 92 | 85 | 4 | 1 | 1 | [@BitFrogOfficial](https://x.com/BitFrogOfficial) (4,079) | [三重信号](https://x.com/i/article/2053665914554658817) |
-| 93 | 81 | 1 | 1 | 0 | [@silk_nodes](https://x.com/silk_nodes) (1,767) | [Onchain Markets Trade 24/7 Now. The Oracles Underneath Couldn't. Here's How SEDA Fixed It.](https://x.com/i/article/2062172614550749185) |
-| 94 | 80 | 0 | 0 | 0 | [@matt_ai_agent](https://x.com/matt_ai_agent) (352) | [Technologia ponad akumulacją. Sukces Hyperliquid na tle kryzysu DAT-ów](https://x.com/i/article/2063223338361655296) |
+| 47 | 3,752 | 126 | 10 | 87 | [@Dan1umma](https://x.com/Dan1umma) (10,181) | [The Board Gets Bigger Decibel Lists Three New AI Equity Perps](https://x.com/i/article/2059863903958441986) |
+| 48 | 3,685 | 23 | 2 | 9 | [@EvanCrypto17](https://x.com/EvanCrypto17) (7,624) | [Lighter vs Hyperliquid，LIT 合理价格是多少？](https://x.com/i/article/2062363708626722816) |
+| 49 | 3,654 | 55 | 2 | 86 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Felix项目研报>](https://x.com/i/article/2055994878182719488) |
+| 50 | 3,625 | 31 | 9 | 5 | [@PDmytriiev](https://x.com/PDmytriiev) (1,014) | [Hyperliquid US ETF Landscape](https://x.com/i/article/2063240163963080705) |
+| 51 | 3,518 | 22 | 1 | 1 | [@munji33](https://x.com/munji33) (1,559) | [Why I Bought $PUMP](https://x.com/i/article/2063679804969570304) |
+| 52 | 3,462 | 64 | 0 | 53 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Hypernova研报>](https://x.com/i/article/2061351914013646848) |
+| 53 | 3,094 | 14 | 1 | 0 | [@0xmediaco](https://x.com/0xmediaco) (31,358) | [HYPE 的 2028：600 美元只是起点？](https://x.com/i/article/2059939883968581633) |
+| 54 | 2,858 | 76 | 0 | 52 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<limUSD：Hyperliquid 原生收益的USD版本>](https://x.com/i/article/2063859764774449152) |
+| 55 | 2,843 | 100 | 16 | 40 | [@El__khalil](https://x.com/El__khalil) (4,245) | [Maxi or Diversified? The Positioning Decision That Could Make (or Cost) You Thousands](https://x.com/i/article/2062553549796470784) |
+| 56 | 2,727 | 61 | 2 | 48 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) (10,444) | [<Nova Markets 项目研报>](https://x.com/i/article/2060273351067844608) |
+| 57 | 2,572 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,718) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
+| 58 | 2,557 | 72 | 13 | 20 | [@redstone_defi](https://x.com/redstone_defi) (236,705) | [RedStone Monthly Digest - May 2026](https://x.com/i/article/2062180809155485696) |
+| 59 | 2,241 | 24 | 9 | 4 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HIP-3: Tesla, oro y el S&P 500 on-chain](https://x.com/i/article/2053423770539294722) |
+| 60 | 1,992 | 38 | 8 | 6 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HyperBFT: 200K órdenes por segundo on-chain](https://x.com/i/article/2053439859834986496) |
+| 61 | 1,981 | 2 | 0 | 2 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,717) | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) |
+| 62 | 1,966 | 17 | 1 | 1 | [@SmaeiliVahid](https://x.com/SmaeiliVahid) (3,912) | [No Lend, No Borrow: Collateral Strategies on Solana vs. Hyperliquid in 2026](https://x.com/i/article/2059909019381166081) |
+| 63 | 1,804 | 160 | 15 | 30 | [@HYPERPEPS](https://x.com/HYPERPEPS) (2,589) | [The AI layer Hyperliquid was missing.](https://x.com/i/article/2064389896786059264) |
+| 64 | 1,720 | 43 | 2 | 26 | [@defiufo](https://x.com/defiufo) (10,641) | [Hypernova Just Raised $3M to Bring Prop Trading On-Chain](https://x.com/i/article/2062536680834289665) |
+| 65 | 1,559 | 20 | 7 | 4 | [@a1research__](https://x.com/a1research__) (10,147) | [Nova: Where New Hyperliquid Markets Are Born](https://x.com/i/article/2061498902784708608) |
+| 66 | 1,540 | 351 | 26 | 78 | [@ilies_larbi](https://x.com/ilies_larbi) (7,353) | [TradFi Perps Are Starting To Look Like A Retail Slaughterhouse](https://x.com/i/article/2062128532810309632) |
+| 67 | 1,385 | 3 | 0 | 0 | [@todayindefi](https://x.com/todayindefi) (17,254) | [Hyperliquid on DeFi Saver: Better Tools for Traders, Better Hedges for Farmers](https://x.com/i/article/2062458522206453760) |
+| 68 | 1,174 | 6 | 1 | 0 | [@ponyo_fp](https://x.com/ponyo_fp) (7,005) | [Can Hyperliquid’s Weekend Trading Predict Monday Opens for Korean Stocks?](https://x.com/i/article/2064245850701000704) |
+| 69 | 1,091 | 2 | 0 | 0 | [@CryptoTaxSucks](https://x.com/CryptoTaxSucks) (18,530) | [Perps Just Got A Tax Break, But Is Hyperliquid Excluded?](https://x.com/i/article/2064127274463666176) |
+| 70 | 1,015 | 55 | 10 | 7 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [Hyperliquid 101: el L1 hecho para trading](https://x.com/i/article/2052720170674601988) |
+| 71 | 884 | 21 | 2 | 7 | [@0xRedGojo](https://x.com/0xRedGojo) (215) | [The next wave of trading isn’t just markets… it’s market creation. 🧵](https://x.com/i/article/2063561125979906048) |
+| 72 | 875 | 199 | 31 | 64 | [@giant_cutie](https://x.com/giant_cutie) (6,121) | [The US is opening up perpetual contracts! Hyperliquid could become a primary target...](https://x.com/i/article/2060589883497017345) |
+| 73 | 860 | 5 | 0 | 0 | [@GoodCryptoApp](https://x.com/GoodCryptoApp) (111,048) | [Hyperliquid: The Best Trading Platform of 2026? Read a detailed Hyperliquid project overview](https://x.com/i/article/2062179882159734784) |
+| 74 | 837 | 25 | 3 | 1 | [@StorkOracle](https://x.com/StorkOracle) (30,797) | [Equity Perps Flippening, Blind Pre-IPO Surge? 🌊](https://x.com/i/article/2064019487473471488) |
+| 75 | 805 | 6 | 1 | 1 | [@CoinWInsightEN](https://x.com/CoinWInsightEN) (11,461) | [“Web3 Pre-IPO: On-Chain Reconfiguration of Primary Markets and the Liquidity Revolution” Volume 2](https://x.com/i/article/2063951049216716800) |
+| 76 | 750 | 2 | 0 | 0 | [@Resonance88888](https://x.com/Resonance88888) (81) | [6 月 6 日｜加密圈财经日报・深耕 HYPE/Hyperliquid](https://x.com/i/article/2063243930075095040) |
+| 77 | 716 | 0 | 0 | 6 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperEVM: The App Store for On-Chain Finance](https://x.com/i/article/2063185801580613632) |
+| 78 | 613 | 1 | 1 | 0 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperCore: The Order Book That Belongs to No One](https://x.com/i/article/2063185672316342272) |
+| 79 | 487 | 4 | 0 | 1 | [@SwftCoin](https://x.com/SwftCoin) (79,975) | [Today’s Top Crypto Headlines (June 05, 2026)](https://x.com/i/article/2062913112047796224) |
+| 80 | 446 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,812) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
+| 81 | 408 | 4 | 0 | 1 | [@longpratas](https://x.com/longpratas) (5,446) | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) |
+| 82 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
+| 83 | 383 | 2 | 1 | 0 | [@euromandriver](https://x.com/euromandriver) (8,966) | [Top 6 Decentralized Perpetual Futures Platforms in 2026](https://x.com/i/article/2063576839855960064) |
+| 84 | 376 | 2 | 0 | 0 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,717) | [Citrini puts Hyperliquid on watch as HYPE jumps over 10% from Sunday lows](https://x.com/i/article/2064063945829236736) |
+| 85 | 374 | 1 | 0 | 0 | [@woleswoosh](https://x.com/woleswoosh) (17,211) | [Grayscale Hyperliquid Staking ETP (HYPG) Launch](https://x.com/i/article/2062004056084865024) |
+| 86 | 346 | 9 | 1 | 6 | [@hypurrworld](https://x.com/hypurrworld) (64) | [Welcome to Hypurr World](https://x.com/i/article/2063998533121048576) |
+| 87 | 293 | 7 | 4 | 2 | [@AtlasHL](https://x.com/AtlasHL) (447) | [Atlas Marketplace keeps growing](https://x.com/i/article/2063655114431213568) |
+| 88 | 188 | 3 | 0 | 1 | [@AveaiGlobal](https://x.com/AveaiGlobal) (8,637) | [Hyperliquid HIP-4 Outcome Contracts Explained](https://x.com/i/article/2064045196984438784) |
+| 89 | 171 | 2 | 2 | 0 | [@dannatafinanza](https://x.com/dannatafinanza) (22) | [HYPE no cotiza como un token DeFi. Cotiza como una bolsa de valores](https://x.com/i/article/2063740180024995842) |
+| 90 | 170 | 3 | 0 | 0 | [@verticalfunded](https://x.com/verticalfunded) (2,525) | [$HYPE: the crypto set to target $150 in 2026 amid a full bear market!!!](https://x.com/i/article/2064056702530387969) |
+| 91 | 151 | 8 | 0 | 3 | [@hypermes_](https://x.com/hypermes_) (8) | [Why Hyperliquid perps need a reasoning agent, not a trading bot](https://x.com/i/article/2064396266553876480) |
+| 92 | 140 | 5 | 0 | 1 | [@coin_gabbar_](https://x.com/coin_gabbar_) (6,106) | [Grayscale HYPE ETF Launches on Nasdaq With 0.29% Fee](https://x.com/i/article/2063177869690593280) |
+| 93 | 85 | 4 | 1 | 1 | [@BitFrogOfficial](https://x.com/BitFrogOfficial) (4,079) | [三重信号](https://x.com/i/article/2053665914554658817) |
+| 94 | 81 | 1 | 1 | 0 | [@silk_nodes](https://x.com/silk_nodes) (1,767) | [Onchain Markets Trade 24/7 Now. The Oracles Underneath Couldn't. Here's How SEDA Fixed It.](https://x.com/i/article/2062172614550749185) |
 | 95 | 61 | 4 | 0 | 0 | [@lan89677745](https://x.com/lan89677745) (702) | [Báo cáo Research $HYPE](https://x.com/i/article/2063573444630077440) |
 | 96 | 53 | 1 | 0 | 0 | [@BitFrogOfficial](https://x.com/BitFrogOfficial) (4,079) | [ASTER，CZ 亲儿子，Hyperliquid 最大对手，却为什么涨不动？](https://x.com/i/article/2057399960879108096) |
 | 97 | 28 | 1 | 0 | 0 | [@TroyFearnow](https://x.com/TroyFearnow) (217) | [HYPE Tokenomics](https://x.com/i/article/2064442339939033088) |

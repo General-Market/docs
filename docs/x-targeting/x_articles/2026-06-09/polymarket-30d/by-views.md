@@ -3,7 +3,7 @@
 ## TL;DR
 
 **100 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **8,955 likes**, **2,172,088 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+Combined: **9,000 likes**, **2,171,997 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -99,12 +99,12 @@ Combined: **8,955 likes**, **2,172,088 views**. Native X Article = a tweet whose
 | 90 | 258 | 18 | 0 | 1 | [@polykinder](https://x.com/polykinder) (23) | [He joined Polymarket the day Roland Garros started. 14 days later, $3.9M.](https://x.com/i/article/2064373719984750593) |
 | 91 | 231 | 4 | 1 | 0 | [@Early_Riders](https://x.com/Early_Riders) (1,527) | [Final Settlement \| Inside the SpaceX IPO And Why Bitcoin Is the Value Trade](https://x.com/i/article/2064344225370480640) |
 | 92 | 180 | 8 | 0 | 0 | [@MarttinChriste1](https://x.com/MarttinChriste1) (1,767) | [The Bank Closes. The Cronos App Doesn't.](https://x.com/i/article/2064422713268060160) |
-| 93 | 160 | 4 | 0 | 1 | [@rajkaria_](https://x.com/rajkaria_) (6,410) | [Prediction Markets vs Trading](https://x.com/i/article/2064233638003404800) |
-| 94 | 152 | 11 | 0 | 3 | [@HeyEmma33](https://x.com/HeyEmma33) (899) | [OpenPlay 正在解决预测市场行业长期存在的问题](https://x.com/i/article/2063814435203158016) |
-| 95 | 147 | 2 | 2 | 0 | [@0xPtts](https://x.com/0xPtts) (857) | [Crypto Daily Recap](https://x.com/i/article/2063256138322264064) |
-| 96 | 138 | 6 | 2 | 0 | [@10dimes_](https://x.com/10dimes_) (1,007) | [How to trade with leverage in prediction markets: risk, and who pays for it](https://x.com/i/article/2062163716812996608) |
-| 97 | 134 | 7 | 0 | 0 | [@nik0x78](https://x.com/nik0x78) (133) | [The story of Predict.fun — Part 2](https://x.com/i/article/2063895024228573184) |
-| 98 | 84 | 4 | 2 | 0 | [@0xtemmy_](https://x.com/0xtemmy_) (1,684) | [Ride vs Polymarket: What's Actually Different?](https://x.com/i/article/2049163811257450496) |
+| 93 | 152 | 11 | 0 | 3 | [@HeyEmma33](https://x.com/HeyEmma33) (899) | [OpenPlay 正在解决预测市场行业长期存在的问题](https://x.com/i/article/2063814435203158016) |
+| 94 | 147 | 2 | 2 | 0 | [@0xPtts](https://x.com/0xPtts) (857) | [Crypto Daily Recap](https://x.com/i/article/2063256138322264064) |
+| 95 | 138 | 6 | 2 | 0 | [@10dimes_](https://x.com/10dimes_) (1,007) | [How to trade with leverage in prediction markets: risk, and who pays for it](https://x.com/i/article/2062163716812996608) |
+| 96 | 134 | 7 | 0 | 0 | [@nik0x78](https://x.com/nik0x78) (133) | [The story of Predict.fun — Part 2](https://x.com/i/article/2063895024228573184) |
+| 97 | 84 | 4 | 2 | 0 | [@0xtemmy_](https://x.com/0xtemmy_) (1,684) | [Ride vs Polymarket: What's Actually Different?](https://x.com/i/article/2049163811257450496) |
+| 98 | 69 | 49 | 0 | 0 | [@Crypto_Mike55](https://x.com/Crypto_Mike55) (952) | [What the Cronos App Actually Means for CRO Token Holders](https://x.com/i/article/2064473747709476864) |
 | 99 | 63 | 6 | 1 | 0 | [@martchelo_eth](https://x.com/martchelo_eth) (42) | [The price oracle problem in prediction market lending](https://x.com/i/article/2064288908322516992) |
 | 100 | 43 | 6 | 1 | 1 | [@brimdex](https://x.com/brimdex) (86) | [Brimdex Ships the Update That Redefines Range Trading](https://x.com/i/article/2064291399994863616) |
 

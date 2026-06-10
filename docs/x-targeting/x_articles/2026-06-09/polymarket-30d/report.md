@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **100 native X Articles** from **4394 searched tweets** since `2026-05-11T02:26:21.530009+00:00`.
+Stored **100 native X Articles** from **4394 searched tweets** since `2026-05-11T02:33:04.687158+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -22,7 +22,7 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 12 | [How to farm polymarket's $1M/day without predicting anything](https://x.com/i/article/2063657602509094912) | [@0xbobaaa](https://x.com/0xbobaaa) | 169 eng / 18634 views / 9.069 eng per 1k views | 190.2 | 14010.526 per 1k | 5.822x | Read and extract pattern (~5 min) |
 | 13 | [منبری برای Ethereum و اکوسیستم ش ](https://x.com/i/article/2063151704191770624) | [@nabi_sarvi](https://x.com/nabi_sarvi) | 44 eng / 4340 views / 10.138 eng per 1k views | 48.4 | 305.204 per 1k | 5.235x | Read and extract pattern (~5 min) |
 | 14 | [The Hidden Marketing & Growth KPI Holding Back Startup Growth](https://x.com/i/article/2063761399579295744) | [@SerrCoker_1](https://x.com/SerrCoker_1) | 18 eng / 1117 views / 16.115 eng per 1k views | 19.4 | 941.821 per 1k | 5.011x | Read and extract pattern (~5 min) |
-| 15 | [ELI5: How do Polymarket markets get resolved?](https://x.com/i/article/2062901951759581184) | [@StandDOTtrade](https://x.com/StandDOTtrade) | 9 eng / 1519 views / 5.925 eng per 1k views | 10.5 | 359.867 per 1k | 4.949x | Read and extract pattern (~5 min) |
+| 15 | [ELI5: How do Polymarket markets get resolved?](https://x.com/i/article/2062901951759581184) | [@StandDOTtrade](https://x.com/StandDOTtrade) | 9 eng / 1519 views / 5.925 eng per 1k views | 10.5 | 359.867 per 1k | 4.91x | Read and extract pattern (~5 min) |
 | 16 | [从 Polymarket 精准榨取 4000 万美元的数学 （完整路线图） ](https://x.com/i/article/2063105590348431360) | [@Inoosota](https://x.com/Inoosota) | 259 eng / 307561 views / 0.842 eng per 1k views | 376.0 | 245263.955 per 1k | 4.412x | Read and extract pattern (~5 min) |
 | 17 | [No Resolution Mechanism Is Perfect. Prediction Markets Need to Insure Users.](https://x.com/i/article/2063095772216700928) | [@deepitreal](https://x.com/deepitreal) | 14 eng / 784 views / 17.857 eng per 1k views | 17.3 | 1465.421 per 1k | 4.305x | Read and extract pattern (~5 min) |
 | 18 | [DeFi Capital Layer for Prediction Markets ](https://x.com/i/article/2063754562033553408) | [@bolsaverse](https://x.com/bolsaverse) | 62 eng / 11595 views / 5.347 eng per 1k views | 78.9 | 6828.622 per 1k | 4.195x | Read and extract pattern (~5 min) |
@@ -120,8 +120,8 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 ## Spend
 
-- Balance before: `9084714` credits.
-- Balance after: `9084714` credits.
+- Balance before: `9034899` credits.
+- Balance after: `9034899` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.
