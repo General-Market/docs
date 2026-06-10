@@ -351,6 +351,24 @@ HIP3_TERMS = (
     "outcome markets",
 )
 
+COPY_TRADING_TERMS = (
+    "copy trading",
+    "copy-trading",
+    "copytrading",
+    "copy trade",
+    "copy-trade",
+    "copytrade",
+    "copy trader",
+    "copy traders",
+    "copy bot",
+    "mirror trading",
+    "social trading",
+    "follow trading",
+    "跟单",
+    "コピートレード",
+    "polygun",
+)
+
 HIP4_TERMS = (
     "hip-4",
     "hip4",
@@ -419,6 +437,10 @@ NICHE_CONFIG = {
     "polymarket": {
         "match_any": POLYMARKET_TERMS,
         "keyword_query": "(Polymarket OR \"poly market\" OR \"prediction market\" OR \"prediction markets\" OR ポリマーケット)",
+        "extra_queries": (
+            ("pm-bot", "(Polymarket) (bot OR bots OR agent OR automated OR strategy OR quant OR copy OR formula OR 跟单 OR 数学) url:x.com/i/article since:{since} -is:retweet"),
+            ("pm-copy", "(\"polymarket bot\" OR \"polymarket strategy\" OR \"polymarket copy\" OR \"polymarket trader\" OR \"polymarket whale\") url:x.com/i/article since:{since} -is:retweet"),
+        ),
     },
     "pumpfun": {
         "match_any": PUMPFUN_TERMS,
@@ -443,6 +465,14 @@ NICHE_CONFIG = {
         "keyword_query": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"permissionless perp\" OR \"deployer auction\") (Hyperliquid OR HyperCore OR perp OR perps OR market)",
         "likes_prefix": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"deployer auction\")",
     },
+    "copy-trading": {
+        "match_any": COPY_TRADING_TERMS,
+        "keyword_query": "(\"copy trading\" OR copytrading OR \"copy trade\" OR \"copy trader\" OR \"mirror trading\" OR \"social trading\" OR 跟单 OR コピートレード)",
+        "likes_prefix": "(\"copy trading\" OR copytrading OR \"copy trade\" OR \"copy trader\" OR 跟单)",
+        "extra_queries": (
+            ("copy-platform", "(\"copy trading\" OR copytrading OR 跟单) (polymarket OR hyperliquid OR crypto OR perp OR bot OR onchain) url:x.com/i/article since:{since} -is:retweet"),
+        ),
+    },
     "hip4-30d": {
         "match_any": HIP4_TERMS,
         "keyword_query": "(HIP-4 OR HIP4 OR \"outcome market\" OR \"outcome markets\" OR \"event perps\" OR \"express a bet\")",
@@ -466,7 +496,7 @@ NICHE_CONFIG = {
 # 30-day deep variants of every daily niche: same filter and queries, a separate
 # slug so the monthly page lives next to the daily one in the UI. Run these with
 # --lookback-hours 720. (The Hyperliquid -30d niches above are bespoke and skipped.)
-for _base in ("trading-ai", "ai", "trading", "crypto", "prediction-markets", "polymarket", "pumpfun"):
+for _base in ("trading-ai", "ai", "trading", "crypto", "prediction-markets", "polymarket", "pumpfun", "copy-trading"):
     NICHE_CONFIG[f"{_base}-30d"] = dict(NICHE_CONFIG[_base])
 
 
@@ -594,9 +624,10 @@ def matches_niche(article: NativeArticle, niche: str) -> bool:
 
 def term_in_text(term: str, text: str) -> bool:
     term = term.lower()
-    if term.startswith("$") or " " in term or "-" in term or "." in term:
-        # Cashtags ($hype) and multi-token / punctuated terms (hip-3, pump.fun) lose
-        # their boundary under \b, so fall back to substring matching.
+    if term.startswith("$") or " " in term or "-" in term or "." in term or not term.isascii():
+        # Cashtags ($hype), multi-token / punctuated terms (hip-3, pump.fun), and
+        # CJK terms (跟单 glued to a latin word: "Polymarket跟单指南") lose their
+        # boundary semantics, so fall back to substring matching.
         return term in text
     # ASCII boundaries instead of \b: \b fails when a latin term is flanked by CJK
     # characters (both sides are \w, so no boundary), which silently drops Chinese
@@ -624,7 +655,16 @@ def keyword_queries(niche: str, since_date: str) -> list[tuple[str, str, str]]:
     if not config:
         raise ValueError(f"Unsupported niche: {niche}. Available: {', '.join(sorted(NICHE_CONFIG))}")
     keyword_query = config["keyword_query"]
-    return [
+    # Sub-topic angles: on a high-volume term, Latest is chronological (14 pages
+    # reaches days, not the month) and Top buries view-rich/like-poor Articles.
+    # Scoped angle queries (bot / copy / strategy / 跟单) slice the space so each
+    # angle's giants reach the first pages. Each angle runs Top + Latest.
+    extra: list[tuple[str, str, str]] = []
+    for label, template in config.get("extra_queries", ()):
+        q = template.format(since=since_date)
+        extra.append((f"x-{label}", q, "Top"))
+        extra.append((f"x-{label}-latest", q, "Latest"))
+    return extra + [
         (
             "broad-native-top",
             f"{keyword_query} url:x.com/i/article since:{since_date} -is:retweet",

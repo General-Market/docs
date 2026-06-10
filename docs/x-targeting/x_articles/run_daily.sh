@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-/home/max/index}"
 KEY_SECRET_FILE="${TWITTERAPI_KEY_FILE:-/root/.secrets/twitterapi_io_key}"
-NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun hyperliquid}"
+NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun hyperliquid copy-trading}"
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
 # No tight cap — the views floor decides what belongs; the max is a budget backstop.

@@ -8,7 +8,7 @@ ROOT_DIR="${ROOT_DIR:-/home/max/index}"
 KEY_SECRET_FILE="${TWITTERAPI_KEY_FILE:-/root/.secrets/twitterapi_io_key}"
 # Every -30d niche: the Hyperliquid ecosystem + sub-topics, plus a 30-day deep
 # variant of each daily topic. All capped at 100 (set below).
-NICHES="${X_ARTICLE_MONTHLY_NICHES:-hyperliquid-30d hip3-30d hyperevm-30d hl-defi-30d ai-30d trading-30d trading-ai-30d crypto-30d polymarket-30d pumpfun-30d prediction-markets-30d}"
+NICHES="${X_ARTICLE_MONTHLY_NICHES:-hyperliquid-30d hip3-30d hyperevm-30d hl-defi-30d ai-30d trading-30d trading-ai-30d crypto-30d polymarket-30d pumpfun-30d prediction-markets-30d copy-trading-30d}"
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
 BUDGET_USD="${X_ARTICLE_BUDGET_USD:-5}"
