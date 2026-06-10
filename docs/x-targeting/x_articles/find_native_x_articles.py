@@ -47,7 +47,10 @@ AI_TERMS = (
     "transformer",
     "scaling law",
     "semiconductor",
+    "半导体",
     "anduril",
+    "codex",
+    "mcp",
 )
 
 CRYPTO_TERMS = (
@@ -80,6 +83,18 @@ PREDICTION_MARKET_TERMS = (
     "kalshi",
     "forecast",
     "betting market",
+    # The industry renamed itself: HIP-4-era coverage says "outcome markets",
+    # CJK coverage says 预测市场/予測市場, and the new platforms (Vizo, XPredict,
+    # Predictstreet) never say "prediction market" in a title. All audited
+    # zero-junk. "bet"/"betting" rejected: admits stock-pick titles + spam.
+    "outcome market",
+    "hip-4",
+    "event contract",
+    "预测市场",
+    "予測市場",
+    "vizo",
+    "xpredict",
+    "predictstreet",
 )
 
 POLYMARKET_TERMS = (
@@ -88,6 +103,7 @@ POLYMARKET_TERMS = (
     "prediction market",
     "prediction markets",
     "pm market",
+    "ポリマーケット",
 )
 
 PUMPFUN_TERMS = (
@@ -103,6 +119,19 @@ PUMPFUN_TERMS = (
     "solana launch",
     "letsbonk",
     "bonkfun",
+    # New launchpads + CJK memecoin slang from the dropped-corpus audit
+    # (土狗 = CN "shitcoin", 狗狗币 = CN "dogecoin"). Bare "meme"/"launch"
+    # rejected: re-admits ~80% of the adjacent junk.
+    "alt.fun",
+    "altdotfun",
+    "bankr",
+    "perpad",
+    "dogecoin",
+    "$doge",
+    "狗狗币",
+    "土狗",
+    "fair launch",
+    "meme season",
 )
 
 MARKET_TERMS = (
@@ -136,6 +165,7 @@ MARKET_TERMS = (
     "ethereum",
     "nisa",
     "米国株",
+    "美股",
     "株式市場",
     "株式投資",
     "上場",
@@ -184,6 +214,12 @@ HYPERLIQUID_ECO_TERMS = (
     "nova markets",
     "liminal",
     "valantis",
+    # HIP-3 builder-market protocols — covered repeatedly without the word
+    # "Hyperliquid" in the title (pre-IPO perps wave).
+    "ventuals",
+    "trade.xyz",
+    "tradexyz",
+    "alt.fun",
 )
 # 'sentiment' (a minor HyperEVM lending app) was dropped: the bare English word
 # "market sentiment" appears in too many unrelated crypto articles to be a safe term.
@@ -240,7 +276,7 @@ HL_DEFI_TERMS = (
 HYPERLIQUID_QUERY = (
     '(Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit '
     'OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova '
-    'OR HyperBloom OR $PURR)'
+    'OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR $PURR)'
 )
 
 NICHE_CONFIG = {
@@ -262,15 +298,15 @@ NICHE_CONFIG = {
     },
     "prediction-markets": {
         "match_any": PREDICTION_MARKET_TERMS,
-        "keyword_query": "(Polymarket OR Kalshi OR prediction OR forecast OR betting market)",
+        "keyword_query": "(Polymarket OR Kalshi OR prediction OR forecast OR \"betting market\" OR \"outcome market\" OR \"outcome markets\" OR \"event contract\" OR Vizo OR XPredict OR 预测市场 OR 予測市場)",
     },
     "polymarket": {
         "match_any": POLYMARKET_TERMS,
-        "keyword_query": "(Polymarket OR \"poly market\" OR \"prediction market\" OR \"prediction markets\")",
+        "keyword_query": "(Polymarket OR \"poly market\" OR \"prediction market\" OR \"prediction markets\" OR ポリマーケット)",
     },
     "pumpfun": {
         "match_any": PUMPFUN_TERMS,
-        "keyword_query": "(pump.fun OR pumpfun OR \"pump fun\" OR memecoin OR memecoins OR \"meme coin\" OR launchpad OR \"bonding curve\" OR LetsBonk OR bonkfun)",
+        "keyword_query": "(pump.fun OR pumpfun OR \"pump fun\" OR memecoin OR memecoins OR \"meme coin\" OR launchpad OR \"bonding curve\" OR LetsBonk OR bonkfun OR alt.fun OR Bankr OR perpad OR dogecoin OR 土狗 OR 狗狗币)",
     },
     "hyperliquid": {
         "match_any": HYPERLIQUID_TERMS,

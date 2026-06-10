@@ -1,38 +1,38 @@
-# Native X Articles — trading-30d — 2026-06-09
+# Native X Articles — trading-30d — 2026-06-10
 
 ## TL;DR
 
-Stored **100 native X Articles** from **2200 searched tweets** since `2026-05-10T22:48:29.026159+00:00`.
+Stored **100 native X Articles** from **3001 searched tweets** since `2026-05-11T02:26:16.753492+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
 | rank | X Article | author | X signal | score | views/followers | vs author avg | next action |
 |---:|---|---|---:|---:|---:|---:|---|
-| 1 | [Kimi K2.6 runs 300 parallel agents. Here's what comes out.](https://x.com/i/article/2061849440290291712) | [@Sprytixl](https://x.com/Sprytixl) | 873 eng / 471641 views / 1.851 eng per 1k views | 1018.0 | 118741.44 per 1k | 147.943x | Read and extract pattern (~5 min) |
-| 2 | [Crypto x AI, AI x Crypto: A Survey](https://x.com/i/article/2063982482765008896) | [@initc3org](https://x.com/initc3org) | 688 eng / 179931 views / 3.824 eng per 1k views | 843.0 | 15092.35 per 1k | 75.633x | Read and extract pattern (~5 min) |
-| 3 | [The Great Chainlink Migration: $4+ Billion in DeFi Value Moves to Secure-by-Default Infrastructure](https://x.com/i/article/2057073578349137920) | [@chainlink](https://x.com/chainlink) | 1168 eng / 3783097 views / 0.309 eng per 1k views | 1422.0 | 2712.852 per 1k | 60.526x | Read and extract pattern (~5 min) |
-| 4 | [OpenServ: an enterprise grade AI company inside a crypto project](https://x.com/i/article/2059971149790928898) | [@KSimback](https://x.com/KSimback) | 911 eng / 656469 views / 1.388 eng per 1k views | 1220.0 | 36305.11 per 1k | 50.155x | Read and extract pattern (~5 min) |
-| 5 | [Economy of Minds: Multi-Agent Prompt Optimization explained](https://x.com/i/article/2062555781736902656) | [@neural_avb](https://x.com/neural_avb) | 1127 eng / 114384 views / 9.853 eng per 1k views | 1206.1 | 9645.333 per 1k | 40.588x | Read and extract pattern (~5 min) |
-| 6 | [How will you sleep this weekend? $QQQ](https://x.com/i/article/2055450018891628544) | [@The_RockTrading](https://x.com/The_RockTrading) | 110 eng / 303021 views / 0.363 eng per 1k views | 215.0 | 1408.581 per 1k | 39.255x | Read and extract pattern (~5 min) |
-| 7 | [Travix 2026: The Agentic Omnibooker for Global Derivatives ](https://x.com/i/article/2055140625952264192) | [@Travix_fi](https://x.com/Travix_fi) | 1317 eng / 104700 views / 12.579 eng per 1k views | 2029.9 | 62694.611 per 1k | 36.458x | Read and extract pattern (~5 min) |
-| 8 | [CYF Spotlight \| When buying RWA, are you purchasing pure bubble or solid cash flow?](https://x.com/i/article/2062849782331187200) | [@DataIPO_RWA](https://x.com/DataIPO_RWA) | 18131 eng / 81084 views / 223.608 eng per 1k views | 25402.0 | 1281.92 per 1k | 29.221x | Read and extract pattern (~5 min) |
-| 9 | [Quick solana lesson that'll literally pay you back](https://x.com/i/article/2058919014013800448) | [@shirakazu_xyz](https://x.com/shirakazu_xyz) | 2340 eng / 167751 views / 13.949 eng per 1k views | 3396.9 | 13502.173 per 1k | 28.242x | Read and extract pattern (~5 min) |
-| 10 | [Polymarket跟单指南：我是如何月赚5万美金的](https://x.com/i/article/2062518167864532992) | [@waveking1314](https://x.com/waveking1314) | 273 eng / 106191 views / 2.571 eng per 1k views | 328.4 | 1907.92 per 1k | 27.001x | Read and extract pattern (~5 min) |
-| 11 | [Introducing Exchange OS: Build Your Own Market](https://x.com/i/article/2059084741450895360) | [@XLayerOfficial](https://x.com/XLayerOfficial) | 818 eng / 666877 views / 1.227 eng per 1k views | 1173.0 | 4446.647 per 1k | 22.872x | Read and extract pattern (~5 min) |
-| 12 | [Prediction Market Leverage Is Coming to Solana](https://x.com/i/article/2062554967823503360) | [@predikt_gg](https://x.com/predikt_gg) | 203 eng / 36580 views / 5.549 eng per 1k views | 241.2 | 16833.87 per 1k | 20.402x | Read and extract pattern (~5 min) |
-| 13 | [Our Apyx Strategic Vision ](https://x.com/i/article/2061920792565481472) | [@apyx_fi](https://x.com/apyx_fi) | 480 eng / 151335 views / 3.172 eng per 1k views | 591.4 | 18235.33 per 1k | 10.617x | Read and extract pattern (~5 min) |
-| 14 | [Fund Your Perp Trades With Equities For The First Time Onchain. ](https://x.com/i/article/2063788668775501825) | [@nadoHQ](https://x.com/nadoHQ) | 329 eng / 135655 views / 2.425 eng per 1k views | 429.2 | 4507.559 per 1k | 10.177x | Read and extract pattern (~5 min) |
-| 15 | [SpaceX IPO 2026: Key Metrics for Next Week](https://x.com/i/article/2063003604295000064) | [@TeslaBoomerMama](https://x.com/TeslaBoomerMama) | 622 eng / 125643 views / 4.951 eng per 1k views | 722.9 | 528.407 per 1k | 7.357x | Read and extract pattern (~5 min) |
-| 16 | [🎉 $ASTER Community Rewards Program](https://x.com/i/article/2064335323157413888) | [@Aster_FND__](https://x.com/Aster_FND__) | 4873 eng / 144649 views / 33.688 eng per 1k views | 5130.2 | 6584.832 per 1k | 5.542x | Read and extract pattern (~5 min) |
-| 17 | [How To Remove Open Loops From Your Life And Gain Elite Clarity (In Just 2 Hours)](https://x.com/i/article/2062493314012889088) | [@dickiebush](https://x.com/dickiebush) | 1240 eng / 38764 views / 31.988 eng per 1k views | 1282.9 | 87.698 per 1k | 5.227x | Read and extract pattern (~5 min) |
-| 18 | [Introducing Backpack Securities: The Crypto Stock Broker](https://x.com/i/article/2061745775802003456) | [@Backpack](https://x.com/Backpack) | 1247 eng / 343825 views / 3.627 eng per 1k views | 1605.0 | 1087.816 per 1k | 5.003x | Read and extract pattern (~5 min) |
-| 19 | [HIP-4: A New Way To Express A Bet](https://x.com/i/article/2059670053096730626) | [@Delphi_Digital](https://x.com/Delphi_Digital) | 506 eng / 41747 views / 12.121 eng per 1k views | 564.9 | 64.763 per 1k | 4.842x | Read and extract pattern (~5 min) |
-| 20 | [Leverage on Prediction Markets: Why It Matters](https://x.com/i/article/2054182458606620672) | [@arespro](https://x.com/arespro) | 50 eng / 7950 views / 6.289 eng per 1k views | 59.6 | 853.462 per 1k | 4.725x | Read and extract pattern (~5 min) |
-| 21 | [An honest assessment of where crypto price discovery happens.](https://x.com/i/article/2062559780015890432) | [@ArrakisFinance](https://x.com/ArrakisFinance) | 1021 eng / 195372 views / 5.226 eng per 1k views | 1162.1 | 12380.204 per 1k | 4.636x | Read and extract pattern (~5 min) |
-| 22 | [A new era for Hyperliquid stablecoins: Thank you for using USDH.](https://x.com/i/article/2054881656985534464) | [@nativemarkets](https://x.com/nativemarkets) | 1416 eng / 354621 views / 3.993 eng per 1k views | 1764.0 | 50045.301 per 1k | 4.634x | Read and extract pattern (~5 min) |
-| 23 | [Why prediction markets matter ](https://x.com/i/article/2061787590160969729) | [@a16zcrypto](https://x.com/a16zcrypto) | 846 eng / 56700 views / 14.921 eng per 1k views | 941.9 | 91.294 per 1k | 3.631x | Read and extract pattern (~5 min) |
-| 24 | [The CLARITY Act Is Not Even the Beginning of the End — Markets Are Waiting for Three Key Steps](https://x.com/i/article/2055287021573484544) | [@SoSoValueCrypto](https://x.com/SoSoValueCrypto) | 28321 eng / 169427 views / 167.158 eng per 1k views | 39877.5 | 168.633 per 1k | 3.451x | Read and extract pattern (~5 min) |
-| 25 | [This Week on Base: Base Azul, Base MCP, and a new Base Builder's hub in Malaysia.](https://x.com/i/article/2060473610960330752) | [@base](https://x.com/base) | 652 eng / 69479 views / 9.384 eng per 1k views | 786.2 | 53.885 per 1k | 3.251x | Read and extract pattern (~5 min) |
+| 1 | [用 Codex 撸出 24/7 交易的 Trading Agent](https://x.com/i/article/2059162867828711425) | [@MossAI_CN](https://x.com/MossAI_CN) | 2146 eng / 151977 views / 14.121 eng per 1k views | 2411.7 | 98176.357 per 1k | 108.284x | Read and extract pattern (~5 min) |
+| 2 | [Crypto x AI, AI x Crypto: A Survey](https://x.com/i/article/2063982482765008896) | [@initc3org](https://x.com/initc3org) | 691 eng / 180586 views / 3.826 eng per 1k views | 848.2 | 15144.75 per 1k | 70.139x | Read and extract pattern (~5 min) |
+| 3 | [qinbafrank 拆解美股回调级别，AI 真正风险是什么？从软件股、Marvell 光互连、Nokia 到 SpaceX 看资金轮动](https://x.com/i/article/2062376688043044864) | [@168X_Fortune](https://x.com/168X_Fortune) | 3690 eng / 1007630 views / 3.662 eng per 1k views | 4213.0 | 72361.221 per 1k | 51.768x | Read and extract pattern (~5 min) |
+| 4 | [OpenServ: an enterprise grade AI company inside a crypto project](https://x.com/i/article/2059971149790928898) | [@KSimback](https://x.com/KSimback) | 913 eng / 656723 views / 1.39 eng per 1k views | 1224.0 | 36319.157 per 1k | 49.657x | Read and extract pattern (~5 min) |
+| 5 | [Travix 2026: The Agentic Omnibooker for Global Derivatives ](https://x.com/i/article/2055140625952264192) | [@Travix_fi](https://x.com/Travix_fi) | 1317 eng / 104700 views / 12.579 eng per 1k views | 2029.9 | 62694.611 per 1k | 36.454x | Read and extract pattern (~5 min) |
+| 6 | [What builders need to know about the CLARITY Act, what it is and why it matters](https://x.com/i/article/2055039906779676672) | [@a16zcrypto](https://x.com/a16zcrypto) | 2085 eng / 524694 views / 3.974 eng per 1k views | 2470.0 | 844.437 per 1k | 34.067x | Read and extract pattern (~5 min) |
+| 7 | [Chris Lee 李书沸「选择比努力重要」：从币圈OG到重仓存储三巨头，AI牛市回调预测、Web4与年轻一代的机会 ](https://x.com/i/article/2060220661839388672) | [@168X_Fortune](https://x.com/168X_Fortune) | 2172 eng / 611499 views / 3.552 eng per 1k views | 2590.0 | 43913.752 per 1k | 31.416x | Read and extract pattern (~5 min) |
+| 8 | [SpaceX-stasy](https://x.com/i/article/2059144312550760448) | [@edels0n](https://x.com/edels0n) | 1787 eng / 895541 views / 1.995 eng per 1k views | 2203.0 | 34265.965 per 1k | 28.872x | Read and extract pattern (~5 min) |
+| 9 | [The World Cup Has Two Prices](https://x.com/i/article/2064262326476574721) | [@MossAI_Official](https://x.com/MossAI_Official) | 940 eng / 208169 views / 4.516 eng per 1k views | 1191.4 | 8609.496 per 1k | 26.841x | Read and extract pattern (~5 min) |
+| 10 | [nobody talks about what trading does to your brain](https://x.com/i/article/2061070214079410177) | [@ferbsol](https://x.com/ferbsol) | 2878 eng / 213622 views / 13.472 eng per 1k views | 3300.2 | 6229.5 per 1k | 24.736x | Read and extract pattern (~5 min) |
+| 11 | [Fund Your Perp Trades With Equities For The First Time Onchain. ](https://x.com/i/article/2063788668775501825) | [@nadoHQ](https://x.com/nadoHQ) | 333 eng / 143623 views / 2.319 eng per 1k views | 435.9 | 4771.37 per 1k | 10.373x | Read and extract pattern (~5 min) |
+| 12 | [Introducing Base MCP: Your agent’s gateway to Base ](https://x.com/i/article/2059121765822115840) | [@base](https://x.com/base) | 2621 eng / 202760 views / 12.927 eng per 1k views | 3108.6 | 157.242 per 1k | 9.111x | Read and extract pattern (~5 min) |
+| 13 | [Velvet May Update: New SocialFi App, Perp Trading, AI-Powered Alpha & More](https://x.com/i/article/2064045322641543168) | [@Velvet_Capital](https://x.com/Velvet_Capital) | 230 eng / 25629 views / 8.974 eng per 1k views | 298.5 | 188.375 per 1k | 8.668x | Read and extract pattern (~5 min) |
+| 14 | [Why Every Trade You've Ever Lost Was Predictable  And How Artificial Intelligence Is Rewriting the ](https://x.com/i/article/2061838543903666177) | [@Defi_princesss](https://x.com/Defi_princesss) | 363 eng / 9671 views / 37.535 eng per 1k views | 487.2 | 1036.66 per 1k | 8.586x | Read and extract pattern (~5 min) |
+| 15 | [Building a trading terminal with c++, dear imgui and emscripten](https://x.com/i/article/2063575121747488768) | [@josedonato__](https://x.com/josedonato__) | 689 eng / 56235 views / 12.252 eng per 1k views | 734.7 | 5393.727 per 1k | 7.415x | Read and extract pattern (~5 min) |
+| 16 | [The Ultimate Foreclosure: Bankrupting the Global Banking Cartel ](https://x.com/i/article/2063088262663827457) | [@kc_coyle](https://x.com/kc_coyle) | 921 eng / 94140 views / 9.783 eng per 1k views | 1161.4 | 26458.685 per 1k | 5.913x | Read and extract pattern (~5 min) |
+| 17 | [🎉 $ASTER Community Rewards Program](https://x.com/i/article/2064335323157413888) | [@Aster_FND__](https://x.com/Aster_FND__) | 4873 eng / 145663 views / 33.454 eng per 1k views | 5130.6 | 6630.992 per 1k | 5.521x | Read and extract pattern (~5 min) |
+| 18 | [How To Remove Open Loops From Your Life And Gain Elite Clarity (In Just 2 Hours)](https://x.com/i/article/2062493314012889088) | [@dickiebush](https://x.com/dickiebush) | 1240 eng / 38781 views / 31.974 eng per 1k views | 1282.9 | 87.736 per 1k | 5.019x | Read and extract pattern (~5 min) |
+| 19 | [How to Match a Market-Making Bot to Market Conditions on Tread.fi](https://x.com/i/article/2064060091129630720) | [@NitroOGFX](https://x.com/NitroOGFX) | 469 eng / 25993 views / 18.043 eng per 1k views | 502.7 | 8444.769 per 1k | 4.944x | Read and extract pattern (~5 min) |
+| 20 | [Introducing Backpack Securities: The Crypto Stock Broker](https://x.com/i/article/2061745775802003456) | [@Backpack](https://x.com/Backpack) | 1248 eng / 343858 views / 3.629 eng per 1k views | 1606.0 | 1087.917 per 1k | 4.934x | Read and extract pattern (~5 min) |
+| 21 | [800V Power Semiconductors: A Layer-by-Layer Stocks Guide ](https://x.com/i/article/2063459576452648960) | [@saso_capital](https://x.com/saso_capital) | 878 eng / 157802 views / 5.564 eng per 1k views | 979.6 | 26217.312 per 1k | 4.555x | Read and extract pattern (~5 min) |
+| 22 | [wen $1? ](https://x.com/i/article/2064049532925816832) | [@BuildrJ](https://x.com/BuildrJ) | 274 eng / 34381 views / 7.97 eng per 1k views | 329.5 | 3160.018 per 1k | 4.548x | Read and extract pattern (~5 min) |
+| 23 | [Why Ritual Is the Last Layer 1: Atomic Intelligence and Sovereign Agents](https://x.com/i/article/2061853311398187008) | [@joshsimenhoff](https://x.com/joshsimenhoff) | 687 eng / 49417 views / 13.902 eng per 1k views | 883.5 | 7481.756 per 1k | 3.955x | Read and extract pattern (~5 min) |
+| 24 | [When the Jewish Daily Forward reported that 75% of the prostitution in Chicago was run by Jews ](https://x.com/i/article/2062870223292653569) | [@Tracking_Power](https://x.com/Tracking_Power) | 1125 eng / 29765 views / 37.796 eng per 1k views | 1386.9 | 205.935 per 1k | 3.763x | Read and extract pattern (~5 min) |
+| 25 | [Why prediction markets matter ](https://x.com/i/article/2061787590160969729) | [@a16zcrypto](https://x.com/a16zcrypto) | 846 eng / 56700 views / 14.921 eng per 1k views | 941.9 | 91.294 per 1k | 3.681x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -61,51 +61,67 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 | label | type | query |
 |---|---|---|
-| `likes-gte-5000` | `Top` | `min_faves:5000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2000` | `Top` | `min_faves:2000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1000` | `Top` | `min_faves:1000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-500` | `Top` | `min_faves:500 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-250` | `Top` | `min_faves:250 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-100` | `Top` | `min_faves:100 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-50` | `Top` | `min_faves:50 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-25` | `Top` | `min_faves:25 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-10` | `Top` | `min_faves:10 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-5` | `Top` | `min_faves:5 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2` | `Top` | `min_faves:2 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1` | `Top` | `min_faves:1 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `broad-native-top` | `Top` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `keyword-native-top` | `Top` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-10 -is:retweet min_faves:5` |
-| `keyword-native-latest` | `Latest` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `rt-gte-500` | `Top` | `min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-500-latest` | `Latest` | `min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-200` | `Top` | `min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-200-latest` | `Latest` | `min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-100` | `Top` | `min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-100-latest` | `Latest` | `min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5000` | `Top` | `min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5000-latest` | `Latest` | `min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2000` | `Top` | `min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2000-latest` | `Latest` | `min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1000` | `Top` | `min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1000-latest` | `Latest` | `min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-500` | `Top` | `min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-500-latest` | `Latest` | `min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-250` | `Top` | `min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-250-latest` | `Latest` | `min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-100` | `Top` | `min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-100-latest` | `Latest` | `min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-50` | `Top` | `min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-25` | `Top` | `min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-10` | `Top` | `min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5` | `Top` | `min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2` | `Top` | `min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1` | `Top` | `min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-2000` | `Top` | `min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-500` | `Top` | `min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-100` | `Top` | `min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-25` | `Top` | `min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `broad-native-top` | `Top` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `keyword-native-top` | `Top` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5` |
+| `keyword-native-latest` | `Latest` | `(trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet` |
 
 ## Author Map
 
 | author | native Articles found |
 |---|---:|
-| [@SoSoValueCrypto](https://x.com/SoSoValueCrypto) | 4 |
-| [@ArrakisFinance](https://x.com/ArrakisFinance) | 3 |
+| [@SoSoValueCrypto](https://x.com/SoSoValueCrypto) | 8 |
+| [@168X_Fortune](https://x.com/168X_Fortune) | 2 |
 | [@a16zcrypto](https://x.com/a16zcrypto) | 2 |
-| [@Defi_Warhol](https://x.com/Defi_Warhol) | 2 |
+| [@MossAI_Official](https://x.com/MossAI_Official) | 2 |
 | [@ConcreteXYZ](https://x.com/ConcreteXYZ) | 2 |
-| [@MyriadMarkets](https://x.com/MyriadMarkets) | 2 |
-| [@SJosephBurns](https://x.com/SJosephBurns) | 2 |
-| [@CFTradercom](https://x.com/CFTradercom) | 2 |
-| [@emmyloveer](https://x.com/emmyloveer) | 2 |
-| [@Sprytixl](https://x.com/Sprytixl) | 1 |
+| [@idontexistTore](https://x.com/idontexistTore) | 2 |
+| [@kunley_drukpa](https://x.com/kunley_drukpa) | 2 |
+| [@nodiens](https://x.com/nodiens) | 2 |
+| [@W__Unlimited](https://x.com/W__Unlimited) | 2 |
+| [@giantcutie666](https://x.com/giantcutie666) | 2 |
+| [@geopolythink](https://x.com/geopolythink) | 2 |
+| [@MossAI_CN](https://x.com/MossAI_CN) | 1 |
 | [@initc3org](https://x.com/initc3org) | 1 |
-| [@chainlink](https://x.com/chainlink) | 1 |
 | [@KSimback](https://x.com/KSimback) | 1 |
-| [@neural_avb](https://x.com/neural_avb) | 1 |
-| [@The_RockTrading](https://x.com/The_RockTrading) | 1 |
 | [@Travix_fi](https://x.com/Travix_fi) | 1 |
-| [@DataIPO_RWA](https://x.com/DataIPO_RWA) | 1 |
-| [@shirakazu_xyz](https://x.com/shirakazu_xyz) | 1 |
-| [@waveking1314](https://x.com/waveking1314) | 1 |
-| [@XLayerOfficial](https://x.com/XLayerOfficial) | 1 |
+| [@edels0n](https://x.com/edels0n) | 1 |
+| [@ferbsol](https://x.com/ferbsol) | 1 |
+| [@nadoHQ](https://x.com/nadoHQ) | 1 |
+| [@base](https://x.com/base) | 1 |
+| [@Velvet_Capital](https://x.com/Velvet_Capital) | 1 |
 
 ## Spend
 
-- Balance before: `9617769` credits.
-- Balance after: `9490359` credits.
-- Apparent spend: `127410` credits = `$1.2741`.
+- Balance before: `9084714` credits.
+- Balance after: `9084714` credits.
+- Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

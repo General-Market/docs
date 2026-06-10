@@ -1,8 +1,8 @@
-# Native X Articles — hip3-30d — 2026-06-09
+# Native X Articles — hip3-30d — 2026-06-10
 
 ## TL;DR
 
-Stored **9 native X Articles** from **700 searched tweets** since `2026-05-10T22:44:58.227723+00:00`.
+Stored **9 native X Articles** from **700 searched tweets** since `2026-05-11T02:26:20.017239+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -45,21 +45,37 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 | label | type | query |
 |---|---|---|
-| `likes-gte-5000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1000 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-500` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:500 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-250` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:250 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-100` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:100 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-50` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:50 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-25` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:25 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-10` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:10 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-5` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-2` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `likes-gte-1` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1 url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `broad-native-top` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-10 -is:retweet` |
-| `keyword-native-top` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-10 -is:retweet min_faves:5` |
-| `keyword-native-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-10 -is:retweet` |
+| `rt-gte-500` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-500-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-200` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-200-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-100` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `rt-gte-100-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5000-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2000-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1000-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-500` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-500-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-250` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-250-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-100` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-100-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-50` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-25` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-10` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-5` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-2` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `likes-gte-1` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-2000` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-500` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-100` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `replies-gte-25` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `broad-native-top` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet` |
+| `keyword-native-top` | `Top` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5` |
+| `keyword-native-latest` | `Latest` | `(HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet` |
 
 ## Author Map
 
@@ -77,8 +93,8 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 ## Spend
 
-- Balance before: `9659139` credits.
-- Balance after: `9659139` credits.
+- Balance before: `9084714` credits.
+- Balance after: `9084714` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.
