@@ -63,7 +63,7 @@ The creator is recorded on-chain and registered for fee accounting. Creating a D
 NAV — net asset value per share — is the market value of the slice of the basket that backs one share. Every DTF launches at a NAV of $1 (1e18 in 18-decimal terms). From then on, NAV moves with the prices of the assets inside: if the basket gains 10%, a share is worth $1.10. NAV is computed off-chain by the oracle network from the DTF's inventory and live asset prices, and pushed on-chain under an oracle signature — [How DTFs are priced](/docs/index/pricing-and-nav) (~4 min) shows exactly how.
 
 ```gmseealso
-[{"title": "Buy and sell a DTF", "href": "/docs/index/buy-and-sell"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}]
+[{"title": "Buy and sell a DTF", "href": "/docs/index/buy-and-sell"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}, {"title": "How is this structured legally?", "href": "/docs/index/legal-structure"}]
 ```
 
 Next: [Buy and sell a DTF](/docs/index/buy-and-sell) (~4 min)

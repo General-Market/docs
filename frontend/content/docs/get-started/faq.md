@@ -8,7 +8,7 @@ mode: reference
 ---
 
 ```gmplain
-The short answers: the money is not real; deposits cost nothing; there is a points program but no token; you can play by hand and run a bot at the same time if you set it up right; the API needs no key; and help is an email or a Discord message away.
+The short answers: the money is not real; deposits cost nothing; there is a points program but no token; you can play by hand and run a bot at the same time if you set it up right; the API needs no key; the protocol's legal backbone is a DAO with one legal compartment per index; and help is an email or a Discord message away.
 ```
 
 ```gmsummary
@@ -17,6 +17,7 @@ Do deposits cost anything? :: No fee on deposits anywhere; Vision charges 0.05% 
 Is there an airdrop? :: A points program exists; no token, no published terms
 Can I play manually and run a bot at the same time? :: Yes — separate wallets, or one wallet updating one position
 Do I need an API key? :: No
+Who runs this, legally? :: A DAO LLC governs; one legal compartment per index
 Why does the faucet refuse my wallet? :: The waitlist gate — redeem a code first
 Where do I get help? :: Email, Discord, GitHub, or X
 ```
@@ -45,6 +46,10 @@ How updates work: [How predictions are sealed](/docs/vision/predictions-and-bitm
 ## Do I need an API key?
 
 No. The API is open, with no authentication. Start at the [API overview](/docs/developers/overview) (~3 min).
+
+## Who runs this, legally?
+
+The protocol is governed by a DAO incorporated as a Marshall Islands DAO LLC, with each index in its own sealed legal compartment (a Series), and custody and the website in separate operating companies. The full design — and why each separation exists — is at [How is this structured legally?](/docs/index/legal-structure) (~6 min), with the complete structuring memorandum hosted as a PDF there. **It is a structuring proposal, not legal advice.**
 
 ## Why does the faucet refuse my wallet?
 

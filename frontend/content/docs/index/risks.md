@@ -2,7 +2,7 @@
 title: What can go wrong
 navTitle: Risks
 description: DTF, lending, and bridge risks — every limitation stated plainly.
-order: 9
+order: 10
 group: System
 mode: explanation
 ---

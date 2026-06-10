@@ -17,10 +17,10 @@ Method (how to write): `method.md`. Facts (what is true): `facts-vision.md`, `fa
 | Get Started | `get-started` | anyone landing fresh | 5 |
 | Vision | `vision` | the player who wants to predict and win | 11 |
 | Bots | `bots` | the developer running an autonomous bot | 7 |
-| Index | `index` | the DTF trader and the DTF creator | 9 |
+| Index | `index` | the DTF trader and the DTF creator | 10 |
 | Developers | `developers` | the integrator / protocol developer | 14 |
 
-Total: 46 pages. Fewer than the old 60 — each one load-bearing.
+Total: 47 pages. Fewer than the old 60 — each one load-bearing.
 
 ## Frozen contract (writers and porter both obey)
 
@@ -153,8 +153,10 @@ Group "Earn & Borrow":
 Group "System":
 8. `settlement-and-bridge` — Two chains, one balance *(explanation, 8)*
    Owns: L3 vs settlement chain, the bridge, **USDC decimals differ: 18 on L3, 6 on settlement** as a bolded line, what settles where. `gmflow index-two-chain`.
-9. `risks` — What can go wrong *(explanation, 9)*
-   Owns: DTF risks (tracking, oracle, liquidity), lending risks (liquidation), **testnet only**.
+9. `legal-structure` — How is this structured legally? *(explanation, 9)*
+   Owns: the legal architecture from the anonymized structuring memorandum (hosted at `/download/indexmaker-structuring-memorandum.pdf`, committed clean in 71e2bcdb8): Marshall Islands Master–Series DAO LLC (one Series per index), Panama Authorized Participant (custody/execution), Panama interface operator, Labs software agreement, Howey/decentralization rationale, sortition governance, progressive-decentralization roadmap with founder-led start stated honestly. **The originating law firm is never named anywhere — liability requirement.** Pointer entry lives in get-started/faq ("Who runs this, legally?").
+10. `risks` — What can go wrong *(explanation, 10)*
+    Owns: DTF risks (tracking, oracle, liquidity), lending risks (liquidation), **testnet only**.
 
 ### 5 · Developers (`content/docs/developers/`)
 
