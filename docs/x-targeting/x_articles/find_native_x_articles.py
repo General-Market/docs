@@ -47,6 +47,7 @@ AI_TERMS = (
     "transformer",
     "scaling law",
     "semiconductor",
+    "anduril",
 )
 
 CRYPTO_TERMS = (
@@ -69,6 +70,7 @@ CRYPTO_TERMS = (
     "stablecoin",
     "satoshi",
     "solana",
+    "孙宇晨",
 )
 
 PREDICTION_MARKET_TERMS = (
@@ -123,6 +125,21 @@ MARKET_TERMS = (
     "financial",
     "banking",
     "liquidity",
+    # Audited against the dropped-article corpus (zero junk measured per term).
+    # "ipo" alone recovered 3 viral SpaceX-S1 articles (11.8M views). CJK retail-
+    # investing vocabulary: 米国株 = US stocks (JP), 株式 = equities (JP), 上場 =
+    # go public (JP), 投资 = invest (CN). Bare 株 rejected (substring of 株式会社
+    # in every JP corporate article); トレード rejected (JP baseball trades).
+    "ipo",
+    "ipos",
+    "bitcoin",
+    "ethereum",
+    "nisa",
+    "米国株",
+    "株式市場",
+    "株式投資",
+    "上場",
+    "投资",
 )
 
 # Distinctive Hyperliquid vocabulary. Bare "hype" is excluded because it collides
