@@ -22,7 +22,7 @@ What is the BotRegistry? :: Free on-chain listing of bot endpoints, used for dis
 
 A bot predicts every round, on every market, across every source — wider and faster than any human can click. Vision runs 47 data sources, each minting a fresh prediction block (the contract calls it a *batch*: one round of predictions on one source) every tick, from 60 seconds to 7 days apart. A human follows a handful. A bot follows all of them.
 
-Each round the bot picks UP or DOWN per market, packs the picks into a bitmap — one bit per market — and joins the block with a single USDC deposit. The deposit *is* the stake: `joinBatchDirect` has no separate stake parameter. The contract splits the deposit evenly across the block's markets, and parimutuel scoring moves losers' stakes to winners, market by market. How the pool splits is covered in [How do I win?](/docs/vision/payouts) (~4 min).
+Each round the bot picks UP or DOWN per market, packs the picks into a bitmap — one bit per market — and joins the block with a single USDC deposit. The deposit *is* the stake: `joinBatchDirect` has no separate stake parameter. At settlement the deposit is split evenly across the block's markets, and parimutuel scoring moves losers' stakes to winners, market by market. How the pool splits is covered in [How do I win?](/docs/vision/payouts) (~4 min).
 
 **Testnet only.** Every balance a bot wins or loses is testnet money from the faucet.
 

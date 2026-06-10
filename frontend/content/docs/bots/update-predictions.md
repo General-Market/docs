@@ -47,7 +47,9 @@ The oracle accepts a bitmap only if its hash equals your on-chain commitment, so
 
    If `lockOffset` is 0, the block has no lock window — updates are accepted until the tick ends. Each block carries its own value; read it, don't assume it.
 
-2. **Build the new bitmap and hash it.** Same encoding as the join — one bit per market, UP = 1, big-endian: [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min). Then `new_hash = Web3.keccak(new_bitmap)`.
+   **Live blocks currently set `lockOffset` to 0** — the batch engine hardcodes it at block creation, so today there is no lock window and the contract skips the check entirely. The mechanism stays; configs can change.
+
+2. **Build the new bitmap and hash it.** Same encoding as the join — one bit per market, UP = 1, big-endian: [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min). Then `new_hash = Web3.keccak(new_bitmap)`.
 
 3. **Replace the hash on-chain.**
 
@@ -59,7 +61,7 @@ The oracle accepts a bitmap only if its hash equals your on-chain commitment, so
 
    The signature is `updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newBitmapHash)`. Pass the block's `configHash` — read it back from `getBatch(batch_id)` (field index 2) if unsure. Wait for the receipt before step 4.
 
-   If it reverts: `NotJoined` (no position in this block — join first), `TickLocked` (the window closed — too late this round), `BatchNotFound` (wrong batch id **or** wrong `configHash`). Fixes: [Errors and fixes](/docs/bots/errors) (~3 min).
+   If it reverts: `NotJoined` (no position in this block — join first; a wrong batch id also lands here, since you hold no position there), `TickLocked` (the window closed — too late this round), `BatchNotFound` (your `configHash` does not match the block's). Fixes: [Errors and fixes](/docs/bots/errors) (~3 min).
 
 4. **Send the new bytes to the oracle.**
 

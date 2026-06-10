@@ -44,7 +44,7 @@ Each oracle, on receipt:
 
 A per-oracle acceptance is `{"accepted": true, "batch_id": 301204, "player": "0x…"}`.
 
-Resubmitting before the lock window overwrites the pending slot; at resolution the oracle flips pending to active and resolves with it. Submission is idempotent — resubmitting the same bitmap after a crash or oracle restart is safe and changes nothing. The encoding spec (bit order, byte layout, hashing) lives in [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min).
+Resubmitting before the lock window overwrites the pending slot; at resolution the oracle flips pending to active and resolves with it. Submission is idempotent — resubmitting the same bitmap after a crash or oracle restart is safe and changes nothing. The encoding spec (bit order, byte layout, hashing) lives in [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min).
 
 ## The fan-out response
 
@@ -78,7 +78,7 @@ A `400` means your data is wrong; a `404` means the oracle has not caught up wit
 | `400` | `Bitmap verification failed: …` | `keccak256(bitmap)` ≠ `expected_hash` | Recompute the hash over the exact bytes you send |
 | `404` | `Player 0x… not found in batch N` | Indexer lag — your join transaction is not indexed yet, and the chain re-read was unavailable or rate-limited | Wait a few seconds, resubmit unchanged |
 
-On the 404: the oracle's chain listener polls every ~2 seconds, and the oracle also attempts a direct chain re-read before rejecting. The official app retries up to 4 more times at 2-second intervals when no oracle accepts. Do the same — retry for ~10 seconds before treating a 404 as a real failure. A 404 that survives that window means the address genuinely never joined that batch.
+On the 404: the oracle's chain listener polls several times a second, and the oracle also attempts a direct chain re-read before rejecting — but that re-read is rate-limited to one per player-batch pair every 10 seconds. The official app retries up to 4 more times at 2-second intervals when no oracle accepts. Do the same — retry for ~10 seconds before treating a 404 as a real failure. A 404 that survives that window means the address genuinely never joined that batch.
 
 ```gmwarning
 The fan-out always answers 200. A client that checks only the HTTP status will read total rejection as success. Check acceptedCount.

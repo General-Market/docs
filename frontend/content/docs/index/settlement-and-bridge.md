@@ -25,9 +25,9 @@ What settles where? :: Trading and lending on L3; requests and cross-chain order
 
 ## Why two chains?
 
-The L3 (chain id 111222333, an Orbit chain) is the application chain: Vision, DTF trading, and lending all execute there, fast and cheap. The settlement chain (id 14601) is the doorway: USDC enters and exits the system there, cross-chain DTF orders originate there, and rebalance requests are filed there.
+The L3 — an Orbit chain — is the application chain: Vision, DTF trading, and lending all execute there, fast and cheap. The settlement chain is the doorway: USDC enters and exits the system there, cross-chain DTF orders originate there, and rebalance requests are filed there.
 
-Most of the time you only touch the L3. The app switches your wallet to the settlement chain in exactly the moments that need it — and switches back. Chain details and contract addresses live in one place: [Network reference](/docs/get-started/network) (~2 min).
+Most of the time you only touch the L3. The app switches your wallet to the settlement chain in exactly the moments that need it — and switches back. Which chain ids and addresses are live is deployment configuration, kept in one place: [Network reference](/docs/get-started/network) (~2 min).
 
 ## Why do the decimals differ?
 
@@ -51,7 +51,7 @@ You never call the release yourself — bridge completion is orchestrated by the
 
 ## What is a BridgedITP?
 
-An 18-decimal ERC-20 mirror of a DTF, living on the settlement chain. It exists so you can buy a DTF without leaving the settlement chain:
+An 18-decimal ERC-20 mirror of a DTF, living on the settlement chain. The name comes from the contracts, which call a DTF an **ITP (Index Token Product)**. It exists so you can buy a DTF without leaving the settlement chain:
 
 1. You call the settlement custody contract's buy entry with 6-decimal USDC. It escrows your USDC and records the order in 18 decimals internally.
 2. The oracle network executes the order on the L3, where the real DTF lives.

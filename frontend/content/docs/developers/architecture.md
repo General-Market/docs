@@ -43,7 +43,7 @@ The data-node polls each source on its own cadence and stores normalized values.
 
 Two outputs matter downstream:
 
-- **Snapshots** — the bulk current state of every market in a source, cached around 15 seconds, served with an HMAC signature header so bots can verify the payload was not altered in transit.
+- **Snapshots** — the bulk current state of every market in a source, cached around 15 seconds. When the deployment configures a signing secret, snapshots carry an HMAC signature header so bots can verify the payload was not altered in transit.
 - **Recommended configs** — the exact market list a new block will be created against. The config is hashed (keccak256), and that `configHash` is the only record of the market list that ever goes on-chain. Everyone — players, bots, oracles — fetches the full list from the data-node by that hash.
 
 ## Who decides what happens on-chain?
@@ -57,7 +57,7 @@ The engine that drives Vision is the **BatchLifecycleManager** — a per-source 
 - One heartbeat performs the whole round turn for its source: rotate the current block to "previous", wait for its betting window to close, flip the bitmap store, resolve every market against the start prices saved at creation, compute the parimutuel settlement, gather BLS co-signatures, and submit the settlement on-chain — with three inline retries (3s, 6s, 12s backoff) so a transient failure does not miss the window.
 - The same heartbeat then creates the next block: fresh config from the data-node, BLS-co-signed `createBatch`, new batch id. A block lives exactly one round; nothing carries over.
 
-If settlement misses its window — the grace period defaults to twice the tick, clamped between 60 seconds and 24 hours — the contract makes settlement permanently illegal for that block and opens the refund path instead. The oracle loses the right to decide; players get their full deposit back, no fee. The protocol gives up the right to be late.
+If settlement misses its window — the grace period defaults to twice the tick, clamped between 60 seconds and 24 hours — the contract makes settlement permanently illegal for that block and opens the refund path instead. The oracle loses the right to decide; players get their full deposit back, no fee.
 
 ## Where do predictions live before they count?
 
@@ -94,7 +94,7 @@ The same trust shape, applied to trading. A DTF order is escrowed on-chain the m
 
 NAV — the price of one DTF share — is computed off-chain by the oracle network and pushed on-chain under BLS signature. The contract stores the number; it has no NAV formula of its own.
 
-Money lives on two chains. Trading happens on the **L3**; a settlement chain holds the other side of the bridge. **L3 USDC has 18 decimals.** Settlement-chain USDC has 6 — the bridge converts by a factor of 1e12. Outbound locks on the L3 require the standard oracle threshold (11 of 20); emergency reversals require 15 of 20. Users never complete a bridge transfer themselves — that step is oracle-orchestrated.
+Money lives on two chains. Trading happens on the **L3**; a settlement chain holds the other side of the bridge. **L3 USDC has 18 decimals.** Settlement-chain USDC has 6 — the bridge converts by a factor of 1e12. Outbound locks on the L3 require 11 oracle co-signatures; emergency reversals require 15. Both numbers are constants in the bridge contract — they fix how many signatures it demands, not how many oracles are running. Users never complete a bridge transfer themselves — that step is oracle-orchestrated.
 
 ```gmwarning
 Testnet only. Every contract, balance, and feed described here runs on a testnet. Faucet money is not real money.

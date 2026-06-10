@@ -28,7 +28,7 @@ Real Morpho Blue, deployed on the L3 — the same lending contract used on Ether
 - **LLTV 77%** — the loan-to-value line. Borrow up to 77% of your collateral's value; cross it and you are liquidatable.
 - **Price feed:** a NAV oracle per DTF, pushed by the oracle network under BLS signature.
 
-The Lending page lists every market in a table — collateral, borrow APY, TVL, available liquidity, LLTV — with filters for **All**, **Your positions**, and **Has Liquidity**.
+The Lending page lists every market in a table — market, your balance, borrow APY, TVL, available liquidity, LLTV — with filters for **All**, **Your positions**, and **Has Liquidity**.
 
 **Testnet only.** Deposits, debts, and liquidations all run on faucet money.
 
@@ -77,13 +77,13 @@ A rate set by a curator — not a utilization curve. The interest rate model (`C
 | Maximum rate | 200% APR |
 | Punitive rate | 100% APR |
 
-**If the curator does not refresh the rate for 48 hours, the market charges the punitive 100% APR** — on purpose. A stale rate could underprice risk and hurt lenders, so staleness is made expensive for borrowers instead. The displayed APY is the per-second rate compounded over a year; supply APY is that times utilization.
+**If no rate was ever set, or the curator does not refresh it for 48 hours, the market charges the punitive 100% APR** — on purpose. A stale rate could underprice risk and hurt lenders, so staleness is made expensive for borrowers instead. The displayed APY is the per-second rate compounded over a year; supply APY is that times utilization.
 
 ## When do I get liquidated?
 
 When your debt exceeds 77% of your collateral's oracle value. Your collateral is priced by the DTF's NAV oracle; the quote you saw when borrowing included your **liquidation price** — the NAV at which your position crosses the line.
 
-Liquidation is **permissionless**: anyone, human or bot, may call `liquidate` on an unhealthy position. The liquidator repays your debt and takes collateral at a discount — about 7% for a 77%-LLTV market, capped at 15%. There is no grace period and no committee.
+Liquidation is **permissionless**: anyone, human or bot, may call `liquidate` on an unhealthy position. The liquidator repays your debt and takes collateral worth about 7% more than they repaid — Morpho derives this incentive from the market's LLTV (at 77% it works out to ~7.4%, against a protocol-wide cap of 15%). There is no grace period and no committee.
 
 Therefore: watch the health factor, and repay or add collateral before it reaches 1. The risks that sit underneath this — rate spikes, oracle staleness — are spelled out in [What can go wrong](/docs/index/risks) (~4 min).
 

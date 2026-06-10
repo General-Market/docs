@@ -8,21 +8,21 @@ mode: explanation
 ---
 
 ```gmplain
-Everyone who joins a block puts money in. When the round ends, each market checks who guessed right. The players who guessed wrong pay the players who guessed right — the protocol only moves money between players, and takes a small cut of winnings only. If a market cannot be judged fairly, that slice of your money comes straight back.
+Everyone who joins a block puts money in. When the round ends, each market checks who guessed right. The players who guessed wrong pay the players who guessed right — the protocol only moves money between players, and takes a small cut of winnings only. If a market cannot be judged fairly, your money is not lost: it is returned, or moved onto the markets that can be judged.
 ```
 
 ```gmsummary
-How is my deposit split? :: Evenly across the block's markets — one stake per market
+How is my deposit split? :: Evenly across the markets with fresh data
 Who wins inside one market? :: Losers' matched stakes pay winners; unmatched stake is refunded
-A worked example :: Three players, two markets, every wei accounted for
-When does a market refund instead? :: Cancelled, flat, one-sided, or all-loser markets return stakes
+How does a full round add up? :: Three players, two markets, every wei accounted for
+When does a market refund instead? :: Flat, one-sided, or unresolvable markets return stakes
 What if I never sent a bitmap? :: You are voided — full deposit back
 Why can the pool never leak? :: The contract rejects any settlement that is not zero-sum
 ```
 
 ## How is my deposit split?
 
-Evenly. Your deposit is divided by the number of markets in the block, and that slice — your *per-market stake* — rides on each market independently. Deposit 2 USDC into a block with 2 markets and you have 1 USDC on each market. If the division leaves a remainder, the leftover wei are spread one each over the first markets, so the whole deposit is always in play — nothing is silently dropped.
+Evenly — across the markets that can be judged. Before anything is scored, the oracle drops any market whose source data is stale or missing. Your deposit is then divided by the number of markets left, and that slice — your *per-market stake* — rides on each one independently. Deposit 2 USDC into a block where 2 markets have fresh data and you have 1 USDC on each. If the division leaves a remainder, the leftover wei are added one each to the first markets, so the whole deposit is always in play — nothing is silently dropped.
 
 From here on, each market is scored as its own small pool. Winning one market and losing another are independent events; your round result is the sum.
 
@@ -45,7 +45,7 @@ So you can never win more from a market than the other side actually staked agai
 vision-parimutuel
 ```
 
-## A worked example
+## How does a full round add up?
 
 Three players each deposit 2 USDC into a block with two markets, so each has a 1 USDC stake per market. Market 1 resolves UP; Market 2 resolves DOWN.
 
@@ -67,14 +67,15 @@ Round payouts sum to 6.0 USDC — exactly the 6.0 USDC deposited. Only Bob made 
 
 ## When does a market refund instead?
 
-When the market cannot produce a fair winner, every player gets their per-market stake back in full. Four cases:
+When the market cannot produce a fair winner, every player gets their per-market stake back in full. Three cases:
 
-- **Cancelled** — the data source was stale or missing, so there is no trustworthy outcome.
-- **Flat** — the value did not move; neither UP nor DOWN is right.
+- **Flat** — the value did not move, or moved less than the market's flat threshold; neither UP nor DOWN is right.
 - **All same side** — everyone picked the same direction, so there is no one to win from.
-- **All losers** — a threshold market where neither direction met its threshold.
+- **Cancelled** — the market's resolution rule could not produce an outcome.
 
 A refunded market is neutral: it neither costs you nor pays you, whatever you picked.
+
+**Stale data is handled earlier, not refunded.** A market whose source data is stale or missing is removed before your deposit is split — your whole deposit rides on the remaining markets instead, in larger slices. If no market in the block can resolve at all, settlement becomes a universal refund.
 
 ## What if I never sent a bitmap?
 

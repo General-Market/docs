@@ -54,7 +54,7 @@ One edge case is handled in your favor: if the USDC transfer to your wallet fail
 | BATCHED | Included in a cycle, execution underway |
 | FILLED | Executed and settled — terminal |
 | CANCELLED | You cancelled before batching — fully refunded, terminal |
-| EXPIRED | Deadline passed without a fill — fully refunded, terminal |
+| EXPIRED | Refunded without a fill — by expiry, batch timeout, or oracle sweep — terminal |
 
 ## What does my limit price do?
 
@@ -72,7 +72,7 @@ Yes, while the order is PENDING. `cancelOrder` is yours alone — only the order
 
 You get your money back — that is a guarantee, not a promise. Three routes lead to the refund, in order of how bad things have gotten:
 
-1. **Normal expiry.** The deadline passes unfilled, and the oracles refund the order.
+1. **Normal expiry.** The deadline passes unfilled, and the oracles refund the order. (They can also sweep a stale PENDING order early — the same full refund, just sooner.)
 2. **Stuck batch.** An order sitting BATCHED for more than 300 seconds without a fill gets refunded by the oracles as timed out.
 3. **The safety net.** `claimExpiredOrder(orderId)` is **permissionless**: 24 hours after your order's deadline, *anyone* — you, a bot, a stranger — can call it and the contract refunds the escrow to the order's owner, no oracle signature required.
 

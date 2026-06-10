@@ -33,7 +33,9 @@ Where the app reads addresses :: GET /api/deployment serves this data live, with
 
 **Testnet only.** Both chains are testnets; nothing on them has real-world value.
 
-Almost everything — Vision, DTF trading, lending — happens on the L3. The settlement chain carries the bridge's far side and cross-chain DTF orders; see [Two chains, one balance](/docs/index/settlement-and-bridge) (~4 min).
+The settlement chain id comes from deployment configuration — `deployment.json`'s `settlementChainId` (14601), fed through the `NEXT_PUBLIC_SETTLEMENT_CHAIN_ID` env var; the code fallback in `wagmi.ts` hardcodes a different id (421611337), so the configured value is the authoritative one.
+
+Almost everything — Vision, DTF trading, lending — happens on the L3. The settlement chain carries the bridge's far side and cross-chain DTF orders; see [Two chains, one balance](/docs/index/settlement-and-bridge) (~5 min).
 
 **The L3 explorer is served over plain HTTP on a bare IP.** Browsers may warn; the address is correct. For protocol activity in a friendlier form, the app has its own explorer at [generalmarket.io/explorer](https://generalmarket.io/explorer).
 
@@ -59,7 +61,7 @@ All on the L3.
 |---|---|---|
 | Vision | `0x36a28967544c301a3c66dcfb6c6c90e548412693` | **Live** — the contract the app calls |
 | VisionVaultFactory | `0x73dbd15d872b80e7a9e90be3cacedf4ad00407ca` | Live |
-| VisionVault (implementation) | `0x7437F064E416C93aC4EaB882e9A488443FaE03c0` | Live — clone target for managed vaults |
+| VisionVault (implementation) | `0x761add2bec841a8cf623ee2437cd8cd45ec0a1b9` | Live — clone target for managed vaults, read from `VisionVaultFactory.implementation()` |
 | VisionReconciler | `0xfee75222Bb00337135341ce543D5612B31FE20c6` | Live |
 | Vision_v3 | `0x8d3cb936504d25772fb62bd537e67eb48e2d4d62` | **Idle** — deployed but inactive; not the live target |
 | Vision_legacy | `0x36a28967544c301a3c66dcfb6c6c90e548412693` | Alias — same address as the live Vision |
@@ -67,7 +69,7 @@ All on the L3.
 The live Vision is a plain (non-upgradeable) contract, verified directly on-chain: bytecode present and the 4-parameter `joinBatchDirect` selector (`0xa092fd46`) in place. Its full function surface is documented in the [Contract reference](/docs/developers/contracts) (~6 min).
 
 ```gmwarning
-Older copies of the reference bot and some README files in the repository carry a stale Vision address that has no bytecode on this chain. Trust this page and GET /api/deployment, nothing else.
+Two stale addresses to ignore. Older copies of the reference bot and some README files carry a Vision address with no bytecode on this chain. And the deployment data's own `VisionVault` entry (`0x7437F064E416C93aC4EaB882e9A488443FaE03c0`) is also empty on-chain — the live clone target in the table above was read from `VisionVaultFactory.implementation()`. Trust this page first, then GET /api/deployment.
 ```
 
 ## Index and bridge contracts
@@ -113,7 +115,7 @@ The Morpho lending stack, all on the L3. How lending works: [Earn yield or borro
 
 ## Where the app reads addresses
 
-`GET https://generalmarket.io/api/deployment` returns the same deployment data the app itself uses, plus a per-contract liveness check (bytecode length at each address) and the RPC it checked against. If this page and that endpoint ever disagree, the endpoint wins — it reflects the running deployment.
+`GET https://generalmarket.io/api/deployment` returns the same deployment data the app itself uses, plus a `_liveness` check on the core entries — Vision, USDC, and Index — reporting the bytecode length found at each address, and the `_rpc` it was checked against. If this page and that endpoint disagree on a liveness-checked entry, the endpoint wins — it reflects the running deployment. The one known stale row in that data, `VisionVault`, is flagged above.
 
 The deployment data also lists every managed-vault clone address — hundreds of them, five per data source. Fetch the endpoint rather than copying them from anywhere; the list grows as vaults deploy.
 

@@ -49,11 +49,11 @@ Request body:
 | Field | Type | Meaning |
 |---|---|---|
 | `address` | string, required | 0x + 40 hex chars |
-| `amount` | string or number, optional | USDC to mint; default 100; values above 10,000 are clamped, not rejected; 0 or negative → `400` |
+| `amount` | string or number, optional | USDC to mint; default 100; values above 10,000 are clamped, not rejected; 0, negative, or non-numeric → `400` |
 | `scope` | string, optional | `vision` (default), `itp`, or `both` |
 
 - The `vision` leg mints `amount` L3 USDC (18 decimals) and sends 1 GM gas. The gas drip is skipped with `{"error": "Deployer low on GM"}` when the faucet wallet runs low.
-- `itp` and `both` mint Settlement-chain USDC (6 decimals) plus 0.5 S gas — admin and E2E tooling only; the UI never uses them. Why the decimals differ: [Two chains, one balance](/docs/index/settlement-and-bridge) (~3 min).
+- `itp` and `both` mint Settlement-chain USDC (6 decimals) plus 0.5 S gas — admin and E2E tooling only; the UI never uses them. Why the decimals differ: [Two chains, one balance](/docs/index/settlement-and-bridge) (~5 min).
 - Each leg reports independently. A failed leg still returns `200` with `{"error": …}` in that leg's slot — check inside `vision.usdc` and `vision.gas`, not just the status code.
 
 Errors:
@@ -84,7 +84,7 @@ Errors:
 |---|---|---|
 | 400 | `{"error": "Invalid address"}` | malformed address |
 | 403 | `{"error": "WAITLIST_REQUIRED", "waitlistUrl": "…"}` | address not whitelisted |
-| 429 | `{"error": "Rate limit: this IP already claimed. Try again in Xh"}` | IP or address claimed within 24 h |
+| 429 | `{"error": "Rate limit: this IP already claimed. Try again in Xh"}` (or `this address already claimed`) | IP or address claimed within 24 h — each has its own 429 message |
 | 503 | `{"error": "Rate limiter unavailable — …"}` | the throttle backend is down; production fails closed rather than dripping unmetered |
 | 500 | `{"error": "…"}` | mint failed |
 

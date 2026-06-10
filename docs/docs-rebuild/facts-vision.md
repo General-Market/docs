@@ -33,7 +33,7 @@ Base: `https://generalmarket.io/api`. No auth (verify rate limits — facts-gaps
 | `/vision/batches` | GET | active batches; zero configHashes patched from vision-batches.json; sourceId hashes resolved to names; dedup latest non-paused per source (`batches/route.ts:115–145`) |
 | `/vision/batch/{id}/state` | GET | Batch struct |
 | `/vision/bitmap` | POST | body `{player, batch_id, bitmap_hex, expected_hash}`; frontend fans out to all issuer URLs, returns `{acceptedCount, totalCount, results[]}` (`bitmap/route.ts`) |
-| `/vision/balance` | GET | player L3 USDC balance |
+| `/vision/balance` | GET | **DEAD** — handler exists in the oracle (`get_balance`, `oracle/src/vision/api.rs:1352`) but is never mounted on the router (`api.rs:134–162`); every call 404s |
 | `/vision/rounds`, `/vision/rounds/{id}/bitmaps`, `/vision/rounds/{id}/results` | GET | round history, revealed bitmaps, per-tick results |
 | `/vision/leaderboard` | GET | `?source_id&batch_id&page&limit` (limit ≤ 200); returns `{leaderboard, total, page, limit, pages, updatedAt}` |
 | `/vision/player/{addr}/profile`, `/vision/player/{addr}/rounds` | GET | stats, PnL, rounds |
@@ -42,7 +42,7 @@ Base: `https://generalmarket.io/api`. No auth (verify rate limits — facts-gaps
 | `/vision/source/{id}/history`, `/vision/asset/{src}/{id}/settlements`, `/vision/batch/{id}/ratios` | GET | history & ratios |
 | `/vision/stats/global`, `/vision/activity`, `/vision/bots/trending`, `/vision/explorer/*` | GET | stats & explorer |
 | `/vision/vault/{address}/*` | GET | vault endpoints — verify per facts-gaps item 3 before documenting |
-| `/api/faucet` | POST | `{address, amount?}` → L3 USDC + gas (verify shape — facts-gaps item 4) |
+| `/api/faucet` | POST | `{address, amount?}` → L3 USDC (default 100, clamp 10,000) + 1 GM gas; waitlist-gated (403 `WAITLIST_REQUIRED`). Fallback `/api/bot/faucet`: fixed 100 USDC + 1 GM, one claim per IP **and** per address per 24 h (`frontend/app/api/bot/faucet/route.ts:40–42,124–151`), same waitlist gate |
 
 ## markets.json (repo root)
 
@@ -53,7 +53,7 @@ Base: `https://generalmarket.io/api`. No auth (verify rate limits — facts-gaps
 - Bitmap encoding (222–228): `bitmap[i // 8] |= 1 << (7 - (i % 8))` — big-endian, market 0 = MSB of byte 0, padded to ceil(count/8); hash = keccak256(bytes).
 - Lifecycle: load config → read USDC address from Vision contract → balance check → auto-faucet (`POST /api/faucet`, 312–334) → discover batches (API, chain fallback 355–389) → fetch config by hash → predict → encode → approve once → join (408–486) → `POST /api/vision/bitmap` (488–519) → sleep, repeat.
 - Strategies (237–253): random, momentum, contrarian, bullish, bearish — seeded by `sha256(private_key:name)`.
-- **KNOWN-STALE:** bot.py's ABI (line 125) has a 5th `stakePerTick` param `joinBatchDirect` does not have (Vision.sol 181). bot.py default address `0x821D7c…` (line 66) disagrees with deployment.json `0x36a28967…`. facts-gaps.md arbitrates; do not copy bot.py's ABI into docs.
+- **FIXED 2026-06-10:** bot.py previously shipped a 5-param `joinBatchDirect` ABI (phantom `stakePerTick`) and the dead default address `0x821D7c…`. It now carries the live 4-param ABI (selector `0xa092fd46`, bot.py:125–139), defaults to the live address `0x36a28967…` (bot.py:75), and falls back to the waitlist-aware bot faucet on 403 (bot.py:379). The bot copies `example-vision-bot/` and `examples/vision-bot-python/` remain stale (5-param ABI with `stakePerTick`, dead address `0x821D7c…`); do not copy their ABIs into docs. (`vision-bot/` is current — its `framework/chain.py:225–236` carries the live 4-param ABI.)
 
 ## Invariants (all verified)
 

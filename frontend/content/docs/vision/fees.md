@@ -49,7 +49,7 @@ How payouts themselves are computed: [How do I win?](/docs/vision/payouts) (~5 m
 
 ## Vault fees
 
-Vault depositors pay one more fee that direct players do not: the vault's own performance fee, set by its manager at creation, charged in basis points on profits above the vault's high-water mark, and capped at 50%. Each vault shows its rate in the app. Details: [Can someone play for me?](/docs/vision/vaults) (~4 min).
+Vault depositors pay one more fee that direct players do not: the vault's own performance fee, fixed when the vault is created, charged in basis points on profits above the vault's high-water mark, and capped at 50%. Each vault shows its rate in the app. Details: [Can someone play for me?](/docs/vision/vaults) (~4 min).
 
 ## Where fees go
 

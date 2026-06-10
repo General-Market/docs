@@ -36,7 +36,7 @@ What happens: the **Login** button becomes your shortened address. You are conne
 The branches:
 
 - **No wallet installed.** The button reads **Install MetaMask** and links to the download. On mobile without a wallet, the in-app guide forwards you to MetaMask's app link so the site reopens inside MetaMask's built-in browser.
-- **Wrong network.** If your wallet sits on another chain, an orange **Switch to Index Settlement** button appears. Click it and approve — it moves your wallet to chain 111222333.
+- **Wrong network.** If your wallet sits on another chain, an orange **Switch to Index Settlement** button appears. The label is misleading: despite the word "Settlement", it moves your wallet to the Index L3, chain 111222333 — not the settlement chain. Click it and approve.
 - **Adding the chain by hand.** All chain parameters live on the [Network reference](/docs/get-started/network) (~2 min).
 
 ## How do I get test USDC?

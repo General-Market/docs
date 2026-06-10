@@ -29,7 +29,7 @@ Call the public API:
 GET https://generalmarket.io/api/vision/batches
 ```
 
-It returns `{ "batches": [...] }`, one entry per source — the latest non-paused block for each, already deduplicated. Each entry carries `id`, `source_id`, `config_hash`, `tick_duration`, `player_count`, `tvl`, `paused`, `current_tick`, and `market_count`.
+It returns `{ "batches": [...] }`, one entry per source — the latest non-paused block for each, already deduplicated. Each entry carries `id`, `creator`, `source_id`, `config_hash`, `tick_duration`, `player_count`, `tvl`, `paused`, `current_tick`, and `market_count`.
 
 If the API is unreachable, scan the chain: read `nextBatchId()` on the Vision contract and walk backwards through the most recent ids with `getBatch(id)`, keeping batches that are neither `paused` nor `settled`. Only recent ids can still be open — a block lives one round, so anything older than a few ticks is history. The endpoint's full shape lives in [Blocks & state](/docs/developers/vision-api/batches) (~4 min).
 
@@ -86,11 +86,11 @@ vision.functions.joinBatchDirect(
 ).build_transaction(...)
 ```
 
-There is no stake parameter. The deposit is the stake; the contract splits it evenly across the block's markets at settlement.
+There is no stake parameter. The deposit is the stake; at settlement it is split evenly across the block's markets.
 
 - Minimum deposit: 0.1 USDC = 1e17. Below it the call reverts with `DepositBelowMinimum`.
 - **L3 USDC has 18 decimals.** 10 USDC = 1e19.
-- Joins (and bitmap updates) revert with `TickLocked` inside the lock window — the final `lockOffset` seconds of the tick.
+- Joins (and bitmap updates) revert with `TickLocked` inside the lock window — the final `lockOffset` seconds of the tick. **Live blocks currently set `lockOffset` to 0**, so there is no lock window in practice; the check stays in the contract and configs can change, so read the value rather than assume it.
 - A `paused` block rejects joins with `BatchPaused`. Skip it.
 
 What happens on success: USDC moves from your wallet to the contract, and a `PlayerJoined` event records your deposit and bitmap hash. On failure, match the revert against the table in [Errors and fixes](/docs/bots/errors) (~3 min).
@@ -104,7 +104,7 @@ POST https://generalmarket.io/api/vision/bitmap
 { "player": "0x…", "batch_id": 301270, "bitmap_hex": "0xb2c0", "expected_hash": "0x…" }
 ```
 
-The endpoint fans your submission out to every oracle node and answers `{ acceptedCount, totalCount, results }`. **A 200 response with `acceptedCount: 0` is still a rejection** — check the count, not just the status. The oracle verifies `expected_hash` against your on-chain commitment (mismatch → 400) and rejects bitmaps too short for the block's market count (400). If the indexer has not yet seen your join, it answers 404 — retry after a few seconds.
+The endpoint fans your submission out to every oracle node and answers `{ acceptedCount, totalCount, results }`. **A 200 response with `acceptedCount: 0` is still a rejection** — check the count, not just the status. Each oracle node verifies `expected_hash` against your on-chain commitment (mismatch → 400) and rejects bitmaps too short for the block's market count (400); a node that has not yet indexed your join answers 404 — retry after a few seconds. Through the fan-out, these per-node statuses arrive inside `results[].error`.
 
 If you never deliver a bitmap, you are voided at settlement and your full deposit is refunded. Changing your picks before the lock is [Update predictions each tick](/docs/bots/update-predictions) (~4 min).
 

@@ -44,7 +44,7 @@ Request body: `itpAddress` (the DTF share token used as collateral), `collateral
 - `expiresAt` is a unix timestamp; quotes expire and must be re-fetched.
 - `crisisLevel` is the market's health-monitor state: `Normal`, `Elevated`, `Stress`, or `Emergency`.
 
-Errors, each with `{"error", "code"}`: `404 MARKET_NOT_FOUND` (no market for that ITP), `400 INSUFFICIENT_COLLATERAL` / `INVALID_REQUEST`, `403 MARKET_FROZEN`, `503 ORACLE_UNAVAILABLE` (no BLS data collected yet), `429 RATE_LIMITED` with `retryAfter` seconds.
+Errors, each with `{"error", "code"}`: `404 MARKET_NOT_FOUND` (no market for that ITP), `400 INSUFFICIENT_COLLATERAL` / `INVALID_REQUEST`, `503 MARKET_FROZEN` (emergency crisis level), `503 ORACLE_UNAVAILABLE` (no BLS data collected yet), `429 RATE_LIMITED` with `retryAfter` seconds.
 
 **Routing caveat, stated out loud:** the frontend app defines no Next.js route for this path — the curator's own HTTP server serves `/api/lending/quote` directly, and the public origin reaches it through proxy routing outside this repository. If a deployment lacks that proxy rule, this endpoint 404s while everything else works.
 
@@ -53,16 +53,17 @@ Errors, each with `{"error", "code"}`: `404 MARKET_NOT_FOUND` (no market for tha
 Asks the curator to reallocate idle vault liquidity into a market so a pending borrow can fill. Returns when the reallocation transaction is confirmed — or immediately if the market already has enough.
 
 ```gm-try
-{"method": "POST", "path": "/lending/prepare", "params": [], "body": {"marketId": "0x21cabe92…", "borrowAmount": "50000000000000000000"}, "response": {"alreadyFunded": false, "txHash": "0x…", "blockNumber": 1234567}}
+{"method": "POST", "path": "/lending/prepare", "params": [], "body": {"marketId": "0x21cabe92…", "borrowAmount": "50000000000000000000"}, "response": {"alreadyFunded": false, "txHash": "0x…", "blockNumber": null}}
 ```
 
 Request body: `marketId` (bytes32 hex, `0x` prefix optional), `borrowAmount` (18-decimal integer string, must be > 0).
 
 - `alreadyFunded: true` means no reallocation was needed and `txHash` is `null`.
+- `blockNumber` is reserved and currently always `null` — do not wait on it. Confirmation is implied by the response itself: the call returns only after the reallocation transaction confirms.
 - This call blocks while the reallocate transaction confirms — up to ~90 seconds. The proxy waits 95 seconds before giving up. Call it right before sending your borrow transaction, not speculatively.
 - The app's flow is: quote → prepare → send the bundler transaction.
 
-Errors, each with `{"error", "code"}`: `400 BAD_REQUEST` (malformed JSON) / `INVALID_MARKET_ID` / `INVALID_BORROW_AMOUNT`, `503 ALLOCATOR_UNAVAILABLE` (allocator task not running), `429 RATE_LIMITED`, `504 PREPARE_TIMEOUT` (curator took longer than 95 s), `502 CURATOR_UNREACHABLE`.
+Errors, each with `{"error", "code"}`: `400 BAD_REQUEST` (malformed JSON) / `INVALID_MARKET_ID` / `INVALID_BORROW_AMOUNT`, `503 ALLOCATOR_UNAVAILABLE` (allocator task not running), `429 RATE_LIMITED`, `500 PREPARE_FAILED` (the reallocation transaction itself failed), `504 PREPARE_TIMEOUT` (curator took longer than 95 s), `502 CURATOR_UNREACHABLE`.
 
 ```gmnote
 Both curator endpoints share one rate-limit bucket: 10 requests per 60 seconds per caller. The curator can also require an x-api-key header; when keys are configured, the prepare proxy attaches the server-side key for you — anonymous public calls then count against one shared anonymous bucket.

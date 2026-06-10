@@ -69,9 +69,9 @@ markets = [{"id": mid, "change": None} for mid in market_ids]
 
 To make them mean something, feed in real change data before predicting:
 
-1. Call `GET /vision/snapshot` — each market in the snapshot carries a `change_pct` field.
+1. Call `GET /vision/snapshot` — each market in the snapshot carries a `change_pct` field (null for markets with no history).
 2. Match snapshot entries to the block's market ids by asset id.
-3. Set `"change": float(change_pct)` in each market dict before calling the strategy.
+3. Set `"change": float(change_pct)` in each market dict before calling the strategy; leave markets with a null `change_pct` at `None` — they keep the 0 default.
 
 The outcome: momentum now follows each market's actual recent move, and contrarian fades it.
 
@@ -96,7 +96,7 @@ Three rules of the road:
 
 - **Return the full length.** If your list is short, the bot pads the tail with coin flips that ignore your seed — your run stops being reproducible.
 - **Use the seeded `rng`, not the global `random`,** if your strategy needs randomness and you want repeatable picks.
-- **Order matters.** Bit *i* of the bitmap is market *i* of the block's config — your output order is your prediction. The encoding is fixed: [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min).
+- **Order matters.** Bit *i* of the bitmap is market *i* of the block's config — your output order is your prediction. The encoding is fixed: [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min).
 
 You can also change your picks after joining, any time before the round locks: [Update predictions before the lock](/docs/bots/update-predictions) (~4 min).
 

@@ -171,7 +171,7 @@ An ERC-7540 asynchronous managed vault for Vision trading, deployed as an EIP-11
 | `pendingRedeemRequest(_, controller)` | Shares still waiting in the queue. |
 | `claimRedeem(receiver, controller)` | Pays out fulfilled redemptions in USDC. Reverts `NothingToClaim`. |
 
-The synchronous ERC-4626 entry points — `deposit`, `mint`, `withdraw`, `redeem` — all revert `SyncDisabled`. The `preview*` functions return 0; `maxWithdraw`/`maxRedeem` return 0. Use the async path; the 4626 views (`asset`, `totalAssets`, `convertToShares`, `convertToAssets`) work normally. `totalAssets = idle USDC + capital deployed in live blocks`.
+The synchronous ERC-4626 entry points — `deposit`, `mint`, `withdraw`, `redeem` — all revert `SyncDisabled`. The `preview*` functions return 0; `maxWithdraw`/`maxRedeem` return 0. Use the async path; the 4626 views (`asset`, `totalAssets`, `convertToShares`, `convertToAssets`) work normally. `totalAssets` = the vault's full USDC balance + capital deployed in live blocks; USDC already earmarked for fulfilled redemptions still counts until it is claimed.
 
 ### Manager and reconciliation
 
@@ -315,7 +315,7 @@ struct Fill {
 | `FillFailed(orderId, user, amount)` / `EscrowClaimed(orderId, user, amount)` | transfer fell back to escrow / escrow claimed |
 | `OrderCancelled(orderId, user, amount, side)` | user cancel |
 | `OrderRefunded(orderId, user, amount)` | oracle refund paths |
-| `ExpiredOrderClaimed(orderId, user, caller, amount)` | permissionless expiry claim |
+| `ExpiredOrderClaimed(orderId, user, claimer, amount)` | permissionless expiry claim |
 | `ITPCreated(itpId, creator, name, symbol, assets, weights)` | a DTF is created |
 | `ItpNavUpdated(itpId, nav)` | NAV push |
 | `RebalanceRequested(requester, itpId, removeIndices, addAssets, newWeights, note)` / `Rebalanced(…)` | rebalance request / execution |
@@ -413,9 +413,10 @@ Shared by Investment, the bridge custody contracts, the registries, and the NAV 
 | `0xf4f270ee` | `E045_LockAlreadyReleased(uint256)` | bridge lock already released |
 | `0xaaea1113` | `E046_LockAlreadyReversed(uint256)` | bridge lock already reversed |
 | `0xef7c27b7` | `E047_LockTimeoutNotReached(uint256,uint256,uint256)` | reversal before lock timeout |
-| `0x907764b7` | `E048_InsufficientSignerCount(uint256,uint256)` | below the emergency 15/20 threshold |
+| `0x907764b7` | `E048_InsufficientSignerCount(uint256,uint256)` | below the emergency reversal threshold (15 signers) |
 | `0xd3504fd4` | `E049_LockNotFound(uint256)` | unknown bridge nonce |
 | `0x3a257e4f` | `E050_ZeroUSDCAddress()` | zero USDC address |
+| `0x72aa7468` | `E051_TooManyAssets(uint256,uint256)` | more than 1000 assets at creation |
 | `0x14144ea0` | `E052_EmptyNameOrSymbol()` | empty ITP name/symbol |
 | `0x7c3fabf9` | `E052_ZeroAmount()` | zero bridge amount (duplicate code, distinct selector) |
 | `0xf62d28f8` | `E053_InvalidDestChainId(uint256)` | zero or same-chain destination |

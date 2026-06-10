@@ -26,7 +26,7 @@ Every vault is an EIP-1167 minimal-proxy clone of one `VisionVault` implementati
 
 The factory caps the performance fee at 5,000 bps (50%) and keeps the registry: `getAllVaults()`, `getVaultsByManager(manager)`, `isRegisteredVault(vault)`. On initialization the clone grants Vision an unlimited USDC allowance so the manager can join batches. Factory, implementation, and per-source vault addresses live on the [Network reference](/docs/get-started/network) (~2 min).
 
-**Shares and NAV.** Vault shares are a vault-local ERC-20 with 18 decimals. `totalAssets = idle USDC + totalActiveCapital`, where active capital is the sum of deposits currently inside unsettled Vision batches. NAV per share follows from `totalAssets / totalSupply`; the high-water mark starts at 1e18.
+**Shares and NAV.** Vault shares are a vault-local ERC-20 with 18 decimals. `totalAssets = the vault's whole USDC balance + totalActiveCapital`, where active capital is the sum of deposits currently inside unsettled Vision batches. Idle USDC is narrower: the balance minus what redeemers can already claim. NAV per share follows from `totalAssets / totalSupply`; the high-water mark starts at 1e18.
 
 **Deposits are asynchronous (ERC-7540).** `requestDeposit(assets, controller, owner)` pulls USDC into the vault and records a pending request. `claimDeposit(receiver, controller)` mints shares at the NAV at claim time — the pending amount is excluded from `totalAssets` when pricing, so a deposit cannot dilute itself. The synchronous ERC-4626 entry points (`deposit`, `mint`, `withdraw`, `redeem`) revert with `SyncDisabled`; the `preview*` views and `maxWithdraw`/`maxRedeem` return 0.
 
@@ -46,7 +46,7 @@ The player-facing story — what depositing feels like, where performance shows 
 Returns trade statistics computed from the vault's on-chain `PlayerJoined` and `PlayerSettled` events over the last 43,200 L3 blocks (~12 hours at the chain's ~1-second blocks).
 
 ```gm-try
-{"method": "GET", "path": "/vision/vault/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/stats", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"vault": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "lookbackBlocks": 43200, "trades": 96, "settledTrades": 94, "wins": 51, "losses": 43, "winRate": 0.5425, "avgWin": 0.42, "avgLoss": -0.38, "totalPnl": 5.08, "headBlock": 4812345, "sharpe": 1.21, "sortino": 1.87, "volatility": 0.34, "maxDrawdown": -0.06, "annualizedReturn": 0.41, "tradesPerYear": 68940.0, "observationSecs": 43000, "minTradesForRisk": 20}}
+{"method": "GET", "path": "/vision/vault/{address}/stats", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"vault": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "lookbackBlocks": 43200, "trades": 96, "settledTrades": 94, "wins": 51, "losses": 43, "winRate": 0.5425, "avgWin": 0.42, "avgLoss": -0.38, "totalPnl": 5.08, "headBlock": 4812345, "sharpe": 1.21, "sortino": 1.87, "volatility": 0.34, "maxDrawdown": -0.06, "annualizedReturn": 0.41, "tradesPerYear": 68940.0, "observationSecs": 43000, "minTradesForRisk": 20}}
 ```
 
 Each settled batch is one trade with return `r = (payout − deposit) / deposit`. Sharpe, Sortino, volatility, max drawdown, and annualized return are computed on those per-trade returns — and are all `null` until the vault has at least 20 settled trades in the window (`minTradesForRisk`). `winRate`, `avgWin`, and `avgLoss` are `null` when there is nothing to divide by. Amounts (`avgWin`, `avgLoss`, `totalPnl`) are USDC floats.
@@ -58,7 +58,7 @@ Errors: `400 {"error": "Invalid address"}`, `500 {"error": "Failed", "message": 
 Returns the vault's NAV-per-share and TVL snapshots, bucketed to fit a chart.
 
 ```gm-try
-{"method": "GET", "path": "/vision/vault/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/history", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}, {"name": "range", "in": "query", "type": "string", "required": false, "desc": "1d | 1w | 1m | all — default all"}], "body": null, "response": {"snapshots": [{"nav": 1.0312, "tvl": 4821.55, "ts": 1781175600000}, {"nav": 1.0344, "tvl": 4836.92, "ts": 1781179200000}]}}
+{"method": "GET", "path": "/vision/vault/{address}/history", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}, {"name": "range", "in": "query", "type": "string", "required": false, "desc": "1d | 1w | 1m | all — default all"}], "body": null, "response": {"snapshots": [{"nav": 1.0312, "tvl": 4821.55, "ts": 1781175600000}, {"nav": 1.0344, "tvl": 4836.92, "ts": 1781179200000}]}}
 ```
 
 A snapshot is written roughly every 4.5 minutes. The range picks the window and the bucket — `1d` buckets at 5 minutes, `1w` at 35 minutes, `1m` at 3 hours, `all` at 6 hours — each bucket keeping its latest snapshot, capped at the newest 500 buckets, returned in chronological order. `ts` is unix milliseconds. An unknown `range` value falls back to `all`.
@@ -70,7 +70,7 @@ A vault with no snapshots returns `{"snapshots": []}`; so does a database failur
 Returns the vault's Vision round history, derived from chain events over the same 43,200-block lookback, with a four-state status per round.
 
 ```gm-try
-{"method": "GET", "path": "/vision/vault/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/rounds", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"vault": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "lookbackBlocks": 43200, "headBlock": 4812345, "nowSec": 1781183000, "total": 3, "totals": {"joined": 3, "settled": 1, "refunded": 1, "refundable": 0, "pending": 1}, "rounds": [{"batchId": "301204", "joinBlock": 4812001, "joinTime": 1781182650, "resolveBlock": null, "resolveTime": null, "status": "pending", "deposit": 1.0, "payout": null, "pnl": null, "expirationTime": 1781183100}]}}
+{"method": "GET", "path": "/vision/vault/{address}/rounds", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"vault": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "lookbackBlocks": 43200, "headBlock": 4812345, "nowSec": 1781183000, "total": 3, "totals": {"joined": 3, "settled": 1, "refunded": 1, "refundable": 0, "pending": 1}, "rounds": [{"batchId": "301204", "joinBlock": 4812001, "joinTime": 1781182650, "resolveBlock": null, "resolveTime": null, "status": "pending", "deposit": 1.0, "payout": null, "pnl": null, "expirationTime": 1781183100}]}}
 ```
 
 | Status | Meaning |
@@ -89,7 +89,7 @@ Errors: `400 {"error": "Invalid address"}`, `500 {"error": "Failed", "message": 
 Returns per-asset aggregates of the vault's *Index* (ITP) trades — vaults trade DTFs as ordinary wallets, and this endpoint groups those fills by asset.
 
 ```gm-try
-{"method": "GET", "path": "/vision/vault/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/assets", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"assets": [{"assetId": "itp-defi-10", "fillsCount": 12, "totalVolume": 1450.0, "avgEntry": 1.042, "realizedPnl": 18.3, "unrealizedPnl": null, "lastFillAt": "2026-06-10T13:58:02Z", "trend": "up"}], "total": 1}}
+{"method": "GET", "path": "/vision/vault/{address}/assets", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}], "body": null, "response": {"assets": [{"assetId": "itp-defi-10", "fillsCount": 12, "totalVolume": 1450.0, "avgEntry": 1.042, "realizedPnl": 18.3, "unrealizedPnl": null, "lastFillAt": "2026-06-10T13:58:02Z", "trend": "up"}], "total": 1}}
 ```
 
 `avgEntry` is the volume-weighted average buy price; `realizedPnl` is computed against average cost on each sell; `trend` is the sign of realized PnL (`up` / `down` / `flat`). Results sort by `|realizedPnl|` descending.
@@ -103,7 +103,7 @@ When the upstream portfolio service fails, the endpoint still returns `200` with
 Returns the individual fills behind one asset's aggregate, paginated.
 
 ```gm-try
-{"method": "GET", "path": "/vision/vault/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/assets/itp-defi-10/fills", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}, {"name": "assetId", "in": "path", "type": "string", "required": true, "desc": "Asset id from the assets endpoint"}, {"name": "page", "in": "query", "type": "number", "required": false, "desc": "0-based page, default 0"}, {"name": "limit", "in": "query", "type": "number", "required": false, "desc": "Page size — default 100, max 500"}], "body": null, "response": {"fills": [{"orderId": 88412, "side": "BUY", "amount": 120.0, "fillPrice": 1.038, "shares": 115.6, "timestamp": "2026-06-10T13:58:02Z"}], "total": 12, "page": 0, "limit": 100}}
+{"method": "GET", "path": "/vision/vault/{address}/assets/{assetId}/fills", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Vault address"}, {"name": "assetId", "in": "path", "type": "string", "required": true, "desc": "Asset id from the assets endpoint"}, {"name": "page", "in": "query", "type": "number", "required": false, "desc": "0-based page, default 0"}, {"name": "limit", "in": "query", "type": "number", "required": false, "desc": "Page size — default 100, max 500"}], "body": null, "response": {"fills": [{"orderId": 88412, "side": "BUY", "amount": 120.0, "fillPrice": 1.038, "shares": 115.6, "timestamp": "2026-06-10T13:58:02Z"}], "total": 12, "page": 0, "limit": 100}}
 ```
 
 Fills are filtered to `status = filled` and sorted oldest-first for chart overlay. `amount` is the USD value of the fill, `fillPrice` the NAV per share at fill time, `shares` the shares traded — the last two are `null` when the upstream row lacked them. The same `_stub: true` fallback applies on upstream failure.

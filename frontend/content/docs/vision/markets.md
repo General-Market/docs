@@ -14,7 +14,7 @@ Vision runs on real-world data feeds called sources — Twitch viewers, earthqua
 ```gmsummary
 How to read this catalog :: One source = one feed; its tick is its round length
 The catalog :: All 47 sources in 16 categories, with cadence
-Fastest and slowest :: Twitch every minute; World Bank every 7 days
+Fastest and slowest :: The file says Twitch every minute; live ticks differ
 Where the live list comes from :: The app reads GET /vision/sources, not this file
 ```
 
@@ -77,25 +77,25 @@ The catalog below comes from the repository's `markets.json`: **47 sources acros
 | Retail | `bestbuy` | every 10 minutes | Best Buy — product pricing, deal counts, rating changes |
 
 ```gmnote
-The catalog file also assigns each source a numeric batchId (0–46). That is a static catalog index, not a live block number — live blocks mint a fresh, ever-increasing id every round. Never join by catalog id.
+The catalog file also assigns each source a numeric batchId (0–46) — "batch" is the contract's word for a block. That is a static catalog index, not a live block number: live blocks mint a fresh, ever-increasing id every round. Never join by catalog id.
 ```
 
 ## Fastest and slowest
 
-- Fastest: `twitch`, every minute — a result every 60 seconds.
-- Slowest: `worldbank`, every 7 days — one round per week.
-- The contract clamps every source's tick to between 60 seconds and 7 days (604,800 s); the catalog stays inside that range.
+- In the catalog file: `twitch` is fastest (every minute), `worldbank` slowest (every 7 days).
+- On the live system (checked 2026-06-10): the fastest cadence is **5 minutes**, `twitch` ticks every **10 minutes**, and `worldbank` still ticks weekly. The live cadence per source comes from the config the oracle fetches at block creation, not from this file.
+- The contract clamps every source's tick to between 60 seconds and 7 days (604,800 s); both the catalog and the live configs stay inside that range.
 
-A faster tick means faster feedback and more rounds per day; a slower tick means each prediction carries longer. Pick by temperament. For a first run, start with the fastest: [Place your first predictions](/docs/vision/first-predictions) (~8 min).
+A faster tick means faster feedback and more rounds per day; a slower tick means each prediction carries longer. Pick by temperament. For a first run: [Place your first predictions](/docs/vision/first-predictions) (~15 min).
 
 ## Where the live list comes from
 
 The app does not read this file. It reads `GET /vision/sources` from the data node, and the home page and explorer render what that returns — so the set of sources you see in the app is the live truth and can differ from this catalog.
 
-**This catalog is a snapshot — `markets.json` is dated 2026-03-31.** Sources get added, curated views get split out, and dead feeds get delisted without this file changing. For the live, machine-readable list, use the discovery endpoints: [Sources, snapshots & search](/docs/developers/vision-api/discovery) (~3 min).
+**This catalog is a snapshot — `markets.json` is dated 2026-03-31.** Sources get added, curated views get split out, cadences get retuned, and dead feeds get delisted without this file changing. A live check on 2026-06-10 found **84 sources with open rounds** — nearly twice this file's 47 — including curated DeFi views (`defillama-*`) and sources the file predates (`binance_spot`, `lichess`, `tmdb`). For the live, machine-readable list, use the discovery endpoints: [Sources, snapshots & search](/docs/developers/vision-api/discovery) (~3 min).
 
 ```gmseealso
 [{"title": "Place your first predictions", "href": "/docs/vision/first-predictions"}, {"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "Sources, snapshots & search", "href": "/docs/developers/vision-api/discovery"}]
 ```
 
-Next: [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~3 min)
+Next: [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min)

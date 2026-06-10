@@ -34,7 +34,7 @@ Every asset you pick must have a live price from the data-node. The app checks t
 4. Click **Continue →**. The **Finalize DTF** modal opens: enter a name (up to 32 characters) and a symbol (up to 10 characters, upper-case — auto-suggested from the name). Description, website, and video are optional.
 5. Click **Finalize & Deploy**. The app fetches live prices for your basket, simulates the transaction, then prompts your wallet to sign on the L3.
 
-What happens next: your wallet calls `createITP(name, symbol, weights, assets, prices, bridgeNonce)` on the Investment contract — directly on the L3, no bridge involved. Your percentages are scaled to 18 decimals (1% = 1e16) so they sum to exactly 1e18. The new DTF starts at a NAV of $1.00 per share, and its starting inventory is computed from the prices you deployed with: `qty[i] = weight[i] × 1e18 / price[i]`.
+What happens next: your wallet calls `createITP(name, symbol, weights, assets, prices, bridgeNonce)` on the Investment contract — the contracts call a DTF an **ITP (Index Token Product)** — directly on the L3, no bridge involved. Your percentages are scaled to 18 decimals (1% = 1e16) so they sum to exactly 1e18. The new DTF starts at a NAV of $1.00 per share, and its starting inventory is computed from the prices you deployed with: `qty[i] = weight[i] × 1e18 / price[i]`.
 
 The app then waits for the oracle network to pick up the new DTF. When it appears in the live price stream, you see **Live on L3** — the DTF is tradeable by anyone.
 

@@ -46,7 +46,7 @@ You request a redeem, and the vault pays you from its idle cash — immediately 
 
 - `requestRedeem` locks your shares in the vault.
 - If the vault's idle USDC covers your shares' value, they are burned at once and the USDC is immediately claimable.
-- If the money is deployed in active rounds, your request joins a **FIFO queue** — first to ask, first to be paid. Each time a round settles and capital returns, the vault sweeps the queue in order and fulfils what the returned cash covers.
+- If the money is deployed in active rounds, your request joins a **FIFO queue** — first to ask, first to be paid. Each time a round settles and capital returns, the vault sweeps the queue in order, fulfilling each request whole until the idle cash no longer covers the next one. The order is strict: a large request at the head waits until it can be paid in full, and everyone behind it waits too.
 - `claimRedeem` transfers your USDC to your wallet.
 
 There is no third party in the withdrawal path: the queue lives on the vault contract, and fulfilment is mechanical — share price at fulfilment time, in queue order.

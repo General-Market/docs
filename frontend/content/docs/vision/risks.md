@@ -14,7 +14,7 @@ Most failures here fail safely: your deposit either comes back through settlemen
 ```gmsummary
 What happens when a block is paused? :: New joins stop; your existing position is untouched
 What if my block never settles? :: After the grace window, claim your full deposit back
-What if a market's data goes stale? :: That market is cancelled and its stakes refunded
+What if a market's data goes stale? :: It is dropped; your deposit rides the remaining markets
 What if the oracle goes down? :: The game stops; your money falls back to the refund path
 What about vault managers? :: Their bad predictions are your loss
 What about the contracts themselves? :: Bugs are possible; the zero-sum check limits, not removes, them
@@ -23,7 +23,7 @@ Is this real money? :: No — testnet only
 
 ## What happens when a block is paused?
 
-**A paused block stops new joins — nothing else.** The oracle can pause a block (with a BLS quorum signature) when something looks wrong with its data. If you already joined, your position stands: you can still update your predictions, and the block still settles or refunds on its normal schedule. Pausing is a gate on the door, not a seizure of the room.
+**A paused block stops new joins — nothing else.** Pausing a block takes a BLS quorum signature from the oracle network — the same authority that creates and settles blocks. If you already joined, your position stands: you can still update your predictions (the pause gate sits only on joining; `updateBitmap` ignores it), and the block still settles or refunds on its normal schedule. Pausing is a gate on the door, not a seizure of the room.
 
 ## What if my block never settles?
 
@@ -31,7 +31,7 @@ Is this real money? :: No — testnet only
 
 ## What if a market's data goes stale?
 
-**A cancelled market refunds its slice of every deposit.** When a data source cannot produce a trustworthy outcome for one market, that market resolves as cancelled and every player's stake on it comes back — whatever they picked. The block's other markets settle normally. If *every* market in a block is cancelled, settlement becomes a universal refund: each player receives exactly their deposit.
+**A market with stale data is dropped before scoring — your money moves to the markets that still work.** When a data source cannot produce fresh values for one market, the oracle removes that market before deposits are split: your whole deposit is divided across the remaining markets instead. A market that fails *during* resolution — flat value, everyone on one side, or a rule that cannot produce an outcome — refunds every player's stake on it, whatever they picked. If no market in the block can resolve at all, settlement becomes a universal refund: each player receives exactly their deposit.
 
 ## What if the oracle goes down?
 

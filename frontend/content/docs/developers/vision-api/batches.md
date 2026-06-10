@@ -61,7 +61,7 @@ The market list is deliberately absent. It is long and identical for every batch
 Returns the full state of one batch, including every player in it.
 
 ```gm-try
-{"method": "GET", "path": "/vision/batch/301204/state", "params": [{"name": "id", "in": "path", "type": "number", "required": true, "desc": "Batch id"}], "body": null, "response": {"id": 301204, "creator": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "source_id": "crypto", "config_hash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tick_duration": 120, "created_at_tick": 14843621, "paused": false, "player_count": 1, "next_tick": 0, "players": [{"address": "0x71c7656ec7ab88b098defb751b7401b5f6d8976f", "deposit": "1000000000000000000", "balance": "1000000000000000000", "start_tick": 0, "has_bitmap": true}]}}
+{"method": "GET", "path": "/vision/batch/{id}/state", "params": [{"name": "id", "in": "path", "type": "number", "required": true, "desc": "Batch id"}], "body": null, "response": {"id": 301204, "creator": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", "source_id": "crypto", "config_hash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tick_duration": 120, "created_at_tick": 14843621, "paused": false, "player_count": 1, "next_tick": 0, "players": [{"address": "0x71c7656ec7ab88b098defb751b7401b5f6d8976f", "deposit": "1000000000000000000", "balance": "1000000000000000000", "start_tick": 0, "has_bitmap": true}]}}
 ```
 
 This path is served by the oracle directly. `created_at_tick` is the contract's `block.timestamp / tickDuration` at creation. `next_tick` and each player's `start_tick` are always `0` — single-round batches have no tick sequence.
@@ -83,7 +83,7 @@ An unknown id returns `404` with `{"error": "Batch 301204 not found"}`.
 Returns the latest market list for a source, by name.
 
 ```gm-try
-{"method": "GET", "path": "/vision/config/crypto", "params": [{"name": "source", "in": "path", "type": "string", "required": true, "desc": "Source name, max 64 chars"}], "body": null, "response": {"sourceId": "crypto", "displayName": "Crypto", "configHash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tickDurationSecs": 120, "lockOffsetSecs": 30, "settlementGraceSecs": 240, "markets": [{"assetId": "BTC", "resolutionType": "up_x", "thresholdBps": 150, "thresholdSource": "last_batch"}, {"assetId": "ETH", "resolutionType": "down_0", "thresholdBps": 0, "thresholdSource": "24h_history"}], "createdAt": "2026-06-10T12:00:00Z"}}
+{"method": "GET", "path": "/vision/config/{source}", "params": [{"name": "source", "in": "path", "type": "string", "required": true, "desc": "Source name, max 64 chars"}], "body": null, "response": {"sourceId": "crypto", "displayName": "Crypto", "configHash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tickDurationSecs": 120, "lockOffsetSecs": 30, "settlementGraceSecs": 240, "markets": [{"assetId": "BTC", "resolutionType": "up_x", "thresholdBps": 150, "thresholdSource": "last_batch"}, {"assetId": "ETH", "resolutionType": "down_0", "thresholdBps": 0, "thresholdSource": "24h_history"}], "createdAt": "2026-06-10T12:00:00Z"}}
 ```
 
 The route translates the display id to the internal source id first, then retries with the raw name. A missing source name, or one longer than 64 characters, returns `400` with `{"markets": []}`. A source with no known config returns `200` with `{"markets": []}` — check the array, not the status.
@@ -104,10 +104,10 @@ Per market:
 Resolves a `config_hash` to its canonical market list — this is how a bot maps bit positions to assets.
 
 ```gm-try
-{"method": "GET", "path": "/vision/config/by-hash/0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "params": [{"name": "hash", "in": "path", "type": "string", "required": true, "desc": "0x-prefixed 32-byte hex config hash"}], "body": null, "response": {"sourceId": "crypto", "configHash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tickDurationSecs": 120, "lockOffsetSecs": 30, "settlementGraceSecs": 240, "markets": [{"assetId": "BTC", "resolutionType": "up_x", "thresholdBps": 150, "thresholdSource": "last_batch"}]}}
+{"method": "GET", "path": "/vision/config/by-hash/{hash}", "params": [{"name": "hash", "in": "path", "type": "string", "required": true, "desc": "0x-prefixed 32-byte hex config hash"}], "body": null, "response": {"sourceId": "crypto", "configHash": "0x3f2a9c41d8b07e6a55c0f1d92e84b6a7c3d51e08f4b29a6c7d80e13f5a4b6c2d", "tickDurationSecs": 120, "lockOffsetSecs": 30, "settlementGraceSecs": 240, "markets": [{"assetId": "BTC", "resolutionType": "up_x", "thresholdBps": 150, "thresholdSource": "last_batch"}]}}
 ```
 
-Take a batch's `config_hash` from `/vision/batches` or the state endpoint, pass it here, and you get the markets array — same shape as `/vision/config/{source}` above. The array order is the bit order of your bitmap; the byte-level spec lives in [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min).
+Take a batch's `config_hash` from `/vision/batches` or the state endpoint, pass it here, and you get the markets array — same shape as `/vision/config/{source}` above. The array order is the bit order of your bitmap; the byte-level spec lives in [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min).
 
 Errors:
 

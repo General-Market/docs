@@ -29,10 +29,10 @@ A connected wallet and some test USDC — nothing else. If you have not connecte
 
 ## How do I find a DTF?
 
-Open the DTF browser at `generalmarket.io/itps`. Every card shows the fund's name, NAV, and performance, with **Buy** and **Sell** buttons on the card itself. Clicking a card opens the fund's own page — chart, holdings, history — with the same Buy button.
+Open the DTF browser at `generalmarket.io/itps` — the contracts call a DTF an **ITP (Index Token Product)**, which is where the URL comes from. Every card shows the fund's name and live NAV, with **Buy** and **Sell** buttons on the card itself. Clicking a card opens the fund's own page — chart, holdings, history — with the same Buy button.
 
 ```gm-shot
-The DTF browser grid at /itps — cards with NAV, performance sparkline, and Buy/Sell buttons.
+The DTF browser grid at /itps — cards with name, NAV, and Buy/Sell buttons.
 ```
 
 Pick any fund. The flow is identical for all of them.
@@ -44,7 +44,7 @@ Pick any fund. The flow is identical for all of them.
    If your balance is zero, a **Mint 10,000 Test USDC** button appears below the field — press it and wait for "Minted!".
 3. Leave **Max Price (USDC/share)** empty. Empty means market order: you take the next fill at NAV. (Setting a price caps what you will pay — the contract rejects any fill above it.)
 4. Press **Approve & Buy**. Your wallet asks for two confirmations: one approval letting the protocol take your USDC, then the order itself. Approve both. On later buys, with the allowance already in place, the button reads **Buy DTF** and there is one confirmation.
-5. Watch the progress ring: **Submit → Batch → Fill**. The oracle network is batching your order and filling it — typically about a minute. The page is safe to close; the order keeps going without you.
+5. Watch the progress ring: **Submit → Relay → Batch → Fill**. The oracle network is batching your order and filling it. (The Relay segment is for orders arriving from the other chain — a direct order like yours passes it instantly.) If it runs long, the modal tells you it is safe to close; the order keeps going without you.
 
 ```gm-shot
 The buy modal: amount field with balance, Max Price field, Approve & Buy button.
@@ -71,7 +71,7 @@ The Portfolio section listing a held DTF position with value and PnL.
 1. Press **Sell** on the fund's card or in your portfolio. The panel shows **Your Shares**.
 2. Enter the number of shares in **Shares to Sell**.
 3. Press **Sell Shares**. One wallet confirmation — selling needs no approval, because the protocol already holds the share ledger.
-4. The same ring runs: Submit → Batch → Fill. At fill, the USDC lands directly in your wallet, and the panel shows the assets your shares released.
+4. The same ring runs: Submit → Relay → Batch → Fill. At fill, the USDC lands directly in your wallet, and the panel shows the assets your shares released.
 
 ```gm-shot
 The sell modal: Your Shares balance, Shares to Sell field, Sell Shares button.

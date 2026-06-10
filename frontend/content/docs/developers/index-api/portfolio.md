@@ -76,7 +76,7 @@ Returns a precomputed account PnL curve — the chart behind the account page �
 - The curve is written ahead of time by a background job; this endpoint only reads it. Cached 30 seconds.
 - Bucket width follows the range: `1d` → 300 s, `1w` → 2100 s, `1m` → 10 800 s, `all` → 21 600 s. At most 500 points.
 - `ts` is unix **milliseconds**. `pnl` is total (realized + unrealized); `realized_pnl` is the locked-in part.
-- Errors: `400` malformed address; `502` returns an empty-points body so charts degrade instead of breaking.
+- Errors: every failure — malformed address included — returns `502` with an empty-points body, so charts degrade instead of breaking. The data-node rejects a bad address with `400`, but the proxy converts any upstream error into the `502` shape.
 
 ## GET /dn/sim/categories
 
@@ -87,7 +87,7 @@ Returns the category universe the backtester can simulate — CoinGecko categori
 ```
 
 - Stablecoin, wrapped-token, and bridged-token categories are filtered out — an index of pegged assets backtests to a flat line.
-- `source` is `coingecko` or `defillama`. DefiLlama categories unlock the TVL/fees/revenue weighting strategies on the run endpoint.
+- `source` is `coingecko` or `defillama`. DefiLlama categories enable the TVL/fees/revenue weighting strategies on the run endpoint.
 
 ## GET /dn/sim/run-stream
 
@@ -164,7 +164,7 @@ Returns BTC and ETH price series normalized to 1.0 at your start date, for plott
 ```
 
 - `nav` is the price divided by the price at `start_date` — directly comparable to a simulation's `nav_series`.
-- Errors: `400` malformed `start_date`. A benchmark with no data in range is simply omitted.
+- Errors: `400` malformed `start_date`. A benchmark with no data in range is omitted from the response.
 
 ```gmnote
 The backtester prices in daily snapshots and percentage fees. It does not simulate the live order pipeline — oracle batching, slippage tiers, partial fills. Treat results as strategy research, not an execution forecast. For how live orders actually fill, read What happens to my order? linked below.

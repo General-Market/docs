@@ -44,7 +44,7 @@ Older docs and the repo's AGENTS.md name two errors that do not exist in the dep
 |---|---|---|---|
 | 404 | `Player … not found in batch …` | The oracle has not indexed your join yet (event lag), or you never joined | Retry in ~5 s with backoff; confirm the join transaction mined |
 | 400 | `expected_hash … does not match on-chain commitment …` | The hash you sent disagrees with your on-chain position | If you just updated, wait for the `updateBitmap` transaction to mine, then resend; otherwise re-derive the hash |
-| 400 | `Bitmap verification failed: Hash mismatch` | `keccak256(bitmap bytes) != expected_hash` | Recompute keccak256 over the exact bytes you POST: [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min) |
+| 400 | `Bitmap verification failed: Hash mismatch` | `keccak256(bitmap bytes) != expected_hash` | Recompute keccak256 over the exact bytes you POST: [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min) |
 | 400 | `Bitmap too short: …` | Fewer bytes than `ceil(market_count / 8)` | Size the bitmap to cover every market in the block |
 | 400 | `Invalid player address` / `Invalid bitmap hex` / `Invalid expected_hash` | Malformed field in the JSON body | Hex fields need the `0x` prefix; check each field's format |
 
@@ -64,7 +64,7 @@ One wrapper to know about: posting through `https://generalmarket.io/api/vision/
 
 **The faucet is waitlist-gated by default.** A fresh wallet gets a 403 until it is whitelisted — this also stops the reference bot's auto-faucet for non-whitelisted keys.
 
-There is a second, separate faucet for bots: `POST /api/bot/faucet` — a fixed grant of 100 USDC + 1 GM gas, one claim per IP and per address per 24 h (429 with a `Rate limit: … try again in Xh` message), behind the same 403 waitlist gate. Details: [Faucet](/docs/developers/vision-api/faucet) (~3 min).
+There is a second, separate faucet for bots: `POST /api/bot/faucet` — a fixed grant of 100 USDC + 1 GM gas, one claim per IP and per address per 24 h (429 with a `Rate limit: … Try again in Xh` message), behind the same 403 waitlist gate. Details: [Faucet](/docs/developers/vision-api/faucet) (~3 min).
 
 **Testnet only.** Faucet funds are not real money.
 

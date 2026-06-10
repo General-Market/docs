@@ -32,7 +32,7 @@ Lists the currently open round — the latest non-paused block — for every sou
 {"method": "GET", "path": "/vision/rounds", "params": [{"name": "source", "in": "query", "type": "string", "required": false, "desc": "Display source id, e.g. twitch"}], "body": null, "response": {"rounds": [{"batchId": 301204, "sourceId": "twitch", "source_id": "twitch", "timeframeSecs": 60, "status": "betting", "playerCount": 3, "tvl": "1500000000000000000", "bettingEnd": "2026-06-10T12:34:00+00:00", "configHash": "0x6f1a…"}]}}
 ```
 
-- `source` (query, optional): a display source id. With it, you get up to the 100 most recent non-paused rounds for that source. Without it, exactly one round per source — the latest.
+- `source` (query, optional): a display source id. The gateway does not forward it upstream — it fetches the latest round per source and filters that list. With or without the filter, you get at most one round per source.
 - `status` is derived from `bettingEnd`: `betting` while the join window is open, `settling` once it has passed.
 - `playerCount` and `tvl` are refreshed from on-chain `PlayerJoined` events over roughly the last 30 minutes of blocks, because the oracle's own table can lag the chain by tens of seconds. `tvl` is a wei string.
 - `configHash` (omitted when unknown) is the key for fetching the round's market list — see [Blocks & state](/docs/developers/vision-api/batches) (~4 min).
@@ -59,7 +59,7 @@ The timing is the point:
 
 - `markets[i]` is the asset whose prediction is bit `i`: `predictions[i]` is `true` for UP, `false` for DOWN.
 - `predictions` is decoded byte by byte, most significant bit first, so its length is a multiple of 8. Bits beyond the market count are padding and read `false`.
-- Byte-level spec: [Bitmap encoding](/docs/bots/bitmap-encoding) (~3 min).
+- Byte-level spec: [Bitmap encoding](/docs/bots/bitmap-encoding) (~4 min).
 
 ## GET /vision/rounds/{batchId}/results
 
@@ -85,7 +85,8 @@ Returns the settled-round history of one source, paginated, newest first.
 - **Amounts on this endpoint are USDC numbers, not wei strings.** `totalPool`, `avgPnl`, `topEarnerPnl`, and `topPayout` are already divided by 1e18 and rounded to cents.
 - Only rounds that had at least one player appear. `status` is always `"settled"`.
 - `topPayout` is the largest gross payout in the round; `topEarnerPnl` is the top earner's net result. A player paid back exactly their deposit has a positive payout but zero PnL.
-- Responses are cached for ~30 seconds; settled data is immutable.
+- `avgPnl` is the mean *absolute* PnL per player — not the signed mean, which is always ~0 in a zero-sum round.
+- Responses are cached at two layers — ~30 seconds at the gateway, ~5 minutes per page inside the oracle. Settled data is immutable, so staleness costs nothing.
 
 ## GET /vision/asset/{sourceId}/{assetId}/settlements
 

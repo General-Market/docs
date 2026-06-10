@@ -35,7 +35,7 @@ There is a points program, and the app's own copy says points "convert to an all
 
 ## Can I play manually and run a bot at the same time?
 
-Yes, two ways. A wallet holds exactly one position per block — a second join from the same address is rejected (`AlreadyJoined`) — so either:
+Yes, two ways. A wallet holds exactly one position per block — one prediction round on one source — and a second join from the same address is rejected (`AlreadyJoined`). So either:
 
 - **Use separate wallets.** Play by hand with one key, run the bot on another. Clean and simple.
 - **Share one wallet.** Whoever joined the block holds the position, but both you and the bot can replace its predictions any time before the lock window — the last update before lock counts.

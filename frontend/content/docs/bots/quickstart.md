@@ -1,20 +1,20 @@
 ---
 title: Run the reference bot in 5 minutes
 navTitle: Quickstart
-description: Clone, add a key, fix config.toml, run bot.py — and what every log line means.
+description: Clone, add a key, run bot.py — and what every log line means.
 order: 2
 group: Build
 mode: tutorial
 ---
 
 ```gmplain
-You copy one file with your wallet key in it, install two Python packages, fix two lines in a config file, and run one command. The bot then gets play money from the faucet by itself, finds the open prediction blocks, and starts placing picks every round. This page shows exactly what you will see — including what happens when the faucet says no.
+You copy one file with your wallet key in it, install two Python packages, and run one command. The bot then gets play money from the faucet by itself, finds the open prediction blocks, and starts placing picks every round. This page shows exactly what you will see — including what happens when the faucet says no.
 ```
 
 ```gmsummary
 What you need :: A wallet key, Python 3.10+, and five minutes
 Step 1 — install :: Copy .env, install web3 and requests
-Step 2 — configure :: Add your key; fix the stale lines in config.toml
+Step 2 — configure :: Add your key; the shipped config works as-is
 Step 3 — run :: python bot.py — faucet, register, join, loop
 What you should see :: The startup log, line by line
 If the faucet refuses you :: The waitlist gate and the bot-faucet fallback
@@ -47,19 +47,10 @@ That installs the bot's only two dependencies: `web3` and `requests`.
    BOT_PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
    ```
 
-2. Open `config.toml` and fix two stale lines. The shipped file still points at a retired Vision contract and pins a block id that died long ago — and config.toml *overrides* the bot's correct built-in defaults:
-
-   ```toml
-   vision_address = "0x36a28967544c301a3c66dcfb6c6c90e548412693"
-   batch_ids = []
-   ```
-
-   The address is the live Vision contract, the same one listed in the [Network reference](/docs/get-started/network) (~2 min). `batch_ids` must be empty because blocks live one round — a pinned id goes stale after one tick. Setting `VISION_ADDRESS=...` in `.env` also works; environment variables beat config.toml.
-
-   If you skip this step the bot refuses to start and prints the exact fix: `No contract at 0x... Set VISION_ADDRESS=...`.
+2. The shipped `config.toml` works as-is — it points at the live Vision contract and pins nothing. Nothing to edit beyond your key.
 
 ```gmnote
-The `stake` line in config.toml is read but ignored. The live `joinBatchDirect` has no stake parameter — the deposit is the stake.
+On an older checkout, check two lines in config.toml: `vision_address` must be the live contract from the [Network reference](/docs/get-started/network) (~2 min), and `batch_ids` must be empty or absent — blocks live one round, so a pinned id goes stale after one tick. A stale address makes the bot refuse to start and print the exact fix (`No contract at 0x... Set VISION_ADDRESS=...`); a stale pin makes it start but join nothing. An old `stake` line is read but ignored — the live `joinBatchDirect` has no stake parameter; the deposit is the stake. `VISION_ADDRESS=...` in `.env` beats config.toml.
 ```
 
 ## Step 3 — run
@@ -75,6 +66,7 @@ In order, the bot: connects to the RPC and checks the chain id, verifies the Vis
 ## What you should see
 
 ```
+17:02:01 [INFO] USDC from Vision contract: 0xaddB799BC1499b224DC4368e92b9042a54908553
 17:02:01 [INFO] Vision Bot starting
 17:02:01 [INFO]   Strategy:    random
 17:02:01 [INFO]   Bot address: 0xYourBotAddress
@@ -104,9 +96,9 @@ The main faucet (`POST /api/faucet`) checks a waitlist before it pays.
 
 The bot handles each refusal and tells you what it did:
 
-- **403 from the main faucet** — the bot automatically falls back to the bot faucet (`POST /api/bot/faucet`): a fixed drip of 100 USDC + 1 GM gas, one claim per IP per 24 hours. You will see `Trying the bot faucet instead...` followed by `Bot faucet OK: 100 USDC + 1 GM`.
+- **403 from the main faucet** — the bot automatically falls back to the bot faucet (`POST /api/bot/faucet`): a fixed drip of 100 USDC + 1 GM gas, one claim per IP and per address every 24 hours. You will see `Trying the bot faucet instead...` followed by `Bot faucet OK: 100 USDC + 1 GM`.
 - **403 from the bot faucet too** — both faucets are gated for your address. The log prints the waitlist URL; join the waitlist with the bot's address, then rerun.
-- **429** — a cooldown. The main faucet allows one claim per address per 30 seconds; the bot faucet one per IP per 24 hours. The log prints how long to wait.
+- **429** — a cooldown. The main faucet allows one claim per address per 30 seconds; the bot faucet one per IP and per address per 24 hours. The log prints how long to wait.
 
 If the bot ends with `No USDC`, funding failed — resolve the waitlist or cooldown above and run it again. Faucet request and response shapes are in the [Faucet API reference](/docs/developers/vision-api/faucet) (~3 min).
 

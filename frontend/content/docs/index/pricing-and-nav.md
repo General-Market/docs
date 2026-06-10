@@ -28,13 +28,13 @@ NAV is also the price your orders fill at, and your limit price is checked again
 
 ## Who computes NAV?
 
-The oracle network — and only off-chain. A quorum of oracle nodes computes each DTF's NAV from its inventory and live prices, agrees on the value, and pushes it to the contract with `setItpNav` under an aggregated BLS signature — one signature proving the quorum agreed. The contract verifies the signature and stores the number; `getNAV` returns whatever was last pushed.
+The oracle network — and only off-chain. A quorum of oracle nodes computes each DTF's NAV from its inventory and live prices, agrees on the value, and pushes it to the contract with `setItpNav` (the contracts call a DTF an **ITP — Index Token Product**) under an aggregated BLS signature — one signature proving the quorum agreed. The contract verifies the signature and stores the number; `getNAV` returns whatever was last pushed.
 
 **There is no on-chain NAV formula.** The contract does not multiply inventories by prices — it cannot, because asset prices are not on the chain. It stores the oracle-signed value and nothing else. The arithmetic, the price feeds, and the agreement all live in the oracle network.
 
 ## Where do asset prices come from?
 
-From the **data-node** — the service that collects market data for the whole system. Its live collector polls exchange tickers (Bitget) on a fixed interval and stores every price in its database; separate collectors backfill price history from CoinGecko and DefiLlama. Before prices are used in consensus, the oracle network cross-checks them against tolerance bands: 0.5% for stablecoins, 2% for BTC and ETH, 2% for everything else. A price outside its band is rejected rather than averaged in.
+From the **data-node** — the service that collects market data for the whole system. Its live collector polls exchange tickers (Bitget) on a fixed interval and stores every price in its database; a separate collector backfills price history from CoinGecko. Before prices are used in consensus, the oracle network cross-checks them against tolerance bands: 0.5% for stablecoins, 2% for BTC and ETH, 2% for everything else. A price outside its band is rejected rather than averaged in.
 
 ```gmnote
 The data-node also computes a live NAV for display, directly from inventory × freshest prices. Between oracle pushes, this display NAV can differ slightly from the value stored on-chain — the display is fresher; the chain is the settled record.

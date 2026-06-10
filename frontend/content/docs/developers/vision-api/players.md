@@ -22,7 +22,7 @@ GET /vision/balance :: Not live — every call returns 404; read the chain inste
 Returns a player's complete record in one call: aggregate stats, a per-batch breakdown, and an hourly cumulative-PnL series.
 
 ```gm-try
-{"method": "GET", "path": "/vision/player/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/profile", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "0x-prefixed 40-hex player address"}], "body": null, "response": {"stats": {"pnl": 12.41, "totalDeposited": 220.0, "roi": 5.64, "winRate": 52.3, "totalBatches": 215, "lastActiveAt": "2026-06-10T14:32:11+00:00"}, "batches": [{"batchId": 301204, "sourceId": "crypto", "status": "active", "deposited": 1.0, "balance": 1.0, "tickCount": 0, "roi": 0.0, "ticks": []}, {"batchId": 301190, "sourceId": "crypto", "status": "exited", "deposited": 1.0, "balance": 1.13, "tickCount": 1, "roi": 13.0, "ticks": [{"tickId": 1781180531, "pnl": 0.13, "won": true}]}], "pnlHistory": [{"timestamp": "2026-06-10T13:00:00+00:00", "pnl": 12.28}, {"timestamp": "2026-06-10T14:00:00+00:00", "pnl": 12.41}]}}
+{"method": "GET", "path": "/vision/player/{address}/profile", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "0x-prefixed 40-hex player address"}], "body": null, "response": {"stats": {"pnl": 12.41, "totalDeposited": 220.0, "roi": 5.64, "winRate": 52.3, "totalBatches": 215, "lastActiveAt": "2026-06-10T14:32:11+00:00"}, "batches": [{"batchId": 301204, "sourceId": "crypto", "status": "active", "deposited": 1.0, "balance": 1.0, "tickCount": 0, "roi": 0.0, "ticks": []}, {"batchId": 301190, "sourceId": "crypto", "status": "exited", "deposited": 1.0, "balance": 1.13, "tickCount": 1, "roi": 13.0, "ticks": [{"tickId": 1781180531, "pnl": 0.13, "won": true}]}], "pnlHistory": [{"timestamp": "2026-06-10T13:00:00+00:00", "pnl": 12.28}, {"timestamp": "2026-06-10T14:00:00+00:00", "pnl": 12.41}]}}
 ```
 
 All amounts here are **display-ready USDC floats rounded to 2 decimals** — not wei strings. The raw amounts live on the rounds endpoint below.
@@ -60,7 +60,7 @@ Errors: `400 {"error": "Invalid address"}` for a malformed address; `502 {"error
 Returns the player's raw round-by-round results, newest batch first.
 
 ```gm-try
-{"method": "GET", "path": "/vision/player/0x71C7656EC7ab88b098defB751B7401B5f6d8976F/rounds", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Player address"}, {"name": "limit", "in": "query", "type": "number", "required": false, "desc": "Rows to return — default 20, max 100"}], "body": null, "response": {"rounds": [{"batchId": 301190, "deposited": "1000000000000000000", "payout": "1130000000000000000", "pnl": "130000000000000000", "correctCount": 14, "totalMarkets": 24}]}}
+{"method": "GET", "path": "/vision/player/{address}/rounds", "params": [{"name": "address", "in": "path", "type": "string", "required": true, "desc": "Player address"}, {"name": "limit", "in": "query", "type": "number", "required": false, "desc": "Rows to return — default 20, max 100"}], "body": null, "response": {"rounds": [{"batchId": 301190, "deposited": "1000000000000000000", "payout": "1130000000000000000", "pnl": "130000000000000000", "correctCount": 14, "totalMarkets": 24}]}}
 ```
 
 | Field | Type | Meaning |
@@ -74,7 +74,7 @@ Returns the player's raw round-by-round results, newest batch first.
 
 **L3 USDC has 18 decimals.** `"130000000000000000"` is 0.13 USDC.
 
-A database failure returns `200` with `{"rounds": []}` — this endpoint never returns 500. An address that has played no rounds also returns the empty array; the two cases are indistinguishable.
+A database failure returns `200` with `{"rounds": []}` — this endpoint never returns 500. An address that has played no rounds also returns the empty array; the two cases are indistinguishable. Only when the oracle itself is unreachable does the gateway return `502`, with the same empty shape.
 
 ## GET /vision/balance
 

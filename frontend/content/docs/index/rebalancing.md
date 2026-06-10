@@ -45,8 +45,8 @@ The Rebalance section on a DTF detail page: weight editor, note field, Request R
 
 The oracles call `rebalance` on the Investment contract with your changes plus current prices, under a BLS signature. Three things happen in one transaction:
 
-- **Assets are removed and added.** Removed assets leave the basket; added assets enter with a starting quantity of zero.
-- **Inventory is recomputed at current prices.** Each asset's per-share quantity becomes `qty[i] = newWeight[i] × NAV / price[i]`.
+- **Assets are removed and added.** Removed assets leave the basket; added assets join the final list.
+- **Inventory is recomputed at current prices.** Every asset in the final list — old and newly added alike — gets its per-share quantity from `qty[i] = newWeight[i] × NAV / price[i]`.
 - **NAV is held constant.** The contract reads the NAV before any change and writes the same value back after. Your share is worth the same the moment before and the moment after — what changed is what it holds, not what it is worth.
 
 The difference between old and new inventory is emitted as per-asset trade requests, which drive the actual buying and selling that brings the real holdings in line.

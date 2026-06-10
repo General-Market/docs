@@ -21,7 +21,7 @@ What happens every round? :: A fresh block opens per source every tick
 
 ## What am I predicting?
 
-Whether real-world numbers go up or down. Crypto prices, weather readings, sports stats, earthquake counts, subway traffic — 47 data sources across 16 categories, each broken into individual *markets* (one number each). The full catalog is in [What markets can I predict?](/docs/vision/markets) (~2 min).
+Whether real-world numbers go up or down. Crypto prices, weather readings, sports stats, earthquake counts, subway traffic — dozens of live data sources, each broken into individual *markets* (one number each). The full catalog is in [What markets can I predict?](/docs/vision/markets) (~2 min).
 
 Markets are grouped by source into a *block* — one round of the game for one source. When you join a block, you predict UP or DOWN for **every market in it at once**, and you back the whole set with one USDC deposit. The deposit is split evenly across the block's markets, so each prediction carries equal weight.
 
@@ -60,13 +60,13 @@ First, your picks become a *bitmap* — a row of bits, one per market, UP = 1 an
 vision-sealed-commitment
 ```
 
-Think of it as a sealed envelope handed to the referee, with the envelope's fingerprint pinned to a public noticeboard. Other players see only the fingerprint — nothing to copy. The referee holds the envelope but cannot swap its contents — the fingerprint would no longer match. When the round resolves, the envelope is opened, scored against your on-chain commitment, and the round's picks become public history — at the exact moment they can no longer help anyone.
+Think of it as a sealed envelope handed to the referee, with the envelope's fingerprint pinned to a public noticeboard. Other players see only the fingerprint — nothing to copy. The referee holds the envelope but cannot swap its contents — the fingerprint would no longer match. When the round resolves, the envelope is opened and scored against your on-chain commitment. The round's *results* — who won what, market by market — become public history; the picks themselves are discarded once the round settles, so there is never a moment when they can help anyone.
 
 The full player-level mechanics — updating before lock, what happens if your bitmap never arrives — are in [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min).
 
 ## What happens every round?
 
-Every source runs on a clock. Each beat of that clock is a *tick* — from one minute to one week depending on the source. Every tick, the oracle scores and pays out the source's previous block, and opens a brand-new one. Nothing carries over: each round you join fresh, with a new deposit and new predictions.
+Every source runs on a clock. Each beat of that clock is a *tick* — minutes for the fastest sources, a week for the slowest. Every tick, the oracle scores and pays out the source's previous block, and opens a brand-new one. Nothing carries over: each round you join fresh, with a new deposit and new predictions.
 
 That round model — block lifetimes, the lock window, settlement timing — is the subject of [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
 
@@ -74,4 +74,4 @@ That round model — block lifetimes, the lock window, settlement timing — is 
 [{"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "How predictions are sealed", "href": "/docs/vision/predictions-and-bitmaps"}, {"title": "How do I win?", "href": "/docs/vision/payouts"}]
 ```
 
-Next: [Place your first predictions](/docs/vision/first-predictions) (~5 min)
+Next: [Place your first predictions](/docs/vision/first-predictions) (~15 min)

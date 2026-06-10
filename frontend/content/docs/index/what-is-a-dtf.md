@@ -66,4 +66,4 @@ NAV — net asset value per share — is the market value of the slice of the ba
 [{"title": "Buy and sell a DTF", "href": "/docs/index/buy-and-sell"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}]
 ```
 
-Next: [Buy and sell a DTF](/docs/index/buy-and-sell) (~6 min)
+Next: [Buy and sell a DTF](/docs/index/buy-and-sell) (~4 min)

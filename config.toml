@@ -1,0 +1,27 @@
+strategy = "random"
+deposit = 10
+max_batches = 50        # max joins per cycle, not a lifetime cap
+max_exposure = 1000
+poll_interval = 30
+
+# L3 Orbit chain
+rpc_url = "https://rpc.generalmarket.io/"
+
+# Public API
+api_url = "https://generalmarket.io/api"
+
+# Contracts (read USDC address from Vision contract at runtime)
+vision_address = "0x36a28967544c301a3c66dcfb6c6c90e548412693"
+
+# Auto-faucet: request testnet USDC on startup if balance is low
+auto_faucet = true
+faucet_amount = 1000
+
+pnl_file = "pnl.json"
+
+# Pin specific batch ids (debugging only). Blocks live one round, so a pinned
+# id goes stale after one tick. Leave unset to join every open block.
+# batch_ids = []
+
+# Note: a "stake" key from older configs is read but ignored — the live
+# joinBatchDirect has no stake parameter; the deposit is the stake.

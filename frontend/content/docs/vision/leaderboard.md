@@ -8,7 +8,7 @@ mode: how-to
 ---
 
 ```gmplain
-The leaderboard ranks every player by realized profit across all settled rounds. Click any row to open that player's profile — a profit chart and their full round history. The numbers are not self-reported: they are computed from the same settlement results that pay the wallets, so the board and the money can never disagree.
+The leaderboard ranks every player by realized profit across all settled rounds. Click any row to open that player's profile — a profit chart and their full round history. The numbers are not self-reported: they come from the same settlement results that pay the wallets.
 ```
 
 ```gmsummary
@@ -48,7 +48,7 @@ Every figure counts **settled rounds only**. An open round you are currently in 
 
 Three honest details:
 
-- **The board is zero-sum.** Vision moves money between players; summed over every player, P&L comes to exactly zero (the protocol's small fee on profits is the only outflow — see [Fees and minimums](/docs/vision/fees) (~2 min)).
+- **The board is zero-sum.** Vision moves money between players, and the board's P&L is computed from settlement payouts *before* the 0.05% fee on profit — so summed over every player it comes to exactly zero. Your wallet receives the payout minus the fee, so a winner's board P&L runs a hair above what actually arrived — see [Fees and minimums](/docs/vision/fees) (~2 min).
 - Win% counts whole rounds, not individual markets. The API also reports a per-market accuracy figure (`avgCorrectPct` — correct predictions ÷ markets predicted), which the table does not display.
 - **Testnet only.** The P&L is real arithmetic over test money. **L3 USDC has 18 decimals** — the board shows human units, rounded to whole cents from the exact on-chain figures.
 
@@ -62,7 +62,7 @@ Click any leaderboard row. It opens `/profile/{address}` — yours or anyone's, 
 
 1. The hero shows the wallet's **P&L curve** over time, switchable between 1D / 1W / 1M / ALL.
 2. Tabs split the account: **Vision** (prediction rounds), **Index** (DTF positions), **Vaults** (vault deposits — shown only on your own profile, because vault positions are private to their owner).
-3. The Vision tab lists the wallet's blocks and per-round results — what was deposited, what came back, round by round.
+3. The Vision tab lists the wallet's rounds and their results — what was deposited, what came back, round by round.
 
 ```gm-shot
 Player profile page: P&L curve in the hero, Vision tab open with a list of settled rounds.
@@ -72,7 +72,7 @@ Your own profile is the same URL with your address — open the leaderboard and 
 
 ## Where do the numbers come from?
 
-From settlement, and nowhere else. When the oracle network settles a block, it grades every player's revealed predictions against the resolved markets and computes each payout — the same payout the contract then transfers to the wallet (the mechanism is in [How do I win?](/docs/vision/payouts) (~4 min)). Each settlement writes one result row per player: deposit, payout, and how many markets they called correctly. The leaderboard is a sum over those rows; the profile is one player's slice of them.
+From settlement, and nowhere else. When the oracle network settles a block (a *batch*, in contract terms), it grades every player's revealed predictions against the resolved markets and computes each payout — the contract then transfers that payout, minus the 0.05% fee on profit, to the wallet (the mechanism is in [How do I win?](/docs/vision/payouts) (~4 min)). Each settlement writes one result row per player: deposit, payout, and how many markets they called correctly. The leaderboard is a sum over those rows; the profile is one player's slice of them.
 
 Because the displayed numbers and the paid money come from the same settlement output, there is no separate scoring system to drift out of sync.
 
