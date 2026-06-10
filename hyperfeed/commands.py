@@ -31,6 +31,17 @@ HELP = (
 SUBSCRIBE = {"hyperliquid", "subscribe", "start"}
 UNSUBSCRIBE = {"stop", "unsubscribe"}
 
+# The slash-command menu shown in Telegram. Set on startup, replacing any leftover commands.
+BOT_COMMANDS = [
+    {"command": "hyperliquid", "description": "Subscribe to the Hyperliquid outlier feed"},
+    {"command": "stop", "description": "Unsubscribe from the feed"},
+    {"command": "status", "description": "Accounts, threshold, floors, spend"},
+    {"command": "recent", "description": "Last fired outliers"},
+    {"command": "accounts", "description": "The watched accounts"},
+    {"command": "calibrate", "description": "Recompute what counts as an outlier"},
+    {"command": "help", "description": "Command list"},
+]
+
 
 def _parse(text: str) -> tuple[str, list[str]]:
     parts = text.strip().split()

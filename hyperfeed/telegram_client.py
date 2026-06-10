@@ -70,6 +70,22 @@ class Telegram:
             await asyncio.sleep(0.05)   # stay clear of Telegram's per-second flood limits
         return sent
 
+    async def set_my_commands(self, commands: list[dict]) -> bool:
+        """Replace the bot's slash-command menu (default scope). Clears any leftover commands."""
+        if not self._session:
+            raise RuntimeError("Telegram client used outside async context")
+        try:
+            async with self._session.post(
+                f"{self._base}/setMyCommands", json={"commands": commands}
+            ) as r:
+                ok = r.status == 200
+                if not ok:
+                    log.error("setMyCommands failed: %s %s", r.status, (await r.text())[:200])
+                return ok
+        except aiohttp.ClientError as e:
+            log.error("setMyCommands network error: %s", e)
+            return False
+
     async def get_updates(self, offset: int, timeout: int = 25) -> list[dict]:
         if not self._session:
             raise RuntimeError("Telegram client used outside async context")

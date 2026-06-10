@@ -79,6 +79,7 @@ class Daemon:
 
     # -- startup -------------------------------------------------------------
     async def startup(self) -> None:
+        await self.tg.set_my_commands(commands.BOT_COMMANDS)  # clear leftover menu, set ours
         if not self.accounts:
             await self._harvest()
         if self.tw.has_key() and not self.calibration:
