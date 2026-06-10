@@ -825,7 +825,8 @@ def build_queries(niche: str, since_date: str, search_mode: str, thresholds: lis
     raise ValueError(f"Unsupported search mode: {search_mode}")
 
 
-def metered_search(query: str, query_type: str, pages: int, label: str, raw_dir: Path) -> list[dict]:
+def metered_search(query: str, query_type: str, pages: int, label: str, raw_dir: Path,
+                   window_cutoff: datetime | None = None) -> list[dict]:
     tweets: list[dict] = []
     cursor = ""
     for page in range(pages):
@@ -845,6 +846,15 @@ def metered_search(query: str, query_type: str, pages: int, label: str, raw_dir:
         if not batch:
             break
         tweets.extend(batch)
+        # Latest is chronological: once a page's oldest tweet predates the window,
+        # the window is exhausted — every further page is older still. This makes
+        # deep page limits cheap: thin queries stop on date, not on the bound.
+        if window_cutoff is not None and query_type == "Latest":
+            stamps = [parse_x_date(t.get("createdAt") or "") for t in batch]
+            stamps = [s for s in stamps if s]
+            if stamps and max(stamps) < window_cutoff:
+                print(f"  ↳ window exhausted at p{page} (oldest page fully before cutoff)", file=sys.stderr)
+                break
         cursor = body.get("next_cursor") or (data.get("next_cursor") if isinstance(data, dict) else "") or ""
         has_next = body.get("has_next_page", data.get("has_next_page", bool(cursor)) if isinstance(data, dict) else bool(cursor))
         if not cursor or not has_next:
@@ -986,9 +996,10 @@ def main() -> None:
     parser.add_argument("--lookback-hours", type=int, default=24)
     parser.add_argument("--pages", type=int, default=4)
     # >1M-view Articles are spread across the full search depth, not front-loaded.
-    # Latest is the better net (it surfaced the 47M-view max on page 6). Paginate it
-    # far deeper than the Top/ladder families, which thin out fast.
-    parser.add_argument("--latest-pages", type=int, default=12)
+    # Latest is the better net (it surfaced the 47M-view max on page 6) and is
+    # chronological, so the window-exhaustion stop bounds the real cost — this is
+    # a ceiling, not a target. Top/ladder families thin out fast and keep --pages.
+    parser.add_argument("--latest-pages", type=int, default=50)
     parser.add_argument("--budget-usd", type=float, default=25.0)
     parser.add_argument("--search-mode", choices=("regressive-likes", "keyword", "both"), default="both")
     parser.add_argument("--like-thresholds", default="5000,2000,1000,500,250,100,50,20,10")
@@ -1028,7 +1039,7 @@ def main() -> None:
     for label, query, qtype in queries:
         pages = args.latest_pages if qtype == "Latest" else args.pages
         print(f"\n### {label} [{qtype}] x{pages}p {query}", file=sys.stderr)
-        source = raw_search(label, pages, raw_dir) if args.reuse_raw else metered_search(query, qtype, pages, label, raw_dir)
+        source = raw_search(label, pages, raw_dir) if args.reuse_raw else metered_search(query, qtype, pages, label, raw_dir, window_cutoff=cutoff)
         if args.reuse_raw:
             print(f"  ↳ RAW REUSE {label}: {len(source)} tweets", file=sys.stderr)
         all_tweets += len(source)

@@ -12,7 +12,7 @@ NICHES="${X_ARTICLE_MONTHLY_NICHES:-hyperliquid-30d hip3-30d hyperevm-30d hl-def
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
 BUDGET_USD="${X_ARTICLE_BUDGET_USD:-5}"
-PAGES="${X_ARTICLE_PAGES:-5}"
+PAGES="${X_ARTICLE_PAGES:-10}"
 ENGINE="$ROOT_DIR/docs/x-targeting/x_articles/find_native_x_articles.py"
 RANKER="$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py"
 
@@ -37,7 +37,7 @@ for niche in $NICHES; do
     --date "$DATE_UTC" \
     --lookback-hours "${X_ARTICLE_LOOKBACK_HOURS:-720}" \
     --pages "$PAGES" \
-    --latest-pages "${X_ARTICLE_LATEST_PAGES:-14}" \
+    --latest-pages "${X_ARTICLE_LATEST_PAGES:-50}" \
     --search-mode both \
     --like-thresholds "${X_ARTICLE_LIKE_THRESHOLDS:-5000,2000,1000,500,250,100,50,25,10,5,2,1}" \
     --max-articles "$max_articles" \
