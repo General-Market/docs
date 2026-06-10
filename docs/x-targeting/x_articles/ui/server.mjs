@@ -432,17 +432,20 @@ const html = String.raw`<!doctype html>
     .metricNum { font-size: 18px; font-weight: 700; color: #1d1d1f; }
     .muted { color: #86868b; font-size: 13px; }
     .empty { background: #fff; border: 1px solid #e8e8ed; border-radius: 8px; padding: 24px; color: #6e6e73; }
-    .draftBtn {
-      height: 32px;
-      border: 1px solid #d2d2d7;
-      background: #fff;
-      color: #1d1d1f;
+    .replyBtn {
+      height: 34px;
+      border: 1px solid #0071e3;
+      background: #0071e3;
+      color: #fff;
       border-radius: 8px;
-      padding: 0 12px;
+      padding: 0 16px;
       cursor: pointer;
       white-space: nowrap;
+      font-weight: 500;
     }
-    .draftBtn:hover { background: #f5f5f7; }
+    .replyBtn:hover { background: #0066cc; }
+    .replyBtn:disabled { opacity: .6; cursor: wait; }
+    .replyBtn.flash { background: #1f8b4c; border-color: #1f8b4c; }
     .draftRow > td { background: #fbfbfd; }
     .draftBox { display: flex; flex-direction: column; gap: 10px; max-width: 680px; }
     textarea.draftText {
@@ -796,9 +799,9 @@ const html = String.raw`<!doctype html>
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
           '<td class="num">' + fmt.format(row.bot_risk || 0) + '<div class="muted">' + escapeHtml((row.bot_risk_reasons || []).join(" | ") || "clean") + '</div></td>' +
           '<td><a href="' + escapeHtml(row.target_tweet_url || "") + '" target="_blank" rel="noreferrer">target</a><div class="muted">' + escapeHtml(row.around_reply_to ? "replying to @" + row.around_reply_to : row.source || "") + '</div></td>' +
-          '<td>' + (tweetId ? '<button class="draftBtn" data-draft-id="' + escapeHtml(tweetId) + '">' + (hasDraft ? 'Show draft' : 'Draft reply') + '</button>' : '<span class="muted">-</span>') + '</td>' +
+          '<td>' + (tweetId ? '<button class="replyBtn" data-reply-id="' + escapeHtml(tweetId) + '">' + (hasDraft ? 'Copy &amp; open' : 'Draft') + '</button>' : '<span class="muted">-</span>') + '</td>' +
         '</tr>' +
-        (tweetId ? '<tr class="draftRow hidden" data-draft-row="' + escapeHtml(tweetId) + '"><td colspan="9"></td></tr>' : ''); }).join("") + '</tbody></table></div>';
+        (tweetId ? '<tr class="draftRow' + (hasDraft ? '' : ' hidden') + '" data-draft-row="' + escapeHtml(tweetId) + '"><td colspan="9">' + (hasDraft ? draftBoxHtml(state.drafts[tweetId].draft, "saved draft") : '') + '</td></tr>' : ''); }).join("") + '</tbody></table></div>';
       content.querySelectorAll("[data-engagement-rank]").forEach((button) => {
         button.addEventListener("click", () => {
           state.engagementRankBy = button.getAttribute("data-engagement-rank");
@@ -806,8 +809,15 @@ const html = String.raw`<!doctype html>
           renderEngagementTable(sortedQueue(state.queue));
         });
       });
-      content.querySelectorAll(".draftBtn").forEach((button) => {
-        button.addEventListener("click", () => onDraftClick(button.getAttribute("data-draft-id")));
+      content.querySelectorAll(".replyBtn").forEach((button) => {
+        button.addEventListener("click", () => onReplyClick(button.getAttribute("data-reply-id")));
+      });
+      queue.forEach((row) => {
+        const id = tweetIdFromUrl(row.tweet_url);
+        if (id && state.drafts[id]) {
+          const cell = draftRowCell(id).cell;
+          if (cell && cell.querySelector(".draftText")) wireDraftBox(cell, id);
+        }
       });
     }
 
@@ -885,12 +895,7 @@ const html = String.raw`<!doctype html>
       const worker = async () => {
         while (shared.length) {
           const id = shared.shift();
-          const rowEl = document.querySelector('[data-draft-row="' + id + '"]');
-          if (rowEl) {
-            rowEl.classList.remove("hidden");
-            rowEl.dataset.loaded = "1";
-            await generateDraft(id, rowEl.firstElementChild, false);
-          }
+          await generateDraft(id, false);
           done += 1;
           status.textContent = "drafted " + done + "/" + total;
         }
@@ -905,36 +910,26 @@ const html = String.raw`<!doctype html>
       ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
     }
 
-    function setDraftStatus(cell, text) {
-      let status = cell.querySelector(".draftStatus");
-      if (!status) {
-        cell.innerHTML = '<div class="draftBox"><div class="draftMeta"><span class="draftStatus muted"></span></div></div>';
-        status = cell.querySelector(".draftStatus");
-      }
-      status.textContent = text;
-    }
-
-    function markDraftButton(tweetId) {
-      const button = document.querySelector('.draftBtn[data-draft-id="' + tweetId + '"]');
-      if (button) button.textContent = "Show draft";
-    }
-
-    function renderDraftBox(cell, tweetId, text, statusText) {
-      cell.innerHTML = '<div class="draftBox">' +
-        '<textarea class="draftText"></textarea>' +
+    function draftBoxHtml(text, statusText) {
+      return '<div class="draftBox">' +
+        '<textarea class="draftText">' + escapeHtml(text || "") + '</textarea>' +
         '<div class="draftMeta">' +
           '<span class="charCount"></span>' +
-          '<button class="draftAction draftCopy">Copy reply</button>' +
-          '<button class="draftAction draftOpen">Open tweet</button>' +
           '<button class="draftAction draftRegen">Regenerate</button>' +
-          '<span class="draftStatus muted"></span>' +
+          '<span class="draftStatus muted">' + escapeHtml(statusText || "") + '</span>' +
         '</div>' +
       '</div>';
+    }
+
+    function draftRowCell(tweetId) {
+      const rowEl = document.querySelector('[data-draft-row="' + tweetId + '"]');
+      return { rowEl: rowEl, cell: rowEl ? rowEl.firstElementChild : null };
+    }
+
+    function wireDraftBox(cell, tweetId) {
       const ta = cell.querySelector(".draftText");
       const count = cell.querySelector(".charCount");
-      const status = cell.querySelector(".draftStatus");
-      ta.value = text || "";
-      status.textContent = statusText || "";
+      if (!ta) return;
       const update = () => {
         const n = ta.value.length;
         count.textContent = n + "/280";
@@ -944,19 +939,44 @@ const html = String.raw`<!doctype html>
       };
       ta.addEventListener("input", update);
       update();
-      cell.querySelector(".draftCopy").addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); }
-        status.textContent = "copied";
-      });
-      cell.querySelector(".draftOpen").addEventListener("click", () => {
-        const row = queueRowByTweetId(tweetId);
-        if (row && row.tweet_url) window.open(row.tweet_url, "_blank", "noopener");
-      });
-      cell.querySelector(".draftRegen").addEventListener("click", () => generateDraft(tweetId, cell, true));
+      const regen = cell.querySelector(".draftRegen");
+      if (regen) regen.addEventListener("click", () => generateDraft(tweetId, true));
     }
 
-    async function generateDraft(tweetId, cell, force) {
-      setDraftStatus(cell, force ? "regenerating — codex is searching the web (~10–30s)" : "writing — codex is searching the web (~10–30s)");
+    function setReplyButton(tweetId, mode) {
+      const button = document.querySelector('.replyBtn[data-reply-id="' + tweetId + '"]');
+      if (!button) return;
+      button.classList.remove("flash");
+      if (mode === "writing") { button.disabled = true; button.innerHTML = "Writing…"; }
+      else if (mode === "ready") { button.disabled = false; button.innerHTML = "Copy &amp; open"; }
+      else { button.disabled = false; button.innerHTML = "Draft"; }
+    }
+
+    function setDraftRowStatus(tweetId, text) {
+      const cell = draftRowCell(tweetId).cell;
+      if (!cell) return;
+      let status = cell.querySelector(".draftStatus");
+      if (!status) {
+        cell.innerHTML = '<div class="draftBox"><div class="draftMeta"><span class="draftStatus muted"></span></div></div>';
+        status = cell.querySelector(".draftStatus");
+      }
+      status.textContent = text;
+    }
+
+    function showDraft(tweetId, text, statusText) {
+      const ref = draftRowCell(tweetId);
+      if (!ref.cell) return;
+      ref.rowEl.classList.remove("hidden");
+      ref.cell.innerHTML = draftBoxHtml(text, statusText);
+      wireDraftBox(ref.cell, tweetId);
+      setReplyButton(tweetId, state.drafts[tweetId] ? "ready" : "draft");
+    }
+
+    async function generateDraft(tweetId, force) {
+      const ref = draftRowCell(tweetId);
+      if (ref.rowEl) ref.rowEl.classList.remove("hidden");
+      setReplyButton(tweetId, "writing");
+      setDraftRowStatus(tweetId, force ? "regenerating — codex is searching the web (~10–30s)" : "writing — codex is searching the web (~10–30s)");
       try {
         const res = await fetch("/api/engagement/draft", {
           method: "POST",
@@ -965,28 +985,33 @@ const html = String.raw`<!doctype html>
         }).then((r) => r.json());
         if (res && res.ok) {
           state.drafts[tweetId] = { tweet_id: tweetId, draft: res.draft };
-          renderDraftBox(cell, tweetId, res.draft, res.cached ? "saved draft" : "drafted");
-          markDraftButton(tweetId);
+          showDraft(tweetId, res.draft, res.cached ? "saved draft" : "drafted");
         } else {
-          renderDraftBox(cell, tweetId, "", "draft failed (" + ((res && res.reason) || "error") + ") — edit or Regenerate");
+          showDraft(tweetId, "", "draft failed (" + ((res && res.reason) || "error") + ") — edit or Regenerate");
         }
       } catch (e) {
-        renderDraftBox(cell, tweetId, "", "draft failed — edit or Regenerate");
+        showDraft(tweetId, "", "draft failed — edit or Regenerate");
       }
     }
 
-    async function onDraftClick(tweetId) {
-      const rowEl = document.querySelector('[data-draft-row="' + tweetId + '"]');
-      if (!rowEl) return;
-      const cell = rowEl.firstElementChild;
-      const willShow = rowEl.classList.contains("hidden");
-      rowEl.classList.toggle("hidden");
-      if (!willShow) return;
-      if (rowEl.dataset.loaded === "1") return;
-      rowEl.dataset.loaded = "1";
-      const cached = state.drafts[tweetId];
-      if (cached) { renderDraftBox(cell, tweetId, cached.draft, "saved draft"); return; }
-      await generateDraft(tweetId, cell, false);
+    function onReplyClick(tweetId) {
+      if (state.drafts[tweetId]) copyAndOpen(tweetId);
+      else generateDraft(tweetId, false);
+    }
+
+    async function copyAndOpen(tweetId) {
+      const row = queueRowByTweetId(tweetId);
+      if (row && row.tweet_url) window.open(row.tweet_url, "_blank", "noopener");
+      const cell = draftRowCell(tweetId).cell;
+      const ta = cell ? cell.querySelector(".draftText") : null;
+      const text = ta ? ta.value : (state.drafts[tweetId] ? state.drafts[tweetId].draft : "");
+      try { await navigator.clipboard.writeText(text); } catch (e) { if (ta) { ta.select(); document.execCommand("copy"); } }
+      const button = document.querySelector('.replyBtn[data-reply-id="' + tweetId + '"]');
+      if (button) {
+        button.classList.add("flash");
+        button.innerHTML = "Copied ✓";
+        setTimeout(() => { button.classList.remove("flash"); button.innerHTML = "Copy &amp; open"; }, 1200);
+      }
     }
 
     function escapeHtml(value) {
