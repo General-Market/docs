@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **100 native X Articles** from **4394 searched tweets** since `2026-05-11T02:33:04.687158+00:00`.
+Stored **72 native X Articles** from **4394 searched tweets** since `2026-05-11T02:45:34.716831+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -24,15 +24,15 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 14 | [The Hidden Marketing & Growth KPI Holding Back Startup Growth](https://x.com/i/article/2063761399579295744) | [@SerrCoker_1](https://x.com/SerrCoker_1) | 18 eng / 1117 views / 16.115 eng per 1k views | 19.4 | 941.821 per 1k | 5.011x | Read and extract pattern (~5 min) |
 | 15 | [ELI5: How do Polymarket markets get resolved?](https://x.com/i/article/2062901951759581184) | [@StandDOTtrade](https://x.com/StandDOTtrade) | 9 eng / 1519 views / 5.925 eng per 1k views | 10.5 | 359.867 per 1k | 4.91x | Read and extract pattern (~5 min) |
 | 16 | [从 Polymarket 精准榨取 4000 万美元的数学 （完整路线图） ](https://x.com/i/article/2063105590348431360) | [@Inoosota](https://x.com/Inoosota) | 259 eng / 307561 views / 0.842 eng per 1k views | 376.0 | 245263.955 per 1k | 4.412x | Read and extract pattern (~5 min) |
-| 17 | [No Resolution Mechanism Is Perfect. Prediction Markets Need to Insure Users.](https://x.com/i/article/2063095772216700928) | [@deepitreal](https://x.com/deepitreal) | 14 eng / 784 views / 17.857 eng per 1k views | 17.3 | 1465.421 per 1k | 4.305x | Read and extract pattern (~5 min) |
-| 18 | [DeFi Capital Layer for Prediction Markets ](https://x.com/i/article/2063754562033553408) | [@bolsaverse](https://x.com/bolsaverse) | 62 eng / 11595 views / 5.347 eng per 1k views | 78.9 | 6828.622 per 1k | 4.195x | Read and extract pattern (~5 min) |
-| 19 | [The Hidden Edge in Weather Markets: How I Reached an 86% Win Rate](https://x.com/i/article/2063967143838855168) | [@Emotion_web3](https://x.com/Emotion_web3) | 98 eng / 5043 views / 19.433 eng per 1k views | 103.7 | 13816.438 per 1k | 4.172x | Read and extract pattern (~5 min) |
-| 20 | [Leverage on Prediction Markets: Why It Matters](https://x.com/i/article/2054182458606620672) | [@arespro](https://x.com/arespro) | 50 eng / 7952 views / 6.288 eng per 1k views | 59.7 | 852.944 per 1k | 3.791x | Read and extract pattern (~5 min) |
-| 21 | [Prediction Markets Accelerate](https://x.com/i/article/2054688712512925696) | [@Sobix1313](https://x.com/Sobix1313) | 82 eng / 4671 views / 17.555 eng per 1k views | 92.6 | 3056.937 per 1k | 3.771x | Read and extract pattern (~5 min) |
-| 22 | [I found 28 free Polymarket repos on GitHub. One of them trades automatically using Claude](https://x.com/i/article/2055271075550740481) | [@Atenov_D](https://x.com/Atenov_D) | 255 eng / 25104 views / 10.158 eng per 1k views | 272.4 | 1974.05 per 1k | 3.696x | Read and extract pattern (~5 min) |
-| 23 | [10 Mistakes to Avoid on Polymarket During the FIFA World Cup 2026 ](https://x.com/i/article/2064015609479008256) | [@GodEyeDotFun](https://x.com/GodEyeDotFun) | 15 eng / 915 views / 16.393 eng per 1k views | 17.3 | 2194.245 per 1k | 3.457x | Read and extract pattern (~5 min) |
-| 24 | [HIP-4 vs. Kalshi vs. Polymarket: We're Just Getting Started ](https://x.com/i/article/2054148665527459840) | [@blocmates](https://x.com/blocmates) | 182 eng / 14957 views / 12.168 eng per 1k views | 200.0 | 174.593 per 1k | 3.417x | Read and extract pattern (~5 min) |
-| 25 | [The Only World Cup Prediction Market Guide You Actually Need](https://x.com/i/article/2064040478702538752) | [@Baheet_](https://x.com/Baheet_) | 111 eng / 5613 views / 19.776 eng per 1k views | 120.9 | 975.665 per 1k | 3.223x | Read and extract pattern (~5 min) |
+| 17 | [DeFi Capital Layer for Prediction Markets ](https://x.com/i/article/2063754562033553408) | [@bolsaverse](https://x.com/bolsaverse) | 62 eng / 11595 views / 5.347 eng per 1k views | 78.9 | 6828.622 per 1k | 4.195x | Read and extract pattern (~5 min) |
+| 18 | [The Hidden Edge in Weather Markets: How I Reached an 86% Win Rate](https://x.com/i/article/2063967143838855168) | [@Emotion_web3](https://x.com/Emotion_web3) | 98 eng / 5043 views / 19.433 eng per 1k views | 103.7 | 13816.438 per 1k | 4.172x | Read and extract pattern (~5 min) |
+| 19 | [Leverage on Prediction Markets: Why It Matters](https://x.com/i/article/2054182458606620672) | [@arespro](https://x.com/arespro) | 50 eng / 7952 views / 6.288 eng per 1k views | 59.7 | 852.944 per 1k | 3.791x | Read and extract pattern (~5 min) |
+| 20 | [Prediction Markets Accelerate](https://x.com/i/article/2054688712512925696) | [@Sobix1313](https://x.com/Sobix1313) | 82 eng / 4671 views / 17.555 eng per 1k views | 92.6 | 3056.937 per 1k | 3.771x | Read and extract pattern (~5 min) |
+| 21 | [I found 28 free Polymarket repos on GitHub. One of them trades automatically using Claude](https://x.com/i/article/2055271075550740481) | [@Atenov_D](https://x.com/Atenov_D) | 255 eng / 25104 views / 10.158 eng per 1k views | 272.4 | 1974.05 per 1k | 3.696x | Read and extract pattern (~5 min) |
+| 22 | [HIP-4 vs. Kalshi vs. Polymarket: We're Just Getting Started ](https://x.com/i/article/2054148665527459840) | [@blocmates](https://x.com/blocmates) | 182 eng / 14957 views / 12.168 eng per 1k views | 200.0 | 174.593 per 1k | 3.417x | Read and extract pattern (~5 min) |
+| 23 | [The Only World Cup Prediction Market Guide You Actually Need](https://x.com/i/article/2064040478702538752) | [@Baheet_](https://x.com/Baheet_) | 111 eng / 5613 views / 19.776 eng per 1k views | 120.9 | 975.665 per 1k | 3.223x | Read and extract pattern (~5 min) |
+| 24 | [How to Lose Money on Polymarket While Being Completely Correct](https://x.com/i/article/2062099670537760768) | [@MossAI_Official](https://x.com/MossAI_Official) | 719 eng / 90506 views / 7.944 eng per 1k views | 897.2 | 3743.166 per 1k | 3.221x | Read and extract pattern (~5 min) |
+| 25 | [Prediction Markets Went Mainstream. So Why Do They Still Feel Empty?](https://x.com/i/article/2054021840855511040) | [@Iamceejaymac](https://x.com/Iamceejaymac) | 234 eng / 10938 views / 21.393 eng per 1k views | 247.6 | 2131.333 per 1k | 3.199x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -98,11 +98,9 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | author | native Articles found |
 |---|---:|
 | [@Baheet_](https://x.com/Baheet_) | 3 |
-| [@whydeso](https://x.com/whydeso) | 3 |
 | [@MossAI_Official](https://x.com/MossAI_Official) | 2 |
-| [@almanac_market](https://x.com/almanac_market) | 2 |
-| [@arespro](https://x.com/arespro) | 2 |
 | [@EMEBOK_](https://x.com/EMEBOK_) | 2 |
+| [@whydeso](https://x.com/whydeso) | 2 |
 | [@kunley_drukpa](https://x.com/kunley_drukpa) | 2 |
 | [@_Polygun_](https://x.com/_Polygun_) | 1 |
 | [@predicttime_](https://x.com/predicttime_) | 1 |
@@ -112,16 +110,18 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@Jackhaldorsson](https://x.com/Jackhaldorsson) | 1 |
 | [@bl888m](https://x.com/bl888m) | 1 |
 | [@BimbaCrypto](https://x.com/BimbaCrypto) | 1 |
+| [@almanac_market](https://x.com/almanac_market) | 1 |
 | [@cupdiction](https://x.com/cupdiction) | 1 |
 | [@0xbobaaa](https://x.com/0xbobaaa) | 1 |
 | [@nabi_sarvi](https://x.com/nabi_sarvi) | 1 |
 | [@SerrCoker_1](https://x.com/SerrCoker_1) | 1 |
 | [@StandDOTtrade](https://x.com/StandDOTtrade) | 1 |
+| [@Inoosota](https://x.com/Inoosota) | 1 |
 
 ## Spend
 
-- Balance before: `9034899` credits.
-- Balance after: `9034899` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

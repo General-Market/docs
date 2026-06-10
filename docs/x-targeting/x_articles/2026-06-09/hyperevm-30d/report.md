@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **47 native X Articles** from **680 searched tweets** since `2026-05-11T02:32:57.596320+00:00`.
+Stored **35 native X Articles** from **680 searched tweets** since `2026-05-11T02:45:33.609274+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -23,16 +23,16 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 13 | [: : [Crypto/Article] Altura: Building the Composable Yield Layer on HyperEVM](https://x.com/i/article/2060180124654546944) | [@FourPillarsFP](https://x.com/FourPillarsFP) | 52 eng / 6388 views / 8.14 eng per 1k views | 61.1 | 377.899 per 1k | 1.992x | Read and extract pattern (~5 min) |
 | 14 | [Leftcurve Report  : A new Launchpad on Hyperliquid](https://x.com/i/article/2055677327745470464) | [@StarkCrypto3](https://x.com/StarkCrypto3) | 18 eng / 6259 views / 2.876 eng per 1k views | 21.1 | 812.541 per 1k | 1.751x | Read and extract pattern (~5 min) |
 | 15 | [<Felix项目研报>](https://x.com/i/article/2055994878182719488) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 151 eng / 3654 views / 41.325 eng per 1k views | 154.2 | 350.034 per 1k | 1.41x | Read and extract pattern (~5 min) |
-| 16 | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) | [@maanas_tyagi](https://x.com/maanas_tyagi) | 11 eng / 622 views / 17.685 eng per 1k views | 14.2 | 4712.121 per 1k | 1.396x | Read and extract pattern (~5 min) |
-| 17 | [<Hypernova研报>](https://x.com/i/article/2061351914013646848) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 124 eng / 3462 views / 35.817 eng per 1k views | 125.2 | 331.641 per 1k | 1.216x | Read and extract pattern (~5 min) |
-| 18 | [基于链上交易所集团框架重估 HyperEVM ](https://x.com/i/article/2058143471471665152) | [@siriusxyzzz](https://x.com/siriusxyzzz) | 76 eng / 15994 views / 4.752 eng per 1k views | 87.3 | 7459.888 per 1k | 1.173x | Read and extract pattern (~5 min) |
-| 19 | [<Nova Markets 项目研报>](https://x.com/i/article/2060273351067844608) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 117 eng / 2727 views / 42.904 eng per 1k views | 119.9 | 261.232 per 1k | 1.053x | Read and extract pattern (~5 min) |
-| 20 | [<limUSD：Hyperliquid 原生收益的USD版本>](https://x.com/i/article/2063859764774449152) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 135 eng / 2857 views / 47.252 eng per 1k views | 136.0 | 273.685 per 1k | 0.982x | Read and extract pattern (~5 min) |
-| 21 | [How Altura Unlocked Cross-Chain Distribution for a HyperEVM-Native Vault](https://x.com/i/article/2054546669451042816) | [@EnsoBuild](https://x.com/EnsoBuild) | 70 eng / 3560 views / 19.663 eng per 1k views | 82.2 | 18.447 per 1k | 0.891x | Read and extract pattern (~5 min) |
-| 22 | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) | [@PANewsCN](https://x.com/PANewsCN) | 4 eng / 2569 views / 1.557 eng per 1k views | 5.9 | 26.29 per 1k | 0.791x | Read and extract pattern (~5 min) |
-| 23 | [EIP-7951 Allows For Touch ID On Berachain](https://x.com/i/article/2060227686778408960) | [@berachaindevs](https://x.com/berachaindevs) | 49 eng / 2091 views / 23.434 eng per 1k views | 53.7 | 168.29 per 1k | 0.77x | Read and extract pattern (~5 min) |
-| 24 | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) | [@longpratas](https://x.com/longpratas) | 5 eng / 402 views / 12.438 eng per 1k views | 5.1 | 73.816 per 1k | 0.667x | Read and extract pattern (~5 min) |
-| 25 | [HyperCore V3: The Story Behind the Firmware](https://x.com/i/article/2057027844660985856) | [@iQunix](https://x.com/iQunix) | 59 eng / 3785 views / 15.588 eng per 1k views | 66.3 | 371.807 per 1k | 0.619x | Read and extract pattern (~5 min) |
+| 16 | [<Hypernova研报>](https://x.com/i/article/2061351914013646848) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 124 eng / 3462 views / 35.817 eng per 1k views | 125.2 | 331.641 per 1k | 1.216x | Read and extract pattern (~5 min) |
+| 17 | [基于链上交易所集团框架重估 HyperEVM ](https://x.com/i/article/2058143471471665152) | [@siriusxyzzz](https://x.com/siriusxyzzz) | 76 eng / 15994 views / 4.752 eng per 1k views | 87.3 | 7459.888 per 1k | 1.173x | Read and extract pattern (~5 min) |
+| 18 | [<Nova Markets 项目研报>](https://x.com/i/article/2060273351067844608) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 117 eng / 2727 views / 42.904 eng per 1k views | 119.9 | 261.232 per 1k | 1.053x | Read and extract pattern (~5 min) |
+| 19 | [<limUSD：Hyperliquid 原生收益的USD版本>](https://x.com/i/article/2063859764774449152) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 135 eng / 2857 views / 47.252 eng per 1k views | 136.0 | 273.685 per 1k | 0.982x | Read and extract pattern (~5 min) |
+| 20 | [How Altura Unlocked Cross-Chain Distribution for a HyperEVM-Native Vault](https://x.com/i/article/2054546669451042816) | [@EnsoBuild](https://x.com/EnsoBuild) | 70 eng / 3560 views / 19.663 eng per 1k views | 82.2 | 18.447 per 1k | 0.891x | Read and extract pattern (~5 min) |
+| 21 | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) | [@PANewsCN](https://x.com/PANewsCN) | 4 eng / 2569 views / 1.557 eng per 1k views | 5.9 | 26.29 per 1k | 0.791x | Read and extract pattern (~5 min) |
+| 22 | [EIP-7951 Allows For Touch ID On Berachain](https://x.com/i/article/2060227686778408960) | [@berachaindevs](https://x.com/berachaindevs) | 49 eng / 2091 views / 23.434 eng per 1k views | 53.7 | 168.29 per 1k | 0.77x | Read and extract pattern (~5 min) |
+| 23 | [HyperCore V3: The Story Behind the Firmware](https://x.com/i/article/2057027844660985856) | [@iQunix](https://x.com/iQunix) | 59 eng / 3785 views / 15.588 eng per 1k views | 66.3 | 371.807 per 1k | 0.619x | Read and extract pattern (~5 min) |
+| 24 | [Market Maturation Cycles Part 2 – The Infatuation Stage](https://x.com/i/article/2061076044795293701) | [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) | 95 eng / 2454 views / 38.712 eng per 1k views | 97.8 | 110.595 per 1k | 0.489x | Read and extract pattern (~5 min) |
+| 25 | [HyperLend Q1 Token Holder Report ](https://x.com/i/article/2054557960731291648) | [@Blockworks](https://x.com/Blockworks) | 129 eng / 19360 views / 6.663 eng per 1k views | 160.5 | 39.237 per 1k | 0.383x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -99,9 +99,7 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 |---|---:|
 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 8 |
 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) | 3 |
-| [@adiefelixadie](https://x.com/adiefelixadie) | 3 |
 | [@PANewsCN](https://x.com/PANewsCN) | 2 |
-| [@stoic_research](https://x.com/stoic_research) | 2 |
 | [@MixemaCrypto](https://x.com/MixemaCrypto) | 1 |
 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 1 |
 | [@Rekt_Zerker](https://x.com/Rekt_Zerker) | 1 |
@@ -111,17 +109,19 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@EzBruv](https://x.com/EzBruv) | 1 |
 | [@FourPillarsFP](https://x.com/FourPillarsFP) | 1 |
 | [@StarkCrypto3](https://x.com/StarkCrypto3) | 1 |
-| [@maanas_tyagi](https://x.com/maanas_tyagi) | 1 |
 | [@siriusxyzzz](https://x.com/siriusxyzzz) | 1 |
 | [@EnsoBuild](https://x.com/EnsoBuild) | 1 |
 | [@berachaindevs](https://x.com/berachaindevs) | 1 |
-| [@longpratas](https://x.com/longpratas) | 1 |
 | [@iQunix](https://x.com/iQunix) | 1 |
+| [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) | 1 |
+| [@Blockworks](https://x.com/Blockworks) | 1 |
+| [@sriramkri](https://x.com/sriramkri) | 1 |
+| [@BrianRoemmele](https://x.com/BrianRoemmele) | 1 |
 
 ## Spend
 
-- Balance before: `9039234` credits.
-- Balance after: `9039234` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

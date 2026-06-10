@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **12 native X Articles** from **709 searched tweets** since `2026-06-09T02:33:02.382773+00:00`.
+Stored **6 native X Articles** from **709 searched tweets** since `2026-06-09T02:45:37.536756+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -12,14 +12,8 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 2 | [qVAULT Opens Early Access, Giving Hyperliquid Holders Post-Quantum Self-Custody ](https://x.com/i/article/2064330903992647680) | [@qlabsofficial](https://x.com/qlabsofficial) | 139 eng / 13442 views / 10.341 eng per 1k views | 173.5 | 859.573 per 1k | 3.439x | Read and extract pattern (~5 min) |
 | 3 | [Trading on Autopilot: Virtuals Agents, Hyperliquid Perps, and HIP-3 Markets](https://x.com/i/article/2064002005404934144) | [@virtuals_io](https://x.com/virtuals_io) | 338 eng / 17943 views / 18.837 eng per 1k views | 378.0 | 62.121 per 1k | 1.006x | Read and extract pattern (~5 min) |
 | 4 | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) | [@PANewsCN](https://x.com/PANewsCN) | 4 eng / 2568 views / 1.558 eng per 1k views | 5.9 | 26.279 per 1k | 0.792x | Read and extract pattern (~5 min) |
-| 5 | [Welcome to Hypurr World](https://x.com/i/article/2063998533121048576) | [@hypurrworld](https://x.com/hypurrworld) | 17 eng / 345 views / 49.275 eng per 1k views | 19.1 | 5390.625 per 1k | 0.77x | Read and extract pattern (~5 min) |
-| 6 | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) | [@longpratas](https://x.com/longpratas) | 5 eng / 398 views / 12.563 eng per 1k views | 5.1 | 73.081 per 1k | 0.661x | Read and extract pattern (~5 min) |
-| 7 | [Hyperliquid Policy Center and Paradigm urge Treasury to narrow stablecoin rules for DeFi](https://x.com/i/article/2064437650908717056) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 0 eng / 201 views / 0.0 eng per 1k views | 0.1 | 3.154 per 1k | 0.285x | Read and extract pattern (~5 min) |
-| 8 | [Onchain Markets Trade 24/7 Now. The Oracles Underneath Couldn't. Here's How SEDA Fixed It.](https://x.com/i/article/2062172614550749185) | [@silk_nodes](https://x.com/silk_nodes) | 2 eng / 80 views / 25.0 eng per 1k views | 3.0 | 45.274 per 1k | 0.023x | Read and extract pattern (~5 min) |
-| 9 | [Why Hyperliquid perps need a reasoning agent, not a trading bot](https://x.com/i/article/2064396266553876480) | [@hypermes_](https://x.com/hypermes_) | 11 eng / 136 views / 80.882 eng per 1k views | 11.0 | 17000.0 per 1k | 0.0x | Read and extract pattern (~5 min) |
-| 10 | [HPC and Paradigm File Joint Comment on Treasury’s GENIUS Act Proposed Rule](https://x.com/i/article/2064369559608377345) | [@HyperliquidPC](https://x.com/HyperliquidPC) | 334 eng / 34518 views / 9.676 eng per 1k views | 390.5 | 4461.996 per 1k | 0.0x | Read and extract pattern (~5 min) |
-| 11 | [The AI layer Hyperliquid was missing.](https://x.com/i/article/2064389896786059264) | [@HYPERPEPS](https://x.com/HYPERPEPS) | 207 eng / 1730 views / 119.653 eng per 1k views | 224.6 | 668.987 per 1k | 0.0x | Read and extract pattern (~5 min) |
-| 12 | [HYPE Tokenomics](https://x.com/i/article/2064442339939033088) | [@TroyFearnow](https://x.com/TroyFearnow) | 1 eng / 24 views / 41.667 eng per 1k views | 1.0 | 111.111 per 1k | 0.0x | Read and extract pattern (~5 min) |
+| 5 | [HPC and Paradigm File Joint Comment on Treasury’s GENIUS Act Proposed Rule](https://x.com/i/article/2064369559608377345) | [@HyperliquidPC](https://x.com/HyperliquidPC) | 334 eng / 34518 views / 9.676 eng per 1k views | 390.5 | 4461.996 per 1k | 0.0x | Read and extract pattern (~5 min) |
+| 6 | [The AI layer Hyperliquid was missing.](https://x.com/i/article/2064389896786059264) | [@HYPERPEPS](https://x.com/HYPERPEPS) | 207 eng / 1730 views / 119.653 eng per 1k views | 224.6 | 668.987 per 1k | 0.0x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -84,22 +78,17 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 | author | native Articles found |
 |---|---:|
-| [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 2 |
+| [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 1 |
 | [@qlabsofficial](https://x.com/qlabsofficial) | 1 |
 | [@virtuals_io](https://x.com/virtuals_io) | 1 |
 | [@PANewsCN](https://x.com/PANewsCN) | 1 |
-| [@hypurrworld](https://x.com/hypurrworld) | 1 |
-| [@longpratas](https://x.com/longpratas) | 1 |
-| [@silk_nodes](https://x.com/silk_nodes) | 1 |
-| [@hypermes_](https://x.com/hypermes_) | 1 |
 | [@HyperliquidPC](https://x.com/HyperliquidPC) | 1 |
 | [@HYPERPEPS](https://x.com/HYPERPEPS) | 1 |
-| [@TroyFearnow](https://x.com/TroyFearnow) | 1 |
 
 ## Spend
 
-- Balance before: `9039234` credits.
-- Balance after: `9034899` credits.
-- Apparent spend: `4335` credits = `$0.0433`.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
+- Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

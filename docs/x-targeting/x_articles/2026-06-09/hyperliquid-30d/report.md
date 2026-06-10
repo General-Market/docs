@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **100 native X Articles** from **1973 searched tweets** since `2026-05-11T02:32:52.607038+00:00`.
+Stored **70 native X Articles** from **1973 searched tweets** since `2026-05-11T02:45:32.428934+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -29,10 +29,10 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 19 | [拆解tradeXYZ定价机制，他们是如何提前定价的？ ](https://x.com/i/article/2056232756485709824) | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 269 eng / 44066 views / 6.104 eng per 1k views | 309.7 | 506.157 per 1k | 4.375x | Read and extract pattern (~5 min) |
 | 20 | [Markets by Kinetiq "The App of All Finance"](https://x.com/i/article/2058590177191235584) | [@VikingoDigital_](https://x.com/VikingoDigital_) | 213 eng / 43017 views / 4.952 eng per 1k views | 254.3 | 5958.033 per 1k | 4.24x | Read and extract pattern (~5 min) |
 | 21 | [HYPE 的 2028：600 美元只是起点？](https://x.com/i/article/2059939883968581633) | [@0xmediaco](https://x.com/0xmediaco) | 22 eng / 3094 views / 7.111 eng per 1k views | 26.0 | 98.667 per 1k | 3.906x | Read and extract pattern (~5 min) |
-| 22 | [6 月 6 日｜加密圈财经日报・深耕 HYPE/Hyperliquid](https://x.com/i/article/2063243930075095040) | [@Resonance88888](https://x.com/Resonance88888) | 2 eng / 750 views / 2.667 eng per 1k views | 2.2 | 9259.259 per 1k | 3.775x | Read and extract pattern (~5 min) |
-| 23 | [Hyperliquid HIP-4 Outcome Contracts Explained](https://x.com/i/article/2064045196984438784) | [@AveaiGlobal](https://x.com/AveaiGlobal) | 5 eng / 188 views / 26.596 eng per 1k views | 6.1 | 21.767 per 1k | 3.554x | Read and extract pattern (~5 min) |
-| 24 | [HIP-4 vs. Kalshi vs. Polymarket: We're Just Getting Started ](https://x.com/i/article/2054148665527459840) | [@blocmates](https://x.com/blocmates) | 182 eng / 14956 views / 12.169 eng per 1k views | 200.0 | 174.583 per 1k | 3.534x | Read and extract pattern (~5 min) |
-| 25 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 1981 views / 2.524 eng per 1k views | 6.7 | 31.091 per 1k | 3.492x | Read and extract pattern (~5 min) |
+| 22 | [HIP-4 vs. Kalshi vs. Polymarket: We're Just Getting Started ](https://x.com/i/article/2054148665527459840) | [@blocmates](https://x.com/blocmates) | 182 eng / 14956 views / 12.169 eng per 1k views | 200.0 | 174.583 per 1k | 3.534x | Read and extract pattern (~5 min) |
+| 23 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 1981 views / 2.524 eng per 1k views | 6.7 | 31.091 per 1k | 3.492x | Read and extract pattern (~5 min) |
+| 24 | [qVAULT Opens Early Access, Giving Hyperliquid Holders Post-Quantum Self-Custody ](https://x.com/i/article/2064330903992647680) | [@qlabsofficial](https://x.com/qlabsofficial) | 139 eng / 13514 views / 10.286 eng per 1k views | 173.5 | 864.066 per 1k | 3.454x | Read and extract pattern (~5 min) |
+| 25 | [海力士开盘前最后2分钟，TradeXYZ让价格精确到只差0.13% ](https://x.com/i/article/2063917633871704064) | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 28 eng / 27517 views / 1.018 eng per 1k views | 44.2 | 316.069 per 1k | 3.152x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -100,12 +100,8 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 8 |
 | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) | 3 |
 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) | 3 |
-| [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 2 |
 | [@Baheet_](https://x.com/Baheet_) | 2 |
 | [@PANewsCN](https://x.com/PANewsCN) | 2 |
-| [@giant_cutie](https://x.com/giant_cutie) | 2 |
-| [@BitFrogOfficial](https://x.com/BitFrogOfficial) | 2 |
-| [@stoic_research](https://x.com/stoic_research) | 2 |
 | [@cryptodotnews](https://x.com/cryptodotnews) | 1 |
 | [@MossAI_CN](https://x.com/MossAI_CN) | 1 |
 | [@BL_labs_xyz](https://x.com/BL_labs_xyz) | 1 |
@@ -117,11 +113,15 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 1 |
 | [@punk2898](https://x.com/punk2898) | 1 |
 | [@Delphi_Digital](https://x.com/Delphi_Digital) | 1 |
+| [@houseki_kirei](https://x.com/houseki_kirei) | 1 |
+| [@nativemarkets](https://x.com/nativemarkets) | 1 |
+| [@Rekt_Zerker](https://x.com/Rekt_Zerker) | 1 |
+| [@VikingoDigital_](https://x.com/VikingoDigital_) | 1 |
 
 ## Spend
 
-- Balance before: `9039234` credits.
-- Balance after: `9039234` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

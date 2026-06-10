@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**37 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **1,299 likes**, **329,395 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**27 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **1,241 likes**, **326,359 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -25,25 +25,15 @@ Combined: **1,299 likes**, **329,395 views**. Native X Article = a tweet whose p
 | 16 | 17,503 | 29 | 3 | 5 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) (4,600) | [How to Maximize kPoints: Full Guide for Beginners & Advanced Farmers](https://x.com/i/article/2059939995666821125) |
 | 17 | 4,233 | 25 | 7 | 5 | [@charles__AI](https://x.com/charles__AI) (1,137) | [Introducing: Base Smart Money Indexes powered by new Tokenized Vaults](https://x.com/i/article/2062105447646064640) |
 | 18 | 2,270 | 25 | 4 | 2 | [@quant_degen](https://x.com/quant_degen) (1,105) | [Toly is usually right. On the long tail, I think he might be wrong.](https://x.com/i/article/2062497542773026816) |
-| 19 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
-| 20 | 710 | 11 | 2 | 5 | [@0xFatih](https://x.com/0xFatih) (1,921) | [BULK Tezi](https://x.com/i/article/2062630313726205952) |
-| 21 | 346 | 9 | 1 | 6 | [@hypurrworld](https://x.com/hypurrworld) (64) | [Welcome to Hypurr World](https://x.com/i/article/2063998533121048576) |
-| 22 | 6,979 | 8 | 1 | 4 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [盘点30多家人形机器人公司：谁能在2026年胜出？](https://x.com/i/article/2056923419585957888) |
-| 23 | 445 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,811) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
-| 24 | 13,054 | 7 | 0 | 1 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [从生存到加速发展：ZODL创始人亲述Zcash三年崛起之路](https://x.com/i/article/2054057830479732736) |
-| 25 | 622 | 6 | 2 | 1 | [@maanas_tyagi](https://x.com/maanas_tyagi) (132) | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) |
-| 26 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
-| 27 | 4,742 | 4 | 2 | 3 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [人形机器人11个应用指南：中国领跑全球，谁在赚钱，谁还在试点？](https://x.com/i/article/2056192746118082560) |
-| 28 | 101 | 3 | 0 | 1 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [A LASTING SOLUTION TO INSECURITY IN NIGERIA](https://x.com/i/article/2062170635111964672) |
-| 29 | 7,085 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [Zcash被AI找出增发漏洞，$ZEC暴跌](https://x.com/i/article/2062805716679917568) |
-| 30 | 3,932 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [宇树科技IPO上会倒计时！拆解“人形机器人第一股”招股书里的冰与火](https://x.com/i/article/2059126585350098944) |
-| 31 | 3,500 | 2 | 0 | 0 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,718) | [Grayscale debuts cheapest Hyperliquid ETF as rivals race for HYPE inflows](https://x.com/i/article/2062190071143333889) |
-| 32 | 2,720 | 2 | 0 | 1 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [对话Figure机器人创始人：390亿美元估值背后是量产百万台的野心](https://x.com/i/article/2056192679466463232) |
-| 33 | 15 | 2 | 0 | 0 | [@web3jatin](https://x.com/web3jatin) (421) | [Why Is $AAVE Underperforming Despite Strong Revenue?](https://x.com/i/article/2063923966423760896) |
-| 34 | 2,569 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
-| 35 | 374 | 1 | 0 | 0 | [@woleswoosh](https://x.com/woleswoosh) (17,211) | [Grayscale Hyperliquid Staking ETP (HYPG) Launch](https://x.com/i/article/2062004056084865024) |
-| 36 | 11 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [DIVERSIFYING BEYOND OIL.](https://x.com/i/article/2063972220196552704) |
-| 37 | 7 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [FROM PIRACY TO PROSPERITY](https://x.com/i/article/2063968377073205248) |
+| 19 | 6,979 | 8 | 1 | 4 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [盘点30多家人形机器人公司：谁能在2026年胜出？](https://x.com/i/article/2056923419585957888) |
+| 20 | 13,054 | 7 | 0 | 1 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [从生存到加速发展：ZODL创始人亲述Zcash三年崛起之路](https://x.com/i/article/2054057830479732736) |
+| 21 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
+| 22 | 4,742 | 4 | 2 | 3 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [人形机器人11个应用指南：中国领跑全球，谁在赚钱，谁还在试点？](https://x.com/i/article/2056192746118082560) |
+| 23 | 7,085 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [Zcash被AI找出增发漏洞，$ZEC暴跌](https://x.com/i/article/2062805716679917568) |
+| 24 | 3,932 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [宇树科技IPO上会倒计时！拆解“人形机器人第一股”招股书里的冰与火](https://x.com/i/article/2059126585350098944) |
+| 25 | 3,500 | 2 | 0 | 0 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,718) | [Grayscale debuts cheapest Hyperliquid ETF as rivals race for HYPE inflows](https://x.com/i/article/2062190071143333889) |
+| 26 | 2,720 | 2 | 0 | 1 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [对话Figure机器人创始人：390亿美元估值背后是量产百万台的野心](https://x.com/i/article/2056192679466463232) |
+| 27 | 2,569 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
 
 ## Ranking rule
 

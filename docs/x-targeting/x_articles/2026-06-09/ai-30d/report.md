@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **100 native X Articles** from **1086 searched tweets** since `2026-05-11T02:26:14.684553+00:00`.
+Stored **109 native X Articles** from **1406 searched tweets** since `2026-05-11T02:45:29.161932+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -19,20 +19,20 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 9 | [Claude: Dynamic Workflows ULTIMATE GUIDE](https://x.com/i/article/2061487141285445632) | [@aiedge_](https://x.com/aiedge_) | 1715 eng / 242587 views / 7.07 eng per 1k views | 1855.9 | 3524.642 per 1k | 56.413x | Read and extract pattern (~5 min) |
 | 10 | [qinbafrank 拆解美股回调级别，AI 真正风险是什么？从软件股、Marvell 光互连、Nokia 到 SpaceX 看资金轮动](https://x.com/i/article/2062376688043044864) | [@168X_Fortune](https://x.com/168X_Fortune) | 3686 eng / 1005693 views / 3.665 eng per 1k views | 4209.0 | 72300.0 per 1k | 53.778x | Read and extract pattern (~5 min) |
 | 11 | [OpenServ: an enterprise grade AI company inside a crypto project](https://x.com/i/article/2059971149790928898) | [@KSimback](https://x.com/KSimback) | 911 eng / 656382 views / 1.388 eng per 1k views | 1220.0 | 36300.299 per 1k | 50.214x | Read and extract pattern (~5 min) |
-| 12 | [Hermes Agent gets smarter every time you use it. Here's how to turn that into $3,000 a month.](https://x.com/i/article/2062842949231071233) | [@gippp69](https://x.com/gippp69) | 956 eng / 390532 views / 2.448 eng per 1k views | 1135.0 | 64840.113 per 1k | 39.095x | Read and extract pattern (~5 min) |
-| 13 | [Travix 2026: The Agentic Omnibooker for Global Derivatives ](https://x.com/i/article/2055140625952264192) | [@Travix_fi](https://x.com/Travix_fi) | 1317 eng / 104700 views / 12.579 eng per 1k views | 2029.9 | 62694.611 per 1k | 36.458x | Read and extract pattern (~5 min) |
-| 14 | [Hermes Agent Masterclass](https://x.com/i/article/2053698458230702080) | [@akshay_pachaar](https://x.com/akshay_pachaar) | 29867 eng / 5349667 views / 5.583 eng per 1k views | 30842.0 | 19345.562 per 1k | 35.238x | Read and extract pattern (~5 min) |
-| 15 | [The Fast Lane to Mediocrity](https://x.com/i/article/2054971788808114177) | [@adityaag](https://x.com/adityaag) | 4900 eng / 434128 views / 11.287 eng per 1k views | 5299.0 | 5933.629 per 1k | 30.834x | Read and extract pattern (~5 min) |
-| 16 | [I Gave Claude David Ogilvy's Writing Rules And Built A Legendary AI Writing Coach](https://x.com/i/article/2062867903431815168) | [@dickiebush](https://x.com/dickiebush) | 6047 eng / 222504 views / 27.177 eng per 1k views | 6245.2 | 503.387 per 1k | 30.159x | Read and extract pattern (~5 min) |
-| 17 | [How to Set Up Claude So You Never Write the Same Prompt Twice (Full Course)](https://x.com/i/article/2061831151917101056) | [@eng_khairallah1](https://x.com/eng_khairallah1) | 1296 eng / 2135978 views / 0.607 eng per 1k views | 1444.0 | 32493.276 per 1k | 29.491x | Read and extract pattern (~5 min) |
-| 18 | [Context as Topology: Why Your Agent's Memory Forgets, and How Structure Escapes It](https://x.com/i/article/2061766607198703616) | [@elpresidank](https://x.com/elpresidank) | 866 eng / 3837035 views / 0.226 eng per 1k views | 1013.0 | 28422481.481 per 1k | 26.743x | Read and extract pattern (~5 min) |
-| 19 | [ローマ字のままAIに投げるのがラクすぎる](https://x.com/i/article/2059685261022474240) | [@fta7](https://x.com/fta7) | 7652 eng / 5080968 views / 1.506 eng per 1k views | 9024.0 | 50565.952 per 1k | 25.206x | Read and extract pattern (~5 min) |
-| 20 | [We Audited the Same Codebase with Claude Opus 4.8 and MiniMax M3](https://x.com/i/article/2063717164931309568) | [@kilocode](https://x.com/kilocode) | 596 eng / 45799 views / 13.013 eng per 1k views | 648.3 | 1789.513 per 1k | 24.583x | Read and extract pattern (~5 min) |
-| 21 | [【2026年最新】AIにデザインを任せたい人が、最初に知るべき制作フロー（すぐ使えるテンプレ付）](https://x.com/i/article/2062466369250381824) | [@kawai_design](https://x.com/kawai_design) | 1880 eng / 153667 views / 12.234 eng per 1k views | 1989.2 | 3701.125 per 1k | 24.222x | Read and extract pattern (~5 min) |
-| 22 | [Claude Opus 4.8 Runs A $16,567/mo YouTube Clipping Channel (full-guide) ](https://x.com/i/article/2062415599536349185) | [@VadimStrizheus](https://x.com/VadimStrizheus) | 1513 eng / 698588 views / 2.166 eng per 1k views | 1689.0 | 21742.546 per 1k | 24.135x | Read and extract pattern (~5 min) |
-| 23 | [Every Company’s First AI Strategy Should Be a Skill Library ](https://x.com/i/article/2062641002016620545) | [@hnshah](https://x.com/hnshah) | 5503 eng / 633106 views / 8.692 eng per 1k views | 5783.0 | 2061.764 per 1k | 22.373x | Read and extract pattern (~5 min) |
-| 24 | [Stop building Foxconn factories for your agents](https://x.com/i/article/2061176923531984896) | [@garrytan](https://x.com/garrytan) | 3379 eng / 521825 views / 6.475 eng per 1k views | 3592.0 | 596.447 per 1k | 20.899x | Read and extract pattern (~5 min) |
-| 25 | [Generative UI Is the New Frontend ](https://x.com/i/article/2057340206442033152) | [@Saboo_Shubham_](https://x.com/Saboo_Shubham_) | 5215 eng / 1167588 views / 4.466 eng per 1k views | 5509.0 | 10003.153 per 1k | 20.127x | Read and extract pattern (~5 min) |
+| 12 | [How to Turn Claude Into a Full Team of Office Workers. One Repo Does All of It (Full Guide)](https://x.com/i/article/2061118461951021057) | [@undefinedKi](https://x.com/undefinedKi) | 2695 eng / 801909 views / 3.361 eng per 1k views | 2859.0 | 324528.126 per 1k | 48.174x | Read and extract pattern (~5 min) |
+| 13 | [Hermes Agent gets smarter every time you use it. Here's how to turn that into $3,000 a month.](https://x.com/i/article/2062842949231071233) | [@gippp69](https://x.com/gippp69) | 956 eng / 390532 views / 2.448 eng per 1k views | 1135.0 | 64840.113 per 1k | 39.095x | Read and extract pattern (~5 min) |
+| 14 | [【スマホ対応】顔固定して成人向け画像を作る方法](https://x.com/i/article/2062805853217148929) | [@agi_aibusi](https://x.com/agi_aibusi) | 3313 eng / 334103 views / 9.916 eng per 1k views | 3468.0 | 18513.964 per 1k | 38.246x | Read and extract pattern (~5 min) |
+| 15 | [Travix 2026: The Agentic Omnibooker for Global Derivatives ](https://x.com/i/article/2055140625952264192) | [@Travix_fi](https://x.com/Travix_fi) | 1317 eng / 104700 views / 12.579 eng per 1k views | 2029.9 | 62694.611 per 1k | 36.458x | Read and extract pattern (~5 min) |
+| 16 | [Hermes Agent Masterclass](https://x.com/i/article/2053698458230702080) | [@akshay_pachaar](https://x.com/akshay_pachaar) | 29867 eng / 5349667 views / 5.583 eng per 1k views | 30842.0 | 19345.562 per 1k | 35.238x | Read and extract pattern (~5 min) |
+| 17 | [The Fast Lane to Mediocrity](https://x.com/i/article/2054971788808114177) | [@adityaag](https://x.com/adityaag) | 4900 eng / 434128 views / 11.287 eng per 1k views | 5299.0 | 5933.629 per 1k | 30.834x | Read and extract pattern (~5 min) |
+| 18 | [I Gave Claude David Ogilvy's Writing Rules And Built A Legendary AI Writing Coach](https://x.com/i/article/2062867903431815168) | [@dickiebush](https://x.com/dickiebush) | 6047 eng / 222504 views / 27.177 eng per 1k views | 6245.2 | 503.387 per 1k | 30.159x | Read and extract pattern (~5 min) |
+| 19 | [How to Set Up Claude So You Never Write the Same Prompt Twice (Full Course)](https://x.com/i/article/2061831151917101056) | [@eng_khairallah1](https://x.com/eng_khairallah1) | 1296 eng / 2135978 views / 0.607 eng per 1k views | 1444.0 | 32493.276 per 1k | 29.491x | Read and extract pattern (~5 min) |
+| 20 | [Context as Topology: Why Your Agent's Memory Forgets, and How Structure Escapes It](https://x.com/i/article/2061766607198703616) | [@elpresidank](https://x.com/elpresidank) | 866 eng / 3837035 views / 0.226 eng per 1k views | 1013.0 | 28422481.481 per 1k | 26.743x | Read and extract pattern (~5 min) |
+| 21 | [ローマ字のままAIに投げるのがラクすぎる](https://x.com/i/article/2059685261022474240) | [@fta7](https://x.com/fta7) | 7652 eng / 5080968 views / 1.506 eng per 1k views | 9024.0 | 50565.952 per 1k | 25.206x | Read and extract pattern (~5 min) |
+| 22 | [We Audited the Same Codebase with Claude Opus 4.8 and MiniMax M3](https://x.com/i/article/2063717164931309568) | [@kilocode](https://x.com/kilocode) | 596 eng / 45799 views / 13.013 eng per 1k views | 648.3 | 1789.513 per 1k | 24.583x | Read and extract pattern (~5 min) |
+| 23 | [【2026年最新】AIにデザインを任せたい人が、最初に知るべき制作フロー（すぐ使えるテンプレ付）](https://x.com/i/article/2062466369250381824) | [@kawai_design](https://x.com/kawai_design) | 1880 eng / 153667 views / 12.234 eng per 1k views | 1989.2 | 3701.125 per 1k | 24.222x | Read and extract pattern (~5 min) |
+| 24 | [Claude Opus 4.8 Runs A $16,567/mo YouTube Clipping Channel (full-guide) ](https://x.com/i/article/2062415599536349185) | [@VadimStrizheus](https://x.com/VadimStrizheus) | 1513 eng / 698588 views / 2.166 eng per 1k views | 1689.0 | 21742.546 per 1k | 24.135x | Read and extract pattern (~5 min) |
+| 25 | [Every Company’s First AI Strategy Should Be a Skill Library ](https://x.com/i/article/2062641002016620545) | [@hnshah](https://x.com/hnshah) | 5503 eng / 633106 views / 8.692 eng per 1k views | 5783.0 | 2061.764 per 1k | 22.373x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -98,11 +98,12 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | author | native Articles found |
 |---|---:|
 | [@eng_khairallah1](https://x.com/eng_khairallah1) | 6 |
+| [@mvanhorn](https://x.com/mvanhorn) | 4 |
 | [@cyrilXBT](https://x.com/cyrilXBT) | 4 |
-| [@mvanhorn](https://x.com/mvanhorn) | 3 |
 | [@DamiDefi](https://x.com/DamiDefi) | 2 |
 | [@Hoshino_Sokichi](https://x.com/Hoshino_Sokichi) | 2 |
 | [@mikenevermiss](https://x.com/mikenevermiss) | 2 |
+| [@sairahul1](https://x.com/sairahul1) | 2 |
 | [@addyosmani](https://x.com/addyosmani) | 2 |
 | [@ActionModelAI](https://x.com/ActionModelAI) | 2 |
 | [@noisyb0y1](https://x.com/noisyb0y1) | 1 |
@@ -113,15 +114,14 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@aiedge_](https://x.com/aiedge_) | 1 |
 | [@168X_Fortune](https://x.com/168X_Fortune) | 1 |
 | [@KSimback](https://x.com/KSimback) | 1 |
+| [@undefinedKi](https://x.com/undefinedKi) | 1 |
 | [@gippp69](https://x.com/gippp69) | 1 |
-| [@Travix_fi](https://x.com/Travix_fi) | 1 |
-| [@akshay_pachaar](https://x.com/akshay_pachaar) | 1 |
-| [@adityaag](https://x.com/adityaag) | 1 |
+| [@agi_aibusi](https://x.com/agi_aibusi) | 1 |
 
 ## Spend
 
-- Balance before: `9084714` credits.
-- Balance after: `9084714` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

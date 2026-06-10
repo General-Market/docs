@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**37 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **1,299 likes**, **329,395 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**27 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
+Combined: **1,241 likes**, **326,359 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -34,16 +34,6 @@ Combined: **1,299 likes**, **329,395 views**. Native X Article = a tweet whose p
 | 25 | 2,454 | 38 | 2 | 2 | [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) (22,189) | [Market Maturation Cycles Part 2 – The Infatuation Stage](https://x.com/i/article/2061076044795293701) |
 | 26 | 2,270 | 25 | 4 | 2 | [@quant_degen](https://x.com/quant_degen) (1,105) | [Toly is usually right. On the long tail, I think he might be wrong.](https://x.com/i/article/2062497542773026816) |
 | 27 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
-| 28 | 710 | 11 | 2 | 5 | [@0xFatih](https://x.com/0xFatih) (1,921) | [BULK Tezi](https://x.com/i/article/2062630313726205952) |
-| 29 | 622 | 6 | 2 | 1 | [@maanas_tyagi](https://x.com/maanas_tyagi) (132) | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) |
-| 30 | 445 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,811) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
-| 31 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
-| 32 | 374 | 1 | 0 | 0 | [@woleswoosh](https://x.com/woleswoosh) (17,211) | [Grayscale Hyperliquid Staking ETP (HYPG) Launch](https://x.com/i/article/2062004056084865024) |
-| 33 | 346 | 9 | 1 | 6 | [@hypurrworld](https://x.com/hypurrworld) (64) | [Welcome to Hypurr World](https://x.com/i/article/2063998533121048576) |
-| 34 | 101 | 3 | 0 | 1 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [A LASTING SOLUTION TO INSECURITY IN NIGERIA](https://x.com/i/article/2062170635111964672) |
-| 35 | 15 | 2 | 0 | 0 | [@web3jatin](https://x.com/web3jatin) (421) | [Why Is $AAVE Underperforming Despite Strong Revenue?](https://x.com/i/article/2063923966423760896) |
-| 36 | 11 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [DIVERSIFYING BEYOND OIL.](https://x.com/i/article/2063972220196552704) |
-| 37 | 7 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [FROM PIRACY TO PROSPERITY](https://x.com/i/article/2063968377073205248) |
 
 ## Ranking rule
 

@@ -6,13 +6,12 @@ KEY_SECRET_FILE="${TWITTERAPI_KEY_FILE:-/root/.secrets/twitterapi_io_key}"
 NICHES="${X_ARTICLE_NICHES:-trading-ai ai trading crypto prediction-markets polymarket pumpfun hyperliquid}"
 DATE_UTC="${X_ARTICLE_DATE:-$(date -u +%F)}"
 LOG_DIR="$ROOT_DIR/docs/x-targeting/x_articles/logs"
-MAX_ARTICLES="${X_ARTICLE_MAX_ARTICLES:-40}"
+# No tight cap — the views floor decides what belongs; the max is a budget backstop.
+MAX_ARTICLES="${X_ARTICLE_MAX_ARTICLES:-300}"
+MIN_VIEWS="${X_ARTICLE_MIN_VIEWS:-1000}"
 FORCE="${X_ARTICLE_FORCE:-0}"
-# High-population niches (broad AI / crypto / markets) hold far more than 20 native
-# Articles a day. A low cap stops the ladder early (find_native_x_articles.py:753),
-# so the long tail — and its outliers — is never seen. These get a deeper cap.
 BROAD_NICHES="${X_ARTICLE_BROAD_NICHES:-ai trading crypto polymarket pumpfun prediction-markets}"
-BROAD_MAX="${X_ARTICLE_BROAD_MAX:-50}"
+BROAD_MAX="${X_ARTICLE_BROAD_MAX:-300}"
 
 mkdir -p "$LOG_DIR"
 
@@ -63,6 +62,7 @@ PY
     --search-mode "${X_ARTICLE_SEARCH_MODE:-both}" \
     --like-thresholds "${X_ARTICLE_LIKE_THRESHOLDS:-5000,2000,1000,500,250,100,50,20,10}" \
     --max-articles "$niche_max" \
+    --min-views "$MIN_VIEWS" \
     --min-article-age-hours "${X_ARTICLE_MIN_ARTICLE_AGE_HOURS:-4}" \
     --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
     --budget-usd "${X_ARTICLE_BUDGET_USD:-25}"

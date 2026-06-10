@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**50 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **8,557 likes**, **2,005,294 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**76 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **9,193 likes**, **2,121,934 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -53,10 +53,36 @@ Combined: **8,557 likes**, **2,005,294 views**. Native X Article = a tweet whose
 | 44 | 8,280 | 48 | 6 | 21 | [@Formulasearch](https://x.com/Formulasearch) (6,531) | [少即是多（上）：经久不衰的设计哲学](https://x.com/i/article/2064337526588932096) |
 | 45 | 6,811 | 43 | 6 | 11 | [@MinLiBuilds](https://x.com/MinLiBuilds) (12,713) | [一个 skill 成为 TOP 1% Context 管理大师，比官方好用 100x 的 /fork](https://x.com/i/article/2064321821877604352) |
 | 46 | 3,251 | 40 | 1 | 0 | [@MakeAI_CEO](https://x.com/MakeAI_CEO) (24,177) | [天才たちの「Agent Skills」完全攻略](https://x.com/i/article/2063235720249331713) |
-| 47 | 5,438 | 36 | 2 | 1 | [@IBuzovskyi](https://x.com/IBuzovskyi) (1,584) | [8 Loops Inside Hermes Agent (And Why They Compound)](https://x.com/i/article/2057902689170706432) |
-| 48 | 3,212 | 32 | 7 | 5 | [@Charles77xixi](https://x.com/Charles77xixi) (3,006) | [软件工程的终结：AI Agent 如何从根本上重构软件范式（译）](https://x.com/i/article/2064249634776883200) |
-| 49 | 15,094 | 23 | 3 | 11 | [@kfk_ai](https://x.com/kfk_ai) (7,340) | [第 1 章：Introduction to agent skills（Agent Skills 入门）](https://x.com/i/article/2064284183778983936) |
-| 50 | 24,512 | 23 | 1 | 0 | [@so_ainsight](https://x.com/so_ainsight) (16,696) | [スマホでAgent View、えぐすぎた。](https://x.com/i/article/2064351643337138176) |
+| 47 | 5,610 | 39 | 1 | 5 | [@dunik_7](https://x.com/dunik_7) (3,683) | [6 MCP servers, 0 calls, $280K wasted - and the model was never the problem](https://x.com/i/article/2064332361626476546) |
+| 48 | 2,377 | 39 | 0 | 4 | [@0xMorlex](https://x.com/0xMorlex) (96) | [How to build your first app with Claude Artifacts: 9 steps from idea to shareable product (no code)](https://x.com/i/article/2064274983031832576) |
+| 49 | 6,018 | 37 | 5 | 5 | [@wintermute_t](https://x.com/wintermute_t) (145,993) | [Good news is bad news](https://x.com/i/article/2064209641161236480) |
+| 50 | 2,667 | 36 | 8 | 2 | [@jrdothoughts](https://x.com/jrdothoughts) (6,257) | [The Mythos Moment is Here: DeFi's Attack Surface Just Went Infinite](https://x.com/i/article/2064320149268709377) |
+| 51 | 5,438 | 36 | 2 | 1 | [@IBuzovskyi](https://x.com/IBuzovskyi) (1,584) | [8 Loops Inside Hermes Agent (And Why They Compound)](https://x.com/i/article/2057902689170706432) |
+| 52 | 1,064 | 35 | 7 | 5 | [@blessedokerekee](https://x.com/blessedokerekee) (2,393) | [Solana didn't win the agent war because of marketing. Agents Choose It.](https://x.com/i/article/2064249094130823168) |
+| 53 | 1,712 | 35 | 6 | 8 | [@devfun](https://x.com/devfun) (37,421) | [4,961 AI agents played poker for 5 days with no humans. the data says skill is real, and rare.](https://x.com/i/article/2064241079608803328) |
+| 54 | 6,946 | 33 | 3 | 1 | [@AlexZio00](https://x.com/AlexZio00) (7,854) | [[리뷰 1] 루프가 화제다: 프롬프트에서 루프로, 그리고 루프가 안 해주는 것](https://x.com/i/article/2064222187327016960) |
+| 55 | 1,084 | 32 | 8 | 0 | [@me2resh](https://x.com/me2resh) (31,985) | [Everyone's Designing Loops Now. ApexYard Is How You Run Them Without Blowing Up.](https://x.com/i/article/2064252547754340352) |
+| 56 | 3,212 | 32 | 7 | 5 | [@Charles77xixi](https://x.com/Charles77xixi) (3,006) | [软件工程的终结：AI Agent 如何从根本上重构软件范式（译）](https://x.com/i/article/2064249634776883200) |
+| 57 | 19,782 | 32 | 2 | 0 | [@ozaken_AI](https://x.com/ozaken_AI) (20,805) | [Claude Mythos 5、Fable 5が公開されました。](https://x.com/i/article/2064403263370432512) |
+| 58 | 1,390 | 30 | 20 | 2 | [@ShaneHummus](https://x.com/ShaneHummus) (9,453) | [How I'd Start a 1-Person Business + Personal Brand With Claude AI in 30 Days](https://x.com/i/article/2064349631996100608) |
+| 59 | 2,915 | 25 | 3 | 10 | [@dimoflexx](https://x.com/dimoflexx) (1,347) | [This AI Agent Gets Smarter Every Time You Use It. Here's How I Make $3,000+ a Month With It.](https://x.com/i/article/2064275553528479744) |
+| 60 | 3,171 | 25 | 1 | 4 | [@kieranklaassen](https://x.com/kieranklaassen) (17,227) | [Claude Fable 5 and whats next?](https://x.com/i/article/2064457189021155328) |
+| 61 | 1,515 | 25 | 0 | 10 | [@0xCristal](https://x.com/0xCristal) (8,141) | [I Connected Claude to Bybit and TradingView. Now I'm earning $5K per month👇](https://x.com/i/article/2064303366621089792) |
+| 62 | 20,380 | 24 | 4 | 12 | [@apob_ai](https://x.com/apob_ai) (11,370) | [Beyond One-Shot Prompts: A Production Workflow for AI Anime Storytelling](https://x.com/i/article/2064271009684094976) |
+| 63 | 4,705 | 23 | 8 | 4 | [@0G_labs](https://x.com/0G_labs) (707,709) | [Alibaba's Agent Frontier is live on 0G](https://x.com/i/article/2064396809846628352) |
+| 64 | 15,094 | 23 | 3 | 11 | [@kfk_ai](https://x.com/kfk_ai) (7,340) | [第 1 章：Introduction to agent skills（Agent Skills 入门）](https://x.com/i/article/2064284183778983936) |
+| 65 | 1,995 | 23 | 3 | 2 | [@hanifproduktif](https://x.com/hanifproduktif) (39,051) | [Claude Cowork: AI yang Bisa "Megang" Laptop Lo](https://x.com/i/article/2064423578133479424) |
+| 66 | 24,512 | 23 | 1 | 0 | [@so_ainsight](https://x.com/so_ainsight) (16,696) | [スマホでAgent View、えぐすぎた。](https://x.com/i/article/2064351643337138176) |
+| 67 | 3,833 | 22 | 0 | 3 | [@thegreatest_sv](https://x.com/thegreatest_sv) (1,298) | [I found a way to turn Claude into a $15,000/month bug hunter. Here’s the complete guide.](https://x.com/i/article/2064339198383951872) |
+| 68 | 1,469 | 21 | 0 | 7 | [@andreysuperior](https://x.com/andreysuperior) (7,361) | [I left Claude running for 30 days. It built 12 browser games. $11,885/month. Here's the full system.](https://x.com/i/article/2064381280196898818) |
+| 69 | 14,638 | 20 | 6 | 4 | [@FirepanHQ](https://x.com/FirepanHQ) (627) | [The Bug Hiding in Curve's Code That Only AI Could Find](https://x.com/i/article/2064148720518623233) |
+| 70 | 3,134 | 20 | 0 | 1 | [@promptowy](https://x.com/promptowy) (36,670) | [Claude Fable 5: Anthropic oddał publiczności model, który sam nazwał zbyt groźnym](https://x.com/i/article/2064448314439794689) |
+| 71 | 2,078 | 17 | 1 | 2 | [@0xMoysei](https://x.com/0xMoysei) (396) | [How to Build an AI Automation Agency With Claude in 14 Steps](https://x.com/i/article/2064398629670907905) |
+| 72 | 1,428 | 13 | 0 | 3 | [@vorty279](https://x.com/vorty279) (340) | [5 agents one task becoming free from routine](https://x.com/i/article/2064352150176534529) |
+| 73 | 1,890 | 9 | 1 | 3 | [@NVIDIAAI](https://x.com/NVIDIAAI) (308,909) | [NVIDIA Spark Hack Toronto: What can you build on a Spark in a weekend?](https://x.com/i/article/2064461013198815232) |
+| 74 | 1,853 | 8 | 3 | 0 | [@thegp](https://x.com/thegp) (2,441) | [Partnering with Minerva](https://x.com/i/article/2064431963616972800) |
+| 75 | 1,655 | 8 | 1 | 0 | [@Voxyz_ai](https://x.com/Voxyz_ai) (13,219) | [The more I use AI, the less I want to start from a prompt](https://x.com/i/article/2064270287315623936) |
+| 76 | 1,331 | 5 | 0 | 0 | [@DarkPoolTech](https://x.com/DarkPoolTech) (395) | [DarkPool Daily Brief - Tech & AI](https://x.com/i/article/2064465076967620608) |
 
 ## Ranking rule
 

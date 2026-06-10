@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**100 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **9,000 likes**, **2,171,997 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**72 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
+Combined: **8,605 likes**, **2,159,349 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -79,34 +79,6 @@ Combined: **9,000 likes**, **2,171,997 views**. Native X Article = a tweet whose
 | 70 | 1,087 | 21 | 0 | 2 | [@whydeso](https://x.com/whydeso) (181) | [I turned Polymarket's free API into $9k/month. I never placed a single bet](https://x.com/i/article/2063362235037274112) |
 | 71 | 1,078 | 14 | 2 | 4 | [@robinmarketsxyz](https://x.com/robinmarketsxyz) (2,836) | [Prediction Market Roundup](https://x.com/i/article/2062823753822638080) |
 | 72 | 1,060 | 8 | 2 | 2 | [@polyweatheryuan](https://x.com/polyweatheryuan) (361) | [Why Weather Underground Historical Data Is Problematic as a Market Settlement Source](https://x.com/i/article/2063521979643105280) |
-| 73 | 949 | 15 | 3 | 4 | [@almanac_market](https://x.com/almanac_market) (1,811) | [The Resolution Battle Ground](https://x.com/i/article/2059897589273706497) |
-| 74 | 932 | 6 | 1 | 0 | [@frenflow](https://x.com/frenflow) (283) | [Copying a top Polymarket trader takes 4 clicks. Here's the entire flow, screenshot by screenshot.](https://x.com/i/article/2062880646641377280) |
-| 75 | 915 | 6 | 0 | 1 | [@GodEyeDotFun](https://x.com/GodEyeDotFun) (417) | [10 Mistakes to Avoid on Polymarket During the FIFA World Cup 2026](https://x.com/i/article/2064015609479008256) |
-| 76 | 897 | 7 | 0 | 0 | [@minmax_one](https://x.com/minmax_one) (1,246) | [The Polymarket weather playbook: 3 strategies, a 50-minute data edge, and one-command execution](https://x.com/i/article/2064235226780352512) |
-| 77 | 865 | 5 | 0 | 0 | [@GoodCryptoApp](https://x.com/GoodCryptoApp) (111,042) | [Hyperliquid: The Best Trading Platform of 2026? Read a detailed Hyperliquid project overview](https://x.com/i/article/2062179882159734784) |
-| 78 | 786 | 7 | 1 | 1 | [@0xMagicMaker](https://x.com/0xMagicMaker) (285) | [A short history of prediction markets](https://x.com/i/article/2063889960143568896) |
-| 79 | 784 | 8 | 1 | 0 | [@deepitreal](https://x.com/deepitreal) (535) | [No Resolution Mechanism Is Perfect. Prediction Markets Need to Insure Users.](https://x.com/i/article/2063095772216700928) |
-| 80 | 782 | 70 | 0 | 53 | [@vorpal_onchain](https://x.com/vorpal_onchain) (3,619) | [The most expensive word in prediction markets; your OGs never say it](https://x.com/i/article/2063897456622903296) |
-| 81 | 707 | 6 | 6 | 2 | [@_DeepWood_](https://x.com/_DeepWood_) (78) | [The day SuperteamDE host the world](https://x.com/i/article/2062958173666136064) |
-| 82 | 559 | 13 | 0 | 2 | [@DG3_terminal](https://x.com/DG3_terminal) (7,479) | [Zverev is 80.5% to win his first Slam. The market just priced a sweep.](https://x.com/i/article/2063564058863792128) |
-| 83 | 536 | 11 | 1 | 0 | [@arespro](https://x.com/arespro) (9,323) | [How to Trade Polymarket with 10x Leverage on Ares](https://x.com/i/article/2064375676120043520) |
-| 84 | 488 | 9 | 2 | 0 | [@questflow](https://x.com/questflow) (24,772) | [Your AI Just Spotted What the Market's Sleeping On](https://x.com/i/article/2056974721527554048) |
-| 85 | 481 | 34 | 26 | 28 | [@coinshooot](https://x.com/coinshooot) (5,569) | [Predix 프로젝트 S0 시즌 시작](https://x.com/i/article/2063549503270195200) |
-| 86 | 422 | 24 | 2 | 5 | [@varl999](https://x.com/varl999) (1,437) | [trusting AI with money: how optimistic democracy turns hallucinations into verifiable consensus](https://x.com/i/article/2015564392444682240) |
-| 87 | 396 | 12 | 5 | 6 | [@0xsolvix](https://x.com/0xsolvix) (1,406) | [Are LP Farmers the Biggest Winners of the Polymarket $POLY Airdrop?](https://x.com/i/article/2063914369985998848) |
-| 88 | 327 | 29 | 0 | 17 | [@mr_bullishh](https://x.com/mr_bullishh) (21,858) | [The Prediction Market Boom: Why VIZO Is the Future of Trading Headlines in 2026](https://x.com/i/article/2063961577221722113) |
-| 89 | 323 | 12 | 0 | 1 | [@whydeso](https://x.com/whydeso) (181) | [I sell one Polymarket research report per big event. Each one nets $2-4k. Here's the system.](https://x.com/i/article/2064274845022486528) |
-| 90 | 258 | 18 | 0 | 1 | [@polykinder](https://x.com/polykinder) (23) | [He joined Polymarket the day Roland Garros started. 14 days later, $3.9M.](https://x.com/i/article/2064373719984750593) |
-| 91 | 231 | 4 | 1 | 0 | [@Early_Riders](https://x.com/Early_Riders) (1,527) | [Final Settlement \| Inside the SpaceX IPO And Why Bitcoin Is the Value Trade](https://x.com/i/article/2064344225370480640) |
-| 92 | 180 | 8 | 0 | 0 | [@MarttinChriste1](https://x.com/MarttinChriste1) (1,767) | [The Bank Closes. The Cronos App Doesn't.](https://x.com/i/article/2064422713268060160) |
-| 93 | 152 | 11 | 0 | 3 | [@HeyEmma33](https://x.com/HeyEmma33) (899) | [OpenPlay 正在解决预测市场行业长期存在的问题](https://x.com/i/article/2063814435203158016) |
-| 94 | 147 | 2 | 2 | 0 | [@0xPtts](https://x.com/0xPtts) (857) | [Crypto Daily Recap](https://x.com/i/article/2063256138322264064) |
-| 95 | 138 | 6 | 2 | 0 | [@10dimes_](https://x.com/10dimes_) (1,007) | [How to trade with leverage in prediction markets: risk, and who pays for it](https://x.com/i/article/2062163716812996608) |
-| 96 | 134 | 7 | 0 | 0 | [@nik0x78](https://x.com/nik0x78) (133) | [The story of Predict.fun — Part 2](https://x.com/i/article/2063895024228573184) |
-| 97 | 84 | 4 | 2 | 0 | [@0xtemmy_](https://x.com/0xtemmy_) (1,684) | [Ride vs Polymarket: What's Actually Different?](https://x.com/i/article/2049163811257450496) |
-| 98 | 69 | 49 | 0 | 0 | [@Crypto_Mike55](https://x.com/Crypto_Mike55) (952) | [What the Cronos App Actually Means for CRO Token Holders](https://x.com/i/article/2064473747709476864) |
-| 99 | 63 | 6 | 1 | 0 | [@martchelo_eth](https://x.com/martchelo_eth) (42) | [The price oracle problem in prediction market lending](https://x.com/i/article/2064288908322516992) |
-| 100 | 43 | 6 | 1 | 1 | [@brimdex](https://x.com/brimdex) (86) | [Brimdex Ships the Update That Redefines Range Trading](https://x.com/i/article/2064291399994863616) |
 
 ## Ranking rule
 

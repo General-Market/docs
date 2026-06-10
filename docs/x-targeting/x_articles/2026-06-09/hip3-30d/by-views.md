@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**24 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **1,079 likes**, **246,244 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**22 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
+Combined: **1,072 likes**, **245,870 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -29,8 +29,6 @@ Combined: **1,079 likes**, **246,244 views**. Native X Article = a tweet whose p
 | 20 | 2,241 | 24 | 9 | 4 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HIP-3: Tesla, oro y el S&P 500 on-chain](https://x.com/i/article/2053423770539294722) |
 | 21 | 1,950 | 10 | 1 | 3 | [@monarch_fast](https://x.com/monarch_fast) (317) | [Bad Oracle, Empty Book: On-chain deep dive into @Ventuals SpaceX blow-up](https://x.com/i/article/2060301137832742912) |
 | 22 | 1,083 | 12 | 3 | 1 | [@FalconXGlobal](https://x.com/FalconXGlobal) (13,858) | [The Drivers Behind Hyperliquid’s Next Phase: HYPE ETFs, HIP-4 Outcome Markets, Priority Fees, and it](https://x.com/i/article/2057565419712679936) |
-| 23 | 187 | 4 | 1 | 1 | [@gizmolab_](https://x.com/gizmolab_) (1,267) | [New Category Of Onchain Markets](https://x.com/i/article/1929879329636270080) |
-| 24 | 187 | 3 | 0 | 1 | [@AveaiGlobal](https://x.com/AveaiGlobal) (8,634) | [Hyperliquid HIP-4 Outcome Contracts Explained](https://x.com/i/article/2064045196984438784) |
 
 ## Ranking rule
 

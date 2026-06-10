@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**72 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **28,631 likes**, **16,530,938 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**50 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
+Combined: **28,506 likes**, **16,526,485 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -57,28 +57,6 @@ Combined: **28,631 likes**, **16,530,938 views**. Native X Article = a tweet who
 | 48 | 1,295 | 3 | 1 | 0 | [@BessemerVP](https://x.com/BessemerVP) (132,115) | [Product-market fit isn't binary, it's a spectrum](https://x.com/i/article/2064036047135342592) |
 | 49 | 1,241 | 21 | 9 | 3 | [@Bancor](https://x.com/Bancor) (146,771) | [Win up to $3,500 in Celo’s Onchain Agents Hackathon — Optimize Trading Activity With Carbon DeFi](https://x.com/i/article/2063020978016546816) |
 | 50 | 1,122 | 46 | 0 | 11 | [@alex_atoms](https://x.com/alex_atoms) (3,615) | [10 Useful Claude Skills & MCPs for Crypto](https://x.com/i/article/2062453663205822464) |
-| 51 | 840 | 3 | 2 | 0 | [@memely](https://x.com/memely) (7,281) | [6.9 Wukong AP \| $JBL, $XFAB, $CBRS: Optical Manufacturing, Silicon Photonics, AI Inference](https://x.com/i/article/2064344995390533632) |
-| 52 | 830 | 6 | 0 | 0 | [@CaesarJulius0](https://x.com/CaesarJulius0) (16,212) | [How Does an AI Trading Assistant Help You Trade Better?](https://x.com/i/article/2064343740248948736) |
-| 53 | 515 | 9 | 1 | 2 | [@Shekel_Agentic](https://x.com/Shekel_Agentic) (3,957) | [Leveraging Non-Determinism in Agentic Trading Backtests](https://x.com/i/article/2064370963542659072) |
-| 54 | 382 | 5 | 1 | 0 | [@markitecht](https://x.com/markitecht) (7,457) | [The DIY Guide to Claude Go-To-Market](https://x.com/i/article/2064052453511999488) |
-| 55 | 368 | 23 | 6 | 4 | [@Tessera_PE](https://x.com/Tessera_PE) (6,022) | [The Front Door to AI Is Going Public](https://x.com/i/article/2064433630902878209) |
-| 56 | 259 | 1 | 1 | 0 | [@Maco_1602](https://x.com/Maco_1602) (25) | [How I Built a Crypto App in 4 Months With AI (Without Knowing How to Code)](https://x.com/i/article/2064416523339370496) |
-| 57 | 231 | 4 | 1 | 0 | [@Early_Riders](https://x.com/Early_Riders) (1,527) | [Final Settlement \| Inside the SpaceX IPO And Why Bitcoin Is the Value Trade](https://x.com/i/article/2064344225370480640) |
-| 58 | 179 | 54 | 14 | 70 | [@Rukkssss__](https://x.com/Rukkssss__) (14,935) | [�🧠�.𝗔𝗜 — 𝗔𝗜 𝗔𝗴𝗲𝗻𝘁𝘀 𝗮𝘀 𝗢𝗻-𝗖𝗵𝗮𝗶𝗻 𝗘𝘅𝗲𝗰𝘂𝘁𝗼𝗿𝘀](https://x.com/i/article/2062760729342541824) |
-| 59 | 127 | 3 | 0 | 0 | [@coin_gabbar_](https://x.com/coin_gabbar_) (6,106) | [MetaMask Agent Wallet Launches: AI Now Trades DeFi on Your Behalf](https://x.com/i/article/2064268970686050304) |
-| 60 | 122 | 8 | 0 | 0 | [@0xGeckoRails](https://x.com/0xGeckoRails) (107) | [The Agent Economy doesn't have a Judgment Layer](https://x.com/i/article/2064208877172703232) |
-| 61 | 112 | 1 | 0 | 0 | [@StokPix](https://x.com/StokPix) (1,380) | [A Bitten Apple Once a Symbol of Hunger](https://x.com/i/article/2064356731858178048) |
-| 62 | 102 | 1 | 1 | 0 | [@NameClubDomains](https://x.com/NameClubDomains) (555) | [A Practical Framework for Unforgettable AI Startup Names](https://x.com/i/article/2064459057227087872) |
-| 63 | 85 | 0 | 0 | 0 | [@nchoro_](https://x.com/nchoro_) (13,677) | [TECHNOLOGY](https://x.com/i/article/2064462269879042048) |
-| 64 | 77 | 1 | 0 | 0 | [@LifeLessonsAcad](https://x.com/LifeLessonsAcad) (4,345) | [Is 10% a ‘Good’ Stock Return? Here’s the Data + Why My AI Strategy Is Crushing It This Year](https://x.com/i/article/2063232155837222912) |
-| 65 | 41 | 0 | 0 | 0 | [@DomasNaujienos](https://x.com/DomasNaujienos) (81) | [Beginner Equity Investing Cheat Sheet: Which Valuation Metrics to Use and When](https://x.com/i/article/2064412189579161600) |
-| 66 | 39 | 3 | 0 | 1 | [@Alphadek_xyz](https://x.com/Alphadek_xyz) (16) | [The Great Pivot: Why AI is Eclipsing Crypto and the Path to Survival](https://x.com/i/article/2064429614152421376) |
-| 67 | 35 | 0 | 0 | 0 | [@RZalutynski](https://x.com/RZalutynski) (146) | [BINANCE JUST OPENED ITS API TO AI AGENTS. HERE'S THE BOT I BUILT IN ONE WEEKEND.](https://x.com/i/article/2064396962900705280) |
-| 68 | 28 | 0 | 0 | 0 | [@InvezzPortal](https://x.com/InvezzPortal) (4,663) | [Invezz Tuesday Digest](https://x.com/i/article/2064391548394164224) |
-| 69 | 26 | 2 | 0 | 0 | [@BbqGio](https://x.com/BbqGio) (870) | [Algo Trading With AI In 2026](https://x.com/i/article/2064365074664570880) |
-| 70 | 26 | 0 | 0 | 0 | [@AdValoremGP](https://x.com/AdValoremGP) (426) | [AI SMB Finance Ops in 2026: AP Automation, Expense Controls, and Cash Forecasting (FinOps Playbook)](https://x.com/i/article/2059994943230181379) |
-| 71 | 20 | 1 | 0 | 0 | [@aixterminal_](https://x.com/aixterminal_) (474) | [AI-Powered Market Intelligence: AIXTerminal, AI Agents, and the Future of Trading](https://x.com/i/article/2064410538583416833) |
-| 72 | 9 | 0 | 0 | 0 | [@kevinwardnow](https://x.com/kevinwardnow) (1,185) | [Why Agents Are Making Less Money Now](https://x.com/i/article/2064461365247709184) |
 
 ## Ranking rule
 

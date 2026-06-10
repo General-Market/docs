@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **72 native X Articles** from **4590 searched tweets** since `2026-05-11T02:26:17.839810+00:00`.
+Stored **50 native X Articles** from **4590 searched tweets** since `2026-05-11T02:45:31.710535+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -19,20 +19,20 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 9 | [How to build a 4-agent trading desk that finds and trades opportunities while you sleep](https://x.com/i/article/2063886024216887296) | [@zodchiii](https://x.com/zodchiii) | 578 eng / 129050 views / 4.479 eng per 1k views | 650.0 | 5915.383 per 1k | 19.62x | Read and extract pattern (~5 min) |
 | 10 | [Introducing Base MCP: Your agent’s gateway to Base ](https://x.com/i/article/2059121765822115840) | [@base](https://x.com/base) | 2621 eng / 202781 views / 12.925 eng per 1k views | 3108.6 | 157.23 per 1k | 9.071x | Read and extract pattern (~5 min) |
 | 11 | [Velvet May Update: New SocialFi App, Perp Trading, AI-Powered Alpha & More](https://x.com/i/article/2064045322641543168) | [@Velvet_Capital](https://x.com/Velvet_Capital) | 231 eng / 25841 views / 8.939 eng per 1k views | 300.6 | 189.931 per 1k | 8.72x | Read and extract pattern (~5 min) |
-| 12 | [Crimson OS: A Reality Anchor for the AI Age](https://x.com/i/article/2064356799919366144) | [@MattGibsonMusic](https://x.com/MattGibsonMusic) | 11 eng / 29746 views / 0.37 eng per 1k views | 21.9 | 19804.261 per 1k | 8.162x | Read and extract pattern (~5 min) |
-| 13 | [How I Built a Crypto App in 4 Months With AI (Without Knowing How to Code)](https://x.com/i/article/2064416523339370496) | [@Maco_1602](https://x.com/Maco_1602) | 2 eng / 259 views / 7.722 eng per 1k views | 3.1 | 10360.0 per 1k | 4.744x | Read and extract pattern (~5 min) |
-| 14 | [800V Power Semiconductors: A Layer-by-Layer Stocks Guide ](https://x.com/i/article/2063459576452648960) | [@saso_capital](https://x.com/saso_capital) | 888 eng / 160899 views / 5.519 eng per 1k views | 990.6 | 26669.816 per 1k | 4.638x | Read and extract pattern (~5 min) |
-| 15 | [6.9 Wukong AP \| $JBL, $XFAB, $CBRS: Optical Manufacturing, Silicon Photonics, AI Inference](https://x.com/i/article/2064344995390533632) | [@memely](https://x.com/memely) | 6 eng / 840 views / 7.143 eng per 1k views | 9.3 | 115.369 per 1k | 4.398x | Read and extract pattern (~5 min) |
-| 16 | [$BWEN: GEV Is Sold Out Through 2030. This Is Theirs and Siemens Machining Partner.](https://x.com/i/article/2064322039968673792) | [@ThematicTrader](https://x.com/ThematicTrader) | 68 eng / 21122 views / 3.219 eng per 1k views | 81.0 | 1855.737 per 1k | 3.726x | Read and extract pattern (~5 min) |
-| 17 | [美元、AI与庞氏：币圈思维炒股指北（上篇）\| USD, AI, and Ponzi — A Crypto Native's Guide to Stocks(P1)](https://x.com/i/article/2061909284464861184) | [@thecryptoskanda](https://x.com/thecryptoskanda) | 721 eng / 52444 views / 13.748 eng per 1k views | 838.5 | 963.159 per 1k | 3.625x | Read and extract pattern (~5 min) |
-| 18 | [This Week on Base: Base Azul, Base MCP, and a new Base Builder's hub in Malaysia.](https://x.com/i/article/2060473610960330752) | [@base](https://x.com/base) | 652 eng / 69522 views / 9.378 eng per 1k views | 786.2 | 53.905 per 1k | 3.11x | Read and extract pattern (~5 min) |
-| 19 | [TPN is becoming Bittensor’s LLM compression & performance engine](https://x.com/i/article/2064436583151902720) | [@TPN_Labs](https://x.com/TPN_Labs) | 42 eng / 5715 views / 7.349 eng per 1k views | 58.9 | 3779.762 per 1k | 3.097x | Read and extract pattern (~5 min) |
-| 20 | [What Really Determines AI Trading Agent Success (Hint: It Is Not the Model)](https://x.com/i/article/2059596153663213568) | [@MossAI_Official](https://x.com/MossAI_Official) | 662 eng / 82686 views / 8.006 eng per 1k views | 812.6 | 3419.744 per 1k | 2.943x | Read and extract pattern (~5 min) |
-| 21 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 2189 views / 2.284 eng per 1k views | 6.7 | 34.353 per 1k | 2.934x | Read and extract pattern (~5 min) |
-| 22 | [The first prop firm for AI agents.](https://x.com/i/article/2059342935314100224) | [@ProprXYZ](https://x.com/ProprXYZ) | 325 eng / 28479 views / 11.412 eng per 1k views | 373.5 | 3393.589 per 1k | 2.502x | Read and extract pattern (~5 min) |
-| 23 | [the coming crisis: crypto, AI, and spaceflight](https://x.com/i/article/2064303711275593728) | [@mert](https://x.com/mert) | 814 eng / 114508 views / 7.109 eng per 1k views | 909.2 | 109.072 per 1k | 2.458x | Read and extract pattern (~5 min) |
-| 24 | [Why Vizo Traders Are Betting on NVIDIA to Remain the World’s Largest Company Through 2026](https://x.com/i/article/2064223679521644544) | [@EMEBOK_](https://x.com/EMEBOK_) | 314 eng / 13918 views / 22.561 eng per 1k views | 333.6 | 503.018 per 1k | 2.08x | Read and extract pattern (~5 min) |
-| 25 | [The Ultimate GTM Playbook for Solo Founders: How to Market a Product in 2026 ](https://x.com/i/article/2062550580782927872) | [@Defi_Warhol](https://x.com/Defi_Warhol) | 345 eng / 11001 views / 31.361 eng per 1k views | 370.7 | 245.948 per 1k | 2.064x | Read and extract pattern (~5 min) |
+| 12 | [Crimson OS: A Reality Anchor for the AI Age](https://x.com/i/article/2064356799919366144) | [@MattGibsonMusic](https://x.com/MattGibsonMusic) | 11 eng / 29746 views / 0.37 eng per 1k views | 21.9 | 19804.261 per 1k | 8.198x | Read and extract pattern (~5 min) |
+| 13 | [800V Power Semiconductors: A Layer-by-Layer Stocks Guide ](https://x.com/i/article/2063459576452648960) | [@saso_capital](https://x.com/saso_capital) | 888 eng / 160899 views / 5.519 eng per 1k views | 990.6 | 26669.816 per 1k | 4.638x | Read and extract pattern (~5 min) |
+| 14 | [$BWEN: GEV Is Sold Out Through 2030. This Is Theirs and Siemens Machining Partner.](https://x.com/i/article/2064322039968673792) | [@ThematicTrader](https://x.com/ThematicTrader) | 68 eng / 21122 views / 3.219 eng per 1k views | 81.0 | 1855.737 per 1k | 3.851x | Read and extract pattern (~5 min) |
+| 15 | [美元、AI与庞氏：币圈思维炒股指北（上篇）\| USD, AI, and Ponzi — A Crypto Native's Guide to Stocks(P1)](https://x.com/i/article/2061909284464861184) | [@thecryptoskanda](https://x.com/thecryptoskanda) | 721 eng / 52444 views / 13.748 eng per 1k views | 838.5 | 963.159 per 1k | 3.625x | Read and extract pattern (~5 min) |
+| 16 | [This Week on Base: Base Azul, Base MCP, and a new Base Builder's hub in Malaysia.](https://x.com/i/article/2060473610960330752) | [@base](https://x.com/base) | 652 eng / 69522 views / 9.378 eng per 1k views | 786.2 | 53.905 per 1k | 3.11x | Read and extract pattern (~5 min) |
+| 17 | [TPN is becoming Bittensor’s LLM compression & performance engine](https://x.com/i/article/2064436583151902720) | [@TPN_Labs](https://x.com/TPN_Labs) | 42 eng / 5715 views / 7.349 eng per 1k views | 58.9 | 3779.762 per 1k | 3.097x | Read and extract pattern (~5 min) |
+| 18 | [What Really Determines AI Trading Agent Success (Hint: It Is Not the Model)](https://x.com/i/article/2059596153663213568) | [@MossAI_Official](https://x.com/MossAI_Official) | 662 eng / 82686 views / 8.006 eng per 1k views | 812.6 | 3419.744 per 1k | 2.943x | Read and extract pattern (~5 min) |
+| 19 | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 5 eng / 2189 views / 2.284 eng per 1k views | 6.7 | 34.353 per 1k | 2.934x | Read and extract pattern (~5 min) |
+| 20 | [The first prop firm for AI agents.](https://x.com/i/article/2059342935314100224) | [@ProprXYZ](https://x.com/ProprXYZ) | 325 eng / 28479 views / 11.412 eng per 1k views | 373.5 | 3393.589 per 1k | 2.502x | Read and extract pattern (~5 min) |
+| 21 | [the coming crisis: crypto, AI, and spaceflight](https://x.com/i/article/2064303711275593728) | [@mert](https://x.com/mert) | 814 eng / 114508 views / 7.109 eng per 1k views | 909.2 | 109.072 per 1k | 2.458x | Read and extract pattern (~5 min) |
+| 22 | [Why Vizo Traders Are Betting on NVIDIA to Remain the World’s Largest Company Through 2026](https://x.com/i/article/2064223679521644544) | [@EMEBOK_](https://x.com/EMEBOK_) | 314 eng / 13918 views / 22.561 eng per 1k views | 333.6 | 503.018 per 1k | 2.08x | Read and extract pattern (~5 min) |
+| 23 | [The Ultimate GTM Playbook for Solo Founders: How to Market a Product in 2026 ](https://x.com/i/article/2062550580782927872) | [@Defi_Warhol](https://x.com/Defi_Warhol) | 345 eng / 11001 views / 31.361 eng per 1k views | 370.7 | 245.948 per 1k | 2.064x | Read and extract pattern (~5 min) |
+| 24 | [Don't Outsource the Learning](https://x.com/i/article/2055936913211899904) | [@addyosmani](https://x.com/addyosmani) | 9283 eng / 622801 views / 14.905 eng per 1k views | 10111.0 | 1567.138 per 1k | 2.018x | Read and extract pattern (~5 min) |
+| 25 | [I Fed a UCL Finance Paper Into Claude. Here Are the 3 Agent Architectures I Built.](https://x.com/i/article/2058511699674591232) | [@DamiDefi](https://x.com/DamiDefi) | 238 eng / 18209 views / 13.07 eng per 1k views | 256.1 | 186.682 per 1k | 1.465x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -109,19 +109,19 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@zodchiii](https://x.com/zodchiii) | 1 |
 | [@Velvet_Capital](https://x.com/Velvet_Capital) | 1 |
 | [@MattGibsonMusic](https://x.com/MattGibsonMusic) | 1 |
-| [@Maco_1602](https://x.com/Maco_1602) | 1 |
 | [@saso_capital](https://x.com/saso_capital) | 1 |
-| [@memely](https://x.com/memely) | 1 |
 | [@ThematicTrader](https://x.com/ThematicTrader) | 1 |
 | [@thecryptoskanda](https://x.com/thecryptoskanda) | 1 |
 | [@TPN_Labs](https://x.com/TPN_Labs) | 1 |
 | [@MossAI_Official](https://x.com/MossAI_Official) | 1 |
 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) | 1 |
+| [@ProprXYZ](https://x.com/ProprXYZ) | 1 |
+| [@mert](https://x.com/mert) | 1 |
 
 ## Spend
 
-- Balance before: `9084714` credits.
-- Balance after: `9084714` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

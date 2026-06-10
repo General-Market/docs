@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**72 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **28,631 likes**, **16,530,938 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**50 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **28,506 likes**, **16,526,485 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -41,44 +41,22 @@ Combined: **28,631 likes**, **16,530,938 views**. Native X Article = a tweet who
 | 32 | 18,209 | 121 | 11 | 6 | [@DamiDefi](https://x.com/DamiDefi) (97,540) | [I Fed a UCL Finance Paper Into Claude. Here Are the 3 Agent Architectures I Built.](https://x.com/i/article/2058511699674591232) |
 | 33 | 25,841 | 109 | 42 | 55 | [@Velvet_Capital](https://x.com/Velvet_Capital) (136,055) | [Velvet May Update: New SocialFi App, Perp Trading, AI-Powered Alpha & More](https://x.com/i/article/2064045322641543168) |
 | 34 | 7,963 | 56 | 13 | 19 | [@Bybit_Official](https://x.com/Bybit_Official) (4,922,553) | [How to pick the best AI solution for you!](https://x.com/i/article/2062876933990359040) |
-| 35 | 179 | 54 | 14 | 70 | [@Rukkssss__](https://x.com/Rukkssss__) (14,935) | [�🧠�.𝗔𝗜 — 𝗔𝗜 𝗔𝗴𝗲𝗻𝘁𝘀 𝗮𝘀 𝗢𝗻-𝗖𝗵𝗮𝗶𝗻 𝗘𝘅𝗲𝗰𝘂𝘁𝗼𝗿𝘀](https://x.com/i/article/2062760729342541824) |
-| 36 | 1,122 | 46 | 0 | 11 | [@alex_atoms](https://x.com/alex_atoms) (3,615) | [10 Useful Claude Skills & MCPs for Crypto](https://x.com/i/article/2062453663205822464) |
-| 37 | 6,729 | 39 | 5 | 5 | [@wintermute_t](https://x.com/wintermute_t) (145,991) | [Good news is bad news](https://x.com/i/article/2064209641161236480) |
-| 38 | 2,054 | 34 | 13 | 5 | [@AustinSteinbart](https://x.com/AustinSteinbart) (8,691) | [Free Energy, Decentralized AI, the Coming Financial Reset, and What Happens Next](https://x.com/i/article/2064450568039641088) |
-| 39 | 3,560 | 32 | 0 | 10 | [@0xCristal](https://x.com/0xCristal) (8,142) | [I Connected Claude to Bybit and TradingView. Now I'm earning $5K per month👇](https://x.com/i/article/2064303366621089792) |
-| 40 | 1,818 | 29 | 10 | 2 | [@Bancor](https://x.com/Bancor) (146,771) | [AI Agents Take On Stablecoin Trading and Custom Market Creation](https://x.com/i/article/2063987458526912512) |
-| 41 | 21,122 | 28 | 3 | 2 | [@ThematicTrader](https://x.com/ThematicTrader) (11,382) | [$BWEN: GEV Is Sold Out Through 2030. This Is Theirs and Siemens Machining Partner.](https://x.com/i/article/2064322039968673792) |
-| 42 | 5,715 | 26 | 11 | 0 | [@TPN_Labs](https://x.com/TPN_Labs) (1,512) | [TPN is becoming Bittensor’s LLM compression & performance engine](https://x.com/i/article/2064436583151902720) |
-| 43 | 11,518 | 25 | 4 | 1 | [@NuttyCLD](https://x.com/NuttyCLD) (18,568) | [Bloom Energy: Ask the Stock, the Engineering Answers](https://x.com/i/article/2064463672689430528) |
-| 44 | 17,156 | 23 | 6 | 5 | [@FirepanHQ](https://x.com/FirepanHQ) (633) | [The Bug Hiding in Curve's Code That Only AI Could Find](https://x.com/i/article/2064148720518623233) |
-| 45 | 368 | 23 | 6 | 4 | [@Tessera_PE](https://x.com/Tessera_PE) (6,022) | [The Front Door to AI Is Going Public](https://x.com/i/article/2064433630902878209) |
-| 46 | 1,241 | 21 | 9 | 3 | [@Bancor](https://x.com/Bancor) (146,771) | [Win up to $3,500 in Celo’s Onchain Agents Hackathon — Optimize Trading Activity With Carbon DeFi](https://x.com/i/article/2063020978016546816) |
-| 47 | 3,690 | 16 | 7 | 0 | [@TheValueist](https://x.com/TheValueist) (36,700) | [The Strategic Landscape of Semiconductor Hybrid Bonding Integration.](https://x.com/i/article/2064455905521840128) |
-| 48 | 20,713 | 12 | 3 | 0 | [@ARKInvest](https://x.com/ARKInvest) (816,432) | [Kalshi Launches Perpetuals As Robinhood’s Rothera Exchange Goes Live, & More](https://x.com/i/article/2064364625731162112) |
-| 49 | 515 | 9 | 1 | 2 | [@Shekel_Agentic](https://x.com/Shekel_Agentic) (3,957) | [Leveraging Non-Determinism in Agentic Trading Backtests](https://x.com/i/article/2064370963542659072) |
-| 50 | 122 | 8 | 0 | 0 | [@0xGeckoRails](https://x.com/0xGeckoRails) (107) | [The Agent Economy doesn't have a Judgment Layer](https://x.com/i/article/2064208877172703232) |
-| 51 | 1,352 | 6 | 2 | 1 | [@gudanglifehack](https://x.com/gudanglifehack) (471,755) | [The Ultimate Market Test: OpenAI Files Confidential S-1 for Landmark IPO](https://x.com/i/article/2064345263574237184) |
-| 52 | 830 | 6 | 0 | 0 | [@CaesarJulius0](https://x.com/CaesarJulius0) (16,212) | [How Does an AI Trading Assistant Help You Trade Better?](https://x.com/i/article/2064343740248948736) |
-| 53 | 382 | 5 | 1 | 0 | [@markitecht](https://x.com/markitecht) (7,457) | [The DIY Guide to Claude Go-To-Market](https://x.com/i/article/2064052453511999488) |
-| 54 | 29,746 | 5 | 0 | 2 | [@MattGibsonMusic](https://x.com/MattGibsonMusic) (1,502) | [Crimson OS: A Reality Anchor for the AI Age](https://x.com/i/article/2064356799919366144) |
-| 55 | 231 | 4 | 1 | 0 | [@Early_Riders](https://x.com/Early_Riders) (1,527) | [Final Settlement \| Inside the SpaceX IPO And Why Bitcoin Is the Value Trade](https://x.com/i/article/2064344225370480640) |
-| 56 | 840 | 3 | 2 | 0 | [@memely](https://x.com/memely) (7,281) | [6.9 Wukong AP \| $JBL, $XFAB, $CBRS: Optical Manufacturing, Silicon Photonics, AI Inference](https://x.com/i/article/2064344995390533632) |
-| 57 | 1,295 | 3 | 1 | 0 | [@BessemerVP](https://x.com/BessemerVP) (132,115) | [Product-market fit isn't binary, it's a spectrum](https://x.com/i/article/2064036047135342592) |
-| 58 | 127 | 3 | 0 | 0 | [@coin_gabbar_](https://x.com/coin_gabbar_) (6,106) | [MetaMask Agent Wallet Launches: AI Now Trades DeFi on Your Behalf](https://x.com/i/article/2064268970686050304) |
-| 59 | 39 | 3 | 0 | 1 | [@Alphadek_xyz](https://x.com/Alphadek_xyz) (16) | [The Great Pivot: Why AI is Eclipsing Crypto and the Path to Survival](https://x.com/i/article/2064429614152421376) |
-| 60 | 2,189 | 2 | 0 | 2 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,720) | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) |
-| 61 | 26 | 2 | 0 | 0 | [@BbqGio](https://x.com/BbqGio) (870) | [Algo Trading With AI In 2026](https://x.com/i/article/2064365074664570880) |
-| 62 | 259 | 1 | 1 | 0 | [@Maco_1602](https://x.com/Maco_1602) (25) | [How I Built a Crypto App in 4 Months With AI (Without Knowing How to Code)](https://x.com/i/article/2064416523339370496) |
-| 63 | 102 | 1 | 1 | 0 | [@NameClubDomains](https://x.com/NameClubDomains) (555) | [A Practical Framework for Unforgettable AI Startup Names](https://x.com/i/article/2064459057227087872) |
-| 64 | 112 | 1 | 0 | 0 | [@StokPix](https://x.com/StokPix) (1,380) | [A Bitten Apple Once a Symbol of Hunger](https://x.com/i/article/2064356731858178048) |
-| 65 | 77 | 1 | 0 | 0 | [@LifeLessonsAcad](https://x.com/LifeLessonsAcad) (4,345) | [Is 10% a ‘Good’ Stock Return? Here’s the Data + Why My AI Strategy Is Crushing It This Year](https://x.com/i/article/2063232155837222912) |
-| 66 | 20 | 1 | 0 | 0 | [@aixterminal_](https://x.com/aixterminal_) (474) | [AI-Powered Market Intelligence: AIXTerminal, AI Agents, and the Future of Trading](https://x.com/i/article/2064410538583416833) |
-| 67 | 85 | 0 | 0 | 0 | [@nchoro_](https://x.com/nchoro_) (13,677) | [TECHNOLOGY](https://x.com/i/article/2064462269879042048) |
-| 68 | 41 | 0 | 0 | 0 | [@DomasNaujienos](https://x.com/DomasNaujienos) (81) | [Beginner Equity Investing Cheat Sheet: Which Valuation Metrics to Use and When](https://x.com/i/article/2064412189579161600) |
-| 69 | 35 | 0 | 0 | 0 | [@RZalutynski](https://x.com/RZalutynski) (146) | [BINANCE JUST OPENED ITS API TO AI AGENTS. HERE'S THE BOT I BUILT IN ONE WEEKEND.](https://x.com/i/article/2064396962900705280) |
-| 70 | 28 | 0 | 0 | 0 | [@InvezzPortal](https://x.com/InvezzPortal) (4,663) | [Invezz Tuesday Digest](https://x.com/i/article/2064391548394164224) |
-| 71 | 26 | 0 | 0 | 0 | [@AdValoremGP](https://x.com/AdValoremGP) (426) | [AI SMB Finance Ops in 2026: AP Automation, Expense Controls, and Cash Forecasting (FinOps Playbook)](https://x.com/i/article/2059994943230181379) |
-| 72 | 9 | 0 | 0 | 0 | [@kevinwardnow](https://x.com/kevinwardnow) (1,185) | [Why Agents Are Making Less Money Now](https://x.com/i/article/2064461365247709184) |
+| 35 | 1,122 | 46 | 0 | 11 | [@alex_atoms](https://x.com/alex_atoms) (3,615) | [10 Useful Claude Skills & MCPs for Crypto](https://x.com/i/article/2062453663205822464) |
+| 36 | 6,729 | 39 | 5 | 5 | [@wintermute_t](https://x.com/wintermute_t) (145,991) | [Good news is bad news](https://x.com/i/article/2064209641161236480) |
+| 37 | 2,054 | 34 | 13 | 5 | [@AustinSteinbart](https://x.com/AustinSteinbart) (8,691) | [Free Energy, Decentralized AI, the Coming Financial Reset, and What Happens Next](https://x.com/i/article/2064450568039641088) |
+| 38 | 3,560 | 32 | 0 | 10 | [@0xCristal](https://x.com/0xCristal) (8,142) | [I Connected Claude to Bybit and TradingView. Now I'm earning $5K per month👇](https://x.com/i/article/2064303366621089792) |
+| 39 | 1,818 | 29 | 10 | 2 | [@Bancor](https://x.com/Bancor) (146,771) | [AI Agents Take On Stablecoin Trading and Custom Market Creation](https://x.com/i/article/2063987458526912512) |
+| 40 | 21,122 | 28 | 3 | 2 | [@ThematicTrader](https://x.com/ThematicTrader) (11,382) | [$BWEN: GEV Is Sold Out Through 2030. This Is Theirs and Siemens Machining Partner.](https://x.com/i/article/2064322039968673792) |
+| 41 | 5,715 | 26 | 11 | 0 | [@TPN_Labs](https://x.com/TPN_Labs) (1,512) | [TPN is becoming Bittensor’s LLM compression & performance engine](https://x.com/i/article/2064436583151902720) |
+| 42 | 11,518 | 25 | 4 | 1 | [@NuttyCLD](https://x.com/NuttyCLD) (18,568) | [Bloom Energy: Ask the Stock, the Engineering Answers](https://x.com/i/article/2064463672689430528) |
+| 43 | 17,156 | 23 | 6 | 5 | [@FirepanHQ](https://x.com/FirepanHQ) (633) | [The Bug Hiding in Curve's Code That Only AI Could Find](https://x.com/i/article/2064148720518623233) |
+| 44 | 1,241 | 21 | 9 | 3 | [@Bancor](https://x.com/Bancor) (146,771) | [Win up to $3,500 in Celo’s Onchain Agents Hackathon — Optimize Trading Activity With Carbon DeFi](https://x.com/i/article/2063020978016546816) |
+| 45 | 3,690 | 16 | 7 | 0 | [@TheValueist](https://x.com/TheValueist) (36,700) | [The Strategic Landscape of Semiconductor Hybrid Bonding Integration.](https://x.com/i/article/2064455905521840128) |
+| 46 | 20,713 | 12 | 3 | 0 | [@ARKInvest](https://x.com/ARKInvest) (816,432) | [Kalshi Launches Perpetuals As Robinhood’s Rothera Exchange Goes Live, & More](https://x.com/i/article/2064364625731162112) |
+| 47 | 1,352 | 6 | 2 | 1 | [@gudanglifehack](https://x.com/gudanglifehack) (471,755) | [The Ultimate Market Test: OpenAI Files Confidential S-1 for Landmark IPO](https://x.com/i/article/2064345263574237184) |
+| 48 | 29,746 | 5 | 0 | 2 | [@MattGibsonMusic](https://x.com/MattGibsonMusic) (1,502) | [Crimson OS: A Reality Anchor for the AI Age](https://x.com/i/article/2064356799919366144) |
+| 49 | 1,295 | 3 | 1 | 0 | [@BessemerVP](https://x.com/BessemerVP) (132,115) | [Product-market fit isn't binary, it's a spectrum](https://x.com/i/article/2064036047135342592) |
+| 50 | 2,189 | 2 | 0 | 2 | [@Crypto_Briefing](https://x.com/Crypto_Briefing) (63,720) | [Hyperliquid perps now live on Nansen as onchain derivatives volume surges to $625B](https://x.com/i/article/2064363843904589825) |
 
 ## Ranking rule
 

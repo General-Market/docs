@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**47 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **2,409 likes**, **410,433 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**35 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **2,349 likes**, **406,155 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -37,23 +37,11 @@ Combined: **2,409 likes**, **410,433 views**. Native X Article = a tweet whose p
 | 28 | 6,388 | 32 | 2 | 6 | [@FourPillarsFP](https://x.com/FourPillarsFP) (16,904) | [: : [Crypto/Article] Altura: Building the Composable Yield Layer on HyperEVM](https://x.com/i/article/2060180124654546944) |
 | 29 | 17,503 | 29 | 3 | 5 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) (4,600) | [How to Maximize kPoints: Full Guide for Beginners & Advanced Farmers](https://x.com/i/article/2059939995666821125) |
 | 30 | 2,241 | 24 | 9 | 4 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HIP-3: Tesla, oro y el S&P 500 on-chain](https://x.com/i/article/2053423770539294722) |
-| 31 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
-| 32 | 6,259 | 12 | 0 | 2 | [@StarkCrypto3](https://x.com/StarkCrypto3) (7,703) | [Leftcurve Report  : A new Launchpad on Hyperliquid](https://x.com/i/article/2055677327745470464) |
-| 33 | 464 | 11 | 1 | 8 | [@greenrock_fi](https://x.com/greenrock_fi) (43) | [GreenRock — Bringing leveraged, structured funds on-chain. Built on HyperEVM.](https://x.com/i/article/2063714513203916800) |
-| 34 | 445 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,809) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
-| 35 | 293 | 7 | 4 | 2 | [@AtlasHL](https://x.com/AtlasHL) (447) | [Atlas Marketplace keeps growing](https://x.com/i/article/2063655114431213568) |
-| 36 | 622 | 6 | 2 | 1 | [@maanas_tyagi](https://x.com/maanas_tyagi) (132) | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) |
-| 37 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
-| 38 | 402 | 4 | 0 | 1 | [@longpratas](https://x.com/longpratas) (5,446) | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) |
-| 39 | 101 | 3 | 0 | 1 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [A LASTING SOLUTION TO INSECURITY IN NIGERIA](https://x.com/i/article/2062170635111964672) |
-| 40 | 199 | 2 | 1 | 0 | [@solarnite0x](https://x.com/solarnite0x) (114) | [Depression is the Setup; HyperEVM is Loading](https://x.com/i/article/2060852529005838336) |
-| 41 | 7,085 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [Zcash被AI找出增发漏洞，$ZEC暴跌](https://x.com/i/article/2062805716679917568) |
-| 42 | 613 | 1 | 1 | 0 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperCore: The Order Book That Belongs to No One](https://x.com/i/article/2063185672316342272) |
-| 43 | 2,569 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
-| 44 | 11 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [DIVERSIFYING BEYOND OIL.](https://x.com/i/article/2063972220196552704) |
-| 45 | 7 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [FROM PIRACY TO PROSPERITY](https://x.com/i/article/2063968377073205248) |
-| 46 | 5,688 | 0 | 0 | 0 | [@info_felixprtcl](https://x.com/info_felixprtcl) (2) | [Felix Governance Proposal Is Ending Soon](https://x.com/i/article/2054491855211905024) |
-| 47 | 716 | 0 | 0 | 6 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperEVM: The App Store for On-Chain Finance](https://x.com/i/article/2063185801580613632) |
+| 31 | 6,259 | 12 | 0 | 2 | [@StarkCrypto3](https://x.com/StarkCrypto3) (7,703) | [Leftcurve Report  : A new Launchpad on Hyperliquid](https://x.com/i/article/2055677327745470464) |
+| 32 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
+| 33 | 7,085 | 2 | 0 | 0 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [Zcash被AI找出增发漏洞，$ZEC暴跌](https://x.com/i/article/2062805716679917568) |
+| 34 | 2,569 | 1 | 0 | 2 | [@PANewsCN](https://x.com/PANewsCN) (97,719) | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) |
+| 35 | 5,688 | 0 | 0 | 0 | [@info_felixprtcl](https://x.com/info_felixprtcl) (2) | [Felix Governance Proposal Is Ending Soon](https://x.com/i/article/2054491855211905024) |
 
 ## Ranking rule
 

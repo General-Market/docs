@@ -351,6 +351,20 @@ HIP3_TERMS = (
     "outcome markets",
 )
 
+HIP4_TERMS = (
+    "hip-4",
+    "hip4",
+    "outcome market",
+    "outcome markets",
+    "express a bet",
+    "event perp",
+    "event perps",
+    "binary market",
+    "binary markets",
+    "hyperliquid prediction",
+    "prediction markets on hyperliquid",
+)
+
 HYPEREVM_TERMS = (
     "hyperevm",
     "hyper evm",
@@ -428,6 +442,12 @@ NICHE_CONFIG = {
         "match_any": HIP3_TERMS,
         "keyword_query": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"permissionless perp\" OR \"deployer auction\") (Hyperliquid OR HyperCore OR perp OR perps OR market)",
         "likes_prefix": "(HIP-3 OR HIP3 OR \"builder deployed\" OR \"builder-deployed\" OR \"deployer auction\")",
+    },
+    "hip4-30d": {
+        "match_any": HIP4_TERMS,
+        "keyword_query": "(HIP-4 OR HIP4 OR \"outcome market\" OR \"outcome markets\" OR \"event perps\" OR \"express a bet\")",
+        "likes_prefix": "(HIP-4 OR HIP4 OR \"outcome market\" OR \"outcome markets\")",
+        "author_regex": HYPERLIQUID_AUTHOR_REGEX,
     },
     "hyperevm-30d": {
         "match_any": HYPEREVM_TERMS,
@@ -933,6 +953,9 @@ def main() -> None:
     parser.add_argument("--search-mode", choices=("regressive-likes", "keyword", "both"), default="both")
     parser.add_argument("--like-thresholds", default="5000,2000,1000,500,250,100,50,20,10")
     parser.add_argument("--max-articles", type=int, default=20)
+    # Views floor instead of a tight cap: keep every Article above the floor and
+    # let the page be as long as the niche really is. 0 = no floor.
+    parser.add_argument("--min-views", type=int, default=0)
     parser.add_argument("--min-article-age-hours", type=int, default=4)
     parser.add_argument("--author-min-age-hours", type=int, default=4)
     parser.add_argument("--reuse-raw", action="store_true")
@@ -979,6 +1002,8 @@ def main() -> None:
                 continue
             article = to_article(tweet, label)
             if not article:
+                continue
+            if article.views < args.min_views:
                 continue
             if not matches_niche(article, args.niche):
                 continue

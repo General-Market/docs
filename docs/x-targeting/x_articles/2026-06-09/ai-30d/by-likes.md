@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**100 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **123,238 likes**, **100,470,660 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**109 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **126,181 likes**, **102,865,691 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -40,73 +40,82 @@ Combined: **123,238 likes**, **100,470,660 views**. Native X Article = a tweet w
 | 31 | 1,744,387 | 1,197 | 136 | 116 | [@skcd42](https://x.com/skcd42) (28,489) | [Introducing Grok Build CLI Beta](https://x.com/i/article/2054789207269511168) |
 | 32 | 1,167,588 | 1,189 | 153 | 57 | [@Saboo_Shubham_](https://x.com/Saboo_Shubham_) (116,722) | [Generative UI Is the New Frontend](https://x.com/i/article/2057340206442033152) |
 | 33 | 229,968 | 1,137 | 83 | 59 | [@DeRonin_](https://x.com/DeRonin_) (107,492) | [How I Run an AI Agency Solo (No Employees, $40k MRR)](https://x.com/i/article/2059627968872280065) |
-| 34 | 93,316 | 1,104 | 95 | 232 | [@0xileri](https://x.com/0xileri) (7,810) | [how i make AI videos (a beginner’s breakdown)](https://x.com/i/article/2055039445322153984) |
-| 35 | 540,657 | 1,049 | 245 | 25 | [@servasyy_ai](https://x.com/servasyy_ai) (33,619) | [30分钟掌握Codex的97%功能(完整教程)](https://x.com/i/article/2062345946399428608) |
-| 36 | 132,331 | 1,037 | 122 | 47 | [@rasbt](https://x.com/rasbt) (460,434) | [Do AGENTS.md Files Actually Help Coding Agents?](https://x.com/i/article/2063647807437705216) |
-| 37 | 263,350 | 1,036 | 137 | 75 | [@gregisenberg](https://x.com/gregisenberg) (669,181) | [How to become "AI-Native"](https://x.com/i/article/2053837926690148352) |
-| 38 | 1,005,693 | 1,021 | 340 | 45 | [@168X_Fortune](https://x.com/168X_Fortune) (13,910) | [qinbafrank 拆解美股回调级别，AI 真正风险是什么？从软件股、Marvell 光互连、Nokia 到 SpaceX 看资金轮动](https://x.com/i/article/2062376688043044864) |
-| 39 | 1,087,641 | 1,014 | 170 | 47 | [@sairahul1](https://x.com/sairahul1) (112,973) | [Harness Engineering: What Every AI Engineer Needs to Know in 2026](https://x.com/i/article/2063478995262533632) |
-| 40 | 521,825 | 965 | 80 | 81 | [@garrytan](https://x.com/garrytan) (874,889) | [Stop building Foxconn factories for your agents](https://x.com/i/article/2061176923531984896) |
-| 41 | 8,107 | 956 | 199 | 52 | [@OptimaiNetwork](https://x.com/OptimaiNetwork) (99,206) | [May Recap, June Direction: Building the Agent-Native Internet](https://x.com/i/article/2061801609147961344) |
-| 42 | 314,372 | 858 | 156 | 21 | [@intuitiveml](https://x.com/intuitiveml) (6,847) | [Building cloud agent infrastructure: what's different, and what we learned](https://x.com/i/article/2062697992814313472) |
-| 43 | 199,327 | 793 | 95 | 27 | [@mem0ai](https://x.com/mem0ai) (18,050) | [State of Memory in Agent Harness](https://x.com/i/article/2061816883691876352) |
-| 44 | 94,700 | 750 | 104 | 22 | [@ByteMohit](https://x.com/ByteMohit) (2,156) | [I Built an Agentic Harness From Scratch. That Taught Me What Agents Actually Are](https://x.com/i/article/2062061871172386816) |
-| 45 | 112,076 | 741 | 41 | 25 | [@ericzakariasson](https://x.com/ericzakariasson) (70,099) | [Don't let your agent guess, give it runtime context](https://x.com/i/article/2061967596568875008) |
-| 46 | 125,993 | 732 | 144 | 36 | [@yanhua1010](https://x.com/yanhua1010) (32,119) | [这应该是目前最接近正解的 Agent 记忆方案](https://x.com/i/article/2060567536543182848) |
-| 47 | 1,455,382 | 715 | 92 | 26 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Actually Set Up Claude Projects That Most Users Don't Know](https://x.com/i/article/2062992662890766337) |
-| 48 | 3,837,035 | 672 | 45 | 19 | [@elpresidank](https://x.com/elpresidank) (135) | [Context as Topology: Why Your Agent's Memory Forgets, and How Structure Escapes It](https://x.com/i/article/2061766607198703616) |
-| 49 | 104,700 | 607 | 676 | 26 | [@Travix_fi](https://x.com/Travix_fi) (1,670) | [Travix 2026: The Agentic Omnibooker for Global Derivatives](https://x.com/i/article/2055140625952264192) |
-| 50 | 511,868 | 597 | 63 | 5 | [@Hoshino_Sokichi](https://x.com/Hoshino_Sokichi) (16,732) | [Claude Codeのトークン節約はNotebookLMが正解でした。無料でできる「読む係と作る係」の分業術](https://x.com/i/article/2063131721223340032) |
-| 51 | 153,667 | 593 | 48 | 0 | [@kawai_design](https://x.com/kawai_design) (41,519) | [【2026年最新】AIにデザインを任せたい人が、最初に知るべき制作フロー（すぐ使えるテンプレ付）](https://x.com/i/article/2062466369250381824) |
-| 52 | 1,886,182 | 592 | 92 | 25 | [@0xwhrrari](https://x.com/0xwhrrari) (5,030) | [How I set up Obsidian + Claude as my second brain](https://x.com/i/article/2062375527755714560) |
-| 53 | 553,847 | 570 | 41 | 3 | [@Hoshino_Sokichi](https://x.com/Hoshino_Sokichi) (16,732) | [【裏技】NotebookLM×Claude・MCP連携させたら面倒な仕事が消えました](https://x.com/i/article/2063122986740412416) |
-| 54 | 409,869 | 532 | 50 | 23 | [@ElevenLabsDevs](https://x.com/ElevenLabsDevs) (14,409) | [Call Your Hermes Agent over the phone using ElevenAgents](https://x.com/i/article/2062556594844446720) |
-| 55 | 58,927 | 531 | 75 | 37 | [@jainarvind](https://x.com/jainarvind) (9,320) | [Your token spend is an AI architecture problem, not just a model problem](https://x.com/i/article/2062294247144132608) |
-| 56 | 88,929 | 492 | 78 | 37 | [@Google](https://x.com/Google) (31,900,906) | [100 things we announced at I/O 2026](https://x.com/i/article/2059301409707683840) |
-| 57 | 224,688 | 490 | 86 | 40 | [@naiyue777](https://x.com/naiyue777) (295) | [用VPS自建梯子教程（超详细小白也能看）](https://x.com/i/article/2063315210631585792) |
-| 58 | 1,136,794 | 485 | 79 | 34 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Use Claude Cowork to Automate Your Entire Day (Full Course)](https://x.com/i/article/2061449101645115392) |
-| 59 | 599,509 | 446 | 57 | 38 | [@leopardracer](https://x.com/leopardracer) (9,317) | [Hermes Agent Just Changed Local AI Forever: Here's How to Run It Yourself](https://x.com/i/article/2062094836862218240) |
-| 60 | 656,382 | 444 | 137 | 47 | [@KSimback](https://x.com/KSimback) (18,082) | [OpenServ: an enterprise grade AI company inside a crypto project](https://x.com/i/article/2059971149790928898) |
-| 61 | 26,438 | 432 | 49 | 23 | [@FlowbyGoogle](https://x.com/FlowbyGoogle) (61,788) | [Getting the most out of Gemini Omni in Google Flow](https://x.com/i/article/2062656127586983936) |
-| 62 | 242,587 | 422 | 56 | 10 | [@aiedge_](https://x.com/aiedge_) (68,826) | [Claude: Dynamic Workflows ULTIMATE GUIDE](https://x.com/i/article/2061487141285445632) |
-| 63 | 59,919 | 411 | 16 | 35 | [@kylejeong](https://x.com/kylejeong) (6,810) | [Why no one cares about your twitter posts](https://x.com/i/article/2063540274056323072) |
-| 64 | 281,478 | 405 | 60 | 21 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [How to Connect Obsidian + Hermes Agent Into One System That Thinks, Remembers, and Runs Your Life](https://x.com/i/article/2061290917403713538) |
-| 65 | 101,778 | 404 | 34 | 53 | [@mert](https://x.com/mert) (1,046,785) | [the coming crisis: crypto, AI, and spaceflight](https://x.com/i/article/2064303711275593728) |
-| 66 | 145,584 | 404 | 30 | 18 | [@alexcooldev](https://x.com/alexcooldev) (63,665) | [How to Create TikTok Slideshow Content with Claude Opus 4.8 (Step-by-Step Guide)](https://x.com/i/article/2060344915134144513) |
-| 67 | 177,276 | 385 | 63 | 29 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [The 10 Hermes Agent Settings Most Users Never Find That Turn a Chat Agent Into a 24/7 Operation](https://x.com/i/article/2062632368758759424) |
-| 68 | 269,523 | 385 | 43 | 27 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [I Connected Claude to Obsidian 90 Days Ago. Here Is What Happened to How I Work.](https://x.com/i/article/2062168616020090880) |
-| 69 | 698,588 | 380 | 41 | 30 | [@VadimStrizheus](https://x.com/VadimStrizheus) (32,130) | [Claude Opus 4.8 Runs A $16,567/mo YouTube Clipping Channel (full-guide)](https://x.com/i/article/2062415599536349185) |
-| 70 | 70,889 | 368 | 54 | 11 | [@0xCodez](https://x.com/0xCodez) (5,225) | [Loop engineering: the 14-step roadmap from prompter to loop designer.](https://x.com/i/article/2064357550225510400) |
-| 71 | 45,799 | 364 | 29 | 17 | [@kilocode](https://x.com/kilocode) (25,593) | [We Audited the Same Codebase with Claude Opus 4.8 and MiniMax M3](https://x.com/i/article/2063717164931309568) |
-| 72 | 710,313 | 337 | 54 | 30 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [30 Copy-Paste System Prompts That Make Claude an Expert at Anything](https://x.com/i/article/2063309590335217664) |
-| 73 | 179,725 | 328 | 57 | 23 | [@initc3org](https://x.com/initc3org) (11,921) | [Crypto x AI, AI x Crypto: A Survey](https://x.com/i/article/2063982482765008896) |
-| 74 | 104,805 | 316 | 32 | 2 | [@kenn](https://x.com/kenn) (41,267) | [Claudeがスーパーデザイナーすぎる件](https://x.com/i/article/2062037260766449664) |
-| 75 | 558,715 | 313 | 39 | 31 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [25 Claude Features, Workflows, and Tricks That Most Users Don't Know](https://x.com/i/article/2062259311515140096) |
-| 76 | 2,135,978 | 310 | 42 | 31 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Set Up Claude So You Never Write the Same Prompt Twice (Full Course)](https://x.com/i/article/2061831151917101056) |
-| 77 | 79,718 | 306 | 54 | 8 | [@amitiitbhu](https://x.com/amitiitbhu) (23,003) | [How to design a loop that prompts your agent?](https://x.com/i/article/2063978445714214913) |
-| 78 | 266,311 | 302 | 46 | 24 | [@cyrilXBT](https://x.com/cyrilXBT) (183,316) | [12 Free MIT AI Textbooks Into Claude and It Rebuilt My Entire Research System From Scratch](https://x.com/i/article/2056443926895382528) |
-| 79 | 35,066 | 300 | 36 | 11 | [@ashwingop](https://x.com/ashwingop) (5,061) | [Memory Is Purpose](https://x.com/i/article/2061831458205880320) |
-| 80 | 265,398 | 297 | 33 | 33 | [@mikenevermiss](https://x.com/mikenevermiss) (10,431) | [How to Become a Hermes Agent Operator](https://x.com/i/article/2063317984328704001) |
-| 81 | 56,005 | 296 | 67 | 76 | [@x402](https://x.com/x402) (13,722) | [x402 on Solana May Roundup](https://x.com/i/article/2062196845376581633) |
-| 82 | 760,196 | 292 | 51 | 37 | [@masaki_lipple](https://x.com/masaki_lipple) (802) | [AI時代に勝つのは、思想を外部記憶にした人間だけだ](https://x.com/i/article/2062702517809754112) |
-| 83 | 31,626 | 284 | 30 | 13 | [@0x_beni_](https://x.com/0x_beni_) (7,576) | [The Complete June 2026 Hackathon List to Build and Win](https://x.com/i/article/2061803927159398400) |
-| 84 | 52,636 | 273 | 57 | 16 | [@0xluffy_eth](https://x.com/0xluffy_eth) (148,379) | [我连续跑了几个月 Hermes Agent，最后发现：99% 的人根本没用对 AI Agent](https://x.com/i/article/2061638990718177280) |
-| 85 | 70,697 | 269 | 22 | 12 | [@mvanhorn](https://x.com/mvanhorn) (33,050) | [Remotion Was My First Agentic Video Love. Then HyperFrames Stole Me. /last30days for both](https://x.com/i/article/2063492603706740736) |
-| 86 | 460,922 | 266 | 29 | 15 | [@noisyb0y1](https://x.com/noisyb0y1) (20,778) | [This free repository makes Claude Code 20x more powerful. An 18-year-old won a hackathon with it](https://x.com/i/article/2063288163141828608) |
-| 87 | 2,563 | 251 | 94 | 216 | [@inference_labs](https://x.com/inference_labs) (37,832) | [The Computer Vision Trust Problem No One's Talking About](https://x.com/i/article/2064059368664920064) |
-| 88 | 42,783 | 250 | 41 | 30 | [@laowangbabababa](https://x.com/laowangbabababa) (2,824) | [超详细版！老美原生住宅 ip 梯子搭建手把手攻略](https://x.com/i/article/2063478294604128256) |
-| 89 | 390,532 | 248 | 26 | 40 | [@gippp69](https://x.com/gippp69) (6,023) | [Hermes Agent gets smarter every time you use it. Here's how to turn that into $3,000 a month.](https://x.com/i/article/2062842949231071233) |
-| 90 | 12,658 | 237 | 30 | 12 | [@alexwg](https://x.com/alexwg) (62,899) | [Welcome to June 9, 2026](https://x.com/i/article/2064366398525038592) |
-| 91 | 517,612 | 234 | 32 | 14 | [@AnatoliKopadze](https://x.com/AnatoliKopadze) (77,160) | [AI Agents. What they are and how to Build Your Own Step by Step.](https://x.com/i/article/2062147039652155392) |
-| 92 | 44,658 | 214 | 75 | 75 | [@thecryptoskanda](https://x.com/thecryptoskanda) (54,433) | [美元、AI与庞氏：币圈思维炒股指北（上篇）\| USD, AI, and Ponzi — A Crypto Native's Guide to Stocks(P1)](https://x.com/i/article/2061909284464861184) |
-| 93 | 449,941 | 210 | 39 | 23 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Run 300 AI Agents From One Prompt. 10 Workflows Most People Skip](https://x.com/i/article/2061873131371761664) |
-| 94 | 30,919 | 182 | 13 | 7 | [@nateherk](https://x.com/nateherk) (15,462) | [How to Build Claude Subagents Better Than 99% of People](https://x.com/i/article/2064324907253575680) |
-| 95 | 13,978 | 144 | 21 | 16 | [@DamiDefi](https://x.com/DamiDefi) (97,544) | [There Are 4 Levels of Claude Mastery. Most Business Owners Never Get Past Level 1.](https://x.com/i/article/2061106688787189768) |
-| 96 | 12,348 | 101 | 30 | 14 | [@Smartpigai](https://x.com/Smartpigai) (7,847) | [Loop Engineering：Agent时代最被低估的能力](https://x.com/i/article/2064208076945936384) |
-| 97 | 20,995 | 100 | 11 | 22 | [@mikenevermiss](https://x.com/mikenevermiss) (10,431) | [How to Build a Claude Cowork System](https://x.com/i/article/2064239180436131840) |
-| 98 | 4,403 | 77 | 5 | 6 | [@aashatwt](https://x.com/aashatwt) (14,807) | [a complete guide to self-improving agent systems](https://x.com/i/article/2064347681951281152) |
-| 99 | 4,737 | 75 | 10 | 82 | [@RealYDT](https://x.com/RealYDT) (18,896) | [用住宅 IP VPS 跑 Claude Code，我把完整流程整理好了](https://x.com/i/article/2064229790694113280) |
-| 100 | 31,923 | 70 | 12 | 4 | [@JotaroSeo](https://x.com/JotaroSeo) (3,609) | [IA x SEO : Comment être référencé sur ChatGPT, Claude et Gemini... ? Le guide complet de A à Z](https://x.com/i/article/2064242622080696320) |
+| 34 | 334,103 | 1,123 | 38 | 11 | [@agi_aibusi](https://x.com/agi_aibusi) (18,046) | [【スマホ対応】顔固定して成人向け画像を作る方法](https://x.com/i/article/2062805853217148929) |
+| 35 | 93,316 | 1,104 | 95 | 232 | [@0xileri](https://x.com/0xileri) (7,810) | [how i make AI videos (a beginner’s breakdown)](https://x.com/i/article/2055039445322153984) |
+| 36 | 540,657 | 1,049 | 245 | 25 | [@servasyy_ai](https://x.com/servasyy_ai) (33,619) | [30分钟掌握Codex的97%功能(完整教程)](https://x.com/i/article/2062345946399428608) |
+| 37 | 132,331 | 1,037 | 122 | 47 | [@rasbt](https://x.com/rasbt) (460,434) | [Do AGENTS.md Files Actually Help Coding Agents?](https://x.com/i/article/2063647807437705216) |
+| 38 | 263,350 | 1,036 | 137 | 75 | [@gregisenberg](https://x.com/gregisenberg) (669,181) | [How to become "AI-Native"](https://x.com/i/article/2053837926690148352) |
+| 39 | 1,005,693 | 1,021 | 340 | 45 | [@168X_Fortune](https://x.com/168X_Fortune) (13,910) | [qinbafrank 拆解美股回调级别，AI 真正风险是什么？从软件股、Marvell 光互连、Nokia 到 SpaceX 看资金轮动](https://x.com/i/article/2062376688043044864) |
+| 40 | 1,087,641 | 1,014 | 170 | 47 | [@sairahul1](https://x.com/sairahul1) (112,973) | [Harness Engineering: What Every AI Engineer Needs to Know in 2026](https://x.com/i/article/2063478995262533632) |
+| 41 | 521,825 | 965 | 80 | 81 | [@garrytan](https://x.com/garrytan) (874,889) | [Stop building Foxconn factories for your agents](https://x.com/i/article/2061176923531984896) |
+| 42 | 8,107 | 956 | 199 | 52 | [@OptimaiNetwork](https://x.com/OptimaiNetwork) (99,206) | [May Recap, June Direction: Building the Agent-Native Internet](https://x.com/i/article/2061801609147961344) |
+| 43 | 314,372 | 858 | 156 | 21 | [@intuitiveml](https://x.com/intuitiveml) (6,847) | [Building cloud agent infrastructure: what's different, and what we learned](https://x.com/i/article/2062697992814313472) |
+| 44 | 199,327 | 793 | 95 | 27 | [@mem0ai](https://x.com/mem0ai) (18,050) | [State of Memory in Agent Harness](https://x.com/i/article/2061816883691876352) |
+| 45 | 94,700 | 750 | 104 | 22 | [@ByteMohit](https://x.com/ByteMohit) (2,156) | [I Built an Agentic Harness From Scratch. That Taught Me What Agents Actually Are](https://x.com/i/article/2062061871172386816) |
+| 46 | 112,076 | 741 | 41 | 25 | [@ericzakariasson](https://x.com/ericzakariasson) (70,099) | [Don't let your agent guess, give it runtime context](https://x.com/i/article/2061967596568875008) |
+| 47 | 125,993 | 732 | 144 | 36 | [@yanhua1010](https://x.com/yanhua1010) (32,119) | [这应该是目前最接近正解的 Agent 记忆方案](https://x.com/i/article/2060567536543182848) |
+| 48 | 1,077,267 | 727 | 143 | 34 | [@sairahul1](https://x.com/sairahul1) (112,974) | [How To Become An AI Engineer in 2026 (Without a CS Degree)](https://x.com/i/article/2062772766802325505) |
+| 49 | 1,455,382 | 715 | 92 | 26 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Actually Set Up Claude Projects That Most Users Don't Know](https://x.com/i/article/2062992662890766337) |
+| 50 | 3,837,035 | 672 | 45 | 19 | [@elpresidank](https://x.com/elpresidank) (135) | [Context as Topology: Why Your Agent's Memory Forgets, and How Structure Escapes It](https://x.com/i/article/2061766607198703616) |
+| 51 | 104,700 | 607 | 676 | 26 | [@Travix_fi](https://x.com/Travix_fi) (1,670) | [Travix 2026: The Agentic Omnibooker for Global Derivatives](https://x.com/i/article/2055140625952264192) |
+| 52 | 511,868 | 597 | 63 | 5 | [@Hoshino_Sokichi](https://x.com/Hoshino_Sokichi) (16,732) | [Claude Codeのトークン節約はNotebookLMが正解でした。無料でできる「読む係と作る係」の分業術](https://x.com/i/article/2063131721223340032) |
+| 53 | 153,667 | 593 | 48 | 0 | [@kawai_design](https://x.com/kawai_design) (41,519) | [【2026年最新】AIにデザインを任せたい人が、最初に知るべき制作フロー（すぐ使えるテンプレ付）](https://x.com/i/article/2062466369250381824) |
+| 54 | 1,886,182 | 592 | 92 | 25 | [@0xwhrrari](https://x.com/0xwhrrari) (5,030) | [How I set up Obsidian + Claude as my second brain](https://x.com/i/article/2062375527755714560) |
+| 55 | 553,847 | 570 | 41 | 3 | [@Hoshino_Sokichi](https://x.com/Hoshino_Sokichi) (16,732) | [【裏技】NotebookLM×Claude・MCP連携させたら面倒な仕事が消えました](https://x.com/i/article/2063122986740412416) |
+| 56 | 409,869 | 532 | 50 | 23 | [@ElevenLabsDevs](https://x.com/ElevenLabsDevs) (14,409) | [Call Your Hermes Agent over the phone using ElevenAgents](https://x.com/i/article/2062556594844446720) |
+| 57 | 58,927 | 531 | 75 | 37 | [@jainarvind](https://x.com/jainarvind) (9,320) | [Your token spend is an AI architecture problem, not just a model problem](https://x.com/i/article/2062294247144132608) |
+| 58 | 88,929 | 492 | 78 | 37 | [@Google](https://x.com/Google) (31,900,906) | [100 things we announced at I/O 2026](https://x.com/i/article/2059301409707683840) |
+| 59 | 224,688 | 490 | 86 | 40 | [@naiyue777](https://x.com/naiyue777) (295) | [用VPS自建梯子教程（超详细小白也能看）](https://x.com/i/article/2063315210631585792) |
+| 60 | 1,136,794 | 485 | 79 | 34 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Use Claude Cowork to Automate Your Entire Day (Full Course)](https://x.com/i/article/2061449101645115392) |
+| 61 | 131,644 | 463 | 37 | 4 | [@claudecode_lab](https://x.com/claudecode_lab) (19,950) | [14ステップでClaudeをオートパイロットで動かす方法：/loop、Routines、完全自動化スタック](https://x.com/i/article/2063483797799424000) |
+| 62 | 801,909 | 450 | 53 | 18 | [@undefinedKi](https://x.com/undefinedKi) (2,471) | [How to Turn Claude Into a Full Team of Office Workers. One Repo Does All of It (Full Guide)](https://x.com/i/article/2061118461951021057) |
+| 63 | 599,509 | 446 | 57 | 38 | [@leopardracer](https://x.com/leopardracer) (9,317) | [Hermes Agent Just Changed Local AI Forever: Here's How to Run It Yourself](https://x.com/i/article/2062094836862218240) |
+| 64 | 656,382 | 444 | 137 | 47 | [@KSimback](https://x.com/KSimback) (18,082) | [OpenServ: an enterprise grade AI company inside a crypto project](https://x.com/i/article/2059971149790928898) |
+| 65 | 26,438 | 432 | 49 | 23 | [@FlowbyGoogle](https://x.com/FlowbyGoogle) (61,788) | [Getting the most out of Gemini Omni in Google Flow](https://x.com/i/article/2062656127586983936) |
+| 66 | 242,587 | 422 | 56 | 10 | [@aiedge_](https://x.com/aiedge_) (68,826) | [Claude: Dynamic Workflows ULTIMATE GUIDE](https://x.com/i/article/2061487141285445632) |
+| 67 | 59,919 | 411 | 16 | 35 | [@kylejeong](https://x.com/kylejeong) (6,810) | [Why no one cares about your twitter posts](https://x.com/i/article/2063540274056323072) |
+| 68 | 281,478 | 405 | 60 | 21 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [How to Connect Obsidian + Hermes Agent Into One System That Thinks, Remembers, and Runs Your Life](https://x.com/i/article/2061290917403713538) |
+| 69 | 101,778 | 404 | 34 | 53 | [@mert](https://x.com/mert) (1,046,785) | [the coming crisis: crypto, AI, and spaceflight](https://x.com/i/article/2064303711275593728) |
+| 70 | 145,584 | 404 | 30 | 18 | [@alexcooldev](https://x.com/alexcooldev) (63,665) | [How to Create TikTok Slideshow Content with Claude Opus 4.8 (Step-by-Step Guide)](https://x.com/i/article/2060344915134144513) |
+| 71 | 177,276 | 385 | 63 | 29 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [The 10 Hermes Agent Settings Most Users Never Find That Turn a Chat Agent Into a 24/7 Operation](https://x.com/i/article/2062632368758759424) |
+| 72 | 269,523 | 385 | 43 | 27 | [@cyrilXBT](https://x.com/cyrilXBT) (183,317) | [I Connected Claude to Obsidian 90 Days Ago. Here Is What Happened to How I Work.](https://x.com/i/article/2062168616020090880) |
+| 73 | 698,588 | 380 | 41 | 30 | [@VadimStrizheus](https://x.com/VadimStrizheus) (32,130) | [Claude Opus 4.8 Runs A $16,567/mo YouTube Clipping Channel (full-guide)](https://x.com/i/article/2062415599536349185) |
+| 74 | 70,889 | 368 | 54 | 11 | [@0xCodez](https://x.com/0xCodez) (5,225) | [Loop engineering: the 14-step roadmap from prompter to loop designer.](https://x.com/i/article/2064357550225510400) |
+| 75 | 45,799 | 364 | 29 | 17 | [@kilocode](https://x.com/kilocode) (25,593) | [We Audited the Same Codebase with Claude Opus 4.8 and MiniMax M3](https://x.com/i/article/2063717164931309568) |
+| 76 | 710,313 | 337 | 54 | 30 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [30 Copy-Paste System Prompts That Make Claude an Expert at Anything](https://x.com/i/article/2063309590335217664) |
+| 77 | 179,725 | 328 | 57 | 23 | [@initc3org](https://x.com/initc3org) (11,921) | [Crypto x AI, AI x Crypto: A Survey](https://x.com/i/article/2063982482765008896) |
+| 78 | 104,805 | 316 | 32 | 2 | [@kenn](https://x.com/kenn) (41,267) | [Claudeがスーパーデザイナーすぎる件](https://x.com/i/article/2062037260766449664) |
+| 79 | 558,715 | 313 | 39 | 31 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [25 Claude Features, Workflows, and Tricks That Most Users Don't Know](https://x.com/i/article/2062259311515140096) |
+| 80 | 2,135,978 | 310 | 42 | 31 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Set Up Claude So You Never Write the Same Prompt Twice (Full Course)](https://x.com/i/article/2061831151917101056) |
+| 81 | 79,718 | 306 | 54 | 8 | [@amitiitbhu](https://x.com/amitiitbhu) (23,003) | [How to design a loop that prompts your agent?](https://x.com/i/article/2063978445714214913) |
+| 82 | 266,311 | 302 | 46 | 24 | [@cyrilXBT](https://x.com/cyrilXBT) (183,316) | [12 Free MIT AI Textbooks Into Claude and It Rebuilt My Entire Research System From Scratch](https://x.com/i/article/2056443926895382528) |
+| 83 | 35,066 | 300 | 36 | 11 | [@ashwingop](https://x.com/ashwingop) (5,061) | [Memory Is Purpose](https://x.com/i/article/2061831458205880320) |
+| 84 | 265,398 | 297 | 33 | 33 | [@mikenevermiss](https://x.com/mikenevermiss) (10,431) | [How to Become a Hermes Agent Operator](https://x.com/i/article/2063317984328704001) |
+| 85 | 56,005 | 296 | 67 | 76 | [@x402](https://x.com/x402) (13,722) | [x402 on Solana May Roundup](https://x.com/i/article/2062196845376581633) |
+| 86 | 760,196 | 292 | 51 | 37 | [@masaki_lipple](https://x.com/masaki_lipple) (802) | [AI時代に勝つのは、思想を外部記憶にした人間だけだ](https://x.com/i/article/2062702517809754112) |
+| 87 | 31,626 | 284 | 30 | 13 | [@0x_beni_](https://x.com/0x_beni_) (7,576) | [The Complete June 2026 Hackathon List to Build and Win](https://x.com/i/article/2061803927159398400) |
+| 88 | 52,636 | 273 | 57 | 16 | [@0xluffy_eth](https://x.com/0xluffy_eth) (148,379) | [我连续跑了几个月 Hermes Agent，最后发现：99% 的人根本没用对 AI Agent](https://x.com/i/article/2061638990718177280) |
+| 89 | 70,697 | 269 | 22 | 12 | [@mvanhorn](https://x.com/mvanhorn) (33,050) | [Remotion Was My First Agentic Video Love. Then HyperFrames Stole Me. /last30days for both](https://x.com/i/article/2063492603706740736) |
+| 90 | 460,922 | 266 | 29 | 15 | [@noisyb0y1](https://x.com/noisyb0y1) (20,778) | [This free repository makes Claude Code 20x more powerful. An 18-year-old won a hackathon with it](https://x.com/i/article/2063288163141828608) |
+| 91 | 2,563 | 251 | 94 | 216 | [@inference_labs](https://x.com/inference_labs) (37,832) | [The Computer Vision Trust Problem No One's Talking About](https://x.com/i/article/2064059368664920064) |
+| 92 | 42,783 | 250 | 41 | 30 | [@laowangbabababa](https://x.com/laowangbabababa) (2,824) | [超详细版！老美原生住宅 ip 梯子搭建手把手攻略](https://x.com/i/article/2063478294604128256) |
+| 93 | 390,532 | 248 | 26 | 40 | [@gippp69](https://x.com/gippp69) (6,023) | [Hermes Agent gets smarter every time you use it. Here's how to turn that into $3,000 a month.](https://x.com/i/article/2062842949231071233) |
+| 94 | 12,658 | 237 | 30 | 12 | [@alexwg](https://x.com/alexwg) (62,899) | [Welcome to June 9, 2026](https://x.com/i/article/2064366398525038592) |
+| 95 | 517,612 | 234 | 32 | 14 | [@AnatoliKopadze](https://x.com/AnatoliKopadze) (77,160) | [AI Agents. What they are and how to Build Your Own Step by Step.](https://x.com/i/article/2062147039652155392) |
+| 96 | 44,658 | 214 | 75 | 75 | [@thecryptoskanda](https://x.com/thecryptoskanda) (54,433) | [美元、AI与庞氏：币圈思维炒股指北（上篇）\| USD, AI, and Ponzi — A Crypto Native's Guide to Stocks(P1)](https://x.com/i/article/2061909284464861184) |
+| 97 | 449,941 | 210 | 39 | 23 | [@eng_khairallah1](https://x.com/eng_khairallah1) (65,736) | [How to Run 300 AI Agents From One Prompt. 10 Workflows Most People Skip](https://x.com/i/article/2061873131371761664) |
+| 98 | 30,919 | 182 | 13 | 7 | [@nateherk](https://x.com/nateherk) (15,462) | [How to Build Claude Subagents Better Than 99% of People](https://x.com/i/article/2064324907253575680) |
+| 99 | 13,978 | 144 | 21 | 16 | [@DamiDefi](https://x.com/DamiDefi) (97,544) | [There Are 4 Levels of Claude Mastery. Most Business Owners Never Get Past Level 1.](https://x.com/i/article/2061106688787189768) |
+| 100 | 12,348 | 101 | 30 | 14 | [@Smartpigai](https://x.com/Smartpigai) (7,847) | [Loop Engineering：Agent时代最被低估的能力](https://x.com/i/article/2064208076945936384) |
+| 101 | 20,995 | 100 | 11 | 22 | [@mikenevermiss](https://x.com/mikenevermiss) (10,431) | [How to Build a Claude Cowork System](https://x.com/i/article/2064239180436131840) |
+| 102 | 4,403 | 77 | 5 | 6 | [@aashatwt](https://x.com/aashatwt) (14,807) | [a complete guide to self-improving agent systems](https://x.com/i/article/2064347681951281152) |
+| 103 | 4,737 | 75 | 10 | 82 | [@RealYDT](https://x.com/RealYDT) (18,896) | [用住宅 IP VPS 跑 Claude Code，我把完整流程整理好了](https://x.com/i/article/2064229790694113280) |
+| 104 | 31,923 | 70 | 12 | 4 | [@JotaroSeo](https://x.com/JotaroSeo) (3,609) | [IA x SEO : Comment être référencé sur ChatGPT, Claude et Gemini... ? Le guide complet de A à Z](https://x.com/i/article/2064242622080696320) |
+| 105 | 8,092 | 57 | 3 | 9 | [@mvanhorn](https://x.com/mvanhorn) (33,050) | [A Guy Told His Agent to Make $5. It Did. I Copied His Playbook, Ran It 84 Hours, and Made $0. AMA](https://x.com/i/article/2064197617069031424) |
+| 106 | 8,390 | 48 | 6 | 21 | [@Formulasearch](https://x.com/Formulasearch) (6,532) | [少即是多（上）：经久不衰的设计哲学](https://x.com/i/article/2064337526588932096) |
+| 107 | 6,916 | 44 | 6 | 11 | [@MinLiBuilds](https://x.com/MinLiBuilds) (12,713) | [一个 skill 成为 TOP 1% Context 管理大师，比官方好用 100x 的 /fork](https://x.com/i/article/2064321821877604352) |
+| 108 | 4,265 | 29 | 1 | 6 | [@kieranklaassen](https://x.com/kieranklaassen) (17,241) | [Claude Fable 5 and whats next?](https://x.com/i/article/2064457189021155328) |
+| 109 | 22,445 | 2 | 2 | 81 | [@difflawb](https://x.com/difflawb) (117) | [THE DIFF THAT CHANGED EVERYTHING](https://x.com/i/article/2058928146678771712) |
 
 ## Ranking rule
 

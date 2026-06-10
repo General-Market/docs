@@ -28,17 +28,20 @@ fi
 
 # The broad ecosystem page reaches for 100; deep sub-topics are thinner, cap at 60.
 for niche in $NICHES; do
-  # Narrow Hyperliquid sub-topics are thin; everything else reaches for 100.
-  case "$niche" in hip3-30d|hyperevm-30d|hl-defi-30d) max_articles=60 ;; *) max_articles=100 ;; esac
+  # No tight cap — a views floor decides what belongs (everything >= MIN_VIEWS
+  # stays); the high max is only a budget backstop.
+  max_articles="${X_ARTICLE_MONTHLY_MAX:-500}"
   echo "[$(date -u --iso-8601=seconds)] monthly fetch niche=$niche date=$DATE_UTC max=$max_articles"
   python3 "$ENGINE" \
     --niche "$niche" \
     --date "$DATE_UTC" \
     --lookback-hours "${X_ARTICLE_LOOKBACK_HOURS:-720}" \
     --pages "$PAGES" \
+    --latest-pages "${X_ARTICLE_LATEST_PAGES:-14}" \
     --search-mode both \
     --like-thresholds "${X_ARTICLE_LIKE_THRESHOLDS:-5000,2000,1000,500,250,100,50,25,10,5,2,1}" \
     --max-articles "$max_articles" \
+    --min-views "${X_ARTICLE_MIN_VIEWS:-1000}" \
     --min-article-age-hours 4 \
     --author-min-age-hours 4 \
     --budget-usd "$BUDGET_USD"

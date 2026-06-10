@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**47 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
-Combined: **2,409 likes**, **410,433 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**35 native X Articles** on this niche over the **last 30 days**, ranked by raw views.
+Combined: **2,349 likes**, **406,155 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -42,18 +42,6 @@ Combined: **2,409 likes**, **410,433 views**. Native X Article = a tweet whose p
 | 33 | 1,992 | 38 | 8 | 6 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [HyperBFT: 200K órdenes por segundo on-chain](https://x.com/i/article/2053439859834986496) |
 | 34 | 1,752 | 6 | 0 | 1 | [@sriramkri](https://x.com/sriramkri) (20,895) | [agm](https://x.com/i/article/2064020369623691264) |
 | 35 | 1,015 | 55 | 10 | 7 | [@Hyperliquid_ES](https://x.com/Hyperliquid_ES) (1,145) | [Hyperliquid 101: el L1 hecho para trading](https://x.com/i/article/2052720170674601988) |
-| 36 | 716 | 0 | 0 | 6 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperEVM: The App Store for On-Chain Finance](https://x.com/i/article/2063185801580613632) |
-| 37 | 622 | 6 | 2 | 1 | [@maanas_tyagi](https://x.com/maanas_tyagi) (132) | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) |
-| 38 | 613 | 1 | 1 | 0 | [@stoic_research](https://x.com/stoic_research) (57) | [HyperCore: The Order Book That Belongs to No One](https://x.com/i/article/2063185672316342272) |
-| 39 | 464 | 11 | 1 | 8 | [@greenrock_fi](https://x.com/greenrock_fi) (43) | [GreenRock — Bringing leveraged, structured funds on-chain. Built on HyperEVM.](https://x.com/i/article/2063714513203916800) |
-| 40 | 445 | 8 | 1 | 0 | [@ilex_ulmus](https://x.com/ilex_ulmus) (8,809) | [Pause vs the Borg](https://x.com/i/article/2063025948488839168) |
-| 41 | 405 | 16 | 0 | 15 | [@196_crypto](https://x.com/196_crypto) (407) | [How the Altura Vault Redefines Stablecoin Yield and Liquidity Scaling](https://x.com/i/article/2063620912042164224) |
-| 42 | 402 | 4 | 0 | 1 | [@longpratas](https://x.com/longpratas) (5,446) | [#32 DeFi Daily, June 9: LlamaRisk quits Curve for Aave, $500M USDC hits HyperEVM](https://x.com/i/article/2064283054852419584) |
-| 43 | 293 | 7 | 4 | 2 | [@AtlasHL](https://x.com/AtlasHL) (447) | [Atlas Marketplace keeps growing](https://x.com/i/article/2063655114431213568) |
-| 44 | 199 | 2 | 1 | 0 | [@solarnite0x](https://x.com/solarnite0x) (114) | [Depression is the Setup; HyperEVM is Loading](https://x.com/i/article/2060852529005838336) |
-| 45 | 101 | 3 | 0 | 1 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [A LASTING SOLUTION TO INSECURITY IN NIGERIA](https://x.com/i/article/2062170635111964672) |
-| 46 | 11 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [DIVERSIFYING BEYOND OIL.](https://x.com/i/article/2063972220196552704) |
-| 47 | 7 | 1 | 0 | 0 | [@adiefelixadie](https://x.com/adiefelixadie) (725) | [FROM PIRACY TO PROSPERITY](https://x.com/i/article/2063968377073205248) |
 
 ## Ranking rule
 

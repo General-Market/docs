@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **50 native X Articles** from **1177 searched tweets** since `2026-06-09T02:26:22.669644+00:00`.
+Stored **76 native X Articles** from **1177 searched tweets** since `2026-06-09T02:45:37.994646+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -120,8 +120,8 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 
 ## Spend
 
-- Balance before: `9084714` credits.
-- Balance after: `9084714` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.

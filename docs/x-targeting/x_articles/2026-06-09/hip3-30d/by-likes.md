@@ -2,8 +2,8 @@
 
 ## TL;DR
 
-**24 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
-Combined: **1,079 likes**, **246,244 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
+**22 native X Articles** on this niche over the **last 30 days**, ranked by raw likes.
+Combined: **1,072 likes**, **245,870 views**. Native X Article = a tweet whose payload carries a non-null `article` object (the long-form `x.com/i/article/...` format), not an external link.
 
 | rank | views | likes | RTs | replies | author (followers) | X Article |
 |---:|---:|---:|---:|---:|---|---|
@@ -29,8 +29,6 @@ Combined: **1,079 likes**, **246,244 views**. Native X Article = a tweet whose p
 | 20 | 27,480 | 10 | 4 | 2 | [@BlockBeatsAsia](https://x.com/BlockBeatsAsia) (87,060) | [海力士开盘前最后2分钟，TradeXYZ让价格精确到只差0.13%](https://x.com/i/article/2063917633871704064) |
 | 21 | 1,950 | 10 | 1 | 3 | [@monarch_fast](https://x.com/monarch_fast) (317) | [Bad Oracle, Empty Book: On-chain deep dive into @Ventuals SpaceX blow-up](https://x.com/i/article/2060301137832742912) |
 | 22 | 5,326 | 6 | 1 | 7 | [@aveai_info](https://x.com/aveai_info) (19,936) | [Hyperliquid HIP-4 结果合约详解：从价格博弈到概率交易的新衍生品机会](https://x.com/i/article/2063610993356455936) |
-| 23 | 187 | 4 | 1 | 1 | [@gizmolab_](https://x.com/gizmolab_) (1,267) | [New Category Of Onchain Markets](https://x.com/i/article/1929879329636270080) |
-| 24 | 187 | 3 | 0 | 1 | [@AveaiGlobal](https://x.com/AveaiGlobal) (8,634) | [Hyperliquid HIP-4 Outcome Contracts Explained](https://x.com/i/article/2064045196984438784) |
 
 ## Ranking rule
 

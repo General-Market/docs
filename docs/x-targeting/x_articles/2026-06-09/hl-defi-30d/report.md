@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Stored **37 native X Articles** from **535 searched tweets** since `2026-05-11T02:32:59.976371+00:00`.
+Stored **27 native X Articles** from **535 searched tweets** since `2026-05-11T02:45:34.110952+00:00`.
 Search mode: **both**.
 Freshness rule: Article and author baseline posts must be at least **4 hours old**.
 
@@ -24,15 +24,15 @@ Freshness rule: Article and author baseline posts must be at least **4 hours old
 | 14 | [盘点30多家人形机器人公司：谁能在2026年胜出？](https://x.com/i/article/2056923419585957888) | [@PANewsCN](https://x.com/PANewsCN) | 19 eng / 6979 views / 2.722 eng per 1k views | 23.3 | 71.419 per 1k | 2.342x | Read and extract pattern (~5 min) |
 | 15 | [人形机器人11个应用指南：中国领跑全球，谁在赚钱，谁还在试点？](https://x.com/i/article/2056192746118082560) | [@PANewsCN](https://x.com/PANewsCN) | 14 eng / 4742 views / 2.952 eng per 1k views | 18.6 | 48.527 per 1k | 1.592x | Read and extract pattern (~5 min) |
 | 16 | [<Felix项目研报>](https://x.com/i/article/2055994878182719488) | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 151 eng / 3654 views / 41.325 eng per 1k views | 154.2 | 350.0 per 1k | 1.41x | Read and extract pattern (~5 min) |
-| 17 | [PewDiePie - Odysseus: A Complete Beginner's Guide](https://x.com/i/article/2062248713062592512) | [@maanas_tyagi](https://x.com/maanas_tyagi) | 11 eng / 622 views / 17.685 eng per 1k views | 14.2 | 4712.121 per 1k | 1.395x | Read and extract pattern (~5 min) |
-| 18 | [宇树科技IPO上会倒计时！拆解“人形机器人第一股”招股书里的冰与火](https://x.com/i/article/2059126585350098944) | [@PANewsCN](https://x.com/PANewsCN) | 3 eng / 3932 views / 0.763 eng per 1k views | 5.3 | 40.238 per 1k | 1.32x | Read and extract pattern (~5 min) |
-| 19 | [对话Figure机器人创始人：390亿美元估值背后是量产百万台的野心](https://x.com/i/article/2056192679466463232) | [@PANewsCN](https://x.com/PANewsCN) | 5 eng / 2720 views / 1.838 eng per 1k views | 7.9 | 27.835 per 1k | 0.913x | Read and extract pattern (~5 min) |
-| 20 | [Grayscale $HYPE ETF Seeding: What it is and what that means for HYPE holders](https://x.com/i/article/2061140420168704000) | [@botblastcap](https://x.com/botblastcap) | 72 eng / 7819 views / 9.208 eng per 1k views | 78.6 | 953.653 per 1k | 0.831x | Read and extract pattern (~5 min) |
-| 21 | [Introducing: Base Smart Money Indexes powered by new Tokenized Vaults](https://x.com/i/article/2062105447646064640) | [@charles__AI](https://x.com/charles__AI) | 46 eng / 4233 views / 10.867 eng per 1k views | 56.4 | 3722.955 per 1k | 0.819x | Read and extract pattern (~5 min) |
-| 22 | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) | [@PANewsCN](https://x.com/PANewsCN) | 4 eng / 2569 views / 1.557 eng per 1k views | 5.9 | 26.29 per 1k | 0.791x | Read and extract pattern (~5 min) |
-| 23 | [Grayscale Hyperliquid Staking ETP (HYPG) Launch](https://x.com/i/article/2062004056084865024) | [@woleswoosh](https://x.com/woleswoosh) | 1 eng / 374 views / 2.674 eng per 1k views | 1.1 | 21.73 per 1k | 0.692x | Read and extract pattern (~5 min) |
-| 24 | [Market Maturation Cycles Part 2 – The Infatuation Stage](https://x.com/i/article/2061076044795293701) | [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) | 95 eng / 2454 views / 38.712 eng per 1k views | 97.8 | 110.595 per 1k | 0.489x | Read and extract pattern (~5 min) |
-| 25 | [HyperLend Q1 Token Holder Report ](https://x.com/i/article/2054557960731291648) | [@Blockworks](https://x.com/Blockworks) | 129 eng / 19360 views / 6.663 eng per 1k views | 160.5 | 39.237 per 1k | 0.383x | Read and extract pattern (~5 min) |
+| 17 | [宇树科技IPO上会倒计时！拆解“人形机器人第一股”招股书里的冰与火](https://x.com/i/article/2059126585350098944) | [@PANewsCN](https://x.com/PANewsCN) | 3 eng / 3932 views / 0.763 eng per 1k views | 5.3 | 40.238 per 1k | 1.32x | Read and extract pattern (~5 min) |
+| 18 | [对话Figure机器人创始人：390亿美元估值背后是量产百万台的野心](https://x.com/i/article/2056192679466463232) | [@PANewsCN](https://x.com/PANewsCN) | 5 eng / 2720 views / 1.838 eng per 1k views | 7.9 | 27.835 per 1k | 0.913x | Read and extract pattern (~5 min) |
+| 19 | [Grayscale $HYPE ETF Seeding: What it is and what that means for HYPE holders](https://x.com/i/article/2061140420168704000) | [@botblastcap](https://x.com/botblastcap) | 72 eng / 7819 views / 9.208 eng per 1k views | 78.6 | 953.653 per 1k | 0.831x | Read and extract pattern (~5 min) |
+| 20 | [Introducing: Base Smart Money Indexes powered by new Tokenized Vaults](https://x.com/i/article/2062105447646064640) | [@charles__AI](https://x.com/charles__AI) | 46 eng / 4233 views / 10.867 eng per 1k views | 56.4 | 3722.955 per 1k | 0.819x | Read and extract pattern (~5 min) |
+| 21 | [机器人越逼真越可怕？揭秘人形机器人时代的“恐怖谷效应”](https://x.com/i/article/2064227422913073152) | [@PANewsCN](https://x.com/PANewsCN) | 4 eng / 2569 views / 1.557 eng per 1k views | 5.9 | 26.29 per 1k | 0.791x | Read and extract pattern (~5 min) |
+| 22 | [Market Maturation Cycles Part 2 – The Infatuation Stage](https://x.com/i/article/2061076044795293701) | [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) | 95 eng / 2454 views / 38.712 eng per 1k views | 97.8 | 110.595 per 1k | 0.489x | Read and extract pattern (~5 min) |
+| 23 | [HyperLend Q1 Token Holder Report ](https://x.com/i/article/2054557960731291648) | [@Blockworks](https://x.com/Blockworks) | 129 eng / 19360 views / 6.663 eng per 1k views | 160.5 | 39.237 per 1k | 0.383x | Read and extract pattern (~5 min) |
+| 24 | [agm](https://x.com/i/article/2064020369623691264) | [@sriramkri](https://x.com/sriramkri) | 9 eng / 1752 views / 5.137 eng per 1k views | 10.6 | 83.848 per 1k | 0.315x | Read and extract pattern (~5 min) |
+| 25 | [Odysseus Has Landed: PewDiePie’s Self-Hosted AI Revolution – And How We’re Stress-Testing the Future](https://x.com/i/article/2062589225439277056) | [@BrianRoemmele](https://x.com/BrianRoemmele) | 238 eng / 17169 views / 13.862 eng per 1k views | 253.7 | 36.023 per 1k | 0.168x | Read and extract pattern (~5 min) |
 
 ## Ranking Rule
 
@@ -99,7 +99,6 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 |---|---:|
 | [@PANewsCN](https://x.com/PANewsCN) | 7 |
 | [@HyperEVM_CN](https://x.com/HyperEVM_CN) | 3 |
-| [@adiefelixadie](https://x.com/adiefelixadie) | 3 |
 | [@quant_degen](https://x.com/quant_degen) | 1 |
 | [@PDmytriiev](https://x.com/PDmytriiev) | 1 |
 | [@TomCryptoDefi](https://x.com/TomCryptoDefi) | 1 |
@@ -109,19 +108,19 @@ These are likely coordinated reposts or duplicate-native Articles. Treat the clu
 | [@eulerfinance](https://x.com/eulerfinance) | 1 |
 | [@tiger_research_](https://x.com/tiger_research_) | 1 |
 | [@qlabsofficial](https://x.com/qlabsofficial) | 1 |
-| [@maanas_tyagi](https://x.com/maanas_tyagi) | 1 |
 | [@botblastcap](https://x.com/botblastcap) | 1 |
 | [@charles__AI](https://x.com/charles__AI) | 1 |
-| [@woleswoosh](https://x.com/woleswoosh) | 1 |
 | [@IAmAlenSultanic](https://x.com/IAmAlenSultanic) | 1 |
 | [@Blockworks](https://x.com/Blockworks) | 1 |
 | [@sriramkri](https://x.com/sriramkri) | 1 |
 | [@BrianRoemmele](https://x.com/BrianRoemmele) | 1 |
+| [@HyperliquidPC](https://x.com/HyperliquidPC) | 1 |
+| [@Baheet_](https://x.com/Baheet_) | 1 |
 
 ## Spend
 
-- Balance before: `9039234` credits.
-- Balance after: `9039234` credits.
+- Balance before: `8956179` credits.
+- Balance after: `8956179` credits.
 - Apparent spend: `0` credits = `$0.0000`.
 
 Exception: twitterapi.io balance can lag per call; use the global ledger for settled accounting.
