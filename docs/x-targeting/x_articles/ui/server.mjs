@@ -405,7 +405,7 @@ const html = String.raw`<!doctype html>
     .metric .value { margin-top: 4px; font-size: 24px; line-height: 1.1666; font-weight: 700; }
     .tableWrap { overflow-x: auto; border: 1px solid #e8e8ed; border-radius: 8px; background: #fff; }
     table { width: 100%; min-width: 1180px; border-collapse: collapse; }
-    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #e8e8ed; vertical-align: top; }
+    th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid #e8e8ed; vertical-align: top; }
     th { color: #6e6e73; font-size: 12px; text-transform: uppercase; letter-spacing: .012em; background: #fbfbfd; white-space: nowrap; }
     .sortHead {
       appearance: none;
@@ -426,7 +426,7 @@ const html = String.raw`<!doctype html>
     .articleCell { min-width: 360px; max-width: 560px; }
     .personCell { min-width: 240px; }
     .title { font-weight: 600; line-height: 1.2105; }
-    .preview { color: #6e6e73; font-size: 14px; margin-top: 5px; max-width: 560px; }
+    .preview { color: #6e6e73; font-size: 13px; margin-top: 4px; max-width: 560px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .byline { margin-top: 7px; color: #6e6e73; font-size: 14px; }
     .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
     .metricNum { font-size: 18px; font-weight: 700; color: #1d1d1f; }
@@ -450,7 +450,7 @@ const html = String.raw`<!doctype html>
     .draftBox { display: flex; flex-direction: column; gap: 10px; max-width: 680px; }
     textarea.draftText {
       width: 100%;
-      min-height: 64px;
+      min-height: 46px;
       border: 1px solid #d2d2d7;
       border-radius: 8px;
       padding: 10px 12px;
@@ -793,7 +793,7 @@ const html = String.raw`<!doctype html>
         queue.map((row, i) => { const tweetId = tweetIdFromUrl(row.tweet_url); const hasDraft = !!state.drafts[tweetId]; return '<tr data-tweet-id="' + escapeHtml(tweetId) + '">' +
           '<td class="rank">#' + (i + 1) + '</td>' +
           '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
-          '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(relativeAge(row.created_at)) + ' | ' + escapeHtml(sourceLabel(row)) + ' | ' + escapeHtml(row.created_at || "") + '</div></td>' +
+          '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(relativeAge(row.created_at)) + ' | ' + escapeHtml(sourceLabel(row)) + '</div></td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(row.rank_score || 0)) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(row.engagement_rate || 0) + '</span><div class="muted">' + fmt.format(row.engagement || 0) + ' eng</div></td>' +
           '<td class="num">' + fmt.format(row.followers || 0) + '</td>' +
@@ -907,7 +907,7 @@ const html = String.raw`<!doctype html>
 
     function autoGrow(ta) {
       ta.style.height = "auto";
-      ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
+      ta.style.height = Math.min(ta.scrollHeight, 150) + "px";
     }
 
     function draftBoxHtml(text, statusText) {
@@ -999,18 +999,42 @@ const html = String.raw`<!doctype html>
       else generateDraft(tweetId, false);
     }
 
-    async function copyAndOpen(tweetId) {
-      const row = queueRowByTweetId(tweetId);
-      if (row && row.tweet_url) window.open(row.tweet_url, "_blank", "noopener");
+    function copyToClipboard(text) {
+      // execCommand path works over plain HTTP (navigator.clipboard needs a secure
+      // context). It must run while the document is focused — so copy BEFORE opening
+      // the tweet, otherwise window.open steals focus and the copy fails.
+      const tmp = document.createElement("textarea");
+      tmp.value = text;
+      tmp.setAttribute("readonly", "");
+      tmp.style.position = "fixed";
+      tmp.style.top = "-1000px";
+      tmp.style.opacity = "0";
+      document.body.appendChild(tmp);
+      tmp.focus();
+      tmp.select();
+      tmp.setSelectionRange(0, text.length);
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(tmp);
+      if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+        ok = true;
+      }
+      return ok;
+    }
+
+    function copyAndOpen(tweetId) {
       const cell = draftRowCell(tweetId).cell;
       const ta = cell ? cell.querySelector(".draftText") : null;
       const text = ta ? ta.value : (state.drafts[tweetId] ? state.drafts[tweetId].draft : "");
-      try { await navigator.clipboard.writeText(text); } catch (e) { if (ta) { ta.select(); document.execCommand("copy"); } }
+      const copied = copyToClipboard(text);            // copy first, while focused
+      const row = queueRowByTweetId(tweetId);
+      if (row && row.tweet_url) window.open(row.tweet_url, "_blank");  // then open the tweet
       const button = document.querySelector('.replyBtn[data-reply-id="' + tweetId + '"]');
       if (button) {
         button.classList.add("flash");
-        button.innerHTML = "Copied ✓";
-        setTimeout(() => { button.classList.remove("flash"); button.innerHTML = "Copy &amp; open"; }, 1200);
+        button.innerHTML = copied ? "Copied ✓" : "Copy failed";
+        setTimeout(() => { button.classList.remove("flash"); button.innerHTML = "Copy &amp; open"; }, 1400);
       }
     }
 
