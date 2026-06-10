@@ -155,6 +155,8 @@ const DRAFT_KILL_GRACE_MS = 4000;
 const MAX_CONCURRENT_DRAFTS = Number(process.env.MAX_CONCURRENT_DRAFTS || 2);
 const codexScratch = path.join(__dirname, ".codex-scratch");
 const replyPromptFile = path.join(engagementRoot, "reply_prompt.md");
+const trackPromptFile = path.join(engagementRoot, "track_prompt.md");
+const CLASSIFY_TIMEOUT_MS = Number(process.env.CLASSIFY_TIMEOUT_MS || 120000);
 const codexPath = (process.env.PATH || "") + ":/usr/local/bin:/usr/bin:/bin:/opt/docsai/.local/bin";
 try { fs.mkdirSync(codexScratch, { recursive: true }); } catch {}
 
@@ -222,9 +224,9 @@ function buildDraftPrompt(row) {
 }
 
 let draftCounter = 0;
-function runCodexDraft(prompt) {
+function runCodex(prompt, useWeb, timeoutMs) {
   return new Promise((resolve) => {
-    const ansFile = path.join(codexScratch, ".draft-" + Date.now().toString(36) + "-" + (draftCounter++) + ".txt");
+    const ansFile = path.join(codexScratch, ".codex-" + Date.now().toString(36) + "-" + (draftCounter++) + ".txt");
     const args = [
       "exec",
       "-m",
@@ -232,15 +234,11 @@ function runCodexDraft(prompt) {
       "--skip-git-repo-check",
       "--sandbox",
       "workspace-write",
-      "-c",
-      "sandbox_workspace_write.network_access=true",
-      "-c",
-      "tools.web_search=true",
-      "-o",
-      ansFile,
-      "-C",
-      codexScratch,
     ];
+    if (useWeb) {
+      args.push("-c", "sandbox_workspace_write.network_access=true", "-c", "tools.web_search=true");
+    }
+    args.push("-o", ansFile, "-C", codexScratch);
     const child = spawn(CODEX_BIN, args, {
       cwd: codexScratch,
       stdio: ["pipe", "pipe", "pipe"],
@@ -258,7 +256,7 @@ function runCodexDraft(prompt) {
       timedOut = true;
       child.kill("SIGTERM");
       setTimeout(() => { if (!child.killed) child.kill("SIGKILL"); }, DRAFT_KILL_GRACE_MS).unref();
-    }, DRAFT_TIMEOUT_MS);
+    }, timeoutMs || DRAFT_TIMEOUT_MS);
     timer.unref();
     child.on("error", () => { clearTimeout(timer); resolve({ ok: false, reason: "spawn" }); });
     child.on("close", () => {
@@ -298,7 +296,7 @@ function draftReply(date, target, tweetId, force) {
     if (!row) return { ok: false, reason: "not_found" };
     await acquireDraftSlot();
     try {
-      const result = await runCodexDraft(buildDraftPrompt(row));
+      const result = await runCodex(buildDraftPrompt(row), true);
       if (!result.ok) return { ok: false, reason: result.reason };
       appendDraft(date, target, { tweet_id: tweetId, draft: result.answer, created_at: new Date().toISOString(), model: CODEX_MODEL });
       return { ok: true, draft: result.answer, cached: false };
@@ -308,6 +306,81 @@ function draftReply(date, target, tweetId, force) {
   })();
   draftInFlight.set(key, job);
   return job.finally(() => draftInFlight.delete(key));
+}
+
+// ─────────────────────────── AI track filter (one batched codex call, no web)
+function trackMap(date, target) {
+  const map = {};
+  for (const row of readJsonl(path.join(engagementDir(date, target), "track.jsonl"))) {
+    if (row && row.tweet_id) map[row.tweet_id] = row;
+  }
+  return map;
+}
+
+function writeTrack(date, target, records) {
+  const dir = engagementDir(date, target);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "track.jsonl"), records.map((r) => JSON.stringify(r)).join("\n") + "\n");
+}
+
+function buildClassifyPrompt(items) {
+  let rules = "";
+  try { rules = fs.readFileSync(trackPromptFile, "utf8").trim(); } catch {}
+  const list = items.map((it, i) => (i + 1) + ". @" + it.handle + ": " + String(it.text || "(no text)").replace(/\s+/g, " ").slice(0, 280)).join("\n");
+  return rules + "\n\n## Tweets\n\n" + list + "\n\nReturn the JSON array now.";
+}
+
+function parseClassify(answer, items) {
+  const txt = String(answer || "");
+  const a = txt.indexOf("[");
+  const b = txt.lastIndexOf("]");
+  if (a === -1 || b === -1 || b < a) return null;
+  let arr;
+  try { arr = JSON.parse(txt.slice(a, b + 1)); } catch { return null; }
+  if (!Array.isArray(arr)) return null;
+  const out = [];
+  for (const entry of arr) {
+    const idx = Number(entry && entry.i);
+    if (!idx || idx < 1 || idx > items.length) continue;
+    const it = items[idx - 1];
+    out.push({
+      tweet_id: it.tweet_id,
+      on_track: !!(entry.on_track),
+      score: Math.max(0, Math.min(100, Math.round(Number(entry.score) || 0))),
+      reason: String(entry.reason || "").slice(0, 80),
+    });
+  }
+  return out.length ? out : null;
+}
+
+const classifyInFlight = new Map();
+function classifyQueue(date, target) {
+  const key = date + "|" + target;
+  if (classifyInFlight.has(key)) return classifyInFlight.get(key);
+  const job = (async () => {
+    const rows = readJsonl(path.join(engagementDir(date, target), "queue.jsonl"));
+    const items = rows
+      .map((r) => ({ tweet_id: tweetIdFromUrl(r.tweet_url), text: r.text || "", handle: r.handle || "" }))
+      .filter((x) => x.tweet_id);
+    if (!items.length) return { ok: false, reason: "empty_queue" };
+    await acquireDraftSlot();
+    let result;
+    try {
+      result = await runCodex(buildClassifyPrompt(items), false, CLASSIFY_TIMEOUT_MS);
+    } finally {
+      releaseDraftSlot();
+    }
+    if (!result.ok) return { ok: false, reason: result.reason };
+    const parsed = parseClassify(result.answer, items);
+    if (!parsed) return { ok: false, reason: "parse" };
+    const stamped = parsed.map((p) => ({ ...p, classified_at: new Date().toISOString() }));
+    writeTrack(date, target, stamped);
+    const map = {};
+    for (const r of stamped) map[r.tweet_id] = r;
+    return { ok: true, track: map };
+  })();
+  classifyInFlight.set(key, job);
+  return job.finally(() => classifyInFlight.delete(key));
 }
 
 function readJsonBody(req) {
@@ -474,6 +547,9 @@ const html = String.raw`<!doctype html>
     }
     .draftAction:hover { background: #f5f5f7; }
     .draftStatus { font-size: 13px; color: #6e6e73; }
+    .trackChip { display: inline-block; margin-top: 5px; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+    .trackChip.trackOn { background: #e6f4ea; color: #1f8b4c; }
+    .trackChip.trackOff { background: #f0f0f2; color: #86868b; }
     @media (max-width: 760px) {
       header, .topActions { align-items: stretch; flex-direction: column; }
       .summary { grid-template-columns: 1fr; }
@@ -515,6 +591,8 @@ const html = String.raw`<!doctype html>
         </select>
         <button class="refreshButton" id="refreshEngagementButton" type="button"><span class="spinner"></span><span id="refreshEngagementText">Refresh today</span></button>
         <span class="refreshStatus" id="refreshStatus"></span>
+        <button class="refreshButton" id="aiFilterButton" type="button"><span class="spinner"></span><span id="aiFilterText">AI filter</span></button>
+        <span class="refreshStatus" id="aiFilterStatus"></span>
         <button class="refreshButton" id="draftAllButton" type="button"><span class="spinner"></span><span id="draftAllText">Draft all</span></button>
         <span class="refreshStatus" id="draftAllStatus"></span>
       </div>
@@ -542,6 +620,8 @@ const html = String.raw`<!doctype html>
       engagementRankBy: "score",
       queue: [],
       drafts: {},
+      track: {},
+      trackOnly: false,
     };
     const fmt = new Intl.NumberFormat();
 
@@ -671,6 +751,8 @@ const html = String.raw`<!doctype html>
       };
       const draftAllButton = document.getElementById("draftAllButton");
       if (draftAllButton) draftAllButton.onclick = () => draftAll();
+      const aiFilterButton = document.getElementById("aiFilterButton");
+      if (aiFilterButton) aiFilterButton.onclick = () => aiFilter();
     }
 
     async function loadArticles() {
@@ -692,8 +774,11 @@ const html = String.raw`<!doctype html>
       const url = "/api/engagement/queue?date=" + encodeURIComponent(state.engagementDate) + "&target=" + encodeURIComponent(state.target);
       const data = await fetch(url).then((r) => r.json());
       state.queue = data.queue || [];
-      state.drafts = await fetch("/api/engagement/drafts?date=" + encodeURIComponent(state.engagementDate) + "&target=" + encodeURIComponent(state.target)).then((r) => r.json()).catch(() => ({}));
-      if (state.mode === "engagement") renderEngagementTable(sortedQueue(state.queue));
+      const qs = "date=" + encodeURIComponent(state.engagementDate) + "&target=" + encodeURIComponent(state.target);
+      state.drafts = await fetch("/api/engagement/drafts?" + qs).then((r) => r.json()).catch(() => ({}));
+      state.track = await fetch("/api/engagement/track?" + qs).then((r) => r.json()).catch(() => ({}));
+      state.trackOnly = false;
+      if (state.mode === "engagement") { renderEngagementTable(sortedQueue(state.queue)); updateAiFilterButton(); }
     }
 
     function sortedArticles(articles) {
@@ -781,6 +866,13 @@ const html = String.raw`<!doctype html>
         content.innerHTML = '<div class="empty">No engagement queue for this date and target.</div>';
         return;
       }
+      const visible = state.trackOnly
+        ? queue.filter((row) => { const t = state.track[tweetIdFromUrl(row.tweet_url)]; return t && t.on_track; })
+        : queue;
+      if (!visible.length) {
+        content.innerHTML = '<div class="empty">No on-track candidates here. Click “Show all” to see every row.</div>';
+        return;
+      }
       content.innerHTML = '<div class="tableWrap"><table><thead><tr>' +
         '<th>Rank</th><th>Candidate</th><th>Source tweet</th>' +
         engagementSortHeader("score", "Score") +
@@ -790,9 +882,9 @@ const html = String.raw`<!doctype html>
         '<th>Target post</th>' +
         '<th>Reply</th>' +
         '</tr></thead><tbody>' +
-        queue.map((row, i) => { const tweetId = tweetIdFromUrl(row.tweet_url); const hasDraft = !!state.drafts[tweetId]; return '<tr data-tweet-id="' + escapeHtml(tweetId) + '">' +
+        visible.map((row, i) => { const tweetId = tweetIdFromUrl(row.tweet_url); const hasDraft = !!state.drafts[tweetId]; return '<tr data-tweet-id="' + escapeHtml(tweetId) + '">' +
           '<td class="rank">#' + (i + 1) + '</td>' +
-          '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div></td>' +
+          '<td class="personCell"><a class="title" href="https://x.com/' + escapeHtml(row.handle) + '" target="_blank" rel="noreferrer">@' + escapeHtml(row.handle) + '</a><div class="muted">' + escapeHtml(row.name || "") + '</div>' + trackBadge(tweetId) + '</td>' +
           '<td class="articleCell"><a class="title" href="' + escapeHtml(row.tweet_url || "") + '" target="_blank" rel="noreferrer">open tweet</a><div class="preview">' + escapeHtml(row.text || "") + '</div><div class="byline">' + escapeHtml(relativeAge(row.created_at)) + ' | ' + escapeHtml(sourceLabel(row)) + '</div></td>' +
           '<td class="num"><span class="metricNum">' + fmt.format(Math.round(row.rank_score || 0)) + '</span></td>' +
           '<td class="num"><span class="metricNum">' + formatPercent(row.engagement_rate || 0) + '</span><div class="muted">' + fmt.format(row.engagement || 0) + ' eng</div></td>' +
@@ -812,7 +904,7 @@ const html = String.raw`<!doctype html>
       content.querySelectorAll(".replyBtn").forEach((button) => {
         button.addEventListener("click", () => onReplyClick(button.getAttribute("data-reply-id")));
       });
-      queue.forEach((row) => {
+      visible.forEach((row) => {
         const id = tweetIdFromUrl(row.tweet_url);
         if (id && state.drafts[id]) {
           const cell = draftRowCell(id).cell;
@@ -881,11 +973,67 @@ const html = String.raw`<!doctype html>
       return state.queue.find((row) => tweetIdFromUrl(row.tweet_url) === tweetId) || null;
     }
 
+    function trackBadge(tweetId) {
+      const t = state.track[tweetId];
+      if (!t) return "";
+      const cls = t.on_track ? "trackOn" : "trackOff";
+      const label = (t.on_track ? "✓ on-track " : "✗ off ") + (t.score || 0);
+      return '<div class="trackChip ' + cls + '" title="' + escapeHtml(t.reason || "") + '">' + label + '</div>';
+    }
+
+    function updateAiFilterButton() {
+      const text = document.getElementById("aiFilterText");
+      const status = document.getElementById("aiFilterStatus");
+      if (!text) return;
+      const ids = Object.keys(state.track || {});
+      if (!ids.length) { text.textContent = "AI filter"; if (status) status.textContent = ""; return; }
+      const on = ids.filter((id) => state.track[id].on_track).length;
+      text.textContent = state.trackOnly ? "Show all" : "AI filter";
+      if (status) status.textContent = on + "/" + ids.length + " on-track";
+    }
+
+    async function aiFilter() {
+      const button = document.getElementById("aiFilterButton");
+      const text = document.getElementById("aiFilterText");
+      const status = document.getElementById("aiFilterStatus");
+      if (Object.keys(state.track || {}).length > 0) {
+        state.trackOnly = !state.trackOnly;
+        renderEngagementTable(sortedQueue(state.queue));
+        updateAiFilterButton();
+        return;
+      }
+      button.disabled = true; button.classList.add("loading"); text.textContent = "Filtering";
+      status.textContent = "codex is reading the queue (~20–40s)";
+      try {
+        const res = await fetch("/api/engagement/classify", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ date: state.engagementDate, target: state.target }),
+        }).then((r) => r.json());
+        button.disabled = false; button.classList.remove("loading");
+        if (res && res.ok) {
+          state.track = res.track;
+          state.trackOnly = true;
+          renderEngagementTable(sortedQueue(state.queue));
+          updateAiFilterButton();
+        } else {
+          text.textContent = "AI filter";
+          status.textContent = "filter failed (" + ((res && res.reason) || "error") + ")";
+        }
+      } catch (e) {
+        button.disabled = false; button.classList.remove("loading");
+        text.textContent = "AI filter";
+        status.textContent = "filter failed";
+      }
+    }
+
     async function draftAll() {
       const button = document.getElementById("draftAllButton");
       const text = document.getElementById("draftAllText");
       const status = document.getElementById("draftAllStatus");
-      const ids = sortedQueue(state.queue).map((row) => tweetIdFromUrl(row.tweet_url)).filter(Boolean);
+      const ids = sortedQueue(state.queue)
+        .filter((row) => !state.trackOnly || (state.track[tweetIdFromUrl(row.tweet_url)] || {}).on_track)
+        .map((row) => tweetIdFromUrl(row.tweet_url)).filter(Boolean);
       const todo = ids.filter((id) => !state.drafts[id]);
       if (!todo.length) { status.textContent = "all rows already drafted"; return; }
       button.disabled = true; button.classList.add("loading"); text.textContent = "Drafting";
@@ -999,42 +1147,53 @@ const html = String.raw`<!doctype html>
       else generateDraft(tweetId, false);
     }
 
-    function copyToClipboard(text) {
-      // execCommand path works over plain HTTP (navigator.clipboard needs a secure
-      // context). It must run while the document is focused — so copy BEFORE opening
-      // the tweet, otherwise window.open steals focus and the copy fails.
-      const tmp = document.createElement("textarea");
-      tmp.value = text;
-      tmp.setAttribute("readonly", "");
-      tmp.style.position = "fixed";
-      tmp.style.top = "-1000px";
-      tmp.style.opacity = "0";
-      document.body.appendChild(tmp);
-      tmp.focus();
-      tmp.select();
-      tmp.setSelectionRange(0, text.length);
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-      document.body.removeChild(tmp);
-      if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+    function copyToClipboard(text, ta) {
+      // 1. Secure context (https): the async Clipboard API.
+      if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).catch(() => {});
-        ok = true;
+        return true;
       }
-      return ok;
+      // 2. Plain HTTP: select a REAL, visible textarea and execCommand. Off-screen /
+      //    opacity:0 elements silently fail to copy in Safari, so prefer the draft box.
+      let copied = false;
+      if (ta) {
+        ta.focus();
+        ta.select();
+        try { ta.setSelectionRange(0, ta.value.length); } catch (e) {}
+        try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+      }
+      // 3. Last resort: a 1px on-screen textarea (removed immediately).
+      if (!copied) {
+        const tmp = document.createElement("textarea");
+        tmp.value = text;
+        tmp.style.position = "fixed";
+        tmp.style.left = "0";
+        tmp.style.top = "0";
+        tmp.style.width = "1px";
+        tmp.style.height = "1px";
+        tmp.style.opacity = "0.01";
+        document.body.appendChild(tmp);
+        tmp.focus();
+        tmp.select();
+        try { tmp.setSelectionRange(0, text.length); } catch (e) {}
+        try { copied = document.execCommand("copy"); } catch (e) { copied = false; }
+        document.body.removeChild(tmp);
+      }
+      return copied;
     }
 
     function copyAndOpen(tweetId) {
       const cell = draftRowCell(tweetId).cell;
       const ta = cell ? cell.querySelector(".draftText") : null;
       const text = ta ? ta.value : (state.drafts[tweetId] ? state.drafts[tweetId].draft : "");
-      const copied = copyToClipboard(text);            // copy first, while focused
+      const copied = copyToClipboard(text, ta);          // copy first, while focused
       const row = queueRowByTweetId(tweetId);
       if (row && row.tweet_url) window.open(row.tweet_url, "_blank");  // then open the tweet
       const button = document.querySelector('.replyBtn[data-reply-id="' + tweetId + '"]');
       if (button) {
         button.classList.add("flash");
-        button.innerHTML = copied ? "Copied ✓" : "Copy failed";
-        setTimeout(() => { button.classList.remove("flash"); button.innerHTML = "Copy &amp; open"; }, 1400);
+        button.innerHTML = copied ? "Copied ✓" : "Select &amp; ⌘C";
+        setTimeout(() => { button.classList.remove("flash"); button.innerHTML = "Copy &amp; open"; }, 1500);
       }
     }
 
@@ -1113,7 +1272,38 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(result));
     return;
   }
-  res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+  if (url.pathname === "/api/engagement/track") {
+    const date = url.searchParams.get("date");
+    const target = url.searchParams.get("target");
+    if (!date || !target || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^[a-zA-Z0-9_]+$/.test(target)) {
+      res.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "invalid date or target" }));
+      return;
+    }
+    res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(trackMap(date, target.toLowerCase())));
+    return;
+  }
+  if (url.pathname === "/api/engagement/classify") {
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "method not allowed" }));
+      return;
+    }
+    const body = await readJsonBody(req);
+    const date = String(body.date || "");
+    const target = String(body.target || "").replace(/^@/, "").toLowerCase();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^[a-zA-Z0-9_]+$/.test(target)) {
+      res.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "invalid date or target" }));
+      return;
+    }
+    const result = await classifyQueue(date, target);
+    res.writeHead(result.ok ? 200 : 500, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(result));
+    return;
+  }
+  res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store, must-revalidate" });
   res.end(html);
 });
 
