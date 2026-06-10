@@ -49,14 +49,13 @@ def format_status(
     cfg,
 ) -> str:
     if calibration:
-        dist = calibration.get("score_distribution", {})
         cal_line = (
             f"threshold <b>{calibration.get('threshold', 0):,.0f}</b> "
-            f"(p{calibration.get('threshold_percentile', '?')}) · "
-            f"floors {calibration.get('min_views', 0):,} views / "
-            f"{calibration.get('min_engagement', 0):,} eng\n"
-            f"history p90 {dist.get('p90', 0):,.0f} · p95 {dist.get('p95', 0):,.0f} · "
-            f"max {dist.get('max', 0):,.0f} ({calibration.get('sample_size', 0)} tweets)"
+            f"→ ~{calibration.get('tweets_per_day_at_threshold', 0)}/day "
+            f"(target {calibration.get('target_tweets_per_day', '?')}/day)\n"
+            f"floors {calibration.get('min_views', 0):,} views / {calibration.get('min_engagement', 0):,} eng · "
+            f"{calibration.get('sample_size', 0)} tweets/{calibration.get('window_days','?')}d, "
+            f"~{calibration.get('total_relevant_per_day', 0)}/day on-theme"
         )
         computed = calibration.get("computed_at", "?")[:16].replace("T", " ")
     else:
@@ -79,28 +78,32 @@ def format_status(
 def format_calibration(cal: dict) -> str:
     if not cal or not cal.get("sample_size"):
         return "Calibration found no mature history — the accounts are quiet or the key is missing."
-    dist = cal.get("score_distribution", {})
     lines = [
         f"<b>Calibration</b> — {len(cal.get('accounts', {}))} accounts, "
-        f"{cal['sample_size']} tweets over {cal.get('window_days')}d",
+        f"{cal['sample_size']} tweets over {cal.get('window_days')}d "
+        f"(~{cal.get('total_relevant_per_day',0)}/day on-theme)",
         "",
-        "outlier_score distribution:",
-        f"  p50 {dist.get('p50',0):,.0f} · p75 {dist.get('p75',0):,.0f} · "
-        f"p90 {dist.get('p90',0):,.0f} · p95 {dist.get('p95',0):,.0f} · max {dist.get('max',0):,.0f}",
-        "",
-        f"<b>fire when</b> score ≥ {cal.get('threshold',0):,.0f} "
-        f"AND views ≥ {cal.get('min_views',0):,} AND eng ≥ {cal.get('min_engagement',0):,}",
-        "",
-        "<b>Top historical outliers</b> (what would have fired):",
+        "<b>Threshold ladder</b> (tweets/day → outlier_score):",
     ]
-    for r in cal.get("top_outliers", [])[:6]:
+    for rung in cal.get("ladder", []):
+        thr = rung.get("score_threshold", 0)
+        thr_txt = f"{thr:,.0f}" if thr > 0 else "—(all)"
+        lines.append(f"  {rung['per_day']:>2}/day → score ≥ {thr_txt}")
+    tgt = cal.get("target_tweets_per_day")
+    lines += [
+        "",
+        f"<b>Set to ~{tgt}/day</b>: fire when score ≥ {cal.get('threshold',0):,.0f} "
+        f"AND views ≥ {cal.get('min_views',0):,} AND eng ≥ {cal.get('min_engagement',0):,}",
+        f"(actual {cal.get('tweets_per_day_at_threshold',0)}/day)",
+    ]
+    if cal.get("note"):
+        lines.append(f"⚠️ {html.escape(cal['note'])}")
+    lines += ["", "<b>Top outliers in the window</b> (what would fire):"]
+    for r in cal.get("top_outliers", [])[:5]:
         ratio = r.get("views_vs_author_avg", 0)
         lines.append(
-            f"  @{html.escape(r['handle'])} — {r['views']:,} views · "
-            f"{ratio:g}× avg · score {r['outlier_score']:,.0f}"
+            f"  @{html.escape(r['handle'])} — {r['views']:,} views · {ratio:g}× avg · score {r['score' if 'score' in r else 'outlier_score']:,.0f}"
         )
-        snippet = html.escape((r.get("text") or "")[:90])
-        lines.append(f"    <i>{snippet}</i>")
     return "\n".join(lines)
 
 

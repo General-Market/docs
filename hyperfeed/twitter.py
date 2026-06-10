@@ -23,13 +23,14 @@ log = logging.getLogger("hyperfeed.twitter")
 BASE = "https://api.twitterapi.io"
 CREDITS_PER_TWEET_EST = 15        # matches twapi.py's per-tweet estimate
 CREDITS_PER_USD = 100_000
+_X_TIME = "%a %b %d %H:%M:%S %z %Y"   # X createdAt; local copy to avoid loading the radar here
 
 
-def _coerce_int(v) -> int:
+def _parse_created(s: str):
     try:
-        return int(v)
-    except (TypeError, ValueError):
-        return 0
+        return datetime.strptime(s, _X_TIME)
+    except Exception:
+        return None
 
 
 class Twitter:
@@ -97,25 +98,41 @@ class Twitter:
         return cursor, has_next
 
     # -- endpoints -----------------------------------------------------------
-    def advanced_search(self, query: str, query_type: str = "Latest") -> tuple[list, int]:
-        """Single page — the cheapest path. Returns (tweets, http_status)."""
-        status, body = self._get(
-            "/twitter/tweet/advanced_search",
-            {"query": query, "queryType": query_type},
-        )
-        tweets = self._extract_tweets(body)
-        self._log_cost(f"advsearch:{query[:48]}", len(tweets), status)
-        if status not in (200, 0) and not tweets:
-            log.warning("advanced_search status=%s body=%s", status, str(body)[:200])
-        return tweets, status
+    def advanced_search(self, query: str, query_type: str = "Latest", pages: int = 1) -> tuple[list, int]:
+        """Follow the cursor up to `pages` pages so a busy window isn't truncated at page 1.
 
-    def user_last_tweets(self, handle: str, pages: int = 1) -> tuple[list, int]:
-        """Recent tweets for one account, paginated. Returns (tweets, last_status)."""
-        handle = handle.lstrip("@")
+        Cheap when quiet: a page that returns nothing stops the loop. Returns (tweets, status)."""
         out: list = []
         cursor = ""
         status = 0
         for p in range(max(1, pages)):
+            params = {"query": query, "queryType": query_type}
+            if cursor:
+                params["cursor"] = cursor
+            status, body = self._get("/twitter/tweet/advanced_search", params)
+            batch = self._extract_tweets(body)
+            self._log_cost(f"advsearch:{query[:40]}:p{p}", len(batch), status)
+            if status not in (200, 0) and not batch:
+                log.warning("advanced_search status=%s body=%s", status, str(body)[:200])
+            if not batch:
+                break
+            out.extend(batch)
+            cursor, has_next = self._cursor(body)
+            if not has_next or not cursor:
+                break
+        return out, status
+
+    def user_last_tweets(self, handle: str, max_pages: int = 1, until_date=None) -> tuple[list, int]:
+        """Recent tweets for one account, paginated newest-first.
+
+        Pages until the cap, the cursor runs out, or (page correction) a page's oldest tweet
+        falls before `until_date` — so the full window is covered without an arbitrary tweet cap.
+        Returns (tweets, last_status)."""
+        handle = handle.lstrip("@")
+        out: list = []
+        cursor = ""
+        status = 0
+        for p in range(max(1, max_pages)):
             params = {"userName": handle}
             if cursor:
                 params["cursor"] = cursor
@@ -125,6 +142,11 @@ class Twitter:
             if not batch:
                 break
             out.extend(batch)
+            if until_date is not None:
+                dates = [_parse_created(t.get("createdAt") or "") for t in batch]
+                dates = [d for d in dates if d]
+                if dates and min(dates) < until_date:
+                    break  # paged past the window edge — older tweets aren't needed
             cursor, has_next = self._cursor(body)
             if not has_next or not cursor:
                 break

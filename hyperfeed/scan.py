@@ -58,7 +58,7 @@ def run_scan(cfg: Config, tw: Twitter, accounts: dict, calibration: dict, seen: 
     hits: list[dict] = []
     last_status = 0
     for chunk in _chunks(handles, FROM_CHUNK):
-        tweets, status = tw.advanced_search(_build_query(chunk, since), "Latest")
+        tweets, status = tw.advanced_search(_build_query(chunk, since), "Latest", pages=cfg.scan_pages)
         last_status = status or last_status
         for t in tweets:
             tid = hl_filter.tweet_id(t)

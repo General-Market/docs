@@ -69,8 +69,12 @@ class Config:
     max_accounts: int
     scan_interval_min: int
     scan_lookback_min: int        # search window per scan; > interval so cycles overlap
-    calibration_window_days: int
-    threshold_percentile: int     # historical outlier_score percentile that becomes the fire line
+    scan_pages: int               # advanced_search pages to follow per scan query (page correction)
+    calibration_window_days: int  # measurement window — "2 weeks back so we have numbers"
+    target_tweets_per_day: int    # set the threshold so ~this many tweets/day clear it
+    threshold_percentile: int     # fallback if the target/day can't be met from the sample
+    lasttweets_max_pages: int     # hard page cap per account when paginating the full window
+    recalibrate_hours: int        # auto-recalibrate cadence
     author_min_age_hours: int     # ignore a tweet younger than this when forming a baseline
     daily_cap_usd: float
     seen_max_age_hours: int
@@ -103,10 +107,14 @@ def load() -> Config:
         seed_handle=_opt("VIBE_SEED_HANDLE", "vibe_trading").lstrip("@"),
         max_accounts=_int("MAX_ACCOUNTS", 40),
         scan_interval_min=_int("SCAN_INTERVAL_MIN", 10),
-        scan_lookback_min=_int("SCAN_LOOKBACK_MIN", 15),
-        calibration_window_days=_int("CALIBRATION_WINDOW_DAYS", 30),
+        scan_lookback_min=_int("SCAN_LOOKBACK_MIN", 45),
+        scan_pages=_int("SCAN_PAGES", 5),
+        calibration_window_days=_int("CALIBRATION_WINDOW_DAYS", 14),
+        target_tweets_per_day=_int("TARGET_TWEETS_PER_DAY", 15),
         threshold_percentile=_int("THRESHOLD_PERCENTILE", 90),
+        lasttweets_max_pages=_int("LASTTWEETS_MAX_PAGES", 20),
+        recalibrate_hours=_int("RECALIBRATE_HOURS", 168),
         author_min_age_hours=_int("AUTHOR_MIN_AGE_HOURS", 6),
-        daily_cap_usd=_float("DAILY_CAP_USD", 0.50),
+        daily_cap_usd=_float("DAILY_CAP_USD", 2.00),
         seen_max_age_hours=_int("SEEN_MAX_AGE_HOURS", 48),
     )

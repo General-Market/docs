@@ -139,7 +139,7 @@ class Daemon:
             age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(computed)).total_seconds() / 3600
         except Exception:
             return
-        if age_h >= 24 and not self._over_cap():
+        if age_h >= self.cfg.recalibrate_hours and not self._over_cap():
             log.info("calibration is %.1fh old — refreshing", age_h)
             await self.do_calibrate()
 

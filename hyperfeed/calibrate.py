@@ -1,13 +1,12 @@
-"""Calibration — learn each account's normal, then set the fire threshold from real history.
+"""Calibration — set the fire threshold by measurement, targeting a daily volume.
 
-For every curated account we pull ~30 days of tweets, take a per-author baseline (the mean of
-its recent *mature* views), and score every historical tweet with the same outlier formula the
-scan uses. The fire threshold is a high percentile of that score distribution: by construction,
-roughly the top (100 - THRESHOLD_PERCENTILE)% of historical posts would have fired. Absolute
-floors (min views, min engagement) come from a low percentile, so a tiny post can never fire on
-ratio alone and a giant account can't fire on a routine post.
+The strategy (per Max): page through ALL of each account's tweets over a 2-week window (no
+arbitrary tweet cap — the page correction), score every one, then sweep the threshold down and
+count how many tweets/day clear it. Set the fire line where ~TARGET_TWEETS_PER_DAY clear it, so
+the feed delivers a known, useful volume instead of an arbitrary percentile.
 
-This is the answer to "what is an outlier" — and `top_outliers` gives concrete examples.
+The ladder (N/day → threshold) is stored and shown, so the trade-off is explicit and tunable.
+A parallel raw-views ladder is kept too, in case the goal shifts to reply-traction targets.
 """
 from __future__ import annotations
 
@@ -21,7 +20,7 @@ from .twitter import Twitter
 
 log = logging.getLogger("hyperfeed.calibrate")
 
-CALIBRATION_PAGES = 3   # last_tweets pages per account (~20/page); 3 ≈ 60 recent tweets
+LADDER_RUNGS = (3, 5, 10, 15, 20, 30, 50)
 
 
 def _percentile(values: list[float], p: float) -> float:
@@ -33,17 +32,14 @@ def _percentile(values: list[float], p: float) -> float:
 
 
 def _baseline_views(tweets: list[dict], min_age_hours: int, now: datetime, window_start: datetime) -> tuple[float, list[dict]]:
-    """Median of up to the last 15 mature, in-window views. Returns (baseline, mature_tweets).
+    """Median of up to the last 15 mature, in-window views, plus the mature in-window tweets.
 
-    Median, not mean: the very outliers we hunt would inflate a mean baseline and then hide the
-    next outlier behind it. The median is a robust estimate of the author's *normal* post.
+    Median, not mean: the outliers we hunt would inflate a mean baseline and hide the next one.
     """
     mature: list[dict] = []
     for t in tweets:
         created = hl_filter.parse_x_date(t.get("createdAt") or "")
-        if not created:
-            continue
-        if created < window_start:
+        if not created or created < window_start:
             continue
         if created > now - timedelta(hours=min_age_hours):
             continue  # too young — still climbing, not a stable baseline sample
@@ -59,15 +55,13 @@ def _baseline_views(tweets: list[dict], min_age_hours: int, now: datetime, windo
 def calibrate(cfg: Config, tw: Twitter, accounts: dict) -> dict:
     now = datetime.now(timezone.utc)
     window_start = now - timedelta(days=cfg.calibration_window_days)
+    days = max(1, cfg.calibration_window_days)
 
     per_account: dict = {}
-    all_scores: list[float] = []
-    all_views: list[int] = []
-    all_eng: list[int] = []
-    historical: list[dict] = []
+    sample: list[dict] = []   # one row per mature in-window tweet, with its score
 
     for handle, meta in accounts.items():
-        tweets, status = tw.user_last_tweets(handle, pages=CALIBRATION_PAGES)
+        tweets, _ = tw.user_last_tweets(handle, max_pages=cfg.lasttweets_max_pages, until_date=window_start)
         baseline, mature = _baseline_views(tweets, cfg.author_min_age_hours, now, window_start)
         followers = meta.get("followers", 0)
         if not followers and tweets:
@@ -79,52 +73,87 @@ def calibrate(cfg: Config, tw: Twitter, accounts: dict) -> dict:
             eng = hl_filter.tweet_engagement(t)
             f = hl_filter.author_followers(t) or followers
             sc = hl_filter.outlier_score(views, f, eng, baseline)
-            all_scores.append(sc["outlier_score"])
-            all_views.append(views)
-            all_eng.append(eng)
-            historical.append({
+            sample.append({
                 "handle": handle,
-                "text": hl_filter.tweet_text(t)[:160],
+                "score": sc["outlier_score"],
+                "views_vs_author_avg": sc["views_vs_author_avg"],
                 "views": views,
                 "likes": hl_filter.tweet_likes(t),
                 "engagement": eng,
                 "url": hl_filter.tweet_url(t),
+                "text": hl_filter.tweet_text(t)[:160],
                 "created": t.get("createdAt") or "",
-                "outlier_score": sc["outlier_score"],
-                "views_vs_author_avg": sc["views_vs_author_avg"],
             })
 
-    baselines = [v["baseline_views"] for v in per_account.values() if v["baseline_views"] > 0]
-    median_baseline = _percentile(baselines, 50) if baselines else 0.0
+    # Modest junk floors so a tiny-but-high-ratio post can't fire; the threshold does the real work.
+    all_views = [s["views"] for s in sample]
+    all_eng = [s["engagement"] for s in sample]
+    min_views = int(max(500, _percentile([float(v) for v in all_views], 20)))
+    min_engagement = int(max(10, _percentile([float(e) for e in all_eng], 20)))
+    floored = [s for s in sample if s["views"] >= min_views and s["engagement"] >= min_engagement]
 
-    threshold = max(120.0, round(_percentile(all_scores, cfg.threshold_percentile), 1)) if all_scores else 200.0
-    min_views = int(max(1000, _percentile([float(v) for v in all_views], 40)))
-    min_engagement = int(max(15, _percentile([float(e) for e in all_eng], 40)))
+    scores = sorted((s["score"] for s in floored), reverse=True)
 
-    top_outliers = sorted(historical, key=lambda r: r["outlier_score"], reverse=True)[:6]
+    def threshold_for(per_day: int) -> float:
+        """Score that lets ~per_day tweets/day through. 0 ⇒ the sample can't be that selective."""
+        n = per_day * days
+        if not scores or len(scores) <= n:
+            return 0.0
+        return round(scores[n - 1], 1)
+
+    def count_per_day(thr: float) -> float:
+        return round(sum(1 for s in floored if s["score"] >= thr) / days, 2)
+
+    ladder = [
+        {"per_day": pd, "score_threshold": threshold_for(pd), "actual_per_day": count_per_day(threshold_for(pd))}
+        for pd in LADDER_RUNGS
+    ]
+
+    # Raw-views ladder — the alternative metric if the goal is reply-traction, not author outliers.
+    sv = sorted(all_views, reverse=True)
+    def views_threshold_for(per_day: int) -> int:
+        n = per_day * days
+        return int(sv[n - 1]) if sv and len(sv) > n else 0
+    views_ladder = [{"per_day": pd, "views_threshold": views_threshold_for(pd)} for pd in (5, 10, 15, 20, 30)]
+
+    target = cfg.target_tweets_per_day
+    threshold = threshold_for(target)
+    note = ""
+    if threshold <= 0:
+        # The accounts don't produce `target`/day above the floors — fire everything that clears them
+        # and fall back to a percentile so the line isn't literally zero.
+        threshold = round(max(min(scores) if scores else 0.0, _percentile(scores, 100 - cfg.threshold_percentile)), 1)
+        note = f"sample yields only {round(len(floored)/days,1)}/day above floors — below the {target}/day target"
 
     cal = {
         "computed_at": now.isoformat(),
-        "window_days": cfg.calibration_window_days,
+        "window_days": days,
+        "target_tweets_per_day": target,
         "threshold": threshold,
-        "threshold_percentile": cfg.threshold_percentile,
+        "tweets_per_day_at_threshold": count_per_day(threshold),
+        "total_relevant_per_day": round(len(sample) / days, 1),
         "min_views": min_views,
         "min_engagement": min_engagement,
-        "median_baseline_views": median_baseline,
-        "sample_size": len(all_scores),
+        "median_baseline_views": _percentile([v["baseline_views"] for v in per_account.values() if v["baseline_views"] > 0], 50),
+        "sample_size": len(sample),
+        "floored_size": len(floored),
+        "ladder": ladder,
+        "views_ladder": views_ladder,
+        "note": note,
         "accounts": per_account,
         "score_distribution": {
-            "p50": round(_percentile(all_scores, 50), 1),
-            "p75": round(_percentile(all_scores, 75), 1),
-            "p90": round(_percentile(all_scores, 90), 1),
-            "p95": round(_percentile(all_scores, 95), 1),
-            "max": round(max(all_scores), 1) if all_scores else 0.0,
+            "p50": round(_percentile([s["score"] for s in sample], 50), 1),
+            "p75": round(_percentile([s["score"] for s in sample], 75), 1),
+            "p90": round(_percentile([s["score"] for s in sample], 90), 1),
+            "p95": round(_percentile([s["score"] for s in sample], 95), 1),
+            "max": round(max((s["score"] for s in sample), default=0.0), 1),
         },
-        "top_outliers": top_outliers,
+        "top_outliers": sorted(sample, key=lambda r: r["score"], reverse=True)[:6],
     }
     store.save_calibration(cal)
     log.info(
-        "calibrated: %d accounts, %d historical tweets, threshold=%.1f (p%d), min_views=%d",
-        len(per_account), len(all_scores), threshold, cfg.threshold_percentile, min_views,
+        "calibrated: %d accounts, %d tweets/%dd (%.1f/day total), threshold=%.1f for ~%d/day (actual %.2f/day)%s",
+        len(per_account), len(sample), days, cal["total_relevant_per_day"],
+        threshold, target, cal["tweets_per_day_at_threshold"], f" — {note}" if note else "",
     )
     return cal
