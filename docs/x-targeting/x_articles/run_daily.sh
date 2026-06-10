@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Daily radar — 24-hour lookback over every niche.
+#
+# Two passes. Pass 1 gives EVERY niche its high-threshold cream (retweet ladder +
+# likes >= 100 + replies ladder) before any niche descends the low rungs; pass 2
+# returns for the low rungs + the deep keyword sweep, merging into pass 1's output.
+# A dead run or drained budget now starves the ladder's tail, never a whole niche.
 set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-/home/max/index}"
@@ -12,6 +18,8 @@ MIN_VIEWS="${X_ARTICLE_MIN_VIEWS:-1000}"
 FORCE="${X_ARTICLE_FORCE:-0}"
 BROAD_NICHES="${X_ARTICLE_BROAD_NICHES:-ai trading crypto polymarket pumpfun prediction-markets}"
 BROAD_MAX="${X_ARTICLE_BROAD_MAX:-300}"
+FIRST_THRESHOLDS="${X_ARTICLE_LIKE_THRESHOLDS_FIRST:-5000,2000,1000,500,250,100}"
+DEEP_THRESHOLDS="${X_ARTICLE_LIKE_THRESHOLDS_DEEP:-50,20,10}"
 
 mkdir -p "$LOG_DIR"
 
@@ -24,16 +32,48 @@ if [[ ! -s /tmp/.twapi_key ]]; then
   exit 2
 fi
 
-for niche in $NICHES; do
+niche_caps() {
   # Deeper cap + pagination for high-population niches so the ladder is not
   # truncated at the default before the long tail is reached.
   niche_max="$MAX_ARTICLES"; niche_pages="${X_ARTICLE_PAGES:-5}"
-  if [[ " $BROAD_NICHES " == *" $niche "* ]]; then
+  if [[ " $BROAD_NICHES " == *" $1 "* ]]; then
     niche_max="$BROAD_MAX"; niche_pages="${X_ARTICLE_BROAD_PAGES:-8}"
   fi
-  out_file="$ROOT_DIR/docs/x-targeting/x_articles/$DATE_UTC/$niche/articles.jsonl"
-  if [[ "$FORCE" != "1" && -f "$out_file" ]]; then
-    if python3 - "$out_file" "$niche_max" <<'PY'
+}
+
+fetch() {
+  local niche="$1" pass_ladders="$2" pass_thresholds="$3"; shift 3
+  python3 "$ROOT_DIR/docs/x-targeting/x_articles/find_native_x_articles.py" \
+    --niche "$niche" \
+    --date "$DATE_UTC" \
+    --lookback-hours 24 \
+    --pages "$niche_pages" \
+    --search-mode "${X_ARTICLE_SEARCH_MODE:-both}" \
+    --ladders "$pass_ladders" \
+    --like-thresholds "$pass_thresholds" \
+    --max-articles "$niche_max" \
+    --min-views "$MIN_VIEWS" \
+    --min-article-age-hours "${X_ARTICLE_MIN_ARTICLE_AGE_HOURS:-4}" \
+    --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
+    --budget-usd "${X_ARTICLE_BUDGET_USD:-25}" \
+    "$@"
+
+  # Ranking companions (free, no API) — by-likes.md + by-views.md next to report.md.
+  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
+    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" || true
+  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
+    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" --sort views || true
+}
+
+{
+  # Skip filter once, up front: a niche whose articles.jsonl is already complete
+  # for today is excluded from both passes.
+  RUN_NICHES=""
+  for niche in $NICHES; do
+    niche_caps "$niche"
+    out_file="$ROOT_DIR/docs/x-targeting/x_articles/$DATE_UTC/$niche/articles.jsonl"
+    if [[ "$FORCE" != "1" && -f "$out_file" ]]; then
+      if python3 - "$out_file" "$niche_max" <<'PY'
 import json
 import sys
 
@@ -46,30 +86,24 @@ complete = (
 )
 sys.exit(0 if complete else 1)
 PY
-    then
-      existing_rows="$(wc -l < "$out_file" | tr -d ' ')"
-      echo "[$(date -u --iso-8601=seconds)] skip niche=$niche date=$DATE_UTC rows=$existing_rows already_complete=1"
-      continue
+      then
+        existing_rows="$(wc -l < "$out_file" | tr -d ' ')"
+        echo "[$(date -u +%FT%TZ)] skip niche=$niche date=$DATE_UTC rows=$existing_rows already_complete=1"
+        continue
+      fi
     fi
-  fi
+    RUN_NICHES="$RUN_NICHES $niche"
+  done
 
-  echo "[$(date -u --iso-8601=seconds)] fetch niche=$niche date=$DATE_UTC"
-  python3 "$ROOT_DIR/docs/x-targeting/x_articles/find_native_x_articles.py" \
-    --niche "$niche" \
-    --date "$DATE_UTC" \
-    --lookback-hours 24 \
-    --pages "$niche_pages" \
-    --search-mode "${X_ARTICLE_SEARCH_MODE:-both}" \
-    --like-thresholds "${X_ARTICLE_LIKE_THRESHOLDS:-5000,2000,1000,500,250,100,50,20,10}" \
-    --max-articles "$niche_max" \
-    --min-views "$MIN_VIEWS" \
-    --min-article-age-hours "${X_ARTICLE_MIN_ARTICLE_AGE_HOURS:-4}" \
-    --author-min-age-hours "${X_ARTICLE_AUTHOR_MIN_AGE_HOURS:-4}" \
-    --budget-usd "${X_ARTICLE_BUDGET_USD:-25}"
+  for niche in $RUN_NICHES; do
+    niche_caps "$niche"
+    echo "[$(date -u +%FT%TZ)] daily pass=1 niche=$niche date=$DATE_UTC"
+    fetch "$niche" "rt,likes,replies" "$FIRST_THRESHOLDS"
+  done
 
-  # Ranking companions (free, no API) — by-likes.md + by-views.md next to report.md.
-  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
-    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" || true
-  python3 "$ROOT_DIR/docs/x-targeting/x_articles/rank_by_likes.py" \
-    --niche "$niche" --date "$DATE_UTC" --top "$niche_max" --window "last 24 hours" --sort views || true
-done 2>&1 | tee -a "$LOG_DIR/$DATE_UTC.log"
+  for niche in $RUN_NICHES; do
+    niche_caps "$niche"
+    echo "[$(date -u +%FT%TZ)] daily pass=2 niche=$niche date=$DATE_UTC"
+    fetch "$niche" "likes,keyword" "$DEEP_THRESHOLDS" --merge
+  done
+} 2>&1 | tee -a "$LOG_DIR/$DATE_UTC.log"

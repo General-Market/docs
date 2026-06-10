@@ -14,7 +14,7 @@ import json
 import re
 import sys
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields as dataclass_fields
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -751,7 +751,10 @@ def parse_tweets(body: dict) -> list[dict]:
 def author_recent_tweets(handle: str, raw_dir: Path, reuse_raw: bool) -> list[dict]:
     label = slug(handle)
     path = raw_dir / "authors" / f"{label}.json"
-    if reuse_raw and path.exists():
+    # The raw dir is per-date, so a cached baseline is at most a day old — always
+    # reuse it. A merge pass re-enriches every article; without this, the second
+    # pass re-buys every author it already paid for in the first.
+    if path.exists():
         return parse_tweets(json.loads(path.read_text()))
     if reuse_raw:
         return []
@@ -807,7 +810,11 @@ def enrich_outlier_metrics(article: NativeArticle, raw_dir: Path, reuse_raw: boo
 REPLY_THRESHOLDS = (2000, 500, 100, 25)
 
 
-def build_queries(niche: str, since_date: str, search_mode: str, thresholds: list[int]) -> list[tuple[str, str, str]]:
+LADDER_FAMILIES = ("rt", "likes", "replies", "keyword")
+
+
+def build_queries(niche: str, since_date: str, search_mode: str, thresholds: list[int],
+                  ladders: tuple[str, ...] = LADDER_FAMILIES) -> list[tuple[str, str, str]]:
     if search_mode == "keyword":
         return keyword_queries(niche, since_date)
     if search_mode == "regressive-likes":
@@ -815,13 +822,20 @@ def build_queries(niche: str, since_date: str, search_mode: str, thresholds: lis
     if search_mode == "both":
         # Retweet ladder first: it is the densest source of view giants, and the
         # ladder stops early once max_articles is reached — giants must be fetched
-        # before that gate can close.
-        return (
-            retweet_ladder_queries(niche, since_date, list(RT_THRESHOLDS))
-            + likes_ladder_queries(niche, since_date, thresholds)
-            + replies_ladder_queries(niche, since_date, list(REPLY_THRESHOLDS))
-            + keyword_queries(niche, since_date)
-        )
+        # before that gate can close. The runner splits these families across two
+        # passes (rt/likes-high/replies for every niche first, low rungs + keyword
+        # sweep second) so a dead run or drained budget starves the ladder's tail,
+        # never a whole niche.
+        out: list[tuple[str, str, str]] = []
+        if "rt" in ladders:
+            out += retweet_ladder_queries(niche, since_date, list(RT_THRESHOLDS))
+        if "likes" in ladders:
+            out += likes_ladder_queries(niche, since_date, thresholds)
+        if "replies" in ladders:
+            out += replies_ladder_queries(niche, since_date, list(REPLY_THRESHOLDS))
+        if "keyword" in ladders:
+            out += keyword_queries(niche, since_date)
+        return out
     raise ValueError(f"Unsupported search mode: {search_mode}")
 
 
@@ -1010,7 +1024,17 @@ def main() -> None:
     parser.add_argument("--min-article-age-hours", type=int, default=4)
     parser.add_argument("--author-min-age-hours", type=int, default=4)
     parser.add_argument("--reuse-raw", action="store_true")
+    parser.add_argument("--ladders", default=",".join(LADDER_FAMILIES),
+                        help="Comma list of query families to run (rt,likes,replies,keyword). "
+                             "Lets the runner make a high-threshold first pass over every niche "
+                             "before any niche descends the low rungs.")
+    parser.add_argument("--merge", action="store_true",
+                        help="Fold results into the day's existing articles.jsonl instead of replacing it.")
     args = parser.parse_args()
+    ladders = tuple(f.strip() for f in args.ladders.split(",") if f.strip())
+    unknown = [f for f in ladders if f not in LADDER_FAMILIES]
+    if unknown:
+        parser.error(f"unknown ladder families: {unknown}; valid: {LADDER_FAMILIES}")
 
     started_at = utc_now()
     cutoff = started_at - timedelta(hours=args.lookback_hours)
@@ -1030,11 +1054,29 @@ def main() -> None:
     twapi.BUDGET_FILE = budget_path
 
     thresholds = parse_thresholds(args.like_thresholds)
-    queries = build_queries(args.niche, since_date, args.search_mode, thresholds)
+    queries = build_queries(args.niche, since_date, args.search_mode, thresholds, ladders)
     seen_tweets: set[str] = set()
     by_article_url: dict[str, NativeArticle] = {}
     by_title: dict[str, NativeArticle] = {}
     all_tweets = 0
+
+    if args.merge:
+        # Seed the dedupe maps from the pass that already ran today. A re-fetched
+        # tweet with fresher counts still wins via the score comparison below.
+        existing_path = out_dir / "articles.jsonl"
+        fields = {f.name for f in dataclass_fields(NativeArticle)}
+        seeded = 0
+        if existing_path.exists():
+            for line in existing_path.read_text().splitlines():
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                article = NativeArticle(**{k: v for k, v in row.items() if k in fields})
+                url_key = article.article_url or article.tweet_url
+                by_article_url[url_key] = article
+                by_title[title_key(article.title) or url_key] = article
+                seeded += 1
+        print(f"  ↳ MERGE: seeded {seeded} articles from {existing_path}", file=sys.stderr)
 
     for label, query, qtype in queries:
         pages = args.latest_pages if qtype == "Latest" else args.pages

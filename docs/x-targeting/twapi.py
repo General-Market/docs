@@ -189,13 +189,36 @@ def cmd_rebase():
     print(json.dumps({"rebased": True, **b}, indent=2))
 
 
+TRANSIENT_STATUSES = {408, 429, 500, 502, 503, 504}
+TRANSIENT_RETRY_DELAYS = (2, 5, 15, 30, 60)
+
+
 def metered_call(label: str, path: str, params: dict | None,
                  estimate: int = 0, on_data=None) -> dict:
-    """Wraps any GET with before/after balance + ledger entry."""
+    """Wraps any GET with before/after balance + ledger entry.
+
+    Transient failures (timeouts, network drops — surfaced as a synthetic 408 —
+    plus 429/5xx) are retried with backoff. A failure that survives every retry
+    raises: returning an empty page here once let a one-minute Wi-Fi blip write
+    empty reports for nine niches while the run still exited 0.
+    """
     check_budget(estimate)
     before = total_credits()
     print(f"  ↳ {label}  bal_before={before}  est={estimate}c", file=sys.stderr)
     status, body = _get(path, params)
+    for delay in TRANSIENT_RETRY_DELAYS:
+        if status not in TRANSIENT_STATUSES:
+            break
+        err = body.get("error", "") if isinstance(body, dict) else ""
+        print(f"  ↳ {label}  transient {status} ({err}); retrying in {delay}s", file=sys.stderr)
+        time.sleep(delay)
+        status, body = _get(path, params)
+    if status in TRANSIENT_STATUSES:
+        append_ledger({
+            "ts": now_iso(), "label": label, "path": path, "params": params or {},
+            "status": status, "fatal": True,
+        })
+        raise RuntimeError(f"{label}: {status} persisted through {len(TRANSIENT_RETRY_DELAYS)} retries — aborting run")
     if isinstance(body, dict) and status >= 400:
         body["_http_status"] = status
     after = total_credits()
