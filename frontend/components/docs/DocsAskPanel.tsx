@@ -25,7 +25,7 @@ type DocsAskMessage = {
 }
 
 const STARTER_QUESTIONS = [
-  'How do I build a Blocks bot?',
+  'How does Vision work?',
   'How does bitmap encoding work?',
   'Which contracts do I call?',
 ]

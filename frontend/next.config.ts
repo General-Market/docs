@@ -6,6 +6,111 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const isDev = process.env.NODE_ENV !== "production";
 
+/* ── Docs redirect map (docs/docs-rebuild/spec.md) ──────────────────────────
+   The docs were rebuilt as five sections under /docs/{section}/{slug}. Every
+   old URL gets a permanent redirect to its new home. Two retired prefixes
+   carried the same page tree across eras: /docs/blocks (recent) and
+   /docs/vision (pre-blocks). /docs/vision is a REAL section again, so it gets
+   only the legacy sub-trees (concepts/, api/, bots/, …) — never a catch-all,
+   which would shadow the live pages. Specific maps first, catch-alls last. */
+
+// old slug (relative to the retired prefix) → new absolute destination
+const DOCS_PAGE_MOVES: Record<string, string> = {
+  "introduction": "/docs/vision/how-vision-works",
+  "getting-started": "/docs/vision/first-predictions",
+  "examples": "/docs/bots/quickstart",
+  "concepts/blocks": "/docs/vision/blocks-and-ticks",
+  "concepts/ticks": "/docs/vision/blocks-and-ticks",
+  "concepts/bitmaps": "/docs/vision/predictions-and-bitmaps",
+  "concepts/fees": "/docs/vision/fees",
+  "concepts/sources": "/docs/vision/markets",
+  "concepts/resolution-types": "/docs/vision/markets",
+  "concepts/balance-proofs": "/docs/vision/your-money",
+  "bots/development": "/docs/bots/strategies",
+  "api/overview": "/docs/developers/overview",
+  "api/blocks": "/docs/developers/vision-api/batches",
+  "api/state": "/docs/developers/vision-api/batches",
+  "api/bitmap": "/docs/developers/vision-api/bitmap",
+  "api/balance": "/docs/developers/vision-api/players",
+  "api/leaderboard": "/docs/developers/vision-api/stats",
+  "api/snapshot": "/docs/developers/vision-api/discovery",
+  "api/ticks": "/docs/developers/vision-api/history",
+  "guides/adding-sources": "/docs/developers/architecture",
+  "reference/contracts": "/docs/developers/contracts",
+  "reference/error-codes": "/docs/developers/contracts",
+  "reference/contract-addresses": "/docs/get-started/network",
+  "reference/glossary": "/docs/get-started/glossary",
+};
+
+type Redirect = { source: string; destination: string; permanent: boolean };
+
+function docsRedirects(): Redirect[] {
+  const r = (source: string, destination: string): Redirect => ({ source, destination, permanent: true });
+  const rules: Redirect[] = [];
+  const RETIRED_PREFIXES = ["/docs/blocks", "/docs/vision"];
+
+  // 1 · specific page moves under both retired prefixes
+  for (const prefix of RETIRED_PREFIXES) {
+    for (const [old, dest] of Object.entries(DOCS_PAGE_MOVES)) {
+      rules.push(r(`${prefix}/${old}`, dest));
+    }
+  }
+  // /docs/vision/risks is a live page now; only the blocks twin redirects.
+  rules.push(r("/docs/blocks/risks", "/docs/vision/risks"));
+
+  // 2 · old Index MDX slugs → the new flat Index section + developers pages.
+  // No /docs/index/:path* catch-all — the section is live; only the legacy
+  // sub-trees (concepts/, guides/, api/, architecture/, reference/) redirect.
+  rules.push(
+    r("/docs/index/introduction", "/docs/index/what-is-a-dtf"),
+    r("/docs/index/getting-started", "/docs/index/buy-and-sell"),
+    r("/docs/index/concepts/itps", "/docs/index/what-is-a-dtf"),
+    r("/docs/index/concepts/lending", "/docs/index/lending"),
+    r("/docs/index/concepts/order-lifecycle", "/docs/index/order-lifecycle"),
+    r("/docs/index/concepts/:path*", "/docs/index/what-is-a-dtf"),
+    r("/docs/index/guides/buy-sell", "/docs/index/buy-and-sell"),
+    r("/docs/index/guides/create-itp", "/docs/index/create-a-dtf"),
+    r("/docs/index/guides/rebalancing", "/docs/index/rebalancing"),
+    r("/docs/index/guides/risks", "/docs/index/risks"),
+    r("/docs/index/guides/settlement", "/docs/index/settlement-and-bridge"),
+    r("/docs/index/guides/backtesting", "/docs/developers/index-api/portfolio"),
+    r("/docs/index/guides/:path*", "/docs/index/buy-and-sell"),
+    r("/docs/index/api/overview", "/docs/developers/overview"),
+    r("/docs/index/api/itps", "/docs/developers/index-api/markets"),
+    r("/docs/index/api/prices", "/docs/developers/index-api/markets"),
+    r("/docs/index/api/portfolio", "/docs/developers/index-api/portfolio"),
+    r("/docs/index/api/simulation", "/docs/developers/index-api/portfolio"),
+    r("/docs/index/api/morpho", "/docs/developers/index-api/lending"),
+    r("/docs/index/api/infrastructure", "/docs/developers/architecture"),
+    r("/docs/index/api/:path*", "/docs/developers/overview"),
+    r("/docs/index/architecture/bridge", "/docs/index/settlement-and-bridge"),
+    r("/docs/index/architecture/l3-chain", "/docs/get-started/network"),
+    r("/docs/index/architecture/contracts", "/docs/developers/contracts"),
+    r("/docs/index/architecture/:path*", "/docs/developers/architecture"),
+    r("/docs/index/reference/contract-addresses", "/docs/get-started/network"),
+    r("/docs/index/reference/error-codes", "/docs/developers/contracts"),
+    r("/docs/index/reference/glossary", "/docs/get-started/glossary"),
+    r("/docs/index/reference/:path*", "/docs/index"),
+  );
+
+  // 3 · legacy sub-tree catch-alls under both retired prefixes
+  for (const prefix of RETIRED_PREFIXES) {
+    rules.push(
+      r(`${prefix}/bots/:path*`, "/docs/bots/:path*"),
+      r(`${prefix}/api/:path*`, "/docs/developers/overview"),
+      r(`${prefix}/architecture/:path*`, "/docs/developers/architecture"),
+      r(`${prefix}/reference/:path*`, "/docs/developers/contracts"),
+      r(`${prefix}/concepts/:path*`, "/docs/vision"),
+      r(`${prefix}/guides/:path*`, "/docs/vision"),
+    );
+  }
+
+  // 4 · final catch-all — only for the fully retired blocks prefix
+  rules.push(r("/docs/blocks/:path*", "/docs/vision"));
+
+  return rules;
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -72,10 +177,10 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // Vision was the protocol's earlier identity; the product is now Blocks.
-      // The bytecode remembers, but the URLs do not.
-      { source: '/docs/vision', destination: '/docs/blocks/introduction', permanent: true },
-      { source: '/docs/vision/:path*', destination: '/docs/blocks/:path*', permanent: true },
+      // The docs are now the five-section handbook under /docs/{section}.
+      // Every old /docs/blocks/* and old /docs/index/* (and pre-blocks
+      // /docs/vision/*) URL redirects permanently to its new home.
+      ...docsRedirects(),
       // Pre-seed room URLs collapsed to /room. The slug was a multi-tenant
       // artifact we no longer need; redirect any old magic links.
       { source: '/room/pre-seed', destination: '/room', permanent: true },

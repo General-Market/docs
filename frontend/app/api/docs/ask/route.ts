@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { loadAllSummaries } from '@/lib/docs/mdx'
-import { flattenSlugs, pageHref } from '@/lib/docs/nav'
+import { docsCorpus } from '@/lib/handbook'
 import {
   forwardDocsPromptToCrm,
   saveDocsPrompt,
@@ -130,28 +129,27 @@ async function respondAndRecord(
 }
 
 async function findRelevantDocs(question: string, path: string): Promise<RankedDoc[]> {
-  const summaries = await loadAllSummaries(flattenSlugs())
+  const corpus = docsCorpus()
   const terms = tokenize(question)
   const activeSlug = path.startsWith('/docs/') ? path.replace(/^\/docs\//, '') : ''
 
-  return summaries
-    .map(summary => {
-      const title = summary.frontmatter.sidebarTitle || summary.frontmatter.title || titleFromSlug(summary.slug)
-      const haystack = `${summary.slug} ${title} ${summary.frontmatter.description ?? ''} ${summary.plainText}`.toLowerCase()
-      let score = summary.slug === activeSlug ? 8 : 0
+  return corpus
+    .map(doc => {
+      const haystack = `${doc.slug} ${doc.title} ${doc.description ?? ''} ${doc.plainText}`.toLowerCase()
+      let score = doc.slug === activeSlug ? 8 : 0
 
       for (const term of terms) {
         const matches = haystack.split(term).length - 1
         score += Math.min(matches, 8)
-        if (summary.slug.includes(term)) score += 4
-        if (title.toLowerCase().includes(term)) score += 5
+        if (doc.slug.includes(term)) score += 4
+        if (doc.title.toLowerCase().includes(term)) score += 5
       }
 
       return {
-        slug: summary.slug,
-        title,
-        href: pageHref(summary.slug),
-        plainText: summary.plainText,
+        slug: doc.slug,
+        title: doc.title,
+        href: doc.href,
+        plainText: doc.plainText,
         score,
       }
     })
@@ -295,15 +293,4 @@ function tokenize(input: string): string[] {
         .filter(term => term.length > 2 && !STOP_WORDS.has(term)),
     ),
   )
-}
-
-function titleFromSlug(slug: string): string {
-  const last = slug.split('/').pop() ?? slug
-  return last
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase())
-    .replace(/\bApi\b/, 'API')
-    .replace(/\bItp\b/, 'ITP')
-    .replace(/\bItps\b/, 'ITPs')
-    .replace(/\bNav\b/, 'NAV')
 }
