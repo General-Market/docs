@@ -83,15 +83,27 @@ def save_seen(seen: dict) -> None:
     _save_json(config.SEEN_FILE, seen)
 
 
+def _latest_ts(v):
+    """seen value is either a legacy iso string or a {'followed':iso,'outlier':iso} dict."""
+    if isinstance(v, dict):
+        times = [t for t in v.values() if t]
+        return max(times) if times else None
+    return v
+
+
 def prune_seen(seen: dict, max_age_hours: int) -> dict:
     now = datetime.now(timezone.utc)
     keep = {}
-    for tid, ts in seen.items():
+    for tid, v in seen.items():
+        ts = _latest_ts(v)
+        if not ts:
+            keep[tid] = v
+            continue
         try:
             if (now - datetime.fromisoformat(ts)).total_seconds() <= max_age_hours * 3600:
-                keep[tid] = ts
+                keep[tid] = v
         except Exception:
-            keep[tid] = ts
+            keep[tid] = v
     return keep
 
 

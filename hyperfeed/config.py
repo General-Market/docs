@@ -67,8 +67,11 @@ class Config:
     seed_handle: str              # whose followings we harvest (vibe_trading)
 
     max_accounts: int
+    outlier_ratio: float          # views >= this x the account's average => "by a lot" => outlier
+    followed_tier: bool           # also send a light notice for non-outlier HL posts
+    followed_min_views: int       # a followed post needs at least this many views to notify
     scan_interval_min: int
-    scan_lookback_min: int        # search window per scan; > interval so cycles overlap
+    scan_lookback_min: int        # search window per scan; > interval so a climber can be upgraded
     scan_pages: int               # advanced_search pages to follow per scan query (page correction)
     calibration_window_days: int  # measurement window — "2 weeks back so we have numbers"
     target_tweets_per_day: int    # set the threshold so ~this many tweets/day clear it
@@ -106,8 +109,11 @@ def load() -> Config:
         twitterapi_key=_resolve_twitter_key(),
         seed_handle=_opt("VIBE_SEED_HANDLE", "vibe_trading").lstrip("@"),
         max_accounts=_int("MAX_ACCOUNTS", 40),
+        outlier_ratio=_float("OUTLIER_RATIO", 3.0),
+        followed_tier=_opt("FOLLOWED_TIER", "true").lower() == "true",
+        followed_min_views=_int("FOLLOWED_MIN_VIEWS", 0),
         scan_interval_min=_int("SCAN_INTERVAL_MIN", 10),
-        scan_lookback_min=_int("SCAN_LOOKBACK_MIN", 45),
+        scan_lookback_min=_int("SCAN_LOOKBACK_MIN", 240),
         scan_pages=_int("SCAN_PAGES", 5),
         calibration_window_days=_int("CALIBRATION_WINDOW_DAYS", 14),
         target_tweets_per_day=_int("TARGET_TWEETS_PER_DAY", 15),

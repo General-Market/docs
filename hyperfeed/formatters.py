@@ -37,6 +37,17 @@ def format_alert(hit: dict) -> str:
     )
 
 
+def format_followed(hit: dict) -> str:
+    """Light notice: a watched Hyperliquid account posted, but not (yet) an outlier."""
+    handle = html.escape(hit["handle"])
+    return (
+        f"📈 <b>@{handle}</b> · {hit['views']:,} views · {hit['likes']:,} likes · "
+        f"{_age(hit.get('created_at',''))} old\n"
+        f"{_clip(hit['text'], 200)}\n"
+        f'<a href="{html.escape(hit["url"])}">open on X</a>'
+    )
+
+
 def format_status(
     *,
     subscriber_count: int,

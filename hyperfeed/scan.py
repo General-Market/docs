@@ -42,27 +42,33 @@ def _build_query(handles_chunk: list[str], since: str) -> str:
 
 
 def run_scan(cfg: Config, tw: Twitter, accounts: dict, calibration: dict, seen: dict) -> tuple[list[dict], int]:
-    """Return (hits_sorted_desc_by_score, last_http_status). Mutates nothing."""
+    """Return (candidates, last_http_status). Mutates nothing.
+
+    Every fresh Hyperliquid post from a watched account is returned, tagged with a tier:
+      - 'outlier'  — views are >= OUTLIER_RATIO x the account's average (it is doing a lot more
+                     than normal), above the calibrated floor;
+      - 'followed' — any other on-theme post above FOLLOWED_MIN_VIEWS.
+    The caller decides what is new (a post can be notified once as 'followed', then again as
+    'outlier' once it climbs)."""
     now = datetime.now(timezone.utc)
     handles = list(accounts.keys())
     if not handles:
         return [], 0
 
     since = _since_str(cfg.scan_lookback_min, now)
-    threshold = calibration.get("threshold", 1e9)            # no calibration yet ⇒ nothing fires
     min_views = calibration.get("min_views", 1_000)
     min_eng = calibration.get("min_engagement", 15)
     acct_cal = calibration.get("accounts", {})
     median_baseline = calibration.get("median_baseline_views", 0.0)
 
-    hits: list[dict] = []
+    out: list[dict] = []
     last_status = 0
     for chunk in _chunks(handles, FROM_CHUNK):
         tweets, status = tw.advanced_search(_build_query(chunk, since), "Latest", pages=cfg.scan_pages)
         last_status = status or last_status
         for t in tweets:
             tid = hl_filter.tweet_id(t)
-            if not tid or tid in seen:
+            if not tid:
                 continue
             handle = hl_filter.author_handle(t)
             text = hl_filter.tweet_text(t)
@@ -73,22 +79,33 @@ def run_scan(cfg: Config, tw: Twitter, accounts: dict, calibration: dict, seen: 
             followers = hl_filter.author_followers(t)
             baseline = (acct_cal.get(handle, {}) or {}).get("baseline_views") or median_baseline
             sc = hl_filter.outlier_score(views, followers, eng, baseline)
-            if sc["outlier_score"] >= threshold and views >= min_views and eng >= min_eng:
-                hits.append({
-                    "tweet_id": tid,
-                    "handle": handle,
-                    "followers": followers,
-                    "text": text,
-                    "views": views,
-                    "likes": hl_filter.tweet_likes(t),
-                    "retweets": int((t.get("retweetCount") or 0)),
-                    "replies": int((t.get("replyCount") or 0)),
-                    "engagement": eng,
-                    "url": hl_filter.tweet_url(t),
-                    "created_at": t.get("createdAt") or "",
-                    "baseline_views": baseline,
-                    **sc,
-                })
+            ratio = sc["views_vs_author_avg"]
 
-    hits.sort(key=lambda h: h["outlier_score"], reverse=True)
-    return hits, last_status
+            is_outlier = ratio >= cfg.outlier_ratio and views >= min_views and eng >= min_eng
+            if is_outlier:
+                tier = "outlier"
+            elif cfg.followed_tier and views >= cfg.followed_min_views:
+                tier = "followed"
+            else:
+                continue
+
+            out.append({
+                "tweet_id": tid,
+                "tier": tier,
+                "handle": handle,
+                "followers": followers,
+                "text": text,
+                "views": views,
+                "likes": hl_filter.tweet_likes(t),
+                "retweets": int((t.get("retweetCount") or 0)),
+                "replies": int((t.get("replyCount") or 0)),
+                "engagement": eng,
+                "url": hl_filter.tweet_url(t),
+                "created_at": t.get("createdAt") or "",
+                "baseline_views": baseline,
+                **sc,
+            })
+
+    # outliers first, by how far above their average
+    out.sort(key=lambda h: (h["tier"] == "outlier", h["views_vs_author_avg"]), reverse=True)
+    return out, last_status

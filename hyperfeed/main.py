@@ -114,22 +114,38 @@ class Daemon:
         await self._self_heal()
         if not self.accounts:
             return 0
-        hits, status = await asyncio.to_thread(
+        candidates, status = await asyncio.to_thread(
             scan.run_scan, self.cfg, self.tw, self.accounts, self.calibration, self.seen
         )
         self.last_scan_dt = datetime.now(timezone.utc)
-        if not hits:
+        if not candidates:
             return 0
         subs = store.load_subscribers()
         now_iso = datetime.now(timezone.utc).isoformat()
-        for hit in hits:
-            if subs:
-                await self.tg.broadcast(subs, formatters.format_alert(hit), html=True)
-            store.append_fired({**hit, "fired_at": now_iso})
-            self.seen[hit["tweet_id"]] = now_iso
+        outliers = 0
+        followed = 0
+        for c in candidates:
+            tid = c["tweet_id"]
+            state = self.seen.get(tid)
+            state = dict(state) if isinstance(state, dict) else {}
+            if c["tier"] == "outlier" and not state.get("outlier"):
+                if subs:
+                    await self.tg.broadcast(subs, formatters.format_alert(c), html=True)
+                store.append_fired({**c, "fired_at": now_iso})
+                state["outlier"] = now_iso
+                outliers += 1
+            elif c["tier"] == "followed" and not state.get("followed"):
+                if subs:
+                    await self.tg.broadcast(subs, formatters.format_followed(c), html=True)
+                state["followed"] = now_iso
+                followed += 1
+            else:
+                continue
+            self.seen[tid] = state
         store.save_seen(self.seen)
-        log.info("scan fired %d outlier(s) to %d subscribers", len(hits), len(subs))
-        return len(hits)
+        if outliers or followed:
+            log.info("scan sent %d outlier(s) + %d followed to %d subscribers", outliers, followed, len(subs))
+        return outliers
 
     async def maybe_recalibrate(self) -> None:
         computed = self.calibration.get("computed_at")
