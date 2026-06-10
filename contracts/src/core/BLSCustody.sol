@@ -8,12 +8,13 @@ import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title BLSCustody - BLS-piloted custody contract for asset management
 /// @notice Manages custody with 11/20 BLS threshold for standard ops, 15/20 for emergency whitelist, 17/20 for emergency upgrade
 /// @dev UUPS upgradeable, uses bitmap nonce for replay protection
 /// @custom:security-contact security@indexprotocol.com
-contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody {
+contract BLSCustody is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, BLSVerifier, IBLSCustody {
     // ============ CONSTRUCTOR ============
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -91,6 +92,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     /// @param oracleRegistry_ Address of the OracleRegistry contract
     function initialize(address oracleRegistry_) external initializer {
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
         if (oracleRegistry_ == address(0)) {
             revert ErrorsLib.E043_ZeroOracleRegistry();
         }
@@ -108,7 +110,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
         uint256 nonceValue,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override returns (bool success, bytes memory returnData) {
+    ) external override nonReentrant returns (bool success, bytes memory returnData) {
         // Check nonce not already used (bitmap pattern prevents gap attacks)
         if (_isNonceUsed(nonceValue)) {
             revert ErrorsLib.E025_NonceAlreadyUsed(nonceValue);
@@ -283,7 +285,7 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     }
 
     /// @inheritdoc IBLSCustody
-    function executeUpgrade(address newImpl) external override {
+    function executeUpgrade(address newImpl) external override nonReentrant {
         if (pendingUpgradeImpl == address(0)) {
             revert ErrorsLib.E040_NoPendingUpgrade();
         }

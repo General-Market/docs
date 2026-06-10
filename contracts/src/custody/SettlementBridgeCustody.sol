@@ -10,6 +10,7 @@ import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
 import "../libraries/TypesLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -19,7 +20,7 @@ import "../interfaces/IBridgeProxy.sol";
 /// @notice Handles releasing USDC on Settlement and cross-chain ITP purchases
 /// @dev UUPS upgradeable, deployed on Settlement chain
 /// @custom:security-contact security@indexprotocol.com
-contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, ISettlementBridgeCustody {
+contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, BLSVerifier, ISettlementBridgeCustody {
     using SafeERC20 for IERC20;
 
     /// @notice Thrown when bundled-call array lengths disagree or are empty.
@@ -142,6 +143,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @param bridgeProxy_ Address of the BridgeProxy contract (set at deploy, BLS-gated after)
     function initialize(address oracleRegistry_, address usdc_, address l3Index_, address bridgeProxy_) external initializer {
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
         if (oracleRegistry_ == address(0)) {
             revert ErrorsLib.E043_ZeroOracleRegistry();
         }
@@ -191,7 +193,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         // Validate source chain ID (not zero, not current chain)
         if (sourceChainId == 0 || sourceChainId == block.chainid) {
             revert ErrorsLib.E055_InvalidSourceChainId(sourceChainId);
@@ -257,7 +259,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         uint256 limitPrice,
         uint256 slippageTier,
         uint256 deadline
-    ) external override returns (uint256 orderId) {
+    ) external override nonReentrant returns (uint256 orderId) {
         // Validate itpId is non-zero
         if (itpId == bytes32(0)) {
             revert ErrorsLib.E060_ZeroITPId();
@@ -319,7 +321,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         _completeBuyOrderOne(orderId, vault, blsSignature, referenceNonce, signersBitmask);
     }
 
@@ -330,7 +332,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes[] calldata blsSignatures,
         uint256[] calldata referenceNonces,
         uint256[] calldata signersBitmasks
-    ) external override {
+    ) external override nonReentrant {
         uint256 n = orderIds.length;
         if (n == 0) revert BundleLengthMismatch();
         if (
@@ -357,7 +359,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         uint256 n = orderIds.length;
         if (n == 0) revert BundleLengthMismatch();
 
@@ -445,7 +447,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
 
@@ -520,7 +522,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         uint256 limitPrice,
         uint256 slippageTier,
         uint256 deadline
-    ) external override returns (uint256 orderId) {
+    ) external override nonReentrant returns (uint256 orderId) {
         // Validate itpId
         if (itpId == bytes32(0)) {
             revert ErrorsLib.E060_ZeroITPId();
@@ -586,7 +588,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) {
             revert ErrorsLib.E119_SellOrderNotFound(orderId);
@@ -621,7 +623,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) {
             revert ErrorsLib.E119_SellOrderNotFound(orderId);
@@ -655,7 +657,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
         if (order.burned) revert ErrorsLib.E147_SellOrderAlreadyBurned(orderId);
@@ -680,7 +682,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external override nonReentrant {
         TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
         if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
         if (!order.burned) revert ErrorsLib.E148_SellSharesNotBurned(orderId);
@@ -723,7 +725,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     event VisionDepositRefunded(uint256 indexed orderId, address indexed user, uint256 usdcAmount);
     event VisionWithdrawCompleted(uint256 indexed withdrawId, address indexed user, uint256 usdcAmount);
 
-    function depositToVision(uint256 usdcAmount) external returns (uint256 orderId) {
+    function depositToVision(uint256 usdcAmount) external nonReentrant returns (uint256 orderId) {
         if (usdcAmount < MIN_USDC_AMOUNT) {
             revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, MIN_USDC_AMOUNT);
         }
@@ -775,7 +777,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external {
+    ) external nonReentrant {
         // Defense-in-depth: reject refund if deposit was already completed (even though
         // completeVisionDeposit deletes the struct, this guards against edge cases)
         if (depositCompleted[orderId]) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
@@ -811,7 +813,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external {
+    ) external nonReentrant {
         if (withdrawProcessed[withdrawId]) revert ErrorsLib.E132_VisionWithdrawAlreadyProcessed(withdrawId);
 
         bytes32 message = keccak256(abi.encode(

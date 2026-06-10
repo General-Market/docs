@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IBridgeProxy} from "../interfaces/IBridgeProxy.sol";
 import {IBridgedItpFactory} from "../interfaces/IBridgedItpFactory.sol";
 import {IBridgedITP} from "../interfaces/IBridgedITP.sol";
@@ -17,7 +18,7 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 /// @title BridgeProxy - Cross-chain ITP creation with BLS consensus
 /// @notice UUPS upgradeable proxy on Settlement for bridged ITP creation
 /// @custom:security-contact security@indexprotocol.com
-contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
+contract BridgeProxy is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
     /// @notice Thrown when bundled-call array lengths disagree or are empty.
     error BundleLengthMismatch();
 
@@ -98,6 +99,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
         __Pausable_init();
+        __ReentrancyGuard_init();
 
         oracleRegistry = IOracleRegistry(_oracleRegistry);
         __BLSVerifier_init(_oracleRegistry);
@@ -179,7 +181,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override whenNotPaused returns (address bridgedItpAddress) {
+    ) external override whenNotPaused nonReentrant returns (address bridgedItpAddress) {
         PendingItpCreation storage pending = _pendingCreations[nonce];
         if (pending.admin == address(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
         if (pending.completed) revert ErrorsLib.E070_AlreadyCompleted(nonce);
@@ -407,7 +409,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override whenNotPaused {
+    ) external override whenNotPaused nonReentrant {
         _mintBridgedSharesOne(itpId, user, amount, orderId, blsSignature, referenceNonce, signersBitmask);
     }
 
@@ -423,7 +425,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         uint256 n = orderIds.length;
         if (n == 0) revert BundleLengthMismatch();
         if (
@@ -480,7 +482,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes[] calldata blsSignatures,
         uint256[] calldata referenceNonces,
         uint256[] calldata signersBitmasks
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         uint256 n = orderIds.length;
         if (n == 0) revert BundleLengthMismatch();
         if (
@@ -546,7 +548,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override whenNotPaused {
+    ) external override whenNotPaused nonReentrant {
         // v5: Custody-held tokens must be burned via burnFromCustody (called by burnSellOrderShares)
         if (from == settlementBridgeCustody) revert ErrorsLib.E149_UseBurnFromCustody();
         address bridgedItp = orbitToSettlement[itpId];
@@ -571,7 +573,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @param itpId The L3 ITP identifier
     /// @param from Address holding the tokens (custody contract)
     /// @param amount Amount of shares to burn
-    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external whenNotPaused {
+    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external whenNotPaused nonReentrant {
         if (msg.sender != settlementBridgeCustody) revert ErrorsLib.E141_OnlyCustody();
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
@@ -586,7 +588,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @param itpId The L3 ITP identifier
     /// @param to Address to receive minted tokens (user)
     /// @param amount Amount of shares to mint
-    function mintFromCustody(bytes32 itpId, address to, uint256 amount) external {
+    function mintFromCustody(bytes32 itpId, address to, uint256 amount) external nonReentrant {
         if (msg.sender != settlementBridgeCustody) revert ErrorsLib.E141_OnlyCustody();
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
@@ -602,7 +604,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         string calldata name,
         string calldata symbol,
         address deployer
-    ) external override onlyOwner returns (address bridgedItpAddress) {
+    ) external override onlyOwner nonReentrant returns (address bridgedItpAddress) {
         if (orbitItpId == bytes32(0)) revert ErrorsLib.E106_ZeroAddressNotAllowed();
         if (deployer == address(0)) revert ErrorsLib.E106_ZeroAddressNotAllowed();
         if (orbitToSettlement[orbitItpId] != address(0))

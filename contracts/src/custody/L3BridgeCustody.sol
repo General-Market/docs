@@ -10,6 +10,7 @@ import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
 import "../libraries/TypesLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -19,7 +20,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @notice Handles locking USDC on L3 for bridging to other chains using two-phase commit
 /// @dev UUPS upgradeable, uses sequential nonces for bridge operations
 /// @custom:security-contact security@indexprotocol.com
-contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3BridgeCustody {
+contract L3BridgeCustody is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, BLSVerifier, IL3BridgeCustody {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -77,6 +78,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     /// @param usdc_ Address of the USDC token contract (must be 18 decimals on L3)
     function initialize(address oracleRegistry_, address usdc_) external initializer {
         __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
         if (oracleRegistry_ == address(0)) {
             revert ErrorsLib.E043_ZeroOracleRegistry();
         }
@@ -104,7 +106,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override returns (uint256 nonce) {
+    ) external override nonReentrant returns (uint256 nonce) {
         // Validate amount is non-zero
         if (amount == 0) {
             revert ErrorsLib.E052_ZeroAmount();
@@ -275,7 +277,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external {
+    ) external nonReentrant {
         TypesLib.PendingLock storage lock = pendingLocks[nonce];
         if (lock.amount == 0) revert ErrorsLib.E049_LockNotFound(nonce);
         if (!lock.reversed) revert ErrorsLib.E046_LockAlreadyReversed(nonce);

@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IVisionVault} from "../interfaces/IVisionVault.sol";
 import {IERC7540Deposit, IERC7540Redeem} from "../interfaces/IERC7540.sol";
 import {VisionVaultAccounting} from "../libraries/VisionVaultAccounting.sol";
@@ -12,7 +13,7 @@ import {IVision} from "../interfaces/IVision.sol";
 /// @title VisionVault — ERC-7540 managed vault for Vision prediction market trading
 /// @notice Async deposit/redeem with manager-only trading and performance fees.
 ///         Deployed as EIP-1167 minimal proxy — initialize() replaces constructor.
-contract VisionVault is IVisionVault {
+contract VisionVault is ReentrancyGuard, IVisionVault {
     using SafeERC20 for IERC20;
 
     uint256 private constant MAX_FEE = 5000; // 50%
@@ -236,7 +237,7 @@ contract VisionVault is IVisionVault {
 
     // ── ERC-7540 Deposit ─────────────────────────────────────────────
 
-    function requestDeposit(uint256 assets, address controller, address owner) external returns (uint256) {
+    function requestDeposit(uint256 assets, address controller, address owner) external nonReentrant returns (uint256) {
         require(assets > 0, "VisionVault: zero deposit");
         require(msg.sender == owner || msg.sender == controller, "VisionVault: unauthorized");
 
@@ -251,7 +252,7 @@ contract VisionVault is IVisionVault {
         return _depositRequests[controller];
     }
 
-    function claimDeposit(address receiver, address controller) external returns (uint256 shares) {
+    function claimDeposit(address receiver, address controller) external nonReentrant returns (uint256 shares) {
         require(msg.sender == controller, "VisionVault: unauthorized");
         uint256 assets = _depositRequests[controller];
         require(assets > 0, "VisionVault: no pending deposit");
@@ -271,7 +272,7 @@ contract VisionVault is IVisionVault {
 
     // ── ERC-7540 Redeem ──────────────────────────────────────────────
 
-    function requestRedeem(uint256 shares, address controller, address owner) external returns (uint256) {
+    function requestRedeem(uint256 shares, address controller, address owner) external nonReentrant returns (uint256) {
         require(shares > 0, "VisionVault: zero redeem");
         require(msg.sender == owner || msg.sender == controller, "VisionVault: unauthorized");
 
@@ -313,7 +314,7 @@ contract VisionVault is IVisionVault {
         return _pendingRedeemShares[controller];
     }
 
-    function claimRedeem(address receiver, address controller) external returns (uint256 assets) {
+    function claimRedeem(address receiver, address controller) external nonReentrant returns (uint256 assets) {
         require(msg.sender == controller, "VisionVault: unauthorized");
         assets = _claimableAssets[controller];
         if (assets == 0) revert NothingToClaim();
@@ -337,7 +338,7 @@ contract VisionVault is IVisionVault {
         bytes32 configHash,
         uint256 depositAmount,
         bytes32 bitmapHash
-    ) external onlyManager {
+    ) external onlyManager nonReentrant {
         if (depositAmount > idleUSDC()) revert InsufficientIdleCapital();
         uint256 maxAlloc = (totalAssets() * MAX_BATCH_BPS) / 10000;
         if (maxAlloc > 0 && depositAmount > maxAlloc) revert ExceedsMaxBatchAllocation();
@@ -350,14 +351,14 @@ contract VisionVault is IVisionVault {
         emit BatchJoined(batchId, depositAmount);
     }
 
-    function updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newBitmapHash) external onlyManager {
+    function updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newBitmapHash) external onlyManager nonReentrant {
         IVision(vision).updateBitmap(batchId, configHash, newBitmapHash);
         emit BitmapUpdated(batchId, newBitmapHash);
     }
 
     // ── Reconciliation ───────────────────────────────────────────────
 
-    function reconcile(uint256 batchId, uint256 settlementPayout) external {
+    function reconcile(uint256 batchId, uint256 settlementPayout) external nonReentrant {
         uint256 deposited = activeBatchDeposits[batchId];
         if (deposited == 0) revert BatchAlreadyReconciled();
 
@@ -405,7 +406,7 @@ contract VisionVault is IVisionVault {
     ///         the on-chain refund would land in the vault's USDC balance
     ///         while NAV still claimed the deposit was active — silent
     ///         double-counting that would over-pay early redeemers.
-    function refundStuckBatch(uint256 batchId) external {
+    function refundStuckBatch(uint256 batchId) external nonReentrant {
         uint256 deposited = activeBatchDeposits[batchId];
         if (deposited == 0) revert BatchAlreadyReconciled();
 
