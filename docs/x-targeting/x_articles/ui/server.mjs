@@ -200,11 +200,14 @@ function buildDraftPrompt(row) {
   if (row.likes) metrics.push(row.likes + " likes");
   if (row.replies) metrics.push(row.replies + " replies");
   if (row.followers) metrics.push(row.followers + " followers");
+  const hasCJK = /[㐀-䶿一-鿿]/.test(row.text || "");
+  const replyLang = (row.lang === "zh" || hasCJK) ? "Chinese" : (row.lang === "en" ? "English" : "");
   const lines = [
     rules,
     "",
     "## This tweet",
     "",
+    replyLang ? "Reply language: " + replyLang + " — the source tweet is " + replyLang + ", so write the reply in " + replyLang + "." : "",
     "Author: @" + (row.handle || "") + (row.name ? " (" + row.name + ")" : ""),
     metrics.length ? "Metrics: " + metrics.join(", ") : "",
     row.reply_angle ? "Suggested angle: " + row.reply_angle : "",
@@ -509,6 +512,8 @@ const html = String.raw`<!doctype html>
         </select>
         <button class="refreshButton" id="refreshEngagementButton" type="button"><span class="spinner"></span><span id="refreshEngagementText">Refresh today</span></button>
         <span class="refreshStatus" id="refreshStatus"></span>
+        <button class="refreshButton" id="draftAllButton" type="button"><span class="spinner"></span><span id="draftAllText">Draft all</span></button>
+        <span class="refreshStatus" id="draftAllStatus"></span>
       </div>
     </section>
     <section class="summary">
@@ -661,6 +666,8 @@ const html = String.raw`<!doctype html>
           text.textContent = "Refresh today";
         }
       };
+      const draftAllButton = document.getElementById("draftAllButton");
+      if (draftAllButton) draftAllButton.onclick = () => draftAll();
     }
 
     async function loadArticles() {
@@ -860,6 +867,39 @@ const html = String.raw`<!doctype html>
       return String(url || "").replace(/[^a-zA-Z0-9]/g, "").slice(-32);
     }
 
+    function queueRowByTweetId(tweetId) {
+      return state.queue.find((row) => tweetIdFromUrl(row.tweet_url) === tweetId) || null;
+    }
+
+    async function draftAll() {
+      const button = document.getElementById("draftAllButton");
+      const text = document.getElementById("draftAllText");
+      const status = document.getElementById("draftAllStatus");
+      const ids = sortedQueue(state.queue).map((row) => tweetIdFromUrl(row.tweet_url)).filter(Boolean);
+      const todo = ids.filter((id) => !state.drafts[id]);
+      if (!todo.length) { status.textContent = "all rows already drafted"; return; }
+      button.disabled = true; button.classList.add("loading"); text.textContent = "Drafting";
+      let done = 0;
+      const total = todo.length;
+      const shared = todo.slice();
+      const worker = async () => {
+        while (shared.length) {
+          const id = shared.shift();
+          const rowEl = document.querySelector('[data-draft-row="' + id + '"]');
+          if (rowEl) {
+            rowEl.classList.remove("hidden");
+            rowEl.dataset.loaded = "1";
+            await generateDraft(id, rowEl.firstElementChild, false);
+          }
+          done += 1;
+          status.textContent = "drafted " + done + "/" + total;
+        }
+      };
+      await Promise.all([worker(), worker()]); // matches server concurrency cap (2)
+      button.disabled = false; button.classList.remove("loading"); text.textContent = "Draft all";
+      status.textContent = "done — " + total + " drafted";
+    }
+
     function autoGrow(ta) {
       ta.style.height = "auto";
       ta.style.height = Math.min(ta.scrollHeight, 240) + "px";
@@ -884,7 +924,8 @@ const html = String.raw`<!doctype html>
         '<textarea class="draftText"></textarea>' +
         '<div class="draftMeta">' +
           '<span class="charCount"></span>' +
-          '<button class="draftAction draftCopy">Copy</button>' +
+          '<button class="draftAction draftCopy">Copy reply</button>' +
+          '<button class="draftAction draftOpen">Open tweet</button>' +
           '<button class="draftAction draftRegen">Regenerate</button>' +
           '<span class="draftStatus muted"></span>' +
         '</div>' +
@@ -906,6 +947,10 @@ const html = String.raw`<!doctype html>
       cell.querySelector(".draftCopy").addEventListener("click", async () => {
         try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); }
         status.textContent = "copied";
+      });
+      cell.querySelector(".draftOpen").addEventListener("click", () => {
+        const row = queueRowByTweetId(tweetId);
+        if (row && row.tweet_url) window.open(row.tweet_url, "_blank", "noopener");
       });
       cell.querySelector(".draftRegen").addEventListener("click", () => generateDraft(tweetId, cell, true));
     }

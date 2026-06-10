@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 import twapi  # noqa: E402
 
 OUT_ROOT = Path(__file__).resolve().parent
-DRAFT_SCHEMA_VERSION = 6
+DRAFT_SCHEMA_VERSION = 7
 
 NICHE_TERMS = (
     "100x",
@@ -118,6 +118,56 @@ AROUND_QUERY_TERMS = (
     "100x OR x100 OR gem OR gems OR alpha OR pumpfun OR pump.fun OR memecoin OR memecoins "
     "OR solana OR crypto OR degen OR liquidity OR holder OR wallet OR entry OR chart"
 )
+
+# Chinese-language degen vocabulary. 土狗 = shitcoin/memecoin, 金狗 = a winning one (gem),
+# 百倍/千倍 = 100x/1000x, 梭哈 = all-in, 埋伏 = early entry, 内盘 = pump.fun bonding curve,
+# 龙头 = lead coin, 聪明钱 = smart money, 狙击 = snipe, 拉盘/砸盘 = pump/dump, 抄底 = buy the dip.
+NICHE_TERMS_ZH = (
+    "土狗", "金狗", "百倍", "千倍", "梭哈", "埋伏", "内盘", "龙头",
+    "抄底", "山寨", "聪明钱", "狙击", "拉盘", "砸盘", "链上", "暴涨",
+    "貔貅", "冲", "meme",
+)
+
+# Chinese spam markers — folded into BOT_TERMS-style risk via term_hits.
+BOT_TERMS_ZH = (
+    "空投", "进群", "电报", "私信", "推广", "抽奖", "领取", "福利", "撸毛",
+)
+
+AROUND_QUERY_TERMS_ZH = (
+    "土狗 OR 金狗 OR 百倍 OR 千倍 OR 梭哈 OR 埋伏 OR 内盘 OR 龙头 OR 聪明钱 OR 狙击 OR "
+    "抄底 OR 链上 OR meme OR memecoin OR pumpfun OR solana"
+)
+
+ADJACENT_QUERIES_ZH = (
+    "(土狗 OR 金狗 OR 百倍 OR 千倍) (meme OR memecoin OR pumpfun OR solana OR 内盘)",
+    "(梭哈 OR 埋伏 OR 抄底 OR 狙击) (土狗 OR meme OR 链上)",
+    "(聪明钱 OR 链上 OR 龙头) (memecoin OR solana OR pumpfun OR 土狗)",
+)
+
+LANG_PROFILES = {
+    "en": dict(niche=NICHE_TERMS, around=AROUND_QUERY_TERMS, adjacent=ADJACENT_QUERIES, bot_extra=()),
+    "zh": dict(niche=NICHE_TERMS_ZH + NICHE_TERMS, around=AROUND_QUERY_TERMS_ZH, adjacent=ADJACENT_QUERIES_ZH, bot_extra=BOT_TERMS_ZH),
+}
+
+# Known target accounts → primary language. Unknown targets default to "en" (override with --lang).
+TARGET_LANG = {
+    "chinadegen": "zh",
+    "100xgemfinder": "en",
+}
+
+
+def resolve_lang(target: str, override: str | None) -> str:
+    if override:
+        return override
+    return TARGET_LANG.get(target.lstrip("@").lower(), "en")
+
+
+# Active language profile — main() rebinds these once the target is known.
+ACTIVE_LANG = "en"
+ACTIVE_NICHE_TERMS = NICHE_TERMS
+ACTIVE_AROUND_QUERY = AROUND_QUERY_TERMS
+ACTIVE_ADJACENT = ADJACENT_QUERIES
+ACTIVE_BOT_EXTRA = ()
 
 
 def install_key_from_secret() -> None:
@@ -306,7 +356,8 @@ def term_hits(text: str, terms: tuple[str, ...]) -> int:
     hits = 0
     for term in terms:
         term_l = term.lower()
-        if " " in term_l or "." in term_l:
+        # CJK terms have no ASCII word boundaries; \b never matches glued runs, so use substring.
+        if " " in term_l or "." in term_l or any("一" <= ch <= "鿿" for ch in term_l):
             hits += int(term_l in text_l)
         else:
             hits += int(re.search(rf"\b{re.escape(term_l)}\b", text_l) is not None)
@@ -339,7 +390,7 @@ def bot_risk(c: Candidate) -> tuple[int, list[str]]:
     if re.search(r"[a-zA-Z]{3,}\d{5,}|[a-zA-Z0-9_]{18,}", c.handle):
         risk += 1
         reasons.append("random-looking handle")
-    bot_hits = term_hits(text, BOT_TERMS)
+    bot_hits = term_hits(text, BOT_TERMS + ACTIVE_BOT_EXTRA)
     if bot_hits:
         risk += bot_hits * 2
         reasons.append("promo/bot wording")
@@ -360,14 +411,28 @@ def english_enough(text: str) -> bool:
     return hits >= 2 and ascii_ratio >= 0.88
 
 
+def chinese_enough(text: str) -> bool:
+    cjk = sum(1 for ch in text if "一" <= ch <= "鿿" or "㐀" <= ch <= "䶿")
+    letters = sum(1 for ch in text if ch.isalpha())
+    if not letters:
+        return False
+    return cjk >= 4 and cjk / letters >= 0.25
+
+
+def lang_enough(text: str, lang: str = "") -> bool:
+    if (lang or ACTIVE_LANG) == "zh":
+        return chinese_enough(text)
+    return english_enough(text)
+
+
 def niche_enough(text: str) -> bool:
-    return term_hits(text, NICHE_TERMS) > 0
+    return term_hits(text, ACTIVE_NICHE_TERMS) > 0
 
 
 def score_candidate(c: Candidate) -> tuple[float, list[str]]:
     risk, risk_reasons = bot_risk(c)
     text = f"{c.text} {c.bio}"
-    niche_hits = term_hits(text, NICHE_TERMS)
+    niche_hits = term_hits(text, ACTIVE_NICHE_TERMS)
     score = 0.0
     score += min(c.followers, 50_000) / 1000
     score += min(c.engagement, 50) * 2
@@ -516,6 +581,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", default="100xgemfinder")
+    parser.add_argument("--lang", default="", help="en|zh; blank auto-resolves from the target")
     parser.add_argument("--date", default=utc_now().strftime("%Y-%m-%d"))
     parser.add_argument("--lookback-hours", type=int, default=24)
     parser.add_argument("--lookback-days", type=int, default=None, help=argparse.SUPPRESS)
@@ -531,6 +597,15 @@ def main() -> None:
     args = parser.parse_args()
     if args.lookback_days is not None:
         args.lookback_hours = args.lookback_days * 24
+
+    global ACTIVE_LANG, ACTIVE_NICHE_TERMS, ACTIVE_AROUND_QUERY, ACTIVE_ADJACENT, ACTIVE_BOT_EXTRA
+    ACTIVE_LANG = resolve_lang(args.target, args.lang)
+    profile = LANG_PROFILES.get(ACTIVE_LANG, LANG_PROFILES["en"])
+    ACTIVE_NICHE_TERMS = profile["niche"]
+    ACTIVE_AROUND_QUERY = profile["around"]
+    ACTIVE_ADJACENT = profile["adjacent"]
+    ACTIVE_BOT_EXTRA = profile["bot_extra"]
+    print(f"[lang] target={args.target} lang={ACTIVE_LANG}")
 
     started_at = utc_now()
     cutoff = started_at - timedelta(hours=args.lookback_hours)
@@ -607,7 +682,7 @@ def main() -> None:
 
     if len(by_handle) < args.max_queue:
         for seed in seed_candidates:
-            query = f"from:{seed.handle} ({AROUND_QUERY_TERMS}) since:{since_date} filter:replies -is:retweet"
+            query = f"from:{seed.handle} ({ACTIVE_AROUND_QUERY}) since:{since_date} filter:replies -is:retweet"
             for tweet in metered_search(
                 f"around-{seed.handle}",
                 query,
@@ -623,7 +698,7 @@ def main() -> None:
                 text = tweet.get("text") or ""
                 if target_handle.lower() in text.lower():
                     continue
-                if not english_enough(text):
+                if not lang_enough(text):
                     continue
                 if not niche_enough(text):
                     continue
@@ -659,14 +734,14 @@ def main() -> None:
                 break
 
     if args.allow_adjacent_fallback and len(by_handle) < args.max_queue:
-        for idx, base_query in enumerate(ADJACENT_QUERIES):
+        for idx, base_query in enumerate(ACTIVE_ADJACENT):
             query = f"{base_query} since:{since_date} -is:retweet"
             for tweet in metered_search(f"adjacent-{idx}", query, "Latest", args.pages, raw_dir, args.reuse_raw):
                 tweet_id = str(tweet.get("id") or "")
                 if not tweet_id or tweet_id in seen_tweets:
                     continue
                 seen_tweets.add(tweet_id)
-                if not english_enough(tweet.get("text") or ""):
+                if not lang_enough(tweet.get("text") or ""):
                     continue
                 created = parse_x_date(tweet.get("createdAt") or "")
                 if not created or created < cutoff:
@@ -728,6 +803,7 @@ def main() -> None:
             "reply_angle": reply_angle(candidate),
             "data_hook": data_hook(candidate, target_handle),
             "reply_draft": reply_draft(candidate),
+            "lang": ACTIVE_LANG,
             "draft_schema_version": DRAFT_SCHEMA_VERSION,
         })
     rows.sort(key=lambda row: (row["rank_score"], row["engagement_rate"], row["followers"]), reverse=True)

@@ -39,7 +39,8 @@ complete = len(rows) >= max_queue and all(
     and "lookback_hours" in row
     and "data_hook" in row
     and "reply_draft" in row
-    and row.get("draft_schema_version") == 6
+    and "lang" in row
+    and row.get("draft_schema_version") == 7
     for row in rows
 )
 sys.exit(0 if complete else 1)
@@ -54,6 +55,7 @@ fi
 echo "[$(date -u --iso-8601=seconds)] fetch target=$TARGET date=$DATE_UTC"
 python3 "$ROOT_DIR/docs/x-targeting/engagement_queue/find_engagement_queue.py" \
   --target "$TARGET" \
+  --lang "${X_ENGAGEMENT_LANG:-}" \
   --date "$DATE_UTC" \
   --lookback-hours "${X_ENGAGEMENT_LOOKBACK_HOURS:-24}" \
   --target-posts "${X_ENGAGEMENT_TARGET_POSTS:-8}" \
