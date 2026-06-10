@@ -1,10 +1,23 @@
-"""HTML message formatters for Telegram. One colour of meaning per line; numbers thousands-grouped."""
+"""HTML message formatters for Telegram. One colour of meaning per line; numbers thousands-grouped.
+
+House rule: never put a twitter/X link in a message. We name the @handle (plain text, not a link)
+and strip any x.com / twitter.com URL out of enriched text.
+"""
 from __future__ import annotations
 
 import html
+import re
 from datetime import datetime, timezone
 
 from . import hl_filter
+
+_TWITTER_URL = re.compile(r"https?://(?:www\.|mobile\.)?(?:x\.com|twitter\.com|t\.co|nitter\.\S+)/\S+", re.I)
+
+
+def _strip_twitter(text: str) -> str:
+    """Remove any twitter/X link from text; collapse the gap it leaves."""
+    cleaned = _TWITTER_URL.sub("", text or "")
+    return re.sub(r"[ \t]{2,}", " ", cleaned)
 
 
 def _age(created_at: str) -> str:
@@ -18,7 +31,7 @@ def _age(created_at: str) -> str:
 
 
 def _clip(text: str, n: int = 280) -> str:
-    text = html.escape(text.strip())
+    text = html.escape(_strip_twitter(text).strip())
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
@@ -32,8 +45,7 @@ def format_alert(hit: dict) -> str:
         f"{hit['views']:,} views · {hit['likes']:,} likes · "
         f"{hit.get('retweets',0):,} RT · {hit.get('replies',0):,} replies\n"
         f"<b>{ratio_txt}</b> · score {hit['outlier_score']:,.0f}\n\n"
-        f"{_clip(hit['text'])}\n\n"
-        f'<a href="{html.escape(hit["url"])}">open on X</a>'
+        f"{_clip(hit['text'])}"
     )
 
 
@@ -43,15 +55,17 @@ def format_followed(hit: dict) -> str:
     return (
         f"📈 <b>@{handle}</b> · {hit['views']:,} views · {hit['likes']:,} likes · "
         f"{_age(hit.get('created_at',''))} old\n"
-        f"{_clip(hit['text'], 200)}\n"
-        f'<a href="{html.escape(hit["url"])}">open on X</a>'
+        f"{_clip(hit['text'], 200)}"
     )
 
 
 def format_enrichment(hit: dict, verdict: str) -> str:
-    """Follow-up to an outlier alert: the codex web-search fact-check, sources included."""
+    """Follow-up to an outlier alert: the codex web-search fact-check, sources included.
+
+    Non-twitter source links (DeFiLlama, CoinGecko, news) are kept — those are the data.
+    Any twitter/X link is stripped per the house rule."""
     handle = html.escape(hit["handle"])
-    body = html.escape(verdict.strip())[:3500]
+    body = html.escape(_strip_twitter(verdict).strip())[:3500]
     return (
         f"🔎 <b>Fact-check</b> · @{handle} (codex + web)\n"
         f"{body}"
@@ -138,7 +152,9 @@ def format_recent(rows: list[dict]) -> str:
             f"⚡ @{html.escape(r.get('handle','?'))} · {r.get('views',0):,} views · "
             f"{ratio:g}× avg · score {r.get('outlier_score',0):,.0f}"
         )
-        lines.append(f'    <a href="{html.escape(r.get("url",""))}">open on X</a>')
+        snippet = html.escape(_strip_twitter(r.get("text", ""))[:90].strip())
+        if snippet:
+            lines.append(f"    <i>{snippet}</i>")
     return "\n".join(lines)
 
 

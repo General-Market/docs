@@ -83,6 +83,7 @@ class Config:
     seen_max_age_hours: int
 
     enrich_enabled: bool          # web-search fact-check each outlier via the codex sidecar
+    enrich_followed: bool         # also fact-check 'followed' posts (more data, more codex load)
     enrich_url: str               # host sidecar endpoint (reachable from the container)
     enrich_timeout_s: int
     enrich_max_concurrency: int   # cap concurrent codex runs so a burst doesn't fork a swarm
@@ -129,6 +130,7 @@ def load() -> Config:
         daily_cap_usd=_float("DAILY_CAP_USD", 2.00),
         seen_max_age_hours=_int("SEEN_MAX_AGE_HOURS", 48),
         enrich_enabled=_opt("ENRICH_ENABLED", "true").lower() == "true",
+        enrich_followed=_opt("ENRICH_FOLLOWED", "true").lower() == "true",
         enrich_url=_opt("ENRICH_URL", "http://172.17.0.1:8092/enrich"),
         enrich_timeout_s=_int("ENRICH_TIMEOUT_S", 160),
         enrich_max_concurrency=_int("ENRICH_MAX_CONCURRENCY", 2),

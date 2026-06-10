@@ -141,6 +141,8 @@ class Daemon:
             elif c["tier"] == "followed" and not state.get("followed"):
                 if subs:
                     await self.tg.broadcast(subs, formatters.format_followed(c), html=True)
+                    if self.cfg.enrich_enabled and self.cfg.enrich_followed:
+                        self._spawn_enrich(c, list(subs))   # data on followed posts too
                 state["followed"] = now_iso
                 followed += 1
             else:
