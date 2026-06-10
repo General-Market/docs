@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/mocks/MockBitgetVault.sol";
-import "../../src/mocks/MockERC20.sol";
+import "../mocks/MockBitgetVault.sol";
+import "../mocks/MockERC20.sol";
 
 /// @title MockBitgetVaultTest - Comprehensive tests for MockBitgetVault
 /// @notice Tests all acceptance criteria for Story 7.18 mint/burn model

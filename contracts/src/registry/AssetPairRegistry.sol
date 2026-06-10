@@ -92,14 +92,6 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     /// @notice Admin address for configuration
     address public admin;
 
-    // ============ MODIFIERS ============
-
-    /// @notice Restricts function to admin only
-    modifier onlyAdmin() {
-        if (msg.sender != admin) revert Unauthorized();
-        _;
-    }
-
     // ============ CONSTRUCTOR ============
 
     /// @notice Initialize the AssetPairRegistry with an admin and oracle registry
@@ -515,7 +507,8 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ ADMIN FUNCTIONS ============
 
     /// @inheritdoc IAssetPairRegistry
-    function setAdmin(address newAdmin) external override onlyAdmin {
+    function setAdmin(address newAdmin) external override {
+        if (msg.sender != admin) revert Unauthorized();
         if (newAdmin == address(0)) revert ZeroAddress();
         address previousAdmin = admin;
         admin = newAdmin;

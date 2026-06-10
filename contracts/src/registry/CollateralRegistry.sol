@@ -79,14 +79,6 @@ contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
     /// @notice Admin address for configuration
     address public admin;
 
-    // ============ MODIFIERS ============
-
-    /// @notice Restricts function to admin only
-    modifier onlyAdmin() {
-        if (msg.sender != admin) revert Unauthorized();
-        _;
-    }
-
     // ============ CONSTRUCTOR ============
 
     /// @notice Initialize the CollateralRegistry with an admin and oracle registry
@@ -207,7 +199,8 @@ contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
 
     /// @notice Transfer admin role to a new address
     /// @param newAdmin The new admin address
-    function setAdmin(address newAdmin) external onlyAdmin {
+    function setAdmin(address newAdmin) external {
+        if (msg.sender != admin) revert Unauthorized();
         if (newAdmin == address(0)) revert ZeroAddress();
         address previousAdmin = admin;
         admin = newAdmin;

@@ -58,6 +58,11 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
     // ============ INITIALIZER ============
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initialize the Investment contract
     /// @param governance_ Address of the Governance contract
     /// @param usdc_ Address of the USDC token (must be 18 decimals on L3)
@@ -982,14 +987,6 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         weights = _itpWeights[itpId];
         inventory = _itpInventory[itpId];
     }
-
-    /// @inheritdoc IInvestment
-    function getPrice(uint256 assetIdx) external view returns (uint256 price) {
-        return assetPrices[assetIdx];
-    }
-
-    // batchGetPrices removed to fit code size limit — use multicall + getPrice()
-
 
     // ============ ADMIN FUNCTIONS ============
 

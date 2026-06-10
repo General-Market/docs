@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-import "../src/mocks/MockERC20.sol";
+import "../test/mocks/MockERC20.sol";
 import "../src/core/Investment.sol";
 
 /// @title Deploy200AssetITP - Deploy 200 mock tokens and create a 200-asset ITP

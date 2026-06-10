@@ -7,8 +7,8 @@ import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
-import {MockMorphoOracle} from "../src/mocks/MockMorphoOracle.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockMorphoOracle} from "./mocks/MockMorphoOracle.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title MorphoE2ETest - Integration tests for Morpho Blue deployment

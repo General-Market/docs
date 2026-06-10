@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-import "../src/mocks/MockERC20.sol";
+import "../test/mocks/MockERC20.sol";
 import "../src/core/Investment.sol";
 import "../src/core/ITP.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";

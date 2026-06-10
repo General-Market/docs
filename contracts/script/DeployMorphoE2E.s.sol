@@ -7,7 +7,7 @@ import {MetaMorpho, IMetaMorphoBase} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 import {CuratorRateIRM} from "../src/irm/CuratorRateIRM.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

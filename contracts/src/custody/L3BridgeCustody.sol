@@ -67,6 +67,11 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
     // ============ INITIALIZER ============
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initialize the L3BridgeCustody contract
     /// @param oracleRegistry_ Address of the OracleRegistry contract
     /// @param usdc_ Address of the USDC token contract (must be 18 decimals on L3)

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/custody/SettlementBridgeCustody.sol";
-import "../src/mocks/MockERC20.sol";
+import "./mocks/MockERC20.sol";
 import "../src/registry/OracleRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";

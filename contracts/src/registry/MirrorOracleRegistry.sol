@@ -490,11 +490,9 @@ contract MirrorOracleRegistry is IMirrorOracleRegistry, IOracleRegistry, Initial
     // ============ UUPS UPGRADE ============
 
     /// @notice Authorize upgrade (admin only)
-    function _authorizeUpgrade(address newImplementation) internal override {
+    function _authorizeUpgrade(address) internal view override {
         if (msg.sender != admin) {
             revert Unauthorized();
         }
-        // Silence unused variable warning
-        newImplementation;
     }
 }

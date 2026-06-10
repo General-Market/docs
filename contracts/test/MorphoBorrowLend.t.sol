@@ -9,7 +9,7 @@ import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurv
 import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

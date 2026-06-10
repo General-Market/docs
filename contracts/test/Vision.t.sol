@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test, console2, Vm} from "forge-std/Test.sol";
 import {Vision} from "../src/vision/Vision.sol";
 import {IVision} from "../src/interfaces/IVision.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
 import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import {Governance} from "../src/Governance.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";

@@ -8,7 +8,7 @@ import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurv
 import {CuratorRateIRM} from "../../src/irm/CuratorRateIRM.sol";
 import {MirrorOracleRegistry} from "../../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../../src/oracle/ITPNAVOracle.sol";
-import {MockERC20} from "../../src/mocks/MockERC20.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./TestHelper.sol";
 

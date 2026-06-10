@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockBitgetVault} from "../src/mocks/MockBitgetVault.sol";
+import {MockERC20} from "../test/mocks/MockERC20.sol";
+import {MockBitgetVault} from "../test/mocks/MockBitgetVault.sol";
 
 /// @title DeployLocalE2E - Local E2E deployment for asset tokens
 /// @notice Deploys mock asset tokens and MockUSDT; vault uses mint/burn (no pre-funding)

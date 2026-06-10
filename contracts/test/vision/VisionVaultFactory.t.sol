@@ -6,7 +6,7 @@ import {Vision} from "../../src/vision/Vision.sol";
 import {VisionVault} from "../../src/vision/VisionVault.sol";
 import {VisionVaultFactory} from "../../src/vision/VisionVaultFactory.sol";
 import {IVisionVault, IVisionVaultFactory} from "../../src/interfaces/IVisionVault.sol";
-import {MockERC20} from "../../src/mocks/MockERC20.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
 import {Governance} from "../../src/Governance.sol";
 import "../helpers/TestHelper.sol";

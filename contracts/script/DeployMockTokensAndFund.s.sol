@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/mocks/MockERC20.sol";
-import "../src/mocks/MockBitgetVault.sol";
+import "../test/mocks/MockERC20.sol";
+import "../test/mocks/MockBitgetVault.sol";
 
 /// @title DeployMockTokensAndFund
 /// @notice Deploy mock tokens and fund MockBitgetVault with 627 tokens each

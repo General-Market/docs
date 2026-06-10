@@ -14,13 +14,6 @@ interface IBotRegistry {
         bool isActive;        // True if bot is registered and active
     }
 
-    // ============ Custom Errors ============
-
-    error AlreadyRegistered();
-    error NotRegistered();
-    error EmptyEndpoint();
-    error ZeroPubkeyHash();
-
     // ============ Events ============
 
     /// @notice Emitted when a bot is registered

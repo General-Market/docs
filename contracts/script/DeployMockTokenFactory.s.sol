@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {MockTokenFactory} from "../src/mocks/MockTokenFactory.sol";
+import {MockTokenFactory} from "../test/mocks/MockTokenFactory.sol";
 
 /// @title DeployMockTokenFactory - Deploy MockTokenFactory for batch token deployment
 contract DeployMockTokenFactory is Script {

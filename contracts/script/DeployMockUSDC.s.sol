@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "../test/mocks/MockERC20.sol";
 
 /// @title DeployMockUSDC - Deploy mock USDC tokens for local E2E testing
 /// @notice Deploys L3Usdc (18 decimals) and/or SettlementUSDC (6 decimals)

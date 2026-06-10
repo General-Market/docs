@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/mocks/MockERC20.sol";
+import "../test/mocks/MockERC20.sol";
 
 /**
  * Batch deploy MockERC20 tokens from a JSON list.

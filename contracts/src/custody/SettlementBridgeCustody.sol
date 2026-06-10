@@ -130,6 +130,11 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     // ============ INITIALIZER ============
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initialize the SettlementBridgeCustody contract
     /// @param oracleRegistry_ Address of the OracleRegistry contract
     /// @param usdc_ Address of the USDC token contract

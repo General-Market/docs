@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../../src/core/Investment.sol";
-import "../../src/mocks/MockERC20.sol";
-import "../../src/mocks/MockTokenFactory.sol";
+import "../mocks/MockERC20.sol";
+import "../mocks/MockTokenFactory.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
 import {TypesLib} from "../../src/libraries/TypesLib.sol";

@@ -205,13 +205,6 @@ interface IInvestment {
             uint256[] memory inventory
         );
 
-    /// @notice Get price for a single asset by index (legacy, reads dead storage)
-    /// @param assetIdx The asset index in the registry
-    /// @return price The asset price in USDC (18 decimals)
-    function getPrice(uint256 assetIdx) external view returns (uint256 price);
-
-    // batchGetPrices removed — use multicall + getPrice()
-
     // ============ ITP NAV FUNCTIONS ============
 
     /// @notice Set ITP NAV via BLS-verified push from oracles

@@ -28,8 +28,8 @@ abstract contract InvestmentStorage {
     /// @notice USDC token reference
     IERC20 public usdc;
 
-    /// @notice Asset prices by asset index (18 decimals)
-    mapping(uint256 => uint256) public assetPrices;
+    /// @dev DEPRECATED — never written, getter removed. Kept to preserve storage layout.
+    mapping(uint256 => uint256) private __deprecated_assetPrices; // slot 4 — was assetPrices, never written; getter removed
 
     // ============ ITP STORAGE ============
 
@@ -110,8 +110,8 @@ abstract contract InvestmentStorage {
     /// @notice Queue depth at which new orders are rejected (default: 500)
     uint256 public queuePauseThreshold;
 
-    /// @notice Mapping from asset address to its price index
-    /// @dev Used by NAV calculation to look up assetPrices[idx] for each ITP asset
+    /// @notice Mapping from asset address to its registered index
+    /// @dev Index registry for assets. (Formerly keyed the now-deprecated assetPrices mapping.)
     mapping(address => uint256) public assetAddressToIndex;
 
     /// @notice Whether an asset address has been registered with an index
@@ -173,7 +173,7 @@ abstract contract InvestmentStorage {
 
     /// @dev Reserved storage slots for future upgrades.
     ///      Slot accounting (each mapping/variable = 1 slot):
-    ///        orders(0), nextOrderId(1), governance(2), usdc(3), assetPrices(4),
+    ///        orders(0), nextOrderId(1), governance(2), usdc(3), __deprecated_assetPrices(4),
     ///        _itps(5), _itpAssets(6), _itpWeights(7), _itpInventory(8),
     ///        _itpExists(9), _itpCount(10), _allItpIds(11), cycleProcessed(12),
     ///        oracleRegistry(13), itpVaults(14), _vault2Id(15), feeRegistry(16),

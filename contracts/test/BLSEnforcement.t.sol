@@ -11,7 +11,7 @@ import "../src/registry/AssetPairRegistry.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/libraries/ErrorsLib.sol";
 import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
-import "../src/mocks/MockERC20.sol";
+import "./mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";

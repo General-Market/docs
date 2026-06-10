@@ -6,7 +6,7 @@ import {Morpho, Id, MarketParams, Market} from "@morpho-blue/Morpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {CuratorRateIRM} from "../src/irm/CuratorRateIRM.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
 import "./helpers/MorphoTestHelper.sol";
 
 /// @title MorphoCuratorIRMLiquidation Test

@@ -54,13 +54,11 @@ interface IVision {
     error NotJoined();
     error InvalidTickDuration();
     error InvalidLockOffset();
-    error LockOffsetTooLarge();
     error InvalidSettlementGrace();
     error NonZeroSum();
     error BotAlreadyRegistered();
     error BotNotRegistered();
     error TickLocked();
-    error InvalidBLSSignature();
     error InvalidArrayLength();
     error BatchAlreadySettled();
     error SettlementWindowClosed();

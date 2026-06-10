@@ -286,9 +286,6 @@ library ErrorsLib {
     /// @param nonce The request nonce
     error E070_AlreadyCompleted(uint256 nonce);
 
-    /// @notice E071: BLS signature verification failed
-    error E071_InvalidBLSSignature();
-
     /// @notice E072: No pending creation request found for nonce
     /// @param nonce The request nonce
     error E072_CreationNotFound(uint256 nonce);
@@ -409,11 +406,6 @@ library ErrorsLib {
 
     // ============ NAV ORACLE ERRORS (Story 8.6) ============
 
-    /// @notice E094: Cycle number is stale (must be greater than last processed)
-    /// @param provided The cycle number provided
-    /// @param current The current (last processed) cycle number
-    error E094_StaleCycleNumber(uint256 provided, uint256 current);
-
     /// @notice E095: Oracle price cannot be zero
     error E095_InvalidOraclePrice();
 
@@ -441,26 +433,6 @@ library ErrorsLib {
     /// @param deployer The expected deployer
     error E100_NotBridgeDeployer(bytes32 itpId, address caller, address deployer);
 
-    /// @notice E101: Rebalance request has empty weights array
-    error E101_EmptyRebalanceWeights();
-
-    /// @notice E102: Rebalance weight below minimum (0.25%)
-    /// @param index The weight index
-    /// @param weight The invalid weight value
-    error E102_RebalanceWeightTooLow(uint256 index, uint256 weight);
-
-    /// @notice E103: Rebalance weights do not sum to 1e18
-    /// @param totalWeight The actual sum
-    error E103_RebalanceWeightsSumInvalid(uint256 totalWeight);
-
-    /// @notice E104: Rebalance request not found for nonce
-    /// @param nonce The missing nonce
-    error E104_RebalanceNotFound(uint256 nonce);
-
-    /// @notice E105: Rebalance request already completed
-    /// @param nonce The already-completed nonce
-    error E105_RebalanceAlreadyCompleted(uint256 nonce);
-
     /// @notice E106: Zero address not allowed
     error E106_ZeroAddressNotAllowed();
 
@@ -468,11 +440,6 @@ library ErrorsLib {
     /// @param caller The actual caller
     /// @param bridge The authorized bridge
     error E107_NotAuthorizedBridge(address caller, address bridge);
-
-    /// @notice E108: Rebalance weights length mismatch with ITP assets
-    /// @param expected Expected length (number of assets)
-    /// @param actual Actual length provided
-    error E108_RebalanceWeightsLengthMismatch(uint256 expected, uint256 actual);
 
     // ============ REBALANCE V2 ERRORS (Asset Changes) ============
 
@@ -521,10 +488,6 @@ library ErrorsLib {
     /// @param orderId The order ID that was not found
     error E119_SellOrderNotFound(uint256 orderId);
 
-    /// @notice E120: Sell order already completed or refunded
-    /// @param orderId The order ID that was already processed
-    error E120_SellOrderAlreadyCompleted(uint256 orderId);
-
     // ============ ITP METADATA ERRORS ============
 
     /// @notice E121: ITP description exceeds maximum length
@@ -566,131 +529,7 @@ library ErrorsLib {
     /// @param maxLength Maximum allowed length
     error E127_DeployerNameTooLong(uint256 length, uint256 maxLength);
 
-    // ============ VISION (BILATERAL P2P) ERRORS (E200+) ============
-
-    /// @notice E200: Insufficient available collateral for bet
-    /// @param user The user address
-    /// @param required Amount required
-    /// @param available Amount available
-    error E200_InsufficientCollateral(address user, uint256 required, uint256 available);
-
-    /// @notice E201: Bet already exists with this ID
-    /// @param betId The duplicate bet ID
-    error E201_BetAlreadyExists(bytes32 betId);
-
-    /// @notice E202: Invalid EIP-712 signature for bet commitment
-    error E202_InvalidBetSignature();
-
-    /// @notice E203: Bet not found
-    /// @param betId The bet ID that was not found
-    error E203_BetNotFound(bytes32 betId);
-
-    /// @notice E204: Bet is not in Active status
-    /// @param betId The bet ID
-    /// @param status Current bet status
-    error E204_BetNotActive(bytes32 betId, uint8 status);
-
-    /// @notice E205: Bet deadline has not passed yet (required for settlement)
-    /// @param betId The bet ID
-    /// @param deadline The bet deadline
-    /// @param currentTime Current timestamp
-    error E205_DeadlineNotPassed(bytes32 betId, uint256 deadline, uint256 currentTime);
-
-    /// @notice E206: Arbitration not requested for this bet
-    /// @param betId The bet ID
-    error E206_ArbitrationNotRequested(bytes32 betId);
-
-    /// @notice E207: Insufficient valid keeper signatures for arbitration threshold
-    /// @param validCount Number of valid signatures
-    /// @param required Required threshold
-    error E207_InsufficientKeeperSignatures(uint256 validCount, uint256 required);
-
-    /// @notice E208: Caller is not a party to this bet
-    /// @param betId The bet ID
-    /// @param caller The unauthorized caller
-    error E208_NotBetParty(bytes32 betId, address caller);
-
-    /// @notice E209: Custom payout amounts exceed total pot
-    /// @param creatorPayout Payout to creator
-    /// @param fillerPayout Payout to filler
-    /// @param totalPot Total collateral in bet
-    error E209_PayoutExceedsPot(uint256 creatorPayout, uint256 fillerPayout, uint256 totalPot);
-
-    /// @notice E210: Bot already registered
-    /// @param bot The bot address
-    error E210_BotAlreadyRegistered(address bot);
-
-    /// @notice E211: Bot not registered or inactive
-    /// @param bot The bot address
-    error E211_BotNotActive(address bot);
-
-    /// @notice E212: Insufficient stake for bot registration
-    /// @param provided Amount provided
-    /// @param required Minimum required
-    error E212_InsufficientBotStake(uint256 provided, uint256 required);
-
-    /// @notice E213: Keeper already registered
-    /// @param keeper The keeper address
-    error E213_KeeperAlreadyRegistered(address keeper);
-
-    /// @notice E214: Invalid BLS public key length (must be 128 bytes for G2)
-    error E214_InvalidKeeperPubkey();
-
-    /// @notice E215: Keeper not found or inactive
-    /// @param keeper The keeper address
-    error E215_KeeperNotActive(address keeper);
-
-    /// @notice E216: Keeper is suspended
-    /// @param keeper The keeper address
-    error E216_KeeperSuspended(address keeper);
-
-    /// @notice E217: No pending key rotation for this keeper
-    /// @param keeper The keeper address
-    error E217_NoRotationPending(address keeper);
-
-    /// @notice E218: Key rotation threshold not met
-    /// @param approvals Current approvals
-    /// @param required Required approvals
-    error E218_RotationThresholdNotMet(uint256 approvals, uint256 required);
-
-    /// @notice E219: Cannot approve own key rotation
-    /// @param keeper The keeper trying to self-approve
-    error E219_CannotSelfApprove(address keeper);
-
-    /// @notice E220: Key rotation already approved by this keeper
-    /// @param keeper The keeper that already approved
-    error E220_AlreadyApproved(address keeper);
-
-    /// @notice E221: Force rotation timeout not reached
-    /// @param requestedAt When rotation was requested
-    /// @param timeoutAt When force rotation becomes available
-    error E221_ForceRotationTooEarly(uint256 requestedAt, uint256 timeoutAt);
-
-    /// @notice E222: Invalid endpoint (empty string)
-    error E222_InvalidEndpoint();
-
-    /// @notice E223: Referral epoch already has a Merkle root
-    /// @param epoch The epoch number
-    error E223_EpochAlreadySet(uint256 epoch);
-
-    /// @notice E224: Referral already claimed for this epoch
-    /// @param epoch The epoch number
-    /// @param claimer The address that already claimed
-    error E224_AlreadyClaimed(uint256 epoch, address claimer);
-
-    /// @notice E225: Invalid Merkle proof for referral claim
-    error E225_InvalidMerkleProof();
-
-    /// @notice E226: Withdraw amount exceeds available balance
-    /// @param requested Amount requested
-    /// @param available Amount available
-    error E226_InsufficientBalance(uint256 requested, uint256 available);
-
     // ============ SECURITY AUDIT FIXES ============
-
-    /// @notice E128: Cycle has not been confirmed yet
-    /// @param cycleNumber The cycle that hasn't been confirmed
-    error E128_CycleNotConfirmed(uint256 cycleNumber);
 
     /// @notice E129: Caller is not the order owner
     /// @param caller The actual caller
@@ -714,9 +553,6 @@ library ErrorsLib {
     error E132_VisionWithdrawAlreadyProcessed(uint256 withdrawId);
 
     // ============ NAV ORACLE PHASE 2B ERRORS ============
-
-    /// @notice E133: Cycle gap too large (cycleNumber > lastCycleNumber + MAX_CYCLE_GAP)
-    error E133_CycleGapTooLarge();
 
     /// @notice E134: Price deviation too high (exceeds MAX_DEVIATION_BPS from current price)
     error E134_PriceDeviationTooHigh();
@@ -773,10 +609,6 @@ library ErrorsLib {
 
     /// @notice E149: burnBridgedShares cannot burn custody-held tokens (use burnFromCustody)
     error E149_UseBurnFromCustody();
-
-    /// @notice E150: Cannot clear pending mint before mint is processed
-    /// @param orderId The order whose mint has not been processed
-    error E150_MintNotProcessed(uint256 orderId);
 
     /// @notice E151: Remint too early — must wait MIN_REMINT_DELAY after burn
     /// @param orderId The order ID

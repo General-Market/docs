@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/mocks/MockERC20.sol";
+import "../test/mocks/MockERC20.sol";
 
 /// @title DeployAllTokens - Deploy 621 Bitget tokens + fund vault
 /// @dev Uses regular CREATE (not CREATE2). Sequential nonces with --slow guarantee unique addresses.

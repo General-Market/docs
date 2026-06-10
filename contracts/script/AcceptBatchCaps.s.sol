@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {IMorpho, MarketParams, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title AcceptBatchCaps — Accept vault caps + set supply queue (no timelock wait needed)

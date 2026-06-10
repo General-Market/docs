@@ -7,7 +7,7 @@ import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title DeploySecondVault — Deploy a second MetaMorpho vault + batch markets

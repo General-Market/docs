@@ -17,7 +17,6 @@ interface IVisionVault is IERC4626, IERC7540Deposit, IERC7540Redeem {
     error NotManager();
     error AlreadyInitialized();
     error InsufficientIdleCapital();
-    error BatchNotActive();
     error BatchAlreadyReconciled();
     error NothingToClaim();
     error FeeTooHigh();

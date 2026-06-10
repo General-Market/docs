@@ -103,9 +103,11 @@ contract BotRegistry is ReentrancyGuard {
     /// @return addresses Array of active bot addresses
     /// @return endpoints Array of corresponding endpoints
     function getAllActiveBots() external view returns (address[] memory addresses, string[] memory endpoints) {
+        uint256 len = botAddresses.length;
+
         // Count active bots (first pass)
         uint256 activeCount = 0;
-        for (uint256 i = 0; i < botAddresses.length; i++) {
+        for (uint256 i = 0; i < len; i++) {
             if (bots[botAddresses[i]].isActive) activeCount++;
         }
 
@@ -115,7 +117,7 @@ contract BotRegistry is ReentrancyGuard {
         uint256 idx = 0;
 
         // Fill arrays with active bots
-        for (uint256 i = 0; i < botAddresses.length; i++) {
+        for (uint256 i = 0; i < len; i++) {
             if (bots[botAddresses[i]].isActive) {
                 addresses[idx] = botAddresses[i];
                 endpoints[idx] = bots[botAddresses[i]].endpoint;

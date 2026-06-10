@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-import "../src/mocks/MockBitgetVault.sol";
+import "../test/mocks/MockBitgetVault.sol";
 import "../src/registry/AssetPairRegistry.sol";
 import "../src/core/Investment.sol";
 import "../src/bridge/BridgeProxy.sol";

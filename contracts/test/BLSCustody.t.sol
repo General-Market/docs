@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/registry/OracleRegistry.sol";
 import {IOracleRegistry} from "../src/interfaces/IOracleRegistry.sol";
-import "../src/mocks/MockERC20.sol";
+import "./mocks/MockERC20.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
 import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
