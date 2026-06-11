@@ -1,7 +1,7 @@
 ---
 title: What is General Market?
 navTitle: Overview
-description: The two products, the chain they run on, and where to start.
+description: Two products on one chain — Vision prediction markets and Index on-chain funds — and where to start.
 order: 1
 group: Get Started
 mode: explanation
@@ -66,4 +66,4 @@ Each tab of these docs is written for one reader. Pick yours.
 
 Whatever you pick, you need a connected wallet and test funds first.
 
-Next: [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~4 min)
+Next: [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~4 min)

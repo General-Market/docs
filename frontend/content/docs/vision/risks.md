@@ -1,9 +1,9 @@
 ---
-title: What can go wrong
+title: Risks and recovery
 navTitle: Risks
 description: Every failure mode, named plainly, with the path out of each one.
 order: 11
-group: Standing
+group: Leaderboard & risks
 mode: explanation
 ---
 
@@ -27,7 +27,7 @@ Is this real money? :: No — testnet only
 
 ## What if my block never settles?
 
-**An unsettled block turns into a full refund — claimable by you.** Every block has a settlement deadline: the end of its tick plus a grace window (60 seconds to 24 hours, typically twice the tick length). Past that deadline the contract refuses late settlement and opens `claimRefund`: full deposit, no fee. The exact claim steps are in [Where is my money?](/docs/vision/your-money) (~3 min).
+**An unsettled block turns into a full refund — claimable by you.** Every block has a settlement deadline: the end of its tick plus a grace window (60 seconds to 24 hours, typically twice the tick length). Past that deadline the contract refuses late settlement and opens `claimRefund`: full deposit, no fee. The exact claim steps are in [Custody and refunds](/docs/vision/your-money) (~3 min).
 
 ## What if a market's data goes stale?
 
@@ -39,7 +39,7 @@ Is this real money? :: No — testnet only
 
 ## What about vault managers?
 
-**A vault manager's bad predictions are your loss.** A vault's structural protections stop theft, not bad judgment — the manager cannot withdraw your money, but they decide every prediction the vault makes. Read [Can someone play for me?](/docs/vision/vaults) (~4 min) before depositing, and judge the manager by their record.
+**A vault manager's bad predictions are your loss.** A vault's structural protections stop theft, not bad judgment — the manager cannot withdraw your money, but they decide every prediction the vault makes. Read [Managed vaults](/docs/vision/vaults) (~4 min) before depositing, and judge the manager by their record.
 
 ## What about the contracts themselves?
 
@@ -47,10 +47,10 @@ Is this real money? :: No — testnet only
 
 ## Is this real money?
 
-**Testnet only.** The L3 chain, the USDC on it, and everything you win or lose are testnet assets with no real-world value. The faucet hands the money out; see [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min).
+**Testnet only.** The L3 chain, the USDC on it, and everything you win or lose are testnet assets with no real-world value. The faucet hands the money out; see [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min).
 
 ```gmseealso
-[{"title": "Where is my money?", "href": "/docs/vision/your-money"}, {"title": "Can someone play for me?", "href": "/docs/vision/vaults"}, {"title": "How do I win?", "href": "/docs/vision/payouts"}]
+[{"title": "Custody and refunds", "href": "/docs/vision/your-money"}, {"title": "Managed vaults", "href": "/docs/vision/vaults"}, {"title": "How payouts work", "href": "/docs/vision/payouts"}]
 ```
 
-Next: [Why run a bot?](/docs/bots/overview) (~3 min)
+Next: [What a bot does](/docs/bots/overview) (~3 min)

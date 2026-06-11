@@ -1,8 +1,9 @@
 ---
-title: Strategies
+title: Prediction strategies
+navTitle: Strategies
 description: The five built-in strategies, their exact decision rules, deterministic seeding, and how to write your own.
 order: 6
-group: Build
+group: Build a bot
 mode: how-to
 ---
 

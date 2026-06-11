@@ -1,5 +1,5 @@
 ---
-title: Vaults
+title: Vault contract and endpoints
 navTitle: Vaults
 description: The ERC-7540 vault contract — async deposits, FIFO redeem queue, clone factory — and the five vault read endpoints.
 order: 9
@@ -39,7 +39,7 @@ The factory caps the performance fee at 5,000 bps (50%) and keeps the registry: 
 **Testnet only.** Vault deposits are testnet funds.
 **L3 USDC has 18 decimals.**
 
-The player-facing story — what depositing feels like, where performance shows in the app — lives at [Can someone play for me?](/docs/vision/vaults) (~4 min).
+The player-facing story — what depositing feels like, where performance shows in the app — lives at [Managed vaults](/docs/vision/vaults) (~4 min).
 
 ## GET /vision/vault/{address}/stats
 
@@ -109,7 +109,7 @@ Returns the individual fills behind one asset's aggregate, paginated.
 Fills are filtered to `status = filled` and sorted oldest-first for chart overlay. `amount` is the USD value of the fill, `fillPrice` the NAV per share at fill time, `shares` the shares traded — the last two are `null` when the upstream row lacked them. The same `_stub: true` fallback applies on upstream failure.
 
 ```gmseealso
-[{"title": "Can someone play for me?", "href": "/docs/vision/vaults"}, {"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
+[{"title": "Managed vaults", "href": "/docs/vision/vaults"}, {"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
 ```
 
 Next: [Faucet](/docs/developers/vision-api/faucet) (~2 min)

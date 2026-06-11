@@ -24,7 +24,7 @@ The price of one share is its NAV — the market value of the assets backing it.
 
 **L3 USDC has 18 decimals.** NAV, like every amount in the protocol, is an 18-decimal figure: $1.00 = 1e18.
 
-NAV is also the price your orders fill at, and your limit price is checked against the fill on-chain — see [What happens to my order?](/docs/index/order-lifecycle) (~5 min).
+NAV is also the price your orders fill at, and your limit price is checked against the fill on-chain — see [How orders fill](/docs/index/order-lifecycle) (~5 min).
 
 ## Who computes NAV?
 
@@ -47,7 +47,7 @@ Three routes, tried in order, so a price almost always renders. The app first li
 **Testnet only.** Every price, NAV, and dollar figure here belongs to a test network.
 
 ```gmseealso
-[{"title": "What is a DTF?", "href": "/docs/index/what-is-a-dtf"}, {"title": "What happens to my order?", "href": "/docs/index/order-lifecycle"}, {"title": "Rebalance a DTF", "href": "/docs/index/rebalancing"}]
+[{"title": "What is a DTF?", "href": "/docs/index/what-is-a-dtf"}, {"title": "How orders fill", "href": "/docs/index/order-lifecycle"}, {"title": "Rebalance a DTF", "href": "/docs/index/rebalancing"}]
 ```
 
 Next: [Create your own DTF](/docs/index/create-a-dtf) (~5 min)

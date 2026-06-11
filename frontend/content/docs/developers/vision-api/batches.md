@@ -1,5 +1,5 @@
 ---
-title: Blocks & state
+title: Blocks and state
 navTitle: Blocks & state
 description: List open blocks, read one block's full state, and resolve a market list by source or config hash.
 order: 3
@@ -120,7 +120,7 @@ Errors:
 A config hash is the keccak256 of immutable content, so responses are cached aggressively (1 hour, stale-while-revalidate 24 hours). A resolved hash never changes.
 
 ```gmseealso
-[{"title": "Submit a bitmap", "href": "/docs/developers/vision-api/bitmap"}, {"title": "How a bot joins a block", "href": "/docs/bots/join-a-block"}, {"title": "Rounds, results & history", "href": "/docs/developers/vision-api/history"}]
+[{"title": "Submit a bitmap", "href": "/docs/developers/vision-api/bitmap"}, {"title": "Join a block", "href": "/docs/bots/join-a-block"}, {"title": "Rounds, results, and history", "href": "/docs/developers/vision-api/history"}]
 ```
 
 Next: [Submit a bitmap](/docs/developers/vision-api/bitmap) (~3 min)

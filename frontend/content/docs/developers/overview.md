@@ -3,7 +3,7 @@ title: API overview
 navTitle: Overview
 description: Base URL, authentication, rate limits, and the endpoint families of the General Market API.
 order: 1
-group: Start
+group: Foundations
 mode: reference
 ---
 
@@ -51,16 +51,16 @@ Open does not mean unlimited. Limits can exist at the proxy layer in front of th
 
 | Family | What it covers | Reference |
 |---|---|---|
-| Blocks & state | Active blocks, batch state, market configs | [Blocks & state](/docs/developers/vision-api/batches) (~5 min) |
+| Blocks & state | Active blocks, batch state, market configs | [Blocks and state](/docs/developers/vision-api/batches) (~5 min) |
 | Bitmap submission | Sending sealed predictions to the oracle | [Submit a bitmap](/docs/developers/vision-api/bitmap) (~4 min) |
-| Players & balances | Balances, player profiles, round history per player | [Players & balances](/docs/developers/vision-api/players) (~4 min) |
-| Rounds & history | Past rounds, revealed bitmaps, results, settlements | [Rounds, results & history](/docs/developers/vision-api/history) (~5 min) |
-| Sources & snapshots | The source catalog, market snapshots, search, icons | [Sources, snapshots & search](/docs/developers/vision-api/discovery) (~5 min) |
-| Leaderboard & stats | Leaderboard, global stats, activity, explorer | [Leaderboard & stats](/docs/developers/vision-api/stats) (~4 min) |
-| Vaults | Managed-vault stats, history, rounds, assets | [Vaults](/docs/developers/vision-api/vaults) (~5 min) |
+| Players & balances | Balances, player profiles, round history per player | [Players and balances](/docs/developers/vision-api/players) (~4 min) |
+| Rounds & history | Past rounds, revealed bitmaps, results, settlements | [Rounds, results, and history](/docs/developers/vision-api/history) (~5 min) |
+| Sources & snapshots | The source catalog, market snapshots, search, icons | [Sources, snapshots, and search](/docs/developers/vision-api/discovery) (~5 min) |
+| Leaderboard & stats | Leaderboard, global stats, activity, explorer | [Leaderboard and stats](/docs/developers/vision-api/stats) (~4 min) |
+| Vaults | Managed-vault stats, history, rounds, assets | [Vault contract and endpoints](/docs/developers/vision-api/vaults) (~5 min) |
 | Faucet | Testnet USDC and gas | [Faucet](/docs/developers/vision-api/faucet) (~3 min) |
-| Prices & DTFs | DTF prices, NAV, rankings | [Prices & DTFs](/docs/developers/index-api/markets) (~5 min) |
-| Portfolio & simulation | Positions, trade history, backtesting | [Portfolio & simulation](/docs/developers/index-api/portfolio) (~5 min) |
+| Prices & DTFs | DTF prices, NAV, rankings | [Prices and DTFs](/docs/developers/index-api/markets) (~5 min) |
+| Portfolio & simulation | Positions, trade history, backtesting | [Portfolio and simulation](/docs/developers/index-api/portfolio) (~5 min) |
 | Lending | The Morpho lending market | [Lending](/docs/developers/index-api/lending) (~4 min) |
 | Contracts | The on-chain surface behind all of it | [Contract reference](/docs/developers/contracts) (~10 min) |
 
@@ -91,7 +91,7 @@ Zero is a real answer. `null` means the upstream fetch failed and you should ret
 If this call returns JSON, your connection works and every other endpoint in this section is reachable the same way.
 
 ```gmseealso
-[{"title": "System architecture", "href": "/docs/developers/architecture"}, {"title": "Blocks & state", "href": "/docs/developers/vision-api/batches"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
+[{"title": "System architecture", "href": "/docs/developers/architecture"}, {"title": "Blocks and state", "href": "/docs/developers/vision-api/batches"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
 ```
 
 Next: [System architecture](/docs/developers/architecture) (~7 min)

@@ -1,5 +1,5 @@
 ---
-title: What happens to my order?
+title: How orders fill
 navTitle: Order lifecycle
 description: Submit, batch, fill — limit prices, partial fills, cancels, and the refund guarantee.
 order: 3

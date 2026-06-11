@@ -1,5 +1,5 @@
 ---
-title: Portfolio & simulation
+title: Portfolio and simulation
 navTitle: Portfolio & simulation
 description: Positions, trade history, PnL curves, and the SSE-streaming index backtester.
 order: 12
@@ -37,7 +37,7 @@ Returns a wallet's current DTF positions with cost basis and unrealized PnL, com
 ```
 
 - Positions are aggregated per DTF from filled trades: buys accumulate shares and cost, sells reduce shares. Average cost is volume-weighted over buys. Positions with zero or negative net shares are dropped.
-- `current_nav` is computed live the same way as `GET /itp-price` — see [Prices & DTFs](/docs/developers/index-api/markets) (~5 min).
+- `current_nav` is computed live the same way as `GET /itp-price` — see [Prices and DTFs](/docs/developers/index-api/markets) (~5 min).
 - All numbers are display-formatted decimal strings: shares to 4 places, NAV and cost to 6, values and PnL to 2, percentages to 1. These are *not* wei-scale — the raw 18-decimal values live in the trades, not here.
 - A wallet with no fills returns empty `positions` and zeroed totals, status 200.
 
@@ -167,11 +167,11 @@ Returns BTC and ETH price series normalized to 1.0 at your start date, for plott
 - Errors: `400` malformed `start_date`. A benchmark with no data in range is omitted from the response.
 
 ```gmnote
-The backtester prices in daily snapshots and percentage fees. It does not simulate the live order pipeline — oracle batching, slippage tiers, partial fills. Treat results as strategy research, not an execution forecast. For how live orders actually fill, read What happens to my order? linked below.
+The backtester prices in daily snapshots and percentage fees. It does not simulate the live order pipeline — oracle batching, slippage tiers, partial fills. Treat results as strategy research, not an execution forecast. For the live pipeline, read How orders fill, linked below.
 ```
 
 ```gmseealso
-[{"title": "Prices & DTFs", "href": "/docs/developers/index-api/markets"}, {"title": "What happens to my order?", "href": "/docs/index/order-lifecycle"}, {"title": "Lending", "href": "/docs/developers/index-api/lending"}]
+[{"title": "Prices and DTFs", "href": "/docs/developers/index-api/markets"}, {"title": "How orders fill", "href": "/docs/index/order-lifecycle"}, {"title": "Lending", "href": "/docs/developers/index-api/lending"}]
 ```
 
 Next: [Lending](/docs/developers/index-api/lending) (~4 min)

@@ -1,5 +1,5 @@
 ---
-title: Earn yield or borrow
+title: Earn yield or borrow against DTFs
 navTitle: Lending
 description: Supply USDC to earn, or borrow USDC against your DTF shares on Morpho Blue.
 order: 7
@@ -12,14 +12,14 @@ There is a lending market on the chain. If you hold USDC, you can deposit it and
 ```
 
 ```gmsummary
-What is this market? :: Real Morpho Blue on the L3 — USDC against DTF shares
+What is the lending market? :: Real Morpho Blue on the L3 — USDC against DTF shares
 How do I supply USDC to earn? :: Deposit into the USDC vault; yield comes from borrowers
 How do I borrow against a DTF? :: Pledge shares, get a quote, borrow up to 77%
 What rate will I pay? :: Curator-set, 0.5%–200% APR — punitive 100% if stale
 When do I get liquidated? :: Health factor below 1 — anyone may liquidate you
 ```
 
-## What is this market?
+## What is the lending market?
 
 Real Morpho Blue, deployed on the L3 — the same lending contract used on Ethereum mainnet, not a mock. Each market pairs one loan token against one collateral token:
 
@@ -85,10 +85,10 @@ When your debt exceeds 77% of your collateral's oracle value. Your collateral is
 
 Liquidation is **permissionless**: anyone, human or bot, may call `liquidate` on an unhealthy position. The liquidator repays your debt and takes collateral worth about 7% more than they repaid — Morpho derives this incentive from the market's LLTV (at 77% it works out to ~7.4%, against a protocol-wide cap of 15%). There is no grace period and no committee.
 
-Therefore: watch the health factor, and repay or add collateral before it reaches 1. The risks that sit underneath this — rate spikes, oracle staleness — are spelled out in [What can go wrong](/docs/index/risks) (~4 min).
+Therefore: watch the health factor, and repay or add collateral before it reaches 1. The risks that sit underneath this — rate spikes, oracle staleness — are spelled out in [DTF, lending, and bridge risks](/docs/index/risks) (~4 min).
 
 ```gmseealso
-[{"title": "What can go wrong", "href": "/docs/index/risks"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Lending API", "href": "/docs/developers/index-api/lending"}]
+[{"title": "DTF, lending, and bridge risks", "href": "/docs/index/risks"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Lending API", "href": "/docs/developers/index-api/lending"}]
 ```
 
-Next: [Two chains, one balance](/docs/index/settlement-and-bridge) (~5 min)
+Next: [Settlement and the bridge](/docs/index/settlement-and-bridge) (~5 min)

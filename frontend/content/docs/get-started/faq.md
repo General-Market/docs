@@ -1,7 +1,7 @@
 ---
 title: FAQ
 navTitle: FAQ
-description: Quick answers that fit nowhere else, with links onward.
+description: Real money, deposit costs, airdrops, API keys, the legal entity, and where to get help.
 order: 5
 group: Get Started
 mode: reference
@@ -41,7 +41,7 @@ Yes, two ways. A wallet holds exactly one position per block — one prediction 
 - **Use separate wallets.** Play by hand with one key, run the bot on another. Clean and simple.
 - **Share one wallet.** Whoever joined the block holds the position, but both you and the bot can replace its predictions any time before the lock window — the last update before lock counts.
 
-How updates work: [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min). What a bot does all day: [Why run a bot?](/docs/bots/overview) (~3 min).
+How updates work: [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min). What a bot does all day: [What a bot does](/docs/bots/overview) (~3 min).
 
 ## Do I need an API key?
 
@@ -49,7 +49,7 @@ No. The API is open, with no authentication. Start at the [API overview](/docs/d
 
 ## Who runs this, legally?
 
-The protocol is governed by a DAO incorporated as a Marshall Islands DAO LLC, with each index in its own sealed legal compartment (a Series), and custody and the website in separate operating companies. The full design — and why each separation exists — is at [How is this structured legally?](/docs/index/legal-structure) (~6 min), with the complete structuring memorandum hosted as a PDF there. **It is a structuring proposal, not legal advice.**
+The protocol is governed by a DAO incorporated as a Marshall Islands DAO LLC, with each index in its own sealed legal compartment (a Series), and custody and the website in separate operating companies. The full design — and why each separation exists — is at [Legal structure](/docs/index/legal-structure) (~6 min), with the complete structuring memorandum hosted as a PDF there. **It is a structuring proposal, not legal advice.**
 
 ## Why does the faucet refuse my wallet?
 
@@ -65,7 +65,7 @@ The waitlist gate. New wallets must redeem a waitlist code once before the fauce
 Found something broken in these docs? Say so in any of the channels above — addresses and endpoints are re-verified against the running system, and reports get folded in.
 
 ```gmseealso
-[{"title": "How do I connect and get funds?", "href": "/docs/get-started/connect-and-fund"}, {"title": "What can go wrong (Vision)", "href": "/docs/vision/risks"}]
+[{"title": "Connect a wallet and get test USDC", "href": "/docs/get-started/connect-and-fund"}, {"title": "Risks and recovery (Vision)", "href": "/docs/vision/risks"}]
 ```
 
 Next: [How Vision works](/docs/vision/how-vision-works) (~5 min)

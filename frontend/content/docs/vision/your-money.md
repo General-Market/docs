@@ -1,9 +1,9 @@
 ---
-title: Where is my money?
-navTitle: Your money
-description: Custody from join to settlement, and the refund right when settlement never comes.
+title: Custody and refunds
+navTitle: Custody & refunds
+description: Where your deposit sits from join to settlement, and the refund right if settlement never comes.
 order: 8
-group: Money
+group: Your money
 mode: explanation
 ---
 
@@ -57,7 +57,7 @@ If the claim reverts with NotYetRefundable, the grace window has not passed. If 
 **Testnet only.**
 
 ```gmseealso
-[{"title": "How do I win?", "href": "/docs/vision/payouts"}, {"title": "What can go wrong", "href": "/docs/vision/risks"}, {"title": "Network reference", "href": "/docs/get-started/network"}]
+[{"title": "How payouts work", "href": "/docs/vision/payouts"}, {"title": "Risks and recovery", "href": "/docs/vision/risks"}, {"title": "Network reference", "href": "/docs/get-started/network"}]
 ```
 
-Next: [Can someone play for me?](/docs/vision/vaults) (~4 min)
+Next: [Managed vaults](/docs/vision/vaults) (~4 min)

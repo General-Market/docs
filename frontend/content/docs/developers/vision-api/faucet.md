@@ -53,7 +53,7 @@ Request body:
 | `scope` | string, optional | `vision` (default), `itp`, or `both` |
 
 - The `vision` leg mints `amount` L3 USDC (18 decimals) and sends 1 GM gas. The gas drip is skipped with `{"error": "Deployer low on GM"}` when the faucet wallet runs low.
-- `itp` and `both` mint Settlement-chain USDC (6 decimals) plus 0.5 S gas — admin and E2E tooling only; the UI never uses them. Why the decimals differ: [Two chains, one balance](/docs/index/settlement-and-bridge) (~5 min).
+- `itp` and `both` mint Settlement-chain USDC (6 decimals) plus 0.5 S gas — admin and E2E tooling only; the UI never uses them. Why the decimals differ: [Settlement and the bridge](/docs/index/settlement-and-bridge) (~5 min).
 - Each leg reports independently. A failed leg still returns `200` with `{"error": …}` in that leg's slot — check inside `vision.usdc` and `vision.gas`, not just the status code.
 
 Errors:
@@ -89,7 +89,7 @@ Errors:
 | 500 | `{"error": "…"}` | mint failed |
 
 ```gmseealso
-[{"title": "How do I connect and get funds?", "href": "/docs/get-started/connect-and-fund"}, {"title": "Run the reference bot in 5 minutes", "href": "/docs/bots/quickstart"}]
+[{"title": "Connect a wallet and get test USDC", "href": "/docs/get-started/connect-and-fund"}, {"title": "Run the reference bot in 5 minutes", "href": "/docs/bots/quickstart"}]
 ```
 
-Next: [Prices & DTFs](/docs/developers/index-api/markets) (~4 min)
+Next: [Prices and DTFs](/docs/developers/index-api/markets) (~4 min)

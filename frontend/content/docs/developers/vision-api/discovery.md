@@ -1,5 +1,5 @@
 ---
-title: Sources, snapshots & search
+title: Sources, snapshots, and search
 navTitle: Discovery
 description: The source catalog, live market values, ingestion health, search, featured charts, and asset icons.
 order: 7
@@ -125,7 +125,7 @@ Redirects (`302`) to the asset's image at its upstream provider — it returns n
 - Redirects are cacheable for one day.
 
 ```gmseealso
-[{"title": "What markets can I predict?", "href": "/docs/vision/markets"}, {"title": "Blocks & state", "href": "/docs/developers/vision-api/batches"}]
+[{"title": "The market catalog", "href": "/docs/vision/markets"}, {"title": "Blocks and state", "href": "/docs/developers/vision-api/batches"}]
 ```
 
-Next: [Leaderboard & stats](/docs/developers/vision-api/stats) (~4 min)
+Next: [Leaderboard and stats](/docs/developers/vision-api/stats) (~4 min)

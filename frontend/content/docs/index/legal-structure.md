@@ -1,7 +1,7 @@
 ---
-title: How is this structured legally?
+title: Legal structure
 navTitle: Legal structure
-description: The legal architecture behind the Index protocol — the DAO, one legal compartment per DTF, separated custody and interface, and the decentralization roadmap.
+description: The DAO, one legal compartment per DTF, separated custody and interface companies, and the decentralization roadmap.
 order: 9
 group: System
 mode: explanation
@@ -82,7 +82,7 @@ Read it with its own limitations in view, stated plainly:
 - **It is a proposal, not a description of completed fact** — it analyzes a structure for the protocol to grow into.
 
 ```gmseealso
-[{"title": "What is a DTF?", "href": "/docs/index/what-is-a-dtf"}, {"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}, {"title": "What can go wrong", "href": "/docs/index/risks"}]
+[{"title": "What is a DTF?", "href": "/docs/index/what-is-a-dtf"}, {"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}, {"title": "DTF, lending, and bridge risks", "href": "/docs/index/risks"}]
 ```
 
-Next: [What can go wrong](/docs/index/risks) (~3 min)
+Next: [DTF, lending, and bridge risks](/docs/index/risks) (~3 min)

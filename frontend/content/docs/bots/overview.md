@@ -1,9 +1,9 @@
 ---
-title: Why run a bot?
+title: What a bot does
 navTitle: Overview
-description: What a Vision bot does, the loop it runs every round, and what you need to start.
+description: The loop a Vision bot runs every round, and what you need to start.
 order: 1
-group: Build
+group: Build a bot
 mode: explanation
 ---
 
@@ -22,7 +22,7 @@ What is the BotRegistry? :: Free on-chain listing of bot endpoints, used for dis
 
 A bot predicts every round, on every market, across every source — wider and faster than any human can click. Vision runs 47 data sources, each minting a fresh prediction block (the contract calls it a *batch*: one round of predictions on one source) every tick, from 60 seconds to 7 days apart. A human follows a handful. A bot follows all of them.
 
-Each round the bot picks UP or DOWN per market, packs the picks into a bitmap — one bit per market — and joins the block with a single USDC deposit. The deposit *is* the stake: `joinBatchDirect` has no separate stake parameter. At settlement the deposit is split evenly across the block's markets, and parimutuel scoring moves losers' stakes to winners, market by market. How the pool splits is covered in [How do I win?](/docs/vision/payouts) (~4 min).
+Each round the bot picks UP or DOWN per market, packs the picks into a bitmap — one bit per market — and joins the block with a single USDC deposit. The deposit *is* the stake: `joinBatchDirect` has no separate stake parameter. At settlement the deposit is split evenly across the block's markets, and parimutuel scoring moves losers' stakes to winners, market by market. How the pool splits is covered in [How payouts work](/docs/vision/payouts) (~4 min).
 
 **Testnet only.** Every balance a bot wins or loses is testnet money from the faucet.
 
@@ -41,13 +41,13 @@ The loop has six beats, repeated every poll interval:
 5. **Join and submit** — put the hash on-chain with a deposit, send the bitmap itself to the oracle.
 6. **Sleep**, then start again.
 
-One fact shapes the whole loop: **a block lives exactly one round.** The oracle settles it one tick after creation and mints a brand-new block per source, with a new id. So the loop is never "join once, predict forever" — it re-discovers and joins new block ids every round, with a fresh deposit and a fresh bitmap each time. The round model is explained in [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
+One fact shapes the whole loop: **a block lives exactly one round.** The oracle settles it one tick after creation and mints a brand-new block per source, with a new id. So the loop is never "join once, predict forever" — it re-discovers and joins new block ids every round, with a fresh deposit and a fresh bitmap each time. The round model is explained in [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min).
 
 ## What do I need?
 
 - A wallet private key. Use a fresh key for the bot, not your main wallet.
 - Python 3.10 or newer, plus two packages: `web3` and `requests` (both in `requirements.txt`).
-- Testnet USDC and GM gas from the faucet. **The faucet is waitlist-gated by default** — see [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min).
+- Testnet USDC and GM gas from the faucet. **The faucet is waitlist-gated by default** — see [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min).
 - The reference bot: `bot.py` at the repository root. One file, self-contained.
 
 **L3 USDC has 18 decimals.** 0.1 USDC = 1e17 — that is also the minimum deposit per block.
@@ -57,7 +57,7 @@ One fact shapes the whole loop: **a block lives exactly one round.** The oracle 
 The BotRegistry is a free on-chain listing: `registerBot(endpoint, pubkeyHash)` stores your bot's endpoint string and a public-key hash so explorers and the API can discover active bots, and `deregisterBot()` removes you. Registration is optional — `joinBatchDirect` enforces no bot check, so an unregistered bot plays exactly like a registered one. The full contract surface is in the [Contract reference](/docs/developers/contracts) (~8 min).
 
 ```gmcards
-[{"title": "Run the reference bot", "desc": "Clone, add a key, run — in 5 minutes.", "href": "/docs/bots/quickstart"}, {"title": "How a bot joins a block", "desc": "Discovery, configHash, approval, and the real joinBatchDirect.", "href": "/docs/bots/join-a-block"}, {"title": "Bitmap encoding", "desc": "The byte-level spec for your predictions.", "href": "/docs/bots/bitmap-encoding"}, {"title": "Strategies", "desc": "The 5 built-ins and how to write your own.", "href": "/docs/bots/strategies"}]
+[{"title": "Run the reference bot", "desc": "Clone, add a key, run — in 5 minutes.", "href": "/docs/bots/quickstart"}, {"title": "Join a block", "desc": "Discovery, configHash, approval, and the real joinBatchDirect.", "href": "/docs/bots/join-a-block"}, {"title": "Bitmap encoding", "desc": "The byte-level spec for your predictions.", "href": "/docs/bots/bitmap-encoding"}, {"title": "Prediction strategies", "desc": "The 5 built-ins and how to write your own.", "href": "/docs/bots/strategies"}]
 ```
 
 Next: [Run the reference bot in 5 minutes](/docs/bots/quickstart) (~5 min)

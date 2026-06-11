@@ -19,7 +19,7 @@ GET /dn/morpho-position :: One wallet's collateral, debt, health factor, and lim
 GET /dn/morpho-history :: Recent supply/withdraw/borrow/repay events for a wallet
 ```
 
-Base URL `https://generalmarket.io/api`. The two `POST /lending/*` endpoints are served by the **curator** — the service that operates the lending vault. The three `GET /dn/*` endpoints read market data from the data-node. Contract addresses (Morpho, the IRM, the NAV oracle, the vault) live in one place: [Network reference](/docs/get-started/network) (~2 min). The user-facing story is at [Earn yield or borrow](/docs/index/lending) (~4 min).
+Base URL `https://generalmarket.io/api`. The two `POST /lending/*` endpoints are served by the **curator** — the service that operates the lending vault. The three `GET /dn/*` endpoints read market data from the data-node. Contract addresses (Morpho, the IRM, the NAV oracle, the vault) live in one place: [Network reference](/docs/get-started/network) (~2 min). The user-facing story is at [Earn yield or borrow against DTFs](/docs/index/lending) (~4 min).
 
 The numbers that frame every response here:
 
@@ -108,7 +108,7 @@ Returns a wallet's recent lending events — deposits and withdrawals of collate
 - **Only the last 10,000 L3 blocks are scanned.** Older events silently fall off this endpoint — it is a recent-activity feed, not an archive.
 
 ```gmseealso
-[{"title": "Earn yield or borrow", "href": "/docs/index/lending"}, {"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
+[{"title": "Earn yield or borrow against DTFs", "href": "/docs/index/lending"}, {"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
 ```
 
 Next: [Contract reference](/docs/developers/contracts) (~10 min)

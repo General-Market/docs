@@ -1,9 +1,9 @@
 ---
-title: Leaderboard and your stats
+title: Read the leaderboard
 navTitle: Leaderboard
-description: Read the board, open a player profile, and know exactly where the numbers come from.
+description: Every column defined, player profiles, and where each number comes from.
 order: 10
-group: Standing
+group: Leaderboard & risks
 mode: how-to
 ---
 
@@ -72,14 +72,14 @@ Your own profile is the same URL with your address — open the leaderboard and 
 
 ## Where do the numbers come from?
 
-From settlement, and nowhere else. When the oracle network settles a block (a *batch*, in contract terms), it grades every player's revealed predictions against the resolved markets and computes each payout — the contract then transfers that payout, minus the 0.05% fee on profit, to the wallet (the mechanism is in [How do I win?](/docs/vision/payouts) (~4 min)). Each settlement writes one result row per player: deposit, payout, and how many markets they called correctly. The leaderboard is a sum over those rows; the profile is one player's slice of them.
+From settlement, and nowhere else. When the oracle network settles a block (a *batch*, in contract terms), it grades every player's revealed predictions against the resolved markets and computes each payout — the contract then transfers that payout, minus the 0.05% fee on profit, to the wallet (the mechanism is in [How payouts work](/docs/vision/payouts) (~4 min)). Each settlement writes one result row per player: deposit, payout, and how many markets they called correctly. The leaderboard is a sum over those rows; the profile is one player's slice of them.
 
 Because the displayed numbers and the paid money come from the same settlement output, there is no separate scoring system to drift out of sync.
 
-For programmatic access: `GET /vision/leaderboard` (filters: `source_id` or `batch_id`; paginated, `limit` ≤ 200) and `GET /vision/player/{address}/profile`. Full request and response shapes: [Leaderboard & stats](/docs/developers/vision-api/stats) (~3 min) and [Players & balances](/docs/developers/vision-api/players) (~3 min).
+For programmatic access: `GET /vision/leaderboard` (filters: `source_id` or `batch_id`; paginated, `limit` ≤ 200) and `GET /vision/player/{address}/profile`. Full request and response shapes: [Leaderboard and stats](/docs/developers/vision-api/stats) (~3 min) and [Players and balances](/docs/developers/vision-api/players) (~3 min).
 
 ```gmseealso
-[{"title": "How do I win?", "href": "/docs/vision/payouts"}, {"title": "Leaderboard & stats", "href": "/docs/developers/vision-api/stats"}, {"title": "Players & balances", "href": "/docs/developers/vision-api/players"}]
+[{"title": "How payouts work", "href": "/docs/vision/payouts"}, {"title": "Leaderboard and stats", "href": "/docs/developers/vision-api/stats"}, {"title": "Players and balances", "href": "/docs/developers/vision-api/players"}]
 ```
 
-Next: [What can go wrong](/docs/vision/risks) (~3 min)
+Next: [Risks and recovery](/docs/vision/risks) (~3 min)

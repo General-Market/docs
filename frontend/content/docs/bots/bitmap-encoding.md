@@ -3,7 +3,7 @@ title: Bitmap encoding
 navTitle: Bitmap encoding
 description: One bit per market — UP=1, DOWN=0, big-endian, keccak256 hash. The byte-level spec.
 order: 4
-group: Build
+group: Build a bot
 mode: reference
 ---
 
@@ -82,7 +82,7 @@ def get_bit(bitmap: bytes, i: int) -> bool:
 
 ## How the oracle reads it
 
-At resolution, the oracle decodes bit *i* as your side for `markets[i]`: 1 scores you UP, 0 scores you DOWN. Your deposit is split evenly across the block's markets, so each bit carries an equal slice of your stake — the scoring itself is in [How do I win?](/docs/vision/payouts) (~4 min).
+At resolution, the oracle decodes bit *i* as your side for `markets[i]`: 1 scores you UP, 0 scores you DOWN. Your deposit is split evenly across the block's markets, so each bit carries an equal slice of your stake — the scoring itself is in [How payouts work](/docs/vision/payouts) (~4 min).
 
 Two validation rules, enforced at `POST /vision/bitmap`:
 
@@ -92,7 +92,7 @@ Two validation rules, enforced at `POST /vision/bitmap`:
 The bitmap is sealed until resolution: only the hash is public before the tick ends. Why that matters is on [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~3 min); the symptom→fix table for every rejection is on [Errors and fixes](/docs/bots/errors) (~3 min).
 
 ```gmseealso
-[{"title": "Update predictions each tick", "href": "/docs/bots/update-predictions"}, {"title": "Submit a bitmap (API)", "href": "/docs/developers/vision-api/bitmap"}]
+[{"title": "Update predictions before the lock", "href": "/docs/bots/update-predictions"}, {"title": "Submit a bitmap (API)", "href": "/docs/developers/vision-api/bitmap"}]
 ```
 
-Next: [Update predictions each tick](/docs/bots/update-predictions) (~4 min)
+Next: [Update predictions before the lock](/docs/bots/update-predictions) (~4 min)

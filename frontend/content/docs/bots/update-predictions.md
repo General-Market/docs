@@ -3,7 +3,7 @@ title: Update predictions before the lock
 navTitle: Update predictions
 description: Change your sealed picks within the current round — updateBitmap on-chain, then resubmit the bitmap to the oracle.
 order: 5
-group: Build
+group: Build a bot
 mode: how-to
 ---
 
@@ -104,4 +104,4 @@ One wrapper to know about: posting through `https://generalmarket.io/api/vision/
 [{"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Errors and fixes", "href": "/docs/bots/errors"}, {"title": "Submit a bitmap (API)", "href": "/docs/developers/vision-api/bitmap"}]
 ```
 
-Next: [Strategies](/docs/bots/strategies) (~4 min)
+Next: [Prediction strategies](/docs/bots/strategies) (~4 min)

@@ -3,7 +3,7 @@ title: Place your first predictions
 navTitle: First predictions
 description: A guided first run — connect, fund, pick a block, predict UP/DOWN, and watch the payout land.
 order: 2
-group: Play
+group: Gameplay
 mode: tutorial
 ---
 
@@ -28,7 +28,7 @@ A browser wallet (MetaMask, Rabby, or anything WalletConnect speaks) and about f
 
 **Testnet only.** Everything on this chain — the USDC, the gas, the payouts — is test money. You cannot lose or win anything real.
 
-If you have never installed a wallet: add MetaMask as a browser extension, create a wallet, and come back. That detour takes about two minutes. Chain setup is covered in [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min) — but you will not need it, because the app configures the chain for you in the next step.
+If you have never installed a wallet: add MetaMask as a browser extension, create a wallet, and come back. That detour takes about two minutes. Chain setup is covered in [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min) — but you will not need it, because the app configures the chain for you in the next step.
 
 ## How do I log in?
 
@@ -61,7 +61,7 @@ Two smaller branches:
 
 From the home page, scroll to **Top markets** and click a source card — **Twitch** is a good first pick because its rounds are short (ten minutes each on the live system), so a result lands while you watch.
 
-A *source* is one real-world data feed (Twitch viewer counts, earthquake magnitudes, DeFi protocol metrics). Inside it, each *market* is one thing being measured right now. A *block* is one timed prediction round over a source's markets — the contract calls it a batch. One block lives exactly one round: it opens, closes, settles once, and a fresh block replaces it. The full lifecycle is in [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
+A *source* is one real-world data feed (Twitch viewer counts, earthquake magnitudes, DeFi protocol metrics). Inside it, each *market* is one thing being measured right now. A *block* is one timed prediction round over a source's markets — the contract calls it a batch. One block lives exactly one round: it opens, closes, settles once, and a fresh block replaces it. The full lifecycle is in [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min).
 
 On the source page, the right rail shows the round timeline: three boxes — **LAST**, **NOW**, **NEXT** — each with a **Closes** timer and a **Settles** timer. **NOW** is the open round you are about to join; its block number sits in the corner of the box.
 
@@ -95,7 +95,7 @@ The button turns green: **In custody**. You are in the round, and your picks are
 The stake box with $5 set and the blue Confirm button active, wallet popup open.
 ```
 
-If publishing fails (the button turns orange: **Retry reveal**), click it — resending is safe and changes nothing on-chain. Your deposit is already in the contract either way, and if a round can never settle, the full deposit comes back to you under the refund rule in [Where is my money?](/docs/vision/your-money) (~3 min).
+If publishing fails (the button turns orange: **Retry reveal**), click it — resending is safe and changes nothing on-chain. Your deposit is already in the contract either way, and if a round can never settle, the full deposit comes back to you under the refund rule in [Custody and refunds](/docs/vision/your-money) (~3 min).
 
 ```gmnote
 The contract accepts changed predictions until the round ends, but this page locks your picks at confirm — changing a live prediction is a bot workflow. See [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min).
@@ -117,18 +117,18 @@ Three places, no action required from you:
 
 - **The Positions card** on the source page shows your settled round with its realized profit or loss, and a running "Realized" total for this source.
 - **Your wallet balance** in the top bar — settlement transfers USDC straight back to your wallet. There is no claim step and no balance held by the app.
-- **Your profile** at `/profile/your-address` keeps the full history across every source, with a P&L chart. The leaderboard ranks you against everyone else — reading both is covered in [Leaderboard and your stats](/docs/vision/leaderboard) (~3 min).
+- **Your profile** at `/profile/your-address` keeps the full history across every source, with a P&L chart. The leaderboard ranks you against everyone else — reading both is covered in [Read the leaderboard](/docs/vision/leaderboard) (~3 min).
 
 ```gm-shot
 Positions card showing one settled round with a green realized P&L figure.
 ```
 
-How the winnings are computed — who pays whom, and the 0.05% fee on profit only — is the subject of [How do I win?](/docs/vision/payouts) (~4 min).
+How the winnings are computed — who pays whom, and the 0.05% fee on profit only — is the subject of [How payouts work](/docs/vision/payouts) (~4 min).
 
 You have now done the whole loop once: join, predict, settle, get paid. A new block opens on the same source every round — joining the next one is the same flow with a fresh block number.
 
 ```gmseealso
-[{"title": "How Vision works", "href": "/docs/vision/how-vision-works"}, {"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "How do I win?", "href": "/docs/vision/payouts"}, {"title": "What markets can I predict?", "href": "/docs/vision/markets"}]
+[{"title": "How Vision works", "href": "/docs/vision/how-vision-works"}, {"title": "Blocks, ticks, and rounds", "href": "/docs/vision/blocks-and-ticks"}, {"title": "How payouts work", "href": "/docs/vision/payouts"}, {"title": "The market catalog", "href": "/docs/vision/markets"}]
 ```
 
-Next: [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min)
+Next: [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min)

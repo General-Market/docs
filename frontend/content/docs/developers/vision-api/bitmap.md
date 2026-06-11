@@ -85,7 +85,7 @@ The fan-out always answers 200. A client that checks only the HTTP status will r
 ```
 
 ```gmseealso
-[{"title": "Blocks & state", "href": "/docs/developers/vision-api/batches"}, {"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Update predictions each tick", "href": "/docs/bots/update-predictions"}]
+[{"title": "Blocks and state", "href": "/docs/developers/vision-api/batches"}, {"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Update predictions before the lock", "href": "/docs/bots/update-predictions"}]
 ```
 
-Next: [Players & balances](/docs/developers/vision-api/players) (~3 min)
+Next: [Players and balances](/docs/developers/vision-api/players) (~3 min)

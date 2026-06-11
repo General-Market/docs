@@ -1,5 +1,5 @@
 ---
-title: Two chains, one balance
+title: Settlement and the bridge
 navTitle: Settlement & bridge
 description: The L3, the settlement chain, the 18-vs-6 decimal split, and the bridge between them.
 order: 8
@@ -74,7 +74,7 @@ Selling is the reverse: the mirror is burned, and 6-decimal USDC comes back. Two
 **Testnet only.** Both chains, and every balance on them, are testnet.
 
 ```gmseealso
-[{"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Rebalance a DTF", "href": "/docs/index/rebalancing"}, {"title": "What happens to my order?", "href": "/docs/index/order-lifecycle"}]
+[{"title": "Network reference", "href": "/docs/get-started/network"}, {"title": "Rebalance a DTF", "href": "/docs/index/rebalancing"}, {"title": "How orders fill", "href": "/docs/index/order-lifecycle"}]
 ```
 
-Next: [What can go wrong](/docs/index/risks) (~4 min)
+Next: [DTF, lending, and bridge risks](/docs/index/risks) (~4 min)

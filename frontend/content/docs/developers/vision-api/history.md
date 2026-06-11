@@ -1,5 +1,5 @@
 ---
-title: Rounds, results & history
+title: Rounds, results, and history
 navTitle: History
 description: Round listings, revealed bitmaps, per-player results, source history, asset settlements, and stake ratios.
 order: 6
@@ -35,7 +35,7 @@ Lists the currently open round — the latest non-paused block — for every sou
 - `source` (query, optional): a display source id. The gateway does not forward it upstream — it fetches the latest round per source and filters that list. With or without the filter, you get at most one round per source.
 - `status` is derived from `bettingEnd`: `betting` while the join window is open, `settling` once it has passed.
 - `playerCount` and `tvl` are refreshed from on-chain `PlayerJoined` events over roughly the last 30 minutes of blocks, because the oracle's own table can lag the chain by tens of seconds. `tvl` is a wei string.
-- `configHash` (omitted when unknown) is the key for fetching the round's market list — see [Blocks & state](/docs/developers/vision-api/batches) (~4 min).
+- `configHash` (omitted when unknown) is the key for fetching the round's market list — see [Blocks and state](/docs/developers/vision-api/batches) (~4 min).
 - Disabled sources are filtered out of the listing.
 - Upstream failure → `502` with `{"rounds": []}`.
 
@@ -115,7 +115,7 @@ Returns the UP/DOWN stake split per market for a settled block.
 - A block that has not settled — or an unknown id — returns `200` with an empty `markets` array.
 
 ```gmseealso
-[{"title": "Blocks & state", "href": "/docs/developers/vision-api/batches"}, {"title": "Players & balances", "href": "/docs/developers/vision-api/players"}, {"title": "How do I win?", "href": "/docs/vision/payouts"}]
+[{"title": "Blocks and state", "href": "/docs/developers/vision-api/batches"}, {"title": "Players and balances", "href": "/docs/developers/vision-api/players"}, {"title": "How payouts work", "href": "/docs/vision/payouts"}]
 ```
 
-Next: [Sources, snapshots & search](/docs/developers/vision-api/discovery) (~5 min)
+Next: [Sources, snapshots, and search](/docs/developers/vision-api/discovery) (~5 min)

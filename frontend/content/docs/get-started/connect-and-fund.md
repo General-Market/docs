@@ -1,5 +1,5 @@
 ---
-title: How do I connect and get funds?
+title: Connect a wallet and get test USDC
 navTitle: Connect & fund
 description: Connect a wallet, add the L3 chain, and claim test USDC from the faucet.
 order: 2

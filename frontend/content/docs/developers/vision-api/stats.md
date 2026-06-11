@@ -1,5 +1,5 @@
 ---
-title: Leaderboard & stats
+title: Leaderboard and stats
 navTitle: Stats
 description: The leaderboard with pagination, global counters, activity time-series, trending bots, and the explorer endpoints.
 order: 8
@@ -108,7 +108,7 @@ Three read-only rollups feed the explorer page; all are GET with no parameters.
 - **`/vision/explorer/tie-rates` serves a static snapshot.** The oracle has no handler for that path yet; the gateway answers from a hardcoded fallback captured from the database at build time.
 
 ```gmseealso
-[{"title": "Leaderboard and your stats", "href": "/docs/vision/leaderboard"}, {"title": "Players & balances", "href": "/docs/developers/vision-api/players"}]
+[{"title": "Read the leaderboard", "href": "/docs/vision/leaderboard"}, {"title": "Players and balances", "href": "/docs/developers/vision-api/players"}]
 ```
 
-Next: [Vaults](/docs/developers/vision-api/vaults) (~4 min)
+Next: [Vault contract and endpoints](/docs/developers/vision-api/vaults) (~4 min)

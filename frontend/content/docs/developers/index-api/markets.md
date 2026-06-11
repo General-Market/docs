@@ -1,5 +1,5 @@
 ---
-title: Prices & DTFs
+title: Prices and DTFs
 navTitle: Prices & DTFs
 description: DTF price, NAV history, orderbook depth, AUM rankings, DTF analytics, and asset price history endpoints.
 order: 11
@@ -89,7 +89,7 @@ Returns a synthetic depth book for one DTF — what buying or selling size would
 {"method": "GET", "path": "/dn/itp-orderbook", "params": [{"name": "itp_id", "in": "query", "type": "string", "required": true, "desc": "0x-prefixed 32-byte ITP id"}, {"name": "levels", "in": "query", "type": "number", "required": false, "desc": "Aggregated levels per side (default 15, max 50)"}, {"name": "aggregation_bps", "in": "query", "type": "number", "required": false, "desc": "Level bucket width in basis points (default 10, max 1000)"}], "body": null, "response": {"mid_price": 1.0523, "spread_bps": 4.2, "bids": [{"price": 1.0519, "quantity": 15200.0, "usd_value": 15989.0}], "asks": [{"price": 1.0527, "quantity": 14100.0, "usd_value": 14843.0}], "total_bid_depth_usd": 250000.0, "total_ask_depth_usd": 241000.0, "assets_included": 10, "assets_failed": [], "per_asset": [{"symbol": "BTCUSDT", "mid_price": 67000.1, "spread_bps": 0.4, "bid_depth_usd": 120000.0, "ask_depth_usd": 118000.0, "weight_bps": 2500}]}}
 ```
 
-- This is not a native order book — DTF orders fill against oracle-executed venues, not a resting book. The endpoint answers "what does the underlying liquidity look like, expressed in DTF shares". Order execution itself is covered in [What happens to my order?](/docs/index/order-lifecycle) (~4 min).
+- This is not a native order book — DTF orders fill against oracle-executed venues, not a resting book. The endpoint answers "what does the underlying liquidity look like, expressed in DTF shares". Order execution itself is covered in [How orders fill](/docs/index/order-lifecycle) (~4 min).
 - `assets_failed` lists symbols whose depth fetch failed; their weight is missing from the book.
 - Results are cached for ~5 seconds per `(itp_id, levels, aggregation_bps)` combination. The app polls it at 500 ms against that cache.
 
@@ -178,7 +178,7 @@ Returns history for many assets with a caller-chosen time range — the unconstr
 - A `source` query param is accepted for symmetry but ignored — assets are queried by id directly.
 
 ```gmseealso
-[{"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Portfolio & simulation", "href": "/docs/developers/index-api/portfolio"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
+[{"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Portfolio and simulation", "href": "/docs/developers/index-api/portfolio"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]
 ```
 
-Next: [Portfolio & simulation](/docs/developers/index-api/portfolio) (~5 min)
+Next: [Portfolio and simulation](/docs/developers/index-api/portfolio) (~5 min)

@@ -1,9 +1,9 @@
 ---
-title: Can someone play for me?
+title: Managed vaults
 navTitle: Vaults
-description: Managed vaults — deposit USDC, a manager plays the rounds, you hold shares.
+description: Deposit USDC, a manager plays the rounds, and you hold shares of the results.
 order: 9
-group: Money
+group: Your money
 mode: explanation
 ---
 
@@ -72,7 +72,7 @@ The performance fee is the manager's compensation: set at vault creation, capped
 
 The manager trades; the contract holds the money. The manager can join blocks with pooled USDC (within the 5%-per-block cap), set and update the vault's predictions, and earn the performance fee. The manager cannot withdraw depositor funds to themselves — the vault has no such function. USDC leaves the vault by exactly two roads: into the Vision contract to join a block, or out to a depositor claiming a redeem.
 
-**Manager risk is real.** The structural protections do not protect you from bad predictions. A manager who predicts poorly loses depositor money round after round, exactly as a losing player loses their own. Choose managers by their record, and read [What can go wrong](/docs/vision/risks) (~3 min).
+**Manager risk is real.** The structural protections do not protect you from bad predictions. A manager who predicts poorly loses depositor money round after round, exactly as a losing player loses their own. Choose managers by their record, and read [Risks and recovery](/docs/vision/risks) (~3 min).
 
 ## Where do I see vaults in the app?
 
@@ -82,10 +82,10 @@ On each source's page. Sources with at least one funded vault show a vault view 
 A source's vault page showing share price history, round results, and the deposit panel.
 ```
 
-Protocol-level mechanics and the vault API endpoints live in [Vaults](/docs/developers/vision-api/vaults) (~4 min).
+Protocol-level mechanics and the vault API endpoints live in [Vault contract and endpoints](/docs/developers/vision-api/vaults) (~4 min).
 
 ```gmseealso
-[{"title": "How do I win?", "href": "/docs/vision/payouts"}, {"title": "What can go wrong", "href": "/docs/vision/risks"}, {"title": "Vaults (API)", "href": "/docs/developers/vision-api/vaults"}]
+[{"title": "How payouts work", "href": "/docs/vision/payouts"}, {"title": "Risks and recovery", "href": "/docs/vision/risks"}, {"title": "Vault contract and endpoints (API)", "href": "/docs/developers/vision-api/vaults"}]
 ```
 
-Next: [Leaderboard and your stats](/docs/vision/leaderboard) (~2 min)
+Next: [Read the leaderboard](/docs/vision/leaderboard) (~2 min)

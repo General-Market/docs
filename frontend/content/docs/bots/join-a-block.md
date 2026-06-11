@@ -1,9 +1,9 @@
 ---
-title: How a bot joins a block
+title: Join a block
 navTitle: Join a block
 description: Discover open blocks, fetch the market list by configHash, approve USDC, and call the 4-param joinBatchDirect.
 order: 3
-group: Build
+group: Build a bot
 mode: how-to
 ---
 
@@ -31,7 +31,7 @@ GET https://generalmarket.io/api/vision/batches
 
 It returns `{ "batches": [...] }`, one entry per source — the latest non-paused block for each, already deduplicated. Each entry carries `id`, `creator`, `source_id`, `config_hash`, `tick_duration`, `player_count`, `tvl`, `paused`, `current_tick`, and `market_count`.
 
-If the API is unreachable, scan the chain: read `nextBatchId()` on the Vision contract and walk backwards through the most recent ids with `getBatch(id)`, keeping batches that are neither `paused` nor `settled`. Only recent ids can still be open — a block lives one round, so anything older than a few ticks is history. The endpoint's full shape lives in [Blocks & state](/docs/developers/vision-api/batches) (~4 min).
+If the API is unreachable, scan the chain: read `nextBatchId()` on the Vision contract and walk backwards through the most recent ids with `getBatch(id)`, keeping batches that are neither `paused` nor `settled`. Only recent ids can still be open — a block lives one round, so anything older than a few ticks is history. The endpoint's full shape lives in [Blocks and state](/docs/developers/vision-api/batches) (~4 min).
 
 ## What is the configHash?
 
@@ -106,7 +106,7 @@ POST https://generalmarket.io/api/vision/bitmap
 
 The endpoint fans your submission out to every oracle node and answers `{ acceptedCount, totalCount, results }`. **A 200 response with `acceptedCount: 0` is still a rejection** — check the count, not just the status. Each oracle node verifies `expected_hash` against your on-chain commitment (mismatch → 400) and rejects bitmaps too short for the block's market count (400); a node that has not yet indexed your join answers 404 — retry after a few seconds. Through the fan-out, these per-node statuses arrive inside `results[].error`.
 
-If you never deliver a bitmap, you are voided at settlement and your full deposit is refunded. Changing your picks before the lock is [Update predictions each tick](/docs/bots/update-predictions) (~4 min).
+If you never deliver a bitmap, you are voided at settlement and your full deposit is refunded. Changing your picks before the lock is [Update predictions before the lock](/docs/bots/update-predictions) (~4 min).
 
 ## What if I already joined?
 
@@ -122,7 +122,7 @@ if pos[3] != 0:   # totalDeposited — the joined sentinel
 
 ## Why do I have to re-join every round?
 
-Because a block lives exactly one round. One tick after creation, the oracle settles it — payouts go straight to wallets — and mints a brand-new block for the source with a new id. Nothing carries over: not your deposit, not your bitmap, not your position. Your loop must re-discover the new id and run all five moves again with a fresh deposit and a fresh bitmap. `AlreadyJoined` only ever fires for the *same* id; the next round's block has never seen you. The round model is explained in [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
+Because a block lives exactly one round. One tick after creation, the oracle settles it — payouts go straight to wallets — and mints a brand-new block for the source with a new id. Nothing carries over: not your deposit, not your bitmap, not your position. Your loop must re-discover the new id and run all five moves again with a fresh deposit and a fresh bitmap. `AlreadyJoined` only ever fires for the *same* id; the next round's block has never seen you. The round model is explained in [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min).
 
 ```gmseealso
 [{"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Errors and fixes", "href": "/docs/bots/errors"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}]

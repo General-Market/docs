@@ -1,9 +1,9 @@
 ---
 title: How predictions are sealed
-navTitle: Predictions & bitmaps
+navTitle: Sealed predictions
 description: Picks become a bitmap, only its hash goes on-chain, and the oracle reveals it at resolution.
 order: 5
-group: Play
+group: Gameplay
 mode: explanation
 ---
 
@@ -43,7 +43,7 @@ Yes — freely, until the round closes. A change has the same two halves as the 
 1. **On-chain**, `updateBitmap` replaces your committed hash with the new one.
 2. **To the oracle**, the new bitmap is submitted, replacing your previous one. Only your latest accepted submission counts at scoring.
 
-Both halves stop working in the final `lockOffset` seconds of the tick — the contract reverts with `TickLocked`, and the round closes for changes. **Live blocks currently set `lockOffset` to zero**, so in practice you can update right up to the tick's end. The lock window is part of the round clock, explained in [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
+Both halves stop working in the final `lockOffset` seconds of the tick — the contract reverts with `TickLocked`, and the round closes for changes. **Live blocks currently set `lockOffset` to zero**, so in practice you can update right up to the tick's end. The lock window is part of the round clock, explained in [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min).
 
 ```gmtip
 Resubmitting the same bitmap twice is harmless — submission is idempotent. If you are ever unsure your picks arrived, send them again.
@@ -51,7 +51,7 @@ Resubmitting the same bitmap twice is harmless — submission is idempotent. If 
 
 ## When are my picks revealed?
 
-At resolution — the moment they can no longer help anyone. When the tick ends, the oracle takes your latest accepted bitmap, scores it market by market against the round's outcomes, and computes the payouts. What becomes public history is the round's *results*: each player's deposit, payout, and accuracy, and each market's UP/DOWN stake split. The bitmaps themselves do not linger — the oracle purges them right after the round settles on-chain. Results are served by the history API — see [Rounds, results & history](/docs/developers/vision-api/history) (~4 min).
+At resolution — the moment they can no longer help anyone. When the tick ends, the oracle takes your latest accepted bitmap, scores it market by market against the round's outcomes, and computes the payouts. What becomes public history is the round's *results*: each player's deposit, payout, and accuracy, and each market's UP/DOWN stake split. The bitmaps themselves do not linger — the oracle purges them right after the round settles on-chain. Results are served by the history API — see [Rounds, results, and history](/docs/developers/vision-api/history) (~4 min).
 
 Copying is dead on arrival here. Picks are visible only in the brief window between scoring and settlement — for a round that is already decided — and the next round's predictions are sealed all over again.
 
@@ -64,7 +64,7 @@ So the worst case of a failed submission is a round you sat out, not a round you
 **Testnet only.** Deposits, payouts, and refunds here are testnet USDC, not real funds.
 
 ```gmseealso
-[{"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Update predictions each tick", "href": "/docs/bots/update-predictions"}, {"title": "How Vision works", "href": "/docs/vision/how-vision-works"}]
+[{"title": "Bitmap encoding", "href": "/docs/bots/bitmap-encoding"}, {"title": "Update predictions before the lock", "href": "/docs/bots/update-predictions"}, {"title": "How Vision works", "href": "/docs/vision/how-vision-works"}]
 ```
 
-Next: [How do I win?](/docs/vision/payouts) (~4 min)
+Next: [How payouts work](/docs/vision/payouts) (~4 min)

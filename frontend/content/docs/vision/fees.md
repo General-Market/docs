@@ -1,9 +1,9 @@
 ---
 title: Fees and minimums
 navTitle: Fees
-description: Every number that touches your money — the fee on profit, the minimum deposit, gas.
+description: The 0.05% fee on profit, the 0.1 USDC minimum deposit, and gas paid in GM.
 order: 7
-group: Money
+group: Your money
 mode: reference
 ---
 
@@ -12,13 +12,13 @@ Playing is close to free. The protocol takes 0.05% of your winnings — and only
 ```
 
 ```gmsummary
-The numbers :: 0.05% on profit only; 0.1 USDC minimum; gas in GM
+The fee schedule :: 0.05% on profit only; 0.1 USDC minimum; gas in GM
 The fee formula :: profit × 5 / 10000, deducted at settlement
 Vault fees :: Vaults add their own performance fee on top
 Where fees go :: Accumulated in the contract, withdrawable only by the fee collector
 ```
 
-## The numbers
+## The fee schedule
 
 | Item | Value | Raw units (18 decimals) | When it applies |
 |---|---|---|---|
@@ -31,7 +31,7 @@ Where fees go :: Accumulated in the contract, withdrawable only by the fee colle
 
 **L3 USDC has 18 decimals.** 0.1 USDC = 1e17; 1 USDC = 1e18.
 
-**Testnet only.** The faucet supplies both USDC and 1 GM of gas — see [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min).
+**Testnet only.** The faucet supplies both USDC and 1 GM of gas — see [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min).
 
 ## The fee formula
 
@@ -45,18 +45,18 @@ netPayout = payout − fee
 
 Deposit 2 USDC, win a 3 USDC payout: profit is 1 USDC, the fee is 0.0005 USDC, and 2.9995 USDC arrives in your wallet. Deposit 2 USDC and get 1.5 USDC back: profit is zero, fee is zero. A refund after a failed settlement returns the full deposit with no fee at all.
 
-How payouts themselves are computed: [How do I win?](/docs/vision/payouts) (~5 min).
+How payouts themselves are computed: [How payouts work](/docs/vision/payouts) (~5 min).
 
 ## Vault fees
 
-Vault depositors pay one more fee that direct players do not: the vault's own performance fee, fixed when the vault is created, charged in basis points on profits above the vault's high-water mark, and capped at 50%. Each vault shows its rate in the app. Details: [Can someone play for me?](/docs/vision/vaults) (~4 min).
+Vault depositors pay one more fee that direct players do not: the vault's own performance fee, fixed when the vault is created, charged in basis points on profits above the vault's high-water mark, and capped at 50%. Each vault shows its rate in the app. Details: [Managed vaults](/docs/vision/vaults) (~4 min).
 
 ## Where fees go
 
 Collected fees accumulate inside the Vision contract (`accumulatedRealFees`). Only the designated fee collector address can withdraw them, and changing that address requires an oracle BLS signature. Fees never come out of the player pool — the pool is zero-sum before fees, and the fee is carved from individual profits after.
 
 ```gmseealso
-[{"title": "How do I win?", "href": "/docs/vision/payouts"}, {"title": "Where is my money?", "href": "/docs/vision/your-money"}, {"title": "Network reference", "href": "/docs/get-started/network"}]
+[{"title": "How payouts work", "href": "/docs/vision/payouts"}, {"title": "Custody and refunds", "href": "/docs/vision/your-money"}, {"title": "Network reference", "href": "/docs/get-started/network"}]
 ```
 
-Next: [Where is my money?](/docs/vision/your-money) (~3 min)
+Next: [Custody and refunds](/docs/vision/your-money) (~3 min)

@@ -3,7 +3,7 @@ title: How Vision works
 navTitle: How Vision works
 description: Sealed UP/DOWN predictions across many markets — better predictors win the stakes of worse predictors.
 order: 1
-group: Play
+group: Gameplay
 mode: explanation
 ---
 
@@ -21,7 +21,7 @@ What happens every round? :: A fresh block opens per source every tick
 
 ## What am I predicting?
 
-Whether real-world numbers go up or down. Crypto prices, weather readings, sports stats, earthquake counts, subway traffic — dozens of live data sources, each broken into individual *markets* (one number each). The full catalog is in [What markets can I predict?](/docs/vision/markets) (~2 min).
+Whether real-world numbers go up or down. Crypto prices, weather readings, sports stats, earthquake counts, subway traffic — dozens of live data sources, each broken into individual *markets* (one number each). The full catalog is in [The market catalog](/docs/vision/markets) (~2 min).
 
 Markets are grouped by source into a *block* — one round of the game for one source. When you join a block, you predict UP or DOWN for **every market in it at once**, and you back the whole set with one USDC deposit. The deposit is split evenly across the block's markets, so each prediction carries equal weight.
 
@@ -31,7 +31,7 @@ You don't pick one market and wager on it. You take a position on the entire set
 
 The other players. Vision is *parimutuel*: in each market, the stakes of everyone who predicted wrong are shared among everyone who predicted right, in proportion to their stakes. Summed across the block, every round is zero-sum — total payouts equal total deposits. No house takes the other side of your prediction, and no house can lose to you or win from you.
 
-The protocol charges one fee: 0.05% of your **profit**, never of your deposit. Predict badly and you pay nothing on top of what you lost. The worked math lives in [How do I win?](/docs/vision/payouts) (~4 min) and the exact numbers in [Fees and minimums](/docs/vision/fees) (~2 min).
+The protocol charges one fee: 0.05% of your **profit**, never of your deposit. Predict badly and you pay nothing on top of what you lost. The worked math lives in [How payouts work](/docs/vision/payouts) (~4 min) and the exact numbers in [Fees and minimums](/docs/vision/fees) (~2 min).
 
 **Testnet only.** All USDC on this chain is testnet money — winnings are not real funds.
 
@@ -68,10 +68,10 @@ The full player-level mechanics — updating before lock, what happens if your b
 
 Every source runs on a clock. Each beat of that clock is a *tick* — minutes for the fastest sources, a week for the slowest. Every tick, the oracle scores and pays out the source's previous block, and opens a brand-new one. Nothing carries over: each round you join fresh, with a new deposit and new predictions.
 
-That round model — block lifetimes, the lock window, settlement timing — is the subject of [What is a block? What is a tick?](/docs/vision/blocks-and-ticks) (~4 min).
+That round model — block lifetimes, the lock window, settlement timing — is the subject of [Blocks, ticks, and rounds](/docs/vision/blocks-and-ticks) (~4 min).
 
 ```gmseealso
-[{"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "How predictions are sealed", "href": "/docs/vision/predictions-and-bitmaps"}, {"title": "How do I win?", "href": "/docs/vision/payouts"}]
+[{"title": "Blocks, ticks, and rounds", "href": "/docs/vision/blocks-and-ticks"}, {"title": "How predictions are sealed", "href": "/docs/vision/predictions-and-bitmaps"}, {"title": "How payouts work", "href": "/docs/vision/payouts"}]
 ```
 
 Next: [Place your first predictions](/docs/vision/first-predictions) (~15 min)

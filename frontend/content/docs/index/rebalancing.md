@@ -68,7 +68,7 @@ Execution enforces the same weight rules as creation, plus ordering rules for th
 The app builds requests that satisfy these for you; they matter if you submit requests directly against the contract.
 
 ```gmseealso
-[{"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Two chains, one balance", "href": "/docs/index/settlement-and-bridge"}]
+[{"title": "Create your own DTF", "href": "/docs/index/create-a-dtf"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Settlement and the bridge", "href": "/docs/index/settlement-and-bridge"}]
 ```
 
-Next: [Earn yield or borrow](/docs/index/lending) (~6 min)
+Next: [Earn yield or borrow against DTFs](/docs/index/lending) (~6 min)

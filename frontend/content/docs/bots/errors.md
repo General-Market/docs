@@ -3,7 +3,7 @@ title: Errors and fixes
 navTitle: Errors
 description: Symptom, cause, and fix for contract reverts, bitmap submissions, and the faucet.
 order: 7
-group: Build
+group: Build a bot
 mode: reference
 ---
 

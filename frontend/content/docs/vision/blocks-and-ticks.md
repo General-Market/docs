@@ -1,9 +1,9 @@
 ---
-title: What is a block? What is a tick?
+title: Blocks, ticks, and rounds
 navTitle: Blocks & ticks
 description: The round model — a block lives exactly one tick, settles once, and a fresh block opens.
 order: 3
-group: Play
+group: Gameplay
 mode: explanation
 ---
 
@@ -39,7 +39,7 @@ vision-block-lifecycle
 
 A tick is the fixed clock that starts and ends every round. Time is divided into equal slices of `tickDuration` seconds — a fixed grid, the same for everyone. A block belongs to the tick it was created in, and its round ends exactly when that tick ends.
 
-Every source sets its own cadence, between the contract's bounds of 60 seconds and 1 week. Twitch viewer counts tick every 10 minutes; interest-rate sources tick daily; World Bank indicators tick weekly. The per-source cadence is listed in [What markets can I predict?](/docs/vision/markets) (~2 min).
+Every source sets its own cadence, between the contract's bounds of 60 seconds and 1 week. Twitch viewer counts tick every 10 minutes; interest-rate sources tick daily; World Bank indicators tick weekly. The per-source cadence is listed in [The market catalog](/docs/vision/markets) (~2 min).
 
 The oracle creates blocks on a heartbeat of the same length — but the heartbeat is not pinned to the grid, so a block can open partway into a tick slice. Its round still ends exactly at the next tick boundary. Your join window is therefore *at most* one tick, and in practice whatever remains of the slice when the block opens — on the live system, often about half a tick.
 
@@ -51,14 +51,14 @@ In the final `lockOffset` seconds before the tick ends. Inside that window the c
 
 Until the round closes, you can join the block and change your predictions freely — see [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min).
 
-One more way a block can stop accepting players: the oracle can **pause** it. A paused block rejects new joins but does not refund the players already in it — see [What can go wrong](/docs/vision/risks) (~3 min).
+One more way a block can stop accepting players: the oracle can **pause** it. A paused block rejects new joins but does not refund the players already in it — see [Risks and recovery](/docs/vision/risks) (~3 min).
 
 ## What happens when the tick ends?
 
 The oracle scores the round and the contract pays out — once, and finally. On its next heartbeat, the oracle:
 
 1. **Resolves each market.** It compares the value snapshotted when the block was created against the value frozen at the tick's end. Each market resolves by the rule pinned in the block's config: the simplest rule is "any rise means UP won"; most markets require the move to clear a threshold (for example +0.5%) before UP wins, and anything short of it counts as DOWN.
-2. **Computes the payouts.** Parimutuel, market by market: the wrong side's stakes go to the right side, and the totals stay zero-sum — payouts equal deposits, enforced by the contract. The math is in [How do I win?](/docs/vision/payouts) (~4 min).
+2. **Computes the payouts.** Parimutuel, market by market: the wrong side's stakes go to the right side, and the totals stay zero-sum — payouts equal deposits, enforced by the contract. The math is in [How payouts work](/docs/vision/payouts) (~4 min).
 3. **Settles on-chain.** The oracle group co-signs the result with one combined *BLS signature* (a single signature proving the oracles agreed) and calls `settleBatch`. The contract transfers each player's payout straight to their wallet — minus the fee, charged on profit only ([Fees and minimums](/docs/vision/fees) (~2 min)).
 
 Settlement lands about one tick after the block was *created*: the oracle's next heartbeat scores the block and opens the next round in the same pass. Because the heartbeat is not pinned to the tick grid, the gap between a round closing and its settlement landing is always less than one tick — on the live Twitch source today, about five minutes. Once settled, the block is immutable: its result can never be changed, and the next round is already open.
@@ -75,10 +75,10 @@ This is the whole round model: one block, one tick, one settlement — then a cl
 
 Then your money comes back — all of it. Every block carries a grace window, `settlementGrace`: between 60 seconds and 24 hours, normally twice the tick length. The oracle must settle before the round's end plus that grace. After the deadline, settlement becomes illegal on-chain — and the refund right opens instead. Calling `claimRefund` returns your **full deposit, with no fee**: the protocol earned nothing if it didn't deliver a round.
 
-The short claim path is in [Where is my money?](/docs/vision/your-money) (~3 min).
+The short claim path is in [Custody and refunds](/docs/vision/your-money) (~3 min).
 
 ```gmseealso
-[{"title": "How Vision works", "href": "/docs/vision/how-vision-works"}, {"title": "How predictions are sealed", "href": "/docs/vision/predictions-and-bitmaps"}, {"title": "Where is my money?", "href": "/docs/vision/your-money"}]
+[{"title": "How Vision works", "href": "/docs/vision/how-vision-works"}, {"title": "How predictions are sealed", "href": "/docs/vision/predictions-and-bitmaps"}, {"title": "Custody and refunds", "href": "/docs/vision/your-money"}]
 ```
 
-Next: [What markets can I predict?](/docs/vision/markets) (~2 min)
+Next: [The market catalog](/docs/vision/markets) (~2 min)

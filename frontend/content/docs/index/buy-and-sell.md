@@ -23,7 +23,7 @@ How do I sell? :: Press Sell, enter shares, one transaction, USDC returns
 
 ## What do I need first?
 
-A connected wallet and some test USDC — nothing else. If you have not connected yet, [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min) covers the wallet and the faucet. You can also fund yourself from inside the buy flow below.
+A connected wallet and some test USDC — nothing else. If you have not connected yet, [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min) covers the wallet and the faucet. You can also fund yourself from inside the buy flow below.
 
 **The faucet is waitlist-gated.** A wallet that is not whitelisted gets refused until it joins the waitlist; the app prompts you through it.
 
@@ -80,7 +80,7 @@ The sell modal: Your Shares balance, Shares to Sell field, Sell Shares button.
 That is the whole loop: USDC in, shares, USDC out. To see what the system actually did with your order between Submit and Fill, read on.
 
 ```gmseealso
-[{"title": "What happens to my order?", "href": "/docs/index/order-lifecycle"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "How do I connect and get funds?", "href": "/docs/get-started/connect-and-fund"}]
+[{"title": "How orders fill", "href": "/docs/index/order-lifecycle"}, {"title": "How DTFs are priced", "href": "/docs/index/pricing-and-nav"}, {"title": "Connect a wallet and get test USDC", "href": "/docs/get-started/connect-and-fund"}]
 ```
 
-Next: [What happens to my order?](/docs/index/order-lifecycle) (~5 min)
+Next: [How orders fill](/docs/index/order-lifecycle) (~5 min)

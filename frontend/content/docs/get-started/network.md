@@ -1,7 +1,7 @@
 ---
 title: Network reference
 navTitle: Network
-description: Chain ids, RPC endpoints, explorers, and every deployed contract address.
+description: Chain IDs, RPC endpoints, block explorers, and every deployed contract address.
 order: 3
 group: Get Started
 mode: reference
@@ -35,7 +35,7 @@ Where the app reads addresses :: GET /api/deployment serves this data live, with
 
 The settlement chain id comes from deployment configuration — `deployment.json`'s `settlementChainId` (14601), fed through the `NEXT_PUBLIC_SETTLEMENT_CHAIN_ID` env var; the code fallback in `wagmi.ts` hardcodes a different id (421611337), so the configured value is the authoritative one.
 
-Almost everything — Vision, DTF trading, lending — happens on the L3. The settlement chain carries the bridge's far side and cross-chain DTF orders; see [Two chains, one balance](/docs/index/settlement-and-bridge) (~5 min).
+Almost everything — Vision, DTF trading, lending — happens on the L3. The settlement chain carries the bridge's far side and cross-chain DTF orders; see [Settlement and the bridge](/docs/index/settlement-and-bridge) (~5 min).
 
 **The L3 explorer is served over plain HTTP on a bare IP.** Browsers may warn; the address is correct. For protocol activity in a friendlier form, the app has its own explorer at [generalmarket.io/explorer](https://generalmarket.io/explorer).
 
@@ -102,7 +102,7 @@ All on Sonic Testnet (14601).
 
 ## Lending contracts
 
-The Morpho lending stack, all on the L3. How lending works: [Earn yield or borrow](/docs/index/lending) (~4 min).
+The Morpho lending stack, all on the L3. How lending works: [Earn yield or borrow against DTFs](/docs/index/lending) (~4 min).
 
 | Contract | Address | Notes |
 |---|---|---|
@@ -120,7 +120,7 @@ The Morpho lending stack, all on the L3. How lending works: [Earn yield or borro
 The deployment data also lists every managed-vault clone address — hundreds of them, five per data source. Fetch the endpoint rather than copying them from anywhere; the list grows as vaults deploy.
 
 ```gmseealso
-[{"title": "Glossary", "href": "/docs/get-started/glossary"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}, {"title": "Two chains, one balance", "href": "/docs/index/settlement-and-bridge"}]
+[{"title": "Glossary", "href": "/docs/get-started/glossary"}, {"title": "Contract reference", "href": "/docs/developers/contracts"}, {"title": "Settlement and the bridge", "href": "/docs/index/settlement-and-bridge"}]
 ```
 
 Next: [Glossary](/docs/get-started/glossary) (~3 min)

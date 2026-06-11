@@ -1,9 +1,9 @@
 ---
-title: How do I win?
+title: How payouts work
 navTitle: Payouts
 description: Parimutuel scoring per market, the zero-sum pool, and one worked example.
 order: 6
-group: Money
+group: Your money
 mode: explanation
 ---
 
@@ -95,7 +95,7 @@ Two details keep that exactness honest:
 The protocol fee never touches this invariant. It is carved out of each player's *profit* only, after the zero-sum pool is balanced. The mechanism is here; the numbers live in [Fees and minimums](/docs/vision/fees) (~2 min).
 
 ```gmseealso
-[{"title": "Fees and minimums", "href": "/docs/vision/fees"}, {"title": "Where is my money?", "href": "/docs/vision/your-money"}, {"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}]
+[{"title": "Fees and minimums", "href": "/docs/vision/fees"}, {"title": "Custody and refunds", "href": "/docs/vision/your-money"}, {"title": "Blocks, ticks, and rounds", "href": "/docs/vision/blocks-and-ticks"}]
 ```
 
 Next: [Fees and minimums](/docs/vision/fees) (~2 min)

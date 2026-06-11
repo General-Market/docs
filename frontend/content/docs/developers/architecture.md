@@ -1,9 +1,9 @@
 ---
 title: System architecture
 navTitle: Architecture
-description: Data sources, the data-node, the BLS oracle network, the contracts, and how money stays honest end to end.
+description: Data sources, the data-node, the BLS oracle network, the contracts, and the invariants that keep settlement exact.
 order: 2
-group: Start
+group: Foundations
 mode: explanation
 ---
 
@@ -16,7 +16,7 @@ What are the moving parts? :: Five stages — sources, data-node, oracles, contr
 How does data get in? :: The data-node polls 47 sources and serves snapshots
 Who decides what happens on-chain? :: Oracles co-sign with BLS; one heartbeat per source
 Where do predictions live before they count? :: A two-slot store — pending, then active
-How does settlement keep the money honest? :: Zero-sum, checked twice — oracle and contract
+What keeps settlement zero-sum? :: Checked twice — by the oracle, then by the contract
 What is a vault in this machine? :: An ERC-7540 fund a manager plays with
 How does the Index side run? :: BLS-batched orders, pushed NAV, a two-chain bridge
 ```
@@ -67,7 +67,7 @@ At the tick boundary the engine **flips** pending into **active** in one atomic 
 
 This is the seal in "sealed predictions": until the flip, no participant — not even another oracle reader — can act on your picks, because only the hash is public. Submissions are batched to disk every 100 ms (or every 200 rows) to survive the ~10k-submissions-per-second bursts a busy tick produces.
 
-## How does settlement keep the money honest?
+## What keeps settlement zero-sum?
 
 The settlement engine computes a parimutuel result per market: losers' stakes pay winners, market by market, inside each block. Players who deposited but never delivered a bitmap are voided and refunded in full. If no market in the block resolved at all, every player is refunded in full.
 
@@ -82,7 +82,7 @@ The only money the protocol takes is the fee: 0.05% of profit, deducted at payou
 
 A managed fund that plays Vision so its depositors don't have to. Each vault is an ERC-7540 asynchronous vault — deposits and redemptions are requested first, claimed later — deployed as a cheap EIP-1167 clone from a factory. Only the vault's manager can join blocks with the pooled USDC, capped at 5% of vault assets per block. Redemptions queue FIFO and are fulfilled as idle USDC becomes available after each block settles; the manager earns a performance fee only above the vault's high-water mark. Withdrawals are a queue the manager's settlements feed — there is no separate proof system in the withdrawal path, and a permissionless rescue function can pull a stuck deposit back from Vision if a block ever goes unsettled.
 
-The player-facing story: [Can someone play for me?](/docs/vision/vaults) (~4 min). The endpoint surface: [Vaults](/docs/developers/vision-api/vaults) (~5 min).
+The player-facing story: [Managed vaults](/docs/vision/vaults) (~4 min). The endpoint surface: [Vault contract and endpoints](/docs/developers/vision-api/vaults) (~5 min).
 
 ## How does the Index side run?
 
@@ -101,7 +101,7 @@ Testnet only. Every contract, balance, and feed described here runs on a testnet
 ```
 
 ```gmseealso
-[{"title": "Contract reference", "href": "/docs/developers/contracts"}, {"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "Two chains, one balance", "href": "/docs/index/settlement-and-bridge"}]
+[{"title": "Contract reference", "href": "/docs/developers/contracts"}, {"title": "Blocks, ticks, and rounds", "href": "/docs/vision/blocks-and-ticks"}, {"title": "Settlement and the bridge", "href": "/docs/index/settlement-and-bridge"}]
 ```
 
 Next: [Contract reference](/docs/developers/contracts) (~10 min)

@@ -1,9 +1,9 @@
 ---
-title: What markets can I predict?
+title: The market catalog
 navTitle: Markets
-description: The source catalog — 47 sources in 16 categories, with tick cadence per source.
+description: 47 data sources in 16 categories, from DeFi to weather, with the tick cadence of each.
 order: 4
-group: Play
+group: Gameplay
 mode: reference
 ---
 
@@ -13,8 +13,8 @@ Vision runs on real-world data feeds called sources — Twitch viewers, earthqua
 
 ```gmsummary
 How to read this catalog :: One source = one feed; its tick is its round length
-The catalog :: All 47 sources in 16 categories, with cadence
-Fastest and slowest :: The file says Twitch every minute; live ticks differ
+The full catalog :: All 47 sources in 16 categories, with cadence
+Fastest and slowest sources :: The file says Twitch every minute; live ticks differ
 Where the live list comes from :: The app reads GET /vision/sources, not this file
 ```
 
@@ -24,7 +24,7 @@ A **source** is one real-world data feed. Inside it, each **market** is one meas
 
 The catalog below comes from the repository's `markets.json`: **47 sources across 16 categories**, counted from the file itself.
 
-## The catalog
+## The full catalog
 
 | Category | Source | Ticks | What it measures |
 |---|---|---|---|
@@ -80,7 +80,7 @@ The catalog below comes from the repository's `markets.json`: **47 sources acros
 The catalog file also assigns each source a numeric batchId (0–46) — "batch" is the contract's word for a block. That is a static catalog index, not a live block number: live blocks mint a fresh, ever-increasing id every round. Never join by catalog id.
 ```
 
-## Fastest and slowest
+## Fastest and slowest sources
 
 - In the catalog file: `twitch` is fastest (every minute), `worldbank` slowest (every 7 days).
 - On the live system (checked 2026-06-10): the fastest cadence is **5 minutes**, `twitch` ticks every **10 minutes**, and `worldbank` still ticks weekly. The live cadence per source comes from the config the oracle fetches at block creation, not from this file.
@@ -92,10 +92,10 @@ A faster tick means faster feedback and more rounds per day; a slower tick means
 
 The app does not read this file. It reads `GET /vision/sources` from the data node, and the home page and explorer render what that returns — so the set of sources you see in the app is the live truth and can differ from this catalog.
 
-**This catalog is a snapshot — `markets.json` is dated 2026-03-31.** Sources get added, curated views get split out, cadences get retuned, and dead feeds get delisted without this file changing. A live check on 2026-06-10 found **84 sources with open rounds** — nearly twice this file's 47 — including curated DeFi views (`defillama-*`) and sources the file predates (`binance_spot`, `lichess`, `tmdb`). For the live, machine-readable list, use the discovery endpoints: [Sources, snapshots & search](/docs/developers/vision-api/discovery) (~3 min).
+**This catalog is a snapshot — `markets.json` is dated 2026-03-31.** Sources get added, curated views get split out, cadences get retuned, and dead feeds get delisted without this file changing. A live check on 2026-06-10 found **84 sources with open rounds** — nearly twice this file's 47 — including curated DeFi views (`defillama-*`) and sources the file predates (`binance_spot`, `lichess`, `tmdb`). For the live, machine-readable list, use the discovery endpoints: [Sources, snapshots, and search](/docs/developers/vision-api/discovery) (~3 min).
 
 ```gmseealso
-[{"title": "Place your first predictions", "href": "/docs/vision/first-predictions"}, {"title": "What is a block? What is a tick?", "href": "/docs/vision/blocks-and-ticks"}, {"title": "Sources, snapshots & search", "href": "/docs/developers/vision-api/discovery"}]
+[{"title": "Place your first predictions", "href": "/docs/vision/first-predictions"}, {"title": "Blocks, ticks, and rounds", "href": "/docs/vision/blocks-and-ticks"}, {"title": "Sources, snapshots, and search", "href": "/docs/developers/vision-api/discovery"}]
 ```
 
 Next: [How predictions are sealed](/docs/vision/predictions-and-bitmaps) (~4 min)

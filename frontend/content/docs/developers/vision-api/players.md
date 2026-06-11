@@ -1,7 +1,7 @@
 ---
-title: Players & balances
+title: Players and balances
 navTitle: Players
-description: Player profile with PnL and accuracy, round-by-round history, and the truth about the balance endpoint.
+description: Player profile with PnL and accuracy, round-by-round history, and why the balance endpoint always 404s.
 order: 5
 group: Vision API
 mode: reference
@@ -85,10 +85,10 @@ To get what it would have told you:
 - **A player's spendable USDC** — read `balanceOf(player)` on the L3 USDC contract directly. The token address comes from `Vision.USDC()` or the [Network reference](/docs/get-started/network) (~2 min).
 - **A player's stake in a batch** — read the `deposit` field in [`/vision/batch/{id}/state`](/docs/developers/vision-api/batches) (~4 min), or `Vision.getPosition` on-chain.
 
-There is no money parked with the oracle to query: USDC moves wallet → contract on join and contract → wallet at settlement. See [Where is my money?](/docs/vision/your-money) (~3 min).
+There is no money parked with the oracle to query: USDC moves wallet → contract on join and contract → wallet at settlement. See [Custody and refunds](/docs/vision/your-money) (~3 min).
 
 ```gmseealso
-[{"title": "Leaderboard & stats", "href": "/docs/developers/vision-api/stats"}, {"title": "Rounds, results & history", "href": "/docs/developers/vision-api/history"}, {"title": "Leaderboard and your stats", "href": "/docs/vision/leaderboard"}]
+[{"title": "Leaderboard and stats", "href": "/docs/developers/vision-api/stats"}, {"title": "Rounds, results, and history", "href": "/docs/developers/vision-api/history"}, {"title": "Read the leaderboard", "href": "/docs/vision/leaderboard"}]
 ```
 
-Next: [Rounds, results & history](/docs/developers/vision-api/history) (~4 min)
+Next: [Rounds, results, and history](/docs/developers/vision-api/history) (~4 min)

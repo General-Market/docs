@@ -31,12 +31,12 @@ Alphabetical. Where a term has a full page, the definition links to it.
 | **Lock window** | The final stretch of a tick during which joins and prediction updates are rejected, so picks are frozen before resolution. |
 | **NAV (Net Asset Value)** | The per-share value of a DTF: the basket's total value divided by shares outstanding. Computed off-chain by the oracle network and pushed on-chain. |
 | **Oracle** | A node that reads real-world data, reaches BLS consensus with its peers, and writes the result on-chain — creating, settling, and pausing batches, filling DTF orders, pushing NAV. |
-| **Parimutuel** | A pool-splitting payout: all stakes on a market form one pool, and losers' stakes are paid to winners in proportion to their stakes. Zero-sum by construction. See [How do I win?](/docs/vision/payouts) (~4 min). |
+| **Parimutuel** | A pool-splitting payout: all stakes on a market form one pool, and losers' stakes are paid to winners in proportion to their stakes. Zero-sum by construction. See [How payouts work](/docs/vision/payouts) (~4 min). |
 | **Sealed commitment** | Before a round resolves, only the hash of your bitmap exists on-chain — nobody, including the operators, can read your picks from the chain until resolution. |
 | **Settlement chain** | The second chain (Sonic Testnet, id 14601) behind the bridge, used for cross-chain DTF orders. USDC there has 6 decimals. |
 | **Source** | One external data feed — defi, weather, congress, twitch — that a block's markets are built from. 47 sources across 16 categories. |
 | **Tick** | One round's duration on a source, from 60 seconds to 7 days. When the tick ends, the markets resolve against fresh data. |
-| **Vault** | A managed on-chain fund (ERC-7540) whose manager plays Vision rounds with depositors' USDC. See [Can someone play for me?](/docs/vision/vaults) (~4 min). |
+| **Vault** | A managed on-chain fund (ERC-7540) whose manager plays Vision rounds with depositors' USDC. See [Managed vaults](/docs/vision/vaults) (~4 min). |
 
 ```gmseealso
 [{"title": "What is General Market?", "href": "/docs/get-started/overview"}, {"title": "Network reference", "href": "/docs/get-started/network"}]

@@ -20,7 +20,7 @@ What do I control afterwards? :: You are the creator — rebalances and fee regi
 
 ## What do I need first?
 
-A wallet connected to the L3 chain, with a little gas. The faucet gives you both USDC and gas — see [How do I connect and get funds?](/docs/get-started/connect-and-fund) (~3 min).
+A wallet connected to the L3 chain, with a little gas. The faucet gives you both USDC and gas — see [Connect a wallet and get test USDC](/docs/get-started/connect-and-fund) (~3 min).
 
 **Testnet only.** Nothing you deploy or spend here is real money.
 

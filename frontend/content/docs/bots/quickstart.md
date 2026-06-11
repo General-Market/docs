@@ -3,7 +3,7 @@ title: Run the reference bot in 5 minutes
 navTitle: Quickstart
 description: Clone, add a key, run bot.py — and what every log line means.
 order: 2
-group: Build
+group: Build a bot
 mode: tutorial
 ---
 
@@ -61,7 +61,7 @@ python bot.py
 
 In order, the bot: connects to the RPC and checks the chain id, verifies the Vision contract has code, requests faucet funds if the balance is below one deposit, registers itself in the BotRegistry, then loops — joining each round's new blocks and sleeping `poll_interval` seconds (default 30) between cycles.
 
-`python bot.py --once` runs a single cycle and exits. `STRATEGY=momentum python bot.py` switches strategy — all five are listed in [Strategies](/docs/bots/strategies) (~4 min).
+`python bot.py --once` runs a single cycle and exits. `STRATEGY=momentum python bot.py` switches strategy — all five are listed in [Prediction strategies](/docs/bots/strategies) (~4 min).
 
 ## What you should see
 
@@ -103,7 +103,7 @@ The bot handles each refusal and tells you what it did:
 If the bot ends with `No USDC`, funding failed — resolve the waitlist or cooldown above and run it again. Faucet request and response shapes are in the [Faucet API reference](/docs/developers/vision-api/faucet) (~3 min).
 
 ```gmseealso
-[{"title": "How a bot joins a block", "href": "/docs/bots/join-a-block"}, {"title": "Errors and fixes", "href": "/docs/bots/errors"}]
+[{"title": "Join a block", "href": "/docs/bots/join-a-block"}, {"title": "Errors and fixes", "href": "/docs/bots/errors"}]
 ```
 
-Next: [How a bot joins a block](/docs/bots/join-a-block) (~6 min)
+Next: [Join a block](/docs/bots/join-a-block) (~6 min)
