@@ -28,7 +28,10 @@ REMOTE="${DOKPLOY_NOTIFY_REMOTE:-mono}"
 BRANCH="main"
 
 case "$ROUTE" in
-  frontend) HOOK="https://generalmarket.io/_dokploy/api/deploy/hDH6dhH6bGa-P0sbD684_" ;;
+  # Hit Dokploy on VPS 3 directly. The public /_dokploy/ path sits behind
+  # Cloudflare's bot challenge (since 2026-06), which 403s every webhook
+  # POST — the ping fails silently in the background and no deploy starts.
+  frontend) HOOK="http://159.195.77.160:3000/api/deploy/hDH6dhH6bGa-P0sbD684_" ;;
   *)
     echo "[notify-dokploy] unknown route: $ROUTE" >&2
     exit 2

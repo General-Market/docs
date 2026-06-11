@@ -105,3 +105,17 @@ Patterns that bit us. Written to prevent repeats.
 - **Plus a red herring:** the page is one server-rendered HTML blob with no cache headers, so the browser served the OLD JS after a redeploy. Add `Cache-Control: no-store` and hard-refresh once.
 - **Verify for real:** click the button, then paste (`Meta+v`) into a fresh textarea and read its value back — don't trust `execCommand` returning `true`, and you can't read `navigator.clipboard` back over HTTP. (Playwright paste-back confirmed 52 chars round-tripped.)
 - **Real fix when possible:** serve the tool over HTTPS so `navigator.clipboard` just works. execCommand is deprecated and a moving target.
+
+## 2026-06-10 — `git commit --only -- <paths> -m "msg"` treats -m as a pathspec
+
+- After the `--` separator, git reads EVERYTHING as a path — including `-m` and the message. Error surfaces as `'<your message text>' did not match any file(s) known to git`.
+- **Rule:** flags before the `--`, always: `git commit -m "msg" --only -- <paths>`.
+- Same family as the existing `--only` skips-untracked gotcha: `--only` commits exactly the named paths, so a malformed call fails loud — better than committing the wrong set silently.
+
+## 2026-06-11 — Cloudflare's bot challenge silently killed the entire Dokploy deploy chain
+
+- **Symptom:** committed + pushed a frontend fix, hook printed "will trigger Dokploy once pushed", push succeeded — but prod still served the old build. No new file in `/etc/dokploy/logs/`, container CreatedAt unchanged.
+- **Cause:** generalmarket.io moved behind Cloudflare; the bot challenge 403s every POST to the public webhook `https://generalmarket.io/_dokploy/api/deploy/...`. The notify script runs in the *background* from post-commit, so its 3×403 ERROR was never seen. Every push since the Cloudflare move deployed nothing.
+- **Fix:** `notify-dokploy.sh` now POSTs straight to the origin, `http://159.195.77.160:3000/api/deploy/...` (Dokploy binds 0.0.0.0:3000 on VPS 3) — Cloudflare never in the path.
+- **Rule:** "webhook returned 200 last month" is not "webhook returns 200 today". After any push that matters, verify the *container rotated* (`ssh vps3 docker ps` CreatedAt > push time), not that the push succeeded. Same lesson as the crx-frontend deploy collision: trust the running artifact, never the pipeline's optimistic log line.
+- **Debug move:** run the background notifier in the foreground to surface its HTTP code: `bash scripts/notify-dokploy.sh frontend generalmarket.io "$(git rev-parse HEAD)"`.
