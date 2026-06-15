@@ -31,12 +31,18 @@ class Telegram:
         *,
         html: bool = False,
         reply_to_message_id: int | None = None,
+        reply_markup: dict | None = None,
+        chat_id: str | int | None = None,
     ) -> int | None:
-        """Send a message. Returns the Telegram message_id, or None on failure."""
+        """Send a message. Returns the Telegram message_id, or None on failure.
+
+        Defaults to the configured chat; pass chat_id to reply to another chat
+        (e.g. a second person authorized to run /golive).
+        """
         if not self._session:
             raise RuntimeError("Telegram client used outside async context")
         payload: dict[str, Any] = {
-            "chat_id": self._chat_id,
+            "chat_id": chat_id if chat_id is not None else self._chat_id,
             "text": text[:4096],
             "disable_web_page_preview": True,
         }
@@ -44,6 +50,8 @@ class Telegram:
             payload["parse_mode"] = "HTML"
         if reply_to_message_id is not None:
             payload["reply_to_message_id"] = reply_to_message_id
+        if reply_markup is not None:
+            payload["reply_markup"] = json.dumps(reply_markup)
         try:
             async with self._session.post(f"{self._base}/sendMessage", json=payload) as r:
                 if r.status != 200:
@@ -58,6 +66,46 @@ class Telegram:
             log.error("telegram network error: %s", e)
             return None
 
+    async def answer_callback(self, callback_query_id: str, text: str = "") -> None:
+        """Acknowledge an inline-button tap so Telegram stops the loading spinner."""
+        if not self._session:
+            return
+        try:
+            await self._session.post(
+                f"{self._base}/answerCallbackQuery",
+                json={"callback_query_id": callback_query_id, "text": text},
+            )
+        except aiohttp.ClientError as e:
+            log.error("telegram answerCallback error: %s", e)
+
+    async def edit_reply_markup(
+        self,
+        chat_id: str | int,
+        message_id: int,
+        markup: dict | None = None,
+    ) -> None:
+        """Replace a message's inline keyboard. Pass markup=None to retire it.
+
+        Used the instant a /golive surface is tapped: stripping the keyboard
+        from the menu message means a stray re-tap has no button left to fire.
+        """
+        if not self._session:
+            return
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "reply_markup": json.dumps(markup or {"inline_keyboard": []}),
+        }
+        try:
+            async with self._session.post(
+                f"{self._base}/editMessageReplyMarkup", json=payload
+            ) as r:
+                if r.status != 200:
+                    body = await r.text()
+                    log.error("telegram editReplyMarkup failed: %s %s", r.status, body[:200])
+        except aiohttp.ClientError as e:
+            log.error("telegram editReplyMarkup error: %s", e)
+
     async def get_updates(self, offset: int, timeout: int = 25) -> list[dict]:
         """Long-poll Telegram for updates. Returns a list of update dicts."""
         if not self._session:
@@ -65,7 +113,7 @@ class Telegram:
         params = {
             "offset": offset,
             "timeout": timeout,
-            "allowed_updates": json.dumps(["message"]),
+            "allowed_updates": json.dumps(["message", "callback_query"]),
         }
         try:
             async with self._session.get(

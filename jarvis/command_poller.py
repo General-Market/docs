@@ -25,13 +25,106 @@ import asyncio
 import logging
 
 from . import blocklist, forwarded_index, group_log
-from .config import Config
+from . import deploy
+from .config import Config, STATE_DIR
 from .gmail_poller import trash_sender_messages
 from .telegram_client import Telegram
 
 log = logging.getLogger("jarvis.cmd")
 
 POLL_TIMEOUT = 25  # long-poll seconds
+
+
+_SURFACES = {
+    "app": "app.crxfx.com",
+    "docs": "docs.crxfx.com",
+    "landing": "crxfx.com (landing)",
+    "blog": "blog.crxfx.com",
+    "solver-dash": "solver.crxfx.com (desk)",
+}
+
+
+# Who may run /golive: Max (telegram_chat_id) plus any id listed in
+# state/golive_allowed.txt — one numeric id per line (a trailing @handle/comment
+# is fine). Read fresh on each use, so adding someone needs no restart: just
+# append their id to /root/jarvis/state/golive_allowed.txt on the host.
+_ALLOWED_FILE = STATE_DIR / "golive_allowed.txt"
+
+
+def _golive_allowed(cfg: Config) -> set[str]:
+    ids = {str(cfg.telegram_chat_id)}
+    try:
+        for line in _ALLOWED_FILE.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                ids.add(line.split()[0])
+    except FileNotFoundError:
+        pass
+    return ids
+
+
+# One tap must ship exactly one surface. A getUpdates batch is processed
+# sequentially, so a stray/duplicate/old-menu tap can arrive as a second
+# callback_query in the same batch and — without these guards — deploy a
+# second surface in turn. Two guards close that door:
+#   _CONSUMED_MENUS — menu message_ids already acted on. A repeat callback on
+#     an already-acted menu is answered and dropped (the keyboard is also
+#     retired on tap, so normally there is no button left to fire).
+#   _DEPLOY_LOCK    — single-flight: while one deploy runs, any further tap is
+#     answered with "already in progress" and never reaches run_deploy.
+_CONSUMED_MENUS: set[int] = set()
+_DEPLOY_LOCK = asyncio.Lock()
+
+
+async def _handle_golive_callback(cfg: Config, tg: Telegram, cq: dict) -> None:
+    """Inline-button tap on the /golive menu. Replies in the tapper's own chat."""
+    await tg.answer_callback(cq.get("id", ""))
+    frm = str((cq.get("from") or {}).get("id", ""))
+    menu = cq.get("message") or {}
+    menu_chat = (menu.get("chat") or {}).get("id")
+    menu_id = menu.get("message_id")
+    chat = str(menu_chat if menu_chat is not None else "") or frm
+    if frm not in _golive_allowed(cfg):
+        return
+    data = cq.get("data", "")
+    if data == "crxcancel":
+        # Retire the keyboard so the dead menu can't be re-tapped, then ack.
+        if menu_chat is not None and isinstance(menu_id, int):
+            _CONSUMED_MENUS.add(menu_id)
+            await tg.edit_reply_markup(menu_chat, menu_id, markup=None)
+        await tg.send("Cancelled — nothing deployed.", chat_id=chat)
+        return
+    if not data.startswith("crxgo:"):
+        return
+    target = data.split(":", 1)[1]
+    if target not in _SURFACES:
+        return
+
+    # Consume-once: a repeat tap on a menu we've already acted on ships nothing.
+    if isinstance(menu_id, int) and menu_id in _CONSUMED_MENUS:
+        await tg.send("That menu was already used — run /golive again.", chat_id=chat)
+        return
+
+    # Retire this menu's keyboard the instant a valid surface is tapped, and
+    # mark it consumed — both happen before any awaited deploy, so a second
+    # queued callback on the same menu finds it spent.
+    if menu_chat is not None and isinstance(menu_id, int):
+        _CONSUMED_MENUS.add(menu_id)
+        await tg.edit_reply_markup(menu_chat, menu_id, markup=None)
+
+    # Single-flight: never run two deploys at once. A tap that arrives while a
+    # deploy is in flight is told to wait, and ships nothing.
+    if _DEPLOY_LOCK.locked():
+        await tg.send("A deploy is already in progress — wait for it to finish.", chat_id=chat)
+        return
+
+    async with _DEPLOY_LOCK:
+        await tg.send(f"⏳ deploying <b>{_SURFACES[target]}</b> to LIVE…", html=True, chat_id=chat)
+        result = await asyncio.to_thread(deploy.run_deploy, target)
+        await tg.send(f"✅ {result}", chat_id=chat)
+        # Audit: if anyone other than Max ships, notify Max too.
+        if frm != str(cfg.telegram_chat_id):
+            await tg.send(f"🛬 LIVE deploy by <code>{frm}</code> → {_SURFACES[target]}\n{result}", html=True)
 
 
 def _parse_command(text: str | None) -> str | None:
@@ -92,11 +185,55 @@ async def poll_commands_loop(cfg: Config, tg: Telegram) -> None:
                 if isinstance(update_id, int):
                     offset = max(offset, update_id + 1)
 
+                # Inline-button taps (the /golive Approve/Cancel buttons).
+                cq = u.get("callback_query")
+                if cq:
+                    await _handle_golive_callback(cfg, tg, cq)
+                    continue
+
                 msg = u.get("message") or {}
 
                 # Transcribe every group message before the command filter below
                 # drops everything that isn't a reply-command.
                 group_log.record_message(msg)
+
+                text = (msg.get("text") or "").strip()
+                chat_id = str((msg.get("chat") or {}).get("id", ""))
+                from_id = str((msg.get("from") or {}).get("id", ""))
+                first = text.split("@")[0].split()[0:1]
+
+                # /id — anyone can ask for their own numeric id (needed to be
+                # added to the /golive allow-list). Harmless: an id isn't secret.
+                if first in (["/id"], ["/whoami"]):
+                    handle = (msg.get("from") or {}).get("username", "")
+                    log.info("/id from %s (@%s)", from_id, handle)
+                    await tg.send(
+                        f"Your Telegram id: <code>{from_id}</code>\nAsk Max to add it to /golive.",
+                        html=True, chat_id=chat_id,
+                    )
+                    continue
+
+                # /golive — production deploy gate. Allowed = Max + anyone in
+                # state/golive_allowed.txt. The menu/replies go to the caller's
+                # own chat. Unauthorized callers are logged and ignored.
+                if first == ["/golive"]:
+                    if from_id not in _golive_allowed(cfg):
+                        handle = (msg.get("from") or {}).get("username", "")
+                        log.info("/golive denied for %s (@%s)", from_id, handle)
+                        continue
+                    kb = {"inline_keyboard": [
+                        [{"text": "📱 App", "callback_data": "crxgo:app"},
+                         {"text": "📖 Docs", "callback_data": "crxgo:docs"}],
+                        [{"text": "🛬 Landing", "callback_data": "crxgo:landing"},
+                         {"text": "🗞 Blog", "callback_data": "crxgo:blog"}],
+                        [{"text": "📊 Solver Dash", "callback_data": "crxgo:solver-dash"}],
+                        [{"text": "❌ Cancel", "callback_data": "crxcancel"}],
+                    ]}
+                    await tg.send(
+                        "Deploy which surface to LIVE? <i>(one at a time — each ships only its own site)</i>",
+                        html=True, reply_markup=kb, chat_id=chat_id,
+                    )
+                    continue
 
                 reply = msg.get("reply_to_message")
                 if not reply:
