@@ -159,6 +159,11 @@ import {
   yc2DefaultProps,
   yc2DurationInFrames,
 } from "./compositions/yc/YC2Composition";
+import {
+  crxDemoMeta,
+  crxDemoDefaultProps,
+  crxDemoDurationInFrames,
+} from "./compositions/crx-demo/CRXDemoComposition";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -176,6 +181,18 @@ export const RemotionRoot: React.FC = () => {
     <>
       {/* ═══ ROOT — videos in active use. Default: a finished video registers at
            the root; its scenes/variants live in a <Folder> below. ═══ */}
+      <Composition
+        id={crxDemoMeta.id}
+        component={crxDemoMeta.component}
+        durationInFrames={crxDemoMeta.durationInFrames}
+        fps={crxDemoMeta.fps}
+        width={crxDemoMeta.width}
+        height={crxDemoMeta.height}
+        defaultProps={crxDemoDefaultProps}
+        calculateMetadata={async ({ props }) => ({
+          durationInFrames: crxDemoDurationInFrames(props, crxDemoMeta.fps),
+        })}
+      />
       <Composition
         id={yc2Meta.id}
         component={yc2Meta.component}
