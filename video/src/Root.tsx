@@ -154,6 +154,11 @@ import { morphoCuratorsMeta } from "./compositions/morpho-curators/MorphoCurator
 import { flowMetas, winnersMetas } from "./compositions/defi-flows/datasets";
 import { walkthroughTakerMeta } from "./compositions/walkthrough/WalkthroughVideo";
 import { TOTAL_FRAMES as WALKTHROUGH_TAKER_FRAMES } from "./compositions/walkthrough/walkthroughData";
+import {
+  yc2Meta,
+  yc2DefaultProps,
+  yc2DurationInFrames,
+} from "./compositions/yc/YC2Composition";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -171,6 +176,18 @@ export const RemotionRoot: React.FC = () => {
     <>
       {/* ═══ ROOT — videos in active use. Default: a finished video registers at
            the root; its scenes/variants live in a <Folder> below. ═══ */}
+      <Composition
+        id={yc2Meta.id}
+        component={yc2Meta.component}
+        durationInFrames={yc2Meta.durationInFrames}
+        fps={yc2Meta.fps}
+        width={yc2Meta.width}
+        height={yc2Meta.height}
+        defaultProps={yc2DefaultProps}
+        calculateMetadata={async ({ props }) => ({
+          durationInFrames: yc2DurationInFrames(props.targetSeconds, yc2Meta.fps),
+        })}
+      />
       <Composition
         id={antiCheatFullMeta.id}
         component={antiCheatFullMeta.component}
