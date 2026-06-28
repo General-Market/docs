@@ -185,7 +185,7 @@ export const RemotionRoot: React.FC = () => {
         height={yc2Meta.height}
         defaultProps={yc2DefaultProps}
         calculateMetadata={async ({ props }) => ({
-          durationInFrames: yc2DurationInFrames(props.targetSeconds, yc2Meta.fps),
+          durationInFrames: yc2DurationInFrames(props, yc2Meta.fps),
         })}
       />
       <Composition
