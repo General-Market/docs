@@ -71,6 +71,12 @@ import {
 } from "./compositions/replicates/worldcoin/DeviceBrollDemo";
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
+import { circle1ReplicateMeta } from "./compositions/replicates/circle1/Circle1Composition";
+import { circle1SideBySideMeta } from "./compositions/replicates/circle1/Circle1SideBySide";
+import { loopscaleReplicateMeta } from "./compositions/replicates/loopscale/LoopscaleComposition";
+import { loopscaleSideBySideMeta } from "./compositions/replicates/loopscale/LoopscaleSideBySide";
+import { circle2ReplicateMeta } from "./compositions/replicates/circle2/Circle2Composition";
+import { circle2SideBySideMeta } from "./compositions/replicates/circle2/Circle2SideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -506,6 +512,45 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
+        {/* --- Circle video 1 (karaoke quote) --- */}
+        {[circle1ReplicateMeta, circle1SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Loopscale --- */}
+        {[loopscaleReplicateMeta, loopscaleSideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Circle video 2 --- */}
+        {[circle2ReplicateMeta, circle2SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
         {/* --- Rainbows: Public.com adaptation --- */}
         <Composition
           id={rainbowsPublicMeta.id}
