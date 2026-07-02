@@ -39,12 +39,9 @@ import {
 
 const CENTER = 640;
 
-// ─── Wave background: the bridge.xyz hero water, looped. The source
-// runs light (teal into white) and the copy is white Poppins 300, so
-// the plate is pulled down with a brightness filter plus a bottom
-// scrim — the water keeps moving, the text keeps its contrast. The
-// end fade-to-black (f861-901) is inherited from the Silk timing so
-// the white end lockup still lands on black.
+// ─── Wave background: the bridge.xyz hero water, looped, shown raw.
+// The end fade-to-black (f861-901) is inherited from the Silk timing
+// so the white end lockup still lands on black.
 const WAVE_SECONDS = 18; // source clip length
 
 const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
@@ -60,16 +57,9 @@ const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
             width: 1280,
             height: 720,
             objectFit: "cover",
-            filter: "brightness(0.52) saturate(1.2)",
           }}
         />
       </Loop>
-      <AbsoluteFill
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 55%, rgba(0,0,0,0.4) 100%)",
-        }}
-      />
       {black > 0 && (
         <AbsoluteFill style={{ backgroundColor: "#000", opacity: black }} />
       )}
