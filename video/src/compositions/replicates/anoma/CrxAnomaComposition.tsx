@@ -60,14 +60,14 @@ const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
             width: 1280,
             height: 720,
             objectFit: "cover",
-            filter: "brightness(0.34) saturate(1.2)",
+            filter: "brightness(0.52) saturate(1.2)",
           }}
         />
       </Loop>
       <AbsoluteFill
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.55) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 55%, rgba(0,0,0,0.4) 100%)",
         }}
       />
       {black > 0 && (
