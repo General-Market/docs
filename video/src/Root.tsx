@@ -83,6 +83,8 @@ import { realistReplicateMeta } from "./compositions/replicates/realist/RealistC
 import { realistSideBySideMeta } from "./compositions/replicates/realist/RealistSideBySide";
 import { short3dReplicateMeta } from "./compositions/replicates/short3d/Short3DComposition";
 import { short3dSideBySideMeta } from "./compositions/replicates/short3d/Short3DSideBySide";
+import { tradingBookReplicateMeta } from "./compositions/replicates/tradingbook/TradingBookComposition";
+import { tradingBookSideBySideMeta } from "./compositions/replicates/tradingbook/TradingBookSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -546,6 +548,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Circle video 2 --- */}
         {[circle2ReplicateMeta, circle2SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- TradingBook (trading-education short) --- */}
+        {[tradingBookReplicateMeta, tradingBookSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
