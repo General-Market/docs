@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Img,
   interpolate,
   Loop,
@@ -16,17 +17,12 @@ import {
   FPS,
   FS,
   POPPINS,
-  Scene10Dash,
-  Scene12Dash,
-  Scene3Dash,
-  Scene4Table,
-  Scene8Onboard,
-  Scene9Batch,
   TEXT_SOFT,
   WHITE,
   wordStyle,
   type WordSpec,
 } from "./AnomaComposition";
+import { CrxAppScenes } from "./CrxAppCards";
 
 // ═══════════════════════════════════════════════════════════════
 // CRX cut of the Anoma replica: same cards and motion physics; the
@@ -39,13 +35,18 @@ import {
 
 const CENTER = 640;
 
+// Bridge sets its own headline on this water in near-black ink, not
+// white — the copy follows suit. Ink value from the Apple style table.
+const INK = "#1D1D1F";
+
 // ─── Wave background: the bridge.xyz hero water, looped, shown raw.
-// The end fade-to-black (f861-901) is inherited from the Silk timing
-// so the white end lockup still lands on black.
+// The end fade-to-black is pulled into the empty beat after scene 12
+// (f851-864) so the white end lockup and URL land on black, never on
+// bright water.
 const WAVE_SECONDS = 18; // source clip length
 
 const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
-  const black = interpolate(frame, [861, 870, 901], [0, 0.26, 1], clamp);
+  const black = interpolate(frame, [851, 864], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={WAVE_SECONDS * FPS}>
@@ -75,6 +76,7 @@ type CrxLineSpec = {
   drop?: number;
   r?: number;
   rise?: boolean;
+  color?: string; // ink by default; the end URL stays white on black
   out?: { cut?: number; fade?: [number, number] };
 };
 
@@ -86,6 +88,7 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
   drop = 53,
   r = 0.74,
   rise = false,
+  color = INK,
   out,
   frame,
 }) => {
@@ -114,7 +117,7 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
         fontWeight: 300,
         fontSize: fs,
         lineHeight: 1,
-        color: WHITE,
+        color,
         whiteSpace: "pre",
         ...TEXT_SOFT,
         opacity: 0.97 * opacity,
@@ -166,7 +169,7 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         fontWeight: 300,
         fontSize: FS,
         lineHeight: 1,
-        color: WHITE,
+        color: INK,
         whiteSpace: "pre",
         ...TEXT_SOFT,
       }}
@@ -248,7 +251,7 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
               fontWeight: 500,
               fontSize: EASY_FS,
               lineHeight: 1,
-              color: "#FDFDFD",
+              color: INK,
               filter: blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : undefined,
               opacity: op,
             }}
@@ -299,8 +302,9 @@ const LINES: CrxLineSpec[] = [
   // Scene 12 — top-center (fades f848-851)
   { words: [{ t: "CRX", f: 766 }, { t: "Sandbox", f: 769 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
   { words: [{ t: "is", f: 772 }, { t: "Live.", f: 775 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
-  // Scene 13 — URL (holds to end; slower settle, smaller size)
-  { words: [{ t: "app.crx.com/swap", f: 861 }], capTop: 318, drop: 44, r: 0.76, fs: 51 },
+  // Scene 13 — URL (holds to end; slower settle, smaller size).
+  // White: it lands after the wave has faded to black.
+  { words: [{ t: "app.crx.com/swap", f: 861 }], capTop: 318, drop: 44, r: 0.76, fs: 51, color: WHITE },
 ];
 
 // ─── End card lockup: settles in above the URL with the same word
@@ -334,13 +338,14 @@ export const CrxAnomaComposition: React.FC = () => {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <Audio
+        src={staticFile("crx-assets/loosin-up.mp3")}
+        volume={(f) =>
+          interpolate(f, [0, 12, DURATION - 45, DURATION - 6], [0, 1, 1, 0], clamp)
+        }
+      />
       <WaveBackground frame={frame} />
-      <Scene3Dash frame={frame} />
-      <Scene4Table frame={frame} />
-      <Scene8Onboard frame={frame} />
-      <Scene9Batch frame={frame} />
-      <Scene10Dash frame={frame} />
-      <Scene12Dash frame={frame} />
+      <CrxAppScenes frame={frame} />
       <CrxScene1 frame={frame} />
       <CrxScene2 frame={frame} />
       {LINES.map((l, i) => (
