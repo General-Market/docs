@@ -81,6 +81,8 @@ import { reflectReplicateMeta } from "./compositions/replicates/reflect/ReflectC
 import { reflectSideBySideMeta } from "./compositions/replicates/reflect/ReflectSideBySide";
 import { realistReplicateMeta } from "./compositions/replicates/realist/RealistComposition";
 import { realistSideBySideMeta } from "./compositions/replicates/realist/RealistSideBySide";
+import { short3dReplicateMeta } from "./compositions/replicates/short3d/Short3DComposition";
+import { short3dSideBySideMeta } from "./compositions/replicates/short3d/Short3DSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -544,6 +546,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Circle video 2 --- */}
         {[circle2ReplicateMeta, circle2SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Short3D (trading-pattern short) --- */}
+        {[short3dReplicateMeta, short3dSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
