@@ -1,5 +1,13 @@
 import React from "react";
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import {
+  AbsoluteFill,
+  Img,
+  interpolate,
+  Loop,
+  OffthreadVideo,
+  staticFile,
+  useCurrentFrame,
+} from "remotion";
 import { measureText } from "@remotion/layout-utils";
 import {
   CAP_OFFSET,
@@ -14,7 +22,6 @@ import {
   Scene4Table,
   Scene8Onboard,
   Scene9Batch,
-  Silk,
   TEXT_SOFT,
   WHITE,
   wordStyle,
@@ -22,14 +29,53 @@ import {
 } from "./AnomaComposition";
 
 // ═══════════════════════════════════════════════════════════════
-// CRX cut of the Anoma replica: identical background plates, cards
-// and motion physics; only the copy changes. New lines are set at
+// CRX cut of the Anoma replica: same cards and motion physics; the
+// silk plates are swapped for the bridge.xyz hero wave video and
+// the copy changes. New lines are set at
 // natural width (no ink-box scaleX — there is no reference ink to
 // match), left-aligned at the original x positions or centered on
 // the frame axis (640).
 // ═══════════════════════════════════════════════════════════════
 
 const CENTER = 640;
+
+// ─── Wave background: the bridge.xyz hero water, looped. The source
+// runs light (teal into white) and the copy is white Poppins 300, so
+// the plate is pulled down with a brightness filter plus a bottom
+// scrim — the water keeps moving, the text keeps its contrast. The
+// end fade-to-black (f861-901) is inherited from the Silk timing so
+// the white end lockup still lands on black.
+const WAVE_SECONDS = 18; // source clip length
+
+const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
+  const black = interpolate(frame, [861, 870, 901], [0, 0.26, 1], clamp);
+  return (
+    <AbsoluteFill>
+      <Loop durationInFrames={WAVE_SECONDS * FPS}>
+        <OffthreadVideo
+          muted
+          src={staticFile("crx-assets/bridge-wave.mp4")}
+          style={{
+            position: "absolute",
+            width: 1280,
+            height: 720,
+            objectFit: "cover",
+            filter: "brightness(0.34) saturate(1.2)",
+          }}
+        />
+      </Loop>
+      <AbsoluteFill
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
+      {black > 0 && (
+        <AbsoluteFill style={{ backgroundColor: "#000", opacity: black }} />
+      )}
+    </AbsoluteFill>
+  );
+};
 
 type CrxLineSpec = {
   words: WordSpec[];
@@ -268,7 +314,7 @@ const LINES: CrxLineSpec[] = [
 ];
 
 // ─── End card lockup: settles in above the URL with the same word
-// physics (drop 44, r 0.76) as the silk fades to black.
+// physics (drop 44, r 0.76) as the wave fades to black.
 const LOGO_W = 380;
 const LOGO_H = 115; // 6605:2000 source aspect
 
@@ -298,7 +344,7 @@ export const CrxAnomaComposition: React.FC = () => {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <Silk frame={frame} />
+      <WaveBackground frame={frame} />
       <Scene3Dash frame={frame} />
       <Scene4Table frame={frame} />
       <Scene8Onboard frame={frame} />
