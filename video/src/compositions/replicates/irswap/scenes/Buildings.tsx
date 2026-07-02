@@ -18,7 +18,7 @@ import type { TrackRow } from "../data/buildings";
 import { clamp01, lerp1, lerpTrack } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
 import {
-  CameraRig, CanvasPlane, Room, Vignette, DCAM, project,
+  CameraRig, CanvasPlane, Room, Vignette, DCAM, project, unprojToFloor,
 } from "../lib/world";
 import type { V3 } from "../lib/world";
 
@@ -238,74 +238,202 @@ const useTextures = (paths: string[]) => {
 };
 
 // ── floor map ────────────────────────────────────────────────────
+// Measured city-plan features. Three source poses:
+//  A) f2505 (identity cam, g≈0) — direct unprojection.
+//  B) f3540 (solved cam+g)      — unproject, un-yaw, + anchor correction.
+//  C) f3700 (chart2 anchor)     — unproject in chart2 world, then map into
+//     this world with a 2D similarity fitted on the dark-plot quad corners
+//     measured at both identity anchors (f2505 here, f3700 in chart2).
+const flB = (u: number, v: number): Pt => {
+  const p = unprojToFloor(u, v, FLOOR_Y);
+  return [p[0], p[2]];
+};
+const FLOORMAP = (() => {
+  // B) 3540 unprojection (un-yawed + corrected)
+  const { cam: cam3540, g: g3540 } = camBld(3540);
+  const fl3540raw = (u: number, v: number): Pt => {
+    const p = unprojToFloor(u, v, FLOOR_Y, cam3540);
+    const q = rotP(p, -g3540);
+    return [q[0], q[2]];
+  };
+  // anchor: dark plot TL seen at f2505 (340,439) and f3540 (280,390)
+  const aI = flB(340, 439);
+  const a35 = fl3540raw(280, 390);
+  const d35: Pt = [aI[0] - a35[0], aI[1] - a35[1]];
+  const fl3540 = (u: number, v: number): Pt => {
+    const p = fl3540raw(u, v);
+    return [p[0] + d35[0], p[1] + d35[1]];
+  };
+  // C) similarity chart2-world → buildings-world from dark plot quad
+  const Q3700: Pt[] = [[339, 321], [368, 325], [343, 338], [312, 334]];
+  const Q2505: Pt[] = [[340, 439], [381, 448], [329, 478], [288, 469]];
+  const P = Q3700.map(([u, v]) => flB(u, v)); // chart2 world (same unproj math)
+  const Q = Q2505.map(([u, v]) => flB(u, v));
+  const cen = (pts: Pt[]): Pt => [
+    pts.reduce((s, p) => s + p[0], 0) / pts.length,
+    pts.reduce((s, p) => s + p[1], 0) / pts.length,
+  ];
+  const cp = cen(P);
+  const cq = cen(Q);
+  let sxx = 0, sxy = 0, spp = 0;
+  for (let i = 0; i < P.length; i++) {
+    const px = P[i][0] - cp[0], py = P[i][1] - cp[1];
+    const qx = Q[i][0] - cq[0], qy = Q[i][1] - cq[1];
+    sxx += px * qx + py * qy;
+    sxy += px * qy - py * qx;
+    spp += px * px + py * py;
+  }
+  const sc = Math.hypot(sxx, sxy) / spp;
+  const th = Math.atan2(sxy, sxx);
+  const fl3700 = (u: number, v: number): Pt => {
+    const p = flB(u, v);
+    const px = p[0] - cp[0], py = p[1] - cp[1];
+    return [
+      cq[0] + sc * (Math.cos(th) * px - Math.sin(th) * py),
+      cq[1] + sc * (Math.sin(th) * px + Math.cos(th) * py),
+    ];
+  };
+  return { fl3540, fl3700 };
+})();
+
+const FLOOR_CB: Pt = [0, -250];
+const FLOOR_WB = 1700;
+const FLOOR_HB = 1500;
+
 const FloorMap: React.FC<{ frame: number; g: number }> = ({ frame, g }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
-    const a = clamp01((f - 1707) / 50) * (1 - clamp01((f - 3515) / 50));
+    const a = clamp01((f - 1707) / 50);
     if (a <= 0) return;
     ctx.globalAlpha = a;
-    // sheet
-    ctx.fillStyle = "#F7F7F5";
-    ctx.fillRect(0, 0, w, h);
-    // pale street grid
-    ctx.strokeStyle = BCOLORS.mapInk;
-    ctx.lineWidth = 1.6;
-    for (let i = 1; i < 8; i++) {
+    const { fl3540, fl3700 } = FLOORMAP;
+    const mx = (p: Pt) => w / 2 + (p[0] - FLOOR_CB[0]);
+    const my = (p: Pt) => h / 2 + (p[1] - FLOOR_CB[1]);
+    const path = (pts: Pt[], close: boolean) => {
       ctx.beginPath();
-      ctx.moveTo((w / 8) * i, 0);
-      ctx.lineTo((w / 8) * i, h);
-      ctx.stroke();
-    }
-    for (let i = 1; i < 5; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, (h / 5) * i);
-      ctx.lineTo(w, (h / 5) * i);
-      ctx.stroke();
-    }
-    // yellow road along the building row
-    ctx.fillStyle = BCOLORS.road;
-    ctx.fillRect(0, h * 0.42, w, h * 0.1);
-    ctx.strokeStyle = "#C9C9C0";
-    ctx.lineWidth = 1.2;
-    ctx.strokeRect(0, h * 0.42, w, h * 0.1);
-    // white plots
-    ctx.fillStyle = "#FDFDFC";
-    ctx.strokeStyle = "#CFCFCB";
-    const plot = (x: number, y: number, pw: number, ph: number) => {
-      ctx.fillRect(x, y, pw, ph);
-      ctx.strokeRect(x, y, pw, ph);
+      ctx.moveTo(mx(pts[0]), my(pts[0]));
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(mx(pts[i]), my(pts[i]));
+      if (close) ctx.closePath();
     };
-    plot(w * 0.33, h * 0.24, w * 0.14, h * 0.14);
-    plot(w * 0.62, h * 0.24, w * 0.14, h * 0.14);
-    // parcel blocks
-    ctx.fillStyle = "#E9E9E6";
-    plot(w * 0.15, h * 0.62, w * 0.1, h * 0.1);
-    plot(w * 0.48, h * 0.66, w * 0.12, h * 0.12);
-    // teal plot + mosaic + red sketch (under-sheet accents)
-    ctx.fillStyle = "#BFE6EA";
-    ctx.fillRect(w * 0.06, h * 0.78, w * 0.08, h * 0.1);
-    ctx.fillStyle = "#B9C6C8";
-    ctx.fillRect(w * 0.38, h * 0.8, w * 0.16, h * 0.09);
-    ctx.strokeStyle = "#D4506C";
-    ctx.setLineDash([5, 4]);
-    ctx.lineWidth = 1.6;
+    const poly = (pts: Pt[], fill: string | null, stroke: string | null, lw = 1.4) => {
+      path(pts, true);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+    };
+    const line = (pts: Pt[], stroke: string, lw: number) => {
+      path(pts, false);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lw;
+      ctx.stroke();
+    };
+    const m2505 = (pts: Pt[]) => pts.map(([u, v]) => flB(u, v));
+    const m3540 = (pts: Pt[]) => pts.map(([u, v]) => fl3540(u, v));
+    const m3700 = (pts: Pt[]) => pts.map(([u, v]) => fl3700(u, v));
+    // sheet outline (f3540): left corner, NW edge, occluded back, right
+    // edge, rounded near corner, bowed front edge
+    const sheet = m3540([
+      [7, 373], [53, 359], [120, 344], [150, 335], [634, 309], [684, 453], [676, 447],
+      [670, 453], [590, 443], [510, 434], [430, 424], [300, 409], [230, 405],
+    ]);
+    poly(sheet, "#F2F2F0", "#DEDEDA", 1.6);
+    // streets clipped to sheet
+    ctx.save();
+    path(sheet, true);
+    ctx.clip();
+    // main street double line (3540)
+    line(m3540([[320, 383], [450, 394], [560, 406], [620, 412]]), BCOLORS.mapInk, 1.6);
+    line(m3540([[450, 400], [560, 411], [620, 417]]), BCOLORS.mapInk, 1.4);
+    // near-side street line + receding street (2505, exact)
+    line(m2505([[132, 456], [558, 431]]), BCOLORS.mapInk, 1.5);
+    line(m2505([[500, 419], [652, 480]]), BCOLORS.mapInk, 1.5);
+    // receding street family (3540 pairs y360→y410; two occluded extended)
+    const fam: [Pt, Pt][] = [
+      [[443, 360], [431, 410]], [[487, 360], [456, 410]], [[533, 360], [515, 410]],
+      [[579, 360], [575, 410]], [[624, 360], [633, 410]],
+    ];
+    for (const [t, b] of fam) {
+      const wt = fl3540(t[0], t[1]);
+      const wb = fl3540(b[0], b[1]);
+      // extend across the sheet
+      const dx = wb[0] - wt[0], dz = wb[1] - wt[1];
+      line([[wt[0] - dx * 1.6, wt[1] - dz * 1.6], [wb[0] + dx * 1.2, wb[1] + dz * 1.2]], BCOLORS.mapInk, 1.4);
+    }
+    // two occluded members left of the family (same direction as first)
+    for (const tx of [350, 397]) {
+      const wt = fl3540(tx, 360);
+      const ref0 = fl3540(443, 360);
+      const ref1 = fl3540(431, 410);
+      const dx = ref1[0] - ref0[0], dz = ref1[1] - ref0[1];
+      line([[wt[0] - dx * 1.6, wt[1] - dz * 1.6], [wt[0] + dx * 2.2, wt[1] + dz * 2.2]], BCOLORS.mapInk, 1.4);
+    }
+    ctx.restore();
+    // white pads (under the buildings)
+    poly(m3540([[195, 329], [295, 339], [224, 374], [124, 364]]), "#FBFBF9", "#E0E0DC");
+    poly(m3540([[480, 318], [583, 322], [583, 339], [481, 332]]), "#FBFBF9", "#E0E0DC");
+    // plot cluster (3540)
+    poly(m3540([[280, 390], [323, 394], [299, 409], [259, 404]]), "#C2C2C4", null);
+    poly(m3540([[328, 393], [369, 397], [356, 416], [308, 410]]), "#C4C4C4", null);
+    poly(m3540([[370, 399], [417, 403], [400, 422], [357, 415]]), "#C6DBDD", null);
+    poly(m3540([[310, 412], [401, 424], [399, 433], [296, 421]]), "#DDF0F2", null);
+    // plots D/E slivers (2505, near-frame-bottom pieces)
+    poly(m2505([[434, 461], [483, 470], [477, 481], [428, 481]]), "#C6DBDD", null);
+    poly(m2505([[348, 475], [383, 479], [381, 492], [346, 488]]), "#DDF0F2", null);
+    // saturated teal quad (from f3700 via similarity)
+    poly(m3700([[240, 369], [273, 374], [263, 384], [218, 378]]), "#BFE0E4", null);
+    // ruled diagonals parcel (f3700 via similarity)
+    for (let i = 0; i < 13; i++) {
+      const t = i / 12;
+      const top: Pt = [418 + (557 - 418) * t, 376 + (393 - 376) * t];
+      const bot: Pt = [385 + (544 - 385) * t, 405 + (427 - 405) * t];
+      line(m3700([top, bot]), "#DDDDDD", 1.1);
+    }
+    // red squiggle (3540)
+    line(
+      m3540([[442, 417], [466, 432], [492, 442], [501, 450], [508, 450], [516, 447],
+        [538, 457], [546, 457], [554, 462], [572, 470], [579, 473], [587, 471], [595, 473], [618, 472]]),
+      "#DC9DA0", 1.6,
+    );
+    // yellow road (2505, exact): one polygon through the visible segments
+    poly(
+      m2505([[306, 368], [321, 366], [430, 354], [464, 358], [543, 369],
+        [526, 375], [464, 367], [333, 378], [307, 389]]),
+      BCOLORS.road, "#DDDCB0", 1,
+    );
+    // red dashed V-road (2505): short dashes along the two branches
+    const dashes = (pts: Pt[]) => {
+      const wpts = m2505(pts);
+      ctx.strokeStyle = "#D4A6A8";
+      ctx.lineWidth = 2.4;
+      for (let i = 0; i < wpts.length; i++) {
+        const nb = wpts[Math.min(i + 1, wpts.length - 1)];
+        const pv = wpts[Math.max(i - 1, 0)];
+        let dx = nb[0] - pv[0], dz = nb[1] - pv[1];
+        const L = Math.hypot(dx, dz) || 1;
+        dx /= L; dz /= L;
+        const p = wpts[i];
+        ctx.beginPath();
+        ctx.moveTo(mx([p[0] - dx * 5, p[1] - dz * 5]), my([p[0] - dx * 5, p[1] - dz * 5]));
+        ctx.lineTo(mx([p[0] + dx * 5, p[1] + dz * 5]), my([p[0] + dx * 5, p[1] + dz * 5]));
+        ctx.stroke();
+      }
+    };
+    dashes([[317, 433], [312, 435], [300, 440], [293, 445], [279, 450], [268, 455], [261, 460], [256, 465]]);
+    dashes([[354, 429], [365, 430], [375, 435], [410, 440], [438, 445], [453, 450], [480, 455], [516, 460], [524, 465]]);
+    // dusty-red inner border + dots (3540)
+    line(m3540([[657, 430], [667, 450], [672, 465], [670, 480]]), "#C09090", 2);
+    const dt = fl3540(654, 416);
     ctx.beginPath();
-    ctx.moveTo(w * 0.62, h * 0.78);
-    ctx.bezierCurveTo(w * 0.7, h * 0.9, w * 0.78, h * 0.72, w * 0.88, h * 0.86);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.arc(mx(dt), my(dt), 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#B98A8C";
+    ctx.fill();
     ctx.globalAlpha = 1;
   }, []);
-  // sheet spans the building row; centered between lender and bank
-  const cx = (W2[0] + W3[0]) / 2;
-  const cz = (W2[2] + W3[2]) / 2 + 40;
   const quat = new THREE.Quaternion()
     .setFromAxisAngle(new THREE.Vector3(0, 1, 0), g)
     .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)));
-  // rotate center about pivot too
-  const c = rotP([cx, FLOOR_Y, cz], g);
+  const c = rotP([FLOOR_CB[0], FLOOR_Y, FLOOR_CB[1]], g);
   return (
     <group position={c} quaternion={quat}>
-      <CanvasPlane frame={frame} width={1500} height={700} res={0.8}
+      <CanvasPlane frame={frame} width={FLOOR_WB} height={FLOOR_HB} res={1}
         position={[0, 0, 0]} rotation={[0, 0, 0]} draw={draw} renderOrder={0} />
     </group>
   );
@@ -583,7 +711,7 @@ export const Buildings: React.FC = () => {
         <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
         <RateValue p={rE(ANCHOR_3450.l3)} size={30} opacity={ncOp} value="2.0" />
       </AbsoluteFill>
-      {endFade > 0 && <Vignette soft opacity={endFade} />}
+      {/* floor persists into the chart2 room — only sprites/overlays fade */}
     </AbsoluteFill>
   );
 };
