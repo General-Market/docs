@@ -90,6 +90,9 @@ import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSid
 import { anomaReplicateMeta } from "./compositions/replicates/anoma/AnomaComposition";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
 import { crxAnomaMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
+import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFollowProp";
+import { slideRailPropMeta } from "./compositions/replicates/anoma/props/SlideRailProp";
+import { fullBleedPropMeta } from "./compositions/replicates/anoma/props/FullBleedProp";
 import { crxAnomaSideBySideMeta } from "./compositions/replicates/anoma/CrxAnomaSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
@@ -577,6 +580,21 @@ export const RemotionRoot: React.FC = () => {
             height={meta.height}
           />
         ))}
+
+        {/* --- CRX-Anoma camera propositions (scene-4 span, pick one) --- */}
+        <Folder name="CRX-Anoma-Props">
+          {[zoomFollowPropMeta, slideRailPropMeta, fullBleedPropMeta].map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
 
         {/* --- IRSwap (interest-rate-swap explainer) --- */}
         {[irswapReplicateMeta, irswapSideBySideMeta].map((meta) => (
