@@ -85,6 +85,8 @@ import { short3dReplicateMeta } from "./compositions/replicates/short3d/Short3DC
 import { short3dSideBySideMeta } from "./compositions/replicates/short3d/Short3DSideBySide";
 import { tradingBookReplicateMeta } from "./compositions/replicates/tradingbook/TradingBookComposition";
 import { tradingBookSideBySideMeta } from "./compositions/replicates/tradingbook/TradingBookSideBySide";
+import { irswapReplicateMeta } from "./compositions/replicates/irswap/IRSwapComposition";
+import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -548,6 +550,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Circle video 2 --- */}
         {[circle2ReplicateMeta, circle2SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- IRSwap (interest-rate-swap explainer) --- */}
+        {[irswapReplicateMeta, irswapSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
