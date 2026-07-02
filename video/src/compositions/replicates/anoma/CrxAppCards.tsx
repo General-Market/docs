@@ -7,10 +7,11 @@ import { clamp } from "./AnomaComposition";
 // CRX in-app mock cards for the CRX-Anoma cut. Every card is drawn
 // in code from the app's own design tokens (app.crxfx.com globals):
 // Inter, teal #0fb6ab, Mercury-white surfaces, brass for the lock
-// moment, the app's own flag files. Mount windows, fade/blur curves
-// and the success-dot expansion are inherited frame-for-frame from
-// the measured Anoma reference so the choreography stays identical —
-// only the pictures now tell the CRX story.
+// moment, the app's own flag files. Mount windows and the master
+// fade/growth curves are inherited frame-for-frame from the measured
+// Anoma reference. Inside the cards the interface moves like a real
+// one — a cursor causes things, values roll rather than cut, and a
+// selection slides rather than teleports.
 // ═══════════════════════════════════════════════════════════════
 
 const { fontFamily: INTER } = loadInter("normal", {
@@ -41,7 +42,7 @@ const SLOT = { left: 504, top: 122, w: 710, h: 472 };
 
 const label: React.CSSProperties = {
   fontFamily: INTER,
-  fontSize: 11,
+  fontSize: 11.5,
   fontWeight: 600,
   letterSpacing: 1.1,
   color: TER,
@@ -68,6 +69,17 @@ const settle = (
 const fadeIn = (frame: number, start: number, dur = 3) =>
   interpolate(frame, [start, start + dur], [0, 1], clamp);
 
+const smooth = (t: number) => t * t * (3 - 2 * t);
+
+// Continuous index that walks a list of step frames, easing each hop.
+const stepSlide = (frame: number, steps: number[], dur = 4) => {
+  let v = 0;
+  for (const s of steps) {
+    v += smooth(interpolate(frame, [s, s + dur], [0, 1], clamp));
+  }
+  return v;
+};
+
 // ─── shared chrome ───
 
 const CrxMark: React.FC<{ size: number }> = ({ size }) => (
@@ -87,6 +99,21 @@ const CrxMark: React.FC<{ size: number }> = ({ size }) => (
   </svg>
 );
 
+// The USDC mark — dollar core plus the two broken arcs.
+const UsdcMark: React.FC<{ size: number }> = ({ size }) => (
+  <svg viewBox="0 0 32 32" width={size} height={size}>
+    <circle cx="16" cy="16" r="16" fill="#2775CA" />
+    <path
+      d="M20.5 18.6c0-2.1-1.3-2.9-3.9-3.3-1.9-.3-2.3-.8-2.3-1.7 0-.9.7-1.5 2-1.5 1.2 0 1.9.4 2.2 1.4.1.2.2.3.4.3h1c.2 0 .4-.2.4-.4v-.1c-.3-1.5-1.4-2.6-3-2.8V9c0-.2-.2-.4-.4-.4h-1c-.2 0-.4.2-.4.4v1.5c-1.9.3-3.1 1.5-3.1 3.1 0 2 1.2 2.8 3.8 3.2 1.8.3 2.4.7 2.4 1.7s-.9 1.7-2.2 1.7c-1.7 0-2.3-.7-2.5-1.7-.1-.2-.2-.3-.4-.3h-1.1c-.2 0-.4.2-.4.4v.1c.3 1.6 1.3 2.8 3.4 3.1V23c0 .2.2.4.4.4h1c.2 0 .4-.2.4-.4v-1.5c2-.3 3.3-1.6 3.3-3.3z"
+      fill="#fff"
+    />
+    <path
+      d="M13 24.4c-3.5-1.3-5.3-5.2-4-8.7.7-1.9 2.2-3.3 4-4 .2-.1.3-.2.3-.5v-.9c0-.2-.1-.4-.3-.4h-.1c-4.3 1.4-6.7 6-5.3 10.3.8 2.5 2.8 4.5 5.3 5.3.2.1.4 0 .4-.2l.1-.1v-.9c0-.2-.2-.4-.4-.5zm6.1-14.5c-.2-.1-.4 0-.4.2l-.1.1v.9c0 .2.2.4.4.5 3.5 1.3 5.3 5.2 4 8.7-.7 1.9-2.2 3.3-4 4-.2.1-.3.2-.3.5v.9c0 .2.1.4.3.4h.1c4.3-1.4 6.7-6 5.3-10.3-.8-2.6-2.8-4.6-5.3-5.4z"
+      fill="#fff"
+    />
+  </svg>
+);
+
 const Check: React.FC<{ size: number; color?: string; stroke?: number }> = ({
   size,
   color = "#fff",
@@ -103,6 +130,11 @@ const Check: React.FC<{ size: number; color?: string; stroke?: number }> = ({
     />
   </svg>
 );
+
+// Soft daylight elevation — the wave behind the cards is bright now,
+// so the shadow whispers instead of pooling.
+const CARD_SHADOW =
+  "0 14px 42px rgba(28, 28, 35, 0.18), 0 3px 12px rgba(28, 28, 35, 0.10)";
 
 const Card: React.FC<{
   x: number;
@@ -129,7 +161,7 @@ const Card: React.FC<{
         borderRadius: radius,
         backgroundColor: bg,
         border: `1px solid ${BORDER}`,
-        boxShadow: "0 24px 70px rgba(0,0,0,0.38), 0 4px 18px rgba(0,0,0,0.22)",
+        boxShadow: CARD_SHADOW,
         overflow: "hidden",
         fontFamily: INTER,
         color: INK,
@@ -171,6 +203,90 @@ const FlagPair: React.FC<{ a: string; b: string; size?: number }> = ({ a, b, siz
   </div>
 );
 
+// ─── cursor: the operator's hand ───
+// Piecewise keyframe path with smoothstep hops; clicks dip the arrow
+// and ring outward. Card-local coordinates.
+type CursorKey = { f: number; x: number; y: number };
+
+const cursorAt = (frame: number, keys: CursorKey[]) => {
+  if (frame <= keys[0].f) return { x: keys[0].x, y: keys[0].y };
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i];
+    const b = keys[i + 1];
+    if (frame <= b.f) {
+      const t = smooth((frame - a.f) / (b.f - a.f));
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+  }
+  const last = keys[keys.length - 1];
+  return { x: last.x, y: last.y };
+};
+
+const Cursor: React.FC<{
+  frame: number;
+  keys: CursorKey[];
+  clicks: number[];
+  appear: number;
+  vanish?: number;
+}> = ({ frame, keys, clicks, appear, vanish }) => {
+  if (frame < appear) return null;
+  if (vanish !== undefined && frame >= vanish) return null;
+  const { x, y } = cursorAt(frame, keys);
+  const op = fadeIn(frame, appear, 4);
+  // Click dip: quick 0.85 scale for 3 frames around each click. The
+  // ripple stays anchored where the click happened, not on the cursor.
+  let dip = 1;
+  const rings: { p: number; cx: number; cy: number }[] = [];
+  for (const c of clicks) {
+    if (frame >= c && frame < c + 3) dip = 0.85;
+    if (frame >= c && frame < c + 9) {
+      const at = cursorAt(c, keys);
+      rings.push({ p: (frame - c) / 9, cx: at.x, cy: at.y });
+    }
+  }
+  return (
+    <>
+      {rings.map((ring, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: ring.cx - 14 * ring.p - 3,
+            top: ring.cy - 14 * ring.p - 3,
+            width: 28 * ring.p + 6,
+            height: 28 * ring.p + 6,
+            borderRadius: "50%",
+            border: "1.6px solid rgba(30,30,42,0.30)",
+            opacity: 1 - ring.p,
+          }}
+        />
+      ))}
+      <svg
+        viewBox="0 0 14 20"
+        width={15}
+        height={21}
+        style={{
+          position: "absolute",
+          left: x - 1,
+          top: y - 1,
+          opacity: op,
+          transform: `scale(${dip})`,
+          transformOrigin: "2px 2px",
+          filter: "drop-shadow(0 1.5px 3px rgba(0,0,0,0.28))",
+        }}
+      >
+        <path
+          d="M1 1 L1 15.5 L4.6 12.2 L7.2 18.2 L9.9 17 L7.3 11.2 L12.2 10.8 Z"
+          fill="#1e1e2a"
+          stroke="#fff"
+          strokeWidth="1.3"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </>
+  );
+};
+
 // ─── Scene 3 (f128-207): portfolio overview under "Introducing CRX" ───
 // Fade/blur/bar curves lifted from the reference Scene3Dash.
 const S3_BARS = { h: [118, 94, 140, 128, 172], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
@@ -205,7 +321,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               color: AMBER,
               backgroundColor: "rgba(199,125,10,0.10)",
@@ -251,7 +367,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         ))}
 
-        <div style={{ position: "absolute", left: 372, top: 226, ...label }}>Hedged notional</div>
+        <div style={{ position: "absolute", left: 372, top: 200, ...label }}>Hedged notional</div>
         <div
           style={{
             position: "absolute",
@@ -286,7 +402,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
                   top: 412,
                   width: 34,
                   textAlign: "center",
-                  fontSize: 10.5,
+                  fontSize: 11,
                   color: TER,
                 }}
               >
@@ -301,21 +417,47 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ─── Scene 4 (f205-357): "Open a hedge" in three beats ───
-// A: the forward rate ticks live, then LOCKS (brass — the app reserves
-//    brass for the instant a rate becomes binding).
-// B: the corridor list opens; the highlight walks it; the pair follows.
-// C: tenor picks Jun 2027, the notional types itself, the CTA arms.
-const CORRIDORS: { a: string; b: string; pair: string; sub: string; rate: string }[] = [
-  { a: "us", b: "mx", pair: "USD/MXN", sub: "Dollars / Mexican pesos", rate: "17.5104" },
-  { a: "us", b: "in", pair: "USD/INR", sub: "Dollars / Indian rupees", rate: "84.212" },
-  { a: "us", b: "tr", pair: "USD/TRY", sub: "Dollars / Turkish lira", rate: "38.905" },
-  { a: "us", b: "br", pair: "USD/BRL", sub: "Dollars / Brazilian reais", rate: "5.4310" },
+// A: the forward rate ticks live (Indicative), then LOCKS at f240 —
+//    brass, because the app reserves brass for the binding moment.
+// B: the cursor opens the corridor list; the hover ring slides down
+//    the rows; the click selects USD/BRL and the card re-quotes.
+// C: the cursor sets tenor Jun 2027, focuses the notional, types
+//    2,500,000; the CTA arms and is clicked as the scene cuts.
+const CORRIDORS: { a: string; b: string; pair: string; sub: string; rate: string; spot: string }[] = [
+  { a: "us", b: "mx", pair: "USD/MXN", sub: "Dollars / Mexican pesos", rate: "17.5104", spot: "17.499" },
+  { a: "us", b: "in", pair: "USD/INR", sub: "Dollars / Indian rupees", rate: "84.212", spot: "84.155" },
+  { a: "us", b: "tr", pair: "USD/TRY", sub: "Dollars / Turkish lira", rate: "38.905", spot: "38.822" },
+  { a: "us", b: "br", pair: "USD/BRL", sub: "Dollars / Brazilian reais", rate: "5.4310", spot: "5.418" },
 ];
-const CORRIDOR_STEPS = [266, 276, 286, 296]; // highlight walk, one per row
+const SELECT_AT = 298; // the click that makes USD/BRL the pair
+const HOVER_STEPS = [276, 286, 296]; // hover ring hops after landing on row 0 at f266
 
 const RATE_TICKS = ["17.5081", "17.5104", "17.5092", "17.5110", "17.5087", "17.5104"];
+// Spot keeps breathing after the forward locks — the market moves,
+// the locked rate does not. Last-digit flicker, deterministic.
+const SPOT_FLICK = ["1", "3", "0", "4", "2", "5"];
 
 const NOTIONAL = "2,500,000";
+const TYPE_START = 326;
+const TYPE_END = TYPE_START + (NOTIONAL.length - 1) * 2; // f342
+
+const CURSOR_KEYS: CursorKey[] = [
+  { f: 250, x: 640, y: 452 },
+  { f: 260, x: 618, y: 224 }, // "Change ⌄" on the pair well
+  { f: 264, x: 618, y: 224 },
+  { f: 266, x: 420, y: 296 }, // row 0 (USD/MXN)
+  { f: 276, x: 420, y: 340 }, // row 1
+  { f: 286, x: 420, y: 384 }, // row 2
+  { f: 296, x: 420, y: 428 }, // row 3 (USD/BRL) — click selects
+  { f: 304, x: 470, y: 400 },
+  { f: 311, x: 170, y: 308 }, // tenor well
+  { f: 320, x: 170, y: 308 },
+  { f: 322, x: 150, y: 116 }, // notional field
+  { f: 328, x: 236, y: 148 }, // rest aside while it types
+  { f: 346, x: 355, y: 384 }, // CTA
+  { f: 357, x: 355, y: 384 },
+];
+const CURSOR_CLICKS = [262, 298, 313, 320, 324, 353];
 
 export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 205 || frame >= 358) return null;
@@ -323,42 +465,49 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   // Reference zoom beat f206-216 → scale settle.
   const scale = 1 + 0.045 * Math.pow(0.74, Math.max(0, frame - 206));
 
-  // Which corridor the pair well shows.
-  let corridor = 0;
-  for (let i = 0; i < CORRIDOR_STEPS.length; i++) {
-    if (frame >= CORRIDOR_STEPS[i]) corridor = i;
-  }
-  const cor = CORRIDORS[frame < CORRIDOR_STEPS[0] ? 0 : corridor];
-  const pairSwap = frame < CORRIDOR_STEPS[0] ? 1 : fadeIn(frame, CORRIDOR_STEPS[corridor], 2);
+  const cor = CORRIDORS[frame < SELECT_AT ? 0 : 3];
+  const reQuote = frame >= SELECT_AT ? settle(frame, SELECT_AT, 9, 0.74) : {};
 
-  // Beat A — rate ticks f219-239, locks at f240.
+  // Beat A — Indicative ticks f219-239, locks at f240.
   const locked = frame >= 240;
   const rate =
     frame < 219
       ? RATE_TICKS[0]
-      : locked || corridor > 0
-        ? cor.rate
-        : RATE_TICKS[Math.floor((frame - 219) / 4) % RATE_TICKS.length];
+      : frame < 240
+        ? RATE_TICKS[Math.floor((frame - 219) / 4) % RATE_TICKS.length]
+        : cor.rate;
   const lockPulse =
     interpolate(frame, [240, 243], [0, 1], clamp) * interpolate(frame, [252, 262], [1, 0], clamp);
 
-  // Beat B — corridor dropdown f264-308.
+  // Spot flicker: last digit changes every 5 frames, forever.
+  const spot = cor.spot + SPOT_FLICK[Math.floor(frame / 5) % SPOT_FLICK.length];
+
+  // Beat B — corridor dropdown f264-307.
   const panelIn = fadeIn(frame, 264, 3) * interpolate(frame, [303, 307], [1, 0], clamp);
   const panelOpen = frame >= 264 && frame < 308;
+  const hoverIdx = stepSlide(frame, HOVER_STEPS, 4); // 0→3, eased hops
+  const hoverOp = fadeIn(frame, 266, 3);
+  const selIdx = frame < SELECT_AT ? 0 : 3;
 
-  // Beat C — tenor swap f313/f322, notional types f326+, CTA arms f346.
+  // Beat C — tenor swaps f313/f321, notional types f326+, CTA arms f346.
   const tenor =
     frame < 313
       ? ["Aug 1, 2026", "30 days from today"]
-      : frame < 322
+      : frame < 321
         ? ["Sep 30, 2026", "90 days from today"]
         : ["Jun 30, 2027", "363 days from today"];
+  const tenorSwap = frame >= 313 ? settle(frame, frame < 321 ? 313 : 321, 8, 0.74) : {};
   const tenorFocus =
     interpolate(frame, [311, 314], [0, 1], clamp) * interpolate(frame, [330, 336], [1, 0], clamp);
-  const typedChars = frame < 326 ? 0 : Math.min(Math.floor((frame - 326) / 2) + 1, NOTIONAL.length);
-  const notionalTyped = NOTIONAL.slice(0, typedChars);
+  const focused = frame >= 324;
+  const typedChars =
+    frame < TYPE_START ? 0 : Math.min(Math.floor((frame - TYPE_START) / 2) + 1, NOTIONAL.length);
+  const typing = typedChars > 0 && typedChars < NOTIONAL.length;
+  // Caret blinks while idle-focused, holds solid while typing.
+  const caretOn = focused && (typing || Math.floor(frame / 8) % 2 === 0);
   const armed = frame >= 346;
-  const ctaPulse = 1 + 0.02 * Math.pow(0.7, Math.max(0, frame - 346));
+  const ctaSettle = armed ? settle(frame, 346, 6, 0.72) : {};
+  const ctaPressed = frame >= 353 && frame < 357;
 
   return (
     <Card
@@ -386,6 +535,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: WELL,
             borderRadius: 14,
             padding: "14px 18px",
+            boxShadow: focused && frame < TYPE_END + 8 ? `0 0 0 3px ${TEAL_RING}` : undefined,
           }}
         >
           <div style={label}>Forward notional</div>
@@ -400,9 +550,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 ...tnum,
               }}
             >
-              {typedChars > 0 ? notionalTyped : "0.0"}
-              {typedChars > 0 && typedChars < NOTIONAL.length && (
-                <span style={{ color: TEAL }}>|</span>
+              {typedChars > 0 ? NOTIONAL.slice(0, typedChars) : focused ? "" : "0.0"}
+              {caretOn && (
+                <span style={{ color: TEAL, fontWeight: 400, marginLeft: 1 }}>|</span>
               )}
             </div>
             <div
@@ -416,30 +566,14 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 padding: "6px 13px 6px 7px",
               }}
             >
-              <div
-                style={{
-                  width: 21,
-                  height: 21,
-                  borderRadius: 11,
-                  backgroundColor: "#2775CA",
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                $
-              </div>
+              <UsdcMark size={21} />
               <span style={{ fontSize: 13.5, fontWeight: 600 }}>USDC</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
             <span style={{ fontSize: 12, color: SEC, ...tnum }}>
-              Spot price {corridor === 3 ? "5.4188" : corridor === 0 ? "17.4991" : cor.rate}{" "}
-              {cor.pair.slice(4)}
+              Spot price {spot} {cor.pair.slice(4)}
             </span>
           </div>
         </div>
@@ -464,14 +598,13 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               alignItems: "center",
               justifyContent: "space-between",
               marginTop: 5,
-              opacity: pairSwap,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, ...reQuote }}>
               <FlagPair a={cor.a} b={cor.b} />
               <div>
                 <div style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.15 }}>{cor.pair}</div>
-                <div style={{ fontSize: 11.5, color: TER }}>{cor.sub}</div>
+                <div style={{ fontSize: 12, color: TER }}>{cor.sub}</div>
               </div>
             </div>
             <span style={{ fontSize: 13, color: SEC }}>Change ⌄</span>
@@ -493,10 +626,12 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         >
           <div style={label}>Tenor</div>
-          <div style={{ fontSize: 15.5, fontWeight: 600, marginTop: 5, lineHeight: 1.15, ...tnum }}>
-            {tenor[0]}
+          <div style={{ ...tenorSwap }}>
+            <div style={{ fontSize: 15.5, fontWeight: 600, marginTop: 5, lineHeight: 1.15, ...tnum }}>
+              {tenor[0]}
+            </div>
+            <div style={{ fontSize: 12, color: TER }}>{tenor[1]}</div>
           </div>
-          <div style={{ fontSize: 11.5, color: TER }}>{tenor[1]}</div>
         </div>
         <div
           style={{
@@ -513,23 +648,44 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         >
           <div style={label}>Forward rate</div>
-          <div style={{ fontSize: 15.5, fontWeight: 600, marginTop: 5, lineHeight: 1.15, ...tnum }}>
-            {rate}
+          <div style={{ ...(frame >= SELECT_AT ? reQuote : {}) }}>
+            <div style={{ fontSize: 15.5, fontWeight: 600, marginTop: 5, lineHeight: 1.15, ...tnum }}>
+              {rate}
+            </div>
+            <div style={{ fontSize: 12, color: TER }}>{cor.pair.slice(4)} per USD</div>
           </div>
-          <div style={{ fontSize: 11.5, color: TER }}>{cor.pair.slice(4)} per USD</div>
-          {frame >= 242 && (
+          {/* Indicative → Locked badge */}
+          {!locked ? (
             <div
               style={{
                 position: "absolute",
                 right: 14,
-                top: 24,
+                top: 11,
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: TER,
+                backgroundColor: "#fff",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 980,
+                padding: "3px 10px",
+                opacity: 0.75 + 0.25 * Math.sin(frame / 3),
+              }}
+            >
+              Indicative
+            </div>
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                right: 14,
+                top: 11,
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
                 backgroundColor: "rgba(192,138,46,0.12)",
                 borderRadius: 980,
                 padding: "4px 10px",
-                ...settle(frame, 242, 12, 0.74),
+                ...settle(frame, 240, 12, 0.74),
               }}
             >
               <svg viewBox="0 0 24 24" width={11} height={11}>
@@ -542,7 +698,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 />
                 <rect x="5" y="10" width="14" height="10" rx="2.4" fill={BRASS} />
               </svg>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: BRASS }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: BRASS }}>
                 Locked · firm 120s
               </span>
             </div>
@@ -558,17 +714,17 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 654,
             height: 52,
             borderRadius: 14,
-            backgroundColor: armed ? TEAL : "#a9e4de",
+            backgroundColor: armed ? (ctaPressed ? "#0c8a82" : TEAL) : "#a9e4de",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 15.5,
             fontWeight: 600,
             color: "#fff",
-            transform: `scale(${ctaPulse.toFixed(4)})`,
+            transform: ctaPressed ? "scale(0.988)" : undefined,
           }}
         >
-          {armed ? "Request quotes" : "Enter an amount"}
+          <span style={{ ...ctaSettle }}>{armed ? "Request quotes" : "Enter an amount"}</span>
         </div>
 
         <div
@@ -604,41 +760,60 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               transformOrigin: "center top",
             }}
           >
-            {CORRIDORS.map((c, i) => {
-              const active = corridor === i && frame >= CORRIDOR_STEPS[0];
-              return (
-                <div
-                  key={c.pair}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    height: 44,
-                    padding: "0 12px",
-                    borderRadius: 10,
-                    backgroundColor: active ? TEAL_SOFT : "transparent",
-                    boxShadow: active ? `inset 0 0 0 1.5px ${TEAL_RING}` : undefined,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                    <FlagPair a={c.a} b={c.b} size={19} />
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>{c.pair}</span>
-                    <span style={{ fontSize: 12, color: TER }}>{c.sub}</span>
-                  </div>
-                  {active && <Check size={16} color={TEAL} stroke={14} />}
+            {/* sliding hover ring */}
+            {hoverOp > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 8,
+                  top: 8 + 44 * hoverIdx,
+                  width: 638,
+                  height: 44,
+                  borderRadius: 10,
+                  backgroundColor: TEAL_SOFT,
+                  boxShadow: `inset 0 0 0 1.5px ${TEAL_RING}`,
+                  opacity: hoverOp,
+                }}
+              />
+            )}
+            {CORRIDORS.map((c, i) => (
+              <div
+                key={c.pair}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  height: 44,
+                  padding: "0 12px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                  <FlagPair a={c.a} b={c.b} size={20} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{c.pair}</span>
+                  <span style={{ fontSize: 12.5, color: TER }}>{c.sub}</span>
                 </div>
-              );
-            })}
+                {selIdx === i && <Check size={16} color={TEAL} stroke={14} />}
+              </div>
+            ))}
           </div>
         )}
+
+        <Cursor
+          frame={frame}
+          keys={CURSOR_KEYS}
+          clicks={CURSOR_CLICKS}
+          appear={250}
+        />
       </div>
     </Card>
   );
 };
 
 // ─── Scene 8 (f464-576): compliance onboarding under "Onboard in days" ───
-// Sub-states crossfade on the reference OB_CHAIN frames; the success
-// dot expands on the exact measured curve, teal instead of lime.
+// Sub-states crossfade on the reference OB_CHAIN frames; rows whose
+// KEY is new to a face drop in staggered; the success dot expands on
+// the measured curve, then floods the card and resolves to Verified.
 type ObRow = { k: string; v: string; state?: "pending" | "done" | "run" };
 
 const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
@@ -700,7 +875,13 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
 
 const OB_STEPS = ["Entity", "Verification", "Wallet"];
 
-const ObFace: React.FC<{ step: number; rows: ObRow[] }> = ({ step, rows }) => (
+const ObFace: React.FC<{
+  frame: number;
+  at: number;
+  step: number;
+  rows: ObRow[];
+  prevRows: ObRow[] | null;
+}> = ({ frame, at, step, rows, prevRows }) => (
   <div style={{ position: "absolute", inset: 0, padding: "26px 30px", backgroundColor: "#fff" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Compliance</span>
@@ -759,7 +940,7 @@ const ObFace: React.FC<{ step: number; rows: ObRow[] }> = ({ step, rows }) => (
             <div
               style={{
                 marginTop: 7,
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: active || done ? 600 : 500,
                 color: active || done ? INK : TER,
               }}
@@ -771,52 +952,57 @@ const ObFace: React.FC<{ step: number; rows: ObRow[] }> = ({ step, rows }) => (
       })}
     </div>
 
-    {/* rows */}
-    {rows.map((r, i) => (
-      <div
-        key={r.k}
-        style={{
-          position: "absolute",
-          left: 30,
-          top: 172 + i * 60,
-          width: 650,
-          height: 60,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderTop: `1px solid ${HAIR}`,
-        }}
-      >
-        <span style={{ fontSize: 14, color: SEC }}>{r.k}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {r.state === "done" && r.v !== "Received" && (
-            <div
+    {/* rows — a row whose key is new to this face drops in staggered */}
+    {rows.map((r, i) => {
+      const fresh = !prevRows || prevRows[i]?.k !== r.k;
+      const drop = fresh ? settle(frame, at + 1 + i * 2, 9, 0.76) : {};
+      return (
+        <div
+          key={r.k}
+          style={{
+            position: "absolute",
+            left: 30,
+            top: 172 + i * 60,
+            width: 650,
+            height: 60,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: `1px solid ${HAIR}`,
+            ...drop,
+          }}
+        >
+          <span style={{ fontSize: 14, color: SEC }}>{r.k}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {r.state === "done" && r.v !== "Received" && (
+              <div
+                style={{
+                  width: 17,
+                  height: 17,
+                  borderRadius: 9,
+                  backgroundColor: SUCCESS,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Check size={10} stroke={18} />
+              </div>
+            )}
+            <span
               style={{
-                width: 17,
-                height: 17,
-                borderRadius: 9,
-                backgroundColor: SUCCESS,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                fontSize: 14,
+                fontWeight: r.state === "pending" ? 400 : 500,
+                color: r.state === "pending" ? TER : r.state === "run" ? SEC : INK,
+                ...tnum,
               }}
             >
-              <Check size={10} stroke={18} />
-            </div>
-          )}
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: r.state === "pending" ? 400 : 500,
-              color: r.state === "pending" ? TER : r.state === "run" ? SEC : INK,
-              ...tnum,
-            }}
-          >
-            {r.v}
-          </span>
+              {r.v}
+            </span>
+          </div>
         </div>
-      </div>
-    ))}
+      );
+    })}
 
     <div style={{ position: "absolute", left: 30, bottom: 22, fontSize: 12, color: TER }}>
       Onboard once — trade with every dealer on the network.
@@ -828,26 +1014,31 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 464 || frame >= 577) return null;
   const cardOpacity = interpolate(frame, [571, 576], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
-  // Success dot: the reference expansion curve, teal.
+  // Success dot: the measured curve to f551, then a full flood — the
+  // teal fills the card and the Verified face resolves out of it.
   const dotD = interpolate(
     frame,
-    [541, 544, 547, 551, 552, 553, 554, 555, 556],
-    [12, 44, 42, 42, 114, 168, 241, 260, 266],
+    [541, 544, 547, 551, 553, 556],
+    [12, 44, 42, 42, 420, 950],
     clamp,
   );
-  const dotR = frame < 551 ? dotD / 2 : interpolate(frame, [551, 556], [dotD / 2, 16], clamp);
-  const successOp = interpolate(frame, [552, 556], [0, 1], clamp);
+  const successOp = interpolate(frame, [554, 559], [0, 1], clamp);
   return (
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h + 5} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
         const op = fadeIn(frame, at, 3);
         if (op <= 0) return null;
-        // Only render the topmost fully-visible face plus the one fading in.
         const next = OB_STATES[i + 1];
         if (next && frame >= next.at + 3) return null;
         return (
           <div key={at} style={{ position: "absolute", inset: 0, opacity: op }}>
-            <ObFace step={step} rows={rows} />
+            <ObFace
+              frame={frame}
+              at={at}
+              step={step}
+              rows={rows}
+              prevRows={i > 0 ? OB_STATES[i - 1].rows : null}
+            />
           </div>
         );
       })}
@@ -859,7 +1050,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
             top: 257 - dotD / 2,
             width: dotD,
             height: dotD,
-            borderRadius: dotR,
+            borderRadius: "50%",
             backgroundColor: TEAL,
           }}
         />
@@ -917,21 +1108,23 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ─── Scene 9 (f571-665): RFQ — quotes from multiple dealers ───
-// Reference beats kept: A skeleton f571 → B rates land f584 (hard) →
-// best-rate highlight f594. The card continues the story: USD/BRL,
-// $2.5M, Jun 30 2027 — exactly what scene 4 configured.
+// Skeleton rows shimmer; rates ROLL in staggered (f584/588/592) with
+// tabular digits; the best rate is ringed at f606 once all three are
+// on the table. The card continues scene 4's trade: USD/BRL, $2.5M,
+// Jun 30 2027.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: "5.4335" },
-  { name: "Dealer 2", sub: "Global FX desk", rate: "5.4298" },
-  { name: "Dealer 3", sub: "Regional specialist", rate: "5.4319" },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584 },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 588 },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 592 },
 ];
 const BEST = 1;
+const HIGHLIGHT_AT = 606;
 
 export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 571 || frame >= 666) return null;
   const rated = frame >= 584;
-  const highlighted = frame >= 594;
-  const countdown = rated ? Math.max(120 - Math.floor((frame - 584) / 30), 117) : 120;
+  const highlighted = frame >= HIGHLIGHT_AT;
+  const countdown = rated ? 120 - Math.floor((frame - 584) / 30) : 120;
   return (
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w + 1} h={SLOT.h} opacity={1}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
@@ -941,7 +1134,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
           </span>
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 600,
               color: rated ? BRASS : TER,
               backgroundColor: rated ? "rgba(192,138,46,0.12)" : WELL,
@@ -957,7 +1150,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           {[
             <span key="p" style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <FlagPair a="us" b="br" size={16} />
+              <FlagPair a="us" b="br" size={19} />
               <span>USD/BRL</span>
             </span>,
             <span key="n">$2,500,000</span>,
@@ -984,8 +1177,14 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
 
         {DEALERS.map((d, i) => {
           const isBest = i === BEST;
-          const dim = highlighted && !isBest ? 0.55 : 1;
+          const dimT = highlighted && !isBest ? fadeIn(frame, HIGHLIGHT_AT, 4) : 0;
+          const dim = 1 - 0.45 * dimT;
           const shimmer = 0.5 + 0.16 * Math.sin((frame + i * 9) / 3.2);
+          const landed = frame >= d.lands;
+          // Rate rolls up to its value over 9 frames, tabular digits.
+          const rollT = smooth(interpolate(frame, [d.lands, d.lands + 9], [0, 1], clamp));
+          const shown = (d.rate - 0.0165 * (1 - rollT)).toFixed(4);
+          const ringOp = highlighted && isBest ? fadeIn(frame, HIGHLIGHT_AT, 4) : 0;
           return (
             <div
               key={d.name}
@@ -996,8 +1195,8 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 width: 651,
                 height: 72,
                 borderRadius: 14,
-                backgroundColor: highlighted && isBest ? TEAL_SOFT : WELL,
-                boxShadow: highlighted && isBest ? `inset 0 0 0 2px ${TEAL}` : undefined,
+                backgroundColor: ringOp > 0 ? TEAL_SOFT : WELL,
+                boxShadow: ringOp > 0 ? `inset 0 0 0 2px rgba(15,182,171,${ringOp.toFixed(2)})` : undefined,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -1024,31 +1223,31 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 </div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{d.name}</div>
-                  <div style={{ fontSize: 12, color: TER }}>{d.sub}</div>
+                  <div style={{ fontSize: 12.5, color: TER }}>{d.sub}</div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {highlighted && isBest && (
                   <div
                     style={{
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: 600,
                       color: "#fff",
                       backgroundColor: TEAL,
                       borderRadius: 980,
                       padding: "4px 11px",
-                      ...settle(frame, 594, 10, 0.74),
+                      ...settle(frame, HIGHLIGHT_AT, 10, 0.74),
                     }}
                   >
                     Best rate
                   </div>
                 )}
-                {rated ? (
-                  <div style={{ textAlign: "right" }}>
+                {landed ? (
+                  <div style={{ textAlign: "right", opacity: fadeIn(frame, d.lands, 4) }}>
                     <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.3, ...tnum }}>
-                      {d.rate}
+                      {shown}
                     </div>
-                    <div style={{ fontSize: 11.5, color: TER }}>BRL per USD</div>
+                    <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
                   </div>
                 ) : (
                   <div
@@ -1076,13 +1275,15 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
 
 // ─── Scene 10 (f641-722): compliance checklist under "Comply with confidence" ───
 // Crossfades over the RFQ card on the reference curve; checks tick in
-// across the reference bar-growth window.
+// across the reference bar-growth window; the All-clear pill is the
+// conclusion and arrives only after the last check.
 const COMPLY_ROWS = [
   { at: 665, k: "KYB", v: "Verified" },
   { at: 679, k: "Sanctions screening", v: "Clear — 0 hits" },
   { at: 693, k: "Travel rule", v: "Enabled" },
   { at: 706, k: "Audit export", v: "CSV · PDF ready" },
 ];
+const ALL_CLEAR_AT = 712;
 
 export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 641 || frame >= 723) return null;
@@ -1094,22 +1295,25 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Compliance</span>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 11.5,
-              fontWeight: 600,
-              color: SUCCESS,
-              backgroundColor: "rgba(14,122,74,0.10)",
-              borderRadius: 980,
-              padding: "4px 11px",
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: SUCCESS }} />
-            All clear
-          </div>
+          {frame >= ALL_CLEAR_AT && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                color: SUCCESS,
+                backgroundColor: "rgba(14,122,74,0.10)",
+                borderRadius: 980,
+                padding: "4px 11px",
+                ...settle(frame, ALL_CLEAR_AT, 10, 0.74),
+              }}
+            >
+              <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: SUCCESS }} />
+              All clear
+            </div>
+          )}
         </div>
 
         {COMPLY_ROWS.map(({ at, k, v }, i) => {
@@ -1163,8 +1367,10 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ─── Scene 12 (f769-848): the app, full width, under "CRX Sandbox is Live." ───
-// Amber sandbox banner + nav + portfolio. Bars grow on the reference
-// curve; the Portfolio tab pill lands on the reference pill beat.
+// Amber sandbox banner + nav + portfolio, AFTER the story's trade:
+// margin in use reflects the $2.5M hedge, and the positions list
+// carries it. Bars grow on the reference curve; the Portfolio tab
+// pill lands on the reference pill beat.
 const S12 = { left: 83, top: 291, w: 1114, h: 429 };
 const S12_BARS = { h: [72, 55, 84, 78, 106], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
 const S12_TABS = ["Swap", "Transfer", "Portfolio", "Compliance"];
@@ -1200,7 +1406,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 11.5,
+          fontSize: 12,
           fontWeight: 500,
           color: "#fff",
         }}
@@ -1234,7 +1440,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                 key={t}
                 style={{
                   position: "relative",
-                  fontSize: 13,
+                  fontSize: 13.5,
                   fontWeight: active ? 600 : 500,
                   color: active ? INK : SEC,
                   padding: "6px 13px",
@@ -1271,7 +1477,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         </div>
       </div>
 
-      {/* balance card */}
+      {/* balance card — margin reflects the hedge opened in scene 4 */}
       <div
         style={{
           position: "absolute",
@@ -1293,9 +1499,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           +$1,550 unrealized
         </div>
         {[
-          ["Available", "$12,180.00"],
-          ["Margin in use", "$8,260.00"],
-          ["Margin ratio", "22%"],
+          ["Available", "$9,930.00"],
+          ["Margin in use", "$10,510.00"],
+          ["Margin ratio", "35%"],
         ].map(([k, v], i) => (
           <div
             key={k}
@@ -1359,7 +1565,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                   top: 254,
                   width: 36,
                   textAlign: "center",
-                  fontSize: 10.5,
+                  fontSize: 11,
                   color: TER,
                 }}
               >
@@ -1403,11 +1609,11 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <FlagPair a={pos.a} b={pos.b} size={17} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{pos.pair}</span>
+                  <FlagPair a={pos.a} b={pos.b} size={19} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{pos.pair}</span>
                   <span
                     style={{
-                      fontSize: 10.5,
+                      fontSize: 11.5,
                       fontWeight: 600,
                       color: pos.side === "Long" ? SUCCESS : SEC,
                       backgroundColor: pos.side === "Long" ? "rgba(14,122,74,0.10)" : WELL,
@@ -1418,7 +1624,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                     {pos.side}
                   </span>
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: SUCCESS, ...tnum }}>
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: SUCCESS, ...tnum }}>
                   {pos.pnl}
                 </span>
               </div>
@@ -1430,9 +1636,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                   marginTop: 10,
                 }}
               >
-                <span style={{ fontSize: 12, color: TER, ...tnum }}>{pos.notional} notional</span>
+                <span style={{ fontSize: 12.5, color: TER, ...tnum }}>{pos.notional} notional</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ fontSize: 11, color: TEAL, fontWeight: 600 }}>Healthy</span>
+                  <span style={{ fontSize: 11.5, color: TEAL, fontWeight: 600 }}>Healthy</span>
                   <div style={{ width: 56, height: 5, borderRadius: 3, backgroundColor: "#e4e5ea" }}>
                     <div
                       style={{
