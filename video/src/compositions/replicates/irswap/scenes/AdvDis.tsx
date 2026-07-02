@@ -11,7 +11,7 @@ import { FloorPaper, PAPER_CAM } from "./floorPaper";
 
 const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
   subsets: ["latin"],
-  weights: ["400", "600"],
+  weights: ["300", "400"],
 });
 
 const F0 = 4131;
@@ -38,7 +38,7 @@ const Line: React.FC<{
       style={{
         position: "absolute", left: cx, top: cy,
         transform: `translate(-50%,-50%) scaleX(${scaleX})`,
-        fontFamily: FONT, fontWeight: 400, fontSize: size, color: "#666666",
+        fontFamily: FONT, fontWeight: 300, fontSize: size, color: "#5A5A5A", letterSpacing: "0.5px",
         whiteSpace: "nowrap", opacity, lineHeight: 1,
         filter: blur > 0 ? `blur(${blur}px)` : undefined,
       }}
@@ -58,16 +58,17 @@ export const AdvDis: React.FC = () => {
   const dy = 0.03 * (frame - 4200);
   const out = 1 - fade(frame, 4244, 4266);
 
-  // line 1: tracking-in (w 0.24→1 by 4145) + fade (→4148) + blur 4140-4142
+  // line 1: tracking-in (w 0.24→1 by 4145) + slow fade (ref is still pale
+  // at 4150) + blur 4140-4142
   const sx = 0.24 + 0.76 * easeOutPow(fade(frame, 4140, 4145), 2);
-  const o1 = fade(frame, 4140, 4148) * out;
+  const o1 = fade(frame, 4141, 4157) * out;
   const b1 = 2.5 * (1 - fade(frame, 4140, 4142));
   const o2 = fade(frame, 4148, 4162) * out;
   const o3 = fade(frame, 4162, 4173) * out;
 
   return (
     <AbsoluteFill>
-      <Vignette />
+      <Vignette variant="room" />
       <Room>
         <CameraRig position={PAPER_CAM} />
         <FloorPaper frame={frame} />

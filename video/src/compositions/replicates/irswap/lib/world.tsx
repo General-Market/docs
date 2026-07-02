@@ -131,16 +131,24 @@ export const unprojToFloor = (
 
 // Measured (f1690): flat #FDFDFD plateau over the central ~75%, elliptical
 // rolloff to #DADADA floor; ellipse center displaced below frame center.
-export const Vignette: React.FC<{ opacity?: number; soft?: boolean }> = ({
-  opacity = 1,
-  soft = false,
-}) => (
+const VIGNETTES = {
+  // title/chart rooms (measured f1690)
+  default:
+    "radial-gradient(620px 400px at 50% 64%, #FDFDFD 0%, #FDFDFD 56%, #ECECEB 66%, #DADADA 78%, #DADADA 100%)",
+  // buildings-map scenes: near-uniform light sheet, mild corners
+  soft: "radial-gradient(760px 480px at 50% 58%, #FCFCFB 0%, #FCFCFB 50%, #F1F1EF 75%, #E9E9E7 100%)",
+  // advDis/slot room: shaded top+bottom edges, light sides (measured 4150-4600)
+  room: "radial-gradient(1400px 340px at 50% 50%, #FDFDFD 0%, #FBFBFB 40%, #E9E9E9 75%, #DADADA 100%)",
+} as const;
+
+export const Vignette: React.FC<{
+  opacity?: number;
+  soft?: boolean;
+  variant?: keyof typeof VIGNETTES;
+}> = ({ opacity = 1, soft = false, variant }) => (
   <AbsoluteFill
     style={{
-      background: soft
-        ? // buildings-map scenes: near-uniform light sheet, mild corners
-          "radial-gradient(760px 480px at 50% 58%, #FCFCFB 0%, #FCFCFB 50%, #F1F1EF 75%, #E9E9E7 100%)"
-        : "radial-gradient(620px 400px at 50% 64%, #FDFDFD 0%, #FDFDFD 56%, #ECECEB 66%, #DADADA 78%, #DADADA 100%)",
+      background: VIGNETTES[variant ?? (soft ? "soft" : "default")],
       opacity,
     }}
   />
@@ -157,7 +165,8 @@ export const CanvasPlane: React.FC<{
   rotation?: [number, number, number];
   draw: (ctx: CanvasRenderingContext2D, frame: number, w: number, h: number) => void;
   renderOrder?: number;
-}> = ({ frame, width, height, res = 2, position, rotation = [0, 0, 0], draw, renderOrder = 0 }) => {
+  depthTest?: boolean;
+}> = ({ frame, width, height, res = 2, position, rotation = [0, 0, 0], draw, renderOrder = 0, depthTest = true }) => {
   const cw = Math.round(width * res);
   const ch = Math.round(height * res);
   const canvas = useMemo(() => {
@@ -184,28 +193,34 @@ export const CanvasPlane: React.FC<{
   return (
     <mesh position={position} rotation={rotation} renderOrder={renderOrder}>
       <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} depthTest={depthTest} toneMapped={false} />
     </mesh>
   );
 };
 
-// Camera rig: translation camera; optional pitch (rotX<0 looks down).
-export const CameraRig: React.FC<{ position: V3; rotX?: number }> = ({
-  position,
-  rotX = 0,
-}) => {
-  return <CameraSetter position={position} rotX={rotX} />;
+// Camera rig: translation camera; optional pitch (rotX<0 looks down),
+// yaw (rotY) and roll (rotZ). Euler order YXZ = yaw, then pitch, then roll.
+export const CameraRig: React.FC<{
+  position: V3;
+  rotX?: number;
+  rotY?: number;
+  rotZ?: number;
+}> = ({ position, rotX = 0, rotY = 0, rotZ = 0 }) => {
+  return <CameraSetter position={position} rotX={rotX} rotY={rotY} rotZ={rotZ} />;
 };
 
 // Needs to live inside the Canvas tree.
 import { useThree } from "@react-three/fiber";
-const CameraSetter: React.FC<{ position: V3; rotX: number }> = ({ position, rotX }) => {
+const CameraSetter: React.FC<{ position: V3; rotX: number; rotY: number; rotZ: number }> = ({
+  position, rotX, rotY, rotZ,
+}) => {
   const camera = useThree((s) => s.camera);
   useLayoutEffect(() => {
     camera.position.set(position[0], position[1], position[2]);
-    camera.rotation.set(rotX, 0, 0);
+    camera.rotation.order = "YXZ";
+    camera.rotation.set(rotX, rotY, rotZ);
     camera.updateMatrixWorld();
-  }, [camera, position, rotX]);
+  }, [camera, position, rotX, rotY, rotZ]);
   return null;
 };
 

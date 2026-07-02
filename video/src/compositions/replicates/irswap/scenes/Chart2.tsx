@@ -85,12 +85,18 @@ const T_P1: Row3[] = [
   [3675, 236, 224], [3690, 238, 224], [3705, 240, 225], [3720, 238, 222], [3735, 216, 205],
   [3750, 172, 177], [3765, 160, 169], [3780, 157, 167], [3795, 154, 166], [3810, 151, 164],
   [3825, 148, 162], [3840, 145, 160], [3855, 141, 157], [3870, 137, 155], [3885, 134, 153],
-  [3900, 41, 185], [4080, 11, 305], [4095, 78, 259], [4110, 206, 239],
+  // dense whip tracking 3888-3912 (re-measured; anchored to the 3900 row)
+  [3888, 133, 152], [3891, 132, 152], [3894, 118, 157], [3897, 88, 169],
+  [3900, 41, 185], [3903, -21, 206], [3906, -97, 232], [3909, -170, 262],
+  [3912, -276, 296], [4080, 11, 305], [4095, 78, 259], [4110, 206, 239],
 ];
 const T_CROSS: Row3[] = [
   [3735, 483, 222], [3750, 592, 200], [3765, 623, 197], [3780, 628, 193], [3795, 632, 191],
   [3810, 643, 193], [3825, 646, 188], [3840, 657, 190], [3855, 665, 188], [3870, 670, 182],
-  [3885, 678, 180], [3900, 591, 214], [3915, 304, 328], [3925, 174, 393],
+  [3885, 678, 180],
+  [3888, 684, 184], [3891, 685, 184], [3894, 667, 189], [3897, 635, 199],
+  [3900, 591, 214], [3903, 538, 233], [3906, 483, 255], [3909, 425, 280],
+  [3912, 367, 306], [3915, 304, 328], [3925, 174, 393],
 ];
 const T_P2: Row3[] = [
   [3645, 604, 137], [3660, 602, 137], [3675, 599, 139], [3690, 597, 140], [3705, 596, 139],
@@ -103,7 +109,10 @@ const T_P3X: [number, number][] = [
   [3600, 420], [3615, 420], [3630, 420], [3645, 420], [3660, 420], [3675, 420], [3690, 420],
   [3705, 420], [3720, 421], [3735, 481.6], [3750, 589.9], [3765, 616.1], [3780, 622.2],
   [3795, 628.6], [3810, 635.4], [3825, 642.4], [3840, 649.3], [3855, 656.8], [3870, 664.6],
-  [3885, 672.4], [3900, 586.1], [3915, 304.1], [3925, 173.7],
+  [3885, 672.4],
+  [3888, 674.6], [3891, 674.6], [3894, 659.1], [3897, 628.1],
+  [3900, 586.1], [3903, 536.1], [3906, 480.1], [3909, 421.1], [3912, 361.1],
+  [3915, 304.1], [3925, 173.7],
   [3930, 164], [3945, 164], [3960, 160], [3975, 156], [3990, 152], [4005, 152], [4020, 148],
   [4035, 148], [4050, 148], [4065, 200], [4080, 288], [4095, 350], [4110, 420],
 ];
@@ -115,6 +124,8 @@ const solveKeys = (): { f: number; cam: V3 }[] => {
   const frames: number[] = [];
   for (let f = 3600; f <= 4110; f += 15) frames.push(f);
   frames.push(3925);
+  // dense whip keys (the 15-frame grid lagged the fast 3888-3912 move)
+  for (let f = 3888; f <= 3912; f += 3) if (!frames.includes(f)) frames.push(f);
   frames.sort((a, b) => a - b);
   const find = (rows: Row3[], f: number): Pt | null => {
     const r = rows.find((x) => x[0] === f);
@@ -318,8 +329,8 @@ const FloorSet: React.FC = () => {
     quad([[337, 317], [454, 328], [353, 406], [195, 381]], "#FCFCFB", "#CFCFCC");
     quad([[454, 328], [589, 342], [555, 438], [353, 406]], "#FCFCFB", "#CFCFCC");
     // rect cluster on left sheet
-    quad([[339, 321], [368, 325], [343, 338], [312, 334]], "#B4B4B4", null);
-    quad([[377, 324], [407, 328], [393, 336], [363, 332]], "#C6C6C6", null);
+    quad([[339, 321], [368, 325], [343, 338], [312, 334]], "#D1D1D1", null);
+    quad([[377, 324], [407, 328], [393, 336], [363, 332]], "#D8D8D8", null);
     quad([[404, 328], [437, 330], [431, 337], [398, 336]], "#CCE4EC", null);
     quad([[355, 334], [423, 341], [420, 347], [352, 340]], "#D8EAEE", null);
     quad([[240, 369], [273, 374], [263, 384], [218, 378]], "#BFE0E4", null);
@@ -380,10 +391,19 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
     if (gT > 0) {
       for (let i = 0; i < GRID_S.length; i++) {
         ctx.strokeStyle = i % 2 === 0 ? C.gridA : C.gridB;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
         ctx.moveTo(mS(GRID_S[i]), mY(GRID_TOP_Y));
         ctx.lineTo(mS(GRID_S[i]), mY(GRID_TOP_Y - (GRID_TOP_Y - GRID_BOT_Y) * gT));
+        ctx.stroke();
+      }
+      // skirting: wall/floor junction line at the grid base
+      if (gT >= 1) {
+        ctx.strokeStyle = "#E0E0DF";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
+        ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
         ctx.stroke();
       }
     }
@@ -440,11 +460,12 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.stroke();
     }
     // green dashed vertical (draw 3586-3610 top→bottom)
+    // ref pattern: dash longer than gap, thin stroke
     const dT = fade(f, 3586, 3610);
     if (dT > 0) {
       ctx.strokeStyle = C.dash;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([3.5, 7]);
+      ctx.lineWidth = 1.3;
+      ctx.setLineDash([5.2, 3.2]);
       ctx.beginPath();
       ctx.moveTo(mS(DASH_T[0]), mY(DASH_T[1]));
       const yEnd = DASH_T[1] + (DASH_B[1] - DASH_T[1]) * dT;
@@ -452,16 +473,25 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.stroke();
       ctx.setLineDash([]);
     }
-    // base-rate curve (draw 3599-3639 ease-out along arc)
+    // base-rate curve (draw 3599-3639 ease-out along arc) — smoothed
+    // through midpoints (the raw polyline kinked at every sample)
     const cT = easeOutPow(fade(f, 3599, 3639), 1.8);
     if (cT > 0) {
       const pts = polyUpToArc(CURVE, CURVE_ARC.cum, CURVE_ARC.total * cT);
       if (pts.length >= 2) {
         ctx.strokeStyle = C.curve;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.2;
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
-        poly(pts);
+        ctx.beginPath();
+        ctx.moveTo(mS(pts[0][0]), mY(pts[0][1]));
+        for (let i = 1; i < pts.length - 1; i++) {
+          const xc = (mS(pts[i][0]) + mS(pts[i + 1][0])) / 2;
+          const yc = (mY(pts[i][1]) + mY(pts[i + 1][1])) / 2;
+          ctx.quadraticCurveTo(mS(pts[i][0]), mY(pts[i][1]), xc, yc);
+        }
+        const last = pts[pts.length - 1];
+        ctx.lineTo(mS(last[0]), mY(last[1]));
         ctx.stroke();
       }
     }
@@ -486,8 +516,8 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.restore();
       ctx.restore();
     };
-    typeIn("Fixed rate", LBL_FIX, C.lblFix, 12, 3584, 3592);
-    typeIn("Base rate", LBL_BASE, C.lblBase, 12, 3584, 3590, 700);
+    typeIn("Fixed rate", [LBL_FIX[0] + 5, LBL_FIX[1] + 2], C.lblFix, 14, 3584, 3592);
+    typeIn("Base rate", [LBL_BASE[0] + 5, LBL_BASE[1] + 2], C.lblBase, 14, 3584, 3590, 700);
     // badges on the chart (pop with overshoot)
     const badge = (
       bd: { s: number; y: number; w: number; h: number },
