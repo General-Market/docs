@@ -195,13 +195,15 @@ const SPRITES: { key: string; src: string; def: ReturnType<typeof spriteWorld>; 
     bbox: [number, number, number, number], z: number,
     appear: [number, number], drop = 0, order = 2,
   ) => ({ key, src, def: spriteWorld({ src, srcFrame, bbox, z, appear }), appear, drop, order });
+  // all bboxes measured at ref frame 2505 (identity camera, yaw≈0) — the
+  // only pose where worldization is exact.
   return [
-    mk("company", "irswap-assets/company-house.png", 3220, [161, 286, 293, 422], zC, [1706, 1730], 26, 3),
-    mk("lender", "irswap-assets/lender-building.png", 2895, [144, 318, 309, 459], zL, [1733, 1755], 24, 4),
-    mk("bank", "irswap-assets/bank-building.png", 3225, [491, 289, 639, 424], zB, [2274, 2312], 18, 3),
+    mk("company", "irswap-assets/company-house.png", 2505, [334, 282, 415, 390], zC, [1706, 1730], 26, 3),
+    mk("lender", "irswap-assets/lender-building.png", 2505, [160, 295, 305, 425], zL, [1733, 1755], 24, 4),
+    mk("bank", "irswap-assets/bank-building.png", 2505, [545, 290, 670, 390], zB, [2274, 2312], 18, 3),
     mk("plq-lender", "irswap-assets/plaque-lender.png", 2505, [258, 385, 360, 435], zL, [1753, 1790], 0, 5),
-    mk("plq-company", "irswap-assets/plaque-company.png", 3220, [205, 395, 384, 467], zC, [1753, 1790], 0, 5),
-    mk("plq-bank", "irswap-assets/plaque-bank.png", 3450, [478, 390, 654, 437], zB, [2288, 2305], 0, 5),
+    mk("plq-company", "irswap-assets/plaque-company.png", 2505, [356, 358, 464, 390], zC, [1753, 1790], 0, 5),
+    mk("plq-bank", "irswap-assets/plaque-bank.png", 2505, [525, 390, 663, 420], zB, [2288, 2305], 0, 5),
   ];
 })();
 
@@ -401,7 +403,7 @@ const RateValue: React.FC<{
 }> = ({ p, size, opacity, value, scale = 1 }) => (
   <Txt p={p} size={size} color={BCOLORS.value} weight={600} opacity={opacity} scale={scale}>
     {value}
-    <span style={{ fontSize: size * 0.65, fontWeight: 400 }}>%</span>
+    <span style={{ fontSize: size * 0.78, fontWeight: 400 }}>{" "}%</span>
   </Txt>
 );
 
@@ -499,7 +501,7 @@ export const Buildings: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <Vignette />
+      <Vignette soft />
       <Room>
         <CameraRig position={cam} />
         <FloorMap frame={frame} g={g} />
@@ -581,7 +583,7 @@ export const Buildings: React.FC = () => {
         <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
         <RateValue p={rE(ANCHOR_3450.l3)} size={30} opacity={ncOp} value="2.0" />
       </AbsoluteFill>
-      {endFade > 0 && <Vignette opacity={endFade} />}
+      {endFade > 0 && <Vignette soft opacity={endFade} />}
     </AbsoluteFill>
   );
 };

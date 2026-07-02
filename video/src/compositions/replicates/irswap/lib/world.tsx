@@ -131,11 +131,16 @@ export const unprojToFloor = (
 
 // Measured (f1690): flat #FDFDFD plateau over the central ~75%, elliptical
 // rolloff to #DADADA floor; ellipse center displaced below frame center.
-export const Vignette: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => (
+export const Vignette: React.FC<{ opacity?: number; soft?: boolean }> = ({
+  opacity = 1,
+  soft = false,
+}) => (
   <AbsoluteFill
     style={{
-      background:
-        "radial-gradient(620px 400px at 50% 64%, #FDFDFD 0%, #FDFDFD 56%, #ECECEB 66%, #DADADA 78%, #DADADA 100%)",
+      background: soft
+        ? // buildings-map scenes: near-uniform light sheet, mild corners
+          "radial-gradient(760px 480px at 50% 58%, #FCFCFB 0%, #FCFCFB 50%, #F1F1EF 75%, #E9E9E7 100%)"
+        : "radial-gradient(620px 400px at 50% 64%, #FDFDFD 0%, #FDFDFD 56%, #ECECEB 66%, #DADADA 78%, #DADADA 100%)",
       opacity,
     }}
   />
