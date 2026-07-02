@@ -189,20 +189,23 @@ export const CanvasPlane: React.FC<{
   );
 };
 
-// Camera rig: pure-translation camera (orientation locked to -z).
-export const CameraRig: React.FC<{ position: V3 }> = ({ position }) => {
-  return <CameraSetter position={position} />;
+// Camera rig: translation camera; optional pitch (rotX<0 looks down).
+export const CameraRig: React.FC<{ position: V3; rotX?: number }> = ({
+  position,
+  rotX = 0,
+}) => {
+  return <CameraSetter position={position} rotX={rotX} />;
 };
 
 // Needs to live inside the Canvas tree.
 import { useThree } from "@react-three/fiber";
-const CameraSetter: React.FC<{ position: V3 }> = ({ position }) => {
+const CameraSetter: React.FC<{ position: V3; rotX: number }> = ({ position, rotX }) => {
   const camera = useThree((s) => s.camera);
   useLayoutEffect(() => {
     camera.position.set(position[0], position[1], position[2]);
-    camera.rotation.set(0, 0, 0);
+    camera.rotation.set(rotX, 0, 0);
     camera.updateMatrixWorld();
-  }, [camera, position]);
+  }, [camera, position, rotX]);
   return null;
 };
 
