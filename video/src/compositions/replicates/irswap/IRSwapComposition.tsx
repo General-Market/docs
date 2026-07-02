@@ -1,11 +1,43 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
+import { ChartRoom } from "./scenes/ChartRoom";
+import { Buildings } from "./scenes/Buildings";
+import { Vignette } from "./lib/world";
 
 export const FPS = 25;
 export const DURATION = 5433; // 217.32s — matches reference irswap-original.mp4 (25fps/5433f)
 
+// Scene frame ranges (reference frame N = composition frame N)
+const RANGES = {
+  chartRoom: [0, 1705], // title card + 3-chapter chart room
+  buildings: [1705, 3588], // S05-S09 lender/company/bank map
+  chart2: [3588, 4138], // S10 settlement chart room
+  advDis: [4138, 4263], // S11 "Advantages & Disadvantages"
+  slot: [4263, 4663], // S12 rate slot-machine
+  community: [4663, 5276], // S13-S14 community map + cube + break-up
+  outro: [5276, 5433], // S15 credits card
+} as const;
+
+const Placeholder: React.FC = () => <Vignette />;
+
+const seq = (range: readonly [number, number], node: React.ReactNode, name: string) => (
+  <Sequence from={range[0]} durationInFrames={range[1] - range[0]} name={name}>
+    {node}
+  </Sequence>
+);
+
 export const IRSwapComposition: React.FC = () => {
-  return <AbsoluteFill style={{ backgroundColor: "#000" }} />;
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#EFEFEF" }}>
+      {seq(RANGES.chartRoom, <ChartRoom />, "ChartRoom")}
+      {seq(RANGES.buildings, <Buildings />, "Buildings")}
+      {seq(RANGES.chart2, <Placeholder />, "Chart2")}
+      {seq(RANGES.advDis, <Placeholder />, "AdvDis")}
+      {seq(RANGES.slot, <Placeholder />, "Slot")}
+      {seq(RANGES.community, <Placeholder />, "Community")}
+      {seq(RANGES.outro, <Placeholder />, "Outro")}
+    </AbsoluteFill>
+  );
 };
 
 export const irswapReplicateMeta = {
