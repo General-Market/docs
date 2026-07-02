@@ -79,6 +79,8 @@ import { circle2ReplicateMeta } from "./compositions/replicates/circle2/Circle2C
 import { circle2SideBySideMeta } from "./compositions/replicates/circle2/Circle2SideBySide";
 import { reflectReplicateMeta } from "./compositions/replicates/reflect/ReflectComposition";
 import { reflectSideBySideMeta } from "./compositions/replicates/reflect/ReflectSideBySide";
+import { realistReplicateMeta } from "./compositions/replicates/realist/RealistComposition";
+import { realistSideBySideMeta } from "./compositions/replicates/realist/RealistSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -542,6 +544,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Circle video 2 --- */}
         {[circle2ReplicateMeta, circle2SideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Realist --- */}
+        {[realistReplicateMeta, realistSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
