@@ -3,6 +3,8 @@ import { AbsoluteFill, Sequence } from "remotion";
 import { ChartRoom } from "./scenes/ChartRoom";
 import { Buildings } from "./scenes/Buildings";
 import { Chart2 } from "./scenes/Chart2";
+import { AdvDis } from "./scenes/AdvDis";
+import { Slot } from "./scenes/Slot";
 import { Vignette } from "./lib/world";
 
 export const FPS = 25;
@@ -15,9 +17,11 @@ const RANGES = {
   // chart2 overlaps buildings from 3572: the wall gridlines start drawing
   // while the buildings scene is still fading (continuous room, no cut).
   chart2: [3572, 4138], // S10 settlement chart room
-  advDis: [4138, 4263], // S11 "Advantages & Disadvantages"
-  slot: [4263, 4663], // S12 rate slot-machine
-  community: [4663, 5276], // S13-S14 community map + cube + break-up
+  // advDis starts 4131 to own the paper-dashboard tumble after the chart
+  // fly-out; slot runs to 4690 because the reel UI pops out at 4684/4685.
+  advDis: [4131, 4263], // S11 "Advantages & Disadvantages"
+  slot: [4263, 4690], // S12 rate reel
+  community: [4690, 5276], // S13-S14 community map + cube + break-up
   outro: [5276, 5433], // S15 credits card
 } as const;
 
@@ -35,8 +39,8 @@ export const IRSwapComposition: React.FC = () => {
       {seq(RANGES.chartRoom, <ChartRoom />, "ChartRoom")}
       {seq(RANGES.buildings, <Buildings />, "Buildings")}
       {seq(RANGES.chart2, <Chart2 />, "Chart2")}
-      {seq(RANGES.advDis, <Placeholder />, "AdvDis")}
-      {seq(RANGES.slot, <Placeholder />, "Slot")}
+      {seq(RANGES.advDis, <AdvDis />, "AdvDis")}
+      {seq(RANGES.slot, <Slot />, "Slot")}
       {seq(RANGES.community, <Placeholder />, "Community")}
       {seq(RANGES.outro, <Placeholder />, "Outro")}
     </AbsoluteFill>
