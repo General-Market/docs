@@ -14,19 +14,19 @@ export const DURATION = 969; // 32.30s — matches reference anoma-original.mp4 
 // is a crossfade chain of clean plates from the same video.
 // ═══════════════════════════════════════════════════════════════
 
-const { fontFamily: POPPINS } = loadPoppins("normal", {
+export const { fontFamily: POPPINS } = loadPoppins("normal", {
   weights: ["300", "500"],
   subsets: ["latin"],
 });
 
-const WHITE = "#FCFCFC";
-const FS = 55.6; // comparator-calibrated (ref ink height 56 vs 59 @58.5)
+export const WHITE = "#FCFCFC";
+export const FS = 55.6; // comparator-calibrated (ref ink height 56 vs 59 @58.5)
 // Comparator-calibrated: rendered cap-top sits 0.065em below box top.
-const CAP_OFFSET = 0.065;
+export const CAP_OFFSET = 0.065;
 // Reference is video-soft; match its stroke softness.
-const TEXT_SOFT: React.CSSProperties = { filter: "blur(0.4px)", opacity: 0.97 };
+export const TEXT_SOFT: React.CSSProperties = { filter: "blur(0.4px)", opacity: 0.97 };
 
-const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const asset = (n: string) => staticFile(`anoma-assets/${n}.png`);
 
 // ─── Silk background: crossfade chain of clean plates ───
@@ -69,7 +69,7 @@ const PLATES_B: [number, string][] = [
   [969, "plate-860"],
 ];
 
-const Silk: React.FC<{ frame: number }> = ({ frame }) => {
+export const Silk: React.FC<{ frame: number }> = ({ frame }) => {
   const stops = frame < 358 ? PLATES_A : PLATES_B;
   let i = 0;
   while (i < stops.length - 2 && frame >= stops[i + 1][0]) i++;
@@ -98,7 +98,7 @@ const Silk: React.FC<{ frame: number }> = ({ frame }) => {
 // Words appear at FULL opacity offset above rest, settling down with
 // exponential decay (measured r≈0.74/frame). Scenes 6/7 instead rise
 // from below with a 3-frame fade (measured by scene-B agent).
-type WordSpec = { t: string; f: number };
+export type WordSpec = { t: string; f: number };
 type LineSpec = {
   words: WordSpec[];
   x: number; // measured ink-left
@@ -111,7 +111,7 @@ type LineSpec = {
   out?: { cut?: number; fade?: [number, number] };
 };
 
-const wordStyle = (
+export const wordStyle = (
   frame: number,
   start: number,
   drop: number,
@@ -416,7 +416,7 @@ const DashCard: React.FC<{ src: string; opacity: number; barsP: number; blur?: n
 // Scene 3: linear fade-in f128-152 with resolving blur (ref content is
 // still soft mid-fade — comparator), bars grow f137-203 (measured
 // soft-S curve), fast blur+fade out f203-207 into scene 4.
-const Scene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 128 || frame >= 208) return null;
   const opacity =
     interpolate(frame, [127, 152], [0, 1], clamp) *
@@ -435,7 +435,7 @@ const Scene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
 // Scene 10: crossfades in over the batch card f641-666 (linear), bars
 // grow f663-719 (p=0.5@680, 0.945@712 measured), card fades out
 // f716-722 (ref still at 26% opacity at f720 — comparator).
-const Scene10Dash: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene10Dash: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 641 || frame >= 723) return null;
   const opacity =
     interpolate(frame, [641, 666], [0, 1], clamp) *
@@ -461,7 +461,7 @@ const TABLE_STATES: [number, string][] = [
   [334, "t334"], [335, "t335"], [336, "table-token"],
 ];
 
-const Scene4Table: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene4Table: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 205 || frame >= 358) return null;
   let src = TABLE_STATES[0][1];
   for (const [f, s] of TABLE_STATES) {
@@ -490,7 +490,7 @@ const OB_CHAIN: { src: string; fadeIn: [number, number] }[] = [
   { src: "ob-s3e", fadeIn: [533, 536] },
 ];
 
-const Scene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 464 || frame >= 577) return null;
   const cardOpacity = interpolate(frame, [571, 576], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
@@ -545,7 +545,7 @@ const Scene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 // Hard state swaps measured: A (Edit/Process) → B f584 (Back-to-overview,
 // card shrinks — baked in crop) → highlights f594 (all bars appear at
 // once, fully formed, static). Dashboard crossfades over it f641-666.
-const Scene9Batch: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene9Batch: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 571 || frame >= 666) return null;
   if (frame >= 594) {
     return (
@@ -569,7 +569,7 @@ const Scene9Batch: React.FC<{ frame: number }> = ({ frame }) => {
 // Overview-pill highlight arrives f810-817 (pill-off raster fades out).
 const D12_BARS = { xs: [250, 296, 340, 384, 428], w: 32, h: [85, 65, 85, 83, 103] };
 
-const Scene12Dash: React.FC<{ frame: number }> = ({ frame }) => {
+export const Scene12Dash: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 769 || frame >= 849) return null;
   const opacity =
     interpolate(frame, [769, 793], [0, 1], clamp) *

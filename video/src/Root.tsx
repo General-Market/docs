@@ -89,6 +89,8 @@ import { irswapReplicateMeta } from "./compositions/replicates/irswap/IRSwapComp
 import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSideBySide";
 import { anomaReplicateMeta } from "./compositions/replicates/anoma/AnomaComposition";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
+import { crxAnomaMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
+import { crxAnomaSideBySideMeta } from "./compositions/replicates/anoma/CrxAnomaSideBySide";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -564,7 +566,7 @@ export const RemotionRoot: React.FC = () => {
         ))}
 
         {/* --- Anoma --- */}
-        {[anomaReplicateMeta, anomaSideBySideMeta].map((meta) => (
+        {[anomaReplicateMeta, anomaSideBySideMeta, crxAnomaMeta, crxAnomaSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
