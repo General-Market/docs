@@ -17,8 +17,6 @@ import {
   FPS,
   FS,
   POPPINS,
-  TEXT_SOFT,
-  WHITE,
   wordStyle,
   type WordSpec,
 } from "./AnomaComposition";
@@ -31,18 +29,30 @@ import { CrxAppScenes } from "./CrxAppCards";
 // natural width (no ink-box scaleX — there is no reference ink to
 // match), left-aligned at the original x positions or centered on
 // the frame axis (640).
+//
+// The composition renders at 4K (3840×2160); the measured 1280×720
+// coordinate system is preserved inside a 3× scaler so every frozen
+// timing and position survives untouched. Text, cards and SVG marks
+// rasterize at the full 4K raster. The wave video (1080p source,
+// enhanced and lanczos-upscaled to 4K offline) mounts OUTSIDE the
+// scaler, 1:1.
 // ═══════════════════════════════════════════════════════════════
 
 const CENTER = 640;
+const HD_SCALE = 3;
 
 // Bridge sets its own headline on this water in near-black ink, not
 // white — the copy follows suit. Ink value from the Apple style table.
 const INK = "#1D1D1F";
 
-// ─── Wave background: the bridge.xyz hero water, looped, shown raw.
-// The end fade-to-black is pulled into the empty beat after scene 12
-// (f851-864) so the white end lockup and URL land on black, never on
-// bright water.
+// ─── Wave background: the bridge.xyz hero water, looped. The 4K cut
+// (bridge-wave-4k.mp4) is the 1080p source denoised, lanczos-scaled
+// to 3840×2160, debanded, gently sharpened and re-grained — the
+// grain hides what remains of the source compression without the
+// softness of a blur. It mounts full-bleed outside the coordinate
+// scaler, 1:1 with the 4K raster. The end fade-to-black is pulled
+// into the empty beat after scene 12 (f851-864) so the end lockup
+// lands on black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
 const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
@@ -52,15 +62,23 @@ const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
       <Loop durationInFrames={WAVE_SECONDS * FPS}>
         <OffthreadVideo
           muted
-          src={staticFile("crx-assets/bridge-wave.mp4")}
+          src={staticFile("crx-assets/bridge-wave-4k.mp4")}
           style={{
             position: "absolute",
-            width: 1280,
-            height: 720,
+            width: 1280 * HD_SCALE,
+            height: 720 * HD_SCALE,
             objectFit: "cover",
           }}
         />
       </Loop>
+      {/* Quiet vignette: settles the frame edges and lifts contrast
+          under the left-anchored ink without touching the center. */}
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 120% 100% at 50% 45%, rgba(0,0,0,0) 62%, rgba(0,0,0,0.10) 100%)",
+        }}
+      />
       {black > 0 && (
         <AbsoluteFill style={{ backgroundColor: "#000", opacity: black }} />
       )}
@@ -76,7 +94,6 @@ type CrxLineSpec = {
   drop?: number;
   r?: number;
   rise?: boolean;
-  color?: string; // ink by default; the end URL stays white on black
   out?: { cut?: number; fade?: [number, number] };
 };
 
@@ -88,7 +105,6 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
   drop = 53,
   r = 0.74,
   rise = false,
-  color = INK,
   out,
   frame,
 }) => {
@@ -117,9 +133,8 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
         fontWeight: 300,
         fontSize: fs,
         lineHeight: 1,
-        color,
+        color: INK,
         whiteSpace: "pre",
-        ...TEXT_SOFT,
         opacity: 0.97 * opacity,
       }}
     >
@@ -171,7 +186,7 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         lineHeight: 1,
         color: INK,
         whiteSpace: "pre",
-        ...TEXT_SOFT,
+        opacity: 0.97,
       }}
     >
       {S1_WORDS.map((w, wi) => {
@@ -302,35 +317,113 @@ const LINES: CrxLineSpec[] = [
   // Scene 12 — top-center (fades f848-851)
   { words: [{ t: "CRX", f: 766 }, { t: "Sandbox", f: 769 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
   { words: [{ t: "is", f: 772 }, { t: "Live.", f: 775 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
-  // Scene 13 — URL (holds to end; slower settle, smaller size).
-  // White: it lands after the wave has faded to black.
-  { words: [{ t: "app.crx.com/swap", f: 861 }], capTop: 318, drop: 44, r: 0.76, fs: 51, color: WHITE },
 ];
 
-// ─── End card lockup: settles in above the URL with the same word
-// physics (drop 44, r 0.76) as the wave fades to black.
-const LOGO_W = 380;
-const LOGO_H = 115; // 6605:2000 source aspect
+// ─── End card lockup: the institutional reveal ───
+// The mark arrives alone on the darkening water — it rolls in with a
+// long exponential settle, no bounce — holds a beat on black, then
+// glides left as the wordmark slides out from behind it to the
+// right. Both movements share one curve, so the lockup opens like a
+// single object. Everything holds to the end; there is no URL.
+//
+// Geometry is measured from crx-lockup-white.png (1600×484): mark
+// x108–389 / y84–398, letters x563–1534. The mark itself is redrawn
+// as SVG so the roll stays vector-crisp; the wordmark keeps the
+// brand PNG, revealed through a clip window.
+const LOCKUP_W = 520;
+const LK = LOCKUP_W / 1600; // px-of-PNG → local px
+const LOCKUP_H = 484 * LK; // 157.3
+const MARK_CX = 248.5 * LK; // mark center, rel lockup left
+const MARK_CY = 241 * LK; // mark center, rel lockup top
+const MARK_SIZE = ((398 - 84) * LK) / 0.95; // SVG strokes span 95/100 units
+const NAME_CLIP = 389 * LK + 2; // window left edge: mark's right edge
+const NAME_SLIDE = 1534 * LK - NAME_CLIP + 6; // fully hidden → in place
 
-const EndLogo: React.FC<{ frame: number }> = ({ frame }) => {
-  const start = 864;
-  if (frame < start) return null;
-  const dt = frame - start;
-  const off = 44 * Math.pow(0.76, dt);
-  const opacity = Math.min((dt + 1) / 3, 1);
+const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
+const LEFT_FINAL = CENTER - LOCKUP_W / 2;
+const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
+
+const MARK_IN = 858;
+const REVEAL = 892;
+const REVEAL_DUR = 20;
+
+const EndMark: React.FC<{ size: number }> = ({ size }) => (
+  <svg viewBox="0 0 100 100" width={size} height={size}>
+    <defs>
+      <linearGradient id="crxEndMarkV" gradientUnits="userSpaceOnUse" x1="50" y1="8" x2="50" y2="92">
+        <stop offset="0" stopColor="#2AD4BB" />
+        <stop offset="0.5" stopColor="#1CC8C6" />
+        <stop offset="1" stopColor="#19B6DD" />
+      </linearGradient>
+    </defs>
+    <g fill="none" stroke="url(#crxEndMarkV)" strokeWidth="11" strokeLinecap="round">
+      <line x1="50" y1="8" x2="50" y2="92" />
+      <line x1="13.6" y1="71" x2="86.4" y2="29" />
+      <line x1="13.6" y1="29" x2="86.4" y2="71" />
+    </g>
+  </svg>
+);
+
+const EndLockup: React.FC<{ frame: number }> = ({ frame }) => {
+  if (frame < MARK_IN) return null;
+  const dt = frame - MARK_IN;
+  const roll = -110 * Math.pow(0.86, dt); // degrees; settles, never bounces
+  const markOp = Math.min(dt / 10, 1);
+  const e =
+    frame < REVEAL
+      ? 0
+      : 1 - Math.pow(1 - Math.min((frame - REVEAL) / REVEAL_DUR, 1), 3);
+  const left = LEFT_ALONE + (LEFT_FINAL - LEFT_ALONE) * e;
+  const tx = -NAME_SLIDE * (1 - e);
   return (
-    <Img
-      src={staticFile("crx-assets/crx-lockup-white.png")}
+    <div
       style={{
         position: "absolute",
-        left: CENTER - LOGO_W / 2,
-        top: 155,
-        width: LOGO_W,
-        height: LOGO_H,
-        transform: `translateY(${(-off).toFixed(2)}px)`,
-        opacity,
+        left,
+        top: LOCKUP_TOP,
+        width: LOCKUP_W,
+        height: LOCKUP_H,
       }}
-    />
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: MARK_CX - MARK_SIZE / 2,
+          top: MARK_CY - MARK_SIZE / 2,
+          width: MARK_SIZE,
+          height: MARK_SIZE,
+          opacity: markOp,
+          transform: `rotate(${roll.toFixed(2)}deg)`,
+          transformOrigin: "50% 50%",
+        }}
+      >
+        <EndMark size={MARK_SIZE} />
+      </div>
+      {e > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: NAME_CLIP,
+            top: 0,
+            width: LOCKUP_W - NAME_CLIP + 8,
+            height: LOCKUP_H,
+            overflow: "hidden",
+          }}
+        >
+          <Img
+            src={staticFile("crx-assets/crx-lockup-white.png")}
+            style={{
+              position: "absolute",
+              left: -NAME_CLIP,
+              top: 0,
+              width: LOCKUP_W,
+              height: LOCKUP_H,
+              transform: `translateX(${tx.toFixed(2)}px)`,
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -345,13 +438,22 @@ export const CrxAnomaComposition: React.FC = () => {
         }
       />
       <WaveBackground frame={frame} />
-      <CrxAppScenes frame={frame} />
-      <CrxScene1 frame={frame} />
-      <CrxScene2 frame={frame} />
-      {LINES.map((l, i) => (
-        <CrxLine key={i} {...l} frame={frame} />
-      ))}
-      <EndLogo frame={frame} />
+      <AbsoluteFill
+        style={{
+          width: 1280,
+          height: 720,
+          transform: `scale(${HD_SCALE})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <CrxAppScenes frame={frame} />
+        <CrxScene1 frame={frame} />
+        <CrxScene2 frame={frame} />
+        {LINES.map((l, i) => (
+          <CrxLine key={i} {...l} frame={frame} />
+        ))}
+        <EndLockup frame={frame} />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -359,8 +461,8 @@ export const CrxAnomaComposition: React.FC = () => {
 export const crxAnomaMeta = {
   id: "CRX-Anoma",
   component: CrxAnomaComposition,
-  width: 1280,
-  height: 720,
+  width: 1280 * HD_SCALE,
+  height: 720 * HD_SCALE,
   fps: FPS,
   durationInFrames: DURATION,
 };

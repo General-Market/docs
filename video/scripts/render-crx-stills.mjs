@@ -3,7 +3,7 @@ import { bundle } from "@remotion/bundler";
 import { renderStill, selectComposition } from "@remotion/renderer";
 import path from "path";
 
-const FRAMES = [30, 58, 95, 180, 240, 290, 345, 395, 440, 520, 620, 700, 750, 820, 940];
+const FRAMES = [30, 58, 95, 180, 240, 290, 345, 395, 440, 520, 620, 700, 750, 820, 868, 885, 900, 950];
 const outDir = process.argv[2] ?? "/tmp/crx-stills";
 
 const serveUrl = await bundle({

@@ -52,11 +52,13 @@ export const CrxAnomaSideBySide: React.FC = () => {
           overflow: "hidden",
         }}
       >
+        {/* The CRX cut now renders at 4K; 1/6 scale fits the
+            640×360 half-frame exactly. */}
         <div
           style={{
-            width: 1280,
-            height: 720,
-            transform: "scale(0.5)",
+            width: 3840,
+            height: 2160,
+            transform: `scale(${1 / 6})`,
             transformOrigin: "top left",
             position: "relative",
           }}
