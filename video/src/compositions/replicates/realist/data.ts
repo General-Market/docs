@@ -14,7 +14,12 @@ export const cap1Ty: number[] = [68.26, 70.58, 70.58, 68.64, 64.83, 64.83, 65.39
 // Measured ink boxes (nominal frame-120 space).
 export const CAP1_L1_INK = [134, 824, 608, 668];
 export const CAP1_L2_INK = [46, 898, 711, 771];
-export const CAP1_L3_INK = [189, 766, 804, 873];
+// L3 box re-derived from the baked LETTER cap band (f100/f130 glyph
+// measurement): the old box's y-range was quote-top→baseline (69px),
+// which over-sized the font ~12% and squeezed scaleX to ~0.78. The
+// y-values below are compensated for the true Montserrat line-box
+// metrics so the rendered cap band lands on the baked [812.5, 872.5].
+export const CAP1_L3_INK = [178, 780, 817, 879];
 
 export const BUYS_MAIN_INK = [653, 1274, 495, 573];  // green glyphs only
 export const BUYS_WHITE10_INK = [945, 1046, 499, 567];

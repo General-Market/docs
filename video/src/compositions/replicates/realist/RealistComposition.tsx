@@ -3,6 +3,7 @@ import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { measureText } from "@remotion/layout-utils";
 import { noise2D } from "@remotion/noise";
 import { loadFont as loadMontserrat } from "@remotion/google-fonts/Montserrat";
+import { loadFont as loadPoppins } from "@remotion/google-fonts/Poppins";
 import {
   CAP1_AFF_F0, cap1S, cap1Tx, cap1Ty,
   CAP1_L1_INK, CAP1_L2_INK, CAP1_L3_INK,
@@ -21,6 +22,12 @@ const { fontFamily: MONT } = loadMontserrat("normal", {
   weights: ["800", "900"],
 });
 loadMontserrat("italic", { subsets: ["latin"], weights: ["900"] });
+// The baked caption-1 quote line is NOT Montserrat: its glyph inks
+// (narrow E/L, wide U/H/M, small high quotes) match Poppins.
+const { fontFamily: POPPINS } = loadPoppins("normal", {
+  subsets: ["latin"],
+  weights: ["800", "900"],
+});
 
 // ═══════════════════════════════════════════════════════════════
 // Base layer: per-frame JPEG plates of the screen recording (the
@@ -74,9 +81,10 @@ const CAP_TOP = 0.21; //  em-box top → cap top (calibrated vs plates)
 
 const measureW = (
   text: string, fontSize: number, weight: "800" | "900", italic: boolean, tracking: string,
+  font: string = MONT,
 ) =>
   measureText({
-    text, fontFamily: MONT, fontSize, fontWeight: weight, letterSpacing: tracking,
+    text, fontFamily: font, fontSize, fontWeight: weight, letterSpacing: tracking,
     additionalStyles: italic ? { fontStyle: "italic" } : undefined,
   }).width;
 
@@ -94,11 +102,13 @@ const CascadeLine: React.FC<{
   frame: number;
   opacityMul: number;
   tracking?: string;
-}> = ({ text, ink, color, glow, revealAt, exitAt, frame, opacityMul, tracking = "0.01em" }) => {
+  weight?: "800" | "900";
+  font?: string;
+}> = ({ text, ink, color, glow, revealAt, exitAt, frame, opacityMul, tracking = "0.01em", weight = "800", font = MONT }) => {
   const inkW = ink[1] - ink[0];
   const inkH = ink[3] - ink[2];
   const fontSize = inkH / CAP_RATIO;
-  const natural = measureW(text, fontSize, "800", false, tracking);
+  const natural = measureW(text, fontSize, weight, false, tracking, font);
   const scaleX = natural > 0 ? inkW / natural : 1;
   return (
     <div
@@ -107,8 +117,8 @@ const CascadeLine: React.FC<{
         left: ink[0],
         top: ink[2] - CAP_TOP * fontSize,
         whiteSpace: "nowrap",
-        fontFamily: MONT,
-        fontWeight: 800,
+        fontFamily: font,
+        fontWeight: Number(weight),
         fontSize,
         letterSpacing: tracking,
         lineHeight: 1,
@@ -193,9 +203,11 @@ const Cap1: React.FC = () => {
         opacityMul={mul}
       />
       <CascadeLine
-        text={"“PUMPWHEEL”"}
+        text={'"PUMPWHEEL"'}
         ink={CAP1_L3_INK}
-        tracking="0.08em"
+        tracking="-0.01em"
+        weight="800"
+        font={POPPINS}
         color="#66ffda"
         glow="rgba(80,255,200,0.3)"
         revealAt={49}
@@ -342,10 +354,14 @@ const RED_GLOW = "0 0 10px rgba(255,0,30,0.55), 0 0 26px rgba(255,0,30,0.32)";
 const BLUE = "#41b8e0";
 const BLUE_GLOW = "0 0 8px rgba(62,184,255,0.55), 0 0 22px rgba(62,184,255,0.3)";
 
+// A-paren re-measured against baked digit glyphs (event 1 f487, event 2
+// f530-550): digit cap band centers on 610 (not 632) at cap height ~49
+// (not 44); the baked ink midline is 960 — parenCx offsets the fitted
+// line's trailing letter-spacing bias (~7px left at 0.18em tracking).
 const STYLE_GEO = {
-  A: { cx: 960, inkH: 62, cy: 537, parenCy: 632, parenInkH: 44, sparkPad: 35, sparkSize: 44 },
-  B: { cx: 964, inkH: 80, cy: 540, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
-  F: { cx: 960, inkH: 62, cy: 533, parenCy: 630, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
+  A: { cx: 960, inkH: 62, cy: 537, parenCx: 967, parenCy: 610, parenInkH: 49, sparkPad: 35, sparkSize: 44 },
+  B: { cx: 964, inkH: 80, cy: 540, parenCx: 964, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
+  F: { cx: 960, inkH: 62, cy: 533, parenCx: 960, parenCy: 630, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
 } as const;
 
 const FittedLine: React.FC<{
@@ -398,11 +414,18 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
   const blur = 7 * Math.exp(-t / 3.5);
   // push by successor (measured pushAt)
   let dy = 0;
+  let dyParen = 0;
+  let parenShrink = 1;
   if (ev.pushAt !== null) {
     const tau = ev.style === "A" ? 5.3 : 2.2;
     const tp = frame - ev.pushAt;
     if (tp > 0) {
       dy = (712 - geo.cy) * (1 - Math.exp(-tp / tau));
+      // the baked paren line travels farther and slightly slower than
+      // the main (measured on event 1, f495-512: D=179, τ=5.55), and
+      // the pushed block collapses its pop and shrinks to ~0.95
+      dyParen = 179 * (1 - Math.exp(-tp / 5.55)) - dy;
+      parenShrink = 1 - 0.049 * (1 - Math.exp(-tp / 1.8));
       const fadeFrom = ev.pushAt + (ev.style === "A" ? 9 : 5);
       op *= 1 - clamp01((frame - fadeFrom) / (ev.style === "A" ? 12 : 14));
     }
@@ -442,14 +465,21 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       <Sparkle cx={geo.cx - sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f} frame={frame} opacity={op} />
       <Sparkle cx={geo.cx + sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f + 1} frame={frame} opacity={op} />
       {ev.paren && ev.parenW && t >= 2 && (
-        <div style={{ position: "absolute", inset: 0, opacity: clamp01((t - 2) / 3) }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: clamp01((t - 2) / 3),
+            transform: `translateY(${dyParen.toFixed(1)}px)`,
+          }}
+        >
           {/* paren line lands ~3f after the main and pops harder:
               s = 1 + 0.6·e^(−(t−3)/8) (measured on event 2) */}
           <FittedLine
             text={ev.paren}
-            cx={geo.cx} cy={geo.parenCy} inkW={ev.parenW} inkH={geo.parenInkH}
+            cx={geo.parenCx} cy={geo.parenCy} inkW={ev.parenW} inkH={geo.parenInkH}
             color={BLUE} glow={BLUE_GLOW} tracking="0.18em"
-            scaleMul={1 + 0.6 * Math.exp(-Math.max(t - 3, 0) / 8)}
+            scaleMul={(1 + 0.6 * Math.exp(-Math.max(t - 3, 0) / 8)) * parenShrink}
             compactParens={ev.style === "F"}
           />
         </div>
