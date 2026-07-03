@@ -177,7 +177,7 @@ type CommB = {
 };
 const WB: Record<string, CommB> = {
   house: {
-    over: { x: 29.5, z: -143.7, kx: 0.522, ky: 0.746 },
+    over: { x: 29.5, z: -143.7, kx: 0.487, ky: 0.552 },
     eye: { x: -114.7, z: -410.3 },
     spec: { kind: "house", W: 167.0, L: 130.5, H: 188.5, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
     padW: 1.6,
@@ -189,25 +189,25 @@ const WB: Record<string, CommB> = {
     padW: 1.6,
   },
   t1: {
-    over: { x: -205.4, z: -207.8, kx: 0.442, ky: 0.442 },
+    over: { x: -205.4, z: -207.8, kx: 0.315, ky: 0.379 },
     eye: { x: -695.8, z: -624.3 },
     spec: { kind: "temple", W: 130.0, L: 89.7, H: 154.2, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 4, fill: "#FFFFFF" }, strip: true },
     padW: 1.4,
   },
   cbs: {
-    over: { x: -227.9, z: -67.0, kx: 0.442, ky: 0.442 },
+    over: { x: -227.9, z: -67.0, kx: 0.315, ky: 0.379 },
     eye: { x: -746.7, z: -306.0 },
     spec: { kind: "box2", W: 144.3, L: 108.0, H: 394.4, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
     padW: 1.4,
   },
   t2: {
-    over: { x: -135.1, z: -263.9, kx: 0.442, ky: 0.585 },
+    over: { x: -135.1, z: -263.9, kx: 0.442, ky: 0.415 },
     eye: { x: -536.9, z: -751.1 },
     spec: { kind: "temple", W: 122.8, L: 95.7, H: 111.8, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.4,
   },
   t3: {
-    over: { x: -40.3, z: -288.0, kx: 0.478, ky: 0.645 },
+    over: { x: -40.3, z: -288.0, kx: 0.41, ky: 0.458 },
     eye: { x: -589.2, z: -1290.6 },
     spec: { kind: "temple", W: 100.8, L: 82.9, H: 97.6, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
     padW: 1.4,
