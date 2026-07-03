@@ -2,13 +2,12 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
-  Img,
   Sequence,
   interpolate,
-  staticFile,
   useCurrentFrame,
 } from "remotion";
 import { CameraMotionBlur } from "@remotion/motion-blur";
+import { FalconXLogoVec, HeadlineVec, PlumeLogoVec } from "./PlumeVectors";
 
 // Plume × FalconX partnership sting — 1:1 replicate.
 // Reference: 1920×1080 @ 25fps, 215 frames, no audio.
@@ -99,8 +98,8 @@ type CardSpec = {
   rF: number[];
   rV: number[];
   gradient: string;
-  logoSrc: string;
-  logoW: number; // padded png width at world scale 1
+  Logo: React.FC<{ width: number; height: number }>;
+  logoW: number; // traced asset width at world scale 1
   logoH: number;
 };
 
@@ -114,7 +113,7 @@ const PLUME_CARD: CardSpec = {
   rF: PLUME_R_F,
   rV: PLUME_R_V,
   gradient: RED_GRAD,
-  logoSrc: "plume-replicate/plume-logo.png",
+  Logo: PlumeLogoVec,
   logoW: 462,
   logoH: 122,
 };
@@ -129,7 +128,7 @@ const FX_CARD: CardSpec = {
   rF: FX_R_F,
   rV: FX_R_V,
   gradient: BLUE_GRAD,
-  logoSrc: "plume-replicate/falconx-logo.png",
+  Logo: FalconXLogoVec,
   logoW: 461,
   logoH: 69,
 };
@@ -169,13 +168,7 @@ const Card: React.FC<{ spec: CardSpec; frame: number; flash: boolean }> = ({
         boxShadow: "0 10px 36px rgba(0,0,0,0.35)",
       }}
     >
-      <Img
-        src={staticFile(spec.logoSrc)}
-        style={{
-          width: spec.logoW * logoRel,
-          height: spec.logoH * logoRel,
-        }}
-      />
+      <spec.Logo width={spec.logoW * logoRel} height={spec.logoH * logoRel} />
     </div>
   );
 };
@@ -335,8 +328,7 @@ const Headline: React.FC = () => {
         opacity,
       }}
     >
-      <Img
-        src={staticFile("plume-replicate/headline.png")}
+      <div
         style={{
           position: "absolute",
           left: 558,
@@ -346,7 +338,9 @@ const Headline: React.FC = () => {
           transform: `translateY(${rise}px)`,
           filter: `blur(${blur}px)`,
         }}
-      />
+      >
+        <HeadlineVec width={804} height={56} />
+      </div>
     </div>
   );
 };
