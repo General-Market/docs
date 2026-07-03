@@ -1,27 +1,41 @@
 // Frames 4690-5290: the community map (S13-S14). Big blue house and red
 // bank drop onto a floor map sheet, yellow rays fan to a community of
-// small buildings, exchange arrows grow, a glass wireframe cube drops
-// over the scene, the camera dives from overhead to eye level, the
-// arrows split at their jagged seam, then the camera pulls back out.
+// small buildings, a glass wireframe cube drops over the scene, the
+// camera dives from overhead to eye level, the exchange arrows split at
+// their jagged seam, then the camera pulls back out.
 //
-// Construction mirrors the source: the room (floor sheet, pads, rays,
-// dashboard papers) and the cube are real 3D under a pitched translation
-// camera solved per frame from the tracked bank; the buildings are real
-// extruded solids whose world anchors ride the measured icon tracks (the
-// source itself is a 2.5D collage — icon parallax is not 3D-consistent,
-// so floor-locked rigid placements cannot follow it).
+// Rebuild notes (measured from the reference, fit-community round 3):
+// - The camera is a smooth piecewise-hermite path (entry settle, one
+//   long overhead glide, ONE dive swoop 4905-4980, a near-still eye
+//   hold, a fast eased pull-back). Solved from the bank-apex track;
+//   the old per-frame key tables (and their dive jitter) are gone.
+// - The source is a 2.5D collage: its overhead and eye-level shots are
+//   provably inconsistent with any single rigid world (~60-100 px splits
+//   under honest pitch bounds). Every icon is therefore PLANTED rigid at
+//   a measured floor pose PER PHASE (reprojection <= ~8 px at every held
+//   frame) and relocates exactly once, inside the dive swoop, on a
+//   smoothstep - no per-frame anchor wobble anywhere.
+// - The painted floor (sheet, grid, dashboard ink, fallen papers, floor
+//   extension) is STATIC in world space for the whole scene; it only
+//   fades in place. White pads are thin slab objects that ride their
+//   buildings; rays and exchange arrows are world objects too (the
+//   arrows on a camera-facing plane spanning the house-bank gap).
+// - The glass cube is one world object with three measured poses
+//   (overhead fit at 4830, room pose fit from the eye-level wall lines +
+//   the 4913 pane crossing, pull-back pose from the 5240 corners),
+//   blended during the dive and the pull-back. The foreground pane sweep
+//   stays a screen-space overlay on its measured tracks: the reference's
+//   own glass is not world-consistent, and the tracks are already smooth.
 
 import React, { useCallback } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
 import * as THREE from "three";
 import { clamp01, easeOutPow, lerp1 } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
-import { CameraRig, CanvasPlane, Room, Vignette, DCAM } from "../lib/world";
+import { CanvasPlane, DCAM } from "../lib/world";
 import type { V3 } from "../lib/world";
 import { MiniBuilding } from "./Buildings3D";
 import type { MiniSpec } from "./Buildings3D";
 
-const F0 = 4690;
 const FLOOR_Y = -170;
 const fade = (f: number, a: number, b: number) => clamp01((f - a) / Math.max(1, b - a));
 const fadeOut = (f: number, a: number, b: number) => 1 - fade(f, a, b);
@@ -36,35 +50,85 @@ const C = {
   ray: "#EEEDA6",
   sheet: "#ECECEC",
   chartRed: "#D98A95",
-  teal: "#D0EBEE",
   door: "#CDEDF4",
   cube: "#BFBFBF",
+  pad: "#FBFBF9",
+  padEdge: "#E0E0DC",
 } as const;
 
-// ── camera (pitched translation, solved from the bank track) ─────
-const PITCH: [number, number][] = [
-  [4685, 34], [4700, 36], [4722, 38], [4885, 38], [4975, 10], [5210, 10], [5240, 22], [5271, 30],
-];
-const pitchAt = (f: number) => (lerp1(PITCH, f) * Math.PI) / 180;
+// ── camera: smooth piecewise-hermite path ────────────────────────
+// Bank-anchored parametrization (u,v = bank apex screen track, W = bank
+// pixel width -> depth). Values on [4685,4715] and [5265,5290] are
+// bit-identical to the previous solve (frozen first/last keys + the
+// frozen pitch segments) - boundary continuity into Slot and Outro.
+const herm = (
+  f: number, f0: number, f1: number, v0: number, v1: number, m0: number, m1: number,
+): number => {
+  const T = f1 - f0;
+  const t = clamp01((f - f0) / T);
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    (2 * t3 - 3 * t2 + 1) * v0 +
+    (t3 - 2 * t2 + t) * T * m0 +
+    (-2 * t3 + 3 * t2) * v1 +
+    (t3 - t2) * T * m1
+  );
+};
 
-const T_B: [number, number, number][] = [
-  [4715, 604, 194], [4730, 602, 222], [4745, 608, 222], [4760, 613, 222], [4775, 619, 220],
-  [4790, 625, 220], [4805, 631, 220], [4820, 638, 220], [4835, 645, 218], [4850, 652, 218],
-  [4865, 660, 216], [4880, 665, 216], [4895, 677, 214], [4910, 683, 210], [4925, 679, 198],
-  [4940, 660, 206], [4955, 633, 170], [4970, 609, 174], [4985, 608, 170], [5000, 609, 170],
-  [5030, 612, 170], [5060, 613, 168], [5090, 615, 168], [5120, 618, 168], [5150, 620, 166],
-  [5180, 623, 166], [5195, 624, 164], [5210, 623, 166], [5225, 588, 186], [5240, 569, 212],
-  [5255, 549, 232], [5265, 534, 226],
+// segments: [f0, f1, v0, v1, m0, m1] - entry settle, glide, dive swoop,
+// eye hold (linear drift), pull-back (two eased legs to the frozen key)
+type Seg = [number, number, number, number, number, number];
+const SEG_U: Seg[] = [
+  [4715, 4770, 604, 626.7, 0, 0.41], [4770, 4905, 626.7, 682, 0.41, 0.41],
+  [4905, 4980, 682, 608, 0.41, 0.0745], [4980, 5208, 608, 625.0, 0.0745, 0.0745],
+  [5208, 5222, 625.0, 597, 0.0745, -2.3], [5222, 5240, 597, 569, -2.3, -1.27],
+  [5240, 5265, 569, 534, -1.27, -1.0],
 ];
-const T_BW: [number, number][] = [
-  [4715, 88], [4730, 92], [4745, 96], [4760, 98], [4775, 102], [4790, 102], [4805, 106],
-  [4820, 108], [4835, 110], [4850, 112], [4865, 116], [4880, 114], [4895, 122], [4910, 130],
-  [4925, 142], [4940, 156], [4955, 170], [4970, 182], [4985, 184], [5000, 186], [5030, 188],
-  [5060, 190], [5090, 190], [5120, 192], [5150, 196], [5180, 198], [5195, 200], [5210, 194],
-  [5225, 132], [5240, 86], [5255, 63], [5265, 55],
+const SEG_V: Seg[] = [
+  [4715, 4770, 194, 220.4, 0, -0.077], [4770, 4905, 220.4, 210, -0.077, -0.077],
+  [4905, 4980, 210, 171.7, -0.077, -0.0322], [4980, 5208, 171.7, 164.2, -0.0322, -0.0322],
+  [5208, 5222, 164.2, 178, -0.0322, 2.2], [5222, 5240, 178, 212, 2.2, 1.6],
+  [5240, 5265, 212, 226, 1.6, 0.15],
 ];
-const BU = T_B.map((r) => [r[0], r[1]] as [number, number]);
-const BV = T_B.map((r) => [r[0], r[2]] as [number, number]);
+const SEG_W: Seg[] = [
+  [4715, 4770, 88, 100.6, 0, 0.16], [4770, 4905, 100.6, 128, 0.16, 0.30],
+  [4905, 4980, 128, 183.5, 0.30, 0.0614], [4980, 5208, 183.5, 197.5, 0.0614, 0.0614],
+  [5208, 5222, 197.5, 148, 0.0614, -4.6], [5222, 5240, 148, 86, -4.6, -2.2],
+  [5240, 5265, 86, 55, -2.2, -0.55],
+];
+const seg = (S: Seg[], f: number): number => {
+  const fc = Math.max(4715, Math.min(5265, f));
+  for (const [f0, f1, v0, v1, m0, m1] of S) {
+    if (fc <= f1) return herm(fc, f0, f1, v0, v1, m0, m1);
+  }
+  return S[S.length - 1][3];
+};
+
+// pitch (deg): frozen entry ramp 34/36/38 (keys 4685/4700/4722), hold,
+// one eased dive 38->10, hold, eased rise 10->22 slope-matched into the
+// frozen 22->30 segment (keys 5240/5271).
+const pitchDeg = (f: number): number => {
+  if (f <= 4685) return 34;
+  if (f <= 4700) {
+    const t = (f - 4685) / 15;
+    return 34 + 2 * t;
+  }
+  if (f <= 4722) {
+    const t = (f - 4700) / 22;
+    return 36 + 2 * t;
+  }
+  if (f <= 4895) return 38;
+  if (f <= 4978) return herm(f, 4895, 4978, 38, 10, 0, 0);
+  if (f <= 5208) return 10;
+  if (f <= 5240) return herm(f, 5208, 5240, 10, 22, 0, 8 / 31);
+  if (f <= 5271) {
+    const t = (f - 5240) / 31;
+    return 22 + 8 * t;
+  }
+  return 30;
+};
+
 const P_BANK: V3 = [192, 20, 0];
 const BANK_WORLD_W = 102;
 
@@ -74,12 +138,11 @@ const rx = (a: number, p: V3): V3 => {
   return [p[0], c * p[1] - s * p[2], s * p[1] + c * p[2]];
 };
 
-const camCommunity = (f: number): { cam: V3; pitch: number } => {
-  const fc = Math.max(4715, Math.min(5265, f));
-  const th = pitchAt(f);
-  const u = lerp1(BU, fc);
-  const v = lerp1(BV, fc);
-  const W = lerp1(T_BW, fc);
+export const camCommunity = (f: number): { cam: V3; pitch: number } => {
+  const th = (pitchDeg(f) * Math.PI) / 180;
+  const u = seg(SEG_U, f);
+  const v = seg(SEG_V, f);
+  const W = seg(SEG_W, f);
   const d = (DCAM * BANK_WORLD_W) / W;
   const q: V3 = [(d * (u - 427)) / DCAM, (d * (240 - v)) / DCAM, -d];
   const off = rx(-th, q);
@@ -94,14 +157,99 @@ const toFloor = (u: number, v: number, f: number): Pt => {
   return [cam[0] + dir[0] * t, cam[2] + dir[2] * t];
 };
 
-// ── floor: sheet, pads, rays, dashboard papers ───────────────────
+// ── phase blend: everything relocates once, inside the dive ──────
+const smooth01 = (t: number) => {
+  const c = clamp01(t);
+  return c * c * (3 - 2 * c);
+};
+const diveT = (f: number) => smooth01((f - 4902) / 80); // 4902-4982
+const mixN = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// ── planted buildings: rigid pose per phase (fit-community3) ─────
+// spec = eye-phase dims; over pose renders through the [kx,ky] scale.
+// Reprojection of every base/top anchor lands within ~8 px of the
+// measured icon at every held frame of its own phase.
+type CommB = {
+  over: { x: number; z: number; kx: number; ky: number };
+  eye: { x: number; z: number };
+  spec: MiniSpec;
+  padW: number;
+};
+const WB: Record<string, CommB> = {
+  house: {
+    over: { x: 29.5, z: -143.7, kx: 0.522, ky: 0.746 },
+    eye: { x: -114.7, z: -410.3 },
+    spec: { kind: "house", W: 167.0, L: 130.5, H: 188.5, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
+    padW: 1.6,
+  },
+  bank: {
+    over: { x: 239.1, z: -71.6, kx: 0.675, ky: 0.918 },
+    eye: { x: 283.9, z: -329.5 },
+    spec: { kind: "temple", W: 166.1, L: 90.6, H: 171.9, eaveFrac: 0.655, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
+    padW: 1.6,
+  },
+  t1: {
+    over: { x: -205.4, z: -207.8, kx: 0.442, ky: 0.442 },
+    eye: { x: -695.8, z: -624.3 },
+    spec: { kind: "temple", W: 130.0, L: 89.7, H: 154.2, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 4, fill: "#FFFFFF" }, strip: true },
+    padW: 1.4,
+  },
+  cbs: {
+    over: { x: -227.9, z: -67.0, kx: 0.442, ky: 0.442 },
+    eye: { x: -746.7, z: -306.0 },
+    spec: { kind: "box2", W: 144.3, L: 108.0, H: 394.4, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
+    padW: 1.4,
+  },
+  t2: {
+    over: { x: -135.1, z: -263.9, kx: 0.442, ky: 0.585 },
+    eye: { x: -536.9, z: -751.1 },
+    spec: { kind: "temple", W: 122.8, L: 95.7, H: 111.8, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
+    padW: 1.4,
+  },
+  t3: {
+    over: { x: -40.3, z: -288.0, kx: 0.478, ky: 0.645 },
+    eye: { x: -589.2, z: -1290.6 },
+    spec: { kind: "temple", W: 100.8, L: 82.9, H: 97.6, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
+    padW: 1.4,
+  },
+};
+const wbAt = (b: CommB, f: number) => {
+  const t = diveT(f);
+  return {
+    x: mixN(b.over.x, b.eye.x, t),
+    z: mixN(b.over.z, b.eye.z, t),
+    kx: mixN(b.over.kx, 1, t),
+    ky: mixN(b.over.ky, 1, t),
+  };
+};
+
+// two vacant community pads (rays end on empty lots in the source);
+// they ride the cluster's relocation like their neighbours
+// eye poses extrapolated by the cluster's measured relocation (scale 2.26
+// about t2) — both project off frame-left at eye level, as in the source
+const VACANT = [
+  { over: { x: -179.5, z: -269.2 }, eye: { x: -637.3, z: -763.1 } },
+  { over: { x: -176.5, z: -100.4 }, eye: { x: -630.6, z: -381.6 } },
+];
+const VAC_W = 176; // eye-phase pad width (scales by kCluster at overhead)
+const K_CLUSTER = 0.442;
+
+// ── floor: static painted map (never moves; fades in place only) ─
 const FLOOR_C: Pt = [0, -150];
-const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
+export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     if (f >= 5285) return; // page-flip handoff to the outro board
+    // the map dissolves ahead of the page-flip: all the sheet's ink fades
+    // uniformly, reaching 0 at 5285 (multiplied into every alpha below)
+    const dissolve = 1 - clamp01((f - 5262) / 23);
+    ctx.globalAlpha = dissolve;
+    // crossfade in from the slot-scene floor paper (full by 4708)
+    ctx.globalAlpha *= clamp01((f - 4690) / 18);
     const mx = (p: Pt) => w / 2 + (p[0] - FLOOR_C[0]);
     const my = (p: Pt) => h / 2 + (p[1] - FLOOR_C[1]);
     const m75 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 4775));
+    const m10 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 4810));
+    const m40 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 5040));
     const m5250 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 5250));
     const path = (pts: Pt[], close: boolean) => {
       ctx.beginPath();
@@ -114,7 +262,45 @@ const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       if (fill) { ctx.fillStyle = fill; ctx.fill(); }
       if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
     };
-    // ── map sheet (anchor 4775)
+    // ── floor extension beyond the sheet's front-right edge (static;
+    //    the sheet is painted after it and wins where they overlap)
+    poly(m40([[260, 330], [880, 330], [880, 500], [200, 500]]), "#ECECEB", null);
+    ctx.strokeStyle = "#DBDBD8";
+    ctx.lineWidth = 1.2;
+    for (const [a, b] of [
+      [[430, 345], [330, 490]], [[560, 345], [520, 490]], [[690, 345], [710, 490]], [[810, 345], [880, 470]],
+    ] as [Pt, Pt][]) {
+      path(m40([a, b]), false);
+      ctx.stroke();
+    }
+    // ── the fallen dashboard papers in front of the sheet (static)
+    poly(m5250([[140, 330], [660, 335], [655, 460], [138, 452]]), "#FCFCFB", "#DCDCD8", 1.4);
+    poly(m5250([[315, 340], [372, 342], [370, 356], [313, 354]]), "#C4C4C4", null);
+    poly(m5250([[378, 342], [460, 345], [458, 365], [376, 362]]), "#D8EEF5", null);
+    poly(m5250([[195, 385], [250, 388], [248, 415], [193, 412]]), "#D0EBF0", null);
+    {
+      const sq2 = m5250([[470, 360], [500, 400], [524, 385], [556, 425], [582, 410], [608, 445], [620, 450]]);
+      path(sq2, false);
+      ctx.strokeStyle = C.chartRed;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = "#DDDDDA";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 9; i++) {
+        const a = toFloor(475 + i * 16, 365, 5250);
+        const b = toFloor(470 + i * 16, 448, 5250);
+        ctx.beginPath();
+        ctx.moveTo(mx(a), my(a));
+        ctx.lineTo(mx(b), my(b));
+        ctx.stroke();
+      }
+      const rl = m5250([[650, 340], [652, 455]]);
+      path(rl, false);
+      ctx.strokeStyle = "#D4A6A8";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    // ── map sheet (anchor 4775) painted over extension + papers
     const sheet = m75([[88, 306], [362, 212], [717, 243], [455, 468]]);
     poly(sheet, C.sheet, "#DEDEDA", 1.6);
     ctx.save();
@@ -142,159 +328,32 @@ const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    // dashboard artwork on the map (measured at f4810, world-locked;
-    // hands over to the eye-level set during the dive)
-    if (f < 4990) {
-      const m10 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 4810));
-      ctx.globalAlpha = 1 - fade(f, 4960, 4990);
-      poly(m10([[330, 300], [398, 303], [396, 345], [328, 342]]), "#C9C9C9", null);
-      poly(m10([[405, 302], [490, 306], [488, 350], [403, 346]]), "#CFEAF3", null);
-      poly(m10([[150, 375], [260, 380], [256, 430], [146, 424]]), "#CBE9EF", null);
-      // tick columns under the chart
-      ctx.strokeStyle = "#DDDDDA";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 10; i++) {
-        const a = toFloor(505 + i * 18, 340, 4810);
-        const b = toFloor(500 + i * 18, 416, 4810);
-        ctx.beginPath();
-        ctx.moveTo(mx(a), my(a));
-        ctx.lineTo(mx(b), my(b));
-        ctx.stroke();
-      }
-      const sq = m10([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]);
-      path(sq, false);
-      ctx.strokeStyle = C.chartRed;
-      ctx.lineWidth = 2;
+    // dashboard artwork on the map (measured at f4810, world-locked,
+    // static for the whole scene)
+    poly(m10([[330, 300], [398, 303], [396, 345], [328, 342]]), "#C9C9C9", null);
+    poly(m10([[405, 302], [490, 306], [488, 350], [403, 346]]), "#CFEAF3", null);
+    poly(m10([[150, 375], [260, 380], [256, 430], [146, 424]]), "#CBE9EF", null);
+    // tick columns under the chart
+    ctx.strokeStyle = "#DDDDDA";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 10; i++) {
+      const a = toFloor(505 + i * 18, 340, 4810);
+      const b = toFloor(500 + i * 18, 416, 4810);
+      ctx.beginPath();
+      ctx.moveTo(mx(a), my(a));
+      ctx.lineTo(mx(b), my(b));
       ctx.stroke();
-      ctx.setLineDash([4, 4]);
-      path(sq.map((p) => [p[0] + 6, p[1] + 14] as Pt), false);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
     }
+    const sq = m10([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]);
+    path(sq, false);
+    ctx.strokeStyle = C.chartRed;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([4, 4]);
+    path(sq.map((p) => [p[0] + 6, p[1] + 14] as Pt), false);
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.restore();
-    // ── under-floor extension at eye level (the ref map surface reaches
-    //    the bottom-right corner with faint lane lines; the sheet quad
-    //    alone leaves blank white there)
-    const extT = fade(f, 4960, 4990) * fadeOut(f, 5215, 5240);
-    if (extT > 0) {
-      const m40 = (pts: Pt[]) => pts.map(([u, v]) => toFloor(u, v, 5040));
-      ctx.globalAlpha = extT;
-      poly(m40([[260, 330], [880, 330], [880, 500], [200, 500]]), "#ECECEB", null);
-      ctx.strokeStyle = "#DBDBD8";
-      ctx.lineWidth = 1.2;
-      for (const [a, b] of [
-        [[430, 345], [330, 490]], [[560, 345], [520, 490]], [[690, 345], [710, 490]], [[810, 345], [880, 470]],
-      ] as [Pt, Pt][]) {
-        path(m40([a, b]), false);
-        ctx.stroke();
-      }
-      // eye-level floor artwork (tiles + rate squiggle, measured f5040)
-      poly(m40([[70, 365], [163, 368], [160, 414], [68, 410]]), "#D6DBD4", null);
-      poly(m40([[155, 370], [248, 373], [246, 410], [153, 407]]), "#D8D8D6", null);
-      poly(m40([[87, 415], [308, 420], [305, 455], [85, 450]]), "#CFEAF3", null);
-      const sq40 = m40([[340, 410], [372, 440], [404, 425], [436, 458], [464, 445], [496, 478]]);
-      path(sq40, false);
-      ctx.strokeStyle = C.chartRed;
-      ctx.lineWidth = 2.2;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    // ── white pads (fade in with each landing)
-    const pad = (quadScr: Pt[], a: number) => {
-      if (a <= 0) return;
-      ctx.globalAlpha = a;
-      poly(m75(quadScr), "#FBFBF9", "#E0E0DC", 1.2);
-      ctx.globalAlpha = 1;
-    };
-    pad([[400, 262], [500, 268], [500, 290], [400, 284]], fade(f, 4700, 4712));
-    pad([[556, 286], [668, 292], [668, 322], [556, 316]], fade(f, 4712, 4722));
-    // ── yellow rays: soft washed wedges from the house's left wall out
-    //    to the community pads (origin + tips re-anchored per phase: the
-    //    source collage moves them between the overhead and eye level)
-    const rayT = fade(f, 4700, 4708) * fadeOut(f, 5225, 5240);
-    if (rayT > 0) {
-      ctx.globalAlpha = rayT * 0.8;
-      const eyeT = fade(f, 4960, 4990);
-      const fromA = toFloor(392, 252, 4775);
-      const fromB = toFloor(176, 315, 5040);
-      const from: Pt = [
-        fromA[0] + (fromB[0] - fromA[0]) * eyeT,
-        fromA[1] + (fromB[1] - fromA[1]) * eyeT,
-      ];
-      const tipsA: [number, number, number][] = [
-        [274, 322, 26], [280, 262, 22], [358, 230, 18], [315, 216, 18], [398, 212, 16], [300, 292, 22],
-      ];
-      const tipsB: [number, number, number][] = [
-        [0, 270, 26], [0, 310, 24], [40, 352, 22], [80, 255, 20], [0, 232, 18], [30, 292, 22],
-      ];
-      const tips: [number, number, number][] = tipsA.map((t, i) => {
-        const a = toFloor(t[0], t[1], 4775);
-        const b = toFloor(tipsB[i][0], tipsB[i][1], 5040);
-        return [
-          a[0] + (b[0] - a[0]) * eyeT,
-          a[1] + (b[1] - a[1]) * eyeT,
-          t[2],
-        ];
-      });
-      for (const [tx, tz, tipW] of tips) {
-        const tip: Pt = [tx, tz];
-        const dx = tip[0] - from[0];
-        const dz = tip[1] - from[1];
-        const L = Math.hypot(dx, dz) || 1;
-        const px = -dz / L;
-        const pz = dx / L;
-        const wHalf = tipW / 2;
-        poly(
-          [
-            [from[0] - px * 3, from[1] - pz * 3],
-            [tip[0] - px * wHalf, tip[1] - pz * wHalf],
-            [tip[0] + px * wHalf, tip[1] + pz * wHalf],
-            [from[0] + px * 3, from[1] + pz * 3],
-          ],
-          C.ray, null,
-        );
-        // white paper/pad at tip
-        ctx.fillStyle = "#FDFDFC";
-        ctx.strokeStyle = "#E0E0DC";
-        ctx.lineWidth = 1;
-        const s = 15;
-        ctx.fillRect(mx(tip) - s, my(tip) - s * 0.7, s * 2, s * 1.4);
-        ctx.strokeRect(mx(tip) - s, my(tip) - s * 0.7, s * 2, s * 1.4);
-      }
-      ctx.globalAlpha = 1;
-    }
-    // ── the fallen dashboard papers: only revealed during the pull-back
-    //    (drawn unconditionally they papered over the map squiggle and
-    //    showed as a stray white sheet at 4700-5100 — not in the ref)
-    if (f < 5130) return;
-    ctx.globalAlpha = fade(f, 5130, 5160);
-    poly(m5250([[140, 330], [660, 335], [655, 460], [138, 452]]), "#FCFCFB", "#DCDCD8", 1.4);
-    poly(m5250([[315, 340], [372, 342], [370, 356], [313, 354]]), "#C4C4C4", null);
-    poly(m5250([[378, 342], [460, 345], [458, 365], [376, 362]]), "#D8EEF5", null);
-    poly(m5250([[195, 385], [250, 388], [248, 415], [193, 412]]), "#D0EBF0", null);
-    {
-      const sq2 = m5250([[470, 360], [500, 400], [524, 385], [556, 425], [582, 410], [608, 445], [620, 450]]);
-      path(sq2, false);
-      ctx.strokeStyle = C.chartRed;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.strokeStyle = "#DDDDDA";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 9; i++) {
-        const a = toFloor(475 + i * 16, 365, 5250);
-        const b = toFloor(470 + i * 16, 448, 5250);
-        ctx.beginPath();
-        ctx.moveTo(mx(a), my(a));
-        ctx.lineTo(mx(b), my(b));
-        ctx.stroke();
-      }
-      const rl = m5250([[650, 340], [652, 455]]);
-      path(rl, false);
-      ctx.strokeStyle = "#D4A6A8";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
   }, []);
   return (
     <CanvasPlane frame={frame} width={1700} height={1500} res={0.9}
@@ -303,38 +362,326 @@ const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ── glass wireframe cube (fit from measured f5240 ref corners:
-// bottom L(77,292) F(331,317) R(527,288); tops at v=96/133/132) ──────
+// ── yellow rays: floor-plane wedges from the house to the pads ───
+// They connect icon-layer objects, so they ride the same single
+// relocation as the buildings; within every held phase they are static.
+const RAY_O = { over: [-60.0, -183.2] as Pt, eye: [-286.1, -486.0] as Pt };
+// tips: cbs, t1, t2, vac1, t3, vac2 with over-phase wedge widths
+const RAY_TIPS: { b?: string; v?: number; tw: number }[] = [
+  { b: "cbs", tw: 30 }, { b: "t1", tw: 26 }, { b: "t2", tw: 21 },
+  { v: 0, tw: 21 }, { b: "t3", tw: 19 }, { v: 1, tw: 26 },
+];
+const RAYS_C: Pt = [-350, -700];
+const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
+    const a = fade(f, 4700, 4708) * fadeOut(f, 5225, 5240) * fadeOut(f, 5262, 5271);
+    if (a <= 0) return;
+    const t = diveT(f);
+    const kw = mixN(1, 1 / K_CLUSTER, t);
+    ctx.globalAlpha = a * 0.8;
+    ctx.fillStyle = C.ray;
+    const mx = (p: Pt) => w / 2 + (p[0] - RAYS_C[0]);
+    const my = (p: Pt) => h / 2 + (p[1] - RAYS_C[1]);
+    const from: Pt = [mixN(RAY_O.over[0], RAY_O.eye[0], t), mixN(RAY_O.over[1], RAY_O.eye[1], t)];
+    for (const tip of RAY_TIPS) {
+      let tx: number;
+      let tz: number;
+      if (tip.b) {
+        const p = wbAt(WB[tip.b], f);
+        tx = p.x;
+        tz = p.z;
+      } else {
+        const vc = VACANT[tip.v ?? 0];
+        tx = mixN(vc.over.x, vc.eye.x, t);
+        tz = mixN(vc.over.z, vc.eye.z, t);
+      }
+      const dx = tx - from[0];
+      const dz = tz - from[1];
+      const L = Math.hypot(dx, dz) || 1;
+      const px = -dz / L;
+      const pz = dx / L;
+      const wHalf = (tip.tw * kw) / 2;
+      ctx.beginPath();
+      ctx.moveTo(mx([from[0] - px * 3, from[1] - pz * 3]), my([from[0] - px * 3, from[1] - pz * 3]));
+      ctx.lineTo(mx([tx - px * wHalf, tz - pz * wHalf]), my([tx - px * wHalf, tz - pz * wHalf]));
+      ctx.lineTo(mx([tx + px * wHalf, tz + pz * wHalf]), my([tx + px * wHalf, tz + pz * wHalf]));
+      ctx.lineTo(mx([from[0] + px * 3, from[1] + pz * 3]), my([from[0] + px * 3, from[1] + pz * 3]));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }, []);
+  return (
+    <CanvasPlane frame={frame} width={900} height={1400} res={0.35}
+      position={[RAYS_C[0], FLOOR_Y + 0.8, RAYS_C[1]]} rotation={[-Math.PI / 2, 0, 0]}
+      draw={draw} renderOrder={1} />
+  );
+};
+
+// ── white slab pads: thin raised mats riding their buildings ─────
+// Measured flat-with-soft-outline in the reference; built as slab quads
+// 2 units above the painted floor so the map itself never moves.
+const SHEET_A: Pt = [0.85, -0.527]; // sheet grain (long side)
+const SHEET_B: Pt = [0.989, 0.147]; // sheet grain (short side)
+const padGeos = (() => {
+  const cache = new Map<string, { fill: THREE.BufferGeometry; edge: THREE.BufferGeometry }>();
+  return (padW: number): { fill: THREE.BufferGeometry; edge: THREE.BufferGeometry } => {
+    const key = padW.toFixed(1);
+    const got = cache.get(key);
+    if (got) return got;
+    const hw = padW / 2;
+    const hd = (padW * 0.8) / 2;
+    const cs: V3[] = ([[-1, -1], [1, -1], [1, 1], [-1, 1]] as Pt[]).map(([sa, sb]) => [
+      sa * SHEET_A[0] * hw + sb * SHEET_B[0] * hd,
+      0,
+      sa * SHEET_A[1] * hw + sb * SHEET_B[1] * hd,
+    ]);
+    const fill = new THREE.BufferGeometry();
+    fill.setAttribute("position", new THREE.Float32BufferAttribute(
+      [...cs[0], ...cs[1], ...cs[2], ...cs[0], ...cs[2], ...cs[3]], 3));
+    fill.computeVertexNormals();
+    const edge = new THREE.BufferGeometry();
+    edge.setAttribute("position", new THREE.Float32BufferAttribute(
+      [...cs[0], ...cs[1], ...cs[1], ...cs[2], ...cs[2], ...cs[3], ...cs[3], ...cs[0]], 3));
+    const out = { fill, edge };
+    cache.set(key, out);
+    return out;
+  };
+})();
+
+const Pad: React.FC<{ x: number; z: number; k: number; padW: number; opacity: number }> = ({
+  x, z, k, padW, opacity,
+}) => {
+  const geos = padGeos(padW);
+  if (opacity <= 0.005) return null;
+  return (
+    <group position={[x, FLOOR_Y + 2, z]} scale={[k, 1, k]}>
+      <mesh geometry={geos.fill} renderOrder={1}>
+        <meshBasicMaterial color={C.pad} transparent opacity={0.92 * opacity}
+          depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+      </mesh>
+      <lineSegments geometry={geos.edge} renderOrder={1}>
+        <lineBasicMaterial color={C.padEdge} transparent opacity={opacity} />
+      </lineSegments>
+    </group>
+  );
+};
+
+// ── exchange arrows: world plane spanning the house-bank gap ─────
+// Planted per phase like the buildings (the collage moves the gap), on a
+// camera-facing plane. Screen-space endpoints measured at 4775 (overhead)
+// and 5040 (eye level), converted to world at the gap's depth.
+const ARR = {
+  over: { z: -75.3, red: [67.5, 165.8] as Pt, redY: -73.0, blue: [80.4, 141.2] as Pt, blueY: -85.1, th: 11.7 },
+  eye: { z: -314.6, red: [-1.3, 119.9] as Pt, redY: -74.9, blue: [22.6, 146.9] as Pt, blueY: -97.9, th: 13.5 },
+} as const;
+const ARROW_CANVAS_W = 480;
+const ARROW_CANVAS_H = 130;
+
+// jagged mating edge, traversed top→bottom (both halves share it exactly)
+const jagPath = (
+  ctx: CanvasRenderingContext2D, X: (x: number) => number, Y: (y: number) => number,
+  xc: number, y: number, t: number,
+) => {
+  const pts: Pt[] = [
+    [xc + 2, y + t], [xc - 4, y + t * 0.35], [xc + 5, y + t * 0.05],
+    [xc - 3, y - t * 0.45], [xc + 2, y - t],
+  ];
+  for (const p of pts) ctx.lineTo(X(p[0]), Y(p[1]));
+};
+
+const ArrowsPlane: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = frame;
+  const t = diveT(f);
+  const red: Pt = [mixN(ARR.over.red[0], ARR.eye.red[0], t), mixN(ARR.over.red[1], ARR.eye.red[1], t)];
+  const blue: Pt = [mixN(ARR.over.blue[0], ARR.eye.blue[0], t), mixN(ARR.over.blue[1], ARR.eye.blue[1], t)];
+  const redY = mixN(ARR.over.redY, ARR.eye.redY, t);
+  const blueY = mixN(ARR.over.blueY, ARR.eye.blueY, t);
+  const zA = mixN(ARR.over.z, ARR.eye.z, t);
+  const th = mixN(ARR.over.th, ARR.eye.th, t);
+  const cx = (red[0] + blue[1]) / 2;
+  const cy = (redY + blueY) / 2;
+  const { pitch } = camCommunity(f);
+
+  const iconFade = fadeOut(f, 5262, 5271);
+  const arrowOp = iconFade * fadeOut(f, 5083, 5088);
+  const growR = fade(f, 4725, 4745);
+  const growB = fade(f, 4720, 4745);
+  // small tear opens as the camera settles at eye level, the halves
+  // fully retract at 5075-5084 (as in the reference)
+  const tear = easeOutPow(fade(f, 4988, 4998), 2) * 4;
+  const retract = easeOutPow(fade(f, 5075, 5084), 1.5);
+  const shiftL = -(tear + retract * 124);
+  const shiftR = tear + retract * 124;
+  const seamX = red[0] + (red[1] - red[0]) * 0.49;
+
+  const draw = useCallback((ctx: CanvasRenderingContext2D, _fr: number, w: number, h: number) => {
+    if (arrowOp <= 0) return;
+    // canvas coords: world offsets from (cx, cy)
+    const X = (wx: number) => w / 2 + (wx - cx);
+    const Y = (wy: number) => h / 2 - (wy - cy);
+    const split = shiftL !== 0 || shiftR !== 0;
+    const drawArrow = (
+      x0: number, x1: number, y: number, headEnd: "left" | "right",
+      color: string, light: string, outline: string, grow: number, growFrom: "left" | "right",
+    ) => {
+      if (grow <= 0) return;
+      const tHalf = th / 2;
+      const head = Math.min(24, (x1 - x0) * 0.28);
+      const g = ctx.createLinearGradient(0, Y(y + th), 0, Y(y - th));
+      g.addColorStop(0, light);
+      g.addColorStop(1, color);
+      ctx.fillStyle = g;
+      ctx.strokeStyle = outline;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = "round";
+      // grow clip
+      ctx.save();
+      const visW = (x1 - x0 + 48) * grow;
+      const clipX0 = growFrom === "right" ? x1 + 24 - visW : x0 - 24;
+      ctx.beginPath();
+      ctx.rect(X(clipX0), Y(y + th * 1.3), visW, th * 2.6);
+      ctx.clip();
+      const piece = (build: () => void, dx: number, dy: number) => {
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.beginPath();
+        build();
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      };
+      if (!split) {
+        piece(() => {
+          if (headEnd === "left") {
+            ctx.moveTo(X(x0), Y(y));
+            ctx.lineTo(X(x0 + head), Y(y + th * 0.95));
+            ctx.lineTo(X(x0 + head), Y(y + tHalf));
+            ctx.lineTo(X(x1), Y(y + tHalf));
+            ctx.lineTo(X(x1), Y(y - tHalf));
+            ctx.lineTo(X(x0 + head), Y(y - tHalf));
+            ctx.lineTo(X(x0 + head), Y(y - th * 0.95));
+          } else {
+            ctx.moveTo(X(x0), Y(y + tHalf));
+            ctx.lineTo(X(x1 - head), Y(y + tHalf));
+            ctx.lineTo(X(x1 - head), Y(y + th * 0.95));
+            ctx.lineTo(X(x1), Y(y));
+            ctx.lineTo(X(x1 - head), Y(y - th * 0.95));
+            ctx.lineTo(X(x1 - head), Y(y - tHalf));
+            ctx.lineTo(X(x0), Y(y - tHalf));
+          }
+        }, 0, 0);
+        ctx.restore();
+        return;
+      }
+      const dyL = Math.min(2.5, Math.abs(shiftL) * 0.6);
+      const dyR = Math.min(2.5, Math.abs(shiftR) * 0.6);
+      // left piece (rises slightly as it tears free, like the source)
+      piece(() => {
+        if (headEnd === "left") {
+          ctx.moveTo(X(x0), Y(y));
+          ctx.lineTo(X(x0 + head), Y(y + th * 0.95));
+          ctx.lineTo(X(x0 + head), Y(y + tHalf));
+          jagPath(ctx, X, Y, seamX, y, tHalf);
+          ctx.lineTo(X(x0 + head), Y(y - tHalf));
+          ctx.lineTo(X(x0 + head), Y(y - th * 0.95));
+        } else {
+          ctx.moveTo(X(x0), Y(y + tHalf));
+          jagPath(ctx, X, Y, seamX, y, tHalf);
+          ctx.lineTo(X(x0), Y(y - tHalf));
+        }
+      }, shiftL, -dyL);
+      // right piece (dips slightly)
+      piece(() => {
+        if (headEnd === "right") {
+          jagPath(ctx, X, Y, seamX, y, tHalf);
+          ctx.lineTo(X(x1 - head), Y(y - tHalf));
+          ctx.lineTo(X(x1 - head), Y(y - th * 0.95));
+          ctx.lineTo(X(x1), Y(y));
+          ctx.lineTo(X(x1 - head), Y(y + th * 0.95));
+          ctx.lineTo(X(x1 - head), Y(y + tHalf));
+        } else {
+          jagPath(ctx, X, Y, seamX, y, tHalf);
+          ctx.lineTo(X(x1), Y(y - tHalf));
+          ctx.lineTo(X(x1), Y(y + tHalf));
+        }
+      }, shiftR, dyR);
+      ctx.restore();
+    };
+    drawArrow(red[0], red[1], redY, "left", C.red, "#FF9DAC", "#8F565E", growR, "right");
+    drawArrow(blue[0], blue[1], blueY, "right", C.blue, "#7FCBDD", "#4E7580", growB, "left");
+  }, [arrowOp, cx, cy, th, red[0], red[1], blue[0], blue[1], redY, blueY, seamX, shiftL, shiftR, growR, growB]);
+
+  if (arrowOp <= 0 || (growR <= 0 && growB <= 0)) return null;
+  return (
+    <group position={[cx, cy, zA]} rotation={[-pitch, 0, 0]}>
+      <CanvasPlane frame={frame} width={ARROW_CANVAS_W} height={ARROW_CANVAS_H} res={1.5}
+        position={[0, 0, 0]} draw={draw} renderOrder={2} opacity={arrowOp} />
+    </group>
+  );
+};
+
+// ── glass wireframe cube: one object, three measured poses ───────
+// Pull-back pose fit from the f5240 corners (bottom L(77,292) F(388,316)
+// R(527,288); tops v=96/132). Overhead pose = affine of it fit to the
+// f4830 wireframe (TL/TF/TR + left edge, rms ~10 px). Eye "room" pose
+// fit from the eye-level wall verticals (x≈443/437 right, ≈8 left), the
+// ceiling line (v≈90) and the pane crossing the camera at f≈4913.
 const CUBE = (() => {
-  // bottom corners on the floor (left, front, right), back by parallelogram
+  // pull-back pose (exact 5240 corner fit; runs camCommunity at import)
   const bl = toFloor(77, 292, 5240);
   const bf = toFloor(388, 316, 5240);
   const br = toFloor(527, 288, 5240);
   const bb: Pt = [bl[0] + br[0] - bf[0], bl[1] + br[1] - bf[1]];
-  // top y from the projected top corners (same x,z as bottoms)
   const { cam, pitch } = camCommunity(5240);
   const ySolve = (p: Pt, v: number): number => {
     // v = 240 - DCAM*qy/(-qz) with q = Rx(pitch)(P - C)
     const dz = p[1] - cam[2];
-    // qy = c*dy - s*dz ; qz = s*dy + c*dz  (rotating by +pitch)
     const c = Math.cos(pitch);
     const s = Math.sin(pitch);
-    const k = (240 - v) / DCAM; // qy = k * (-qz)
-    // c*dy - s*dz = -k*(s*dy + c*dz)  →  dy(c + k*s) = s*dz - k*c*dz
+    const k = (240 - v) / DCAM;
     const dy = ((s - k * c) * dz) / (c + k * s);
     return cam[1] + dy;
   };
-  const yTop = (ySolve(bl, 96) + ySolve(br, 132)) / 2;
-  return { quad: [bl, bb, br, bf] as Pt[], yTop };
+  const yTopP = (ySolve(bl, 96) + ySolve(br, 132)) / 2;
+  const quadP: Pt[] = [bl, bb, br, bf];
+  // overhead pose: affine of the pull-back quad (s=0.77, +50,+92)
+  const cen: Pt = [
+    (bl[0] + bb[0] + br[0] + bf[0]) / 4,
+    (bl[1] + bb[1] + br[1] + bf[1]) / 4,
+  ];
+  const quadO: Pt[] = quadP.map((p) => [
+    cen[0] + (p[0] - cen[0]) * 0.77 + 50,
+    cen[1] + (p[1] - cen[1]) * 0.77 + 92,
+  ]);
+  // eye room pose (rect cx=-241.6 cz=-116.9 hx=348.8 hz=550 yaw≈0)
+  const quadE: Pt[] = [
+    [-593.7, 430.9], [-586.9, -669.0], [110.6, -664.7], [103.7, 435.3],
+  ];
+  return { quadO, quadE, quadP, yTopO: yTopP, yTopE: 90.3, yTopP };
 })();
 
+const cubeAt = (f: number): { quad: Pt[]; yTop: number } => {
+  const mixQ = (a: Pt[], b: Pt[], t: number): Pt[] =>
+    a.map((p, i) => [mixN(p[0], b[i][0], t), mixN(p[1], b[i][1], t)] as Pt);
+  if (f <= 4885) return { quad: CUBE.quadO, yTop: CUBE.yTopO };
+  if (f < 4910) {
+    const t = smooth01((f - 4885) / 25);
+    return { quad: mixQ(CUBE.quadO, CUBE.quadE, t), yTop: mixN(CUBE.yTopO, CUBE.yTopE, t) };
+  }
+  if (f <= 5208) return { quad: CUBE.quadE, yTop: CUBE.yTopE };
+  if (f < 5240) {
+    const t = smooth01((f - 5208) / 32);
+    return { quad: mixQ(CUBE.quadE, CUBE.quadP, t), yTop: mixN(CUBE.yTopE, CUBE.yTopP, t) };
+  }
+  return { quad: CUBE.quadP, yTop: CUBE.yTopP };
+};
+
 // The reference glass is near-tintless: presence is carried by the drawn
-// edges, a faint sheen wash under the ceiling corners, and the arrows'
-// zigzag seam at the face. Faces are real glass (physical material,
-// transmissive) so the dive-through reads as passing a pane. Each pane is
-// built from its exact corner vertices (the quad is a parallelogram, not
-// a rectangle — a plane+quaternion fit sheared the top face into a
-// phantom pyramid).
+// edges, a faint sheen wash under the ceiling corners, and the foreground
+// pane sweep. Faces are real glass (physical material, transmissive) so
+// the dive-through reads as passing a pane. Each pane is built from its
+// exact corner vertices (the quad is a parallelogram, not a rectangle).
 const quadGeo = (a: V3, b: V3, c: V3, d: V3): THREE.BufferGeometry => {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute(
@@ -349,8 +696,10 @@ const quadGeo = (a: V3, b: V3, c: V3, d: V3): THREE.BufferGeometry => {
   return geo;
 };
 
-const CubeGlass: React.FC<{ opacity: number; drop: number }> = ({ opacity, drop }) => {
-  const { yTop, quad } = CUBE;
+const CubeGlass: React.FC<{ quad: Pt[]; yTop: number; opacity: number; drop: number }> = ({
+  quad, yTop, opacity, drop,
+}) => {
+  const geoKey = `${quad.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(";")};${yTop.toFixed(1)}`;
   const built = React.useMemo(() => {
     const pts: number[] = [];
     const push = (a: V3, b: V3) => pts.push(...a, ...b);
@@ -370,7 +719,6 @@ const CubeGlass: React.FC<{ opacity: number; drop: number }> = ({ opacity, drop 
     }
     panes.push(quadGeo(top[0], top[1], top[2], top[3]));
     // sheen strips just under the ceiling, hugging each side pane
-    // (uv v=0 at the strip bottom, v=1 at the top)
     const sheens: THREE.BufferGeometry[] = [];
     const SH = 56;
     for (let i = 0; i < 4; i++) {
@@ -398,7 +746,8 @@ const CubeGlass: React.FC<{ opacity: number; drop: number }> = ({ opacity, drop 
     const sheenTex = new THREE.CanvasTexture(c);
     sheenTex.colorSpace = THREE.SRGBColorSpace;
     return { geo, panes, sheens, sheenTex };
-  }, [quad, yTop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geoKey]);
   if (opacity <= 0) return null;
   return (
     <group position={[0, drop, 0]}>
@@ -479,159 +828,14 @@ const Backdrop: React.FC<{ cam: V3; pitch: number }> = ({ cam, pitch }) => {
   );
 };
 
-// ── community buildings: extruded solids on the collage's tracks ─
-// The source is a 2.5D collage (icon parallax is not 3D-consistent, and
-// floor-locked rigid fits miss by 25-65px), so each mesh is real
-// extruded geometry whose world anchor rides the measured icon track,
-// unprojected at the building's fitted height (fit-community.mjs).
-// f, worldX, worldZ, optional worldY (per-frame depth/size correction —
-// the source collage rescales icons shot-to-shot, so the anchor must ride
-// in all three axes; y falls back to yBase when absent)
-type WTrackRow = [number, number, number] | [number, number, number, number];
-type CommB = { yBase: number; track: WTrackRow[]; spec: MiniSpec };
-// Cluster = 2-tier box + three temples (measured; the reference has no
-// separate small gabled house — that silhouette is t3 seen end-on).
-// Tracks re-solved from measured icon bottom-centers (fit-community2.mjs):
-// box/t1 exit frame-left before eye level, t2/t3 hold through 5205.
-const WB: Record<string, CommB> = {
-  house: {
-    yBase: -67.5,
-    // dive+hold rows re-solved from per-frame ref/cur blob measurements
-    // (fit-dive-tracks.mjs): the ref collage slides the icons shot-to-shot,
-    // worst mid-dive (dv +26 @4939) and ~(+19,-11)px through the hold.
-    track: [
-      [4775, 26.1, -5.3], [4880, 11.8, -12.7, -67.5],
-      [4915, 30, -39.4, -67.5], [4924, 28, -41.7, -67.5], [4933, 22.6, -58.8, -67.5],
-      [4939, 17.8, -70.2, -67.5], [4945, 14.5, -60.8, -67.5], [4951, 7.3, -41.7, -67.5],
-      [4953, 9.3, -38.3, -68.8], [4963, -2.9, -27.2, -65.3], [4972, -3.9, -25.6, -62.1],
-      [4981, -8.3, -24.7, -61.8], [4995, 1, -20.1, -61.9],
-      [5030, -26.5, -44.1, -67.5], [5060, -26.1, -43.5, -68.9], [5100, -29.7, -44.5, -68.9],
-      [5150, -25.4, -33.5, -66.1], [5205, -26.4, -23.6, -64.8],
-    ],
-    spec: { kind: "house", W: 74.2, L: 58, H: 89, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
-  },
-  bank: {
-    yBase: -62,
-    // dive+hold rows re-solved from measurements (bank ran ~-28..-39px du)
-    track: [
-      [4880, 196, 37.1, -62],
-      // 4915-4933 stay on the old path: the ref draws a smaller, left-
-      // leaning bank on a pad at the overhead pose — a different icon
-      // shape; base-matching it painted more wrong pixels, not fewer
-      [4915, 192.3, 28.7, -62], [4924, 191.3, 26.6, -62], [4933, 190.3, 24.5, -62],
-      [4942, 236, -31.5, -81.2], [4953, 225.9, -25, -84.4], [4963, 219.6, -9.3, -74.2],
-      [4972, 212.3, -11.2, -69.6], [4981, 210.1, -5.1, -68.7], [4990, 208.5, -4.6, -68.7],
-      [4995, 208.7, -4.9, -68.7], [5030, 183.3, 14.7, -62], [5060, 183.3, 14.7, -62],
-      [5100, 183.3, 14.7, -62], [5150, 183.3, 14.7, -62], [5205, 183.3, 14.7, -62],
-    ],
-    spec: { kind: "temple", W: 88, L: 48, H: 88, eaveFrac: 0.655, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
-  },
-  t1: {
-    yBase: -10.9,
-    track: [[4775, -124.6, 6.2], [4880, -163.9, 1.3], [4955, -123.7, 92.1], [5010, -127.9, 120.5]],
-    spec: { kind: "temple", W: 46.4, L: 32, H: 36.4, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 4, fill: "#FFFFFF" }, strip: true },
-  },
-  cbs: {
-    yBase: -165.2,
-    track: [[4750, -200.1, -69.9], [4775, -201.7, -73.5], [4880, -234.3, -27.1], [4955, -364, -119.8]],
-    spec: { kind: "box2", W: 56.1, L: 42, H: 97, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
-  },
-  t2: {
-    yBase: -5.5,
-    track: [[4775, -70.9, -15.4], [4880, -108, -32], [4955, -75.7, 88.4], [5000, -63.4, 97.4], [5060, -57.8, 104.5], [5140, -57.2, 102.5], [5205, -57.4, 104.6]],
-    spec: { kind: "temple", W: 38.5, L: 30, H: 36.6, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
-  },
-  t3: {
-    yBase: -12,
-    track: [[4775, -4.3, -38.2], [4880, -39.1, -69.9], [4955, -42, -4], [5000, -31.4, 27.7], [5060, -38.6, 7.3], [5140, -44.7, -3.5], [5205, -39.3, 13]],
-    spec: { kind: "temple", W: 36.5, L: 30, H: 33.5, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
-  },
-};
-const wbPos = (b: CommB, f: number, lift = 0): V3 => {
-  const y4 = b.track.filter((r) => r.length === 4) as [number, number, number, number][];
-  return [
-    lerp1(b.track.map((r) => [r[0], r[1]] as [number, number]), f),
-    (y4.length ? lerp1(y4.map((r) => [r[0], r[3]] as [number, number]), f) : b.yBase) + lift,
-    lerp1(b.track.map((r) => [r[0], r[2]] as [number, number]), f),
-  ];
-};
-
-// ── arrows: jagged-seam block arrows ─────────────────────────────
-const JagArrow: React.FC<{
-  x0: number; x1: number; y: number; th: number; headEnd: "left" | "right";
-  color: string; light: string; outline: string; opacity: number;
-  seamX: number; shiftL: number; shiftR: number; grow: number; growFrom: "left" | "right";
-}> = ({ x0, x1, y, th, headEnd, color, light, outline, opacity, seamX, shiftL, shiftR, grow, growFrom }) => {
-  if (opacity <= 0 || grow <= 0) return null;
-  const t = th / 2;
-  const head = Math.min(22, (x1 - x0) * 0.28);
-  const split = shiftL !== 0 || shiftR !== 0;
-  const jag = (xc: number, dir: 1 | -1): string => {
-    // jagged mating edge (lightning): from top to bottom
-    return [
-      `${xc + 2 * dir},${y - t}`,
-      `${xc - 4 * dir},${y - t * 0.35}`,
-      `${xc + 5 * dir},${y - t * 0.05}`,
-      `${xc - 3 * dir},${y + t * 0.45}`,
-      `${xc + 2 * dir},${y + t}`,
-    ].join(" ");
-  };
-  // before the split the arrow is one clean block — the zigzag seam only
-  // exists once the halves pull apart (ref shows no seam at rest)
-  const wholePoly =
-    headEnd === "left"
-      ? `${x0},${y} ${x0 + head},${y - th * 0.95} ${x0 + head},${y - t} ${x1},${y - t} ${x1},${y + t} ${x0 + head},${y + t} ${x0 + head},${y + th * 0.95}`
-      : `${x0},${y - t} ${x1 - head},${y - t} ${x1 - head},${y - th * 0.95} ${x1},${y} ${x1 - head},${y + th * 0.95} ${x1 - head},${y + t} ${x0},${y + t}`;
-  // left piece + right piece polygons
-  const leftPoly =
-    headEnd === "left"
-      ? `${x0},${y} ${x0 + head},${y - th * 0.95} ${x0 + head},${y - t} ${jag(seamX, 1)} ${x0 + head},${y + t} ${x0 + head},${y + th * 0.95}`
-      : `${x0},${y - t} ${jag(seamX, 1)} ${x0},${y + t}`;
-  const rightPoly =
-    headEnd === "right"
-      ? `${jag(seamX, 1)} ${x1 - head},${y + t} ${x1 - head},${y + th * 0.95} ${x1},${y} ${x1 - head},${y - th * 0.95} ${x1 - head},${y - t}`
-      : `${jag(seamX, 1)} ${x1},${y + t} ${x1},${y - t}`;
-  // grow clip
-  const visW = (x1 - x0 + 44) * grow;
-  const clipX = growFrom === "right" ? x1 + 22 - visW : x0 - 22;
-  const gid = `jag-${Math.round(y)}-${headEnd}`;
-  return (
-    <svg width={854} height={480} style={{ position: "absolute", inset: 0, opacity }}>
-      <defs>
-        <linearGradient id={`${gid}-g`} x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stopColor={color} />
-          <stop offset="100%" stopColor={light} />
-        </linearGradient>
-        <clipPath id={gid}>
-          <rect x={clipX} y={y - th * 1.2} width={visW} height={th * 2.4} />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${gid})`}>
-        {split ? (
-          <>
-            {/* the ref tear offsets the halves vertically as well */}
-            <g transform={`translate(${shiftL},${-Math.min(4, Math.abs(shiftL) * 0.6)})`}>
-              <polygon points={leftPoly} fill={`url(#${gid}-g)`} stroke={outline} strokeWidth={2.2} />
-            </g>
-            <g transform={`translate(${shiftR},${Math.min(4, Math.abs(shiftR) * 0.6)})`}>
-              <polygon points={rightPoly} fill={`url(#${gid}-g)`} stroke={outline} strokeWidth={2.2} />
-            </g>
-          </>
-        ) : (
-          <polygon points={wholePoly} fill={`url(#${gid}-g)`} stroke={outline} strokeWidth={2.2} />
-        )}
-      </g>
-    </svg>
-  );
-};
-
-// ── foreground glass-pane sweep ──────────────────────────────────
-// The cube's LEFT face passes the camera during the dive: a full-height
+// ── foreground glass-pane sweep (screen-space, kept deliberately) ─
+// The cube's front face passes the camera during the dive: a full-height
 // neutral-grey band (interior ~22 levels under the bg, two faint edge
 // lines) sweeps leftward 4915-4975, parks at the left edge and fades by
-// ~5085; during the pull-back (5218-5240) the face re-enters left→right
-// and hands over to the drawn cube edges. All xs measured per frame on
-// the reference (top band y≈52, bottom band y≈432).
+// ~5085; during the pull-back (5216-5240) the face re-enters left→right
+// and hands over to the drawn cube edges. The reference's own glass is
+// not world-consistent between shots, and these measured tracks are
+// already smooth — so this one element stays a DOM overlay.
 const PANE_TOP: [number, number, number][] = [
   // [f, xL, xR] at y≈52
   [4915, 456, 462], [4921, 445, 452], [4924, 438, 445], [4930, 407, 417],
@@ -708,102 +912,102 @@ const GlassSweep: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// arrow geometry keyframes (endpoints in screen px)
-const RED_K: [number, number, number, number][] = [
-  // [f, x0(head), x1(tail), cy]
-  [4775, 497, 580, 252], [4880, 500, 585, 252], [4925, 480, 560, 240],
-  [4940, 447, 505, 240], [4985, 338, 462, 240], [5030, 338, 462, 240], [5205, 335, 460, 240],
-];
-const BLUE_K: [number, number, number, number][] = [
-  [4775, 508, 585, 268], [4880, 512, 590, 268], [4925, 495, 578, 262],
-  [4940, 495, 550, 265], [4985, 365, 487, 266], [5030, 365, 487, 266], [5205, 360, 490, 266],
-];
-
 // ── the scene ────────────────────────────────────────────────────
-export const Community: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
+const PlantedBuilding: React.FC<{
+  name: string; frame: number; opacity: number; pop?: number; dropY?: number;
+}> = ({ name, frame, opacity, pop = 1, dropY = 0 }) => {
+  const b = WB[name];
+  const p = wbAt(b, frame);
+  if (opacity <= 0.005 || pop <= 0.005) return null;
+  return (
+    <group position={[p.x, FLOOR_Y + dropY, p.z]} scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
+      <MiniBuilding spec={b.spec} position={[0, 0, 0]} opacity={opacity} />
+    </group>
+  );
+};
+
+export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const { cam, pitch } = camCommunity(frame);
 
   const iconFade = fadeOut(frame, 5262, 5271);
-  // wash fitted to the ref mean-luminance ramp (227→242 over 5205-5271;
-  // first pass overshot by ~8 levels at 5240)
-  const washOp = lerp1([[5205, 0], [5225, 0.22], [5240, 0.38], [5271, 0.62]], frame);
 
-  const houseDrop = (1 - easeOutPow(fade(frame, 4698, 4712), 2)) * 40;
-  const houseOp = fade(frame, 4698, 4710) * iconFade;
-  const bankDrop = (1 - easeOutPow(fade(frame, 4712, 4722), 2)) * 36;
-  const bankOp = fade(frame, 4712, 4720) * iconFade;
+  // hero entries/exits measured on the reference: house fades in from
+  // ~4694, bank ~4705; on the way out the house is gone by ~5275 and the
+  // bank alone survives to ~5279
+  const houseDrop = (1 - easeOutPow(fade(frame, 4694, 4708), 2)) * 40;
+  const houseOp = fade(frame, 4694, 4708) * fadeOut(frame, 5266, 5275);
+  const bankDrop = (1 - easeOutPow(fade(frame, 4705, 4715), 2)) * 36;
+  const bankOp = fade(frame, 4705, 4715) * fadeOut(frame, 5270, 5279);
 
   const pop = (a: number, b: number) => {
     const t = fade(frame, a, b);
     return t <= 0 ? 0 : Math.min(1, 1.1 * easeOutPow(t, 2));
   };
 
-  const redK = {
-    x0: lerp1(RED_K.map((k) => [k[0], k[1]] as [number, number]), frame),
-    x1: lerp1(RED_K.map((k) => [k[0], k[2]] as [number, number]), frame),
-    y: lerp1(RED_K.map((k) => [k[0], k[3]] as [number, number]), frame),
-  };
-  const blueK = {
-    x0: lerp1(BLUE_K.map((k) => [k[0], k[1]] as [number, number]), frame),
-    x1: lerp1(BLUE_K.map((k) => [k[0], k[2]] as [number, number]), frame),
-    y: lerp1(BLUE_K.map((k) => [k[0], k[3]] as [number, number]), frame),
-  };
-  const closeT = fade(frame, 4925, 4985);
-  // measured shaft: ~11px at 4925 → ~15px at 5000 (was 16→24: too chunky)
-  const thArrow = 11 + 4 * closeT;
-  // small tear opens as the camera settles at eye level (~4990), the
-  // halves fully retract at 5075
-  const tear = easeOutPow(fade(frame, 4988, 4998), 2) * 4;
-  const retract = easeOutPow(fade(frame, 5075, 5084), 1.5);
-  const arrowOp = iconFade * fadeOut(frame, 5083, 5088);
-  const shiftL = -(tear + retract * 120);
-  const shiftR = tear + retract * 120;
-
   // rigid drop (measured: airborne ~4800, landed ~4812, no bounce), then
   // lifts off during the pull-back before the whiteout
   const cubeOp = fade(frame, 4798, 4806) * fadeOut(frame, 5280, 5287);
   const cubeDrop = (1 - easeOutPow(fade(frame, 4798, 4815), 1.8)) * 150;
   const cubeLift = easeOutPow(fade(frame, 5240, 5271), 1.5) * 110;
+  const cube = cubeAt(frame);
+
+  // cbs and t1 leave the frame during the dive (the source drops them);
+  // t2/t3 hold through eye level, slightly washed as in the source
+  const cbsOp = iconFade * fadeOut(frame, 4950, 4970);
+  const t1Op = iconFade * fadeOut(frame, 4955, 4975);
+  const t2Op = iconFade * (1 - 0.45 * fade(frame, 4985, 5000));
+  const t3Op = iconFade * (1 - 0.3 * fade(frame, 4985, 5000));
+
+  const padOp = (name: string, a: number, b: number, extra = 1) => {
+    const bld = WB[name];
+    const p = wbAt(bld, frame);
+    return { p, o: fade(frame, a, b) * iconFade * extra, w: bld.padW * bld.spec.W };
+  };
+  const pads = [
+    { key: "p-house", ...padOp("house", 4700, 4712) },
+    { key: "p-bank", ...padOp("bank", 4712, 4722) },
+    // cbs/t1 pads leave with their buildings during the dive
+    { key: "p-cbs", ...padOp("cbs", 4700, 4710, fadeOut(frame, 4950, 4970)) },
+    { key: "p-t1", ...padOp("t1", 4700, 4710, fadeOut(frame, 4955, 4975)) },
+    { key: "p-t2", ...padOp("t2", 4700, 4710) },
+    { key: "p-t3", ...padOp("t3", 4700, 4710) },
+  ];
+  const dvT = diveT(frame);
 
   return (
-    <AbsoluteFill>
-      <Vignette />
-      <Room>
-        <CameraRig position={cam} rotX={-pitch} />
-        <ambientLight intensity={2.5} />
-        <Backdrop cam={cam} pitch={pitch} />
-        <SheetFloor frame={frame} />
-        {/* community cluster: real extruded solids on the collage tracks
-            (box + t1 leave the frame during the dive — the ref drops them;
-            t2 holds at the left edge, half-faded, through the eye level) */}
-        <MiniBuilding spec={WB.cbs.spec} position={wbPos(WB.cbs, frame)}
-          opacity={iconFade * fadeOut(frame, 4990, 5005)} scale={pop(4744, 4756)} />
-        <MiniBuilding spec={WB.t1.spec} position={wbPos(WB.t1, frame)}
-          opacity={iconFade * fadeOut(frame, 5000, 5015)} scale={pop(4750, 4762)} />
-        <MiniBuilding spec={WB.t2.spec} position={wbPos(WB.t2, frame)}
-          opacity={iconFade * (1 - 0.45 * fade(frame, 4985, 5000))} scale={pop(4754, 4766)} />
-        <MiniBuilding spec={WB.t3.spec} position={wbPos(WB.t3, frame)}
-          opacity={iconFade * (1 - 0.3 * fade(frame, 4985, 5000))} scale={pop(4766, 4778)} />
-        {/* hero house + bank */}
-        <MiniBuilding spec={WB.house.spec} position={wbPos(WB.house, frame, houseDrop)} opacity={houseOp} />
-        <MiniBuilding spec={WB.bank.spec} position={wbPos(WB.bank, frame, bankDrop)} opacity={bankOp} />
-        <CubeGlass opacity={cubeOp} drop={cubeDrop + cubeLift} />
-      </Room>
-      {/* exchange arrows */}
-      <JagArrow x0={redK.x0} x1={redK.x1} y={redK.y} th={thArrow} headEnd="left"
-        color={C.red} light="#FF9DAC" outline="#8F565E" opacity={arrowOp}
-        seamX={redK.x0 + (redK.x1 - redK.x0) * 0.5} shiftL={shiftL} shiftR={shiftR}
-        grow={fade(frame, 4725, 4745)} growFrom="right" />
-      <JagArrow x0={blueK.x0} x1={blueK.x1} y={blueK.y} th={thArrow} headEnd="right"
-        color={C.blue} light="#7FCBDD" outline="#4E7580" opacity={arrowOp}
-        seamX={blueK.x0 + (blueK.x1 - blueK.x0) * 0.35} shiftL={shiftL} shiftR={shiftR}
-        grow={fade(frame, 4720, 4745)} growFrom="left" />
+    <>
+      <ambientLight intensity={2.5} />
+      <Backdrop cam={cam} pitch={pitch} />
+      {/* SheetFloor is mounted by the ground layer, not here */}
+      <RaysPlane frame={frame} />
+      {/* slab pads under buildings + the two vacant lots */}
+      {pads.map(({ key, p, o, w }) => (
+        <Pad key={key} x={p.x} z={p.z} k={p.kx} padW={w} opacity={o} />
+      ))}
+      {VACANT.map((vc, i) => (
+        <Pad key={`p-vac${i}`} x={mixN(vc.over.x, vc.eye.x, dvT)} z={mixN(vc.over.z, vc.eye.z, dvT)}
+          k={mixN(K_CLUSTER, 1, dvT)} padW={VAC_W} opacity={fade(frame, 4700, 4710) * iconFade} />
+      ))}
+      {/* community cluster: rigid planted solids, one relocation in the dive */}
+      <PlantedBuilding name="cbs" frame={frame} opacity={cbsOp} pop={pop(4744, 4756)} />
+      <PlantedBuilding name="t1" frame={frame} opacity={t1Op} pop={pop(4750, 4762)} />
+      <PlantedBuilding name="t2" frame={frame} opacity={t2Op} pop={pop(4754, 4766)} />
+      <PlantedBuilding name="t3" frame={frame} opacity={t3Op} pop={pop(4766, 4778)} />
+      {/* hero house + bank */}
+      <PlantedBuilding name="house" frame={frame} opacity={houseOp} dropY={houseDrop} />
+      <PlantedBuilding name="bank" frame={frame} opacity={bankOp} dropY={bankDrop} />
+      {/* exchange arrows: world plane in the house-bank gap */}
+      <ArrowsPlane frame={frame} />
+      <CubeGlass quad={cube.quad} yTop={cube.yTop} opacity={cubeOp} drop={cubeDrop + cubeLift} />
+    </>
+  );
+};
+
+export const CommunityOverlay: React.FC<{ frame: number }> = ({ frame }) => {
+  return (
+    <>
       {/* foreground glass pane crossing the camera */}
       <GlassSweep frame={frame} />
-      {/* pull-back wash */}
-      {washOp > 0 && <AbsoluteFill style={{ background: "#FBFBFA", opacity: washOp }} />}
-    </AbsoluteFill>
+    </>
   );
 };

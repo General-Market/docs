@@ -168,7 +168,8 @@ export const CanvasPlane: React.FC<{
   draw: (ctx: CanvasRenderingContext2D, frame: number, w: number, h: number) => void;
   renderOrder?: number;
   depthTest?: boolean;
-}> = ({ frame, width, height, res = 2, position, rotation = [0, 0, 0], draw, renderOrder = 0, depthTest = true }) => {
+  opacity?: number;
+}> = ({ frame, width, height, res = 2, position, rotation = [0, 0, 0], draw, renderOrder = 0, depthTest = true, opacity = 1 }) => {
   const cw = Math.round(width * res);
   const ch = Math.round(height * res);
   const canvas = useMemo(() => {
@@ -195,7 +196,7 @@ export const CanvasPlane: React.FC<{
   return (
     <mesh position={position} rotation={rotation} renderOrder={renderOrder}>
       <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={texture} transparent depthWrite={false} depthTest={depthTest} toneMapped={false} />
+      <meshBasicMaterial map={texture} transparent opacity={opacity} depthWrite={false} depthTest={depthTest} toneMapped={false} />
     </mesh>
   );
 };

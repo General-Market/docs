@@ -3,18 +3,15 @@
 // text lines enter (tracking-in+fade / fade / fade) and exit together.
 
 import React, { useEffect, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
+import { continueRender, delayRender } from "remotion";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, easeOutPow } from "../lib/helpers";
-import { CameraRig, Room, Vignette } from "../lib/world";
-import { FloorPaper, PAPER_CAM } from "./floorPaper";
 
 const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["300", "400"],
 });
 
-const F0 = 4131;
 const fade = (f: number, a: number, b: number) => clamp01((f - a) / Math.max(1, b - a));
 
 const useFonts = () => {
@@ -48,9 +45,10 @@ const Line: React.FC<{
   );
 };
 
-export const AdvDis: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
+// The ground layer owns FloorPaper now; AdvDis has no world objects of its own.
+export const AdvDisWorld: React.FC<{ frame: number }> = () => null;
+
+export const AdvDisOverlay: React.FC<{ frame: number }> = ({ frame }) => {
   useFonts();
 
   // slow drift measured at f4200: +0.076 px/f x, +0.03 px/f y
@@ -67,15 +65,12 @@ export const AdvDis: React.FC = () => {
   const o3 = fade(frame, 4162, 4173) * out;
 
   return (
-    <AbsoluteFill>
-      <Vignette variant="room" />
-      <Room>
-        <CameraRig position={PAPER_CAM} />
-        <FloorPaper frame={frame} />
-      </Room>
+    <>
       <Line text="Advantages" cx={419.5 + dx} cy={169 + dy} size={32} opacity={o1} scaleX={sx} blur={b1} />
       <Line text="&" cx={417 + dx} cy={200 + dy} size={30} opacity={o2} />
       <Line text="Disadvantages" cx={422 + dx} cy={230 + dy} size={32} opacity={o3} />
-    </AbsoluteFill>
+    </>
   );
 };
+
+

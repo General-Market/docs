@@ -11,7 +11,8 @@ import {
   B_BASE_LABEL,
 } from "../data/chartroom";
 import {
-  lerp1, lerpTrack, polyArc, monotonic, easeInOutCubic, easeOutPow, clamp01,
+  lerp1, lerpTrack, polyArc, monotonic, easeInOutCubic, easeOutPow, easeInPow,
+  clamp01, pointAtArc,
 } from "../lib/helpers";
 import type { Pt, TrackRow } from "../lib/helpers";
 import {
@@ -388,8 +389,67 @@ export const jaggedProgressC = (f: number) =>
   f < C.jaggedStart ? 0 : lerp1(jaggedProgTable, f);
 export const redProgressC = (f: number) => lerp1(redProgTable, f);
 
-export const fadeOutC = (f: number) =>
-  clamp01((f - C.fadeOut[0]) / (C.fadeOut[1] - C.fadeOut[0])) ** 1.6;
+// ═════════ Chapter C exit (measured erase + topple, no whiteout) ═════════
+// Reference: traces retract left→right ~1642-1672 (jagged left half gone
+// by 1660, red keeps only its upper arc); the 11 wall gridlines topple
+// right→left 1662-1684, each pivoting at its base and falling toward
+// screen-right; the dashed skirting fades under the topple; the floor
+// sheet persists and fades 1712-1740 while the next scene's floor inks in.
+export const C_EXIT = {
+  redErase: [1642, 1671] as const, // ease-in: front at x≈487 by 1660
+  jaggedErase: [1644, 1668] as const, // linear: front at x≈380 by 1660
+  labelFade: [1644, 1662] as const, // DOM labels nearly gone by 1660
+  baselineFade: [1662, 1682] as const,
+  toppleStart: 1662,
+  toppleStagger: 1.4, // per gridline, rightmost first
+  toppleDur: 8, // leftmost: starts 1676, done 1684
+  floorFade: [1712, 1740] as const,
+} as const;
+
+// Erase fronts: arc position measured from the polyline start (screen-
+// left), so the traces retract left→right while the tip stays put.
+export const redEraseC = (f: number) =>
+  redArcC.total *
+  easeInPow((f - C_EXIT.redErase[0]) / (C_EXIT.redErase[1] - C_EXIT.redErase[0]), 1.6);
+export const jaggedEraseC = (f: number) =>
+  jaggedArcC.total *
+  clamp01((f - C_EXIT.jaggedErase[0]) / (C_EXIT.jaggedErase[1] - C_EXIT.jaggedErase[0]));
+
+// Sub-polyline between arc positions s0..s1 (both ends interpolated).
+export const polySliceArc = (
+  poly: readonly Pt[],
+  cum: number[],
+  s0: number,
+  s1: number,
+): Pt[] => {
+  const total = cum[cum.length - 1];
+  const a = Math.min(Math.max(s0, 0), total);
+  const b = Math.min(Math.max(s1, 0), total);
+  if (b - a < 1e-9) return [];
+  const out: Pt[] = [pointAtArc(poly, cum, a)];
+  for (let i = 0; i < poly.length; i++) {
+    if (cum[i] > a && cum[i] < b) out.push([poly[i][0], poly[i][1]]);
+  }
+  out.push(pointAtArc(poly, cum, b));
+  return out;
+};
+
+// Gridline topple: i = 0 (leftmost) .. 10 (rightmost). Rightmost tips
+// first; each rotates about its base to +90° toward screen-right with an
+// ease-in fall (a card tipping over), fading out as it goes.
+export const toppleC = (f: number, i: number): { angle: number; alpha: number } => {
+  const t = clamp01(
+    (f - (C_EXIT.toppleStart + (10 - i) * C_EXIT.toppleStagger)) / C_EXIT.toppleDur,
+  );
+  return { angle: easeInPow(t, 2.2) * (Math.PI / 2), alpha: 1 - easeInPow(t, 1.8) };
+};
+
+export const baselineFadeC = (f: number) =>
+  1 - clamp01((f - C_EXIT.baselineFade[0]) / (C_EXIT.baselineFade[1] - C_EXIT.baselineFade[0]));
+export const labelFadeC = (f: number) =>
+  1 - clamp01((f - C_EXIT.labelFade[0]) / (C_EXIT.labelFade[1] - C_EXIT.labelFade[0]));
+export const floorFadeC = (f: number) =>
+  1 - clamp01((f - C_EXIT.floorFade[0]) / (C_EXIT.floorFade[1] - C_EXIT.floorFade[0]));
 
 // Label sizing: screen cap height scales with the zoom table.
 export const labelCapC = (f: number) => 17 * (lerp1(C_SPACING, Math.min(Math.max(f, 940), 1650)) / gapAnchorC);

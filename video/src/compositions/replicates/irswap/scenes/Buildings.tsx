@@ -6,9 +6,9 @@
 // arrows/labels of phases A-C live on two world planes (~99 deg apart);
 // the phase-D two-shot overlays and the panel stay screen-space.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import {
-  AbsoluteFill, continueRender, delayRender, useCurrentFrame,
+  AbsoluteFill,
 } from "remotion";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import * as THREE from "three";
@@ -22,16 +22,15 @@ import type { ArrowAlphas } from "./Buildings3D";
 import { clamp01, lerp1, lerpTrack } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
 import {
-  CameraRig, CanvasPlane, Room, Vignette, DCAM, unprojToFloor,
+  CanvasPlane, DCAM, unprojToFloor,
 } from "../lib/world";
 import type { V3 } from "../lib/world";
 
-const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
+const { fontFamily: FONT } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
 });
 
-const F0 = 1705; // sequence offset: local frame = global - F0 handled by caller
 
 // ── world model ──────────────────────────────────────────────────
 // Anchor frame 2500 = identity camera, yaw 0. Depths from floor contact.
@@ -150,17 +149,6 @@ const BLD_APPEAR = {
   bank: { appear: [2274, 2312] as const, drop: 18 },
 };
 
-const useFontReady = () => {
-  const [ready, setReady] = useState(false);
-  const [handle] = useState(() => delayRender("bld-fonts"));
-  useEffect(() => {
-    Promise.resolve(waitUntilDone()).then(() => {
-      setReady(true);
-      continueRender(handle);
-    });
-  }, [handle]);
-  return ready;
-};
 
 // ── floor map ────────────────────────────────────────────────────
 // Measured city-plan features. Three source poses:
@@ -225,8 +213,11 @@ const FLOOR_CB: Pt = [0, -250];
 const FLOOR_WB = 1700;
 const FLOOR_HB = 1500;
 
-const FloorMap: React.FC<{ frame: number; g: number }> = ({ frame, g }) => {
+export const FloorMap: React.FC<{ frame: number; g?: number }> = ({ frame, g = camBld(frame).g }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
+    // ground layer mounts for all frames; past the hand-off the sheet is
+    // gone (opacity 0 by 3581) — stay blank as a belt-and-braces guard
+    if (f > 3600) return;
     // ref: the map sheet inks in over ~1695-1725 (scene starts at 1705)
     const a = clamp01((f - 1705) / 22);
     if (a <= 0) return;
@@ -359,8 +350,12 @@ const FloorMap: React.FC<{ frame: number; g: number }> = ({ frame, g }) => {
   const c = rotP([FLOOR_CB[0], FLOOR_Y, FLOOR_CB[1]], g);
   return (
     <group position={c} quaternion={quat}>
+      {/* fades out over 3572-3581 while chart2's FloorSet fades in underneath
+          (ref dissolves fast — ending later leaves a ghost sliver crossing
+          the successor floor through ~3586) */}
       <CanvasPlane frame={frame} width={FLOOR_WB} height={FLOOR_HB} res={1}
-        position={[0, 0, 0]} rotation={[0, 0, 0]} draw={draw} renderOrder={0} />
+        position={[0, 0, 0]} rotation={[0, 0, 0]} draw={draw} renderOrder={0}
+        opacity={fadeOut(frame, 3572, 3581)} />
     </group>
   );
 };
@@ -487,11 +482,10 @@ const Panel: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ── main scene ───────────────────────────────────────────────────
-export const Buildings: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
-  const fontReady = useFontReady();
-  const { cam, g } = camBld(frame);
+// World half: everything that lives inside <Room> except the CameraRig,
+// so the one-world composition can mount it under its own rig.
+export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
+  const { g } = camBld(frame);
 
   // overall scene fade at the end (ref: colors still full at 3550,
   // fully white by ~3572)
@@ -527,25 +521,9 @@ export const Buildings: React.FC = () => {
   // left column pops fully formed between 2612 and 2625 (measured)
   const leftArrOp = fade(frame, 2613, 2625) * fadeOut(frame, 3096, 3110);
   const leftLblOp = fade(frame, 2615, 2628) * (frame < 3086 ? 1 : fadeOut(frame, 3086, 3100));
-  const dVbrOp = fade(frame, 3195, 3240) * fadeOut(frame, 3421, 3427);
-  const ncOp = fade(frame, 3443, 3450) * fadeOut(frame, 3520, 3540);
-  const ncArrowOp = frame >= 2495 ? Math.max(redOp * fadeOut(frame, 3421, 3427), fade(frame, 3427, 3438) * fadeOut(frame, 3520, 3545)) : 0;
 
   const vbrVal = tickValue(frame, TICKS_A, "0.5");
   const cVal = tickValue(frame, TICKS_C, "0.5");
-
-  // track-riding anchor helpers (phase D screen overlays only)
-  // rDA carries the measured phase-D correction (ref arrows sit ~14px
-  // left / 10px lower; labels ~10px left / 11px lower than the first fit)
-  const rD = (base: readonly [number, number]): Pt => riding(frame, 3300, base, P1);
-  const rDA = (base: readonly [number, number]): Pt => {
-    const p = rD(base);
-    return [p[0] - 14, p[1] + 10];
-  };
-  const rE = (base: readonly [number, number]): Pt => riding(frame, 3450, base, P1);
-
-  // red arrow blend 3427-3438 phase-D pose → net-cash pose
-  const redSlide = fade(frame, 3427, 3438);
 
   const al: ArrowAlphas = {
     arrA, progA, lblA, lmA, vbrVal,
@@ -562,62 +540,94 @@ export const Buildings: React.FC = () => {
   };
 
   return (
-    <AbsoluteFill>
-      <Vignette soft />
-      <Room>
-        <CameraRig position={cam} />
-        <FloorMap frame={frame} g={g} />
-        {(Object.keys(BLD_APPEAR) as (keyof typeof BLD_APPEAR)[]).map((name) => {
-          const b = BLD_APPEAR[name];
-          const t = fade(frame, b.appear[0], b.appear[1]);
+    <>
+      {/* FloorMap now lives on the persistent ground layer (orchestrator) */}
+      {(Object.keys(BLD_APPEAR) as (keyof typeof BLD_APPEAR)[]).map((name) => {
+        const b = BLD_APPEAR[name];
+        const t = fade(frame, b.appear[0], b.appear[1]);
+        return (
+          <Building3D key={name} name={name} g={g}
+            opacity={t * (1 - endFade)} drop={b.drop * (1 - t)} renderOrder={2} />
+        );
+      })}
+      {PLAQUES.map((s) => {
+          const op = fade(frame, s.appear[0], s.appear[1]) * (1 - endFade);
+          if (op <= 0) return null;
+          const dropT = 1 - fade(frame, s.appear[0], s.appear[1]);
+          const c = rotP(s.def.center, g);
+          const board = drawPlaque(s.text, s.tilt);
           return (
-            <Building3D key={name} name={name} g={g}
-              opacity={t * (1 - endFade)} drop={b.drop * (1 - t)} renderOrder={2} />
+            <CanvasPlane key={s.key} frame={frame}
+              width={s.def.w} height={s.def.h} res={3}
+              position={[c[0], c[1] + s.drop * dropT, c[2]]}
+              draw={(ctx, f, w, h) => {
+                ctx.globalAlpha = op;
+                board(ctx, f, w, h);
+              }}
+              renderOrder={5} depthTest={false} />
           );
         })}
-        {fontReady &&
-          PLAQUES.map((s) => {
-            const op = fade(frame, s.appear[0], s.appear[1]) * (1 - endFade);
-            if (op <= 0) return null;
-            const dropT = 1 - fade(frame, s.appear[0], s.appear[1]);
-            const c = rotP(s.def.center, g);
-            const board = drawPlaque(s.text, s.tilt);
-            return (
-              <CanvasPlane key={s.key} frame={frame}
-                width={s.def.w} height={s.def.h} res={3}
-                position={[c[0], c[1] + s.drop * dropT, c[2]]}
-                draw={(ctx, f, w, h) => {
-                  ctx.globalAlpha = op;
-                  board(ctx, f, w, h);
-                }}
-                renderOrder={5} depthTest={false} />
-            );
-          })}
-        {fontReady && <ArrowPlanes frame={frame} g={g} font={FONT} al={al} />}
-      </Room>
-      {/* screen-space overlays: panel + phase-D two-shot */}
-      <AbsoluteFill style={{ opacity: 1 - endFade }}>
-        <Panel frame={frame} />
-        {/* Phase D tight two-shot; red arrow slides down 3427-3438 into the
-            net-cash pose measured at 3450 */}
-        <Arrow
-          tail={mixPt(rDA(ANCHOR_3300.redArrow.tail), rE(ANCHOR_3450.redArrow.tail), redSlide)}
-          tip={mixPt(rDA(ANCHOR_3300.redArrow.tip), rE(ANCHOR_3450.redArrow.tip), redSlide)}
-          color={BCOLORS.red} thickness={18} headLen={25} headH={32}
-          opacity={frame >= 3195 ? ncArrowOp : 0} />
-        <Arrow tail={rDA(ANCHOR_3300.tealArrow.tail)} tip={rDA(ANCHOR_3300.tealArrow.tip)}
-          color={BCOLORS.teal} thickness={18} headLen={26} headH={33}
-          opacity={frame >= 3080 ? fixArrowOp : 0} />
-        <Txt p={rDA(ANCHOR_3300.vbrTitle)} size={27} opacity={dVbrOp}>Variable Base Rate</Txt>
-        <RateValue p={rDA(ANCHOR_3300.vbrValue)} size={37} opacity={dVbrOp} value="5.0" />
-        <Txt p={rDA(ANCHOR_3300.fixedTitle)} size={25} opacity={frame >= 3080 ? fixOp : 0}>Fixed Rate</Txt>
-        <RateValue p={rDA(ANCHOR_3300.fixedValue)} size={32} opacity={frame >= 3080 ? fixOp : 0} value="3.0" />
-        {/* Net Cash Settlement */}
-        <Txt p={rE(ANCHOR_3450.l1)} size={24} opacity={ncOp}>Net Cash</Txt>
-        <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
-        <RateValue p={rE(ANCHOR_3450.l3)} size={30} opacity={ncOp} value="2.0" />
-      </AbsoluteFill>
-      {/* floor persists into the chart2 room — only models/overlays fade */}
+      <ArrowPlanes frame={frame} g={g} font={FONT} al={al} />
+    </>
+  );
+};
+
+// Overlay half: the screen-space DOM block (panel + phase-D two-shot).
+export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
+  // overall scene fade at the end (ref: colors still full at 3550,
+  // fully white by ~3572)
+  const endFade = fade(frame, 3548, 3572);
+
+  // solid → ghost at 0.30 over 2575-2600 (measured), back up 3085-3120
+  const ghost = (f: number) =>
+    f < 2575 ? 1 : f < 3085 ? Math.max(0.3, fadeOut(f, 2575, 2600)) : Math.min(1, 0.3 + fade(f, 3085, 3120) * 0.7);
+  const fixOp = fade(frame, 2345, 2355) * ghost(frame) * fadeOut(frame, 3421, 3427);
+  const fixArrowOp = fade(frame, 2361, 2363) * ghost(frame) * fadeOut(frame, 3427, 3438);
+
+  // red arrow: tip-first wipe 2490-2525 with an alpha ramp (ref head is
+  // ~20% alpha mid-wipe), world-static after
+  const redOp = fade(frame, 2495, 2512) *
+    (frame < 3086 ? 1 : frame < 3195 ? Math.max(0.3, fadeOut(frame, 3095, 3115)) : Math.min(1, 0.3 + fade(frame, 3195, 3240) * 0.7));
+  const dVbrOp = fade(frame, 3195, 3240) * fadeOut(frame, 3421, 3427);
+  const ncOp = fade(frame, 3443, 3450) * fadeOut(frame, 3520, 3540);
+  const ncArrowOp = frame >= 2495 ? Math.max(redOp * fadeOut(frame, 3421, 3427), fade(frame, 3427, 3438) * fadeOut(frame, 3520, 3545)) : 0;
+
+  // track-riding anchor helpers (phase D screen overlays only)
+  // rDA carries the measured phase-D correction (ref arrows sit ~14px
+  // left / 10px lower; labels ~10px left / 11px lower than the first fit)
+  const rD = (base: readonly [number, number]): Pt => riding(frame, 3300, base, P1);
+  const rDA = (base: readonly [number, number]): Pt => {
+    const p = rD(base);
+    return [p[0] - 14, p[1] + 10];
+  };
+  const rE = (base: readonly [number, number]): Pt => riding(frame, 3450, base, P1);
+
+  // red arrow blend 3427-3438 phase-D pose → net-cash pose
+  const redSlide = fade(frame, 3427, 3438);
+
+  return (
+    <AbsoluteFill style={{ opacity: 1 - endFade }}>
+      <Panel frame={frame} />
+      {/* Phase D tight two-shot; red arrow slides down 3427-3438 into the
+          net-cash pose measured at 3450 */}
+      <Arrow
+        tail={mixPt(rDA(ANCHOR_3300.redArrow.tail), rE(ANCHOR_3450.redArrow.tail), redSlide)}
+        tip={mixPt(rDA(ANCHOR_3300.redArrow.tip), rE(ANCHOR_3450.redArrow.tip), redSlide)}
+        color={BCOLORS.red} thickness={18} headLen={25} headH={32}
+        opacity={frame >= 3195 ? ncArrowOp : 0} />
+      <Arrow tail={rDA(ANCHOR_3300.tealArrow.tail)} tip={rDA(ANCHOR_3300.tealArrow.tip)}
+        color={BCOLORS.teal} thickness={18} headLen={26} headH={33}
+        opacity={frame >= 3080 ? fixArrowOp : 0} />
+      <Txt p={rDA(ANCHOR_3300.vbrTitle)} size={27} opacity={dVbrOp}>Variable Base Rate</Txt>
+      <RateValue p={rDA(ANCHOR_3300.vbrValue)} size={37} opacity={dVbrOp} value="5.0" />
+      <Txt p={rDA(ANCHOR_3300.fixedTitle)} size={25} opacity={frame >= 3080 ? fixOp : 0}>Fixed Rate</Txt>
+      <RateValue p={rDA(ANCHOR_3300.fixedValue)} size={32} opacity={frame >= 3080 ? fixOp : 0} value="3.0" />
+      {/* Net Cash Settlement */}
+      <Txt p={rE(ANCHOR_3450.l1)} size={24} opacity={ncOp}>Net Cash</Txt>
+      <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
+      <RateValue p={rE(ANCHOR_3450.l3)} size={30} opacity={ncOp} value="2.0" />
     </AbsoluteFill>
   );
 };
+
+

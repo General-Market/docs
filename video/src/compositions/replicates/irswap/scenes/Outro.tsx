@@ -7,18 +7,17 @@
 // camera starts high, pitched and yawed, and eases to the frontal pose.
 // End pose: board plane z=0, camera [0,100,DCAM] → screen x132-726 exact.
 
-import React, { useEffect, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
+import React from "react";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, lerp1 } from "../lib/helpers";
-import { CameraRig, CanvasPlane, Room, Vignette, DCAM } from "../lib/world";
+import { CanvasPlane, DCAM } from "../lib/world";
+import type { V3 } from "../lib/world";
 
-const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
+const { fontFamily: FONT } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
 });
 
-const F0 = 5276;
 const FLOOR_Y = -170;
 
 // board: final pose spans x132-726 (594 wide), bleeds past frame v edges
@@ -68,21 +67,19 @@ const ROLL: [number, number][] = [
 const Y_LIFT: [number, number][] = [
   [5300, 0], [5303, 12], [5306, 21], [5309, 24], [5311, 12], [5313, 0],
 ];
-// whiteout hand-off (ref background is settled by ~5290)
-const WASH: [number, number][] = [
-  [5276, 0.9], [5282, 0.55], [5288, 0.2], [5294, 0],
-];
 
-const useFonts = () => {
-  const [, setReady] = useState(false);
-  const [handle] = useState(() => delayRender("outro-fonts"));
-  useEffect(() => {
-    Promise.resolve(waitUntilDone()).then(() => {
-      setReady(true);
-      continueRender(handle);
-    });
-  }, [handle]);
+export const camOutro = (frame: number): { pos: V3; pitch: number; roll: number } => {
+  const fc = Math.min(frame, 5318);
+  const pos: V3 = [
+    lerp1(CAM_O.map((k) => [k[0], k[1]] as [number, number]), fc),
+    lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc) + lerp1(Y_LIFT, fc),
+    lerp1(CAM_O.map((k) => [k[0], k[3]] as [number, number]), fc),
+  ];
+  const pitch = (lerp1(CAM_O.map((k) => [k[0], k[4]] as [number, number]), fc) * Math.PI) / 180;
+  const roll = (lerp1(ROLL, fc) * Math.PI) / 180;
+  return { pos, pitch, roll };
 };
+
 
 const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
   // board texture in final-pose screen coordinates: (132,−30)-(726,510)
@@ -253,89 +250,81 @@ const drawBacking = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: nu
   ctx.fillRect(0, 0, w, h);
 };
 
-export const Outro: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
-  useFonts();
+export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
 
   const fc = Math.min(frame, 5318);
   const phi = lerp1(PHI, fc);
   const rx = ((phi - 90) * Math.PI) / 180; // -90° = flat behind, 0 = standing
   const psi = (lerp1(PSI, fc) * Math.PI) / 180;
-  const cam: [number, number, number] = [
-    lerp1(CAM_O.map((k) => [k[0], k[1]] as [number, number]), fc),
-    lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc) + lerp1(Y_LIFT, fc),
-    lerp1(CAM_O.map((k) => [k[0], k[3]] as [number, number]), fc),
-  ];
-  const pitch = (lerp1(CAM_O.map((k) => [k[0], k[4]] as [number, number]), fc) * Math.PI) / 180;
-  const roll = (lerp1(ROLL, fc) * Math.PI) / 180;
   const settled = frame >= 5318;
-  // dissolving remnant of the community glass cube (ref f5276-5289)
-  const cubeGhost = 1 - clamp01((frame - 5278) / 11);
-  const wash = frame < 5303 ? lerp1(WASH, frame) : 0;
   // the page plane sweeps through vertical at ~5301: hand the visible
   // surface from the dashboard art to the teal credits across it
   const artOp = 1 - clamp01((frame - 5300) / 3);
 
   return (
-    <AbsoluteFill>
-      <Vignette />
-      <Room>
-        <CameraRig position={cam} rotX={-pitch} rotZ={roll} />
-        {/* the squiggle page of the open book, flat in front of the fold */}
-        <CanvasPlane frame={0} width={BW} height={BH} res={1.5}
-          position={[BOARD_CX, FLOOR_Y, BH / 2]} rotation={[-Math.PI / 2, 0, 0]}
-          draw={drawRightPage} renderOrder={0} />
-        {/* settled page slivers left/right of the board */}
-        {settled && (
-          <>
-            <mesh position={[299 + 4.5, 100, -4]}>
-              <planeGeometry args={[9, BH]} />
-              <meshBasicMaterial color="#8F9495" />
-            </mesh>
-            <mesh position={[-427 + 128, 100, -4]}>
-              <planeGeometry args={[7, BH]} />
-              <meshBasicMaterial color="#FDFDFD" />
-            </mesh>
-          </>
-        )}
-        {/* the flipping page: yawed about the fold midpoint (the ref rises
-            it turned ~90° away, then swings it frontal), hinged at the
-            floor line for the rise itself */}
-        <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psi, 0]}>
-        <group rotation={[rx, 0, 0]}>
-          {/* page thickness rim (under the page while rising, a teal
-              border ring once the credits face the camera) */}
-          <CanvasPlane frame={0} width={BW + 7} height={BH + 7} res={0.5}
-            position={[0, BH / 2, -0.4]} draw={drawBacking} renderOrder={1} />
-          {/* credits card, revealed as the page passes vertical */}
-          <CanvasPlane frame={0} width={BW} height={BH} res={2}
-            position={[0, BH / 2, 0.3]} draw={drawCard} renderOrder={2} />
-          {/* dashboard-art surface, carried while the page rises */}
-          <CanvasPlane frame={frame} width={BW} height={BH} res={1.5}
-            position={[0, BH / 2, 0.6]}
-            draw={(ctx, f, w, h) => {
-              if (artOp <= 0) return;
-              ctx.globalAlpha = artOp;
-              drawPageArt(ctx, f, w, h);
-            }}
-            renderOrder={3} />
-        </group>
-        </group>
-      </Room>
-      {/* dissolving remnant of the community glass cube */}
-      {cubeGhost > 0 && (
-        <svg width={854} height={480}
-          style={{ position: "absolute", inset: 0, opacity: cubeGhost * 0.45 }}>
-          <g stroke="#C4C4C4" strokeWidth={1.6} fill="none">
-            <polyline points="238,128 402,138 578,120" />
-            <line x1={238} y1={128} x2={244} y2={-10} />
-            <line x1={402} y1={138} x2={408} y2={0} />
-            <line x1={578} y1={120} x2={582} y2={-10} />
-          </g>
-        </svg>
+    <>
+      {/* the squiggle page of the open book, flat in front of the fold.
+          The reference keeps this page whited-out until ~5288 — fade it
+          in rather than popping with the region mount at 5276. */}
+      <CanvasPlane frame={0} width={BW} height={BH} res={1.5}
+        position={[BOARD_CX, FLOOR_Y, BH / 2]} rotation={[-Math.PI / 2, 0, 0]}
+        draw={drawRightPage} renderOrder={0}
+        opacity={clamp01((frame - 5280) / 8)} />
+      {/* settled page slivers left/right of the board */}
+      {settled && (
+        <>
+          <mesh position={[299 + 4.5, 100, -4]}>
+            <planeGeometry args={[9, BH]} />
+            <meshBasicMaterial color="#8F9495" />
+          </mesh>
+          <mesh position={[-427 + 128, 100, -4]}>
+            <planeGeometry args={[7, BH]} />
+            <meshBasicMaterial color="#FDFDFD" />
+          </mesh>
+        </>
       )}
-      {wash > 0 && <AbsoluteFill style={{ background: "#FBFBFA", opacity: wash }} />}
-    </AbsoluteFill>
+      {/* the flipping page: yawed about the fold midpoint (the ref rises
+          it turned ~90° away, then swings it frontal), hinged at the
+          floor line for the rise itself */}
+      <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psi, 0]}>
+      <group rotation={[rx, 0, 0]}>
+        {/* page thickness rim (under the page while rising, a teal
+            border ring once the credits face the camera) */}
+        <CanvasPlane frame={0} width={BW + 7} height={BH + 7} res={0.5}
+          position={[0, BH / 2, -0.4]} draw={drawBacking} renderOrder={1} />
+        {/* credits card, revealed as the page passes vertical */}
+        <CanvasPlane frame={0} width={BW} height={BH} res={2}
+          position={[0, BH / 2, 0.3]} draw={drawCard} renderOrder={2} />
+        {/* dashboard-art surface, carried while the page rises */}
+        <CanvasPlane frame={frame} width={BW} height={BH} res={1.5}
+          position={[0, BH / 2, 0.6]}
+          draw={(ctx, f, w, h) => {
+            if (artOp <= 0) return;
+            ctx.globalAlpha = artOp;
+            drawPageArt(ctx, f, w, h);
+          }}
+          renderOrder={3} />
+      </group>
+      </group>
+    </>
   );
 };
+
+export const OutroOverlay: React.FC<{ frame: number }> = ({ frame }) => {
+  // dissolving remnant of the community glass cube (ref f5276-5289)
+  const cubeGhost = 1 - clamp01((frame - 5278) / 11);
+  if (cubeGhost <= 0) return null;
+  return (
+    <svg width={854} height={480}
+      style={{ position: "absolute", inset: 0, opacity: cubeGhost * 0.45 }}>
+      <g stroke="#C4C4C4" strokeWidth={1.6} fill="none">
+        <polyline points="238,128 402,138 578,120" />
+        <line x1={238} y1={128} x2={244} y2={-10} />
+        <line x1={402} y1={138} x2={408} y2={0} />
+        <line x1={578} y1={120} x2={582} y2={-10} />
+      </g>
+    </svg>
+  );
+};
+
+

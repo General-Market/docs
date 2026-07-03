@@ -5,22 +5,21 @@
 // (identity camera); per-frame translation camera solved from the three
 // measured tracks (label-left, curve tip, green-dash x).
 
-import React, { useCallback, useEffect, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
+import React, { useCallback } from "react";
+import { AbsoluteFill } from "remotion";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, easeInOutCubic, easeInPow, easeOutPow, lerp1, polyArc, polyUpToArc } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
 import {
-  CameraRig, CanvasPlane, Room, Vignette, DCAM, fitWall, unprojToWall, unprojToFloor, wallToWorld,
+  CanvasPlane, DCAM, fitWall, unprojToWall, unprojToFloor, wallToWorld,
 } from "../lib/world";
 import type { V3 } from "../lib/world";
 
-const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
+const { fontFamily: FONT } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
 });
 
-const F0 = 3572;
 const FLOOR_Y = -170;
 
 // ── wall fit (anchor f3700, identity camera) ─────────────────────
@@ -241,9 +240,10 @@ const camFixed = (f: number): V3 => {
   const d2 = (cam[2] - WC3[2]) / s;
   return [cam[0] - (tx * d2) / DCAM, cam[1] + (ty * d2) / DCAM, WC3[2] + d2];
 };
+export const camChart2 = camFixed;
 
 // ── whip motion blur (180° shutter over the corrected camera path) ──
-const whipSigma = (f: number): [number, number] => {
+export const whipSigma = (f: number): [number, number] => {
   if (f < 3884 || f > 3932) return [0, 0];
   const a = projT(WC3, camFixed(f - 1));
   const b = projT(WC3, camFixed(f + 1));
@@ -318,16 +318,6 @@ const pop = (f: number, a: number, b: number) => {
   return over - (over - 1) * ((t - 0.7) / 0.3);
 };
 
-const useFonts = () => {
-  const [, setReady] = useState(false);
-  const [handle] = useState(() => delayRender("chart2-fonts"));
-  useEffect(() => {
-    Promise.resolve(waitUntilDone()).then(() => {
-      setReady(true);
-      continueRender(handle);
-    });
-  }, [handle]);
-};
 
 // ── floor set dressing (static; all quads measured at f3700 identity) ──
 const flr = (u: number, v: number): Pt => {
@@ -338,7 +328,7 @@ const FLOOR_C: Pt = [0, -350];
 const FLOOR_WD = 1400;
 const FLOOR_HT = 1200;
 
-const FloorSet: React.FC = () => {
+export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
     const mx = (p: Pt) => w / 2 + (p[0] - FLOOR_C[0]);
     const my = (p: Pt) => h / 2 + (p[1] - FLOOR_C[1]);
@@ -404,6 +394,9 @@ const FloorSet: React.FC = () => {
     dot(328, 313, 3, "#C9A9AB");
     line([[177, 387], [339, 399]], "#D6D6D3", 1.6);
   }, []);
+  // texture stays static (frame={0}); only the material opacity animates —
+  // in over 3572-3584 (buildings' FloorMap fades out), out over 4133-4155
+  // (the next scene's FloorPaper inks in).
   return (
     <CanvasPlane
       frame={0}
@@ -414,6 +407,7 @@ const FloorSet: React.FC = () => {
       rotation={[-Math.PI / 2, 0, 0]}
       draw={draw}
       renderOrder={0}
+      opacity={fade(frame, 3572, 3584) * (1 - fade(frame, 4133, 4155))}
     />
   );
 };
@@ -687,13 +681,9 @@ const Legend: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ── scene ────────────────────────────────────────────────────────
-export const Chart2: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
-  useFonts();
-  const cam = camFixed(frame);
-  const [sigX, sigY] = whipSigma(frame);
-  const blurred = sigX > 0.25 || sigY > 0.25;
+// World = everything inside <Room> except the camera; Overlay = the
+// screen-anchored DOM legend. Chart2 wires them together unchanged.
+export const Chart2World: React.FC<{ frame: number }> = ({ frame }) => {
 
   // fly-out 4112-4131: wall assembly shrinks + flies up-right, slight roll
   const flyT = easeInPow(fade(frame, 4112, 4131), 1.6);
@@ -701,33 +691,23 @@ export const Chart2: React.FC = () => {
   const flyScale = Math.max(0.02, 1 - 0.98 * flyT);
 
   return (
-    <AbsoluteFill>
-      <Vignette />
-      {blurred && (
-        <svg width={0} height={0} style={{ position: "absolute" }}>
-          <filter id="chart2-whip-blur">
-            <feGaussianBlur stdDeviation={`${sigX.toFixed(2)} ${sigY.toFixed(2)}`} />
-          </filter>
-        </svg>
-      )}
-      <AbsoluteFill style={{ filter: blurred ? "url(#chart2-whip-blur)" : undefined }}>
-      <Room>
-        <CameraRig position={cam} />
-        <FloorSet />
-        {flyT < 1 && (
-          <group
-            position={[wallCenter[0] + 430 * flyT, wallCenter[1] + 310 * flyT, wallCenter[2]]}
-            rotation={[0, 0, -0.35 * flyT]}
-            scale={[flyScale, flyScale, flyScale]}
-          >
-            <group position={[-wallCenter[0], -wallCenter[1], -wallCenter[2]]}>
-              <WallChart frame={frame} />
-            </group>
+    <>
+      {/* FloorSet now lives on the persistent ground layer (orchestrator) */}
+      {flyT < 1 && (
+        <group
+          position={[wallCenter[0] + 430 * flyT, wallCenter[1] + 310 * flyT, wallCenter[2]]}
+          rotation={[0, 0, -0.35 * flyT]}
+          scale={[flyScale, flyScale, flyScale]}
+        >
+          <group position={[-wallCenter[0], -wallCenter[1], -wallCenter[2]]}>
+            <WallChart frame={frame} />
           </group>
-        )}
-      </Room>
-      </AbsoluteFill>
-      <Legend frame={frame} />
-    </AbsoluteFill>
+        </group>
+      )}
+    </>
   );
 };
+
+export const Chart2Overlay: React.FC<{ frame: number }> = ({ frame }) => <Legend frame={frame} />;
+
+

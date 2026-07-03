@@ -1,44 +1,24 @@
 // Frames 0-1704: title card → falls flat onto the floor board → 3D chart
 // room with three continuous chart chapters, one camera-driven world.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import {
-  AbsoluteFill, continueRender, delayRender, staticFile, useCurrentFrame,
+  AbsoluteFill,
 } from "remotion";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
-import { COLORS, A, B, C, LEGEND_ROWS } from "../data/chartroom";
+import { COLORS, A, B, LEGEND_ROWS } from "../data/chartroom";
 import { clamp01, easeOutPow, polyUpToArc } from "../lib/helpers";
-import { CameraRig, CanvasPlane, Room, Vignette } from "../lib/world";
+import { CanvasPlane } from "../lib/world";
+import { getTitleImg } from "../lib/assets";
 import type { V3 } from "../lib/world";
 import { drawSpread } from "./boards";
 import * as M from "./chartroomModel";
 
-const { fontFamily: BARLOW, waitUntilDone } = loadTitillium("normal", {
+const { fontFamily: BARLOW } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
 });
 
-const useFontsAndImage = () => {
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
-  const [, setReady] = useState(false);
-  const [handle] = useState(() => delayRender("chartroom-assets"));
-  useEffect(() => {
-    const image = new Image();
-    image.src = staticFile("irswap-assets/title-inner.png");
-    Promise.all([
-      waitUntilDone(),
-      new Promise<void>((res) => {
-        image.onload = () => res();
-        image.onerror = () => res();
-      }),
-    ]).then(() => {
-      setImg(image);
-      setReady(true);
-      continueRender(handle);
-    });
-  }, [handle]);
-  return img;
-};
 
 const setFont = (ctx: CanvasRenderingContext2D, cap: number, weight = 500) => {
   ctx.font = `${weight} ${cap / 0.72}px ${BARLOW}`;
@@ -334,35 +314,67 @@ const ChapterCWall: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number) => {
     const mx = (s: number) => s - C_S_MIN;
     const my = (y: number) => C_Y_MAX - y;
+    // gridlines; from 1662 they topple right→left. Canvas +x runs along
+    // dirS (increasing gridline index → screen-right), so ctx.rotate(+θ)
+    // about the base in y-down canvas coords tips the top screen-right.
     ctx.strokeStyle = COLORS.gridline;
     ctx.lineWidth = 2.5;
+    const yB = my(M.yBaseC);
+    const yT = my(M.yTopC);
     for (let i = 0; i <= 10; i++) {
-      const s = i * M.fitC.spacing;
+      const { angle, alpha } = M.toppleC(f, i);
+      if (alpha <= 0) continue;
+      const x = mx(i * M.fitC.spacing);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (angle > 0) {
+        ctx.translate(x, yB);
+        ctx.rotate(angle);
+        ctx.translate(-x, -yB);
+      }
       ctx.beginPath();
-      ctx.moveTo(mx(s), my(M.yBaseC));
-      ctx.lineTo(mx(s), my(M.yTopC));
+      ctx.moveTo(x, yB);
+      ctx.lineTo(x, yT);
       ctx.stroke();
+      ctx.restore();
     }
-    ctx.strokeStyle = "#E6DEE0";
-    ctx.lineWidth = 1.6;
-    ctx.setLineDash([4, 5]);
-    ctx.beginPath();
-    ctx.moveTo(mx(-20), my(M.wallC.baselineY));
-    ctx.lineTo(mx(10 * M.fitC.spacing + 30), my(M.wallC.baselineY));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // jagged grey historical line (square corners)
-    ctx.strokeStyle = "#828282";
-    ctx.lineWidth = 3.5;
-    ctx.lineJoin = "miter";
-    ctx.lineCap = "butt";
-    strokePoly(ctx, polyUpToArc(M.wallC.jaggedPoly, M.jaggedArcC.cum, M.jaggedProgressC(f)), mx, my);
-    // red S-curve
-    ctx.strokeStyle = "#E02B2E";
-    ctx.lineWidth = 4.5;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    strokePoly(ctx, polyUpToArc(M.wallC.redPoly, M.redArcC.cum, M.redProgressC(f)), mx, my);
+    // dashed skirting, fading out under the topple
+    const blAlpha = M.baselineFadeC(f);
+    if (blAlpha > 0) {
+      ctx.save();
+      ctx.globalAlpha = blAlpha;
+      ctx.strokeStyle = "#E6DEE0";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath();
+      ctx.moveTo(mx(-20), my(M.wallC.baselineY));
+      ctx.lineTo(mx(10 * M.fitC.spacing + 30), my(M.wallC.baselineY));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    // jagged grey historical line (square corners), erasing left→right
+    const jag = M.polySliceArc(
+      M.wallC.jaggedPoly, M.jaggedArcC.cum, M.jaggedEraseC(f), M.jaggedProgressC(f),
+    );
+    if (jag.length >= 2) {
+      ctx.strokeStyle = "#828282";
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = "miter";
+      ctx.lineCap = "butt";
+      strokePoly(ctx, jag, mx, my);
+    }
+    // red S-curve, erasing left→right (upper arc goes last)
+    const red = M.polySliceArc(
+      M.wallC.redPoly, M.redArcC.cum, M.redEraseC(f), M.redProgressC(f),
+    );
+    if (red.length >= 2) {
+      ctx.strokeStyle = "#E02B2E";
+      ctx.lineWidth = 4.5;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      strokePoly(ctx, red, mx, my);
+    }
   }, []);
   const w = C_S_MAX - C_S_MIN;
   const h = C_Y_MAX - C_Y_MIN;
@@ -493,7 +505,7 @@ const LegendOverlay: React.FC<{ frame: number }> = ({ frame }) => {
 
 // ═══════════ DOM label overlay (B→C glide + chapter C) ═══════════
 const LabelsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 903 || frame > C.fadeOut[1]) return null;
+  if (frame < 903 || frame > M.C_EXIT.labelFade[1]) return null;
   const fixed = M.fixedLabelPos(frame);
   const base = M.baseLabelPos(frame);
   const cap = M.labelCapC(frame);
@@ -509,7 +521,7 @@ const LabelsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
     whiteSpace: "nowrap",
   });
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ opacity: M.labelFadeC(frame) }}>
       <div style={style(fixed, COLORS.labelGrey)}>Fixed rate</div>
       <div style={style(base, COLORS.labelRed)}>Base rate</div>
     </AbsoluteFill>
@@ -520,6 +532,7 @@ const LabelsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
 const drawYearsA = yearDrawer(M.yearMetricsA);
 const AFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, d: number) => {
+    if (f >= 452) return; // outside chapter A: blank canvas (was unmounted)
     const ink = M.boardInkA(f);
     if (ink <= 0) return;
     ctx.globalAlpha = ink;
@@ -536,6 +549,7 @@ const AFloor: React.FC<{ frame: number }> = ({ frame }) => {
 const drawYearsB = yearDrawer(M.yearMetricsB);
 const BFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, d: number) => {
+    if (f < 452 || f >= 935) return; // outside chapter B: blank canvas (was unmounted)
     const enter = clamp01((f - 452) / 16);
     ctx.globalAlpha = enter;
     drawSpread(ctx, { w, d, years: null });
@@ -549,8 +563,15 @@ const BFloor: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 const CFloor: React.FC<{ frame: number }> = ({ frame }) => {
-  const draw = useCallback((ctx: CanvasRenderingContext2D, _f: number, w: number, d: number) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, d: number) => {
+    if (f < 935 || f >= 1745) return; // outside chapter C: blank canvas (was unmounted)
+    // persists under the topple; fades out while the next scene's floor
+    // inks in over it (global frames 1705-1727)
+    const ink = M.floorFadeC(f);
+    if (ink <= 0) return;
+    ctx.globalAlpha = ink;
     drawSpread(ctx, { w, d, years: null });
+    ctx.globalAlpha = 1;
   }, []);
   return (
     <SpreadFloor frame={frame} fit={M.fitC} board={M.boardC} yF={M.floorYC}
@@ -558,52 +579,54 @@ const CFloor: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// ═══════════ Ground layer (composition-level, persistent) ═══════════
+// All three floors mount once and never unmount; each floor's draw
+// early-returns outside its chapter window, leaving a blank transparent
+// canvas — pixel-identical to the old mount/unmount gates.
+export const ChartRoomGround: React.FC<{ frame: number }> = ({ frame }) => (
+  <>
+    {/* chapter A floor renders inside the same scaled group as before */}
+    <group scale={M.A_GROUP.scale} position={M.A_GROUP.position}>
+      <AFloor frame={frame} />
+    </group>
+    <BFloor frame={frame} />
+    <CFloor frame={frame} />
+  </>
+);
+
 // ═══════════ Scene ═══════════
-export const ChartRoom: React.FC = () => {
-  const frame = useCurrentFrame();
-  const img = useFontsAndImage();
+// camera in scale-1 chapter coords; chapter A renders scaled, so its
+// camera is transformed by the same map (z stays DCAM on the axis).
+export const camChartRoom = (frame: number): V3 =>
+  frame < 452
+    ? ([M.camA(frame)[0] * M.SCALE_A, M.camA(frame)[1] * M.SCALE_A, M.camA(frame)[2]] as V3)
+    : frame < 935
+      ? M.camB(frame)
+      : M.camC(frame);
 
-  // camera in scale-1 chapter coords; chapter A renders scaled, so its
-  // camera is transformed by the same map (z stays DCAM on the axis).
-  const cam: V3 =
-    frame < 452
-      ? ([M.camA(frame)[0] * M.SCALE_A, M.camA(frame)[1] * M.SCALE_A, M.camA(frame)[2]] as V3)
-      : frame < 935
-        ? M.camB(frame)
-        : M.camC(frame);
-
-  const fade = M.fadeOutC(frame);
-
+export const ChartRoomWorld: React.FC<{ frame: number }> = ({ frame }) => {
+  const img = getTitleImg();
   return (
-    <AbsoluteFill>
-      <Vignette />
-      <Room>
-        <CameraRig position={cam} />
-        {frame < 452 && (
-          <>
-            <group scale={M.A_GROUP.scale} position={M.A_GROUP.position}>
-              <AFloor frame={frame} />
-              <ChapterAWall frame={frame} />
-            </group>
-            <TitlePage frame={frame} img={img} />
-          </>
-        )}
-        {frame >= 452 && frame < 935 && (
-          <>
-            <BFloor frame={frame} />
-            <ChapterBWall frame={frame} />
-          </>
-        )}
-        {frame >= 935 && frame < C.fadeOut[1] + 4 && (
-          <>
-            <CFloor frame={frame} />
-            <ChapterCWall frame={frame} />
-          </>
-        )}
-      </Room>
-      <LegendOverlay frame={frame} />
-      <LabelsOverlay frame={frame} />
-      {fade > 0 && <Vignette opacity={fade} />}
-    </AbsoluteFill>
+    <>
+      {frame < 452 && (
+        <>
+          <group scale={M.A_GROUP.scale} position={M.A_GROUP.position}>
+            <ChapterAWall frame={frame} />
+          </group>
+          <TitlePage frame={frame} img={img} />
+        </>
+      )}
+      {frame >= 452 && frame < 935 && <ChapterBWall frame={frame} />}
+      {frame >= 935 && frame < 1690 && <ChapterCWall frame={frame} />}
+    </>
   );
 };
+
+export const ChartRoomOverlay: React.FC<{ frame: number }> = ({ frame }) => (
+  <>
+    <LegendOverlay frame={frame} />
+    <LabelsOverlay frame={frame} />
+  </>
+);
+
+

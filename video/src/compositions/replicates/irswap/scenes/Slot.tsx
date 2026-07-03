@@ -5,19 +5,16 @@
 // 3D: row artwork on a z=0 plane; camera dolly solved from the tracked
 // teal digit block (position + width→depth). World = screen at f4498.
 
-import React, { useCallback, useEffect, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
+import React, { useCallback } from "react";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { lerp1 } from "../lib/helpers";
-import { CameraRig, CanvasPlane, Room, Vignette } from "../lib/world";
-import { camSlot, FloorPaper } from "./floorPaper";
+import { CanvasPlane } from "../lib/world";
 
-const { fontFamily: FONT, waitUntilDone } = loadTitillium("normal", {
+const { fontFamily: FONT } = loadTitillium("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
 });
 
-const F0 = 4263;
 
 // ── reel: value at window center over time ───────────────────────
 const O_TABLE: [number, number][] = [
@@ -143,29 +140,10 @@ const SlotArt: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-const useFonts = () => {
-  const [, setReady] = useState(false);
-  const [handle] = useState(() => delayRender("slot-fonts"));
-  useEffect(() => {
-    Promise.resolve(waitUntilDone()).then(() => {
-      setReady(true);
-      continueRender(handle);
-    });
-  }, [handle]);
+
+// FloorPaper is mounted by the ground layer; SlotWorld owns the readout only.
+export const SlotWorld: React.FC<{ frame: number }> = ({ frame }) => {
+  return <SlotArt frame={frame} />;
 };
 
-export const Slot: React.FC = () => {
-  const local = useCurrentFrame();
-  const frame = local + F0;
-  useFonts();
-  return (
-    <AbsoluteFill>
-      <Vignette variant="room" />
-      <Room>
-        <CameraRig position={camSlot(frame)} />
-        <FloorPaper frame={frame} />
-        <SlotArt frame={frame} />
-      </Room>
-    </AbsoluteFill>
-  );
-};
+

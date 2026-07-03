@@ -69,50 +69,12 @@ const CEN: Pt = [
 // red corner dots sit just outside the sheet corners
 const DOTS: Pt[] = [S(306, 319), S(597, 332), S(644, 441), S(158, 405)];
 
-// ── the sheet rides its measured screen track through the slot dolly ─
-// (the reference's slot camera and its paper are collage-inconsistent:
-// a world-locked sheet exits the frustum by 4350; the ref keeps its far
-// edge at the frame bottom the whole ride). Far-corner screen tracks:
-const FL_TRK: [number, number, number][] = [
-  [4268, 320, 322], [4350, 250, 393], [4400, 230, 412], [4498, 214, 430],
-  [4600, 220, 422], [4680, 232, 410],
-];
-const FR_TRK: [number, number, number][] = [
-  [4268, 586, 338], [4350, 594, 390], [4400, 600, 406], [4498, 604, 418],
-  [4600, 602, 412], [4680, 598, 406],
-];
-const A0 = S(320, 322);
-const A1 = S(586, 338);
-// similarity (rotate+scale+translate) mapping A0A1 → the frame's corners
-const sheetXform = (f: number): ((p: Pt) => Pt) => {
-  if (f <= 4268) return (p) => p;
-  const cam = camSlot(f);
-  const un = (u: number, v: number): Pt => {
-    const q = unprojToFloor(u, v, FLOOR_Y, cam);
-    return [q[0], q[2]];
-  };
-  const b0 = un(
-    lerp1(FL_TRK.map((r) => [r[0], r[1]] as [number, number]), f),
-    lerp1(FL_TRK.map((r) => [r[0], r[2]] as [number, number]), f),
-  );
-  const b1 = un(
-    lerp1(FR_TRK.map((r) => [r[0], r[1]] as [number, number]), f),
-    lerp1(FR_TRK.map((r) => [r[0], r[2]] as [number, number]), f),
-  );
-  const va: Pt = [A1[0] - A0[0], A1[1] - A0[1]];
-  const vb: Pt = [b1[0] - b0[0], b1[1] - b0[1]];
-  const sc = Math.hypot(vb[0], vb[1]) / Math.hypot(va[0], va[1]);
-  const th = Math.atan2(vb[1], vb[0]) - Math.atan2(va[1], va[0]);
-  const c = Math.cos(th) * sc;
-  const s = Math.sin(th) * sc;
-  return (p: Pt): Pt => {
-    const dx = p[0] - A0[0];
-    const dy = p[1] - A0[1];
-    return [b0[0] + c * dx - s * dy, b0[1] + s * dx + c * dy];
-  };
-};
+// The sheet is WORLD-LOCKED: after the land/settle (4133-4155) it never
+// moves again — the reference floor is pixel-static; only the camera
+// breathes around it. (An earlier build rode a measured screen track
+// through the slot dolly; that made the replica floor slide. Removed.)
 
-// canvas extent covering the sheet across the whole ride
+// canvas extent covering the sheet
 const PAPER_C: Pt = [-11, 480];
 const PAPER_W = 1000;
 const PAPER_H = 1000;
@@ -120,20 +82,18 @@ const PAPER_H = 1000;
 export const FloorPaper: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     if (f < 4133) return;
+    if (f >= 4715) return; // handed off to the community sheet
     // settle: the sheet lands slightly small and expands flat by ~4148
     const t = clamp01((f - 4136) / 12);
     const e = 1 - Math.pow(1 - t, 2.2);
     const s = 0.62 + 0.38 * e;
     ctx.globalAlpha = clamp01((f - 4133) / 22);
-    const T = sheetXform(f);
-    const mx = (p: Pt) => {
-      const q = T([CEN[0] + (p[0] - CEN[0]) * s, CEN[1] + (p[1] - CEN[1]) * s]);
-      return w / 2 + (q[0] - PAPER_C[0]);
-    };
-    const my = (p: Pt) => {
-      const q = T([CEN[0] + (p[0] - CEN[0]) * s, CEN[1] + (p[1] - CEN[1]) * s]);
-      return h / 2 + (q[1] - PAPER_C[1]);
-    };
+    // crossfade out into the community sheet (gone by 4712)
+    ctx.globalAlpha *= 1 - clamp01((f - 4692) / 20);
+    const mx = (p: Pt) =>
+      w / 2 + (CEN[0] + (p[0] - CEN[0]) * s - PAPER_C[0]);
+    const my = (p: Pt) =>
+      h / 2 + (CEN[1] + (p[1] - CEN[1]) * s - PAPER_C[1]);
     const M = (u: number, v: number): Pt => S(u, v);
     const path = (pts: Pt[], close: boolean) => {
       ctx.beginPath();
