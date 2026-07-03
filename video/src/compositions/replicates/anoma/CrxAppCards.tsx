@@ -177,10 +177,17 @@ const Check: React.FC<{ size: number; color?: string; stroke?: number }> = ({
   </svg>
 );
 
-// Soft daylight elevation — the wave behind the cards is bright now,
-// so the shadow whispers instead of pooling.
+// Three-layer daylight elevation: contact, key, ambient. One shadow
+// reads as a sticker; the stack reads as a material.
 const CARD_SHADOW =
-  "0 14px 42px rgba(28, 28, 35, 0.18), 0 3px 12px rgba(28, 28, 35, 0.10)";
+  "0 1px 2px rgba(28, 28, 35, 0.05), 0 10px 28px rgba(28, 28, 35, 0.12), 0 32px 80px rgba(28, 28, 35, 0.14)";
+// Panels inside the S12 shell sit one layer lower.
+const PANEL_SHADOW =
+  "0 1px 2px rgba(28, 28, 35, 0.04), 0 4px 14px rgba(28, 28, 35, 0.06)";
+// Wells are borderless in the app; an inset hairline keeps their edge
+// legible on the 4K raster.
+const WELL_INSET = "inset 0 0 0 1px rgba(23, 23, 33, 0.035)";
+const BAR_GRADIENT = "linear-gradient(180deg, #1fc5b9 0%, #0aa094 100%)";
 
 const Card: React.FC<{
   x: number;
@@ -193,7 +200,7 @@ const Card: React.FC<{
   radius?: number;
   bg?: string;
   children: React.ReactNode;
-}> = ({ x, y, w, h, opacity, blur = 0, scale = 1, radius = 18, bg = "#fff", children }) => {
+}> = ({ x, y, w, h, opacity, blur = 0, scale = 1, radius = 20, bg = "#fff", children }) => {
   if (opacity <= 0) return null;
   return (
     <div
@@ -333,6 +340,139 @@ const Cursor: React.FC<{
   );
 };
 
+// ─── chart engine ───
+// A finished product draws its charts on a scale: hairline gridlines
+// with money labels, gradient bars, and a value pill that names the
+// latest reading once the growth has settled. Container-local
+// coordinates; bars rise from the baseline at (x, y).
+const BarChart: React.FC<{
+  frame: number;
+  growth: (fr: number) => number;
+  bars: number[];
+  months: string[];
+  x: number;
+  y: number;
+  barW: number;
+  gap: number;
+  plotH: number;
+  gridLabels: [string, string, string];
+  labelGutter: number;
+  pill: { at: number; text: string };
+}> = ({ frame, growth, bars, months, x, y, barW, gap, plotH, gridLabels, labelGutter, pill }) => {
+  const plotW = (bars.length - 1) * gap + barW;
+  return (
+    <>
+      {gridLabels.map((gl, i) => {
+        const gy = y - (plotH * (i + 1)) / 3;
+        return (
+          <React.Fragment key={gl}>
+            <div
+              style={{
+                position: "absolute",
+                left: x - 6,
+                top: gy,
+                width: plotW + 12,
+                height: 1,
+                backgroundColor: "rgba(23,23,33,0.05)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: labelGutter - 60,
+                top: gy - 6,
+                width: 60,
+                textAlign: "right",
+                fontSize: 10,
+                color: TER,
+                ...tnum,
+              }}
+            >
+              {gl}
+            </div>
+          </React.Fragment>
+        );
+      })}
+      <div
+        style={{
+          position: "absolute",
+          left: x - 6,
+          top: y,
+          width: plotW + 12,
+          height: 1,
+          backgroundColor: "rgba(23,23,33,0.14)",
+        }}
+      />
+      {bars.map((h, i) => {
+        const bh = h * growth(frame - i * 2);
+        return (
+          <React.Fragment key={i}>
+            {bh >= 1 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: x + i * gap,
+                  top: y - bh,
+                  width: barW,
+                  height: bh,
+                  background: BAR_GRADIENT,
+                  borderRadius: "7px 7px 0 0",
+                }}
+              />
+            )}
+            <div
+              style={{
+                position: "absolute",
+                left: x + i * gap,
+                top: y + 8,
+                width: barW,
+                textAlign: "center",
+                fontSize: 11,
+                color: TER,
+              }}
+            >
+              {months[i]}
+            </div>
+          </React.Fragment>
+        );
+      })}
+      {frame >= pill.at && (
+        <div
+          style={{
+            position: "absolute",
+            left: x + (bars.length - 1) * gap + barW / 2 - 52,
+            top: y - plotH - 32,
+            width: 104,
+            display: "flex",
+            justifyContent: "center",
+            ...settle(frame, pill.at, 10, 0.74),
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: "#fff",
+              borderRadius: 980,
+              padding: "4px 11px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: INK,
+              boxShadow: "0 1px 2px rgba(28,28,35,0.08), 0 5px 16px rgba(28,28,35,0.14)",
+              whiteSpace: "nowrap",
+              ...tnum,
+            }}
+          >
+            <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
+            {pill.text}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 // ─── Scene 3 (f128-207): portfolio overview under "Introducing CRX" ───
 // Card mounts on the f128 snare. Bars grow on the 8th grid from the
 // f147 beat and are FINISHED on the f202 snare — the chart rests
@@ -393,9 +533,9 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         </div>
 
-        <div style={{ marginTop: 22 }}>
-          <div style={{ fontSize: 38, fontWeight: 600, letterSpacing: -1, ...tnum }}>
-            $30,440<span style={{ color: TER, fontSize: 23 }}>.00</span>
+        <div style={{ marginTop: 20 }}>
+          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: -1.4, ...tnum }}>
+            $30,440<span style={{ color: TER, fontSize: 26 }}>.00</span>
           </div>
           <div style={{ fontSize: 13, color: SEC, marginTop: 3 }}>Total value</div>
         </div>
@@ -451,50 +591,21 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         ))}
 
-        <div style={{ position: "absolute", left: 372, top: 200, ...label }}>Hedged notional</div>
-        <div
-          style={{
-            position: "absolute",
-            left: 372,
-            top: 404,
-            width: 308,
-            height: 1,
-            backgroundColor: HAIR,
-          }}
+        <div style={{ position: "absolute", left: 372, top: 172, ...label }}>Hedged notional</div>
+        <BarChart
+          frame={frame}
+          growth={growth}
+          bars={S3_BARS.h}
+          months={S3_BARS.months}
+          x={376}
+          y={404}
+          barW={34}
+          gap={62}
+          plotH={180}
+          gridLabels={["$0.6M", "$1.2M", "$1.8M"]}
+          labelGutter={368}
+          pill={{ at: 197, text: "Jun · $1.7M" }}
         />
-        {S3_BARS.h.map((h, i) => {
-          const bh = h * growth(frame - i * 2);
-          return (
-            <React.Fragment key={i}>
-              {bh >= 1 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 376 + i * 62,
-                    top: 404 - bh,
-                    width: 34,
-                    height: bh,
-                    backgroundColor: TEAL,
-                    borderRadius: "6px 6px 0 0",
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 376 + i * 62,
-                  top: 412,
-                  width: 34,
-                  textAlign: "center",
-                  fontSize: 11,
-                  color: TER,
-                }}
-              >
-                {S3_BARS.months[i]}
-              </div>
-            </React.Fragment>
-          );
-        })}
       </div>
     </Card>
   );
@@ -623,17 +734,20 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: WELL,
             borderRadius: 14,
             padding: "14px 18px",
-            boxShadow: focused && frame < TYPE_END + 8 ? `0 0 0 3px ${TEAL_RING}` : undefined,
+            boxShadow:
+              focused && frame < TYPE_END + 8
+                ? `${WELL_INSET}, 0 0 0 3px ${TEAL_RING}`
+                : WELL_INSET,
           }}
         >
           <div style={label}>Forward notional</div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div
               style={{
-                fontSize: 34,
+                fontSize: 38,
                 fontWeight: typedChars > 0 ? 600 : 500,
-                letterSpacing: -0.8,
-                marginTop: 4,
+                letterSpacing: -1,
+                marginTop: 2,
                 color: typedChars > 0 ? INK : "#b8bac4",
                 ...tnum,
               }}
@@ -680,6 +794,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: WELL,
             borderRadius: 14,
             padding: "9px 12px 0 12px",
+            boxShadow: WELL_INSET,
           }}
         >
           <div style={{ ...label, paddingLeft: 6 }}>Pair</div>
@@ -717,7 +832,10 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: WELL,
             borderRadius: 14,
             padding: "10px 18px",
-            boxShadow: tenorFocus > 0 ? `0 0 0 3px rgba(15,182,171,${(0.28 * tenorFocus).toFixed(3)})` : undefined,
+            boxShadow:
+              tenorFocus > 0
+                ? `${WELL_INSET}, 0 0 0 3px rgba(15,182,171,${(0.28 * tenorFocus).toFixed(3)})`
+                : WELL_INSET,
           }}
         >
           <div style={label}>Tenor</div>
@@ -744,7 +862,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: WELL,
             borderRadius: 14,
             padding: "10px 18px",
-            boxShadow: lockPulse > 0 ? `0 0 0 3px ${BRASS_RING}` : undefined,
+            boxShadow: lockPulse > 0 ? `${WELL_INSET}, 0 0 0 3px ${BRASS_RING}` : WELL_INSET,
             outline: lockPulse > 0 ? `1.5px solid rgba(192,138,46,${lockPulse.toFixed(2)})` : undefined,
           }}
         >
@@ -806,7 +924,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           )}
         </div>
 
-        {/* CTA */}
+        {/* CTA — armed, it lifts off the card the way the app's primary does */}
         <div
           style={{
             position: "absolute",
@@ -814,12 +932,17 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             top: 358,
             width: 654,
             height: 52,
-            borderRadius: 14,
+            borderRadius: 16,
             backgroundColor: armed ? (ctaPressed ? "#0c8a82" : TEAL) : "#a9e4de",
+            boxShadow: armed
+              ? ctaPressed
+                ? "0 4px 12px rgba(15,182,171,0.28)"
+                : "0 10px 26px rgba(15,182,171,0.35)"
+              : undefined,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 15.5,
+            fontSize: 16,
             fontWeight: 600,
             color: "#fff",
             transform: ctaPressed ? "scale(0.988)" : undefined,
@@ -1064,9 +1187,9 @@ const ObFace: React.FC<{
           style={{
             position: "absolute",
             left: 30,
-            top: 172 + i * 60,
+            top: 168 + i * 66,
             width: 650,
-            height: 60,
+            height: 66,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1074,7 +1197,7 @@ const ObFace: React.FC<{
             ...drop,
           }}
         >
-          <span style={{ fontSize: 14, color: SEC }}>{r.k}</span>
+          <span style={{ fontSize: 14.5, color: SEC }}>{r.k}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {r.state === "run" && <Spinner frame={frame} />}
             {r.state === "done" && r.v !== "Received" && (
@@ -1280,11 +1403,14 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
           ))}
         </div>
 
+        <div style={{ position: "absolute", left: 30, top: 118, fontSize: 12, color: TER }}>
+          {rated ? "3 of 3 dealers responded" : "Quoting 3 dealers…"}
+        </div>
+
         {DEALERS.map((d, i) => {
           const isBest = i === BEST;
           const dimT = highlighted && !isBest ? fadeIn(frame, HIGHLIGHT_AT, 4) : 0;
           const dim = 1 - 0.45 * dimT;
-          const shimmer = 0.5 + 0.16 * Math.sin((frame + i * 9) / 3.2);
           const landed = frame >= d.lands;
           // Rate rolls up to its value over 9 frames, tabular digits.
           const rollT = smooth(interpolate(frame, [d.lands, d.lands + 9], [0, 1], clamp));
@@ -1301,7 +1427,10 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 height: 72,
                 borderRadius: 14,
                 backgroundColor: ringOp > 0 ? TEAL_SOFT : WELL,
-                boxShadow: ringOp > 0 ? `inset 0 0 0 2px rgba(15,182,171,${ringOp.toFixed(2)})` : undefined,
+                boxShadow:
+                  ringOp > 0
+                    ? `inset 0 0 0 2px rgba(15,182,171,${ringOp.toFixed(2)}), 0 10px 30px rgba(15,182,171,${(0.25 * ringOp).toFixed(3)})`
+                    : WELL_INSET,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -1355,13 +1484,16 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                     <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
                   </div>
                 ) : (
+                  // Skeleton with a light sweep — products shimmer, mocks pulse.
                   <div
                     style={{
                       width: 86,
                       height: 14,
                       borderRadius: 7,
-                      backgroundColor: "#e2e4ea",
-                      opacity: shimmer,
+                      background:
+                        "linear-gradient(100deg, #e3e5eb 32%, #f4f6fa 48%, #e3e5eb 64%)",
+                      backgroundSize: "220% 100%",
+                      backgroundPositionX: `${((frame * 3 + i * 40) % 140) - 20}%`,
                     }}
                   />
                 )}
@@ -1609,9 +1741,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 300,
           height: 300,
           backgroundColor: "#fff",
-          border: `1px solid ${BORDER}`,
-          borderRadius: 14,
+          border: "1px solid rgba(23,23,33,0.05)",
+          borderRadius: 16,
           padding: "20px 22px",
+          boxShadow: PANEL_SHADOW,
         }}
       >
         <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: -0.8, ...tnum }}>
@@ -1654,48 +1787,27 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 400,
           height: 300,
           backgroundColor: "#fff",
-          border: `1px solid ${BORDER}`,
-          borderRadius: 14,
+          border: "1px solid rgba(23,23,33,0.05)",
+          borderRadius: 16,
           padding: "20px 22px",
+          boxShadow: PANEL_SHADOW,
         }}
       >
         <div style={label}>Hedged notional</div>
-        <div
-          style={{ position: "absolute", left: 22, top: 246, width: 356, height: 1, backgroundColor: HAIR }}
+        <BarChart
+          frame={frame}
+          growth={growth}
+          bars={S12_BARS.h}
+          months={S12_BARS.months}
+          x={64}
+          y={246}
+          barW={36}
+          gap={64}
+          plotH={147}
+          gridLabels={["$1.4M", "$2.8M", "$4.2M"]}
+          labelGutter={60}
+          pill={{ at: 828, text: "Jun · $3.0M" }}
         />
-        {S12_BARS.h.map((h, i) => {
-          const bh = h * growth(frame - i * 2);
-          return (
-            <React.Fragment key={i}>
-              {bh >= 1 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 34 + i * 70,
-                    top: 246 - bh,
-                    width: 36,
-                    height: bh,
-                    backgroundColor: TEAL,
-                    borderRadius: "6px 6px 0 0",
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 34 + i * 70,
-                  top: 254,
-                  width: 36,
-                  textAlign: "center",
-                  fontSize: 11,
-                  color: TER,
-                }}
-              >
-                {S12_BARS.months[i]}
-              </div>
-            </React.Fragment>
-          );
-        })}
       </div>
 
       {/* positions */}
@@ -1707,9 +1819,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 330,
           height: 300,
           backgroundColor: "#fff",
-          border: `1px solid ${BORDER}`,
-          borderRadius: 14,
+          border: "1px solid rgba(23,23,33,0.05)",
+          borderRadius: 16,
           padding: "20px 22px",
+          boxShadow: PANEL_SHADOW,
         }}
       >
         <div style={label}>Positions</div>
