@@ -129,16 +129,18 @@ export const unprojToFloor = (
 
 // ── React pieces ─────────────────────────────────────────────────
 
-// Measured (f1690): flat #FDFDFD plateau over the central ~75%, elliptical
-// rolloff to #DADADA floor; ellipse center displaced below frame center.
+// The reference's corner/edge darkening is a FIXED post overlay (see
+// lib/post.tsx EdgeFeather — corners land at 219-220 in every scene).
+// These backgrounds therefore stay near-flat; the old measured rolloffs
+// double-counted the feather and shaded the mid-field the ref keeps flat.
 const VIGNETTES = {
-  // title/chart rooms (measured f1690)
-  default:
-    "radial-gradient(620px 400px at 50% 64%, #FDFDFD 0%, #FDFDFD 56%, #ECECEB 66%, #DADADA 78%, #DADADA 100%)",
-  // buildings-map scenes: near-uniform light sheet, mild corners
-  soft: "radial-gradient(760px 480px at 50% 58%, #FCFCFB 0%, #FCFCFB 50%, #F1F1EF 75%, #E9E9E7 100%)",
-  // advDis/slot room: shaded top+bottom edges, light sides (measured 4150-4600)
-  room: "radial-gradient(1400px 340px at 50% 50%, #FDFDFD 0%, #FBFBFB 40%, #E9E9E9 75%, #DADADA 100%)",
+  // title/chart rooms: flat paper — the feather does all edge work
+  default: "#FDFDFD",
+  // buildings-map scenes: near-uniform light sheet (near-paper at the
+  // edges so the multiplicative feather lands the corners at ~220)
+  soft: "radial-gradient(760px 480px at 50% 58%, #FCFCFB 0%, #FCFCFB 50%, #FBFBF9 75%, #F9F9F7 100%)",
+  // advDis/slot room: gentle top+bottom edge shading only
+  room: "radial-gradient(1400px 340px at 50% 50%, #FDFDFD 0%, #FCFCFC 40%, #FBFBFA 75%, #F9F9F8 100%)",
 } as const;
 
 export const Vignette: React.FC<{

@@ -487,7 +487,7 @@ const tauTable: [number, number][] = [
   [104, 1],
 ];
 
-export const titlePose = (f: number): { pos: V3; quat: THREE.Quaternion } => {
+const titlePoseRaw = (f: number): { pos: V3; quat: THREE.Quaternion } => {
   if (f <= 0) return { pos: titleKeys[0].pos, quat: titleKeys[0].quat };
   if (f < 70) {
     let i = 0;
@@ -499,6 +499,35 @@ export const titlePose = (f: number): { pos: V3; quat: THREE.Quaternion } => {
   }
   const tau = lerp1(tauTable, f);
   return posePair(titleKeys[titleKeys.length - 1], landedPose, tau);
+};
+
+// Measured fall correction: at f34-40 the board renders ~6% small and
+// up-left (card center (403,208) vs ref (415,223), width ratio 0.94 —
+// constant across the window). Applied as a depth pull-in (screen scale
+// ×1.065 about the principal point) plus the residual screen shift,
+// feathered in after the frontal title (≤26) and out before the landing
+// keys re-pin the pose.
+const FALL_FIX = { k: 1.065, du: 13.6, dv: 17.1 };
+const fallFixT = (f: number): number => {
+  if (f <= 26 || f >= 60) return 0;
+  if (f < 32) return (f - 26) / 6;
+  if (f <= 44) return 1;
+  return 1 - (f - 44) / 16;
+};
+export const titlePose = (f: number): { pos: V3; quat: THREE.Quaternion } => {
+  const raw = titlePoseRaw(f);
+  const t = fallFixT(f);
+  if (t <= 0) return raw;
+  const k = 1 + (FALL_FIX.k - 1) * t;
+  const d2 = (DCAM - raw.pos[2]) / k;
+  return {
+    pos: [
+      raw.pos[0] + (t * FALL_FIX.du * d2) / DCAM,
+      raw.pos[1] - (t * FALL_FIX.dv * d2) / DCAM,
+      DCAM - d2,
+    ],
+    quat: raw.quat,
+  };
 };
 
 export const tealFade = (f: number) => 1 - clamp01((f - 71) / 7);

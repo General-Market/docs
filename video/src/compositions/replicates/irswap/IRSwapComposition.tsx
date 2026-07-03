@@ -1,5 +1,6 @@
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
+import { EdgeFeather, Grain } from "./lib/post";
 import { ChartRoom } from "./scenes/ChartRoom";
 import { Buildings } from "./scenes/Buildings";
 import { Chart2 } from "./scenes/Chart2";
@@ -35,7 +36,11 @@ const seq = (range: readonly [number, number], node: React.ReactNode, name: stri
   </Sequence>
 );
 
+const GRAIN_ON = true;
+const FEATHER_ON = true;
+
 export const IRSwapComposition: React.FC = () => {
+  const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ backgroundColor: "#EFEFEF" }}>
       {seq(RANGES.chartRoom, <ChartRoom />, "ChartRoom")}
@@ -45,6 +50,9 @@ export const IRSwapComposition: React.FC = () => {
       {seq(RANGES.slot, <Slot />, "Slot")}
       {seq(RANGES.community, <Community />, "Community")}
       {seq(RANGES.outro, <Outro />, "Outro")}
+      {/* measured film response of the reference (see lib/post.tsx) */}
+      {GRAIN_ON && <Grain frame={frame} />}
+      {FEATHER_ON && <EdgeFeather />}
     </AbsoluteFill>
   );
 };

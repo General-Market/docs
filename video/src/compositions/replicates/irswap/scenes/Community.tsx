@@ -452,11 +452,13 @@ const Backdrop: React.FC<{ cam: V3; pitch: number }> = ({ cam, pitch }) => {
     c.height = 288;
     const ctx = c.getContext("2d");
     if (ctx) {
+      // near-flat: the multiplicative EdgeFeather carries the ref's edge
+      // darkening (the old #EBEBEA rolloff double-counted it)
       const g = ctx.createRadialGradient(256, 184, 40, 256, 184, 380);
       g.addColorStop(0, "#FDFDFD");
       g.addColorStop(0.6, "#FDFDFD");
-      g.addColorStop(0.82, "#F4F4F3");
-      g.addColorStop(1, "#EBEBEA");
+      g.addColorStop(0.82, "#FAFAF9");
+      g.addColorStop(1, "#F7F7F6");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 512, 288);
     }
@@ -482,7 +484,10 @@ const Backdrop: React.FC<{ cam: V3; pitch: number }> = ({ cam, pitch }) => {
 // floor-locked rigid fits miss by 25-65px), so each mesh is real
 // extruded geometry whose world anchor rides the measured icon track,
 // unprojected at the building's fitted height (fit-community.mjs).
-type WTrackRow = [number, number, number]; // f, worldX, worldZ
+// f, worldX, worldZ, optional worldY (per-frame depth/size correction —
+// the source collage rescales icons shot-to-shot, so the anchor must ride
+// in all three axes; y falls back to yBase when absent)
+type WTrackRow = [number, number, number] | [number, number, number, number];
 type CommB = { yBase: number; track: WTrackRow[]; spec: MiniSpec };
 // Cluster = 2-tier box + three temples (measured; the reference has no
 // separate small gabled house — that silhouette is t3 seen end-on).
@@ -491,13 +496,34 @@ type CommB = { yBase: number; track: WTrackRow[]; spec: MiniSpec };
 const WB: Record<string, CommB> = {
   house: {
     yBase: -67.5,
-    // eye-level rows shifted left+up (ref base y≈315, x −15px vs first fit)
-    track: [[4775, 26.1, -5.3], [4880, 11.8, -12.7], [4925, 34.1, -36.5], [4955, -13, -17.6], [4985, -13, -16.4], [5030, -8.3, -14.1], [5205, -6, 5.2]],
+    // dive+hold rows re-solved from per-frame ref/cur blob measurements
+    // (fit-dive-tracks.mjs): the ref collage slides the icons shot-to-shot,
+    // worst mid-dive (dv +26 @4939) and ~(+19,-11)px through the hold.
+    track: [
+      [4775, 26.1, -5.3], [4880, 11.8, -12.7, -67.5],
+      [4915, 30, -39.4, -67.5], [4924, 28, -41.7, -67.5], [4933, 22.6, -58.8, -67.5],
+      [4939, 17.8, -70.2, -67.5], [4945, 14.5, -60.8, -67.5], [4951, 7.3, -41.7, -67.5],
+      [4953, 9.3, -38.3, -68.8], [4963, -2.9, -27.2, -65.3], [4972, -3.9, -25.6, -62.1],
+      [4981, -8.3, -24.7, -61.8], [4995, 1, -20.1, -61.9],
+      [5030, -26.5, -44.1, -67.5], [5060, -26.1, -43.5, -68.9], [5100, -29.7, -44.5, -68.9],
+      [5150, -25.4, -33.5, -66.1], [5205, -26.4, -23.6, -64.8],
+    ],
     spec: { kind: "house", W: 74.2, L: 58, H: 89, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
   },
   bank: {
     yBase: -62,
-    track: [[4880, 196, 37.1], [4955, 188, 19.2], [5030, 183.3, 14.7], [5205, 183.3, 14.7]],
+    // dive+hold rows re-solved from measurements (bank ran ~-28..-39px du)
+    track: [
+      [4880, 196, 37.1, -62],
+      // 4915-4933 stay on the old path: the ref draws a smaller, left-
+      // leaning bank on a pad at the overhead pose — a different icon
+      // shape; base-matching it painted more wrong pixels, not fewer
+      [4915, 192.3, 28.7, -62], [4924, 191.3, 26.6, -62], [4933, 190.3, 24.5, -62],
+      [4942, 236, -31.5, -81.2], [4953, 225.9, -25, -84.4], [4963, 219.6, -9.3, -74.2],
+      [4972, 212.3, -11.2, -69.6], [4981, 210.1, -5.1, -68.7], [4990, 208.5, -4.6, -68.7],
+      [4995, 208.7, -4.9, -68.7], [5030, 183.3, 14.7, -62], [5060, 183.3, 14.7, -62],
+      [5100, 183.3, 14.7, -62], [5150, 183.3, 14.7, -62], [5205, 183.3, 14.7, -62],
+    ],
     spec: { kind: "temple", W: 88, L: 48, H: 88, eaveFrac: 0.655, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
   },
   t1: {
@@ -521,11 +547,14 @@ const WB: Record<string, CommB> = {
     spec: { kind: "temple", W: 36.5, L: 30, H: 33.5, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
   },
 };
-const wbPos = (b: CommB, f: number, lift = 0): V3 => [
-  lerp1(b.track.map((r) => [r[0], r[1]] as [number, number]), f),
-  b.yBase + lift,
-  lerp1(b.track.map((r) => [r[0], r[2]] as [number, number]), f),
-];
+const wbPos = (b: CommB, f: number, lift = 0): V3 => {
+  const y4 = b.track.filter((r) => r.length === 4) as [number, number, number, number][];
+  return [
+    lerp1(b.track.map((r) => [r[0], r[1]] as [number, number]), f),
+    (y4.length ? lerp1(y4.map((r) => [r[0], r[3]] as [number, number]), f) : b.yBase) + lift,
+    lerp1(b.track.map((r) => [r[0], r[2]] as [number, number]), f),
+  ];
+};
 
 // ── arrows: jagged-seam block arrows ─────────────────────────────
 const JagArrow: React.FC<{
@@ -592,6 +621,89 @@ const JagArrow: React.FC<{
           <polygon points={wholePoly} fill={`url(#${gid}-g)`} stroke={outline} strokeWidth={2.2} />
         )}
       </g>
+    </svg>
+  );
+};
+
+// ── foreground glass-pane sweep ──────────────────────────────────
+// The cube's LEFT face passes the camera during the dive: a full-height
+// neutral-grey band (interior ~22 levels under the bg, two faint edge
+// lines) sweeps leftward 4915-4975, parks at the left edge and fades by
+// ~5085; during the pull-back (5218-5240) the face re-enters left→right
+// and hands over to the drawn cube edges. All xs measured per frame on
+// the reference (top band y≈52, bottom band y≈432).
+const PANE_TOP: [number, number, number][] = [
+  // [f, xL, xR] at y≈52
+  [4915, 456, 462], [4921, 445, 452], [4924, 438, 445], [4930, 407, 417],
+  [4936, 368, 380], [4942, 316, 333], [4948, 253, 275], [4954, 179, 207],
+  [4960, 94, 131], [4966, 18, 52], [4970, -2, 14], [4974, -34, -16],
+  [5075, -34, -16],
+];
+const PANE_BOT: [number, number, number][] = [
+  // [f, xL, xR] at y≈432
+  [4915, 456, 462], [4921, 443, 449], [4927, 424, 431], [4933, 396, 406],
+  [4939, 362, 373], [4945, 315, 331], [4951, 257, 278], [4957, 188, 215],
+  [4963, 112, 146], [4969, 50, 87], [4975, 17, 56], [4985, 12, 51],
+  [4995, 8, 47], [5010, 2, 33], [5030, 0, 27], [5050, 0, 20], [5075, 0, 15],
+];
+// pull-back re-entry (measured 5220/5230/5240; ~+12px/f decelerating)
+const PANE_BACK: [number, number, number][] = [
+  [5216, 149, 167], [5220, 197, 215], [5230, 324, 332], [5240, 386, 389],
+];
+const paneQuad = (rows: { top: [number, number]; bot: [number, number] }) => {
+  // extend the measured bands (y52 / y432) to the full frame height
+  const ext = (a: number, b: number, y: number) => a + ((b - a) * (y - 52)) / 380;
+  return {
+    tl: [ext(rows.top[0], rows.bot[0], 0), 0] as Pt,
+    tr: [ext(rows.top[1], rows.bot[1], 0), 0] as Pt,
+    br: [ext(rows.top[1], rows.bot[1], 480), 480] as Pt,
+    bl: [ext(rows.top[0], rows.bot[0], 480), 480] as Pt,
+  };
+};
+const GlassSweep: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = frame;
+  let quad: ReturnType<typeof paneQuad> | null = null;
+  let alpha = 0;
+  let topRamp = 1;
+  let edges = false;
+  if (f >= 4915 && f <= 5088) {
+    const at = (rows: [number, number, number][], idx: 1 | 2) =>
+      lerp1(rows.map((r) => [r[0], r[idx]] as [number, number]), f);
+    quad = paneQuad({
+      top: [at(PANE_TOP, 1), at(PANE_TOP, 2)],
+      bot: [at(PANE_BOT, 1), at(PANE_BOT, 2)],
+    });
+    // interior deficit: ~22 levels on ~243 bg through the sweep, easing to
+    // ~10 as the camera settles, ~4 through the hold, gone by 5085
+    alpha = lerp1([[4915, 0.09], [4960, 0.09], [4972, 0.05], [4995, 0.035], [5010, 0.017], [5070, 0.015], [5085, 0]], f);
+    topRamp = fade(f, 4919, 4926); // top of the pane eases in
+    edges = f <= 4970;
+  } else if (f >= 5216 && f <= 5246) {
+    const xL = lerp1(PANE_BACK.map((r) => [r[0], r[1]] as [number, number]), f);
+    const xR = lerp1(PANE_BACK.map((r) => [r[0], r[2]] as [number, number]), f);
+    quad = paneQuad({ top: [xL, xR], bot: [xL, xR] });
+    alpha = lerp1([[5216, 0], [5220, 0.04], [5230, 0.066], [5240, 0.05], [5246, 0]], f);
+  }
+  if (!quad || alpha <= 0) return null;
+  const pts = `${quad.tl[0]},0 ${quad.tr[0]},0 ${quad.br[0]},480 ${quad.bl[0]},480`;
+  return (
+    <svg width={854} height={480} style={{ position: "absolute", inset: 0 }}>
+      <defs>
+        <linearGradient id="pane-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3A3A3A" stopOpacity={alpha * topRamp} />
+          <stop offset="35%" stopColor="#3A3A3A" stopOpacity={alpha} />
+          <stop offset="100%" stopColor="#3A3A3A" stopOpacity={alpha} />
+        </linearGradient>
+      </defs>
+      <polygon points={pts} fill="url(#pane-g)" />
+      {edges && (
+        <>
+          <line x1={quad.tl[0]} y1={0} x2={quad.bl[0]} y2={480}
+            stroke="#3A3A3A" strokeOpacity={0.05 * topRamp} strokeWidth={2.4} />
+          <line x1={quad.tr[0]} y1={0} x2={quad.br[0]} y2={480}
+            stroke="#3A3A3A" strokeOpacity={0.04 * topRamp} strokeWidth={2.2} />
+        </>
+      )}
     </svg>
   );
 };
@@ -688,6 +800,8 @@ export const Community: React.FC = () => {
         color={C.blue} light="#7FCBDD" outline="#4E7580" opacity={arrowOp}
         seamX={blueK.x0 + (blueK.x1 - blueK.x0) * 0.35} shiftL={shiftL} shiftR={shiftR}
         grow={fade(frame, 4720, 4745)} growFrom="left" />
+      {/* foreground glass pane crossing the camera */}
+      <GlassSweep frame={frame} />
       {/* pull-back wash */}
       {washOp > 0 && <AbsoluteFill style={{ background: "#FBFBFA", opacity: washOp }} />}
     </AbsoluteFill>

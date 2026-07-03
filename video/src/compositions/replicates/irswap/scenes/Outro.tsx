@@ -37,9 +37,12 @@ const PHI: [number, number][] = [
 ];
 // board yaw about the fold midpoint: the page rises turned ~90° away
 // (edge-on sliver at 5300 in the ref), then swings frontal by 5318.
+// (re-measured: the first pass opened the page toward the camera too
+// fast — silhouette 42% too wide at 5303, 22% at 5306; ref cosines give
+// the retimed keys below)
 const PSI: [number, number][] = [
-  [5283, -96], [5295, -93], [5300, -88], [5303, -62], [5306, -34],
-  [5310, -15], [5314, -5], [5318, 0],
+  [5283, -96], [5295, -93], [5300, -88], [5303, -70], [5306, -47],
+  [5309, -29], [5311, -20], [5313, -10], [5315, -5], [5318, 0],
 ];
 // camera: [frame, x, y, z, pitchDeg] — high in front, descending to the
 // exact frontal pose (0,100,DCAM) which reproduces the settled board
@@ -54,9 +57,16 @@ const CAM_O: [number, number, number, number, number][] = [
   [5312, 5, 150, 700, 4],
   [5318, 0, 100, DCAM, 0],
 ];
-// camera roll through the reveal (ref board tilts ~8° CCW mid-swing)
+// camera roll through the reveal — the ref page leads with a corner:
+// measured top-edge tilt −22.7° at 5306 easing to −2.3° by 5313 (the
+// first pass held a flat ~−5°)
 const ROLL: [number, number][] = [
-  [5299, 0], [5303, -8], [5307, -4], [5312, -1.5], [5318, 0],
+  [5299, 0], [5301, -10], [5303, -16], [5306, -23], [5309, -7],
+  [5312, -1.5], [5318, 0],
+];
+// mid-swing height trim: the inner page rode 15-22px high vs the ref
+const Y_LIFT: [number, number][] = [
+  [5300, 0], [5303, 12], [5306, 21], [5309, 24], [5311, 12], [5313, 0],
 ];
 // whiteout hand-off (ref background is settled by ~5290)
 const WASH: [number, number][] = [
@@ -254,7 +264,7 @@ export const Outro: React.FC = () => {
   const psi = (lerp1(PSI, fc) * Math.PI) / 180;
   const cam: [number, number, number] = [
     lerp1(CAM_O.map((k) => [k[0], k[1]] as [number, number]), fc),
-    lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc),
+    lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc) + lerp1(Y_LIFT, fc),
     lerp1(CAM_O.map((k) => [k[0], k[3]] as [number, number]), fc),
   ];
   const pitch = (lerp1(CAM_O.map((k) => [k[0], k[4]] as [number, number]), fc) * Math.PI) / 180;

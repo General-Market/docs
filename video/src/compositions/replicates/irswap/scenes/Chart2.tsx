@@ -213,12 +213,54 @@ const ky: [number, number][] = KEYS.map((k) => [k.f, k.cam[1]]);
 const kz: [number, number][] = KEYS.map((k) => [k.f, k.cam[2]]);
 const camAt = (f: number): V3 => [lerp1(kx, f), lerp1(ky, f), lerp1(kz, f)];
 
+// ── measured camera retarget (post-pan hold + whip) ──────────────
+// Similarity registration of our render onto the reference (masked
+// patch-flow NCC): ref ≈ s·(cur − center) + center + t. The solved path
+// pushed IN during the whip where the reference pulls BACK (s=0.709 at
+// 3909), and the whole post-pan hold sat ~2.2% large and ~6px left.
+// Applied as a depth retarget about the wall-center depth.
+const CAM_FIX: [number, number, number, number][] = [
+  // [f, s, tx, ty]
+  [3740, 1, 0, 0], [3760, 0.978, 6, -1], [3885, 0.979, 5.8, 0.6],
+  [3891, 0.972, 4.6, -2.7], [3894, 0.966, 5.8, -0.4], [3897, 0.96, 9.2, -0.5],
+  [3900, 0.909, 15.9, -1.7], [3903, 0.814, 20.6, 0.5], [3906, 0.742, 11.8, 2],
+  [3909, 0.709, -2.4, 3.7], [3912, 0.725, -27.8, 11.3], [3915, 0.975, 11, -5],
+  [3918, 1, 3, -3], [3922, 1, 0, 0],
+];
+const WC3: V3 = wallToWorld(WALL, (S0 + S1) / 2, (Y_TOP + Y_BOT) / 2);
+const fixRow = (i: 1 | 2 | 3) => CAM_FIX.map((r) => [r[0], r[i]] as [number, number]);
+const FIX_S = fixRow(1);
+const FIX_TX = fixRow(2);
+const FIX_TY = fixRow(3);
+const camFixed = (f: number): V3 => {
+  const cam = camAt(f);
+  const s = lerp1(FIX_S, f);
+  const tx = lerp1(FIX_TX, f);
+  const ty = lerp1(FIX_TY, f);
+  if (Math.abs(s - 1) < 1e-4 && Math.abs(tx) < 1e-3 && Math.abs(ty) < 1e-3) return cam;
+  const d2 = (cam[2] - WC3[2]) / s;
+  return [cam[0] - (tx * d2) / DCAM, cam[1] + (ty * d2) / DCAM, WC3[2] + d2];
+};
+
+// ── whip motion blur (180° shutter over the corrected camera path) ──
+const whipSigma = (f: number): [number, number] => {
+  if (f < 3884 || f > 3932) return [0, 0];
+  const a = projT(WC3, camFixed(f - 1));
+  const b = projT(WC3, camFixed(f + 1));
+  const dx = (b[0] - a[0]) / 2;
+  const dy = (b[1] - a[1]) / 2;
+  const L = Math.hypot(dx, dy);
+  if (L < 5) return [0, 0];
+  const sig = (0.5 * L) / 3.46; // box streak L/2 → equivalent gaussian σ
+  return [(sig * Math.abs(dx)) / L, (sig * Math.abs(dy)) / L];
+};
+
 // ── badges (unprojected at their pop frames with the solved camera) ──
 const badgeWall = (
   frame: number,
   bbox: [number, number, number, number],
 ): { s: number; y: number; w: number; h: number } => {
-  const cam = camAt(frame);
+  const cam = camFixed(frame);
   const a = unprojToWall(WALL, bbox[0], bbox[1], cam);
   const b = unprojToWall(WALL, bbox[2], bbox[3], cam);
   return { s: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]) };
@@ -649,16 +691,26 @@ export const Chart2: React.FC = () => {
   const local = useCurrentFrame();
   const frame = local + F0;
   useFonts();
-  const cam = camAt(frame);
+  const cam = camFixed(frame);
+  const [sigX, sigY] = whipSigma(frame);
+  const blurred = sigX > 0.25 || sigY > 0.25;
 
   // fly-out 4112-4131: wall assembly shrinks + flies up-right, slight roll
   const flyT = easeInPow(fade(frame, 4112, 4131), 1.6);
-  const wallCenter = wallToWorld(WALL, (S0 + S1) / 2, (Y_TOP + Y_BOT) / 2);
+  const wallCenter = WC3;
   const flyScale = Math.max(0.02, 1 - 0.98 * flyT);
 
   return (
     <AbsoluteFill>
       <Vignette />
+      {blurred && (
+        <svg width={0} height={0} style={{ position: "absolute" }}>
+          <filter id="chart2-whip-blur">
+            <feGaussianBlur stdDeviation={`${sigX.toFixed(2)} ${sigY.toFixed(2)}`} />
+          </filter>
+        </svg>
+      )}
+      <AbsoluteFill style={{ filter: blurred ? "url(#chart2-whip-blur)" : undefined }}>
       <Room>
         <CameraRig position={cam} />
         <FloorSet />
@@ -674,6 +726,7 @@ export const Chart2: React.FC = () => {
           </group>
         )}
       </Room>
+      </AbsoluteFill>
       <Legend frame={frame} />
     </AbsoluteFill>
   );
