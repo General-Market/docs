@@ -527,9 +527,9 @@ export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
 
   const al: ArrowAlphas = {
     arrA, progA, lblA, lmA, vbrVal,
-    fixArrow: frame < 3080 ? fixArrowOp : 0,
+    fixArrow: frame < 3180 ? fixArrowOp : 0,
     fixProg,
-    fix: frame < 3080 ? fixOp : 0,
+    fix: frame < 3180 ? fixOp : 0,
     red: frame < 3195 ? redOp : 0,
     redProg,
     rightLbl: rightLblOp,
@@ -595,11 +595,20 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
   // track-riding anchor helpers (phase D screen overlays only)
   // rDA carries the measured phase-D correction (ref arrows sit ~14px
   // left / 10px lower; labels ~10px left / 11px lower than the first fit)
-  const rD = (base: readonly [number, number]): Pt => riding(frame, 3300, base, P1);
-  const rDA = (base: readonly [number, number]): Pt => {
-    const p = rD(base);
-    return [p[0] - 14, p[1] + 10];
-  };
+  // Phase-D two-shot overlays are painted in near-static SCREEN space in the
+  // reference during the hold: measured red-arrow center holds at
+  // (393→403, 175) across 3200-3420 — a tiny rightward drift only, NOT the
+  // strong P1-apex motion the old track-riding applied (it swept the held
+  // arrows ~25px and sank them ~10px, and the old −14/+10 "correction"
+  // pushed them further off the measured anchor). ANCHOR_3300 IS the
+  // measured hold pose, so place elements there directly with only the
+  // measured ~+0.045px/frame drift. (During 3080-3180 the reference arrow
+  // still swings with the camera orbit out to x≈534; no screen-space model
+  // captures that world-space swing, and the hold gain dwarfs it.)
+  const rDA = (base: readonly [number, number]): Pt => [
+    base[0] + 0.045 * (frame - 3300),
+    base[1],
+  ];
   const rE = (base: readonly [number, number]): Pt => riding(frame, 3450, base, P1);
 
   // red arrow blend 3427-3438 phase-D pose → net-cash pose
@@ -617,11 +626,11 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
         opacity={frame >= 3195 ? ncArrowOp : 0} />
       <Arrow tail={rDA(ANCHOR_3300.tealArrow.tail)} tip={rDA(ANCHOR_3300.tealArrow.tip)}
         color={BCOLORS.teal} thickness={18} headLen={26} headH={33}
-        opacity={frame >= 3080 ? fixArrowOp : 0} />
+        opacity={frame >= 3180 ? fixArrowOp : 0} />
       <Txt p={rDA(ANCHOR_3300.vbrTitle)} size={27} opacity={dVbrOp}>Variable Base Rate</Txt>
       <RateValue p={rDA(ANCHOR_3300.vbrValue)} size={37} opacity={dVbrOp} value="5.0" />
-      <Txt p={rDA(ANCHOR_3300.fixedTitle)} size={25} opacity={frame >= 3080 ? fixOp : 0}>Fixed Rate</Txt>
-      <RateValue p={rDA(ANCHOR_3300.fixedValue)} size={32} opacity={frame >= 3080 ? fixOp : 0} value="3.0" />
+      <Txt p={rDA(ANCHOR_3300.fixedTitle)} size={25} opacity={frame >= 3180 ? fixOp : 0}>Fixed Rate</Txt>
+      <RateValue p={rDA(ANCHOR_3300.fixedValue)} size={32} opacity={frame >= 3180 ? fixOp : 0} value="3.0" />
       {/* Net Cash Settlement */}
       <Txt p={rE(ANCHOR_3450.l1)} size={24} opacity={ncOp}>Net Cash</Txt>
       <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
