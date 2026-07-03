@@ -5,9 +5,12 @@ import { clamp } from "./AnomaComposition";
 
 // ═══════════════════════════════════════════════════════════════
 // CRX in-app mock cards for the CRX-Anoma cut. Every card is drawn
-// in code from the app's own design tokens (app.crxfx.com globals):
-// Inter, teal #0fb6ab, Mercury-white surfaces, brass for the lock
-// moment, the app's own flag files. Mount windows are inherited
+// in code from the app's own design system, hex-resolved from
+// ui/frontend (globals.css + components/desk/ui.tsx): Inter, teal
+// #0fb6ab, the SOFT_CARD surface, sunken wells, hairline dividers,
+// brass for the lock moment, the app's own flag files. No invented
+// shadows, no gradients — if app.crxfx.com doesn't render it, the
+// video doesn't either. Mount windows are inherited
 // frame-for-frame from the measured Anoma reference; intra-scene
 // events (clicks, locks, landings, chart growth) sit on the 97.97 BPM
 // grid of loosin-up.mp3 — causes on beats/snares, effects 1-2 frames
@@ -22,32 +25,40 @@ const { fontFamily: INTER } = loadInter("normal", {
   subsets: ["latin"],
 });
 
-// ─── app.crxfx.com tokens (hex-resolved from globals.css) ───
-const INK = "#1e1e2a";
-const SEC = "#5b5b66";
-const TER = "#8a8a96";
-const TEAL = "#0fb6ab";
-const TEAL_SOFT = "rgba(15, 182, 171, 0.10)";
-const TEAL_RING = "rgba(15, 182, 171, 0.28)";
-const WELL = "#f2f3f6";
-const BG = "#f7f8fa";
-const BORDER = "rgba(23, 23, 33, 0.08)";
-const HAIR = "rgba(23, 23, 33, 0.07)";
-const SUCCESS = "#0e7a4a";
-const AMBER = "#c77d0a";
-const BRASS = "#8a5d12"; // AA text brass (--accent-2)
-const BRASS_RING = "rgba(192, 138, 46, 0.32)"; // luminous signal brass ring
+// ─── app.crxfx.com tokens, hex-resolved from ui/frontend ───
+// (globals.css :root + components/desk/ui.tsx — nothing invented here)
+const INK = "#1e1e2a"; // --text
+const SEC = "#5b5b66"; // --text-secondary
+const TER = "#8a8a96"; // --text-tertiary
+const TEAL = "#0fb6ab"; // --accent
+const TEAL_HOVER = "#0c8a82"; // --accent-hover
+const TEAL_SOFT = "rgba(15, 182, 171, 0.10)"; // bg-accent/10
+const TEAL_RING = "rgba(15, 182, 171, 0.28)"; // --accent-ring
+const WELL = "#eef1f1"; // --surface-sunken (wells, inset tracks)
+const SURFACE2 = "#f5f7f7"; // --surface-2 (hover, active nav pill, Tag bg)
+const BG = "#f7f8fa"; // --bg
+const BORDER = "rgba(23, 23, 33, 0.08)"; // --border (the only hairline)
+const BORDER_STRONG = "#e4e5ea"; // --border-strong (inputs, tracks)
+const SUCCESS = "#0e7a4a"; // --success
+const SUCCESS_SOFT = "rgba(14, 122, 74, 0.15)"; // bg-success/15
+const AMBER = "#c77d0a"; // --warning
+const AMBER_SOFT = "rgba(199, 125, 10, 0.15)"; // bg-warning/15
+const BRASS = "#8a5d12"; // --accent-2 (AA text brass)
+const BRASS_SOFT = "rgba(138, 93, 18, 0.15)"; // bg-accent2/15
+// --accent-2-ring (lock-ignite) = rgba(184,132,58,0.32); the lock
+// pulse animates its alpha inline.
 
 const flag = (cc: string) => staticFile(`crx-assets/flags/${cc}.svg`);
 
 // Card slot shared with the Anoma originals: left 504, top 122, 710×472.
 const SLOT = { left: 504, top: 122, w: 710, h: 472 };
 
+// The app's section eyebrow: 12px/600 uppercase, tracking 0.08em.
 const label: React.CSSProperties = {
   fontFamily: INTER,
-  fontSize: 11.5,
+  fontSize: 12,
   fontWeight: 600,
-  letterSpacing: 1.1,
+  letterSpacing: "0.08em",
   color: TER,
   textTransform: "uppercase",
 };
@@ -97,8 +108,9 @@ const CrxMark: React.FC<{ size: number }> = ({ size }) => (
   </svg>
 );
 
-// Money rendered the app's way: integer part in ink, the decimals a
-// size down and grey. Every $ value on app.crxfx.com does this.
+// Money exactly as MoneyAmount renders it (components/desk/ui.tsx):
+// tabular figure, cents at 0.7em / weight 400 / opacity 0.6 — the
+// cents inherit the figure's color, they do not go grey.
 const Money: React.FC<{ d: string; c?: string; fs?: number; color?: string }> = ({
   d,
   c = ".00",
@@ -107,7 +119,7 @@ const Money: React.FC<{ d: string; c?: string; fs?: number; color?: string }> = 
 }) => (
   <span style={{ fontSize: fs, fontWeight: 500, color, ...tnum }}>
     {d}
-    <span style={{ fontSize: fs * 0.82, color: TER }}>{c}</span>
+    <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>{c}</span>
   </span>
 );
 
@@ -120,7 +132,7 @@ const Spinner: React.FC<{ frame: number; size?: number }> = ({ frame, size = 14 
     height={size}
     style={{ transform: `rotate(${(frame * 14) % 360}deg)` }}
   >
-    <circle cx="12" cy="12" r="9" fill="none" stroke="#e4e5ea" strokeWidth="3" />
+    <circle cx="12" cy="12" r="9" fill="none" stroke={BORDER_STRONG} strokeWidth="3" />
     <path d="M12 3 a9 9 0 0 1 9 9" fill="none" stroke={TEAL} strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
@@ -177,17 +189,29 @@ const Check: React.FC<{ size: number; color?: string; stroke?: number }> = ({
   </svg>
 );
 
-// Three-layer daylight elevation: contact, key, ambient. One shadow
-// reads as a sticker; the stack reads as a material.
+// The app's SOFT_CARD (components/desk/ui.tsx, used 58×): one soft
+// diffuse shadow plus a 1px ring — no border, radius 20. This is the
+// only card elevation the app has.
 const CARD_SHADOW =
-  "0 1px 2px rgba(28, 28, 35, 0.05), 0 10px 28px rgba(28, 28, 35, 0.12), 0 32px 80px rgba(28, 28, 35, 0.14)";
-// Panels inside the S12 shell sit one layer lower.
-const PANEL_SHADOW =
-  "0 1px 2px rgba(28, 28, 35, 0.04), 0 4px 14px rgba(28, 28, 35, 0.06)";
-// Wells are borderless in the app; an inset hairline keeps their edge
-// legible on the 4K raster.
-const WELL_INSET = "inset 0 0 0 1px rgba(23, 23, 33, 0.035)";
-const BAR_GRADIENT = "linear-gradient(180deg, #1fc5b9 0%, #0aa094 100%)";
+  "0 1px 2px rgba(28, 28, 35, 0.04), 0 14px 36px -10px rgba(28, 28, 35, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)";
+// --shadow-overlay: drawers, modals, floating dropdowns only.
+const OVERLAY_SHADOW =
+  "0 10px 16px rgba(28, 28, 35, 0.04), 0 6px 10px rgba(28, 28, 35, 0.04), 0 0 3px rgba(28, 28, 35, 0.09)";
+// focus-visible:ring-2 ring-accent — the app's one focus treatment.
+const FOCUS_RING = `0 0 0 2px ${TEAL_RING}`;
+
+// Neutral Tag (side/pair chips): rounded-sm, hairline, surface-2.
+const tag: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  borderRadius: 6,
+  border: `1px solid ${BORDER}`,
+  backgroundColor: SURFACE2,
+  padding: "2px 8px",
+  fontSize: 12,
+  fontWeight: 500,
+  color: SEC,
+};
 
 const Card: React.FC<{
   x: number;
@@ -213,7 +237,6 @@ const Card: React.FC<{
         opacity,
         borderRadius: radius,
         backgroundColor: bg,
-        border: `1px solid ${BORDER}`,
         boxShadow: CARD_SHADOW,
         overflow: "hidden",
         fontFamily: INTER,
@@ -341,10 +364,10 @@ const Cursor: React.FC<{
 };
 
 // ─── chart engine ───
-// A finished product draws its charts on a scale: hairline gridlines
-// with money labels, gradient bars, and a value pill that names the
-// latest reading once the growth has settled. Container-local
-// coordinates; bars rise from the baseline at (x, y).
+// Hairline gridlines with money labels, flat teal bars (the app has
+// no gradients — zero in the entire components tree), and a quiet
+// teal chip that names the latest reading once the growth settles.
+// Container-local coordinates; bars rise from the baseline at (x, y).
 const BarChart: React.FC<{
   frame: number;
   growth: (fr: number) => number;
@@ -415,8 +438,8 @@ const BarChart: React.FC<{
                   top: y - bh,
                   width: barW,
                   height: bh,
-                  background: BAR_GRADIENT,
-                  borderRadius: "7px 7px 0 0",
+                  backgroundColor: TEAL,
+                  borderRadius: "6px 6px 0 0",
                 }}
               />
             )}
@@ -450,21 +473,18 @@ const BarChart: React.FC<{
         >
           <div
             style={{
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              gap: 6,
-              backgroundColor: "#fff",
+              backgroundColor: TEAL_SOFT,
               borderRadius: 980,
-              padding: "4px 11px",
+              padding: "3px 10px",
               fontSize: 11.5,
-              fontWeight: 600,
-              color: INK,
-              boxShadow: "0 1px 2px rgba(28,28,35,0.08), 0 5px 16px rgba(28,28,35,0.14)",
+              fontWeight: 500,
+              color: TEAL,
               whiteSpace: "nowrap",
               ...tnum,
             }}
           >
-            <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
             {pill.text}
           </div>
         </div>
@@ -522,11 +542,11 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           <div
             style={{
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 500,
               color: AMBER,
-              backgroundColor: "rgba(199,125,10,0.10)",
+              backgroundColor: AMBER_SOFT,
               borderRadius: 980,
-              padding: "4px 11px",
+              padding: "3px 10px",
             }}
           >
             Sandbox
@@ -534,8 +554,9 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: -1.4, ...tnum }}>
-            $30,440<span style={{ color: TER, fontSize: 26 }}>.00</span>
+          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", ...tnum }}>
+            $30,440
+            <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
           </div>
           <div style={{ fontSize: 13, color: SEC, marginTop: 3 }}>Total value</div>
         </div>
@@ -552,7 +573,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderTop: `1px solid ${HAIR}`,
+              borderTop: `1px solid ${BORDER}`,
             }}
           >
             <span style={{ fontSize: 13, color: SEC }}>{k}</span>
@@ -572,7 +593,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderTop: `1px solid ${HAIR}`,
+              borderTop: `1px solid ${BORDER}`,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -732,12 +753,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 654,
             height: 108,
             backgroundColor: WELL,
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "14px 18px",
-            boxShadow:
-              focused && frame < TYPE_END + 8
-                ? `${WELL_INSET}, 0 0 0 3px ${TEAL_RING}`
-                : WELL_INSET,
+            boxShadow: focused && frame < TYPE_END + 8 ? FOCUS_RING : undefined,
           }}
         >
           <div style={label}>Forward notional</div>
@@ -792,9 +810,8 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 654,
             height: 74,
             backgroundColor: WELL,
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "9px 12px 0 12px",
-            boxShadow: WELL_INSET,
           }}
         >
           <div style={{ ...label, paddingLeft: 6 }}>Pair</div>
@@ -805,9 +822,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               justifyContent: "space-between",
               marginTop: 4,
               backgroundColor: "#fff",
-              borderRadius: 10,
-              padding: "6px 12px",
-              boxShadow: "0 1px 2px rgba(28,28,35,0.05)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              padding: "5px 12px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12, ...reQuote }}>
@@ -830,12 +847,12 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 320,
             height: 74,
             backgroundColor: WELL,
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "10px 18px",
             boxShadow:
               tenorFocus > 0
-                ? `${WELL_INSET}, 0 0 0 3px rgba(15,182,171,${(0.28 * tenorFocus).toFixed(3)})`
-                : WELL_INSET,
+                ? `0 0 0 2px rgba(15,182,171,${(0.28 * tenorFocus).toFixed(3)})`
+                : undefined,
           }}
         >
           <div style={label}>Tenor</div>
@@ -860,10 +877,12 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 320,
             height: 74,
             backgroundColor: WELL,
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "10px 18px",
-            boxShadow: lockPulse > 0 ? `${WELL_INSET}, 0 0 0 3px ${BRASS_RING}` : WELL_INSET,
-            outline: lockPulse > 0 ? `1.5px solid rgba(192,138,46,${lockPulse.toFixed(2)})` : undefined,
+            boxShadow:
+              lockPulse > 0
+                ? `0 0 0 2px rgba(184,132,58,${(0.32 * lockPulse).toFixed(3)})`
+                : undefined,
           }}
         >
           <div style={label}>Forward rate</div>
@@ -875,21 +894,16 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
           {/* Indicative → Locked badge */}
           {!locked ? (
-            <div
-              style={{
-                position: "absolute",
-                right: 14,
-                top: 11,
-                fontSize: 11.5,
-                fontWeight: 600,
-                color: TER,
-                backgroundColor: "#fff",
-                border: `1px solid ${BORDER}`,
-                borderRadius: 980,
-                padding: "3px 10px",
-                opacity: 0.75 + 0.25 * Math.sin(frame / 3),
-              }}
-            >
+            <div style={{ position: "absolute", right: 14, top: 11, ...tag, gap: 6 }}>
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: TEAL,
+                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 30),
+                }}
+              />
               Indicative
             </div>
           ) : (
@@ -901,7 +915,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
-                backgroundColor: "rgba(192,138,46,0.12)",
+                backgroundColor: BRASS_SOFT,
                 borderRadius: 980,
                 padding: "4px 10px",
                 ...settle(frame, 240, 12, 0.74),
@@ -917,14 +931,17 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 />
                 <rect x="5" y="10" width="14" height="10" rx="2.4" fill={BRASS} />
               </svg>
-              <span style={{ fontSize: 12, fontWeight: 600, color: BRASS }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: BRASS }}>
                 Locked · firm 120s
               </span>
             </div>
           )}
         </div>
 
-        {/* CTA — armed, it lifts off the card the way the app's primary does */}
+        {/* CTA — the app's swap primary: flat teal, rounded-2xl, 15px
+            medium; disabled is the same button at half opacity, and a
+            press is accent-hover at scale 0.98. No glow — the app's
+            primary has no shadow at all. */}
         <div
           style={{
             position: "absolute",
@@ -933,19 +950,15 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             width: 654,
             height: 52,
             borderRadius: 16,
-            backgroundColor: armed ? (ctaPressed ? "#0c8a82" : TEAL) : "#a9e4de",
-            boxShadow: armed
-              ? ctaPressed
-                ? "0 4px 12px rgba(15,182,171,0.28)"
-                : "0 10px 26px rgba(15,182,171,0.35)"
-              : undefined,
+            backgroundColor: ctaPressed ? TEAL_HOVER : TEAL,
+            opacity: armed ? 1 : 0.5,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 16,
-            fontWeight: 600,
+            fontSize: 15,
+            fontWeight: 500,
             color: "#fff",
-            transform: ctaPressed ? "scale(0.988)" : undefined,
+            transform: ctaPressed ? "scale(0.98)" : undefined,
           }}
         >
           <span style={{ ...ctaSettle }}>{armed ? "Request quotes" : "Enter an amount"}</span>
@@ -974,10 +987,10 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               left: 28,
               top: 262,
               width: 654,
-              borderRadius: 14,
+              borderRadius: 12,
               backgroundColor: "#fff",
               border: `1px solid ${BORDER}`,
-              boxShadow: "0 18px 44px rgba(28,28,35,0.16), 0 2px 8px rgba(28,28,35,0.08)",
+              boxShadow: OVERLAY_SHADOW,
               padding: 8,
               opacity: panelIn,
               transform: `scaleY(${(0.96 + 0.04 * panelIn).toFixed(3)})`,
@@ -993,9 +1006,8 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                   top: 8 + 44 * hoverIdx,
                   width: 638,
                   height: 44,
-                  borderRadius: 10,
-                  backgroundColor: TEAL_SOFT,
-                  boxShadow: `inset 0 0 0 1.5px ${TEAL_RING}`,
+                  borderRadius: 8,
+                  backgroundColor: SURFACE2,
                   opacity: hoverOp,
                 }}
               />
@@ -1124,7 +1136,7 @@ const ObFace: React.FC<{
             top: 11,
             width: 271 - 48 + 24,
             height: 2,
-            backgroundColor: step > i ? TEAL : "#e4e5ea",
+            backgroundColor: step > i ? TEAL : BORDER_STRONG,
           }}
         />
       ))}
@@ -1140,8 +1152,8 @@ const ObFace: React.FC<{
                 margin: "0 auto",
                 borderRadius: 12,
                 backgroundColor: done || active ? TEAL : "#fff",
-                border: done || active ? "none" : "2px solid #e4e5ea",
-                boxShadow: active ? `0 0 0 4px ${TEAL_RING}` : undefined,
+                border: done || active ? "none" : `2px solid ${BORDER_STRONG}`,
+                boxShadow: active ? FOCUS_RING : undefined,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1193,7 +1205,7 @@ const ObFace: React.FC<{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderTop: `1px solid ${HAIR}`,
+            borderTop: `1px solid ${BORDER}`,
             ...drop,
           }}
         >
@@ -1360,19 +1372,34 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
           <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>
             Request for quote
           </span>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: rated ? BRASS : TER,
-              backgroundColor: rated ? "rgba(192,138,46,0.12)" : WELL,
-              borderRadius: 980,
-              padding: "4px 11px",
-              ...tnum,
-            }}
-          >
-            {rated ? `Firm · ${countdown}s` : "Quoting…"}
-          </div>
+          {rated ? (
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: BRASS,
+                backgroundColor: BRASS_SOFT,
+                borderRadius: 980,
+                padding: "3px 10px",
+                ...tnum,
+              }}
+            >
+              Firm · {countdown}s
+            </div>
+          ) : (
+            <div style={{ ...tag, gap: 6 }}>
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: TEAL,
+                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 30),
+                }}
+              />
+              Quoting…
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -1387,14 +1414,9 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
             <div
               key={i}
               style={{
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: WELL,
-                borderRadius: 980,
-                padding: "6px 13px",
+                ...tag,
+                padding: "4px 10px",
                 fontSize: 12.5,
-                fontWeight: 600,
-                color: INK,
                 ...tnum,
               }}
             >
@@ -1425,12 +1447,12 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 top: 146 + i * 84,
                 width: 651,
                 height: 72,
-                borderRadius: 14,
+                borderRadius: 12,
                 backgroundColor: ringOp > 0 ? TEAL_SOFT : WELL,
                 boxShadow:
                   ringOp > 0
-                    ? `inset 0 0 0 2px rgba(15,182,171,${ringOp.toFixed(2)}), 0 10px 30px rgba(15,182,171,${(0.25 * ringOp).toFixed(3)})`
-                    : WELL_INSET,
+                    ? `0 0 0 2px rgba(15,182,171,${(0.28 * ringOp).toFixed(3)})`
+                    : undefined,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -1465,11 +1487,11 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                   <div
                     style={{
                       fontSize: 12,
-                      fontWeight: 600,
-                      color: "#fff",
-                      backgroundColor: TEAL,
+                      fontWeight: 500,
+                      color: TEAL,
+                      backgroundColor: TEAL_SOFT,
                       borderRadius: 980,
-                      padding: "4px 11px",
+                      padding: "3px 10px",
                       ...settle(frame, HIGHLIGHT_AT, 10, 0.74),
                     }}
                   >
@@ -1484,16 +1506,15 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                     <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
                   </div>
                 ) : (
-                  // Skeleton with a light sweep — products shimmer, mocks pulse.
+                  // Skeleton the app's way: a flat bar on animate-pulse
+                  // (opacity breathing, 2s period) — no light sweep.
                   <div
                     style={{
                       width: 86,
                       height: 14,
-                      borderRadius: 7,
-                      background:
-                        "linear-gradient(100deg, #e3e5eb 32%, #f4f6fa 48%, #e3e5eb 64%)",
-                      backgroundSize: "220% 100%",
-                      backgroundPositionX: `${((frame * 3 + i * 40) % 140) - 20}%`,
+                      borderRadius: 6,
+                      backgroundColor: BORDER_STRONG,
+                      opacity: 0.5 + 0.5 * Math.cos(((frame + i * 12) * Math.PI) / 30),
                     }}
                   />
                 )}
@@ -1540,11 +1561,11 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 alignItems: "center",
                 gap: 6,
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 color: SUCCESS,
-                backgroundColor: "rgba(14,122,74,0.10)",
+                backgroundColor: SUCCESS_SOFT,
                 borderRadius: 980,
-                padding: "4px 11px",
+                padding: "3px 10px",
                 ...settle(frame, ALL_CLEAR_AT, 10, 0.74),
               }}
             >
@@ -1570,7 +1591,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                borderBottom: `1px solid ${HAIR}`,
+                borderBottom: `1px solid ${BORDER}`,
                 opacity: rowOp,
               }}
             >
@@ -1580,7 +1601,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                     width: 26,
                     height: 26,
                     borderRadius: 13,
-                    backgroundColor: on ? SUCCESS : "#e4e5ea",
+                    backgroundColor: on ? SUCCESS : BORDER_STRONG,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1620,8 +1641,12 @@ const POSITIONS = [
   { at: 800, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
-// Sandbox banner mustard + flask, as the live app renders it.
-const BANNER = "#b8860b";
+// The app shell's nav is deliberately NOT Inter — TopNav.tsx sets
+// Helvetica Neue for the wordmark and tabs, ink #1a1a1a, and a
+// frosted white bar over a hardcoded warm-grey hairline.
+const HELV = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+const NAV_INK = "#1a1a1a";
+const NAV_BORDER = "#e7e7e2";
 
 const Flask: React.FC<{ size?: number }> = ({ size = 13 }) => (
   <svg viewBox="0 0 24 24" width={size} height={size}>
@@ -1648,14 +1673,14 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
   const pillOn = interpolate(frame, [809, 816], [0, 1], clamp);
   return (
     <Card x={S12.left} y={S12.top} w={S12.w} h={S12.h} opacity={opacity} radius={16} bg={BG}>
-      {/* sandbox banner */}
+      {/* sandbox banner — AppShell renders it bg-warning, 13px/500 white */}
       <div
         style={{
           position: "absolute",
           top: 0,
           width: "100%",
           height: 30,
-          backgroundColor: BANNER,
+          backgroundColor: AMBER,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1676,15 +1701,25 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           top: 30,
           width: "100%",
           height: 48,
-          backgroundColor: "#fff",
-          borderBottom: `1px solid ${BORDER}`,
+          backgroundColor: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(12px) saturate(1.8)",
+          borderBottom: `1px solid ${NAV_BORDER}`,
           display: "flex",
           alignItems: "center",
           padding: "0 26px",
+          fontFamily: HELV,
         }}
       >
         <CrxMark size={19} />
-        <span style={{ fontSize: 15.5, fontWeight: 700, letterSpacing: -0.6, marginLeft: 8 }}>
+        <span
+          style={{
+            fontSize: 15.5,
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            marginLeft: 8,
+            color: NAV_INK,
+          }}
+        >
           CRX
         </span>
         <div style={{ display: "flex", gap: 4, marginLeft: 40 }}>
@@ -1696,8 +1731,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                 style={{
                   position: "relative",
                   fontSize: 13.5,
-                  fontWeight: active ? 600 : 500,
-                  color: active ? INK : SEC,
+                  fontWeight: 500,
+                  color: NAV_INK,
+                  opacity: active ? 1 : 0.7,
                   padding: "6px 13px",
                 }}
               >
@@ -1706,8 +1742,8 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      borderRadius: 9,
-                      backgroundColor: "#eef0f3",
+                      borderRadius: 8,
+                      backgroundColor: SURFACE2,
                       opacity: pillOn,
                     }}
                   />
@@ -1724,8 +1760,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
             color: "#fff",
             fontSize: 12.5,
             fontWeight: 600,
+            letterSpacing: "-0.01em",
             borderRadius: 980,
             padding: "8px 16px",
+            boxShadow: "0 1px 1px 0 rgba(0,0,0,0.08), 0 8px 20px -12px rgba(0,0,0,0.4)",
           }}
         >
           Connect wallet
@@ -1741,14 +1779,14 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 300,
           height: 300,
           backgroundColor: "#fff",
-          border: "1px solid rgba(23,23,33,0.05)",
-          borderRadius: 16,
+          borderRadius: 20,
           padding: "20px 22px",
-          boxShadow: PANEL_SHADOW,
+          boxShadow: CARD_SHADOW,
         }}
       >
-        <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: -0.8, ...tnum }}>
-          $30,440<span style={{ color: TER, fontSize: 18 }}>.00</span>
+        <div style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-0.018em", ...tnum }}>
+          $30,440
+          <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
         </div>
         <div style={{ fontSize: 12.5, color: SEC, marginTop: 3 }}>Total value</div>
         {(
@@ -1769,7 +1807,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderTop: `1px solid ${HAIR}`,
+              borderTop: `1px solid ${BORDER}`,
             }}
           >
             <span style={{ fontSize: 12.5, color: SEC }}>{k}</span>
@@ -1787,10 +1825,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 400,
           height: 300,
           backgroundColor: "#fff",
-          border: "1px solid rgba(23,23,33,0.05)",
-          borderRadius: 16,
+          borderRadius: 20,
           padding: "20px 22px",
-          boxShadow: PANEL_SHADOW,
+          boxShadow: CARD_SHADOW,
         }}
       >
         <div style={label}>Hedged notional</div>
@@ -1819,10 +1856,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           width: 330,
           height: 300,
           backgroundColor: "#fff",
-          border: "1px solid rgba(23,23,33,0.05)",
-          borderRadius: 16,
+          borderRadius: 20,
           padding: "20px 22px",
-          boxShadow: PANEL_SHADOW,
+          boxShadow: CARD_SHADOW,
         }}
       >
         <div style={label}>Positions</div>
@@ -1837,7 +1873,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                 top: 52 + i * 96,
                 width: 286,
                 height: 96,
-                borderBottom: i === 0 ? `1px solid ${HAIR}` : undefined,
+                borderBottom: i === 0 ? `1px solid ${BORDER}` : undefined,
                 opacity: op,
                 paddingTop: 14,
               }}
@@ -1846,18 +1882,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <FlagPair a={pos.a} b={pos.b} size={19} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{pos.pair}</span>
-                  <span
-                    style={{
-                      fontSize: 11.5,
-                      fontWeight: 600,
-                      color: INK,
-                      backgroundColor: WELL,
-                      borderRadius: 8,
-                      padding: "2px 8px",
-                    }}
-                  >
-                    {pos.side}
-                  </span>
+                  <span style={{ ...tag, fontSize: 11.5 }}>{pos.side}</span>
                 </div>
                 <span style={{ fontSize: 13.5, fontWeight: 600, color: SUCCESS, ...tnum }}>
                   {pos.pnl}
@@ -1873,21 +1898,21 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               >
                 <span style={{ fontSize: 12.5, color: TER, ...tnum }}>{pos.notional} notional</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ fontSize: 11.5, color: SUCCESS, fontWeight: 600 }}>Healthy</span>
+                  <span style={{ fontSize: 11.5, color: SUCCESS, fontWeight: 500 }}>Healthy</span>
                   <div
                     style={{
                       position: "relative",
                       width: 56,
                       height: 5,
-                      borderRadius: 3,
-                      backgroundColor: "#e4e5ea",
+                      borderRadius: 980,
+                      backgroundColor: WELL,
                     }}
                   >
                     <div
                       style={{
                         width: 56 * pos.health * Math.min(1, op * 1.2),
                         height: 5,
-                        borderRadius: 3,
+                        borderRadius: 980,
                         backgroundColor: SUCCESS,
                       }}
                     />
@@ -1895,12 +1920,11 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                       <div
                         style={{
                           position: "absolute",
-                          left: 56 * pos.health - 1.5,
+                          left: 56 * pos.health - 1,
                           top: -1,
-                          width: 2.5,
+                          width: 2,
                           height: 7,
-                          borderRadius: 1,
-                          backgroundColor: "#0a5c38",
+                          backgroundColor: INK,
                         }}
                       />
                     )}
