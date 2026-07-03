@@ -242,6 +242,19 @@ const camFixed = (f: number): V3 => {
 };
 export const camChart2 = camFixed;
 
+// ── background-bar depth parallax ─────────────────────────────────
+// The 11 gridlines/bars sit on a plane BEHIND the diagram. We take the
+// fitted wall and push a copy of it back — uniformly scaled about the
+// anchor camera pose (f3700) by BAR_K. Scaling about the camera leaves
+// the anchor-frame projection pixel-identical to the front plane (zero
+// seam at f3700), while every other camera pose sees the bars at BAR_K×
+// depth, so they parallax at ~1/BAR_K of the diagram's screen motion.
+// BAR_K = 3.41 lands the measured back-vs-front shift at ~0.27 at f3720
+// (bold-black diagnostic render + OpenCV column detection).
+const F_ANCHOR = 3700;
+const ANCHOR_CAM: V3 = camFixed(F_ANCHOR);
+const BAR_K = 3.41;
+
 // ── whip motion blur (180° shutter over the corrected camera path) ──
 export const whipSigma = (f: number): [number, number] => {
   if (f < 3884 || f > 3932) return [0, 0];
@@ -422,27 +435,9 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.moveTo(mS(pts[0][0]), mY(pts[0][1]));
       for (let i = 1; i < pts.length; i++) ctx.lineTo(mS(pts[i][0]), mY(pts[i][1]));
     };
-    // gridlines (draw-on 3572-3584, top→bottom wipe)
-    const gT = fade(f, 3572, 3584);
-    if (gT > 0) {
-      for (let i = 0; i < GRID_S.length; i++) {
-        ctx.strokeStyle = i % 2 === 0 ? C.gridA : C.gridB;
-        ctx.lineWidth = 0.9;
-        ctx.beginPath();
-        ctx.moveTo(mS(GRID_S[i]), mY(GRID_TOP_Y));
-        ctx.lineTo(mS(GRID_S[i]), mY(GRID_TOP_Y - (GRID_TOP_Y - GRID_BOT_Y) * gT));
-        ctx.stroke();
-      }
-      // skirting: wall/floor junction line at the grid base
-      if (gT >= 1) {
-        ctx.strokeStyle = "#E0E0DF";
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
-        ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
-        ctx.stroke();
-      }
-    }
+    // gridlines/bars now live on the back parallax plane (GridWall) —
+    // pushed behind the diagram so they register at f3700 and lag under
+    // the camera move at depth ratio ~0.27.
     // hatched regions (region1 sweep 3806-3820; region2 3994-4006)
     const sweep = (polyPts: Pt[], sA: number, sB: number, t: number) => {
       if (t <= 0) return;
@@ -617,6 +612,57 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// ── background bars (back parallax plane) ────────────────────────
+// The 11 gridlines + skirting, drawn in the SAME wall-canvas space as the
+// front wall but carried on a plane pushed back by BAR_K about the anchor
+// camera. Identical drawing code → identical texel content; the group
+// scale is a pure scale-about-camera, so at f3700 this projects pixel-for-
+// pixel onto where the front wall drew the bars, then lags on the pan.
+const GridWall: React.FC<{ frame: number }> = ({ frame }) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, _w: number, _h: number) => {
+    const mS = (s: number) => s - S0;
+    const mY = (y: number) => Y_TOP - y;
+    // gridlines (draw-on 3572-3584, top→bottom wipe)
+    const gT = fade(f, 3572, 3584);
+    if (gT > 0) {
+      for (let i = 0; i < GRID_S.length; i++) {
+        ctx.strokeStyle = i % 2 === 0 ? C.gridA : C.gridB;
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(mS(GRID_S[i]), mY(GRID_TOP_Y));
+        ctx.lineTo(mS(GRID_S[i]), mY(GRID_TOP_Y - (GRID_TOP_Y - GRID_BOT_Y) * gT));
+        ctx.stroke();
+      }
+      // skirting: wall/floor junction line at the grid base
+      if (gT >= 1) {
+        ctx.strokeStyle = "#E0E0DF";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
+        ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
+        ctx.stroke();
+      }
+    }
+  }, []);
+  // back plane center = anchor-camera + BAR_K·(wallCenter − anchor-camera);
+  // expressed as the front wall's local offset inside a scale-about-camera group.
+  const local: V3 = [WC3[0] - ANCHOR_CAM[0], WC3[1] - ANCHOR_CAM[1], WC3[2] - ANCHOR_CAM[2]];
+  return (
+    <group position={ANCHOR_CAM} scale={[BAR_K, BAR_K, BAR_K]}>
+      <CanvasPlane
+        frame={frame}
+        width={WALL_W}
+        height={WALL_H}
+        res={3}
+        position={local}
+        rotation={[0, WALL.yawRad, 0]}
+        draw={draw}
+        renderOrder={1}
+      />
+    </group>
+  );
+};
+
 // ── screen-anchored legend ───────────────────────────────────────
 const LegendBadge: React.FC<{ x: number; y: number; scale: number; label: string }> = ({
   x, y, scale, label,
@@ -700,6 +746,7 @@ export const Chart2World: React.FC<{ frame: number }> = ({ frame }) => {
           scale={[flyScale, flyScale, flyScale]}
         >
           <group position={[-wallCenter[0], -wallCenter[1], -wallCenter[2]]}>
+            <GridWall frame={frame} />
             <WallChart frame={frame} />
           </group>
         </group>
