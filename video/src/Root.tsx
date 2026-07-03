@@ -88,6 +88,8 @@ import { tradingBookSideBySideMeta } from "./compositions/replicates/tradingbook
 import { irswapReplicateMeta } from "./compositions/replicates/irswap/IRSwapComposition";
 import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSideBySide";
 import { anomaReplicateMeta } from "./compositions/replicates/anoma/AnomaComposition";
+import { plumeReplicateMeta } from "./compositions/replicates/plume/PlumeComposition";
+import { plumeSideBySideMeta } from "./compositions/replicates/plume/PlumeSideBySide";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
 import { crxAnomaMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
 import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFollowProp";
@@ -650,6 +652,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Reflect --- */}
         {[reflectReplicateMeta, reflectSideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Plume × FalconX --- */}
+        {[plumeReplicateMeta, plumeSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
