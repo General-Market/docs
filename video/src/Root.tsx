@@ -90,6 +90,8 @@ import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSid
 import { anomaReplicateMeta } from "./compositions/replicates/anoma/AnomaComposition";
 import { plumeReplicateMeta } from "./compositions/replicates/plume/PlumeComposition";
 import { plumeSideBySideMeta } from "./compositions/replicates/plume/PlumeSideBySide";
+import { centrifugeReplicateMeta } from "./compositions/replicates/centrifuge/CentrifugeComposition";
+import { centrifugeSideBySideMeta } from "./compositions/replicates/centrifuge/CentrifugeSideBySide";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
 import { crxAnomaMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
 import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFollowProp";
@@ -652,6 +654,19 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Reflect --- */}
         {[reflectReplicateMeta, reflectSideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Centrifuge --- */}
+        {[centrifugeReplicateMeta, centrifugeSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
