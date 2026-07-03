@@ -156,12 +156,14 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
 
 // ─── Scene 1: "Managing FX risk just became" — word drop-in, then
 // per-character gaussian blur-out (same physics as the reference).
+// Words walk the 16th-note grid from the downbeat; "became" lands on
+// the f19 snare. Beat map: docs/crx-anoma-beat-sync.md.
 const S1_WORDS: WordSpec[] = [
   { t: "Managing", f: 1 },
-  { t: "FX", f: 5 },
-  { t: "risk", f: 9 },
-  { t: "just", f: 13 },
-  { t: "became", f: 17 },
+  { t: "FX", f: 6 },
+  { t: "risk", f: 10 },
+  { t: "just", f: 15 },
+  { t: "became", f: 19 },
 ];
 
 const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
@@ -195,7 +197,8 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         return (
           <span key={wi} style={{ display: "inline-block", whiteSpace: "pre", ...ws }}>
             {chars.map((c, k) => {
-              const s = 52 + ((ci * 11 + 5) % 9);
+              // Scatter centered on the f55 snare — the line dissolves on the hit.
+              const s = 51 + ((ci * 11 + 5) % 9);
               ci++;
               const blur = interpolate(frame, [s, s + 6], [0, 10], clamp);
               const op = interpolate(frame, [s, s + 6], [1, 0], clamp);
@@ -240,7 +243,8 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
       {EASY.map((ch, i) => {
         const x = cx;
         cx += widths[i];
-        const sIn = 69 + i * 2;
+        // Letter cascade rides the 16ths into the f74 beat ("a" on the hit).
+        const sIn = 73 + i * 2;
         const sOut = 102 + i * 1.2;
         let blur: number;
         let op: number;
@@ -279,44 +283,48 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── All standard text lines (scene timings inherited from the
-// reference cut; copy remapped to the CRX script) ───
+// ─── All standard text lines (scene mount windows inherited from the
+// reference cut; word entries quantized to the 97.97 BPM grid —
+// first word on a beat/8th, cascades on 16ths, line-enders on the
+// snare. Map: docs/crx-anoma-beat-sync.md) ───
 const LINES: CrxLineSpec[] = [
-  // Scene 3 — Introducing / CRX (hard cut f209)
-  { words: [{ t: "Introducing", f: 123 }], x: 91, capTop: 257, drop: 44, out: { cut: 209 } },
+  // Scene 3 — Introducing / CRX; "CRX" on the f128 snare (hard cut f209)
+  { words: [{ t: "Introducing", f: 124 }], x: 91, capTop: 257, drop: 44, out: { cut: 209 } },
   { words: [{ t: "CRX", f: 128 }], x: 88, capTop: 328, drop: 44, out: { cut: 209 } },
-  // Scene 4 — Access / rate locks (cut f258), In Any Corridor (cut f308)
+  // Scene 4 — Access / rate locks (cut f258); "locks" on the f221 beat.
+  // "In Any Corridor" walks quarters into the f277 snare (cut f308).
   { words: [{ t: "Access", f: 212 }], x: 71, capTop: 291, out: { cut: 258 } },
-  { words: [{ t: "rate", f: 216 }, { t: "locks", f: 220 }], x: 71, capTop: 355, out: { cut: 258 } },
-  { words: [{ t: "In", f: 266 }, { t: "Any", f: 270 }, { t: "Corridor", f: 274 }], x: 88, capTop: 330, out: { cut: 308 } },
-  // Scene 5 — At your preferred date; "and notional" lands with the
-  // table's token-column swap (pan f324-336). Cut f358.
-  { words: [{ t: "At", f: 311 }, { t: "your", f: 315 }], x: 77, capTop: 275, out: { cut: 358 } },
-  { words: [{ t: "preferred", f: 319 }], x: 77, capTop: 339, out: { cut: 358 } },
-  { words: [{ t: "date", f: 323 }], x: 75, capTop: 396, out: { cut: 358 } },
-  { words: [{ t: "and", f: 326 }, { t: "notional", f: 330 }], x: 75, capTop: 460, out: { cut: 358 } },
-  // Scene 6 — centered, rise+fade (cut f409)
-  { words: [{ t: "Without", f: 362 }, { t: "paying", f: 366 }], capTop: 299, drop: 24, rise: true, out: { cut: 409 } },
-  { words: [{ t: "the", f: 370 }, { t: "middleman", f: 374 }], capTop: 366, drop: 24, rise: true, out: { cut: 409 } },
-  // Scene 7 — centered, rise+fade (cut f461)
-  { words: [{ t: "From", f: 412 }, { t: "legacy", f: 414 }, { t: "banks,", f: 416 }], capTop: 295, drop: 24, rise: true, out: { cut: 461 } },
-  { words: [{ t: "to", f: 420 }, { t: "modern", f: 422 }, { t: "infrastructure", f: 424 }], capTop: 364, drop: 24, rise: true, out: { cut: 461 } },
-  // Scene 8 — Onboard / in days (cut f565)
-  { words: [{ t: "Onboard", f: 464 }], x: 72, capTop: 286, drop: 50, out: { cut: 565 } },
+  { words: [{ t: "rate", f: 217 }, { t: "locks", f: 221 }], x: 71, capTop: 355, out: { cut: 258 } },
+  { words: [{ t: "In", f: 267 }, { t: "Any", f: 272 }, { t: "Corridor", f: 277 }], x: 55, capTop: 330, out: { cut: 308 } },
+  // Scene 5 — "your" on the f313 snare with the tenor click;
+  // "notional" on the f332 beat as the typing starts. Cut f358.
+  { words: [{ t: "At", f: 309 }, { t: "your", f: 313 }], x: 77, capTop: 275, out: { cut: 358 } },
+  { words: [{ t: "preferred", f: 318 }], x: 77, capTop: 339, out: { cut: 358 } },
+  { words: [{ t: "date", f: 322 }], x: 75, capTop: 396, out: { cut: 358 } },
+  { words: [{ t: "and", f: 327 }, { t: "notional", f: 332 }], x: 75, capTop: 460, out: { cut: 358 } },
+  // Scene 6 — centered, rise+fade; "paying" on the f368 beat (cut f409)
+  { words: [{ t: "Without", f: 364 }, { t: "paying", f: 368 }], capTop: 299, drop: 24, rise: true, out: { cut: 409 } },
+  { words: [{ t: "the", f: 373 }, { t: "middleman", f: 377 }], capTop: 366, drop: 24, rise: true, out: { cut: 409 } },
+  // Scene 7 — centered, rise+fade; "infrastructure" on the f423 snare (cut f461)
+  { words: [{ t: "From", f: 410 }, { t: "legacy", f: 412 }, { t: "banks,", f: 415 }], capTop: 295, drop: 24, rise: true, out: { cut: 461 } },
+  { words: [{ t: "to", f: 419 }, { t: "modern", f: 421 }, { t: "infrastructure", f: 423 }], capTop: 364, drop: 24, rise: true, out: { cut: 461 } },
+  // Scene 8 — Onboard / in days on the quarter grid (cut f565)
+  { words: [{ t: "Onboard", f: 465 }], x: 72, capTop: 286, drop: 50, out: { cut: 565 } },
   { words: [{ t: "in", f: 469 }, { t: "days", f: 474 }], x: 73, capTop: 355, drop: 50, out: { cut: 565 } },
-  // Scene 9 — Access liquidity / from multiple / dealers (cut f650)
-  { words: [{ t: "Access", f: 568 }, { t: "liquidity", f: 572 }], x: 55, capTop: 278, drop: 50, out: { cut: 650 } },
-  { words: [{ t: "from", f: 576 }, { t: "multiple", f: 580 }], x: 55, capTop: 349, drop: 50, out: { cut: 650 } },
-  { words: [{ t: "dealers", f: 584 }], x: 55, capTop: 420, drop: 50, out: { cut: 650 } },
-  // Scene 10 — Comply with / confidence (fades f716-722)
-  { words: [{ t: "Comply", f: 653 }, { t: "with", f: 656 }], x: 64, capTop: 269, drop: 50, out: { fade: [716, 722] } },
-  { words: [{ t: "confidence", f: 659 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
-  // Scene 11 — centered (cut f764)
-  { words: [{ t: "Cross-border", f: 720 }, { t: "business", f: 722 }], capTop: 305, drop: 26, out: { cut: 764 } },
-  { words: [{ t: "risk,", f: 725 }, { t: "made", f: 728 }, { t: "simple.", f: 731 }], capTop: 373, drop: 26, out: { cut: 764 } },
-  // Scene 12 — top-center (fades f848-851)
-  { words: [{ t: "CRX", f: 766 }, { t: "Sandbox", f: 769 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
-  { words: [{ t: "is", f: 772 }, { t: "Live.", f: 775 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
+  // Scene 9 — "Access" on the f570 snare; "dealers" on the f589 beat
+  // as the dealer quotes land (cut f650)
+  { words: [{ t: "Access", f: 570 }, { t: "liquidity", f: 575 }], x: 55, capTop: 278, drop: 50, out: { cut: 650 } },
+  { words: [{ t: "from", f: 579 }, { t: "multiple", f: 584 }], x: 55, capTop: 349, drop: 50, out: { cut: 650 } },
+  { words: [{ t: "dealers", f: 589 }], x: 55, capTop: 420, drop: 50, out: { cut: 650 } },
+  // Scene 10 — "confidence" on the f662 beat (fades f716-722)
+  { words: [{ t: "Comply", f: 653 }, { t: "with", f: 657 }], x: 64, capTop: 269, drop: 50, out: { fade: [716, 722] } },
+  { words: [{ t: "confidence", f: 662 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
+  // Scene 11 — centered; "simple." on the f736 beat (cut f764)
+  { words: [{ t: "Cross-border", f: 722 }, { t: "business", f: 726 }], capTop: 305, drop: 26, out: { cut: 764 } },
+  { words: [{ t: "risk,", f: 731 }, { t: "made", f: 733 }, { t: "simple.", f: 736 }], capTop: 373, drop: 26, out: { cut: 764 } },
+  // Scene 12 — top-center; "Sandbox" on the f772 snare (fades f848-851)
+  { words: [{ t: "CRX", f: 768 }, { t: "Sandbox", f: 772 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
+  { words: [{ t: "is", f: 777 }, { t: "Live.", f: 782 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -343,8 +351,10 @@ const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
 const LEFT_FINAL = CENTER - LOCKUP_W / 2;
 const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
 
-const MARK_IN = 858;
-const REVEAL = 892;
+// The mark arrives on the f864 snare — the first hit after the water
+// has gone fully black — and the wordmark reveals on the f901 snare.
+const MARK_IN = 864;
+const REVEAL = 901;
 const REVEAL_DUR = 20;
 
 const EndMark: React.FC<{ size: number }> = ({ size }) => (
