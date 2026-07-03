@@ -197,7 +197,7 @@ const WB: Record<string, CommB> = {
   cbs: {
     over: { x: -227.9, z: -67.0, kx: 0.442, ky: 0.442 },
     eye: { x: -746.7, z: -306.0 },
-    spec: { kind: "box2", W: 144.3, L: 108.0, H: 394.4, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
+    spec: { kind: "box2", W: 144.3, L: 108.0, H: 170, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
     padW: 1.4,
   },
   t2: {
@@ -664,9 +664,14 @@ const CUBE = (() => {
 const cubeAt = (f: number): { quad: Pt[]; yTop: number } => {
   const mixQ = (a: Pt[], b: Pt[], t: number): Pt[] =>
     a.map((p, i) => [mixN(p[0], b[i][0], t), mixN(p[1], b[i][1], t)] as Pt);
-  if (f <= 4885) return { quad: CUBE.quadO, yTop: CUBE.yTopO };
-  if (f < 4910) {
-    const t = smooth01((f - 4885) / 25);
+  // The overhead quad is a FIXED world box; as the camera dives it projects
+  // naturally from a compact box (top face visible) into a room — exactly the
+  // reference. Hold it through the whole dive, then a short corrective blend at
+  // eye level resizes it to the measured room pose (the earlier switch at 4885
+  // jumped to the huge room while still overhead → off-frame broken diagonals).
+  if (f <= 4965) return { quad: CUBE.quadO, yTop: CUBE.yTopO };
+  if (f < 4988) {
+    const t = smooth01((f - 4965) / 23);
     return { quad: mixQ(CUBE.quadO, CUBE.quadE, t), yTop: mixN(CUBE.yTopO, CUBE.yTopE, t) };
   }
   if (f <= 5208) return { quad: CUBE.quadE, yTop: CUBE.yTopE };

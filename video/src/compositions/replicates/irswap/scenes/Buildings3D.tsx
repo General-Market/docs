@@ -482,9 +482,12 @@ export const MiniBuilding: React.FC<{
     const { W: w, L: l, H } = spec;
     const out: FaceSpec[] = [];
     if (spec.kind === "box2") {
+      // two equal full-width boxes stacked with a horizontal mid-seam — the
+      // reference far-left front icon is a modest box split across the middle
+      // (front face in two equal panels), not a narrowing tower.
       const plain = miniRect(spec);
-      out.push(...orientOutward(boxFaces(w, l, 0, H * 0.48, plain, "b0"), [0, H * 0.24, 0]));
-      out.push(...orientOutward(boxFaces(w * 0.75, l * 0.85, H * 0.48, H, plain, "b1"), [0, H * 0.74, 0]));
+      out.push(...orientOutward(boxFaces(w, l, 0, H * 0.5, plain, "b0"), [0, H * 0.25, 0]));
+      out.push(...orientOutward(boxFaces(w, l, H * 0.5, H, plain, "b1"), [0, H * 0.75, 0]));
       return out;
     }
     const Hw = H * spec.eaveFrac;
