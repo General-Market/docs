@@ -183,9 +183,9 @@ const WB: Record<string, CommB> = {
     padW: 1.6,
   },
   bank: {
-    over: { x: 239.1, z: -71.6, kx: 0.675, ky: 0.918 },
-    eye: { x: 283.9, z: -329.5 },
-    spec: { kind: "temple", W: 166.1, L: 90.6, H: 171.9, eaveFrac: 0.655, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
+    over: { x: 226, z: -71.6, kx: 0.57, ky: 0.80 },
+    eye: { x: 283.9, z: -300 },
+    spec: { kind: "temple", W: 166.1, L: 32, H: 171.9, eaveFrac: 0.70, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.6,
   },
   t1: {
