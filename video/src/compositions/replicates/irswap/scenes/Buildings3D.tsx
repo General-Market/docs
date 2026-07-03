@@ -277,28 +277,11 @@ export const Building3D: React.FC<{
       });
     }
     const oriented = orientOutward(out, [0, Ha / 2, (sdSign * L) / 2]);
-    // plinth slab under the classical buildings (ref: light-gray platform)
-    // — own box, oriented about its own center
-    if (name !== "company") {
-      const PH = 7;
-      const PO = 6;
-      const px0 = -(Wf / 2 + PO);
-      const px1 = Wf / 2 + PO;
-      const pz0 = Math.min(0, sdSign * L) - PO;
-      const pz1 = Math.max(0, sdSign * L) + PO;
-      const pw = px1 - px0;
-      const pl = pz1 - pz0;
-      const pcz = (pz0 + pz1) / 2;
-      const pDraw = drawRect("#E9E9E7", "rgba(130,130,130,0.55)");
-      const plf: FaceSpec[] = [
-        { key: "plF", w: pw, h: PH, draw: pDraw, position: [0, PH / 2, pz1] },
-        { key: "plB", w: pw, h: PH, draw: pDraw, position: [0, PH / 2, pz0] },
-        { key: "plL", w: pl, h: PH, draw: pDraw, position: [px0, PH / 2, pcz], rotation: [0, Math.PI / 2, 0] },
-        { key: "plR", w: pl, h: PH, draw: pDraw, position: [px1, PH / 2, pcz], rotation: [0, Math.PI / 2, 0] },
-        { key: "plT", w: pw, h: pl, draw: pDraw, position: [0, PH, pcz], rotation: [-Math.PI / 2, 0, 0] },
-      ];
-      oriented.push(...orientOutward(plf, [0, PH / 2, pcz]));
-    }
+    // NOTE: the plinth slab (light-gray platform under lender/bank) is a
+    // GROUND element. It has moved out of the building actor into the
+    // persistent ground layer (see plinthFaces + BuildingSlabs below): it
+    // never drops, and it dissolves with the map instead of the building.
+    // The building descends onto the fixed slab.
     // chimney (own box: orient about its own center)
     if (name === "company") {
       const ch = B3D_DECOR.company.chimney;
@@ -331,6 +314,68 @@ export const Building3D: React.FC<{
           renderOrder={renderOrder} mirror={f.mirror} />
       ))}
     </group>
+  );
+};
+
+// ── plinth slab (ground layer) ───────────────────────────────────
+// The light-gray platform lender/bank stand on. It is world-fixed floor
+// furniture, so it lives in the persistent ground layer, not the building
+// actor. `plinthFaces` builds the five faces of one plinth in the
+// building's local frame; `BuildingSlabs` plants all plinths at their map
+// poses (turntable: rotate the map point by g, group yaw g-θ), fades each
+// in with its building and out as the map dissolves, and — crucially —
+// never drops. The building descends onto the fixed slab.
+const PLINTH_H = 7;
+const PLINTH_O = 6; // overhang beyond the footprint on every side
+const plinthFaces = (def: Building3DDef): FaceSpec[] => {
+  const { Wf, L, sdSign } = def;
+  const px0 = -(Wf / 2 + PLINTH_O);
+  const px1 = Wf / 2 + PLINTH_O;
+  const pz0 = Math.min(0, sdSign * L) - PLINTH_O;
+  const pz1 = Math.max(0, sdSign * L) + PLINTH_O;
+  const pw = px1 - px0;
+  const pl = pz1 - pz0;
+  const pcz = (pz0 + pz1) / 2;
+  const pDraw = drawRect("#E9E9E7", "rgba(130,130,130,0.55)");
+  const plf: FaceSpec[] = [
+    { key: "plF", w: pw, h: PLINTH_H, draw: pDraw, position: [0, PLINTH_H / 2, pz1] },
+    { key: "plB", w: pw, h: PLINTH_H, draw: pDraw, position: [0, PLINTH_H / 2, pz0] },
+    { key: "plL", w: pl, h: PLINTH_H, draw: pDraw, position: [px0, PLINTH_H / 2, pcz], rotation: [0, Math.PI / 2, 0] },
+    { key: "plR", w: pl, h: PLINTH_H, draw: pDraw, position: [px1, PLINTH_H / 2, pcz], rotation: [0, Math.PI / 2, 0] },
+    { key: "plT", w: pw, h: pl, draw: pDraw, position: [0, PLINTH_H, pcz], rotation: [-Math.PI / 2, 0, 0] },
+  ];
+  return orientOutward(plf, [0, PLINTH_H / 2, pcz]);
+};
+
+// Per-building slab fade-in windows (each slab appears with its building);
+// all slabs dissolve with the floor map over 3572-3581.
+const SLAB_APPEAR: Record<"lender" | "bank", [number, number]> = {
+  lender: [1733, 1755],
+  bank: [2274, 2312],
+};
+
+export const BuildingSlabs: React.FC<{ frame: number; g: number }> = ({ frame, g }) => {
+  const c01 = (x: number) => Math.max(0, Math.min(1, x));
+  const mapFade = 1 - c01((frame - 3572) / 9);
+  return (
+    <>
+      {(["lender", "bank"] as const).map((name) => {
+        const def = B3D[name];
+        const app = SLAB_APPEAR[name];
+        const op = c01((frame - app[0]) / (app[1] - app[0])) * mapFade;
+        if (op <= 0.005) return null;
+        const [px, pz] = rotXZ(def.mid[0], def.mid[1], g);
+        return (
+          <group key={name} position={[px, FLOOR_Y_3D, pz]} rotation={[0, g - def.theta, 0]}>
+            {plinthFaces(def).map((f) => (
+              <Face key={f.key} w={f.w} h={f.h} draw={f.draw} position={f.position}
+                rotation={f.rotation} quaternion={f.quaternion} opacity={op}
+                renderOrder={1} mirror={f.mirror} />
+            ))}
+          </group>
+        );
+      })}
+    </>
   );
 };
 

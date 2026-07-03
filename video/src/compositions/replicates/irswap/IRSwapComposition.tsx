@@ -5,7 +5,8 @@ import { EdgeFeather, Grain } from "./lib/post";
 import { CameraRig, Room, Vignette } from "./lib/world";
 import { A_TILT, T_BLD, T_C2, T_COMM, T_OUTRO, T_SLOT, worldCam } from "./lib/camera";
 import { ChartRoomGround, ChartRoomOverlay, ChartRoomWorld } from "./scenes/ChartRoom";
-import { BuildingsOverlay, BuildingsWorld, FloorMap } from "./scenes/Buildings";
+import { BuildingsOverlay, BuildingsWorld, camBld, FloorMap } from "./scenes/Buildings";
+import { BuildingSlabs } from "./scenes/Buildings3D";
 import { Chart2Overlay, Chart2World, FloorSet, whipSigma } from "./scenes/Chart2";
 import { AdvDisOverlay } from "./scenes/AdvDis";
 import { FloorPaper } from "./scenes/floorPaper";
@@ -66,6 +67,7 @@ const GroundWorld: React.FC<{ frame: number }> = ({ frame }) => (
     <ChartRoomGround frame={frame} />
     <group position={T_BLD}>
       <FloorMap frame={frame} />
+      <BuildingSlabs frame={frame} g={camBld(frame).g} />
     </group>
     <group position={T_C2}>
       <FloorSet frame={frame} />
