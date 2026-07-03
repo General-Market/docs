@@ -93,13 +93,19 @@ export type WorldPose = { pos: V3; rotX: number; rotZ: number };
 // EXACTLY to add(camBld.cam,T_BLD), rotX=0 — so T_BLD/T_C2 and every
 // downstream transform are unchanged.
 const BLD_PIVOT_Y = -170; // anchor height = floor
-const BLD_PITCH = 0.44; // peak downward pitch (rad ≈ 25.2°)
+const BLD_PITCH = 0.3; // peak downward pitch (rad ≈ 17.2°) — moderate aerial
+// angle matching the reference recede; 0.44/25° overshot (raked too far back,
+// buildings keystoned, ground streets near-vertical).
 const BLD_RADIUS = 1.0; // depth dolly-back (1 = pure pitch, buildings full size)
 const BLD_MEAN_MID: [number, number] = [-6.986, -95.892]; // mean of B3D mids (xz)
 const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 // 0 at the frozen boundaries, 1 across the live interior.
 const bldEnv = (f: number) =>
   Math.min(smooth((f - 1725) / 80), 1 - smooth((f - 3524) / 46));
+// Current downward pitch of the buildings camera (rad, ≥0). The rate
+// arrow/label planes counter-rotate by this so they stay screen-upright
+// (see ArrowPlanes). 0 at both frozen handoffs, so nothing to counter there.
+export const bldPitchAt = (f: number): number => BLD_PITCH * bldEnv(f);
 const rotXZg = (x: number, z: number, g: number): [number, number] => {
   const c = Math.cos(g);
   const s = Math.sin(g);

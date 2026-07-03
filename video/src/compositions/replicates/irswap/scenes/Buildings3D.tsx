@@ -9,6 +9,7 @@ import React, { useMemo } from "react";
 import * as THREE from "three";
 import { CanvasPlane } from "../lib/world";
 import type { V3 } from "../lib/world";
+import { bldPitchAt } from "../lib/camera";
 import {
   ARR3D, B3D, B3D_DECOR, FLOOR_Y_3D, LBL3D, PIVOT_XZ, PLANE_ANCHOR, PLANES,
 } from "../data/buildings3d";
@@ -690,8 +691,22 @@ const PlaneGroup: React.FC<{
     },
     [draw, P.s1, P.yTop],
   );
+  // Upright screen-space overlay: cancel the camera's downward pitch in view
+  // space. The camera world rotation is Rx(-e); pre-multiplying the plane's
+  // base yaw by Rx(-e) makes R_cam^-1 · M' = Ry(theta) — i.e. the plane renders
+  // exactly as it did under the old flat camera (level text, correct
+  // handedness), regardless of pitch. e ramps 0→peak→0 with bldEnv, so at the
+  // frozen handoffs the plane reduces to the original pure-yaw orientation.
+  const e = bldPitchAt(frame);
+  const quat = new THREE.Quaternion()
+    .setFromAxisAngle(new THREE.Vector3(1, 0, 0), -e)
+    .multiply(
+      new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, g + pl.yaw + Math.PI, 0),
+      ),
+    );
   return (
-    <group position={[px, yC, pz]} rotation={[0, g + pl.yaw + Math.PI, 0]}>
+    <group position={[px, yC, pz]} quaternion={quat}>
       <CanvasPlane frame={frame} width={w} height={h} position={[0, 0, 0]}
         draw={drawCb} renderOrder={6} depthTest={false} />
     </group>
