@@ -93,9 +93,23 @@ export type WorldPose = { pos: V3; rotX: number; rotZ: number };
 // EXACTLY to add(camBld.cam,T_BLD), rotX=0 — so T_BLD/T_C2 and every
 // downstream transform are unchanged.
 const BLD_PIVOT_Y = -170; // anchor height = floor
-const BLD_PITCH = 0.3; // peak downward pitch (rad ≈ 17.2°) — moderate aerial
-// angle matching the reference recede; 0.44/25° overshot (raked too far back,
-// buildings keystoned, ground streets near-vertical).
+// Peak downward pitch (rad). The camera pitches about world-X only (rotZ=0,
+// no roll) so the ground horizon stays level; the pitch converts world depth
+// into screen height. The buildings were bundle-adjusted under the FLAT
+// (yaw-only, look-along-z) solve, so their depths are consistent with a flat
+// camera in 2D but sit ~90u apart in depth (LENDER near, BANK mid, COMPANY
+// far). A strong pitch turns that residual depth-spread into a big vertical
+// stagger — LENDER over-drops, COMPANY over-rises — which reads as a rolled/
+// arced building row. Measured against the reference (base contacts at
+// f2630: LENDER≈431 BANK≈397 COMPANY≈369; f3300: COMPANY≈411 BANK≈417) the
+// reference buildings sit near-flat while its far-reaching ground still
+// recedes; both gate frames fit a pitch of ≈0.09-0.12 rad (5-7°), NOT 0.3.
+// At ≈0.10 the front-row tilt (BANK-LENDER) and COMPANY's set-back rise both
+// match the reference within a few px at f2630/f3300. 0.3/17° over-spread the
+// row (LENDER 37px too low, reads as a rolled/arced row); 0.44/25° keystoned.
+// The ground still opens up because the floor plane extends far in depth,
+// where even a mild pitch reveals recede.
+const BLD_PITCH = 0.1;
 const BLD_RADIUS = 1.0; // depth dolly-back (1 = pure pitch, buildings full size)
 const BLD_MEAN_MID: [number, number] = [-6.986, -95.892]; // mean of B3D mids (xz)
 const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
