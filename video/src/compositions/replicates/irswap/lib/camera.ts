@@ -21,7 +21,9 @@
 //            orientation joined by the constant A_TILT
 //   F @5280  Community frozen 5271→ / Outro clamped →5283 (pitch 30° both)
 
+import { DCAM } from "./world";
 import type { V3 } from "./world";
+import { PIVOT_XZ } from "../data/buildings3d";
 import { camChartRoom } from "../scenes/ChartRoom";
 import { camBld } from "../scenes/Buildings";
 import { camChart2 } from "../scenes/Chart2";
@@ -74,9 +76,70 @@ export const T_OUTRO: V3 = add(T_OUTRO_FROZEN, D_OUTRO);
 
 export type WorldPose = { pos: V3; rotX: number; rotZ: number };
 
+// ── Buildings interior: real pitched aerial camera ───────────────────────
+// The buildings/floor/plaques are real meshes at fixed world coords. camBld
+// is a FLAT turntable (position + yaw g, no pitch) that faked a pitched view;
+// a turntable cannot foreshorten near vs far the way a genuine downward pitch
+// does, so the near building always ballooned. Here worldCam gives the shared
+// camera a real downward PITCH (rotX<0) — with an optional depth dolly-back
+// (BLD_RADIUS, 1 = off). The tilt is
+// built AROUND a fixed anchor Q — the turntabled centroid of the three
+// building footprints on the floor: at every pitch Q keeps its flat-camera
+// screen position, so the cluster stays framed exactly where the tuned flat
+// solve placed it and only the view angle changes (near drops, far rises,
+// roofs open up). The turntable g still drives azimuth (untouched), so
+// arrows/floor/plaques ride along for free. Pinned to the flat pose at both
+// handoffs: the envelope is 0 at f≤1725 and f≥3570, where this reduces
+// EXACTLY to add(camBld.cam,T_BLD), rotX=0 — so T_BLD/T_C2 and every
+// downstream transform are unchanged.
+const BLD_PIVOT_Y = -170; // anchor height = floor
+const BLD_PITCH = 0.44; // peak downward pitch (rad ≈ 25.2°)
+const BLD_RADIUS = 1.0; // depth dolly-back (1 = pure pitch, buildings full size)
+const BLD_MEAN_MID: [number, number] = [-6.986, -95.892]; // mean of B3D mids (xz)
+const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+// 0 at the frozen boundaries, 1 across the live interior.
+const bldEnv = (f: number) =>
+  Math.min(smooth((f - 1725) / 80), 1 - smooth((f - 3524) / 46));
+const rotXZg = (x: number, z: number, g: number): [number, number] => {
+  const c = Math.cos(g);
+  const s = Math.sin(g);
+  const dx = x - PIVOT_XZ[0];
+  const dz = z - PIVOT_XZ[1];
+  return [PIVOT_XZ[0] + c * dx + s * dz, PIVOT_XZ[1] - s * dx + c * dz];
+};
+export const buildingsPose = (f: number): WorldPose => {
+  const { cam, g } = camBld(f);
+  const env = bldEnv(f);
+  if (env <= 0) return { pos: add(cam, T_BLD), rotX: 0, rotZ: 0 };
+  const e = BLD_PITCH * env;
+  const rf = 1 + (BLD_RADIUS - 1) * env;
+  // Anchor Q = turntabled cluster centroid on the floor.
+  const [Qx, Qz] = rotXZg(BLD_MEAN_MID[0], BLD_MEAN_MID[1], g);
+  const Qy = BLD_PIVOT_Y;
+  const dz0 = cam[2] - Qz; // flat camera-space depth of Q
+  const u0 = 427 + (DCAM * (Qx - cam[0])) / dz0; // Q's flat screen position
+  const v0 = 240 - (DCAM * (Qy - cam[1])) / dz0;
+  // Back-project (u0,v0) through the pitched camera and place it a dollied
+  // depth t = dz0·rf back along that world ray, so Q re-projects to (u0,v0).
+  const rlx = (u0 - 427) / DCAM;
+  const rly = (240 - v0) / DCAM;
+  const ce = Math.cos(e);
+  const se = Math.sin(e);
+  const mx = rlx; // m = Rx(-e)·(rlx,rly,-1)
+  const my = ce * rly - se;
+  const mz = -se * rly - ce;
+  const t = dz0 * rf;
+  const pos: V3 = [
+    Qx - t * mx + T_BLD[0],
+    Qy - t * my + T_BLD[1],
+    Qz - t * mz + T_BLD[2],
+  ];
+  return { pos, rotX: -e, rotZ: 0 };
+};
+
 export const worldCam = (f: number): WorldPose => {
   if (f < H.A) return { pos: camChartRoom(f), rotX: 0, rotZ: 0 };
-  if (f < H.B) return { pos: add(camBld(f).cam, T_BLD), rotX: 0, rotZ: 0 };
+  if (f < H.B) return buildingsPose(f);
   if (f < H.C) return { pos: add(camChart2(f), T_C2), rotX: 0, rotZ: 0 };
   if (f < H.E) return { pos: add(camSlot(f), T_SLOT), rotX: 0, rotZ: 0 };
   if (f < BRIDGE0) {
