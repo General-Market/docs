@@ -364,10 +364,12 @@ const Cursor: React.FC<{
 };
 
 // ─── chart engine ───
-// Hairline gridlines with money labels, flat teal bars (the app has
-// no gradients — zero in the entire components tree), and a quiet
-// teal chip that names the latest reading once the growth settles.
-// Container-local coordinates; bars rise from the baseline at (x, y).
+// Product-grade bar marks: ≤24px thick, 4px rounded data-end, square
+// at the baseline; history rides a de-emphasized teal step and the
+// current month carries the full accent; hairline gridlines with
+// clean money ticks; the latest reading is named once — in ink, at
+// the cap, because text never wears the data color. No gradients:
+// the app has zero. Container-local; bars rise from (x, y).
 const BarChart: React.FC<{
   frame: number;
   growth: (fr: number) => number;
@@ -396,7 +398,7 @@ const BarChart: React.FC<{
                 top: gy,
                 width: plotW + 12,
                 height: 1,
-                backgroundColor: "rgba(23,23,33,0.05)",
+                backgroundColor: "rgba(23,23,33,0.06)",
               }}
             />
             <div
@@ -423,23 +425,24 @@ const BarChart: React.FC<{
           top: y,
           width: plotW + 12,
           height: 1,
-          backgroundColor: "rgba(23,23,33,0.14)",
+          backgroundColor: "rgba(23,23,33,0.12)",
         }}
       />
       {bars.map((h, i) => {
         const bh = h * growth(frame - i * 2);
+        const current = i === bars.length - 1;
         return (
           <React.Fragment key={i}>
             {bh >= 1 && (
               <div
                 style={{
                   position: "absolute",
-                  left: x + i * gap,
+                  left: x + i * gap + (barW - 22) / 2,
                   top: y - bh,
-                  width: barW,
+                  width: 22,
                   height: bh,
-                  backgroundColor: TEAL,
-                  borderRadius: "6px 6px 0 0",
+                  backgroundColor: current ? TEAL : "rgba(15, 182, 171, 0.35)",
+                  borderRadius: "4px 4px 0 0",
                 }}
               />
             )}
@@ -451,7 +454,8 @@ const BarChart: React.FC<{
                 width: barW,
                 textAlign: "center",
                 fontSize: 11,
-                color: TER,
+                color: current ? SEC : TER,
+                fontWeight: current ? 500 : 400,
               }}
             >
               {months[i]}
@@ -464,29 +468,18 @@ const BarChart: React.FC<{
           style={{
             position: "absolute",
             left: x + (bars.length - 1) * gap + barW / 2 - 52,
-            top: y - plotH - 32,
+            top: y - plotH - 24,
             width: 104,
-            display: "flex",
-            justifyContent: "center",
+            textAlign: "center",
+            fontSize: 12,
+            fontWeight: 600,
+            color: INK,
+            whiteSpace: "nowrap",
+            ...tnum,
             ...settle(frame, pill.at, 10, 0.74),
           }}
         >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              backgroundColor: TEAL_SOFT,
-              borderRadius: 980,
-              padding: "3px 10px",
-              fontSize: 11.5,
-              fontWeight: 500,
-              color: TEAL,
-              whiteSpace: "nowrap",
-              ...tnum,
-            }}
-          >
-            {pill.text}
-          </div>
+          {pill.text}
         </div>
       )}
     </>
@@ -553,12 +546,41 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         </div>
 
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", ...tnum }}>
-            $30,440
-            <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
+        {/* page-grammar hairline under the header */}
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            top: 66,
+            height: 1,
+            backgroundColor: BORDER,
+          }}
+        />
+
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", ...tnum }}>
+              $30,440
+              <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: SUCCESS,
+                backgroundColor: SUCCESS_SOFT,
+                borderRadius: 980,
+                padding: "3px 10px",
+                ...tnum,
+              }}
+            >
+              +4.3% MTD
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: SEC, marginTop: 3 }}>Total value</div>
+          <div style={{ fontSize: 13, color: SEC, marginTop: 2 }}>
+            Total value · Updated just now
+          </div>
         </div>
 
         {S3_ROWS.map(([k, v, green], i) => (
@@ -613,6 +635,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
 
         <div style={{ position: "absolute", left: 372, top: 172, ...label }}>Hedged notional</div>
+        <div style={{ position: "absolute", right: 30, top: 165, ...tag, fontSize: 11.5 }}>6M</div>
         <BarChart
           frame={frame}
           growth={growth}
@@ -625,7 +648,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           plotH={180}
           gridLabels={["$0.6M", "$1.2M", "$1.8M"]}
           labelGutter={368}
-          pill={{ at: 197, text: "Jun · $1.7M" }}
+          pill={{ at: 197, text: "$1.7M" }}
         />
       </div>
     </Card>
@@ -742,6 +765,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: TER, fontSize: 18, lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Open a hedge</span>
+          <div style={{ marginLeft: "auto", ...tag, fontSize: 11.5 }}>FX Forward</div>
         </div>
 
         {/* Forward notional well */}
@@ -758,7 +782,13 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             boxShadow: focused && frame < TYPE_END + 8 ? FOCUS_RING : undefined,
           }}
         >
-          <div style={label}>Forward notional</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={label}>Forward notional</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
+              <span style={{ color: TER, ...tnum }}>Balance $30,440</span>
+              <span style={{ color: TEAL, fontWeight: 600 }}>Max</span>
+            </div>
+          </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div
               style={{
@@ -1029,7 +1059,12 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{c.pair}</span>
                   <span style={{ fontSize: 12.5, color: TER }}>{c.sub}</span>
                 </div>
-                {selIdx === i && <Check size={16} color={TEAL} stroke={14} />}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: SEC, ...tnum }}>
+                    {c.rate}
+                  </span>
+                  {selIdx === i && <Check size={16} color={TEAL} stroke={14} />}
+                </div>
               </div>
             ))}
           </div>
@@ -1124,6 +1159,16 @@ const ObFace: React.FC<{
       <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Compliance</span>
       <span style={{ fontSize: 12, color: TER }}>Institutional onboarding</span>
     </div>
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        right: 30,
+        top: 60,
+        height: 1,
+        backgroundColor: BORDER,
+      }}
+    />
 
     {/* stepper */}
     <div style={{ position: "absolute", left: 30, top: 76, width: 650 }}>
@@ -1353,9 +1398,9 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 // Jun 30 2027. Avatars carry distinct tints the way real dealer marks
 // would.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, bg: "#e8eaf2", fg: "#5b647a" },
-  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, bg: "#dff3f1", fg: "#0f7d76" },
-  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, bg: "#efe9f7", fg: "#6b5b8a" },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, t: "0.6s", bg: "#e8eaf2", fg: "#5b647a" },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, t: "0.8s", bg: "#dff3f1", fg: "#0f7d76" },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, t: "1.1s", bg: "#efe9f7", fg: "#6b5b8a" },
 ];
 const BEST = 1;
 const HIGHLIGHT_AT = 607;
@@ -1402,7 +1447,18 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            top: 60,
+            height: 1,
+            backgroundColor: BORDER,
+          }}
+        />
+
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
           {[
             <span key="p" style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <FlagPair a="us" b="br" size={19} />
@@ -1479,7 +1535,9 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 </div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{d.name}</div>
-                  <div style={{ fontSize: 12.5, color: TER }}>{d.sub}</div>
+                  <div style={{ fontSize: 12.5, color: TER }}>
+                    {landed ? `${d.sub} · answered ${d.t}` : d.sub}
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1574,6 +1632,16 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
             </div>
           )}
         </div>
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            right: 30,
+            top: 60,
+            height: 1,
+            backgroundColor: BORDER,
+          }}
+        />
 
         {COMPLY_ROWS.map(({ at, k, v }, i) => {
           const on = frame >= at;
@@ -1830,7 +1898,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           boxShadow: CARD_SHADOW,
         }}
       >
-        <div style={label}>Hedged notional</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={label}>Hedged notional</div>
+          <div style={{ ...tag, fontSize: 11 }}>6M</div>
+        </div>
         <BarChart
           frame={frame}
           growth={growth}
@@ -1843,7 +1914,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           plotH={147}
           gridLabels={["$1.4M", "$2.8M", "$4.2M"]}
           labelGutter={60}
-          pill={{ at: 828, text: "Jun · $3.0M" }}
+          pill={{ at: 828, text: "$3.0M" }}
         />
       </div>
 
@@ -1861,7 +1932,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           boxShadow: CARD_SHADOW,
         }}
       >
-        <div style={label}>Positions</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={label}>Positions</div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: SEC }}>View all ›</div>
+        </div>
         {POSITIONS.map((pos, i) => {
           const op = fadeIn(frame, pos.at, 4);
           return (
