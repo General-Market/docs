@@ -225,6 +225,13 @@ const CAM_FIX: [number, number, number, number][] = [
   [3900, 0.909, 15.9, -1.7], [3903, 0.814, 20.6, 0.5], [3906, 0.742, 11.8, 2],
   [3909, 0.709, -2.4, 3.7], [3912, 0.725, -27.8, 11.3], [3915, 0.975, 11, -5],
   [3918, 1, 3, -3], [3922, 1, 0, 0],
+  // late-pan de-shear: the solved base camera grows too oblique as it pans
+  // right (the horizontal fixed-rate line droops down-right while the ref
+  // holds it near-flat). A depth pull-back about the wall center flattens
+  // the perspective. Held flat 4090→4131 so the frozen handoff pose keeps
+  // zero velocity (T_SLOT recomputes; Slot screen output is T_SLOT-invariant).
+  [3970, 1, 0, 0], [4010, 0.95, 0, 0], [4050, 0.86, 0, 0],
+  [4090, 0.83, 0, 0], [4110, 0.83, 0, 0], [4131, 0.83, 0, 0],
 ];
 const WC3: V3 = wallToWorld(WALL, (S0 + S1) / 2, (Y_TOP + Y_BOT) / 2);
 const fixRow = (i: 1 | 2 | 3) => CAM_FIX.map((r) => [r[0], r[i]] as [number, number]);
