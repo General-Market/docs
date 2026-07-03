@@ -783,7 +783,11 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={label}>Forward notional</div>
+            {/* SwapPage renders this one sentence-case — 12.5px/500
+                tertiary, not the uppercase eyebrow */}
+            <div style={{ fontFamily: INTER, fontSize: 12.5, fontWeight: 500, color: TER }}>
+              Forward notional
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
               <span style={{ color: TER, ...tnum }}>Balance $30,440</span>
               <span style={{ color: TEAL, fontWeight: 600 }}>Max</span>
@@ -1006,7 +1010,8 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             ...tnum,
           }}
         >
-          Convert {cor.pair.slice(4)} → USD on {tenor[0]} at the locked rate
+          Convert {cor.pair.slice(4)} → USD on {tenor[0]} at the{" "}
+          {locked ? "locked" : "quoted"} rate
         </div>
 
         {/* Corridor dropdown — floats over the lower wells during beat B */}
@@ -1395,12 +1400,12 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 // "dealers" lands on the f589 beat with the second quote) with tabular
 // digits; the best rate is ringed on the f607 snare once all three are
 // on the table. The card continues scene 4's trade: USD/BRL, $2.5M,
-// Jun 30 2027. Avatars carry distinct tints the way real dealer marks
-// would.
+// Jun 30 2027. Avatars wear the app's own neutrals — surface-2 with
+// secondary ink; only the best dealer carries the teal-soft fill.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, t: "0.6s", bg: "#e8eaf2", fg: "#5b647a" },
-  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, t: "0.8s", bg: "#dff3f1", fg: "#0f7d76" },
-  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, t: "1.1s", bg: "#efe9f7", fg: "#6b5b8a" },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, t: "0.6s", bg: SURFACE2, fg: SEC },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, t: "0.8s", bg: TEAL_SOFT, fg: TEAL },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, t: "1.1s", bg: SURFACE2, fg: SEC },
 ];
 const BEST = 1;
 const HIGHLIGHT_AT = 607;
@@ -1664,19 +1669,22 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                {/* the app's completed check: soft green well, green
+                    glyph (bg-success/15 text-success) — never a solid
+                    green disc */}
                 <div
                   style={{
                     width: 26,
                     height: 26,
                     borderRadius: 13,
-                    backgroundColor: on ? SUCCESS : BORDER_STRONG,
+                    backgroundColor: on ? SUCCESS_SOFT : BORDER_STRONG,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     transform: `scale(${pop.toFixed(3)})`,
                   }}
                 >
-                  {on && <Check size={14} stroke={16} />}
+                  {on && <Check size={14} stroke={16} color={SUCCESS} />}
                 </div>
                 <span style={{ fontSize: 15.5, fontWeight: 600 }}>{k}</span>
               </div>
@@ -1698,8 +1706,9 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
 // margin locked reflects the $2.5M hedge, and the positions list
 // carries it. Bars grow on the beat grid from f783 and are FINISHED
 // on the f828 beat — 17 frames of rest before the fade instead of
-// growth running into the cut. The Portfolio pill lands on the f809
-// beat; positions land on the f791 snare and the f800 16th.
+// growth running into the cut. Positions land on the f791 snare and
+// the f800 16th. The Portfolio pill is chrome — the real nav never
+// animates it in, so it is present from the scene's first frame.
 const S12 = { left: 83, top: 291, w: 1114, h: 429 };
 const S12_BARS = { h: [72, 55, 84, 78, 106], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
 const S12_TABS = ["Swap", "Transfer", "Portfolio", "Compliance"];
@@ -1738,7 +1747,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
   if (opacity <= 0) return null;
   const growth = (fr: number) =>
     interpolate(fr, [783, 791, 800, 809, 819, 828], [0, 0.18, 0.42, 0.68, 0.9, 1], clamp);
-  const pillOn = interpolate(frame, [809, 816], [0, 1], clamp);
+  const pillOn = 1; // chrome never animates itself in
   return (
     <Card x={S12.left} y={S12.top} w={S12.w} h={S12.h} opacity={opacity} radius={16} bg={BG}>
       {/* sandbox banner — AppShell renders it bg-warning, 13px/500 white */}
@@ -1793,6 +1802,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", gap: 4, marginLeft: 40 }}>
           {S12_TABS.map((t) => {
             const active = t === "Portfolio";
+            // TopNav: Transfer / Portfolio / Compliance are dropdown
+            // menus and carry a small chevron; Swap is a bare link.
+            const hasMenu = t !== "Swap";
             return (
               <div
                 key={t}
@@ -1816,7 +1828,26 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                     }}
                   />
                 )}
-                <span style={{ position: "relative" }}>{t}</span>
+                <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                  {t}
+                  {hasMenu && (
+                    <svg
+                      viewBox="0 0 9 9"
+                      width={9}
+                      height={9}
+                      style={{ marginLeft: 4, opacity: 0.55 }}
+                    >
+                      <path
+                        d="M2 3.5 L4.5 6 L7 3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
               </div>
             );
           })}
