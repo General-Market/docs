@@ -60,16 +60,16 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <div style={{ position: "absolute", inset: 0, fontFamily: FONT }}>
       {/* region backgrounds */}
-      <div style={{ position: "absolute", left: 0, top: 150, width: 1610, height: 32, background: C.chartToolbarBg }} />
-      <div style={{ position: "absolute", left: 0, top: 182, width: 1610, height: 766, background: C.chartBg }} />
-      <div style={{ position: "absolute", left: 0, top: 948, width: 1610, height: 40, background: C.chartToolbarBg }} />
+      <div style={{ position: "absolute", left: 0, top: 150, width: 1632, height: 32, background: C.chartToolbarBg }} />
+      <div style={{ position: "absolute", left: 0, top: 182, width: 1632, height: 766, background: C.chartBg }} />
+      <div style={{ position: "absolute", left: 0, top: 948, width: 1632, height: 40, background: C.chartToolbarBg }} />
       {/* dividers */}
-      <div style={{ position: "absolute", left: 0, top: 181, width: 1610, height: 1, background: C.divider }} />
+      <div style={{ position: "absolute", left: 0, top: 181, width: 1632, height: 1, background: C.divider }} />
       <div style={{ position: "absolute", left: 44, top: 182, width: 1, height: 766, background: C.divider }} />
       <div style={{ position: "absolute", left: 1556, top: 182, width: 1, height: 766, background: C.divider }} />
       <div style={{ position: "absolute", left: 0, top: 918, width: 1556, height: 1, background: C.divider }} />
-      <div style={{ position: "absolute", left: 0, top: 948, width: 1610, height: 1, background: C.divider }} />
-      <div style={{ position: "absolute", left: 1610, top: 84, width: 1, height: 904, background: "#0d0f14" }} />
+      <div style={{ position: "absolute", left: 0, top: 948, width: 1632, height: 1, background: C.divider }} />
+      <div style={{ position: "absolute", left: 1632, top: 84, width: 1, height: 904, background: "#0d0f14" }} />
 
       {/* ── toolbar row (y150–182) ── */}
       <div style={{ position: "absolute", left: 0, top: 157, width: 1610, height: 20 }}>

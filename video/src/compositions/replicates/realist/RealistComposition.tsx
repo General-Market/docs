@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { measureText } from "@remotion/layout-utils";
 import { noise2D } from "@remotion/noise";
 import { loadFont as loadMontserrat } from "@remotion/google-fonts/Montserrat";
@@ -13,6 +13,12 @@ import {
   FADE_IN_F0, fadeIn, FADE_OUT_F0, fadeOut,
   sellsEvents, SellsEvent,
 } from "./data";
+import { TrenchesScreen } from "./ui/TrenchesScreen";
+import { TokenLoadScreen } from "./ui/TokenLoadScreen";
+import { PulseScreen } from "./ui/PulseScreen";
+import { TokenPage } from "./ui/TokenPage";
+import { PnlCard } from "./ui/OutroOverlay";
+import { BLUR_FROM, BLUR_FULL, BLUR_PX } from "./ui/copy/outro";
 
 export const FPS = 60;
 export const DURATION = 2116; // 35.27s — matches reference realist-original.mp4 (59.94fps/2114f)
@@ -30,12 +36,13 @@ const { fontFamily: POPPINS } = loadPoppins("normal", {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// Base layer: per-frame JPEG plates of the screen recording (the
-// live trading UI is unreproducible — sanctioned per the playbook,
-// same as the reflect replica's Footage component). The plates
-// include the baked caption pass; the overlay layer REBUILDS every
-// caption with per-frame measured curves and draws it on top,
-// frame-locked to the baked one (all numbers from data.ts).
+// Base layer: full DOM rebuild of the Axiom Pro trading UI — four
+// screens switched on measured frame boundaries (plates in
+// public/realist-assets/footage stay on disk as the measurement
+// reference only; nothing mounts them). Every visible string lives
+// in ui/copy/*; time-varying values in ui/timeline-token.ts.
+// The overlay layer draws every caption with per-frame measured
+// curves on top (all numbers from data.ts).
 // ═══════════════════════════════════════════════════════════════
 
 const LAST_PLATE = 2112;
@@ -64,14 +71,38 @@ const fadeMul = (f: number): number => {
   return 1;
 };
 
-const Plates: React.FC = () => {
+// Screen boundaries measured off the plates: Trenches 0–332, token page
+// loading (old chrome) 333–391, Pulse 392–417, live token page 418–end.
+const ScreenBase: React.FC = () => {
+  const frame = useCurrentFrame();
+  const f = Math.min(Math.max(Math.round(frame), 0), LAST_PLATE);
+  const blurP = clamp01((f - BLUR_FROM) / (BLUR_FULL - BLUR_FROM));
+  const blur = BLUR_PX * blurP;
+  let screen: React.ReactNode;
+  if (f <= 332) screen = <TrenchesScreen frame={f} />;
+  else if (f <= 391) screen = <TokenLoadScreen frame={f} />;
+  else if (f <= 417) screen = <PulseScreen frame={f} />;
+  else screen = <TokenPage frame={f} />;
+  return (
+    <AbsoluteFill
+      style={{
+        opacity: fadeMul(f),
+        filter: blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : undefined,
+      }}
+    >
+      {screen}
+    </AbsoluteFill>
+  );
+};
+
+// PnL share-card flies in above the blurred UI during the outro.
+const OutroCard: React.FC = () => {
   const frame = useCurrentFrame();
   const f = Math.min(Math.max(Math.round(frame), 0), LAST_PLATE);
   return (
-    <Img
-      src={staticFile(`realist-assets/footage/f${String(f).padStart(4, "0")}.jpg`)}
-      style={{ position: "absolute", width: 1920, height: 1080 }}
-    />
+    <div style={{ position: "absolute", inset: 0, opacity: fadeMul(f) }}>
+      <PnlCard frame={f} />
+    </div>
   );
 };
 
@@ -603,7 +634,8 @@ const Outro: React.FC = () => {
 export const RealistComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000", overflow: "hidden" }}>
-      <Plates />
+      <ScreenBase />
+      <OutroCard />
       <Cap1 />
       <Buys />
       <Sells />
