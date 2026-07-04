@@ -127,6 +127,7 @@ echo "  video_ssim=$VIDEO_SSIM" >&2
 echo "PHASE: keyframe_ssim" >&2
 
 KF_SCORES=()
+KF_TS=()
 
 if [ "$HAS_ANALYSIS" = true ]; then
   # Use keyframes from analysis
@@ -149,14 +150,21 @@ fi
 KF_IDX=0
 while IFS= read -r ts; do
   KF_IDX=$((KF_IDX + 1))
-  REF_FRAME="/tmp/_kf_ref_${KF_IDX}.png"
-  ATT_FRAME="/tmp/_kf_att_${KF_IDX}.png"
+  # Per-run paths inside $WORK: the old fixed /tmp/_kf_* names collided
+  # across concurrent verify runs and survived killed runs, so failures
+  # silently compared stale/foreign frames (2026-07-04 realist r2: 8 of
+  # 18 extractions died on a full disk and 4 stale pairs scored 0.214).
+  REF_FRAME="$WORK/kf_ref_${KF_IDX}.png"
+  ATT_FRAME="$WORK/kf_att_${KF_IDX}.png"
+  rm -f "$REF_FRAME" "$ATT_FRAME"
 
-  # Extract frame at this timestamp from both videos
-  ffmpeg -i "$REFERENCE" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$REF_FRAME" -y 2>/dev/null || continue
-  ffmpeg -i "$ATTEMPT" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$ATT_FRAME" -y 2>/dev/null || continue
+  # Extract frame at this timestamp from both videos — loudly on failure
+  ffmpeg -i "$REFERENCE" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$REF_FRAME" -y 2>/dev/null \
+    || { echo "  WARN: ref keyframe extract failed at t=${ts}s" >&2; continue; }
+  ffmpeg -i "$ATTEMPT" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$ATT_FRAME" -y 2>/dev/null \
+    || { echo "  WARN: attempt keyframe extract failed at t=${ts}s" >&2; continue; }
 
-  if [ -f "$REF_FRAME" ] && [ -f "$ATT_FRAME" ]; then
+  if [ -s "$REF_FRAME" ] && [ -s "$ATT_FRAME" ]; then
     # SSIM via ffmpeg (same metric as the video component). ImageMagick's
     # `compare -metric SSIM` emits raw distortion on this build (identical=0),
     # which read as similarity poisoned the keyframe average.
@@ -164,6 +172,7 @@ while IFS= read -r ts; do
       | grep "All:" | sed 's/.*All://' | awk '{print $1}' || echo "0")
     if [ -z "$KF_SSIM" ]; then KF_SSIM="0"; fi
     KF_SCORES+=("$KF_SSIM")
+    KF_TS+=("$ts")
   fi
 done <<< "$KEYFRAME_TIMES"
 
@@ -305,19 +314,17 @@ with open('$BREAKDOWN_FILE', 'w') as f:
     json.dump(breakdown, f, indent=2)
 " 2>/dev/null || true
 
-# Write per-keyframe detail file
+# Write per-keyframe detail file — labels come from KF_TS (recorded with each
+# score), not positionally from KEYFRAME_TIMES: skipped extractions used to
+# shift every following label onto the wrong timestamp.
 KF_DETAIL_FILE="$ANALYSIS_DIR/last-verify-keyframes.txt"
 {
   echo "# Per-keyframe SSIM scores (lower = needs more work at this timestamp)"
   KF_IDX2=0
-  KF_SCORES_STR="${KF_SCORES[*]:-}"
-  while IFS= read -r ts; do
-    if [ $KF_IDX2 -lt ${#KF_SCORES[@]} ]; then
-      SCORE_VAL="${KF_SCORES[$KF_IDX2]}"
-      echo "  t=${ts}s  ssim=${SCORE_VAL}"
-    fi
+  while [ $KF_IDX2 -lt ${#KF_SCORES[@]} ]; do
+    echo "  t=${KF_TS[$KF_IDX2]}s  ssim=${KF_SCORES[$KF_IDX2]}"
     KF_IDX2=$((KF_IDX2 + 1))
-  done <<< "$KEYFRAME_TIMES"
+  done
 } > "$KF_DETAIL_FILE" 2>/dev/null || true
 
 echo "" >&2
