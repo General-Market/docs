@@ -565,20 +565,41 @@ const BFloor: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// Round 3 (owner ground-continuity): the reference keeps the chapter-C
+// floor spread visible at the frame bottom through the topple, the map
+// ink-in, AND the early buildings era (sheets prominent 1670-1745,
+// sliding out by ~1805) — the replica's world-locked spread sat below
+// frame from 1660, so the ground emptied and the map faded in from
+// nothing (a scene cut). The spread therefore slides by a calibrated
+// world offset (blended in 1655-1675, frozen after) that pins its bars
+// page to the measured band, and lives until the reference loses it.
+// Solved analytically (floorPlacement basis + drawSpread fractions,
+// Gauss-Newton over three measured f1720 band features: bars page,
+// sticky, squiggle page; ~15px RMS residual — the ref band is drawn
+// flatter than a rigid floor plane can project, same as the slot
+// band). The +39 y float is invisible: nothing else references this
+// plane after the topple lines fade (~1690). Under the buildings-era
+// camera (CAM_KEYS + pitch env) the band stays quasi-static at the
+// frame bottom through 1800, exactly like the reference.
+const A_BRIDGE: [number, number, number] = [27.6, 39.2, -224.5];
+const bridgeT = (f: number) => clamp01((f - 1655) / 20);
 const CFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, d: number) => {
-    if (f < 935 || f >= 1745) return; // outside chapter C: blank canvas (was unmounted)
-    // persists under the topple; fades out while the next scene's floor
-    // inks in over it (global frames 1705-1727)
+    if (f < 935 || f >= 1810) return; // outside chapter C: blank canvas (was unmounted)
+    // persists under the topple and the buildings entry; fades out as
+    // the reference loses the sheets (C_EXIT.floorFade)
     const ink = M.floorFadeC(f);
     if (ink <= 0) return;
     ctx.globalAlpha = ink;
     drawSpread(ctx, { w, d, years: null });
     ctx.globalAlpha = 1;
   }, []);
+  const t = bridgeT(frame);
   return (
-    <SpreadFloor frame={frame} fit={M.fitC} board={M.boardC} yF={M.floorYC}
-      draw={draw} res={2.5} />
+    <group position={[A_BRIDGE[0] * t, A_BRIDGE[1] * t, A_BRIDGE[2] * t]}>
+      <SpreadFloor frame={frame} fit={M.fitC} board={M.boardC} yF={M.floorYC}
+        draw={draw} res={2.5} />
+    </group>
   );
 };
 

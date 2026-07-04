@@ -485,7 +485,7 @@ export const redProgressC = (f: number) => lerp1(redProgTable, f);
 // by 1660, red keeps only its upper arc); the 11 wall gridlines topple
 // right→left 1662-1684, each pivoting at its base and falling toward
 // screen-right; the dashed skirting fades under the topple; the floor
-// sheet persists and fades 1712-1740 while the next scene's floor inks in.
+// sheet persists through the buildings entry like the reference's.
 export const C_EXIT = {
   redErase: [1642, 1671] as const, // ease-in: front at x≈487 by 1660
   jaggedErase: [1644, 1668] as const, // linear: front at x≈380 by 1660
@@ -494,7 +494,10 @@ export const C_EXIT = {
   toppleStart: 1662,
   toppleStagger: 1.4, // per gridline, rightmost first
   toppleDur: 8, // leftmost: starts 1676, done 1684
-  floorFade: [1712, 1740] as const,
+  // round 3: the ref keeps the sheets visible through the buildings
+  // entry; they slide out ~1770-1805 (was [1712,1740], which emptied
+  // the ground 70 frames before the reference does)
+  floorFade: [1770, 1805] as const,
 } as const;
 
 // Erase fronts: arc position measured from the polyline start (screen-
