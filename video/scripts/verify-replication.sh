@@ -157,10 +157,12 @@ while IFS= read -r ts; do
   ffmpeg -i "$ATTEMPT" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$ATT_FRAME" -y 2>/dev/null || continue
 
   if [ -f "$REF_FRAME" ] && [ -f "$ATT_FRAME" ]; then
-    # SSIM via ImageMagick
-    KF_SSIM=$(magick compare -metric SSIM "$REF_FRAME" "$ATT_FRAME" /dev/null 2>&1 || echo "0")
-    # Handle different ImageMagick output formats
-    KF_SSIM=$(echo "$KF_SSIM" | head -1 | awk '{print $1}')
+    # SSIM via ffmpeg (same metric as the video component). ImageMagick's
+    # `compare -metric SSIM` emits raw distortion on this build (identical=0),
+    # which read as similarity poisoned the keyframe average.
+    KF_SSIM=$(ffmpeg -i "$REF_FRAME" -i "$ATT_FRAME" -lavfi ssim -f null - 2>&1 \
+      | grep "All:" | sed 's/.*All://' | awk '{print $1}' || echo "0")
+    if [ -z "$KF_SSIM" ]; then KF_SSIM="0"; fi
     KF_SCORES+=("$KF_SSIM")
   fi
 done <<< "$KEYFRAME_TIMES"
