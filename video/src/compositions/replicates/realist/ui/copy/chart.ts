@@ -76,20 +76,31 @@ export const EXIT_BADGE: { f: number; text: string }[] = [
   { f: 1520, text: "284K" },
 ];
 
-// Exit-price line y (badge row read off the price-scale strips; the
-// in-band dash detection was unreliable under the caption glow).
+// Exit-price line y — r2 re-sweep with dash-row detection in the
+// caption-free window x1270-1520 (f0500 confirmed visually: line at 431,
+// not 361). The line jumps with price-scale re-anchors.
 export const EXIT_Y: { f: number; y: number }[] = [
   { f: 418, y: 421 },
   { f: 460, y: 354 },
-  { f: 520, y: 361 },
+  { f: 480, y: 420 },
+  { f: 500, y: 431 },
+  { f: 545, y: 353 },
   { f: 580, y: 475 },
-  { f: 690, y: 476 },
-  { f: 920, y: 476 },
-  { f: 1040, y: 504 },
-  { f: 1160, y: 490 },
-  { f: 1290, y: 495 },
-  { f: 1400, y: 510 },
-  { f: 1520, y: 525 },
+  { f: 690, y: 462 },
+  { f: 790, y: 495 },
+  { f: 840, y: 474 },
+  { f: 870, y: 464 },
+  { f: 940, y: 476 },
+  { f: 990, y: 485 },
+  { f: 1030, y: 481 },
+  { f: 1090, y: 515 },
+  { f: 1150, y: 503 },
+  { f: 1210, y: 494 },
+  { f: 1280, y: 499 },
+  { f: 1340, y: 497 },
+  { f: 1440, y: 501 },
+  { f: 1510, y: 507 },
+  { f: 1640, y: 524 },
 ];
 
 // Current Average Cost Basis — dashed white line + white badge.

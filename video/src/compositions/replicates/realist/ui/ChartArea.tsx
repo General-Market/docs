@@ -154,7 +154,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
         left: 56,
         right: 1920 - 1560,
         top: y,
-        height: 2,
+        height: 3,
         backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 ${dashW}px, transparent ${dashW}px ${dashW + gap}px)`,
       }}
     />
@@ -227,8 +227,9 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           {t.text}
         </div>
       ))}
-      {/* dashed strategy lines + labels + badges */}
-      {dash(C.exitLine, exitY)}
+      {/* dashed strategy lines + labels + badges (plate dashes ~14px long,
+          ~10px gaps, 3px tall — f0500 crop) */}
+      {dash(C.exitLine, exitY, 14, 10)}
       <div
         style={{
           position: "absolute",

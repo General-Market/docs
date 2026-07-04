@@ -403,7 +403,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
   geom,
   hoverActive = false,
 }) => {
-  const iconTop = card.sub2 ? 49 : 35;
+  const iconTop = card.sub2 ? 46 : 35;
   const handleTop = card.sub2 ? 66 : 52;
   const pctTop = card.sub2 && card.handle ? 87 : card.handle ? 74 : 72;
   return (
@@ -473,10 +473,10 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
       ) : null}
       {/* name row */}
       <Row gap={7} style={{ position: "absolute", left: geom.textX, top: 10 }}>
-        <T size={15} color={card.hovered ? "#E4E2F5" : C.name} weight={600}>
+        <T size={14} color={card.hovered ? "#E4E2F5" : C.name} weight={600}>
           {card.name}
         </T>
-        <T size={15} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"` }}>
+        <T size={14} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"` }}>
           {card.sub}
         </T>
         {card.copyIcon ? <Glyph kind="copy" size={12} color="#565A66" /> : null}
@@ -496,7 +496,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
         ) : null}
       </Row>
       {card.sub2 ? (
-        <div style={{ position: "absolute", left: geom.textX, top: 30 }}>
+        <div style={{ position: "absolute", left: geom.textX, top: 26 }}>
           <T size={11} color={card.sub2.color} weight={600}>
             {card.sub2.text}
           </T>
