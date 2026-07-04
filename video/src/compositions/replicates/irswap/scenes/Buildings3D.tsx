@@ -392,6 +392,7 @@ export type MiniSpec = {
   fill: string;
   fillTop?: string;
   outline: string;
+  strokeW?: number; // face outline width (world units; ref bank ~4.5)
   door?: { u0: number; u1: number; top: number; fill: string };
   chimney?: boolean;
   cols?: { n: number; fill: string };
@@ -434,7 +435,7 @@ const miniFront = (s: MiniSpec, Hw: number): DrawFn => (ctx, w, h) => {
   }
   pentaPath(ctx, w, h, Hw, 1.1);
   ctx.strokeStyle = s.outline;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = s.strokeW ?? 2.2;
   ctx.lineJoin = "round";
   ctx.stroke();
 };
@@ -445,7 +446,51 @@ const miniPlain = (s: MiniSpec, Hw: number): DrawFn => (ctx, w, h) => {
   ctx.fill();
   pentaPath(ctx, w, h, Hw, 1.1);
   ctx.strokeStyle = s.outline;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = s.strokeW ?? 2.2;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+};
+
+// Temple walls: rect face under a separate overhanging pediment
+// (the reference bank/temples have a wide LOW pediment with a horizontal
+// architrave line at the eave — not a flush pentagon).
+const miniTempleWalls = (s: MiniSpec, Hw: number): DrawFn => (ctx, w, h) => {
+  ctx.fillStyle = s.fill;
+  ctx.fillRect(0, h - Hw, w, Hw);
+  if (s.cols) {
+    const n = s.cols.n;
+    const cw = w * (n === 5 ? 0.09 : 0.13);
+    const pitch = (w * 0.72) / (n - 1);
+    for (let i = 0; i < n; i++) {
+      const x0 = w * 0.14 + i * pitch - cw / 2;
+      ctx.fillStyle = s.cols.fill;
+      ctx.fillRect(x0, h - Hw * 0.92, cw, Hw * 0.66);
+    }
+  }
+  if (s.strip) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(w * 0.05, h - Hw * 0.24, w * 0.9, Hw * 0.1);
+  }
+  const lw = s.strokeW ?? 2.2;
+  ctx.strokeStyle = s.outline;
+  ctx.lineWidth = lw;
+  ctx.lineJoin = "round";
+  ctx.strokeRect(lw / 2, h - Hw + lw / 2, w - lw, Hw - lw);
+};
+
+// Pediment face: triangle over the full (overhanging) width, flat
+// architrave line along its base.
+const miniPediment = (s: MiniSpec): DrawFn => (ctx, w, h) => {
+  const lw = s.strokeW ?? 2.2;
+  ctx.beginPath();
+  ctx.moveTo(w / 2, lw / 2);
+  ctx.lineTo(w - lw / 2, h - lw / 2);
+  ctx.lineTo(lw / 2, h - lw / 2);
+  ctx.closePath();
+  ctx.fillStyle = s.fill;
+  ctx.fill();
+  ctx.strokeStyle = s.outline;
+  ctx.lineWidth = lw;
   ctx.lineJoin = "round";
   ctx.stroke();
 };
@@ -454,7 +499,7 @@ const miniRect = (s: MiniSpec): DrawFn => (ctx, w, h) => {
   ctx.fillStyle = vgrad(ctx, h, s.fill, s.fillTop);
   ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = s.outline;
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = s.strokeW ?? 2.2;
   ctx.strokeRect(1.1, 1.1, w - 2.2, h - 2.2);
 };
 
@@ -492,8 +537,18 @@ export const MiniBuilding: React.FC<{
       return out;
     }
     const Hw = H * spec.eaveFrac;
-    out.push({ key: "front", w, h: H, draw: miniFront(spec, Hw), position: [0, H / 2, l / 2] });
-    out.push({ key: "back", w, h: H, draw: miniPlain(spec, Hw), position: [0, H / 2, -l / 2] });
+    if (spec.kind === "temple") {
+      // rect walls under a wide overhanging pediment with an architrave
+      out.push({ key: "front", w, h: Hw, draw: miniTempleWalls(spec, Hw), position: [0, Hw / 2, l / 2] });
+      out.push({ key: "back", w, h: Hw, draw: miniTempleWalls(spec, Hw), position: [0, Hw / 2, -l / 2] });
+      const pedW = w * 1.14; // matches the roof-slab eave overhang below
+      const pedDraw = miniPediment(spec);
+      out.push({ key: "pedF", w: pedW, h: H - Hw, draw: pedDraw, position: [0, (H + Hw) / 2, l / 2] });
+      out.push({ key: "pedB", w: pedW, h: H - Hw, draw: pedDraw, position: [0, (H + Hw) / 2, -l / 2] });
+    } else {
+      out.push({ key: "front", w, h: H, draw: miniFront(spec, Hw), position: [0, H / 2, l / 2] });
+      out.push({ key: "back", w, h: H, draw: miniPlain(spec, Hw), position: [0, H / 2, -l / 2] });
+    }
     const wall = miniRect(spec);
     out.push({ key: "sideL", w: l, h: Hw, draw: wall, position: [-w / 2, Hw / 2, 0], rotation: [0, Math.PI / 2, 0] });
     out.push({ key: "sideR", w: l, h: Hw, draw: wall, position: [w / 2, Hw / 2, 0], rotation: [0, Math.PI / 2, 0] });

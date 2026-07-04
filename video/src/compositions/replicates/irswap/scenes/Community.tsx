@@ -41,8 +41,8 @@ const fade = (f: number, a: number, b: number) => clamp01((f - a) / Math.max(1, 
 const fadeOut = (f: number, a: number, b: number) => 1 - fade(f, a, b);
 
 const C = {
-  blue: "#4CB3CB",
-  blueLight: "#8FD0E0",
+  blue: "#6AB9CB",
+  blueLight: "#91D1E1",
   blueDark: "#2E7C90",
   red: "#E56575",
   redLight: "#F08B98",
@@ -162,7 +162,7 @@ const smooth01 = (t: number) => {
   const c = clamp01(t);
   return c * c * (3 - 2 * c);
 };
-const diveT = (f: number) => smooth01((f - 4902) / 80); // 4902-4982
+const diveT = (f: number) => smooth01((f - 4914) / 68); // 4914-4982 (delayed: ref icons hold overhead pose longer mid-dive)
 const mixN = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ── planted buildings: rigid pose per phase (fit-community3) ─────
@@ -177,15 +177,15 @@ type CommB = {
 };
 const WB: Record<string, CommB> = {
   house: {
-    over: { x: 29.5, z: -143.7, kx: 0.522, ky: 0.746 },
+    over: { x: 29.5, z: -143.7, kx: 0.522, ky: 0.55 },
     eye: { x: -114.7, z: -410.3 },
-    spec: { kind: "house", W: 167.0, L: 130.5, H: 188.5, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
+    spec: { kind: "house", W: 167.0, L: 130.5, H: 178.8, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, strokeW: 4, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
     padW: 1.6,
   },
   bank: {
     over: { x: 226, z: -71.6, kx: 0.57, ky: 0.80 },
-    eye: { x: 283.9, z: -300 },
-    spec: { kind: "temple", W: 166.1, L: 32, H: 171.9, eaveFrac: 0.70, fill: C.red, fillTop: C.redLight, outline: C.redDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
+    eye: { x: 272, z: -300 },
+    spec: { kind: "temple", W: 178, L: 32, H: 171.9, eaveFrac: 0.63, fill: C.red, outline: "#787E7C", strokeW: 4.5, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.6,
   },
   t1: {
@@ -195,7 +195,7 @@ const WB: Record<string, CommB> = {
     padW: 1.4,
   },
   cbs: {
-    over: { x: -227.9, z: -67.0, kx: 0.442, ky: 0.442 },
+    over: { x: -195, z: -67.0, kx: 0.442, ky: 0.442 },
     eye: { x: -746.7, z: -306.0 },
     spec: { kind: "box2", W: 144.3, L: 108.0, H: 170, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
     padW: 1.4,
@@ -234,6 +234,82 @@ const VACANT = [
 const VAC_W = 176; // eye-phase pad width (scales by kCluster at overhead)
 const K_CLUSTER = 0.442;
 
+// One-shot relocation for the floor DASHBOARD ink: the reference's 2.5D
+// collage moves the dashboard with the buildings between shots (at eye
+// level the rose chart spans x[344-711] y[356-479] on screen while the
+// world-static ink projected out of view). Similarity fitted from the
+// house+bank over→eye poses, blended with the same diveT as the buildings.
+const inkFixRef: { fn: ((p: Pt) => Pt) | null } = { fn: null };
+const fitSimRef: { fn: ((pairs: [Pt, Pt][]) => (p: Pt) => Pt) | null } = { fn: null };
+const inkRelocate = (() => {
+  const oH: Pt = [WB.house.over.x, WB.house.over.z];
+  const eH: Pt = [WB.house.eye.x, WB.house.eye.z];
+  const dO: Pt = [WB.bank.over.x - oH[0], WB.bank.over.z - oH[1]];
+  const dE: Pt = [WB.bank.eye.x - eH[0], WB.bank.eye.z - eH[1]];
+  const s = Math.hypot(dE[0], dE[1]) / Math.hypot(dO[0], dO[1]);
+  const th = Math.atan2(dE[1], dE[0]) - Math.atan2(dO[1], dO[0]);
+  const c = Math.cos(th) * s;
+  const sn = Math.sin(th) * s;
+  return (p: Pt, t: number, extra?: (pp: Pt) => Pt): Pt => {
+    const q0: Pt = [
+      eH[0] + c * (p[0] - oH[0]) - sn * (p[1] - oH[1]),
+      eH[1] + sn * (p[0] - oH[0]) + c * (p[1] - oH[1]),
+    ];
+    let q = inkFixRef.fn ? inkFixRef.fn(q0) : q0;
+    if (extra) q = extra(q);
+    return [mixN(p[0], q[0], t), mixN(p[1], q[1], t)];
+  };
+})();
+
+// Measured correction on top of the similarity (fit at f5100: the wave
+// and card bboxes, replica render → reference): least-squares 2D
+// similarity over the unprojected point pairs.
+const inkFix = (() => {
+  const fitSim = (pairsS: [Pt, Pt][]): ((p: Pt) => Pt) => {
+    const pairs = pairsS.map(([a, b]): [Pt, Pt] => [toFloor(a[0], a[1], 5100), toFloor(b[0], b[1], 5100)]);
+    let cpx = 0, cpz = 0, cqx = 0, cqz = 0;
+    for (const [pp, q] of pairs) { cpx += pp[0]; cpz += pp[1]; cqx += q[0]; cqz += q[1]; }
+    cpx /= pairs.length; cpz /= pairs.length; cqx /= pairs.length; cqz /= pairs.length;
+    let sxx = 0, sxy = 0, spp = 0;
+    for (const [pp, q] of pairs) {
+      const px = pp[0] - cpx, pz = pp[1] - cpz, qx = q[0] - cqx, qz = q[1] - cqz;
+      sxx += px * qx + pz * qz;
+      sxy += px * qz - pz * qx;
+      spp += px * px + pz * pz;
+    }
+    const sc = Math.hypot(sxx, sxy) / spp;
+    const th = Math.atan2(sxy, sxx);
+    const c = sc * Math.cos(th), sn = sc * Math.sin(th);
+    return (pp: Pt): Pt => [
+      cqx + c * (pp[0] - cpx) - sn * (pp[1] - cpz),
+      cqz + sn * (pp[0] - cpx) + c * (pp[1] - cpz),
+    ];
+  };
+  fitSimRef.fn = fitSim;
+  const e1 = fitSim([
+    [[295, 384], [348, 378]],
+    [[625, 474], [666, 479]],
+    [[35, 340], [94, 382]],
+    [[292, 392], [307, 455]],
+  ]);
+  // round-3 render still under-scaled: wave/card bboxes re-measured
+  const e2 = fitSim([
+    [[346, 411], [346, 372]],
+    [[632, 479], [723, 479]],
+    [[129, 367], [90, 378]],
+    [[325, 428], [409, 459]],
+  ]);
+  return (pp: Pt): Pt => e2(e1(pp));
+})();
+inkFixRef.fn = inkFix;
+
+// hex color lerp for the eye-phase pale ink
+const mixc = (a: string, b: string, t: number): string => {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  return `rgb(${pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(",")})`;
+};
+
 // ── floor: static painted map (never moves; fades in place only) ─
 const FLOOR_C: Pt = [0, -150];
 export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
@@ -242,6 +318,14 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     // the map dissolves ahead of the page-flip: all the sheet's ink fades
     // uniformly, reaching 0 at 5285 (multiplied into every alpha below)
     const dissolve = 1 - clamp01((f - 5262) / 23);
+    // Ink relocation is OFF (dv = 0 keeps the dashboard world-static, as
+    // before): the reference collage DOES move its dashboard into the eye
+    // view, but every measured correspondence tried this round scored
+    // worse than the static plant (misplaced ink loses to absent ink —
+    // A/B at f5100: static .7352 vs relocated .7329). The machinery
+    // (inkRelocate/fitSim) stays for a future round with better
+    // correspondences.
+    const dv = 0;
     ctx.globalAlpha = dissolve;
     // crossfade in from the slot-scene floor paper (full by 4708)
     ctx.globalAlpha *= clamp01((f - 4690) / 18);
@@ -280,6 +364,8 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     poly(m5250([[195, 385], [250, 388], [248, 415], [193, 412]]), "#D0EBF0", null);
     {
       const sq2 = m5250([[470, 360], [500, 400], [524, 385], [556, 425], [582, 410], [608, 445], [620, 450]]);
+      const gA = ctx.globalAlpha;
+      ctx.globalAlpha = gA * (0.25 + 0.75 * diveT(f));
       path(sq2, false);
       ctx.strokeStyle = C.chartRed;
       ctx.lineWidth = 2;
@@ -299,6 +385,7 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.strokeStyle = "#D4A6A8";
       ctx.lineWidth = 2;
       ctx.stroke();
+      ctx.globalAlpha = gA;
     }
     // ── map sheet (anchor 4775) painted over extension + papers
     const sheet = m75([[88, 306], [362, 212], [717, 243], [455, 468]]);
@@ -328,26 +415,32 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    // dashboard artwork on the map (measured at f4810, world-locked,
-    // static for the whole scene)
-    poly(m10([[330, 300], [398, 303], [396, 345], [328, 342]]), "#C9C9C9", null);
-    poly(m10([[405, 302], [490, 306], [488, 350], [403, 346]]), "#CFEAF3", null);
-    poly(m10([[150, 375], [260, 380], [256, 430], [146, 424]]), "#CBE9EF", null);
+    // dashboard artwork on the map (measured at f4810; rides the same
+    // one-shot dive relocation as the buildings — the reference collage
+    // keeps the rose chart + cards in view at eye level)
+    const mR = (pts: Pt[]) => m10(pts).map((p) => inkRelocate(p, dv));
+    const waveFix = fitSimRef.fn
+      ? fitSimRef.fn([[[375, 409], [346, 372]], [[675, 469], [723, 479]]])
+      : undefined;
+    const mRW = (pts: Pt[]) => m10(pts).map((p) => inkRelocate(p, dv, waveFix));
+    poly(mR([[330, 300], [398, 303], [396, 345], [328, 342]]), mixc("#C9C9C9", "#DFDFDD", dv), null);
+    poly(mR([[405, 302], [490, 306], [488, 350], [403, 346]]), mixc("#CFEAF3", "#E4F2F6", dv), null);
+    poly(mR([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E1F0F3", dv), null);
     // tick columns under the chart
     ctx.strokeStyle = "#DDDDDA";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = mixN(1, 0.6, dv);
     for (let i = 0; i < 10; i++) {
-      const a = toFloor(505 + i * 18, 340, 4810);
-      const b = toFloor(500 + i * 18, 416, 4810);
+      const a = inkRelocate(toFloor(505 + i * 18, 340, 4810), dv, waveFix);
+      const b = inkRelocate(toFloor(500 + i * 18, 416, 4810), dv, waveFix);
       ctx.beginPath();
       ctx.moveTo(mx(a), my(a));
       ctx.lineTo(mx(b), my(b));
       ctx.stroke();
     }
-    const sq = m10([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]);
+    const sq = mRW([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]);
     path(sq, false);
-    ctx.strokeStyle = C.chartRed;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = mixc(C.chartRed, "#E4B4BB", dv);
+    ctx.lineWidth = mixN(2, 1.2, dv);
     ctx.stroke();
     ctx.setLineDash([4, 4]);
     path(sq.map((p) => [p[0] + 6, p[1] + 14] as Pt), false);
@@ -365,19 +458,23 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
 // ── yellow rays: floor-plane wedges from the house to the pads ───
 // They connect icon-layer objects, so they ride the same single
 // relocation as the buildings; within every held phase they are static.
-const RAY_O = { over: [-60.0, -183.2] as Pt, eye: [-286.1, -486.0] as Pt };
-// tips: cbs, t1, t2, vac1, t3, vac2 with over-phase wedge widths
-const RAY_TIPS: { b?: string; v?: number; tw: number }[] = [
+const RAY_O = { over: [-60.0, -183.2] as Pt, eye: toFloor(420, 330, 5100) };
+// tips: cbs, t1, t2, vac1, t3, vac2 with over-phase wedge widths (twE =
+// explicit eye-phase width for tips that end near the camera)
+const RAY_TIPS: { b?: string; v?: number; tw: number; twE?: number }[] = [
   { b: "cbs", tw: 30 }, { b: "t1", tw: 26 }, { b: "t2", tw: 21 },
-  { v: 0, tw: 21 }, { b: "t3", tw: 19 }, { v: 1, tw: 26 },
+  { v: 0, tw: 21 }, { b: "t3", tw: 19 }, { v: 1, tw: 26, twE: 16 },
 ];
-const RAYS_C: Pt = [-350, -700];
+// the two vacant-lot wedges get their own eye tips (measured at f5100:
+// one to the left edge, one to the bottom-left frame corner); the pads
+// keep the extrapolated off-frame poses
+const RAY_VAC_EYE: Pt[] = [toFloor(-10, 302, 5100), toFloor(-40, 430, 5100)];
+const RAYS_C: Pt = [-400, -800];
 const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     const a = fade(f, 4700, 4708) * fadeOut(f, 5225, 5240) * fadeOut(f, 5262, 5271);
     if (a <= 0) return;
     const t = diveT(f);
-    const kw = mixN(1, 1 / K_CLUSTER, t);
     ctx.globalAlpha = a * 0.8;
     ctx.fillStyle = C.ray;
     const mx = (p: Pt) => w / 2 + (p[0] - RAYS_C[0]);
@@ -392,15 +489,16 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
         tz = p.z;
       } else {
         const vc = VACANT[tip.v ?? 0];
-        tx = mixN(vc.over.x, vc.eye.x, t);
-        tz = mixN(vc.over.z, vc.eye.z, t);
+        const et = RAY_VAC_EYE[tip.v ?? 0];
+        tx = mixN(vc.over.x, et[0], t);
+        tz = mixN(vc.over.z, et[1], t);
       }
       const dx = tx - from[0];
       const dz = tz - from[1];
       const L = Math.hypot(dx, dz) || 1;
       const px = -dz / L;
       const pz = dx / L;
-      const wHalf = (tip.tw * kw) / 2;
+      const wHalf = mixN(tip.tw, tip.twE ?? tip.tw / K_CLUSTER, t) / 2;
       ctx.beginPath();
       ctx.moveTo(mx([from[0] - px * 3, from[1] - pz * 3]), my([from[0] - px * 3, from[1] - pz * 3]));
       ctx.lineTo(mx([tx - px * wHalf, tz - pz * wHalf]), my([tx - px * wHalf, tz - pz * wHalf]));
@@ -411,7 +509,7 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
     }
   }, []);
   return (
-    <CanvasPlane frame={frame} width={900} height={1400} res={0.35}
+    <CanvasPlane frame={frame} width={1200} height={1800} res={0.35}
       position={[RAYS_C[0], FLOOR_Y + 0.8, RAYS_C[1]]} rotation={[-Math.PI / 2, 0, 0]}
       draw={draw} renderOrder={1} />
   );
