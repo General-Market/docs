@@ -62,17 +62,38 @@ const S = (u: number, v: number): Pt => {
 
 // sheet corners: far/top, right, near/bottom, left (measured diamond)
 const SHEET: Pt[] = [S(320, 322), S(586, 338), S(606, 422), S(198, 398)];
-const CEN: Pt = [
-  (SHEET[0][0] + SHEET[1][0] + SHEET[2][0] + SHEET[3][0]) / 4,
-  (SHEET[0][1] + SHEET[1][1] + SHEET[2][1] + SHEET[3][1]) / 4,
-];
 // red corner dots sit just outside the sheet corners
 const DOTS: Pt[] = [S(306, 319), S(597, 332), S(644, 441), S(158, 405)];
 
-// The sheet is WORLD-LOCKED: after the land/settle (4133-4155) it never
-// moves again — the reference floor is pixel-static; only the camera
-// breathes around it. (An earlier build rode a measured screen track
-// through the slot dolly; that made the replica floor slide. Removed.)
+// ── measured slot slide (round 3, owner ground-continuity fix) ──
+// The reference sheet is NOT rigidly consistent with the reel through
+// the slot dolly: scanned every 30f (teal plot-band centroid, tight
+// color mask), it stays screen-quasi-static at the frame bottom
+// (u 355-371, v 424-457) for the WHOLE slot region, while the
+// world-locked sheet sank out of frame by f4500 — the ground vanished
+// for ~350 frames and a new world faded in at 4690, which read as a
+// scene cut (owner: "still transition about ground level"). The sheet
+// therefore rides a measured world slide: the drawn teal-band anchor
+// is pinned to the scanned track through camSlot(f). Zero until 4330
+// (advDis calibration untouched, f4200 byte-identical), frozen at the
+// 4690 delta through the community pull-back.
+const SLIDE_UV: [number, number, number][] = [
+  [4360, 368.8, 425.1], [4390, 363.6, 437.2], [4420, 361.2, 444.1],
+  [4450, 359.5, 450.6], [4480, 355.1, 457.2], [4510, 355.2, 456.6],
+  [4540, 355.5, 454.7], [4570, 356.8, 451.0], [4600, 359.7, 446.5],
+  [4630, 360.8, 443.0], [4660, 363.6, 438.2], [4690, 371.1, 424.4],
+];
+const SLIDE_U: [number, number][] = SLIDE_UV.map((r) => [r[0], r[1]]);
+const SLIDE_V: [number, number][] = SLIDE_UV.map((r) => [r[0], r[2]]);
+// drawn plot-band anchor (rects 350-430 × 336-355 at the f4268 anchor)
+const TEAL_W: Pt = S(390, 345.5);
+export const slideDelta = (f: number): Pt => {
+  if (f <= 4330) return [0, 0];
+  const fc = Math.min(f, 4690);
+  const t = unprojToFloor(lerp1(SLIDE_U, fc), lerp1(SLIDE_V, fc), FLOOR_Y, camSlot(fc));
+  const w = clamp01((f - 4330) / 30);
+  return [(t[0] - TEAL_W[0]) * w, (t[2] - TEAL_W[1]) * w];
+};
 
 // canvas extent covering the sheet
 const PAPER_C: Pt = [-11, 480];
@@ -83,17 +104,14 @@ export const FloorPaper: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     if (f < 4133) return;
     if (f >= 4715) return; // handed off to the community sheet
-    // settle: the sheet lands slightly small and expands flat by ~4148
-    const t = clamp01((f - 4136) / 12);
-    const e = 1 - Math.pow(1 - t, 2.2);
-    const s = 0.62 + 0.38 * e;
+    // No land/settle: the reference sheet never scales — the wall
+    // collapses onto a floor that is already there (measured round 3:
+    // the spread is static through 4111-4170). Plain alpha-in only.
     ctx.globalAlpha = clamp01((f - 4133) / 22);
     // crossfade out into the community sheet (gone by 4712)
     ctx.globalAlpha *= 1 - clamp01((f - 4692) / 20);
-    const mx = (p: Pt) =>
-      w / 2 + (CEN[0] + (p[0] - CEN[0]) * s - PAPER_C[0]);
-    const my = (p: Pt) =>
-      h / 2 + (CEN[1] + (p[1] - CEN[1]) * s - PAPER_C[1]);
+    const mx = (p: Pt) => w / 2 + (p[0] - PAPER_C[0]);
+    const my = (p: Pt) => h / 2 + (p[1] - PAPER_C[1]);
     const M = (u: number, v: number): Pt => S(u, v);
     const path = (pts: Pt[], close: boolean) => {
       ctx.beginPath();
@@ -169,13 +187,14 @@ export const FloorPaper: React.FC<{ frame: number }> = ({ frame }) => {
     ctx.restore();
     ctx.globalAlpha = 1;
   }, []);
+  const [dx, dz] = slideDelta(frame);
   return (
     <CanvasPlane
       frame={frame}
       width={PAPER_W}
       height={PAPER_H}
       res={1}
-      position={[PAPER_C[0], FLOOR_Y, PAPER_C[1]]}
+      position={[PAPER_C[0] + dx, FLOOR_Y, PAPER_C[1] + dz]}
       rotation={[-Math.PI / 2, 0, 0]}
       draw={draw}
       renderOrder={0}
