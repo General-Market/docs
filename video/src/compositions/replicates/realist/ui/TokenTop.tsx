@@ -465,7 +465,7 @@ const TickerIcon: React.FC<{ icon: string }> = ({ icon }) => {
 
 // ─── Header column (label above value) ─────────────────────────────────
 const HeaderCol: React.FC<{ x: number; label: string; children: React.ReactNode }> = ({ x, label, children }) => (
-  <div style={{ position: "absolute", left: x, top: 99 }}>
+  <div style={{ position: "absolute", left: x, top: 9 }}>
     <T size={12.5} color={C.textMid} weight={500}>
       {label}
     </T>
@@ -765,7 +765,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           </Row>
         </Row>
         {/* big MC — renders near-white on every plate (not teal) */}
-        <div style={{ position: "absolute", left: 346, top: 0, height: 60, display: "flex", alignItems: "center" }}>
+        <div style={{ position: "absolute", left: 346, top: 0, height: 34, display: "flex", alignItems: "center" }}>
           <T size={23} color={LOCAL.mcWhite} weight={600}>
             {mc}
           </T>

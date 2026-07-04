@@ -914,16 +914,16 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </div>
 
         {/* ------------------------------------------------ heading */}
-        <div style={{ position: "absolute", left: 12, top: 99 }}>
+        <div style={{ position: "absolute", left: 12, top: 96 }}>
           <Row gap={14}>
-            <T size={25} color="#E7E9EE" weight={600}>
+            <T size={19} color="#E7E9EE" weight={600}>
               {HEADING.title}
             </T>
-            <div style={{ background: "#171A22", borderRadius: 6, padding: "5px 6px" }}>
-              <SolanaBars size={13} />
+            <div style={{ background: "#171A22", borderRadius: 5, padding: "3px 5px" }}>
+              <SolanaBars size={11} />
             </div>
             <div style={{ position: "relative" }}>
-              <svg width={20} height={20} viewBox="0 0 16 16">
+              <svg width={17} height={17} viewBox="0 0 16 16">
                 <path
                   d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z M2 5 L8 8.5 L14 5 M8 8.5 L8 14.5"
                   fill="none"

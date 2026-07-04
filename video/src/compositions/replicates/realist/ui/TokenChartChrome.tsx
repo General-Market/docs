@@ -164,7 +164,7 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
       </div>
 
       {/* ── OHLC readout row (y188–212) ── */}
-      <div style={{ position: "absolute", left: 58, top: 192, height: 16, whiteSpace: "nowrap" }}>
+      <div style={{ position: "absolute", left: 58, top: 197, height: 16, whiteSpace: "nowrap" }}>
         <T size={12.5} color={C.text}>
           {OHLC.symbolLine}
         </T>
