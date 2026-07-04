@@ -55,18 +55,22 @@ const INK = "#1D1D1F";
 // lands on black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
-const WaveBackground: React.FC<{ frame: number }> = ({ frame }) => {
+const WaveBackground: React.FC<{
+  frame: number;
+  height?: number;
+  waveSrc?: string;
+}> = ({ frame, height = 720 * HD_SCALE, waveSrc = "crx-assets/bridge-wave-4k.mp4" }) => {
   const black = interpolate(frame, [851, 864], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={WAVE_SECONDS * FPS}>
         <OffthreadVideo
           muted
-          src={staticFile("crx-assets/bridge-wave-4k.mp4")}
+          src={staticFile(waveSrc)}
           style={{
             position: "absolute",
             width: 1280 * HD_SCALE,
-            height: 720 * HD_SCALE,
+            height,
             objectFit: "cover",
           }}
         />
@@ -316,9 +320,9 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "Access", f: 570 }, { t: "liquidity", f: 575 }], x: 55, capTop: 278, drop: 50, out: { cut: 650 } },
   { words: [{ t: "from", f: 579 }, { t: "multiple", f: 584 }], x: 55, capTop: 349, drop: 50, out: { cut: 650 } },
   { words: [{ t: "dealers", f: 589 }], x: 55, capTop: 420, drop: 50, out: { cut: 650 } },
-  // Scene 10 — "confidence" on the f662 beat (fades f716-722)
-  { words: [{ t: "Comply", f: 653 }, { t: "with", f: 657 }], x: 64, capTop: 269, drop: 50, out: { fade: [716, 722] } },
-  { words: [{ t: "confidence", f: 662 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
+  // Scene 10 — "design" on the f662 beat (fades f716-722)
+  { words: [{ t: "Compliance", f: 653 }, { t: "by", f: 657 }], x: 64, capTop: 269, drop: 50, out: { fade: [716, 722] } },
+  { words: [{ t: "design", f: 662 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
   // Scene 11 — centered; "simple." on the f736 beat (cut f764)
   { words: [{ t: "Cross-border", f: 722 }, { t: "business", f: 726 }], capTop: 305, drop: 26, out: { cut: 764 } },
   { words: [{ t: "risk,", f: 731 }, { t: "made", f: 733 }, { t: "simple.", f: 736 }], capTop: 373, drop: 26, out: { cut: 764 } },
@@ -437,8 +441,16 @@ const EndLockup: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-export const CrxAnomaComposition: React.FC = () => {
+// The stage, parametrized on frame height. The measured 1280×720 coordinate
+// system never changes — a taller frame (the 3:2 landing cut) centers the
+// same 16:9 stage vertically and lets the water run into the extra rows
+// above and below. Every frozen timing and position survives untouched.
+const CrxAnomaStage: React.FC<{ height?: number; waveSrc?: string }> = ({
+  height = 720 * HD_SCALE,
+  waveSrc,
+}) => {
   const frame = useCurrentFrame();
+  const inset = (height - 720 * HD_SCALE) / 2;
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       <Audio
@@ -447,11 +459,12 @@ export const CrxAnomaComposition: React.FC = () => {
           interpolate(f, [0, 12, DURATION - 45, DURATION - 6], [0, 1, 1, 0], clamp)
         }
       />
-      <WaveBackground frame={frame} />
+      <WaveBackground frame={frame} height={height} waveSrc={waveSrc} />
       <AbsoluteFill
         style={{
           width: 1280,
           height: 720,
+          top: inset,
           transform: `scale(${HD_SCALE})`,
           transformOrigin: "top left",
         }}
@@ -468,11 +481,31 @@ export const CrxAnomaComposition: React.FC = () => {
   );
 };
 
+export const CrxAnomaComposition: React.FC = () => <CrxAnomaStage />;
+
+// The 3:2 cut for the landing film band — 3840×2560. Full-frame app scenes
+// hold their 16:9 window and read as a full-width band on the water. This cut
+// is rendered at half scale for the web (1920×1280), so it draws the water
+// from the lighter 1080p source — the 4K wave only bloats Chrome's frame cache
+// and buys nothing at the web output size.
+export const CrxAnoma32Composition: React.FC = () => (
+  <CrxAnomaStage height={2560} waveSrc="crx-assets/bridge-wave.mp4" />
+);
+
 export const crxAnomaMeta = {
   id: "CRX-Anoma",
   component: CrxAnomaComposition,
   width: 1280 * HD_SCALE,
   height: 720 * HD_SCALE,
+  fps: FPS,
+  durationInFrames: DURATION,
+};
+
+export const crxAnoma32Meta = {
+  id: "CRX-Anoma-3-2",
+  component: CrxAnoma32Composition,
+  width: 1280 * HD_SCALE,
+  height: 2560,
   fps: FPS,
   durationInFrames: DURATION,
 };

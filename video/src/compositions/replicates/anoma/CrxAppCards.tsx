@@ -1594,7 +1594,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 10 (f641-722): compliance checklist under "Comply with confidence" ───
+// ─── Scene 10 (f641-722): compliance checklist under "Compliance by design" ───
 // Crossfades over the RFQ card on the reference curve; checks tick in
 // on the 8th grid (f680 is the snare); the All-clear pill is the
 // conclusion — it lands on the f699 beat and HOLDS 17 frames before

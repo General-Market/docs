@@ -39,6 +39,10 @@ import {
   webglPicksMeta,
   webglSceneMetas,
 } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
+import {
+  bridgeWaveMeta,
+  bridgeWaveSideBySideMeta,
+} from "./compositions/backgrounds/bridge-wave/BridgeWaveComposition";
 import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
 import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
 import { kalshiSideBySideMeta } from "./compositions/replicates/kalshi/KalshiSideBySide";
@@ -90,10 +94,14 @@ import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSid
 import { anomaReplicateMeta } from "./compositions/replicates/anoma/AnomaComposition";
 import { plumeReplicateMeta } from "./compositions/replicates/plume/PlumeComposition";
 import { plumeSideBySideMeta } from "./compositions/replicates/plume/PlumeSideBySide";
+import { ethenaReplicateMeta } from "./compositions/replicates/ethena/EthenaComposition";
+import { ethenaSideBySideMeta } from "./compositions/replicates/ethena/EthenaSideBySide";
 import { centrifugeReplicateMeta } from "./compositions/replicates/centrifuge/CentrifugeComposition";
 import { centrifugeSideBySideMeta } from "./compositions/replicates/centrifuge/CentrifugeSideBySide";
+import { morphoReplicateMeta } from "./compositions/replicates/morpho/MorphoComposition";
+import { morphoSideBySideMeta } from "./compositions/replicates/morpho/MorphoSideBySide";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
-import { crxAnomaMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
+import { crxAnomaMeta, crxAnoma32Meta } from "./compositions/replicates/anoma/CrxAnomaComposition";
 import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFollowProp";
 import { slideRailPropMeta } from "./compositions/replicates/anoma/props/SlideRailProp";
 import { fullBleedPropMeta } from "./compositions/replicates/anoma/props/FullBleedProp";
@@ -434,6 +442,24 @@ export const RemotionRoot: React.FC = () => {
         width={webglPicksMeta.width}
         height={webglPicksMeta.height}
       />
+      <Folder name="Backgrounds">
+        <Composition
+          id={bridgeWaveMeta.id}
+          component={bridgeWaveMeta.component}
+          durationInFrames={bridgeWaveMeta.durationInFrames}
+          fps={bridgeWaveMeta.fps}
+          width={bridgeWaveMeta.width}
+          height={bridgeWaveMeta.height}
+        />
+        <Composition
+          id={bridgeWaveSideBySideMeta.id}
+          component={bridgeWaveSideBySideMeta.component}
+          durationInFrames={bridgeWaveSideBySideMeta.durationInFrames}
+          fps={bridgeWaveSideBySideMeta.fps}
+          width={bridgeWaveSideBySideMeta.width}
+          height={bridgeWaveSideBySideMeta.height}
+        />
+      </Folder>
       <Composition
         id={antiCheatEditThumbnailMeta.id}
         component={antiCheatEditThumbnailMeta.component}
@@ -573,7 +599,7 @@ export const RemotionRoot: React.FC = () => {
         ))}
 
         {/* --- Anoma --- */}
-        {[anomaReplicateMeta, anomaSideBySideMeta, crxAnomaMeta, crxAnomaSideBySideMeta].map((meta) => (
+        {[anomaReplicateMeta, anomaSideBySideMeta, crxAnomaMeta, crxAnoma32Meta, crxAnomaSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
@@ -680,6 +706,32 @@ export const RemotionRoot: React.FC = () => {
 
         {/* --- Plume × FalconX --- */}
         {[plumeReplicateMeta, plumeSideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Morpho × Robinhood Earn --- */}
+        {[morphoReplicateMeta, morphoSideBySideMeta].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+
+        {/* --- Ethena --- */}
+        {[ethenaReplicateMeta, ethenaSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
