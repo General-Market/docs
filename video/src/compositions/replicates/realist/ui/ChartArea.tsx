@@ -3,13 +3,13 @@ import {
   BUBBLE_TRACKS,
   CANDLE_TRACKS,
   COST_BASIS_Y,
-  EXIT_PRICE_Y,
   BubbleTrack,
   CandleTrack,
 } from "./chart-data";
 import {
   CHART_COLORS as C,
   SCALE_ERAS,
+  EXIT_Y,
   HIGH_CHIP,
   LOW_CHIP,
   EXIT_LABEL,
@@ -144,7 +144,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
   const high = stepAt(HIGH_CHIP, f);
   const exitBadge = stepAt(EXIT_BADGE, f);
   const cur = stepAt(CURRENT_CHIP, f);
-  const exitY = sampleY(EXIT_PRICE_Y, f) ?? 455;
+  const exitY = stepAt(EXIT_Y, f).y;
   const costY = sampleY(COST_BASIS_Y, f) ?? 855;
 
   const dash = (color: string, y: number, dashW = 7, gap = 6) => (
@@ -191,7 +191,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
       {TIME_AXIS.map((t, i) => (
         <div
           key={`v${i}`}
-          style={{ position: "absolute", left: t.x, top: 195, height: 815, width: 1, background: C.gridLine }}
+          style={{ position: "absolute", left: t.x, top: 195, height: 723, width: 1, background: C.gridLine }}
         />
       ))}
       {/* price scale labels */}
@@ -217,7 +217,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           style={{
             position: "absolute",
             left: t.x - 30,
-            top: 1014,
+            top: 926,
             width: 60,
             textAlign: "center",
             fontSize: 12,

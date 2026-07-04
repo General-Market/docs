@@ -76,6 +76,22 @@ export const EXIT_BADGE: { f: number; text: string }[] = [
   { f: 1520, text: "284K" },
 ];
 
+// Exit-price line y (badge row read off the price-scale strips; the
+// in-band dash detection was unreliable under the caption glow).
+export const EXIT_Y: { f: number; y: number }[] = [
+  { f: 418, y: 421 },
+  { f: 460, y: 354 },
+  { f: 520, y: 361 },
+  { f: 580, y: 475 },
+  { f: 690, y: 476 },
+  { f: 920, y: 476 },
+  { f: 1040, y: 504 },
+  { f: 1160, y: 490 },
+  { f: 1290, y: 495 },
+  { f: 1400, y: 510 },
+  { f: 1520, y: 525 },
+];
+
 // Current Average Cost Basis — dashed white line + white badge.
 export const COST_LABEL = "Current Average Cost Basis";
 export const COST_BADGE = "5.75K";
