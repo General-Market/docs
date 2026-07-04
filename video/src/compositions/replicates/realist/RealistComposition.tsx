@@ -47,6 +47,17 @@ const { fontFamily: POPPINS } = loadPoppins("normal", {
 
 const LAST_PLATE = 2112;
 
+// ─── Reference clock ───
+// The reference runs 59.94fps (60000/1001, 2114 frames); the comp runs
+// 60fps over 2116. Every measured boundary/curve/table is indexed in
+// PLATE frames (= reference frames, confirmed plate n ≡ ref frame n).
+// Both the verify keyframe extraction (first pts ≥ t) and the ffmpeg
+// framesync pairing behind video-SSIM show plate ceil(f·1000/1001) at
+// comp frame f — so every plate-indexed clock samples there. Drift is
+// 0 until f=1001, 1 frame to f=2002, 2 frames after.
+const refFrame = (f: number) =>
+  Math.min(Math.max(Math.ceil((f * 1000) / 1001), 0), LAST_PLATE);
+
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 const easeInCubic = (t: number) => t ** 3;
@@ -74,8 +85,7 @@ const fadeMul = (f: number): number => {
 // Screen boundaries measured off the plates: Trenches 0–332, token page
 // loading (old chrome) 333–391, Pulse 392–417, live token page 418–end.
 const ScreenBase: React.FC = () => {
-  const frame = useCurrentFrame();
-  const f = Math.min(Math.max(Math.round(frame), 0), LAST_PLATE);
+  const f = refFrame(useCurrentFrame());
   const blurP = clamp01((f - BLUR_FROM) / (BLUR_FULL - BLUR_FROM));
   const blur = BLUR_PX * blurP;
   let screen: React.ReactNode;
@@ -97,8 +107,7 @@ const ScreenBase: React.FC = () => {
 
 // PnL share-card flies in above the blurred UI during the outro.
 const OutroCard: React.FC = () => {
-  const frame = useCurrentFrame();
-  const f = Math.min(Math.max(Math.round(frame), 0), LAST_PLATE);
+  const f = refFrame(useCurrentFrame());
   return (
     <div style={{ position: "absolute", inset: 0, opacity: fadeMul(f) }}>
       <PnlCard frame={f} />
@@ -200,7 +209,7 @@ const CascadeLine: React.FC<{
 // Rides the baked editor zoom + its own grow-in via the measured
 // per-frame affine (data.ts, f26-215).
 const Cap1: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = refFrame(useCurrentFrame());
   if (frame < 25 || frame > 212) return null;
   const s = at(cap1S, CAP1_AFF_F0, frame);
   const tx = at(cap1Tx, CAP1_AFF_F0, frame);
@@ -258,7 +267,7 @@ const BUYS_LINE = "*BUYS 10 SOL*";
 const BUYS_FULL_INK = { x0: 616, x1: 1313, y0: 499, y1: 577 };
 
 const Buys: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = refFrame(useCurrentFrame());
   if (frame < 315 || frame > 380) return null;
   const t = frame - 315;
   const s = 1 + 0.35 * Math.exp(-t / 8);
@@ -520,7 +529,7 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
 };
 
 const Sells: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = refFrame(useCurrentFrame());
   if (frame < 466 || frame > 1668) return null;
   const active: React.ReactNode[] = [];
   for (const ev of sellsEvents) {
@@ -550,7 +559,7 @@ const XMark: React.FC<{ size: number }> = ({ size }) => (
 );
 
 const Outro: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = refFrame(useCurrentFrame());
   if (frame < 1828 || frame > 2106) return null;
   const mul = fadeMul(frame);
   const logoCx = (frame <= 1884 ? at(outroCx, OUTRO_CX_F0, frame) : 687) - 2.5;
