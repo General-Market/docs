@@ -265,6 +265,8 @@ export const sellRowTable: Sample<SellRow>[] = T([
 // Sell mode label "%" → "SOL" and red presets flip 13.37/…→1/3/5/10,
 // measured between f818 (old) and f828 (new).
 export const SELL_MODE_FLIP_F = 823;
+// …and flips BACK to "%" presets late (SOL at f1610, % at f1615).
+export const SELL_MODE_FLIP2_F = 1613;
 
 // ─── Bottom trades table first row (every 100f) ──────────────────────
 export type TradeRow = { age: string; type: "Buy" | "Sell"; mc: string; amount: string; sol: string };

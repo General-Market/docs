@@ -46,7 +46,7 @@ export const PnlCard: React.FC<{ frame: number }> = ({ frame }) => {
         style={{ position: "absolute", inset: 0, width: W, height: H }}
       />
       {/* brand top right */}
-      <div style={{ position: "absolute", left: 566, top: 22, fontSize: 34, fontWeight: 700, color: "#17181c", letterSpacing: "0.01em" }}>
+      <div style={{ position: "absolute", left: 566, top: 22, fontSize: 34, fontWeight: 700, color: "#e9e9ec", letterSpacing: "0.01em" }}>
         {PNL_CARD.brand}
         <span style={{ fontWeight: 400, fontSize: 26 }}>{PNL_CARD.brandSuffix}</span>
       </div>
@@ -79,7 +79,7 @@ export const PnlCard: React.FC<{ frame: number }> = ({ frame }) => {
           <div style={{ position: "absolute", left: 40, top: 290 + i * 40, fontSize: 27, color: "#dcdce0" }}>
             {r.label}
           </div>
-          <div style={{ position: "absolute", left: 291, top: 284 + i * 40, fontSize: 27, fontWeight: 600, color: "#101014" }}>
+          <div style={{ position: "absolute", left: 291, top: 284 + i * 40, fontSize: 27, fontWeight: 600, color: "#f2f2f5" }}>
             {r.value}
           </div>
         </React.Fragment>
@@ -92,7 +92,7 @@ export const PnlCard: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", left: 46, top: 450, fontSize: 17, color: "#d3d3d8" }}>
         {PNL_CARD.footerLeft}
       </div>
-      <div style={{ position: "absolute", left: 172, top: 450, fontSize: 17, color: "#101014", fontWeight: 500 }}>
+      <div style={{ position: "absolute", left: 172, top: 450, fontSize: 17, color: "#e9e9ec", fontWeight: 500 }}>
         {PNL_CARD.footerRight}
       </div>
     </div>
