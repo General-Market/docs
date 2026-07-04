@@ -277,6 +277,7 @@ print(f'{score:.1f}')
 # ─────────────────────────────────────────────
 # 8. WRITE BREAKDOWN FILE (for agent to read)
 # ─────────────────────────────────────────────
+mkdir -p "$ANALYSIS_DIR"
 BREAKDOWN_FILE="$ANALYSIS_DIR/last-verify-breakdown.json"
 python3 -c "
 import json
