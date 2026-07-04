@@ -11,7 +11,7 @@ import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, easeInOutCubic, easeInPow, easeOutPow, lerp1, polyArc, polyUpToArc } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
 import {
-  CanvasPlane, DCAM, fitWall, project, unprojToWall, unprojToFloor, wallToWorld,
+  CanvasPlane, DCAM, fitWall, unprojToWall, unprojToFloor, wallToWorld,
 } from "../lib/world";
 import type { V3 } from "../lib/world";
 
@@ -388,18 +388,12 @@ const C2BAR: [number, number, number][] = [
 const BAR_KT: [number, number][] = C2BAR.map((r) => [r[0], r[1]]);
 const BAR_LT: [number, number][] = C2BAR.map((r) => [r[0], r[2]]);
 
-// ── whip motion blur (180° shutter over the corrected camera path) ──
-export const whipSigma = (f: number): [number, number] => {
-  if (f < 3884 || f > 3932) return [0, 0];
-  const a = project(WC3, camRefit(f - 1), camChart2Yaw(f - 1));
-  const b = project(WC3, camRefit(f + 1), camChart2Yaw(f + 1));
-  const dx = (b[0] - a[0]) / 2;
-  const dy = (b[1] - a[1]) / 2;
-  const L = Math.hypot(dx, dy);
-  if (L < 5) return [0, 0];
-  const sig = (0.5 * L) / 3.46; // box streak L/2 → equivalent gaussian σ
-  return [(sig * Math.abs(dx)) / L, (sig * Math.abs(dy)) / L];
-};
+// ── whip motion blur: RETIRED (round 3) ─────────────────────────
+// Measured: reference frames 3885/3891/3897/3900/3903/3909/3915/3925
+// are all SHARP — the hand-drawn reference has no motion blur through
+// the whip. The 180°-shutter gaussian was theory; under the orbit-refit
+// camera its per-frame deltas exploded and it cost −0.02 SSIM at f3900.
+export const whipSigma = (_f: number): [number, number] => [0, 0];
 
 // ── badges (unprojected at their pop frames with the solved camera) ──
 const badgeWall = (
