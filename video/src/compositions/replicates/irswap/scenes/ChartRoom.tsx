@@ -604,11 +604,17 @@ export const camChartRoom = (frame: number): V3 =>
       ? M.camB(frame)
       : M.camC(frame);
 
-// Camera yaw (rotation.y): nonzero only inside chapter B, whose reference
-// camera orbits the wall (see chartroomModel camB). Regime switches at
-// 452/935 sit inside content crossfades, exactly like the position solve.
+// Camera yaw (rotation.y): nonzero inside chapters B and C, whose
+// reference camera orbits the walls (see chartroomModel camB/camC solves).
+// Regime switches at 452/935 sit inside content crossfades, exactly like
+// the position solve; the C yaw tapers to 0 by 1690 (inside the gridline
+// topple), so T_BLD and the buildings handoff stay byte-identical.
 export const camChartRoomYaw = (frame: number): number =>
-  frame >= 452 && frame < 935 ? M.camBYaw(frame) : 0;
+  frame >= 452 && frame < 935
+    ? M.camBYaw(frame)
+    : frame >= 935 && frame < 1690
+      ? M.camCYaw(frame)
+      : 0;
 
 export const ChartRoomWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const img = getTitleImg();

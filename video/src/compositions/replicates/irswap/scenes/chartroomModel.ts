@@ -6,7 +6,7 @@ import * as THREE from "three";
 import {
   A, B, C, BOARD_FALL, WALL_GROW,
   B_GREY_X1, B_GRID, B_TOP5,
-  C_FIXED_LBL, C_BASE_LBL, C_GRID_X, C_SPACING, C_JAGGED_TIP, C_RED_TIP,
+  C_FIXED_LBL, C_BASE_LBL, C_GRID, C_TOPV, C_SPACING, C_JAGGED_TIP, C_RED_TIP,
   C_JAGGED_DENSE, C_RED_TOP, A_WALL_DRIFT,
   B_BASE_LABEL,
 } from "../data/chartroom";
@@ -190,66 +190,80 @@ export const solidArcB = polyArc(wallB.solidPoly);
 export const dashCountB = (f: number) =>
   f < B.firstDash ? 0 : Math.min(B.dashCentroids.length, 1 + Math.floor((f - B.firstDash) / 4.7));
 
-const camBcx: [number, number][] = [];
-const camBcz: [number, number][] = [];
-const camBg: [number, number][] = [];
-for (const [f, xs] of B_GRID) {
-  // init from the old linear (cx, cz | g=0) solve
-  let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
-  for (let i = 0; i < 11; i++) {
-    const u = xs[i] - 427;
-    const rhs = DCAM * gridWorldB[i][0] + u * gridWorldB[i][2];
-    a11 += DCAM * DCAM;
-    a12 += DCAM * u;
-    a22 += u * u;
-    b1 += DCAM * rhs;
-    b2 += u * rhs;
-  }
-  const det = a11 * a22 - a12 * a12;
-  let cx = (b1 * a22 - b2 * a12) / det;
-  let cz = (a11 * b2 - a12 * b1) / det;
-  let g = 0;
-  // Gauss-Newton over (cx, cz, g), numeric Jacobian
-  for (let it = 0; it < 30; it++) {
-    const A = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0],
-    ];
-    const b = [0, 0, 0];
-    for (let i = 0; i < 11; i++) {
-      const u0 = uPredYaw(gridWorldB[i], cx, cz, g);
-      const r = u0 - xs[i];
-      const J = [
-        (uPredYaw(gridWorldB[i], cx + 1e-2, cz, g) - u0) / 1e-2,
-        (uPredYaw(gridWorldB[i], cx, cz + 1e-2, g) - u0) / 1e-2,
-        (uPredYaw(gridWorldB[i], cx, cz, g + 1e-4) - u0) / 1e-4,
-      ];
-      for (let a = 0; a < 3; a++) {
-        b[a] -= J[a] * r;
-        for (let c = 0; c < 3; c++) A[a][c] += J[a] * J[c];
-      }
+// Per-frame Gauss-Newton (cx, cz, yaw) over tracked gridline xs. Shared by
+// chapters B and C — identical math to the original B-only block, so the
+// B tables are byte-identical.
+const solveGridCam = (
+  gridWorld: V3[],
+  rows: readonly (readonly [number, number[]])[],
+): { cx: [number, number][]; cz: [number, number][]; g: [number, number][] } => {
+  const cxT: [number, number][] = [];
+  const czT: [number, number][] = [];
+  const gT: [number, number][] = [];
+  for (const [f, xs] of rows) {
+    // init from the old linear (cx, cz | g=0) solve
+    let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < gridWorld.length; i++) {
+      const u = xs[i] - 427;
+      const rhs = DCAM * gridWorld[i][0] + u * gridWorld[i][2];
+      a11 += DCAM * DCAM;
+      a12 += DCAM * u;
+      a22 += u * u;
+      b1 += DCAM * rhs;
+      b2 += u * rhs;
     }
-    const det3 = (m: number[][]) =>
-      m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
-      m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-      m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-    const D3 = det3(A);
-    if (Math.abs(D3) < 1e-12) break;
-    const col = (m: number[][], k: number, v: number[]) =>
-      m.map((row, i) => row.map((x, j) => (j === k ? v[i] : x)));
-    const dx = det3(col(A, 0, b)) / D3;
-    const dz = det3(col(A, 1, b)) / D3;
-    const dg = det3(col(A, 2, b)) / D3;
-    cx += dx;
-    cz += dz;
-    g += dg;
-    if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6 && Math.abs(dg) < 1e-9) break;
+    const det = a11 * a22 - a12 * a12;
+    let cx = (b1 * a22 - b2 * a12) / det;
+    let cz = (a11 * b2 - a12 * b1) / det;
+    let g = 0;
+    // Gauss-Newton over (cx, cz, g), numeric Jacobian
+    for (let it = 0; it < 30; it++) {
+      const A = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ];
+      const b = [0, 0, 0];
+      for (let i = 0; i < gridWorld.length; i++) {
+        const u0 = uPredYaw(gridWorld[i], cx, cz, g);
+        const r = u0 - xs[i];
+        const J = [
+          (uPredYaw(gridWorld[i], cx + 1e-2, cz, g) - u0) / 1e-2,
+          (uPredYaw(gridWorld[i], cx, cz + 1e-2, g) - u0) / 1e-2,
+          (uPredYaw(gridWorld[i], cx, cz, g + 1e-4) - u0) / 1e-4,
+        ];
+        for (let a = 0; a < 3; a++) {
+          b[a] -= J[a] * r;
+          for (let c = 0; c < 3; c++) A[a][c] += J[a] * J[c];
+        }
+      }
+      const det3 = (m: number[][]) =>
+        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+        m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+        m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+      const D3 = det3(A);
+      if (Math.abs(D3) < 1e-12) break;
+      const col = (m: number[][], k: number, v: number[]) =>
+        m.map((row, i) => row.map((x, j) => (j === k ? v[i] : x)));
+      const dx = det3(col(A, 0, b)) / D3;
+      const dz = det3(col(A, 1, b)) / D3;
+      const dg = det3(col(A, 2, b)) / D3;
+      cx += dx;
+      cz += dz;
+      g += dg;
+      if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6 && Math.abs(dg) < 1e-9) break;
+    }
+    cxT.push([f, cx]);
+    czT.push([f, cz]);
+    gT.push([f, g]);
   }
-  camBcx.push([f, cx]);
-  camBcz.push([f, cz]);
-  camBg.push([f, g]);
-}
+  return { cx: cxT, cz: czT, g: gT };
+};
+
+const bSolve = solveGridCam(gridWorldB, B_GRID);
+const camBcx = bSolve.cx;
+const camBcz = bSolve.cz;
+const camBg = bSolve.g;
 // Camera yaw (rotation.y) for chapter B; 0 outside the B window — the
 // solve regime switches at 452/935 exactly where the chapter content
 // crossfades, same masking as the existing position jumps there.
@@ -334,51 +348,58 @@ export const yTopC = avg([
   unprojToWall(fitC, 736, 134)[1],
 ]);
 const gapAnchorC = lerp1(C_SPACING, C.anchorFrame);
-const zcC = wallToWorld(fitC, 5 * fitC.spacing, 0)[2];
-export const czC = (f: number) => {
-  const gap = lerp1(C_SPACING, Math.min(Math.max(f, 940), 1650));
-  return zcC + (DCAM - zcC) * (gapAnchorC / gap);
-};
 
-const g4World: V3 = (() => {
-  const w = unprojToWall(fitC, 442, 240);
-  return wallToWorld(fitC, w[0], w[1]);
-})();
-const cxCTable: [number, number][] = C_GRID_X.map(([f, u]) => {
-  const cz = czC(f);
-  const d = cz - g4World[2];
-  return [f, g4World[0] - ((u - 427) * d) / DCAM] as [number, number];
-});
-const wTopWorld: V3 = (() => {
-  const w = unprojToWall(fitC, 427, C.gridTopY);
-  return wallToWorld(fitC, w[0], w[1]);
-})();
-const cyFromTopY = (f: number, v: number) => {
-  const cz = czC(f);
-  const d = cz - wTopWorld[2];
-  return wTopWorld[1] - ((240 - v) * d) / DCAM;
-};
-const cyCTable: [number, number][] = [
-  [940, cyFromTopY(940, 141.5)],
-  [1440, cyFromTopY(1440, 119)], [1470, cyFromTopY(1470, 122)],
-  [1500, cyFromTopY(1500, 128)], [1530, cyFromTopY(1530, 128)],
-  [1560, cyFromTopY(1560, 134)], [1590, cyFromTopY(1590, 141)],
-  [1620, cyFromTopY(1620, 142)], [1650, cyFromTopY(1650, 145)],
+// C camera: the same per-frame Gauss-Newton as chapter B, over the 11
+// scanned gridline xs (C_GRID). The reference orbits chapter C too — the
+// gridline recession flips from left-near (f950) to right-near (f1400):
+// yaw runs +0.12 @950 → -0.61 @1400 → +0.17 @1655 at 0.14-0.28px RMS
+// (the old translation-only single-line model compromised at 10-15px).
+const gridWorldC = Array.from({ length: 11 }, (_, i) =>
+  wallToWorld(fitC, i * fitC.spacing, 0),
+);
+const cSolve = solveGridCam(gridWorldC, C_GRID);
+// Frozen exit pose == the pre-refit camC(1650) clamp at full precision.
+// The solved orbit tapers into it across 1655→1690 (inside the gridline
+// topple), so camChartRoom(1705) — and therefore T_BLD and every
+// downstream handoff — stays byte-identical, and yaw is 0 from 1690.
+const C_EXIT_POSE: V3 = [
+  -3.4758713858605894, 0.89834503324520654, 674.55307677644521,
 ];
-export const camC = (f: number): V3 => [lerp1(cxCTable, f), lerp1(cyCTable, f), czC(f)];
+const camCcx: [number, number][] = [...cSolve.cx, [1690, C_EXIT_POSE[0]]];
+const camCcz: [number, number][] = [...cSolve.cz, [1690, C_EXIT_POSE[2]]];
+const camCg: [number, number][] = [...cSolve.g, [1690, 0]];
+export const camCYaw = (f: number): number =>
+  f < 935 || f >= 1690 ? 0 : lerp1(camCg, f);
+// cy from the tracked top of gridline #5 through the yawed camera,
+// exactly as chapter B derives cy from B_TOP5.
+const top5WorldC = wallToWorld(fitC, 5 * fitC.spacing, 0);
+const camCcy: [number, number][] = [
+  ...C_TOPV.map(([f, v]): [number, number] => {
+    const cx = lerp1(camCcx, f);
+    const cz = lerp1(camCcz, f);
+    const g = lerp1(camCg, f);
+    const dEff = -(Math.sin(g) * (top5WorldC[0] - cx) + Math.cos(g) * (top5WorldC[2] - cz));
+    return [f, yTopC - ((240 - v) * dEff) / DCAM];
+  }),
+  [1690, C_EXIT_POSE[1]],
+];
+export const camC = (f: number): V3 => [
+  lerp1(camCcx, f), lerp1(camCcy, f), lerp1(camCcz, f),
+];
 
 // floor + board chapter C (from f1100 far edge/quad with camC(1100))
 export const yBaseC = avg([
-  unprojToWall(fitC, 322, 365, camC(1100))[1],
-  unprojToWall(fitC, 644, 392, camC(1100))[1],
+  unprojToWall(fitC, 322, 365, camC(1100), camCYaw(1100))[1],
+  unprojToWall(fitC, 644, 392, camC(1100), camCYaw(1100))[1],
 ]);
 export const floorYC = yBaseC;
 export const boardC = (() => {
   const cam = camC(1100);
-  const tl = floorCoord(fitC, 322, 365, floorYC, cam);
-  const tr = floorCoord(fitC, 644, 392, floorYC, cam);
-  const bl = floorCoord(fitC, 129, 447, floorYC, cam);
-  const br = floorCoord(fitC, 662, 520, floorYC, cam);
+  const g = camCYaw(1100);
+  const tl = floorCoord(fitC, 322, 365, floorYC, cam, g);
+  const tr = floorCoord(fitC, 644, 392, floorYC, cam, g);
+  const bl = floorCoord(fitC, 129, 447, floorYC, cam, g);
+  const br = floorCoord(fitC, 662, 520, floorYC, cam, g);
   const s0 = (tl.s + bl.s) / 2;
   const s1 = (tr.s + br.s) / 2;
   const tFar = (tl.t + tr.t) / 2;
@@ -429,13 +450,14 @@ const solveTipArc = (
   polyW: Pt[],
   arc: { cum: number[] },
   cam: V3,
+  yaw: number,
   target: Pt,
   xOnly: boolean,
 ): number => {
   let best = 0;
   let bestD = Infinity;
   for (let i = 0; i < polyW.length; i++) {
-    const p = project(wallToWorld(fit, polyW[i][0], polyW[i][1]), cam);
+    const p = project(wallToWorld(fit, polyW[i][0], polyW[i][1]), cam, yaw);
     const d = xOnly ? Math.abs(p[0] - target[0]) : Math.hypot(p[0] - target[0], p[1] - target[1]);
     if (d < bestD) {
       bestD = d;
@@ -446,12 +468,12 @@ const solveTipArc = (
 };
 const jaggedProgTable: [number, number][] = monotonic(
   C_JAGGED_TIP.map(([f, x]): [number, number] => [
-    f, solveTipArc(fitC, wallC.jaggedPoly, jaggedArcC, camC(f), [x, 0], true),
+    f, solveTipArc(fitC, wallC.jaggedPoly, jaggedArcC, camC(f), camCYaw(f), [x, 0], true),
   ]),
 );
 const redProgTable: [number, number][] = monotonic(
   C_RED_TIP.map(([f, x, y]): [number, number] => [
-    f, solveTipArc(fitC, wallC.redPoly, redArcC, camC(f), [x, y], false),
+    f, solveTipArc(fitC, wallC.redPoly, redArcC, camC(f), camCYaw(f), [x, y], false),
   ]),
 );
 export const jaggedProgressC = (f: number) =>
