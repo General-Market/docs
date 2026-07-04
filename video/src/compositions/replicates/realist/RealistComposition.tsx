@@ -389,10 +389,12 @@ const Sparkle: React.FC<{
 // Push-down: rest cy → ~712, p = 1−e^(−t/τ), τ=5.3 (A) / 2.2 (B),
 // from the measured per-event pushAt; pushed caption fades
 // pushAt+9..+21 (A) / +5..+19 (B). Solo fade: 16f from fadeAt.
+// glow spread re-fitted r2: plate halo ink area ~1.7x the r1 shadows
+// (f0486 red n=32k vs attempt 17.5k) — third, wider bloom layer added
 const RED = "#ee0011";
-const RED_GLOW = "0 0 10px rgba(255,0,30,0.55), 0 0 26px rgba(255,0,30,0.32)";
+const RED_GLOW = "0 0 12px rgba(255,0,30,0.6), 0 0 30px rgba(255,0,30,0.38), 0 0 58px rgba(255,0,30,0.2)";
 const BLUE = "#41b8e0";
-const BLUE_GLOW = "0 0 8px rgba(62,184,255,0.55), 0 0 22px rgba(62,184,255,0.3)";
+const BLUE_GLOW = "0 0 10px rgba(62,184,255,0.6), 0 0 26px rgba(62,184,255,0.36), 0 0 50px rgba(62,184,255,0.18)";
 
 // A-paren re-measured against baked digit glyphs (event 1 f487, event 2
 // f530-550): digit cap band centers on 610 (not 632) at cap height ~49
@@ -448,8 +450,9 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
   const t = frame - ev.f;
   if (t < 0) return null;
   const geo = STYLE_GEO[ev.style];
-  // pop
-  const s = 1 + 0.31 * Math.exp(-t / 5.8);
+  // pop — re-fitted r2 on events 1 AND 2 (f470-486 / f500-510 bbox widths):
+  // s(0)≈1.33, s(4)≈1.22, s(8)≈1.12, s(16)≈1.03 → a=0.34, τ=8
+  const s = 1 + 0.34 * Math.exp(-t / 8);
   let op = clamp01((t + 1.5) / 2);
   const blur = 7 * Math.exp(-t / 3.5);
   // push by successor (measured pushAt)
@@ -509,17 +512,17 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
           style={{
             position: "absolute",
             inset: 0,
-            opacity: clamp01((t - 2) / 3),
+            opacity: clamp01((t - 1.5) / 5),
             transform: `translateY(${dyParen.toFixed(1)}px)`,
           }}
         >
-          {/* paren line lands ~3f after the main and pops harder:
-              s = 1 + 0.6·e^(−(t−3)/8) (measured on event 2) */}
+          {/* paren line materialises at t=2 already ~2.1x and shrinks in:
+              plate f0502-0510 widths 830/722/648/550 → s = 1 + 1.45·e^(−t/7) */}
           <FittedLine
             text={ev.paren}
             cx={geo.parenCx} cy={geo.parenCy} inkW={ev.parenW} inkH={geo.parenInkH}
             color={BLUE} glow={BLUE_GLOW} tracking="0.18em"
-            scaleMul={(1 + 0.6 * Math.exp(-Math.max(t - 3, 0) / 8)) * parenShrink}
+            scaleMul={(1 + 1.45 * Math.exp(-t / 7)) * parenShrink}
             compactParens={ev.style === "F"}
           />
         </div>
