@@ -26,7 +26,7 @@ import type { V3 } from "./world";
 import { PIVOT_XZ } from "../data/buildings3d";
 import { camChartRoom, camChartRoomYaw } from "../scenes/ChartRoom";
 import { camBld } from "../scenes/Buildings";
-import { camChart2 } from "../scenes/Chart2";
+import { camChart2, camChart2Yaw } from "../scenes/Chart2";
 import { camSlot } from "../scenes/floorPaper";
 import { camCommunity } from "../scenes/Community";
 import { camOutro } from "../scenes/Outro";
@@ -160,7 +160,9 @@ export const buildingsPose = (f: number): WorldPose => {
 export const worldCam = (f: number): WorldPose => {
   if (f < H.A) return { pos: camChartRoom(f), rotX: 0, rotZ: 0, rotY: camChartRoomYaw(f) };
   if (f < H.B) return buildingsPose(f);
-  if (f < H.C) return { pos: add(camChart2(f), T_C2), rotX: 0, rotZ: 0 };
+  // Chart2 orbits like B/C: rotY from the round-3 refit (0 at both
+  // handoffs, so the frozen-window joins are untouched).
+  if (f < H.C) return { pos: add(camChart2(f), T_C2), rotX: 0, rotZ: 0, rotY: camChart2Yaw(f) };
   if (f < H.E) return { pos: add(camSlot(f), T_SLOT), rotX: 0, rotZ: 0 };
   if (f < BRIDGE0) {
     const { cam, pitch } = camCommunity(f);

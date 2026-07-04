@@ -11,7 +11,7 @@ import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, easeInOutCubic, easeInPow, easeOutPow, lerp1, polyArc, polyUpToArc } from "../lib/helpers";
 import type { Pt } from "../lib/helpers";
 import {
-  CanvasPlane, DCAM, fitWall, unprojToWall, unprojToFloor, wallToWorld,
+  CanvasPlane, DCAM, fitWall, project, unprojToWall, unprojToFloor, wallToWorld,
 } from "../lib/world";
 import type { V3 } from "../lib/world";
 
@@ -247,7 +247,92 @@ const camFixed = (f: number): V3 => {
   const d2 = (cam[2] - WC3[2]) / s;
   return [cam[0] - (tx * d2) / DCAM, cam[1] + (ty * d2) / DCAM, WC3[2] + d2];
 };
-export const camChart2 = camFixed;
+
+// ── round-3 orbit refit ──────────────────────────────────────────
+// The reference ORBITS this wall too. Proof is in the scans: the
+// gridline-gap recession FLIPS (f3800: 46.5→63 rising rightward;
+// f4000: 62→52 falling), and the fixed-rate line's screen slope flips
+// sign (+0.038 at the f3700 anchor → −0.035 in the second hold) — a
+// fixed vanishing point (translation-only camera) can do neither.
+// Solved per-frame (cx, cy, cz, yaw) from the measured tracks + a
+// grey-masked gridline column scan + fixed-line RANSAC + red-curve
+// samples (tooling: .claude/rounds/work/scanc2.py, solvec2*.py).
+// The old translation solve misfit the same observations at 5-35px
+// RMS through 3750-4110; this fits at 0.3-6px.
+const C2R: [number, number, number, number, number][] = [
+  // [f, cx, cy, cz, yaw]
+  [3600, -4.267, 4.156, 604.769, -0.00719],
+  [3615, -2.773, 3.669, 612.424, -0.0045],
+  [3630, -2.14, 2.919, 619.534, -0.00361],
+  [3645, -1.621, 2.341, 630.253, -0.00343],
+  [3660, -2.528, 1.849, 638.42, -0.00413],
+  [3675, -1.487, 1.262, 647.551, -0.00316],
+  [3690, 8.788, 1.046, 651.275, 0.0118],
+  [3705, 13.261, 0.632, 647.381, 0.01859],
+  [3720, 13.05, 0.274, 601.136, 0.02777],
+  [3735, -41.03, -5.728, 434.969, 0.00798],
+  [3750, -137.768, -12.705, 284.947, -0.16599],
+  [3765, -164.669, -14.869, 254.252, -0.24001],
+  [3780, -174.702, -15.562, 247.5, -0.26873],
+  [3795, -178.157, -15.923, 240.28, -0.28151],
+  [3810, -184.779, -16.352, 233.034, -0.30194],
+  [3825, -188.878, -16.819, 226.076, -0.31785],
+  [3840, -192.489, -16.768, 219.303, -0.32975],
+  [3855, -200.541, -17.411, 211.556, -0.35593],
+  [3870, -215.143, -18.039, 201.835, -0.40755],
+  [3885, -214.665, -18.363, 193.954, -0.41094],
+  [3888, -223.055, -18.049, 188.399, -0.4382],
+  [3891, -228.189, -17.896, 185.136, -0.45714],
+  [3894, -228.987, -15.922, 186.817, -0.47719],
+  [3897, -224.794, -11.398, 191.662, -0.49914],
+  [3900, -216.852, -4.796, 197.605, -0.52736],
+  [3903, -206.06, 3.773, 204.706, -0.56004],
+  [3906, -192.872, 13.913, 211.667, -0.5943],
+  [3909, -179.865, 25.279, 224.09, -0.6228],
+  [3912, -160.09, 36.538, 227.87, -0.6484],
+  [3915, -113.399, 33.092, 164.104, -0.71076],
+  [3925, -93.995, 52.255, 172.041, -0.79337],
+  [3930, -101.342, 53.383, 171.737, -0.83929],
+  [3945, -101.253, 53.649, 174.411, -0.83016],
+  [3960, -98.382, 53.885, 174.575, -0.82361],
+  [3975, -95.836, 53.717, 171.751, -0.82459],
+  [3990, -94.521, 53.846, 170.547, -0.82633],
+  [4005, -95.384, 53.585, 169.074, -0.83197],
+  [4020, -92.841, 53.28, 163.461, -0.84082],
+  [4035, -94.233, 53.151, 161.022, -0.8499],
+  [4050, -94.681, 53.214, 161.723, -0.84869],
+  [4065, -36.202, 53.808, 247.082, -0.45],
+  [4080, 27.906, 37.877, 348.545, -0.08],
+  [4095, 21.267, 26.893, 400.745, -0.05],
+  [4110, 26.415, 11.571, 515.673, 0.04843],
+];
+// Blend 0 at both mount edges so camChart2(3580) (→ T_C2) and the
+// frozen exit pose camChart2(≥4128) (→ T_SLOT, advDis entry at 4131)
+// stay byte-identical to the pre-refit build.
+const C2W: [number, number][] = [[3600, 0], [3630, 1], [4110, 1], [4128, 0]];
+const c2Row = (i: 1 | 2 | 3 | 4) => C2R.map((r) => [r[0], r[i]] as [number, number]);
+const R_CX = c2Row(1);
+const R_CY = c2Row(2);
+const R_CZ = c2Row(3);
+const R_G = c2Row(4);
+export const camChart2Yaw = (f: number): number => {
+  if (f <= 3600 || f >= 4128) return 0;
+  return lerp1(R_G, f) * lerp1(C2W, f);
+};
+const camRefit = (f: number): V3 => {
+  if (f <= 3600 || f >= 4128) return camFixed(f);
+  const w = lerp1(C2W, f);
+  const base = camFixed(f);
+  if (w <= 0) return base;
+  const r: V3 = [lerp1(R_CX, f), lerp1(R_CY, f), lerp1(R_CZ, f)];
+  if (w >= 1) return r;
+  return [
+    base[0] + (r[0] - base[0]) * w,
+    base[1] + (r[1] - base[1]) * w,
+    base[2] + (r[2] - base[2]) * w,
+  ];
+};
+export const camChart2 = camRefit;
 
 // ── background-bar depth parallax ─────────────────────────────────
 // The 11 gridlines/bars sit on a plane BEHIND the diagram. We take the
@@ -260,13 +345,54 @@ export const camChart2 = camFixed;
 // (bold-black diagnostic render + OpenCV column detection).
 const F_ANCHOR = 3700;
 const ANCHOR_CAM: V3 = camFixed(F_ANCHOR);
-const BAR_K = 3.41;
+// (the original constant BAR_K = 3.41 lives on as the first C2BAR rows)
+
+// ── bar-layer refit (round 3) ────────────────────────────────────
+// The reference's bar field is NOT rigidly attached to a single back
+// plane: no constant depth K fits the scans (rms ≥ 80px across the
+// window at any K given the orbit camera). Hand-drawn 2.5D — the bar
+// layer pans/zooms with its own logic. So the layer gets a per-frame
+// depth scale K(f) about the anchor camera (preserving the zero-seam
+// at f3700 by construction) plus a lateral slide Ls(f) along the wall
+// (wall-space units), both fitted to the scanned gridline columns at
+// 0.5-5px RMS. K=3.41/Ls=0 up to f3720 keeps entry byte-identical;
+// near the anchor pose K is visually inert, so the 3720→3750 ramp is
+// masked by the pan.
+const C2BAR: [number, number, number][] = [
+  // [f, K, Ls]
+  [3600, 3.41, 0],
+  [3720, 3.41, 0],
+  [3750, 1.3179, 16.89],
+  [3765, 1.3497, 29.08],
+  [3780, 1.3477, 32.32],
+  [3795, 1.3492, 34.13],
+  [3810, 1.3349, 33.63],
+  [3825, 1.2683, 23.53],
+  [3840, 1.2664, 23.49],
+  [3855, 1.2573, 23.38],
+  [3885, 1.2447, 24.92],
+  [3930, 1.3621, 51.8],
+  [3945, 1.3573, 51.59],
+  [3960, 1.3594, 53.77],
+  [3975, 1.3927, 63.78],
+  [3990, 1.3989, 68.44],
+  [4005, 1.3989, 71.89],
+  [4020, 1.4112, 78.92],
+  [4035, 1.4097, 82.75],
+  [4050, 1.4076, 84.72],
+  [4065, 1.4097, 26.53],
+  [4080, 1.1556, -22.67],
+  [4095, 1.3849, -2.32],
+  [4110, 1.0698, -19.65],
+];
+const BAR_KT: [number, number][] = C2BAR.map((r) => [r[0], r[1]]);
+const BAR_LT: [number, number][] = C2BAR.map((r) => [r[0], r[2]]);
 
 // ── whip motion blur (180° shutter over the corrected camera path) ──
 export const whipSigma = (f: number): [number, number] => {
   if (f < 3884 || f > 3932) return [0, 0];
-  const a = projT(WC3, camFixed(f - 1));
-  const b = projT(WC3, camFixed(f + 1));
+  const a = project(WC3, camRefit(f - 1), camChart2Yaw(f - 1));
+  const b = project(WC3, camRefit(f + 1), camChart2Yaw(f + 1));
   const dx = (b[0] - a[0]) / 2;
   const dy = (b[1] - a[1]) / 2;
   const L = Math.hypot(dx, dy);
@@ -280,9 +406,10 @@ const badgeWall = (
   frame: number,
   bbox: [number, number, number, number],
 ): { s: number; y: number; w: number; h: number } => {
-  const cam = camFixed(frame);
-  const a = unprojToWall(WALL, bbox[0], bbox[1], cam);
-  const b = unprojToWall(WALL, bbox[2], bbox[3], cam);
+  const cam = camRefit(frame);
+  const yaw = camChart2Yaw(frame);
+  const a = unprojToWall(WALL, bbox[0], bbox[1], cam, yaw);
+  const b = unprojToWall(WALL, bbox[2], bbox[3], cam, yaw);
   return { s: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]) };
 };
 const BADGE1 = badgeWall(3900, [412, 352, 462, 407]); // tail up
@@ -651,11 +778,20 @@ const GridWall: React.FC<{ frame: number }> = ({ frame }) => {
       }
     }
   }, []);
-  // back plane center = anchor-camera + BAR_K·(wallCenter − anchor-camera);
-  // expressed as the front wall's local offset inside a scale-about-camera group.
-  const local: V3 = [WC3[0] - ANCHOR_CAM[0], WC3[1] - ANCHOR_CAM[1], WC3[2] - ANCHOR_CAM[2]];
+  // back plane center = anchor-camera + K(f)·(wallCenter − anchor-camera);
+  // expressed as the front wall's local offset inside a scale-about-camera
+  // group. Round 3: K animates (C2BAR) and the layer slides Ls(f) along the
+  // wall — see the bar-layer refit note above. K=3.41/Ls=0 through f3720
+  // reproduces the original mount exactly (adding dirS·0 is exact in IEEE).
+  const K = lerp1(BAR_KT, frame);
+  const Ls = lerp1(BAR_LT, frame);
+  const local: V3 = [
+    WC3[0] + WALL.dirS[0] * Ls - ANCHOR_CAM[0],
+    WC3[1] - ANCHOR_CAM[1],
+    WC3[2] + WALL.dirS[2] * Ls - ANCHOR_CAM[2],
+  ];
   return (
-    <group position={ANCHOR_CAM} scale={[BAR_K, BAR_K, BAR_K]}>
+    <group position={ANCHOR_CAM} scale={[K, K, K]}>
       <CanvasPlane
         frame={frame}
         width={WALL_W}
