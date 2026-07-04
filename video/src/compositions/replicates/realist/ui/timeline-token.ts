@@ -102,6 +102,10 @@ export const gfpTable: Sample<string>[] = T([
 ]);
 
 // ─── Rail 24h stats (every 100f; f498 from f0500) ────────────────────
+// f418–460 re-measured per-frame (round 2): real values land at f420,
+// then tick at f446/449/453 and roll up to the f460 settle. Mid-roll
+// odometer frames (f454–459) are motion-blurred on the plates; the
+// step-hold takes the nearest settled reading.
 export type Stats24 = {
   vol: string;
   buysN: string; buysUsd: string;
@@ -115,19 +119,27 @@ const s24 = (
 ): Stats24 => ({ vol, buysN, buysUsd, sellsN, sellsUsd, net, ratio });
 export const stats24Table: Sample<Stats24>[] = T([
   [418, s24("$0", "0", "$0", "0", "$0", "-$0", 0.5)],
+  [420, s24("$7.15K", "31", "$7.15K", "0", "$0", "+$7.15K", 1)],
+  [446, s24("$8.53K", "31", "$7.15K", "1", "$1.38K", "+$5.76K", 0.84)],
+  [449, s24("$8.55K", "33", "$7.17K", "1", "$1.38K", "+$5.79K", 0.84)],
+  [453, s24("$8.85K", "36", "$7.5K", "1", "$1.38K", "+$6.11K", 0.84)],
+  [460, s24("$32.7K", "125", "$26.1K", "18", "$6.84K", "+$19.4K", 0.79)],
   [498, s24("$37.8K", "163", "$30.4K", "24", "$7.3K", "+$23.1K", 0.81)],
   [518, s24("$43.5K", "183", "$33.2K", "40", "$10.3K", "+$22.8K", 0.76)],
   [618, s24("$106K", "327", "$58K", "142", "$48.3K", "+$9.64K", 0.55)],
   [718, s24("$137K", "467", "$77.5K", "193", "$59.2K", "+$18.3K", 0.57)],
   [818, s24("$187K", "586", "$106K", "200", "$80.3K", "+$25.3K", 0.57)],
+  [900, s24("$225K", "713", "$124K", "418", "$101K", "+$23.5K", 0.55)], // r2 spot-check
   [918, s24("$231K", "751", "$128K", "434", "$103K", "+$24.1K", 0.55)],
   [1018, s24("$277K", "971", "$151K", "570", "$126K", "+$24.3K", 0.55)],
   [1118, s24("$312K", "1.14K", "$170K", "675", "$142K", "+$27.7K", 0.54)],
   [1218, s24("$342K", "1.31K", "$186K", "777", "$156K", "+$29.3K", 0.54)],
+  [1300, s24("$371K", "1.44K", "$198K", "903", "$173K", "+$24.6K", 0.53)], // r2 spot-check
   [1318, s24("$377K", "1.48K", "$201K", "920", "$176K", "+$25.5K", 0.53)],
   [1418, s24("$405K", "1.6K", "$214K", "1.05K", "$191K", "+$23.9K", 0.53)],
   [1518, s24("$432K", "1.7K", "$227K", "1.15K", "$205K", "+$21.9K", 0.53)],
   [1618, s24("$454K", "1.84K", "$238K", "1.23K", "$216K", "+$22.5K", 0.52)],
+  [1650, s24("$457K", "1.86K", "$240K", "1.25K", "$218K", "+$21.9K", 0.52)], // r2 spot-check
 ]);
 
 // ─── Position stats: Bought / Sold / Holding / PnL (every 60f) ───────
@@ -138,6 +150,15 @@ const ps = (bought: string, sold: string, holding: string, pnl: string, pnlPct: 
   ({ bought, sold, holding, pnl, pnlPct });
 export const posStatsTable: Sample<PosStats>[] = T([
   [418, ps("0", "0", "0", "+0", 0)],
+  // f418–460 re-measured per-frame (round 2): holding fills at f420,
+  // bought at f425; f454–459 are odometer-blurred, settle read at f460.
+  [420, ps("0", "0", "58.75", "+58.75", 0)],
+  [425, ps("10.54", "0", "58.75", "+48.21", 457)],
+  [439, ps("10.54", "0", "58.74", "+48.2", 457)],
+  [446, ps("10.54", "0", "40.05", "+29.51", 280)],
+  [449, ps("10.54", "0", "40.39", "+29.85", 283)],
+  [453, ps("10.54", "0", "44.94", "+34.4", 326)],
+  [460, ps("10.54", "0", "434.6", "+424.1", 4023)],
   [478, ps("10.54", "11.5", "456.6", "+457.6", 4341)],
   [538, ps("10.54", "41.62", "243.8", "+274.8", 2607)],
   [598, ps("10.54", "43.36", "151", "+183.9", 1744)],
@@ -176,7 +197,17 @@ const ti = (
   bundlers: string, lp: string, holders: string, pro: string,
 ): TokenInfo => ({ top10, dev, snipers, insiders, bundlers, lp, holders, pro });
 export const tokenInfoTable: Sample<TokenInfo>[] = T([
-  [418, ti("", "", "", "", "", "", "", "")], // skeleton
+  [418, ti("", "", "", "", "", "", "", "")], // skeleton (f418–419 only)
+  // f418–460 re-measured per-frame (round 2): grid fills at f420 with LP
+  // still "???" (flips to 100% at f421); snipers 13.95%→0% at f453; the
+  // top10/bundlers/holders/pro roll f455–459 settles at f460.
+  // NOTE: at f420–452 the plates render snipers 13.95% and LP "???" in
+  // PINK; the component colors those cells green (fixed neg flags) —
+  // TokenRail.tsx lane, not fixable here.
+  [420, ti("57.82%", "9.75%", "13.95%", "0%", "65.36%", "???", "25", "19")],
+  [421, ti("57.82%", "9.75%", "13.95%", "0%", "65.36%", "100%", "25", "19")],
+  [453, ti("57.82%", "9.75%", "0%", "0%", "65.36%", "100%", "25", "19")],
+  [460, ti("55.25%", "9.75%", "0%", "0%", "58.78%", "100%", "82", "58")],
   [478, ti("54.94%", "9.75%", "0%", "0%", "57.83%", "100%", "87", "63")],
   [538, ti("50.72%", "9.75%", "0%", "0%", "52.45%", "100%", "125", "94")],
   [598, ti("49.36%", "9.75%", "0%", "0%", "51.08%", "100%", "143", "112")],
@@ -205,32 +236,52 @@ export const tokenInfoTable: Sample<TokenInfo>[] = T([
 export type Ohlc = { o: string; h: string; l: string; c: string; d: string; dp: string; up: boolean };
 const oh = (o: string, h: string, l: string, c: string, d: string, dp: string, up: boolean): Ohlc =>
   ({ o, h, l, c, d, dp, up });
+// Round 2: all round-1 entries re-verified correct AT THEIR OWN frames;
+// the drift was in the holds. Added samples at the verify keyframes
+// (480/840/1199/1439) where the readout ticked 1–2f after the grid
+// point, the f494–527 candle flip + dump (fixes the f500 defect), and
+// legible 60f-gap ticks. dp cells hidden by toast confetti are computed
+// as d/O to the display's 2dp — marked "dp computed".
 export const ohlcTable: Sample<Ohlc | null>[] = T<Ohlc | null>([
   [418, null],
   [478, oh("230K", "280K", "217K", "280K", "49.9K", "+21.68%", true)],
+  [480, oh("230K", "357K", "217K", "357K", "127K", "+55.16%", true)],
+  [494, oh("230K", "358K", "217K", "358K", "128K", "+55.63%", true)],
+  [500, oh("364K", "367K", "367K", "367K", "2.57K", "+0.71%", true)], // L as read
+  [505, oh("364K", "370K", "328K", "346K", "-17.6K", "-4.85%", false)],
+  [520, oh("364K", "377K", "241K", "241K", "-123K", "-33.81%", false)],
+  [527, oh("364K", "377K", "154K", "154K", "-210K", "-57.70%", false)],
   [538, oh("364K", "377K", "154K", "154K", "-210K", "-57.70%", false)],
   [598, oh("126K", "127K", "96.9K", "98.4K", "-27.3K", "-21.69%", false)],
   [658, oh("97.2K", "125K", "90.7K", "106K", "9.12K", "+9.38%", true)],
+  [660, oh("97.2K", "138K", "90.7K", "138K", "40.4K", "+41.58%", true)],
   [718, oh("226K", "232K", "177K", "189K", "-36.6K", "-16.22%", false)],
   [778, oh("455K", "453K", "357K", "357K", "-97.7K", "-21.46%", false)], // H as read
+  [780, oh("455K", "453K", "356K", "356K", "-99.4K", "-21.84%", false)],
   [838, oh("397K", "395K", "338K", "339K", "-57.4K", "-14.46%", false)],
+  [840, oh("397K", "395K", "329K", "388K", "-9.11K", "-2.30%", false)],
   [898, oh("376K", "379K", "268K", "311K", "-64.7K", "-17.21%", false)],
   [958, oh("254K", "260K", "254K", "260K", "6.26K", "+2.46%", true)],
   [1018, oh("216K", "337K", "215K", "299K", "83.6K", "+38.76%", true)],
   [1078, oh("365K", "391K", "355K", "382K", "17.4K", "+4.76%", true)],
   [1138, oh("453K", "478K", "405K", "459K", "5.5K", "+1.21%", true)],
   [1198, oh("397K", "393K", "363K", "393K", "-3.62K", "-0.91%", false)],
-  [1258, oh("344K", "354K", "276K", "312K", "-32.2K", "-9.36%", false)], // dp est
-  [1318, oh("292K", "327K", "292K", "325K", "32.3K", "+11.1%", true)], // dp est
-  [1378, oh("370K", "397K", "261K", "264K", "-106K", "-28.6%", false)], // dp est
+  [1199, oh("397K", "395K", "363K", "392K", "-4.77K", "-1.20%", false)],
+  [1258, oh("344K", "354K", "276K", "312K", "-32.2K", "-9.36%", false)],
+  [1260, oh("344K", "354K", "276K", "318K", "-27.4K", "-7.97%", false)], // dp computed
+  [1318, oh("292K", "327K", "292K", "325K", "32.3K", "+11.06%", true)], // dp computed
+  [1378, oh("370K", "397K", "261K", "264K", "-106K", "-28.65%", false)], // dp computed
   [1438, oh("242K", "286K", "238K", "268K", "26.4K", "+10.89%", true)],
-  [1498, oh("220K", "238K", "200K", "235K", "15K", "+6.8%", true)], // dp est
-  [1558, oh("171K", "167K", "167K", "167K", "-4.25K", "-2.4%", false)], // dp est
+  [1439, oh("242K", "286K", "238K", "278K", "36.9K", "+15.25%", true)], // dp computed
+  [1498, oh("220K", "238K", "200K", "235K", "15K", "+6.82%", true)], // dp computed
+  [1500, oh("220K", "244K", "200K", "243K", "23K", "+10.45%", true)], // dp computed
+  [1558, oh("171K", "167K", "167K", "167K", "-4.25K", "-2.49%", false)],
 ]);
 
 // ─── Popup: buy total, sell row, preset flip (every 60f) ─────────────
 export const buyTotalTable: Sample<string>[] = T([
-  [418, "322.3"], [478, "333.6"], [538, "363.4"], [598, "365.2"],
+  // 322.3→322.1 measured at f423 (round 2); holds 322.1 through f477.
+  [418, "322.3"], [423, "322.1"], [478, "333.6"], [538, "363.4"], [598, "365.2"],
   [658, "371.8"], [718, "380.4"], [778, "414.2"], [838, "473.6"],
   [898, "492.8"], [958, "516.8"], [1018, "539"], [1078, "575.2"],
   [1138, "597.3"], [1198, "609.5"], [1258, "640"], [1318, "672.8"],
@@ -241,6 +292,14 @@ export type SellRow = { tokens: string; usd: string; sol: string };
 const sr = (tokens: string, usd: string, sol: string): SellRow => ({ tokens, usd, sol });
 export const sellRowTable: Sample<SellRow>[] = T([
   [418, sr("0", "$0", "0")],
+  // f418–460 re-measured per-frame (round 2): fills at f420, usd/sol
+  // track the holding; tokens 143M→3.72M rolls f455–459, settles f460.
+  [420, sr("143M", "$4.89K", "58.75")],
+  [439, sr("143M", "$4.89K", "58.74")],
+  [446, sr("143M", "$3.34K", "40.05")],
+  [449, sr("143M", "$3.36K", "40.39")],
+  [453, sr("143M", "$3.74K", "44.94")],
+  [460, sr("3.72M", "$885.9", "10.63")],
   [478, sr("3.62M", "$930.3", "11.17")],
   [538, sr("3.43M", "$503.6", "6.044")],
   [598, sr("3.41M", "$314.3", "3.772")],
