@@ -24,7 +24,7 @@
 import { DCAM } from "./world";
 import type { V3 } from "./world";
 import { PIVOT_XZ } from "../data/buildings3d";
-import { camChartRoom } from "../scenes/ChartRoom";
+import { camChartRoom, camChartRoomYaw } from "../scenes/ChartRoom";
 import { camBld } from "../scenes/Buildings";
 import { camChart2 } from "../scenes/Chart2";
 import { camSlot } from "../scenes/floorPaper";
@@ -74,7 +74,7 @@ const BRIDGE1 = 5283;
 const D_OUTRO: V3 = rotXv(A_TILT, [-19.3, -38.6, -25.7]);
 export const T_OUTRO: V3 = add(T_OUTRO_FROZEN, D_OUTRO);
 
-export type WorldPose = { pos: V3; rotX: number; rotZ: number };
+export type WorldPose = { pos: V3; rotX: number; rotZ: number; rotY?: number };
 
 // ── Buildings interior: real pitched aerial camera ───────────────────────
 // The buildings/floor/plaques are real meshes at fixed world coords. camBld
@@ -158,7 +158,7 @@ export const buildingsPose = (f: number): WorldPose => {
 };
 
 export const worldCam = (f: number): WorldPose => {
-  if (f < H.A) return { pos: camChartRoom(f), rotX: 0, rotZ: 0 };
+  if (f < H.A) return { pos: camChartRoom(f), rotX: 0, rotZ: 0, rotY: camChartRoomYaw(f) };
   if (f < H.B) return buildingsPose(f);
   if (f < H.C) return { pos: add(camChart2(f), T_C2), rotX: 0, rotZ: 0 };
   if (f < H.E) return { pos: add(camSlot(f), T_SLOT), rotX: 0, rotZ: 0 };

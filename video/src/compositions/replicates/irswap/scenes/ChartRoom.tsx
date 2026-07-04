@@ -604,6 +604,12 @@ export const camChartRoom = (frame: number): V3 =>
       ? M.camB(frame)
       : M.camC(frame);
 
+// Camera yaw (rotation.y): nonzero only inside chapter B, whose reference
+// camera orbits the wall (see chartroomModel camB). Regime switches at
+// 452/935 sit inside content crossfades, exactly like the position solve.
+export const camChartRoomYaw = (frame: number): number =>
+  frame >= 452 && frame < 935 ? M.camBYaw(frame) : 0;
+
 export const ChartRoomWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const img = getTitleImg();
   return (

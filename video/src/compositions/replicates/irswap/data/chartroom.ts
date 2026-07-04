@@ -171,9 +171,14 @@ export const B_BASE_LABEL: TrackRow[] = [
 ];
 
 // Grey fixed-line extension (frame, x1) chapter B.
+// Re-measured 2026-07-04 (round 1): the old [705,418]→[805,420] "hold"
+// was a tracker dropout — the reference tip keeps extending ~2px/frame
+// through the whole window (grey-only pixel scan, red dashes excluded).
 export const B_GREY_X1: [number, number][] = [
   [615, 286], [625, 300], [635, 314], [645, 329], [655, 343], [665, 357],
-  [675, 372], [685, 389], [695, 404], [705, 418], [805, 420], [815, 636],
+  [675, 372], [685, 389], [695, 404], [705, 417], [720, 417], [730, 460],
+  [740, 478], [750, 495], [760, 514], [770, 532], [780, 551], [790, 571],
+  [800, 593], [810, 613], [815, 636],
   [825, 647], [835, 670], [845, 691], [855, 694], [875, 701], [895, 706],
 ];
 

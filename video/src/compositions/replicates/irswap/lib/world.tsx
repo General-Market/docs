@@ -17,10 +17,23 @@ export const DCAM = 240 / Math.tan((VFOV / 2) * (Math.PI / 180)); // ≈659.38
 export type V3 = [number, number, number];
 export type Pt = [number, number];
 
-// ── projection helpers (translation-only camera looking -z) ──────
-export const project = (p: V3, cam: V3): Pt => {
-  const d = cam[2] - p[2];
-  return [427 + (DCAM * (p[0] - cam[0])) / d, 240 - (DCAM * (p[1] - cam[1])) / d];
+// ── projection helpers (translation camera looking -z, optional yaw) ──────
+// yaw = camera rotation.y (rad). 0 preserves the original translation-only
+// math exactly; the chart-room chapter-B solve needs a real yawing camera
+// (the reference orbits its wall — see chartroomModel camB).
+export const project = (p: V3, cam: V3, yaw = 0): Pt => {
+  if (yaw === 0) {
+    const d = cam[2] - p[2];
+    return [427 + (DCAM * (p[0] - cam[0])) / d, 240 - (DCAM * (p[1] - cam[1])) / d];
+  }
+  const px = p[0] - cam[0];
+  const py = p[1] - cam[1];
+  const pz = p[2] - cam[2];
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  const xc = c * px - s * pz; // R_y(-yaw) · p
+  const zc = s * px + c * pz;
+  return [427 + (DCAM * xc) / -zc, 240 - (DCAM * py) / -zc];
 };
 
 // Solve camera x/y so that world point p projects to screen (u,v) given cz.
@@ -30,8 +43,15 @@ export const solveCamXY = (p: V3, u: number, v: number, cz: number): [number, nu
 };
 
 // Ray through screen (u,v) from camera position `cam`: origin cam,
-// direction ((u-427)/D, (240-v)/D, -1).
-const rayDir = (u: number, v: number): V3 => [(u - 427) / DCAM, (240 - v) / DCAM, -1];
+// direction ((u-427)/D, (240-v)/D, -1), rotated by the camera yaw.
+const rayDir = (u: number, v: number, yaw = 0): V3 => {
+  const rx = (u - 427) / DCAM;
+  const ry = (240 - v) / DCAM;
+  if (yaw === 0) return [rx, ry, -1];
+  const c = Math.cos(yaw);
+  const s = Math.sin(yaw);
+  return [c * rx - s, ry, -s * rx - c]; // R_y(yaw) · (rx, ry, -1)
+};
 
 // Intersect the screen ray with plane (point p0, normal n).
 export const unprojectOnPlane = (
@@ -40,8 +60,9 @@ export const unprojectOnPlane = (
   p0: V3,
   n: V3,
   cam: V3 = [0, 0, DCAM],
+  yaw = 0,
 ): V3 => {
-  const d = rayDir(u, v);
+  const d = rayDir(u, v, yaw);
   const denom = n[0] * d[0] + n[1] * d[1] + n[2] * d[2];
   const t =
     (n[0] * (p0[0] - cam[0]) + n[1] * (p0[1] - cam[1]) + n[2] * (p0[2] - cam[2])) / denom;
@@ -106,8 +127,9 @@ export const unprojToWall = (
   u: number,
   v: number,
   cam: V3 = [0, 0, DCAM],
+  yaw = 0,
 ): Pt => {
-  const p = unprojectOnPlane(u, v, fit.origin, fit.normal, cam);
+  const p = unprojectOnPlane(u, v, fit.origin, fit.normal, cam, yaw);
   const s =
     (p[0] - fit.origin[0]) * fit.dirS[0] + (p[2] - fit.origin[2]) * fit.dirS[2];
   return [s, p[1]];
@@ -125,7 +147,8 @@ export const unprojToFloor = (
   v: number,
   yF: number,
   cam: V3 = [0, 0, DCAM],
-): V3 => unprojectOnPlane(u, v, [0, yF, 0], [0, 1, 0], cam);
+  yaw = 0,
+): V3 => unprojectOnPlane(u, v, [0, yF, 0], [0, 1, 0], cam, yaw);
 
 // ── React pieces ─────────────────────────────────────────────────
 

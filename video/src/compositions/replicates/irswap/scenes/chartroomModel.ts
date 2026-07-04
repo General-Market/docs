@@ -37,8 +37,8 @@ export const floorYA = yBaseA;
 // Board spread rect (chapter A world, scale-1): from the f340 quad.
 // s along the wall from the far-left corner; depth toward the camera.
 const perpOf = (fit: { dirS: V3 }): V3 => [fit.dirS[2], 0, -fit.dirS[0]]; // far direction
-const floorCoord = (fit: ReturnType<typeof fitWall>, u: number, v: number, yF: number, cam: V3 = [0, 0, DCAM]) => {
-  const p = unprojToFloor(u, v, yF, cam);
+const floorCoord = (fit: ReturnType<typeof fitWall>, u: number, v: number, yF: number, cam: V3 = [0, 0, DCAM], yaw = 0) => {
+  const p = unprojToFloor(u, v, yF, cam, yaw);
   const rel: V3 = [p[0] - fit.origin[0], 0, p[2] - fit.origin[2]];
   const s = rel[0] * fit.dirS[0] + rel[2] * fit.dirS[2];
   const far = perpOf(fit);
@@ -141,12 +141,30 @@ export const yBaseB = avg([
 ]);
 export const floorYB = yBaseB;
 
-// B camera: per-frame least-squares (cx, cz) from the 11 tracked
-// gridlines — D·cx + u'·cz = D·x_i + u'·z_i — then cy from the top of
-// gridline #5 (index 4).
+// B camera: per-frame Gauss-Newton (cx, cz, yaw) from the 11 tracked
+// gridlines, then cy from the top of gridline #5 (index 4).
+//
+// WHY YAW: the reference camera ORBITS the chapter-B wall. Its measured
+// gridline spacing narrows to the RIGHT at f455-750 (left side close,
+// e.g. f500: 40→24px) and to the LEFT by f870-900 — a flip in the
+// recession direction. A translation-only camera cannot flip which end
+// of a fixed wall is nearer, so the old 2-param solve compromised at
+// ~11px RMS (wall, labels, curve and floor all landed visibly wrong,
+// worst mid-chapter). With a yaw DOF the same tracked data fits at
+// ~0.25px RMS; yaw runs -0.857rad @455 → 0 near the f860 anchor →
+// +0.135 @900. Real camera motion, same rigid world.
 const gridWorldB = Array.from({ length: 11 }, (_, i) =>
   wallToWorld(fitB, i * fitB.spacing, 0),
 );
+
+// u-projection of a vertical wall line (x, z) through a yawed camera.
+const uPredYaw = (P: V3, cx: number, cz: number, g: number): number => {
+  const px = P[0] - cx;
+  const pz = P[2] - cz;
+  const c = Math.cos(g);
+  const s = Math.sin(g);
+  return 427 + (DCAM * (c * px - s * pz)) / -(s * px + c * pz);
+};
 
 export const wallB = {
   solidPoly: B.solidPoly.map((p) => unprojToWall(fitB, p[0], p[1])),
@@ -174,8 +192,9 @@ export const dashCountB = (f: number) =>
 
 const camBcx: [number, number][] = [];
 const camBcz: [number, number][] = [];
+const camBg: [number, number][] = [];
 for (const [f, xs] of B_GRID) {
-  // normal equations for (cx, cz)
+  // init from the old linear (cx, cz | g=0) solve
   let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
   for (let i = 0; i < 11; i++) {
     const u = xs[i] - 427;
@@ -187,28 +206,75 @@ for (const [f, xs] of B_GRID) {
     b2 += u * rhs;
   }
   const det = a11 * a22 - a12 * a12;
-  const cx = (b1 * a22 - b2 * a12) / det;
-  const cz = (a11 * b2 - a12 * b1) / det;
+  let cx = (b1 * a22 - b2 * a12) / det;
+  let cz = (a11 * b2 - a12 * b1) / det;
+  let g = 0;
+  // Gauss-Newton over (cx, cz, g), numeric Jacobian
+  for (let it = 0; it < 30; it++) {
+    const A = [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ];
+    const b = [0, 0, 0];
+    for (let i = 0; i < 11; i++) {
+      const u0 = uPredYaw(gridWorldB[i], cx, cz, g);
+      const r = u0 - xs[i];
+      const J = [
+        (uPredYaw(gridWorldB[i], cx + 1e-2, cz, g) - u0) / 1e-2,
+        (uPredYaw(gridWorldB[i], cx, cz + 1e-2, g) - u0) / 1e-2,
+        (uPredYaw(gridWorldB[i], cx, cz, g + 1e-4) - u0) / 1e-4,
+      ];
+      for (let a = 0; a < 3; a++) {
+        b[a] -= J[a] * r;
+        for (let c = 0; c < 3; c++) A[a][c] += J[a] * J[c];
+      }
+    }
+    const det3 = (m: number[][]) =>
+      m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+      m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+      m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    const D3 = det3(A);
+    if (Math.abs(D3) < 1e-12) break;
+    const col = (m: number[][], k: number, v: number[]) =>
+      m.map((row, i) => row.map((x, j) => (j === k ? v[i] : x)));
+    const dx = det3(col(A, 0, b)) / D3;
+    const dz = det3(col(A, 1, b)) / D3;
+    const dg = det3(col(A, 2, b)) / D3;
+    cx += dx;
+    cz += dz;
+    g += dg;
+    if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6 && Math.abs(dg) < 1e-9) break;
+  }
   camBcx.push([f, cx]);
   camBcz.push([f, cz]);
+  camBg.push([f, g]);
 }
+// Camera yaw (rotation.y) for chapter B; 0 outside the B window — the
+// solve regime switches at 452/935 exactly where the chapter content
+// crossfades, same masking as the existing position jumps there.
+export const camBYaw = (f: number): number => lerp1(camBg, f);
 const top5World = wallToWorld(fitB, 4 * fitB.spacing, 0); // z of line 5
 const camBcy: [number, number][] = B_TOP5.map(([f, v]) => {
   const cz = lerp1(camBcz, f);
-  const d = cz - top5World[2];
-  return [f, yTopB - ((240 - v) * d) / DCAM] as [number, number];
+  const cx = lerp1(camBcx, f);
+  const g = lerp1(camBg, f);
+  // depth of the gridline-5 top through the yawed camera
+  const dEff = -(Math.sin(g) * (top5World[0] - cx) + Math.cos(g) * (top5World[2] - cz));
+  return [f, yTopB - ((240 - v) * dEff) / DCAM] as [number, number];
 });
 export const camB = (f: number): V3 => [
   lerp1(camBcx, f), lerp1(camBcy, f), lerp1(camBcz, f),
 ];
 
-// Board spread rect chapter B (from f500 quad, camB(500))
+// Board spread rect chapter B (from f500 quad, camB(500) + its yaw)
 export const boardB = (() => {
   const cam = camB(500);
-  const tl = floorCoord(fitB, 236, 391, floorYB, cam);
-  const tr = floorCoord(fitB, 494, 358, floorYB, cam);
-  const bl = floorCoord(fitB, 47, 571, floorYB, cam);
-  const br = floorCoord(fitB, 697, 421, floorYB, cam);
+  const g = camBYaw(500);
+  const tl = floorCoord(fitB, 236, 391, floorYB, cam, g);
+  const tr = floorCoord(fitB, 494, 358, floorYB, cam, g);
+  const bl = floorCoord(fitB, 47, 571, floorYB, cam, g);
+  const br = floorCoord(fitB, 697, 421, floorYB, cam, g);
   const s0 = (tl.s + bl.s) / 2;
   const s1 = (tr.s + br.s) / 2;
   const tFar = (tl.t + tr.t) / 2;
@@ -218,9 +284,10 @@ export const boardB = (() => {
 // f500 "2015" quad → glyph metrics on the B floor
 export const yearMetricsB = (() => {
   const cam = camB(500);
-  const l = floorCoord(fitB, 405, 379.7, floorYB, cam);
-  const r = floorCoord(fitB, 443, 374.9, floorYB, cam);
-  const b = floorCoord(fitB, 405, 390.4, floorYB, cam);
+  const g = camBYaw(500);
+  const l = floorCoord(fitB, 405, 379.7, floorYB, cam, g);
+  const r = floorCoord(fitB, 443, 374.9, floorYB, cam, g);
+  const b = floorCoord(fitB, 405, 390.4, floorYB, cam, g);
   return { width: r.s - l.s, depth: Math.abs(l.t - b.t) }; // "2015" 4 glyphs
 })();
 
@@ -228,13 +295,15 @@ export const yearMetricsB = (() => {
 const greyYat = (x: number) =>
   B.greyLine.y0 + ((B.greyLine.y1 - B.greyLine.y0) * (x - B.greyLine.x0)) / (B.greyLine.x1 - B.greyLine.x0);
 const greyS1Table: [number, number][] = monotonic([
-  [B.greyTiming.stubStart, unprojToWall(fitB, 251, greyYat(251), camB(B.greyTiming.stubStart))[0]],
-  ...B_GREY_X1.map(([f, x1]): [number, number] => [f, unprojToWall(fitB, x1, greyYat(x1), camB(f))[0]]),
+  [B.greyTiming.stubStart, unprojToWall(fitB, 251, greyYat(251), camB(B.greyTiming.stubStart), camBYaw(B.greyTiming.stubStart))[0]],
+  ...B_GREY_X1.map(([f, x1]): [number, number] => [f, unprojToWall(fitB, x1, greyYat(x1), camB(f), camBYaw(f))[0]]),
 ]);
 const greyS0Table: [number, number][] = [
-  [B.greyTiming.stubStart, unprojToWall(fitB, 249, greyYat(249), camB(B.greyTiming.stubStart))[0]],
-  [705, unprojToWall(fitB, 230, greyYat(230), camB(705))[0]],
-  [895, unprojToWall(fitB, 232, greyYat(232), camB(895))[0]],
+  [B.greyTiming.stubStart, unprojToWall(fitB, 249, greyYat(249), camB(B.greyTiming.stubStart), camBYaw(B.greyTiming.stubStart))[0]],
+  [705, unprojToWall(fitB, 230, greyYat(230), camB(705), camBYaw(705))[0]],
+  [750, unprojToWall(fitB, 224.5, greyYat(224.5), camB(750), camBYaw(750))[0]],
+  [800, unprojToWall(fitB, 227, greyYat(227), camB(800), camBYaw(800))[0]],
+  [895, unprojToWall(fitB, 232, greyYat(232), camB(895), camBYaw(895))[0]],
 ];
 export const greyExtentB = (f: number): [number, number] | null => {
   if (f < B.greyTiming.stubStart) return null;
@@ -457,7 +526,7 @@ export const labelCapC = (f: number) => 17 * (lerp1(C_SPACING, Math.min(Math.max
 // DOM label positions across the B→C glide and chapter C.
 export const fixedLabelPos = (f: number): Pt => {
   if (f < 935) {
-    const p = project(fixedLabelWorldB, camB(f));
+    const p = project(fixedLabelWorldB, camB(f), camBYaw(f));
     if (f < 903) return p;
     const c: Pt = [C_FIXED_LBL[0][1], C_FIXED_LBL[0][2]];
     const t = easeInOutCubic(clamp01((f - 903) / 37));
