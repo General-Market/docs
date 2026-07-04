@@ -8,7 +8,7 @@ import {
   B_GREY_X1, B_GRID, B_TOP5,
   C_FIXED_LBL, C_BASE_LBL, C_GRID, C_TOPV, C_SPACING, C_JAGGED_TIP, C_RED_TIP,
   C_JAGGED_DENSE, C_RED_TOP, A_WALL_DRIFT,
-  B_BASE_LABEL,
+  B_BASE_LABEL, B_FIXED_LABEL, B_CAP_BASE, B_CAP_FIXED,
 } from "../data/chartroom";
 import {
   lerp1, lerpTrack, polyArc, monotonic, easeInOutCubic, easeOutPow, easeInPow,
@@ -545,10 +545,13 @@ export const floorFadeC = (f: number) =>
 // Label sizing: screen cap height scales with the zoom table.
 export const labelCapC = (f: number) => 17 * (lerp1(C_SPACING, Math.min(Math.max(f, 940), 1650)) / gapAnchorC);
 
-// DOM label positions across the B→C glide and chapter C.
+// DOM label positions across chapter B, the B→C glide and chapter C.
+// Round 3: chapter B uses the MEASURED screen tracks (B_FIXED_LABEL /
+// B_BASE_LABEL) — the reference keeps both labels screen-large while
+// the wall-locked copy shrank them (labels crop SSIM 0.70 at f750).
 export const fixedLabelPos = (f: number): Pt => {
   if (f < 935) {
-    const p = project(fixedLabelWorldB, camB(f), camBYaw(f));
+    const p = lerpTrack(B_FIXED_LABEL, f);
     if (f < 903) return p;
     const c: Pt = [C_FIXED_LBL[0][1], C_FIXED_LBL[0][2]];
     const t = easeInOutCubic(clamp01((f - 903) / 37));
@@ -561,6 +564,11 @@ export const baseLabelPos = (f: number): Pt => {
   const rows: TrackRow[] = [[935, 225.0, 349.0], ...C_BASE_LBL];
   return lerpTrack(rows, f);
 };
+// Measured chapter-B cap heights, blended into the C sizing across the
+// 903-940 glide (labelCapC takes over exactly where the C track owns
+// the labels).
+export const labelCapBaseB = (f: number) => lerp1(B_CAP_BASE, f);
+export const labelCapFixedB = (f: number) => lerp1(B_CAP_FIXED, f);
 
 // ═════════════ Title page (S01 + fall) ═════════════
 // Pose origin = the INNER photo card center (that is what solvePnP solved).

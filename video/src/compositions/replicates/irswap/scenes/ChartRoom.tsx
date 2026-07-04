@@ -267,29 +267,10 @@ const ChapterBWall: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.lineTo(mx(ext[1]), my(M.wallB.greyY));
       ctx.stroke();
     }
-    // labels (wall-locked until 903)
-    if (f < 903) {
-      const wipe = clamp01((f - B.greyTiming.labelWipe[0]) / (B.greyTiming.labelWipe[1] - B.greyTiming.labelWipe[0]));
-      if (wipe > 0) {
-        ctx.save();
-        const tl = M.wallB.fixedLabel.tl;
-        ctx.beginPath();
-        ctx.rect(mx(tl[0]) - 2, my(tl[1]) - 4, 135 * wipe, 30);
-        ctx.clip();
-        ctx.fillStyle = COLORS.labelGrey;
-        setFont(ctx, M.wallB.fixedLabel.cap, 600);
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        ctx.fillText("Fixed rate", mx(tl[0]), my(tl[1]));
-        ctx.restore();
-      }
-      const bl = M.wallB.baseLabel.tl;
-      ctx.fillStyle = COLORS.labelRed;
-      setFont(ctx, M.wallB.baseLabel.cap, 600);
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText("Base rate", mx(bl[0]), my(bl[1]));
-    }
+    // labels: moved to the DOM overlay (round 3) — the reference keeps
+    // "Fixed rate"/"Base rate" screen-large while the wall zooms, so
+    // wall-locking them shrank and misplaced them (crop SSIM 0.70).
+    // LabelsOverlay owns them for all of chapter B now.
     ctx.globalAlpha = 1;
   }, []);
   const w = B_S_MAX - B_S_MIN;
@@ -503,13 +484,20 @@ const LegendOverlay: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ═══════════ DOM label overlay (B→C glide + chapter C) ═══════════
+// ═══════════ DOM label overlay (chapter B + B→C glide + chapter C) ═══════════
+// Round 3: owns the labels from f452 (they were wall-locked until 903,
+// which shrank them with the zoom; the reference keeps them screen-large
+// — measured tracks B_FIXED_LABEL / B_BASE_LABEL).
 const LabelsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 903 || frame > M.C_EXIT.labelFade[1]) return null;
+  if (frame < 455 || frame > M.C_EXIT.labelFade[1]) return null;
   const fixed = M.fixedLabelPos(frame);
   const base = M.baseLabelPos(frame);
-  const cap = M.labelCapC(frame);
-  const style = (p: [number, number], color: string): React.CSSProperties => ({
+  const capC = M.labelCapC(frame);
+  // measured B caps blend into the C sizing across the 903-940 glide
+  const glide = clamp01((frame - 903) / 37);
+  const capBase = frame >= 940 ? capC : M.labelCapBaseB(frame) + (capC - M.labelCapBaseB(frame)) * glide;
+  const capFixed = frame >= 940 ? capC : M.labelCapFixedB(frame) + (capC - M.labelCapFixedB(frame)) * glide;
+  const style = (p: [number, number], color: string, cap: number): React.CSSProperties => ({
     position: "absolute",
     left: p[0],
     top: p[1],
@@ -520,10 +508,25 @@ const LabelsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
     color,
     whiteSpace: "nowrap",
   });
+  // chapter-B entry fade (with the wall) + the fixed label's L→R wipe
+  const enter = clamp01((frame - 452) / 16);
+  const wipe = clamp01(
+    (frame - B.greyTiming.labelWipe[0]) /
+      (B.greyTiming.labelWipe[1] - B.greyTiming.labelWipe[0]),
+  );
   return (
-    <AbsoluteFill style={{ opacity: M.labelFadeC(frame) }}>
-      <div style={style(fixed, COLORS.labelGrey)}>Fixed rate</div>
-      <div style={style(base, COLORS.labelRed)}>Base rate</div>
+    <AbsoluteFill style={{ opacity: M.labelFadeC(frame) * enter }}>
+      {wipe > 0 && (
+        <div
+          style={{
+            ...style(fixed, COLORS.labelGrey, capFixed),
+            clipPath: wipe < 1 ? `inset(0 ${(1 - wipe) * 100}% 0 0)` : undefined,
+          }}
+        >
+          Fixed rate
+        </div>
+      )}
+      <div style={style(base, COLORS.labelRed, capBase)}>Base rate</div>
     </AbsoluteFill>
   );
 };
