@@ -4,8 +4,6 @@ import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import {
   gsap,
-  MorphSVGPlugin,
-  MotionPathPlugin,
 } from "../../../lib/useGsapTimeline";
 import { useFloat3D } from "../../../lib/tilt3d";
 import { GM, GMLogo } from "./theme";
@@ -92,84 +90,6 @@ const GradientText: React.FC<{
   </span>
 );
 
-// ─── Glow effect wrapper ───
-
-const Glow: React.FC<{
-  color?: string;
-  spread?: number;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}> = ({ color = PURPLE, spread = 40, children, style }) => (
-  <div
-    style={{
-      filter: `drop-shadow(0 0 ${spread}px ${color})`,
-      ...style,
-    }}
-  >
-    {children}
-  </div>
-);
-
-// ─── GM Logo — LUMINOUS LIGHT SOURCE ───
-// The G is NOT a flat SVG. It is a lamp projecting colored light in a dark room.
-
-/** Tiny floating particles near the G — like dust caught in projected light */
-const GParticles: React.FC<{ count: number; frame: number; spread: number; intensity: number }> = ({
-  count,
-  frame,
-  spread,
-  intensity,
-}) => {
-  const particles = useMemo(() => {
-    const arr: { x: number; y: number; size: number; speed: number; seed: string; phase: number }[] = [];
-    for (let i = 0; i < count; i++) {
-      arr.push({
-        x: (Math.random() - 0.5) * spread * 2,
-        y: (Math.random() - 0.8) * spread * 1.6, // biased upward
-        size: 1 + Math.random() * 2,
-        speed: 0.008 + Math.random() * 0.015,
-        seed: `gp${i}`,
-        phase: Math.random() * Math.PI * 2,
-      });
-    }
-    return arr;
-  }, [count, spread]);
-
-  return (
-    <>
-      {particles.map((p, i) => {
-        const dx = noise2D(p.seed, frame * p.speed, 0) * 12;
-        const dy = noise2D(p.seed, 0, frame * p.speed * 0.7) * 8 - frame * 0.04;
-        const flickerOp =
-          (Math.sin(frame * 0.1 + p.phase) * 0.3 + 0.7) *
-          intensity *
-          (0.4 + Math.random() * 0.2);
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: `calc(50% + ${p.x + dx}px)`,
-              top: `calc(50% + ${p.y + dy}px)`,
-              width: p.size,
-              height: p.size,
-              borderRadius: "50%",
-              background: i % 3 === 0
-                ? "rgba(22,163,74,0.9)"
-                : i % 3 === 1
-                  ? "rgba(0,163,108,0.8)"
-                  : "rgba(255,255,255,0.7)",
-              opacity: flickerOp,
-              pointerEvents: "none" as const,
-              boxShadow: `0 0 ${p.size * 2}px rgba(22,163,74,0.3)`,
-            }}
-          />
-        );
-      })}
-    </>
-  );
-};
-
 // ─── GM Light Show — replaces sparkle→GMLightLogo finale ───
 
 const LIGHT_SHOW_START = 610;
@@ -248,10 +168,6 @@ const GMLightShow: React.FC<{ frame: number; opacity: number; fps: number }> = (
     : 1;
 
   // ── Phase 4 (60-84): Settle + Fade ──
-  const settleProgress = interpolate(localFrame, [60, 70], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
   // Rays retract
   const rayRetract = interpolate(localFrame, [60, 80], [1, 0], {
@@ -489,180 +405,6 @@ const GMLightShow: React.FC<{ frame: number; opacity: number; fps: number }> = (
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-const GMLightLogo: React.FC<{
-  size?: number;
-  opacity?: number;
-  glowIntensity?: number;
-  frame?: number;
-  isLightSource?: boolean;
-}> = ({ size = 60, opacity = 1, glowIntensity = 0, frame = 0, isLightSource = false }) => {
-  const s = size;
-
-  const sineBreath = Math.sin(frame * 0.09) * 0.5 + 0.5;
-  const noiseBreath = noise2D("gBreath", frame * 0.04, 0) * 0.5 + 0.5;
-  const driftBreath = Math.sin(frame * 0.025) * 0.3 + 0.7;
-  const pulse =
-    (sineBreath * 0.5 + noiseBreath * 0.3 + driftBreath * 0.2) * glowIntensity;
-
-  const blueGlow = pulse * 1.0;
-  const redGlow =
-    pulse * 0.7 +
-    noise2D("gRed", frame * 0.035, 1) * 0.15 * glowIntensity;
-  const yellowGlow =
-    pulse * 0.5 +
-    noise2D("gYlw", frame * 0.03, 2) * 0.12 * glowIntensity;
-  const greenGlow =
-    pulse * 0.6 +
-    noise2D("gGrn", frame * 0.032, 3) * 0.1 * glowIntensity;
-
-  // For light-source mode: dramatically amplified glow
-  const lightMult = isLightSource ? 3.0 : 1.0;
-
-  const glowShadow =
-    glowIntensity > 0
-      ? [
-          `0 0 ${20 * blueGlow * lightMult}px rgba(0,163,108,${isLightSource ? 0.8 : 0.6})`,
-          `0 0 ${45 * blueGlow * lightMult}px rgba(0,163,108,${isLightSource ? 0.4 : 0.25})`,
-          `0 0 ${35 * redGlow * lightMult}px rgba(0,138,90,${isLightSource ? 0.5 : 0.35})`,
-          `0 0 ${70 * redGlow * lightMult}px rgba(0,138,90,${isLightSource ? 0.2 : 0.12})`,
-          `0 0 ${50 * yellowGlow * lightMult}px rgba(22,163,74,${isLightSource ? 0.5 : 0.25})`,
-          `0 0 ${90 * yellowGlow * lightMult}px rgba(22,163,74,${isLightSource ? 0.15 : 0.08})`,
-          `0 0 ${40 * greenGlow * lightMult}px rgba(0,163,108,${isLightSource ? 0.6 : 0.3})`,
-          `0 0 ${75 * greenGlow * lightMult}px rgba(0,163,108,${isLightSource ? 0.2 : 0.1})`,
-          ...(isLightSource
-            ? [
-                `0 0 ${120 * pulse}px rgba(0,163,108,0.25)`,
-                `0 0 ${160 * pulse}px rgba(22,163,74,0.15)`,
-                `0 0 ${200 * pulse}px rgba(0,163,108,0.08)`,
-              ]
-            : []),
-        ].join(", ")
-      : "none";
-
-  const svgFilter =
-    pulse > 0
-      ? `drop-shadow(0 0 ${12 * blueGlow * lightMult}px rgba(0,163,108,0.7)) drop-shadow(0 0 ${30 * pulse * lightMult}px rgba(0,163,108,0.3))${isLightSource ? ` drop-shadow(0 0 ${50 * pulse}px rgba(0,163,108,0.4))` : ""}`
-      : "none";
-
-  // Animated gradient rotation — continuous rainbow flow
-  const gradRotation = frame * (isLightSource ? 2.5 : 1.5);
-
-  return (
-    <div style={{ width: s, height: s, opacity, position: "relative" }}>
-      {/* LIGHT SOURCE MODE: large warm green/gold radial glow BEHIND the G */}
-      {isLightSource && (
-        <>
-          {/* Outermost warm light projection — 500px+ — the lamp's reach */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 550,
-              height: 550,
-              borderRadius: "50%",
-              background: `radial-gradient(circle,
-                rgba(0,163,108,${0.35 * pulse}) 0%,
-                rgba(0,138,90,${0.25 * pulse}) 15%,
-                rgba(22,163,74,${0.18 * pulse}) 30%,
-                rgba(0,163,108,${0.10 * pulse}) 50%,
-                rgba(0,163,108,${0.04 * pulse}) 70%,
-                transparent 88%)`,
-              pointerEvents: "none",
-            }}
-          />
-          {/* Inner warm halo — 350px — the bright core behind the G */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 360,
-              height: 360,
-              borderRadius: "50%",
-              background: `radial-gradient(circle,
-                rgba(22,163,74,${0.45 * pulse}) 0%,
-                rgba(0,163,108,${0.30 * pulse}) 25%,
-                rgba(0,163,108,${0.15 * pulse}) 50%,
-                transparent 75%)`,
-              pointerEvents: "none",
-            }}
-          />
-          {/* Hot core — tight bright spot right behind the G */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 160,
-              height: 160,
-              borderRadius: "50%",
-              background: `radial-gradient(circle,
-                rgba(230,247,240,${0.15 * pulse}) 0%,
-                rgba(22,163,74,${0.25 * pulse}) 30%,
-                rgba(0,163,108,${0.10 * pulse}) 60%,
-                transparent 85%)`,
-              pointerEvents: "none",
-            }}
-          />
-          {/* Floating particles */}
-          <GParticles count={35} frame={frame} spread={200} intensity={pulse} />
-        </>
-      )}
-      <svg
-        viewBox="0 0 48 48"
-        width={s}
-        height={s}
-        style={{ filter: svgFilter, position: "relative", zIndex: 2 }}
-      >
-        <defs>
-          <linearGradient
-            id={`g-rainbow-${s}-${isLightSource ? "ls" : "n"}`}
-            gradientUnits="userSpaceOnUse"
-            x1={24 + 22 * Math.cos((gradRotation * Math.PI) / 180)}
-            y1={24 + 22 * Math.sin((gradRotation * Math.PI) / 180)}
-            x2={24 - 22 * Math.cos((gradRotation * Math.PI) / 180)}
-            y2={24 - 22 * Math.sin((gradRotation * Math.PI) / 180)}
-          >
-            <stop offset="0%" stopColor={GM.green} />
-            <stop offset="25%" stopColor={GM.greenDark} />
-            <stop offset="50%" stopColor={GM.greenStatus} />
-            <stop offset="75%" stopColor={GM.green} />
-            <stop offset="100%" stopColor={GM.greenDark} />
-          </linearGradient>
-        </defs>
-        {/* Single G path with continuous rainbow gradient */}
-        <path
-          d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"
-          fill={`url(#g-rainbow-${s}-${isLightSource ? "ls" : "n"})`}
-        />
-      </svg>
-      <div
-        style={{
-          position: "absolute",
-          inset: isLightSource ? -12 : -6,
-          borderRadius: "50%",
-          boxShadow: glowShadow,
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: isLightSource ? -40 : -20,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, rgba(0,163,108,${(isLightSource ? 0.15 : 0.08) * pulse}) 0%, rgba(0,163,108,${(isLightSource ? 0.08 : 0.04) * pulse}) 40%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
     </div>
   );
 };
@@ -1446,7 +1188,6 @@ const UltraOrb: React.FC<{
 // ─── Spiral inward text chars ───
 const SPIRAL_TEXT = "With access to";
 const SPIRAL_CHARS = SPIRAL_TEXT.split("");
-const SPIRAL_WORDS = ["Vision", "ITPs", "Analytics", "Oracles", "Markets", "Portfolio"];
 
 // ─── Circular stamp text (coin/seal style) ───
 const STAMP_TEXT = "Vision  ·  ITPs  ·  Analytics  ·  Oracles  ·  Markets  ·  Portfolio  ·  ";
@@ -1475,7 +1216,6 @@ export const Scene05: React.FC = () => {
   const cardsPanRef = useRef<HTMLDivElement>(null);
   const cardPanItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const spiralContainerRef = useRef<HTMLDivElement>(null);
-  const spiralWordsRef = useRef<(HTMLDivElement | null)[]>([]);
   const spiralRingRef = useRef<HTMLDivElement>(null);
   const spiralTextRef = useRef<HTMLDivElement>(null);
   const spiralCharsRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -1781,7 +1521,6 @@ export const Scene05: React.FC = () => {
     ) => {
       refs.current.forEach((el, i) => {
         if (!el) return;
-        const delay = i === 0 ? 0 : (words[i]?.length > 4 ? 5 : 3) + (i % 2 === 0 ? 2 : 0);
         const wordDelay = words.slice(0, i).reduce((sum, w, idx) => {
           const d = idx === 0 ? 0 : (w.length > 4 ? 5 : 3) + (idx % 2 === 0 ? 2 : 0);
           return sum + d;

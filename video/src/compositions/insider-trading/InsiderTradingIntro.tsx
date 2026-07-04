@@ -2,7 +2,6 @@ import React from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
-  interpolate,
   OffthreadVideo,
   staticFile,
 } from "remotion";
@@ -15,8 +14,6 @@ export type InsiderTradingProps = {
 const FPS = 30;
 const COLS = 7;
 const ROWS = 7;
-const CELL_W = 1920 / COLS;
-const CELL_H = 1080 / ROWS;
 
 // Tilt angle in degrees (slight backward lean on X axis)
 const TILT_X = 12;

@@ -25,10 +25,8 @@ const loadMontserrat = () => {
 
 const HEX_N = 20;
 const LIGHT1_COLOR = 0xffffff;
-const LIGHT1_INTENSITY = 1000;
 const LIGHT1_Z = 5;
 const LIGHT2_COLOR = 0xff0000;
-const LIGHT2_INTENSITY = 500;
 const LIGHT2_Z = -20;
 const COLORS = [0x0000ff, 0x202020, 0xffffff];
 const METALNESS = 0.8;

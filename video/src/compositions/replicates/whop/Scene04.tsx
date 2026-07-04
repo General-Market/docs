@@ -26,8 +26,6 @@ const AAVE_PURPLE = "#7C3AED";
 /* ─── data: 30 bars, year 1..30 ─── */
 const BAR_COUNT = 30;
 const DEPOSIT_PER_YEAR = 28262;
-const FINAL_TOTAL = 1224907;
-const FINAL_DEPOSIT = BAR_COUNT * DEPOSIT_PER_YEAR; // ~847,860
 const FINAL_INTEREST = 706347; // matches reference "$706,347 earned in 30 years"
 
 function generateBarData() {

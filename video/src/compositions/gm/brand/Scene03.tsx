@@ -140,7 +140,7 @@ interface PctParticle {
 function generatePctParticles(count: number, seed: number): PctParticle[] {
   const rng = seededRandom(seed);
   return Array.from({length: count}, (_, i) => {
-    const r1 = rng(); const r2 = rng(); const r3 = rng();
+    rng(); const r2 = rng(); const r3 = rng();
     const r4 = rng(); const r5 = rng(); const r6 = rng(); const r7 = rng();
     const value = (r2 * 25 + 0.1).toFixed(1);
     const label = `+${value}%`;
@@ -198,7 +198,7 @@ interface BurstPct { id: number; label: string; color: string; angle: number; di
 function generateBurstPcts(count: number, seed: number): BurstPct[] {
   const rng = seededRandom(seed);
   return Array.from({length: count}, (_, i) => {
-    const r1 = rng();
+    rng();
     const r2 = rng();
     const r3 = rng();
     const r4 = rng();
@@ -716,7 +716,6 @@ const SegAndMoreInner: React.FC = () => {
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
   /* Market lines overlay — fades in during second half */
   const treeOp = interpolate(frame, [fps*0.8, fps*1.2], [0, 0.85], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
@@ -751,7 +750,6 @@ const SegAndMoreInner: React.FC = () => {
     const goesUp = labelIdx % 2 === 0;
     const lineH = hasLine ? interpolate(lineProg, [0,1], [0, 80 + (labelIdx % 3) * 20], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}) : 0;
     const lineCol = hasLine ? MARKET_NODES[labelIdx].color : col;
-    const lineLabel = hasLine ? MARKET_NODES[labelIdx].label : "";
     const lineSourceId = hasLine ? MARKET_NODES[labelIdx].sourceId : "";
     return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
       {/* Always render the colored O circle */}

@@ -10,7 +10,6 @@ import {
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
-import { SceneWrapper } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
 import { PLOB_ACCENT, LAND_SOFT } from "../sfxMap";
 
@@ -324,6 +323,29 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
     </div>
   );
 };
+
+// ── Quadrant layout wrapper (topLeft + bottomRight content, webcam/broll slots) ──
+
+const SceneWrapper: React.FC<{
+  layout: "quadrant";
+  topLeft: React.ReactNode;
+  bottomRight: React.ReactNode;
+  topLeftStyle?: React.CSSProperties;
+  webcamStyle?: React.CSSProperties;
+  brollStyle?: React.CSSProperties;
+  bottomRightStyle?: React.CSSProperties;
+}> = ({ topLeft, bottomRight, topLeftStyle, webcamStyle, brollStyle, bottomRightStyle }) => (
+  <AbsoluteFill>
+    <div style={{ position: "absolute", top: 0, left: 0, width: "50%", height: "50%", ...topLeftStyle }}>
+      {topLeft}
+    </div>
+    <div style={{ position: "absolute", top: 0, right: 0, width: "50%", height: "50%", ...webcamStyle }} />
+    <div style={{ position: "absolute", bottom: 0, left: 0, width: "50%", height: "50%", ...brollStyle }} />
+    <div style={{ position: "absolute", bottom: 0, right: 0, width: "50%", height: "50%", ...bottomRightStyle }}>
+      {bottomRight}
+    </div>
+  </AbsoluteFill>
+);
 
 // ── Main Diagram ────────────────────────────────────────────────────────────
 

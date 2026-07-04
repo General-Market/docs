@@ -877,9 +877,6 @@ export const Scene04: React.FC = () => {
   /* Introducing glow effects */
   const introLocal = frame - PHASE.INTRODUCING.start;
   const glowBreath = 0.4 + Math.sin(Math.max(0, introLocal) * 0.18) * 0.15;
-  const glowBreath2 = 0.25 + Math.sin(Math.max(0, introLocal) * 0.14 + 1.5) * 0.1;
-  const glowX = interpolate(s.introClipRight, [0, 100], [0, -280]);
-  const sweepEdgeX = interpolate(s.introClipRight, [0, 100], [320, -320]);
   const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
   const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
 

@@ -2,7 +2,6 @@ import React from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
-  interpolate,
   Easing,
   useVideoConfig,
 } from "remotion";

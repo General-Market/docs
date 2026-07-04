@@ -12,7 +12,6 @@ const SLAT_WIDTH = 0.065;
 const SLAT_GAP = 0.001;
 const SLAT_SPACING = SLAT_WIDTH + SLAT_GAP;
 const TOTAL_WIDTH = SLAT_COUNT * SLAT_SPACING;
-const SLAT_ANGLE = 0.2;
 
 // ── Colored PointLights — localized prismatic pools ──
 const AuroraLights: React.FC<{ time: number }> = ({ time }) => {

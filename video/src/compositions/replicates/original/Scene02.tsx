@@ -978,7 +978,7 @@ const Showcase: React.FC<{
         camPos={glassCamPos}
         fov={glassFov}
       >
-        {React.cloneElement(glassScene as React.ReactElement, {
+        {React.cloneElement(glassScene as React.ReactElement<{ progress?: number; frame?: number }>, {
           progress: glassProgress,
           frame,
         })}

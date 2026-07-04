@@ -94,44 +94,6 @@ const FadeWrapper: React.FC<{
   );
 };
 
-/**
- * BlackBandReveal — rounded-rect clip-path expanding from center.
- * Like zooming into the letter "O". A black band with border-radius ~40px
- * grows from 0 height to full viewport height over `revealFrames`.
- */
-const BlackBandReveal: React.FC<{
-  children: React.ReactNode;
-  duration: number;
-  revealFrames: number;
-}> = ({ children, duration, revealFrames }) => {
-  const frame = useCurrentFrame();
-
-  // Progress 0→1 over revealFrames
-  const progress = interpolate(frame, [0, revealFrames], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Eased progress — expo out for fast start, decelerating
-  const eased = 1 - Math.pow(1 - progress, 3);
-
-  // The band expands vertically from center.
-  // insetY: starts at 50% (invisible), goes to 0% (full height)
-  const insetY = (1 - eased) * 50;
-  // Horizontal: starts at ~12.5% (3/4 width band) and expands to 0%
-  const insetX = (1 - eased) * 12.5;
-  // Border radius: starts large (like an "O"), shrinks to 0
-  const radius = Math.round(40 * (1 - eased));
-
-  const clipPath = `inset(${insetY.toFixed(1)}% ${insetX.toFixed(1)}% ${insetY.toFixed(1)}% ${insetX.toFixed(1)}% round ${radius}px)`;
-
-  return (
-    <AbsoluteFill style={{ clipPath }}>
-      {children}
-    </AbsoluteFill>
-  );
-};
-
 export const GMBrandComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>

@@ -52,15 +52,14 @@ const IMPACT = "sfx/drop-sub-impact.mp3";
 
 // ── Pair chart — portrait Lorenz panel, ~60% of the height ───────────────────
 const CW = 1000;
-const CH = 1180;
 const CHART_SCALE = 0.95; // → 1121px tall ≈ 58% of the frame
 const CHART_TOP = 360;
 const CHART_LEFT = (W - CW * CHART_SCALE) / 2;
 
 // ── Per-screen look ──────────────────────────────────────────────────────────
 const WHITE_BG = "#F0F2F4";
-const BLUE_BG = "#0052FF";
-const ACCENT = "#0052FF";
+const BLUE_BG = "#2D5BFF";
+const ACCENT = "#2D5BFF";
 const RED = "#EE2B2B";
 type Screen = {
   bg: string;

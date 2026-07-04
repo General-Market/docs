@@ -4,8 +4,6 @@ import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import {
   gsap,
-  MorphSVGPlugin,
-  MotionPathPlugin,
 } from "../../../lib/useGsapTimeline";
 import { useFloat3D } from "../../../lib/tilt3d";
 
@@ -86,24 +84,6 @@ const GradientText: React.FC<{
   >
     {children}
   </span>
-);
-
-// ─── Glow effect wrapper ───
-
-const Glow: React.FC<{
-  color?: string;
-  spread?: number;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}> = ({ color = PURPLE, spread = 40, children, style }) => (
-  <div
-    style={{
-      filter: `drop-shadow(0 0 ${spread}px ${color})`,
-      ...style,
-    }}
-  >
-    {children}
-  </div>
 );
 
 // ─── Google "G" logo — LUMINOUS LIGHT SOURCE ───
@@ -1145,7 +1125,6 @@ const UltraOrb: React.FC<{
 // ─── Spiral inward text chars ───
 const SPIRAL_TEXT = "With access to";
 const SPIRAL_CHARS = SPIRAL_TEXT.split("");
-const SPIRAL_WORDS = ["Search", "YouTube", "Maps", "Flights", "Gmail", "Workspace"];
 
 // ─── Circular stamp text (coin/seal style) ───
 const STAMP_TEXT = "Gmail  ·  Search  ·  YouTube  ·  Maps  ·  Flights  ·  Workspace  ·  ";
@@ -1174,7 +1153,6 @@ export const Scene05: React.FC = () => {
   const cardsPanRef = useRef<HTMLDivElement>(null);
   const cardPanItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const spiralContainerRef = useRef<HTMLDivElement>(null);
-  const spiralWordsRef = useRef<(HTMLDivElement | null)[]>([]);
   const spiralRingRef = useRef<HTMLDivElement>(null);
   const spiralTextRef = useRef<HTMLDivElement>(null);
   const spiralCharsRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -1480,7 +1458,6 @@ export const Scene05: React.FC = () => {
     ) => {
       refs.current.forEach((el, i) => {
         if (!el) return;
-        const delay = i === 0 ? 0 : (words[i]?.length > 4 ? 5 : 3) + (i % 2 === 0 ? 2 : 0);
         const wordDelay = words.slice(0, i).reduce((sum, w, idx) => {
           const d = idx === 0 ? 0 : (w.length > 4 ? 5 : 3) + (idx % 2 === 0 ? 2 : 0);
           return sum + d;

@@ -568,30 +568,6 @@ const FadeOverlay: React.FC = () => {
   );
 };
 
-const Top10Badge: React.FC = () => {
-  const frame = useCurrentFrame();
-  const op = interpolate(frame, [20, 35], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  return (
-    <div
-      style={{
-        position: "absolute",
-        right: 60,
-        top: 40,
-        fontFamily: FONT,
-        fontSize: 64,
-        fontWeight: 700,
-        color: TEAL,
-        opacity: op,
-      }}
-    >
-      TOP 10
-    </div>
-  );
-};
-
 /* ───── subtitle with crossfade (used in Scene 1) ───── */
 
 const CrossfadeSubtitles: React.FC<{
@@ -655,57 +631,6 @@ const CrossfadeSubtitles: React.FC<{
         />
       </div>
     </>
-  );
-};
-
-/* ───── NEW: Counting stat (0% → 97%) ───── */
-
-const CountingStat: React.FC<{
-  startFrame?: number;
-  endValue?: number;
-  duration?: number;
-}> = ({ startFrame = 0, endValue = 97, duration = 75 }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const elapsed = frame - startFrame;
-
-  const s = spring({
-    frame: Math.max(0, elapsed),
-    fps,
-    config: { damping: 14, stiffness: 80, mass: 0.8 },
-    durationInFrames: 15,
-  });
-  const opacity = elapsed < 0 ? 0 : s;
-
-  const rawVal = interpolate(elapsed, [0, duration], [0, endValue], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: FONT,
-          fontSize: 380,
-          fontWeight: 700,
-          color: TEAL,
-          opacity,
-          letterSpacing: -2,
-          lineHeight: 1,
-        }}
-      >
-        {Math.round(rawVal)}%
-      </div>
-    </div>
   );
 };
 

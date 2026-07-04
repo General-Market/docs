@@ -34,11 +34,7 @@ const FPS = 30;
 const W = 1280;
 const H = 720;
 
-// Canvas is 1280x720 but reference is 960x540. Scale factor:
-const SCALE = 720 / 540; // 1.333
-
 // --- Palette (General Market brand kit) ------------------------------------
-const BG_BASE = GM.greenLight;
 const TEXT_DARK = GM.textPrimary;
 
 const clamp = {
@@ -174,7 +170,7 @@ const EXP_START_SIZE = 64;
 const EXP_END_SIZE = 50;
 
 const PhaseExperimenting: React.FC = () => {
-  const frame = useCurrentFrame();
+  useCurrentFrame();
 
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {

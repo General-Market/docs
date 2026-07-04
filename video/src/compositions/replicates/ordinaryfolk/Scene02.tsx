@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, interpolate } from "remotion";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
 import { useGsapTimeline, gsap } from "../../../lib/useGsapTimeline";
 
@@ -351,7 +351,6 @@ export const Scene02: React.FC = () => {
   const pageRotateZ = turnProgress * 5;
   const pageRotateX = turnProgress * 3;
   const pageOpacity = turnProgress > 0.88 ? Math.max(0, (1 - turnProgress) / 0.12) : 1;
-  const foldAngle = turnProgress * 40;
 
   // Warm accent drift
   const accentRight = -100 + Math.sin(frame * 0.015) * 40;

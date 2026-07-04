@@ -76,7 +76,6 @@ export const GMLogo: React.FC<{
   bgColor?: string;
   barColor?: string;
 }> = ({ size = 36, bgColor = "black", barColor = "white" }) => {
-  const s = size / 102;
   return (
     <svg width={size} height={size} viewBox="0 0 102 102" fill="none">
       <rect width="102" height="102" rx="8" fill={bgColor}/>
