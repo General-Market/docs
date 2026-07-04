@@ -262,11 +262,12 @@ const TabsRight: React.FC = () => (
 // table header, text center y≈1037
 const TableHeader: React.FC = () => (
   <>
-    <Row gap={4} style={{ position: "absolute", left: COL_X.age - 3, top: 1031 }}>
-      <T size={11} color={C.textMid} weight={500}>{BOTTOM.tableHead.age}</T>
+    {/* plate f0500: Age+arrow x20-43, "/" x51-55, "Time" x64-88 */}
+    <Row gap={7} style={{ position: "absolute", left: COL_X.age + 7, top: 1031 }}>
+      <T size={12} color={C.textMid} weight={500}>{BOTTOM.tableHead.age}</T>
       <Glyph kind="downArrow" size={10} color={C.textMid} />
-      <T size={11} color={C.textMid} weight={500}>/</T>
-      <T size={11} color={C.textMid} weight={500}>{BOTTOM.tableHead.time}</T>
+      <T size={12} color={C.textMid} weight={500}>/</T>
+      <T size={12} color={C.textMid} weight={500}>{BOTTOM.tableHead.time}</T>
     </Row>
     <div style={{ position: "absolute", left: COL_X.type, top: 1031 }}>
       <T size={11} color={C.textMid} weight={500}>{BOTTOM.tableHead.type}</T>

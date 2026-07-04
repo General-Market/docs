@@ -444,8 +444,9 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
 };
 
 // ─── Ticker strip ───────────────────────────────────────────────────────
-// Item icon left edges measured f0430/f0500 (±3px).
-const TICKER_X = [131, 345, 580, 801, 1027, 1227, 1421, 1628];
+// Item icon left edges re-anchored r2 so LABEL starts hit the plate ink
+// (f0500/f0420 blob scan: labels at 146/376/601/820/1056/1254/1455/1648).
+const TICKER_X = [123, 352, 578, 797, 1033, 1231, 1432, 1624];
 
 const TickerIcon: React.FC<{ icon: string }> = ({ icon }) => {
   if (icon === "spax" || icon === "neta") {
@@ -456,9 +457,10 @@ const TickerIcon: React.FC<{ icon: string }> = ({ icon }) => {
       />
     );
   }
+  // plate placeholder icons are barely brighter than the strip bg
   return (
-    <div style={{ width: 16, height: 16, borderRadius: 4, background: "#2A2D36", overflow: "hidden" }}>
-      <div style={{ width: 8, height: 8, margin: "4px auto", borderRadius: 2, background: "#171A21" }} />
+    <div style={{ width: 16, height: 16, borderRadius: 4, background: "#252831", overflow: "hidden" }}>
+      <div style={{ width: 8, height: 8, margin: "4px auto", borderRadius: 2, background: "#1A1D24" }} />
     </div>
   );
 };
@@ -466,10 +468,10 @@ const TickerIcon: React.FC<{ icon: string }> = ({ icon }) => {
 // ─── Header column (label above value) ─────────────────────────────────
 const HeaderCol: React.FC<{ x: number; label: string; children: React.ReactNode }> = ({ x, label, children }) => (
   <div style={{ position: "absolute", left: x, top: 9 }}>
-    <T size={12.5} color={C.textMid} weight={500}>
+    <T size={10.5} color={C.textMid} weight={500}>
       {label}
     </T>
-    <Row gap={4} style={{ marginTop: 6 }}>
+    <Row gap={4} style={{ marginTop: 7 }}>
       {children}
     </Row>
   </div>
@@ -487,8 +489,8 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
   const toasts = sampleAt(toastTable, frame);
   const pnlPct = sampleAt(posStatsTable, frame).pnlPct;
 
-  // toast stack vertical layout
-  let toastY = 12;
+  // toast stack vertical layout (plate first-toast text starts y30 → 15)
+  let toastY = 15;
   const placed: { toast: ParsedToast; y: number }[] = [];
   for (const tok of toasts) {
     const parsed = parseToast(tok);
@@ -701,15 +703,17 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
         {TICKER.items.map((item, i) => (
           <Row key={i} gap={7} style={{ position: "absolute", left: TICKER_X[i], top: 0, height: 32 }}>
             <TickerIcon icon={item.icon} />
-            <T size={13} color={C.textHi} weight={600}>
+            {/* label/chip fonts fitted to plate ink widths (f0500 blobs):
+                label w73 vs 87 at 13px → 11; chip num w47 vs 55 → 11 */}
+            <T size={11} color={C.textHi} weight={600}>
               {item.label}
             </T>
             <Row
               gap={4}
-              style={{ background: C.chipBg, borderRadius: 5, padding: "3px 7px", marginLeft: 3 }}
+              style={{ background: C.chipBg, borderRadius: 5, padding: "3px 7px", marginLeft: 5 }}
             >
-              <Glyph kind="bolt" size={11} color="#8C7BFA" />
-              <T size={12.5} color={C.tickerSol} weight={500}>
+              <Glyph kind="bolt" size={10} color="#8C7BFA" />
+              <T size={11} color={C.tickerSol} weight={500}>
                 {item.sol}
               </T>
             </Row>
@@ -717,13 +721,15 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
       </div>
 
-      {/* ═══ Token header row (y 90–150) ═══ */}
+      {/* ═══ Token header row (y 90–150) ═══
+          Width stops at the rail divider (1632): a full-width surface here
+          buried the rail's 24h stats block (r2 fix, plate f0500). */}
       <div
         style={{
           position: "absolute",
           left: 0,
           top: 90,
-          width: 1920,
+          width: 1632,
           height: 60,
           background: C.panelBg,
           borderBottom: "1px solid #232833",
@@ -735,20 +741,22 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           src={staticFile("realist-assets/ui/pump-avatar.png")}
           style={{ position: "absolute", left: 11, top: 6, width: 38, height: 38, borderRadius: 8, display: "block" }}
         />
-        {/* name row */}
-        <Row gap={8} style={{ position: "absolute", left: 54, top: 7 }}>
-          <T size={17} color={C.textHi} weight={600}>
+        {/* name row — fonts fitted to plate ink (f0500: name w80, subtitle
+            starts x138 i.e. 4px after the name) */}
+        <Row gap={3} style={{ position: "absolute", left: 54, top: 8 }}>
+          <T size={14.5} color={C.textHi} weight={600}>
             {HEADER.name}
           </T>
-          <T size={14} color={C.textMid} weight={400}>
+          <T size={13} color={C.textMid} weight={400}>
             {HEADER.subtitle}
           </T>
           <Glyph kind="copyDoc" size={13} color={C.textDim} />
           <Glyph kind="shareNodes" size={13} color={C.textDim} />
           <Glyph kind="star" size={14} color={C.textDim} />
         </Row>
-        {/* meta row: age · link · search · views */}
-        <Row gap={9} style={{ position: "absolute", left: 54, top: 30 }}>
+        {/* meta row: age · link · search · views (plate: link 75, search 97,
+            views 120-155 → tighter gaps, 11.5px text) */}
+        <Row gap={8} style={{ position: "absolute", left: 54, top: 31 }}>
           <Row gap={3}>
             <Glyph kind="clock" size={11} color={C.pos} />
             <T size={13} color={C.pos} weight={600}>
@@ -758,25 +766,26 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           <Glyph kind="link" size={13} color={C.textDim} />
           <Glyph kind="search" size={13} color={C.textDim} />
           <Row gap={4}>
-            <Glyph kind="eye" size={14} color={C.textDim} />
+            <Glyph kind="eye" size={13} color={C.textDim} />
             <T size={13} color={C.textMid} weight={500}>
               {views}
             </T>
           </Row>
         </Row>
-        {/* big MC — renders near-white on every plate (not teal) */}
-        <div style={{ position: "absolute", left: 346, top: 0, height: 34, display: "flex", alignItems: "center" }}>
-          <T size={23} color={LOCAL.mcWhite} weight={600}>
+        {/* big MC — renders near-white on every plate (not teal); plate ink
+            x345-398 y98-124 → 19px, center y111 */}
+        <div style={{ position: "absolute", left: 346, top: 0, height: 42, display: "flex", alignItems: "center" }}>
+          <T size={19} color={LOCAL.mcWhite} weight={600}>
             {mc}
           </T>
         </div>
         {/* columns */}
         <HeaderCol x={422} label={HEADER.cols.price}>
-          <T size={15} color={C.textHi} weight={600}>
+          <T size={12} color={C.textHi} weight={600}>
             {price ? (
               <>
                 $0.0
-                <span style={{ fontSize: 10, verticalAlign: "-2.5px" }}>{price.zeros}</span>
+                <span style={{ fontSize: 8.5, verticalAlign: "-2px" }}>{price.zeros}</span>
                 {price.digit}
               </>
             ) : (
@@ -785,26 +794,26 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
         </HeaderCol>
         <HeaderCol x={482} label={HEADER.cols.liquidity}>
-          <T size={15} color={C.textHi} weight={600}>
+          <T size={12} color={C.textHi} weight={600}>
             {liq}
           </T>
         </HeaderCol>
         <HeaderCol x={548} label={HEADER.cols.supply}>
-          <T size={15} color={C.textHi} weight={600}>
+          <T size={12} color={C.textHi} weight={600}>
             {HEADER.supplyValue}
           </T>
-          <Glyph kind="refresh" size={12} color={C.textDim} />
+          <Glyph kind="refresh" size={11} color={C.textDim} />
         </HeaderCol>
         <HeaderCol x={606} label={HEADER.cols.fees}>
-          <SolanaBars size={12} />
-          <T size={15} color={C.textHi} weight={600}>
+          <SolanaBars size={11} />
+          <T size={12} color={C.textHi} weight={600}>
             {gfp}
           </T>
         </HeaderCol>
         {/* trophy chip */}
         <Row gap={4} style={{ position: "absolute", left: 708, top: 30 }}>
-          <Glyph kind="trophy" size={15} color={C.gold} />
-          <T size={14} color={C.textHi} weight={600}>
+          <Glyph kind="trophy" size={14} color={C.gold} />
+          <T size={12.5} color={C.textHi} weight={600}>
             {HEADER.trophyCount}
           </T>
         </Row>
@@ -841,8 +850,8 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
           <Glyph kind="chevron" size={12} color={C.textMid} />
         </Row>
-        {/* right icon cluster + Alert + panel */}
-        <Row gap={0} style={{ position: "absolute", left: 1382, top: 30 }}>
+        {/* right icon cluster + Alert + panel (plate icons y100-112 → top 22) */}
+        <Row gap={0} style={{ position: "absolute", left: 1382, top: 22 }}>
           <Glyph kind="gear" size={15} color={C.textMid} />
           <div style={{ width: 21 }} />
           <Glyph kind="sliders" size={15} color={C.textMid} />

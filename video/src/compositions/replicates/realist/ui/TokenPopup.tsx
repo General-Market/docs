@@ -88,20 +88,22 @@ const SettingsRow: React.FC<{
   tip: string | readonly string[];
   right: { text: string; color: string };
 }> = ({ y, pct, gas, tip, right }) => (
+  // every span carries top:0 — absolutely positioned spans WITHOUT top keep
+  // their static-flow y (parent 16px line box) and sat ~7px low (r2 fix)
   <div style={{ position: "absolute", left: 124, top: y, width: 312, height: 12 }}>
-    <span style={{ position: "absolute", left: 0 }}>
+    <span style={{ position: "absolute", left: 0, top: 0 }}>
       <T size={10.5} color={C.textMid}>
         ⇅ {pct}
       </T>
     </span>
-    <span style={{ position: "absolute", left: 46 }}>
+    <span style={{ position: "absolute", left: 46, top: 0 }}>
       <T size={10.5} color={C.textMid}>
         ⛽{" "}
       </T>
       <SubZero parts={gas} color={C.textMid} />
       <Warn />
     </span>
-    <span style={{ position: "absolute", left: 118 }}>
+    <span style={{ position: "absolute", left: 118, top: 0 }}>
       <T size={10.5} color={C.textMid}>
         ◎{" "}
       </T>
@@ -114,12 +116,12 @@ const SettingsRow: React.FC<{
       )}
       <Warn />
     </span>
-    <span style={{ position: "absolute", left: 188 }}>
+    <span style={{ position: "absolute", left: 188, top: 0 }}>
       <T size={10.5} color={C.textMid}>
         ∅ {POPUP.buySettings.off}
       </T>
     </span>
-    <span style={{ position: "absolute", right: 0 }}>
+    <span style={{ position: "absolute", right: 0, top: 0 }}>
       <T size={10.5} weight={500} color={right.color}>
         {right.text}
       </T>
@@ -351,7 +353,7 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
           { x: 158, v: pos.holding, c: C.text },
           { x: 228, v: `${pos.pnl}(${pctK(pos.pnlPct)})`, c: C.pos },
         ].map((s, i) => (
-          <span key={i} style={{ position: "absolute", left: s.x, top: 11, whiteSpace: "nowrap" }}>
+          <span key={i} style={{ position: "absolute", left: s.x, top: 6, whiteSpace: "nowrap" }}>
             <Bars size={11} />{" "}
             <T size={12.5} weight={600} color={s.c}>
               {s.v}

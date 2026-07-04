@@ -71,59 +71,59 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", left: 0, top: 948, width: 1632, height: 1, background: C.divider }} />
       <div style={{ position: "absolute", left: 1632, top: 84, width: 1, height: 904, background: "#0d0f14" }} />
 
-      {/* ── toolbar row (y150–182) ── */}
+      {/* ── toolbar row (y150–182) — x anchors re-measured r2 (f0500 blobs) ── */}
       <div style={{ position: "absolute", left: 0, top: 157, width: 1610, height: 20 }}>
         {CHART_TOOLBAR.timeframes.map((tf, i) => (
-          <span key={tf} style={{ position: "absolute", left: 10 + i * 26, top: 3 }}>
-            <T size={12.5} weight={600} color={i === 0 ? C.tealText : C.textMid}>
+          <span key={tf} style={{ position: "absolute", left: [7, 28, 53, 81, 111][i], top: 4 }}>
+            <T size={11} weight={600} color={i === 0 ? C.tealText : C.textMid}>
               {tf}
             </T>
           </span>
         ))}
-        <span style={{ position: "absolute", left: 143, top: 5 }}>
+        <span style={{ position: "absolute", left: 150, top: 5 }}>
           <T size={9} color={C.textMid}>
             ▾
           </T>
         </span>
-        <div style={{ position: "absolute", left: 160, top: 0, width: 1, height: 20, background: C.divider }} />
+        <div style={{ position: "absolute", left: 167, top: 0, width: 1, height: 20, background: C.divider }} />
         {/* candle glyph */}
-        <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 172, top: 3 }}>
+        <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 184, top: 3 }}>
           <path d="M4 1v3M4 10v3M10 1v2M10 11v2" stroke="#8b8e97" strokeWidth="1.2" />
           <rect x="2.5" y="4" width="3" height="6" fill="none" stroke="#8b8e97" strokeWidth="1.1" />
           <rect x="8.5" y="3" width="3" height="8" fill="none" stroke="#8b8e97" strokeWidth="1.1" />
         </svg>
-        <span style={{ position: "absolute", left: 200, top: 3 }}>
+        <span style={{ position: "absolute", left: 227, top: 3 }}>
           <T size={12.5} color={C.textMid}>
             ƒ<span style={{ fontSize: 9 }}>x</span>
           </T>
         </span>
-        <span style={{ position: "absolute", left: 222, top: 3 }}>
+        <span style={{ position: "absolute", left: 249, top: 3 }}>
           <T size={12.5} color={C.text}>
             {CHART_TOOLBAR.indicators}
           </T>
         </span>
-        <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 306, top: 3 }}>
+        <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 325, top: 3 }}>
           <rect x="1.5" y="1.5" width="4.5" height="4.5" stroke="#8b8e97" strokeWidth="1.1" fill="none" />
           <rect x="8" y="1.5" width="4.5" height="4.5" stroke="#8b8e97" strokeWidth="1.1" fill="none" />
           <rect x="1.5" y="8" width="4.5" height="4.5" stroke="#8b8e97" strokeWidth="1.1" fill="none" />
           <rect x="8" y="8" width="4.5" height="4.5" stroke="#8b8e97" strokeWidth="1.1" fill="none" />
         </svg>
-        <span style={{ position: "absolute", left: 340, top: 5 }}>
+        <span style={{ position: "absolute", left: 374, top: 5 }}>
           <T size={9} color={C.textMid}>
             ▾
           </T>
         </span>
-        <span style={{ position: "absolute", left: 356, top: 3 }}>
+        <span style={{ position: "absolute", left: 394, top: 3 }}>
           <T size={12.5} color={C.text}>
             {CHART_TOOLBAR.displayOptions}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 510, top: 3 }}>
+        <span style={{ position: "absolute", left: 513, top: 3 }}>
           <T size={12.5} color={C.text}>
             {CHART_TOOLBAR.showAllBubbles}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 645, top: 3 }}>
+        <span style={{ position: "absolute", left: 640, top: 3 }}>
           <T size={12.5} weight={600} color={C.textHi}>
             {CHART_TOOLBAR.usdSol.active}
           </T>
@@ -163,23 +163,24 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
       </div>
 
-      {/* ── OHLC readout row (y188–212) ── */}
-      <div style={{ position: "absolute", left: 58, top: 197, height: 16, whiteSpace: "nowrap" }}>
-        <T size={12.5} color={C.text}>
+      {/* ── OHLC readout row (y188–212) — plate f0500: symbol line 14px light
+          (ink x59-451), dot x469, values 11px at ~50% opacity from x496 ── */}
+      <div style={{ position: "absolute", left: 58, top: 196, height: 16, whiteSpace: "nowrap" }}>
+        <T size={14.3} weight={400} color={C.text}>
           {OHLC.symbolLine}
         </T>
         <span
           style={{
             display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: 9,
+            height: 9,
+            borderRadius: 4.5,
             background: "#3ED6C5",
-            margin: "0 10px 0 14px",
+            margin: "0 17px 0 17px",
           }}
         />
         {ohlc ? (
-          <>
+          <span style={{ opacity: 0.52 }}>
             {(
               [
                 [OHLC.o, ohlc.o],
@@ -188,19 +189,19 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
                 [OHLC.c, ohlc.c],
               ] as const
             ).map(([k, v]) => (
-              <span key={k}>
-                <T size={12.5} color={C.textMid}>
+              <span key={k} style={{ marginRight: 6 }}>
+                <T size={11} color={C.textMid}>
                   {k}
                 </T>
-                <T size={12.5} weight={500} color={dir}>
-                  {v}{" "}
+                <T size={11} weight={500} color={dir}>
+                  {v}
                 </T>
               </span>
             ))}
-            <T size={12.5} weight={500} color={dir}>
+            <T size={11} weight={500} color={dir}>
               {ohlc.d} ({ohlc.dp})
             </T>
-          </>
+          </span>
         ) : null}
       </div>
 
@@ -235,23 +236,23 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
         <svg width={13} height={13} viewBox="0 0 14 14" style={{ position: "absolute", left: 208, top: 2 }}>
           <path d="M3 7a4 4 0 1 1 1 3M3 7V4M3 7h3" stroke="#8b8e97" strokeWidth="1.2" fill="none" />
         </svg>
-        <span style={{ position: "absolute", left: 1408, top: 2 }}>
+        <span style={{ position: "absolute", left: 1425, top: 2 }}>
           <T size={12} color={C.text}>
             {clockAt(frame)}
             {CHART_FOOT.utcSuffix}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 1532, top: 2 }}>
+        <span style={{ position: "absolute", left: 1534, top: 2 }}>
           <T size={12} color={C.textMid}>
             {CHART_FOOT.pct}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 1554, top: 2 }}>
+        <span style={{ position: "absolute", left: 1558, top: 2 }}>
           <T size={12} color={C.textMid}>
             {CHART_FOOT.log}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 1580, top: 2 }}>
+        <span style={{ position: "absolute", left: 1587, top: 2 }}>
           <T size={12} weight={600} color="#4a7dd8">
             {CHART_FOOT.auto}
           </T>

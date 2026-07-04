@@ -540,16 +540,16 @@ const MigratingSection: React.FC = () => (
   </>
 );
 
-// big action button, y 420–450
+// big action button (plate ink y418–452 → 34 tall)
 const ActionButton: React.FC<{ migrating: boolean }> = ({ migrating }) => (
   <div
     style={{
       position: "absolute",
       left: X0,
-      top: 420,
+      top: 418,
       width: RW,
-      height: 30,
-      borderRadius: 15,
+      height: 34,
+      borderRadius: 17,
       background: migrating ? SNIPE_BG : C.teal,
       display: "flex",
       alignItems: "center",
@@ -649,17 +649,19 @@ const GridCell: React.FC<{
   value: string;
   valueColor: string;
   label: string;
-}> = ({ x, y, h, glyph, value, valueColor, label }) => (
+  valueTop?: number;
+  labelTop?: number;
+}> = ({ x, y, h, glyph, value, valueColor, label, valueTop = 5, labelTop = 31 }) => (
   <div style={{ position: "absolute", left: x, top: y, width: GRID_W, height: h, borderRadius: 8, background: C.cardBg }}>
     {value === "" ? (
-      <div style={{ position: "absolute", left: GRID_W / 2 - 18, top: 10, width: 36, height: 10, borderRadius: 4, background: SKEL }} />
+      <div style={{ position: "absolute", left: GRID_W / 2 - 18, top: valueTop + 1, width: 36, height: 10, borderRadius: 4, background: SKEL }} />
     ) : (
-      <Row gap={4} style={{ position: "absolute", left: 0, top: 9, width: "100%", justifyContent: "center" }}>
+      <Row gap={4} style={{ position: "absolute", left: 0, top: valueTop, width: "100%", justifyContent: "center" }}>
         <Glyph kind={glyph} size={12} color={valueColor} />
         <T size={13} color={valueColor} weight={600}>{value}</T>
       </Row>
     )}
-    <div style={{ position: "absolute", left: 0, top: h - 21, width: "100%", textAlign: "center" }}>
+    <div style={{ position: "absolute", left: 0, top: labelTop, width: "100%", textAlign: "center" }}>
       <T size={10.5} color={C.textMid} weight={500}>{label}</T>
     </div>
   </div>
@@ -710,6 +712,8 @@ const TokenInfoSection: React.FC<{ info: TokenInfo }> = ({ info }) => {
           value={c.v}
           valueColor={c.color}
           label={c.label}
+          valueTop={9}
+          labelTop={34}
         />
       ))}
     </>
