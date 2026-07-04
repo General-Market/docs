@@ -7,6 +7,7 @@ import {
   HEADING,
   COLUMN_HEADERS,
   RIGHT_CONTROLS,
+  STAT_LABELS,
   NEW_CARDS,
   SOON_CARDS,
   MIGRATED_CARDS,
@@ -212,6 +213,13 @@ const Glyph: React.FC<{ kind: string; size?: number; color?: string }> = ({
       return (
         <svg {...common}>
           <path d="M3 11.5 L2.5 5.5 L5.5 7.5 L8 4 L10.5 7.5 L13.5 5.5 L13 11.5 Z" fill="none" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+        </svg>
+      );
+    case "cup":
+      return (
+        <svg {...common}>
+          <path d="M3.5 5 L12.5 5 L11.4 11.3 A2 2 0 0 1 9.4 13 L6.6 13 A2 2 0 0 1 4.6 11.3 Z" fill="none" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+          <path d="M2.5 6.5 L4 6.5 M12 6.5 L13.5 6.5" stroke={color} strokeWidth={sw} strokeLinecap="round" />
         </svg>
       );
     case "personRun":
@@ -423,10 +431,10 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
       </div>
       {/* name row */}
       <Row gap={7} style={{ position: "absolute", left: geom.textX, top: 8 }}>
-        <T size={15} color={C.name} weight={600}>
+        <T size={14} color={C.name} weight={600}>
           {card.name}
         </T>
-        <T size={15} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"` }}>
+        <T size={14} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"` }}>
           {card.sub}
         </T>
         {card.badges?.map((b, i) => (
@@ -442,7 +450,7 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
       ) : null}
       {/* age + icon row */}
       <Row gap={11} style={{ position: "absolute", left: geom.textX, top: card.sub2 ? 40 : 30 }}>
-        <T size={13} color={card.ageColor ?? C.green} weight={600}>
+        <T size={12} color={card.ageColor ?? C.green} weight={600}>
           {age}
         </T>
         {card.timer ? (
@@ -461,17 +469,17 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
           </Row>
         ) : null}
         {card.icons.map((t, i) => (
-          <Glyph key={i} kind={TOKEN_KIND[t]} size={14} color={ICON_COLOR[t] ?? C.icon} />
+          <Glyph key={i} kind={TOKEN_KIND[t]} size={13} color={ICON_COLOR[t] ?? C.icon} />
         ))}
         <Row gap={4} style={{ marginLeft: 6 }}>
-          <Glyph kind="person" size={13} color={C.icon} />
-          <T size={13} color={C.count} weight={600}>
+          <Glyph kind="person" size={12} color={C.icon} />
+          <T size={12} color={C.count} weight={600}>
             {card.people}
           </T>
         </Row>
         <Row gap={4}>
-          <Glyph kind="bell" size={13} color={C.icon} />
-          <T size={13} color={C.count} weight={600}>
+          <Glyph kind="bell" size={12} color={C.icon} />
+          <T size={12} color={C.count} weight={600}>
             {card.bell}
           </T>
         </Row>
@@ -503,7 +511,7 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
           </T>
         </Row>
         <Row gap={3}>
-          <Glyph kind="crown" size={12} color={card.pct2.color} />
+          <Glyph kind="cup" size={12} color={card.pct2.color} />
           <T size={12} color={card.pct2.color} weight={600}>
             {card.pct2.v}
           </T>
@@ -539,9 +547,9 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
           border: `1px solid ${C.box1Border}`,
         }}
       >
-        <Row gap={3} style={{ position: "absolute", right: 10, bottom: 8 }}>
-          <Glyph kind="bolt" size={12} color={C.textBright} />
-          <T size={13} color={C.textBright} weight={700}>
+        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 8 }}>
+          <Glyph kind="bolt" size={11} color={C.textBright} />
+          <T size={12} color={C.textBright} weight={700}>
             {card.stats.chip1}
           </T>
         </Row>
@@ -561,13 +569,13 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
       >
         <Row gap={4} style={{ position: "absolute", right: 8, top: 8 }}>
           <T size={11} color={C.label} weight={500}>
-            V
+            {STAT_LABELS.v}
           </T>
           <T size={14} color={C.textBright} weight={700}>
             {card.stats.v}
           </T>
           <T size={11} color={C.label} weight={500}>
-            MC
+            {STAT_LABELS.mc}
           </T>
           <T size={14} color={card.stats.mcColor} weight={700}>
             {card.stats.mc}
@@ -575,16 +583,16 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
         </Row>
         <Row gap={3} style={{ position: "absolute", right: 8, top: 26 }}>
           <T size={11} color={C.label} weight={500}>
-            F
+            {STAT_LABELS.f}
           </T>
           <SolanaBars size={9} />
           <T size={11} color={C.textBright} weight={600}>
             {card.stats.f}
           </T>
         </Row>
-        <Row gap={3} style={{ position: "absolute", right: 10, bottom: 8 }}>
-          <Glyph kind="bolt" size={12} color={C.textBright} />
-          <T size={13} color={C.textBright} weight={700}>
+        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 8 }}>
+          <Glyph kind="bolt" size={11} color={C.textBright} />
+          <T size={12} color={C.textBright} weight={700}>
             {card.stats.chip2}
           </T>
         </Row>
@@ -623,8 +631,8 @@ const Column: React.FC<{
     >
       {/* header */}
       <div style={{ position: "absolute", left: 0, top: 0, width: "100%", height: 50 }}>
-        <Row gap={8} style={{ position: "absolute", left: 20, top: 15 }}>
-          <T size={17} color="#DFE2EA" weight={600}>
+        <Row gap={8} style={{ position: "absolute", left: 17, top: 16 }}>
+          <T size={15} color="#DFE2EA" weight={600}>
             {h.title}
           </T>
           {h.paused ? <Glyph kind="pause" size={13} color={C.purple} /> : null}
@@ -635,7 +643,7 @@ const Column: React.FC<{
               </div>
               <div style={{ padding: "3px 7px", borderLeft: "1px solid #2C2F3A" }}>
                 <T size={10} color={C.sub} weight={600}>
-                  MC
+                  {STAT_LABELS.mc}
                 </T>
               </div>
             </Row>
@@ -658,25 +666,32 @@ const Column: React.FC<{
             {h.search}
           </T>
         </div>
-        {/* right chips */}
-        <Row gap={10} style={{ position: "absolute", right: 14, top: 14 }}>
-          <Row gap={5} style={{ background: "#12151B", borderRadius: 6, padding: "4px 8px" }}>
-            <Glyph kind="bolt" size={11} color="#8A8D99" />
+        {/* right cluster — left-anchored at panel-local x (measured f0300:
+            bolt 428, value right-aligned to 470, sol 475, preset 505, chart 534, mute 567, filter 597) */}
+        <div style={{ position: "absolute", left: 420, top: 11, height: 26, borderRadius: 6, background: "#12151B", display: "flex", alignItems: "center", padding: "0 8px", gap: 5 }}>
+          <Glyph kind="bolt" size={11} color="#8A8D99" />
+          <div style={{ width: 27, textAlign: "right" }}>
             <T size={12} color="#DFE2EA" weight={600}>
               {h.bolt}
             </T>
-            <SolanaBars size={10} />
-          </Row>
+          </div>
+          <SolanaBars size={10} />
+        </div>
+        <div style={{ position: "absolute", left: 505, top: 17 }}>
           <T size={12} color={C.sub} weight={600}>
             {h.preset}
           </T>
+        </div>
+        <div style={{ position: "absolute", left: 534, top: 17 }}>
           <Glyph kind="chart" size={13} color={C.icon} />
+        </div>
+        <div style={{ position: "absolute", left: 567, top: 17 }}>
           <Glyph kind="mute" size={13} color={C.icon} />
-          <div style={{ position: "relative" }}>
-            <Glyph kind="filter" size={13} color={C.icon} />
-            <div style={{ position: "absolute", right: -3, top: -3, width: 4, height: 4, borderRadius: 2, background: "#7C78C9" }} />
-          </div>
-        </Row>
+        </div>
+        <div style={{ position: "absolute", left: 597, top: 17 }}>
+          <Glyph kind="filter" size={13} color={C.icon} />
+          <div style={{ position: "absolute", right: -3, top: -3, width: 4, height: 4, borderRadius: 2, background: "#7C78C9" }} />
+        </div>
       </div>
       {/* cards (positions are column-local: panel top is y=142, cards start at 198-142=56) */}
       {cards.map((card, i) => (
@@ -697,7 +712,7 @@ const ExecutingToast: React.FC<{ y: number; opacity: number; spinPhase: number }
       left: 1630,
       top: y,
       width: 283,
-      height: 73,
+      height: 68,
       background: C.toastBg,
       border: `1px solid ${C.toastBorder}`,
       borderRadius: 10,
@@ -707,44 +722,44 @@ const ExecutingToast: React.FC<{ y: number; opacity: number; spinPhase: number }
   >
     {/* spinner */}
     <svg
-      width={16}
-      height={16}
+      width={14}
+      height={14}
       viewBox="0 0 16 16"
-      style={{ position: "absolute", left: 12, top: 12, transform: `rotate(${spinPhase}deg)` }}
+      style={{ position: "absolute", left: 12, top: 11, transform: `rotate(${spinPhase}deg)` }}
     >
       <circle cx="8" cy="8" r="6" fill="none" stroke="#3A3D6E" strokeWidth={2} />
       <path d="M8 2 A6 6 0 0 1 14 8" fill="none" stroke="#7C78C9" strokeWidth={2} strokeLinecap="round" />
     </svg>
-    <div style={{ position: "absolute", left: 38, top: 13 }}>
-      <T size={14} color={C.name} weight={600}>
+    <div style={{ position: "absolute", left: 31, top: 11 }}>
+      <T size={13} color={C.name} weight={600}>
         {TOAST.title}
       </T>
     </div>
-    <div style={{ position: "absolute", right: 10, top: 12 }}>
-      <Glyph kind="close" size={13} color={C.icon} />
+    <div style={{ position: "absolute", right: 10, top: 11 }}>
+      <Glyph kind="close" size={12} color={C.icon} />
     </div>
-    <Row gap={5} style={{ position: "absolute", left: 38, top: 34 }}>
-      <T size={13} color="#9EA1AB" weight={500}>
+    <Row gap={5} style={{ position: "absolute", left: 31, top: 31 }}>
+      <T size={12} color="#9EA1AB" weight={500}>
         {TOAST.buyPrefix}
       </T>
       <Img
         src={staticFile("realist-assets/ui/av-pumpwheel.png")}
-        style={{ width: 14, height: 14, borderRadius: 7, display: "block" }}
+        style={{ width: 13, height: 13, borderRadius: 7, display: "block" }}
       />
-      <T size={13} color={C.green} weight={600}>
+      <T size={12} color={C.green} weight={600}>
         {TOAST.coin}
       </T>
-      <T size={13} color="#9EA1AB" weight={500}>
+      <T size={12} color="#9EA1AB" weight={500}>
         {TOAST.buySuffix}
       </T>
     </Row>
-    <Row gap={14} style={{ position: "absolute", left: 38, top: 53 }}>
+    <Row gap={12} style={{ position: "absolute", left: 31, top: 49 }}>
       {TOAST.counts.map((c, i) => (
-        <Row key={i} gap={5}>
-          <T size={12} color="#9EA1AB" weight={500}>
+        <Row key={i} gap={4}>
+          <T size={11} color="#9EA1AB" weight={500}>
             {c.label}
           </T>
-          <T size={12} color={C.name} weight={600}>
+          <T size={11} color={C.name} weight={600}>
             {c.value}
           </T>
         </Row>
@@ -809,9 +824,9 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
       >
         {/* ------------------------------------------------ top nav */}
         <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 56, background: C.navBg }}>
-          <Row gap={32} style={{ position: "absolute", left: 115, top: 21 }}>
+          <Row gap={31} style={{ position: "absolute", left: 117, top: 22 }}>
             {NAV.items.map((it, i) => (
-              <T key={it} size={14} color={i === NAV.activeIndex ? C.purple : "#9EA1AB"} weight={600}>
+              <T key={it} size={13} color={i === NAV.activeIndex ? C.purple : "#9EA1AB"} weight={500}>
                 {it}
               </T>
             ))}
@@ -915,8 +930,8 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
 
         {/* ------------------------------------------------ heading */}
         <div style={{ position: "absolute", left: 12, top: 96 }}>
-          <Row gap={14}>
-            <T size={19} color="#E7E9EE" weight={600}>
+          <Row gap={13}>
+            <T size={18} color="#E7E9EE" weight={600}>
               {HEADING.title}
             </T>
             <div style={{ background: "#171A22", borderRadius: 5, padding: "3px 5px" }}>

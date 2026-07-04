@@ -12,8 +12,10 @@ import {
   PULSE_MIGRATED,
   DOCK,
   PAID_CHIP,
+  QUICK_BUY,
   PulseCard,
 } from "./copy/pulse";
+import { STAT_LABELS } from "./copy/trenches";
 import type { IconToken, Badge } from "./copy/trenches";
 
 const { fontFamily } = loadFont("normal", {
@@ -189,6 +191,27 @@ const Glyph: React.FC<{ kind: string; size?: number; color?: string }> = ({
       return (
         <svg {...common}>
           <path d="M3 11.5 L2.5 5.5 L5.5 7.5 L8 4 L10.5 7.5 L13.5 5.5 L13 11.5 Z" fill="none" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+        </svg>
+      );
+    case "cup":
+      return (
+        <svg {...common}>
+          <path d="M3.5 5 L12.5 5 L11.4 11.3 A2 2 0 0 1 9.4 13 L6.6 13 A2 2 0 0 1 4.6 11.3 Z" fill="none" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
+          <path d="M2.5 6.5 L4 6.5 M12 6.5 L13.5 6.5" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+        </svg>
+      );
+    case "eyeSlash":
+      return (
+        <svg {...common}>
+          <path d="M2 8 C3.5 5 5.5 3.8 8 3.8 C10.5 3.8 12.5 5 14 8 C12.5 11 10.5 12.2 8 12.2 C5.5 12.2 3.5 11 2 8 Z" fill="none" stroke={color} strokeWidth={sw} />
+          <line x1="3.5" y1="13" x2="12.5" y2="3" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+        </svg>
+      );
+    case "circlePlus":
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="8" r="5.8" fill="none" stroke={color} strokeWidth={sw} />
+          <path d="M8 5.2 L8 10.8 M5.2 8 L10.8 8" stroke={color} strokeWidth={sw} strokeLinecap="round" />
         </svg>
       );
     case "personRun":
@@ -374,8 +397,13 @@ type PGeom = {
   single?: boolean; // migrated single-box layout
 };
 
-const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ card, y, geom }) => {
-  const iconTop = card.sub2 ? 46 : 32;
+const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverActive?: boolean }> = ({
+  card,
+  y,
+  geom,
+  hoverActive = false,
+}) => {
+  const iconTop = card.sub2 ? 49 : 35;
   const handleTop = card.sub2 ? 66 : 52;
   const pctTop = card.sub2 && card.handle ? 87 : card.handle ? 74 : 72;
   return (
@@ -386,7 +414,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
         top: y,
         width: "100%",
         height: CARD_H,
-        background: card.hovered ? C.hoverBg : undefined,
+        background: hoverActive ? C.hoverBg : undefined,
       }}
     >
       {/* avatar */}
@@ -432,6 +460,17 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
           </T>
         </div>
       ) : null}
+      {/* hover eye icons (left edge of the hovered row) */}
+      {hoverActive ? (
+        <>
+          <div style={{ position: "absolute", left: 6, top: 14 }}>
+            <Glyph kind="eyeSlash" size={12} color="#6E717E" />
+          </div>
+          <div style={{ position: "absolute", left: 6, top: 36 }}>
+            <Glyph kind="eyeSlash" size={12} color="#4A4E5A" />
+          </div>
+        </>
+      ) : null}
       {/* name row */}
       <Row gap={7} style={{ position: "absolute", left: geom.textX, top: 10 }}>
         <T size={15} color={card.hovered ? "#E4E2F5" : C.name} weight={600}>
@@ -465,7 +504,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
       ) : null}
       {/* age + icons */}
       {card.age ? (
-        <Row gap={11} style={{ position: "absolute", left: geom.textX, top: iconTop }}>
+        <Row gap={9} style={{ position: "absolute", left: geom.textX, top: iconTop }}>
           <T size={13} color={card.ageColor ?? C.green} weight={600}>
             {card.age}
           </T>
@@ -480,15 +519,15 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
           {card.icons.map((t, i) => (
             <Glyph key={i} kind={TOKEN_KIND[t]} size={14} color={ICON_COLOR[t] ?? C.icon} />
           ))}
-          <Row gap={4} style={{ marginLeft: 6 }}>
-            <Glyph kind="person" size={13} color={C.icon} />
-            <T size={13} color={C.count} weight={600}>
+          <Row gap={4} style={{ marginLeft: 4 }}>
+            <Glyph kind="person" size={13} color={card.countColor ?? C.icon} />
+            <T size={13} color={card.countColor ?? C.count} weight={600}>
               {card.people}
             </T>
           </Row>
           <Row gap={4}>
-            <Glyph kind="bell" size={13} color={C.icon} />
-            <T size={13} color={C.count} weight={600}>
+            <Glyph kind="bell" size={13} color={card.countColor ?? C.icon} />
+            <T size={13} color={card.countColor ?? C.count} weight={600}>
               {card.bell}
             </T>
           </Row>
@@ -520,7 +559,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
             </T>
           </Row>
           <Row gap={3}>
-            <Glyph kind={card.pct1Skull ? "skull" : "crown"} size={12} color={card.pct2.color} />
+            <Glyph kind={card.pct1Skull ? "skull" : "cup"} size={12} color={card.pct2.color} />
             <T size={12} color={card.pct2.color} weight={600}>
               {card.pct2.v}
             </T>
@@ -537,45 +576,81 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
           ) : null}
         </Row>
       ) : null}
-      {/* V / MC line, right aligned */}
-      <Row
-        gap={4}
-        style={{ position: "absolute", right: geom.right, top: 12, justifyContent: "flex-end" }}
-      >
-        <T size={11} color={C.label} weight={500}>
-          V
-        </T>
-        <T size={14} color={card.hovered ? C.hoverText : C.textBright} weight={700}>
-          {card.stats.v}
-        </T>
-        <T size={11} color={C.label} weight={500}>
-          MC
-        </T>
-        <T size={14} color={card.stats.mcColor} weight={700}>
-          {card.stats.mc}
-        </T>
-      </Row>
-      {/* stat boxes */}
+      {/* stat boxes / quick-buy (rendered before the V/MC line so the line stays on top) */}
       {card.hovered ? (
-        <Row gap={6} style={{ position: "absolute", right: geom.right, bottom: 16 }}>
-          {["#2E5A4C", "#2E4A5A", "#5A4A2E"].map((b, i) => (
+        hoverActive ? (
+          <>
+            {/* expanded quick-buy pill buttons (plates f0408+) */}
+            {[
+              { x: 373, w: 108, label: QUICK_BUY.sol1 },
+              { x: 489, w: 114, label: QUICK_BUY.sol2 },
+            ].map((p) => (
+              <div
+                key={p.label}
+                style={{
+                  position: "absolute",
+                  left: p.x,
+                  top: 56,
+                  width: p.w,
+                  height: 36,
+                  borderRadius: 18,
+                  border: "1px solid #4A47A0",
+                  background: "#151726",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 5,
+                }}
+              >
+                <Glyph kind="circlePlus" size={13} color="#6E6AD8" />
+                <T size={12} color="#8B87E0" weight={700} style={{ whiteSpace: "nowrap" }}>
+                  {p.label}
+                </T>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            {/* collapsed quick-buy circles (plates f0392–f0406) */}
             <div
-              key={i}
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 9,
-                border: `1.5px solid ${b}`,
-                background: "#14131C",
+                position: "absolute",
+                left: 548,
+                top: 71,
+                width: 19,
+                height: 19,
+                borderRadius: 10,
+                border: "1.5px solid #2E5A4C",
+                background: "#14201C",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Glyph kind={i === 0 ? "pill" : i === 1 ? "clock" : "crown"} size={9} color={["#57B58E", "#5FA8D4", "#D9B845"][i]} />
+              <Glyph kind="pill" size={10} color="#57B58E" />
             </div>
-          ))}
-        </Row>
+            <div style={{ position: "absolute", left: 572, top: 77 }}>
+              <SolanaBars size={8} />
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: 587,
+                top: 71,
+                width: 19,
+                height: 19,
+                borderRadius: 10,
+                border: "1.5px solid #6B5A2E",
+                background: "#201A10",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Glyph kind="bolt" size={10} color="#D9B845" />
+            </div>
+          </>
+        )
       ) : geom.single ? (
         <div
           style={{
@@ -589,7 +664,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
             background: C.statBoxBg,
           }}
         >
-          <Row gap={3} style={{ position: "absolute", left: 14, bottom: 26 }}>
+          <Row gap={3} style={{ position: "absolute", left: 17, bottom: 14 }}>
             <Glyph kind="bolt" size={12} color={C.textBright} />
             <T size={13} color={C.textBright} weight={700}>
               {card.stats.single}
@@ -610,7 +685,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
               background: C.statBoxBg,
             }}
           >
-            <Row gap={3} style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: 22 }}>
+            <Row gap={3} style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: 14 }}>
               <Glyph kind="bolt" size={12} color={C.textBright} />
               <T size={13} color={C.textBright} weight={700} style={{ whiteSpace: "nowrap" }}>
                 {card.stats.chip1}
@@ -629,7 +704,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
               background: C.statBoxBg,
             }}
           >
-            <Row gap={3} style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: 22 }}>
+            <Row gap={3} style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: 14 }}>
               <Glyph kind="bolt" size={12} color={C.textBright} />
               <T size={13} color={C.textBright} weight={700} style={{ whiteSpace: "nowrap" }}>
                 {card.stats.chip2}
@@ -638,6 +713,24 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom }> = ({ c
           </div>
         </>
       )}
+      {/* V / MC line — after the boxes so it renders on top of their backgrounds */}
+      <Row
+        gap={4}
+        style={{ position: "absolute", right: geom.right, top: 12, justifyContent: "flex-end" }}
+      >
+        <T size={11} color={C.label} weight={500}>
+          {STAT_LABELS.v}
+        </T>
+        <T size={14} color={card.hovered ? C.hoverText : C.textBright} weight={700}>
+          {card.stats.v}
+        </T>
+        <T size={11} color={C.label} weight={500}>
+          {STAT_LABELS.mc}
+        </T>
+        <T size={14} color={card.stats.mcColor} weight={700}>
+          {card.stats.mc}
+        </T>
+      </Row>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, background: "rgba(255,255,255,0.05)" }} />
     </div>
   );
@@ -669,10 +762,11 @@ const PulseColumn: React.FC<{
         overflow: "hidden",
       }}
     >
-      {/* header */}
+      {/* header — right cluster is left-anchored at panel-local x (measured f0405:
+          bolt 396, value 412, sol chip 448, P1 477, P2 500, P3 523, mute 558, sliders 593) */}
       <div style={{ position: "absolute", left: 0, top: 0, width: "100%", height: 44 }}>
-        <div style={{ position: "absolute", left: 20, top: 14 }}>
-          <T size={17} color="#DFE2EA" weight={600}>
+        <div style={{ position: "absolute", left: 20, top: 15 }}>
+          <T size={15} color="#DFE2EA" weight={600}>
             {h.title}
           </T>
         </div>
@@ -692,33 +786,32 @@ const PulseColumn: React.FC<{
             {h.search}
           </T>
         </div>
-        <Row gap={8} style={{ position: "absolute", right: 12, top: 12 }}>
-          <Row gap={5}>
-            <Glyph kind="bolt" size={11} color="#8A8D99" />
-            <T size={13} color="#DFE2EA" weight={600}>
-              {h.bolt}
-            </T>
-            <SolanaBars size={10} />
-          </Row>
-          {h.presets.map((p, i) => (
-            <T key={p} size={12} color={i === h.activePreset ? C.purple : "#565A66"} weight={600}>
+        <Row gap={5} style={{ position: "absolute", left: 396, top: 14 }}>
+          <Glyph kind="bolt" size={11} color="#8A8D99" />
+          <T size={13} color="#DFE2EA" weight={600}>
+            {h.bolt}
+          </T>
+        </Row>
+        <div style={{ position: "absolute", left: 448, top: 11, padding: "4px 4px", borderRadius: 5, background: "#22252E" }}>
+          <SolanaBars size={10} />
+        </div>
+        {h.presets.map((p, i) => (
+          <div key={p} style={{ position: "absolute", left: 477 + i * 23, top: 15 }}>
+            <T size={12} color={i === h.activePreset ? C.purple : "#565A66"} weight={600}>
               {p}
             </T>
-          ))}
-          <Glyph kind={h.muted ? "mute" : "speaker"} size={13} color={C.icon} />
-          <div style={{ position: "relative" }}>
-            <Glyph kind="sliders" size={13} color={C.icon} />
-            <div style={{ position: "absolute", right: -3, top: -3, width: 4, height: 4, borderRadius: 2, background: "#7C78C9" }} />
           </div>
-        </Row>
+        ))}
+        <div style={{ position: "absolute", left: 558, top: 14 }}>
+          <Glyph kind={h.muted ? "mute" : "speaker"} size={13} color={C.icon} />
+        </div>
+        <div style={{ position: "absolute", left: 593, top: 14 }}>
+          <Glyph kind="sliders" size={13} color={C.icon} />
+          <div style={{ position: "absolute", right: -3, top: -3, width: 4, height: 4, borderRadius: 2, background: "#7C78C9" }} />
+        </div>
       </div>
       {cards.map((card, i) => (
-        <PulseCardRow
-          key={i}
-          card={card.hovered && !hoverOn ? { ...card, hovered: false } : card}
-          y={50 + i * CARD_H}
-          geom={geom}
-        />
+        <PulseCardRow key={i} card={card} y={50 + i * CARD_H} geom={geom} hoverActive={card.hovered && hoverOn} />
       ))}
     </div>
   );
@@ -729,13 +822,14 @@ const PulseColumn: React.FC<{
 // ---------------------------------------------------------------------------
 
 // panel-local geometry (panels: NewPairs x=12 w=638, FinalStretch x=651 w=615, Migrated x=1281 w=612)
-const NP_GEOM: PGeom = { x: 22, textX: 90, box1X: 380, box1W: 109, box2X: 489, box2W: 123, right: 30 };
-const FS_GEOM: PGeom = { x: 16, textX: 86, box1X: 384, box1W: 111, box2X: 498, box2W: 112, right: 8 };
-const MIG_GEOM: PGeom = { x: 21, textX: 89, box1X: 431, box1W: 180, box2X: 0, box2W: 0, right: 8, single: true };
+// box edges probed from f0405 border pixels: NP 392|500 + 506|624, FS 1036|1146 + 1150|1267, MIG 1713|1892
+const NP_GEOM: PGeom = { x: 22, textX: 90, box1X: 380, box1W: 109, box2X: 494, box2W: 118, right: 38 };
+const FS_GEOM: PGeom = { x: 16, textX: 86, box1X: 384, box1W: 111, box2X: 499, box2W: 117, right: 8 };
+const MIG_GEOM: PGeom = { x: 21, textX: 89, box1X: 431, box1W: 180, box2X: 0, box2W: 0, right: 16, single: true };
 
-// Pumpwheel hover (tinted row + quick-buy buttons) lands between f402
-// and f408 on the plates — gate it at f405.
-const HOVER_FROM = 405;
+// Pumpwheel hover: the plates show the untinted row with collapsed quick-buy
+// circles through f0406; the tint + expanded pill buttons land at f0407-408.
+const HOVER_FROM = 407;
 
 export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
   return (
@@ -748,16 +842,16 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
             <path d="M8 2 L11 7 L5 7 Z" fill="#F2F4F9" />
             <path d="M3.5 13 L6 9 L10 9 L12.5 13 Z" fill="#F2F4F9" />
           </svg>
-          <T size={20} color="#F2F4F9" weight={700} style={{ letterSpacing: 1 }}>
+          <T size={19} color="#F2F4F9" weight={700} style={{ letterSpacing: 1 }}>
             {PNAV.logo}
           </T>
           <T size={13} color="#7C808C" weight={500}>
             {PNAV.logoSuffix}
           </T>
         </Row>
-        <Row gap={30} style={{ position: "absolute", left: 180, top: 20 }}>
+        <Row gap={31} style={{ position: "absolute", left: 177, top: 21 }}>
           {PNAV.items.map((it, i) => (
-            <T key={it} size={14} color={i === PNAV.activeIndex ? C.purpleBright : "#9EA1AB"} weight={600}>
+            <T key={it} size={13} color={i === PNAV.activeIndex ? C.purpleBright : "#9EA1AB"} weight={500}>
               {it}
             </T>
           ))}
@@ -820,7 +914,7 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         >
           <Glyph kind="search" size={13} color="#565A66" />
-          <T size={13} color="#565A66">
+          <T size={12} color="#565A66" style={{ whiteSpace: "nowrap" }}>
             {PNAV.searchPlaceholder}
           </T>
           <T size={12} color="#565A66" style={{ marginLeft: "auto" }}>
@@ -849,7 +943,7 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
             alignItems: "center",
           }}
         >
-          <T size={13} color={C.depositText} weight={600}>
+          <T size={13} color={C.depositText} weight={700}>
             {PNAV.deposit}
           </T>
         </div>
@@ -888,19 +982,19 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
           <Glyph kind="chart" size={14} color={C.icon} />
           <div style={{ width: 1, height: 14, background: "#23262F" }} />
         </Row>
-        <Row gap={26} style={{ position: "absolute", left: 140, top: 7 }}>
+        <Row gap={26} style={{ position: "absolute", left: 140, top: 7, width: 2400 }}>
           {TICKER.map((e, i) => (
             <Row key={i} gap={6}>
-              <div style={{ width: 14, height: 14, borderRadius: 4, background: e.icon }} />
+              <div style={{ width: 12, height: 12, borderRadius: 4, background: e.icon }} />
               <T size={12} color="#9EA1AB" weight={600}>
                 {e.label}
               </T>
-              <T size={12} color="#9EA1AB" weight={600}>
+              <T size={12} color="#E4E6EC" weight={600}>
                 {e.cap}
               </T>
               <div style={{ background: "#1D1F2A", borderRadius: 5, padding: "3px 7px", display: "flex", alignItems: "center", gap: 4 }}>
                 <Glyph kind="bolt" size={10} color="#63659A" />
-                <T size={11} color="#63659A" weight={600}>
+                <T size={11} color="#63659A" weight={600} style={{ whiteSpace: "nowrap" }}>
                   {e.sol}
                 </T>
               </div>
@@ -910,13 +1004,13 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
       </div>
 
       {/* ------------------------------------------------ heading row */}
-      <div style={{ position: "absolute", left: 18, top: 106 }}>
-        <Row gap={14}>
-          <T size={25} color="#E7E9EE" weight={600}>
+      <div style={{ position: "absolute", left: 18, top: 108 }}>
+        <Row gap={9}>
+          <T size={22} color="#E7E9EE" weight={600}>
             {PHEADING.title}
           </T>
-          <div style={{ background: "#171A22", borderRadius: 6, padding: "5px 6px" }}>
-            <SolanaBars size={13} />
+          <div style={{ background: "#171A22", borderRadius: 6, padding: "6px 10px" }}>
+            <SolanaBars size={14} />
           </div>
           <svg width={18} height={18} viewBox="0 0 16 16">
             <path d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z M2 5 L8 8.5 L14 5 M8 8.5 L8 14.5" fill="none" stroke="#B8963E" strokeWidth={1.1} strokeLinejoin="round" />
@@ -952,25 +1046,33 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
           <Glyph kind="chevron" size={11} color="#7C808C" />
         </Row>
-        <div style={{ width: 8 }} />
+      </Row>
+      {/* heading tail — fixed positions measured from f0405 (icons spread wider than a flex flow) */}
+      <div style={{ position: "absolute", left: 1604, top: 114 }}>
         <Glyph kind="bookmark" size={14} color={C.icon} />
+      </div>
+      <div style={{ position: "absolute", left: 1640, top: 114 }}>
         <Glyph kind="monitor" size={14} color={C.icon} />
+      </div>
+      <div style={{ position: "absolute", left: 1678, top: 114 }}>
         <Glyph kind="speaker" size={14} color={C.icon} />
+      </div>
+      <div style={{ position: "absolute", left: 1722, top: 114 }}>
         <Glyph kind="target" size={14} color={C.icon} />
-        <div style={{ width: 1, height: 14, background: "#23262F" }} />
-        <Row gap={4}>
-          <Glyph kind="calendar" size={13} color="#9EA1AB" />
-          <T size={13} color="#C8CBD5" weight={600}>
-            {PHEADING.walletChip}
-          </T>
-        </Row>
-        <Row gap={4}>
-          <SolanaBars size={11} />
-          <T size={14} color="#F2F4F9" weight={700}>
-            {PHEADING.balanceChip}
-          </T>
-          <Glyph kind="chevron" size={11} color="#7C808C" />
-        </Row>
+      </div>
+      <div style={{ position: "absolute", left: 1756, top: 113, width: 1, height: 16, background: "#23262F" }} />
+      <Row gap={4} style={{ position: "absolute", left: 1766, top: 113 }}>
+        <Glyph kind="calendar" size={13} color="#9EA1AB" />
+        <T size={13} color="#C8CBD5" weight={600}>
+          {PHEADING.walletChip}
+        </T>
+      </Row>
+      <Row gap={4} style={{ position: "absolute", left: 1808, top: 112 }}>
+        <SolanaBars size={11} />
+        <T size={14} color="#F2F4F9" weight={700}>
+          {PHEADING.balanceChip}
+        </T>
+        <Glyph kind="chevron" size={11} color="#7C808C" />
       </Row>
 
       {/* ------------------------------------------------ columns */}
@@ -1011,9 +1113,11 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
               ) : null}
             </div>
           ))}
-          <Glyph kind="gear" size={13} color={C.icon} />
+          <div style={{ marginLeft: 16 }}>
+            <Glyph kind="gear" size={13} color={C.icon} />
+          </div>
           <Glyph kind="filter" size={13} color="#7C78C9" />
-          <T size={12} color="#7C808C" weight={600}>
+          <T size={12} color="#7C808C" weight={600} style={{ marginLeft: 13 }}>
             {DOCK.preset}
           </T>
           <Row gap={3}>
@@ -1024,17 +1128,17 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
             <SolanaBars size={10} />
           </Row>
         </Row>
-        <Row gap={12} style={{ position: "absolute", right: 12, top: 10 }}>
+        <Row gap={26} style={{ position: "absolute", right: 10, top: 10 }}>
           <Glyph kind="external" size={13} color={C.icon} />
           <Glyph kind="close" size={13} color={C.icon} />
         </Row>
         {/* column header row */}
         <Row style={{ position: "absolute", left: 12, top: 46, width: 532 }}>
           <Glyph kind="gear" size={11} color="#565A66" />
-          <T size={12} color="#7C808C" weight={500} style={{ marginLeft: 14, width: 130 }}>
+          <T size={12} color="#7C808C" weight={500} style={{ marginLeft: 14, width: 140 }}>
             {DOCK.columns[0]}
           </T>
-          <T size={12} color="#7C808C" weight={500} style={{ width: 150 }}>
+          <T size={12} color="#7C808C" weight={500} style={{ width: 158 }}>
             {DOCK.columns[1]}
           </T>
           <T size={12} color="#7C808C" weight={500} style={{ width: 140 }}>

@@ -4,15 +4,15 @@
 // Colors probed from f0400.
 
 export const PCOLORS = {
-  pageBg: "#101218",
+  pageBg: "#191C23", // probed f0405 (5,500) / (300,95)
   navBg: "#12151B",
-  panelBg: "#14161D",
+  panelBg: "#1A1D24", // probed f0405 card interior (350,230)
   cardBg: "#181B23",
-  statBoxBg: "#262B33",
+  statBoxBg: "#2E3339", // probed f0405 box interior (440,230)
   statBoxBorder: "#3A3F49",
   tickerChipBg: "#1D1F2A",
   depositBg: "#444190",
-  depositText: "#C9C5F1",
+  depositText: "#E8E6F7",
   dockBg: "#151820",
   dockBorder: "#2A2D38",
   notifBorder: "#5A55B8",
@@ -38,7 +38,7 @@ export const PCOLORS = {
   cyan: "#61A4CF",
   addr: "#7C808C",
   goldRing: "#8A6D2F", // migrated avatar ring + underline
-  hoverBg: "#1E1B2E", // Pumpwheel hovered row
+  hoverBg: "#212234", // Pumpwheel hovered row (probed f0410)
   hoverText: "#8B87D8",
   badgeCheck: "#35B36B",
   paidGreen: "#4BC98F",
@@ -112,6 +112,7 @@ export type PulseCard = {
   icons: IconToken[];
   people: string;
   bell: string;
+  countColor?: string; // Pumpwheel row: people/bell counts render purple
   handle?: { text: string; color: string; num?: string };
   pct1: { v: string; color: string };
   pct1Skull?: boolean; // VISION's 70% skull marker
@@ -194,7 +195,7 @@ export const PULSE_FINAL_STRETCH: PulseCard[] = [
   {
     name: "Pumpwheel", sub: "The Pumpfun Flywheel", copyIcon: true, avatar: "av-pumpwheel.png",
     age: "6s", hovered: true,
-    icons: ["link", "search"], people: "21", bell: "2005",
+    icons: ["link", "search"], people: "25", bell: "2005", countColor: "#8B87D8",
     pct1: { v: "58%", color: PCOLORS.redBright }, pct2: { v: "10%", color: G }, pct2Suffix: "10mo",
     address: "Bs2...f4JD", bar: { color: PCOLORS.purpleBright, w: 62 },
     stats: { v: "$7K", mc: "$34.2K", mcColor: PCOLORS.hoverText },
@@ -326,6 +327,9 @@ export const PULSE_MIGRATED: PulseCard[] = [
 ];
 
 export const PAID_CHIP = "Paid" as const;
+
+// Pumpwheel hover quick-buy pill buttons (plates f0408–f0417)
+export const QUICK_BUY = { sol1: "4.3 SOL", sol2: "8.00 SOL" } as const;
 
 export const DOCK = {
   owner: "Jason",

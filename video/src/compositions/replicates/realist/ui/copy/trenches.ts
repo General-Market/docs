@@ -79,6 +79,9 @@ export const COLUMN_HEADERS: ColumnHeader[] = [
 
 export const RIGHT_CONTROLS = { customize: "Customize" } as const;
 
+// stat-box letter labels, shared with the Pulse screen
+export const STAT_LABELS = { v: "V", mc: "MC", f: "F" } as const;
+
 // ---------------------------------------------------------------------------
 // Cards
 // ---------------------------------------------------------------------------
