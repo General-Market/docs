@@ -139,18 +139,31 @@ const Background: React.FC = () => (
         }}
       />
     </div>
-    {/* high-frequency noise to dither out 8-bit radial-gradient banding */}
-    <AbsoluteFill
-      style={{
-        opacity: 0.05,
-        mixBlendMode: "overlay",
-        backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
-          "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>",
-        )}")`,
-      }}
-    />
   </AbsoluteFill>
 );
+
+// Full-canvas animated grain — dithers the 8-bit banding of every gradient
+// (background rings, card fills, inset glows) the way the source's video
+// grain does. Sits on top of the whole stage; position jitters per frame.
+const NOISE_URI = `url("data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>",
+)}")`;
+const Grain: React.FC = () => {
+  const f = useCurrentFrame();
+  const jx = ((f * 53) % 160) - 80;
+  const jy = ((f * 97) % 160) - 80;
+  return (
+    <AbsoluteFill
+      style={{
+        opacity: 0.09,
+        mixBlendMode: "overlay",
+        backgroundImage: NOISE_URI,
+        backgroundPosition: `${jx}px ${jy}px`,
+        pointerEvents: "none",
+      }}
+    />
+  );
+};
 
 // ————— glass material —————
 // Measured on the settled pill (f42): interior IS the background (transfer
@@ -415,14 +428,16 @@ const FlyCards: React.FC<{
               }}
             />
           </div>
+          {/* soft spill beyond the facing edge — elliptical falloff, no hard
+              rectangle edges (they read as a stepped bridge between cards) */}
           <div
             style={{
               position: "absolute",
-              left: sign > 0 ? -size / 2 - 64 : size / 2,
-              top: -190,
-              width: 64,
-              height: 380,
-              background: `linear-gradient(${sign > 0 ? 270 : 90}deg, rgba(255,255,255,0.34), rgba(255,255,255,0))`,
+              left: sign > 0 ? -size / 2 - 90 : size / 2,
+              top: -220,
+              width: 90,
+              height: 440,
+              background: `radial-gradient(ellipse 100% 50% at ${sign > 0 ? "100%" : "0%"} 50%, rgba(255,255,255,0.26), rgba(255,255,255,0) 75%)`,
             }}
           />
         </div>
@@ -673,6 +688,7 @@ export const MorphoComposition: React.FC = () => {
           <Stage frameOffset={503} />
         </CameraMotionBlur>
       </Sequence>
+      <Grain />
     </AbsoluteFill>
   );
 };
