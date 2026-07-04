@@ -653,7 +653,8 @@ const PulseColumn: React.FC<{
   headerIndex: number;
   cards: PulseCard[];
   geom: PGeom;
-}> = ({ x, w, headerIndex, cards, geom }) => {
+  hoverOn?: boolean;
+}> = ({ x, w, headerIndex, cards, geom, hoverOn = true }) => {
   const h = PULSE_HEADERS[headerIndex];
   return (
     <div
@@ -712,7 +713,12 @@ const PulseColumn: React.FC<{
         </Row>
       </div>
       {cards.map((card, i) => (
-        <PulseCardRow key={i} card={card} y={50 + i * CARD_H} geom={geom} />
+        <PulseCardRow
+          key={i}
+          card={card.hovered && !hoverOn ? { ...card, hovered: false } : card}
+          y={50 + i * CARD_H}
+          geom={geom}
+        />
       ))}
     </div>
   );
@@ -727,7 +733,11 @@ const NP_GEOM: PGeom = { x: 22, textX: 90, box1X: 380, box1W: 109, box2X: 489, b
 const FS_GEOM: PGeom = { x: 16, textX: 86, box1X: 384, box1W: 111, box2X: 498, box2W: 112, right: 8 };
 const MIG_GEOM: PGeom = { x: 21, textX: 89, box1X: 431, box1W: 180, box2X: 0, box2W: 0, right: 8, single: true };
 
-export const PulseScreen: React.FC<{ frame: number }> = () => {
+// Pumpwheel hover (tinted row + quick-buy buttons) lands between f402
+// and f408 on the plates — gate it at f405.
+const HOVER_FROM = 405;
+
+export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ background: C.pageBg, fontFamily: FONT, overflow: "hidden" }}>
       {/* ------------------------------------------------ top nav */}
@@ -965,7 +975,7 @@ export const PulseScreen: React.FC<{ frame: number }> = () => {
 
       {/* ------------------------------------------------ columns */}
       <PulseColumn x={12} w={638} headerIndex={0} cards={PULSE_NEW_PAIRS} geom={NP_GEOM} />
-      <PulseColumn x={651} w={615} headerIndex={1} cards={PULSE_FINAL_STRETCH} geom={FS_GEOM} />
+      <PulseColumn x={651} w={615} headerIndex={1} cards={PULSE_FINAL_STRETCH} geom={FS_GEOM} hoverOn={frame >= HOVER_FROM} />
       <PulseColumn x={1281} w={612} headerIndex={2} cards={PULSE_MIGRATED} geom={MIG_GEOM} />
       {/* scrollbar */}
       <div style={{ position: "absolute", left: 1900, top: 205, width: 5, height: 260, borderRadius: 3, background: "#2E313B" }} />
