@@ -37,7 +37,14 @@ export const COLORS = {
   depositBg: "#444294", //      Deposit pill (f0900 rgb 68,66,148)
   chipBg: "#393B47", //         ticker item chips (f0500)
   searchBg: "#3D3F4C", //       nav search field
-  solPillBg: "#3E496C", //      nav SOL dropdown
+  solPillBg: "#34363F", //      nav SOL dropdown (re-probed f0500 p{1408,28})
+  tickerBg: "#1F222B", //       ticker strip bg, lighter than panelBg (f0500 p{330,73})
+  circleBtnBg: "#303338", //    nav star/bell circular buttons (f0500 p{1570,15})
+  walletChipBg: "#26292E", //   nav wallet chip (f0500 p{1700,27})
+  mcWhite: "#DFE2E7", //        big MC figure is near-white on every plate (f0500 p{370,112})
+  verbGreen: "#63B6A2", //      toast card "bought"/"bought more" verb (f0430 p{950,29})
+  warnAmber: "#D8AB2C", //      partial-toast amber dot (f1650 p{784,268})
+  checkTeal: "#17A296", //      s4/tc toast check circle (f0500 x851-858 y80 scan)
   yellow: "#D8C05C", //         loading "Select P1…" message (f0350)
   loadTealBtn: "#268068", //    loading "Gas preset not selected" button
   gold: "#C9A227", //           trophy chip / gas icons
@@ -206,6 +213,27 @@ export const RAIL = {
   similarSort: "MC",
 } as const;
 
+// Migrating-phase rail/bottom content (plates f0420-f0438; f0418 is live,
+// button flips purple→teal between f0435 and f0439).
+export const MIGRATE = {
+  fromF: 420,
+  untilF: 438,
+  devTokensCountFromF: 439, // "Dev Tokens" count appears with the live flip
+  snipeBg: "#6B5EEA", //       purple button bg (f0420 p{1700,447})
+  snipeText: "#23227A", //     purple button label ink (f0420 p{1770,435})
+  snipeLabel: "Snipe PUMPWHEEL",
+  message: [
+    "This pair is currently migrating. This is",
+    "usually instant, so if you see this message,",
+    "you should refresh the page.",
+  ],
+  reusedLabel: "Reused Image Tokens", // dusty-red link above Similar Tokens
+  reusedColor: "#A85F63", //           (f0420 only; absent from f0500 on)
+} as const;
+
+// PRESET 3 pill (probed f0420 p{1845,546})
+export const PRESET3_STYLE = { bg: "#403C6F", text: "#A6A0EE" } as const;
+
 export const BOTTOM = {
   tabs: ["Trades", "Positions", "Orders", "Holders", "Top Traders", "Dev Tokens"],
   devTokensCount: "2005",
@@ -341,6 +369,31 @@ export const LOAD_TOASTS = {
   waiting: "Waiting",
   success: "Success",
   error: "Error",
+  // counts: 4 wallets in flight; flip to success when the order completes
+  walletTotal: "4",
+  zero: "0",
+} as const;
+
+// Padre chart flash inside the loading screen (plates f0378-f0391).
+export const LOAD_PADRE = {
+  timeframes: ["1s", "5s", "15s", "1m"], // "1s" active (blue)
+  indicators: "Indicators",
+  priceMcap: { prefix: "Price / ", active: "MCap" },
+  display: "Display",
+  layout: "Default ▾",
+  symbolLine: "Pumpwheel/SOL · trade.padre.gg",
+  ohlc: { o: "19.1K", h: "32.3K", l: "19.1K", c: "32.3K", d: "13.3K", dp: "+69.56%" },
+  migration: "Migration ─ ─",
+  avgFill: "Avg. Fill Price",
+  avgFillChip: "6K",
+  priceChip: "34.3K",
+  highChip: "High 32.3K",
+  lastChip: "32.3K",
+  lowChip: "Low 2.57K",
+  timeLabels: ["15:03", "15:03:14"],
+  footRanges: "1h 3d 1m ⏱",
+  footClock: "15:02:52 (UTC) · % log ",
+  footAuto: "auto",
 } as const;
 
 export const LOAD_BOTTOM = {

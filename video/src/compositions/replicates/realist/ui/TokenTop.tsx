@@ -22,18 +22,7 @@ const { fontFamily } = loadFont("normal", {
 
 const FONT = `${fontFamily}, -apple-system, sans-serif`;
 
-// ─── Locally measured values not (yet) in copy/token.ts ────────────────
-// TODO(copy): promote to copy/token.ts
-const LOCAL = {
-  verbGreen: "#63B6A2", //   card "bought"/"bought more" verb (f0430 p{950,29})
-  warnAmber: "#D8AB2C", //   partial-toast amber dot (f1650 p{784,268})
-  checkTeal: "#17A296", //   s4/tc check circle (f0500 x851-858 y80 scan)
-  tickerBg: "#1F222B", //    ticker strip bg, lighter than panelBg (f0500 p{330,73})
-  solPillBg: "#34363F", //   nav SOL pill bg — COLORS.solPillBg #3E496C does NOT match probe (f0500 p{1408,28})
-  circleBtnBg: "#303338", // nav star/bell circular buttons (f0500 p{1570,15})
-  walletChipBg: "#26292E", // nav wallet chip (f0500 p{1700,27})
-  mcWhite: "#DFE2E7", //     big MC figure is near-white on every plate, not teal (f0500 p{370,112})
-} as const;
+// All probed colors live in copy/token.ts COLORS (promoted r2).
 
 // ─── Text / row primitives (local re-declarations, TrenchesScreen idiom) ──
 const T: React.FC<{
@@ -294,12 +283,12 @@ const StatusDot: React.FC<{ kind: "check" | "warn" | "error" }> = ({ kind }) => 
   if (kind === "check") {
     return (
       <svg width={18} height={18} viewBox="0 0 16 16" style={{ display: "block" }}>
-        <circle cx="8" cy="8" r="7" fill={LOCAL.checkTeal} />
+        <circle cx="8" cy="8" r="7" fill={C.checkTeal} />
         <path d="M4.8 8 L7 10.2 L11.2 5.8" fill="none" stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }
-  const fill = kind === "warn" ? LOCAL.warnAmber : C.neg;
+  const fill = kind === "warn" ? C.warnAmber : C.neg;
   const mark = kind === "warn" ? "#1A1D24" : "#FFFFFF";
   return (
     <svg width={18} height={18} viewBox="0 0 16 16" style={{ display: "block" }}>
@@ -377,7 +366,7 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
   };
   if (toast.kind === "card") {
     const sell = toast.verb.includes("sold");
-    const accent = sell ? C.neg : LOCAL.verbGreen;
+    const accent = sell ? C.neg : C.verbGreen;
     const amtColor = sell ? C.neg : C.tealText;
     return (
       <div style={{ ...shell, height: CARD_H, minWidth: 220, padding: "0 12px 0 8px", gap: 10 }}>
@@ -570,7 +559,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
             top: 13,
             height: 30,
             borderRadius: 8,
-            background: LOCAL.solPillBg,
+            background: C.solPillBg,
             padding: "0 10px",
             boxSizing: "border-box",
           }}
@@ -611,7 +600,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
               width: 34,
               height: 34,
               borderRadius: 17,
-              background: LOCAL.circleBtnBg,
+              background: C.circleBtnBg,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -629,7 +618,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
             top: 12,
             height: 32,
             borderRadius: 16,
-            background: LOCAL.walletChipBg,
+            background: C.walletChipBg,
             padding: "0 12px",
             boxSizing: "border-box",
           }}
@@ -661,7 +650,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
             width: 34,
             height: 34,
             borderRadius: 17,
-            background: LOCAL.walletChipBg,
+            background: C.walletChipBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -685,7 +674,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           top: 56,
           width: 1920,
           height: 34,
-          background: LOCAL.tickerBg,
+          background: C.tickerBg,
           borderTop: "1px solid #232833",
           borderBottom: "1px solid #232833",
           boxSizing: "border-box",
@@ -775,7 +764,7 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
         {/* big MC — renders near-white on every plate (not teal); plate ink
             x345-398 y98-124 → 19px, center y111 */}
         <div style={{ position: "absolute", left: 346, top: 0, height: 42, display: "flex", alignItems: "center" }}>
-          <T size={19} color={LOCAL.mcWhite} weight={600}>
+          <T size={19} color={C.mcWhite} weight={600}>
             {mc}
           </T>
         </div>

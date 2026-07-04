@@ -9,6 +9,7 @@ import {
   LOAD_POPUP,
   LOAD_TOASTS,
   LOAD_BOTTOM,
+  LOAD_PADRE,
 } from "./copy/token";
 import {
   sampleAt,
@@ -122,13 +123,13 @@ const OrderToast: React.FC<{ y: number; done: boolean; phase: number }> = ({ y, 
     </span>
     <span style={{ position: "absolute", left: 36, top: 52 }}>
       <T size={11} color="#8b8e97">
-        {LOAD_TOASTS.waiting} {done ? "0" : "4"}
+        {LOAD_TOASTS.waiting} {done ? LOAD_TOASTS.zero : LOAD_TOASTS.walletTotal}
       </T>
       <T size={11} color={done ? "#3ED6C5" : "#8b8e97"} style={{ marginLeft: 14 }}>
-        {LOAD_TOASTS.success} {done ? "4" : "0"}
+        {LOAD_TOASTS.success} {done ? LOAD_TOASTS.walletTotal : LOAD_TOASTS.zero}
       </T>
       <T size={11} color="#8b8e97" style={{ marginLeft: 14 }}>
-        {LOAD_TOASTS.error} 0
+        {LOAD_TOASTS.error} {LOAD_TOASTS.zero}
       </T>
     </span>
   </div>
@@ -438,7 +439,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ position: "absolute", left: 0, top: 140, width: 1596, height: 830, background: "#0e1116" }}>
           {/* toolbar strip */}
           <div style={{ position: "absolute", left: 0, top: 8, width: 1596, height: 30, background: "#12151b" }}>
-            {["1s", "5s", "15s", "1m"].map((tf, i) => (
+            {LOAD_PADRE.timeframes.map((tf, i) => (
               <span key={tf} style={{ position: "absolute", left: 10 + i * 26, top: 9 }}>
                 <T size={12} weight={600} color={i === 0 ? "#4a7dd8" : "#8b8e97"}>
                   {tf}
@@ -447,53 +448,53 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
             ))}
             <span style={{ position: "absolute", left: 150, top: 9 }}>
               <T size={12} color="#c6c9d2">
-                Indicators
+                {LOAD_PADRE.indicators}
               </T>
             </span>
             <span style={{ position: "absolute", left: 245, top: 9 }}>
               <T size={12} color="#c6c9d2">
-                Price / <span style={{ color: "#4a7dd8" }}>MCap</span>
+                {LOAD_PADRE.priceMcap.prefix}<span style={{ color: "#4a7dd8" }}>{LOAD_PADRE.priceMcap.active}</span>
               </T>
             </span>
             <span style={{ position: "absolute", left: 340, top: 9 }}>
               <T size={12} color="#c6c9d2">
-                Display
+                {LOAD_PADRE.display}
               </T>
             </span>
             <span style={{ position: "absolute", left: 1385, top: 9 }}>
               <T size={12} color="#c6c9d2">
-                Default ▾
+                {LOAD_PADRE.layout}
               </T>
             </span>
           </div>
           {/* OHLC line */}
           <span style={{ position: "absolute", left: 60, top: 55 }}>
             <T size={12} color="#c6c9d2">
-              Pumpwheel/SOL · trade.padre.gg{" "}
+              {LOAD_PADRE.symbolLine}{" "}
             </T>
             <T size={12} color="#8b8e97">
               O
             </T>
             <T size={12} color="#3ED6C5">
-              19.1K{" "}
+              {LOAD_PADRE.ohlc.o}{" "}
             </T>
             <T size={12} color="#8b8e97">
               H
             </T>
             <T size={12} color="#3ED6C5">
-              32.3K{" "}
+              {LOAD_PADRE.ohlc.h}{" "}
             </T>
             <T size={12} color="#8b8e97">
               L
             </T>
             <T size={12} color="#3ED6C5">
-              19.1K{" "}
+              {LOAD_PADRE.ohlc.l}{" "}
             </T>
             <T size={12} color="#8b8e97">
               C
             </T>
             <T size={12} color="#3ED6C5">
-              32.3K 13.3K (+69.56%)
+              {LOAD_PADRE.ohlc.c} {LOAD_PADRE.ohlc.d} ({LOAD_PADRE.ohlc.dp})
             </T>
           </span>
           {/* left tool strip */}
@@ -506,7 +507,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
           {/* migration label */}
           <span style={{ position: "absolute", left: 1416, top: 72 }}>
             <T size={11} color="#8b8e97">
-              Migration ─ ─
+              {LOAD_PADRE.migration}
             </T>
           </span>
           {/* green candle */}
@@ -533,54 +534,54 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
           />
           <span style={{ position: "absolute", left: 1345, top: 626 }}>
             <T size={11} color="#8b8e97">
-              Avg. Fill Price
+              {LOAD_PADRE.avgFill}
             </T>
           </span>
           <div style={{ position: "absolute", left: 1522, top: 629, padding: "2px 5px", background: "#3ED6C5", borderRadius: 2 }}>
             <T size={11} weight={600} color="#0B1418">
-              6K
+              {LOAD_PADRE.avgFillChip}
             </T>
           </div>
           {/* chips right */}
           <div style={{ position: "absolute", left: 1522, top: 72, padding: "2px 5px", background: "#3a3e49", borderRadius: 2 }}>
             <T size={11} color="#e4e7ee">
-              34.3K
+              {LOAD_PADRE.priceChip}
             </T>
           </div>
           <div style={{ position: "absolute", left: 1498, top: 96, padding: "2px 5px", background: "#20232b", borderRadius: 2 }}>
             <T size={11} color="#c6c9d2">
-              High 32.3K
+              {LOAD_PADRE.highChip}
             </T>
           </div>
           <div style={{ position: "absolute", left: 1522, top: 118, padding: "2px 5px", background: "#2BB48A", borderRadius: 2 }}>
         <T size={11} weight={600} color="#0B1418">
-              32.3K
+              {LOAD_PADRE.lastChip}
             </T>
           </div>
           <div style={{ position: "absolute", left: 1500, top: 700, padding: "2px 5px", background: "#20232b", borderRadius: 2 }}>
             <T size={11} color="#c6c9d2">
-              Low 2.57K
+              {LOAD_PADRE.lowChip}
             </T>
           </div>
           {/* time labels */}
           <span style={{ position: "absolute", left: 780, top: 772 }}>
             <T size={11} color="#8b8e97">
-              15:03
+              {LOAD_PADRE.timeLabels[0]}
             </T>
           </span>
           <span style={{ position: "absolute", left: 862, top: 772 }}>
             <T size={11} color="#8b8e97">
-              15:03:14
+              {LOAD_PADRE.timeLabels[1]}
             </T>
           </span>
           <span style={{ position: "absolute", left: 20, top: 802 }}>
             <T size={11} color="#8b8e97">
-              1h 3d 1m ⏱
+              {LOAD_PADRE.footRanges}
             </T>
           </span>
           <span style={{ position: "absolute", left: 1380, top: 802 }}>
             <T size={11} color="#8b8e97">
-              15:02:52 (UTC) · % log <span style={{ color: "#4a7dd8" }}>auto</span>
+              {LOAD_PADRE.footClock}<span style={{ color: "#4a7dd8" }}>{LOAD_PADRE.footAuto}</span>
             </T>
           </span>
         </div>

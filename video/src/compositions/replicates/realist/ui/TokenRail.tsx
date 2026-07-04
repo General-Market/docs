@@ -1,6 +1,6 @@
 import React from "react";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { COLORS as C, RAIL, POPUP } from "./copy/token";
+import { COLORS as C, RAIL, POPUP, MIGRATE, PRESET3_STYLE } from "./copy/token";
 import {
   sampleAt,
   stats24Table,
@@ -17,32 +17,6 @@ const { fontFamily } = loadFont("normal", {
 
 const FONT = `${fontFamily}, -apple-system, sans-serif`;
 
-// ---------------------------------------------------------------------------
-// Measured constants not yet in copy/token.ts / timeline-token.ts.
-// ---------------------------------------------------------------------------
-
-// TODO(copy): promote to copy/token.ts — migrating→live switch measured on the
-// plates: f0435 button still purple srgb(40,39,119), f0439 teal srgb(50,215,198).
-const MIGRATE_UNTIL_F = 438;
-// TODO(copy): promote to copy/token.ts — probed f0420 button bg (1700,447).
-const SNIPE_BG = "#6B5EEA";
-// TODO(copy): promote to copy/token.ts — probed f0420 button text (1770,435).
-const SNIPE_TEXT = "#23227A";
-// TODO(copy): promote to copy/token.ts — f0420 purple button label.
-const SNIPE_LABEL = "Snipe PUMPWHEEL";
-// TODO(copy): promote to copy/token.ts — migrating skeleton message, f0420.
-const MIGRATE_MSG = [
-  "This pair is currently migrating. This is",
-  "usually instant, so if you see this message,",
-  "you should refresh the page.",
-];
-// TODO(copy): promote to copy/token.ts — dusty-red link above Similar Tokens,
-// only in the migrating rail (f0420); absent from f0500 onward.
-const REUSED_TOKENS_LABEL = "Reused Image Tokens";
-const REUSED_TOKENS_COLOR = "#A85F63";
-// TODO(copy): promote to copy/token.ts — PRESET 3 pill probed f0420 (1845,546).
-const PRESET3_BG = "#403C6F";
-const PRESET3_TEXT = "#A6A0EE";
 // skeleton shimmer-bar fill (dim, matches f0420 placeholder bars)
 const SKEL = "#23262E";
 
@@ -530,7 +504,7 @@ const MigratingSection: React.FC = () => (
     ))}
     {/* migrating message */}
     <div style={{ position: "absolute", left: X0, top: 312, width: RW, textAlign: "center" }}>
-      {MIGRATE_MSG.map((line) => (
+      {MIGRATE.message.map((line) => (
         <div key={line} style={{ marginBottom: 6 }}>
           <T size={13} color="#7A7E88" weight={500}>{line}</T>
         </div>
@@ -550,14 +524,14 @@ const ActionButton: React.FC<{ migrating: boolean }> = ({ migrating }) => (
       width: RW,
       height: 34,
       borderRadius: 17,
-      background: migrating ? SNIPE_BG : C.teal,
+      background: migrating ? MIGRATE.snipeBg : C.teal,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
     }}
   >
-    <T size={15} color={migrating ? SNIPE_TEXT : C.onTeal} weight={700}>
-      {migrating ? SNIPE_LABEL : RAIL.buyButton}
+    <T size={15} color={migrating ? MIGRATE.snipeText : C.onTeal} weight={700}>
+      {migrating ? MIGRATE.snipeLabel : RAIL.buyButton}
     </T>
   </div>
 );
@@ -625,13 +599,13 @@ const PresetTabs: React.FC = () => (
         width: 76,
         height: 19,
         borderRadius: 6,
-        background: PRESET3_BG,
+        background: PRESET3_STYLE.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <T size={11} color={PRESET3_TEXT} weight={600}>{RAIL.presetTabs[2]}</T>
+      <T size={11} color={PRESET3_STYLE.text} weight={600}>{RAIL.presetTabs[2]}</T>
     </div>
     <div style={{ position: "absolute", left: 1632, right: 0, top: 566, height: 1, background: C.divider }} />
   </>
@@ -667,14 +641,19 @@ const GridCell: React.FC<{
   </div>
 );
 
+// Cell colors are value-driven on the plates (green = safe, pink = risky):
+// f0420 renders snipers 13.95% and LP "???" PINK; f0500 renders snipers 0%
+// and LP 100% GREEN. Thresholds per field, "???" counts as risky.
+const pct = (v: string) => parseFloat(v.replace("%", "")) || 0;
+
 const TokenInfoSection: React.FC<{ info: TokenInfo }> = ({ info }) => {
   const cells: { glyph: string; v: string; neg: boolean }[] = [
-    { glyph: "person", v: info.top10, neg: true },
-    { glyph: "chef", v: info.dev, neg: false },
-    { glyph: "target", v: info.snipers, neg: false },
-    { glyph: "shield", v: info.insiders, neg: false },
-    { glyph: "cluster", v: info.bundlers, neg: true },
-    { glyph: "droplet", v: info.lp, neg: false },
+    { glyph: "person", v: info.top10, neg: pct(info.top10) > 20 },
+    { glyph: "chef", v: info.dev, neg: pct(info.dev) > 10 },
+    { glyph: "target", v: info.snipers, neg: pct(info.snipers) > 5 || info.snipers.includes("?") },
+    { glyph: "shield", v: info.insiders, neg: pct(info.insiders) > 5 },
+    { glyph: "cluster", v: info.bundlers, neg: pct(info.bundlers) > 10 },
+    { glyph: "droplet", v: info.lp, neg: info.lp !== "" && pct(info.lp) < 100 },
   ];
   const counts: { glyph: string; v: string; color: string; label: string }[] = [
     { glyph: "people", v: info.holders, color: C.text, label: RAIL.countLabels[0] },
@@ -769,8 +748,8 @@ const SimilarTokens: React.FC<{ migrating: boolean }> = ({ migrating }) => {
     <>
       {migrating ? (
         <Row gap={5} style={{ position: "absolute", left: X0, top: 844 }}>
-          <T size={12} color={REUSED_TOKENS_COLOR} weight={500}>{REUSED_TOKENS_LABEL}</T>
-          <T size={12} color={REUSED_TOKENS_COLOR} weight={500}>{"›"}</T>
+          <T size={12} color={MIGRATE.reusedColor} weight={500}>{MIGRATE.reusedLabel}</T>
+          <T size={12} color={MIGRATE.reusedColor} weight={500}>{"›"}</T>
         </Row>
       ) : null}
       <div style={{ position: "absolute", left: 1632, right: 0, top: y - 13, height: 1, background: C.divider }} />
@@ -798,7 +777,8 @@ const SimilarTokens: React.FC<{ migrating: boolean }> = ({ migrating }) => {
 // ---------------------------------------------------------------------------
 
 export const TokenRail: React.FC<{ frame: number }> = ({ frame }) => {
-  const migrating = frame <= MIGRATE_UNTIL_F;
+  // plate f0418 shows the LIVE layout; the migrating panel spans ~f420-438
+  const migrating = frame >= MIGRATE.fromF && frame <= MIGRATE.untilF;
   const info = sampleAt(tokenInfoTable, frame);
   return (
     <div style={{ position: "absolute", inset: 0, fontFamily: FONT }}>

@@ -1,6 +1,6 @@
 import React from "react";
 import { loadFont } from "@remotion/google-fonts/Inter";
-import { COLORS as C, BOTTOM, DOCK } from "./copy/token";
+import { COLORS as C, BOTTOM, DOCK, MIGRATE } from "./copy/token";
 import { sampleAt, tokenInfoTable, tradeRowTable } from "./timeline-token";
 
 const { fontFamily } = loadFont("normal", {
@@ -10,10 +10,9 @@ const { fontFamily } = loadFont("normal", {
 
 const FONT = `${fontFamily}, -apple-system, sans-serif`;
 
-// TODO(copy): promote to copy/token.ts — "Dev Tokens" carries no count on the
-// migrating plates (f0420 shows bare "Dev Tokens", f0900 shows "(2005)");
-// switch tied to the rail's measured migrate→live flip at f438/f439.
-const DEVTOKENS_COUNT_FROM_F = 439;
+// "Dev Tokens" carries no count on the migrating plates (f0420 bare,
+// f0900 "(2005)"); switch tied to the measured migrate→live flip (copy).
+const DEVTOKENS_COUNT_FROM_F = MIGRATE.devTokensCountFromF;
 // skeleton shimmer-bar fill (dim placeholder bars while the table is empty)
 const SKEL = "#23262E";
 
