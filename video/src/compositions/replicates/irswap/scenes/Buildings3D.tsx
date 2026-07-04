@@ -559,16 +559,20 @@ export type ArrowAlphas = {
   cVal: string;
 };
 
-// reference arrows: charcoal-outlined fills with a glossy horizontal
-// mid-lightening (measured centers: teal 122,223,247 / red 255,164,183)
+// reference arrows: charcoal-outlined fills, SOLID body with a light
+// zone only in the trailing ~20% (re-measured round 1: red body
+// 244,95,110 / tail 255,173,190; teal body 76,179,203 / tail
+// 127,230,252 — the old symmetric mid-lightening had measured the tail,
+// not the body, and left the whole fill ~48 levels too light).
 const TEAL_FLAT: [number, string][] = [
-  [0, "#4CB3CD"], [0.5, "#79D2EE"], [1, "#4CB3CD"],
+  [0, "#7FE6FC"], [0.22, "#4CB3CD"], [1, "#4CB3CD"],
 ];
 const RED_STOPS: [number, string][] = [
-  [0, "#F05F6D"], [0.5, "#FFA4B7"], [1, "#F05F6D"],
+  [0, "#FFADBE"], [0.22, "#F05F6D"], [1, "#F05F6D"],
 ];
-const TITLE_COLOR = "#757777";
-const VALUE_COLOR = "#666B6B";
+// re-measured round 1: ref title glyph cores gray 87-91, values 93-95
+const TITLE_COLOR = "#5B5B5B";
+const VALUE_COLOR = "#5E6363";
 
 type Run = { t: string; size: number; weight: number; color: string };
 type TextOpts = { span?: number; rot?: number };

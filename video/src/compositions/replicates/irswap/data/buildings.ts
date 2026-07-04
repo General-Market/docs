@@ -93,8 +93,9 @@ export const BCOLORS = {
   plaqueFace: "#F3FAF7",
   plaqueBorder: "#B8BEBE",
   plaqueText: "#707474",
-  title: "#757777",
-  value: "#666B6B",
+  // re-measured round 1: ref title glyph cores gray 87-91, values 93-95
+  title: "#5B5B5B",
+  value: "#5E6363",
   panelBar: "#D2D2D2",
   panelBody: "#F4FEFD",
   panelStrip: "#E2E2E2",

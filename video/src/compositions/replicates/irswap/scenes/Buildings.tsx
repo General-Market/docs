@@ -586,9 +586,14 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
 
   // red arrow: tip-first wipe 2490-2525 with an alpha ramp (ref head is
   // ~20% alpha mid-wipe), world-static after
+  // ghost floor + ramp-back re-measured round 1 (core-pixel alpha trace):
+  // floor ≈0.45 (not 0.3), full again by 3210 — ref: 3190:0.52 3200:0.78
+  // 3210:1.0 (old 3195-3240 window held it ghosted ~20 frames too long)
   const redOp = fade(frame, 2495, 2512) *
-    (frame < 3086 ? 1 : frame < 3195 ? Math.max(0.3, fadeOut(frame, 3095, 3115)) : Math.min(1, 0.3 + fade(frame, 3195, 3240) * 0.7));
-  const dVbrOp = fade(frame, 3195, 3240) * fadeOut(frame, 3421, 3427);
+    (frame < 3086 ? 1 : frame < 3185 ? Math.max(0.45, fadeOut(frame, 3095, 3115)) : Math.min(1, 0.45 + fade(frame, 3185, 3210) * 0.55));
+  // re-measured round 1: ref title inks in 3175-3215 (darkest-glyph
+  // trace), ~25 frames earlier than the old 3195-3240 window
+  const dVbrOp = fade(frame, 3175, 3215) * fadeOut(frame, 3421, 3427);
   const ncOp = fade(frame, 3443, 3450) * fadeOut(frame, 3520, 3540);
   const ncArrowOp = frame >= 2495 ? Math.max(redOp * fadeOut(frame, 3421, 3427), fade(frame, 3427, 3438) * fadeOut(frame, 3520, 3545)) : 0;
 
