@@ -1132,27 +1132,27 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
               ? `${t} (${LOAD_BOTTOM.devTokensCount})`
               : t;
         return (
-          <span key={t} style={{ position: "absolute", left: [24, 95, 185, 273, 390, 510][i], top: 985 }}>
+          <span key={t} style={{ position: "absolute", left: [24, 95, 185, 276, 392, 496][i], top: 972 }}>
             <T size={12.5} weight={i === 0 ? 600 : 500} color={i === 0 ? "#e9ecf3" : "#8b8e97"}>
               {label}
             </T>
           </span>
         );
       })}
-      <div style={{ position: "absolute", left: 24, top: 1003, width: 42, height: 2, background: "#5F58B0" }} />
+      <div style={{ position: "absolute", left: 24, top: 1000, width: 42, height: 2, background: "#5F58B0" }} />
       {/* instant trade pill */}
-      <div style={{ position: "absolute", left: 1425, top: 978, height: 24, padding: "0 12px", borderRadius: 12, background: C.teal, display: "flex", alignItems: "center", gap: 5 }}>
+      <div style={{ position: "absolute", left: 1425, top: 966, height: 24, padding: "0 12px", borderRadius: 12, background: C.teal, display: "flex", alignItems: "center", gap: 5 }}>
         <T size={11.5} weight={700} color={C.onTeal}>
           ⚡ {LOAD_BOTTOM.instantTrade}
         </T>
       </div>
       {/* feed row */}
-      <span style={{ position: "absolute", left: 24, top: 1016 }}>
+      <span style={{ position: "absolute", left: 24, top: 1008 }}>
         <T size={11.5} weight={500} color="#3ED6C5">
           {LOAD_BOTTOM.feedLive}
         </T>
       </span>
-      <span style={{ position: "absolute", left: 1358, top: 1016, whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", left: 1358, top: 1008, whiteSpace: "nowrap" }}>
         <T size={11.5} color="#8b8e97">
           {LOAD_BOTTOM.filter}
         </T>
@@ -1175,7 +1175,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
           [1505, `▼ ${LOAD_BOTTOM.tableHead.maker}`],
         ] as const
       ).map(([x, label]) => (
-        <span key={x} style={{ position: "absolute", left: x, top: 1050 }}>
+        <span key={x} style={{ position: "absolute", left: x, top: 1039 }}>
           <T size={11.5} color="#8b8e97">
             {label}
           </T>
