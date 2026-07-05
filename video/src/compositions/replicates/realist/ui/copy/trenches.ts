@@ -122,6 +122,8 @@ export type TrenchCard = {
     chip1: string; // left box lightning chip
     chip2: string; // right box lightning chip
   };
+  // stepped value changes read off the plates (last step with at <= frame wins)
+  statSteps?: { at: number; v?: string; mc?: string; mcColor?: string; fee?: string }[];
 };
 
 const G = COLORS.green;
@@ -138,7 +140,8 @@ export const NEW_CARDS: TrenchCard[] = [
       { label: "ATH", value: "14.97%", valueColor: "#8A8D99" },
     ],
     address: "4qR...pump", bar: { color: COLORS.greenBar, w: 5 },
-    stats: { v: "$110", mc: "$2.5K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
+    stats: { v: "$85", mc: "$2.5K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
+    statSteps: [{ at: 232, v: "$110" }],
   },
   {
     name: "Pumpwheel", sub: "The Pumpfun Flywheel", avatar: "av-pumpwheel.png",
@@ -146,7 +149,8 @@ export const NEW_CARDS: TrenchCard[] = [
     icons: ["link", "sCircle", "search"], people: "2", bell: "2,014",
     pct1: { v: "14%", color: G }, pct2: { v: "10%", color: G }, pct2Suffix: "10mo",
     address: "Bs2...f4jD", bar: { color: COLORS.teal, w: 10 },
-    stats: { v: "$399", mc: "$2.9K", mcColor: COLORS.teal, f: "0.034", chip1: "4.30", chip2: "8.00" },
+    stats: { v: "$275", mc: "$2.8K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
+    statSteps: [{ at: 232, v: "$399", mc: "$2.9K", fee: "0.034" }],
   },
   {
     name: "eight", sub: "eight", avatar: "av-eight.png",
@@ -163,6 +167,7 @@ export const NEW_CARDS: TrenchCard[] = [
     pct1: { v: "1%", color: G }, pct2: { v: "0%", color: G }, pct2Suffix: "3mo",
     address: "CAG...pump", bar: { color: COLORS.greenBar, w: 0 },
     stats: { v: "$18", mc: "$2.3K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
+    statSteps: [{ at: 308, v: "$24", mc: "$2.4K" }],
   },
   {
     name: "SIMS", sub: "Crypto Simulator", avatar: "av-sims.png",
@@ -188,7 +193,8 @@ export const NEW_CARDS: TrenchCard[] = [
     icons: ["link", "clock", "search"], people: "3", bell: "5,782",
     pct1: { v: "11%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "5mo",
     address: "5kQ...pump", bar: { color: COLORS.greenBar, w: 6 },
-    stats: { v: "$2.8K", mc: "$3.0K", mcColor: COLORS.teal, f: "0.240", chip1: "4.30", chip2: "8.00" },
+    stats: { v: "$2.8K", mc: "$3.1K", mcColor: COLORS.teal, f: "0.240", chip1: "4.30", chip2: "8.00" },
+    statSteps: [{ at: 285, mc: "$3.0K" }],
   },
   {
     name: "TST", sub: "Test", avatar: "av-tst.png",
@@ -217,7 +223,8 @@ export const SOON_CARDS: TrenchCard[] = [
     handle: { text: "@funbaldi", color: "#AEB1B7", num: "70" },
     pct1: { v: "34%", color: R }, pct2: { v: "0%", color: G }, pct2Suffix: "~ 16m",
     address: "vRp...pump", bar: { color: COLORS.teal, w: 0 },
-    stats: { v: "$2.6K", mc: "$6.9K", mcColor: COLORS.teal, f: "0.021", chip1: "4.30", chip2: "8.20" },
+    stats: { v: "$2.5K", mc: "$6.8K", mcColor: COLORS.teal, f: "0.021", chip1: "4.30", chip2: "8.20" },
+    statSteps: [{ at: 232, v: "$2.6K", mc: "$6.9K" }],
   },
 ];
 
@@ -246,7 +253,8 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     handle: { text: "@elonmusk", color: "#AEB1B7", num: "234.7m" },
     pct1: { v: "25%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "2d",
     address: "rAc...pump", bar: { color: COLORS.greenBar, w: 62 },
-    stats: { v: "$301K", mc: "$98K", mcColor: COLORS.yellow, f: "0.855", chip1: "4.30", chip2: "15.00" },
+    stats: { v: "$301K", mc: "$100K", mcColor: COLORS.greenMc, f: "0.855", chip1: "4.30", chip2: "15.00" },
+    statSteps: [{ at: 278, mc: "$98K", mcColor: COLORS.yellow }, { at: 308, mc: "$99K", fee: "0.857" }],
   },
   {
     name: "Cashback", sub: "Cashback Coin", avatar: "av-cashback.png",
@@ -254,7 +262,8 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["link", "search"], people: "707", bell: "7,330",
     pct1: { v: "21%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "7mo",
     address: "E1X...pump", bar: { color: COLORS.greenBar, w: 62 },
-    stats: { v: "$422K", mc: "$182K", mcColor: COLORS.greenMc, f: "46.11", chip1: "4.30", chip2: "15.00" },
+    stats: { v: "$421K", mc: "$184K", mcColor: COLORS.greenMc, f: "46.03", chip1: "4.30", chip2: "15.00" },
+    statSteps: [{ at: 278, v: "$422K", mc: "$182K", fee: "46.11" }, { at: 308, v: "$423K", mc: "$195K", fee: "46.22" }],
   },
   {
     name: "TST", sub: "Test", avatar: "av-tst.png",
@@ -263,7 +272,8 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["link", "atCircle", "search"], people: "2,158", bell: "29",
     pct1: { v: "14%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "2mo",
     address: "Hdv...pump", bar: { color: COLORS.greenBar, w: 62 },
-    stats: { v: "$2.0M", mc: "$624K", mcColor: COLORS.greenMc, f: "160.98", chip1: "4.30", chip2: "15.00" },
+    stats: { v: "$2.0M", mc: "$620K", mcColor: COLORS.greenMc, f: "160.89", chip1: "4.30", chip2: "15.00" },
+    statSteps: [{ at: 278, mc: "$624K", fee: "160.98" }, { at: 308, mc: "$636K", fee: "161.02" }],
   },
   {
     name: "$1Maya", sub: "The One Dog", avatar: "av-maya.png",

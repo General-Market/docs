@@ -395,6 +395,15 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
   frame,
 }) => {
   const age = ageAt(card.ages, frame);
+  let { v: stV, mc: stMc, mcColor: stMcColor, f: stF } = card.stats;
+  for (const step of card.statSteps ?? []) {
+    if (frame >= step.at) {
+      if (step.v !== undefined) stV = step.v;
+      if (step.mc !== undefined) stMc = step.mc;
+      if (step.mcColor !== undefined) stMcColor = step.mcColor;
+      if (step.fee !== undefined) stF = step.fee;
+    }
+  }
   return (
     <div style={{ position: "absolute", left: 0, top: y, width: "100%", height: CARD_H }}>
       {/* avatar — the asset IS a plate crop taken at exactly this position, so no
@@ -566,13 +575,13 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
             {STAT_LABELS.v}
           </T>
           <T size={14} color={C.textBright} weight={700}>
-            {card.stats.v}
+            {stV}
           </T>
           <T size={11} color={C.label} weight={500}>
             {STAT_LABELS.mc}
           </T>
-          <T size={14} color={card.stats.mcColor} weight={700}>
-            {card.stats.mc}
+          <T size={14} color={stMcColor} weight={700}>
+            {stMc}
           </T>
         </Row>
         <Row gap={3} style={{ position: "absolute", right: 8, top: 26 }}>
@@ -581,7 +590,7 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
           </T>
           <SolanaBars size={9} />
           <T size={11} color={C.textBright} weight={600}>
-            {card.stats.f}
+            {stF}
           </T>
         </Row>
         <Row gap={3} style={{ position: "absolute", right: 8, bottom: 12 }}>
