@@ -1,6 +1,17 @@
+// OHLC readout for the chart legend row (TokenChartChrome).
+//
+// r5 (owner reframe): ohlcAt() now derives LIVE from the chart-input
+// playback — the legend ticks with the forming candle, the real
+// TradingView grammar. The measured OHLC_TIMELINE table below is kept
+// as PROVENANCE: it is the OCR'd, price-true source the default
+// dataset's bars were converted from (gen script:
+// .claude/rounds/work/r5/chartlive/gen-default-dataset.ts).
+//
 // AUTO-GENERATED (round 3, TEAM CHART) — dense OHLC readout timeline.
 // Source: per-plate diff detection + OCR + eye-verified montages
 // (.claude/rounds/work/realist-r3/chart/). Values are plate-true at each keyframe.
+
+import { activeDataset, barStateAt, fmtCompact } from "./chart-input";
 
 export type ChartOhlc = {
   o: string; h: string; l: string; c: string; d: string; dp: string; up: boolean;
@@ -152,11 +163,23 @@ export const OHLC_TIMELINE: [number, ChartOhlc][] = [
   [1646, { o: "0", h: "0", l: "0", c: "0", d: "0", dp: "0%", up: true, z: true }],
 ];
 
+const ZERO_OHLC: ChartOhlc = { o: "0", h: "0", l: "0", c: "0", d: "0", dp: "0%", up: true, z: true };
+
+// live legend: the forming candle's O/H/L/C + change-vs-open, ticking
+// per frame with the chart (positive d unsigned, dp signed — plate style)
 export function ohlcAt(frame: number): ChartOhlc | null {
-  let cur: ChartOhlc | null = null;
-  for (const [f, v] of OHLC_TIMELINE) {
-    if (f <= frame) cur = v;
-    else break;
-  }
-  return cur;
+  const st = barStateAt(activeDataset(), frame);
+  if (st.bars.length === 0) return ZERO_OHLC;
+  const b = st.bars[st.bars.length - 1];
+  const d = b.close - b.open;
+  const dp = b.open !== 0 ? (d / b.open) * 100 : 0;
+  return {
+    o: fmtCompact(b.open),
+    h: fmtCompact(b.high),
+    l: fmtCompact(b.low),
+    c: fmtCompact(b.close),
+    d: fmtCompact(d),
+    dp: `${d >= 0 ? "+" : "-"}${Math.abs(dp).toFixed(2)}%`,
+    up: d >= 0,
+  };
 }

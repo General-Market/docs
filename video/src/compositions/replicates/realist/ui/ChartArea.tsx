@@ -4,85 +4,56 @@ import {
   createChart,
   CandlestickSeries,
   ColorType,
+  LineStyle,
   IChartApi,
   ISeriesApi,
   CandlestickData,
   UTCTimestamp,
 } from "lightweight-charts";
+import { CURSOR, CANDLE_PITCH } from "./chart-data";
+import { CHART_COLORS as C } from "./copy/chart";
 import {
-  CANDLE_PITCH,
-  CANDLE_ANCHOR,
-  CANDLE_ENTS,
-  BUBBLE_TRACKS,
-  BubbleTrack,
-  CHIP_HIGH_Y,
-  CHIP_LOW_Y,
-  CHIP_CUR,
-  CHIP_EXIT,
-  CHIP_COST,
-  HIGH_TEXT,
-  CURSOR,
-  CROSSHAIR,
-  TIME_SLOT0,
-} from "./chart-data";
-import {
-  CHART_COLORS as C,
-  eraMapAt,
-  fmtK,
-  fmtChip,
-  EXIT_LABEL,
-  COST_LABEL,
-  COST_BADGE,
-  LOW_CHIP_TEXT,
-} from "./copy/chart";
+  activeDataset,
+  barStateAt,
+  rangeAt,
+  frameOfBarUnits,
+  linePriceAt,
+  fmtCompact,
+  niceStep,
+  timeTickSeconds,
+  startClockSec,
+  fmtClock,
+  TradeMarker,
+} from "./chart-input";
 
-// The chart interior, drawn in FULL-FRAME 1920×1080 coordinates (all track
-// data is measured in that space, r3 per-plate detection).
+// ═══════════════════════════════════════════════════════════════════
+// LIVE CHART (r5, owner reframe) — a real lightweight-charts session
+// driven purely by the chart-input.ts dataset. The grammar is a live
+// TradingView feed, not a pixel replay:
+//   · the rightmost candle FORMS tick-by-tick (deterministic seeded
+//     path through its true O/H/L/C — chart-input.tickPathOf),
+//   · the time scale autoscrolls smoothly (live edge pinned at
+//     liveEdgeX, history sliding left at bar pace),
+//   · the price scale autoscales per frame over the printed data —
+//     the reference's "era rescales" emerge from the data,
+//   · engine-native dotted last-price line + a ticking right-scale
+//     price chip, High/Low session chips, strategy price lines and
+//     trade-marker bubbles all derive from the dataset.
+// Determinism: every value is a pure function of the frame; the
+// engine is gated per frame with delayRender until painted (r4
+// twin-render byte-identical rig, kept intact).
+// ═══════════════════════════════════════════════════════════════════
+
+// The chart interior, drawn in FULL-FRAME 1920×1080 coordinates.
 const CHART_FREEZE = 1656; // detection ends where the outro blur starts
 const VIEW_L = 57;
 const VIEW_R = 1556;
 const PLOT_TOP = 196;
 const PLOT_BOT = 918;
+const PANE_W = VIEW_R - VIEW_L; // 1499
+const PANE_H = PLOT_BOT - PLOT_TOP; // 722
 
-// ── track lookups ────────────────────────────────────────────────
-// [f,v,...] pairs, step-hold; null before first keyframe
-const stepPairs = (k: number[], f: number): number | null => {
-  if (k.length === 0 || f < k[0]) return null;
-  let v = k[1];
-  for (let i = 0; i < k.length; i += 2) {
-    if (k[i] <= f) v = k[i + 1];
-    else break;
-  }
-  return v;
-};
-
-// [f,v,...] pairs with linear interpolation (pan anchor)
-const lerpPairs = (k: number[], f: number): number => {
-  if (f <= k[0]) return k[1];
-  for (let i = 0; i + 3 < k.length; i += 2) {
-    if (f >= k[i] && f <= k[i + 2]) {
-      const t = k[i + 2] === k[i] ? 0 : (f - k[i]) / (k[i + 2] - k[i]);
-      return k[i + 1] + (k[i + 3] - k[i + 1]) * t;
-    }
-  }
-  return k[k.length - 1];
-};
-
-// [f,a,b,...] triplets, step-hold
-const stepTriple = (k: number[], f: number): [number, number] | null => {
-  if (k.length === 0 || f < k[0]) return null;
-  let a = k[1];
-  let b = k[2];
-  for (let i = 0; i < k.length; i += 3) {
-    if (k[i] <= f) {
-      a = k[i + 1];
-      b = k[i + 2];
-    } else break;
-  }
-  return [a, b];
-};
-
-// [f,x,y,kind] quads, step-hold
+// [f,x,y,kind] quads, step-hold (measured mouse cursor)
 const stepQuad = (k: number[], f: number): [number, number, number] | null => {
   if (k.length === 0 || f < k[0]) return null;
   let out: [number, number, number] = [k[1], k[2], k[3]];
@@ -93,52 +64,26 @@ const stepQuad = (k: number[], f: number): [number, number, number] | null => {
   return out;
 };
 
-// candle keyframes: [f,bt,bb,wt,wb]* step-hold; null before first
-const candleGeom = (k: number[], f: number): [number, number, number, number] | null => {
-  if (k.length === 0 || f < k[0]) return null;
-  let g: [number, number, number, number] = [k[1], k[2], k[3], k[4]];
-  for (let i = 0; i < k.length; i += 5) {
-    if (k[i] <= f) g = [k[i + 1], k[i + 2], k[i + 3], k[i + 4]];
-    else break;
-  }
-  return g;
-};
-
-const stepText = (table: [number, string][], f: number): string | null => {
-  let cur: string | null = null;
-  for (const [kf, t] of table) {
-    if (kf <= f) cur = t;
-    else break;
-  }
-  return cur;
-};
-
-// ── REAL chart engine (r4, owner directive): lightweight-charts 5.x ──
-// The candle layer is a real TradingView OSS candlestick series. Everything
-// is pinned per frame from the measured tables so the engine is a pure
-// deterministic rasterizer:
+// ── REAL chart engine: lightweight-charts 5.x ───────────────────────
+// A pure deterministic rasterizer pinned per frame:
 //   x: setVisibleLogicalRange — barSpacing = W/(to-from+1); bar center
-//      x(s) = W-1-(to+0.5)·bs+s·bs  (source: time-scale indexToCoordinate),
-//      solved so slot s lands at CANDLE_ANCHOR + s·CANDLE_PITCH.
-//   y: autoscaleInfoProvider pins priceRange to [yV(917), yV(196)] with zero
-//      margins — the engine maps min→pane(h-1), max→0 (source:
-//      barPricesToCoordinates uses internalHeight-1), so price→pixel
-//      round-trips the measured era map exactly.
-// Interactions, axes, grid, crosshair, attribution logo: all OFF. The plate
-// TV logo stays as measured DOM in TokenChartChrome (engine logo sits at the
-// pane corner, wrong place/size vs plate).
-const PANE_W = VIEW_R - VIEW_L; // 1499
-const PANE_H = PLOT_BOT - PLOT_TOP; // 722
-
+//      x(i) = W-1-(to+0.5)·bs+i·bs (time-scale indexToCoordinate),
+//      solved so bar i lands at anchor + i·pitch.
+//   y: autoscaleInfoProvider pins priceRange to the frame's autoscale
+//      range with zero margins — min→pane(h-1), max→0, so price→pixel
+//      is the same linear map the DOM overlays use.
+// Native affordance kept ON: the series price line (dotted, colored by
+// the forming candle's direction) — the live last-price tick.
 type EngineRefs = { chart: IChartApi; series: ISeriesApi<"Candlestick"> };
 
-const EngineCandles: React.FC<{ f: number; A: number; K: number; anchor: number }> = ({
-  f,
-  A,
-  K,
-  anchor,
-}) => {
-  const yV = (y: number) => (A - y) / K;
+const EngineCandles: React.FC<{
+  f: number;
+  bars: { open: number; high: number; low: number; close: number; green: boolean }[];
+  rangeMin: number;
+  rangeMax: number;
+  anchor: number;
+  pitch: number;
+}> = ({ f, bars, rangeMin, rangeMax, anchor, pitch }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<EngineRefs | null>(null);
   const rangeRef = useRef<{ min: number; max: number }>({ min: 0, max: 1 });
@@ -195,32 +140,39 @@ const EngineCandles: React.FC<{ f: number; A: number; K: number; anchor: number 
     const { chart, series } = engineRef.current;
 
     // pin y: engine maps maxValue→pane y 0, minValue→pane y (PANE_H-1)
-    rangeRef.current = { min: yV(PLOT_TOP + PANE_H - 1), max: yV(PLOT_TOP) };
+    rangeRef.current = { min: rangeMin, max: rangeMax };
 
-    // candles known at this plate frame, in measured pixel space → prices
-    const data: CandlestickData<UTCTimestamp>[] = [];
-    for (const t of CANDLE_ENTS) {
-      const g = candleGeom(t.k, f);
-      if (!g) continue;
-      const [bt, bb, wt, wb] = g;
-      const flip = t.cc ? stepPairs(t.cc, f) : null;
-      const green = flip === null ? t.c === "g" : flip === 1;
-      const pTop = yV(bt);
-      const pBot = yV(bb);
-      const open = green ? pBot : pTop;
-      const close = green ? pTop : pBot;
-      const high = Math.max(yV(wt), pTop);
-      const low = Math.min(yV(wb), pBot);
-      const col = green ? C.candleGreen : C.candleRed;
-      data.push({ time: t.s as UTCTimestamp, open, high, low, close, color: col, wickColor: col });
-    }
-    data.sort((a, b) => (a.time as number) - (b.time as number));
+    const data: CandlestickData<UTCTimestamp>[] = bars.map((b, i) => {
+      const col = b.green ? C.candleGreen : C.candleRed;
+      return {
+        time: i as UTCTimestamp,
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+        color: col,
+        wickColor: col,
+      };
+    });
     series.setData(data);
 
-    // pin x: slot s center at anchor + s·pitch (pane-relative: -VIEW_L)
+    // native last-price line, colored by the forming candle's direction
+    const last = bars[bars.length - 1];
+    series.applyOptions(
+      last
+        ? {
+            priceLineVisible: true,
+            priceLineStyle: LineStyle.Dotted,
+            priceLineWidth: 1,
+            priceLineColor: last.green ? C.curChipGreen : C.curChipRed,
+          }
+        : { priceLineVisible: false },
+    );
+
+    // pin x: bar i center at anchor + i·pitch (pane-relative: -VIEW_L)
     if (data.length > 0) {
-      const to = (PANE_W - 1 - (anchor - VIEW_L)) / CANDLE_PITCH - 0.5;
-      const from = to + 1 - PANE_W / CANDLE_PITCH;
+      const to = (PANE_W - 1 - (anchor - VIEW_L)) / pitch - 0.5;
+      const from = to + 1 - PANE_W / pitch;
       chart.timeScale().setVisibleLogicalRange({ from, to });
     }
 
@@ -238,7 +190,7 @@ const EngineCandles: React.FC<{ f: number; A: number; K: number; anchor: number 
       if (r2) cancelAnimationFrame(r2);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f, A, K, anchor]);
+  }, [f, bars, rangeMin, rangeMax, anchor, pitch]);
 
   useEffect(
     () => () => {
@@ -272,59 +224,53 @@ const EngineCandles: React.FC<{ f: number; A: number; K: number; anchor: number 
 // glyphs drawn as bold letters (vs emoji)
 const isLetterGlyph = (g: string) => /^[A-Z]{1,2}$/.test(g);
 
-const Bubble: React.FC<{ t: BubbleTrack; f: number }> = ({ t, f }) => {
-  // k = [f,x,y]* keyframes, lerp between
-  const k = t.k;
-  if (f < k[0] || f > k[k.length - 3]) return null;
-  let x = k[1];
-  let y = k[2];
-  for (let i = 0; i + 5 < k.length; i += 3) {
-    if (f >= k[i] && f <= k[i + 3]) {
-      const tt = k[i + 3] === k[i] ? 0 : (f - k[i]) / (k[i + 3] - k[i]);
-      x = k[i + 1] + (k[i + 4] - k[i + 1]) * tt;
-      y = k[i + 2] + (k[i + 5] - k[i + 2]) * tt;
-      break;
-    }
-    x = k[i + 3 + 1];
-    y = k[i + 3 + 2];
-  }
-  const born = k[0];
-  const pop = Math.min((f - born) / 5, 1);
+const MARKER_FILL: Record<string, string> = {
+  g: C.bubbleGreenFill,
+  r: C.bubbleRedFill,
+  y: C.bubbleYellowFill,
+  p: C.bubblePurpleFill,
+  w: C.bubbleWhiteFill,
+};
+
+const MarkerBubble: React.FC<{ m: TradeMarker; f: number; appearF: number; x: number; y: number }> = ({
+  m,
+  f,
+  appearF,
+  x,
+  y,
+}) => {
+  const r = m.r ?? 11;
+  const pop = Math.min((f - appearF) / 5, 1);
+  const fade = m.ttl !== undefined ? Math.max(0, Math.min((appearF + m.ttl - f) / 4, 1)) : 1;
+  if (pop <= 0 || fade <= 0) return null;
+  if (y < PLOT_TOP - r || y > PLOT_BOT + r || x < VIEW_L - r || x > VIEW_R + r) return null;
   const scale = 0.5 + 0.5 * (1 - (1 - pop) ** 3);
-  const fill =
-    t.c === "g"
-      ? C.bubbleGreenFill
-      : t.c === "r"
-        ? C.bubbleRedFill
-        : t.c === "y"
-          ? C.bubbleYellowFill
-          : t.c === "p"
-            ? C.bubblePurpleFill
-            : C.bubbleWhiteFill;
-  const letter = isLetterGlyph(t.g);
+  const color = m.color ?? (m.side === "sell" ? "r" : "g");
+  const glyph = m.emoji ?? (m.side === "sell" ? "S" : "B");
+  const letter = isLetterGlyph(glyph);
   return (
     <div
       style={{
         position: "absolute",
-        left: x - t.r,
-        top: y - t.r,
-        width: t.r * 2,
-        height: t.r * 2,
+        left: x - r,
+        top: y - r,
+        width: r * 2,
+        height: r * 2,
         borderRadius: "50%",
-        background: fill,
+        background: MARKER_FILL[color] ?? C.bubbleWhiteFill,
         border: `1.5px solid rgba(10,14,20,0.55)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: letter ? (t.g.length > 1 ? t.r * 0.85 : t.r * 1.1) : t.r * 1.35,
+        fontSize: letter ? (glyph.length > 1 ? r * 0.85 : r * 1.1) : r * 1.35,
         fontWeight: 800,
-        color: t.c === "p" ? C.bubblePurpleInk : "#fff",
+        color: color === "p" ? C.bubblePurpleInk : "#fff",
         lineHeight: 1,
-        opacity: pop,
+        opacity: pop * fade,
         transform: `scale(${scale.toFixed(3)})`,
       }}
     >
-      {t.g}
+      {glyph}
     </div>
   );
 };
@@ -356,34 +302,45 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
   const f = Math.min(frame, CHART_FREEZE);
   if (frame < 418) return null;
 
-  // Era mapping, blended across the plate-measured rescale windows so the
-  // label grid SLIDES at era boundaries instead of cutting (plates never cut).
-  const { era, A, K } = eraMapAt(f);
-  const pY = (v: number) => A - K * v;
-  const yV = (y: number) => (A - y) / K;
-  const nLabels = Math.round((era.top - era.bottom) / era.step);
+  const ds = activeDataset();
+  const pitch = ds.barSpacingPx ?? CANDLE_PITCH;
+  const liveEdgeX = ds.liveEdgeX ?? 840;
+  const st = barStateAt(ds, f);
+  const rng = rangeAt(ds, f);
+
+  // price → y: the same linear map the engine is pinned to
+  const yOf = (p: number) => PLOT_TOP + ((rng.max - p) / (rng.max - rng.min)) * (PANE_H - 1);
+
+  // smooth autoscroll: the live edge stays pinned, history slides left.
+  // Before the session loads, history holds its place (no jump at load).
+  const pre = ds.preloadedBars ?? 0;
+  const anchor = liveEdgeX - Math.max(st.barsFormed, pre) * pitch;
+  const xOfBar = (i: number) => anchor + i * pitch;
+
+  // ── price gridlines: nice steps over the live autoscale range ──
+  const step = niceStep(rng.max - rng.min);
   const rows: { text: string; y: number }[] = [];
-  for (let i = 0; i <= nLabels; i++) {
-    const y = pY(era.top - i * era.step);
-    if (y < PLOT_TOP - 2 || y > PLOT_BOT + 6) continue; // pane clips sliding rows
-    rows.push({ text: fmtK(era.top - i * era.step), y });
+  for (let k = Math.ceil(rng.min / step); k * step <= rng.max; k++) {
+    const y = yOf(k * step);
+    if (y < PLOT_TOP - 2 || y > PLOT_BOT + 6) continue;
+    rows.push({ text: fmtCompact(k * step), y });
   }
 
-  const anchor = lerpPairs(CANDLE_ANCHOR, f);
-  const slotX = (s: number) => anchor + s * CANDLE_PITCH;
+  // ── time axis: market-clock ticks projected across the pane ──
+  const spb = ds.secondsPerBar ?? 1;
+  const t0 = startClockSec(ds);
+  const tick = timeTickSeconds(ds);
+  const timeCols: { text: string; x: number }[] = [];
+  const tLo = t0 + ((VIEW_L + 32 - anchor) / pitch) * spb;
+  const tHi = t0 + ((VIEW_R - 32 - anchor) / pitch) * spb;
+  for (let k = Math.ceil(tLo / tick); k * tick <= tHi; k++) {
+    const t = k * tick;
+    timeCols.push({ text: fmtClock(t), x: anchor + ((t - t0) / spb) * pitch });
+  }
 
-  const exitY = stepPairs(CHIP_EXIT, f);
-  const costY = stepPairs(CHIP_COST, f);
-  const curChip = stepTriple(CHIP_CUR, f);
-  const highY = stepPairs(CHIP_HIGH_Y, f) ?? 258;
-  const lowY = stepPairs(CHIP_LOW_Y, f) ?? 872;
-  const highText = stepText(HIGH_TEXT, f) ?? "High";
-  const cursor = stepQuad(CURSOR, f);
-  const cross = f <= CHART_FREEZE ? stepTriple(CROSSHAIR, f) : null;
-  const crossOn = cursor && cursor[2] === 1 && cross !== null;
-
-  const dash = (color: string, y: number, dashW = 7, gap = 6, h = 3) => (
+  const dash = (color: string, y: number, dashW = 7, gap = 6, h = 3, key?: string) => (
     <div
+      key={key}
       style={{
         position: "absolute",
         left: VIEW_L - 1,
@@ -415,23 +372,12 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
     </div>
   );
 
-  // time-axis: minute marks every 60 slots from TIME_SLOT0 ("15:03"), with
-  // :14/:28/:42 sub-labels between (TV drops :56 in favor of the minute mark).
-  const timeCols: { text: string; x: number }[] = [];
-  for (let m = 0; m < 4; m++) {
-    for (const [off, suffix] of [
-      [0, ""],
-      [14, ":14"],
-      [28, ":28"],
-      [42, ":42"],
-    ] as const) {
-      const x = slotX(TIME_SLOT0 + m * 60 + off);
-      // r5: labels must stay INSIDE the pane — the old +40 margin painted
-      // "15:05:28" into the bottom-right corner (x~1597 y~934) where the
-      // plate shows only the white axis knob (TokenChartChrome).
-      if (x > VIEW_L + 32 && x < VIEW_R - 32) timeCols.push({ text: `15:0${3 + m}${suffix}`, x });
-    }
-  }
+  // session state for the chips + last-price tick
+  const lastBar = st.bars.length > 0 ? st.bars[st.bars.length - 1] : null;
+  const clampChipY = (y: number) => Math.min(Math.max(y, PLOT_TOP + 12), PLOT_BOT - 12);
+  const highChipY = clampChipY(yOf(st.sessionHigh));
+  const lowChipY = clampChipY(yOf(st.sessionLow));
+  const cursor = stepQuad(CURSOR, f);
 
   return (
     <div style={{ position: "absolute", inset: 0 }}>
@@ -481,102 +427,65 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           {t.text}
         </div>
       ))}
-      {/* dashed strategy lines + labels (plate dashes ~14px/10px) */}
-      {exitY !== null && (
-        <>
-          {dash(C.exitLine, exitY, 14, 10)}
-          <div
-            style={{
-              position: "absolute",
-              right: 1920 - 1592,
-              top: exitY - 18,
-              fontSize: 12,
-              color: "#c9535e",
-            }}
-          >
-            {EXIT_LABEL}
-          </div>
-          {chip(fmtChip(yV(exitY)), exitY, C.exitBadgeBg)}
-        </>
-      )}
-      {costY !== null && (
-        <>
-          {dash(C.costLine, costY, 9, 7)}
-          <div
-            style={{
-              position: "absolute",
-              right: 1920 - 1592,
-              top: costY - 18,
-              fontSize: 12,
-              color: "#dfe4ee",
-            }}
-          >
-            {COST_LABEL}
-          </div>
-          {chip(COST_BADGE, costY, C.costBadgeBg, C.costBadgeText)}
-        </>
-      )}
-      {/* candles: REAL lightweight-charts candlestick series (r4) */}
-      <EngineCandles f={f} A={A} K={K} anchor={anchor} />
-      {/* current-price dotted line */}
-      {curChip && (
-        <div
-          style={{
-            position: "absolute",
-            left: VIEW_L - 1,
-            width: VIEW_R - VIEW_L,
-            top: curChip[0] - 1,
-            height: 1,
-            opacity: 0.65,
-            backgroundImage: `repeating-linear-gradient(90deg, ${curChip[1] ? C.curChipGreen : C.curChipRed} 0 2px, transparent 2px 5px)`,
-          }}
-        />
-      )}
-      {/* bubbles */}
-      {BUBBLE_TRACKS.map((t: BubbleTrack, i: number) => (
-        <Bubble key={`b${i}`} t={t} f={f} />
-      ))}
-      {/* crosshair (only during grab-cursor spans) */}
-      {crossOn && cross && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              left: cross[0],
-              top: PLOT_TOP,
-              width: 1,
-              height: PLOT_BOT - PLOT_TOP,
-              backgroundImage: `repeating-linear-gradient(180deg, ${C.crossDash} 0 5px, transparent 5px 9px)`,
-            }}
+      {/* dashed strategy lines + right-edge labels + badges */}
+      {(ds.lines ?? []).map((spec, i) => {
+        const p = linePriceAt(spec, st.barsFormed);
+        if (p === null) return null;
+        const y = yOf(p);
+        if (y < PLOT_TOP || y > PLOT_BOT) return null;
+        return (
+          <React.Fragment key={`line${i}`}>
+            {dash(spec.color, y, spec.dashW ?? 7, spec.gap ?? 6)}
+            <div
+              style={{
+                position: "absolute",
+                right: 1920 - 1592,
+                top: y - 18,
+                fontSize: 12,
+                color: spec.labelColor ?? spec.color,
+              }}
+            >
+              {spec.label}
+            </div>
+            {chip(fmtCompact(p), y, spec.badgeBg, spec.badgeText ?? C.chipText)}
+          </React.Fragment>
+        );
+      })}
+      {/* candles: REAL lightweight-charts session, forming bar live */}
+      <EngineCandles
+        f={f}
+        bars={st.bars}
+        rangeMin={rng.min}
+        rangeMax={rng.max}
+        anchor={anchor}
+        pitch={pitch}
+      />
+      {/* trade-marker bubbles */}
+      {(ds.markers ?? []).map((m, i) => {
+        const appearF = frameOfBarUnits(ds, m.at);
+        if (f < appearF) return null;
+        const barIdx = Math.min(Math.floor(m.at), ds.bars.length - 1);
+        const price = m.price ?? ds.bars[barIdx].close;
+        return (
+          <MarkerBubble
+            key={`m${i}`}
+            m={m}
+            f={f}
+            appearF={appearF}
+            x={xOfBar(m.slotX ?? m.at)}
+            y={yOf(price)}
           />
-          <div
-            style={{
-              position: "absolute",
-              left: VIEW_L - 1,
-              width: VIEW_R - VIEW_L,
-              top: cross[1],
-              height: 1,
-              backgroundImage: `repeating-linear-gradient(90deg, ${C.crossDash} 0 5px, transparent 5px 9px)`,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 1564,
-              top: cross[1] - 8,
-              fontSize: 13,
-              fontWeight: 700,
-              color: C.crossLabel,
-            }}
-          >
-            {fmtChip(yV(cross[1]))}
-          </div>
-        </>
-      )}
-      {/* chips */}
-      {chip(highText, highY, C.highChipBg)}
-      {chip(LOW_CHIP_TEXT, lowY, C.lowChipBg)}
-      {curChip && chip(fmtChip(yV(curChip[0])), curChip[0], curChip[1] ? C.curChipGreen : C.curChipRed)}
+        );
+      })}
+      {/* session High/Low chips + ticking last-price chip */}
+      {chip(`High ${fmtCompact(st.sessionHigh)}`, highChipY, C.highChipBg)}
+      {chip(`Low ${fmtCompact(st.sessionLow)}`, lowChipY, C.lowChipBg)}
+      {lastBar &&
+        chip(
+          fmtCompact(lastBar.close),
+          clampChipY(yOf(lastBar.close)),
+          lastBar.green ? C.curChipGreen : C.curChipRed,
+        )}
       {/* cursor (above TokenPopup via zIndex; popup root has no stacking ctx) */}
       {cursor && frame <= CHART_FREEZE && (cursor[2] === 1 ? <GrabHand x={cursor[0]} y={cursor[1]} /> : <PointerHand x={cursor[0]} y={cursor[1]} />)}
     </div>
