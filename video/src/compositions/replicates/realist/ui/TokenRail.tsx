@@ -36,7 +36,9 @@ const T: React.FC<{
   style?: React.CSSProperties;
   children: React.ReactNode;
 }> = ({ size, color, weight = 400, style, children }) => (
-  <span style={{ fontSize: size, color, fontWeight: weight, lineHeight: 1, ...style }}>
+  // the 1px same-color shadow mimics the plates' JPEG stroke bleed (r3;
+  // crisp strokes overshoot the soft plate and cost SSIM)
+  <span style={{ fontSize: size, color, fontWeight: weight, lineHeight: 1, textShadow: `0 0 1px ${color}`, ...style }}>
     {children}
   </span>
 );
@@ -47,12 +49,13 @@ const Row: React.FC<{ gap?: number; style?: React.CSSProperties; children: React
   children,
 }) => <div style={{ display: "flex", alignItems: "center", gap, ...style }}>{children}</div>;
 
-// monochrome SOL "≡" mark (three slanted bars), tinted per value
-const SolBars: React.FC<{ size?: number; color?: string }> = ({ size = 11, color = C.tealText }) => (
+// SOL "≡" mark (three slanted bars). Default = the plate's vertical
+// teal→blue→purple gradient (r3); pass color to tint solid.
+const SolBars: React.FC<{ size?: number; color?: string }> = ({ size = 11, color }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" style={{ display: "block" }}>
-    <path d="M3.5 3 H13 L11.5 5.2 H2 Z" fill={color} />
-    <path d="M2 6.9 H11.5 L13 9.1 H3.5 Z" fill={color} />
-    <path d="M3.5 10.8 H13 L11.5 13 H2 Z" fill={color} />
+    <path d="M3.5 3 H13 L11.5 5.2 H2 Z" fill={color ?? C.barsTop} />
+    <path d="M2 6.9 H11.5 L13 9.1 H3.5 Z" fill={color ?? C.barsMid} />
+    <path d="M3.5 10.8 H13 L11.5 13 H2 Z" fill={color ?? C.barsBot} />
   </svg>
 );
 
@@ -294,39 +297,39 @@ const Stats24Block: React.FC<{ frame: number }> = ({ frame }) => {
   const greenW = Math.round(s.ratio * (barW - gap));
   return (
     <>
-      {/* labels */}
+      {/* labels — plate ink center y98.5; buys column centers at 1739 (r3) */}
       <div style={{ position: "absolute", left: X0 + 3, top: 93 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.stats24.vol}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.stats24.vol}</T>
       </div>
-      <div style={{ position: "absolute", left: 1732, top: 93, transform: "translateX(-50%)" }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.stats24.buys}</T>
+      <div style={{ position: "absolute", left: 1739, top: 93, transform: "translateX(-50%)" }}>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.stats24.buys}</T>
       </div>
       <div style={{ position: "absolute", left: 1812, top: 93, transform: "translateX(-50%)" }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.stats24.sells}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.stats24.sells}</T>
       </div>
       <div style={{ position: "absolute", right: 1920 - 1912, top: 93 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.stats24.net}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.stats24.net}</T>
       </div>
-      {/* values */}
-      <div style={{ position: "absolute", left: X0 + 3, top: 112 }}>
-        <T size={13} color={C.textHi} weight={600}>{s.vol}</T>
+      {/* values — plate ink center y117; small-text cores probed r3 */}
+      <div style={{ position: "absolute", left: X0 + 3, top: 111 }}>
+        <T size={13} color={C.dimWhite} weight={600}>{s.vol}</T>
       </div>
-      <div style={{ position: "absolute", left: 1732, top: 112, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
-        <T size={13} color={C.tealText} weight={600}>{s.buysN}/{s.buysUsd}</T>
+      <div style={{ position: "absolute", left: 1740, top: 111, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
+        <T size={13} color={C.dimTeal} weight={600}>{s.buysN}/{s.buysUsd}</T>
       </div>
-      <div style={{ position: "absolute", left: 1812, top: 112, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
-        <T size={13} color={C.neg} weight={600}>{s.sellsN}/{s.sellsUsd}</T>
+      <div style={{ position: "absolute", left: 1812, top: 111, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
+        <T size={13} color={C.dimPink} weight={600}>{s.sellsN}/{s.sellsUsd}</T>
       </div>
-      <div style={{ position: "absolute", right: 1920 - 1912, top: 112 }}>
-        <T size={13} color={C.pos} weight={600}>{s.net}</T>
+      <div style={{ position: "absolute", right: 1920 - 1912, top: 111 }}>
+        <T size={13} color={C.dimTeal} weight={600}>{s.net}</T>
       </div>
-      {/* buys/sells ratio bar (teal/pink at ~0.62 opacity on the plates) */}
-      <div style={{ position: "absolute", left: X0 + 1, top: 130, width: greenW, height: 3, borderRadius: 2, background: C.teal, opacity: 0.62 }} />
+      {/* buys/sells ratio bar — plate rows y132-134 (r3) */}
+      <div style={{ position: "absolute", left: X0 + 1, top: 132, width: greenW, height: 3, borderRadius: 2, background: C.teal, opacity: 0.62 }} />
       <div
         style={{
           position: "absolute",
           left: X0 + 1 + greenW + gap,
-          top: 130,
+          top: 132,
           width: Math.max(0, barW - greenW - gap),
           height: 3,
           borderRadius: 2,
@@ -431,8 +434,8 @@ const AmountSection: React.FC = () => (
         <SolBars size={12} color={C.tealText} />
       </div>
     </div>
-    {/* preset cells */}
-    <div style={{ position: "absolute", left: X0, top: 288, width: RW, height: 24, borderRadius: 8, background: C.cellBg, display: "flex" }}>
+    {/* preset cells — plate ink center y297 (r3: was 3px low) */}
+    <div style={{ position: "absolute", left: X0, top: 285, width: RW, height: 24, borderRadius: 8, background: C.cellBg, display: "flex" }}>
       {RAIL.presets.map((p, i) => (
         <div
           key={p}
@@ -444,7 +447,7 @@ const AmountSection: React.FC = () => (
             borderLeft: i > 0 ? `1px solid ${C.popupBorder}` : "none",
           }}
         >
-          <T size={13} color={C.text} weight={600}>{p}</T>
+          <T size={13} color={C.railPreset} weight={600}>{p}</T>
         </div>
       ))}
       <div
@@ -459,18 +462,18 @@ const AmountSection: React.FC = () => (
         <Glyph kind="pencil" size={12} color={C.textMid} />
       </div>
     </div>
-    {/* settings row: ⇅ 50%  ⛽0.0₃2⚠  🍬0.01⚠  ∅ Off */}
+    {/* settings row: ⇅ 50%  ⛽0.0₃2⚠  🍬0.01⚠  ∅ Off — gas/tip sand (r3) */}
     <Row gap={5} style={{ position: "absolute", left: X0 + 1, top: 322, height: 14 }}>
       <Glyph kind="swapV" size={11} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{RAIL.settings.pct}</T>
       <div style={{ width: 6 }} />
-      <Glyph kind="gas" size={12} color={C.gold} />
-      <SubNum parts={RAIL.settings.gas} size={11} color={C.gold} />
-      <Glyph kind="warn" size={11} color={C.gold} />
+      <Glyph kind="gas" size={12} color={C.sand} />
+      <SubNum parts={RAIL.settings.gas} size={11} color={C.sand} />
+      <Glyph kind="warn" size={11} color={C.sand} />
       <div style={{ width: 6 }} />
-      <Glyph kind="candy" size={12} color={C.gold} />
-      <T size={11} color={C.gold} weight={600}>{RAIL.settings.tip}</T>
-      <Glyph kind="warn" size={11} color={C.gold} />
+      <Glyph kind="candy" size={12} color={C.sand} />
+      <T size={11} color={C.sand} weight={600}>{RAIL.settings.tip}</T>
+      <Glyph kind="warn" size={11} color={C.sand} />
       <div style={{ width: 6 }} />
       <Glyph kind="slash" size={11} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{RAIL.settings.off}</T>
@@ -547,34 +550,34 @@ const PosStatsRow: React.FC<{ frame: number }> = ({ frame }) => {
         <div key={x} style={{ position: "absolute", left: x, top: 480, width: 1, height: 42, background: C.divider }} />
       ))}
       <div style={{ position: "absolute", left: 1642, top: 484 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.statLabels.bought}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.bought}</T>
       </div>
       <div style={{ position: "absolute", left: 1707, top: 484 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.statLabels.sold}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.sold}</T>
       </div>
       <div style={{ position: "absolute", left: 1765, top: 484 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.statLabels.holding}</T>
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.holding}</T>
       </div>
       <Row gap={4} style={{ position: "absolute", left: 1852, top: 482 }}>
-        <T size={11} color={C.textMid} weight={500}>{RAIL.statLabels.pnl}</T>
-        <Glyph kind="infoCircle" size={11} color={C.textMid} />
+        <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.pnl}</T>
+        <Glyph kind="infoCircle" size={11} color={C.dimLabel} />
       </Row>
       <Row gap={4} style={{ position: "absolute", left: 1642, top: 501 }}>
-        <SolBars size={11} color={C.tealText} />
-        <T size={13} color={C.textHi} weight={600}>{p.bought}</T>
+        <SolBars size={11} />
+        <T size={13} color={C.dimTeal} weight={600}>{p.bought}</T>
       </Row>
       <Row gap={4} style={{ position: "absolute", left: 1703, top: 501 }}>
-        <SolBars size={11} color={C.tealText} />
+        <SolBars size={11} />
         {/* sold reads pink on the plates (f0900 "169.8"), not white */}
-        <T size={13} color={C.neg} weight={600}>{p.sold}</T>
+        <T size={13} color={C.dimPink} weight={600}>{p.sold}</T>
       </Row>
       <Row gap={4} style={{ position: "absolute", left: 1763, top: 501 }}>
-        <SolBars size={11} color={C.tealText} />
-        <T size={13} color={C.textHi} weight={600}>{p.holding}</T>
+        <SolBars size={11} />
+        <T size={13} color={C.dimWhite} weight={600}>{p.holding}</T>
       </Row>
       <Row gap={4} style={{ position: "absolute", left: 1836, top: 501, whiteSpace: "nowrap" }}>
-        <SolBars size={11} color={C.pos} />
-        <T size={13} color={C.pos} weight={600}>
+        <SolBars size={11} />
+        <T size={13} color={C.dimTeal} weight={600}>
           {p.pnl} (+{p.pnlPct}%)
         </T>
       </Row>
@@ -585,17 +588,17 @@ const PosStatsRow: React.FC<{ frame: number }> = ({ frame }) => {
 // PRESET 1 / 2 / 3 tabs, y 537–556
 const PresetTabs: React.FC = () => (
   <>
-    <div style={{ position: "absolute", left: 1662, top: 541 }}>
-      <T size={11} color={C.textMid} weight={600}>{RAIL.presetTabs[0]}</T>
+    <div style={{ position: "absolute", left: 1662, top: 539 }}>
+      <T size={11} color={C.dimLabel} weight={600}>{RAIL.presetTabs[0]}</T>
     </div>
-    <div style={{ position: "absolute", left: 1748, top: 541 }}>
-      <T size={11} color={C.textMid} weight={600}>{RAIL.presetTabs[1]}</T>
+    <div style={{ position: "absolute", left: 1748, top: 539 }}>
+      <T size={11} color={C.dimLabel} weight={600}>{RAIL.presetTabs[1]}</T>
     </div>
     <div
       style={{
         position: "absolute",
         left: 1830,
-        top: 537,
+        top: 535,
         width: 76,
         height: 19,
         borderRadius: 6,
@@ -636,7 +639,7 @@ const GridCell: React.FC<{
       </Row>
     )}
     <div style={{ position: "absolute", left: 0, top: labelTop, width: "100%", textAlign: "center" }}>
-      <T size={10.5} color={C.textMid} weight={500}>{label}</T>
+      <T size={10.5} color={C.dimLabel} weight={500}>{label}</T>
     </div>
   </div>
 );
@@ -656,9 +659,9 @@ const TokenInfoSection: React.FC<{ info: TokenInfo }> = ({ info }) => {
     { glyph: "droplet", v: info.lp, neg: info.lp !== "" && pct(info.lp) < 100 },
   ];
   const counts: { glyph: string; v: string; color: string; label: string }[] = [
-    { glyph: "people", v: info.holders, color: C.text, label: RAIL.countLabels[0] },
-    { glyph: "arrowsUpDown", v: info.pro, color: C.text, label: RAIL.countLabels[1] },
-    { glyph: "infoCircle", v: RAIL.dexPaidValue, color: C.neg, label: RAIL.countLabels[2] },
+    { glyph: "people", v: info.holders, color: C.dimWhite, label: RAIL.countLabels[0] },
+    { glyph: "arrowsUpDown", v: info.pro, color: C.dimWhite, label: RAIL.countLabels[1] },
+    { glyph: "infoCircle", v: RAIL.dexPaidValue, color: C.tiPink, label: RAIL.countLabels[2] },
   ];
   return (
     <>
@@ -677,7 +680,7 @@ const TokenInfoSection: React.FC<{ info: TokenInfo }> = ({ info }) => {
           h={56}
           glyph={c.glyph}
           value={c.v}
-          valueColor={c.neg ? C.neg : C.pos}
+          valueColor={c.neg ? C.tiPink : C.tiTeal}
           label={RAIL.gridLabels[i]}
         />
       ))}

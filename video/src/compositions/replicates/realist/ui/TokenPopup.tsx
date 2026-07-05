@@ -43,43 +43,47 @@ const SubZero: React.FC<{ parts: readonly string[]; color: string; size?: number
   </span>
 );
 
-// ≡ stacked-bars (SOL amount) glyph
-const Bars: React.FC<{ size?: number; color?: string }> = ({ size = 11, color = "#7d8bd0" }) => (
+// ≡ stacked-bars (SOL amount) glyph — Solana mark, vertical teal→blue→purple
+// gradient measured off the plates (r3); was flat #7d8bd0.
+const Bars: React.FC<{ size?: number; color?: string }> = ({ size = 11, color }) => (
   <svg width={size} height={size} viewBox="0 0 12 12" style={{ display: "inline-block", verticalAlign: "-1px" }}>
-    <rect x="1" y="2" width="10" height="2" rx="1" fill={color} />
-    <rect x="1" y="5.5" width="10" height="2" rx="1" fill={color} />
-    <rect x="1" y="9" width="10" height="2" rx="1" fill={color} />
+    <rect x="1" y="2" width="10" height="2" rx="1" fill={color ?? C.barsTop} />
+    <rect x="1" y="5.5" width="10" height="2" rx="1" fill={color ?? C.barsMid} />
+    <rect x="1" y="9" width="10" height="2" rx="1" fill={color ?? C.barsBot} />
   </svg>
 );
 
 const Warn: React.FC = () => (
   <svg width={9} height={9} viewBox="0 0 10 10" style={{ display: "inline-block", verticalAlign: "-1px" }}>
-    <path d="M5 0.8 9.5 9H0.5Z" fill="#C9A227" />
+    <path d="M5 0.8 9.5 9H0.5Z" fill={C.sand} />
   </svg>
 );
 
+// pill ring 75×27, pitch 80 (r3 mask measurement); ring + text colors are
+// the washed plate cores, not the source-site accents.
 const PresetCell: React.FC<{ x: number; y: number; text: string; kind: "buy" | "sell" }> = ({ x, y, text, kind }) => (
   <div
     style={{
       position: "absolute",
       left: x,
       top: y,
-      width: 73,
-      height: 26,
-      borderRadius: 13,
-      border: `1px solid ${kind === "buy" ? C.tealDim : C.negDim}`,
+      width: 75,
+      height: 27,
+      borderRadius: 13.5,
+      border: `1px solid ${kind === "buy" ? C.popupPillBuyRing : C.popupPillSellRing}`,
+      boxSizing: "border-box",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
     }}
   >
-    <T size={13} weight={600} color={kind === "buy" ? C.pos : C.neg}>
+    <T size={13} weight={600} color={kind === "buy" ? C.popupPillBuyText : C.popupPillSellText}>
       {text}
     </T>
   </div>
 );
 
-const CELL_X = [123, 203.5, 284, 364.5];
+const CELL_X = [122.5, 202.5, 282.5, 362.5];
 
 const SettingsRow: React.FC<{
   y: number;
@@ -96,23 +100,24 @@ const SettingsRow: React.FC<{
         ⇅ {pct}
       </T>
     </span>
+    {/* gas/tip clusters — icon, value AND warn are all sand-gold (r3) */}
     <span style={{ position: "absolute", left: 46, top: 0 }}>
-      <T size={10.5} color={C.textMid}>
+      <T size={10.5} color={C.sand}>
         ⛽{" "}
       </T>
-      <SubZero parts={gas} color={C.textMid} />
+      <SubZero parts={gas} color={C.sand} />
       <Warn />
     </span>
     <span style={{ position: "absolute", left: 118, top: 0 }}>
-      <T size={10.5} color={C.textMid}>
+      <T size={10.5} color={C.sand}>
         ◎{" "}
       </T>
       {typeof tip === "string" ? (
-        <T size={10.5} color={C.textMid}>
+        <T size={10.5} color={C.sand}>
           {tip}{" "}
         </T>
       ) : (
-        <SubZero parts={tip} color={C.textMid} />
+        <SubZero parts={tip} color={C.sand} />
       )}
       <Warn />
     </span>
@@ -138,8 +143,9 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <div style={{ position: "absolute", inset: 0, fontFamily: FONT }}>
-      {/* wallet tab chips above the popup */}
-      <div style={{ position: "absolute", left: 121, top: 345, width: 323, height: 22, display: "flex", gap: 10 }}>
+      {/* wallet tab chips above the popup — HODLER is PURPLE on the plates
+          (text #6560A0 on #222544), J7DEV grey with a grey icon (r3) */}
+      <div style={{ position: "absolute", left: 114, top: 344, width: 330, height: 23, display: "flex", gap: 10 }}>
         {POPUP.tabs.map((t, i) => (
           <div
             key={t}
@@ -148,31 +154,31 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
               alignItems: "center",
               gap: 5,
               padding: "0 9px",
-              height: 21,
+              height: 22,
               borderRadius: 4,
-              background: i === 0 ? "#22262e" : "transparent",
-              border: i === 0 ? "1px solid #343946" : "1px solid transparent",
+              background: i === 0 ? C.tabActiveBg : "transparent",
+              border: i === 0 ? `1px solid ${C.tabActiveBorder}` : "1px solid transparent",
             }}
           >
             <svg width={10} height={10} viewBox="0 0 10 10">
-              <rect x="1" y="2.5" width="8" height="6" rx="1.5" fill="none" stroke="#8d85cf" strokeWidth="1.3" />
-              <path d="M3 2.5 V1.5 h5 v4" fill="none" stroke="#8d85cf" strokeWidth="1.1" />
+              <rect x="1" y="2.5" width="8" height="6" rx="1.5" fill="none" stroke={i === 1 ? C.tabIdleText : "#6C64AB"} strokeWidth="1.3" />
+              <path d="M3 2.5 V1.5 h5 v4" fill="none" stroke={i === 1 ? C.tabIdleText : "#6C64AB"} strokeWidth="1.1" />
             </svg>
-            <T size={11} weight={600} color={i === 0 ? "#cfd2da" : i === 2 ? "#8d85cf" : C.textMid}>
+            <T size={11} weight={600} color={i === 0 ? C.tabActiveText : i === 2 ? "#6C64AB" : C.tabIdleText}>
               {t}
             </T>
           </div>
         ))}
       </div>
 
-      {/* body */}
+      {/* body — bbox re-measured r3: x114 y365 330×361 (was 121/372/323/356) */}
       <div
         style={{
           position: "absolute",
-          left: 121,
-          top: 372,
-          width: 323,
-          height: 356,
+          left: 114,
+          top: 365,
+          width: 330,
+          height: 361,
           background: C.popupBg,
           border: `1px solid ${C.popupBorder}`,
           borderRadius: 8,
@@ -231,7 +237,7 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
         </span>
       </div>
-      <div style={{ position: "absolute", left: 122, top: 411, width: 321, height: 1, background: C.divider }} />
+      <div style={{ position: "absolute", left: 115, top: 413, width: 328, height: 1, background: C.divider }} />
 
       {/* Buy row */}
       <div style={{ position: "absolute", left: 124, top: 421, width: 312, height: 20 }}>
@@ -248,14 +254,14 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             height: 20,
             padding: "0 8px",
             borderRadius: 10,
-            background: "#2a2d36",
+            background: C.solChipBg,
             display: "flex",
             alignItems: "center",
             gap: 4,
           }}
         >
           <Bars size={10} />
-          <T size={10.5} weight={700} color={C.textHi}>
+          <T size={10.5} weight={700} color={C.solChipText}>
             {POPUP.sol}
           </T>
         </div>
@@ -271,8 +277,11 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             gap: 4,
           }}
         >
-          <span style={{ width: 8, height: 8, borderRadius: 4, background: "#3a6ea8", display: "inline-block" }} />
-          <T size={10.5} weight={600} color={C.textDim}>
+          {/* USDC coin: blue disc + white mark (r3) */}
+          <span style={{ position: "relative", width: 9, height: 9, borderRadius: 4.5, background: C.usdcBlue, display: "inline-block" }}>
+            <span style={{ position: "absolute", left: 2.5, top: 2, width: 4, height: 5, borderRadius: 2, border: "1px solid #DDE4EE", boxSizing: "border-box" }} />
+          </span>
+          <T size={10.5} weight={600} color="#73777F">
             {POPUP.usdc}
           </T>
         </div>
@@ -286,7 +295,7 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
 
       {/* buy presets */}
       {POPUP.buyPresets.map((row, r) =>
-        row.map((v, i) => <PresetCell key={`b${r}${i}`} x={CELL_X[i]} y={r === 0 ? 452 : 488} text={v} kind="buy" />),
+        row.map((v, i) => <PresetCell key={`b${r}${i}`} x={CELL_X[i]} y={r === 0 ? 452 : 486.5} text={v} kind="buy" />),
       )}
       <SettingsRow
         y={530}
@@ -335,23 +344,24 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
 
       {/* sell presets */}
       {sellPresets.map((row, r) =>
-        row.map((v, i) => <PresetCell key={`s${r}${i}`} x={CELL_X[i]} y={r === 0 ? 587 : 623} text={v} kind="sell" />),
+        row.map((v, i) => <PresetCell key={`s${r}${i}`} x={CELL_X[i]} y={r === 0 ? 584 : 620.5} text={v} kind="sell" />),
       )}
       <SettingsRow
         y={665}
         pct={POPUP.sellSettings.pct}
         gas={POPUP.sellSettings.gas}
         tip={POPUP.sellSettings.tip}
-        right={{ text: POPUP.sellSettings.init, color: C.neg }}
+        right={{ text: POPUP.sellSettings.init, color: C.sellInit }}
       />
 
-      {/* footer stats */}
-      <div style={{ position: "absolute", left: 122, top: 694, width: 321, height: 34, borderTop: `1px solid ${C.divider}` }}>
+      {/* footer stats — no divider exists on the plates (r3); ≡ icons start
+          at x138/208/279/336, text band c≈708.5 */}
+      <div style={{ position: "absolute", left: 114, top: 697, width: 330, height: 30 }}>
         {[
-          { x: 13, v: pos.bought, c: C.pos },
-          { x: 87, v: pos.sold, c: C.neg },
-          { x: 158, v: pos.holding, c: C.text },
-          { x: 228, v: `${pos.pnl}(${pctK(pos.pnlPct)})`, c: C.pos },
+          { x: 24, v: pos.bought, c: C.footTeal },
+          { x: 94, v: pos.sold, c: C.footPink },
+          { x: 165, v: pos.holding, c: C.footWhite },
+          { x: 222, v: `${pos.pnl}(${pctK(pos.pnlPct)})`, c: C.footTeal },
         ].map((s, i) => (
           <span key={i} style={{ position: "absolute", left: s.x, top: 6, whiteSpace: "nowrap" }}>
             <Bars size={11} />{" "}

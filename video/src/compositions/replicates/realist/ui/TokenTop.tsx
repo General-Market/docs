@@ -345,10 +345,13 @@ const cardAvatar = (name: string, token: string): string => {
   return "realist-assets/ui/pump-avatar.png"; // Pumpwheel + default
 };
 
-const STACK_CX = 963; // measured center of the toast stack
-const TOAST_H = 42;
-const CARD_H = 52;
-const GAP_STD = 12;
+// Stack metrics re-measured r3 (f0910/f0930/f0470 box masks): std toast
+// box 35 tall on a 56px slot pitch, cards 47 tall (~65 pitch), stack
+// centered at x963, cards ~305 wide (x813-1120 on f0470).
+const STACK_CX = 963;
+const TOAST_H = 35;
+const CARD_H = 47;
+const GAP_STD = 21;
 const GAP_CARD = 18;
 
 const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ toast, y, frame }) => {
@@ -369,10 +372,10 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
     const accent = sell ? C.neg : C.verbGreen;
     const amtColor = sell ? C.neg : C.tealText;
     return (
-      <div style={{ ...shell, height: CARD_H, minWidth: 220, padding: "0 12px 0 8px", gap: 10 }}>
+      <div style={{ ...shell, height: CARD_H, minWidth: 300, padding: "0 12px 0 8px", gap: 10 }}>
         <Img
           src={staticFile(cardAvatar(toast.name, toast.token))}
-          style={{ width: 38, height: 38, borderRadius: 6, display: "block", flexShrink: 0 }}
+          style={{ width: 36, height: 36, borderRadius: 6, display: "block", flexShrink: 0 }}
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
           <Row gap={5}>
@@ -412,18 +415,18 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
   if (toast.kind === "attempt") {
     // Attempting toasts carry no close ✕ on the plates.
     return (
-      <div style={{ ...shell, height: TOAST_H, padding: "0 14px", gap: 10 }}>
+      <div style={{ ...shell, height: TOAST_H, padding: "0 12px", gap: 10 }}>
         <Spinner frame={frame} size={16} />
-        <T size={13} color={C.textHi} weight={600}>
+        <T size={13} color={C.textHi} weight={500}>
           {toast.text}
         </T>
       </div>
     );
   }
   return (
-    <div style={{ ...shell, height: TOAST_H, padding: "0 14px", gap: 10 }}>
+    <div style={{ ...shell, height: TOAST_H, padding: "0 12px", gap: 10 }}>
       <StatusDot kind={toast.dot} />
-      <T size={13} color={C.textHi} weight={600}>
+      <T size={13} color={C.textHi} weight={500}>
         {toast.text}
       </T>
       <div style={{ width: 4 }} />
@@ -478,8 +481,8 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
   const toasts = sampleAt(toastTable, frame);
   const pnlPct = sampleAt(posStatsTable, frame).pnlPct;
 
-  // toast stack vertical layout (plate first-toast text starts y30 → 15)
-  let toastY = 15;
+  // toast stack vertical layout (plate slot-1 box top ≈ y14, r3)
+  let toastY = 14;
   const placed: { toast: ParsedToast; y: number }[] = [];
   for (const tok of toasts) {
     const parsed = parseToast(tok);
@@ -693,8 +696,9 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           <Row key={i} gap={7} style={{ position: "absolute", left: TICKER_X[i], top: 0, height: 32 }}>
             <TickerIcon icon={item.icon} />
             {/* label/chip fonts fitted to plate ink widths (f0500 blobs):
-                label w73 vs 87 at 13px → 11; chip num w47 vs 55 → 11 */}
-            <T size={11} color={C.textHi} weight={600}>
+                label w73 vs 87 at 13px → 11; chip num w47 vs 55 → 11.
+                Labels are DIM on the plates, the SOL figure brighter (r3). */}
+            <T size={11} color={C.tickerLabel} weight={600}>
               {item.label}
             </T>
             <Row

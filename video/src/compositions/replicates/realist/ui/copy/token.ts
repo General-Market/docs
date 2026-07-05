@@ -21,8 +21,8 @@ export const COLORS = {
   inputBg: "#25252B", //        AMOUNT input (f0900)
   cellBg: "#1C1F26", //         rail preset cells
   dockBg: "#191B25", //         bottom-right docked panel
-  toastBg: "#26282F",
-  toastBorder: "#3A3D46",
+  toastBg: "#181B22", //         toast fill probed f0910 (24,27,34) — r3, was #26282F
+  toastBorder: "#272B33", //     no bright border line exists on the plates (r3)
   divider: "#232833",
   scrollThumb: "#414852",
   // accents
@@ -53,7 +53,39 @@ export const COLORS = {
   text: "#C6C9D2",
   textMid: "#8B8E97",
   textDim: "#5E626E",
-  tickerSol: "#7B799E", //      "13.010101 SOL" purple-grey
+  tickerSol: "#B9B8C4", //      "13.010101 SOL" — brighter than the LABEL on the plates (r3 probe #CECDD5 core)
+  tickerLabel: "#7A7D84", //    ticker item label ("STAR $9.99K") is DIM, not white (r3 probe)
+  // r3 small-text ink (probed at glyph size off f0900 — JPEG stroke bleed
+  // makes 11-13px text far dimmer than the big-glyph colors above; the
+  // plates are the target, so small text adopts the measured cores)
+  dimLabel: "#6E717C", //       11px rail labels (Bought/Sold/…, grid labels)
+  dimTeal: "#649B97", //        13px teal values (s24 buys/net, pos bought/pnl)
+  dimPink: "#87536C", //        13px pink values (s24 sells, pos sold)
+  dimWhite: "#7A7E8A", //       13px white values (s24 vol, pos holding, counts)
+  tiTeal: "#74AFAA", //         token-info grid teal values (slightly brighter)
+  tiPink: "#82576D", //         token-info grid pink values
+  sand: "#B0A290", //           gas/tip icons + values + warn triangles (washed gold)
+  railPreset: "#ACAFB6", //     rail preset cell numbers
+  // r3 popup probes
+  popupPillBuyRing: "#37444A", //  buy pill ring (grey-teal, was #1E4D48)
+  popupPillSellRing: "#3A2F3D", // sell pill ring (grey-mauve, was #4A2338)
+  popupPillBuyText: "#6E9C99",
+  popupPillSellText: "#83576E",
+  tabActiveText: "#6560A0", //  HODLER tab text is purple on the plates
+  tabActiveBg: "#222544", //    HODLER chip purple-navy bg
+  tabActiveBorder: "#2E3252",
+  tabIdleText: "#818294",
+  sellInit: "#A86C88", //       "Sell Init." washed pink
+  footTeal: "#7CB2B1", //       popup footer bought/pnl
+  footPink: "#9B6885", //       popup footer sold
+  footWhite: "#8B8F99", //      popup footer holding
+  solChipBg: "#33353C", //      popup Buy-row SOL chip
+  solChipText: "#D6D9E0",
+  usdcBlue: "#5581B5", //       USDC disc blend (official #2775CA washed by JPEG)
+  // ≡ bars = Solana glyph, vertical teal→blue→purple gradient (r3)
+  barsTop: "#2C555F",
+  barsMid: "#46648A",
+  barsBot: "#666897",
   ohlcPos: "#3ED6C5",
   ohlcNeg: "#E85D86",
   onTeal: "#0B1418", //         text on solid teal buttons
