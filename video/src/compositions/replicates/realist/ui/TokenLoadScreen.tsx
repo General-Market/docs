@@ -179,7 +179,7 @@ const Card: React.FC<{ x: number; y: number; label: string; value: string; vColo
         </T>
       ) : null}
     </div>
-    <div style={{ marginTop: 6 }}>
+    <div style={{ marginTop: -1 }}>
       <T size={10} color="#8b8e97">
         {label}
       </T>
@@ -941,7 +941,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </span>
       </div>
       {/* presets */}
-      <div style={{ position: "absolute", left: railX, top: 332, width: 296, height: 24, display: "flex", gap: 5 }}>
+      <div style={{ position: "absolute", left: railX, top: 337, width: 296, height: 24, display: "flex", gap: 5 }}>
         {LOAD_DIALOG.presets.map((p) => (
           <div key={p} style={{ width: 64, height: 24, borderRadius: 5, background: "#1d2027", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <T size={11.5} weight={600} color="#c6c9d2">
@@ -956,14 +956,14 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </div>
       </div>
       {/* exit strategy */}
-      <div style={{ position: "absolute", left: railX, top: 374, display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ position: "absolute", left: railX, top: 379, display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ width: 13, height: 13, borderRadius: 3, border: "1.3px solid #5e626e" }} />
         <T size={12} color="#c6c9d2">
           {LOAD_DIALOG.exitStrategy}
         </T>
       </div>
       {/* select preset message */}
-      <div style={{ position: "absolute", left: railX, top: 410, width: 296, textAlign: "center" }}>
+      <div style={{ position: "absolute", left: railX, top: 406, width: 296, textAlign: "center" }}>
         <T size={11.5} weight={600} color={C.yellow}>
           ↑ {LOAD_DIALOG.selectPreset}
         </T>
@@ -1007,7 +1007,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
             <Card
               key={l}
               x={railX + 4 + (i % 3) * 104}
-              y={580 + Math.floor(i / 3) * 66}
+              y={582 + Math.floor(i / 3) * 67}
               label={l}
               value="-"
               vColor="#8b8e97"
@@ -1033,7 +1033,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
               <Card
                 key={card.l}
                 x={railX + 4 + (i % 3) * 104}
-                y={580 + Math.floor(i / 3) * 66}
+                y={582 + Math.floor(i / 3) * 67}
                 label={card.l}
                 value={card.v}
                 vColor={card.c}
@@ -1045,7 +1045,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
       {/* CA / DA rows — y depends on card grid height */}
       {(() => {
         const gridRows = cards.phase === "dash" ? 2 : cards.phase === "partial" ? 2 : 4;
-        const caY = 580 + gridRows * 66 + 8;
+        const caY = 582 + gridRows * 67 + 9;
         return (
           <>
             <div style={{ position: "absolute", left: railX, top: caY, width: 296, height: 26, borderRadius: 6, background: "#1d2027", display: "flex", alignItems: "center", paddingLeft: 8 }}>
@@ -1058,7 +1058,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
                 </T>
               </span>
             </div>
-            <div style={{ position: "absolute", left: railX, top: caY + 34, width: 296, height: 26, borderRadius: 6, background: "#1d2027", display: "flex", alignItems: "center", paddingLeft: 8 }}>
+            <div style={{ position: "absolute", left: railX, top: caY + 47, width: 296, height: 26, borderRadius: 6, background: "#1d2027", display: "flex", alignItems: "center", paddingLeft: 8 }}>
               <T size={11} color="#c6c9d2">
                 {LOAD_DIALOG.da}
               </T>
@@ -1068,12 +1068,12 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
                 </T>
               </span>
             </div>
-            <div style={{ position: "absolute", left: railX, top: caY + 78 }}>
+            <div style={{ position: "absolute", left: railX, top: caY + 105 }}>
               <T size={12.5} weight={600} color="#e9ecf3">
                 {LOAD_DIALOG.similar}
               </T>
             </div>
-            <div style={{ position: "absolute", left: railX + 220, top: caY + 74, height: 20, padding: "0 7px", borderRadius: 5, background: "#20232b", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ position: "absolute", left: railX + 220, top: caY + 101, height: 20, padding: "0 7px", borderRadius: 5, background: "#20232b", display: "flex", alignItems: "center", gap: 4 }}>
               <T size={10.5} weight={600} color="#c6c9d2">
                 {LOAD_DIALOG.similarSort}
               </T>
@@ -1082,7 +1082,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
               </svg>
             </div>
             {frame >= 387 ? (
-              <div style={{ position: "absolute", left: railX, top: caY + 104, width: 296, height: 56, borderRadius: 6, background: "#1d2027" }}>
+              <div style={{ position: "absolute", left: railX, top: caY + 131, width: 296, height: 56, borderRadius: 6, background: "#1d2027" }}>
                 <Img src={staticFile("realist-assets/ui/pump-avatar.png")} style={{ position: "absolute", left: 8, top: 8, width: 40, height: 40, borderRadius: 5 }} />
                 <span style={{ position: "absolute", left: 58, top: 10 }}>
                   <T size={11.5} weight={600} color="#e9ecf3">
