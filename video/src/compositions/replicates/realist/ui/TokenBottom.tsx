@@ -219,15 +219,17 @@ const TabsRow: React.FC<{ frame: number }> = ({ frame }) => {
 // 1600-1611 -> left 1599.
 const TabsRight: React.FC = () => (
   <>
+    {/* r5 f0901: ref chip purple ink x1129-1239 y992-1016 (h~24), text rows
+        1000-1007 — was 1123/h21 (text 1.5px high) */}
     <Row
       gap={5}
       style={{
         position: "absolute",
-        left: 1123,
+        left: 1129,
         top: 992,
-        height: 21,
+        height: 24,
         padding: "0 10px",
-        borderRadius: 11,
+        borderRadius: 12,
         border: "1px solid #3D3B66",
       }}
     >
@@ -391,8 +393,9 @@ const JasonDock: React.FC = () => (
     <div style={{ position: "absolute", left: 1558 - DOCK_X, top: 1019 - DOCK_Y }}>
       <Glyph kind="gear" size={13} color={C.textMid} />
     </div>
-    <div style={{ position: "absolute", left: 1588 - DOCK_X, top: 1019 - DOCK_Y }}>
-      <Glyph kind="filterSolid" size={13} color="#6C63D9" />
+    {/* ref funnel ink 11px wide (1591-1601) — 13px glyph rendered 8px */}
+    <div style={{ position: "absolute", left: 1588 - DOCK_X, top: 1018 - DOCK_Y }}>
+      <Glyph kind="filterSolid" size={16} color="#6C63D9" />
     </div>
     <div style={{ position: "absolute", left: 1628 - DOCK_X, top: 1013 - DOCK_Y }}>
       <T size={12} color={C.textMid} weight={600}>{DOCK.preset}</T>
