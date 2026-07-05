@@ -52,7 +52,13 @@ export const CAM_KEYS_3D: [number, number, number, number, number][] = [
   [2250, -34.114, 11.855, 724.528, -0.378],
   [2265, -28.211, 12.592, 742.228, -0.3172],
   [2280, -24.994, 11.894, 747.454, -0.2598],
-  [2295, -30.652, 4.446, 745.944, -0.1965],
+  // r7 despike: the solved row [2295, -30.652, 4.446, 745.944, -0.1965]
+  // was a fit outlier — it bounced the whole scene ~4px up and back over
+  // 2286-2310 (tracked: our lender v 356.6->352.2->354.1, company v
+  // 326.4->322.1->324.5) where the REFERENCE glides monotonically
+  // (lender v 351.9->350.0, company v 326.5->324.9). Replaced with the
+  // 2280/2310 neighbor midpoint; every projected track is monotone again.
+  [2295, -23.9415, 10.951, 756.312, -0.2271],
   [2310, -22.889, 10.008, 765.17, -0.1945],
   [2325, -15.034, 10.747, 765.872, -0.1968],
   [2340, -12.075, 8.739, 752.725, -0.1849],

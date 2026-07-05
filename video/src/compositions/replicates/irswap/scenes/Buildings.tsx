@@ -67,10 +67,49 @@ const camCx: [number, number][] = CAM_KEYS_3D.map((k) => [k[0], k[1]]);
 const camCy: [number, number][] = CAM_KEYS_3D.map((k) => [k[0], k[2]]);
 const camCz: [number, number][] = CAM_KEYS_3D.map((k) => [k[0], k[3]]);
 const camG: [number, number][] = CAM_KEYS_3D.map((k) => [k[0], k[4]]);
-export const camBld = (f: number): { cam: V3; g: number } => ({
-  cam: [lerp1(camCx, f), lerp1(camCy, f), lerp1(camCz, f)],
-  g: lerp1(camG, f),
-});
+// r7 ride smoothing (owner: "sometimes the house moves, while only camera
+// should move"). Linear key interpolation put a velocity STEP at every 15f
+// key — mean 0.33 px/f, up to 2.3 px/f of instantaneous screen-velocity
+// change on the building centers — which reads as the houses hitching once
+// per 0.6 s while the reference camera glides. Catmull-Rom passes through
+// every key EXACTLY (the module-scope datums camBld(2505)/camBld(3540) and
+// both handoff clamps camBld(1705)/camBld(3580) are key/clamp evaluations,
+// so T_BLD, T_C2, plaqueWorld and FLOORMAP are all bit-identical) and is
+// C1 between keys: key-frame velocity steps drop to <=0.27 px/f. Measured
+// path deviation stays under 1.5px except inside the entry swing and the
+// f3112-3191 whip (<=4.2px there, where the camera moves 20-30 px/f).
+// The exit whip f>=CR_END keeps the exact linear ride so the round-7
+// transition rebuild (other lane) sees byte-identical frames.
+const CR_END = 3510;
+const cr1 = (tbl: [number, number][], f: number): number => {
+  const n = tbl.length;
+  if (f <= tbl[0][0]) return tbl[0][1];
+  if (f >= tbl[n - 1][0]) return tbl[n - 1][1];
+  let i = 0;
+  while (tbl[i + 1][0] < f) i++;
+  const [x0, y0] = tbl[i];
+  const [x1, y1] = tbl[i + 1];
+  const h = x1 - x0;
+  const t = (f - x0) / h;
+  const m0 = i > 0 ? (y1 - tbl[i - 1][1]) / (x1 - tbl[i - 1][0]) : (y1 - y0) / h;
+  const m1 = i + 2 < n ? (tbl[i + 2][1] - y0) / (tbl[i + 2][0] - x0) : (y1 - y0) / h;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * h * m0 +
+    (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * h * m1
+  );
+};
+export const camBld = (f: number): { cam: V3; g: number } =>
+  f >= CR_END
+    ? {
+        cam: [lerp1(camCx, f), lerp1(camCy, f), lerp1(camCz, f)],
+        g: lerp1(camG, f),
+      }
+    : {
+        cam: [cr1(camCx, f), cr1(camCy, f), cr1(camCz, f)],
+        g: cr1(camG, f),
+      };
 
 // ── plaque signboards ────────────────────────────────────────────
 // Drawn procedurally (the old sprite crops baked in neighboring pixels —
