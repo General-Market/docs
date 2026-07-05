@@ -485,7 +485,11 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
 // eye origin re-measured round 4: the ref fan converges UNDER the house
 // (occluded by the house body/pad; no wedge ink right of the pad) — the
 // old (420,330) origin leaked yellow streaks to the house door
-const RAY_O = { over: [-60.0, -183.2] as Pt, eye: toFloor(255, 325, 5100) };
+// over origin re-fit empirically (round 4 finisher): ref wedge center-lines
+// at f4880 (scan lines x=300/340/380/400) converge at screen (455,273.5) →
+// world (19.2,-140.2), stable ±4px across 4775-4880; the old (-60,-183.2)
+// projected 65px left of the ref convergence and compressed the fan
+const RAY_O = { over: [19.2, -140.2] as Pt, eye: toFloor(255, 325, 5100) };
 // tips: cbs, t1, t2, vac1, t3, vac2 with over-phase wedge widths (twE =
 // explicit eye-phase width for tips that end near the camera)
 const RAY_TIPS: { b?: string; v?: number; tw: number; twE?: number }[] = [
@@ -496,14 +500,23 @@ const RAY_TIPS: { b?: string; v?: number; tw: number; twE?: number }[] = [
 // one to the left edge, one to the bottom-left frame corner); the pads
 // keep the extrapolated off-frame poses
 const RAY_VAC_EYE: Pt[] = [toFloor(-10, 302, 5100), toFloor(-40, 430, 5100)];
+// over-phase wedge tips for the vacant lots (round 4 finisher): the ref's
+// horizontal wedge (y≈273.5 constant across x=300-410 at f4880) points at
+// the vacant lot behind cbs, not at vac2's pad center — retarget the wedge
+// tip only, the pad itself stays put; vac1 keeps its pad tip
+const RAY_VAC_OVER: Pt[] = [[-179.5, -269.2], [-236.0, -140.2]];
 const RAYS_C: Pt = [-400, -800];
 const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     const a = fade(f, 4700, 4708) * fadeOut(f, 5225, 5240) * fadeOut(f, 5262, 5271);
     if (a <= 0) return;
     const t = diveT(f);
-    ctx.globalAlpha = a * 0.8;
-    ctx.fillStyle = C.ray;
+    // wedge ink sampled off the ref cores: overhead f4880 (253,251,163),
+    // eye f5100 (253,253,195) — brighter than the old C.ray@0.8; mid-dive
+    // the ref fan sweeps low-right ahead of our tip blend, so the ink dips
+    // while the geometry is least trustworthy (held phases keep full ink)
+    ctx.globalAlpha = a * (0.9 - 0.28 * Math.sin(Math.PI * t));
+    ctx.fillStyle = mixc("#FCFB9D", "#FDFDC3", t);
     const mx = (p: Pt) => w / 2 + (p[0] - RAYS_C[0]);
     const my = (p: Pt) => h / 2 + (p[1] - RAYS_C[1]);
     const from: Pt = [mixN(RAY_O.over[0], RAY_O.eye[0], t), mixN(RAY_O.over[1], RAY_O.eye[1], t)];
@@ -515,10 +528,10 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
         tx = p.x;
         tz = p.z;
       } else {
-        const vc = VACANT[tip.v ?? 0];
+        const ot = RAY_VAC_OVER[tip.v ?? 0];
         const et = RAY_VAC_EYE[tip.v ?? 0];
-        tx = mixN(vc.over.x, et[0], t);
-        tz = mixN(vc.over.z, et[1], t);
+        tx = mixN(ot[0], et[0], t);
+        tz = mixN(ot[1], et[1], t);
       }
       const dx = tx - from[0];
       const dz = tz - from[1];
