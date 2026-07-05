@@ -179,6 +179,41 @@ export const PLQ_FIX: Record<"lender" | "company" | "bank", [number, number, num
 // the ref text center misregisters both border ends. The PLQ_FIX rigid
 // world fit is the winner.
 
+// Round 6 revision of the above: the r5 fit measured TEXT centers at 3
+// sparse anchors. An edge-pair fit (plqedge.py: angle-swept projection
+// histogram finds the two long border edges -> tilt + center + extent,
+// self-validating — the attempt-side tilts reproduce the drawn tilts
+// exactly) gives clean PER-FRAME tracks for company and bank: the ref
+// redraws both boards 6-10 deg steeper than the f2505 pose and their
+// center deltas swing from (0,-13) at 3305 through (0,+8..+13) mid-era
+// to (+21,-15)/( +9,+3) in the exit whip. Rows below are screen-space
+// deltas [frame, du, dv] (ref minus attempt) applied through the pitched
+// camera at the board's depth, plus tilt deltas [frame, deg] in the
+// canvas tilt convention. Zero at <=3300. LENDER IS EXCLUDED: its board
+// clips the frame bottom and merges with the building base ink — the
+// edge fit jumps (-5 to -26 deg tilt across 40f); no measurement-grade
+// track exists for it (do not apply an invented one).
+export const PLQ_D_FIX: Partial<Record<"lender" | "company" | "bank", [number, number, number][]>> = {
+  company: [
+    [3300, 0, 0], [3315, -3.2, -11.9], [3335, -4.2, -4.9], [3345, -4.3, 2.3],
+    [3355, -3.6, 8.1], [3365, -3.6, 11.3], [3385, -4.0, 12.0], [3395, -4.8, 12.3],
+    [3405, -4.8, 12.8], [3415, -5.5, 13.3], [3445, -6.5, 13.3], [3455, -6.5, 12.4],
+    [3465, -5.5, 11.4], [3485, -4.8, 10.4], [3495, -2.2, 9.3], [3505, -1.2, 9.8],
+    [3515, 3.9, 12.6], [3525, 9.4, 3.3],
+  ],
+  bank: [
+    [3300, 0, 0], [3315, -1.2, -11.6], [3335, 0.1, -6.5], [3345, -0.1, -0.7],
+    [3355, 0, 4.1], [3365, -1.3, 7.0], [3385, 0.8, 6.9], [3395, 0.7, 6.5],
+    [3405, 0.6, 7.9], [3415, 1.6, 8.1], [3445, 2.7, 7.6], [3455, 3.7, 8.2],
+    [3465, 2.8, 7.7], [3485, 5.6, 6.1], [3495, 7.0, 3.3], [3505, 11.1, 0.2],
+    [3515, 15.8, 0.5], [3525, 21.2, -14.6],
+  ],
+};
+export const PLQ_TILT_FIX: Partial<Record<"lender" | "company" | "bank", [number, number][]>> = {
+  company: [[3300, 0], [3315, -10], [3415, -9], [3495, -8], [3525, -6]],
+  bank: [[3300, 0], [3315, 6], [3495, 7]],
+};
+
 // Facade decor, fractions of Wf (u along Fb->Fo) / Hw (heights above base).
 export const B3D_DECOR = {
   lender: {

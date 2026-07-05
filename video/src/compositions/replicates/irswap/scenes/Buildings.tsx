@@ -17,7 +17,8 @@ import {
   D_FIX, D_ARR_FIX, E_FIX, ROAD_FIX, ROAD_SQZ,
 } from "../data/buildings";
 import type { TrackRow } from "../data/buildings";
-import { CAM_KEYS_3D, PLQ_FIX } from "../data/buildings3d";
+import { CAM_KEYS_3D, PLQ_FIX, PLQ_D_FIX, PLQ_TILT_FIX } from "../data/buildings3d";
+import { bldPitchAt, buildingsPose, T_BLD } from "../lib/camera";
 import { ArrowPlanes, Building3D } from "./Buildings3D";
 import type { ArrowAlphas } from "./Buildings3D";
 import { clamp01, lerp1, lerpTrack } from "../lib/helpers";
@@ -570,10 +571,34 @@ export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
             s.def.center[2] + s.fix[2],
           ], g);
           const board = drawPlaque(s.text, s.tilt);
+          // r6: measured per-frame board registration (PLQ_D_FIX screen
+          // deltas + PLQ_TILT_FIX roll, plqedge.py edge-pair fit). The
+          // screen delta converts to a world offset at the board's depth
+          // through the pitched camera; the tilt delta rolls the PLANE
+          // about its normal (rz = -canvasTilt: canvas y is down, world
+          // y is up) so the art never clips its canvas.
+          const name = s.key.slice(4) as "lender" | "company" | "bank";
+          let pos: V3 = [c[0], c[1] + s.drop * dropT, c[2]];
+          let rz = 0;
+          const dRows = PLQ_D_FIX[name];
+          if (dRows && frame > 3300) {
+            const [du, dv] = lerpTrack(dRows, frame);
+            const e = bldPitchAt(frame);
+            const cp = buildingsPose(frame).pos;
+            const ce = Math.cos(e);
+            const se = Math.sin(e);
+            const dy = pos[1] - (cp[1] - T_BLD[1]);
+            const dz = pos[2] - (cp[2] - T_BLD[2]);
+            const dist = -(se * dy + ce * dz);
+            const sc = dist / DCAM;
+            pos = [pos[0] + du * sc, pos[1] - dv * sc * ce, pos[2] + dv * sc * se];
+            const tRows = PLQ_TILT_FIX[name];
+            if (tRows) rz = (-lerp1(tRows, frame) * Math.PI) / 180;
+          }
           return (
             <CanvasPlane key={s.key} frame={frame}
               width={s.def.w} height={s.def.h} res={3}
-              position={[c[0], c[1] + s.drop * dropT, c[2]]}
+              position={pos} rotation={[0, 0, rz]}
               draw={(ctx, f, w, h) => {
                 ctx.globalAlpha = op;
                 board(ctx, f, w, h);
