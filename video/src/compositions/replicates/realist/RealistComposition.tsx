@@ -427,7 +427,11 @@ const BLUE_GLOW = "0 0 5px rgba(65,184,224,0.9), 0 0 12px rgba(62,184,255,0.65),
 // line's trailing letter-spacing bias (~7px left at 0.18em tracking).
 const STYLE_GEO = {
   A: { cx: 960, inkH: 62, cy: 537, parenCx: 967, parenCy: 610, parenInkH: 49, sparkPad: 35, sparkSize: 44 },
-  B: { cx: 964, inkH: 80, cy: 540, parenCx: 964, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
+  // B re-measured r4 (core glyph mask r>220,g<60 on plate f1200 vs a
+  // render): plate cap band y 503-565 (height ~61, center 534); the old
+  // inkH 80 / cy 540 drew the glyphs 30% too tall and 6px low — the
+  // width still matched only because scaleX squeezes to mainW.
+  B: { cx: 964, inkH: 61, cy: 534, parenCx: 964, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
   // F parenCy re-measured r3b: settled blue ink band f1610-1630 is
   // y 562-647 → cy 602 (the old 630 sat the lockup 28px low)
   F: { cx: 960, inkH: 62, cy: 536, parenCx: 960, parenCy: 602, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
@@ -550,8 +554,28 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       // +6/14 kept it visible at f950 — tightened to +5/12.
       fadeParen = 1 - clamp01((frame - fadeFrom - 5) / 12);
     }
+  } else if (ev.pushAt !== null && ev.pushDy && ev.pushStart !== undefined) {
+    // B-style push — r4: measured per-event dy tables (red-mask blob
+    // tracking of all 12 pushed B events, bpush_track.py). True motion
+    // start runs 2-9f before the recorded pushAt, and the curve is
+    // two-phase: a slow creep (2-13f, length varies per event) then a
+    // ~4f fast transit into a shared soft landing (...129, 140.5,
+    // 149.5, 156, 161, 165.5, 170, 173, 175, 176.5, 178, ~180). The
+    // old exp(τ2.2) from pushAt was never measured — it overshot every
+    // mid-push frame (92px low at plate 1335, ev1301's 13f creep).
+    // Fade: red-mass decay begins at the frame dy crosses ~176.5
+    // (exact ±1f on all 12 events), mass 1.0→0.28 over 9f → linear 13f.
+    const tp = frame - ev.pushStart;
+    if (tp > 0) {
+      const tab = ev.pushDy;
+      dy = tab[Math.min(tp, tab.length - 1)];
+      let settleIdx = tab.findIndex((v) => v >= 176.5);
+      if (settleIdx < 0) settleIdx = tab.length - 1;
+      fadeMain = 1 - clamp01((frame - (ev.pushStart + settleIdx)) / 13);
+      fadeParen = fadeMain;
+    }
   } else if (ev.pushAt !== null) {
-    // B-style push — r2 exponential fit kept (τ=2.2, no paren line)
+    // fallback for a pushed event without a measured table (none today)
     const tp = frame - ev.pushAt;
     if (tp > 0) {
       dy = (715 - geo.cy) * (1 - Math.exp(-tp / 2.2));

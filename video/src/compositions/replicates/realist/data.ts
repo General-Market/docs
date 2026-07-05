@@ -57,6 +57,12 @@ export type SellsEvent = {
   pushAt: number | null;  // measured frame the caption starts its slide-down
   fadeAt: number | null;  // measured frame a solo fade begins
   slide?: true;           // un-pushed S-curve slide-out (both lines fade together)
+  // r4 B-push measurement (bpush_track.py, red-mask blob tracking): the
+  // true motion start runs 2-9f before the recorded pushAt and the curve
+  // is two-phase — a slow creep (2-13f, varies per event) then a ~4f fast
+  // transit into a shared soft landing. One measured table per event.
+  pushStart?: number;     // measured true motion-start frame
+  pushDy?: number[];      // per-frame dy from pushStart, px down from rest; holds last
 };
 export const sellsEvents: SellsEvent[] = [
   { f: 468, main: "SELLS 3%", paren: "(11.5 SOL)", style: "A", mainW: 445, parenW: 450, pushAt: 493, fadeAt: null },
@@ -75,20 +81,20 @@ export const sellsEvents: SellsEvent[] = [
   { f: 925, main: "SELLS 3%", paren: "(24.2 SOL)", style: "A", mainW: 434, parenW: 440, pushAt: 948, fadeAt: null, slide: true },  // plate red-mask f940-970: S-curve slide f948-963 (dy 24/53/83/131/151/168/177 at t=2..15), both lines fade f961-967
   { f: 977, main: "SELLS 13%", paren: "(22.3 SOL)", style: "A", mainW: 485, parenW: 479, pushAt: 1001, fadeAt: null },
   { f: 1007, main: "SELLS 3%", paren: "(14.1 SOL)", style: "A", mainW: 435, parenW: 427, pushAt: 1024, fadeAt: null },
-  { f: 1033, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 577, parenW: null, pushAt: 1056, fadeAt: null },
-  { f: 1060, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: 1081, fadeAt: null },
+  { f: 1033, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 577, parenW: null, pushAt: 1056, fadeAt: null, pushStart: 1050, pushDy: [1, 2.5, 4.5, 10, 13.5, 19, 42, 115, 129.5, 141, 149.5, 156.5, 166.5, 171, 173.5, 175, 176.5, 178.5, 179] },
+  { f: 1060, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: 1081, fadeAt: null, pushStart: 1079, pushDy: [0, 4, 15.5, 29, 45.5, 59, 65, 99, 115, 129, 140.5, 149, 156, 161, 165.5, 170, 173, 174.5, 176.5, 178, 178, 178.5, 179] },
   { f: 1080, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: null, fadeAt: 1128 },
   { f: 1166, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: null, fadeAt: 1204 },
-  { f: 1223, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 586, parenW: null, pushAt: 1241, fadeAt: null },
-  { f: 1244, main: "SELLS 25 SOL", paren: null, style: "B", mainW: 661, parenW: null, pushAt: 1263, fadeAt: null },
-  { f: 1269, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1295, fadeAt: null },
-  { f: 1301, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1330, fadeAt: null },
-  { f: 1336, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1366, fadeAt: null },
-  { f: 1368, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1397, fadeAt: null },
-  { f: 1399, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 650, parenW: null, pushAt: 1424, fadeAt: null },
-  { f: 1429, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: 1452, fadeAt: null },
-  { f: 1457, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1480, fadeAt: null },
-  { f: 1485, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1509, fadeAt: null },
+  { f: 1223, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 586, parenW: null, pushAt: 1241, fadeAt: null, pushStart: 1237, pushDy: [0.5, 2, 6, 9.5, 18, 24.5, 33, 148.5, 155.5, 161, 170, 172.5, 174.5, 177.5, 178, 178.5, 180] },
+  { f: 1244, main: "SELLS 25 SOL", paren: null, style: "B", mainW: 661, parenW: null, pushAt: 1263, fadeAt: null, pushStart: 1261, pushDy: [0, 2, 3, 7.5, 19, 52, 99.5, 116.5, 129.5, 141, 150, 156, 161.5, 166, 170.5, 173.5, 175.5, 177, 178.5, 179] },
+  { f: 1269, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1295, fadeAt: null, pushStart: 1290, pushDy: [1, 2, 4, 7, 14, 18, 25, 32, 38, 43, 49, 61, 66, 100, 116, 130, 150, 157, 162, 167, 171, 173.5, 175.5, 177.5, 179] },
+  { f: 1301, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1330, fadeAt: null, pushStart: 1323, pushDy: [1.5, 2.5, 4.5, 7, 10, 14.5, 19, 25, 33, 41.5, 50.5, 61, 65.5, 100.5, 116.5, 130, 150, 157, 162, 167, 171, 173.5, 175.5, 177.5, 179] },
+  { f: 1336, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1366, fadeAt: null, pushStart: 1357, pushDy: [1, 3, 5, 8, 12, 23, 30, 40, 51, 62, 72, 99, 115, 128, 149, 155, 160, 165, 169, 172, 174, 176, 177, 178, 178, 179] },
+  { f: 1368, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1397, fadeAt: null, pushStart: 1388, pushDy: [0, 2, 4.5, 6.5, 10, 13, 18, 27, 66.5, 114.5, 129.5, 141, 156.5, 161.5, 166.5, 170.5, 173, 175.5, 177, 178.5, 179] },
+  { f: 1399, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 650, parenW: null, pushAt: 1424, fadeAt: null, pushStart: 1419, pushDy: [0, 3, 6, 10, 13, 19, 100, 140, 149, 156, 166, 170, 172, 175, 176, 178, 179, 179, 180] },
+  { f: 1429, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: 1452, fadeAt: null, pushStart: 1449, pushDy: [1, 2.5, 4.5, 8, 17.5, 55.5, 76.5, 116, 129.5, 141, 149.5, 156, 166.5, 170.5, 173, 175, 176.5, 178, 179] },
+  { f: 1457, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1480, fadeAt: null, pushStart: 1476, pushDy: [1, 2, 5, 9, 14, 19, 31, 96, 116, 129, 149, 156, 166, 170, 175, 177, 178, 179, 180] },
+  { f: 1485, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1509, fadeAt: null, pushStart: 1501, pushDy: [1, 4.5, 6.5, 9, 18, 24.5, 42, 61, 100, 129.5, 141, 149.5, 156, 161.5, 166.5, 170.5, 173.5, 175, 177.5, 178, 178.5, 179] },
   { f: 1514, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: null, fadeAt: 1541 },
   { f: 1553, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: null, fadeAt: 1576 },
   { f: 1595, main: "SELLS 100%", paren: "(481.2 SOL TOTAL)", style: "F", mainW: 565, parenW: 879, pushAt: null, fadeAt: 1639 },
