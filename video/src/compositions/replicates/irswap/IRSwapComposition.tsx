@@ -36,7 +36,9 @@ export const DURATION = 5433; // 217.32s — matches reference irswap-original.m
 const WIN = {
   chartRoom: [0, 1745],
   buildings: [1705, 3588],
-  chart2: [3572, 4160],
+  // chart2 mounts at 3570: the ref's wall gridlines enter f3570-3572
+  // carrying the buildings-spin's tail rotation (r7 strike-3)
+  chart2: [3570, 4160],
   advDis: [4131, 4263],
   slot: [4263, 4690],
   community: [4690, 5290],
@@ -136,6 +138,11 @@ const humpAt = (f: number): number => {
 
 const GRAIN_ON = true;
 const FEATHER_ON = true;
+
+// r7 strike-3: the wall-entry inherited rotation lives INSIDE GridWall
+// (scenes/Chart2.tsx) as per-line foot-pivot leans — see the negative
+// A/Bs documented there (vertical-axis yaw wrappers and a rigid
+// wall-normal roll all lost; the ref pivots each line at its own foot).
 
 export const IRSwapComposition: React.FC = () => {
   const frame = useCurrentFrame();

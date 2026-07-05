@@ -1109,27 +1109,69 @@ const GridWall: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, _w: number, _h: number) => {
     const mS = (s: number) => s - S0;
     const mY = (y: number) => Y_TOP - y;
-    // gridlines (draw-on 3572-3584, top→bottom wipe)
-    const gT = fade(f, 3572, 3584);
-    if (gT > 0) {
+    // r7 strike-3: the ref's gridlines enter f3570-3577 SEQUENTIALLY,
+    // left to right, each line rising TILTED (~10-15° early, steeper for
+    // late arrivals; contrast-stretched crops in work/r7/spin/att/
+    // refgrid-strip.png) and rotating about its OWN FOOT on the floor
+    // junction until vertical — the spin's tail carried onto the wall.
+    // Everything settles by 3580; from there this branch draws the exact
+    // settled grid the old code drew at wipe-end, so >=3584 (and the
+    // whole hold) is byte-identical. NEGATIVE A/Bs (measured, in
+    // IRSwapComposition history — do not retry): (1) vertical-axis yaw
+    // wrappers (cluster axis / wall-center axis) can NEVER tilt the
+    // lines — a level camera keeps world-vertical lines screen-vertical,
+    // the grid only slid sideways (.8728-.8766 at 3572-3578 gates);
+    // (2) a rigid ROLL about the wall's normal through the base center
+    // tilts the floor junction with the lines — the ref keeps every foot
+    // planted. Per-line foot-pivot rotation is the measured grammar.
+    if (f >= 3580) {
+      // settled grid (identical rasterization to the old wipe's end)
       for (let i = 0; i < GRID_S.length; i++) {
         ctx.strokeStyle = i % 2 === 0 ? C.gridA : C.gridB;
         ctx.lineWidth = 0.9;
         ctx.beginPath();
         ctx.moveTo(mS(GRID_S[i]), mY(GRID_TOP_Y));
-        ctx.lineTo(mS(GRID_S[i]), mY(GRID_TOP_Y - (GRID_TOP_Y - GRID_BOT_Y) * gT));
+        ctx.lineTo(mS(GRID_S[i]), mY(GRID_BOT_Y));
         ctx.stroke();
       }
-      // skirting: wall/floor junction line at the grid base
-      if (gT >= 1) {
-        ctx.strokeStyle = "#E0E0DF";
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
-        ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
-        ctx.stroke();
-      }
+      ctx.strokeStyle = "#E0E0DF";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
+      ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
+      ctx.stroke();
+      return;
     }
+    if (f < 3570) return;
+    const H = GRID_TOP_Y - GRID_BOT_Y;
+    const PHI0 = (25 * Math.PI) / 180; // arrival lean (rad), tops screen-left
+    for (let i = 0; i < GRID_S.length; i++) {
+      const a0 = 3570 + i * 0.75; // staggered arrival, left to right
+      const al = fade(f, a0, a0 + 1.5);
+      if (al <= 0) continue;
+      const settleEnd = Math.min(a0 + 6, 3580);
+      const u = clamp01((f - a0) / (settleEnd - a0));
+      const phi = PHI0 * (1 - u) * (1 - u);
+      ctx.globalAlpha = al;
+      ctx.strokeStyle = i % 2 === 0 ? C.gridA : C.gridB;
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(mS(GRID_S[i]), mY(GRID_BOT_Y));
+      ctx.lineTo(mS(GRID_S[i] - H * Math.sin(phi)), mY(GRID_BOT_Y + H * Math.cos(phi)));
+      ctx.stroke();
+    }
+    // skirting rises with the later lines (ref junction reads ~3574+)
+    const aS = fade(f, 3574, 3578);
+    if (aS > 0) {
+      ctx.globalAlpha = aS;
+      ctx.strokeStyle = "#E0E0DF";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(mS(GRID_S[0]) - 30, mY(GRID_BOT_Y));
+      ctx.lineTo(mS(GRID_S[GRID_S.length - 1]) + 40, mY(GRID_BOT_Y));
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }, []);
   // back plane center = anchor-camera + K(f)·(wallCenter − anchor-camera);
   // expressed as the front wall's local offset inside a scale-about-camera
