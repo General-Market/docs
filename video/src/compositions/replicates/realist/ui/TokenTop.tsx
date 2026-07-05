@@ -373,10 +373,15 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
     const amtColor = sell ? C.neg : C.tealText;
     return (
       <div style={{ ...shell, height: CARD_H, minWidth: 300, padding: "0 12px 0 8px", gap: 10 }}>
-        <Img
-          src={staticFile(cardAvatar(toast.name, toast.token))}
-          style={{ width: 36, height: 36, borderRadius: 6, display: "block", flexShrink: 0 }}
-        />
+        {/* avatar carries two badge chips (coin + age) on its bottom-left (r3) */}
+        <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
+          <Img
+            src={staticFile(cardAvatar(toast.name, toast.token))}
+            style={{ width: 36, height: 36, borderRadius: 6, display: "block" }}
+          />
+          <div style={{ position: "absolute", left: -4, bottom: -3, width: 13, height: 13, borderRadius: 6.5, background: "#C9A227", border: "1.5px solid #14161C", boxSizing: "border-box" }} />
+          <div style={{ position: "absolute", left: 7, bottom: -3, width: 13, height: 13, borderRadius: 6.5, background: "#22252C", border: "1.5px solid #14161C", boxSizing: "border-box" }} />
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
           <Row gap={5}>
             {toast.name === "samsrep" ? (
