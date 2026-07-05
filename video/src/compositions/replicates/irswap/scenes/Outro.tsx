@@ -81,6 +81,14 @@ export const camOutro = (frame: number): { pos: V3; pitch: number; roll: number 
 };
 
 
+// r8: the lockup is drawn to MEASURED ref f5380 geometry (static credits
+// hold = 143 frames; ssim-grid put 7 of the 8 worst hold cells on this
+// card). Bands (screen y at final pose): "Tutorial created by" 81-98
+// x337-486 core 178; logo bbox x367-452 y142-228 core (27,155,189); solid
+// teal wordmark (NOT hollow — the old strokeText was the catastrophic
+// r2c4 cell) cap 249-276 x319-503 core (31,154,185); VISUAL FINANCE
+// 277-290 right edge 502 core 185; contacts mid-y 346/369/392.5 widths
+// 195/163/136 core 178.
 const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
   // board texture in final-pose screen coordinates: (132,−30)-(726,510)
   const sx = w / BW;
@@ -89,7 +97,7 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   const Y = (v: number) => (v + 30) * sy;
   // teal board (measured vertical gradient), rounded corners like the ref
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, "#189BC1");
+  grad.addColorStop(0, "#199ABD");
   grad.addColorStop(1, "#2185A4");
   const rr = Math.min(w, h) * 0.02;
   ctx.beginPath();
@@ -111,58 +119,78 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   ctx.textBaseline = "middle";
   type Ctx2 = CanvasRenderingContext2D & { letterSpacing?: string };
   const c2 = ctx as Ctx2;
-  // "Tutorial created by" — light gray, gently tracked
-  ctx.fillStyle = "#B3B3B3";
-  ctx.font = `400 ${16 * sy}px ${FONT}`;
-  c2.letterSpacing = "1px";
-  ctx.fillText("Tutorial created by", X(412), Y(89));
+  // "Tutorial created by" — light gray, measured cap band 81-95
+  ctx.fillStyle = "#B6B6B6";
+  ctx.font = `600 ${18 * sy}px ${FONT}`;
+  c2.letterSpacing = "0.6px";
+  ctx.fillText("Tutorial created by", X(411.5), Y(89.5));
   c2.letterSpacing = "0px";
-  // logo: four-lobe butterfly — two large wings left, two petals right,
-  // gray center accent
-  ctx.save();
-  ctx.translate(X(392), Y(200));
-  ctx.scale(sx, sy);
-  ctx.fillStyle = "#1C9DBE";
-  const lobe = (rot: number, len: number, wd: number) => {
-    ctx.save();
-    ctx.rotate(rot);
+  // logo: teal leaf pinwheel, measured petal tips off the f5380 crop —
+  // big top leaf, big lower-left leaf, right leaf, stubby upper-right
+  // petal, grey cone tucked at the junction. All coords final-pose screen.
+  const leaf = (
+    bx: number, by: number, tx: number, ty: number, wd: number, bow = 0,
+  ) => {
+    // fat leaf from base (bx,by) to tip (tx,ty): cubic beziers hold the
+    // width toward the tip (the ref lobes are rounded, near-elliptical
+    // with a pointed base); wd = half-width, bow leans the bulge sideways
+    const dx = tx - bx;
+    const dy = ty - by;
+    const L = Math.hypot(dx, dy);
+    const nx = -dy / L;
+    const ny = dx / L;
+    const p = (t: number, s: number) => [
+      bx + dx * t + nx * s, by + dy * t + ny * s,
+    ];
+    const [a1x, a1y] = p(0.25, wd + bow);
+    const [a2x, a2y] = p(0.8, (wd + bow) * 0.9);
+    const [b2x, b2y] = p(0.8, -(wd - bow) * 0.9);
+    const [b1x, b1y] = p(0.25, -(wd - bow));
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(-wd, -len * 0.45, -wd * 0.7, -len * 0.95, 6, -len);
-    ctx.bezierCurveTo(wd * 0.55, -len * 0.8, wd * 0.35, -len * 0.3, 0, 0);
+    ctx.moveTo(X(bx), Y(by));
+    ctx.bezierCurveTo(X(a1x), Y(a1y), X(a2x), Y(a2y), X(tx), Y(ty));
+    ctx.bezierCurveTo(X(b2x), Y(b2y), X(b1x), Y(b1y), X(bx), Y(by));
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
   };
-  lobe(-0.62, 46, 15); // large upper-left wing
-  lobe(-1.12, 38, 13); // large lower-left wing
-  lobe(0.45, 34, 11); // upper-right petal
-  lobe(0.95, 26, 9); // lower-right petal
-  ctx.fillStyle = "#B3B5B5";
+  ctx.fillStyle = "#1B9BBD";
+  leaf(404, 183, 373, 142, 11, 2.5); // top leaf
+  leaf(401, 185, 375, 227, 10, -2.5); // lower-left leaf
+  leaf(412, 187, 452, 201, 8, 1.5); // right leaf
+  leaf(416, 174, 431, 156, 6.5, 0); // upper-right petal
+  // grey cone at the junction
+  ctx.fillStyle = "#B3B6B5";
   ctx.beginPath();
-  ctx.ellipse(2, 2, 6, 4, -0.2, 0, Math.PI * 2);
+  ctx.moveTo(X(407), Y(187));
+  ctx.quadraticCurveTo(X(409), Y(174), X(418), Y(169));
+  ctx.lineTo(X(427), Y(178));
+  ctx.quadraticCurveTo(X(415), Y(181), X(407), Y(187));
+  ctx.closePath();
   ctx.fill();
+  // "Xpono" — SOLID teal, wide round letterforms (Titillium stretched
+  // 1.32x horizontally to the measured 184px extent, cap 249-276)
+  ctx.fillStyle = "#1B9BBD";
+  ctx.font = `700 ${40 * sy}px ${FONT}`;
+  c2.letterSpacing = "5px";
+  ctx.save();
+  ctx.translate(X(414), Y(262.5));
+  ctx.scale(1.45, 1);
+  ctx.fillText("Xpono", 0, 0);
   ctx.restore();
-  // "Xpono" — heavy hollow (outlined) lettering, wide tracking
-  ctx.strokeStyle = "#4CA8C1";
-  ctx.lineWidth = 1.8 * sy;
-  ctx.font = `600 ${40 * sy}px ${FONT}`;
-  c2.letterSpacing = "7px";
-  ctx.strokeText("Xpono", X(414), Y(264));
-  // "VISUAL FINANCE" — small gray caps, right-aligned under the wordmark
-  ctx.fillStyle = "#B4B4B4";
-  ctx.font = `400 ${9 * sy}px ${FONT}`;
+  // "VISUAL FINANCE" — gray caps, right edge aligned with the wordmark
+  ctx.fillStyle = "#A5A5A5";
+  ctx.font = `400 ${13 * sy}px ${FONT}`;
   c2.letterSpacing = "3px";
   ctx.textAlign = "right";
-  ctx.fillText("VISUAL FINANCE", X(474), Y(286));
+  ctx.fillText("VISUAL FINANCE", X(506), Y(283.5));
   ctx.textAlign = "center";
   c2.letterSpacing = "0.8px";
-  // contact lines (evenly spaced — they collided at 15px pitch)
-  ctx.fillStyle = "#A7A7A7";
-  ctx.font = `400 ${17 * sy}px ${FONT}`;
-  ctx.fillText("email:  info@xpono.com", X(413), Y(347));
-  ctx.fillText("tel:  02079935112", X(413), Y(368));
-  ctx.fillText("www.xpono.com", X(413), Y(389));
+  // contact lines — measured mids 346/369/392.5, widths 195/163/136
+  ctx.fillStyle = "#B0B0B0";
+  ctx.font = `400 ${19 * sy}px ${FONT}`;
+  ctx.fillText("email:  info@xpono.com", X(413), Y(346));
+  ctx.fillText("tel:  02079935112", X(413), Y(369));
+  ctx.fillText("www.xpono.com", X(413), Y(392.5));
   c2.letterSpacing = "0px";
 };
 
