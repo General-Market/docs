@@ -19,9 +19,11 @@ Rounds. Each round: one builder agent per track → measure → fix → official
 - The judge lies until interrogated. Three bugs found by refusing to accept numbers that disagreed with frames: ImageMagick `compare -metric SSIM` emits DISTORTION (identical=0) on IM 7.x → use ffmpeg ssim; ffmpeg inside a while-read loop EATS STDIN and silently re-scores frame 0 → `-nostdin`; fixed /tmp keyframe names + full disk → stale foreign frames scored → per-run paths, fail loudly. When a score jumps or a value repeats identically across timestamps, audit the judge first.
 - Rescue the attempt render to `work/r<N>/` before the cleanup trap eats it — next round triages from it for free.
 
-## Triage — rolling windows, not keyframes
+## Triage — rolling windows in time, grid cells in space
 
-Rank by WORST ROLLING-WINDOW MEAN of per-frame SSIM (`scripts/rolling-ssim.py <framessim> --fps <N> --window-sec 2 --top 12`; the verify persists the series automatically, or one ffmpeg ssim pass over a saved render rebuilds it in seconds). A bad frame is noise; a bad 2s window is a defect. Round reports list windows before/after; next-round priorities are stated as windows.
+Two axes, both owner-mandated:
+- **WHEN (rolling windows):** rank by WORST ROLLING-WINDOW MEAN of per-frame SSIM (`scripts/rolling-ssim.py <framessim> --fps <N> --window-sec 2 --top 12`; the verify persists the series automatically, or one ffmpeg ssim pass over a saved render rebuilds it in seconds). A bad frame is noise; a bad 2s window is a defect. Round reports list windows before/after; next-round priorities are stated as windows.
+- **WHERE (grid cells):** inside a bad window, rank cells with `scripts/ssim-grid.py <ref.png> <att.png> --grid 8x6 --top 10` (or `--pairs list.txt` across several frames of the window to find PERSISTENT offenders, not one frame's noise). Output includes ready `WxH+X+Y` crop rects — feed them straight to `magick -crop` / difference composites. Values are coarse block-SSIM: trust the RANKING, verify with the crop, don't quote the absolute number. Fix the worst persistent cell's ink first; re-grid after.
 
 ## Measurement doctrine
 
