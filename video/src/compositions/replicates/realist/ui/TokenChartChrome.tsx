@@ -1,7 +1,8 @@
 import React from "react";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { COLORS as C, CHART_TOOLBAR, OHLC, CHART_FOOT } from "./copy/token";
-import { sampleAt, ohlcTable, clockAt } from "./timeline-token";
+import { clockAt } from "./timeline-token";
+import { ohlcAt } from "./chart-timeline";
 
 const { fontFamily } = loadFont("normal", {
   weights: ["400", "500", "600", "700"],
@@ -54,7 +55,7 @@ const ToolGlyph: React.FC<{ i: number }> = ({ i }) => {
 };
 
 export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
-  const ohlc = sampleAt(ohlcTable, frame);
+  const ohlc = ohlcAt(frame);
   const dir = ohlc ? (ohlc.up ? C.ohlcPos : C.ohlcNeg) : C.textMid;
 
   return (
