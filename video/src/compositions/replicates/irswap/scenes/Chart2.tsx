@@ -390,7 +390,6 @@ const C2WREG: [number, number, number, number, number][] = [
   [4089, 1.0443, 0.02623, -0.59, -2.5],
   [4100, 1.0154, 0.0141, -1.23, 0.7],
 ];
-const WREG_A: Pt = [S_CROSS, yLine(S_CROSS)]; // wall anchor (crossing)
 const wregRow = (i: 1 | 2 | 3 | 4) => C2WREG.map((r) => [r[0], r[i]] as [number, number]);
 const WREG_K = wregRow(1);
 const WREG_TH = wregRow(2);
