@@ -171,55 +171,81 @@ const mixN = (a: number, b: number, t: number) => a + (b - a) * t;
 // measured icon at every held frame of its own phase.
 type CommB = {
   over: { x: number; z: number; kx: number; ky: number };
-  eye: { x: number; z: number };
+  eye: { x: number; z: number; k?: number };
   spec: MiniSpec;
   padW: number;
 };
+// Round-4 pose refits (fitcomm.py): connected-component silhouettes scanned
+// in ref at 4775/4820/4880 (overhead glide) and 5000/5100/5200 (eye hold),
+// poses solved through the ported camera by Gauss-Newton.
+//   house over joint fit rms 4.8px (old pose: base 63px low on screen)
+//   bank  over joint fit rms 3.4px; eye (x,z,H) rms 2.2px (was 17px short)
+//   cbs   over joint fit rms 6.0px; eye (x,z,k) exact at 5100
 const WB: Record<string, CommB> = {
   house: {
-    over: { x: 29.5, z: -143.7, kx: 0.522, ky: 0.55 },
-    eye: { x: -114.7, z: -410.3 },
+    over: { x: 25.39, z: -152.09, kx: 0.506, ky: 0.486 },
+    eye: { x: -119.5, z: -423.8 },
     spec: { kind: "house", W: 167.0, L: 130.5, H: 178.8, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, strokeW: 4, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
     padW: 1.6,
   },
   bank: {
-    over: { x: 226, z: -71.6, kx: 0.57, ky: 0.80 },
-    eye: { x: 272, z: -300 },
-    spec: { kind: "temple", W: 178, L: 32, H: 171.9, eaveFrac: 0.63, fill: C.red, outline: "#787E7C", strokeW: 4.5, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
+    over: { x: 218.2, z: -57.7, kx: 0.518, ky: 0.742 },
+    eye: { x: 274.2, z: -320.7 },
+    spec: { kind: "temple", W: 188.5, L: 32, H: 182.1, eaveFrac: 0.58, fill: C.red, outline: "#787E7C", strokeW: 4.5, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.6,
   },
   t1: {
     over: { x: -205.4, z: -207.8, kx: 0.442, ky: 0.442 },
     eye: { x: -695.8, z: -624.3 },
     spec: { kind: "temple", W: 130.0, L: 89.7, H: 154.2, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 4, fill: "#FFFFFF" }, strip: true },
-    padW: 1.4,
+    padW: 1.85,
   },
   cbs: {
-    over: { x: -195, z: -67.0, kx: 0.442, ky: 0.442 },
+    over: { x: -205.9, z: -47.2, kx: 0.213, ky: 0.729 },
     eye: { x: -746.7, z: -306.0 },
     spec: { kind: "box2", W: 144.3, L: 108.0, H: 170, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
-    padW: 1.4,
+    padW: 1.85,
   },
   t2: {
     over: { x: -135.1, z: -263.9, kx: 0.442, ky: 0.585 },
-    eye: { x: -536.9, z: -751.1 },
+    eye: { x: -555.0, z: -782.8, k: 0.92 },
     spec: { kind: "temple", W: 122.8, L: 95.7, H: 111.8, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
-    padW: 1.4,
+    padW: 1.85,
   },
   t3: {
     over: { x: -40.3, z: -288.0, kx: 0.478, ky: 0.645 },
-    eye: { x: -589.2, z: -1290.6 },
+    eye: { x: -559.3, z: -1290.6 },
     spec: { kind: "temple", W: 100.8, L: 82.9, H: 97.6, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
-    padW: 1.4,
+    padW: 1.85,
   },
 };
-const wbAt = (b: CommB, f: number) => {
+// Per-building screen-tracked world slides through the overhead glide
+// (round 4): the reference re-poses its icons along the glide faster than
+// any constant world pose projects (bank cx drift −6→+7px 4775→4880) —
+// residuals of the joint fits, converted to floor-plane world deltas at
+// each key frame, interpolated, and released through the dive blend.
+const OVSLIDE: Record<string, [number, number, number][]> = {
+  // [f, dx, dz] world units
+  bank: [[4715, -6.2, -4.6], [4775, -6.2, -4.6], [4820, -7.5, -0.3], [4880, 5.8, 6.0], [4905, 5.8, 6.0]],
+  house: [[4715, -6.6, -7.4], [4775, -6.6, -7.4], [4820, 2.0, -0.6], [4880, 3.3, 6.4], [4905, 3.3, 6.4]],
+};
+const slideAt = (name: string, f: number): Pt => {
+  const rows = OVSLIDE[name];
+  if (!rows) return [0, 0];
+  const dx = lerp1(rows.map((r) => [r[0], r[1]] as [number, number]), f);
+  const dz = lerp1(rows.map((r) => [r[0], r[2]] as [number, number]), f);
+  return [dx, dz];
+};
+const wbAt = (b: CommB, f: number, name?: string) => {
   const t = diveT(f);
+  const ke = b.eye.k ?? 1;
+  const [sx, sz] = name ? slideAt(name, f) : [0, 0];
+  const rel = 1 - t;
   return {
-    x: mixN(b.over.x, b.eye.x, t),
-    z: mixN(b.over.z, b.eye.z, t),
-    kx: mixN(b.over.kx, 1, t),
-    ky: mixN(b.over.ky, 1, t),
+    x: mixN(b.over.x, b.eye.x, t) + sx * rel,
+    z: mixN(b.over.z, b.eye.z, t) + sz * rel,
+    kx: mixN(b.over.kx, ke, t),
+    ky: mixN(b.over.ky, ke, t),
   };
 };
 
@@ -234,74 +260,59 @@ const VACANT = [
 const VAC_W = 176; // eye-phase pad width (scales by kCluster at overhead)
 const K_CLUSTER = 0.442;
 
-// One-shot relocation for the floor DASHBOARD ink: the reference's 2.5D
-// collage moves the dashboard with the buildings between shots (at eye
-// level the rose chart spans x[344-711] y[356-479] on screen while the
-// world-static ink projected out of view). Similarity fitted from the
-// house+bank over→eye poses, blended with the same diveT as the buildings.
-const inkFixRef: { fn: ((p: Pt) => Pt) | null } = { fn: null };
-const fitSimRef: { fn: ((pairs: [Pt, Pt][]) => (p: Pt) => Pt) | null } = { fn: null };
-const inkRelocate = (() => {
-  const oH: Pt = [WB.house.over.x, WB.house.over.z];
-  const eH: Pt = [WB.house.eye.x, WB.house.eye.z];
-  const dO: Pt = [WB.bank.over.x - oH[0], WB.bank.over.z - oH[1]];
-  const dE: Pt = [WB.bank.eye.x - eH[0], WB.bank.eye.z - eH[1]];
-  const s = Math.hypot(dE[0], dE[1]) / Math.hypot(dO[0], dO[1]);
-  const th = Math.atan2(dE[1], dE[0]) - Math.atan2(dO[1], dO[0]);
-  const c = Math.cos(th) * s;
-  const sn = Math.sin(th) * s;
-  return (p: Pt, t: number, extra?: (pp: Pt) => Pt): Pt => {
-    const q0: Pt = [
-      eH[0] + c * (p[0] - oH[0]) - sn * (p[1] - oH[1]),
-      eH[1] + sn * (p[0] - oH[0]) + c * (p[1] - oH[1]),
-    ];
-    let q = inkFixRef.fn ? inkFixRef.fn(q0) : q0;
-    if (extra) q = extra(q);
-    return [mixN(p[0], q[0], t), mixN(p[1], q[1], t)];
-  };
-})();
-
-// Measured correction on top of the similarity (fit at f5100: the wave
-// and card bboxes, replica render → reference): least-squares 2D
-// similarity over the unprojected point pairs.
-const inkFix = (() => {
-  const fitSim = (pairsS: [Pt, Pt][]): ((p: Pt) => Pt) => {
-    const pairs = pairsS.map(([a, b]): [Pt, Pt] => [toFloor(a[0], a[1], 5100), toFloor(b[0], b[1], 5100)]);
-    let cpx = 0, cpz = 0, cqx = 0, cqz = 0;
-    for (const [pp, q] of pairs) { cpx += pp[0]; cpz += pp[1]; cqx += q[0]; cqz += q[1]; }
-    cpx /= pairs.length; cpz /= pairs.length; cqx /= pairs.length; cqz /= pairs.length;
-    let sxx = 0, sxy = 0, spp = 0;
-    for (const [pp, q] of pairs) {
-      const px = pp[0] - cpx, pz = pp[1] - cpz, qx = q[0] - cqx, qz = q[1] - cqz;
-      sxx += px * qx + pz * qz;
-      sxy += px * qz - pz * qx;
-      spp += px * px + pz * pz;
-    }
-    const sc = Math.hypot(sxx, sxy) / spp;
-    const th = Math.atan2(sxy, sxx);
-    const c = sc * Math.cos(th), sn = sc * Math.sin(th);
-    return (pp: Pt): Pt => [
-      cqx + c * (pp[0] - cpx) - sn * (pp[1] - cpz),
-      cqz + sn * (pp[0] - cpx) + c * (pp[1] - cpz),
-    ];
-  };
-  fitSimRef.fn = fitSim;
-  const e1 = fitSim([
-    [[295, 384], [348, 378]],
-    [[625, 474], [666, 479]],
-    [[35, 340], [94, 382]],
-    [[292, 392], [307, 455]],
-  ]);
-  // round-3 render still under-scaled: wave/card bboxes re-measured
-  const e2 = fitSim([
-    [[346, 411], [346, 372]],
-    [[632, 479], [723, 479]],
-    [[129, 367], [90, 378]],
-    [[325, 428], [409, 459]],
-  ]);
-  return (pp: Pt): Pt => e2(e1(pp));
-})();
-inkFixRef.fn = inkFix;
+// PER-ELEMENT relocation for the floor DASHBOARD ink (round 4). The
+// reference's 2.5D collage moves each dashboard element with the
+// buildings between shots, but NOT under one shared similarity — round
+// 2's single-similarity A/B lost to the static plant (.7329 vs .7352 at
+// f5100). Round 4 measured each element's own eye-phase quad off the
+// f5100 reference (bandL/bandR crops) and fits one world similarity PER
+// ELEMENT: overhead screen corners (@4810, the original measurement
+// frame) → eye screen corners (@5100), both unprojected to the floor.
+// Every element rides its own transform, blended with the same diveT as
+// the buildings.
+const simWorld = (over: Pt[], eye: Pt[]): ((p: Pt) => Pt) => {
+  const P = over.map(([u, v]) => toFloor(u, v, 4810));
+  const Q = eye.map(([u, v]) => toFloor(u, v, 5100));
+  let cpx = 0, cpz = 0, cqx = 0, cqz = 0;
+  for (let i = 0; i < P.length; i++) {
+    cpx += P[i][0]; cpz += P[i][1]; cqx += Q[i][0]; cqz += Q[i][1];
+  }
+  cpx /= P.length; cpz /= P.length; cqx /= Q.length; cqz /= Q.length;
+  let sxx = 0, sxy = 0, spp = 0;
+  for (let i = 0; i < P.length; i++) {
+    const px = P[i][0] - cpx, pz = P[i][1] - cpz;
+    const qx = Q[i][0] - cqx, qz = Q[i][1] - cqz;
+    sxx += px * qx + pz * qz;
+    sxy += px * qz - pz * qx;
+    spp += px * px + pz * pz;
+  }
+  const sc = Math.hypot(sxx, sxy) / spp;
+  const th = Math.atan2(sxy, sxx);
+  const c = sc * Math.cos(th), sn = sc * Math.sin(th);
+  return (pp: Pt): Pt => [
+    cqx + c * (pp[0] - cpx) - sn * (pp[1] - cpz),
+    cqz + sn * (pp[0] - cpx) + c * (pp[1] - cpz),
+  ];
+};
+// measured eye quads (screen @5100): two grey cards read as one union
+// mass for E1; the wide pale-teal strip is E3; the wave squiggle maps by
+// its two endpoints.
+const SIM_E1 = simWorld(
+  [[330, 300], [398, 303], [396, 345], [328, 342]],
+  [[50, 370], [205, 372], [210, 438], [55, 436]],
+);
+const SIM_E2 = simWorld(
+  [[405, 302], [490, 306], [488, 350], [403, 346]],
+  [[215, 377], [317, 378], [322, 422], [220, 421]],
+);
+const SIM_E3 = simWorld(
+  [[150, 375], [260, 380], [256, 430], [146, 424]],
+  [[82, 422], [280, 424], [285, 460], [87, 458]],
+);
+const SIM_WAVE = simWorld(
+  [[500, 345], [680, 418]],
+  [[347, 417], [495, 480]],
+);
 
 // hex color lerp for the eye-phase pale ink
 const mixc = (a: string, b: string, t: number): string => {
@@ -318,14 +329,11 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     // the map dissolves ahead of the page-flip: all the sheet's ink fades
     // uniformly, reaching 0 at 5285 (multiplied into every alpha below)
     const dissolve = 1 - clamp01((f - 5262) / 23);
-    // Ink relocation is OFF (dv = 0 keeps the dashboard world-static, as
-    // before): the reference collage DOES move its dashboard into the eye
-    // view, but every measured correspondence tried this round scored
-    // worse than the static plant (misplaced ink loses to absent ink —
-    // A/B at f5100: static .7352 vs relocated .7329). The machinery
-    // (inkRelocate/fitSim) stays for a future round with better
-    // correspondences.
-    const dv = 0;
+    // Per-element relocation rides the dive (round 4): each dashboard
+    // element follows its own measured over→eye similarity (SIM_E1..E3,
+    // SIM_WAVE above). Round 2's single shared similarity lost its A/B;
+    // the per-element quads measured at f5100 win it (see round log).
+    const dv = diveT(f);
     ctx.globalAlpha = dissolve;
     // crossfade in from the slot-scene floor paper (full by 4708)
     ctx.globalAlpha *= clamp01((f - 4690) / 18);
@@ -415,32 +423,41 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    // dashboard artwork on the map (measured at f4810; rides the same
-    // one-shot dive relocation as the buildings — the reference collage
-    // keeps the rose chart + cards in view at eye level)
-    const mR = (pts: Pt[]) => m10(pts).map((p) => inkRelocate(p, dv));
-    const waveFix = fitSimRef.fn
-      ? fitSimRef.fn([[[375, 409], [346, 372]], [[675, 469], [723, 479]]])
-      : undefined;
-    const mRW = (pts: Pt[]) => m10(pts).map((p) => inkRelocate(p, dv, waveFix));
-    poly(mR([[330, 300], [398, 303], [396, 345], [328, 342]]), mixc("#C9C9C9", "#DFDFDD", dv), null);
-    poly(mR([[405, 302], [490, 306], [488, 350], [403, 346]]), mixc("#CFEAF3", "#E4F2F6", dv), null);
-    poly(mR([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E1F0F3", dv), null);
-    // tick columns under the chart
-    ctx.strokeStyle = "#DDDDDA";
-    ctx.lineWidth = mixN(1, 0.6, dv);
-    for (let i = 0; i < 10; i++) {
-      const a = inkRelocate(toFloor(505 + i * 18, 340, 4810), dv, waveFix);
-      const b = inkRelocate(toFloor(500 + i * 18, 416, 4810), dv, waveFix);
-      ctx.beginPath();
-      ctx.moveTo(mx(a), my(a));
-      ctx.lineTo(mx(b), my(b));
-      ctx.stroke();
+    // dashboard artwork on the map (overhead corners measured at f4810;
+    // each element rides its OWN measured over→eye similarity)
+    const blendSim = (sim: (p: Pt) => Pt) => (p: Pt): Pt => {
+      const q = sim(p);
+      return [mixN(p[0], q[0], dv), mixN(p[1], q[1], dv)];
+    };
+    const mE1 = (pts: Pt[]) => m10(pts).map(blendSim(SIM_E1));
+    const mE2 = (pts: Pt[]) => m10(pts).map(blendSim(SIM_E2));
+    const mE3 = (pts: Pt[]) => m10(pts).map(blendSim(SIM_E3));
+    const wv = blendSim(SIM_WAVE);
+    // eye-phase inks sampled off the f5100 reference band
+    poly(mE1([[330, 300], [398, 303], [396, 345], [328, 342]]), mixc("#C9C9C9", "#DFDFDF", dv), null);
+    poly(mE2([[405, 302], [490, 306], [488, 350], [403, 346]]), mixc("#CFEAF3", "#DFEBEE", dv), null);
+    poly(mE3([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E2E9EB", dv), null);
+    // tick columns under the chart — the reference's eye view drops them
+    // (streets replace the ruled block), so they fade through the dive
+    {
+      const gA = ctx.globalAlpha;
+      ctx.globalAlpha = gA * (1 - 0.85 * dv);
+      ctx.strokeStyle = "#DDDDDA";
+      ctx.lineWidth = mixN(1, 0.6, dv);
+      for (let i = 0; i < 10; i++) {
+        const a = wv(toFloor(505 + i * 18, 340, 4810));
+        const b = wv(toFloor(500 + i * 18, 416, 4810));
+        ctx.beginPath();
+        ctx.moveTo(mx(a), my(a));
+        ctx.lineTo(mx(b), my(b));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = gA;
     }
-    const sq = mRW([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]);
+    const sq = m10([[500, 345], [524, 372], [548, 360], [574, 396], [600, 382], [626, 412], [652, 400], [680, 418]]).map(wv);
     path(sq, false);
     ctx.strokeStyle = mixc(C.chartRed, "#E4B4BB", dv);
-    ctx.lineWidth = mixN(2, 1.2, dv);
+    ctx.lineWidth = mixN(2, 1.6, dv);
     ctx.stroke();
     ctx.setLineDash([4, 4]);
     path(sq.map((p) => [p[0] + 6, p[1] + 14] as Pt), false);
@@ -458,7 +475,10 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
 // ── yellow rays: floor-plane wedges from the house to the pads ───
 // They connect icon-layer objects, so they ride the same single
 // relocation as the buildings; within every held phase they are static.
-const RAY_O = { over: [-60.0, -183.2] as Pt, eye: toFloor(420, 330, 5100) };
+// eye origin re-measured round 4: the ref fan converges UNDER the house
+// (occluded by the house body/pad; no wedge ink right of the pad) — the
+// old (420,330) origin leaked yellow streaks to the house door
+const RAY_O = { over: [-60.0, -183.2] as Pt, eye: toFloor(255, 325, 5100) };
 // tips: cbs, t1, t2, vac1, t3, vac2 with over-phase wedge widths (twE =
 // explicit eye-phase width for tips that end near the camera)
 const RAY_TIPS: { b?: string; v?: number; tw: number; twE?: number }[] = [
@@ -484,7 +504,7 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
       let tx: number;
       let tz: number;
       if (tip.b) {
-        const p = wbAt(WB[tip.b], f);
+        const p = wbAt(WB[tip.b], f, tip.b);
         tx = p.x;
         tz = p.z;
       } else {
@@ -1020,7 +1040,7 @@ const PlantedBuilding: React.FC<{
   name: string; frame: number; opacity: number; pop?: number; dropY?: number;
 }> = ({ name, frame, opacity, pop = 1, dropY = 0 }) => {
   const b = WB[name];
-  const p = wbAt(b, frame);
+  const p = wbAt(b, frame, name);
   if (opacity <= 0.005 || pop <= 0.005) return null;
   return (
     <group position={[p.x, FLOOR_Y + dropY, p.z]} scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
@@ -1063,7 +1083,7 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
 
   const padOp = (name: string, a: number, b: number, extra = 1) => {
     const bld = WB[name];
-    const p = wbAt(bld, frame);
+    const p = wbAt(bld, frame, name);
     return { p, o: fade(frame, a, b) * iconFade * extra, w: bld.padW * bld.spec.W };
   };
   const pads = [

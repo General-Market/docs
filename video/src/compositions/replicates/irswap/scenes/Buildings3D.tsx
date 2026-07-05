@@ -459,17 +459,29 @@ const miniTempleWalls = (s: MiniSpec, Hw: number): DrawFn => (ctx, w, h) => {
   ctx.fillRect(0, h - Hw, w, Hw);
   if (s.cols) {
     const n = s.cols.n;
-    const cw = w * (n === 5 ? 0.09 : 0.13);
-    const pitch = (w * 0.72) / (n - 1);
+    // n=5 (the red bank): measured off the reference eye hold (f5100:
+    // five 10px runs on a 185px body, pitch 28.7, symmetric about the
+    // center) and the overhead glide (f4880 pitch 0.145w) — narrow
+    // outlined columns hanging from just under the pediment to 0.65Hw.
+    const cw = w * (n === 5 ? 0.055 : 0.13);
+    const pitch = n === 5 ? w * 0.15 : (w * 0.72) / (n - 1);
+    const c0 = n === 5 ? w * 0.2 : w * 0.14 + cw / 2;
+    const yTop = h - Hw * (n === 5 ? 0.96 : 0.92);
+    const colH = Hw * (n === 5 ? 0.61 : 0.66);
     for (let i = 0; i < n; i++) {
-      const x0 = w * 0.14 + i * pitch - cw / 2;
+      const x0 = c0 + i * pitch - cw / 2;
       ctx.fillStyle = s.cols.fill;
-      ctx.fillRect(x0, h - Hw * 0.92, cw, Hw * 0.66);
+      ctx.fillRect(x0, yTop, cw, colH);
+      if ((s.strokeW ?? 2.2) >= 4) {
+        ctx.strokeStyle = s.outline;
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(x0, yTop, cw, colH);
+      }
     }
   }
   if (s.strip) {
     ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(w * 0.05, h - Hw * 0.24, w * 0.9, Hw * 0.1);
+    ctx.fillRect(w * 0.05, h - Hw * 0.19, w * 0.9, Hw * 0.075);
   }
   const lw = s.strokeW ?? 2.2;
   ctx.strokeStyle = s.outline;
@@ -528,12 +540,19 @@ export const MiniBuilding: React.FC<{
     const { W: w, L: l, H } = spec;
     const out: FaceSpec[] = [];
     if (spec.kind === "box2") {
-      // two equal full-width boxes stacked with a horizontal mid-seam — the
-      // reference far-left front icon is a modest box split across the middle
-      // (front face in two equal panels), not a narrowing tower.
+      // two SEPARATE cubes stacked with an offset (round 4, measured off
+      // the reference overhead glide f4880: the icon is a smaller outlined
+      // cube perched up-left on a larger one, each with its own visible
+      // top face — not one tower with a mid-seam).
       const plain = miniRect(spec);
-      out.push(...orientOutward(boxFaces(w, l, 0, H * 0.5, plain, "b0"), [0, H * 0.25, 0]));
-      out.push(...orientOutward(boxFaces(w, l, H * 0.5, H, plain, "b1"), [0, H * 0.75, 0]));
+      out.push(...orientOutward(boxFaces(w, l, 0, H * 0.52, plain, "b0"), [0, H * 0.26, 0]));
+      const uw = w * 0.85;
+      const ul = l * 0.85;
+      const up = orientOutward(boxFaces(uw, ul, H * 0.52, H, plain, "b1"), [0, H * 0.76, 0]).map((f) => ({
+        ...f,
+        position: [f.position[0] - w * 0.06, f.position[1], f.position[2] - l * 0.05] as V3,
+      }));
+      out.push(...up);
       return out;
     }
     const Hw = H * spec.eaveFrac;
