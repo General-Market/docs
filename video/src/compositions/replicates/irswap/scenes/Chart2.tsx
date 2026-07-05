@@ -410,6 +410,82 @@ const wregAt = (f: number): Wreg => ({
 const WREG_ACX = S_CROSS - S0;
 const WREG_ACY = Y_TOP - yLine(S_CROSS);
 
+// ── measured label tracks (round 6) ──────────────────────────────
+// The r6 diffgrids pinned a leading loss through 3811-3911 on the two
+// wall labels: the ref redraws "Fixed rate"/"Base rate" nearly
+// wall-locked in POSITION (bbox-left s ≈ −135.5 constant across the
+// whole approach + whip) while their SIZE shrinks in wall units
+// (56→47/52→44) — the hand keeps the text closer to screen-constant as
+// the camera closes in. Our wall-locked 14px text (and the C2WREG k it
+// rode through the whip) rendered 15-40% oversized and ~3-4 wall units
+// off through the era (work/r6/c2/scanlbl.py: per-frame ref bboxes at
+// ≤10f spacing, ours calibrated with the same scanner on the rendered
+// base3850 still). Labels therefore leave the C2WREG transform inside
+// (3735, 3920) and follow the measured track; outside that window the
+// original in-transform typeIn runs, byte-identical. The 3735 row IS
+// our identity pose (transform is identity there), so the switch is
+// seamless; 3919 holds the 3901 row — the label is off-frame through
+// the whip tail (ref scans clip at the frame edge from 3906).
+const LT_FIX: [number, number, number, number][] = [
+  // [f, bbox-left s, bbox-center y, wall width] (ref-measured)
+  [3735, -131.366, 17.854, 57.588],
+  [3750, -137.478, 17.723, 56.251],
+  [3760, -137.713, 17.583, 55.475],
+  [3770, -135.986, 15.919, 52.963],
+  [3780, -136.083, 15.517, 52.268],
+  [3790, -135.64, 15.049, 51.795],
+  [3800, -135.451, 15.04, 51.759],
+  [3811, -135.408, 14.921, 51.071],
+  [3821, -134.931, 14.603, 50.555],
+  [3831, -134.929, 14.504, 50.11],
+  [3841, -135.689, 14.724, 50.145],
+  [3851, -135.878, 14.228, 49.889],
+  [3861, -135.548, 13.867, 48.873],
+  [3871, -135.592, 13.491, 48.237],
+  [3881, -135.293, 13.33, 47.736],
+  [3891, -135.962, 13.097, 45.909],
+  [3896, -135.612, 13.186, 46.438],
+  [3901, -135.506, 12.751, 47.224],
+  [3919, -135.506, 12.751, 47.224],
+];
+const LT_BASE: [number, number, number, number][] = [
+  [3735, -126.795, -69.858, 55.264],
+  [3750, -129.204, -68.882, 52.147],
+  [3760, -129.017, -69.288, 51.721],
+  [3770, -127.264, -68.405, 49.459],
+  [3780, -127.582, -68.385, 48.883],
+  [3790, -127.307, -68.079, 48.489],
+  [3800, -126.787, -68.276, 48.029],
+  [3811, -126.958, -67.745, 47.938],
+  [3821, -126.172, -67.987, 47.018],
+  [3831, -126.339, -67.586, 46.655],
+  [3841, -126.794, -67.102, 46.76],
+  [3851, -127.209, -66.956, 46.619],
+  [3861, -127.165, -66.909, 45.758],
+  [3871, -127.074, -66.801, 44.857],
+  [3881, -126.94, -66.341, 44.846],
+  [3886, -126.699, -65.932, 44.152],
+  // (3891 scan merged with the curve — dropped; 3886→3896 interp)
+  [3896, -126.297, -65.851, 43.141],
+  [3901, -126.257, -67.629, 44.589],
+  [3919, -126.257, -67.629, 44.589],
+];
+const ltRow = (T: [number, number, number, number][], i: 1 | 2 | 3) =>
+  T.map((r) => [r[0], r[i]] as [number, number]);
+const LTF_S = ltRow(LT_FIX, 1);
+const LTF_Y = ltRow(LT_FIX, 2);
+const LTF_W = ltRow(LT_FIX, 3);
+const LTB_S = ltRow(LT_BASE, 1);
+const LTB_Y = ltRow(LT_BASE, 2);
+const LTB_W = ltRow(LT_BASE, 3);
+// our identity label widths (wall units) + bbox-left-center → draw-anchor
+// bearing (both measured on the base3850 still with the same scanner)
+const LBL_W0_FIX = 57.588;
+const LBL_W0_BASE = 55.264;
+const LBL_D_FIX: Pt = [0.651, 0.139];
+const LBL_D_BASE: Pt = [0.949, 0.162];
+const lblTrackOn = (f: number) => f > 3735 && f < 3920;
+
 // ── background-bar depth parallax ─────────────────────────────────
 // The 11 gridlines/bars sit on a plane BEHIND the diagram. We take the
 // fitted wall and push a copy of it back — uniformly scaled about the
@@ -867,8 +943,12 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.restore();
       ctx.restore();
     };
-    typeIn("Fixed rate", [LBL_FIX[0] + 5, LBL_FIX[1] + 2], C.lblFix, 14, 3584, 3592);
-    typeIn("Base rate", [LBL_BASE[0] + 5, LBL_BASE[1] + 2], C.lblBase, 14, 3584, 3590, 700);
+    // labels: measured per-frame track owns them inside (3735, 3920) —
+    // drawn after the restore, outside the C2WREG scale (round 6).
+    if (!lblTrackOn(f)) {
+      typeIn("Fixed rate", [LBL_FIX[0] + 5, LBL_FIX[1] + 2], C.lblFix, 14, 3584, 3592);
+      typeIn("Base rate", [LBL_BASE[0] + 5, LBL_BASE[1] + 2], C.lblBase, 14, 3584, 3590, 700);
+    }
     // badges on the chart (pop with overshoot)
     const badge = (
       bd: { s: number; y: number; w: number; h: number },
@@ -916,6 +996,27 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.restore();
     };
     ctx.restore(); // end C2WREG — badges draw at measured positions
+    // tracked labels (round 6): ref-measured pose + size, no k-scale
+    if (lblTrackOn(f)) {
+      const trkLbl = (
+        text: string, S: [number, number][], Y: [number, number][],
+        W: [number, number][], w0: number, d: Pt, color: string, weight: number,
+      ) => {
+        const sc = lerp1(W, f) / w0;
+        const ax = lerp1(S, f) - d[0] * sc;
+        const ay = lerp1(Y, f) - d[1] * sc;
+        ctx.save();
+        ctx.font = `${weight} ${14 * sc}px ${FONT}`;
+        ctx.fillStyle = color;
+        ctx.textBaseline = "middle";
+        ctx.translate(mS(ax), mY(ay));
+        ctx.rotate((3 * Math.PI) / 180);
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      };
+      trkLbl("Fixed rate", LTF_S, LTF_Y, LTF_W, LBL_W0_FIX, LBL_D_FIX, C.lblFix, 600);
+      trkLbl("Base rate", LTB_S, LTB_Y, LTB_W, LBL_W0_BASE, LBL_D_BASE, C.lblBase, 700);
+    }
     badge(BADGE1, "1", true, pop(f, 3814, 3824));
     badge(BADGE2, "2", false, pop(f, 3994, 4004));
   }, []);
