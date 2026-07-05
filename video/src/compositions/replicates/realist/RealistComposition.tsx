@@ -399,13 +399,25 @@ const Buys: React.FC = () => {
 // r3: the plate glyph (f0899 x~700 y~617 zoomed 3x) is an 8-spoke
 // ASTERISK — eight rounded petals around a bright hub with a soft round
 // halo — not a 4-point star. Drawn as 4 crossing stadium bars at 45°.
+// r5: spoke width re-read from zoomed plate crops (f480/f1180 at 3x,
+// work/r5/glow/strips/sparkle-*): the plate rays are THIN and separated
+// (~4-5px full width at size 44, clear V-gaps to the hub) — the old
+// 0.14·size half-width merged them into a scalloped blob.
+// Swept f480 (sparkle-window SSIM 130px crops + caption crop/cells):
+// w .05 too spindly by eye; .08 vs .10 tie on crop (.8517/.8520), .08
+// wins the mission cells; old fat .14 + weak halo scored .669/.661 in
+// the windows, thin+strong .696/.686. The halo triple below closes the
+// plate's broad white fog (old stack: 8px 0.7 + 20px 0.4).
+const SPARK_W = process.env.REMOTION_SPARK_W ? Number(process.env.REMOTION_SPARK_W) : 0.08;
+const SPARK_GLOW = process.env.REMOTION_SPARK_GLOW ??
+  "drop-shadow(0 0 10px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,255,255,0.75)) drop-shadow(0 0 44px rgba(255,255,255,0.4))";
 const Sparkle: React.FC<{
   cx: number; cy: number; size: number; seed: number; frame: number; opacity: number;
 }> = ({ cx, cy, size, seed, frame, opacity }) => {
   const rot = noise2D(`spark-r-${seed}`, frame * 0.02, seed) * 8;
   const sc = 1 + noise2D(`spark-s-${seed}`, frame * 0.03, seed) * 0.1;
   const r = size / 2;
-  const w = size * 0.14; // spoke half-width
+  const w = size * SPARK_W; // spoke half-width
   return (
     <svg
       width={size * 2}
@@ -416,7 +428,7 @@ const Sparkle: React.FC<{
         top: cy - size,
         opacity,
         transform: `rotate(${rot.toFixed(1)}deg) scale(${sc.toFixed(3)})`,
-        filter: "drop-shadow(0 0 8px rgba(255,255,255,0.7)) drop-shadow(0 0 20px rgba(255,255,255,0.4))",
+        filter: SPARK_GLOW,
       }}
     >
       <g transform={`translate(${size} ${size})`} fill="#ffffff">
