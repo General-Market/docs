@@ -949,10 +949,10 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
             </T>
           </Row>
         </div>
-        <div style={{ position: "absolute", left: 143, top: 107 }}>
-          <SolanaBars size={11} />
+        <div style={{ position: "absolute", left: 108, top: 105 }}>
+          <SolanaBars size={20} />
         </div>
-        <svg width={17} height={17} viewBox="0 0 16 16" style={{ position: "absolute", left: 154, top: 102 }}>
+        <svg width={17} height={17} viewBox="0 0 16 16" style={{ position: "absolute", left: 138, top: 105 }}>
           <path
             d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z M2 5 L8 8.5 L14 5 M8 8.5 L8 14.5"
             fill="none"
@@ -964,8 +964,8 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 156,
-            top: 116,
+            left: 151,
+            top: 115,
             background: "#22252E",
             border: "1px solid #2C2F3A",
             borderRadius: 5,
