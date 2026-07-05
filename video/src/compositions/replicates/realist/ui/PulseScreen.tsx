@@ -35,7 +35,9 @@ const Glyph: React.FC<{ kind: string; size?: number; color?: string }> = ({
   color = C.icon,
 }) => {
   const s = size;
-  const sw = 1.4;
+  // r5: plate icon ink runs ~2x our per-column weight (ZOOMER icons 68-116 vs
+  // 24-61) — the reference renders bolder line icons.
+  const sw = 1.7;
   const common = { width: s, height: s, viewBox: "0 0 16 16", style: { display: "block" } };
   switch (kind) {
     case "search":
