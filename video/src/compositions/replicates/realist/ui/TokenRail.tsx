@@ -638,6 +638,9 @@ const GridCell: React.FC<{
     {value === "" ? (
       <div style={{ position: "absolute", left: GRID_W / 2 - 18, top: valueTop + 1, width: 36, height: 10, borderRadius: 4, background: SKEL }} />
     ) : (
+      // r4: a uniform -3px nudge was tried against the blob scans (ours
+      // +3-4px right of plate ink) — it won at f1640 but lost at f1600/f900;
+      // reverted, the per-cell offsets are not uniform.
       <Row gap={4} style={{ position: "absolute", left: 0, top: valueTop, width: "100%", justifyContent: "center" }}>
         <Glyph kind={glyph} size={12} color={valueColor} />
         <T size={13} color={valueColor} weight={600}>{value}</T>

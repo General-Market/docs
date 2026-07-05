@@ -310,16 +310,19 @@ const TradeRowLine: React.FC<{ frame: number }> = ({ frame }) => {
   const sideColor = row.type === "Buy" ? C.pos : C.neg;
   return (
     <>
-      <div style={{ position: "absolute", left: COL_X.age, top: 1062 }}>
+      {/* r4: text cells profiled 7px low vs plate f1640 (ink 1069-77 vs
+          1061-69, x0-500 scan) while the flex-centered SOL cell aligned;
+          tops 1062 -> 1055. */}
+      <div style={{ position: "absolute", left: COL_X.age, top: 1055 }}>
         <T size={12} color={C.text} weight={500}>{row.age}</T>
       </div>
-      <div style={{ position: "absolute", left: COL_X.type, top: 1062 }}>
+      <div style={{ position: "absolute", left: COL_X.type, top: 1055 }}>
         <T size={12} color={sideColor} weight={600}>{row.type}</T>
       </div>
-      <div style={{ position: "absolute", left: COL_X.mc, top: 1062 }}>
+      <div style={{ position: "absolute", left: COL_X.mc, top: 1055 }}>
         <T size={12} color={C.text} weight={500}>{row.mc}</T>
       </div>
-      <div style={{ position: "absolute", left: COL_X.amount, top: 1062 }}>
+      <div style={{ position: "absolute", left: COL_X.amount, top: 1055 }}>
         <T size={12} color={C.text} weight={500}>{row.amount}</T>
       </div>
       <Row gap={4} style={{ position: "absolute", left: COL_X.sol, top: 1061 }}>
