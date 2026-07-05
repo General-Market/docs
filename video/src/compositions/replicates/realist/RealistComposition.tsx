@@ -498,6 +498,12 @@ const STYLE_GEO = {
 // layer can. It must ride the same wrappers (dy, scaleMul, fadeMain/
 // fadeParen) or every push double-ghosts. (blur, opacity) swept per
 // style/color on caption-crop SSIM; sweep table in work/r5/glow/notes.md.
+// F "($40969)" line params (see the r5 re-fit note at its render site).
+const FLINE_PARAMS: { op: number; blur: number; color: string; track: string } =
+  process.env.REMOTION_FLINE
+    ? (JSON.parse(process.env.REMOTION_FLINE) as { op: number; blur: number; color: string; track: string })
+    : { op: 0.9, blur: 2.5, color: "#5ab9d7", track: "0.1em" };
+
 type Bloom = { blur: number; opacity: number } | null;
 type SellsBloomMap = Record<"A" | "B" | "F", { red: Bloom; blue: Bloom }>;
 const SELLS_BLOOM: SellsBloomMap = process.env.REMOTION_GLOW_SWEEP
@@ -697,24 +703,43 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
         filter: blur > 0.5 ? `blur(${blur.toFixed(1)}px)` : undefined,
       }}
     >
-      {ev.style === "F" && (
-        // r3: the plate white line is soft and half-transparent for its
-        // whole life (saturated-white mask peaks 1.4k px vs 12k when
-        // drawn crisp) — standing 2.5px blur at 0.55 opacity.
-        // r3b geometry re-measured (white-mask f1610/f1620): ink band
-        // y 498-535 → cy 517 (was 472, 45px high), x 612-1307 → ~660
-        // wide net of glow bleed (was 436), band height ~37.
-        <div style={{ position: "absolute", inset: 0, opacity: 0.55 * fadeMain, filter: "blur(2.5px)" }}>
-          <FittedLine
-            text="($40969)"
-            cx={geo.cx} cy={517} inkW={660} inkH={38}
-            color="#d8dde6"
-            glow="0 0 8px rgba(215,222,232,0.5), 0 0 20px rgba(215,222,232,0.3)"
-            tracking="0.1em"
-            scaleMul={s}
-          />
-        </div>
-      )}
+      {ev.style === "F" && (() => {
+        // r5 re-fit: the r3/r3b fits chased WHITE masks, but the plate
+        // line is CYAN-STEEL (core median rgb(65,170,205), f1610-1645)
+        // — a white mask cannot see it, which is how the old grey
+        // #d8dde6 at 0.55 opacity landed 50px low (cy 517) and nearly
+        // invisible. Cyan-core mask (b>190,g>150,b>r+25) f1600-1645:
+        // settled cx 958-961, cy drifts 454→471 (t15→t50), glyph span
+        // ~395px, cap ~40; entrance rides the paren law (glow width
+        // 807→378 over t5→t35 → 1+2.0·e^(−t/8)). The line OUTLIVES the
+        // red main (core n=5003 at f1645 = fadeAt+6, red half-gone) →
+        // it fades with the paren clock, not fadeMain.
+        const FLINE_CY: [number, number][] = [[10, 450], [15, 454], [25, 463], [35, 466], [50, 471]];
+        let fcy = 471;
+        if (t <= 10) fcy = 450;
+        else
+          for (let i = 1; i < FLINE_CY.length; i++) {
+            if (t <= FLINE_CY[i][0]) {
+              const [t0, y0] = FLINE_CY[i - 1];
+              const [t1, y1] = FLINE_CY[i];
+              fcy = y0 + ((y1 - y0) * (t - t0)) / (t1 - t0);
+              break;
+            }
+          }
+        const fp = FLINE_PARAMS;
+        return (
+          <div style={{ position: "absolute", inset: 0, opacity: fp.op * fadeParen, filter: `blur(${fp.blur}px)` }}>
+            <FittedLine
+              text="($40969)"
+              cx={960} cy={fcy} inkW={395} inkH={40}
+              color={fp.color}
+              glow="0 0 8px rgba(90,185,215,0.6), 0 0 22px rgba(90,185,215,0.35)"
+              tracking={fp.track}
+              scaleMul={1 + 2.0 * Math.exp(-t / 8)}
+            />
+          </div>
+        );
+      })()}
       <div style={{ position: "absolute", inset: 0, opacity: fadeMain }}>
         {bloom.red && (
           <div style={{ position: "absolute", inset: 0, opacity: bloom.red.opacity, filter: `blur(${bloom.red.blur}px)` }}>
