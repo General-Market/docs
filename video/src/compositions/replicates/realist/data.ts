@@ -65,7 +65,10 @@ export type SellsEvent = {
   pushDy?: number[];      // per-frame dy from pushStart, px down from rest; holds last
 };
 export const sellsEvents: SellsEvent[] = [
-  { f: 468, main: "SELLS 3%", paren: "(11.5 SOL)", style: "A", mainW: 445, parenW: 450, pushAt: 493, fadeAt: null },
+  // r5: ev468's push tracked directly (bright-red band centers, plates f490-516) — a LONG
+  // creep from f488 reaching dy 126 only at f500 (the shared A S-curve was 50px ahead there,
+  // the f500 worst-frame offender); red fades f~509-520, paren outlives to f~526.
+  { f: 468, main: "SELLS 3%", paren: "(11.5 SOL)", style: "A", mainW: 445, parenW: 450, pushAt: 493, fadeAt: null, pushStart: 488, pushDy: [0, 3, 6, 13, 21, 29, 37, 50, 63, 80, 96, 111, 126, 137, 147, 153, 159, 163, 167, 169, 171, 176.5, 177] },
   { f: 498, main: "SELLS 3%", paren: "(30 SOL)", style: "A", mainW: 446, parenW: 397, pushAt: null, fadeAt: 540 },
   { f: 577, main: "SELLS 3%", paren: "(1.9 SOL)", style: "A", mainW: 442, parenW: 399, pushAt: 600, fadeAt: null },
   { f: 604, main: "SELLS 3%", paren: "(3.1 SOL)", style: "A", mainW: 435, parenW: 371, pushAt: 627, fadeAt: null },

@@ -612,6 +612,32 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       fadeMain = 1 - clamp01((frame - (ev.pushAt + 13)) / 6);
       fadeParen = 1 - clamp01((frame - (ev.pushAt + 14)) / 5);
     }
+  } else if (ev.pushAt !== null && ev.pushDy && ev.pushStart !== undefined) {
+    // Per-event measured dy table (takes precedence over the shared
+    // style-A S-curve). B events (r4, bpush_track.py) and ev468 (r5):
+    // the f500 grid smoke-run exposed ev468 ~50px AHEAD mid-transit —
+    // its plate track (bright-red band centers f490-516) is a LONG
+    // two-phase creep from f488 (dy 6/21/37/63/96/126/147/159/167/171/
+    // 175/176/177 at t=2..24, every 2f), half the speed of the shared
+    // TAB fitted on ev848/ev873. Fade: red mass decays f~509-520;
+    // the paren outlives to f~526 (blue mass flat till f518) → paren
+    // fade offset +8/8 when a paren exists (B events carry none).
+    const tp = frame - ev.pushStart;
+    if (tp > 0) {
+      const tab = ev.pushDy;
+      dy = tab[Math.min(tp, tab.length - 1)];
+      let settleIdx = tab.findIndex((v) => v >= 176.5);
+      if (settleIdx < 0) settleIdx = tab.length - 1;
+      fadeMain = 1 - clamp01((frame - (ev.pushStart + settleIdx)) / 13);
+      if (ev.paren) {
+        const dP = tab[Math.max(Math.min(tp - 1, tab.length - 1), 0)];
+        dyParen = (170 / 177) * dP - dy;
+        parenShrink = 1 - 0.049 * (1 - Math.exp(-tp / 1.8));
+        fadeParen = 1 - clamp01((frame - (ev.pushStart + settleIdx + 8)) / 8);
+      } else {
+        fadeParen = fadeMain;
+      }
+    }
   } else if (ev.pushAt !== null && ev.style === "A") {
     // r3b: red-mask sweeps of ev848 (f866-882) and ev873 (f896-914) show
     // the A-push BEGINS ~3f before the recorded pushAt (the same
@@ -646,26 +672,6 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       // gone by ~f948 on the plates (blue-mass residual < 0.3k) while
       // +6/14 kept it visible at f950 — tightened to +5/12.
       fadeParen = 1 - clamp01((frame - fadeFrom - 5) / 12);
-    }
-  } else if (ev.pushAt !== null && ev.pushDy && ev.pushStart !== undefined) {
-    // B-style push — r4: measured per-event dy tables (red-mask blob
-    // tracking of all 12 pushed B events, bpush_track.py). True motion
-    // start runs 2-9f before the recorded pushAt, and the curve is
-    // two-phase: a slow creep (2-13f, length varies per event) then a
-    // ~4f fast transit into a shared soft landing (...129, 140.5,
-    // 149.5, 156, 161, 165.5, 170, 173, 175, 176.5, 178, ~180). The
-    // old exp(τ2.2) from pushAt was never measured — it overshot every
-    // mid-push frame (92px low at plate 1335, ev1301's 13f creep).
-    // Fade: red-mass decay begins at the frame dy crosses ~176.5
-    // (exact ±1f on all 12 events), mass 1.0→0.28 over 9f → linear 13f.
-    const tp = frame - ev.pushStart;
-    if (tp > 0) {
-      const tab = ev.pushDy;
-      dy = tab[Math.min(tp, tab.length - 1)];
-      let settleIdx = tab.findIndex((v) => v >= 176.5);
-      if (settleIdx < 0) settleIdx = tab.length - 1;
-      fadeMain = 1 - clamp01((frame - (ev.pushStart + settleIdx)) / 13);
-      fadeParen = fadeMain;
     }
   } else if (ev.pushAt !== null) {
     // fallback for a pushed event without a measured table (none today)
