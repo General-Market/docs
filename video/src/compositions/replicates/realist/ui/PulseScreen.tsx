@@ -395,6 +395,7 @@ type PGeom = {
   box2W: number;
   right: number; // right text edge (panel-local)
   single?: boolean; // migrated single-box layout
+  dy?: number; // r5 f0400: MIG card text rows sit 2-3px lower than NP/FS
 };
 
 const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverActive?: boolean }> = ({
@@ -403,9 +404,11 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
   geom,
   hoverActive = false,
 }) => {
-  const iconTop = card.sub2 ? 46 : 35;
-  const handleTop = card.sub2 ? 66 : 52;
-  const pctTop = card.sub2 && card.handle ? 87 : card.handle ? 74 : 72;
+  const dy = geom.dy ?? 0;
+  const nameTop = 10 + dy;
+  const iconTop = (card.sub2 ? 46 : 35) + dy;
+  const handleTop = (card.sub2 ? 66 : 52) + dy;
+  const pctTop = (card.sub2 && card.handle ? 87 : card.handle ? 74 : 72) + dy;
   return (
     <div
       style={{
@@ -472,7 +475,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
         </>
       ) : null}
       {/* name row */}
-      <Row gap={7} style={{ position: "absolute", left: geom.textX, top: 10 }}>
+      <Row gap={7} style={{ position: "absolute", left: geom.textX, top: nameTop }}>
         <T size={14} color={card.hovered ? "#E4E2F5" : C.name} weight={600}>
           {card.name}
         </T>
@@ -496,7 +499,7 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
         ) : null}
       </Row>
       {card.sub2 ? (
-        <div style={{ position: "absolute", left: geom.textX, top: 26 }}>
+        <div style={{ position: "absolute", left: geom.textX, top: 26 + dy }}>
           <T size={11} color={card.sub2.color} weight={600}>
             {card.sub2.text}
           </T>
@@ -747,7 +750,8 @@ const PulseColumn: React.FC<{
   cards: PulseCard[];
   geom: PGeom;
   hoverOn?: boolean;
-}> = ({ x, w, headerIndex, cards, geom, hoverOn = true }) => {
+  headerDx?: number; // r5 f0400: FS header cluster sits 5px left of NP/MIG
+}> = ({ x, w, headerIndex, cards, geom, hoverOn = true, headerDx = 0 }) => {
   const h = PULSE_HEADERS[headerIndex];
   return (
     <div
@@ -786,26 +790,26 @@ const PulseColumn: React.FC<{
             {h.search}
           </T>
         </div>
-        <Row gap={5} style={{ position: "absolute", left: 396, top: 14 }}>
+        <Row gap={5} style={{ position: "absolute", left: 396 + headerDx, top: 14 }}>
           <Glyph kind="bolt" size={11} color="#8A8D99" />
           <T size={13} color="#DFE2EA" weight={600}>
             {h.bolt}
           </T>
         </Row>
-        <div style={{ position: "absolute", left: 448, top: 11, padding: "4px 4px", borderRadius: 5, background: "#22252E" }}>
+        <div style={{ position: "absolute", left: 448 + headerDx, top: 11, padding: "4px 4px", borderRadius: 5, background: "#22252E" }}>
           <SolanaBars size={10} />
         </div>
         {h.presets.map((p, i) => (
-          <div key={p} style={{ position: "absolute", left: 477 + i * 23, top: 15 }}>
+          <div key={p} style={{ position: "absolute", left: 477 + headerDx + i * 23, top: 15 }}>
             <T size={12} color={i === h.activePreset ? C.purple : "#565A66"} weight={600}>
               {p}
             </T>
           </div>
         ))}
-        <div style={{ position: "absolute", left: 558, top: 14 }}>
+        <div style={{ position: "absolute", left: 558 + headerDx, top: 14 }}>
           <Glyph kind={h.muted ? "mute" : "speaker"} size={13} color={C.icon} />
         </div>
-        <div style={{ position: "absolute", left: 593, top: 14 }}>
+        <div style={{ position: "absolute", left: 593 + headerDx, top: 14 }}>
           <Glyph kind="sliders" size={13} color={C.icon} />
           <div style={{ position: "absolute", right: -3, top: -3, width: 4, height: 4, borderRadius: 2, background: "#7C78C9" }} />
         </div>
@@ -825,6 +829,9 @@ const PulseColumn: React.FC<{
 // box edges probed from f0405 border pixels: NP 392|500 + 506|624, FS 1036|1146 + 1150|1267, MIG 1713|1892
 const NP_GEOM: PGeom = { x: 22, textX: 90, box1X: 380, box1W: 109, box2X: 494, box2W: 118, right: 38 };
 const FS_GEOM: PGeom = { x: 16, textX: 86, box1X: 384, box1W: 111, box2X: 499, box2W: 117, right: 8 };
+// r5 NEGATIVE A/B: textX 93 + dy 2 (measured on card1 VISION) regressed
+// r2c6/r4c6 by .03-.08 — cards 2+ are plate-aligned at textX 89 / dy 0;
+// the card-1 rowprof read was a local anomaly. Do not re-shift MIG rows.
 const MIG_GEOM: PGeom = { x: 21, textX: 89, box1X: 431, box1W: 180, box2X: 0, box2W: 0, right: 16, single: true };
 
 // Pumpwheel hover: the plates show the untinted row with collapsed quick-buy
@@ -836,45 +843,52 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
     <AbsoluteFill style={{ background: C.pageBg, fontFamily: FONT, overflow: "hidden" }}>
       {/* ------------------------------------------------ top nav */}
       <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 55, background: C.navBg }}>
-        {/* logo */}
-        <Row gap={8} style={{ position: "absolute", left: 30, top: 15 }}>
-          <svg width={26} height={24} viewBox="0 0 16 16" style={{ display: "block" }}>
+        {/* logo — r5 f0400 colprof: mark ink 25-48 (24px wide), AXIOM 54-122,
+            Pro 129-150; the flex flow sat the mark at 37 and text at 64 */}
+        <Row gap={0} style={{ position: "absolute", left: 16, top: 15 }}>
+          <svg width={41} height={24} viewBox="0 0 16 16" style={{ display: "block" }}>
             <path d="M8 2 L11 7 L5 7 Z" fill="#F2F4F9" />
             <path d="M3.5 13 L6 9 L10 9 L12.5 13 Z" fill="#F2F4F9" />
           </svg>
+        </Row>
+        <Row style={{ position: "absolute", left: 52, top: 15, height: 24 }}>
           <T size={19} color="#F2F4F9" weight={700} style={{ letterSpacing: 1 }}>
             {PNAV.logo}
           </T>
+        </Row>
+        <Row style={{ position: "absolute", left: 127, top: 15, height: 24 }}>
           <T size={13} color="#7C808C" weight={500}>
             {PNAV.logoSuffix}
           </T>
         </Row>
-        <Row gap={31} style={{ position: "absolute", left: 177, top: 21 }}>
-          {PNAV.items.map((it, i) => (
-            <T key={it} size={13} color={i === PNAV.activeIndex ? C.purpleBright : "#9EA1AB"} weight={500}>
+        {/* r5 f0400: flex-flow drift accumulated +1px/item — plate ink starts
+            178/264/327/410/507/568/636/719, anchored absolutely */}
+        {PNAV.items.map((it, i) => (
+          <Row key={it} style={{ position: "absolute", left: [177, 263, 326, 409, 506, 567, 635, 718][i], top: 21 }}>
+            <T size={13} color={i === PNAV.activeIndex ? C.purpleBright : "#9EA1AB"} weight={500}>
               {it}
             </T>
-          ))}
-        </Row>
-        {/* notification chip */}
-        <div
-          style={{
-            position: "absolute",
-            left: 858,
-            top: 4,
-            width: 208,
-            height: 47,
-            borderRadius: 10,
-            border: `1px solid ${C.notifBorder}`,
-            background: "#14131C",
-            boxShadow: "0 0 12px rgba(90,85,184,0.35)",
-          }}
-        >
+          </Row>
+        ))}
+        {/* notification chip — r5 f0392-417 forensics: NO purple border/glow on
+            ANY probe plate (purple px ≤41 = the ≡ bars); avatar ~29px at page
+            (862,17) with two badge circles on its lower-left; line1 ink y22-31
+            starts with a small grey square at x905, text at 919; line2 y40-50
+            starts at x904 UNDER the avatar's right edge; pink square 1025,
+            close 1053. The old chip sat 9px high with a 36px avatar. */}
+        <div style={{ position: "absolute", left: 858, top: 4, width: 208, height: 52 }}>
           <Img
             src={staticFile(`realist-assets/ui/${PNAV.notif.avatar}`)}
-            style={{ position: "absolute", left: 6, top: 5, width: 36, height: 36, borderRadius: 6 }}
+            style={{ position: "absolute", left: 4, top: 14, width: 29, height: 29, borderRadius: 6 }}
           />
-          <Row gap={5} style={{ position: "absolute", left: 50, top: 9 }}>
+          <div style={{ position: "absolute", left: -3, top: 36, width: 14, height: 14, borderRadius: 7, background: "#23262E", border: "1px solid #3A3F49" }} />
+          <div style={{ position: "absolute", left: 19, top: 38, width: 12, height: 12, borderRadius: 6, background: "#35B36B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width={8} height={8} viewBox="0 0 16 16" style={{ display: "block" }}>
+              <path d="M4 8 L7 11 L12 5.5" fill="none" stroke="#0E1116" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div style={{ position: "absolute", left: 47, top: 19, width: 8, height: 8, borderRadius: 2, background: "#565A66" }} />
+          <Row gap={5} style={{ position: "absolute", left: 59, top: 16 }}>
             <T size={12} color="#E4E6EC" weight={600}>
               {PNAV.notif.who}
             </T>
@@ -884,12 +898,12 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
             <T size={12} color="#E4E6EC" weight={600}>
               {PNAV.notif.what}
             </T>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: "#E0507A" }} />
           </Row>
-          <div style={{ position: "absolute", right: 8, top: 9 }}>
+          <div style={{ position: "absolute", left: 167, top: 18, width: 11, height: 11, borderRadius: 3, background: "#E0507A" }} />
+          <div style={{ position: "absolute", left: 193, top: 17 }}>
             <Glyph kind="close" size={11} color="#9EA1AB" />
           </div>
-          <Row gap={4} style={{ position: "absolute", left: 50, top: 27 }}>
+          <Row gap={4} style={{ position: "absolute", left: 46, top: 34 }}>
             <SolanaBars size={10} />
             <T size={12} color={C.greenMc} weight={600}>
               {PNAV.notif.line2Value}
@@ -975,32 +989,37 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
       </div>
 
       {/* ------------------------------------------------ ticker strip */}
+      {/* r5 f0400 colprof: the flex flow drifted +9px/entry (att label starts
+          159/377/629/857 vs plate 146/357/602/820). Entries are anchored
+          absolutely at plate label ink minus the icon+gap run-in (19px). */}
       <div style={{ position: "absolute", left: 0, top: 55, width: 1920, height: 34, borderBottom: "1px solid #15181F" }}>
-        <Row gap={22} style={{ position: "absolute", left: 22, top: 9 }}>
+        <div style={{ position: "absolute", left: 16, top: 9 }}>
           <Glyph kind="gear" size={14} color={C.icon} />
+        </div>
+        <div style={{ position: "absolute", left: 54, top: 9 }}>
           <Glyph kind="star" size={14} color={C.icon} />
+        </div>
+        <div style={{ position: "absolute", left: 84, top: 9 }}>
           <Glyph kind="chart" size={14} color={C.icon} />
-          <div style={{ width: 1, height: 14, background: "#23262F" }} />
-        </Row>
-        <Row gap={26} style={{ position: "absolute", left: 140, top: 7, width: 2400 }}>
-          {TICKER.map((e, i) => (
-            <Row key={i} gap={6}>
-              <div style={{ width: 12, height: 12, borderRadius: 4, background: e.icon }} />
-              <T size={12} color="#9EA1AB" weight={600}>
-                {e.label}
+        </div>
+        <div style={{ position: "absolute", left: 112, top: 9, width: 1, height: 14, background: "#23262F" }} />
+        {TICKER.map((e, i) => (
+          <Row key={i} gap={6} style={{ position: "absolute", left: [127, 338, 583, 801, 1013, 1226, 1424, 1611][i], top: 7 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 4, background: e.icon }} />
+            <T size={12} color="#9EA1AB" weight={600}>
+              {e.label}
+            </T>
+            <T size={12} color="#E4E6EC" weight={600}>
+              {e.cap}
+            </T>
+            <div style={{ background: "#1D1F2A", borderRadius: 5, padding: "3px 7px", display: "flex", alignItems: "center", gap: 4 }}>
+              <Glyph kind="bolt" size={10} color="#63659A" />
+              <T size={11} color="#63659A" weight={600} style={{ whiteSpace: "nowrap" }}>
+                {e.sol}
               </T>
-              <T size={12} color="#E4E6EC" weight={600}>
-                {e.cap}
-              </T>
-              <div style={{ background: "#1D1F2A", borderRadius: 5, padding: "3px 7px", display: "flex", alignItems: "center", gap: 4 }}>
-                <Glyph kind="bolt" size={10} color="#63659A" />
-                <T size={11} color="#63659A" weight={600} style={{ whiteSpace: "nowrap" }}>
-                  {e.sol}
-                </T>
-              </div>
-            </Row>
-          ))}
-        </Row>
+            </div>
+          </Row>
+        ))}
       </div>
 
       {/* ------------------------------------------------ heading row */}
@@ -1077,77 +1096,102 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
 
       {/* ------------------------------------------------ columns */}
       <PulseColumn x={12} w={638} headerIndex={0} cards={PULSE_NEW_PAIRS} geom={NP_GEOM} />
-      <PulseColumn x={651} w={615} headerIndex={1} cards={PULSE_FINAL_STRETCH} geom={FS_GEOM} hoverOn={frame >= HOVER_FROM} />
+      <PulseColumn x={651} w={615} headerIndex={1} cards={PULSE_FINAL_STRETCH} geom={FS_GEOM} hoverOn={frame >= HOVER_FROM} headerDx={-5} />
       <PulseColumn x={1281} w={612} headerIndex={2} cards={PULSE_MIGRATED} geom={MIG_GEOM} />
       {/* scrollbar */}
       <div style={{ position: "absolute", left: 1900, top: 205, width: 5, height: 260, borderRadius: 3, background: "#2E313B" }} />
 
       {/* ------------------------------------------------ docked trades panel */}
+      {/* r5: plate 400's dock ink is byte-identical to plate 901's (mean abs
+          diff 5.4) — geometry ported from TokenBottom's plate-901 forensics:
+          box x1258 w577 y1006; plain-div text tops carry the 16px strut so
+          row1 caps land 1020 (top 1013) and row2 caps 1057 (top 1048); Jason
+          is a pill with tri-color bars + purple #7E79B5; dots are rose. */}
       <div
         style={{
           position: "absolute",
-          left: 1272,
-          top: 1008,
-          width: 556,
-          height: 72,
+          left: 1258,
+          top: 1006,
+          width: 577,
+          height: 74,
           background: C.dockBg,
           border: `1px solid ${C.dockBorder}`,
-          borderRadius: "10px 10px 0 0",
+          borderBottom: "none",
+          borderRadius: "8px 8px 0 0",
           boxShadow: "0 -6px 20px rgba(0,0,0,0.4)",
         }}
       >
-        <Row gap={14} style={{ position: "absolute", left: 12, top: 10 }}>
-          <Row gap={5}>
-            <SolanaBars size={11} />
-            <T size={13} color={C.purpleBright} weight={600}>
-              {DOCK.owner}
+        <div style={{ position: "absolute", left: 1270 - 1258, top: 1012 - 1006, width: 73, height: 23, borderRadius: 7, background: "#1E2028" }} />
+        <Row gap={5} style={{ position: "absolute", left: 1277 - 1258, top: 1019 - 1006 }}>
+          <svg width={12} height={12} viewBox="0 0 16 16" style={{ display: "block" }}>
+            <rect x="2.5" y="3" width="11" height="2.6" rx="1.3" fill="#41E8B0" />
+            <rect x="2.5" y="6.8" width="11" height="2.6" rx="1.3" fill="#7A78D8" />
+            <rect x="2.5" y="10.6" width="11" height="2.6" rx="1.3" fill="#9B5FE0" />
+          </svg>
+          <T size={12} color="#7E79B5" weight={600}>
+            {DOCK.owner}
+          </T>
+        </Row>
+        {DOCK.tabs.map((t, i) => (
+          <div key={t} style={{ position: "absolute", left: [1345, 1414, 1472][i] - 1258, top: 1013 - 1006 }}>
+            <T size={12} color={i === DOCK.activeTab ? "#F2F4F9" : "#7C808C"} weight={i === DOCK.activeTab ? 600 : 500}>
+              {t}
             </T>
-          </Row>
-          {DOCK.tabs.map((t, i) => (
-            <div key={t} style={{ position: "relative" }}>
-              <T size={13} color={i === DOCK.activeTab ? "#F2F4F9" : "#7C808C"} weight={i === DOCK.activeTab ? 700 : 500}>
-                {t}
-              </T>
-              {i >= 1 ? (
-                <div style={{ position: "absolute", right: -5, top: -2, width: 4, height: 4, borderRadius: 2, background: "#E0507A" }} />
-              ) : null}
-            </div>
-          ))}
-          <div style={{ marginLeft: 16 }}>
-            <Glyph kind="gear" size={13} color={C.icon} />
           </div>
-          <Glyph kind="filter" size={13} color="#7C78C9" />
-          <T size={12} color="#7C808C" weight={600} style={{ marginLeft: 13 }}>
+        ))}
+        <div style={{ position: "absolute", left: 1457 - 1258, top: 1015 - 1006, width: 5, height: 5, borderRadius: 3, background: "#A77D93" }} />
+        <div style={{ position: "absolute", left: 1519 - 1258, top: 1015 - 1006, width: 5, height: 5, borderRadius: 3, background: "#A76F8A" }} />
+        <div style={{ position: "absolute", left: 1558 - 1258, top: 1019 - 1006 }}>
+          <Glyph kind="gear" size={13} color={C.icon} />
+        </div>
+        <div style={{ position: "absolute", left: 1588 - 1258, top: 1018 - 1006 }}>
+          <Glyph kind="filter" size={16} color="#6C63D9" />
+        </div>
+        <div style={{ position: "absolute", left: 1628 - 1258, top: 1013 - 1006 }}>
+          <T size={12} color="#7C808C" weight={600}>
             {DOCK.preset}
           </T>
-          <Row gap={3}>
-            <Glyph kind="bolt" size={11} color="#57B58E" />
-            <T size={13} color="#F2F4F9" weight={700}>
-              {DOCK.bolt}
-            </T>
-            <SolanaBars size={10} />
-          </Row>
+        </div>
+        <div style={{ position: "absolute", left: 1648 - 1258, top: 1015 - 1006, width: 1, height: 16, background: "#23262F" }} />
+        <Row gap={4} style={{ position: "absolute", left: 1658 - 1258, top: 1018 - 1006 }}>
+          <Glyph kind="bolt" size={12} color="#F2F4F9" />
+          <T size={12} color="#F2F4F9" weight={600}>
+            {DOCK.bolt}
+          </T>
+          <SolanaBars size={11} />
         </Row>
-        <Row gap={26} style={{ position: "absolute", right: 10, top: 10 }}>
+        <div style={{ position: "absolute", left: 1733 - 1258, top: 1015 - 1006, width: 1, height: 16, background: "#23262F" }} />
+        <div style={{ position: "absolute", left: 1765 - 1258, top: 1019 - 1006 }}>
           <Glyph kind="external" size={13} color={C.icon} />
-          <Glyph kind="close" size={13} color={C.icon} />
-        </Row>
-        {/* column header row */}
-        <Row style={{ position: "absolute", left: 12, top: 46, width: 532 }}>
-          <Glyph kind="gear" size={11} color="#565A66" />
-          <T size={12} color="#7C808C" weight={500} style={{ marginLeft: 14, width: 140 }}>
+        </div>
+        <div style={{ position: "absolute", left: 1805 - 1258, top: 1020 - 1006 }}>
+          <Glyph kind="close" size={12} color={C.icon} />
+        </div>
+        {/* column header row — plate anchors 1279/1312/1465/1618/1785 */}
+        <div style={{ position: "absolute", left: 1277 - 1258, top: 1054 - 1006 }}>
+          <Glyph kind="gear" size={12} color="#565A66" />
+        </div>
+        <div style={{ position: "absolute", left: 1311 - 1258, top: 1048 - 1006 }}>
+          <T size={11} color="#7C808C" weight={500}>
             {DOCK.columns[0]}
           </T>
-          <T size={12} color="#7C808C" weight={500} style={{ width: 158 }}>
+        </div>
+        <div style={{ position: "absolute", left: 1464 - 1258, top: 1048 - 1006 }}>
+          <T size={11} color="#7C808C" weight={500}>
             {DOCK.columns[1]}
           </T>
-          <T size={12} color="#7C808C" weight={500} style={{ width: 140 }}>
+        </div>
+        <Row gap={4} style={{ position: "absolute", left: 1619 - 1258, top: 1054 - 1006 }}>
+          <T size={11} color="#7C808C" weight={500}>
             {DOCK.columns[2]}
           </T>
-          <T size={12} color="#7C808C" weight={500} style={{ marginLeft: "auto" }}>
+          <Glyph kind="question" size={11} color="#7C808C" />
+        </Row>
+        <div style={{ position: "absolute", left: 1784 - 1258, top: 1048 - 1006 }}>
+          <T size={11} color="#7C808C" weight={500}>
             {DOCK.columns[3]}
           </T>
-        </Row>
+        </div>
       </div>
     </AbsoluteFill>
   );
