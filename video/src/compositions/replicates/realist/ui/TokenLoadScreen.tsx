@@ -81,9 +81,9 @@ const OrderToast: React.FC<{ y: number; done: boolean; phase: number }> = ({ y, 
   <div
     style={{
       position: "absolute",
-      left: 1633,
+      left: 1631,
       top: y,
-      width: 273,
+      width: 285,
       height: 74,
       background: "#20232b",
       border: "1px solid #33363f",
@@ -91,20 +91,20 @@ const OrderToast: React.FC<{ y: number; done: boolean; phase: number }> = ({ y, 
       boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
     }}
   >
-    <div style={{ position: "absolute", left: 12, top: 10 }}>
+    <div style={{ position: "absolute", left: 12, top: 8 }}>
       <Spinner phase={phase} done={done} />
     </div>
-    <span style={{ position: "absolute", left: 36, top: 12 }}>
+    <span style={{ position: "absolute", left: 36, top: 6 }}>
       <T size={12.5} weight={600} color="#e4e7ee">
         {done ? LOAD_TOASTS.completed : LOAD_TOASTS.executing}
       </T>
     </span>
-    <span style={{ position: "absolute", right: 10, top: 10 }}>
+    <span style={{ position: "absolute", right: 10, top: 6 }}>
       <T size={12} color="#8b8e97">
         ✕
       </T>
     </span>
-    <span style={{ position: "absolute", left: 36, top: 32, whiteSpace: "nowrap" }}>
+    <span style={{ position: "absolute", left: 36, top: 27, whiteSpace: "nowrap" }}>
       <T size={11.5} color="#c6c9d2">
         {LOAD_TOASTS.buyLine}{" "}
       </T>
@@ -121,7 +121,7 @@ const OrderToast: React.FC<{ y: number; done: boolean; phase: number }> = ({ y, 
         {LOAD_TOASTS.buyAmount}
       </T>
     </span>
-    <span style={{ position: "absolute", left: 36, top: 52 }}>
+    <span style={{ position: "absolute", left: 36, top: 49 }}>
       <T size={11} color="#8b8e97">
         {LOAD_TOASTS.waiting} {done ? LOAD_TOASTS.zero : LOAD_TOASTS.walletTotal}
       </T>
@@ -197,7 +197,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
   const holders = sampleAt(loadHoldersTable, frame);
   const toastPhase = sampleAt(loadToastPhaseTable, frame);
   const cards = sampleAt(loadCardsTable, frame);
-  const compactPopup = frame >= 360;
+  const compactPopup = true; // plate is compact from f333 on
   const walletsLoaded = frame >= 376;
   const spin = (frame * 16) % 360;
 
@@ -654,7 +654,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
       </div>
 
       {/* Buy row */}
-      <div style={{ position: "absolute", left: 142, top: 438, width: 288, height: 16 }}>
+      <div style={{ position: "absolute", left: 142, top: 447, width: 288, height: 16 }}>
         <T size={13.5} weight={600} color="#e9ecf3">
           {LOAD_POPUP.buy}
         </T>
@@ -674,7 +674,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
               style={{
                 position: "absolute",
                 left: 142 + i * 74,
-                top: r === 0 ? 462 : 498,
+                top: r === 0 ? 473 : 513,
                 width: 66,
                 height: 26,
                 borderRadius: 13,
@@ -716,14 +716,14 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </>
       )}
       {/* buy settings */}
-      <div style={{ position: "absolute", left: 142, top: compactPopup ? 534 : 536, whiteSpace: "nowrap" }}>
+      <div style={{ position: "absolute", left: 142, top: compactPopup ? 547 : 536, whiteSpace: "nowrap" }}>
         <T size={10.5} color={C.textMid}>
           ⛽ {LOAD_POPUP.buySettings.gas}{"   "}◎ {LOAD_POPUP.buySettings.tip}{"   "}⚖ {LOAD_POPUP.buySettings.pct}{"   "}🛡 {LOAD_POPUP.buySettings.shield}
         </T>
       </div>
 
       {/* Sell row */}
-      <div style={{ position: "absolute", left: 142, top: 560, width: 288, height: 16 }}>
+      <div style={{ position: "absolute", left: 142, top: 576, width: 288, height: 16 }}>
         <T size={13.5} weight={600} color="#e9ecf3">
           {LOAD_POPUP.sell}
         </T>
@@ -750,7 +750,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
               style={{
                 position: "absolute",
                 left: 142 + i * 74,
-                top: r === 0 ? 584 : 620,
+                top: r === 0 ? 604 : 643,
                 width: 66,
                 height: 26,
                 borderRadius: 13,
@@ -792,7 +792,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </>
       )}
       {/* sell settings */}
-      <div style={{ position: "absolute", left: 142, top: compactPopup ? 656 : 658, whiteSpace: "nowrap" }}>
+      <div style={{ position: "absolute", left: 142, top: compactPopup ? 676 : 658, whiteSpace: "nowrap" }}>
         <T size={10.5} color={C.textMid}>
           ⛽ {LOAD_POPUP.sellSettings.gas}{"   "}◎ {LOAD_POPUP.sellSettings.tip}{"   "}⚖ {LOAD_POPUP.sellSettings.pct}{"   "}∅ {LOAD_POPUP.sellSettings.off}
         </T>
@@ -803,7 +803,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </span>
       </div>
       {/* popup footer */}
-      <div style={{ position: "absolute", left: 129, top: 684, width: 314, height: 34, borderTop: `1px solid ${C.divider}` }}>
+      <div style={{ position: "absolute", left: 129, top: 698, width: 314, height: 34, borderTop: `1px solid ${C.divider}` }}>
         {footer ? (
           <>
             {[
@@ -1119,8 +1119,8 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
       })()}
 
       {/* ── toasts top-right ── */}
-      <OrderToast y={13} done={false} phase={spin} />
-      <OrderToast y={96} done={toastPhase === "b"} phase={spin + 120} />
+      <OrderToast y={12} done={false} phase={spin} />
+      <OrderToast y={95} done={toastPhase === "b"} phase={spin + 120} />
 
       {/* ── bottom band ── */}
       <div style={{ position: "absolute", left: 0, top: 970, width: 1596, height: 110, background: "#14161c", borderTop: "1px solid #20232b" }} />
