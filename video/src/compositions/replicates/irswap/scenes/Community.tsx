@@ -354,6 +354,48 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [5255, 140.3, -117.8, 0.585, 0.521],
     [5260, 136.3, -114.1, 0.585, 0.533],
   ],
+  // r7 pull-back cluster re-assembly (STEP-0 discovery, unnamed by any
+  // prior round): as the camera pulls out the ref RE-GATHERS the whole
+  // community — a compact group (box + temples) enters from frame-left
+  // 5216-5230, slides right onto the sheet, shrinks, and fades away
+  // 5240-5256, while our render kept two stragglers (t2/t3) floating
+  // high-left until the 5262 fade. Ref component tracks measured at 5f
+  // steps (blue-mask CCs, identities from the 5220-5240 crops: entering
+  // pair = cbs box + t1 temple; the temple sliding right through the
+  // group = t2; t3 tucks in beside the house and hides behind it by
+  // ~5237). t2 rows scan-vs-scan; t3/cbs/t1 rows vs the analytic raw
+  // projection (they are invisible in the baseline render), k eased ~7%
+  // for the outline-mask bias.
+  t2: [
+    [5212, 0, 0, 1, 1],
+    [5220, 101.8, -57.2, 0.9, 0.966],
+    [5225, 166.7, -89.0, 0.75, 0.793],
+    [5230, 220.2, -129.6, 0.649, 0.741],
+    [5235, 259.1, -171.5, 0.636, 0.783],
+    [5240, 278.2, -189.0, 0.5, 0.45],
+  ],
+  t3: [
+    [5214, 0, 0, 1, 1],
+    [5222, 266.4, -192.8, 1.0, 0.95],
+    [5225, 260.3, -231.7, 1.0, 0.92],
+    [5230, 286.2, -294.2, 0.94, 0.86],
+    [5235, 324.2, -345.2, 0.82, 0.73],
+  ],
+  cbs: [
+    [5225, 288.2, -69.9, 0.5, 0.7],
+    [5230, 332.3, -64.5, 0.58, 0.55],
+    [5235, 374.4, -67.6, 0.48, 0.54],
+    [5240, 405.0, -66.8, 0.49, 0.56],
+    [5245, 436.0, -71.9, 0.46, 0.43],
+    [5250, 444.2, -104.6, 0.45, 0.4],
+  ],
+  t1: [
+    [5220, 130.0, -62.6, 0.91, 0.67],
+    [5225, 191.3, -107.3, 0.75, 0.63],
+    [5230, 251.1, -142.0, 0.79, 0.73],
+    [5235, 291.3, -174.1, 0.69, 0.7],
+    [5240, 322.8, -191.5, 0.65, 0.63],
+  ],
 };
 type IconFix = { dx: number; dy: number; kx: number; ky: number };
 const iconFixAt = (name: string, f: number): IconFix => {
@@ -944,6 +986,26 @@ const RAY_VAC_EYE: Pt[] = [toFloor(-10, 302, 5100), toFloor(-40, 430, 5100)];
 // the vacant lot behind cbs, not at vac2's pad center — retarget the wedge
 // tip only, the pad itself stays put; vac1 keeps its pad tip
 const RAY_VAC_OVER: Pt[] = [[-179.5, -269.2], [-236.0, -140.2]];
+// r7 pull-back fan override: the ref's fan follows the RE-GATHERED
+// cluster through the pull-back (yellow-mask scan: fan tight around the
+// group, x158-323 y258-303 at 5230, dead by ~5243 — our old fade window
+// 5225-5240 already matches the timing; only the GEOMETRY was stale).
+// Tips ride the same measured screen tracks as the re-posed icons
+// (base bottom-centers), unprojected to the floor per frame; the origin
+// follows the corrected house base (converge point at 5230 measured
+// (350,287) = house bc + (-14,+1), offset carried along the house
+// track). The two vacant-lot wedges die early — the ref fan has no
+// far-left wedges from 5225 on (yellow x-min 80@5225, 158@5230).
+const RAY_PB_TIP: Record<string, [number, number, number][]> = {
+  t2: [[5220, 142, 254], [5225, 198, 254], [5230, 246, 256], [5235, 285, 260], [5240, 309, 258]],
+  t3: [[5222, 295, 248], [5230, 322, 252], [5235, 347, 252]],
+  cbs: [[5225, 30, 338], [5230, 108, 315], [5235, 176, 302], [5240, 225, 292]],
+  t1: [[5220, 39, 278], [5225, 110, 285], [5230, 175, 285], [5235, 224, 285], [5240, 261, 282]],
+};
+const RAY_PB_O: [number, number, number][] = [
+  [5215, 249, 314], [5220, 286, 302], [5225, 320, 294], [5230, 349, 288],
+  [5235, 374, 284], [5240, 400, 282],
+];
 const RAYS_C: Pt = [-400, -800];
 const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
@@ -954,11 +1016,19 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
     // eye f5100 (253,253,195) — brighter than the old C.ray@0.8; mid-dive
     // the ref fan sweeps low-right ahead of our tip blend, so the ink dips
     // while the geometry is least trustworthy (held phases keep full ink)
-    ctx.globalAlpha = a * (0.9 - 0.28 * Math.sin(Math.PI * t));
+    const baseA = a * (0.9 - 0.28 * Math.sin(Math.PI * t));
+    ctx.globalAlpha = baseA;
     ctx.fillStyle = mixc("#FCFB9D", "#FDFDC3", t);
     const mx = (p: Pt) => w / 2 + (p[0] - RAYS_C[0]);
     const my = (p: Pt) => h / 2 + (p[1] - RAYS_C[1]);
-    const from: Pt = [mixN(RAY_O.over[0], RAY_O.eye[0], t), mixN(RAY_O.over[1], RAY_O.eye[1], t)];
+    const pb = fade(f, 5212, 5222);
+    let from: Pt = [mixN(RAY_O.over[0], RAY_O.eye[0], t), mixN(RAY_O.over[1], RAY_O.eye[1], t)];
+    if (pb > 0) {
+      const o2 = toFloor(
+        lerp1(RAY_PB_O.map((r) => [r[0], r[1]] as [number, number]), f),
+        lerp1(RAY_PB_O.map((r) => [r[0], r[2]] as [number, number]), f), f);
+      from = [mixN(from[0], o2[0], pb), mixN(from[1], o2[1], pb)];
+    }
     for (const tip of RAY_TIPS) {
       let tx: number;
       let tz: number;
@@ -966,11 +1036,22 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
         const p = wbAt(WB[tip.b], f, tip.b);
         tx = p.x;
         tz = p.z;
+        const track = RAY_PB_TIP[tip.b];
+        if (pb > 0 && track) {
+          const t2f = toFloor(
+            lerp1(track.map((r) => [r[0], r[1]] as [number, number]), f),
+            lerp1(track.map((r) => [r[0], r[2]] as [number, number]), f), f);
+          tx = mixN(tx, t2f[0], pb);
+          tz = mixN(tz, t2f[1], pb);
+        }
+        ctx.globalAlpha = baseA;
       } else {
         const ot = RAY_VAC_OVER[tip.v ?? 0];
         const et = RAY_VAC_EYE[tip.v ?? 0];
         tx = mixN(ot[0], et[0], t);
         tz = mixN(ot[1], et[1], t);
+        // vacant wedges die early in the pull-back (no ref counterpart)
+        ctx.globalAlpha = baseA * fadeOut(f, 5218, 5230);
       }
       const dx = tx - from[0];
       const dz = tz - from[1];
@@ -1568,12 +1649,20 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const cubeLift = easeOutPow(fade(frame, 5240, 5271), 1.5) * 110;
   const cube = cubeAt(frame);
 
-  // cbs and t1 leave the frame during the dive (the source drops them);
-  // t2/t3 hold through eye level, slightly washed as in the source
-  const cbsOp = iconFade * fadeOut(frame, 4950, 4970);
-  const t1Op = iconFade * fadeOut(frame, 4955, 4975);
-  const t2Op = iconFade * (1 - 0.45 * fade(frame, 4985, 5000));
-  const t3Op = iconFade * (1 - 0.3 * fade(frame, 4985, 5000));
+  // cbs and t1 leave the frame during the dive (the source drops them) —
+  // and RE-ENTER during the pull-back as the camera re-reveals the
+  // community (r7 measured: the box+temple pair walks in from frame-left
+  // 5216-5230 and the whole cluster fades away 5240-5256; by 5258 the
+  // ref keeps only house and bank). t2/t3 hold through eye level,
+  // slightly washed as in the source, then fade on the measured schedule
+  // (ref t2 last clear at 5240, gone by 5245; t3 hides behind the house
+  // by ~5237) instead of surviving to the 5262 icon fade.
+  const cbsOp = iconFade * Math.max(
+    fadeOut(frame, 4950, 4970), fade(frame, 5222, 5230) * fadeOut(frame, 5246, 5256));
+  const t1Op = iconFade * Math.max(
+    fadeOut(frame, 4955, 4975), fade(frame, 5216, 5224) * fadeOut(frame, 5242, 5252));
+  const t2Op = iconFade * (1 - 0.45 * fade(frame, 4985, 5000)) * fadeOut(frame, 5240, 5250);
+  const t3Op = iconFade * (1 - 0.3 * fade(frame, 4985, 5000)) * fadeOut(frame, 5232, 5242);
 
   // pads do NOT ride ICON_FIX: the fix compensates OUR icon rendering vs
   // the ref's icon redraw; the ref's pads stay put on the sheet (A/B: a
@@ -1586,11 +1675,16 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const pads = [
     { key: "p-house", ...padOp("house", 4700, 4712) },
     { key: "p-bank", ...padOp("bank", 4712, 4722) },
-    // cbs/t1 pads leave with their buildings during the dive
+    // cbs/t1 pads leave with their buildings during the dive (and stay
+    // out at the pull-back re-entry: pads do not ride ICON_FIX, so a
+    // returned pad would sit at the stale raw pose — absent beats
+    // misplaced). t2/t3 pads fade as the re-pose begins for the same
+    // reason: their buildings slide onto the ref track, the raw-pose
+    // white slabs must not stay behind.
     { key: "p-cbs", ...padOp("cbs", 4700, 4710, fadeOut(frame, 4950, 4970)) },
     { key: "p-t1", ...padOp("t1", 4700, 4710, fadeOut(frame, 4955, 4975)) },
-    { key: "p-t2", ...padOp("t2", 4700, 4710) },
-    { key: "p-t3", ...padOp("t3", 4700, 4710) },
+    { key: "p-t2", ...padOp("t2", 4700, 4710, fadeOut(frame, 5212, 5224)) },
+    { key: "p-t3", ...padOp("t3", 4700, 4710, fadeOut(frame, 5212, 5224)) },
   ];
   const dvT = diveT(frame);
 
