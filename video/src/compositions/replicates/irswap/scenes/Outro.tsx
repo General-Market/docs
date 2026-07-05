@@ -31,8 +31,7 @@ const BOARD_CX = 2; // world x of the board center (screen 429 at the end)
 // side of the fold); past vertical it leans slightly toward the camera
 // and the teal credits take over. phi: 0 = flat behind, 90 = standing.
 const PHI: [number, number][] = [
-  [5283, 8], [5290, 44], [5295, 64], [5300, 88], [5303, 95], [5307, 98],
-  [5312, 94], [5318, 90],
+  [5283, 8], [5290, 44], [5295, 64], [5300, 88], [5303, 95],
 ];
 // board yaw about the fold midpoint: the page rises turned ~90° away
 // (edge-on sliver at 5300 in the ref), then swings frontal by 5318.
@@ -40,36 +39,66 @@ const PHI: [number, number][] = [
 // fast — silhouette 42% too wide at 5303, 22% at 5306; ref cosines give
 // the retimed keys below)
 const PSI: [number, number][] = [
-  [5283, -96], [5295, -93], [5300, -88], [5303, -70], [5306, -47],
-  [5309, -29], [5311, -20], [5313, -10], [5315, -5], [5318, 0],
+  [5283, -96], [5295, -93], [5300, -88], [5303, -70],
 ];
-// camera: [frame, x, y, z, pitchDeg] — high in front, descending to the
-// exact frontal pose (0,100,DCAM) which reproduces the settled board
-// span x132-726 / v-30..510 precisely.
+// camera: [frame, x, y, z, pitchDeg] — high in front, descending
 const CAM_O: [number, number, number, number, number][] = [
   [5283, 220, 620, 1050, 30],
   [5290, 205, 590, 1030, 29],
   [5295, 190, 540, 990, 27],
   [5300, 170, 460, 920, 23],
   [5303, 85, 360, 850, 17],
-  [5306, 30, 280, 800, 12],
-  [5312, 5, 150, 700, 4],
-  [5318, 0, 100, DCAM, 0],
 ];
-// camera roll through the reveal — the ref page leads with a corner:
-// measured top-edge tilt −22.7° at 5306 easing to −2.3° by 5313 (the
-// first pass held a flat ~−5°)
 const ROLL: [number, number][] = [
-  [5299, 0], [5301, -10], [5303, -16], [5306, -23], [5309, -7],
-  [5312, -1.5], [5318, 0],
+  [5299, 0], [5301, -10], [5303, -16],
 ];
 // mid-swing height trim: the inner page rode 15-22px high vs the ref
 const Y_LIFT: [number, number][] = [
-  [5300, 0], [5303, 12], [5306, 21], [5309, 24], [5311, 12], [5313, 0],
+  [5300, 0], [5303, 12],
 ];
 
+// ── r8: the settle 5304-5316, solved per frame from the reference ──
+// The white credits card is a hole in the teal mask; its four corners
+// were measured on every ref frame 5304-5316 and the (phi, psi, roll,
+// camX, camY, camZ, pitch) pose solved per frame (LM, corner rms
+// 1.2-2.8px; work/r8/outro/opose.json). The board is a plane, so hitting
+// the four corners reproduces its whole projection (homography). The ref
+// settles at 5316 — NOT 5318 (consecutive-frame diff 5316→5317 = 0.002,
+// last motion 5315→5316) — so every clamp below reads 5316.
+// [f, phi, psi, roll, camX, camY, camZ, pitchDeg]
+const OPOSE: [number, number, number, number, number, number, number, number][] = [
+  [5304, 76.29, -52.0, -9.25, 137.3, -127.4, 875.4, -13.85],
+  [5305, 78.39, -45.93, -7.29, 106.2, -67.0, 843.3, -11.2],
+  [5306, 80.27, -40.57, -5.32, 80.3, -17.9, 810.5, -8.81],
+  [5307, 81.88, -34.55, -3.87, 59.4, 14.6, 785.4, -7.1],
+  [5308, 83.19, -29.27, -2.64, 43.3, 37.5, 760.6, -5.74],
+  [5309, 84.11, -23.97, -1.57, 30.3, 51.0, 740.2, -4.76],
+  [5310, 85.48, -19.14, -1.06, 21.8, 66.2, 723.2, -3.68],
+  [5311, 86.48, -14.84, -0.55, 14.8, 75.6, 708.1, -2.82],
+  [5312, 87.46, -11.05, -0.29, 10.7, 83.8, 694.6, -2.05],
+  [5313, 88.55, -7.22, -0.03, 5.9, 93.0, 684.4, -1.21],
+  [5314, 89.07, -4.77, 0.02, 4.8, 95.3, 673.1, -0.77],
+  [5315, 89.43, -2.75, -0.07, 3.6, 96.1, 665.8, -0.45],
+  [5316, 90, 0, 0, 0, 100, DCAM, 0],
+];
+export const SETTLE_F = 5316;
+const oposeCol = (f: number, col: number): number =>
+  lerp1(OPOSE.map((k) => [k[0], k[col]] as [number, number]), f);
+export const oposeAt = (frame: number): { phi: number; psi: number } => {
+  const fc = Math.min(frame, SETTLE_F);
+  if (fc < OPOSE[0][0]) return { phi: lerp1(PHI, fc), psi: lerp1(PSI, fc) };
+  return { phi: oposeCol(fc, 1), psi: oposeCol(fc, 2) };
+};
+
 export const camOutro = (frame: number): { pos: V3; pitch: number; roll: number } => {
-  const fc = Math.min(frame, 5318);
+  const fc = Math.min(frame, SETTLE_F);
+  if (fc >= OPOSE[0][0]) {
+    return {
+      pos: [oposeCol(fc, 4), oposeCol(fc, 5), oposeCol(fc, 6)],
+      pitch: (oposeCol(fc, 7) * Math.PI) / 180,
+      roll: (oposeCol(fc, 3) * Math.PI) / 180,
+    };
+  }
   const pos: V3 = [
     lerp1(CAM_O.map((k) => [k[0], k[1]] as [number, number]), fc),
     lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc) + lerp1(Y_LIFT, fc),
@@ -280,11 +309,10 @@ const drawBacking = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: nu
 
 export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
 
-  const fc = Math.min(frame, 5318);
-  const phi = lerp1(PHI, fc);
+  const { phi, psi: psiDeg } = oposeAt(frame);
   const rx = ((phi - 90) * Math.PI) / 180; // -90° = flat behind, 0 = standing
-  const psi = (lerp1(PSI, fc) * Math.PI) / 180;
-  const settled = frame >= 5318;
+  const psi = (psiDeg * Math.PI) / 180;
+  const settled = frame >= SETTLE_F;
   // the page plane sweeps through vertical at ~5301: hand the visible
   // surface from the dashboard art to the teal credits across it
   const artOp = 1 - clamp01((frame - 5300) / 3);
