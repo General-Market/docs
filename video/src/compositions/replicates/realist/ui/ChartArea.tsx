@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { continueRender, delayRender } from "remotion";
+import {
+  createChart,
+  CandlestickSeries,
+  ColorType,
+  IChartApi,
+  ISeriesApi,
+  CandlestickData,
+  UTCTimestamp,
+} from "lightweight-charts";
 import {
   CANDLE_PITCH,
   CANDLE_ANCHOR,
   CANDLE_ENTS,
-  CandleEnt,
   BUBBLE_TRACKS,
   BubbleTrack,
   CHIP_HIGH_Y,
@@ -102,6 +111,162 @@ const stepText = (table: [number, string][], f: number): string | null => {
     else break;
   }
   return cur;
+};
+
+// ── REAL chart engine (r4, owner directive): lightweight-charts 5.x ──
+// The candle layer is a real TradingView OSS candlestick series. Everything
+// is pinned per frame from the measured tables so the engine is a pure
+// deterministic rasterizer:
+//   x: setVisibleLogicalRange — barSpacing = W/(to-from+1); bar center
+//      x(s) = W-1-(to+0.5)·bs+s·bs  (source: time-scale indexToCoordinate),
+//      solved so slot s lands at CANDLE_ANCHOR + s·CANDLE_PITCH.
+//   y: autoscaleInfoProvider pins priceRange to [yV(917), yV(196)] with zero
+//      margins — the engine maps min→pane(h-1), max→0 (source:
+//      barPricesToCoordinates uses internalHeight-1), so price→pixel
+//      round-trips the measured era map exactly.
+// Interactions, axes, grid, crosshair, attribution logo: all OFF. The plate
+// TV logo stays as measured DOM in TokenChartChrome (engine logo sits at the
+// pane corner, wrong place/size vs plate).
+const PANE_W = VIEW_R - VIEW_L; // 1499
+const PANE_H = PLOT_BOT - PLOT_TOP; // 722
+
+type EngineRefs = { chart: IChartApi; series: ISeriesApi<"Candlestick"> };
+
+const EngineCandles: React.FC<{ f: number; A: number; K: number; anchor: number }> = ({
+  f,
+  A,
+  K,
+  anchor,
+}) => {
+  const yV = (y: number) => (A - y) / K;
+  const hostRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<EngineRefs | null>(null);
+  const rangeRef = useRef<{ min: number; max: number }>({ min: 0, max: 1 });
+  const handleRef = useRef<number | null>(null);
+  const gatedRef = useRef<number | null>(null);
+
+  // Remotion capture gate: a fresh delayRender per frame value, released
+  // after the engine has painted (double rAF past its own scheduled draw).
+  if (gatedRef.current !== f) {
+    gatedRef.current = f;
+    if (handleRef.current !== null) continueRender(handleRef.current);
+    handleRef.current = delayRender(`lwc paint f=${f}`);
+  }
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    if (!engineRef.current) {
+      const chart = createChart(host, {
+        width: PANE_W,
+        height: PANE_H,
+        autoSize: false,
+        layout: {
+          background: { type: ColorType.Solid, color: "transparent" },
+          attributionLogo: false,
+        },
+        grid: { vertLines: { visible: false }, horzLines: { visible: false } },
+        rightPriceScale: { visible: false },
+        leftPriceScale: { visible: false },
+        timeScale: { visible: false, minBarSpacing: 0.1 },
+        crosshair: {
+          vertLine: { visible: false, labelVisible: false },
+          horzLine: { visible: false, labelVisible: false },
+        },
+        handleScroll: false,
+        handleScale: false,
+        kineticScroll: { touch: false, mouse: false },
+      });
+      const series = chart.addSeries(CandlestickSeries, {
+        upColor: C.candleGreen,
+        downColor: C.candleRed,
+        wickUpColor: C.candleGreen,
+        wickDownColor: C.candleRed,
+        borderVisible: false,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        autoscaleInfoProvider: () => ({
+          priceRange: { minValue: rangeRef.current.min, maxValue: rangeRef.current.max },
+        }),
+      });
+      series.priceScale().applyOptions({ scaleMargins: { top: 0, bottom: 0 }, autoScale: true });
+      engineRef.current = { chart, series };
+    }
+    const { chart, series } = engineRef.current;
+
+    // pin y: engine maps maxValue→pane y 0, minValue→pane y (PANE_H-1)
+    rangeRef.current = { min: yV(PLOT_TOP + PANE_H - 1), max: yV(PLOT_TOP) };
+
+    // candles known at this plate frame, in measured pixel space → prices
+    const data: CandlestickData<UTCTimestamp>[] = [];
+    for (const t of CANDLE_ENTS) {
+      const g = candleGeom(t.k, f);
+      if (!g) continue;
+      const [bt, bb, wt, wb] = g;
+      const flip = t.cc ? stepPairs(t.cc, f) : null;
+      const green = flip === null ? t.c === "g" : flip === 1;
+      const pTop = yV(bt);
+      const pBot = yV(bb);
+      const open = green ? pBot : pTop;
+      const close = green ? pTop : pBot;
+      const high = Math.max(yV(wt), pTop);
+      const low = Math.min(yV(wb), pBot);
+      const col = green ? C.candleGreen : C.candleRed;
+      data.push({ time: t.s as UTCTimestamp, open, high, low, close, color: col, wickColor: col });
+    }
+    data.sort((a, b) => (a.time as number) - (b.time as number));
+    series.setData(data);
+
+    // pin x: slot s center at anchor + s·pitch (pane-relative: -VIEW_L)
+    if (data.length > 0) {
+      const to = (PANE_W - 1 - (anchor - VIEW_L)) / CANDLE_PITCH - 0.5;
+      const from = to + 1 - PANE_W / CANDLE_PITCH;
+      chart.timeScale().setVisibleLogicalRange({ from, to });
+    }
+
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => {
+        if (handleRef.current !== null) {
+          continueRender(handleRef.current);
+          handleRef.current = null;
+        }
+      });
+    });
+    return () => {
+      cancelAnimationFrame(r1);
+      if (r2) cancelAnimationFrame(r2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f, A, K, anchor]);
+
+  useEffect(
+    () => () => {
+      if (engineRef.current) {
+        engineRef.current.chart.remove();
+        engineRef.current = null;
+      }
+      if (handleRef.current !== null) {
+        continueRender(handleRef.current);
+        handleRef.current = null;
+      }
+    },
+    [],
+  );
+
+  return (
+    <div
+      ref={hostRef}
+      style={{
+        position: "absolute",
+        left: VIEW_L,
+        top: PLOT_TOP,
+        width: PANE_W,
+        height: PANE_H,
+        overflow: "hidden",
+      }}
+    />
+  );
 };
 
 // glyphs drawn as bold letters (vs emoji)
@@ -348,44 +513,8 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           {chip(COST_BADGE, costY, C.costBadgeBg, C.costBadgeText)}
         </>
       )}
-      {/* candles: wick behind body, slot x from pan anchor */}
-      {CANDLE_ENTS.map((t: CandleEnt, i: number) => {
-        const g = candleGeom(t.k, f);
-        if (!g) return null;
-        const x = slotX(t.s);
-        if (x < VIEW_L + 2 || x > VIEW_R - 1) return null;
-        const flip = t.cc ? stepPairs(t.cc, f) : null;
-        const green = flip === null ? t.c === "g" : flip === 1;
-        const col = green ? C.candleGreen : C.candleRed;
-        const [bt, bb, wt, wb] = g;
-        return (
-          <React.Fragment key={`c${i}`}>
-            {wb - wt > 1 && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: x - 0.5,
-                  top: wt,
-                  width: 1,
-                  height: Math.max(wb - wt, 1),
-                  background: col,
-                }}
-              />
-            )}
-            <div
-              style={{
-                position: "absolute",
-                left: x - 2,
-                top: bt,
-                width: 4,
-                height: Math.max(bb - bt, 1.5),
-                background: col,
-                borderRadius: 0.5,
-              }}
-            />
-          </React.Fragment>
-        );
-      })}
+      {/* candles: REAL lightweight-charts candlestick series (r4) */}
+      <EngineCandles f={f} A={A} K={K} anchor={anchor} />
       {/* current-price dotted line */}
       {curChip && (
         <div
