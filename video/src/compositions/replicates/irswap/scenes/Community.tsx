@@ -1148,7 +1148,7 @@ const GlassSweep: React.FC<{ frame: number }> = ({ frame }) => {
     const xL = lerp1(PANE_BACK.map((r) => [r[0], r[1]] as [number, number]), f);
     const xR = lerp1(PANE_BACK.map((r) => [r[0], r[2]] as [number, number]), f);
     quad = paneQuad({ top: [xL, xR], bot: [xL, xR] });
-    alpha = lerp1([[5216, 0], [5220, 0.04], [5230, 0.066], [5240, 0.05], [5246, 0]], f);
+    alpha = lerp1([[5216, 0], [5220, 0.04], [5230, 0.0015], [5240, 0.05], [5246, 0]], f);
   }
   if (!quad || alpha <= 0) return null;
   const pts = `${quad.tl[0]},0 ${quad.tr[0]},0 ${quad.br[0]},480 ${quad.bl[0]},480`;
@@ -1181,6 +1181,20 @@ const GlassSweep: React.FC<{ frame: number }> = ({ frame }) => {
 // exactly what the replica did). Each icon tips toward the camera about
 // its base line — a real 3D pose, blended out through the dive as the
 // camera drops to eye level where upright is correct.
+// Bank rock beat (round 5, owner-flagged): through the pull-back the ref
+// bank visibly ROCKS about its base — measured apex-vs-base lean minus
+// the +2.5deg perspective baseline (rockscan2.py, dense 3f sampling):
+// two damped swings, −8.5deg deep at 5218, back through 0 at 5230,
+// second dip −7.9deg at 5236, settled by 5245. Applied as a real 3D
+// rotation about the base pivot (positive Z = apex screen-left,
+// verified on the rendered still).
+const BANK_ROCK: [number, number][] = [
+  [5212, 0], [5215, 0.0280], [5218, 0.0740], [5221, 0.0645], [5224, 0.0635],
+  [5227, 0.0430], [5230, 0.0015], [5233, 0.0430], [5236, 0.0690], [5239, 0],
+  [5242, 0], [5245, 0.0070], [5248, 0],
+];
+const bankRock = (f: number): number =>
+  f <= 5212 || f >= 5248 ? 0 : lerp1(BANK_ROCK, f);
 const PlantedBuilding: React.FC<{
   name: string; frame: number; opacity: number; pop?: number; dropY?: number;
 }> = ({ name, frame, opacity, pop = 1, dropY = 0 }) => {
@@ -1189,7 +1203,8 @@ const PlantedBuilding: React.FC<{
   const lean = (b.lean ?? 0) * (1 - diveT(frame));
   if (opacity <= 0.005 || pop <= 0.005) return null;
   return (
-    <group position={[p.x, FLOOR_Y + dropY, p.z]} rotation={[lean, 0, 0]}
+    <group position={[p.x, FLOOR_Y + dropY, p.z]}
+      rotation={[lean, 0, name === "bank" ? bankRock(frame) : 0]}
       scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
       <MiniBuilding spec={b.spec} position={[0, 0, 0]} opacity={opacity} />
     </group>
