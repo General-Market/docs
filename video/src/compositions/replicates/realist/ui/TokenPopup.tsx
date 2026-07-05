@@ -9,6 +9,7 @@ import {
   pctK,
   SELL_MODE_FLIP_F,
   SELL_MODE_FLIP2_F,
+  BUY_TIP_WARN_F,
 } from "./timeline-token";
 
 const { fontFamily } = loadFont("normal", {
@@ -54,8 +55,28 @@ const Bars: React.FC<{ size?: number; color?: string }> = ({ size = 11, color })
 );
 
 const Warn: React.FC = () => (
-  <svg width={9} height={9} viewBox="0 0 10 10" style={{ display: "inline-block", verticalAlign: "-1px" }}>
+  <svg width={10} height={10} viewBox="0 0 10 10" style={{ display: "block" }}>
     <path d="M5 0.8 9.5 9H0.5Z" fill={C.sand} />
+    <rect x="4.4" y="3.6" width="1.2" height="2.8" rx="0.6" fill={C.popupBg} />
+    <rect x="4.4" y="7.1" width="1.2" height="1.2" rx="0.6" fill={C.popupBg} />
+  </svg>
+);
+
+// gas icon — the plates show a small GOLD banknote/pump blob; the previous
+// "⛽" TEXT glyph rendered as the full-color red emoji on macOS (r4 fix).
+const GasIcon: React.FC = () => (
+  <svg width={10} height={11} viewBox="0 0 10 11" style={{ display: "block" }}>
+    <rect x="0.8" y="1" width="6" height="9" rx="1.1" fill={C.sand} />
+    <rect x="2" y="2.4" width="3.6" height="2.6" rx="0.5" fill={C.popupBg} />
+    <path d="M7.4 3.4 L9 4.8 L9 8.8" fill="none" stroke={C.sand} strokeWidth="1.1" strokeLinecap="round" />
+  </svg>
+);
+
+// tip icon — flat disc/coin (grey until the tip warn appears, then sand)
+const TipIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width={11} height={11} viewBox="0 0 11 11" style={{ display: "block" }}>
+    <ellipse cx="5.5" cy="5.5" rx="4.6" ry="3.1" fill="none" stroke={color} strokeWidth="1.2" />
+    <ellipse cx="5.5" cy="5.5" rx="1.7" ry="1.1" fill="none" stroke={color} strokeWidth="1" />
   </svg>
 );
 
@@ -85,54 +106,59 @@ const PresetCell: React.FC<{ x: number; y: number; text: string; kind: "buy" | "
 
 const CELL_X = [122.5, 202.5, 282.5, 362.5];
 
+// Settings strip under each preset grid. The plates lay this out as a FLOW,
+// not fixed columns: "∅ Off" sits at x276 on the buy row (short grey "0.01",
+// no warn) but x299 on the sell row (long sand "0.0₃5" + warn) — r4 blob
+// measurement, f0500. Fixed lefts for the first two clusters (they never
+// change width), flex flow from the tip cluster on.
 const SettingsRow: React.FC<{
   y: number;
   pct: string;
   gas: readonly string[];
-  tip: string | readonly string[];
+  tip: { val: string | readonly string[]; warn: boolean };
   right: { text: string; color: string };
-}> = ({ y, pct, gas, tip, right }) => (
-  // every span carries top:0 — absolutely positioned spans WITHOUT top keep
-  // their static-flow y (parent 16px line box) and sat ~7px low (r2 fix)
-  <div style={{ position: "absolute", left: 124, top: y, width: 312, height: 12 }}>
-    <span style={{ position: "absolute", left: 0, top: 0 }}>
-      <T size={10.5} color={C.textMid}>
-        ⇅ {pct}
-      </T>
-    </span>
-    {/* gas/tip clusters — icon, value AND warn are all sand-gold (r3) */}
-    <span style={{ position: "absolute", left: 46, top: 0 }}>
-      <T size={10.5} color={C.sand}>
-        ⛽{" "}
-      </T>
-      <SubZero parts={gas} color={C.sand} />
-      <Warn />
-    </span>
-    <span style={{ position: "absolute", left: 118, top: 0 }}>
-      <T size={10.5} color={C.sand}>
-        ◎{" "}
-      </T>
-      {typeof tip === "string" ? (
-        <T size={10.5} color={C.sand}>
-          {tip}{" "}
+}> = ({ y, pct, gas, tip, right }) => {
+  const tipColor = tip.warn ? C.sandVal : C.settingsGrey;
+  return (
+    // every cluster is a FLEX div (alignItems center, height 13) — abs spans
+    // holding fallback-font glyphs (⇅) grow the line strut and sat ~7px low
+    // even with top:0 (r4; sibling of the r2 static-flow bug)
+    <div style={{ position: "absolute", left: 124, top: y, width: 312, height: 13 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, height: 13, display: "flex", alignItems: "center" }}>
+        <T size={10.5} color={C.settingsGrey}>
+          ⇅ {pct}
         </T>
-      ) : (
-        <SubZero parts={tip} color={C.sand} />
-      )}
-      <Warn />
-    </span>
-    <span style={{ position: "absolute", left: 188, top: 0 }}>
-      <T size={10.5} color={C.textMid}>
-        ∅ {POPUP.buySettings.off}
-      </T>
-    </span>
-    <span style={{ position: "absolute", right: 0, top: 0 }}>
-      <T size={10.5} weight={500} color={right.color}>
-        {right.text}
-      </T>
-    </span>
-  </div>
-);
+      </div>
+      <div style={{ position: "absolute", left: 47, top: 0, height: 13, display: "flex", alignItems: "center", gap: 3 }}>
+        <GasIcon />
+        <SubZero parts={gas} color={C.sandVal} />
+        <Warn />
+      </div>
+      <div style={{ position: "absolute", left: 110, top: 0, height: 13, display: "flex", alignItems: "center", gap: 3 }}>
+        <TipIcon color={tip.warn ? C.sand : C.settingsGrey} />
+        {typeof tip.val === "string" ? (
+          <T size={10.5} color={tipColor}>
+            {tip.val}
+          </T>
+        ) : (
+          <SubZero parts={tip.val} color={tipColor} />
+        )}
+        {tip.warn ? <Warn /> : null}
+        <div style={{ width: 4 }} />
+        <T size={10.5} color={C.settingsGrey}>
+          ∅ {POPUP.buySettings.off}
+        </T>
+      </div>
+      {/* NO checkbox before "Adv." — a faint box seen in 600% zooms probed
+          as pure bg on f0500/f0700/f1050/f1620 (upscale phantom, r4) */}
+      <div style={{ position: "absolute", right: 0, top: 0, height: 13, display: "flex", alignItems: "center" }}>
+        <T size={10.5} weight={500} color={right.color}>
+          {right.text}
+        </T>
+      </div>
+    </div>
+  );
+};
 
 export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
   const buyTotal = sampleAt(buyTotalTable, frame);
@@ -160,11 +186,17 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
               border: i === 0 ? `1px solid ${C.tabActiveBorder}` : "1px solid transparent",
             }}
           >
+            {/* folder tab icon (the plates show a real folder silhouette, r4) */}
             <svg width={10} height={10} viewBox="0 0 10 10">
-              <rect x="1" y="2.5" width="8" height="6" rx="1.5" fill="none" stroke={i === 1 ? C.tabIdleText : "#6C64AB"} strokeWidth="1.3" />
-              <path d="M3 2.5 V1.5 h5 v4" fill="none" stroke={i === 1 ? C.tabIdleText : "#6C64AB"} strokeWidth="1.1" />
+              <path
+                d="M1 2.6 h2.7 l1 1.2 h3.9 a0.9 0.9 0 0 1 0.9 0.9 v2.7 a0.9 0.9 0 0 1 -0.9 0.9 h-6.7 a0.9 0.9 0 0 1 -0.9 -0.9 Z"
+                fill="none"
+                stroke={i === 1 ? C.tabIdleText : C.tabActiveText}
+                strokeWidth="1.2"
+                strokeLinejoin="round"
+              />
             </svg>
-            <T size={11} weight={600} color={i === 0 ? C.tabActiveText : i === 2 ? "#6C64AB" : C.tabIdleText}>
+            <T size={11} weight={600} color={i === 1 ? C.tabIdleText : C.tabActiveText}>
               {t}
             </T>
           </div>
@@ -186,23 +218,28 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
         }}
       />
 
-      {/* header row */}
-      <div style={{ position: "absolute", left: 133, top: 385, width: 300, height: 18 }}>
+      {/* header row — top 385→382 r4: keyboard/P-labels/✕ all sat ~3px
+          below the plate ink (plate text band y385-397) */}
+      <div style={{ position: "absolute", left: 133, top: 382, width: 300, height: 18 }}>
         <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 0, top: 1 }}>
           <rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
           <path d="M4 5h6M4 8h6" stroke="#8b8e97" strokeWidth="1.1" />
         </svg>
+        {/* P3 carries a subtle purple-navy chip on the plates (x217-237, r4) */}
+        <div style={{ position: "absolute", left: 84, top: 0, width: 21, height: 17, borderRadius: 4, background: C.tabActiveBg }} />
         {POPUP.presetsLabels.map((p, i) => (
           <span key={p} style={{ position: "absolute", left: 26 + i * 30, top: 2 }}>
-            <T size={12.5} weight={600} color={i === 2 ? C.purpleText : C.textMid}>
+            <T size={12.5} weight={600} color={i === 2 ? C.tabActiveText : C.textMid}>
               {p}
             </T>
           </span>
         ))}
-        <svg width={13} height={13} viewBox="0 0 14 14" style={{ position: "absolute", left: 118, top: 2 }}>
-          <path d="M2 12 3 9l6.5-6.5a1.4 1.4 0 0 1 2 2L5 11Z" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
+        {/* pencil with the underline the plates show (edit icon) */}
+        <svg width={14} height={14} viewBox="0 0 14 14" style={{ position: "absolute", left: 117, top: 2 }}>
+          <path d="M2.5 10.5 3 8.5l5.5-5.5a1.3 1.3 0 0 1 1.9 1.9L4.9 10.4Z" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
+          <path d="M2.5 13 H11.5" stroke="#8b8e97" strokeWidth="1.1" strokeLinecap="round" />
         </svg>
-        <svg width={13} height={13} viewBox="0 0 14 14" style={{ position: "absolute", left: 203, top: 2 }}>
+        <svg width={13} height={13} viewBox="0 0 14 14" style={{ position: "absolute", left: 200, top: 2 }}>
           <circle cx="7" cy="7" r="2.4" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
           <path
             d="M7 1.5v2M7 10.5v2M1.5 7h2M10.5 7h2M3.2 3.2l1.4 1.4M9.4 9.4l1.4 1.4M10.8 3.2 9.4 4.6M4.6 9.4 3.2 10.8"
@@ -210,6 +247,8 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             strokeWidth="1.1"
           />
         </svg>
+        {/* wallet-count chip — the plates show NO bright ring (border ≈
+            popupBorder) and a brighter 12px wallet/camera icon (r4) */}
         <div
           style={{
             position: "absolute",
@@ -218,20 +257,21 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             height: 19,
             padding: "0 8px",
             borderRadius: 10,
-            border: "1px solid #343946",
             display: "flex",
             alignItems: "center",
             gap: 4,
           }}
         >
-          <svg width={10} height={10} viewBox="0 0 10 10">
-            <rect x="1" y="2.5" width="8" height="6" rx="1.5" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
+          <svg width={12} height={12} viewBox="0 0 12 12">
+            <rect x="0.8" y="2.6" width="10.4" height="7.6" rx="1.6" fill="none" stroke="#B6BAC3" strokeWidth="1.2" />
+            <path d="M7.6 2.6 L9 1.2 L10.6 2.8" fill="none" stroke="#B6BAC3" strokeWidth="1.1" strokeLinejoin="round" />
+            <path d="M3 7.2 H6.4" stroke="#B6BAC3" strokeWidth="1.1" strokeLinecap="round" />
           </svg>
-          <T size={11} weight={600} color={C.text}>
+          <T size={11} weight={600} color={C.textHi}>
             {POPUP.walletCount}
           </T>
         </div>
-        <span style={{ position: "absolute", left: 284, top: 1 }}>
+        <span style={{ position: "absolute", left: 280, top: 1 }}>
           <T size={13} color={C.textMid}>
             ✕
           </T>
@@ -246,40 +286,42 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             {POPUP.buy}
           </T>
         </span>
+        {/* SOL/USDC segmented toggle — chip re-measured r4 (f0500): SOL
+            segment is a TIGHT chip x158-190 y423-437 (was 20px tall and
+            ~20px too wide); USDC segment is bare (no bg). */}
         <div
           style={{
             position: "absolute",
-            left: 31,
-            top: 0,
-            height: 20,
-            padding: "0 8px",
-            borderRadius: 10,
+            left: 34,
+            top: 2,
+            height: 15,
+            padding: "0 3px",
+            borderRadius: 5,
             background: C.solChipBg,
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 3,
           }}
         >
-          <Bars size={10} />
-          <T size={10.5} weight={700} color={C.solChipText}>
+          <Bars size={7} />
+          <T size={9.5} weight={700} color={C.solChipText}>
             {POPUP.sol}
           </T>
         </div>
         <div
           style={{
             position: "absolute",
-            left: 80,
-            top: 0,
-            height: 20,
-            padding: "0 8px",
+            left: 74,
+            top: 2,
+            height: 15,
             display: "flex",
             alignItems: "center",
             gap: 4,
           }}
         >
-          {/* USDC coin: blue disc + white mark (r3) */}
-          <span style={{ position: "relative", width: 9, height: 9, borderRadius: 4.5, background: C.usdcBlue, display: "inline-block" }}>
-            <span style={{ position: "absolute", left: 2.5, top: 2, width: 4, height: 5, borderRadius: 2, border: "1px solid #DDE4EE", boxSizing: "border-box" }} />
+          {/* USDC coin: blue disc + white mark (r3; r4 size 9→10.5 per plate) */}
+          <span style={{ position: "relative", width: 10.5, height: 10.5, borderRadius: 5.25, background: C.usdcBlue, display: "inline-block" }}>
+            <span style={{ position: "absolute", left: 3, top: 2.5, width: 4.5, height: 5.5, borderRadius: 2.2, border: "1px solid #DDE4EE", boxSizing: "border-box" }} />
           </span>
           <T size={10.5} weight={600} color="#73777F">
             {POPUP.usdc}
@@ -298,11 +340,11 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
         row.map((v, i) => <PresetCell key={`b${r}${i}`} x={CELL_X[i]} y={r === 0 ? 452 : 486.5} text={v} kind="buy" />),
       )}
       <SettingsRow
-        y={530}
+        y={527}
         pct={POPUP.buySettings.pct}
         gas={POPUP.buySettings.gas}
-        tip={POPUP.buySettings.tip}
-        right={{ text: POPUP.buySettings.adv, color: C.textMid }}
+        tip={{ val: POPUP.buySettings.tip, warn: frame >= BUY_TIP_WARN_F }}
+        right={{ text: POPUP.buySettings.adv, color: C.settingsGrey }}
       />
 
       {/* Sell row */}
@@ -312,14 +354,16 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
             {POPUP.sell}
           </T>
         </span>
-        <span style={{ position: "absolute", left: 34, top: 4 }}>
+        {/* mode label + swap FLOW together on the plates: ⇄ sits at x170
+            after "%" (f0500) but x182 after "SOL" (f1050) — r4 */}
+        <div style={{ position: "absolute", left: 31, top: 3, display: "flex", alignItems: "center", gap: 5 }}>
           <T size={11} weight={600} color={C.textMid}>
             {solMode ? POPUP.sellModeSol : POPUP.sellModePct}
           </T>
-        </span>
-        <svg width={12} height={12} viewBox="0 0 12 12" style={{ position: "absolute", left: 60, top: 3 }}>
-          <path d="M2 4h7M7 2l2 2-2 2M10 8H3M5 6 3 8l2 2" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
-        </svg>
+          <svg width={12} height={12} viewBox="0 0 12 12" style={{ display: "block" }}>
+            <path d="M2 4h7M7 2l2 2-2 2M10 8H3M5 6 3 8l2 2" fill="none" stroke="#8b8e97" strokeWidth="1.2" />
+          </svg>
+        </div>
         <span style={{ position: "absolute", right: 0, top: 3, whiteSpace: "nowrap" }}>
           <T size={12.5} weight={500} color={C.text}>
             {sellRow.tokens} {POPUP.pumpwheelShort}
@@ -350,7 +394,7 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
         y={665}
         pct={POPUP.sellSettings.pct}
         gas={POPUP.sellSettings.gas}
-        tip={POPUP.sellSettings.tip}
+        tip={{ val: POPUP.sellSettings.tip, warn: true }}
         right={{ text: POPUP.sellSettings.init, color: C.sellInit }}
       />
 
@@ -360,7 +404,7 @@ export const TokenPopup: React.FC<{ frame: number }> = ({ frame }) => {
         {[
           { x: 24, v: pos.bought, c: C.footTeal },
           { x: 94, v: pos.sold, c: C.footPink },
-          { x: 165, v: pos.holding, c: C.footWhite },
+          { x: 159, v: pos.holding, c: C.footWhite }, // r4: plate icon x272-284, was 6px right
           { x: 222, v: `${pos.pnl}(${pctK(pos.pnlPct)})`, c: C.footTeal },
         ].map((s, i) => (
           <span key={i} style={{ position: "absolute", left: s.x, top: 6, whiteSpace: "nowrap" }}>

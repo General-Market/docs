@@ -491,7 +491,10 @@ export const posStatsTable: Sample<PosStats>[] = T([
   [478, ps("10.54", "11.5", "456.6", "+457.6", 4342)],
   [483, ps("10.54", "11.5", "516.5", "+517.5", 4910)],
   [490, ps("10.54", "11.5", "600.3", "+601.3", 5705)],
-  [499, ps("10.54", "17.15", "533.5", "+540.1", 5124)],
+  // r4: the old [499] anchor (17.15/533.5/+540.1) contradicted plate 500 —
+  // popup AND rail both read 11.5/610.4/+611.3 (+5800%) there, and sold is
+  // monotonic (11.5@490 → 21.54@506), so 17.15-before-11.5 was a misread.
+  [500, ps("10.54", "11.5", "610.4", "+611.3", 5800)],
   [506, ps("10.54", "21.54", "481.5", "+492.5", 4672)],
   [511, ps("10.54", "24.68", "444.3", "+458.5", 4350)],
   [514, ps("10.54", "26.56", "422", "+438", 4156)],
@@ -1102,6 +1105,12 @@ export const sellRowTable: Sample<SellRow>[] = T([
 // and back to the identical % set at f1613.
 export const SELL_MODE_FLIP_F = 821;
 export const SELL_MODE_FLIP2_F = 1613;
+
+// Popup buy-settings tip cluster: grey "◎ 0.01" with NO warn triangle until
+// plate 578, then sand-gold WITH warn from 579 on (r4 probe sweep of the
+// warn slot x272,y526: bg #1F222B ≤578 → warm #353131 ≥579, still warm
+// at 1660/2000).
+export const BUY_TIP_WARN_F = 579;
 
 // ─── Bottom trades table first row (every 100f) ──────────────────────
 export type TradeRow = { age: string; type: "Buy" | "Sell"; mc: string; amount: string; sol: string };

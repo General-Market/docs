@@ -34,7 +34,12 @@ export const COLORS = {
   negDim: "#4A2338", //         red preset pill borders
   purple: "#5F58B0", //         active P3 / PRESET 3 / dock filter
   purpleText: "#6E64BB", //     Instant Trade chip text
-  depositBg: "#444294", //      Deposit pill (f0900 rgb 68,66,148)
+  // r4 purple unification — probed f0500/f0900/f1050 (see rounds/work/r4/popup/notes.md).
+  // Deposit fill re-measured on three plates (top #6A5FE0..#665EDC, bottom
+  // #5C52C5..#6258D1) → mid #655CD9; the old #444294 was far too dark. Text
+  // on the pill is DARK navy ink, not white (probemin f0500 #161652).
+  depositBg: "#655CD9", //      Deposit pill fill (f0500/f0900/f1050 mid)
+  depositInk: "#161652", //     Deposit label ink (f0500 darkest glyph core)
   chipBg: "#393B47", //         ticker item chips (f0500)
   searchBg: "#3D3F4C", //       nav search field
   solPillBg: "#34363F", //      nav SOL dropdown (re-probed f0500 p{1408,28})
@@ -65,27 +70,34 @@ export const COLORS = {
   tiTeal: "#74AFAA", //         token-info grid teal values (slightly brighter)
   tiPink: "#82576D", //         token-info grid pink values
   sand: "#B0A290", //           gas/tip icons + values + warn triangles (washed gold)
+  sandVal: "#A3958C", //        popup settings gas/tip VALUES (dimmer than the icons, r4 probe)
+  settingsGrey: "#747680", //   popup settings 50%/Off/pre-warn tip — dimmer than textMid (r4)
   railPreset: "#ACAFB6", //     rail preset cell numbers
-  // r3 popup probes
+  // r3 popup probes (r4: pill TEXT re-probed on the sharper f1050 — greener)
   popupPillBuyRing: "#37444A", //  buy pill ring (grey-teal, was #1E4D48)
   popupPillSellRing: "#3A2F3D", // sell pill ring (grey-mauve, was #4A2338)
-  popupPillBuyText: "#6E9C99",
-  popupPillSellText: "#83576E",
-  tabActiveText: "#6560A0", //  HODLER tab text is purple on the plates
-  tabActiveBg: "#222544", //    HODLER chip purple-navy bg
+  popupPillBuyText: "#70ADA7", //  f0500 #71B0A8 / f1050 #6FA9A5
+  popupPillSellText: "#96647F", // f0500 #925D77 / f1050 #9A6C87
+  // r4 mid-purple family — anchored on HODLER (cleanest 44px glyph run, f0500):
+  // text #645EA6, chip bg #29294D. P3 (#615C92/#262545), DRILLIFY (#6E69AC),
+  // rail PRESET 3 (#6E68A6/#28274A) all probe within JPEG noise of the anchor.
+  tabActiveText: "#645EA6", //  HODLER/DRILLIFY/P3/PRESET-3 purple text family
+  tabActiveBg: "#29294D", //    purple-navy chip bg family
   tabActiveBorder: "#2E3252",
   tabIdleText: "#818294",
-  sellInit: "#A86C88", //       "Sell Init." washed pink
+  sellInit: "#B27590", //       "Sell Init." pink (r4 core probe, was #A86C88)
   footTeal: "#7CB2B1", //       popup footer bought/pnl
   footPink: "#9B6885", //       popup footer sold
   footWhite: "#8B8F99", //      popup footer holding
   solChipBg: "#33353C", //      popup Buy-row SOL chip
   solChipText: "#D6D9E0",
   usdcBlue: "#5581B5", //       USDC disc blend (official #2775CA washed by JPEG)
-  // ≡ bars = Solana glyph, vertical teal→blue→purple gradient (r3)
-  barsTop: "#2C555F",
-  barsMid: "#46648A",
-  barsBot: "#666897",
+  // ≡ bars = Solana glyph, vertical teal→blue→purple gradient
+  // (r4 re-probe, popup footer icons rows y704/707/711 on f0500+f1050:
+  // top #51727E/#516F85, mid #3C5E74/#3F5A7E, bot #5E6E90/#5B6796)
+  barsTop: "#51707F",
+  barsMid: "#3E5D75",
+  barsBot: "#5C6B93",
   ohlcPos: "#3ED6C5",
   ohlcNeg: "#E85D86",
   onTeal: "#0B1418", //         text on solid teal buttons
@@ -251,8 +263,8 @@ export const MIGRATE = {
   fromF: 420,
   untilF: 438,
   devTokensCountFromF: 439, // "Dev Tokens" count appears with the live flip
-  snipeBg: "#6B5EEA", //       purple button bg (f0420 p{1700,447})
-  snipeText: "#23227A", //     purple button label ink (f0420 p{1770,435})
+  snipeBg: "#6B5EEA", //       purple button bg (f0420 p{1700,447}; r4 f0425 re-probe #6A5FE9 ✓)
+  snipeText: "#0D0D50", //     purple button label ink (r4 probemin f0425; #23227A was too light)
   snipeLabel: "Snipe PUMPWHEEL",
   message: [
     "This pair is currently migrating. This is",
@@ -263,8 +275,10 @@ export const MIGRATE = {
   reusedColor: "#A85F63", //           (f0420 only; absent from f0500 on)
 } as const;
 
-// PRESET 3 pill (probed f0420 p{1845,546})
-export const PRESET3_STYLE = { bg: "#403C6F", text: "#A6A0EE" } as const;
+// PRESET 3 pill — r4 re-probe f0500 (bg #29284A/#26263F, text core mid
+// #6A65A0): both sit inside the mid-purple family → unified onto it.
+// The old #403C6F/#A6A0EE were far brighter than the plate.
+export const PRESET3_STYLE = { bg: COLORS.tabActiveBg, text: COLORS.tabActiveText } as const;
 
 export const BOTTOM = {
   tabs: ["Trades", "Positions", "Orders", "Holders", "Top Traders", "Dev Tokens"],
