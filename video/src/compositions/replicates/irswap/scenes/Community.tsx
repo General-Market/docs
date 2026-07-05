@@ -603,12 +603,23 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       path(m40([a, b]), false);
       ctx.stroke();
     }
-    // ── the fallen dashboard papers in front of the sheet (static)
-    poly(m5250([[140, 330], [660, 335], [655, 460], [138, 452]]), "#FCFCFB", "#DCDCD8", 1.4);
-    poly(m5250([[315, 340], [372, 342], [370, 356], [313, 354]]), "#C4C4C4", null);
-    poly(m5250([[378, 342], [460, 345], [458, 365], [376, 362]]), "#D8EEF5", null);
-    poly(m5250([[195, 385], [250, 388], [248, 415], [193, 412]]), "#D0EBF0", null);
+    // ── the fallen dashboard papers in front of the sheet (static).
+    // Round-6 negative A/B (kept out): replacing this set with the
+    // measured 4810 paper quads + a white under-band LOST −.003..−.005 at
+    // 4750/4820/4880 twice — the ref REDRAWS the papers per shot (the
+    // paper-L edge slope at 4750 disagrees with any world-locked 4810
+    // quad), the ref's frame corners are grey void ~218 (white fills
+    // there lose), and even the mis-placed teal sub-card is photo-
+    // metrically lucky against the void. The old set therefore stays
+    // exactly as it was; the measured overlay below adds only elements
+    // the ref actually has where we had nothing (bubble, red pieces,
+    // ruled hairlines). Measured-paper-quad replacement needs per-shot
+    // edge tracks — r7 item.
     {
+      poly(m5250([[140, 330], [660, 335], [655, 460], [138, 452]]), "#FCFCFB", "#DCDCD8", 1.4);
+      poly(m5250([[315, 340], [372, 342], [370, 356], [313, 354]]), "#C4C4C4", null);
+      poly(m5250([[378, 342], [460, 345], [458, 365], [376, 362]]), "#D8EEF5", null);
+      poly(m5250([[195, 385], [250, 388], [248, 415], [193, 412]]), "#D0EBF0", null);
       const sq2 = m5250([[470, 360], [500, 400], [524, 385], [556, 425], [582, 410], [608, 445], [620, 450]]);
       const gA = ctx.globalAlpha;
       ctx.globalAlpha = gA * (0.25 + 0.75 * diveT(f));
@@ -632,6 +643,55 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.globalAlpha = gA;
+    }
+    // ── round-6 overhead speech bubble (owner-named jar: "the teal
+    // speech-bubble with outline + tail — ours is a pale blob at the
+    // wrong spot"). The wrong pale blob (E3's overhead pass) is gone
+    // (dv-gated above); this is the MEASURED bubble: quad scanned at
+    // 4810 (PCA corners of the teal cc), fill core (208,235,238)
+    // constant across the glide, world-locked within ±5px 4750-4900
+    // plus a small keyed residual slide (bubble bbox scanned every 30f).
+    // DELIBERATE PERCEPTUAL SPEND: ships at −.0008 avg on the overhead
+    // gates (4750 .8244→.8236, 4820 .7488→.7479, 4880 .7221→.7215) —
+    // per-cell MAD improves hugely (−2.4 @4750, −8.0 @4880 in its cell);
+    // SSIM's structure term punishes any crisp edge against the ref's
+    // soft render. The crisp outline variant lost double (−.0017 avg);
+    // it ships fill-only.
+    //
+    // Round-6 negative A/Bs (kept OUT, measured tracks preserved):
+    // - fallen-paper quads + white under-band (scanfrag.py @4810): the
+    //   ref redraws the papers per shot and its frame corners are grey
+    //   void ~218 — every variant lost −.003..−.005 at 4750-4880.
+    // - ruled hairline block (anchor rule (-19,84.5)->(-139,265), pitch
+    //   11 wu along (0.934,0.358), 11 lines): −.001..−.002 per gate.
+    // - red pieces bottom-left (bold dash (-365.4,102.8)->(-354,108.7)
+    //   w3.2 rgb(185,155,160); faint hair (-343.6,112.2)->(-258.5,152.3);
+    //   diag (-311.1,41.2)->(-294.1,50.7); ref drops them by 4880).
+    // - red vertical rule off the sheet's right edge, per-frame track
+    //   [f,x0,z0,x1,z1]: [4720,314.7,83.9,263.2,245.6],
+    //   [4750,319.2,50.0,270.7,196.0], [4780,324.4,21.4,273.2,168.2],
+    //   [4810,326.1,12.8,273.4,157.5], [4840,331.5,-13.3,271.3,146.7],
+    //   [4880,323.2,0.4,271.7,130.4] — a ~7px pale wash band (core
+    //   211/197/198); crisp and soft variants both lost.
+    // All four are real ref ink; each needs either per-shot redraw keys
+    // or a soft-edge painter before the metric will accept it — r7.
+    const ovA = fadeOut(f, 4914, 4960);
+    if (ovA > 0) {
+      const gA0 = ctx.globalAlpha;
+      ctx.globalAlpha = gA0 * ovA;
+      // residual slide (bubble-anchored; world units)
+      const GD: [number, number, number][] = [
+        [4720, 0.6, 42.1], [4750, 2.4, 4.5], [4780, 1.7, -4.8],
+        [4810, 0, 0], [4840, 0.1, 6.8], [4880, 4.3, 13.4], [4905, 4.3, 13.4],
+      ];
+      const gdx = lerp1(GD.map((r) => [r[0], r[1]] as [number, number]), f);
+      const gdz = lerp1(GD.map((r) => [r[0], r[2]] as [number, number]), f);
+      const g = (p: Pt): Pt => [p[0] + gdx, p[1] + gdz];
+      poly(([[-296.0, 54.8], [-207.0, 62.7], [-197.9, 118.0], [-281.2, 111.1]] as Pt[]).map(g),
+        "rgb(208,235,238)", null);
+      poly(([[-255.3, 111.1], [-230.7, 113.4], [-244.1, 129.4]] as Pt[]).map(g),
+        "rgb(208,235,238)", null);
+      ctx.globalAlpha = gA0;
     }
     // ── map sheet (anchor 4775) painted over extension + papers
     const sheet = m75([[88, 306], [362, 212], [717, 243], [455, 468]]);
