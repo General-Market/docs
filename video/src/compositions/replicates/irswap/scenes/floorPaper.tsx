@@ -95,6 +95,20 @@ export const slideDelta = (f: number): Pt => {
   return [(t[0] - TEAL_W[0]) * w, (t[2] - TEAL_W[1]) * w];
 };
 
+// ── measured band flatten (round 5) ─────────────────────────────
+// The reference redraws the sheet FLATTER through the slot dolly than
+// the rigid f4268 artwork can project (r3 accepted −.008/−.015 for the
+// slide; the shape residual is this): at 4650 the ref plot band is
+// ~0.6× our projected height and slightly wider (teal strips 29px vs
+// 41px tall, far edge y411 vs y389). An in-plane anisotropic scale
+// about the tracked teal-band anchor (the same point the slide pins)
+// closes the shape gap without disturbing the pinned position. Values
+// FLAT_SZ=0.38 fit by rendered-still SSIM grid search at 4350-4700 (see
+// .claude/rounds/work/r5/slot/). Identity until 4330 and ramped with
+// the slide weight — f4200/advDis byte-identical.
+const FLAT_SX = 1.0;
+const FLAT_SZ = 0.38;
+
 // canvas extent covering the sheet
 const PAPER_C: Pt = [-11, 480];
 const PAPER_W = 1000;
@@ -113,6 +127,14 @@ export const FloorPaper: React.FC<{ frame: number }> = ({ frame }) => {
     const mx = (p: Pt) => w / 2 + (p[0] - PAPER_C[0]);
     const my = (p: Pt) => h / 2 + (p[1] - PAPER_C[1]);
     const M = (u: number, v: number): Pt => S(u, v);
+    // band flatten about the pinned anchor (identity at fw=0)
+    const fw = clamp01((f - 4330) / 30);
+    const fsx = 1 + (FLAT_SX - 1) * fw;
+    const fsz = 1 + (FLAT_SZ - 1) * fw;
+    ctx.save();
+    ctx.translate(mx(TEAL_W), my(TEAL_W));
+    ctx.scale(fsx, fsz);
+    ctx.translate(-mx(TEAL_W), -my(TEAL_W));
     const path = (pts: Pt[], close: boolean) => {
       ctx.beginPath();
       ctx.moveTo(mx(pts[0]), my(pts[0]));
@@ -185,6 +207,7 @@ export const FloorPaper: React.FC<{ frame: number }> = ({ frame }) => {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
+    ctx.restore(); // band flatten
     ctx.globalAlpha = 1;
   }, []);
   const [dx, dz] = slideDelta(frame);
