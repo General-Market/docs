@@ -107,6 +107,17 @@ const Face: React.FC<{
 // Fills bleed to the exact canvas edges (no transparent margins — margins
 // read as white seams between adjoining faces); strokes are inset.
 const OUT_W = 2.5;
+// r7 ink weights, measured at f2505 against the reference (probe rows in
+// .claude/rounds/work/r7/bld/): the side walls render nearly edge-on, so
+// their 2.5u stroke minifies to NOTHING (ref bank left silhouette: 7px
+// dark band, core 140,115,118 — ours had zero dark pixels on the same
+// row) — they get a heavier stroke. Column outlines wash to pure fill
+// under mipmap minification (ref inter-column gap cores 120-160 grey,
+// ours 224 red) — wider, full-alpha. The wall-ground contact line reads
+// pale (ours 169 vs ref 116 at the lender base) — explicit base line.
+const SIDE_W = 4.0;
+const COL_W = 2.2;
+const BASE_W = 3.6;
 
 type ClassicDecor = typeof B3D_DECOR.lender | typeof B3D_DECOR.bank;
 
@@ -156,7 +167,7 @@ const drawClassicFront = (def: Building3DDef, decor: ClassicDecor): DrawFn => (c
     ctx.fillStyle = cd.fill;
     ctx.fill();
     ctx.strokeStyle = decor.outline;
-    ctx.lineWidth = 1.3;
+    ctx.lineWidth = COL_W;
     ctx.stroke();
   }
   // outline + architrave
@@ -169,6 +180,12 @@ const drawClassicFront = (def: Building3DDef, decor: ClassicDecor): DrawFn => (c
   ctx.moveTo(1.2, eave);
   ctx.lineTo(w - 1.2, eave);
   ctx.stroke();
+  // ground-contact line (ref draws a solid dark base under every wall)
+  ctx.beginPath();
+  ctx.moveTo(1.2, h - BASE_W / 2);
+  ctx.lineTo(w - 1.2, h - BASE_W / 2);
+  ctx.lineWidth = BASE_W;
+  ctx.stroke();
 };
 
 const drawPentaPlain = (def: Building3DDef, fill: string, outline: string): DrawFn => (ctx, w, h) => {
@@ -179,6 +196,11 @@ const drawPentaPlain = (def: Building3DDef, fill: string, outline: string): Draw
   ctx.strokeStyle = outline;
   ctx.lineWidth = OUT_W;
   ctx.lineJoin = "round";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(1.2, h - BASE_W / 2);
+  ctx.lineTo(w - 1.2, h - BASE_W / 2);
+  ctx.lineWidth = BASE_W;
   ctx.stroke();
 };
 
@@ -201,16 +223,26 @@ const drawHouseFront = (def: Building3DDef, decor: typeof B3D_DECOR.company): Dr
   ctx.fillStyle = d.fill;
   ctx.fill();
   ctx.strokeStyle = decor.outline;
-  ctx.lineWidth = 1.6;
+  ctx.lineWidth = COL_W;
   ctx.stroke();
   pentaPath(ctx, w, h, Hw, 1.2);
   ctx.strokeStyle = decor.outline;
   ctx.lineWidth = OUT_W;
   ctx.lineJoin = "round";
   ctx.stroke();
+  // ground-contact line (outside the door span — the ref door sits open
+  // to the ground; a dark bar across the doorway reads as a threshold
+  // the ref does not draw)
+  ctx.beginPath();
+  ctx.moveTo(1.2, h - BASE_W / 2);
+  ctx.lineTo(d.u0 * w, h - BASE_W / 2);
+  ctx.moveTo(d.u1 * w, h - BASE_W / 2);
+  ctx.lineTo(w - 1.2, h - BASE_W / 2);
+  ctx.lineWidth = BASE_W;
+  ctx.stroke();
 };
 
-const drawRect = (fill: string, outline: string, bandW = 0, bandFill = ""): DrawFn => (ctx, w, h) => {
+const drawRect = (fill: string, outline: string, bandW = 0, bandFill = "", lw = OUT_W): DrawFn => (ctx, w, h) => {
   ctx.fillStyle = fill;
   ctx.fillRect(0, 0, w, h);
   if (bandW > 0) {
@@ -218,8 +250,8 @@ const drawRect = (fill: string, outline: string, bandW = 0, bandFill = ""): Draw
     ctx.fillRect(0, 0, bandW, h);
   }
   ctx.strokeStyle = outline;
-  ctx.lineWidth = OUT_W;
-  ctx.strokeRect(OUT_W / 2, OUT_W / 2, w - OUT_W, h - OUT_W);
+  ctx.lineWidth = lw;
+  ctx.strokeRect(lw / 2, lw / 2, w - lw, h - lw);
 };
 
 // ── one building ─────────────────────────────────────────────────
@@ -247,12 +279,14 @@ export const Building3D: React.FC<{
       key: "back", w: Wf, h: Ha, draw: drawPentaPlain(def, fill, outline),
       position: [0, Ha / 2, sdSign * L],
     });
-    // side walls: canvas x = distance from the front wall
+    // side walls: canvas x = distance from the front wall. SIDE_W stroke:
+    // these faces render near edge-on, where the standard stroke minifies
+    // away and the building loses its dark silhouette edge (r7, measured).
     const band = name === "bank" ? B3D_DECOR.bank.cornerBand : null;
     for (const side of [-1, 1] as const) {
       out.push({
         key: `side${side}`, w: L, h: Hw,
-        draw: drawRect(fill, outline, band ? band.w : 0, band ? band.fill : ""),
+        draw: drawRect(fill, outline, band ? band.w : 0, band ? band.fill : "", SIDE_W),
         position: [side * (Wf / 2), Hw / 2, sdSign * (L / 2)],
         rotation: [0, -sdSign * (Math.PI / 2) * side, 0],
       });
@@ -292,7 +326,7 @@ export const Building3D: React.FC<{
       const zF = sdSign * ch.dFr;
       const zB = sdSign * (ch.dFr + ch.w);
       const zc = (zF + zB) / 2;
-      const chDraw = drawRect(fill, outline);
+      const chDraw = drawRect(fill, outline, 0, "", 3.2);
       const chf: FaceSpec[] = [
         { key: "chF", w: ch.w, h: hCh, draw: chDraw, position: [xc, yc, zF] },
         { key: "chB", w: ch.w, h: hCh, draw: chDraw, position: [xc, yc, zB] },
