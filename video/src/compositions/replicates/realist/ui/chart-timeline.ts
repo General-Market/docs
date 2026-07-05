@@ -145,6 +145,9 @@ export const OHLC_TIMELINE: [number, ChartOhlc][] = [
   [1563, { o: "171K", h: "167K", l: "166K", c: "166K", d: "-4.38K", dp: "-2.56%", up: false }],
   [1567, { o: "171K", h: "167K", l: "150K", c: "161K", d: "-10.2K", dp: "-5.97%", up: false }],
   [1572, { o: "171K", h: "167K", l: "150K", c: "160K", d: "-11K", dp: "-6.44%", up: false }],
+  // r4: plates flip red->green between f1577 and f1579 (zoom-crops);
+  // H forced 180K by C178K > prior H167K; dp = 7.39/170.61.
+  [1578, { o: "171K", h: "180K", l: "134K", c: "178K", d: "7.39K", dp: "+4.33%", up: true }],
   [1589, { o: "171K", h: "210K", l: "134K", c: "209K", d: "37.8K", dp: "+22.11%", up: true }],
   [1646, { o: "0", h: "0", l: "0", c: "0", d: "0", dp: "0%", up: true, z: true }],
 ];
