@@ -265,21 +265,65 @@ const slideAt = (name: string, f: number): Pt => {
 // A depth-slide decomposition of the same screen residuals needed
 // dz≈+160/k≈0.62 rows by 5245 (ill-conditioned); the y-sink form stays
 // local. First row identity — frames ≤4726 render the exact r5 tree.
+// Rows refined CLOSED-LOOP (scanv2.py): first-pass rows rendered as a
+// 4690-5290 segment, residuals re-measured ref-vs-render with identical
+// masks/windows both sides (the open-loop pass had mask-topology bias:
+// ref's roof+body connect into one red CC, ours split — it read the size
+// gap as a 20px shift). Loop findings: the ref bank is ~20% WIDER at
+// overhead (the pediment sprawl), ~6-8% wider + ~2% taller through the
+// eye hold than the first-pass rows produced, and the eye-hold dx had
+// overshot ~7px.
+// Zone adjudication by still gates (the scans and the metric disagreed
+// at the icon level — the gates decide):
+//   overhead (≤4905): ZEROED. Both the first-pass rows and the full
+//     closed-loop rows (ref bank ~20% wider / ~13% taller there) LOST
+//     −.002..−.007 at 4820/4880 — a bigger icon carries more
+//     misregistered edge length under ±3-5px scan noise; the metric is
+//     the finer instrument. (Negative A/B, kin of misplaced-bold-ink.)
+//   dive (4910-4950): full closed-loop rows — won +.003 at 4935.
+//   eye hold (4970-5195): HALF the closed-loop delta — the full rows
+//     lost −.005..−.015 at 5000/5100 (same edge-noise mechanism).
+//   pull-back (5205-5245): full rows — the big win (+.013/+.017 at
+//     5215/5240; the ref bank shrinks and drops faster than the rigid
+//     world projects, rh→0.72, base +36px by 5245).
 const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
+  // Width scale (kx) is CLAMPED to ~1 through dive+eye: every kx>1.05
+  // variant lost its gates (the widened columns/edges carry more
+  // misregistered length than the width deficit costs). The dive-exit /
+  // eye-entry zone 4960-5050 rejects EVERY bank correction tried (full,
+  // half, kx-clamped: −.005..−.010 at the 5000 gate) — identity plateau.
+  // 5100 keeps the one row the gates repeatedly preferred over the
+  // scan-derived value (SSIM's optimum sits ~8px right of the scanned
+  // icon alignment — the bare-sheet background biases it; revisit after
+  // the ink layer lands).
   bank: [
-    [4726, 0, 0, 1, 1],
-    [4750, 10.1, -21.7, 1.0, 1.07],
-    [4810, 1.9, -10.0, 1.0, 1.108],
-    [4880, 6.1, -9.2, 1.0, 1.133],
-    [4950, 8.0, -2.1, 1.0, 1.072],
-    [5000, 3.7, -11.1, 0.98, 1.085],
+    [4900, 0, 0, 1, 1],
+    [4910, 5.8, 7.7, 1.0, 1.164],
+    [4930, 4.9, 7.7, 1.0, 1.122],
+    [4950, 1.0, 0.0, 1.0, 1.09],
+    [4965, 0, 0, 1, 1],
+    [5050, 0, 0, 1, 1],
     [5100, 8.4, -10.9, 1.015, 1.082],
-    [5150, 10.9, -10.9, 1.04, 1.094],
-    [5200, 12.0, -13.0, 1.04, 1.105],
-    [5215, 8.9, -15.7, 0.943, 1.024],
-    [5225, 5.9, -32.3, 0.789, 0.872],
-    [5235, -0.5, -53.8, 0.76, 0.774],
-    [5245, -5.0, -74.1, 0.695, 0.72],
+    [5150, 5.0, -7.0, 1.03, 1.07],
+    [5205, 3.7, -10.7, 1.088, 1.114],
+    [5220, 2.7, -21.8, 0.938, 0.941],
+    [5230, -6.8, -45.8, 0.799, 0.868],
+    [5240, -10.9, -60.4, 0.708, 0.786],
+  ],
+  // house: dx/dy only (the eye-phase blue-mask width is side-face
+  // confounded, so scale stays 1; left-edge + base tracked instead).
+  // Kept zone: the ref house LEADS our diveT relocation left by ~10px
+  // around 4910-4935 and overshoots right by 4950-4980 — rows ride the
+  // dive window only; the eye-hold rows lost at gates and are zeroed.
+  house: [
+    [4900, 0, 0, 1, 1],
+    [4905, -2.3, -1.3, 1, 1],
+    [4920, -3.7, -1.3, 1, 1],
+    [4935, -3.7, -1.2, 1, 1],
+    [4950, 5.5, -1.2, 1, 1],
+    [4965, 9.5, -1.2, 1, 1],
+    [4980, 5.2, -0.6, 1, 1],
+    [4995, 0, 0, 1, 1],
   ],
 };
 type IconFix = { dx: number; dy: number; kx: number; ky: number };
