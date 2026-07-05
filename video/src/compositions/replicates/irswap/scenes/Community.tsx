@@ -232,9 +232,11 @@ const WB: Record<string, CommB> = {
 // residuals of the joint fits, converted to floor-plane world deltas at
 // each key frame, interpolated, and released through the dive blend.
 const OVSLIDE: Record<string, [number, number, number][]> = {
-  // [f, dx, dz] world units (residuals of the lean-refit joint fits)
-  bank: [[4715, -6.0, -9.1], [4775, -6.0, -9.1], [4820, -2.7, -0.2], [4880, 6.6, 6.0], [4905, 6.6, 6.0]],
-  house: [[4715, -6.6, -7.3], [4775, -6.6, -7.3], [4820, 1.9, -0.6], [4880, 3.3, 6.3], [4905, 3.3, 6.3]],
+  // [f, dx, dz] world units (residuals of the lean-refit joint fits;
+  // 4950 keys measured mid-dive against the ref components; the release
+  // to zero lives IN the table — by 4990 the eye poses stand alone)
+  bank: [[4715, -6.0, -9.1], [4775, -6.0, -9.1], [4820, -2.7, -0.2], [4880, 6.6, 6.0], [4905, 6.6, 6.0], [4950, 7.0, 11.0], [4990, 0, 0]],
+  house: [[4715, -6.6, -7.3], [4775, -6.6, -7.3], [4820, 1.9, -0.6], [4880, 3.3, 6.3], [4905, 3.3, 6.3], [4950, 10.4, -8.8], [4990, 0, 0]],
 };
 const slideAt = (name: string, f: number): Pt => {
   const rows = OVSLIDE[name];
@@ -247,10 +249,9 @@ const wbAt = (b: CommB, f: number, name?: string) => {
   const t = diveT(f);
   const ke = b.eye.k ?? 1;
   const [sx, sz] = name ? slideAt(name, f) : [0, 0];
-  const rel = 1 - t;
   return {
-    x: mixN(b.over.x, b.eye.x, t) + sx * rel,
-    z: mixN(b.over.z, b.eye.z, t) + sz * rel,
+    x: mixN(b.over.x, b.eye.x, t) + sx,
+    z: mixN(b.over.z, b.eye.z, t) + sz,
     kx: mixN(b.over.kx, ke, t),
     ky: mixN(b.over.ky, ke, t),
   };
@@ -419,6 +420,11 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.lineTo(mx(b), my(b));
       ctx.stroke();
     }
+    // NOTE (r4 A/B): bolding these toward the ref's measured street marks
+    // (dash 16.2/8.7, w2.9, #BDBDBD) LOST SSIM at 5100/5150 (−.006) — our
+    // dashed rules sit at the sheet-grid positions, not the ref's street
+    // positions; misplaced bold ink loses to pale ink. A future pass must
+    // MOVE the lines (measured street tracks), not just bold them.
     ctx.setLineDash([6, 6]);
     for (let i = 1; i <= 3; i++) {
       const t = i / 4;
