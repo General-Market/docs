@@ -703,10 +703,10 @@ const ExecutingToast: React.FC<{ y: number; opacity: number; spinPhase: number }
   <div
     style={{
       position: "absolute",
-      left: 1630,
+      left: 1631,
       top: y,
-      width: 283,
-      height: 68,
+      width: 285,
+      height: 74,
       background: C.toastBg,
       border: `1px solid ${C.toastBorder}`,
       borderRadius: 10,
@@ -724,15 +724,15 @@ const ExecutingToast: React.FC<{ y: number; opacity: number; spinPhase: number }
       <circle cx="8" cy="8" r="6" fill="none" stroke="#3A3D6E" strokeWidth={2} />
       <path d="M8 2 A6 6 0 0 1 14 8" fill="none" stroke="#7C78C9" strokeWidth={2} strokeLinecap="round" />
     </svg>
-    <div style={{ position: "absolute", left: 31, top: 11 }}>
-      <T size={13} color={C.name} weight={600}>
+    <div style={{ position: "absolute", left: 31, top: 9 }}>
+      <T size={12} color="#BFC2CC" weight={600}>
         {TOAST.title}
       </T>
     </div>
-    <div style={{ position: "absolute", right: 10, top: 11 }}>
+    <div style={{ position: "absolute", right: 10, top: 15 }}>
       <Glyph kind="close" size={12} color={C.icon} />
     </div>
-    <Row gap={5} style={{ position: "absolute", left: 31, top: 31 }}>
+    <Row gap={5} style={{ position: "absolute", left: 31, top: 32 }}>
       <T size={12} color="#9EA1AB" weight={500}>
         {TOAST.buyPrefix}
       </T>
@@ -747,7 +747,7 @@ const ExecutingToast: React.FC<{ y: number; opacity: number; spinPhase: number }
         {TOAST.buySuffix}
       </T>
     </Row>
-    <Row gap={12} style={{ position: "absolute", left: 31, top: 49 }}>
+    <Row gap={12} style={{ position: "absolute", left: 31, top: 56 }}>
       {TOAST.counts.map((c, i) => (
         <Row key={i} gap={4}>
           <T size={11} color="#9EA1AB" weight={500}>
@@ -989,9 +989,12 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
         <Column x={1289} w={624} headerIndex={2} cards={MIGRATED_CARDS} geom={MIG_GEOM} frame={frame} />
       </div>
 
-      {/* toasts are screen-fixed overlays (not affected by the editor zoom) */}
-      {toast1 > 0 ? <ExecutingToast y={13} opacity={toast1} spinPhase={(frame * 14) % 360} /> : null}
-      {toast2 > 0 ? <ExecutingToast y={94} opacity={toast2} spinPhase={(frame * 14 + 120) % 360} /> : null}
+      </AbsoluteFill>
+      {/* toasts are screen-fixed overlays; the plate renders them crisp, so they
+          sit outside the page blur with only a light softening of their own */}
+      <AbsoluteFill style={{ filter: "blur(0.7px)" }}>
+        {toast1 > 0 ? <ExecutingToast y={12} opacity={toast1} spinPhase={(frame * 14) % 360} /> : null}
+        {toast2 > 0 ? <ExecutingToast y={95} opacity={toast2} spinPhase={(frame * 14 + 120) % 360} /> : null}
       </AbsoluteFill>
     </AbsoluteFill>
   );
