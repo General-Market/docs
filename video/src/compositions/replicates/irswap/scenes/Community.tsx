@@ -1842,7 +1842,16 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
 
   // hero entries/exits measured on the reference: house fades in from
   // ~4694, bank ~4705; on the way out the house is gone by ~5275 and the
-  // bank alone survives to ~5279
+  // bank alone survives to ~5279.
+  // r8 NEGATIVE A/B (dissolve correspondence, work/r8/comm/): the ref
+  // actually holds BOTH heroes FULL to ~5271-5272 (blue 1706 px @5272 =
+  // the 5268 mass; loose-red 1428) and kills them FAST by 5276-5277 —
+  // but retiming to the measured windows (house 5271-5276, bank
+  // 5271-5277) LOST −.0006/−.0009 at 5270/5273: ICON_FIX rows end at
+  // 5260 and clamp, so the longer-held heroes are STALE-POSED ink, and
+  // misplaced loses to absent from this side too. Retiming is blocked
+  // on fresh ICON_FIX rows 5260-5276 (blue-mask fitting there needs a
+  // hue window that excludes the teal cards — plain b−r masks pollute).
   const houseDrop = (1 - easeOutPow(fade(frame, 4694, 4708), 2)) * 40;
   const houseOp = fade(frame, 4694, 4708) * fadeOut(frame, 5266, 5275);
   const bankDrop = (1 - easeOutPow(fade(frame, 4705, 4715), 2)) * 36;
