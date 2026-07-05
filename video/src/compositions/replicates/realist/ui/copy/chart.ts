@@ -31,6 +31,11 @@ export const CHART_COLORS = {
   curChipRed: "#e34056", // plate probe (227,64,86)
   crossDash: "#4a5260", // crosshair dash (39,46,54)+
   crossLabel: "#e6ebf2", // bold white price label at crosshair y
+  // r5: active toolbar toggles ("1s", "MarketCap") are PURPLE on every plate,
+  // not teal — peak ink probe f0500 x718-778 y157-172 = (129,128,188) #8180BC
+  // (f0900 #7A75AD, f1280 #7875A2 are the same ink JPEG-dimmed; "1s" 11px
+  // peaks #6F6C99-#76709C, small-text antialiasing never reaches full ink).
+  toolbarActive: "#8180BC",
 } as const;
 
 // Price-scale eras — re-measured r3 from label-row signatures + eye reads

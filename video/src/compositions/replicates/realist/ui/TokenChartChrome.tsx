@@ -1,6 +1,7 @@
 import React from "react";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { COLORS as C, CHART_TOOLBAR, OHLC, CHART_FOOT } from "./copy/token";
+import { CHART_COLORS } from "./copy/chart";
 import { clockAt } from "./timeline-token";
 import { ohlcAt } from "./chart-timeline";
 
@@ -76,7 +77,7 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", left: 0, top: 157, width: 1610, height: 20 }}>
         {CHART_TOOLBAR.timeframes.map((tf, i) => (
           <span key={tf} style={{ position: "absolute", left: [7, 28, 53, 81, 111][i], top: 4 }}>
-            <T size={11} weight={600} color={i === 0 ? C.tealText : C.textMid}>
+            <T size={11} weight={600} color={i === 0 ? CHART_COLORS.toolbarActive : C.textMid}>
               {tf}
             </T>
           </span>
@@ -133,7 +134,7 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
         </span>
         <span style={{ position: "absolute", left: 718, top: 3 }}>
-          <T size={12.5} weight={600} color={C.tealText}>
+          <T size={12.5} weight={600} color={CHART_COLORS.toolbarActive}>
             {CHART_TOOLBAR.mcPrice.active}
           </T>
           <T size={12.5} color={C.textDim}>
