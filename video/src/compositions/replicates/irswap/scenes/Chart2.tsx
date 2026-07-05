@@ -433,6 +433,14 @@ const regionPoly = (sA: number, sB: number): Pt[] => {
 const REGION1 = regionPoly(CURVE[0][0], S_CROSS);
 const REGION2 = regionPoly(S_CROSS, CURVE[CURVE.length - 1][0]);
 
+// hatch lattices (round-5 measured, canvas coords: x = s − S0, y = Y_TOP − y).
+// deg = stripe NORMAL angle from +x toward +y(down); stripes rise to the
+// right at (deg − 90°) ≈ 40-44° screen-ish. pitch in wall units. ref/off:
+// a light-stripe center passes `off` units along the normal from `ref`
+// (the rectified measurement patch centroid — region-fixed).
+const HATCH1 = { deg: 46.1, pitch: 4.06, ref: [161.054, 172.714] as Pt, off: -1.262, lw: 1.35 };
+const HATCH2 = { deg: 50.2, pitch: 4.535, ref: [378.555, 126.157] as Pt, off: -0.986, lw: 1.5 };
+
 const C = {
   gridA: "#EDEDED",
   gridB: "#F6F6F6",
@@ -440,8 +448,11 @@ const C = {
   curve: "#C62E2F",
   dash: "#76D1BE",
   guide: "#E0E0E0",
-  hatchFill: "#D7E6E6",
-  hatchLine: "#ADBCBC",
+  // hatch inks re-measured round 5 (rectified ref cores, f4050/f3850):
+  // the ref draws WIDE dark bands with NARROW light stripes — the old
+  // light-fill + thin dark line had the duty cycle inverted.
+  hatchBand: "#AEBEBE", // dark band (fill)
+  hatchLight: "#CCDCDC", // light stripe
   badge: "#48B0C9",
   badgeBorder: "#3C7A8E",
   lblFix: "#777777",
@@ -611,8 +622,20 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
     // gridlines/bars now live on the back parallax plane (GridWall) —
     // pushed behind the diagram so they register at f3700 and lag under
     // the camera move at depth ratio ~0.27.
-    // hatched regions (region1 sweep 3806-3820; region2 3994-4006)
-    const sweep = (polyPts: Pt[], sA: number, sB: number, t: number) => {
+    // hatched regions (region1 sweep 3806-3820; region2 3994-4006).
+    // Round-5 refit: the lattice was measured per region by rectifying the
+    // reference frames into wall-canvas space through the exact solved
+    // camera (work/r5/c2/rectify.py). The ref hatch is dark bands with
+    // narrow light stripes (light duty ~1/3) — NOT thin dark lines on a
+    // light fill — and each region carries its own angle/pitch/phase
+    // (the hand-drawn ref redraws the two regions independently). Phase
+    // is anchored to a region-fixed canvas point (the measured patch
+    // centroid): a light-stripe center passes `off` canvas units along
+    // the normal from `ref`.
+    const sweep = (
+      polyPts: Pt[], sA: number, sB: number, t: number,
+      hs: { deg: number; pitch: number; ref: Pt; off: number; lw: number },
+    ) => {
       if (t <= 0) return;
       ctx.save();
       const sEnd = sA + (sB - sA) * t;
@@ -621,26 +644,31 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.clip();
       poly(polyPts);
       ctx.closePath();
-      ctx.fillStyle = C.hatchFill;
+      ctx.fillStyle = C.hatchBand;
       ctx.fill();
-      // diagonal hatch
+      // light stripes over the dark band fill
       ctx.save();
       poly(polyPts);
       ctx.closePath();
       ctx.clip();
-      ctx.strokeStyle = C.hatchLine;
-      ctx.lineWidth = 1.1;
-      for (let x = -h; x < w + h; x += 5) {
+      ctx.strokeStyle = C.hatchLight;
+      ctx.lineWidth = hs.lw;
+      const a = (hs.deg * Math.PI) / 180;
+      const nx = Math.cos(a);
+      const ny = Math.sin(a);
+      const qRef = hs.ref[0] * nx + hs.ref[1] * ny + hs.off;
+      for (let k = -220; k <= 220; k++) {
+        const q = qRef + k * hs.pitch;
         ctx.beginPath();
-        ctx.moveTo(x, h);
-        ctx.lineTo(x + h, 0);
+        ctx.moveTo(nx * q + ny * 700, ny * q - nx * 700);
+        ctx.lineTo(nx * q - ny * 700, ny * q + nx * 700);
         ctx.stroke();
       }
       ctx.restore();
       ctx.restore();
     };
-    sweep(REGION1, CURVE[0][0], S_CROSS, easeInOutCubic(fade(f, 3806, 3820)));
-    sweep(REGION2, S_CROSS, CURVE[CURVE.length - 1][0], easeInOutCubic(fade(f, 3994, 4006)));
+    sweep(REGION1, CURVE[0][0], S_CROSS, easeInOutCubic(fade(f, 3806, 3820)), HATCH1);
+    sweep(REGION2, S_CROSS, CURVE[CURVE.length - 1][0], easeInOutCubic(fade(f, 3994, 4006)), HATCH2);
     // faint horizontal dashed guide
     if (f >= 3610) {
       ctx.strokeStyle = C.guide;
