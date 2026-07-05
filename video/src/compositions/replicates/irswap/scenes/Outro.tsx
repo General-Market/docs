@@ -2,7 +2,7 @@
 // dashboard book lies open on the floor; its LEFT page flips up about the
 // book fold — dashboard artwork face up while rising (5285-5300), the
 // teal credits board on its back revealed past vertical (~5303) — and
-// settles facing the camera at 5318, static to the end.
+// settles facing the camera at 5316 (r8 measured), static to the end.
 // 3D: real page flip about a floor hinge (world x axis at the fold); the
 // camera starts high, pitched and yawed, and eases to the frontal pose.
 // End pose: board plane z=0, camera [0,100,DCAM] → screen x132-726 exact.
