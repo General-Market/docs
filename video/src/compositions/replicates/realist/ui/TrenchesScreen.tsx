@@ -938,42 +938,45 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
           </Row>
         </div>
 
-        {/* ------------------------------------------------ heading */}
-        <div style={{ position: "absolute", left: 12, top: 96 }}>
+        {/* ------------------------------------------------ heading
+            (plate f0300 ink: title rows 106-119 cols 11-126, bare sol bars
+            144-152 @111-117, cube ~154-172 @104-118, tiny beta pill ~156-174
+            @117-126 — no chip bg around the bars) */}
+        <div style={{ position: "absolute", left: 12, top: 103 }}>
           <Row gap={13}>
             <T size={18} color="#E7E9EE" weight={600}>
               {HEADING.title}
             </T>
-            <div style={{ background: "#171A22", borderRadius: 5, padding: "3px 5px" }}>
-              <SolanaBars size={11} />
-            </div>
-            <div style={{ position: "relative" }}>
-              <svg width={17} height={17} viewBox="0 0 16 16">
-                <path
-                  d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z M2 5 L8 8.5 L14 5 M8 8.5 L8 14.5"
-                  fill="none"
-                  stroke="#8A8D99"
-                  strokeWidth={1.1}
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div
-                style={{
-                  position: "absolute",
-                  left: 10,
-                  top: 11,
-                  background: "#22252E",
-                  border: "1px solid #2C2F3A",
-                  borderRadius: 7,
-                  padding: "1px 6px",
-                }}
-              >
-                <T size={8} color="#9EA1AB" weight={600}>
-                  {HEADING.beta}
-                </T>
-              </div>
-            </div>
           </Row>
+        </div>
+        <div style={{ position: "absolute", left: 143, top: 107 }}>
+          <SolanaBars size={11} />
+        </div>
+        <svg width={17} height={17} viewBox="0 0 16 16" style={{ position: "absolute", left: 154, top: 102 }}>
+          <path
+            d="M8 1.5 L14 5 L14 11 L8 14.5 L2 11 L2 5 Z M2 5 L8 8.5 L14 5 M8 8.5 L8 14.5"
+            fill="none"
+            stroke="#8A8D99"
+            strokeWidth={1.1}
+            strokeLinejoin="round"
+          />
+        </svg>
+        <div
+          style={{
+            position: "absolute",
+            left: 156,
+            top: 116,
+            background: "#22252E",
+            border: "1px solid #2C2F3A",
+            borderRadius: 5,
+            padding: "1px 3px",
+            fontSize: 7,
+            lineHeight: 1,
+            color: "#9EA1AB",
+            fontWeight: 600,
+          }}
+        >
+          {HEADING.beta}
         </div>
         {/* right controls */}
         <Row gap={12} style={{ position: "absolute", left: 1712, top: 102 }}>
