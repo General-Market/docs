@@ -498,9 +498,17 @@ const SELLS_BLOOM: SellsBloomMap = process.env.REMOTION_GLOW_SWEEP
       // baseline — (30,.7) is the mass-converged winner (A620 sat 27.3k
       // vs plate 27.6k, mid 15.2k vs 15.3k), all cells >= baseline at
       // A480/620/715, B1045/1180, F1605/1620, guards f900/1268/1513 up.
-      A: { red: { blur: 30, opacity: 0.7 }, blue: null },
+      // blue sweep (f480 over landed red, crop/cells): 30px at .5/.7/.9
+      // lifts crop but sinks r3c3/r3c4 (paren spill) and overshoots the
+      // lum-60-100 band; WIDER+DIMMER wins the cells — (45,.4) r3c3
+      // +0.0045/r3c4 +0.0046, (45,.3) matches it with better full-frame
+      // at 480/620/715 and mass nearer plate. F's paren deficit is
+      // deeper (blue_mid 46.8k vs 13.1k at f1620) → (45,.5), which
+      // CONVERGES dim60_100 (40.7k vs plate 42.3k); (45,.7) overshoots
+      // (51.9k) and drops both r3 cells. B events carry no paren.
+      A: { red: { blur: 30, opacity: 0.7 }, blue: { blur: 45, opacity: 0.3 } },
       B: { red: { blur: 30, opacity: 0.7 }, blue: null },
-      F: { red: { blur: 30, opacity: 0.7 }, blue: null },
+      F: { red: { blur: 30, opacity: 0.7 }, blue: { blur: 45, opacity: 0.5 } },
     };
 
 const FittedLine: React.FC<{
