@@ -477,9 +477,10 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           />
         );
       })}
-      {/* session High/Low chips + ticking last-price chip */}
-      {chip(`High ${fmtCompact(st.sessionHigh)}`, highChipY, C.highChipBg)}
-      {chip(`Low ${fmtCompact(st.sessionLow)}`, lowChipY, C.lowChipBg)}
+      {/* session High/Low chips + ticking last-price chip (hidden until a
+          dataset has printed data or carries pre-history seeds) */}
+      {Number.isFinite(st.sessionHigh) && chip(`High ${fmtCompact(st.sessionHigh)}`, highChipY, C.highChipBg)}
+      {Number.isFinite(st.sessionLow) && chip(`Low ${fmtCompact(st.sessionLow)}`, lowChipY, C.lowChipBg)}
       {lastBar &&
         chip(
           fmtCompact(lastBar.close),

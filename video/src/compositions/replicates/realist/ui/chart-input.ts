@@ -523,10 +523,90 @@ const DATASET_PUMPWHEEL: ChartDataset = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// SECOND DATASET — "randomwalk" (input-flexibility demo, r5 gate b)
+// A different price regime entirely: BTC-flavored ~45,000, 48 one-
+// minute bars with volume, chunkier 14px spacing, side-only markers,
+// no ticks (seeded wander), no strategy lines, no pre-history seeds.
+// Generated offline: .claude/rounds/work/r5/chartlive/gen-randomwalk.ts.
+// Rendering it requires flipping ACTIVE_DATASET only — zero code.
+// ═══════════════════════════════════════════════════════════════════
+const DATASET_RANDOMWALK: ChartDataset = {
+  id: "randomwalk",
+  bars: [
+    { open: 45000, high: 45135, low: 44834, close: 45032, volume: 266 },
+    { open: 45032, high: 45071, low: 44947, close: 44986, volume: 209 },
+    { open: 44986, high: 45225, low: 44898, close: 45050, volume: 75 },
+    { open: 45050, high: 45096, low: 44877, close: 44945, volume: 254 },
+    { open: 44945, high: 44998, low: 44772, close: 44973, volume: 219 },
+    { open: 44973, high: 45124, low: 44902, close: 45060, volume: 368 },
+    { open: 45060, high: 45119, low: 44716, close: 44828, volume: 288 },
+    { open: 44828, high: 44883, low: 44710, close: 44796, volume: 172 },
+    { open: 44796, high: 44911, low: 44660, close: 44709, volume: 239 },
+    { open: 44709, high: 44824, low: 44535, close: 44670, volume: 79 },
+    { open: 44670, high: 44745, low: 44597, close: 44675, volume: 174 },
+    { open: 44675, high: 44727, low: 44462, close: 44562, volume: 109 },
+    { open: 44562, high: 44583, low: 44264, close: 44350, volume: 239 },
+    { open: 44350, high: 44468, low: 44150, close: 44259, volume: 415 },
+    { open: 44259, high: 44392, low: 43815, close: 43897, volume: 263 },
+    { open: 43897, high: 43939, low: 43524, close: 43683, volume: 242 },
+    { open: 43683, high: 43874, low: 43336, close: 43384, volume: 446 },
+    { open: 43384, high: 43430, low: 43067, close: 43116, volume: 65 },
+    { open: 43116, high: 43193, low: 42853, close: 42918, volume: 434 },
+    { open: 42918, high: 43039, low: 42744, close: 42778, volume: 195 },
+    { open: 42778, high: 42884, low: 42430, close: 42605, volume: 163 },
+    { open: 42605, high: 42786, low: 42404, close: 42448, volume: 240 },
+    { open: 42448, high: 42623, low: 42119, close: 42245, volume: 55 },
+    { open: 42245, high: 42304, low: 41992, close: 42050, volume: 289 },
+    { open: 42050, high: 42226, low: 41670, close: 41725, volume: 395 },
+    { open: 41725, high: 41880, low: 41444, close: 41532, volume: 317 },
+    { open: 41532, high: 41633, low: 41169, close: 41272, volume: 72 },
+    { open: 41272, high: 41443, low: 40805, close: 40896, volume: 277 },
+    { open: 40896, high: 41078, low: 40553, close: 40684, volume: 448 },
+    { open: 40684, high: 40734, low: 40413, close: 40533, volume: 348 },
+    { open: 40533, high: 40588, low: 40292, close: 40378, volume: 352 },
+    { open: 40378, high: 40520, low: 39910, close: 39998, volume: 304 },
+    { open: 39998, high: 40155, low: 39422, close: 39612, volume: 438 },
+    { open: 39612, high: 39714, low: 39258, close: 39349, volume: 53 },
+    { open: 39349, high: 39534, low: 38985, close: 39090, volume: 212 },
+    { open: 39090, high: 39132, low: 38667, close: 38767, volume: 158 },
+    { open: 38767, high: 38908, low: 38418, close: 38583, volume: 253 },
+    { open: 38583, high: 38617, low: 38430, close: 38469, volume: 368 },
+    { open: 38469, high: 38641, low: 38182, close: 38370, volume: 74 },
+    { open: 38370, high: 38554, low: 38138, close: 38188, volume: 350 },
+    { open: 38188, high: 38267, low: 37754, close: 37784, volume: 441 },
+    { open: 37784, high: 37814, low: 37530, close: 37586, volume: 402 },
+    { open: 37586, high: 37679, low: 37419, close: 37492, volume: 225 },
+    { open: 37492, high: 37575, low: 37243, close: 37439, volume: 64 },
+    { open: 37439, high: 37611, low: 37283, close: 37332, volume: 419 },
+    { open: 37332, high: 37508, low: 37289, close: 37438, volume: 286 },
+    { open: 37438, high: 37577, low: 37242, close: 37523, volume: 152 },
+    { open: 37523, high: 37660, low: 37266, close: 37325, volume: 376 },
+  ],
+  markers: [
+    { at: 9.5, side: "buy" },
+    { at: 17.2, side: "sell" },
+    { at: 24.8, side: "buy" },
+    { at: 31.4, side: "buy" },
+    { at: 38.6, side: "sell" },
+    { at: 44.3, side: "sell" },
+  ],
+  startFrame: 460,
+  endFrame: 1656,
+  preloadedBars: 12,
+  barSpacingPx: 14,
+  liveEdgeX: 1100,
+  secondsPerBar: 60,
+  startClock: "13:00:00",
+  emptyRange: [44500, 45500],
+  seed: 42,
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // REGISTRY — add datasets here; switching is a data change.
 // ═══════════════════════════════════════════════════════════════════
 export const DATASETS: Record<string, ChartDataset> = {
   pumpwheel: DATASET_PUMPWHEEL,
+  randomwalk: DATASET_RANDOMWALK,
 };
 
 export const ACTIVE_DATASET = "pumpwheel";
