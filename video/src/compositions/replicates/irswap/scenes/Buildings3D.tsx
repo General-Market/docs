@@ -33,10 +33,17 @@ const useStaticTex = (w: number, h: number, draw: DrawFn, res = 2, mirror = fals
     c.height = Math.max(2, Math.round(h * res));
     const ctx = c.getContext("2d");
     if (ctx) {
+      // Map logical (w,h) EXACTLY onto the rounded canvas: with a plain
+      // `res` scale, round(w*res) > w*res leaves a sub-pixel transparent
+      // sliver at the canvas edge, which mipmap sampling drags inward at
+      // glancing angles — alphaTest then discards fragments INSIDE the
+      // face, sparkling as white dots along roof/gable edges (r7).
+      const sx = c.width / w;
+      const sy = c.height / h;
       // mirrored faces are flipped 180° about their local Y; pre-mirror the
       // art so the viewer still sees it with the original chirality
-      if (mirror) ctx.setTransform(-res, 0, 0, res, c.width, 0);
-      else ctx.setTransform(res, 0, 0, res, 0, 0);
+      if (mirror) ctx.setTransform(-sx, 0, 0, sy, c.width, 0);
+      else ctx.setTransform(sx, 0, 0, sy, 0, 0);
       draw(ctx, w, h);
     }
     const t = new THREE.CanvasTexture(c);
@@ -54,6 +61,13 @@ type FaceSpec = {
   rotation?: [number, number, number];
   quaternion?: THREE.Quaternion;
   mirror?: boolean;
+  // r7: render double-sided while fully opaque. Roof slopes only — the
+  // far slope is at the FrontSide culling threshold when the pitched
+  // camera looks just over the ridge, so it flickered in as white AA
+  // dashes along the ridge; the reference draws the far slope (dark far
+  // edge over the ridge, f2505 probe 104,111,116). Gated on opacity so
+  // the flat-icon fade-in/out ramps keep hiding interior faces.
+  ds?: boolean;
 };
 
 // Enforce outward normals so FrontSide culling hides the interior: the
@@ -85,7 +99,8 @@ const Face: React.FC<{
   opacity: number;
   renderOrder: number;
   mirror?: boolean;
-}> = ({ w, h, draw, position, rotation, quaternion, opacity, renderOrder, mirror }) => {
+  ds?: boolean;
+}> = ({ w, h, draw, position, rotation, quaternion, opacity, renderOrder, mirror, ds }) => {
   const tex = useStaticTex(w, h, draw, 2, mirror);
   return (
     <mesh position={position} rotation={rotation} quaternion={quaternion} renderOrder={renderOrder}>
@@ -96,7 +111,7 @@ const Face: React.FC<{
         opacity={opacity}
         depthWrite
         alphaTest={0.02}
-        side={THREE.FrontSide}
+        side={ds && opacity > 0.995 ? THREE.DoubleSide : THREE.FrontSide}
         toneMapped={false}
       />
     </mesh>
@@ -131,6 +146,11 @@ const pentaPath = (ctx: CanvasRenderingContext2D, w: number, h: number, Hw: numb
   ctx.lineTo(inset, eave + inset * 0.5);
   ctx.closePath();
 };
+// NEGATIVE (r7, do not retry): raising the pentagon's eave-top vertices by
+// roof.lift to close the white dots along the gable/roof junction did
+// nothing — the dots are parallax UNDER the ovF/ovB roof overhang (the
+// fascia gap), not the eave-lift wedge. Gates 2450 -.0005 / 2525 flat /
+// 2600 +.0001. The RoofFascia planes below are the working closure.
 
 // column slot with a rounded (arched) top
 const colPath = (ctx: CanvasRenderingContext2D, x0: number, y0: number, cw: number, y1: number) => {
@@ -291,11 +311,16 @@ export const Building3D: React.FC<{
         rotation: [0, -sdSign * (Math.PI / 2) * side, 0],
       });
     }
-    // roof slopes
+    // roof slopes. RIDGE_OV extends each slope slightly PAST the ridge so
+    // the two planes cross instead of abutting — two planes that merely
+    // meet leave a half-covered AA seam that reads as a white dotted line
+    // along the ridge (r7, visible at f2505-2600); the reference ridge is
+    // a solid dark line.
+    const RIDGE_OV = 1.2;
     const m = (Ha - Hw - roof.lift) / (Wf / 2);
     const eaveX = Wf / 2 + roof.ovE;
     const eaveY = Ha - m * eaveX;
-    const slopeW = Math.hypot(eaveX, Ha - eaveY);
+    const slopeW = Math.hypot(eaveX, Ha - eaveY) + RIDGE_OV;
     const ridgeLen = L + roof.ovF + roof.ovB;
     for (const side of [-1, 1] as const) {
       const bx = new THREE.Vector3(side * eaveX, eaveY - Ha, 0).normalize();
@@ -307,8 +332,46 @@ export const Building3D: React.FC<{
       out.push({
         key: `roof${side}`, w: slopeW, h: ridgeLen,
         draw: drawRect(fill, outline),
-        position: [side * (eaveX / 2), (Ha + eaveY) / 2, sdSign * (L / 2 + (roof.ovB - roof.ovF) / 2)],
+        position: [
+          side * (eaveX / 2) - bx.x * (RIDGE_OV / 2),
+          (Ha + eaveY) / 2 - bx.y * (RIDGE_OV / 2),
+          sdSign * (L / 2 + (roof.ovB - roof.ovF) / 2),
+        ],
         quaternion: q,
+        ds: true,
+      });
+    }
+    // roof-edge fascia (r7): the slopes overhang the gables by ovF/ovB and
+    // the pitched camera sees UNDER the overhang — a white parallax wedge
+    // of AA dots between the roof edge stroke and the gable outline. The
+    // reference closes it with one thicker roof-edge line. Each gable end
+    // gets a flat ink plane at the roof-edge depth drawing the roofline
+    // diagonals; transparent fill, so only the line shows.
+    // Stroke 4.2 biased 0.9 BELOW the roofline: the see-under wedge extends
+    // ~lift + ovF*tan(pitch) ≈ 2.9u below the roof edge; a centered 3.0
+    // stroke left a residual dot trail (probed at f2525).
+    const fasciaH = Ha - eaveY + 5.2;
+    const fascia: DrawFn = (ctx, fw, fh) => {
+      ctx.beginPath();
+      ctx.moveTo(1.2, fh - 2.6);
+      ctx.lineTo(fw / 2, 2.6);
+      ctx.lineTo(fw - 1.2, fh - 2.6);
+      ctx.strokeStyle = outline;
+      ctx.lineWidth = 4.2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+    };
+    // 0.3u outward nudge: the fascia shares its top line with the slope's
+    // front edge at the same depth; the slope draws first (farther center)
+    // and its AA edge fragments write depth, so the coplanar fascia lost
+    // the quantized depth test right at the line — the dot trail survived
+    // two stroke-widening attempts. Strictly nearer, it wins.
+    for (const [end, zEnd] of [["F", -sdSign * (roof.ovF + 0.3)], ["B", sdSign * (L + roof.ovB + 0.3)]] as const) {
+      out.push({
+        key: `fascia${end}`, w: 2 * eaveX, h: fasciaH,
+        draw: fascia,
+        position: [0, (Ha + eaveY) / 2 - 0.9, zEnd],
       });
     }
     const oriented = orientOutward(out, [0, Ha / 2, (sdSign * L) / 2]);
@@ -346,7 +409,7 @@ export const Building3D: React.FC<{
       {faces.map((f) => (
         <Face key={f.key} w={f.w} h={f.h} draw={f.draw} position={f.position}
           rotation={f.rotation} quaternion={f.quaternion} opacity={opacity}
-          renderOrder={renderOrder} mirror={f.mirror} />
+          renderOrder={renderOrder} mirror={f.mirror} ds={f.ds} />
       ))}
     </group>
   );
