@@ -74,6 +74,7 @@ export const COLORS = {
   sandVal: "#A3958C", //        popup settings gas/tip VALUES (dimmer than the icons, r4 probe)
   settingsGrey: "#747680", //   popup settings 50%/Off/pre-warn tip — dimmer than textMid (r4)
   railPreset: "#ACAFB6", //     rail preset cell numbers
+  railPresetTab: "#9296A0", //  PRESET 1/2 idle tab labels (r4 core probe — brighter than dimLabel)
   // r3 popup probes (r4: pill TEXT re-probed on the sharper f1050 — greener)
   popupPillBuyRing: "#37444A", //  buy pill ring (grey-teal, was #1E4D48)
   popupPillSellRing: "#3A2F3D", // sell pill ring (grey-mauve, was #4A2338)

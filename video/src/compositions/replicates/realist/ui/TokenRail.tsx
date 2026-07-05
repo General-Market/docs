@@ -590,22 +590,24 @@ const PosStatsRow: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// PRESET 1 / 2 / 3 tabs, y 537–556
+// PRESET 1 / 2 / 3 tabs, y 534–556 — r4 re-fit: idle labels probe #9296A0
+// (dimLabel was too dark) and the active chip spans x1824-1911 y534-556
+// (edge bisect), not the old 1830+76×19.
 const PresetTabs: React.FC = () => (
   <>
     <div style={{ position: "absolute", left: 1662, top: 539 }}>
-      <T size={11} color={C.dimLabel} weight={600}>{RAIL.presetTabs[0]}</T>
+      <T size={11} color={C.railPresetTab} weight={600}>{RAIL.presetTabs[0]}</T>
     </div>
     <div style={{ position: "absolute", left: 1748, top: 539 }}>
-      <T size={11} color={C.dimLabel} weight={600}>{RAIL.presetTabs[1]}</T>
+      <T size={11} color={C.railPresetTab} weight={600}>{RAIL.presetTabs[1]}</T>
     </div>
     <div
       style={{
         position: "absolute",
-        left: 1830,
-        top: 535,
-        width: 76,
-        height: 19,
+        left: 1825,
+        top: 534,
+        width: 86,
+        height: 22,
         borderRadius: 6,
         background: PRESET3_STYLE.bg,
         display: "flex",
