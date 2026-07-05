@@ -853,10 +853,12 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
             {HEADER.trophyCount}
           </T>
         </Row>
-        {/* Share PnL */}
-        <Row gap={6} style={{ position: "absolute", left: 756, top: 30 }}>
-          <Glyph kind="upload" size={15} color={C.tealText} />
-          <T size={14} color={C.tealText} weight={600}>
+        {/* Share PnL — r5: plate ink runs 756-768 (icon) + 772-812 (text),
+            i.e. ~12.5px; the old 14px text ran past x836 and collided with
+            the pin glyph. */}
+        <Row gap={6} style={{ position: "absolute", left: 756, top: 31 }}>
+          <Glyph kind="upload" size={14} color={C.tealText} />
+          <T size={12.5} color={C.tealText} weight={600}>
             {HEADER.sharePnl}
           </T>
         </Row>
