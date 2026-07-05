@@ -18,7 +18,7 @@ import { TokenLoadScreen } from "./ui/TokenLoadScreen";
 import { PulseScreen } from "./ui/PulseScreen";
 import { TokenPage } from "./ui/TokenPage";
 import { PnlCard } from "./ui/OutroOverlay";
-import { BLUR_FROM, BLUR_FULL, BLUR_PX } from "./ui/copy/outro";
+import { BLUR_TABLE } from "./ui/copy/outro";
 
 export const FPS = 60;
 export const DURATION = 2116; // 35.27s — matches reference realist-original.mp4 (59.94fps/2114f)
@@ -84,10 +84,24 @@ const fadeMul = (f: number): number => {
 
 // Screen boundaries measured off the plates: Trenches 0–332, token page
 // loading (old chrome) 333–391, Pulse 392–417, live token page 418–end.
+// Measured outro blur (BLUR_TABLE, copy/outro.ts): lerp between rows.
+const blurPxAt = (f: number): number => {
+  if (f <= BLUR_TABLE[0][0]) return 0;
+  const last = BLUR_TABLE[BLUR_TABLE.length - 1];
+  if (f >= last[0]) return last[1];
+  for (let i = 1; i < BLUR_TABLE.length; i++) {
+    if (f <= BLUR_TABLE[i][0]) {
+      const [f0, b0] = BLUR_TABLE[i - 1];
+      const [f1, b1] = BLUR_TABLE[i];
+      return b0 + ((b1 - b0) * (f - f0)) / (f1 - f0);
+    }
+  }
+  return last[1];
+};
+
 const ScreenBase: React.FC = () => {
   const f = refFrame(useCurrentFrame());
-  const blurP = clamp01((f - BLUR_FROM) / (BLUR_FULL - BLUR_FROM));
-  const blur = BLUR_PX * blurP;
+  const blur = blurPxAt(f);
   let screen: React.ReactNode;
   if (f <= 332) screen = <TrenchesScreen frame={f} />;
   else if (f <= 391) screen = <TokenLoadScreen frame={f} />;

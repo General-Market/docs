@@ -38,8 +38,16 @@ export const CARD_TRACK: [number, number, number, number, number][] = [
   [1876, 968, 1110, 0.72, 4],
 ];
 
-// UI blur ramp under the outro (measured off plates: sharp at f1685,
-// fully blurred by ~f1725).
-export const BLUR_FROM = 1690;
-export const BLUR_FULL = 1725;
-export const BLUR_PX = 14;
+// UI blur under the outro — measured law (r4: Laplacian-variance sweep
+// of the plates on the rail crop 1520,300–1900,700 inverted through a
+// synthetic-Gaussian LUT of the sharp f1652 plate): sharp through
+// f1657, fast collapse to σ≈0.9 by f1661, slow creep to σ≈2.1 by
+// f1728, hold to the fade-out. CSS blur px ≈ 2σ. The old linear ramp
+// (1690→1725, 14px) started 32 frames late and landed ~3× too strong.
+// [frame, cssBlurPx] — lerp between rows, clamp outside.
+export const BLUR_TABLE: [number, number][] = [
+  [1657, 0], [1658, 0.9], [1659, 1.4], [1660, 1.7], [1662, 1.8],
+  [1664, 2.1], [1666, 2.4], [1668, 2.7], [1672, 2.9], [1676, 3.0],
+  [1680, 3.5], [1690, 5.5], [1700, 7.5], [1710, 9.7], [1720, 11.9],
+  [1730, 14],
+];
