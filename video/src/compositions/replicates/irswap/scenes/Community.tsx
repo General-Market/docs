@@ -331,6 +331,59 @@ const mixc = (a: string, b: string, t: number): string => {
 
 // ── floor: static painted map (never moves; fades in place only) ─
 const FLOOR_C: Pt = [0, -150];
+// Round-5 measured street track (the bottom band's bold dashed rule).
+// A single world-locked track fit f5100 (+.0013) but LOST every other
+// gate (−.002 each): the camera drifts ~2 px across the eye hold while
+// the ref street drops ~0.09 px/f — the hand-drawn ref REDRAWS the
+// street every shot, and again through the pull-back. Therefore the
+// track is KEYFRAMED: line cores scanned per frame (scanstreets2.py,
+// ink[150,205) neutral), unprojected to the floor at that frame, dash
+// phase fitted mod 44.5 against the mid anchor (capture .93-.99 across
+// the hold). Between keys the world line lerps; before 4950 and after
+// 5230 it clamps. Measured bows were ≤4.5 wu (~2 px) — dropped, the
+// per-key line is straight.
+type StKey = { f: number; mid: Pt; u: Pt; off: number };
+const ST_KEYS: StKey[] = [
+  { f: 4950, mid: [159.9, -17.8], u: [0.9764, 0.216], off: 33.5 },
+  { f: 5000, mid: [31.2, -59.1], u: [0.9891, 0.1471], off: 30.5 },
+  { f: 5100, mid: [73.1, -39.7], u: [0.9906, 0.137], off: 36.0 },
+  { f: 5150, mid: [35.0, -39.1], u: [0.9915, 0.1305], off: 32.5 },
+  { f: 5200, mid: [-53.8, -43.5], u: [0.993, 0.1181], off: 35.0 },
+  { f: 5220, mid: [217.6, -61.2], u: [0.9814, 0.192], off: 10.0 },
+  { f: 5230, mid: [219.3, -70.8], u: [0.9685, 0.2491], off: 10.0 },
+];
+const stTrack = (f: number): StKey => {
+  const K = ST_KEYS;
+  if (f <= K[0].f) return K[0];
+  if (f >= K[K.length - 1].f) return K[K.length - 1];
+  let i = 0;
+  while (K[i + 1].f < f) i++;
+  const a = K[i];
+  const b = K[i + 1];
+  const t = (f - a.f) / (b.f - a.f);
+  const ux = mixN(a.u[0], b.u[0], t);
+  const uz = mixN(a.u[1], b.u[1], t);
+  const n = Math.hypot(ux, uz);
+  return {
+    f,
+    mid: [mixN(a.mid[0], b.mid[0], t), mixN(a.mid[1], b.mid[1], t)],
+    u: [ux / n, uz / n],
+    off: mixN(a.off, b.off, t),
+  };
+};
+// param (rel. mid) where the track crosses the sheet's right edge s2→s3
+const stExit = (k: StKey, s2: Pt, s3: Pt): number => {
+  const ex = s3[0] - s2[0];
+  const ez = s3[1] - s2[1];
+  const den = k.u[0] * ez - k.u[1] * ex;
+  if (Math.abs(den) < 1e-9) return Infinity;
+  return ((s2[0] - k.mid[0]) * ez - (s2[1] - k.mid[1]) * ex) / den;
+};
+const ST_DASH: [number, number] = [26.7, 17.8]; // fitted dash/gap (wu), period 44.5
+const ST_PERIOD = ST_DASH[0] + ST_DASH[1];
+const ST_P0 = 380; // draw start param before mid (covers the frame at every key)
+const ST_W = 2.0; // measured stroke (~2-3 px screen at the band)
+const ST_INK = "#BDBDBD"; // measured dash cores 185-193
 export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     if (f >= 5285) return; // page-flip handoff to the outro board
@@ -342,6 +395,13 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     // SIM_WAVE above). Round 2's single shared similarity lost its A/B;
     // the per-element quads measured at f5100 win it (see round log).
     const dv = diveT(f);
+    // street morph completes at 4948 — the ref street rule is already
+    // fully bold at f4950 (measured), well before the dive blend ends.
+    // Through the pull-back the ref WASHES the street out (dash pixels
+    // above threshold: 438 @5220 → 42 @5230 → 0 @5240), so the stroke
+    // morphs back to the plain grid rule across 5222-5240 — at 5240 the
+    // render is exactly the pre-street baseline again.
+    const sv = smooth01((f - 4914) / 34) * (1 - clamp01((f - 5222) / 18));
     ctx.globalAlpha = dissolve;
     // crossfade in from the slot-scene floor paper (full by 4708)
     ctx.globalAlpha *= clamp01((f - 4690) / 18);
@@ -420,13 +480,13 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.lineTo(mx(b), my(b));
       ctx.stroke();
     }
-    // NOTE (r4 A/B): bolding these toward the ref's measured street marks
-    // (dash 16.2/8.7, w2.9, #BDBDBD) LOST SSIM at 5100/5150 (−.006) — our
-    // dashed rules sit at the sheet-grid positions, not the ref's street
-    // positions; misplaced bold ink loses to pale ink. A future pass must
-    // MOVE the lines (measured street tracks), not just bold them.
+    // Round 5 (Task A): r4's A/B proved bolding the dashed rules IN PLACE
+    // loses (−.006 at 5100/5150) — they sat at sheet-grid positions, not
+    // the ref's street positions. The MIDDLE rule morphs onto the
+    // KEYFRAMED measured street track (ST_KEYS above) by sv — identity
+    // at sv=0; the outer two rules stay untouched.
     ctx.setLineDash([6, 6]);
-    for (let i = 1; i <= 3; i++) {
+    for (const i of [1, 3]) {
       const t = i / 4;
       const a: Pt = [sheet[0][0] + (sheet[3][0] - sheet[0][0]) * t, sheet[0][1] + (sheet[3][1] - sheet[0][1]) * t];
       const b: Pt = [sheet[1][0] + (sheet[2][0] - sheet[1][0]) * t, sheet[1][1] + (sheet[2][1] - sheet[1][1]) * t];
@@ -434,6 +494,34 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.moveTo(mx(a), my(a));
       ctx.lineTo(mx(b), my(b));
       ctx.stroke();
+    }
+    {
+      const t = 2 / 4;
+      const a0: Pt = [sheet[0][0] + (sheet[3][0] - sheet[0][0]) * t, sheet[0][1] + (sheet[3][1] - sheet[0][1]) * t];
+      const b0: Pt = [sheet[1][0] + (sheet[2][0] - sheet[1][0]) * t, sheet[1][1] + (sheet[2][1] - sheet[1][1]) * t];
+      const tk = stTrack(f);
+      const p0: Pt = [tk.mid[0] - tk.u[0] * ST_P0, tk.mid[1] - tk.u[1] * ST_P0];
+      const p1: Pt = [tk.mid[0] + tk.u[0] * 300, tk.mid[1] + tk.u[1] * 300];
+      const a: Pt = [mixN(a0[0], p0[0], sv), mixN(a0[1], p0[1], sv)];
+      const b: Pt = [mixN(b0[0], p1[0], sv), mixN(b0[1], p1[1], sv)];
+      ctx.setLineDash([mixN(6, ST_DASH[0], sv), mixN(6, ST_DASH[1], sv)]);
+      // dash starts at track param tk.off + k·period; path starts at −ST_P0
+      ctx.lineDashOffset = -(((tk.off + ST_P0) % ST_PERIOD) * sv);
+      ctx.strokeStyle = mixc("#DBDBD8", ST_INK, sv);
+      ctx.lineWidth = mixN(1.2, ST_W, sv);
+      ctx.beginPath();
+      ctx.moveTo(mx(a), my(a));
+      if (sv > 0) {
+        // keep the mid vertex (the morph pivots about the track anchor)
+        const m0: Pt = [(a0[0] + b0[0]) / 2, (a0[1] + b0[1]) / 2];
+        const m: Pt = [mixN(m0[0], tk.mid[0], sv), mixN(m0[1], tk.mid[1], sv)];
+        ctx.lineTo(mx(m), my(m));
+      }
+      ctx.lineTo(mx(b), my(b));
+      ctx.stroke();
+      ctx.lineDashOffset = 0;
+      ctx.strokeStyle = "#DBDBD8";
+      ctx.lineWidth = 1.2;
     }
     ctx.setLineDash([]);
     // dashboard artwork on the map (overhead corners measured at f4810;
@@ -477,6 +565,31 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
+    // the street rule runs past the sheet's right edge onto the floor
+    // extension (ref dashes reach x≈719 at f5100; the sheet clip cuts the
+    // in-sheet stroke). Drawn unclipped from the per-frame sheet-exit
+    // param (runtime intersection — it swings 158→385 across the keys),
+    // alpha-gated by sv — invisible (identity) at sv=0. Dash phase is
+    // continued from the in-sheet stroke.
+    if (sv > 0) {
+      const tk = stTrack(f);
+      const q0p = stExit(tk, sheet[2], sheet[3]);
+      if (q0p < 290) {
+        ctx.globalAlpha = dissolve * clamp01((f - 4690) / 18) * sv;
+        ctx.strokeStyle = ST_INK;
+        ctx.lineWidth = ST_W;
+        ctx.setLineDash(ST_DASH);
+        ctx.lineDashOffset = -((((tk.off - q0p) % ST_PERIOD) + ST_PERIOD) % ST_PERIOD);
+        const q0: Pt = [tk.mid[0] + tk.u[0] * q0p, tk.mid[1] + tk.u[1] * q0p];
+        const q1: Pt = [tk.mid[0] + tk.u[0] * (q0p + 140), tk.mid[1] + tk.u[1] * (q0p + 140)];
+        ctx.beginPath();
+        ctx.moveTo(mx(q0), my(q0));
+        ctx.lineTo(mx(q1), my(q1));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+      }
+    }
   }, []);
   return (
     <CanvasPlane frame={frame} width={1700} height={1500} res={0.9}
