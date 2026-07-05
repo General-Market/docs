@@ -164,9 +164,12 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
       </div>
 
-      {/* ── OHLC readout row (y188–212) — plate f0500: symbol line 14px light
-          (ink x59-451), dot x469, values 11px at ~50% opacity from x496 ── */}
-      <div style={{ position: "absolute", left: 58, top: 196, height: 16, whiteSpace: "nowrap" }}>
+      {/* ── OHLC readout row — plate f0500: symbol line 14px light
+          (ink x59-451), dot x469, values 11px at ~50% opacity from x496.
+          r4: ink-row profile (plate sym band 195-207 vs render 201-214,
+          measured at f1580 and consistent with f0500 values 194-203)
+          showed the row 6px low — top 196->190 ── */}
+      <div style={{ position: "absolute", left: 58, top: 190, height: 16, whiteSpace: "nowrap" }}>
         <T size={14.3} weight={400} color={C.text}>
           {OHLC.symbolLine}
         </T>
@@ -181,7 +184,10 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         />
         {ohlc ? (
-          <span style={{ opacity: 0.52 }}>
+          // r4: values ink profile plate 194-203 vs render 198-205 —
+          // the 11px spans baseline-align 3px low against the 14.3px
+          // symbol line; plate top-aligns them.
+          <span style={{ opacity: 0.52, position: "relative", top: -3 }}>
             {(
               [
                 [OHLC.o, ohlc.o],
