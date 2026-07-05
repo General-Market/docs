@@ -35,6 +35,17 @@ const CORNER_PLATEAU = 90;
 const CORNER_END = 200;
 const GREY = 220;
 
+// NEGATIVE A/B (round 7 — do not retry as-is): the community eye-hold
+// f4920-5240 measures a LEFT-side lift of this wash in the ref (TL corner
+// 243-244 uncapped paper vs our capped ~220 → att−ref −23; BL −12..−20;
+// top-left band −14; TR pinned at the 219.4 void all along). A zone-masked
+// weight lift (top-left 0.65 / bottom-left 0.55, ramps 4912-4945 in,
+// 5228-5242 out) fixed every band mean to ±3 levels and LOST SSIM at all
+// three gates (4950 .7091→.7051, 5100 .7555→.7538, 5200 .7403→.7388):
+// at high luma SSIM's mean term barely notices a 24-level offset (~0.995)
+// while lifting the cap exposes our corner content's structure against the
+// ref's flat wash — the feather was hiding misplaced ink. Only worth
+// retrying AFTER the community corner content itself matches structurally.
 const prof = (rows: Prof, d: number): number => {
   if (d <= rows[0][0]) return rows[0][1];
   for (let i = 0; i < rows.length - 1; i++) {
