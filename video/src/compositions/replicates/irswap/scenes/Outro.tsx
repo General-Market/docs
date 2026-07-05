@@ -30,6 +30,28 @@ const BOARD_CX = 2; // world x of the board center (screen 429 at the end)
 // shows the dashboard art facing the viewer for the whole rise, upper
 // side of the fold); past vertical it leans slightly toward the camera
 // and the teal credits take over. phi: 0 = flat behind, 90 = standing.
+//
+// r8 NEGATIVES on the rise 5284-5302 (measured, all reverted — do not
+// retry blind). The ref rise page is FACE-ON, not a sliver (its cyan art
+// blob grows to 8837px at 5296 and collapses to 659 by 5300; teal back
+// appears 5301) — but every attempt to reproduce that lost SSIM:
+// 1. Heuristic face-on rise (phi 22..75, psi ≈ -28): 5290 .924→.914,
+//    5296 .917→.893, 5300 .946→.901. Misplaced ink loses to absent ink.
+// 2. Analytic per-frame (phi,psi,roll) fits against measured cyan/grey
+//    art centroids DIVERGED under both the legacy and the solved camera
+//    (30-100px residuals): our drawPageArt layout is INVENTED and does
+//    not match the ref page's art arrangement.
+// 3. Squiggle-anchored camera solves: one-way ICP (rms "5px") slid along
+//    the polyline — rendered squiggle came out 2x the ref's size, 5300
+//    .946→.917; the honest two-way ICP ran to a 2000+ unit camera at rms
+//    10-16px — our right-page squiggle geometry is also invented and
+//    unfittable. Instrument lesson: one-way ICP against a longer curve
+//    is degenerate; always check the reverse term.
+// The real fix: measure the ref's actual page artwork (left page = the
+// community dashboard collage, see Community SIM_E tables; right page =
+// the squiggle chart), redraw both pages, then refit poses and camera.
+// Until then the sliver rise stays: it is what the metric prefers over
+// every mismeasured alternative (5290-5300 baseline .917-.946).
 const PHI: [number, number][] = [
   [5283, 8], [5290, 44], [5295, 64], [5300, 88], [5303, 95],
 ];
