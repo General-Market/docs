@@ -311,7 +311,7 @@ const AxiomMark: React.FC<{ size?: number }> = ({ size = 28 }) => (
 // ─── Toast DSL ──────────────────────────────────────────────────────────
 type ParsedToast =
   | { kind: "attempt"; text: string }
-  | { kind: "simple"; dot: "check" | "warn" | "error"; text: string }
+  | { kind: "simple"; dot: "check" | "warn" | "error"; text: string; wide?: boolean }
   | { kind: "card"; name: string; verb: string; token: string; amt: string; mc: string };
 
 const parseToast = (tok: string): ParsedToast | null => {
@@ -329,6 +329,7 @@ const parseToast = (tok: string): ParsedToast | null => {
   const missing = tok.match(/^m([123])$/);
   if (missing) return { kind: "simple", dot: "error", text: TOASTS.missing(Number(missing[1])) };
   if (tok === "ffc") return { kind: "simple", dot: "error", text: TOASTS.failConsumed };
+  if (tok === "ffa") return { kind: "simple", dot: "error", text: TOASTS.failAllInput, wide: true };
   if (tok === "ffi") return { kind: "simple", dot: "error", text: TOASTS.failInsufficient };
   if (tok === "fft") return { kind: "simple", dot: "error", text: TOASTS.failTimeout };
   if (tok === "fft2") return { kind: "simple", dot: "error", text: TOASTS.failTimeout2 };
@@ -428,10 +429,13 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
       </div>
     );
   }
+  // Wide band toasts render tighter type (plate f1590: 134 chars over 806px
+  // ≈ 12.4px Inter) and sit ~9px left of the std stack center.
+  const wide = toast.kind === "simple" && toast.wide;
   return (
-    <div style={{ ...shell, height: TOAST_H, padding: "0 12px", gap: 10 }}>
+    <div style={{ ...shell, ...(wide ? { left: STACK_CX - 4, top: y + 3 } : null), height: TOAST_H, padding: "0 12px", gap: 10 }}>
       <StatusDot kind={toast.dot} />
-      <T size={13} color={C.textHi} weight={500}>
+      <T size={wide ? 12.4 : 13} color={C.textHi} weight={500}>
         {toast.text}
       </T>
       <div style={{ width: 4 }} />

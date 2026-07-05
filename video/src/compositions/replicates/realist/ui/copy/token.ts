@@ -299,6 +299,9 @@ export const TOASTS = {
     "Transactions failed or timed out, try increasing priority fee/bribe/slippage",
   failTimeout2:
     "0/4 transactions succeeded: Transaction timed out, try increasing priority fee",
+  // Wide band toast, read EXACTLY off plate f1590 (left/right halves @300%):
+  failAllInput:
+    "All transactions failed and priority fees were consumed: Transaction failed and priority fees were consumed: Insufficient input tokens",
   notEnough:
     "Error getting tokens to sell: Not enough tokens to sell for 5 SOL",
   // buy/sell notification cards: "<name> <verb> <token>" + "≡<amt> at <mc> MC"

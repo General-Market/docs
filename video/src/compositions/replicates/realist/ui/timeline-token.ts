@@ -1249,11 +1249,11 @@ export const toastTable: Sample<ToastStack>[] = T<ToastStack>([
   [1508, ["m2", "a16", "c:jijo:sold all:TST:16.16:$169K", "m2", "p3"]],
   [1518, ["m2", "a16", "a16", "p3", "p3"]],
   [1528, ["m3", "a16", "m2", "a16", "p3"]],
-  [1538, ["m3", "a16", "m3", "a16", "ffc"]],
+  [1538, ["m3", "a16", "m3", "a16", "ffa"]],
   [1548, ["m3", "a16", "m3", "a16", "a16"]],
   [1568, ["a16", "p4", "p4", "p4", "p4"]],
-  [1578, ["ne", "m3", "ffc", "p4", "p4"]],
-  [1598, ["c:jsol:sold all:eight:1.378:$2.6K", "ne", "m3", "ffc", "p4"]],
+  [1578, ["ne", "m3", "ffa", "p4", "p4"]],
+  [1598, ["c:jsol:sold all:eight:1.378:$2.6K", "ne", "m3", "ffa", "p4"]],
   // holds from f1598 through the blur / outro
 ]);
 
