@@ -115,32 +115,90 @@ const BG_GRADIENT =
 // interior (α≈0.04 of rgb(0,80,246)), grid pitch 33.35px phase-locked to
 // global x=9.2+33.35k, line amplitude ≈ +7 grey (α≈0.07 white). No grid
 // outside the panel.
-const Background: React.FC = () => (
-  <AbsoluteFill style={{ background: BG_GRADIENT }}>
-    <div
-      style={{
-        position: "absolute",
-        left: 42.5,
-        top: 42.5,
-        width: 634,
-        height: 634,
-        boxSizing: "border-box",
-        background: "rgba(0,80,246,0.04)",
-        border: "1.5px solid rgba(255,255,255,0.045)",
-        overflow: "hidden",
-      }}
-    >
-      <AbsoluteFill
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0 1px, transparent 1px 33.35px)," +
-            "repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 1px, transparent 1px 33.35px)",
-          backgroundPosition: "0 -1.3px, -1.3px 0",
-        }}
-      />
-    </div>
-  </AbsoluteFill>
-);
+//
+// Panel visibility is NOT constant, and during the fly-in the grid rides
+// the same camera as the cards. Measured (rotation-aligned fixed-style
+// line-vs-flank medians with foreground exclusion, cross-checked with
+// pitch/phase folds and raw pixel slices):
+//   f0-8    grid rotated ≈ −25° (the cards' pose), pitch 80→78px
+//           (zoom 2.40→2.35), amplitude ≈ 45-60% of steady — soft, coarse.
+//   f11-23  amplitude dips (real in-source dip through the fuse) while
+//           rotation swings −24°→−10° and zoom falls to ~1.2. Pitch-fold
+//           re-measure on rendered pairs: dip ≈ 30% @f13 → 16% @f22-23
+//           (the earlier 10-15% read was too deep — replica rendered
+//           smoother than source at f14, ratio 0.65; 0.3/0.16 → 0.90).
+//   f38     geometry locks: axis-aligned, pitch 33.35, phase 9.2.
+//   f33-92  amplitude ramps 0.55→0.74@40→0.91@56→1.0 by f92.
+//   f92-330 steady plateau: raw line peak +8-9 grey over a 3-4px spread
+//           (the α0.088 below renders +8.4 over 2px — peak-matched).
+//   f331    a scene cut inside the phone demo removes the panel entirely
+//           — it never returns; the outro (f486-509) is grid-free at
+//           every phase, pitch and rotation.
+// The border amplitude tracks the grid exactly (0 → 2.5@35 → 7.5@55 →
+// 0 after 330), so border, tint and lines transform and fade as ONE panel.
+const panelZoomAt = (f: number) =>
+  interpolate(
+    f,
+    [0, 8, 14, 17, 20, 23, 26, 29, 32, 35, 38],
+    [2.4, 2.35, 2.17, 1.97, 1.55, 1.21, 1.14, 1.07, 1.03, 1.01, 1],
+    clamp,
+  );
+const panelRotAt = (f: number) =>
+  interpolate(
+    f,
+    [0, 8, 14, 17, 20, 23, 26, 29, 32, 38],
+    [-25, -24.5, -24, -22.5, -20.5, -10, -3.5, -2, -1, 0],
+    clamp,
+  );
+const panelOpacityAt = (f: number) =>
+  f >= 331
+    ? 0
+    : interpolate(
+        f,
+        [0, 4, 8, 13, 23, 27, 32, 36, 40, 48, 56, 92],
+        [0.55, 0.5, 0.42, 0.3, 0.16, 0.4, 0.55, 0.6, 0.74, 0.8, 0.91, 1],
+        clamp,
+      );
+
+const Background: React.FC<{ frame: number }> = ({ frame }) => {
+  const panelOp = panelOpacityAt(frame);
+  const zoom = panelZoomAt(frame);
+  const rot = panelRotAt(frame);
+  return (
+    <AbsoluteFill style={{ background: BG_GRADIENT }}>
+      {panelOp > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 42.5,
+            top: 42.5,
+            width: 634,
+            height: 634,
+            boxSizing: "border-box",
+            background: "rgba(0,80,246,0.04)",
+            border: "1.5px solid rgba(255,255,255,0.056)",
+            overflow: "hidden",
+            opacity: panelOp,
+            transform: `rotate(${rot}deg) scale(${zoom})`,
+          }}
+        >
+          {/* α0.15 + blur(0.8px) ⇒ raw cross-section ≈ source's: peak +9
+              grey over a 3-4px spread (1px box ⊛ N(0,0.8) keeps 0.47 of
+              peak; energy α·129 ≈ 19 grey·px, measured 19). */}
+          <AbsoluteFill
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0 1px, transparent 1px 33.35px)," +
+                "repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0 1px, transparent 1px 33.35px)",
+              backgroundPosition: "0 -1.3px, -1.3px 0",
+              filter: "blur(0.8px)",
+            }}
+          />
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
 
 // Full-canvas animated grain — dithers the 8-bit banding of every gradient
 // (background rings, card fills, inset glows) the way the source's video
@@ -561,7 +619,7 @@ const Stage: React.FC<{ frameOffset: number }> = ({ frameOffset }) => {
     const showPill = f >= 19.5 && f <= 118;
     return (
       <AbsoluteFill>
-        <Background />
+        <Background frame={f} />
         {showCards && <FlyCards vf={f} />}
         {showPill && (
           <Capsule
@@ -591,7 +649,7 @@ const Stage: React.FC<{ frameOffset: number }> = ({ frameOffset }) => {
   const pillOp = interpolate(f, [486.6, 487, 488, 490, 491], [0.3, 0.65, 0.8, 0.9, 1], clamp);
   return (
     <AbsoluteFill>
-      <Background />
+      <Background frame={f} />
       {pillPhase && (
         <Capsule
           cx={CX}
