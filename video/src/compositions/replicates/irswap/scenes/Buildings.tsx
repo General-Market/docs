@@ -17,7 +17,7 @@ import {
   D_FIX, D_ARR_FIX, E_FIX, ROAD_FIX, ROAD_SQZ,
 } from "../data/buildings";
 import type { TrackRow } from "../data/buildings";
-import { CAM_KEYS_3D, PLQ_FIX, PLQ_D_FIX, PLQ_TILT_FIX } from "../data/buildings3d";
+import { B3D, CAM_KEYS_3D, PLQ_FIX, PLQ_D_FIX, PLQ_TILT_FIX } from "../data/buildings3d";
 import { bldPitchAt, buildingsPose, T_BLD } from "../lib/camera";
 import { ArrowPlanes, Building3D } from "./Buildings3D";
 import type { ArrowAlphas } from "./Buildings3D";
@@ -110,6 +110,121 @@ export const camBld = (f: number): { cam: V3; g: number } =>
         cam: [cr1(camCx, f), cr1(camCy, f), cr1(camCz, f)],
         g: cr1(camG, f),
       };
+
+// ── r7 strike-3: the exit spin (f3551-3574) ──────────────────────
+// The reference leaves the buildings scene by spinning the WHOLE scene
+// group — three buildings + plaques + the floor beneath — one full turn
+// about a VERTICAL axis through the cluster's own centroid while the ink
+// fades out (measured, .claude/rounds/work/r7/spin/report.md +
+// spin-measure.json: bank-centroid orbit anchors at f3551/3558.5/3563/
+// 3566.7/3572.5; direction = clockwise seen from above, near facades
+// sweep screen-left = turntable g DECREASING; peak 24 deg/f at
+// f3563-3567, still ~15 deg/f at building extinction — the buildings
+// never settle; the floor carries the settle and lands at exactly 360°
+// (== identity) on the chart2 tablet pose at f3574).
+const SPIN_TH: [number, number][] = [
+  [3551, 0], [3554, 26], [3558, 62], [3560, 96], [3562, 136], [3563, 156],
+  [3565, 205], [3567, 251], [3569, 282], [3571, 313], [3573, 343], [3574, 360],
+];
+// Monotone cubic (Fritsch–Carlson / PCHIP): C1 between the dense measured
+// keys with NO overshoot — theta must stay monotone and hit 360 exactly
+// at the 3574 closure (Catmull-Rom could overshoot past 360 mid-segment).
+const pchip1 = (tbl: [number, number][], f: number): number => {
+  const n = tbl.length;
+  if (f <= tbl[0][0]) return tbl[0][1];
+  if (f >= tbl[n - 1][0]) return tbl[n - 1][1];
+  const h: number[] = [];
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    h.push(tbl[i + 1][0] - tbl[i][0]);
+    d.push((tbl[i + 1][1] - tbl[i][1]) / h[i]);
+  }
+  const m: number[] = [d[0]];
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i - 1] * d[i] <= 0) m.push(0);
+    else {
+      const w1 = 2 * h[i] + h[i - 1];
+      const w2 = h[i] + 2 * h[i - 1];
+      m.push((w1 + w2) / (w1 / d[i - 1] + w2 / d[i]));
+    }
+  }
+  m.push(d[n - 2]);
+  let i = 0;
+  while (tbl[i + 1][0] < f) i++;
+  const t = (f - tbl[i][0]) / h[i];
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    (2 * t3 - 3 * t2 + 1) * tbl[i][1] + (t3 - 2 * t2 + t) * h[i] * m[i] +
+    (-2 * t3 + 3 * t2) * tbl[i + 1][1] + (t3 - t2) * h[i] * m[i + 1]
+  );
+};
+// cumulative spin, degrees: 0 at ≤3551, exactly 360 at ≥3574.
+export const bldSpinThetaDeg = (f: number): number => pchip1(SPIN_TH, f);
+// Spin axis: the TURNTABLED cluster centroid (mean of the B3D mids ridden
+// through the same rotP(g) the buildings ride) — measured pivot_world
+// (-7.3, -92.2) IS this centroid; g is frozen from the 3555 key so the
+// axis is near-constant through the spin.
+const BLD_MEAN: Pt = (() => {
+  const ms = [B3D.lender.mid, B3D.bank.mid, B3D.company.mid];
+  return [
+    (ms[0][0] + ms[1][0] + ms[2][0]) / 3,
+    (ms[0][1] + ms[1][1] + ms[2][1]) / 3,
+  ];
+})();
+export const bldSpinAxisXZ = (f: number): [number, number] => {
+  const p = rotP([BLD_MEAN[0], 0, BLD_MEAN[1]], camBld(f).g);
+  return [p[0], p[2]];
+};
+// Lift: the building group detaches and rises ~50-80 SCREEN px across the
+// spin (clear air gap under the buildings by f3563). At the frozen 3555
+// camera the cluster depth is ~724 world units → px·(724/DCAM) ≈ px·1.10.
+const SPIN_LIFT: [number, number][] = [
+  [3551, 0], [3555, 7], [3559, 20], [3563, 38], [3567, 58], [3570, 70], [3574, 84],
+];
+export const bldSpinLift = (f: number): number => lerp1(SPIN_LIFT, f);
+// Measured fade envelope (spin-measure.json fade_sat, smoothed per the
+// report's prescription): recede eases the ink down from 3518, 0.55→0.41
+// across the spin ramp 3551-3559, plateau ~0.36-0.38 through the fastest
+// rotation, then extinction — the BLUES (lender+company) die at 3568, the
+// BANK carries alone to 3573. Replaces the old static endFade 3548-3572.
+const FADE_BLUE: [number, number][] = [
+  [3517, 1], [3530, 0.92], [3540, 0.77], [3545, 0.68], [3551, 0.55],
+  [3559, 0.41], [3561, 0.38], [3565, 0.36], [3566, 0.3], [3567, 0.16], [3568, 0],
+];
+const FADE_BANK: [number, number][] = [
+  [3517, 1], [3530, 0.92], [3540, 0.77], [3545, 0.68], [3551, 0.55],
+  [3559, 0.41], [3561, 0.38], [3566, 0.36], [3567, 0.33], [3570, 0.29],
+  [3572, 0.25], [3573, 0.12], [3574, 0],
+];
+export const bldSpinAlpha = (
+  name: "lender" | "company" | "bank",
+  f: number,
+): number => lerp1(name === "bank" ? FADE_BANK : FADE_BLUE, f);
+// Rigid spin wrapper: yaw −θ about the vertical axis through (axis.x,
+// axis.z), plus an optional lift along world y (buildings only — the
+// floor stays planted). Identity frames (θ≤0 or θ≥360) return the bare
+// children so every frame outside (3551, 3574) renders the EXACT
+// pre-spin tree — byte-identity at both ends is structural, not
+// numerical (rotation.y = −2π would leave sin(2π)≈2.4e-16 residue).
+// Sign: −θ = turntable g decreasing = clockwise seen from above
+// (near facades sweep screen-left) — A/B sign-checked at f3560 against
+// the reference (COMPANY plaque mirrored, bank left-of-center showing
+// its column-less back).
+export const BldSpinGroup: React.FC<{
+  frame: number;
+  axis: [number, number];
+  lift?: number;
+  children: React.ReactNode;
+}> = ({ frame, axis, lift = 0, children }) => {
+  const deg = bldSpinThetaDeg(frame);
+  if (deg <= 0 || deg >= 360) return <>{children}</>;
+  return (
+    <group position={[axis[0], lift, axis[1]]} rotation={[0, (-deg * Math.PI) / 180, 0]}>
+      <group position={[-axis[0], 0, -axis[1]]}>{children}</group>
+    </group>
+  );
+};
 
 // ── plaque signboards ────────────────────────────────────────────
 // Drawn procedurally (the old sprite crops baked in neighboring pixels —
@@ -537,9 +652,11 @@ const Panel: React.FC<{ frame: number }> = ({ frame }) => {
 export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const { g } = camBld(frame);
 
-  // overall scene fade at the end (ref: colors still full at 3550,
-  // fully white by ~3572)
-  const endFade = fade(frame, 3548, 3572);
+  // r7 strike-3: the old static endFade (3548-3572, whole scene at once)
+  // is replaced by the measured per-building spin envelope (bldSpinAlpha)
+  // — the buildings fade WHILE spinning, blues out at 3568, bank at 3573.
+  const spinDeg = bldSpinThetaDeg(frame);
+  const spinAxis = bldSpinAxisXZ(frame);
 
   // arrows/labels — phase driven
   const arrA = fade(frame, 1826, 1828) * fadeOut(frame, 2170, 2190);
@@ -592,16 +709,18 @@ export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <>
       {/* FloorMap now lives on the persistent ground layer (orchestrator) */}
+      <BldSpinGroup frame={frame} axis={spinAxis} lift={bldSpinLift(frame)}>
       {(Object.keys(BLD_APPEAR) as (keyof typeof BLD_APPEAR)[]).map((name) => {
         const b = BLD_APPEAR[name];
         const t = fade(frame, b.appear[0], b.appear[1]);
         return (
           <Building3D key={name} name={name} g={g}
-            opacity={t * (1 - endFade)} drop={b.drop * (1 - t)} renderOrder={2} />
+            opacity={t * bldSpinAlpha(name, frame)} drop={b.drop * (1 - t)} renderOrder={2} />
         );
       })}
       {PLAQUES.map((s) => {
-          const op = fade(frame, s.appear[0], s.appear[1]) * (1 - endFade);
+          const plqName = s.key.slice(4) as "lender" | "company" | "bank";
+          const op = fade(frame, s.appear[0], s.appear[1]) * bldSpinAlpha(plqName, frame);
           if (op <= 0) return null;
           const dropT = 1 - fade(frame, s.appear[0], s.appear[1]);
           const c = rotP([
@@ -634,17 +753,45 @@ export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
             const tRows = PLQ_TILT_FIX[name];
             if (tRows) rz = (-lerp1(tRows, frame) * Math.PI) / 180;
           }
+          const drawBoard = (ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
+            ctx.globalAlpha = op;
+            board(ctx, f, w, h);
+          };
+          // the twin is a FRONT-facing plane standing in for the original
+          // seen from BEHIND — a real back view mirrors, so its canvas is
+          // pre-mirrored (the ref plaque reads "YNAPMOC" mid-turn)
+          const drawBoardBack = (ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
+            ctx.translate(w, 0);
+            ctx.scale(-1, 1);
+            ctx.globalAlpha = op;
+            board(ctx, f, w, h);
+          };
           return (
-            <CanvasPlane key={s.key} frame={frame}
-              width={s.def.w} height={s.def.h} res={3}
-              position={pos} rotation={[0, 0, rz]}
-              draw={(ctx, f, w, h) => {
-                ctx.globalAlpha = op;
-                board(ctx, f, w, h);
-              }}
-              renderOrder={5} depthTest={false} />
+            <React.Fragment key={s.key}>
+              <CanvasPlane frame={frame}
+                width={s.def.w} height={s.def.h} res={3}
+                position={pos} rotation={[0, 0, rz]}
+                draw={drawBoard}
+                renderOrder={5} depthTest={false} />
+              {/* r7 spin: the plaque plane is FrontSide-culled, but the
+                  reference SHOWS the boards from behind mid-turn (the
+                  COMPANY plaque reads mirrored, f3560-3563) — a flipped
+                  twin covers the far half of the rotation. Mounted only
+                  while θ∈(0,360), so all other frames keep the exact
+                  single-plane tree. */}
+              {spinDeg > 0 && spinDeg < 360 && (
+                <group position={pos} rotation={[0, 0, rz]}>
+                  <CanvasPlane frame={frame}
+                    width={s.def.w} height={s.def.h} res={3}
+                    position={[0, 0, 0]} rotation={[0, Math.PI, 0]}
+                    draw={drawBoardBack}
+                    renderOrder={5} depthTest={false} />
+                </group>
+              )}
+            </React.Fragment>
           );
         })}
+      </BldSpinGroup>
       <ArrowPlanes frame={frame} g={g} font={FONT} al={al} />
     </>
   );
