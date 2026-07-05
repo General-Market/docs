@@ -139,3 +139,37 @@ export const ANCHOR_3450 = {
   l2: [410, 125], // "Settlement"
   l3: [409, 156], // "2.0 %"
 } as const;
+
+// ── round 6: per-frame overlay registration tracks (f3300-3535) ──
+// The reference hand-redraws every phase-D/E overlay element frame to
+// frame; single-anchor models (the rDA +0.045px/f drift, the P1-riding
+// rE) leave 8-30px by the window ends. These rows are measured screen
+// deltas (ref ink-centroid minus attempt-r5 ink-centroid, scantxt.py,
+// every 10f, median-3 smoothed) applied ON TOP of rDA/rE. Zero at
+// <=3300 (seam guard); rows hold (lerpTrack clamp) past their last key,
+// where the end fades own the frame.
+// Measured story: D text sinks ~6px and slides right; the "3.0" value
+// sits 5->9px HIGHER in the ref; both D arrows contract ~4-8px at the
+// ends; the E net-cash block is near screen-static (the P1 ride was
+// wrong during the hold) then sweeps left-down relative to the model
+// through the 3515-3535 exit whip.
+export const D_FIX: Record<"vbrT" | "vbrV" | "fixT" | "fixV", TrackRow[]> = {
+  vbrT: [[3300, 0, 0], [3320, 7.5, 2.0], [3335, 7.5, 2.8], [3345, 8.2, 3.4], [3355, 8.2, 4.0], [3365, 8.2, 4.8], [3375, 8.5, 5.1], [3385, 9.3, 5.7], [3395, 9.7, 6.4], [3405, 9.7, 6.9], [3415, 10.0, 7.8]],
+  vbrV: [[3300, 0, 0], [3320, -0.4, 0.7], [3335, -0.4, 1.3], [3345, -0.5, 1.5], [3355, -0.3, 2.0], [3365, -0.2, 2.1], [3375, 0.0, 2.9], [3385, 0.7, 3.1], [3395, 1.0, 3.7], [3405, 1.5, 3.8], [3415, 2.0, 4.5]],
+  fixT: [[3300, 0, 0], [3320, 2.8, -1.1], [3335, 2.7, -0.5], [3345, 3.2, 0.2], [3395, 3.5, 0.1], [3415, 4.0, -0.2]],
+  fixV: [[3300, 0, 0], [3320, 3.3, -6.0], [3335, 4.2, -6.9], [3345, 4.3, -7.3], [3355, 4.8, -7.4], [3365, 5.3, -7.9], [3375, 6.0, -8.0], [3385, 6.0, -8.4], [3395, 6.4, -8.4], [3405, 6.8, -8.7], [3415, 6.9, -8.7]],
+};
+// arrow endpoint deltas: rows are [frame, dx, dCy]
+export const D_ARR_FIX: Record<"redTip" | "redTail" | "tealTip" | "tealTail", TrackRow[]> = {
+  redTip: [[3300, 0, 0], [3320, 2, 0.4], [3345, 4, 0.6], [3375, 6, 0.8], [3405, 6, 1.0], [3415, 8, 1.1]],
+  redTail: [[3300, 0, 0], [3320, 0, 0.4], [3345, 0, 0.6], [3375, -2, 0.8], [3405, -2, 1.0], [3415, -2, 1.1]],
+  tealTip: [[3300, 0, 0], [3320, 2, 0.1], [3335, 2, -0.3], [3345, 0, -0.9], [3375, -2, -1.8], [3415, -2, -2.0]],
+  tealTail: [[3300, 0, 0], [3320, 2, 0.1], [3335, 4, -0.3], [3345, 4, -0.9], [3365, 6, -1.3], [3395, 6, -2.0], [3415, 8, -2.0]],
+};
+export const E_FIX: Record<"l1" | "l2" | "l3" | "redTip" | "redTail", TrackRow[]> = {
+  l1: [[3445, 2.0, 3.1], [3455, 2.0, 3.1], [3465, -1.2, 3.1], [3475, -3.6, 3.3], [3485, -3.8, 5.1], [3495, -4.7, 6.6], [3505, -7.4, 7.1], [3515, -12.0, 8.8], [3525, -19.7, 8.8], [3535, -27, 8]],
+  l2: [[3445, -2.9, 1.9], [3455, -2.9, 1.9], [3465, -4.2, 1.9], [3475, -5.6, 2.2], [3485, -6.4, 3.6], [3495, -6.9, 5.2], [3505, -7.6, 5.2], [3515, -13.5, 5.2], [3525, -19.7, 4.0], [3535, -27, 4]],
+  l3: [[3445, -3.4, 2.0], [3455, -3.4, 2.0], [3465, -4.6, 2.0], [3475, -4.7, 2.3], [3485, -6.0, 3.5], [3495, -8.2, 4.6], [3505, -8.3, 4.9], [3515, -15.5, 4.9], [3525, -22.4, 5.0], [3535, -28, 5]],
+  redTip: [[3445, 2, 0.6], [3455, 2, 0.6], [3465, 0, 1.2], [3485, -2, 2.5], [3505, -4, 3.1], [3515, -8, 6.6], [3525, -10, 7.1]],
+  redTail: [[3445, -2, 0.6], [3455, -4, 0.6], [3465, -6, 1.2], [3485, -7, 2.5], [3505, -10, 3.1], [3515, -16, 6.6], [3525, -28, 7.1], [3535, -40, 8]],
+};

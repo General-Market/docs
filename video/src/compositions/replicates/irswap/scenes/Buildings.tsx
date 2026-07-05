@@ -14,6 +14,7 @@ import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import * as THREE from "three";
 import {
   P1, TICKS_A, TICKS_C, BCOLORS, ANCHOR_1900, ANCHOR_3300, ANCHOR_3450,
+  D_FIX, D_ARR_FIX, E_FIX,
 } from "../data/buildings";
 import type { TrackRow } from "../data/buildings";
 import { CAM_KEYS_3D, PLQ_FIX } from "../data/buildings3d";
@@ -586,8 +587,8 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
   // solid → ghost at 0.30 over 2575-2600 (measured), back up 3085-3120
   const ghost = (f: number) =>
     f < 2575 ? 1 : f < 3085 ? Math.max(0.3, fadeOut(f, 2575, 2600)) : Math.min(1, 0.3 + fade(f, 3085, 3120) * 0.7);
-  const fixOp = fade(frame, 2345, 2355) * ghost(frame) * fadeOut(frame, 3421, 3427);
-  const fixArrowOp = fade(frame, 2361, 2363) * ghost(frame) * fadeOut(frame, 3427, 3438);
+  const fixOp = fade(frame, 2345, 2355) * ghost(frame) * fadeOut(frame, 3420, 3430);
+  const fixArrowOp = fade(frame, 2361, 2363) * ghost(frame) * fadeOut(frame, 3426, 3434);
 
   // red arrow: tip-first wipe 2490-2525 with an alpha ramp (ref head is
   // ~20% alpha mid-wipe), world-static after
@@ -598,9 +599,14 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
     (frame < 3086 ? 1 : frame < 3185 ? Math.max(0.45, fadeOut(frame, 3095, 3115)) : Math.min(1, 0.45 + fade(frame, 3185, 3210) * 0.55));
   // re-measured round 1: ref title inks in 3175-3215 (darkest-glyph
   // trace), ~25 frames earlier than the old 3195-3240 window
-  const dVbrOp = fade(frame, 3175, 3215) * fadeOut(frame, 3421, 3427);
-  const ncOp = fade(frame, 3443, 3450) * fadeOut(frame, 3520, 3540);
-  const ncArrowOp = frame >= 2495 ? Math.max(redOp * fadeOut(frame, 3421, 3427), fade(frame, 3427, 3438) * fadeOut(frame, 3520, 3545)) : 0;
+  // D->E transition re-measured round 6 (probe_fade.py, 3f steps): ref
+  // text holds FULL through 3420, ~50% at 3425, gone by 3430; teal arrow
+  // a beat later (full 3425, 55% 3430, gone 3435); the red arrow stays
+  // SOLID through 3430 and re-poses 3430-3440 (the old 3421/3427 windows
+  // ran 6-9 frames early and read as a premature ghost at 3425).
+  const dVbrOp = fade(frame, 3175, 3215) * fadeOut(frame, 3420, 3430);
+  const ncOp = fade(frame, 3440, 3452) * fadeOut(frame, 3520, 3540);
+  const ncArrowOp = frame >= 2495 ? Math.max(redOp * fadeOut(frame, 3430, 3437), fade(frame, 3433, 3440) * fadeOut(frame, 3520, 3545)) : 0;
 
   // track-riding anchor helpers (phase D screen overlays only)
   // rDA carries the measured phase-D correction (ref arrows sit ~14px
@@ -620,9 +626,18 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
     base[1],
   ];
   const rE = (base: readonly [number, number]): Pt => riding(frame, 3450, base, P1);
+  // r6: measured per-frame registration deltas layered on the base
+  // models (D_FIX/D_ARR_FIX/E_FIX rows in data/buildings.ts — ref minus
+  // attempt scan every 10f; the hand redraw drifts continuously, so the
+  // correction is a dense keyed track, not a single-frame anchor).
+  const fx = (base: Pt, rows: TrackRow[]): Pt => {
+    const d = lerpTrack(rows, frame);
+    return [base[0] + d[0], base[1] + d[1]];
+  };
 
-  // red arrow blend 3427-3438 phase-D pose → net-cash pose
-  const redSlide = fade(frame, 3427, 3438);
+  // red arrow blend 3430-3440 phase-D pose → net-cash pose (measured:
+  // solid D pose through 3430, E pose established by 3440)
+  const redSlide = fade(frame, 3430, 3440);
 
   return (
     <AbsoluteFill style={{ opacity: 1 - endFade }}>
@@ -630,21 +645,21 @@ export const BuildingsOverlay: React.FC<{ frame: number }> = ({ frame }) => {
       {/* Phase D tight two-shot; red arrow slides down 3427-3438 into the
           net-cash pose measured at 3450 */}
       <Arrow
-        tail={mixPt(rDA(ANCHOR_3300.redArrow.tail), rE(ANCHOR_3450.redArrow.tail), redSlide)}
-        tip={mixPt(rDA(ANCHOR_3300.redArrow.tip), rE(ANCHOR_3450.redArrow.tip), redSlide)}
+        tail={mixPt(fx(rDA(ANCHOR_3300.redArrow.tail), D_ARR_FIX.redTail), fx(rE(ANCHOR_3450.redArrow.tail), E_FIX.redTail), redSlide)}
+        tip={mixPt(fx(rDA(ANCHOR_3300.redArrow.tip), D_ARR_FIX.redTip), fx(rE(ANCHOR_3450.redArrow.tip), E_FIX.redTip), redSlide)}
         color={BCOLORS.red} thickness={18} headLen={25} headH={32}
         opacity={frame >= 3195 ? ncArrowOp : 0} />
-      <Arrow tail={rDA(ANCHOR_3300.tealArrow.tail)} tip={rDA(ANCHOR_3300.tealArrow.tip)}
+      <Arrow tail={fx(rDA(ANCHOR_3300.tealArrow.tail), D_ARR_FIX.tealTail)} tip={fx(rDA(ANCHOR_3300.tealArrow.tip), D_ARR_FIX.tealTip)}
         color={BCOLORS.teal} thickness={18} headLen={26} headH={33}
         opacity={frame >= 3180 ? fixArrowOp : 0} />
-      <Txt p={rDA(ANCHOR_3300.vbrTitle)} size={27} opacity={dVbrOp}>Variable Base Rate</Txt>
-      <RateValue p={rDA(ANCHOR_3300.vbrValue)} size={37} opacity={dVbrOp} value="5.0" />
-      <Txt p={rDA(ANCHOR_3300.fixedTitle)} size={25} opacity={frame >= 3180 ? fixOp : 0}>Fixed Rate</Txt>
-      <RateValue p={rDA(ANCHOR_3300.fixedValue)} size={32} opacity={frame >= 3180 ? fixOp : 0} value="3.0" />
+      <Txt p={fx(rDA(ANCHOR_3300.vbrTitle), D_FIX.vbrT)} size={27} opacity={dVbrOp}>Variable Base Rate</Txt>
+      <RateValue p={fx(rDA(ANCHOR_3300.vbrValue), D_FIX.vbrV)} size={37} opacity={dVbrOp} value="5.0" />
+      <Txt p={fx(rDA(ANCHOR_3300.fixedTitle), D_FIX.fixT)} size={25} opacity={frame >= 3180 ? fixOp : 0}>Fixed Rate</Txt>
+      <RateValue p={fx(rDA(ANCHOR_3300.fixedValue), D_FIX.fixV)} size={32} opacity={frame >= 3180 ? fixOp : 0} value="3.0" />
       {/* Net Cash Settlement */}
-      <Txt p={rE(ANCHOR_3450.l1)} size={24} opacity={ncOp}>Net Cash</Txt>
-      <Txt p={rE(ANCHOR_3450.l2)} size={24} opacity={ncOp}>Settlement</Txt>
-      <RateValue p={rE(ANCHOR_3450.l3)} size={30} opacity={ncOp} value="2.0" />
+      <Txt p={fx(rE(ANCHOR_3450.l1), E_FIX.l1)} size={24} opacity={ncOp}>Net Cash</Txt>
+      <Txt p={fx(rE(ANCHOR_3450.l2), E_FIX.l2)} size={24} opacity={ncOp}>Settlement</Txt>
+      <RateValue p={fx(rE(ANCHOR_3450.l3), E_FIX.l3)} size={30} opacity={ncOp} value="2.0" />
     </AbsoluteFill>
   );
 };
