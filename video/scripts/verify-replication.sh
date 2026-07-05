@@ -179,17 +179,20 @@ while IFS= read -r ts; do
   ATT_FRAME="$WORK/kf_att_${KF_IDX}.png"
   rm -f "$REF_FRAME" "$ATT_FRAME"
 
-  # Extract frame at this timestamp from both videos — loudly on failure
-  ffmpeg -i "$REFERENCE" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$REF_FRAME" -y 2>/dev/null \
+  # Extract frame at this timestamp from both videos — loudly on failure.
+  # -nostdin is LOAD-BEARING: without it ffmpeg consumes this while-loop's
+  # stdin (the timestamp list), mangling seeks into empty/garbage values
+  # that silently re-score frame 0 (realist r2: four keyframes at 0.214).
+  ffmpeg -nostdin -i "$REFERENCE" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$REF_FRAME" -y 2>/dev/null \
     || { echo "  WARN: ref keyframe extract failed at t=${ts}s" >&2; continue; }
-  ffmpeg -i "$ATTEMPT" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$ATT_FRAME" -y 2>/dev/null \
+  ffmpeg -nostdin -i "$ATTEMPT" -ss "$ts" -frames:v 1 -vf "scale=${REF_WIDTH}:${REF_HEIGHT}" "$ATT_FRAME" -y 2>/dev/null \
     || { echo "  WARN: attempt keyframe extract failed at t=${ts}s" >&2; continue; }
 
   if [ -s "$REF_FRAME" ] && [ -s "$ATT_FRAME" ]; then
     # SSIM via ffmpeg (same metric as the video component). ImageMagick's
     # `compare -metric SSIM` emits raw distortion on this build (identical=0),
     # which read as similarity poisoned the keyframe average.
-    KF_SSIM=$(ffmpeg -i "$REF_FRAME" -i "$ATT_FRAME" -lavfi ssim -f null - 2>&1 \
+    KF_SSIM=$(ffmpeg -nostdin -i "$REF_FRAME" -i "$ATT_FRAME" -lavfi ssim -f null - 2>&1 \
       | grep "All:" | sed 's/.*All://' | awk '{print $1}' || echo "0")
     if [ -z "$KF_SSIM" ]; then KF_SSIM="0"; fi
     KF_SCORES+=("$KF_SSIM")
