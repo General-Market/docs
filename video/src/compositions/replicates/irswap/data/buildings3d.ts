@@ -158,6 +158,27 @@ export const B3D: Record<"lender" | "bank" | "company", Building3DDef> = {
   company: { mid: [-58.502, -193.305], theta: -0.451, Wf: 81.397, L: 57.003, Hw: 64.376, Ha: 105.094, sdSign: -1, eSign: -1 },
 };
 
+// Plaque world-center corrections (round 5): the legacy plaqueWorld
+// unprojection guessed board depths off ground-contact rows; measured
+// board centers (boardfind non-CLIP rows + hand-verified crops at
+// f1900-f3410) Gauss-Newton-fit a per-board 3D center delta. Each fit
+// cross-validates at held-out poses within ~3-7px (company f3410 is the
+// reference redrawing the board lower at the D-pose — self-contradiction
+// a rigid point cannot satisfy; the fit still moves halfway toward it).
+export const PLQ_FIX: Record<"lender" | "company" | "bank", [number, number, number]> = {
+  lender: [-9.76, -3.06, -44.52],
+  company: [1.5, 12.76, 81.15],
+  bank: [-3.68, 18.43, 47.55],
+};
+
+// NOTE (round 5, negative A/B — do not retry): keyed D-phase board slides
+// toward the text-measured ref board positions at f3410/3450/3510 (the ref
+// re-poses/redraws the boards narrower and ~-22deg tilted through the D
+// hold) LOST SSIM at all three gates, all-plaques and lender-only alike —
+// the silhouette mismatch dominates, and sliding the wide flat board onto
+// the ref text center misregisters both border ends. The PLQ_FIX rigid
+// world fit is the winner.
+
 // Facade decor, fractions of Wf (u along Fb->Fo) / Hw (heights above base).
 export const B3D_DECOR = {
   lender: {

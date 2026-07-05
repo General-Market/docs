@@ -16,7 +16,7 @@ import {
   P1, TICKS_A, TICKS_C, BCOLORS, ANCHOR_1900, ANCHOR_3300, ANCHOR_3450,
 } from "../data/buildings";
 import type { TrackRow } from "../data/buildings";
-import { CAM_KEYS_3D } from "../data/buildings3d";
+import { CAM_KEYS_3D, PLQ_FIX } from "../data/buildings3d";
 import { ArrowPlanes, Building3D } from "./Buildings3D";
 import type { ArrowAlphas } from "./Buildings3D";
 import { clamp01, lerp1, lerpTrack } from "../lib/helpers";
@@ -100,13 +100,14 @@ type PlaqueDef = {
   appear: [number, number];
   drop: number;
   tilt: number; // in-plane board rotation (rad, canvas frame)
+  fix: V3; // measured world-center correction (data/buildings3d PLQ_FIX)
 };
 // the plaques drop in WITH their buildings (ref f1706-1760 / f2274+)
 const PLAQUES: PlaqueDef[] = [
-  { key: "plq-lender", text: "LENDER", def: plaqueWorld([258, 385, 360, 435], zL), appear: [1733, 1755], drop: 24, tilt: -0.16 },
-  { key: "plq-company", text: "COMPANY", def: plaqueWorld([356, 358, 464, 390], zC), appear: [1706, 1730], drop: 26, tilt: -0.07 },
+  { key: "plq-lender", text: "LENDER", def: plaqueWorld([258, 385, 360, 435], zL), appear: [1733, 1755], drop: 24, tilt: -0.16, fix: PLQ_FIX.lender },
+  { key: "plq-company", text: "COMPANY", def: plaqueWorld([356, 358, 464, 390], zC), appear: [1706, 1730], drop: 26, tilt: -0.07, fix: PLQ_FIX.company },
   // bank board is tall — its top edge overlaps the building base (ref)
-  { key: "plq-bank", text: "BANK", def: plaqueWorld([525, 380, 663, 424], zB), appear: [2274, 2312], drop: 18, tilt: -0.05 },
+  { key: "plq-bank", text: "BANK", def: plaqueWorld([525, 380, 663, 424], zB), appear: [2274, 2312], drop: 18, tilt: -0.05, fix: PLQ_FIX.bank },
 ];
 
 const drawPlaque = (text: string, tilt: number) => (
@@ -554,7 +555,11 @@ export const BuildingsWorld: React.FC<{ frame: number }> = ({ frame }) => {
           const op = fade(frame, s.appear[0], s.appear[1]) * (1 - endFade);
           if (op <= 0) return null;
           const dropT = 1 - fade(frame, s.appear[0], s.appear[1]);
-          const c = rotP(s.def.center, g);
+          const c = rotP([
+            s.def.center[0] + s.fix[0],
+            s.def.center[1] + s.fix[1],
+            s.def.center[2] + s.fix[2],
+          ], g);
           const board = drawPlaque(s.text, s.tilt);
           return (
             <CanvasPlane key={s.key} frame={frame}
