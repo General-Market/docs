@@ -483,6 +483,13 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
           {card.sub}
         </T>
         {card.copyIcon ? <Glyph kind="copy" size={12} color="#565A66" /> : null}
+        {card.greenBadge ? (
+          <svg width={15} height={15} viewBox="0 0 16 16" style={{ display: "block" }}>
+            <rect x="1" y="1" width="14" height="14" rx="4" fill="#35B36B" />
+            <path d="M5 9.5 A3.2 3.2 0 0 1 10.6 6.4 M11 6.5 L10.8 4.6 M11 6.5 L9.2 6.9" fill="none" stroke="#0E1116" strokeWidth={1.3} strokeLinecap="round" />
+            <path d="M11 6.5 A3.2 3.2 0 0 1 5.4 9.6 M5 9.5 L5.2 11.4 M5 9.5 L6.8 9.1" fill="none" stroke="#0E1116" strokeWidth={1.3} strokeLinecap="round" />
+          </svg>
+        ) : null}
         {card.badges?.map((b, i) => (
           <BadgeDot key={i} kind={b} />
         ))}
@@ -511,10 +518,12 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
           <T size={13} color={card.ageColor ?? C.green} weight={600}>
             {card.age}
           </T>
+          {/* r5 f0400: plate timer text is 11px, 53px wide (ours at 12px ran
+              59px and pushed every icon after it +12 right) */}
           {card.timer ? (
-            <Row gap={3} style={{ border: "1px solid #4A2E38", borderRadius: 9, padding: "2px 7px" }}>
+            <Row gap={2} style={{ border: "1px solid #4A2E38", borderRadius: 8, padding: "1px 4px" }}>
               <Glyph kind="clock" size={10} color={card.timer.color} />
-              <T size={12} color={card.timer.color} weight={600}>
+              <T size={11} color={card.timer.color} weight={600}>
                 {card.timer.text}
               </T>
             </Row>
@@ -536,16 +545,17 @@ const PulseCardRow: React.FC<{ card: PulseCard; y: number; geom: PGeom; hoverAct
           </Row>
         </Row>
       ) : null}
-      {/* handle */}
+      {/* handle — r5 f0400 TaxTime: plate handle ink is 85px for 14 chars
+          (11px font); 12px rendered 103px and pushed the num +18 right */}
       {card.handle ? (
         <Row gap={6} style={{ position: "absolute", left: geom.textX, top: handleTop }}>
-          <T size={12} color={card.handle.color} weight={600}>
+          <T size={11} color={card.handle.color} weight={600}>
             {card.handle.text}
           </T>
           {card.handle.num ? (
             <Row gap={3}>
               <Glyph kind="person" size={11} color={C.cyan} />
-              <T size={12} color={C.cyan} weight={600}>
+              <T size={11} color={C.cyan} weight={600}>
                 {card.handle.num}
               </T>
             </Row>
@@ -914,21 +924,23 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
           </Row>
         </div>
         {/* search */}
+        {/* r5 f0400: magnifier ink 1160-1175 (bigger, further left), placeholder
+            123px (11px font, ours at 12 ran 135), slash at 1326 */}
         <Row
-          gap={7}
+          gap={8}
           style={{
             position: "absolute",
             left: 1155,
             top: 13,
             width: 190,
             height: 28,
-            padding: "0 10px",
+            padding: "0 12px 0 6px",
             borderRadius: 14,
             background: "#1D202A",
           }}
         >
-          <Glyph kind="search" size={13} color="#565A66" />
-          <T size={12} color="#565A66" style={{ whiteSpace: "nowrap" }}>
+          <Glyph kind="search" size={15} color="#565A66" />
+          <T size={11} color="#565A66" style={{ whiteSpace: "nowrap" }}>
             {PNAV.searchPlaceholder}
           </T>
           <T size={12} color="#565A66" style={{ marginLeft: "auto" }}>
@@ -1036,57 +1048,65 @@ export const PulseScreen: React.FC<{ frame: number }> = ({ frame }) => {
           </svg>
         </Row>
       </div>
-      <Row gap={10} style={{ position: "absolute", left: 1184, top: 110 }}>
-        {PHEADING.presetChips.map((p, i) => {
-          const active = (PHEADING.activePresets as readonly number[]).includes(i);
-          return (
-            <Row
-              key={p}
-              gap={4}
-              style={{
-                borderRadius: 6,
-                padding: "4px 9px",
-                background: active ? "rgba(90,85,184,0.22)" : "#1A1D26",
-                border: `1px solid ${active ? "#5A55B8" : "#23262F"}`,
-              }}
-            >
-              <Glyph kind="copy" size={10} color={active ? "#A5A0E8" : "#7C808C"} />
-              <T size={11} color={active ? "#A5A0E8" : "#9EA1AB"} weight={600}>
-                {p}
-              </T>
-            </Row>
-          );
-        })}
-        <Glyph kind="question" size={15} color={C.icon} />
-        <Row gap={6} style={{ background: "#22252E", borderRadius: 15, padding: "7px 14px" }}>
-          <Glyph kind="sliders" size={13} color="#DFE2EA" />
-          <T size={14} color="#DFE2EA" weight={600}>
-            {PHEADING.display}
-          </T>
-          <Glyph kind="chevron" size={11} color="#7C808C" />
-        </Row>
+      {/* r5 f0400: chip ink 1192-1251 / 1274-1323 / 1345-1409 — 11px text in a
+          flex flow ran 78px wide and drifted the ? and Display +13-18 right.
+          Chips anchored absolutely, text 10px. */}
+      {PHEADING.presetChips.map((p, i) => {
+        const active = (PHEADING.activePresets as readonly number[]).includes(i);
+        return (
+          <Row
+            key={p}
+            gap={4}
+            style={{
+              position: "absolute",
+              left: [1191, 1266, 1344][i],
+              top: 110,
+              borderRadius: 6,
+              padding: "3px 7px",
+              background: active ? "rgba(90,85,184,0.22)" : "#1A1D26",
+              border: `1px solid ${active ? "#5A55B8" : "#23262F"}`,
+            }}
+          >
+            <Glyph kind="copy" size={10} color={active ? "#A5A0E8" : "#7C808C"} />
+            <T size={10} color={active ? "#A5A0E8" : "#9EA1AB"} weight={600}>
+              {p}
+            </T>
+          </Row>
+        );
+      })}
+      <div style={{ position: "absolute", left: 1427, top: 112 }}>
+        <Glyph kind="question" size={17} color={C.icon} />
+      </div>
+      <Row gap={6} style={{ position: "absolute", left: 1460, top: 108, background: "#22252E", borderRadius: 15, padding: "7px 14px" }}>
+        <Glyph kind="sliders" size={13} color="#DFE2EA" />
+        <T size={14} color="#DFE2EA" weight={600}>
+          {PHEADING.display}
+        </T>
+        <Glyph kind="chevron" size={11} color="#7C808C" />
       </Row>
       {/* heading tail — fixed positions measured from f0405 (icons spread wider than a flex flow) */}
       <div style={{ position: "absolute", left: 1604, top: 114 }}>
         <Glyph kind="bookmark" size={14} color={C.icon} />
       </div>
-      <div style={{ position: "absolute", left: 1640, top: 114 }}>
+      {/* r5 f0400 ink: monitor 1646, speaker 1686, target 1728 (21px — big),
+          calendar 1777 + "4" 1798, bars 1816 + 322.3 1832 */}
+      <div style={{ position: "absolute", left: 1645, top: 114 }}>
         <Glyph kind="monitor" size={14} color={C.icon} />
       </div>
-      <div style={{ position: "absolute", left: 1678, top: 114 }}>
+      <div style={{ position: "absolute", left: 1684, top: 114 }}>
         <Glyph kind="speaker" size={14} color={C.icon} />
       </div>
-      <div style={{ position: "absolute", left: 1722, top: 114 }}>
-        <Glyph kind="target" size={14} color={C.icon} />
+      <div style={{ position: "absolute", left: 1726, top: 112 }}>
+        <Glyph kind="target" size={18} color={C.icon} />
       </div>
-      <div style={{ position: "absolute", left: 1756, top: 113, width: 1, height: 16, background: "#23262F" }} />
-      <Row gap={4} style={{ position: "absolute", left: 1766, top: 113 }}>
+      <div style={{ position: "absolute", left: 1760, top: 113, width: 1, height: 16, background: "#23262F" }} />
+      <Row gap={4} style={{ position: "absolute", left: 1776, top: 113 }}>
         <Glyph kind="calendar" size={13} color="#9EA1AB" />
         <T size={13} color="#C8CBD5" weight={600}>
           {PHEADING.walletChip}
         </T>
       </Row>
-      <Row gap={4} style={{ position: "absolute", left: 1808, top: 112 }}>
+      <Row gap={4} style={{ position: "absolute", left: 1815, top: 112 }}>
         <SolanaBars size={11} />
         <T size={14} color="#F2F4F9" weight={700}>
           {PHEADING.balanceChip}

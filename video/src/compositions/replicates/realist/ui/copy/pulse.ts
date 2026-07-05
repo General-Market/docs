@@ -104,6 +104,7 @@ export type PulseCard = {
   sub2?: { text: string; color: string };
   copyIcon: boolean; // the little copy glyph after the sub
   badges?: Badge[];
+  greenBadge?: boolean; // TaxTime: 15px green rounded square w/ circular arrows (plate x1513)
   keyBadge?: string; // GROKOFFICE "2" next to the key glyph
   avatar: string;
   age: string;
@@ -295,7 +296,9 @@ export const PULSE_MIGRATED: PulseCard[] = [
     stats: { v: "$2.0M", mc: "$655K", mcColor: PCOLORS.greenMc, single: "10.000000000 SOL" },
   },
   {
-    name: "TaxTime", sub: "Tax Refund", copyIcon: true, badges: ["check"],
+    // r5 f0400: plate shows [green arrows square 1513-1527][badge 1536-1546],
+    // no copy glyph between sub and badges
+    name: "TaxTime", sub: "Tax Refund", copyIcon: false, greenBadge: true, badges: ["check"],
     avatar: "av-taxtime.png", age: "19m", ageColor: PCOLORS.agePurple, ring: PCOLORS.goldRing,
     timer: { text: "10:02:41", color: PCOLORS.timerRed },
     icons: ["person", "link", "search"], people: "29", bell: "27",
