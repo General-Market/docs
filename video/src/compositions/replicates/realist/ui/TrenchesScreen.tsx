@@ -806,8 +806,8 @@ export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
 
   // The reference is a compressed screen recording; when the editor zoom
   // scales it up the footage softens further. Match that optical character —
-  // measured SSIM optimum: sigma ~2.0 at s=1.0, ~3.5 at s=1.366.
-  const blurPx = 2.0 + 4.1 * (s - 1);
+  // re-tuned after the zoom refit: sigma ~1.5 at s=1.0, ~2.5 at s=1.37.
+  const blurPx = 1.5 + 2.7 * (s - 1);
 
   return (
     <AbsoluteFill style={{ background: C.pageBg, fontFamily: FONT, overflow: "hidden" }}>
