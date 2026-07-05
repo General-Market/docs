@@ -159,6 +159,23 @@ export const D_FIX: Record<"vbrT" | "vbrV" | "fixT" | "fixV", TrackRow[]> = {
   fixT: [[3300, 0, 0], [3320, 2.8, -1.1], [3335, 2.7, -0.5], [3345, 3.2, 0.2], [3395, 3.5, 0.1], [3415, 4.0, -0.2]],
   fixV: [[3300, 0, 0], [3320, 3.3, -6.0], [3335, 4.2, -6.9], [3345, 4.3, -7.3], [3355, 4.8, -7.4], [3365, 5.3, -7.9], [3375, 6.0, -8.0], [3385, 6.0, -8.4], [3395, 6.4, -8.4], [3405, 6.8, -8.7], [3415, 6.9, -8.7]],
 };
+// Yellow road refit (round 6): through the right swing the reference
+// REDRAWS the road as a thinner ribbon sliding deeper into the map —
+// measured road-ink centroids (roadscan.py: ref n~1900 px vs ours
+// ~4100, screen delta up to (+16,+21) by f3425) unprojected onto the
+// floor plane per frame. ROAD_FIX rows are pre-yaw world deltas
+// [frame, dwx, dwz]; ROAD_SQZ is the f2505 road polygon squeezed 0.55
+// about its centerline (world coords, matches the m2505 point order).
+export const ROAD_FIX: TrackRow[] = [
+  [3300, 0, 0], [3305, 15.2, 7.2], [3325, 13.7, 15.6], [3345, 11.7, 43.4],
+  [3365, 11.4, 67.9], [3385, 14.5, 70.0], [3405, 12.3, 73.4], [3425, 12.0, 76.5],
+  [3445, 13.2, 78.1], [3465, 13.5, 76.4], [3485, 22.0, 72.5], [3505, 33.1, 68.1],
+];
+export const ROAD_SQZ: [number, number][] = [
+  [-160.7, -188.6], [-143.0, -199.4], [4.5, -297.0], [53.3, -274.8], [152.9, -200.9],
+  [124.7, -184.8], [49.5, -239.0], [-115.8, -174.2], [-136.9, -124.7],
+];
+
 // arrow endpoint deltas: rows are [frame, dx, dCy]
 export const D_ARR_FIX: Record<"redTip" | "redTail" | "tealTip" | "tealTail", TrackRow[]> = {
   redTip: [[3300, 0, 0], [3320, 2, 0.4], [3345, 4, 0.6], [3375, 6, 0.8], [3405, 6, 1.0], [3415, 8, 1.1]],

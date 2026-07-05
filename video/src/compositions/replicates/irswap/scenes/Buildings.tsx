@@ -14,7 +14,7 @@ import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import * as THREE from "three";
 import {
   P1, TICKS_A, TICKS_C, BCOLORS, ANCHOR_1900, ANCHOR_3300, ANCHOR_3450,
-  D_FIX, D_ARR_FIX, E_FIX,
+  D_FIX, D_ARR_FIX, E_FIX, ROAD_FIX, ROAD_SQZ,
 } from "../data/buildings";
 import type { TrackRow } from "../data/buildings";
 import { CAM_KEYS_3D, PLQ_FIX } from "../data/buildings3d";
@@ -311,12 +311,20 @@ export const FloorMap: React.FC<{ frame: number; g?: number }> = ({ frame, g = c
         [538, 457], [546, 457], [554, 462], [572, 470], [579, 473], [587, 471], [595, 473], [618, 472]]),
       "#DC9DA0", 1.6,
     );
-    // yellow road (2505, exact): one polygon through the visible segments
-    poly(
-      m2505([[306, 368], [321, 366], [430, 354], [464, 358], [543, 369],
-        [526, 375], [464, 367], [333, 378], [307, 389]]),
-      BCOLORS.road, "#DDDCB0", 1,
-    );
+    // yellow road (2505, exact): one polygon through the visible segments.
+    // r6: the ref redraws it thinner (0.55 cross-width) and slides it
+    // deeper through the right swing — blend to ROAD_SQZ and ride the
+    // measured ROAD_FIX world track (identity <=3300, seam-exact: the
+    // base points stay runtime-unprojected).
+    const roadBase = m2505([[306, 368], [321, 366], [430, 354], [464, 358], [543, 369],
+      [526, 375], [464, 367], [333, 378], [307, 389]]);
+    const rs = clamp01((f - 3300) / 30);
+    const rSlide = lerpTrack(ROAD_FIX, f);
+    const road = rs <= 0 ? roadBase : roadBase.map((p, i): Pt => [
+      p[0] + (ROAD_SQZ[i][0] - p[0]) * rs + rSlide[0],
+      p[1] + (ROAD_SQZ[i][1] - p[1]) * rs + rSlide[1],
+    ]);
+    poly(road, BCOLORS.road, "#DDDCB0", 1);
     // red dashed V-road (2505): short dashes along the two branches
     const dashes = (pts: Pt[]) => {
       const wpts = m2505(pts);
