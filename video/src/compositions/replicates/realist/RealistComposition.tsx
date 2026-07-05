@@ -476,6 +476,33 @@ const STYLE_GEO = {
   F: { cx: 962, inkH: 62, cy: 534, parenCx: 966, parenCy: 609, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
 } as const;
 
+// r5: glyph-shaped blurred UNDERLAYERS for the SELLS halos — the r4
+// caption-1 technique ported. Ink-mass census at 11 settled probes
+// (work/r5/glow/notes.md): the plate halo is WIDE and DIM — the red
+// mid band (r 70-140) carries 1.9-2.7x the render's mass and lum 60-100
+// 1.5-3x, while the render's bright core OVERSHOOTS 2-4x (lum150p).
+// textShadow cannot make that shape (r3b: alpha boost 0.584 vs 0.598
+// baseline); a blurred duplicate of the fitted line under the crisp
+// layer can. It must ride the same wrappers (dy, scaleMul, fadeMain/
+// fadeParen) or every push double-ghosts. (blur, opacity) swept per
+// style/color on caption-crop SSIM; sweep table in work/r5/glow/notes.md.
+type Bloom = { blur: number; opacity: number } | null;
+type SellsBloomMap = Record<"A" | "B" | "F", { red: Bloom; blue: Bloom }>;
+const SELLS_BLOOM: SellsBloomMap = process.env.REMOTION_GLOW_SWEEP
+  ? (JSON.parse(process.env.REMOTION_GLOW_SWEEP) as SellsBloomMap)
+  : {
+      // red sweep (f480, crop SSIM vs baseline 0.8332): (30,.25) .8355 ·
+      // (45,.35) .8368 · (30,.4) .8381 · (20,.5) .8399 · (30,.55) .8405 ·
+      // (25,.6) .8412 · (30,.7) .8422 · (30,.85) .8434 but overshoots
+      // plate red_sat (31.1k vs 29.0k) and regresses B1045 r2c4 below
+      // baseline — (30,.7) is the mass-converged winner (A620 sat 27.3k
+      // vs plate 27.6k, mid 15.2k vs 15.3k), all cells >= baseline at
+      // A480/620/715, B1045/1180, F1605/1620, guards f900/1268/1513 up.
+      A: { red: { blur: 30, opacity: 0.7 }, blue: null },
+      B: { red: { blur: 30, opacity: 0.7 }, blue: null },
+      F: { red: { blur: 30, opacity: 0.7 }, blue: null },
+    };
+
 const FittedLine: React.FC<{
   text: string; cx: number; cy: number; inkW: number; inkH: number;
   color: string; glow: string; tracking: string;
@@ -520,6 +547,7 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
   const t = frame - ev.f;
   if (t < 0) return null;
   const geo = STYLE_GEO[ev.style];
+  const bloom = SELLS_BLOOM[ev.style];
   // pop — r3: entrance frames re-anchored 2f earlier (first visible ink
   // on the plates, red-mask sweep of all 33 events); the r2 pop fit was
   // taken at old-f (= t=2 now), so a re-solves to keep s(t=2)=1.33.
@@ -668,6 +696,16 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
         </div>
       )}
       <div style={{ position: "absolute", inset: 0, opacity: fadeMain }}>
+        {bloom.red && (
+          <div style={{ position: "absolute", inset: 0, opacity: bloom.red.opacity, filter: `blur(${bloom.red.blur}px)` }}>
+            <FittedLine
+              text={ev.main}
+              cx={geo.cx} cy={geo.cy} inkW={ev.mainW} inkH={geo.inkH}
+              color={RED} glow={RED_GLOW} tracking="0.03em"
+              scaleMul={s}
+            />
+          </div>
+        )}
         <FittedLine
           text={ev.main}
           cx={geo.cx} cy={geo.cy} inkW={ev.mainW} inkH={geo.inkH}
@@ -688,6 +726,17 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
         >
           {/* paren line materialises already ~2.1x and shrinks in:
               plate f0502-0510 widths 830/722/648/550 → s = 1 + 1.45·e^(−t/7) */}
+          {bloom.blue && (
+            <div style={{ position: "absolute", inset: 0, opacity: bloom.blue.opacity, filter: `blur(${bloom.blue.blur}px)` }}>
+              <FittedLine
+                text={ev.paren}
+                cx={geo.parenCx} cy={geo.parenCy} inkW={ev.parenW} inkH={geo.parenInkH}
+                color={BLUE} glow={BLUE_GLOW} tracking="0.18em"
+                scaleMul={(1 + 1.45 * Math.exp(-t / 7)) * parenShrink}
+                compactParens={ev.style === "F"}
+              />
+            </div>
+          )}
           <FittedLine
             text={ev.paren}
             cx={geo.parenCx} cy={geo.parenCy} inkW={ev.parenW} inkH={geo.parenInkH}
