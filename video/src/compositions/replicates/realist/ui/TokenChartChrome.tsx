@@ -228,8 +228,13 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
         </svg>
       </div>
 
-      {/* ── foot row (y948–988) ── */}
-      <div style={{ position: "absolute", left: 0, top: 958, width: 1610, height: 18 }}>
+      {/* ── white time-axis knob, bottom-right corner — plate bbox
+          x1591-1603 y928-939 (persistent f620/f900/f1280/f1550), ink #E1E8F0 ── */}
+      <div style={{ position: "absolute", left: 1591, top: 928, width: 13, height: 12, borderRadius: 6, background: "#E1E8F0" }} />
+
+      {/* ── foot row (y948–988) — r5 ink-row profile f1280: plate caps 960-971
+          vs render 967-977 => the strip sat 7px LOW (r4 strut law) ── */}
+      <div style={{ position: "absolute", left: 0, top: 951, width: 1610, height: 18 }}>
         {CHART_FOOT.ranges.map((r, i) => (
           <span key={r} style={{ position: "absolute", left: 64 + i * 28, top: 2 }}>
             <T size={12} color={C.textMid}>
@@ -261,7 +266,9 @@ export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
         </span>
         <span style={{ position: "absolute", left: 1587, top: 2 }}>
-          <T size={12} weight={600} color="#4a7dd8">
+          {/* r5: plate peak-ink probe f1280 x1585-1625 y954-970 = #716D9F —
+              muted purple, not bright blue */}
+          <T size={12} weight={600} color="#716D9F">
             {CHART_FOOT.auto}
           </T>
         </span>

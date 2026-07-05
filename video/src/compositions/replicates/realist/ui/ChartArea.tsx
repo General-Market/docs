@@ -426,7 +426,10 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
       [42, ":42"],
     ] as const) {
       const x = slotX(TIME_SLOT0 + m * 60 + off);
-      if (x > VIEW_L - 40 && x < VIEW_R + 40) timeCols.push({ text: `15:0${3 + m}${suffix}`, x });
+      // r5: labels must stay INSIDE the pane — the old +40 margin painted
+      // "15:05:28" into the bottom-right corner (x~1597 y~934) where the
+      // plate shows only the white axis knob (TokenChartChrome).
+      if (x > VIEW_L + 32 && x < VIEW_R - 32) timeCols.push({ text: `15:0${3 + m}${suffix}`, x });
     }
   }
 
