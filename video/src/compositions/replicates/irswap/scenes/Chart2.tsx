@@ -334,6 +334,83 @@ const camRefit = (f: number): V3 => {
 };
 export const camChart2 = camRefit;
 
+// ── wall-layer registration refit (round 5) ──────────────────────
+// The r4 diffgrids pinned a residual "doubled ink" misregistration on
+// the wall layer (doubled curve / fixed line / labels) across
+// 3750-4110, worst through the whip. ICP similarity fits of the ref's
+// red-curve + grey-line + green-dash pixels against the model geometry
+// in WALL space (through the exact C2R camera; work/r5/c2/fitwall.py,
+// overlay-verified at 3850/3900/3919/4050/4075) show the ref REDRAWS
+// the whole wall diagram per hold — the same hand-drawn 2.5D as the
+// bar layer (C2BAR) and the floor (C2FLR): ~7-13% larger with a ~-1°
+// roll through hold 1, ~15% larger through the whip, snapping ~4%
+// smaller for hold 2 (roll drifting to -2° by 4050), and a third pose
+// for the pull-back that converges near identity by 4100. Correction:
+// per-frame in-plane similarity about the curve×line crossing,
+//   T(p) = A + k·R(θ)·(p−A) + (ds, dy)      (wall units, y up),
+// applied to the WallChart canvas. First row = identity, so every
+// frame ≤3735 (incl. the f3700 anchor zero-seam and the 3572-3588
+// crossfade) renders the exact original tree; the last row holds
+// through the 4112-4131 fly-out.
+const C2WREG: [number, number, number, number, number][] = [
+  // [f, k, theta, ds, dy] — trimmed-robust fit, rms 0.5-2.4 wall units
+  [3735, 1, 0, 0, 0],
+  // hold-1 rows (3750-3850) A/B'd to identity: the fitted k≈1.07-1.10
+  // scale REGRESSED the 3850 gate .7405->.7191 (the ICP traded the
+  // curve's own shape error into scale; the hatch/base pose measured at
+  // 3850 was already the winner). Identity here also keeps the whole
+  // hold-1 era at the committed hatch-refit optimum. Fitted originals:
+  // [3750,1.0671,-.01705,1.65,-.01] [3765,1.0814,-.0186,.46,-.72]
+  // [3780,1.0938,-.0184,.56,-.89] [3800,1.0968,-.0176,.66,-.89]
+  // [3825,1.0954,-.01695,-.26,-1.21] [3850,1.1022,-.02022,-.63,-1.27]
+  [3850, 1, 0, 0, 0],
+  [3863, 1.1236, -0.02078, 0.06, -0.97],
+  [3875, 1.132, -0.01721, -0.35, -0.87],
+  [3885, 1.1283, -0.02352, 0.04, -1.25],
+  [3888, 1.1464, -0.02475, 0.04, -0.27],
+  [3891, 1.1433, -0.02438, -1.41, -0.36],
+  [3894, 1.1509, -0.01783, -1.02, 0.34],
+  [3897, 1.1519, -0.00798, -1.05, 1.06],
+  [3900, 1.1515, 0.00009, -0.55, 1.65],
+  [3903, 1.1425, 0.01242, -0.68, 1.9],
+  [3906, 1.1382, 0.01544, -0.24, 2.0],
+  [3909, 1.1543, 0.02146, -0.49, 1.86],
+  [3912, 1.1851, 0.02127, -0.32, 2.08],
+  [3915, 0.9783, 0.01325, 0.8, -2.14],
+  [3919, 0.9423, 0.01114, -4.57, -3.22],
+  [3925, 0.9379, 0.00123, -0.07, 0.87],
+  [3930, 0.9876, -0.00823, 1.07, 0.52],
+  [3950, 0.9902, -0.00992, -0.42, 0.19],
+  [3975, 0.971, -0.01256, 0.36, 0.82],
+  [4000, 0.9818, -0.02025, -0.07, 1.08],
+  [4025, 0.9597, -0.02891, 0.39, 2.0],
+  [4050, 0.9633, -0.03453, -1.02, 1.98],
+  [4065, 0.9779, 0.02121, 2.73, -1.02],
+  [4075, 1.0527, 0.03553, 0.37, -7.02],
+  [4089, 1.0443, 0.02623, -0.59, -2.5],
+  [4100, 1.0154, 0.0141, -1.23, 0.7],
+];
+const WREG_A: Pt = [S_CROSS, yLine(S_CROSS)]; // wall anchor (crossing)
+const wregRow = (i: 1 | 2 | 3 | 4) => C2WREG.map((r) => [r[0], r[i]] as [number, number]);
+const WREG_K = wregRow(1);
+const WREG_TH = wregRow(2);
+const WREG_DS = wregRow(3);
+const WREG_DY = wregRow(4);
+type Wreg = { k: number; th: number; ds: number; dy: number };
+const wregAt = (f: number): Wreg => ({
+  k: lerp1(WREG_K, f),
+  th: lerp1(WREG_TH, f),
+  ds: lerp1(WREG_DS, f),
+  dy: lerp1(WREG_DY, f),
+});
+// (a wall-space inverse restatement for the badge bboxes was A/B'd and
+// LOST — the badges now draw outside the transform at their measured
+// positions; see badgeWall and the draw's save/restore.)
+// canvas-space form (canvas x = s − S0, y = Y_TOP − y_wall, y DOWN):
+// G(c) = AC + (ds, −dy) + k·Rc(−θ)·(c − AC)
+const WREG_ACX = S_CROSS - S0;
+const WREG_ACY = Y_TOP - yLine(S_CROSS);
+
 // ── background-bar depth parallax ─────────────────────────────────
 // The 11 gridlines/bars sit on a plane BEHIND the diagram. We take the
 // fitted wall and push a copy of it back — uniformly scaled about the
@@ -404,6 +481,10 @@ const badgeWall = (
   const yaw = camChart2Yaw(frame);
   const a = unprojToWall(WALL, bbox[0], bbox[1], cam, yaw);
   const b = unprojToWall(WALL, bbox[2], bbox[3], cam, yaw);
+  // A/B (round 5): restating the badge bbox through wregInv(g(frame))
+  // mis-sits BADGE1 during hold-1 (visible from its 3814 pop, where the
+  // wall transform is identity) — the measured-position base wins at the
+  // long static hold; the whip frames it costs are fast motion.
   return { s: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]) };
 };
 const BADGE1 = badgeWall(3900, [412, 352, 462, 407]); // tail up
@@ -438,8 +519,32 @@ const REGION2 = regionPoly(S_CROSS, CURVE[CURVE.length - 1][0]);
 // right at (deg − 90°) ≈ 40-44° screen-ish. pitch in wall units. ref/off:
 // a light-stripe center passes `off` units along the normal from `ref`
 // (the rectified measurement patch centroid — region-fixed).
-const HATCH1 = { deg: 46.1, pitch: 4.06, ref: [161.054, 172.714] as Pt, off: -1.262, lw: 1.35 };
-const HATCH2 = { deg: 50.2, pitch: 4.535, ref: [378.555, 126.157] as Pt, off: -0.986, lw: 1.5 };
+// The rectified measurements were taken at f3850 (region 1) / f4050
+// (region 2) and therefore CARRY the ref's redraw pose at those frames.
+// hatchBase divides that pose out (canvas-space inverse of C2WREG), so
+// the drawn lattice + the forward transform reproduces the measurement
+// exactly at its frame and tracks the redraw everywhere else (verified:
+// the ref's lattice angle follows the fitted art roll −0.020→0.000 rad
+// between 3850 and 3900, and its pitch scales toward k).
+type Hatch = { deg: number; pitch: number; ref: Pt; off: number; lw: number };
+const hatchBase = (m: Hatch & { f: number }): Hatch => {
+  const g = wregAt(m.f);
+  const a = (m.deg * Math.PI) / 180;
+  const q: Pt = [m.ref[0] + m.off * Math.cos(a), m.ref[1] + m.off * Math.sin(a)];
+  const c = Math.cos(g.th);
+  const sn = Math.sin(g.th);
+  const vx = q[0] - WREG_ACX - g.ds;
+  const vy = q[1] - WREG_ACY + g.dy;
+  return {
+    deg: m.deg + (g.th * 180) / Math.PI,
+    pitch: m.pitch / g.k,
+    ref: [WREG_ACX + (c * vx - sn * vy) / g.k, WREG_ACY + (sn * vx + c * vy) / g.k],
+    off: 0,
+    lw: m.lw / g.k,
+  };
+};
+const HATCH1 = hatchBase({ deg: 46.1, pitch: 4.06, ref: [161.054, 172.714], off: -1.262, lw: 1.35, f: 3850 });
+const HATCH2 = hatchBase({ deg: 50.2, pitch: 4.535, ref: [378.555, 126.157], off: -0.986, lw: 1.5, f: 4050 });
 
 const C = {
   gridA: "#EDEDED",
@@ -614,6 +719,21 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     const mS = (s: number) => s - S0;
     const mY = (y: number) => Y_TOP - y;
+    // wall-layer registration (C2WREG): in-plane similarity about the
+    // crossing, canvas form (y down ⇒ rotate −θ, translate (ds, −dy)).
+    // Identity rows skip the ops entirely — exact original rasterization.
+    // The badges are drawn AFTER the matching restore — they were each
+    // measured at their own frame and win at their measured positions
+    // under every pose (A/B: riding the transform lost at 3850 hold-1
+    // and at the 3900 whip alike).
+    ctx.save();
+    const g = wregAt(f);
+    if (g.k !== 1 || g.th !== 0 || g.ds !== 0 || g.dy !== 0) {
+      ctx.translate(WREG_ACX + g.ds, WREG_ACY - g.dy);
+      ctx.rotate(-g.th);
+      ctx.scale(g.k, g.k);
+      ctx.translate(-WREG_ACX, -WREG_ACY);
+    }
     const poly = (pts: Pt[]) => {
       ctx.beginPath();
       ctx.moveTo(mS(pts[0][0]), mY(pts[0][1]));
@@ -796,6 +916,7 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.fillText(label, 0, bh * 0.04);
       ctx.restore();
     };
+    ctx.restore(); // end C2WREG — badges draw at measured positions
     badge(BADGE1, "1", true, pop(f, 3814, 3824));
     badge(BADGE2, "2", false, pop(f, 3994, 4004));
   }, []);
