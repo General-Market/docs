@@ -353,7 +353,9 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
         if (!g) return null;
         const x = slotX(t.s);
         if (x < VIEW_L + 2 || x > VIEW_R - 1) return null;
-        const col = t.c === "g" ? C.candleGreen : C.candleRed;
+        const flip = t.cc ? stepPairs(t.cc, f) : null;
+        const green = flip === null ? t.c === "g" : flip === 1;
+        const col = green ? C.candleGreen : C.candleRed;
         const [bt, bb, wt, wb] = g;
         return (
           <React.Fragment key={`c${i}`}>
