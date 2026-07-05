@@ -84,13 +84,17 @@ fi
 
 # VERIFY_PUBLIC_DIR: slim public dir (APFS clone) so bundling doesn't
 # byte-copy the full multi-GB public/ tree — required when disk is tight.
+# VERIFY_ENTRY: alternate entry point (e.g. src/index-replicas.ts) so the
+# bundle excludes unrelated comps whose module-level asset preloads 404
+# against a slim public dir.
 PUBLIC_DIR_ARGS=()
 if [ -n "${VERIFY_PUBLIC_DIR:-}" ]; then
   PUBLIC_DIR_ARGS=(--public-dir "$VERIFY_PUBLIC_DIR")
   echo "  public dir: $VERIFY_PUBLIC_DIR" >&2
 fi
+ENTRY="${VERIFY_ENTRY:-src/index.ts}"
 
-if ! npx remotion render src/index.ts "$COMP_ID" "$ATTEMPT" --codec h264 "${PUBLIC_DIR_ARGS[@]}" 2>/dev/null; then
+if ! npx remotion render "$ENTRY" "$COMP_ID" "$ATTEMPT" --codec h264 "${PUBLIC_DIR_ARGS[@]}" 2>/dev/null; then
   echo "ERROR: Remotion render failed" >&2
   echo "SCORE: 0"
   exit 1
