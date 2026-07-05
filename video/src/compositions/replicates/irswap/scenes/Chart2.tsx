@@ -737,6 +737,19 @@ const C2FLR: [number, number, number, number][] = [
   [3915, -58, 45, 1],
   [3930, 0, 0, 1],
 ];
+// r6 NEGATIVE A/B: replacing the 3811-3901 block with per-frame all-ink
+// trimmed-ICP floor fits (work/r6/c2/floorfit.py, red+teal+grey classes,
+// rms 15-26 floor units) LOST at every gate — 3826 .7296→.7275, 3850
+// .7470→.7458, 3871 .7169→.7146, 3886 .7247→.7230, 3905 .6619→.6550.
+// Fifth confirmation: mask-fit optima lose to the r4 rendered-still SSIM
+// search that produced the rows above (the ref redraws the cards'
+// internal layout, so any floor similarity leaves 20+ units of residual
+// and the ICP spends it on the wrong elements). A red-ink-only fit for
+// the bottom-right map squiggle diverged outright (the mask catches the
+// wall curve and the ±90-unit prefilter can't hold it) — the squiggle
+// needs its own scanner before its bolding can ship (ref draws it as a
+// dark double stroke; ours is pale #DC9DA0 — presence noted, position
+// track missing).
 const FLR_DX: [number, number][] = C2FLR.map((r) => [r[0], r[1]]);
 const FLR_DZ: [number, number][] = C2FLR.map((r) => [r[0], r[2]]);
 const FLR_S: [number, number][] = C2FLR.map((r) => [r[0], r[3]]);
