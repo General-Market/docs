@@ -508,9 +508,13 @@ const sqInterp = (K: SqKey[], f: number): { pts: Pt[]; doff: Pt } => {
 };
 // width (wu) and stroke core by phase: overhead ~2px dusty, eye bolder
 // ~3.6px screen and more saturated, pull-back washes toward the sheet
+// widths bumped +0.4-0.5 closed-loop (round 6): with the scan-measured
+// widths the CanvasPlane pipeline (res 0.9 + texture filtering) rendered
+// only ~99 strict-red pixels at 4850 vs the ref's 350 (cores matched
+// within 2-4 levels; the footprint was thin, not light)
 const SQ_W: [number, number][] = [
-  [4710, 2.1], [4900, 2.2], [4940, 2.5], [4980, 2.85], [5210, 2.85],
-  [5225, 2.6], [5240, 2.3],
+  [4710, 2.6], [4900, 2.7], [4940, 2.9], [4980, 3.15], [5210, 3.15],
+  [5225, 2.8], [5240, 2.4],
 ];
 const SQ_INK: [number, number, number, number][] = [
   [4750, 224, 196, 200], [4810, 219, 189, 192], [4880, 219, 188, 192],
