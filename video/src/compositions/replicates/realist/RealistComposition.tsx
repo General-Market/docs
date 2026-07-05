@@ -428,7 +428,9 @@ const BLUE_GLOW = "0 0 5px rgba(65,184,224,0.9), 0 0 12px rgba(62,184,255,0.65),
 const STYLE_GEO = {
   A: { cx: 960, inkH: 62, cy: 537, parenCx: 967, parenCy: 610, parenInkH: 49, sparkPad: 35, sparkSize: 44 },
   B: { cx: 964, inkH: 80, cy: 540, parenCx: 964, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
-  F: { cx: 960, inkH: 62, cy: 533, parenCx: 960, parenCy: 630, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
+  // F parenCy re-measured r3b: settled blue ink band f1610-1630 is
+  // y 562-647 → cy 602 (the old 630 sat the lockup 28px low)
+  F: { cx: 960, inkH: 62, cy: 536, parenCx: 960, parenCy: 602, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
 } as const;
 
 const FittedLine: React.FC<{
@@ -513,25 +515,49 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       fadeMain = 1 - clamp01((frame - (ev.pushAt + 13)) / 6);
       fadeParen = 1 - clamp01((frame - (ev.pushAt + 14)) / 5);
     }
-  } else if (ev.pushAt !== null) {
-    const tau = ev.style === "A" ? 5.3 : 2.2;
-    const tp = frame - ev.pushAt;
-    if (tp > 0) {
+  } else if (ev.pushAt !== null && ev.style === "A") {
+    // r3b: red-mask sweeps of ev848 (f866-882) and ev873 (f896-914) show
+    // the A-push BEGINS ~3f before the recorded pushAt (the same
+    // detection-lag bias the entrance re-anchor corrected) and follows
+    // an S-curve, not the exponential — measured dy from true start:
+    // ev848 t1:13 t3:36 t5:129 t9:168 · ev873 t2.5:68 t4.5:104 t10:171.
+    // The old exp(τ5.3) from pushAt left the main ~50px high for
+    // several frames of every push (double-ghost in the f900 diff).
+    const tpe = frame - (ev.pushAt - 3);
+    if (tpe > 0) {
+      const TAB: [number, number][] = [[0, 0], [1, 10], [2, 30], [3, 60], [4, 95], [5, 125], [6, 145], [8, 165], [10, 173], [12, 177]];
+      const S = (tt: number): number => {
+        if (tt >= 12) return 177;
+        for (let i = 1; i < TAB.length; i++) {
+          if (tt <= TAB[i][0]) {
+            const [t0, d0] = TAB[i - 1];
+            const [t1, d1] = TAB[i];
+            return d0 + ((d1 - d0) * (tt - t0)) / (t1 - t0);
+          }
+        }
+        return 177;
+      };
       // rest y of the pushed main measured 714-715 across events
-      dy = (715 - geo.cy) * (1 - Math.exp(-tp / tau));
-      // the baked paren line travels farther and slightly slower than
-      // the main (measured on event 1, f495-512: τ=5.55; settled pushed
-      // paren cy reads 780 on the plates → D=170), and the pushed block
-      // collapses its pop and shrinks to ~0.95
-      dyParen = 170 * (1 - Math.exp(-tp / 5.55)) - dy;
-      parenShrink = 1 - 0.049 * (1 - Math.exp(-tp / 1.8));
-      const fadeFrom = ev.pushAt + (ev.style === "A" ? 9 : 5);
-      const dur = ev.style === "A" ? 14 : 18; // plate decays: gone push+20..27
-      fadeMain = 1 - clamp01((frame - fadeFrom) / dur);
+      dy = ((715 - geo.cy) / 177) * S(tpe);
+      // paren travels 170 total (settled pushed paren cy 780), lagging
+      // the main ~1f; the pushed block shrinks to ~0.95
+      dyParen = (170 / 177) * S(Math.max(tpe - 1, 0)) - dy;
+      parenShrink = 1 - 0.049 * (1 - Math.exp(-tpe / 1.8));
+      const fadeFrom = ev.pushAt + 9;
+      fadeMain = 1 - clamp01((frame - fadeFrom) / 14);
       // r3b: +6/dur was measured on ev604, but ev902's ghost paren is
       // gone by ~f948 on the plates (blue-mass residual < 0.3k) while
       // +6/14 kept it visible at f950 — tightened to +5/12.
       fadeParen = 1 - clamp01((frame - fadeFrom - 5) / 12);
+    }
+  } else if (ev.pushAt !== null) {
+    // B-style push — r2 exponential fit kept (τ=2.2, no paren line)
+    const tp = frame - ev.pushAt;
+    if (tp > 0) {
+      dy = (715 - geo.cy) * (1 - Math.exp(-tp / 2.2));
+      const fadeFrom = ev.pushAt + 5;
+      fadeMain = 1 - clamp01((frame - fadeFrom) / 18);
+      fadeParen = fadeMain;
     }
   } else if (ev.fadeAt !== null) {
     // solo decay measured 8-13f on the plates (ev634/ev1514/ev1553/ev1595)
@@ -564,10 +590,13 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
         // r3: the plate white line is soft and half-transparent for its
         // whole life (saturated-white mask peaks 1.4k px vs 12k when
         // drawn crisp) — standing 2.5px blur at 0.55 opacity.
+        // r3b geometry re-measured (white-mask f1610/f1620): ink band
+        // y 498-535 → cy 517 (was 472, 45px high), x 612-1307 → ~660
+        // wide net of glow bleed (was 436), band height ~37.
         <div style={{ position: "absolute", inset: 0, opacity: 0.55 * fadeMain, filter: "blur(2.5px)" }}>
           <FittedLine
             text="($40969)"
-            cx={geo.cx} cy={472} inkW={436} inkH={44}
+            cx={geo.cx} cy={517} inkW={660} inkH={38}
             color="#d8dde6"
             glow="0 0 8px rgba(215,222,232,0.5), 0 0 20px rgba(215,222,232,0.3)"
             tracking="0.1em"
