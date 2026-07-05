@@ -339,6 +339,19 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [5250, 0.0, -92.1, 0.708, 0.738],
     [5255, -6.8, -109.2, 0.708, 0.734],
     [5260, -5.2, -128.0, 0.708, 0.73],
+    // r8 close-out: fresh rows 5264-5278 (the a3ca1ccaa unblock). The ref
+    // bank does NOT die in place — it rises with the bridge camera and
+    // slides LEFT fast through its kill (pose-mask bc 531->404 screen over
+    // 5270-5277, w 50->28) while our clamped 5260 row sat pinned at 539.
+    // Same-mask ref-vs-render bbox deltas via the bridge-aware Jacobian
+    // (campb.py) where both masks live (5262-5275), ref-chained beyond;
+    // median-3; keys every ~3f (work/r8/cam/t2fit.py, t2pose.json).
+    [5264, -13.1, -110.5, 0.708, 0.702],
+    [5267, -21.1, -86.6, 0.637, 0.674],
+    [5270, -31.7, -51.2, 0.61, 0.642],
+    [5273, -119.8, -16.4, 0.607, 0.584],
+    [5276, -291.4, 9.8, 0.354, 0.509],
+    [5278, -394.1, 33.1, 0.392, 0.39],
   ],
   // house: dx/dy only (the eye-phase blue-mask width is side-face
   // confounded, so scale stays 1; left-edge + base tracked instead).
@@ -374,6 +387,14 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [5250, 140.3, -95.6, 0.593, 0.54],
     [5255, 140.3, -117.8, 0.585, 0.521],
     [5260, 136.3, -114.1, 0.585, 0.533],
+    // r8 close-out fresh rows (see the bank block note): the ref house
+    // keeps RISING through the bridge to its kill (pose-mask bc y
+    // 260->218 over 5264-5273) where the stale 5260 clamp barely moved.
+    [5264, 133.6, -102.1, 0.665, 0.511],
+    [5267, 133.4, -71.6, 0.612, 0.521],
+    [5270, 128.0, -41.3, 0.557, 0.509],
+    [5273, 122.3, 1.0, 0.643, 0.533],
+    [5274, 122.3, 1.0, 0.658, 0.527],
   ],
   // r7 pull-back cluster re-assembly (STEP-0 discovery, unnamed by any
   // prior round): as the camera pulls out the ref RE-GATHERS the whole
@@ -1862,21 +1883,20 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const iconFade = fadeOut(frame, 5262, 5271);
 
   // hero entries/exits measured on the reference: house fades in from
-  // ~4694, bank ~4705; on the way out the house is gone by ~5275 and the
-  // bank alone survives to ~5279.
-  // r8 NEGATIVE A/B (dissolve correspondence, work/r8/comm/): the ref
-  // actually holds BOTH heroes FULL to ~5271-5272 (blue 1706 px @5272 =
-  // the 5268 mass; loose-red 1428) and kills them FAST by 5276-5277 —
-  // but retiming to the measured windows (house 5271-5276, bank
-  // 5271-5277) LOST −.0006/−.0009 at 5270/5273: ICON_FIX rows end at
-  // 5260 and clamp, so the longer-held heroes are STALE-POSED ink, and
-  // misplaced loses to absent from this side too. Retiming is blocked
-  // on fresh ICON_FIX rows 5260-5276 (blue-mask fitting there needs a
-  // hue window that excludes the teal cards — plain b−r masks pollute).
+  // ~4694, bank ~4705.
+  // r8 close-out HERO-KILL RETIME (unblocks the a3ca1ccaa negative): the
+  // ref holds both heroes' INK MASS near-full through ~5272-5273 (they
+  // WASH pale from ~5266 but keep their mass: hue-window pose mask n
+  // ~1450-1560 house / ~1700-1760 bank at 5270-5272), then kills them
+  // fast — house gone by ~5275-5276, bank decays 5273-5278, gone 5279
+  // (work/r8/cam/t2meas.py). The prior retime lost only because the
+  // 5260-clamped rows left the held heroes STALE-POSED; the fresh
+  // 5264-5278 ICON_FIX rows above carry the measured rise/left-slide
+  // through the kill, so the measured windows now hold their gates.
   const houseDrop = (1 - easeOutPow(fade(frame, 4694, 4708), 2)) * 40;
-  const houseOp = fade(frame, 4694, 4708) * fadeOut(frame, 5266, 5275);
+  const houseOp = fade(frame, 4694, 4708) * fadeOut(frame, 5272, 5276);
   const bankDrop = (1 - easeOutPow(fade(frame, 4705, 4715), 2)) * 36;
-  const bankOp = fade(frame, 4705, 4715) * fadeOut(frame, 5270, 5279);
+  const bankOp = fade(frame, 4705, 4715) * fadeOut(frame, 5272, 5278);
 
   const pop = (a: number, b: number) => {
     const t = fade(frame, a, b);
