@@ -355,15 +355,30 @@ export const camChart2 = camRefit;
 const C2WREG: [number, number, number, number, number][] = [
   // [f, k, theta, ds, dy] — trimmed-robust fit, rms 0.5-2.4 wall units
   [3735, 1, 0, 0, 0],
-  // hold-1 rows (3750-3850) A/B'd to identity: the fitted k≈1.07-1.10
-  // scale REGRESSED the 3850 gate .7405->.7191 (the ICP traded the
-  // curve's own shape error into scale; the hatch/base pose measured at
-  // 3850 was already the winner). Identity here also keeps the whole
-  // hold-1 era at the committed hatch-refit optimum. Fitted originals:
-  // [3750,1.0671,-.01705,1.65,-.01] [3765,1.0814,-.0186,.46,-.72]
-  // [3780,1.0938,-.0184,.56,-.89] [3800,1.0968,-.0176,.66,-.89]
-  // [3825,1.0954,-.01695,-.26,-1.21] [3850,1.1022,-.02022,-.63,-1.27]
-  [3850, 1, 0, 0, 0],
+  // hold-1 rows: r5 A/B'd these to identity — the fitted k≈1.07-1.10
+  // regressed the 3850 gate .7405->.7191. Round 6 found TWO reasons and
+  // fixed both: (1) the labels rode the transform, and the ref does NOT
+  // scale its labels with the diagram redraw — they now live on their
+  // own measured track (LT_FIX/LT_BASE, outside the transform); (2) the
+  // fitted −0.02 rad roll was curve-shape leakage, not art pose — the
+  // theta rows still lost at 3835/3850 (.7180→.7086, .7503→.7363) while
+  // the NO-THETA refits of the same frames win big (3790 .8018→.8249,
+  // 3820 .7076→.7515, 3835 .7180→.7504; 3850 .7503→.7470 is the one
+  // residual, paid against +.076 net). Rows below are the no-theta fits
+  // on a ≤10f grid (work/r6/c2 fitwall runs, rms 1.4-2.2 wall units).
+  // The whip rows from 3863 keep their r5 theta fits — A/B'd better
+  // there (the whip redraw really does roll).
+  [3750, 1.0493, 0, 0.96, -0.03],
+  [3765, 1.0778, 0, 0.26, -0.4],
+  [3780, 1.0852, 0, 0.21, -0.51],
+  [3800, 1.1024, 0, 0.62, -0.41],
+  [3806, 1.1047, 0, 0.43, -0.45],
+  [3816, 1.1003, 0, 0.08, -0.52],
+  [3826, 1.1022, 0, -0.89, -0.56],
+  [3836, 1.1103, 0, 0.07, -0.24],
+  [3846, 1.1173, 0, 0.02, -0.12],
+  [3856, 1.1198, 0, -0.67, -0.21],
+  [3861, 1.1274, 0, -0.83, -0.17],
   [3863, 1.1236, -0.02078, 0.06, -0.97],
   [3875, 1.132, -0.01721, -0.35, -0.87],
   [3885, 1.1283, -0.02352, 0.04, -1.25],
@@ -602,8 +617,7 @@ const REGION2 = regionPoly(S_CROSS, CURVE[CURVE.length - 1][0]);
 // the ref's lattice angle follows the fitted art roll −0.020→0.000 rad
 // between 3850 and 3900, and its pitch scales toward k).
 type Hatch = { deg: number; pitch: number; ref: Pt; off: number; lw: number };
-const hatchBase = (m: Hatch & { f: number }): Hatch => {
-  const g = wregAt(m.f);
+const hatchBaseG = (m: Hatch, g: Wreg): Hatch => {
   const a = (m.deg * Math.PI) / 180;
   const q: Pt = [m.ref[0] + m.off * Math.cos(a), m.ref[1] + m.off * Math.sin(a)];
   const c = Math.cos(g.th);
@@ -618,7 +632,41 @@ const hatchBase = (m: Hatch & { f: number }): Hatch => {
     lw: m.lw / g.k,
   };
 };
-const HATCH1 = hatchBase({ deg: 46.1, pitch: 4.06, ref: [161.054, 172.714], off: -1.262, lw: 1.35, f: 3850 });
+const hatchBase = (m: Hatch & { f: number }): Hatch => hatchBaseG(m, wregAt(m.f));
+const HATCH1_M: Hatch = { deg: 46.1, pitch: 4.06, ref: [161.054, 172.714], off: -1.262, lw: 1.35 };
+// Round 6: the region-1 lattice base is era-dependent, because the
+// measurement (rectified at f3850) carries the ref's redraw pose there
+// and the APPLIED rows differ per era from the true art pose:
+// - hold-1 (≤3856): rows are the no-theta fits (below), so dividing the
+//   applied 3850 pose out (dynamic hatchBase) reproduces the
+//   measurement at 3850 and drifts only with the slow hold redraw.
+// - whip (3863-3912): rows ARE the r5 theta fits, so the base must
+//   divide the theta ART pose at 3850 (k1.1022, th−0.02022) — under the
+//   r5 identity-divide the whip hatch was double-scaled ~10% (the
+//   measurement already carried the 3850 pose and the whip k scaled it
+//   again); gates 3868 .7084→.7177, 3885 .7162→.7276 from this alone,
+//   and the roll-less divide lost .013 of it back.
+// - hold-2 (≥3919): the r5-committed identity-divide base, so every
+//   frame ≥3919 — the protected 4039-4089 window and the 4050 seam —
+//   stays byte-identical.
+// Bases blend across 3856-3863 and the whip tail 3912-3919.
+const HATCH1_H1 = hatchBase({ ...HATCH1_M, f: 3850 });
+const HATCH1_W = hatchBaseG(HATCH1_M, { k: 1.1022, th: -0.02022, ds: -0.63, dy: -1.27 });
+const HATCH1_B = hatchBaseG(HATCH1_M, { k: 1, th: 0, ds: 0, dy: 0 });
+const hatchLerp = (a: Hatch, b: Hatch, t: number): Hatch => ({
+  deg: a.deg + (b.deg - a.deg) * t,
+  pitch: a.pitch + (b.pitch - a.pitch) * t,
+  ref: [a.ref[0] + (b.ref[0] - a.ref[0]) * t, a.ref[1] + (b.ref[1] - a.ref[1]) * t],
+  off: 0,
+  lw: a.lw + (b.lw - a.lw) * t,
+});
+const hatch1At = (f: number): Hatch => {
+  if (f <= 3856) return HATCH1_H1;
+  if (f < 3863) return hatchLerp(HATCH1_H1, HATCH1_W, (f - 3856) / 7);
+  if (f <= 3912) return HATCH1_W;
+  if (f < 3919) return hatchLerp(HATCH1_W, HATCH1_B, (f - 3912) / 7);
+  return HATCH1_B;
+};
 const HATCH2 = hatchBase({ deg: 50.2, pitch: 4.535, ref: [378.555, 126.157], off: -0.986, lw: 1.5, f: 4050 });
 
 const C = {
@@ -862,7 +910,7 @@ const WallChart: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.restore();
       ctx.restore();
     };
-    sweep(REGION1, CURVE[0][0], S_CROSS, easeInOutCubic(fade(f, 3806, 3820)), HATCH1);
+    sweep(REGION1, CURVE[0][0], S_CROSS, easeInOutCubic(fade(f, 3806, 3820)), hatch1At(f));
     sweep(REGION2, S_CROSS, CURVE[CURVE.length - 1][0], easeInOutCubic(fade(f, 3994, 4006)), HATCH2);
     // faint horizontal dashed guide
     if (f >= 3610) {
