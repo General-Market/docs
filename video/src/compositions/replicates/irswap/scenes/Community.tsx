@@ -787,6 +787,20 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       poly(mE3([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E2E9EB", dv), null);
       ctx.globalAlpha = gA;
     }
+    // Round-6 negative A/B (kept out; measured data in
+    // work/r6/ink/leaders.json): the ref's real ink here is a family of
+    // ~22-33 leader hairlines with darker dot terminals running the
+    // sheet's short axis (scanned pale-core sets at 4810 and 4880, plus
+    // the 5 solid rules measured BOLDER in ref: bodies 2-4px, rendered
+    // cores 185-215 vs ours 213-230). Replacing these ticks with the two
+    // measured leader sets crossfaded mid-glide + upgrading the rules to
+    // 1.9px #D2D2CF LOST at every gate (4750 −.0065, 4820 −.0040, 4935
+    // −.0062, and −.006 at 5000/5100 where this tick residue + the thin
+    // rules were quietly correct). The ref REDRAWS the leader set per
+    // shot (nearest-neighbour world distance ~27wu between 4810/4880) —
+    // like the street and the squiggle, only per-frame keyed tracks can
+    // carry this ink, and that needs a per-line correspondence
+    // instrument across the redraw scatter. r7 item.
     // tick columns under the chart — the reference's eye view drops them
     // (streets replace the ruled block), so they fade through the dive
     {
