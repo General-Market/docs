@@ -469,6 +469,40 @@ const FLOOR_C: Pt = [0, -350];
 const FLOOR_WD = 1400;
 const FLOOR_HT = 1200;
 
+// ── floor-set placement refit (round 4) ──────────────────────────
+// The reference redraws its floor NON-rigidly between camera holds — the
+// same hand-drawn 2.5D as the wall bars (C2BAR). Through hold 1
+// (3750-3885) its card cluster sits ~150px right / ~20px lower than our
+// static floor projects (scanc2floor.py centroid scan, r4/c2f), and the
+// centroid-only unprojection fit LOSES SSIM (the teal mask ignores the
+// heavy grey cards, whose internal layout the ref redraws) — so the final
+// values are a rendered-still SSIM grid search per anchor frame (search.py,
+// floor-band crop objective, full-frame gated), constrained to keep the
+// cluster visibly under the chart: SSIM's unconstrained optimum slides the
+// ink off-frame, which the ground rule forbids. Hold 2 (3930→end) measured
+// best at identity, so the correction retires at 3930 — everything from
+// there through the 4133-4155 fade-out is byte-identical to the pre-refit
+// build (freeze rule trivially satisfied). Identity rows return the EXACT
+// original JSX tree, so f<=3720 and the 3572-3588 crossfade are also
+// byte-identical. The whip rows (3900/3915) re-fit per-frame; lerp1
+// interpolates between holds.
+const C2FLR: [number, number, number, number][] = [
+  // [f, dx, dz, s]
+  [3720, 0, 0, 1],
+  [3735, 80, 40, 1],
+  [3750, 160, 80, 1],
+  [3810, 160, 90, 1],
+  [3850, 190, 100, 1.15],
+  [3885, 190, 100, 1.15],
+  [3900, 44, 267, 1.3],
+  [3915, -58, 45, 1],
+  [3930, 0, 0, 1],
+];
+const FLR_DX: [number, number][] = C2FLR.map((r) => [r[0], r[1]]);
+const FLR_DZ: [number, number][] = C2FLR.map((r) => [r[0], r[2]]);
+const FLR_S: [number, number][] = C2FLR.map((r) => [r[0], r[3]]);
+const FLR_ANCHOR: Pt = flr(390, 334); // teal card-cluster center (identity pose)
+
 export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
     const mx = (p: Pt) => w / 2 + (p[0] - FLOOR_C[0]);
@@ -538,7 +572,7 @@ export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
   // texture stays static (frame={0}); only the material opacity animates —
   // in over 3572-3584 (buildings' FloorMap fades out), out over 4133-4155
   // (the next scene's FloorPaper inks in).
-  return (
+  const plane = (
     <CanvasPlane
       frame={0}
       width={FLOOR_WD}
@@ -550,6 +584,17 @@ export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
       renderOrder={0}
       opacity={fade(frame, 3572, 3584) * (1 - fade(frame, 4133, 4155))}
     />
+  );
+  // placement refit: floor point Q → A + s·(Q−A) + (dx,dz) on the plane
+  // (y untouched). Identity returns the exact original tree.
+  const dx = lerp1(FLR_DX, frame);
+  const dz = lerp1(FLR_DZ, frame);
+  const s = lerp1(FLR_S, frame);
+  if (dx === 0 && dz === 0 && s === 1) return plane;
+  return (
+    <group position={[FLR_ANCHOR[0] + dx, 0, FLR_ANCHOR[1] + dz]} scale={[s, 1, s]}>
+      <group position={[-FLR_ANCHOR[0], 0, -FLR_ANCHOR[1]]}>{plane}</group>
+    </group>
   );
 };
 
