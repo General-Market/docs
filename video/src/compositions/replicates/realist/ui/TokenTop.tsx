@@ -346,14 +346,24 @@ const cardAvatar = (name: string, token: string): string => {
   return "realist-assets/ui/pump-avatar.png"; // Pumpwheel + default
 };
 
-// Stack metrics re-measured r3 (f0910/f0930/f0470 box masks): std toast
-// box 35 tall on a 56px slot pitch, cards 47 tall (~65 pitch), stack
-// centered at x963, cards ~305 wide (x813-1120 on f0470).
-const STACK_CX = 963;
+// Stack metrics re-measured r5 on SETTLED plates only (dot/✕/spinner blob
+// centers + fill-edge scans; f0861/0910/0930/1020/1280/1630). The law
+// reproduces every settled plate to ≤0.5px:
+//   · every box CENTER-ANCHORED at cx 959.5 (5 toast kinds agree ±0.3)
+//   · std box 35 tall, slot-1 top 18.8, std→std pitch 56.5
+//   · cards 51 tall (f0930 box 71→122, f1630 14.4→65.5), slot-1 top 14.4
+//   · gaps: std→card 17.2, card→std 14.5, card→card ≈9 (only mid-anim samples)
+// r3's "top y14 / cards 47 / 65 pitch" was fit on mid-animation plates
+// (f0465/0470/0485 are 2-8f into a re-flow; tops compress there).
+const STACK_CX = 959.5;
 const TOAST_H = 35;
-const CARD_H = 47;
-const GAP_STD = 21;
-const GAP_CARD = 18;
+const CARD_H = 51;
+const TOP_STD = 18.8;
+const TOP_CARD = 14.4;
+const GAP_SS = 21.5;
+const GAP_SC = 17.2;
+const GAP_CS = 14.5;
+const GAP_CC = 9;
 
 const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ toast, y, frame }) => {
   const shell: React.CSSProperties = {
@@ -372,8 +382,13 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
     const sell = toast.verb.includes("sold");
     const accent = sell ? C.neg : C.verbGreen;
     const amtColor = sell ? C.neg : C.tealText;
+    // Card internals measured r5 (f0930/f1630 + f0470 class maps): name row
+    // center = top+14.6, amt row 21 lower (rows gap 9); pink dot AND close ✕
+    // ride the NAME ROW line (plate ✕ cy 28.5 vs name 29 on f1630), not the
+    // box center; width is content-driven (jsol card is only 239 wide on the
+    // plate — a 300 minWidth broke it).
     return (
-      <div style={{ ...shell, height: CARD_H, minWidth: 300, padding: "0 12px 0 8px", gap: 10 }}>
+      <div style={{ ...shell, height: CARD_H, padding: "0 12px 0 8px", gap: 10 }}>
         {/* avatar carries two badge chips (coin + age) on its bottom-left (r3) */}
         <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
           <Img
@@ -383,7 +398,7 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
           <div style={{ position: "absolute", left: -4, bottom: -3, width: 13, height: 13, borderRadius: 6.5, background: "#C9A227", border: "1.5px solid #14161C", boxSizing: "border-box" }} />
           <div style={{ position: "absolute", left: 7, bottom: -3, width: 13, height: 13, borderRadius: 6.5, background: "#22252C", border: "1.5px solid #14161C", boxSizing: "border-box" }} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, flex: 1 }}>
           <Row gap={5}>
             {toast.name === "samsrep" ? (
               <Glyph kind="starFill" size={12} color={C.gold} />
@@ -413,8 +428,10 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
             </T>
           </Row>
         </div>
-        <div style={{ width: 11, height: 11, borderRadius: 5.5, background: C.neg, flexShrink: 0 }} />
-        <Glyph kind="close" size={13} color={C.textMid} />
+        <div style={{ width: 11, height: 11, borderRadius: 5.5, background: C.neg, flexShrink: 0, alignSelf: "flex-start", marginTop: 9 }} />
+        <div style={{ alignSelf: "flex-start", marginTop: 8 }}>
+          <Glyph kind="close" size={13} color={C.textMid} />
+        </div>
       </div>
     );
   }
@@ -423,19 +440,20 @@ const ToastRow: React.FC<{ toast: ParsedToast; y: number; frame: number }> = ({ 
     return (
       <div style={{ ...shell, height: TOAST_H, padding: "0 12px", gap: 10 }}>
         <Spinner frame={frame} size={16} />
-        <T size={13} color={C.textHi} weight={500}>
+        <T size={12.4} color={C.textHi} weight={500}>
           {toast.text}
         </T>
       </div>
     );
   }
-  // Wide band toasts render tighter type (plate f1590: 134 chars over 806px
-  // ≈ 12.4px Inter) and sit ~9px left of the std stack center.
-  const wide = toast.kind === "simple" && toast.wide;
+  // All simple-toast text is ~12.4px on the plates (r5: plate ink widths are
+  // 0.95-0.97× our old 13px on m- AND p-toasts; r4 had already fitted the
+  // ffa band at 12.4). The old ffa-only −4/+3 offset died with the measured
+  // law — f1630's ffa sits on the uniform slot grid, centered like the rest.
   return (
-    <div style={{ ...shell, ...(wide ? { left: STACK_CX - 4, top: y + 3 } : null), height: TOAST_H, padding: "0 12px", gap: 10 }}>
+    <div style={{ ...shell, height: TOAST_H, padding: "0 12px", gap: 10 }}>
       <StatusDot kind={toast.dot} />
-      <T size={wide ? 12.4 : 13} color={C.textHi} weight={500}>
+      <T size={12.4} color={C.textHi} weight={500}>
         {toast.text}
       </T>
       <div style={{ width: 4 }} />
@@ -490,14 +508,26 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
   const toasts = sampleAt(toastTable, frame);
   const pnlPct = sampleAt(posStatsTable, frame).pnlPct;
 
-  // toast stack vertical layout (plate slot-1 box top ≈ y14, r3)
-  let toastY = 14;
+  // Toast stack vertical layout — measured pairwise law (r5, settled plates):
+  // slot-1 top is 18.8 for std toasts, 14.4 for cards; the gap below a toast
+  // depends on both neighbours (std→std 21.5 · std→card 17.2 · card→std 14.5
+  // · card→card 9). Validated ≤0.5px on f0861/0910/0930/1020/1280/1630.
   const placed: { toast: ParsedToast; y: number }[] = [];
+  let prevCard: boolean | null = null;
+  let prevBottom = 0;
   for (const tok of toasts) {
     const parsed = parseToast(tok);
     if (!parsed) continue;
-    placed.push({ toast: parsed, y: toastY });
-    toastY += parsed.kind === "card" ? CARD_H + GAP_CARD : TOAST_H + GAP_STD;
+    const isCard = parsed.kind === "card";
+    const top =
+      prevCard === null
+        ? isCard
+          ? TOP_CARD
+          : TOP_STD
+        : prevBottom + (prevCard ? (isCard ? GAP_CC : GAP_CS) : isCard ? GAP_SC : GAP_SS);
+    placed.push({ toast: parsed, y: top });
+    prevBottom = top + (isCard ? CARD_H : TOAST_H);
+    prevCard = isCard;
   }
 
   return (
@@ -830,32 +860,32 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
             {HEADER.sharePnl}
           </T>
         </Row>
-        {/* pinned PnL preview cluster (mostly hidden behind the toast stack) */}
+        {/* pinned PnL cluster — r5 fine map of f1280 (x700-960, y106-136):
+            after the pin the plate shows ONLY a green pnl chip, text right-
+            anchored at x≈928 rows 118-126 (f0861/f1280/f1630 agree). No
+            megaphone, no avatar, no chevron — the old wallet-avatar here
+            rendered as a stray white disc the plates never had. The chip
+            first appears at plate 505 (occluded at the f0500 anchor). */}
         <Row gap={10} style={{ position: "absolute", left: 836, top: 30 }}>
           <Glyph kind="pin" size={14} color={C.tealText} />
-          <Glyph kind="megaphone" size={14} color={C.purpleText} />
-          <div style={{ position: "relative", width: 26, height: 26, marginTop: -4 }}>
-            <Img
-              src={staticFile("realist-assets/ui/wallet-avatar.png")}
-              style={{ width: 24, height: 24, borderRadius: 12, display: "block" }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: 2,
-                bottom: -6,
-                background: "#123B33",
-                borderRadius: 4,
-                padding: "1px 3px",
-              }}
-            >
-              <T size={9} color={C.pos} weight={600}>
-                +{pnlPct}%
-              </T>
-            </div>
-          </div>
-          <Glyph kind="chevron" size={12} color={C.textMid} />
         </Row>
+        {frame >= 505 && pnlPct > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: 933,
+              top: 24,
+              transform: "translateX(-100%)",
+              background: "#12242E",
+              borderRadius: 4,
+              padding: "3px 5px",
+            }}
+          >
+            <T size={9.5} color={C.pos} weight={600}>
+              +{pnlPct}%
+            </T>
+          </div>
+        )}
         {/* right icon cluster + Alert + panel (plate icons y100-112 → top 22) */}
         <Row gap={0} style={{ position: "absolute", left: 1382, top: 22 }}>
           <Glyph kind="gear" size={15} color={C.textMid} />

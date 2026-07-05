@@ -60,7 +60,9 @@ export const COLORS = {
   text: "#C6C9D2",
   textMid: "#8B8E97",
   textDim: "#5E626E",
-  tickerSol: "#B9B8C4", //      "13.010101 SOL" — brighter than the LABEL on the plates (r3 probe #CECDD5 core)
+  tickerSol: "#7E7BA6", //      "13.010101 SOL" — blue-lavender, NOT grey-white; r5 glyph cores
+  //                            (115,113,148)/(111,109,146) on f0500, identical f0700-f1550.
+  //                            r3's #CECDD5 was probed off a bolt-glyph highlight.
   tickerLabel: "#7A7D84", //    ticker item label ("STAR $9.99K") is DIM, not white (r3 probe)
   // r3 small-text ink (probed at glyph size off f0900 — JPEG stroke bleed
   // makes 11-13px text far dimmer than the big-glyph colors above; the
