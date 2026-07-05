@@ -638,7 +638,7 @@ export const TokenLoadScreen: React.FC<{ frame: number }> = ({ frame }) => {
         </svg>
         {LOAD_POPUP.presetsLabels.map((p, i) => (
           <span key={p} style={{ position: "absolute", left: 160 + i * 30, top: 4 }}>
-            <T size={12.5} weight={600} color={i === 2 ? C.purpleText : C.textMid}>
+            <T size={12.5} weight={600} color={i === 2 ? C.tabActiveText : C.textMid}>
               {p}
             </T>
           </span>

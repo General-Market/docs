@@ -33,7 +33,8 @@ export const COLORS = {
   neg: "#EE508D", //            negative numbers / pink dot (f0500 rgb 238,80,141)
   negDim: "#4A2338", //         red preset pill borders
   purple: "#5F58B0", //         active P3 / PRESET 3 / dock filter
-  purpleText: "#6E64BB", //     Instant Trade chip text
+  purpleText: "#7468CE", //     Instant Trade chip text (r4 plate probe; was #6E64BB invented)
+  dockUser: "#51545B", //       Jason dock user text — plate probes GREY, not purple (r4)
   // r4 purple unification — probed f0500/f0900/f1050 (see rounds/work/r4/popup/notes.md).
   // Deposit fill re-measured on three plates (top rows #6A5FE0/#695FE4/#665EDC,
   // bottom rows #5C52C5/#6259CF/#6258D1) → slight vertical falloff; the old

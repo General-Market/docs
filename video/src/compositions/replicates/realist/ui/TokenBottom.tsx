@@ -350,8 +350,8 @@ const JasonDock: React.FC = () => (
   >
     {/* row 1 — coordinates dock-local (dock origin x 1258, y 1006) */}
     <Row gap={5} style={{ position: "absolute", left: 1272 - DOCK_X, top: 1019 - DOCK_Y }}>
-      <Glyph kind="drag" size={12} color={C.purpleText} />
-      <T size={12} color={C.purpleText} weight={600}>{DOCK.user}</T>
+      <Glyph kind="drag" size={12} color={C.dockUser} />
+      <T size={12} color={C.dockUser} weight={600}>{DOCK.user}</T>
     </Row>
     <div style={{ position: "absolute", left: 1344 - DOCK_X, top: 1020 - DOCK_Y }}>
       <T size={12} color={C.textMid} weight={500}>{DOCK.tabs[0]}</T>
