@@ -1572,6 +1572,34 @@ const CUBE = (() => {
   return { quadO, quadE, quadP, yTopO: yTopP, yTopE: 90.3, yTopP };
 })();
 
+// ── r8 close-out (Task 3): cube-fade drift 5268-5288 ─────────────
+// Routed from the outro audit (work/r8/outro/cubefade.png): our cube
+// rode ~60-170px LEFT (left edge 169 vs ref 230-340) and ~80-120px LOW
+// of the ref's through the fade, and missed the ref's rise. Measured
+// ref-vs-render line-mask centroid/corner/left-edge tracks 5266-5288
+// (work/r8/cam/t3*.json; the washing wireframe wobbles the x-instrument
+// ±40px — the y signal is solid and monotone). Smoothed screen deltas
+// baked to world offsets through the bridge-aware Jacobian at the
+// cube's front corner (campb.py); zero at ≤5266 (release), fade
+// schedule untouched (timing was already correct, gone by 5288).
+const CUBE_DRIFT: [number, number, number][] = [
+  [5266, 0, 0],
+  [5268, 16.8, 57.9],
+  [5270, 41.8, 126.9],
+  [5273, 72.4, 195.1],
+  [5276, 92.0, 216.5],
+  [5280, 110.6, 224.9],
+  [5284, 98.7, 247.6],
+  [5288, 86.8, 260.6],
+];
+const cubeDriftAt = (f: number): [number, number] => {
+  if (f <= CUBE_DRIFT[0][0]) return [0, 0];
+  return [
+    lerp1(CUBE_DRIFT.map((r) => [r[0], r[1]] as [number, number]), f),
+    lerp1(CUBE_DRIFT.map((r) => [r[0], r[2]] as [number, number]), f),
+  ];
+};
+
 const cubeAt = (f: number): { quad: Pt[]; yTop: number } => {
   const mixQ = (a: Pt[], b: Pt[], t: number): Pt[] =>
     a.map((p, i) => [mixN(p[0], b[i][0], t), mixN(p[1], b[i][1], t)] as Pt);
@@ -1612,8 +1640,10 @@ const quadGeo = (a: V3, b: V3, c: V3, d: V3): THREE.BufferGeometry => {
   return geo;
 };
 
-const CubeGlass: React.FC<{ quad: Pt[]; yTop: number; opacity: number; drop: number }> = ({
-  quad, yTop, opacity, drop,
+const CubeGlass: React.FC<{
+  quad: Pt[]; yTop: number; opacity: number; drop: number; shift?: [number, number];
+}> = ({
+  quad, yTop, opacity, drop, shift = [0, 0],
 }) => {
   const geoKey = `${quad.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(";")};${yTop.toFixed(1)}`;
   const built = React.useMemo(() => {
@@ -1666,7 +1696,7 @@ const CubeGlass: React.FC<{ quad: Pt[]; yTop: number; opacity: number; drop: num
   }, [geoKey]);
   if (opacity <= 0) return null;
   return (
-    <group position={[0, drop, 0]}>
+    <group position={[shift[0], drop + shift[1], 0]}>
       {built.panes.map((g, i) => (
         <mesh key={`g${i}`} geometry={g} renderOrder={3}>
           <meshPhysicalMaterial
@@ -1973,7 +2003,8 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
       <PlantedBuilding name="bank" frame={frame} opacity={bankOp} dropY={bankDrop} />
       {/* exchange arrows: world plane in the house-bank gap */}
       <ArrowsPlane frame={frame} />
-      <CubeGlass quad={cube.quad} yTop={cube.yTop} opacity={cubeOp} drop={cubeDrop + cubeLift} />
+      <CubeGlass quad={cube.quad} yTop={cube.yTop} opacity={cubeOp} drop={cubeDrop + cubeLift}
+        shift={cubeDriftAt(frame)} />
     </>
   );
 };
