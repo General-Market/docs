@@ -641,6 +641,58 @@ const SQ_KEYS: SqKey[] = [
   { f: 5230, doff: [0.2, 9.7], pts: [43.4, -3.4, 44.8, -9.2, 48.3, -8.4, 53.4, -6.5, 58.9, -7.8, 62.6, -6.6, 64.8, -1.0, 66.6, 4.6, 68.8, 9.9, 71.2, 15.1, 74.6, 19.5, 79.5, 19.6, 84.3, 17.2, 89.6, 15.7, 94.5, 17.8, 98.9, 20.5, 102.7, 24.1, 105.7, 28.9, 108.1, 33.9, 109.7, 39.6, 111.3, 45.1, 112.6, 50.8, 114.0, 56.4, 115.8, 61.8, 118.3, 66.8, 123.9, 68.1, 127.8, 64.1, 131.5, 59.7, 136.1, 56.5, 139.7, 59.9, 141.3, 65.4, 144.7, 69.8] },
   { f: 5240, doff: [0.2, 9.7], pts: [52.6, 31.0, 54.0, 25.2, 57.5, 26.0, 62.6, 27.9, 68.1, 26.6, 71.8, 27.8, 73.9, 33.4, 75.8, 39.0, 78.0, 44.3, 80.4, 49.5, 83.8, 53.9, 88.7, 54.0, 93.5, 51.5, 98.8, 50.1, 103.7, 52.2, 108.1, 54.9, 111.9, 58.5, 114.9, 63.3, 117.3, 68.3, 118.9, 73.9, 120.5, 79.5, 121.8, 85.1, 123.2, 90.8, 125.0, 96.2, 127.5, 101.2, 133.1, 102.5, 137.0, 98.5, 140.7, 94.1, 145.3, 90.9, 148.9, 94.3, 150.5, 99.8, 153.9, 104.2] },
 ];
+// ── r8 eye-phase pad PLATES (grid triage finding) ────────────────
+// ssim-grid over 5199/5205/5214 + 5100/5150: the worst persistent cells
+// of the eye hold and the 5199-5214 valley (r4c2 −0.02, r4c4 0.12,
+// r3/r4 c5, r3c2) share one mass — the ref sets each hero icon on a
+// BRIGHT WHITE PLATE (core 253 vs sheet 236, ~250×55 px each) while our
+// render leaves grey floor there. The r7 pad-EDGE strokes ride measured
+// tracks over that grey, so they read as detached cast shadows — a dark
+// rim on grey is a shadow; on white it is a pad. The r6/r7 pad
+// negatives were about bolding OUR diamond-slab geometry; these are the
+// REF's plate polygons, column-profiled at 5100/5205 (front edges from
+// grey-profiles; the flood-extreme corners had the bank BL 17px high
+// and the house right side 25px long), carried to the other keys by the
+// clean L/TL corner tracks + measured width scale, unprojected at the
+// current frame. Past f5211 they freeze in WORLD space (unproject at
+// 5211): floor stickers riding the pull-back, gone by ~5217 (bank) /
+// ~5222 (house, white-mask decay).
+// PLACEMENT NEGATIVE (r8, measured): drawing plates+strokes on their
+// own transparent floor CanvasPlane above the rays lost −.003..−.005 at
+// every eye gate BEFORE any ink difference — at pitch 10° the GL
+// texture filtering bleeds transparent texels into strokes on a
+// transparent plane (T1/T2 isolation, work/r8/comm/). Strokes only
+// survive on an OPAQUE underlay → everything stays in this canvas; the
+// rays are occluded by erasing the plate polygon in RaysPlane instead.
+type PlateKey = [number, number[]];
+const trkPts = (keys: PlateKey[], fc: number): Pt[] => {
+  let i = 0;
+  const f = Math.max(keys[0][0], Math.min(keys[keys.length - 1][0], fc));
+  while (i < keys.length - 2 && keys[i + 1][0] < f) i++;
+  const a = keys[i];
+  const b = keys[i + 1];
+  const t = clamp01((f - a[0]) / (b[0] - a[0]));
+  return Array.from({ length: a[1].length / 2 }, (_, j) =>
+    [mixN(a[1][2 * j], b[1][2 * j], t), mixN(a[1][2 * j + 1], b[1][2 * j + 1], t)] as Pt);
+};
+// HOUSE: BL, TL, TR, R, BR (the right side bows: TR→R→BR)
+const HOUSE_PLATE: PlateKey[] = [
+  [5000, [132, 318, 158, 269, 368, 278, 372, 285, 325, 329]],
+  [5100, [119, 322, 146, 271, 365, 280, 369, 288, 320, 333]],
+  [5150, [113, 325, 140, 273, 363, 282, 367, 290, 317, 336]],
+  [5205, [106, 328, 134, 275, 361, 284, 365, 293, 314, 339]],
+  [5211, [125, 322, 152, 272, 368, 280, 372, 288, 324, 333]],
+];
+// BANK: BL, TL, TR, R (the front edge BL→R is straight in the ref)
+const BANK_PLATE: PlateKey[] = [
+  [5000, [484, 338, 500, 282, 720, 294, 724, 344]],
+  [5100, [486, 342, 503, 284, 732, 296, 736, 349]],
+  [5150, [486, 343, 503, 284, 736, 296, 740, 350]],
+  [5205, [485, 345, 503, 284, 743, 297, 747, 352]],
+  [5211, [489, 342, 506, 284, 735, 296, 739, 349]],
+];
+const plateAlpha = (f: number): number =>
+  fade(f, 4985, 4998) * fadeOut(f, 5213, 5221);
 export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     if (f >= 5285) return; // page-flip handoff to the outro board
@@ -956,37 +1008,63 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     // re-pose begins (5212-5224, where the tracks end).
     {
       const eyeA = fade(f, 4985, 4998) * fadeOut(f, 5212, 5224);
-      if (eyeA > 0) {
-        ctx.globalAlpha = dissolve * clamp01((f - 4690) / 18) * eyeA;
+      const plateA = plateAlpha(f);
+      if (eyeA > 0 || plateA > 0) {
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
+        // r8: past the last measured key the plates + their edge ink
+        // freeze in WORLD space (unproject at 5211) — floor stickers
+        // riding the pull-back flow, not screen-pinned through the fade
+        const fw = Math.min(f, 5211);
         type K3 = [number, number[]]; // [f, flat point list u0,v0,u1,v1,...]
-        const trkS = (keys: K3[]): Pt[] => {
-          let i = 0;
-          const fc = Math.max(keys[0][0], Math.min(keys[keys.length - 1][0], f));
-          while (i < keys.length - 2 && keys[i + 1][0] < fc) i++;
-          const a = keys[i];
-          const b = keys[i + 1];
-          const t = clamp01((fc - a[0]) / (b[0] - a[0]));
-          return Array.from({ length: a[1].length / 2 }, (_, j) =>
-            [mixN(a[1][2 * j], b[1][2 * j], t), mixN(a[1][2 * j + 1], b[1][2 * j + 1], t)] as Pt);
-        };
-        // stroke width is specified in SCREEN px; the floor plane is
-        // heavily foreshortened at the eye pitch (a vertical screen px
-        // spans ~6 floor units at pitch 10°), so convert at the track
-        // midpoint per frame — the same closed-loop lesson as the r6
-        // squiggle width bump, generalized.
+        const trkS = (keys: K3[]): Pt[] => trkPts(keys, fw);
+        // r8: the white plates under the icons (the grid's biggest
+        // persistent mass) — painted before the edge ink below
+        if (plateA > 0) {
+          ctx.globalAlpha = dissolve * clamp01((f - 4690) / 18) * plateA;
+          ctx.fillStyle = "rgb(253,253,253)"; // sampled plate core
+          for (const keys of [HOUSE_PLATE, BANK_PLATE]) {
+            const sp = trkPts(keys, fw);
+            const pts = sp.map(([u, v]) => toFloor(u, v, fw));
+            ctx.beginPath();
+            ctx.moveTo(mx(pts[0]), my(pts[0]));
+            for (let i = 1; i < pts.length; i++) ctx.lineTo(mx(pts[i]), my(pts[i]));
+            ctx.closePath();
+            ctx.fill();
+            // No drawn rim: the 253-on-236 tonal step is the ref's own
+            // back-edge grammar; the dark FRONT edges are the measured
+            // strokes below. A uniform 1.6px rim rendered 6x fat on the
+            // steep sides (orientation trap, next comment) and lost
+            // −.003..−.008 at every gate.
+          }
+        }
+        if (eyeA > 0) {
+        ctx.globalAlpha = dissolve * clamp01((f - 4690) / 18) * eyeA;
+        // Stroke widths are SCREEN px; the floor is foreshortened ~6x
+        // vertically at pitch 10° (r6 squiggle-width lesson). r8 FIX: a
+        // stroke's thickness extends PERPENDICULAR to it in screen
+        // space — r7 converted every width by the VERTICAL rate, right
+        // for horizontal runs, ~6x fat for steep ones (the bank right
+        // edge / house corner kink / red diagonal smears = the r7
+        // strips' "cast shadows toward bottom-right"). Convert per
+        // SEGMENT along its own screen perpendicular.
         const stroke = (sp: Pt[], ink: string, wpx: number) => {
-          const pts = sp.map(([u, v]) => toFloor(u, v, f));
-          const mid = sp[Math.floor(sp.length / 2)];
-          const q0 = toFloor(mid[0], mid[1], f);
-          const q1 = toFloor(mid[0], mid[1] + 1, f);
           ctx.strokeStyle = ink;
-          ctx.lineWidth = wpx * Math.hypot(q1[0] - q0[0], q1[1] - q0[1]);
-          ctx.beginPath();
-          ctx.moveTo(mx(pts[0]), my(pts[0]));
-          for (let i = 1; i < pts.length; i++) ctx.lineTo(mx(pts[i]), my(pts[i]));
-          ctx.stroke();
+          for (let i = 0; i < sp.length - 1; i++) {
+            const a = sp[i];
+            const b = sp[i + 1];
+            const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+            const m: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+            const q0 = toFloor(m[0], m[1], fw);
+            const q1 = toFloor(m[0] - (b[1] - a[1]) / L, m[1] + (b[0] - a[0]) / L, fw);
+            ctx.lineWidth = wpx * Math.hypot(q1[0] - q0[0], q1[1] - q0[1]);
+            const wa = toFloor(a[0], a[1], fw);
+            const wb = toFloor(b[0], b[1], fw);
+            ctx.beginPath();
+            ctx.moveTo(mx(wa), my(wa));
+            ctx.lineTo(mx(wb), my(wb));
+            ctx.stroke();
+          }
         };
         const trk = trkS;
         stroke(trk([
@@ -1008,26 +1086,34 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
         stroke(trk([
           [5000, [420, 376, 655, 388]], [5100, [420, 377, 655, 388]], [5210, [420, 376, 655, 389]],
         ]), "rgb(205,205,205)", 2.0);
-        // fallen-paper corner curve (measured @5100; zone static)
+        // fallen-paper corner curve — r8 re-measured (grey-mask trace at
+        // 5100/5205, static): runs (672,384)→(712,447), 2-3px
         stroke(trk([
-          [5000, [668, 388, 690, 404, 701, 428, 710, 450]],
-          [5210, [668, 388, 690, 404, 701, 428, 710, 450]],
-        ]), "rgb(196,196,196)", 2.2);
+          [5000, [672, 384, 684, 401, 694, 417, 704, 433, 712, 447]],
+          [5210, [672, 384, 684, 401, 694, 417, 704, 433, 712, 447]],
+        ]), "rgb(196,196,196)", 2.4);
+        // red paper-edge band — r8 re-measured (dusty-red mask at
+        // 5100/5205, static): a WIDE pale band (676,396)→(724,477)
+        // reaching the frame bottom, ~4.7px perpendicular, core
+        // (193,178,181). r7 drew it 3px-vertical-converted (~18px fat,
+        // one of the "cast shadows") and stopped at y453.
         stroke(trk([
-          [5000, [678, 400, 701, 445]], [5100, [676, 397, 714, 461]], [5210, [676, 398, 711, 453]],
-        ]), "rgb(206,190,193)", 3.0);
+          [5000, [676, 396, 700, 436, 724, 477]],
+          [5210, [676, 396, 700, 436, 724, 477]],
+        ]), "rgb(193,178,181)", 4.7);
         // red dot terminal (drawn as a floor ellipse so it reads as a
         // round screen dot under the foreshortening)
         {
           const s = trk([[5000, [665.5, 380.5]], [5100, [664.5, 378.5]], [5210, [664.5, 376.5]]])[0];
-          const c = toFloor(s[0], s[1], f);
-          const qh = toFloor(s[0] + 1, s[1], f);
-          const qv = toFloor(s[0], s[1] + 1, f);
+          const c = toFloor(s[0], s[1], fw);
+          const qh = toFloor(s[0] + 1, s[1], fw);
+          const qv = toFloor(s[0], s[1] + 1, fw);
           ctx.fillStyle = "rgb(205,178,182)";
           ctx.beginPath();
           ctx.ellipse(mx(c), my(c), 3.4 * Math.hypot(qh[0] - c[0], qh[1] - c[1]),
             3.4 * Math.hypot(qv[0] - c[0], qv[1] - c[1]), 0, 0, Math.PI * 2);
           ctx.fill();
+        }
         }
       }
     }
@@ -1170,6 +1256,27 @@ const RaysPlane: React.FC<{ frame: number }> = ({ frame }) => {
       ctx.lineTo(mx([from[0] + px * 3, from[1] + pz * 3]), my([from[0] + px * 3, from[1] + pz * 3]));
       ctx.closePath();
       ctx.fill();
+    }
+    // r8: the ref fan dies at the house plate's edge — the plate
+    // occludes the wedges' convergence zone (ours leaked yellow across
+    // the pad, the 5205 grid's r4c2 cell). The white plate itself lives
+    // in SheetFloor (strokes need an opaque underlay — see the plate
+    // placement negative there); here the wedges are ERASED under the
+    // plate polygon. Bank plate needs no erase: no wedges reach it.
+    {
+      const pa = plateAlpha(f);
+      if (pa > 0) {
+        const fw = Math.min(f, 5211);
+        const pts = trkPts(HOUSE_PLATE, fw).map(([u, v]) => toFloor(u, v, fw));
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.globalAlpha = pa;
+        ctx.beginPath();
+        ctx.moveTo(mx(pts[0]), my(pts[0]));
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(mx(pts[i]), my(pts[i]));
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }
     }
   }, []);
   return (
