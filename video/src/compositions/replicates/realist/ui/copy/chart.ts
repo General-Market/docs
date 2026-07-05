@@ -17,7 +17,8 @@ export const CHART_COLORS = {
   bubbleRedRing: "#6e1a20",
   bubbleYellowFill: "#e0c433",
   bubbleWhiteFill: "#f2efe9",
-  bubblePurpleFill: "#7a5cff",
+  bubblePurpleFill: "#6e6bde", // plate bright-quartile probe (110,107,222)
+  bubblePurpleInk: "#1a2267", // M glyph is DARK navy on the plates (26,34,103)
   exitLine: "rgb(90,72,76)", // measured dash blend at f620
   exitBadgeBg: "#c96342", // ORANGE badge (plate f620/f900/f1300)
   costLine: "#d7dce6",

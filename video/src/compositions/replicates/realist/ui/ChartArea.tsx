@@ -155,7 +155,7 @@ const Bubble: React.FC<{ t: BubbleTrack; f: number }> = ({ t, f }) => {
         justifyContent: "center",
         fontSize: letter ? (t.g.length > 1 ? t.r * 0.85 : t.r * 1.1) : t.r * 1.35,
         fontWeight: 800,
-        color: "#fff",
+        color: t.c === "p" ? C.bubblePurpleInk : "#fff",
         lineHeight: 1,
         opacity: pop,
         transform: `scale(${scale.toFixed(3)})`,
