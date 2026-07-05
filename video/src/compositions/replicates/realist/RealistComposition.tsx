@@ -432,9 +432,15 @@ const STYLE_GEO = {
   // inkH 80 / cy 540 drew the glyphs 30% too tall and 6px low — the
   // width still matched only because scaleX squeezes to mainW.
   B: { cx: 964, inkH: 61, cy: 534, parenCx: 964, parenCy: 0, parenInkH: 0, sparkPad: 35, sparkSize: 38 },
-  // F parenCy re-measured r3b: settled blue ink band f1610-1630 is
-  // y 562-647 → cy 602 (the old 630 sat the lockup 28px low)
-  F: { cx: 960, inkH: 62, cy: 536, parenCx: 960, parenCy: 602, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
+  // F re-measured r4 with CORE masks (red r>220,g<60 / blue b>200,r<130,
+  // g>130; plates 1620+1635 vs a render): red glyph band rows 501-567
+  // center 534 (render sat at 536), col-span center 960.5 (render 958 —
+  // the 0.03em trailing-tracking bias). Blue glyph rows center 609 both
+  // plates (r3b's 602 came from the glow-wide mask polluted by a second
+  // blue band at y 450-472); blue col-span center 960 stable while the
+  // render sat at 953.5 — parenCx carries the 0.18em trailing bias like
+  // style A's 967. Plate col spans pulse frame-to-frame, widths kept.
+  F: { cx: 962, inkH: 62, cy: 534, parenCx: 966, parenCy: 609, parenInkH: 48, sparkPad: 35, sparkSize: 44 },
 } as const;
 
 const FittedLine: React.FC<{
