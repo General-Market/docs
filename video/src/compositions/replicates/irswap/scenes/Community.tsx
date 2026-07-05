@@ -68,6 +68,27 @@ const C = {
 // pixel width -> depth). Values on [4685,4715] and [5265,5290] are
 // bit-identical to the previous solve (frozen first/last keys + the
 // frozen pitch segments) - boundary continuity into Slot and Outro.
+//
+// r8 PULL-BACK CAMERA UNLOCK: REFUTED (measured, do not retry blind —
+// tracks in .claude/rounds/work/r8/cam/). The r8 frame-diff finding
+// (ref pull-back 1.5-2x faster over 5208-5217) is REAL but NOT a
+// camera: five instruments, LK floor tracks 5197-5262 solved per-frame
+// against an additive (du,dv,dW) correction on this parametrization:
+//  1. ref floor recedes 1.3-2.5x faster (per-cell Farneback, flowdec).
+//  2. icons vs floor split: the floor clamped to the icon-implied dW
+//     explodes 4.6->35px rms (dW 3-5x apart) — no shared camera.
+//  3. WITHIN the floor: card-block vs sheet-grid split from ~5214 (the
+//     best floor camera helps right-zone grid 45-60% but HURTS the
+//     card zone: 24.9->29.1 @5218, 31.3->44.8 @5220).
+//  4. direction disagreement: measured card deficit is +33..+54px
+//     RIGHTWARD by 5217-5220; any solved camera moves cards mostly
+//     DOWN (dv-dominated). A 4th pitch param: no help, degenerate.
+//  5. the one clean "collapse" (rms 55->3-4) was points ON the icons —
+//     whose recede ICON_FIX already keys per-element.
+// The ref recede is hand-animated PER ELEMENT in one rough direction;
+// only per-element measured tracks can chase it. The camera stays
+// frozen; the un-keyed masses (E1-E3 card block deficit 15-50px over
+// 5212-5240) are the remaining per-element targets.
 const herm = (
   f: number, f0: number, f1: number, v0: number, v1: number, m0: number, m1: number,
 ): number => {
