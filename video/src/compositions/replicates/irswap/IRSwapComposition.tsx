@@ -207,8 +207,12 @@ export const IRSwapComposition: React.FC = () => {
           the fade (5280-5287) — two cubes 80px apart read as a defect */}
       {hump > 0 && <AbsoluteFill style={{ background: "#FBFBFA", opacity: hump }} />}
       {/* measured film response of the reference (see lib/post.tsx);
-          grain freezes with the reference's static credits from 5317 */}
-      {GRAIN_ON && <Grain frame={Math.min(frame, 5317)} />}
+          grain freezes with the reference's static credits from 5316 —
+          r8 measured: ref consecutive-frame diff 5316→5317 is 0.002
+          (codec floor), last real motion 5315→5316; with the outro
+          settle also clamped at 5316 (Outro SETTLE_F) every frame from
+          5316 to the end is now identical, exactly like the reference */}
+      {GRAIN_ON && <Grain frame={Math.min(frame, 5316)} />}
       {FEATHER_ON && <EdgeFeather />}
     </AbsoluteFill>
   );
