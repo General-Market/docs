@@ -56,7 +56,7 @@ const ToolGlyph: React.FC<{ i: number }> = ({ i }) => {
 
 export const TokenChartChrome: React.FC<{ frame: number }> = ({ frame }) => {
   const ohlc = ohlcAt(frame);
-  const dir = ohlc ? (ohlc.up ? C.ohlcPos : C.ohlcNeg) : C.textMid;
+  const dir = ohlc ? (ohlc.z ? C.textMid : ohlc.up ? C.ohlcPos : C.ohlcNeg) : C.textMid;
 
   return (
     <div style={{ position: "absolute", inset: 0, fontFamily: FONT }}>

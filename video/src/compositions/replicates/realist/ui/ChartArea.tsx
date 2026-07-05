@@ -1,167 +1,237 @@
 import React from "react";
 import {
+  CANDLE_PITCH,
+  CANDLE_ANCHOR,
+  CANDLE_ENTS,
+  CandleEnt,
   BUBBLE_TRACKS,
-  CANDLE_TRACKS,
-  COST_BASIS_Y,
   BubbleTrack,
-  CandleTrack,
+  CHIP_HIGH_Y,
+  CHIP_LOW_Y,
+  CHIP_CUR,
+  CHIP_EXIT,
+  CHIP_COST,
+  HIGH_TEXT,
+  CURSOR,
+  CROSSHAIR,
+  TIME_SLOT0,
 } from "./chart-data";
 import {
   CHART_COLORS as C,
-  SCALE_ERAS,
-  EXIT_Y,
-  HIGH_CHIP,
-  LOW_CHIP,
+  eraAt,
+  priceToY,
+  yToPrice,
+  fmtK,
+  fmtChip,
   EXIT_LABEL,
-  EXIT_BADGE,
   COST_LABEL,
   COST_BADGE,
-  CURRENT_CHIP,
-  TIME_AXIS,
-  BUBBLE_GLYPHS,
-  fmtK,
+  LOW_CHIP_TEXT,
 } from "./copy/chart";
 
 // The chart interior, drawn in FULL-FRAME 1920×1080 coordinates (all track
-// data is measured in that space). The parent places it inside the chart
-// viewport and passes the viewport origin so we can counter-offset.
+// data is measured in that space, r3 per-plate detection).
 const CHART_FREEZE = 1656; // detection ends where the outro blur starts
+const VIEW_L = 57;
+const VIEW_R = 1556;
+const PLOT_TOP = 196;
+const PLOT_BOT = 918;
 
-const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
-
-// piecewise-linear lookup over keyframe triples [f,x,y,...]
-const trackAt = (k: number[], f: number): [number, number] | null => {
-  const n = k.length / 3;
-  if (f < k[0] || f > k[(n - 1) * 3]) return null;
-  for (let i = 0; i < n - 1; i++) {
-    const f0 = k[i * 3];
-    const f1 = k[(i + 1) * 3];
-    if (f >= f0 && f <= f1) {
-      const t = f1 === f0 ? 0 : (f - f0) / (f1 - f0);
-      return [
-        k[i * 3 + 1] + (k[(i + 1) * 3 + 1] - k[i * 3 + 1]) * t,
-        k[i * 3 + 2] + (k[(i + 1) * 3 + 2] - k[i * 3 + 2]) * t,
-      ];
-    }
+// ── track lookups ────────────────────────────────────────────────
+// [f,v,...] pairs, step-hold; null before first keyframe
+const stepPairs = (k: number[], f: number): number | null => {
+  if (k.length === 0 || f < k[0]) return null;
+  let v = k[1];
+  for (let i = 0; i < k.length; i += 2) {
+    if (k[i] <= f) v = k[i + 1];
+    else break;
   }
-  return null;
+  return v;
 };
 
-const ctrackAt = (k: number[], f: number): [number, number, number] | null => {
-  const n = k.length / 4;
-  if (f < k[0] || f > k[(n - 1) * 4]) return null;
-  for (let i = 0; i < n - 1; i++) {
-    const f0 = k[i * 4];
-    const f1 = k[(i + 1) * 4];
-    if (f >= f0 && f <= f1) {
-      const t = f1 === f0 ? 0 : (f - f0) / (f1 - f0);
-      const lerp = (a: number, b: number) => a + (b - a) * t;
-      return [
-        lerp(k[i * 4 + 1], k[(i + 1) * 4 + 1]),
-        lerp(k[i * 4 + 2], k[(i + 1) * 4 + 2]),
-        lerp(k[i * 4 + 3], k[(i + 1) * 4 + 3]),
-      ];
+// [f,v,...] pairs with linear interpolation (pan anchor)
+const lerpPairs = (k: number[], f: number): number => {
+  if (f <= k[0]) return k[1];
+  for (let i = 0; i + 3 < k.length; i += 2) {
+    if (f >= k[i] && f <= k[i + 2]) {
+      const t = k[i + 2] === k[i] ? 0 : (f - k[i]) / (k[i + 2] - k[i]);
+      return k[i + 1] + (k[i + 3] - k[i + 1]) * t;
     }
   }
-  return null;
+  return k[k.length - 1];
 };
 
-const stepAt = <T extends { f: number }>(table: T[], f: number): T => {
-  let cur = table[0];
-  for (const row of table) {
-    if (row.f <= f) cur = row;
+// [f,a,b,...] triplets, step-hold
+const stepTriple = (k: number[], f: number): [number, number] | null => {
+  if (k.length === 0 || f < k[0]) return null;
+  let a = k[1];
+  let b = k[2];
+  for (let i = 0; i < k.length; i += 3) {
+    if (k[i] <= f) {
+      a = k[i + 1];
+      b = k[i + 2];
+    } else break;
+  }
+  return [a, b];
+};
+
+// [f,x,y,kind] quads, step-hold
+const stepQuad = (k: number[], f: number): [number, number, number] | null => {
+  if (k.length === 0 || f < k[0]) return null;
+  let out: [number, number, number] = [k[1], k[2], k[3]];
+  for (let i = 0; i < k.length; i += 4) {
+    if (k[i] <= f) out = [k[i + 1], k[i + 2], k[i + 3]];
+    else break;
+  }
+  return out;
+};
+
+// candle keyframes: [f,bt,bb,wt,wb]* step-hold; null before first
+const candleGeom = (k: number[], f: number): [number, number, number, number] | null => {
+  if (k.length === 0 || f < k[0]) return null;
+  let g: [number, number, number, number] = [k[1], k[2], k[3], k[4]];
+  for (let i = 0; i < k.length; i += 5) {
+    if (k[i] <= f) g = [k[i + 1], k[i + 2], k[i + 3], k[i + 4]];
+    else break;
+  }
+  return g;
+};
+
+const stepText = (table: [number, string][], f: number): string | null => {
+  let cur: string | null = null;
+  for (const [kf, t] of table) {
+    if (kf <= f) cur = t;
     else break;
   }
   return cur;
 };
 
-const sampleY = (table: number[][], f: number): number | null => {
-  let cur: number | null = null;
-  for (const [sf, y] of table) {
-    if (sf <= f) cur = y;
-    else break;
-  }
-  return cur;
-};
+// glyphs drawn as bold letters (vs emoji)
+const isLetterGlyph = (g: string) => /^[A-Z]{1,2}$/.test(g);
 
-const Bubble: React.FC<{ t: BubbleTrack; i: number; f: number }> = ({ t, i, f }) => {
-  const p = trackAt(t.k, f);
-  if (!p) return null;
-  const born = t.k[0];
-  const pop = clamp((f - born) / 6, 0, 1);
-  const scale = 0.4 + 0.6 * (1 - (1 - pop) ** 3);
-  const glyphs = BUBBLE_GLYPHS[t.c];
-  const glyph = glyphs[i % glyphs.length];
-  const isLetter = glyph === "S" || glyph === "DS";
+const Bubble: React.FC<{ t: BubbleTrack; f: number }> = ({ t, f }) => {
+  // k = [f,x,y]* keyframes, lerp between
+  const k = t.k;
+  if (f < k[0] || f > k[k.length - 3]) return null;
+  let x = k[1];
+  let y = k[2];
+  for (let i = 0; i + 5 < k.length; i += 3) {
+    if (f >= k[i] && f <= k[i + 3]) {
+      const tt = k[i + 3] === k[i] ? 0 : (f - k[i]) / (k[i + 3] - k[i]);
+      x = k[i + 1] + (k[i + 4] - k[i + 1]) * tt;
+      y = k[i + 2] + (k[i + 5] - k[i + 2]) * tt;
+      break;
+    }
+    x = k[i + 3 + 1];
+    y = k[i + 3 + 2];
+  }
+  const born = k[0];
+  const pop = Math.min((f - born) / 5, 1);
+  const scale = 0.5 + 0.5 * (1 - (1 - pop) ** 3);
   const fill =
-    t.c === "g" ? C.bubbleGreenFill : t.c === "r" ? C.bubbleRedFill : t.c === "y" ? C.bubbleYellowFill : C.bubbleWhiteFill;
-  const ring = t.c === "g" ? C.bubbleGreenRing : t.c === "r" ? C.bubbleRedRing : "rgba(0,0,0,0.45)";
+    t.c === "g"
+      ? C.bubbleGreenFill
+      : t.c === "r"
+        ? C.bubbleRedFill
+        : t.c === "y"
+          ? C.bubbleYellowFill
+          : t.c === "p"
+            ? C.bubblePurpleFill
+            : C.bubbleWhiteFill;
+  const letter = isLetterGlyph(t.g);
   return (
     <div
       style={{
         position: "absolute",
-        left: p[0] - t.r,
-        top: p[1] - t.r,
+        left: x - t.r,
+        top: y - t.r,
         width: t.r * 2,
         height: t.r * 2,
         borderRadius: "50%",
-        background: isLetter || t.c === "g" || t.c === "r" ? fill : "transparent",
-        border: isLetter ? `2px solid ${ring}` : undefined,
+        background: fill,
+        border: `1.5px solid rgba(10,14,20,0.55)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: isLetter ? t.r * 1.05 : t.r * 1.75,
+        fontSize: letter ? (t.g.length > 1 ? t.r * 0.85 : t.r * 1.1) : t.r * 1.35,
         fontWeight: 800,
         color: "#fff",
         lineHeight: 1,
         opacity: pop,
         transform: `scale(${scale.toFixed(3)})`,
-        boxShadow: isLetter ? "0 1px 3px rgba(0,0,0,0.5)" : undefined,
       }}
     >
-      {glyph}
+      {t.g}
     </div>
   );
 };
+
+// hand cursor glyphs
+const GrabHand: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <svg width={18} height={16} viewBox="0 0 18 16" style={{ position: "absolute", left: x - 9, top: y - 7, zIndex: 12 }}>
+    <path
+      d="M4.5 7.5 4 4.6c-.1-.9 1.3-1.1 1.5-.2l.4 2.2.5-3.6c.1-.9 1.5-.8 1.5.1l.1 3.2.7-3.4c.2-.9 1.5-.7 1.5.2l-.2 3.4 1-2.6c.4-.8 1.6-.4 1.4.5l-1 3.9c-.4 1.7-1 3.4-2.7 3.4H7.4c-1.2 0-1.9-.7-2.4-1.8Z"
+      fill="#f5f8ff"
+      stroke="#2a2f3a"
+      strokeWidth="0.7"
+    />
+  </svg>
+);
+
+const PointerHand: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <svg width={20} height={24} viewBox="0 0 20 24" style={{ position: "absolute", left: x - 10, top: y - 12, zIndex: 12 }}>
+    <path
+      d="M8 2.5c0-1.4 2-1.4 2 0v7l.3-2c.2-1.2 1.9-1 1.9.2v2.4l.6-1.6c.4-1 1.9-.6 1.7.5l-.5 2.5.8-1c.7-.8 1.9 0 1.4 1l-2 4.3c-.8 1.8-1.8 3.2-3.9 3.2H9.2c-1.6 0-2.6-1-3.3-2.4L3.6 12c-.5-1 .8-1.9 1.5-1l1.4 1.8V2.5Z"
+      fill="#5fc0ea"
+      stroke="#eaf6ff"
+      strokeWidth="0.8"
+    />
+  </svg>
+);
 
 export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
   const f = Math.min(frame, CHART_FREEZE);
   if (frame < 418) return null;
 
-  const era = stepAt(
-    SCALE_ERAS.map((e) => ({ f: e.from, e })),
-    f,
-  ).e;
+  const era = eraAt(f);
   const nLabels = Math.round((era.top - era.bottom) / era.step);
   const rows: { text: string; y: number }[] = [];
   for (let i = 0; i <= nLabels; i++) {
     rows.push({
       text: fmtK(era.top - i * era.step),
-      y: era.yTop + ((era.yBottom - era.yTop) * i) / nLabels,
+      y: priceToY(era.top - i * era.step, era),
     });
   }
 
-  const high = stepAt(HIGH_CHIP, f);
-  const exitBadge = stepAt(EXIT_BADGE, f);
-  const cur = stepAt(CURRENT_CHIP, f);
-  const exitY = stepAt(EXIT_Y, f).y;
-  const costY = sampleY(COST_BASIS_Y, f) ?? 855;
+  const anchor = lerpPairs(CANDLE_ANCHOR, f);
+  const slotX = (s: number) => anchor + s * CANDLE_PITCH;
 
-  const dash = (color: string, y: number, dashW = 7, gap = 6) => (
+  const exitY = stepPairs(CHIP_EXIT, f);
+  const costY = stepPairs(CHIP_COST, f);
+  const curChip = stepTriple(CHIP_CUR, f);
+  const highY = stepPairs(CHIP_HIGH_Y, f) ?? 258;
+  const lowY = stepPairs(CHIP_LOW_Y, f) ?? 872;
+  const highText = stepText(HIGH_TEXT, f) ?? "High";
+  const cursor = stepQuad(CURSOR, f);
+  const cross = f <= CHART_FREEZE ? stepTriple(CROSSHAIR, f) : null;
+  const crossOn = cursor && cursor[2] === 1 && cross !== null;
+
+  const dash = (color: string, y: number, dashW = 7, gap = 6, h = 3) => (
     <div
       style={{
         position: "absolute",
-        left: 56,
-        right: 1920 - 1560,
-        top: y,
-        height: 3,
+        left: VIEW_L - 1,
+        width: VIEW_R - VIEW_L,
+        top: y - h / 2,
+        height: h,
         backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 ${dashW}px, transparent ${dashW}px ${dashW + gap}px)`,
       }}
     />
   );
 
-  const chip = (text: string, y: number, bg: string, color: string = C.chipText) => (
+  const chip = (text: string, y: number, bg: string, color: string = C.chipText, key?: string) => (
     <div
+      key={key}
       style={{
         position: "absolute",
         left: 1564,
@@ -179,19 +249,34 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
     </div>
   );
 
+  // time-axis: minute marks every 60 slots from TIME_SLOT0 ("15:03"), with
+  // :14/:28/:42 sub-labels between (TV drops :56 in favor of the minute mark).
+  const timeCols: { text: string; x: number }[] = [];
+  for (let m = 0; m < 4; m++) {
+    for (const [off, suffix] of [
+      [0, ""],
+      [14, ":14"],
+      [28, ":28"],
+      [42, ":42"],
+    ] as const) {
+      const x = slotX(TIME_SLOT0 + m * 60 + off);
+      if (x > VIEW_L - 40 && x < VIEW_R + 40) timeCols.push({ text: `15:0${3 + m}${suffix}`, x });
+    }
+  }
+
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       {/* grid */}
       {rows.map((r, i) => (
         <div
           key={`h${i}`}
-          style={{ position: "absolute", left: 56, width: 1500, top: r.y, height: 1, background: C.gridLine }}
+          style={{ position: "absolute", left: VIEW_L - 1, width: 1500, top: r.y, height: 1, background: C.gridLine }}
         />
       ))}
-      {TIME_AXIS.map((t, i) => (
+      {timeCols.map((t, i) => (
         <div
           key={`v${i}`}
-          style={{ position: "absolute", left: t.x, top: 195, height: 723, width: 1, background: C.gridLine }}
+          style={{ position: "absolute", left: t.x, top: PLOT_TOP - 1, height: PLOT_BOT - PLOT_TOP + 5, width: 1, background: C.gridLine }}
         />
       ))}
       {/* price scale labels */}
@@ -211,7 +296,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
         </div>
       ))}
       {/* time axis labels */}
-      {TIME_AXIS.map((t, i) => (
+      {timeCols.map((t, i) => (
         <div
           key={`t${i}`}
           style={{
@@ -227,61 +312,138 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           {t.text}
         </div>
       ))}
-      {/* dashed strategy lines + labels + badges (plate dashes ~14px long,
-          ~10px gaps, 3px tall — f0500 crop) */}
-      {dash(C.exitLine, exitY, 14, 10)}
-      <div
-        style={{
-          position: "absolute",
-          right: 1920 - 1558,
-          top: exitY - 18,
-          fontSize: 12,
-          color: "#c9535e",
-        }}
-      >
-        {EXIT_LABEL}
-      </div>
-      {chip(exitBadge.text, exitY, C.exitBadgeBg)}
-      {dash(C.costLine, costY, 9, 7)}
-      <div
-        style={{
-          position: "absolute",
-          right: 1920 - 1558,
-          top: costY - 18,
-          fontSize: 12,
-          color: "#dfe4ee",
-        }}
-      >
-        {COST_LABEL}
-      </div>
-      {chip(COST_BADGE, costY, C.costBadgeBg, C.costBadgeText)}
-      {/* candles */}
-      {CANDLE_TRACKS.map((t: CandleTrack, i: number) => {
-        const p = ctrackAt(t.k, f);
-        if (!p) return null;
-        return (
+      {/* dashed strategy lines + labels (plate dashes ~14px/10px) */}
+      {exitY !== null && (
+        <>
+          {dash(C.exitLine, exitY, 14, 10)}
           <div
-            key={`c${i}`}
             style={{
               position: "absolute",
-              left: p[0] - t.w / 2,
-              top: p[1],
-              width: t.w,
-              height: Math.max(p[2] - p[1], 2),
-              background: t.c === "g" ? C.candleGreen : C.candleRed,
-              borderRadius: 1,
+              right: 1920 - 1592,
+              top: exitY - 18,
+              fontSize: 12,
+              color: "#c9535e",
             }}
-          />
+          >
+            {EXIT_LABEL}
+          </div>
+          {chip(fmtChip(yToPrice(exitY, era)), exitY, C.exitBadgeBg)}
+        </>
+      )}
+      {costY !== null && (
+        <>
+          {dash(C.costLine, costY, 9, 7)}
+          <div
+            style={{
+              position: "absolute",
+              right: 1920 - 1592,
+              top: costY - 18,
+              fontSize: 12,
+              color: "#dfe4ee",
+            }}
+          >
+            {COST_LABEL}
+          </div>
+          {chip(COST_BADGE, costY, C.costBadgeBg, C.costBadgeText)}
+        </>
+      )}
+      {/* candles: wick behind body, slot x from pan anchor */}
+      {CANDLE_ENTS.map((t: CandleEnt, i: number) => {
+        const g = candleGeom(t.k, f);
+        if (!g) return null;
+        const x = slotX(t.s);
+        if (x < VIEW_L + 2 || x > VIEW_R - 1) return null;
+        const col = t.c === "g" ? C.candleGreen : C.candleRed;
+        const [bt, bb, wt, wb] = g;
+        return (
+          <React.Fragment key={`c${i}`}>
+            {wb - wt > 1 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: x - 0.5,
+                  top: wt,
+                  width: 1,
+                  height: Math.max(wb - wt, 1),
+                  background: col,
+                }}
+              />
+            )}
+            <div
+              style={{
+                position: "absolute",
+                left: x - 2,
+                top: bt,
+                width: 4,
+                height: Math.max(bb - bt, 1.5),
+                background: col,
+                borderRadius: 0.5,
+              }}
+            />
+          </React.Fragment>
         );
       })}
+      {/* current-price dotted line */}
+      {curChip && (
+        <div
+          style={{
+            position: "absolute",
+            left: VIEW_L - 1,
+            width: VIEW_R - VIEW_L,
+            top: curChip[0] - 1,
+            height: 1,
+            opacity: 0.65,
+            backgroundImage: `repeating-linear-gradient(90deg, ${curChip[1] ? C.curChipGreen : C.curChipRed} 0 2px, transparent 2px 5px)`,
+          }}
+        />
+      )}
       {/* bubbles */}
       {BUBBLE_TRACKS.map((t: BubbleTrack, i: number) => (
-        <Bubble key={`b${i}`} t={t} i={i} f={f} />
+        <Bubble key={`b${i}`} t={t} f={f} />
       ))}
+      {/* crosshair (only during grab-cursor spans) */}
+      {crossOn && cross && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: cross[0],
+              top: PLOT_TOP,
+              width: 1,
+              height: PLOT_BOT - PLOT_TOP,
+              backgroundImage: `repeating-linear-gradient(180deg, ${C.crossDash} 0 5px, transparent 5px 9px)`,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: VIEW_L - 1,
+              width: VIEW_R - VIEW_L,
+              top: cross[1],
+              height: 1,
+              backgroundImage: `repeating-linear-gradient(90deg, ${C.crossDash} 0 5px, transparent 5px 9px)`,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 1564,
+              top: cross[1] - 8,
+              fontSize: 13,
+              fontWeight: 700,
+              color: C.crossLabel,
+            }}
+          >
+            {fmtChip(yToPrice(cross[1], era))}
+          </div>
+        </>
+      )}
       {/* chips */}
-      {chip(high.text, high.y, C.highChipBg)}
-      {chip(LOW_CHIP.text, LOW_CHIP.y, C.lowChipBg)}
-      {chip(cur.text, cur.y, cur.up ? C.curChipGreen : C.curChipRed)}
+      {chip(highText, highY, C.highChipBg)}
+      {chip(LOW_CHIP_TEXT, lowY, C.lowChipBg)}
+      {curChip && chip(fmtChip(yToPrice(curChip[0], era)), curChip[0], curChip[1] ? C.curChipGreen : C.curChipRed)}
+      {/* cursor (above TokenPopup via zIndex; popup root has no stacking ctx) */}
+      {cursor && frame <= CHART_FREEZE && (cursor[2] === 1 ? <GrabHand x={cursor[0]} y={cursor[1]} /> : <PointerHand x={cursor[0]} y={cursor[1]} />)}
     </div>
   );
 };

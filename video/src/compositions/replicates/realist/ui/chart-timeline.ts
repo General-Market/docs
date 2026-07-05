@@ -4,11 +4,13 @@
 
 export type ChartOhlc = {
   o: string; h: string; l: string; c: string; d: string; dp: string; up: boolean;
+  z?: boolean; // zero-state (grey) readout
 };
 
 // [frame, value] rows; step-hold between rows (matches plate ticking).
-export const OHLC_TIMELINE: [number, ChartOhlc | null][] = [
-  [418, null],
+export const OHLC_TIMELINE: [number, ChartOhlc][] = [
+  [418, { o: "0", h: "0", l: "0", c: "0", d: "0", dp: "0%", up: true, z: true }],
+  [460, { o: "230K", h: "270K", l: "217K", c: "253K", d: "23.8K", dp: "+10.07%", up: true }],
   [478, { o: "230K", h: "280K", l: "217K", c: "280K", d: "49.9K", dp: "+21.68%", up: true }],
   [480, { o: "230K", h: "357K", l: "217K", c: "357K", d: "127K", dp: "+55.16%", up: true }],
   [494, { o: "230K", h: "358K", l: "217K", c: "358K", d: "128K", dp: "+55.63%", up: true }],
@@ -16,10 +18,13 @@ export const OHLC_TIMELINE: [number, ChartOhlc | null][] = [
   [505, { o: "364K", h: "370K", l: "328K", c: "346K", d: "-17.6K", dp: "-4.85%", up: false }],
   [520, { o: "364K", h: "377K", l: "241K", c: "241K", d: "-123K", dp: "-33.81%", up: false }],
   [527, { o: "364K", h: "377K", l: "154K", c: "154K", d: "-210K", dp: "-57.70%", up: false }],
+  [575, { o: "154K", h: "348K", l: "157K", c: "322K", d: "168K", dp: "+109.31%", up: true }],
   [598, { o: "126K", h: "127K", l: "96.9K", c: "98.4K", d: "-27.3K", dp: "-21.69%", up: false }],
   [658, { o: "97.2K", h: "125K", l: "90.7K", c: "106K", d: "9.12K", dp: "+9.38%", up: true }],
   [660, { o: "97.2K", h: "138K", l: "90.7K", c: "138K", d: "40.4K", dp: "+41.58%", up: true }],
+  [700, { o: "226K", h: "232K", l: "202K", c: "202K", d: "-23.9K", dp: "-10.60%", up: false }],
   [718, { o: "226K", h: "232K", l: "177K", c: "189K", d: "-36.6K", dp: "-16.22%", up: false }],
+  [730, { o: "226K", h: "339K", l: "177K", c: "319K", d: "93.2K", dp: "+41.30%", up: true }],
   [744, { o: "455K", h: "452K", l: "412K", c: "412K", d: "-43.6K", dp: "-9.59%", up: false }],
   [747, { o: "455K", h: "452K", l: "412K", c: "426K", d: "-29.4K", dp: "-6.45%", up: false }],
   [751, { o: "455K", h: "453K", l: "405K", c: "405K", d: "-50.1K", dp: "-11.01%", up: false }],
@@ -141,6 +146,7 @@ export const OHLC_TIMELINE: [number, ChartOhlc | null][] = [
   [1567, { o: "171K", h: "167K", l: "150K", c: "161K", d: "-10.2K", dp: "-5.97%", up: false }],
   [1572, { o: "171K", h: "167K", l: "150K", c: "160K", d: "-11K", dp: "-6.44%", up: false }],
   [1589, { o: "171K", h: "210K", l: "134K", c: "209K", d: "37.8K", dp: "+22.11%", up: true }],
+  [1646, { o: "0", h: "0", l: "0", c: "0", d: "0", dp: "0%", up: true, z: true }],
 ];
 
 export function ohlcAt(frame: number): ChartOhlc | null {
