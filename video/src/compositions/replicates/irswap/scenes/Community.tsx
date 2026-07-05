@@ -174,6 +174,7 @@ type CommB = {
   eye: { x: number; z: number; k?: number };
   spec: MiniSpec;
   padW: number;
+  lean?: number; // overhead base-pivot lean toward the camera (rad, ≤0)
 };
 // Round-4 pose refits (fitcomm.py): connected-component silhouettes scanned
 // in ref at 4775/4820/4880 (overhead glide) and 5000/5100/5200 (eye hold),
@@ -183,40 +184,46 @@ type CommB = {
 //   cbs   over joint fit rms 6.0px; eye (x,z,k) exact at 5100
 const WB: Record<string, CommB> = {
   house: {
-    over: { x: 25.39, z: -152.09, kx: 0.506, ky: 0.486 },
+    over: { x: 25.3, z: -143.14, kx: 0.505, ky: 0.508 },
     eye: { x: -119.5, z: -423.8 },
     spec: { kind: "house", W: 167.0, L: 130.5, H: 178.8, eaveFrac: 0.62, fill: C.blue, fillTop: C.blueLight, outline: C.blueDark, strokeW: 4, door: { u0: 0.37, u1: 0.63, top: 0.53, fill: C.door }, chimney: true },
     padW: 1.6,
+    lean: -0.22,
   },
   bank: {
-    over: { x: 218.2, z: -57.7, kx: 0.518, ky: 0.742 },
+    over: { x: 228.93, z: -53.06, kx: 0.543, ky: 0.644 },
     eye: { x: 274.2, z: -320.7 },
     spec: { kind: "temple", W: 188.5, L: 32, H: 182.1, eaveFrac: 0.58, fill: C.red, outline: "#787E7C", strokeW: 4.5, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.6,
+    lean: -0.45,
   },
   t1: {
     over: { x: -205.4, z: -207.8, kx: 0.442, ky: 0.442 },
     eye: { x: -695.8, z: -624.3 },
     spec: { kind: "temple", W: 130.0, L: 89.7, H: 154.2, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 4, fill: "#FFFFFF" }, strip: true },
     padW: 1.85,
+    lean: -0.35,
   },
   cbs: {
-    over: { x: -205.9, z: -47.2, kx: 0.213, ky: 0.729 },
+    over: { x: -210.6, z: -49.6, kx: 0.30, ky: 0.631 },
     eye: { x: -746.7, z: -306.0 },
     spec: { kind: "box2", W: 144.3, L: 108.0, H: 170, eaveFrac: 0, fill: C.blue, outline: C.blueDark },
     padW: 1.85,
+    lean: -0.2,
   },
   t2: {
     over: { x: -135.1, z: -263.9, kx: 0.442, ky: 0.585 },
     eye: { x: -555.0, z: -782.8, k: 0.92 },
     spec: { kind: "temple", W: 122.8, L: 95.7, H: 111.8, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 5, fill: "#FFFFFF" }, strip: true },
     padW: 1.85,
+    lean: -0.35,
   },
   t3: {
     over: { x: -40.3, z: -288.0, kx: 0.478, ky: 0.645 },
     eye: { x: -559.3, z: -1290.6 },
     spec: { kind: "temple", W: 100.8, L: 82.9, H: 97.6, eaveFrac: 0.66, fill: C.blue, outline: C.blueDark, cols: { n: 3, fill: "#FFFFFF" }, strip: true },
     padW: 1.85,
+    lean: -0.35,
   },
 };
 // Per-building screen-tracked world slides through the overhead glide
@@ -225,9 +232,9 @@ const WB: Record<string, CommB> = {
 // residuals of the joint fits, converted to floor-plane world deltas at
 // each key frame, interpolated, and released through the dive blend.
 const OVSLIDE: Record<string, [number, number, number][]> = {
-  // [f, dx, dz] world units
-  bank: [[4715, -6.2, -4.6], [4775, -6.2, -4.6], [4820, -7.5, -0.3], [4880, 5.8, 6.0], [4905, 5.8, 6.0]],
-  house: [[4715, -6.6, -7.4], [4775, -6.6, -7.4], [4820, 2.0, -0.6], [4880, 3.3, 6.4], [4905, 3.3, 6.4]],
+  // [f, dx, dz] world units (residuals of the lean-refit joint fits)
+  bank: [[4715, -6.0, -9.1], [4775, -6.0, -9.1], [4820, -2.7, -0.2], [4880, 6.6, 6.0], [4905, 6.6, 6.0]],
+  house: [[4715, -6.6, -7.3], [4775, -6.6, -7.3], [4820, 1.9, -0.6], [4880, 3.3, 6.3], [4905, 3.3, 6.3]],
 };
 const slideAt = (name: string, f: number): Pt => {
   const rows = OVSLIDE[name];
@@ -1036,14 +1043,22 @@ const GlassSweep: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ── the scene ────────────────────────────────────────────────────
+// Overhead-phase lean: the reference draws its icons semi-billboarded —
+// near-upright facades under the 38-degree overhead camera (a true-3D
+// upright building foreshortens hard and reads "fallen over", which is
+// exactly what the replica did). Each icon tips toward the camera about
+// its base line — a real 3D pose, blended out through the dive as the
+// camera drops to eye level where upright is correct.
 const PlantedBuilding: React.FC<{
   name: string; frame: number; opacity: number; pop?: number; dropY?: number;
 }> = ({ name, frame, opacity, pop = 1, dropY = 0 }) => {
   const b = WB[name];
   const p = wbAt(b, frame, name);
+  const lean = (b.lean ?? 0) * (1 - diveT(frame));
   if (opacity <= 0.005 || pop <= 0.005) return null;
   return (
-    <group position={[p.x, FLOOR_Y + dropY, p.z]} scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
+    <group position={[p.x, FLOOR_Y + dropY, p.z]} rotation={[lean, 0, 0]}
+      scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
       <MiniBuilding spec={b.spec} position={[0, 0, 0]} opacity={opacity} />
     </group>
   );
