@@ -549,35 +549,40 @@ const PosStatsRow: React.FC<{ frame: number }> = ({ frame }) => {
       {[1697, 1755, 1830].map((x) => (
         <div key={x} style={{ position: "absolute", left: x, top: 480, width: 1, height: 42, background: C.divider }} />
       ))}
-      <div style={{ position: "absolute", left: 1642, top: 484 }}>
+      {/* r4 refit from plate blobs (f0900/f1580/f1620, thr-80 column scans):
+          labels cap y482-490 (top 482 not 484); values 11.5px not 13 (plate
+          "10.54" ink 28px wide, digits y503-511); bought/sold/holding are
+          CENTER-aligned columns (centers 1657/1720/1784 — "0" at f1620 sits
+          centered, not left); pnl group is left-anchored at bars x1822. */}
+      <div style={{ position: "absolute", left: 1657, top: 482, transform: "translateX(-50%)" }}>
         <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.bought}</T>
       </div>
-      <div style={{ position: "absolute", left: 1707, top: 484 }}>
+      <div style={{ position: "absolute", left: 1720, top: 482, transform: "translateX(-50%)" }}>
         <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.sold}</T>
       </div>
-      <div style={{ position: "absolute", left: 1765, top: 484 }}>
+      <div style={{ position: "absolute", left: 1784, top: 482, transform: "translateX(-50%)" }}>
         <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.holding}</T>
       </div>
-      <Row gap={4} style={{ position: "absolute", left: 1852, top: 482 }}>
+      <Row gap={6} style={{ position: "absolute", left: 1873, top: 482, transform: "translateX(-50%)" }}>
         <T size={11} color={C.dimLabel} weight={500}>{RAIL.statLabels.pnl}</T>
         <Glyph kind="infoCircle" size={11} color={C.dimLabel} />
       </Row>
-      <Row gap={4} style={{ position: "absolute", left: 1642, top: 501 }}>
+      <Row gap={5} style={{ position: "absolute", left: 1657, top: 501, transform: "translateX(-50%)" }}>
         <SolBars size={11} />
-        <T size={13} color={C.dimTeal} weight={600}>{p.bought}</T>
+        <T size={11.5} color={C.dimTeal} weight={600}>{p.bought}</T>
       </Row>
-      <Row gap={4} style={{ position: "absolute", left: 1703, top: 501 }}>
+      <Row gap={5} style={{ position: "absolute", left: 1720, top: 501, transform: "translateX(-50%)" }}>
         <SolBars size={11} />
         {/* sold reads pink on the plates (f0900 "169.8"), not white */}
-        <T size={13} color={C.dimPink} weight={600}>{p.sold}</T>
+        <T size={11.5} color={C.dimPink} weight={600}>{p.sold}</T>
       </Row>
-      <Row gap={4} style={{ position: "absolute", left: 1763, top: 501 }}>
+      <Row gap={5} style={{ position: "absolute", left: 1784, top: 501, transform: "translateX(-50%)" }}>
         <SolBars size={11} />
-        <T size={13} color={C.dimWhite} weight={600}>{p.holding}</T>
+        <T size={11.5} color={C.dimWhite} weight={600}>{p.holding}</T>
       </Row>
-      <Row gap={4} style={{ position: "absolute", left: 1836, top: 501, whiteSpace: "nowrap" }}>
+      <Row gap={5} style={{ position: "absolute", left: 1822, top: 501, whiteSpace: "nowrap" }}>
         <SolBars size={11} />
-        <T size={13} color={C.dimTeal} weight={600}>
+        <T size={11.5} color={C.dimTeal} weight={600}>
           {p.pnl} (+{p.pnlPct}%)
         </T>
       </Row>
