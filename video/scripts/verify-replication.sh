@@ -121,6 +121,15 @@ fi
 
 echo "  video_ssim=$VIDEO_SSIM" >&2
 
+# Persist the per-frame SSIM series — rolling-window triage reads it
+# (scripts/rolling-ssim.py). Without this the frame-level signal dies
+# with the temp dir.
+mkdir -p "$ANALYSIS_DIR"
+if [ -f "$WORK/ssim_log.txt" ]; then
+  cp "$WORK/ssim_log.txt" "$ANALYSIS_DIR/last-verify-framessim.txt"
+  echo "  frame_ssim_log: $ANALYSIS_DIR/last-verify-framessim.txt" >&2
+fi
+
 # ─────────────────────────────────────────────
 # 4. KEYFRAME SSIM (weight: 35%)
 # ─────────────────────────────────────────────
