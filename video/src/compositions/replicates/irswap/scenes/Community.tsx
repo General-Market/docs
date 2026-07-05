@@ -704,10 +704,29 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
     const mE2 = (pts: Pt[]) => m10(pts).map(blendSim(SIM_E2));
     const mE3 = (pts: Pt[]) => m10(pts).map(blendSim(SIM_E3));
     const wv = blendSim(SIM_WAVE);
-    // eye-phase inks sampled off the f5100 reference band
-    poly(mE1([[330, 300], [398, 303], [396, 345], [328, 342]]), mixc("#C9C9C9", "#DFDFDF", dv), null);
-    poly(mE2([[405, 302], [490, 306], [488, 350], [403, 346]]), mixc("#CFEAF3", "#DFEBEE", dv), null);
-    poly(mE3([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E2E9EB", dv), null);
+    // Card inks re-sampled per phase (round 6, dashboard-zone histograms):
+    // the ref's overhead grey is LIGHTER than the old #C9C9C9 (201) — grey
+    // median 214 @4750-4810 washing to 222 by 4880 (the ref repaints the
+    // cards paler through the glide); the old teal #CFEAF3 was too blue
+    // (b 243 vs ref 224). Keyed tables land exactly on the r4-measured eye
+    // values by 4990, so the eye hold renders byte-identical.
+    const kInk = (rt: [number, number][], gt: [number, number][], bt: [number, number][]) =>
+      `rgb(${Math.round(lerp1(rt, f))},${Math.round(lerp1(gt, f))},${Math.round(lerp1(bt, f))})`;
+    poly(mE1([[330, 300], [398, 303], [396, 345], [328, 342]]),
+      kInk([[4750, 214], [4880, 222], [4990, 223]], [[4750, 214], [4880, 222], [4990, 223]],
+        [[4750, 214], [4880, 222], [4990, 223]]), null);
+    poly(mE2([[405, 302], [490, 306], [488, 350], [403, 346]]),
+      kInk([[4750, 202], [4880, 225], [4990, 223]], [[4750, 221], [4880, 236], [4990, 235]],
+        [[4750, 224], [4880, 237], [4990, 238]]), null);
+    // E3's "overhead" quad was actually the ref's speech bubble (round-6
+    // finding): the wide teal strip exists only in the eye band, so it
+    // fades in with the dive; the bubble is drawn as its own fragment.
+    {
+      const gA = ctx.globalAlpha;
+      ctx.globalAlpha = gA * dv;
+      poly(mE3([[150, 375], [260, 380], [256, 430], [146, 424]]), mixc("#CBE9EF", "#E2E9EB", dv), null);
+      ctx.globalAlpha = gA;
+    }
     // tick columns under the chart — the reference's eye view drops them
     // (streets replace the ruled block), so they fade through the dive
     {
