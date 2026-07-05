@@ -239,7 +239,11 @@ export const B3D_DECOR = {
     fill: "#4CB3CB",
     outline: "rgba(85,96,101,0.95)",
     door: { u0: 0.4, u1: 0.575, top: 0.345, fill: "#CCF0F7" },
-    chimney: { w: 8.5, top: 96.5, dLat: 27.9, dFr: 1, bottom: 74 },
+    // r7 chimney rebuild: the ref draws a stout outlined box on the right
+    // roof slope (f1900/f2505 crops: ~10u wide, rising ~10u above the
+    // local roof surface, sitting into the slope) — the old 8.5x18u spec
+    // read as a thin stick poking from behind the gable edge.
+    chimney: { w: 10, top: 89, dLat: 27.9, dFr: 4, bottom: 60 },
   },
   roof: { lift: 2, ovE: 3, ovF: 4.5, ovB: 4 },
 } as const;
