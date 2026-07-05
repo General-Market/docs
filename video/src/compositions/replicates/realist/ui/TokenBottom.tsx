@@ -195,22 +195,28 @@ const TabsRow: React.FC<{ frame: number }> = ({ frame }) => {
     { text: BOTTOM.tabs[4], x: 355 },
     { text: devTokens, x: 458 },
   ];
+  // r5: plain-div strut puts 13px caps at top+6; plate caps at 999 (f0901
+  // rowprof, ref 998-1009 vs att 1002-1011) — tops 996 -> 993.
   return (
     <>
       {tabs.map((t) => (
-        <div key={t.text} style={{ position: "absolute", left: t.x, top: 996 }}>
+        <div key={t.text} style={{ position: "absolute", left: t.x, top: 993 }}>
           <T size={13} color={t.active ? C.textHi : C.textMid} weight={t.active ? 600 : 500}>
             {t.text}
           </T>
         </div>
       ))}
-      {/* faint active underline (probed f0900 y≈1012, subtle) */}
-      <div style={{ position: "absolute", left: 13, top: 1012, width: 42, height: 2, background: C.toastBorder, borderRadius: 1 }} />
+      {/* faint active underline (f0901 ref rows 1010-1012, very dim) */}
+      <div style={{ position: "absolute", left: 13, top: 1010, width: 42, height: 2, background: C.toastBorder, borderRadius: 1 }} />
     </>
   );
 };
 
 // right side of the tabs row: Instant Trade chip + trades-panel strip + glyphs
+// r5 f0901 rowprof: strip flex rows sat 2px HIGH (att 996-1004 vs ref
+// 998-1005) — tops 995 -> 997; TRACKED/YOU groups sat ~20px RIGHT of plate
+// ink (ref glyphs 1442/1534) — 1462 -> 1440, 1552 -> 1532; backArrow ref
+// 1600-1611 -> left 1599.
 const TabsRight: React.FC = () => (
   <>
     <Row
@@ -218,7 +224,7 @@ const TabsRight: React.FC = () => (
       style={{
         position: "absolute",
         left: 1123,
-        top: 991,
+        top: 992,
         height: 21,
         padding: "0 10px",
         borderRadius: 11,
@@ -229,30 +235,30 @@ const TabsRight: React.FC = () => (
       <T size={12} color={C.purpleText} weight={600}>{BOTTOM.instantTrade}</T>
     </Row>
     {/* Trades Panel / DEV / TRACKED / YOU strip (mostly covered by the dock) */}
-    <Row gap={5} style={{ position: "absolute", left: 1262, top: 995 }}>
+    <Row gap={7} style={{ position: "absolute", left: 1262, top: 997 }}>
       <Glyph kind="panelCheck" size={12} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{BOTTOM.tradesPanelRow[0]}</T>
     </Row>
-    <Row gap={4} style={{ position: "absolute", left: 1380, top: 995 }}>
+    <Row gap={4} style={{ position: "absolute", left: 1380, top: 997 }}>
       <Glyph kind="filter" size={11} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{BOTTOM.tradesPanelRow[1]}</T>
     </Row>
-    <Row gap={4} style={{ position: "absolute", left: 1462, top: 995 }}>
+    <Row gap={4} style={{ position: "absolute", left: 1440, top: 997 }}>
       <Glyph kind="filter" size={11} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{BOTTOM.tradesPanelRow[2]}</T>
     </Row>
-    <Row gap={4} style={{ position: "absolute", left: 1552, top: 995 }}>
+    <Row gap={4} style={{ position: "absolute", left: 1532, top: 997 }}>
       <Glyph kind="target" size={11} color={C.textMid} />
       <T size={11} color={C.textMid} weight={500}>{BOTTOM.tradesPanelRow[3]}</T>
     </Row>
-    <div style={{ position: "absolute", left: 1605, top: 995 }}>
+    <div style={{ position: "absolute", left: 1599, top: 997 }}>
       <Glyph kind="backArrow" size={12} color={C.textMid} />
     </div>
     {/* far-right share + panel toggle */}
-    <div style={{ position: "absolute", left: 1875, top: 995 }}>
+    <div style={{ position: "absolute", left: 1875, top: 997 }}>
       <Glyph kind="share" size={12} color={C.textMid} />
     </div>
-    <div style={{ position: "absolute", left: 1900, top: 995 }}>
+    <div style={{ position: "absolute", left: 1900, top: 997 }}>
       <Glyph kind="panel" size={12} color={C.textMid} />
     </div>
   </>
@@ -333,7 +339,24 @@ const TradeRowLine: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// Jason dock, x 1258–1835, y 1006–1080
+// Jason drag handle — plate f0901 shows TRI-COLOR bars (rows 1021-23 teal,
+// 1025-26 blue, 1028-29 purple), not a grey drag glyph.
+const DragSol: React.FC<{ size?: number }> = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" style={{ display: "block" }}>
+    <rect x="2.5" y="3" width="11" height="2.6" rx="1.3" fill="#41E8B0" />
+    <rect x="2.5" y="6.8" width="11" height="2.6" rx="1.3" fill="#7A78D8" />
+    <rect x="2.5" y="10.6" width="11" height="2.6" rx="1.3" fill="#9B5FE0" />
+  </svg>
+);
+
+// Jason dock, x 1258–1835, y 1006–1080.
+// r5 f0901 forensics: plain-div dock text sat 7px LOW (strut; ref caps 1020/
+// 1057 vs att 1028/1064) and label x-anchors drifted left up to 11px (ref ink
+// starts: Manager 1347, Trades 1416, Monitor 1474; row2 Name 1312, Token 1465,
+// $MC 1785). Flex rows (Jason, bolt cluster) measured on-Y — only x moved.
+// The user chip is a subtle pill (#1E2028) with tri-color bars + purple text
+// #7E79B5 (plate max (126,121,181)); dots are plate-desaturated rose, Trades
+// dot at (1457,1015) #A77D93, Monitor dot at (1519,1015) #A76F8A.
 const JasonDock: React.FC = () => (
   <div
     style={{
@@ -349,58 +372,60 @@ const JasonDock: React.FC = () => (
     }}
   >
     {/* row 1 — coordinates dock-local (dock origin x 1258, y 1006) */}
-    <Row gap={5} style={{ position: "absolute", left: 1272 - DOCK_X, top: 1019 - DOCK_Y }}>
-      <Glyph kind="drag" size={12} color={C.dockUser} />
-      <T size={12} color={C.dockUser} weight={600}>{DOCK.user}</T>
+    <div style={{ position: "absolute", left: 1270 - DOCK_X, top: 1012 - DOCK_Y, width: 73, height: 23, borderRadius: 7, background: "#1E2028" }} />
+    <Row gap={5} style={{ position: "absolute", left: 1277 - DOCK_X, top: 1019 - DOCK_Y }}>
+      <DragSol size={12} />
+      <T size={12} color="#7E79B5" weight={600}>{DOCK.user}</T>
     </Row>
-    <div style={{ position: "absolute", left: 1344 - DOCK_X, top: 1020 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1345 - DOCK_X, top: 1013 - DOCK_Y }}>
       <T size={12} color={C.textMid} weight={500}>{DOCK.tabs[0]}</T>
     </div>
-    <div style={{ position: "absolute", left: 1409 - DOCK_X, top: 1020 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1414 - DOCK_X, top: 1013 - DOCK_Y }}>
       <T size={12} color={C.textHi} weight={600}>{DOCK.tabs[1]}</T>
     </div>
-    <div style={{ position: "absolute", left: 1449 - DOCK_X, top: 1016 - DOCK_Y, width: 5, height: 5, borderRadius: 3, background: C.neg }} />
-    <div style={{ position: "absolute", left: 1461 - DOCK_X, top: 1020 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1457 - DOCK_X, top: 1015 - DOCK_Y, width: 5, height: 5, borderRadius: 3, background: "#A77D93" }} />
+    <div style={{ position: "absolute", left: 1472 - DOCK_X, top: 1013 - DOCK_Y }}>
       <T size={12} color={C.textMid} weight={500}>{DOCK.tabs[2]}</T>
     </div>
-    <div style={{ position: "absolute", left: 1513 - DOCK_X, top: 1016 - DOCK_Y, width: 5, height: 5, borderRadius: 3, background: C.neg }} />
-    <div style={{ position: "absolute", left: 1556 - DOCK_X, top: 1019 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1519 - DOCK_X, top: 1015 - DOCK_Y, width: 5, height: 5, borderRadius: 3, background: "#A76F8A" }} />
+    <div style={{ position: "absolute", left: 1558 - DOCK_X, top: 1019 - DOCK_Y }}>
       <Glyph kind="gear" size={13} color={C.textMid} />
     </div>
     <div style={{ position: "absolute", left: 1588 - DOCK_X, top: 1019 - DOCK_Y }}>
       <Glyph kind="filterSolid" size={13} color="#6C63D9" />
     </div>
-    <div style={{ position: "absolute", left: 1625 - DOCK_X, top: 1020 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1628 - DOCK_X, top: 1013 - DOCK_Y }}>
       <T size={12} color={C.textMid} weight={600}>{DOCK.preset}</T>
     </div>
     <div style={{ position: "absolute", left: 1648 - DOCK_X, top: 1015 - DOCK_Y, width: 1, height: 16, background: C.divider }} />
+    {/* "13.010": ref ink 33px wide (1676-1708) — 13px/700 rendered 41px */}
     <Row gap={4} style={{ position: "absolute", left: 1658 - DOCK_X, top: 1018 - DOCK_Y }}>
       <Glyph kind="bolt" size={12} color={C.textHi} />
-      <T size={13} color={C.textHi} weight={700}>{DOCK.bolt}</T>
+      <T size={12} color={C.textHi} weight={600}>{DOCK.bolt}</T>
       <SolLogo size={11} />
     </Row>
     <div style={{ position: "absolute", left: 1733 - DOCK_X, top: 1015 - DOCK_Y, width: 1, height: 16, background: C.divider }} />
-    <div style={{ position: "absolute", left: 1763 - DOCK_X, top: 1019 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1765 - DOCK_X, top: 1019 - DOCK_Y }}>
       <Glyph kind="extLink" size={13} color={C.textMid} />
     </div>
-    <div style={{ position: "absolute", left: 1803 - DOCK_X, top: 1020 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1805 - DOCK_X, top: 1020 - DOCK_Y }}>
       <Glyph kind="close" size={12} color={C.text} />
     </div>
     {/* row 2 — column heads */}
-    <div style={{ position: "absolute", left: 1272 - DOCK_X, top: 1054 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1277 - DOCK_X, top: 1054 - DOCK_Y }}>
       <Glyph kind="gear" size={12} color={C.textMid} />
     </div>
-    <div style={{ position: "absolute", left: 1306 - DOCK_X, top: 1055 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1311 - DOCK_X, top: 1048 - DOCK_Y }}>
       <T size={11} color={C.textMid} weight={500}>{DOCK.tableHead[0]}</T>
     </div>
-    <div style={{ position: "absolute", left: 1469 - DOCK_X, top: 1055 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1464 - DOCK_X, top: 1048 - DOCK_Y }}>
       <T size={11} color={C.textMid} weight={500}>{DOCK.tableHead[1]}</T>
     </div>
     <Row gap={4} style={{ position: "absolute", left: 1619 - DOCK_X, top: 1054 - DOCK_Y }}>
       <T size={11} color={C.textMid} weight={500}>{DOCK.tableHead[2]}</T>
       <Glyph kind="infoCircle" size={11} color={C.textMid} />
     </Row>
-    <div style={{ position: "absolute", left: 1786 - DOCK_X, top: 1055 - DOCK_Y }}>
+    <div style={{ position: "absolute", left: 1784 - DOCK_X, top: 1048 - DOCK_Y }}>
       <T size={11} color={C.textMid} weight={500}>{DOCK.tableHead[3]}</T>
     </div>
   </div>
