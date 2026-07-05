@@ -370,6 +370,161 @@ const FLOOR_CB: Pt = [0, -250];
 const FLOOR_WB = 1700;
 const FLOOR_HB = 1500;
 
+// ── r8: the yellow-road spin survivor ────────────────────────────
+// The r7 negative (FloorMap comment below) proved the ref's yellow road
+// outlives the map→paper crossfade and orbits with the spin, but a
+// survivor riding the SPUN WORLD POSE lands under the cluster, off the
+// ref's sheet spot. The prescription was a per-frame MEASURED track for
+// the road alone — this is it. ROAD_TRACK rows are fitted per ref frame
+// (work/r8/road/fitroad.py: saturated-yellow mask → connected components
+// in the floor band y≥285 → PCA ribbon): [f, x0,y0, x1,y1, x2,y2, width,
+// r,g,b] — a 3-point skeleton polyline + stroke width in REF SCREEN
+// coords plus the sampled core color (the ink washes toward the paper as
+// it dies; the wash lives in the color keys, #FBFB98 → #E1EDCC). Two
+// patches orbit mirror-image to the bank — the right ribbon sweeps
+// screen-left 3548→3560, the left blob sweeps right along the sheet
+// bottom 3554→3566 — and building occlusion is baked in (only visible
+// ink was measured). Extinct at 3568 (ref yellow count: 380 at 3567 → 7
+// at 3568), so the ≥3568 unmount matches the ref's own sharp death.
+const ROAD_TRACK: number[][] = [
+  [3541, 470.9, 307.3, 444.6, 306.2, 418.3, 305.3, 7.5, 251, 251, 152],
+  [3541, 283.8, 318.8, 270.0, 325.3, 255.2, 328.8, 10.5, 226, 231, 176],
+  [3542, 289.1, 317.5, 272.4, 321.1, 255.5, 323.8, 11.5, 236, 239, 173],
+  [3542, 472.0, 305.1, 445.1, 303.8, 418.3, 302.5, 7.2, 250, 250, 153],
+  [3543, 289.3, 314.2, 272.9, 317.7, 256.4, 320.4, 13.1, 234, 236, 158],
+  [3543, 473.2, 303.1, 447.1, 301.6, 421.0, 300.6, 6.9, 248, 250, 154],
+  [3544, 294.6, 311.5, 275.9, 314.3, 257.1, 317.2, 14.2, 233, 236, 155],
+  [3544, 472.6, 300.1, 445.9, 299.3, 419.3, 298.5, 6.8, 248, 250, 154],
+  [3545, 295.4, 308.9, 278.5, 311.8, 261.5, 314.8, 12.8, 238, 242, 150],
+  [3545, 472.8, 298.2, 446.3, 296.9, 419.7, 296.1, 6.9, 245, 247, 154],
+  [3546, 298.8, 306.3, 282.9, 309.9, 266.9, 312.3, 12.8, 242, 247, 149],
+  [3546, 472.6, 296.1, 446.3, 294.9, 420.1, 294.1, 6.5, 244, 247, 152],
+  [3547, 299.9, 305.2, 284.9, 306.7, 270.2, 310.2, 14.3, 249, 251, 153],
+  [3547, 472.8, 294.9, 441.3, 294.2, 409.7, 292.9, 6.8, 246, 248, 159],
+  [3548, 303.7, 304.9, 288.3, 307.9, 272.8, 310.1, 12.6, 249, 251, 152],
+  [3548, 469.1, 293.9, 434.5, 293.3, 399.9, 291.0, 7.1, 245, 250, 154],
+  [3549, 464.9, 294.5, 430.4, 292.9, 395.9, 289.4, 7.5, 246, 249, 157],
+  [3549, 305.7, 304.4, 291.0, 307.7, 276.1, 309.8, 12.5, 250, 252, 153],
+  [3550, 466.9, 295.3, 431.8, 293.6, 396.9, 290.7, 6.8, 247, 250, 158],
+  [3550, 307.5, 304.9, 293.4, 308.2, 279.0, 310.3, 12.7, 250, 251, 153],
+  [3551, 308.6, 306.5, 294.0, 309.7, 279.3, 312.0, 13.1, 250, 252, 155],
+  [3551, 469.2, 296.8, 433.0, 294.6, 396.7, 292.0, 6.4, 248, 250, 162],
+  [3552, 463.2, 296.8, 423.7, 295.4, 384.4, 292.2, 6.9, 247, 250, 166],
+  [3552, 307.0, 310.4, 292.9, 311.5, 279.0, 314.6, 13.2, 250, 252, 152],
+  [3553, 303.3, 315.7, 290.4, 316.3, 278.1, 319.9, 15.1, 250, 253, 153],
+  [3553, 450.4, 296.8, 410.7, 296.5, 371.0, 293.8, 6.2, 248, 250, 171],
+  [3554, 299.3, 323.0, 287.8, 322.4, 276.8, 325.8, 17.2, 249, 253, 165],
+  [3554, 437.5, 298.4, 397.9, 298.5, 358.4, 298.6, 5.9, 246, 251, 177],
+  [3555, 300.7, 332.9, 289.7, 332.5, 278.7, 331.5, 17.8, 248, 250, 175],
+  [3555, 431.3, 298.5, 387.4, 301.1, 343.4, 302.5, 6.0, 247, 251, 177],
+  [3556, 316.6, 343.3, 299.0, 342.6, 281.8, 338.9, 15.8, 250, 252, 176],
+  [3556, 395.3, 302.4, 359.3, 305.8, 323.2, 308.1, 6.7, 246, 251, 177],
+  [3557, 340.2, 355.0, 317.4, 353.4, 295.0, 348.9, 14.3, 249, 246, 172],
+  [3557, 375.0, 305.3, 336.7, 312.6, 298.0, 316.5, 7.3, 246, 250, 178],
+  [3558, 378.5, 364.6, 347.6, 362.1, 316.8, 360.2, 14.2, 251, 250, 182],
+  [3558, 346.8, 312.6, 322.3, 320.7, 297.0, 326.0, 9.3, 247, 251, 176],
+  [3559, 416.7, 369.7, 385.8, 368.7, 355.0, 370.5, 14.2, 252, 251, 185],
+  [3559, 324.6, 324.8, 307.9, 331.6, 291.4, 338.9, 13.9, 250, 251, 190],
+  [3560, 457.1, 370.8, 430.3, 372.3, 403.7, 376.1, 14.0, 250, 251, 187],
+  [3560, 309.1, 337.8, 302.6, 342.8, 297.5, 349.3, 20.2, 248, 249, 183],
+  [3561, 323.3, 365.4, 312.8, 358.6, 301.9, 352.4, 20.7, 248, 246, 190],
+  [3561, 491.8, 368.9, 469.8, 371.2, 448.2, 376.3, 14.9, 245, 248, 188],
+  [3562, 357.6, 379.1, 331.4, 370.7, 304.9, 363.2, 14.8, 251, 252, 200],
+  [3562, 510.0, 364.5, 498.4, 367.1, 486.6, 368.8, 16.6, 249, 252, 195],
+  [3563, 408.7, 388.2, 369.5, 382.3, 330.0, 378.5, 12.3, 247, 251, 201],
+  [3563, 519.3, 360.9, 513.3, 360.8, 507.3, 360.1, 17.2, 248, 251, 202],
+  [3564, 451.2, 390.2, 403.7, 390.5, 356.3, 390.6, 9.3, 249, 251, 210],
+  [3564, 519.3, 354.3, 511.9, 352.2, 504.2, 351.5, 12.2, 233, 241, 201],
+  [3565, 480.3, 387.0, 443.2, 392.1, 405.9, 396.9, 8.7, 248, 250, 208],
+  [3565, 504.2, 348.3, 495.2, 346.0, 486.2, 343.9, 8.2, 245, 248, 215],
+  [3566, 490.1, 384.7, 473.3, 392.1, 455.5, 396.9, 9.1, 225, 237, 204],
+  [3567, 469.5, 341.4, 455.0, 339.7, 440.4, 339.1, 5.3, 250, 253, 221],
+  [3567, 504.1, 386.9, 501.2, 386.6, 498.2, 386.2, 5.9, 217, 232, 204],
+  [3567, 485.3, 397.2, 484.5, 397.2, 483.8, 397.0, 9.2, 240, 234, 212],
+];
+// Screen(u,v) → floor-canvas coords at frame f, inverting the FULL chain
+// the plane renders through: the pitched buildings camera (buildingsPose
+// — a flat unprojToFloor misses by bldPitchAt(f), nonzero and VARYING
+// 0.06→0.002 rad across this window), then the BldSpinGroup turntable
+// (−θ about the cluster axis; pre-image = +θ), then the FloorMap group
+// yaw (+g; pre-image = rotP(·,−g)). At θ=0, pitch=0 this reduces exactly
+// to the fl3540raw recipe, so the 3544 seam is the map's own road math.
+const roadScr2Floor = (f: number) => {
+  const pose = buildingsPose(f);
+  const cx0 = pose.pos[0] - T_BLD[0];
+  const cy0 = pose.pos[1] - T_BLD[1];
+  const cz0 = pose.pos[2] - T_BLD[2];
+  const ca = Math.cos(pose.rotX);
+  const sa = Math.sin(pose.rotX);
+  const th = (bldSpinThetaDeg(f) * Math.PI) / 180;
+  const cs = Math.cos(th);
+  const sn = Math.sin(th);
+  const ax = bldSpinAxisXZ(f);
+  const { g } = camBld(f);
+  return (u: number, v: number): Pt => {
+    const rx = (u - 427) / DCAM;
+    const ry = (240 - v) / DCAM;
+    const dy = ca * ry + sa; // R_x(rotX)·(rx,ry,−1), rotX = −pitch
+    const dz = sa * ry - ca;
+    const t = (FLOOR_Y - cy0) / dy;
+    const px = cx0 + rx * t;
+    const pz = cz0 + dz * t;
+    const dxa = px - ax[0];
+    const dza = pz - ax[1];
+    const q = rotP(
+      [ax[0] + cs * dxa + sn * dza, FLOOR_Y, ax[1] - sn * dxa + cs * dza],
+      -g,
+    );
+    return [q[0], q[2]];
+  };
+};
+const drawRoadSurvivor = (
+  ctx: CanvasRenderingContext2D, f: number, w: number, h: number,
+) => {
+  const m = roadScr2Floor(f);
+  const mx = (p: Pt) => w / 2 + (p[0] - FLOOR_CB[0]);
+  const my = (p: Pt) => h / 2 + (p[1] - FLOOR_CB[1]);
+  // The ribbon outline is built in REF SCREEN space and every outline
+  // vertex is unprojected to the floor canvas — a canvas stroke with
+  // lineWidth would balloon: the floor is anisotropic (a near-vertical
+  // screen width unprojects to a large depth extent) and circular caps/
+  // joins bleed that magnitude into screen-x (first attempt measured
+  // 3x-wide bboxes at 3554/3560). Polygon-in-screen-space projects back
+  // to the measured ribbon by construction.
+  const norm = (x: number, y: number): Pt => {
+    const L = Math.hypot(x, y);
+    return L > 1e-3 ? [x / L, y / L] : [1, 0];
+  };
+  for (const r of ROAD_TRACK) {
+    if (r[0] !== f) continue;
+    const hw = r[7] / 2;
+    const d01 = norm(r[3] - r[1], r[4] - r[2]);
+    const d12 = norm(r[5] - r[3], r[6] - r[4]);
+    const n01: Pt = [-d01[1], d01[0]];
+    const n12: Pt = [-d12[1], d12[0]];
+    const n1 = norm(n01[0] + n12[0], n01[1] + n12[1]);
+    const outline: Pt[] = [
+      [r[1] - d01[0] * hw, r[2] - d01[1] * hw], // start apex
+      [r[1] + n01[0] * hw, r[2] + n01[1] * hw],
+      [r[3] + n1[0] * hw, r[4] + n1[1] * hw],
+      [r[5] + n12[0] * hw, r[6] + n12[1] * hw],
+      [r[5] + d12[0] * hw, r[6] + d12[1] * hw], // end apex
+      [r[5] - n12[0] * hw, r[6] - n12[1] * hw],
+      [r[3] - n1[0] * hw, r[4] - n1[1] * hw],
+      [r[1] - n01[0] * hw, r[2] - n01[1] * hw],
+    ];
+    ctx.fillStyle = `rgb(${r[8]},${r[9]},${r[10]})`;
+    ctx.beginPath();
+    outline.forEach(([u, v], i) => {
+      const q = m(u, v);
+      if (i === 0) ctx.moveTo(mx(q), my(q));
+      else ctx.lineTo(mx(q), my(q));
+    });
+    ctx.closePath();
+    ctx.fill();
+  }
+};
+
 export const FloorMap: React.FC<{ frame: number; g?: number }> = ({ frame, g = camBld(frame).g }) => {
   const draw = useCallback((ctx: CanvasRenderingContext2D, f: number, w: number, h: number) => {
     // ground layer mounts for all frames; past the hand-off the sheet is
@@ -527,10 +682,27 @@ export const FloorMap: React.FC<{ frame: number; g?: number }> = ({ frame, g = c
           -.0010, 3556 -.0013/-.0003, 3563 -.0005/-.0014): under the spun
           pose our road track lands beneath the cluster, not on the ref's
           sheet spot — misplaced ink loses to absent ink, again. A
-          survivor needs its own measured track first. */}
+          survivor needs its own measured track first.
+          r8: RESOLVED by exactly that — the ROAD_TRACK survivor plane
+          below draws the road on its per-frame measured screen track
+          (fitted from the ref frames, work/r8/road/), inverse-mapped
+          through pitch, spin and yaw so the ink lands on the ref's
+          sheet spot at every frame. */}
       <CanvasPlane frame={frame} width={FLOOR_WB} height={FLOOR_HB} res={1}
         position={[0, 0, 0]} rotation={[0, 0, 0]} draw={draw} renderOrder={0}
         opacity={fadeOut(frame, 3518, 3544)} />
+      {/* r8 road survivor: mounted only inside (3540, 3568) so every
+          frame outside is the exact pre-change tree (byte-identity is
+          structural). Ramp-in 3541-3544 hands over from the dying map
+          road (map opacity 0.115→0.038 there); from 3544 the survivor
+          owns the road. renderOrder 1: over the chart paper (the ref
+          road orbits ON the paper, FloorSet renders at 0), under the
+          lifted buildings (2) and plaques (5). */}
+      {frame >= 3541 && frame <= 3567 && (
+        <CanvasPlane frame={frame} width={FLOOR_WB} height={FLOOR_HB} res={1}
+          position={[0, 0, 0]} rotation={[0, 0, 0]} draw={drawRoadSurvivor}
+          renderOrder={1} opacity={clamp01((frame - 3540) / 4)} />
+      )}
     </group>
   );
 };
