@@ -44,12 +44,12 @@ const Row: React.FC<{ gap?: number; style?: React.CSSProperties; children: React
 }) => <div style={{ display: "flex", alignItems: "center", gap, ...style }}>{children}</div>;
 
 // ─── Glyph vocabulary ───────────────────────────────────────────────────
-const Glyph: React.FC<{ kind: string; size?: number; color?: string }> = ({
+const Glyph: React.FC<{ kind: string; size?: number; color?: string; sw?: number }> = ({
   kind,
   size = 13,
   color = C.textMid,
+  sw = 1.4,
 }) => {
-  const sw = 1.4;
   const common = { width: size, height: size, viewBox: "0 0 16 16", style: { display: "block" as const } };
   switch (kind) {
     case "search":
@@ -620,7 +620,9 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
               justifyContent: "center",
             }}
           >
-            <Glyph kind={i === 0 ? "star" : "bell"} size={16} color={C.text} />
+            {/* r4: plate glyph cores are near-white (#E7E8EC star, #EFF2F7
+                bell) with a heavier stroke than the default 1.4 */}
+            <Glyph kind={i === 0 ? "star" : "bell"} size={16} color={C.textHi} sw={1.8} />
           </div>
         ))}
         {/* wallet chip: balance + globe/0 */}
