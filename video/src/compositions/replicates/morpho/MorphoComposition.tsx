@@ -104,11 +104,55 @@ const PoweredByMorphoText: React.FC<LogoProps> = (props) => (
 // deep saturated blue centre, lighter toward corners. Constant across the
 // whole video (no hue drift — corners read 115-116,176-178,238-240 at f42,
 // f80, f200, f350, f470 alike).
-const BG_GRADIENT =
-  "radial-gradient(circle at 50% 50%," +
-  " rgb(39,113,248) 0%, rgb(47,120,248) 19%, rgb(56,126,248) 38%," +
-  " rgb(64,132,249) 47%, rgb(72,139,248) 57%, rgb(82,148,246) 66%," +
-  " rgb(93,157,244) 75%, rgb(105,166,242) 85%, rgb(117,179,239) 100%)";
+// Baked as explicit dithered pixels (not a CSS gradient): CSS radial
+// gradients band differently on GPU vs SwiftShader, and CameraMotionBlur's
+// low-opacity sub-frame compositing re-quantizes them per pass, amplifying
+// the faint banding into visible concentric rings. A once-computed canvas
+// image with a deterministic ±0.75-level hash dither kills the rings at the
+// source. Computed once at bundle evaluation — no Date/random, so renders
+// stay deterministic.
+const bakeBg = (): string => {
+  const size = 720;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(size, size);
+  const stops: Array<[number, number, number, number]> = [
+    [0, 39, 113, 248],
+    [0.19, 47, 120, 248],
+    [0.38, 56, 126, 248],
+    [0.47, 64, 132, 249],
+    [0.57, 72, 139, 248],
+    [0.66, 82, 148, 246],
+    [0.75, 93, 157, 244],
+    [0.85, 105, 166, 242],
+    [1, 117, 179, 239],
+  ];
+  const R = 509;
+  let k = 0;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const t = Math.min(1, Math.hypot(x - 360, y - 360) / R);
+      let i = 1;
+      while (i < stops.length - 1 && stops[i][0] < t) i++;
+      const [t0, r0, g0, b0] = stops[i - 1];
+      const [t1, r1, g1, b1] = stops[i];
+      const u = t1 === t0 ? 0 : (t - t0) / (t1 - t0);
+      // deterministic hash dither, ±0.75 level
+      let h = (x * 374761393 + y * 668265263) | 0;
+      h = (h ^ (h >> 13)) * 1274126177;
+      const d = (((h ^ (h >> 16)) >>> 0) / 4294967295 - 0.5) * 1.5;
+      img.data[k++] = Math.max(0, Math.min(255, Math.round(r0 + (r1 - r0) * u + d)));
+      img.data[k++] = Math.max(0, Math.min(255, Math.round(g0 + (g1 - g0) * u + d)));
+      img.data[k++] = Math.max(0, Math.min(255, Math.round(b0 + (b1 - b0) * u + d)));
+      img.data[k++] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return c.toDataURL("image/png");
+};
+const BG_BAKED = typeof document === "undefined" ? "" : bakeBg();
 
 // The grid lives inside a 634×634 square PANEL (edges at x/y 42.5–676.5):
 // measured hairline at the panel edge (+6-8 grey), a subtle blue-tint
@@ -165,7 +209,12 @@ const Background: React.FC<{ frame: number }> = ({ frame }) => {
   const zoom = panelZoomAt(frame);
   const rot = panelRotAt(frame);
   return (
-    <AbsoluteFill style={{ background: BG_GRADIENT }}>
+    <AbsoluteFill
+      style={{
+        backgroundImage: `url(${BG_BAKED})`,
+        backgroundSize: "720px 720px",
+      }}
+    >
       {panelOp > 0 && (
         <div
           style={{
@@ -201,13 +250,16 @@ const Background: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // Full-canvas animated grain — dithers the 8-bit banding of every gradient
-// (background rings, card fills, inset glows) the way the source's video
-// grain does. Sits on top of the whole stage; position jitters per frame.
+// (card fills, inset glows) the way the source's video grain does. Mounted
+// INSIDE the blurred stage so it dithers every CameraMotionBlur sub-frame;
+// jitter is locked to Math.floor(frame) so all sub-samples of one output
+// frame share a single grain position and the grain survives the averaging
+// at full strength.
 const NOISE_URI = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>",
 )}")`;
-const Grain: React.FC = () => {
-  const f = useCurrentFrame();
+const Grain: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = Math.floor(frame);
   const jx = ((f * 53) % 160) - 80;
   const jy = ((f * 97) % 160) - 80;
   return (
@@ -637,6 +689,7 @@ const Stage: React.FC<{ frameOffset: number }> = ({ frameOffset }) => {
           />
         )}
         <TextBlock frame={f} />
+        <Grain frame={f} />
       </AbsoluteFill>
     );
   }
@@ -677,6 +730,7 @@ const Stage: React.FC<{ frameOffset: number }> = ({ frameOffset }) => {
         />
       )}
       {cardPhase && <FlyCards vf={outroVfAt(f)} logoMul={outroLogoMulAt(f)} />}
+      <Grain frame={f} />
     </AbsoluteFill>
   );
 };
@@ -746,7 +800,6 @@ export const MorphoComposition: React.FC = () => {
           <Stage frameOffset={503} />
         </CameraMotionBlur>
       </Sequence>
-      <Grain />
     </AbsoluteFill>
   );
 };
