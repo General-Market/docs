@@ -52,6 +52,13 @@ const C = {
   chartRed: "#D98A95",
   door: "#CDEDF4",
   cube: "#BFBFBF",
+  // Round-6 negative A/B: bolding the pad edges to the measured ref
+  // cores (162-167 grey) and riding the icon-fix track LOST at every
+  // overhead/eye gate (−.004..−.014 at 4820-5150) — our pad GEOMETRY
+  // (big diamond slab) mismatches the ref's thin per-phase pad shapes,
+  // so bolder+moved edges doubled the loss. Misplaced bold ink loses to
+  // faint ink, 5th confirmation. Pads keep the soft ink and stay
+  // anchored; reshaping them per phase is the open item.
   pad: "#FBFBF9",
   padEdge: "#E0E0DC",
 } as const;
@@ -244,6 +251,43 @@ const slideAt = (name: string, f: number): Pt => {
   const dx = lerp1(rows.map((r) => [r[0], r[1]] as [number, number]), f);
   const dz = lerp1(rows.map((r) => [r[0], r[2]] as [number, number]), f);
   return [dx, dz];
+};
+
+// ── round-6 per-frame icon registration (scanicons.py, ref vs the r5
+// render at every 10f) ─────────────────────────────────────────────
+// [f, dx, dy, kx, ky]: world x-slide, world y-sink (better conditioned
+// than a depth slide for vertical screen registration under the low eye
+// pitch), and direct width/height scale ratios about the base center.
+// Measured: the ref redraws the bank continuously — its height runs
+// 7-13% over ours through every phase (red-mask extents, arrows
+// excluded), and through the pull-back the ref bank shrinks and drops
+// FASTER than the rigid world projects (rh→0.72, base +36px by 5245).
+// A depth-slide decomposition of the same screen residuals needed
+// dz≈+160/k≈0.62 rows by 5245 (ill-conditioned); the y-sink form stays
+// local. First row identity — frames ≤4726 render the exact r5 tree.
+const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
+  bank: [
+    [4726, 0, 0, 1, 1],
+    [4750, 10.1, -21.7, 1.0, 1.07],
+    [4810, 1.9, -10.0, 1.0, 1.108],
+    [4880, 6.1, -9.2, 1.0, 1.133],
+    [4950, 8.0, -2.1, 1.0, 1.072],
+    [5000, 3.7, -11.1, 0.98, 1.085],
+    [5100, 8.4, -10.9, 1.015, 1.082],
+    [5150, 10.9, -10.9, 1.04, 1.094],
+    [5200, 12.0, -13.0, 1.04, 1.105],
+    [5215, 8.9, -15.7, 0.943, 1.024],
+    [5225, 5.9, -32.3, 0.789, 0.872],
+    [5235, -0.5, -53.8, 0.76, 0.774],
+    [5245, -5.0, -74.1, 0.695, 0.72],
+  ],
+};
+type IconFix = { dx: number; dy: number; kx: number; ky: number };
+const iconFixAt = (name: string, f: number): IconFix => {
+  const rows = ICON_FIX[name];
+  if (!rows) return { dx: 0, dy: 0, kx: 1, ky: 1 };
+  const at = (i: 1 | 2 | 3 | 4) => lerp1(rows.map((r) => [r[0], r[i]] as [number, number]), f);
+  return { dx: at(1), dy: at(2), kx: at(3), ky: at(4) };
 };
 const wbAt = (b: CommB, f: number, name?: string) => {
   const t = diveT(f);
@@ -705,13 +749,13 @@ const padGeos = (() => {
   };
 })();
 
-const Pad: React.FC<{ x: number; z: number; k: number; padW: number; opacity: number }> = ({
-  x, z, k, padW, opacity,
+const Pad: React.FC<{ x: number; z: number; k: number; padW: number; opacity: number; dy?: number }> = ({
+  x, z, k, padW, opacity, dy = 0,
 }) => {
   const geos = padGeos(padW);
   if (opacity <= 0.005) return null;
   return (
-    <group position={[x, FLOOR_Y + 2, z]} scale={[k, 1, k]}>
+    <group position={[x, FLOOR_Y + 2 + dy, z]} scale={[k, 1, k]}>
       <mesh geometry={geos.fill} renderOrder={1}>
         <meshBasicMaterial color={C.pad} transparent opacity={0.92 * opacity}
           depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
@@ -1200,12 +1244,24 @@ const PlantedBuilding: React.FC<{
 }> = ({ name, frame, opacity, pop = 1, dropY = 0 }) => {
   const b = WB[name];
   const p = wbAt(b, frame, name);
+  const fx = iconFixAt(name, frame);
   const lean = (b.lean ?? 0) * (1 - diveT(frame));
+  // eye-phase face-the-camera yaw (round 6): the ref draws the eye-level
+  // house FLAT — front face only, no side wall. Our fixed-yaw box shows a
+  // ~40px side face at the eye bearing (0.263 rad, stable 5000-5200), which
+  // read as the house being ~35% too wide. Still a real 3D pose — the
+  // house turns to face the camera through the dive, like the lean.
+  // Round-6 negative A/B: yawing the eye-phase house to face the camera
+  // (0.263 rad, hiding the ~40px side face the ref never draws) lost
+  // −.001/−.002 at 5000/5100 both with and without a front-face slide
+  // compensation — the roof silhouette distortion outweighs the hidden
+  // side wall. The flat-icon read stays an open perceptual item; the
+  // metric prefers the upright box.
   if (opacity <= 0.005 || pop <= 0.005) return null;
   return (
-    <group position={[p.x, FLOOR_Y + dropY, p.z]}
+    <group position={[p.x + fx.dx, FLOOR_Y + dropY + fx.dy, p.z]}
       rotation={[lean, 0, name === "bank" ? bankRock(frame) : 0]}
-      scale={[p.kx * pop, p.ky * pop, p.kx * pop]}>
+      scale={[p.kx * pop * fx.kx, p.ky * pop * fx.ky, p.kx * pop * fx.kx]}>
       <MiniBuilding spec={b.spec} position={[0, 0, 0]} opacity={opacity} />
     </group>
   );
@@ -1243,10 +1299,13 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   const t2Op = iconFade * (1 - 0.45 * fade(frame, 4985, 5000));
   const t3Op = iconFade * (1 - 0.3 * fade(frame, 4985, 5000));
 
+  // pads do NOT ride ICON_FIX: the fix compensates OUR icon rendering vs
+  // the ref's icon redraw; the ref's pads stay put on the sheet (A/B: a
+  // riding bank pad became the worst diff cell at 5000)
   const padOp = (name: string, a: number, b: number, extra = 1) => {
     const bld = WB[name];
     const p = wbAt(bld, frame, name);
-    return { p, o: fade(frame, a, b) * iconFade * extra, w: bld.padW * bld.spec.W };
+    return { p, dy: 0, o: fade(frame, a, b) * iconFade * extra, w: bld.padW * bld.spec.W };
   };
   const pads = [
     { key: "p-house", ...padOp("house", 4700, 4712) },
@@ -1266,8 +1325,8 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
       {/* SheetFloor is mounted by the ground layer, not here */}
       <RaysPlane frame={frame} />
       {/* slab pads under buildings + the two vacant lots */}
-      {pads.map(({ key, p, o, w }) => (
-        <Pad key={key} x={p.x} z={p.z} k={p.kx} padW={w} opacity={o} />
+      {pads.map(({ key, p, dy, o, w }) => (
+        <Pad key={key} x={p.x} z={p.z} k={p.kx} padW={w} opacity={o} dy={dy} />
       ))}
       {VACANT.map((vc, i) => (
         <Pad key={`p-vac${i}`} x={mixN(vc.over.x, vc.eye.x, dvT)} z={mixN(vc.over.z, vc.eye.z, dvT)}
