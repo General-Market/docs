@@ -1017,7 +1017,7 @@ const CubeGlass: React.FC<{ quad: Pt[]; yTop: number; opacity: number; drop: num
         <mesh key={`g${i}`} geometry={g} renderOrder={3}>
           <meshPhysicalMaterial
             transparent
-            opacity={0.32 * opacity}
+            opacity={0.12 * opacity}
             transmission={0.85}
             roughness={0.07}
             metalness={0}
