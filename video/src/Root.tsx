@@ -101,7 +101,7 @@ import { centrifugeSideBySideMeta } from "./compositions/replicates/centrifuge/C
 import { morphoReplicateMeta } from "./compositions/replicates/morpho/MorphoComposition";
 import { morphoSideBySideMeta } from "./compositions/replicates/morpho/MorphoSideBySide";
 import { anomaSideBySideMeta } from "./compositions/replicates/anoma/AnomaSideBySide";
-import { crxAnomaMeta, crxAnoma32Meta } from "./compositions/replicates/anoma/CrxAnomaComposition";
+import { crxAnomaMeta, crxAnoma32Meta, crxAnomaSilkMeta } from "./compositions/replicates/anoma/CrxAnomaComposition";
 import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFollowProp";
 import { slideRailPropMeta } from "./compositions/replicates/anoma/props/SlideRailProp";
 import { fullBleedPropMeta } from "./compositions/replicates/anoma/props/FullBleedProp";
@@ -599,7 +599,7 @@ export const RemotionRoot: React.FC = () => {
         ))}
 
         {/* --- Anoma --- */}
-        {[anomaReplicateMeta, anomaSideBySideMeta, crxAnomaMeta, crxAnoma32Meta, crxAnomaSideBySideMeta].map((meta) => (
+        {[anomaReplicateMeta, anomaSideBySideMeta, crxAnomaMeta, crxAnoma32Meta, crxAnomaSilkMeta, crxAnomaSideBySideMeta].map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
