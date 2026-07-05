@@ -582,22 +582,24 @@ export const TokenTop: React.FC<{ frame: number }> = ({ frame }) => {
           </T>
           <Glyph kind="chevron" size={12} color={C.textMid} />
         </Row>
-        {/* Deposit */}
+        {/* Deposit — r4 re-measure (f0500/f0900/f1050): bright purple stadium
+            x1467-1543 y11.5-42 with DARK navy bold label, not white-on-dim;
+            the fill carries a slight vertical falloff on every plate */}
         <div
           style={{
             position: "absolute",
-            left: 1468,
-            top: 14,
-            width: 74,
-            height: 28,
-            borderRadius: 14,
-            background: C.depositBg,
+            left: 1467,
+            top: 12,
+            width: 76,
+            height: 30,
+            borderRadius: 15,
+            background: `linear-gradient(180deg, ${C.depositTop} 0%, ${C.depositBot} 100%)`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <T size={13} color="#FFFFFF" weight={600}>
+          <T size={13.5} color={C.depositInk} weight={700}>
             {NAV.deposit}
           </T>
         </div>

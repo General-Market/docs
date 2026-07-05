@@ -35,10 +35,11 @@ export const COLORS = {
   purple: "#5F58B0", //         active P3 / PRESET 3 / dock filter
   purpleText: "#6E64BB", //     Instant Trade chip text
   // r4 purple unification — probed f0500/f0900/f1050 (see rounds/work/r4/popup/notes.md).
-  // Deposit fill re-measured on three plates (top #6A5FE0..#665EDC, bottom
-  // #5C52C5..#6258D1) → mid #655CD9; the old #444294 was far too dark. Text
-  // on the pill is DARK navy ink, not white (probemin f0500 #161652).
-  depositBg: "#655CD9", //      Deposit pill fill (f0500/f0900/f1050 mid)
+  // Deposit fill re-measured on three plates (top rows #6A5FE0/#695FE4/#665EDC,
+  // bottom rows #5C52C5/#6259CF/#6258D1) → slight vertical falloff; the old
+  // flat #444294 was far too dark. The label is DARK navy ink, not white.
+  depositTop: "#685EE0", //     Deposit pill fill, top (3-plate mean)
+  depositBot: "#6157CD", //     Deposit pill fill, bottom (3-plate mean)
   depositInk: "#161652", //     Deposit label ink (f0500 darkest glyph core)
   chipBg: "#393B47", //         ticker item chips (f0500)
   searchBg: "#3D3F4C", //       nav search field
