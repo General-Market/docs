@@ -822,8 +822,12 @@ export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
     line([[177, 387], [339, 399]], "#D6D6D3", 1.6);
   }, []);
   // texture stays static (frame={0}); only the material opacity animates —
-  // in over 3572-3584 (buildings' FloorMap fades out), out over 4133-4155
-  // (the next scene's FloorPaper inks in).
+  // in over 3518-3544 (r7 strike-3: the ref crossfades the buildings map
+  // to THIS chart paper through the pre-spin recede — faint 3518, clear
+  // 3528, dominant 3544 — then the paper rides the exit spin about the
+  // cluster axis and lands here, its own pose, at the exact-360 closure
+  // f3574; the old 3572-3584 fade-in was the "cards pop from nothing"
+  // defect), out over 4133-4155 (the next scene's FloorPaper inks in).
   const plane = (
     <CanvasPlane
       frame={0}
@@ -834,7 +838,7 @@ export const FloorSet: React.FC<{ frame: number }> = ({ frame }) => {
       rotation={[-Math.PI / 2, 0, 0]}
       draw={draw}
       renderOrder={0}
-      opacity={fade(frame, 3572, 3584) * (1 - fade(frame, 4133, 4155))}
+      opacity={fade(frame, 3518, 3544) * (1 - fade(frame, 4133, 4155))}
     />
   );
   // placement refit: floor point Q → A + s·(Q−A) + (dx,dz) on the plane

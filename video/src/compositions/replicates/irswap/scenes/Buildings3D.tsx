@@ -454,7 +454,10 @@ const SLAB_APPEAR: Record<"lender" | "bank", [number, number]> = {
 
 export const BuildingSlabs: React.FC<{ frame: number; g: number }> = ({ frame, g }) => {
   const c01 = (x: number) => Math.max(0, Math.min(1, x));
-  const mapFade = 1 - c01((frame - 3572) / 9);
+  // r7 strike-3: slabs dissolve with the map on the measured 3518-3544
+  // map->chart-paper crossfade (was 3572-3581) — by the time the spin
+  // starts (3551) the buildings float over the chart paper, as the ref.
+  const mapFade = 1 - c01((frame - 3518) / 26);
   return (
     <>
       {(["lender", "bank"] as const).map((name) => {

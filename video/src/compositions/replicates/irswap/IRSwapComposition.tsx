@@ -5,7 +5,9 @@ import { EdgeFeather, Grain } from "./lib/post";
 import { CameraRig, Room, Vignette } from "./lib/world";
 import { A_TILT, T_BLD, T_C2, T_COMM, T_OUTRO, T_SLOT, worldCam } from "./lib/camera";
 import { ChartRoomGround, ChartRoomOverlay, ChartRoomWorld } from "./scenes/ChartRoom";
-import { BuildingsOverlay, BuildingsWorld, camBld, FloorMap } from "./scenes/Buildings";
+import {
+  BldSpinGroup, bldSpinAxisXZ, BuildingsOverlay, BuildingsWorld, camBld, FloorMap,
+} from "./scenes/Buildings";
 import { BuildingSlabs } from "./scenes/Buildings3D";
 import { Chart2Overlay, Chart2World, FloorSet, whipSigma } from "./scenes/Chart2";
 import { AdvDisOverlay } from "./scenes/AdvDis";
@@ -62,15 +64,32 @@ const BG_FADE = 15;
 // place on their measured schedules (inside their own draw callbacks); the
 // layer itself never unmounts and nothing on it translates. Actors (walls,
 // buildings, charts, reel, cube, book) live in the windowed scene worlds.
-const GroundWorld: React.FC<{ frame: number }> = ({ frame }) => (
+const GroundWorld: React.FC<{ frame: number }> = ({ frame }) => {
+  // r7 strike-3: the buildings-exit spin (Buildings.tsx BldSpinGroup)
+  // turns the floor too — the chart paper (FloorSet) crossfades in under
+  // the map at 3518-3544, rides the same rigid yaw about the cluster
+  // axis, and lands on its own chart2 pose at the exact-360 closure
+  // (f3574): identity at both ends, so every frame outside (3551, 3574)
+  // renders the untouched tree. The axis is T_BLD-local; FloorSet lives
+  // in T_C2, so the same world axis is re-expressed in its frame.
+  const spinAxis = bldSpinAxisXZ(frame);
+  const spinAxisC2: [number, number] = [
+    T_BLD[0] + spinAxis[0] - T_C2[0],
+    T_BLD[2] + spinAxis[1] - T_C2[2],
+  ];
+  return (
   <>
     <ChartRoomGround frame={frame} />
     <group position={T_BLD}>
-      <FloorMap frame={frame} />
-      <BuildingSlabs frame={frame} g={camBld(frame).g} />
+      <BldSpinGroup frame={frame} axis={spinAxis}>
+        <FloorMap frame={frame} />
+        <BuildingSlabs frame={frame} g={camBld(frame).g} />
+      </BldSpinGroup>
     </group>
     <group position={T_C2}>
-      <FloorSet frame={frame} />
+      <BldSpinGroup frame={frame} axis={spinAxisC2}>
+        <FloorSet frame={frame} />
+      </BldSpinGroup>
     </group>
     <group position={T_SLOT}>
       <FloorPaper frame={frame} />
@@ -79,7 +98,8 @@ const GroundWorld: React.FC<{ frame: number }> = ({ frame }) => (
       <SheetFloor frame={frame} />
     </group>
   </>
-);
+  );
+};
 
 const WorldBackground: React.FC<{ frame: number }> = ({ frame }) => {
   let i = 0;

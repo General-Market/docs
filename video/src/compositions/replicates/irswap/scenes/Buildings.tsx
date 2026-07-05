@@ -515,12 +515,22 @@ export const FloorMap: React.FC<{ frame: number; g?: number }> = ({ frame, g = c
   const c = rotP([FLOOR_CB[0], FLOOR_Y, FLOOR_CB[1]], g);
   return (
     <group position={c} quaternion={quat}>
-      {/* fades out over 3572-3581 while chart2's FloorSet fades in underneath
-          (ref dissolves fast — ending later leaves a ghost sliver crossing
-          the successor floor through ~3586) */}
+      {/* r7 strike-3: dissolves over 3518-3544 while chart2's FloorSet
+          (the chart paper) fades in underneath — the ref crossfades
+          city-map -> chart paper through the pre-spin recede, so the
+          paper, not the map, rides the exit spin (old window: 3572-3581).
+          NEGATIVE A/B (do not retry blind): the ref's yellow road
+          visibly SURVIVES the crossfade and orbits with the spin
+          (f3550-3563) — both a whole-map low tail (0.24 to 3556) and a
+          yellow-road-only survivor (0.55->0.5->0 by 3566, per-element
+          alpha) LOST at every gate (3530 -.0020/-.0009, 3545 -.0022/
+          -.0010, 3556 -.0013/-.0003, 3563 -.0005/-.0014): under the spun
+          pose our road track lands beneath the cluster, not on the ref's
+          sheet spot — misplaced ink loses to absent ink, again. A
+          survivor needs its own measured track first. */}
       <CanvasPlane frame={frame} width={FLOOR_WB} height={FLOOR_HB} res={1}
         position={[0, 0, 0]} rotation={[0, 0, 0]} draw={draw} renderOrder={0}
-        opacity={fadeOut(frame, 3572, 3581)} />
+        opacity={fadeOut(frame, 3518, 3544)} />
     </group>
   );
 };
