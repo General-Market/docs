@@ -367,6 +367,13 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
   // projection (they are invisible in the baseline render), k eased ~7%
   // for the outline-mask bias.
   t2: [
+    // r7 overhead height: ours renders 20-27% taller than the ref temple
+    // through the whole glide (closed-loop CC scan: rh 0.73-0.82 steady,
+    // bottoms and widths matching within a few px) — pure ky about the
+    // base, released into the dive.
+    [4715, 0, 0, 1, 0.76],
+    [4900, 0, 0, 1, 0.8],
+    [4914, 0, 0, 1, 1],
     [5212, 0, 0, 1, 1],
     [5220, 101.8, -57.2, 0.9, 0.966],
     [5225, 166.7, -89.0, 0.75, 0.793],
@@ -375,6 +382,11 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [5240, 278.2, -189.0, 0.5, 0.45],
   ],
   t3: [
+    // r7 overhead height (same instrument: rh 0.64-0.77 steady)
+    [4715, 0, 0, 1, 0.68],
+    [4820, 0, 0, 1, 0.68],
+    [4900, 0, 0, 1, 0.77],
+    [4914, 0, 0, 1, 1],
     [5214, 0, 0, 1, 1],
     [5222, 266.4, -192.8, 1.0, 0.95],
     [5225, 260.3, -231.7, 1.0, 0.92],
