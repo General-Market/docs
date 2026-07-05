@@ -18,9 +18,7 @@ import {
 } from "./chart-data";
 import {
   CHART_COLORS as C,
-  eraAt,
-  priceToY,
-  yToPrice,
+  eraMapAt,
   fmtK,
   fmtChip,
   EXIT_LABEL,
@@ -193,14 +191,17 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
   const f = Math.min(frame, CHART_FREEZE);
   if (frame < 418) return null;
 
-  const era = eraAt(f);
+  // Era mapping, blended across the plate-measured rescale windows so the
+  // label grid SLIDES at era boundaries instead of cutting (plates never cut).
+  const { era, A, K } = eraMapAt(f);
+  const pY = (v: number) => A - K * v;
+  const yV = (y: number) => (A - y) / K;
   const nLabels = Math.round((era.top - era.bottom) / era.step);
   const rows: { text: string; y: number }[] = [];
   for (let i = 0; i <= nLabels; i++) {
-    rows.push({
-      text: fmtK(era.top - i * era.step),
-      y: priceToY(era.top - i * era.step, era),
-    });
+    const y = pY(era.top - i * era.step);
+    if (y < PLOT_TOP - 2 || y > PLOT_BOT + 6) continue; // pane clips sliding rows
+    rows.push({ text: fmtK(era.top - i * era.step), y });
   }
 
   const anchor = lerpPairs(CANDLE_ANCHOR, f);
@@ -327,7 +328,7 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
           >
             {EXIT_LABEL}
           </div>
-          {chip(fmtChip(yToPrice(exitY, era)), exitY, C.exitBadgeBg)}
+          {chip(fmtChip(yV(exitY)), exitY, C.exitBadgeBg)}
         </>
       )}
       {costY !== null && (
@@ -436,14 +437,14 @@ export const ChartArea: React.FC<{ frame: number }> = ({ frame }) => {
               color: C.crossLabel,
             }}
           >
-            {fmtChip(yToPrice(cross[1], era))}
+            {fmtChip(yV(cross[1]))}
           </div>
         </>
       )}
       {/* chips */}
       {chip(highText, highY, C.highChipBg)}
       {chip(LOW_CHIP_TEXT, lowY, C.lowChipBg)}
-      {curChip && chip(fmtChip(yToPrice(curChip[0], era)), curChip[0], curChip[1] ? C.curChipGreen : C.curChipRed)}
+      {curChip && chip(fmtChip(yV(curChip[0])), curChip[0], curChip[1] ? C.curChipGreen : C.curChipRed)}
       {/* cursor (above TokenPopup via zIndex; popup root has no stacking ctx) */}
       {cursor && frame <= CHART_FREEZE && (cursor[2] === 1 ? <GrabHand x={cursor[0]} y={cursor[1]} /> : <PointerHand x={cursor[0]} y={cursor[1]} />)}
     </div>

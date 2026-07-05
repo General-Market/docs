@@ -62,6 +62,36 @@ export const eraAt = (f: number): ScaleEra => {
   return cur;
 };
 
+// The plates never CUT to a new scale — the rescale slides the label grid
+// over a few frames (motion-blurred on the reference). Plate-measured
+// windows below; anything unlisted slides over 4 frames from era.from.
+const ERA_TRANS: Record<number, [number, number]> = {
+  736: [733, 741], // top walks 400K->500K while the pump runs (f733 blur .. f741 settle)
+  1097: [1096, 1099],
+};
+type LinMap = { A: number; K: number }; // y = A - K*v (both era mappings are linear)
+const eraMap = (e: ScaleEra): LinMap => {
+  const K = (e.yBottom - e.yTop) / (e.top - e.bottom);
+  return { A: e.yTop + e.top * K, K };
+};
+export const eraMapAt = (f: number): { era: ScaleEra; A: number; K: number } => {
+  let i = 0;
+  for (let j = 0; j < SCALE_ERAS.length; j++) if (SCALE_ERAS[j].from <= f) i = j;
+  if (i + 1 < SCALE_ERAS.length) {
+    const nxt = SCALE_ERAS[i + 1];
+    const s = (ERA_TRANS[nxt.from] ?? [nxt.from, nxt.from + 4])[0];
+    if (f >= s) i += 1; // slide toward the next era starts before its step frame
+  }
+  const era = SCALE_ERAS[i];
+  const cur = eraMap(era);
+  if (i === 0) return { era, ...cur };
+  const [s, e] = ERA_TRANS[era.from] ?? [era.from, era.from + 4];
+  if (f >= e) return { era, ...cur };
+  const u = Math.max(0, Math.min(1, (f - s) / (e - s)));
+  const prev = eraMap(SCALE_ERAS[i - 1]);
+  return { era, A: prev.A + (cur.A - prev.A) * u, K: prev.K + (cur.K - prev.K) * u };
+};
+
 // price (thousands) -> y and inverse, per era
 export const priceToY = (v: number, e: ScaleEra): number =>
   e.yTop + ((e.top - v) / (e.top - e.bottom)) * (e.yBottom - e.yTop);
