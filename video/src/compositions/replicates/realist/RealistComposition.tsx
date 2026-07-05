@@ -144,13 +144,19 @@ const CascadeLine: React.FC<{
   tracking?: string;
   weight?: "700" | "800" | "900";
   font?: string;
-}> = ({ text, ink, color, glow, revealAt, exitAt, frame, opacityMul, tracking = "0.01em", weight = "800", font = MONT }) => {
+  // r4: glyph-shaped blurred underlayer — the baked halo carries ~1.8x
+  // the render's ink mass and r3b proved a textShadow alpha boost only
+  // LOWERS SSIM; one blurred duplicate of the whole line (same cascade
+  // state) under the crisp layer closes the halo without per-letter
+  // filter cost.
+  bloom?: { blur: number; opacity: number };
+}> = ({ text, ink, color, glow, revealAt, exitAt, frame, opacityMul, tracking = "0.01em", weight = "800", font = MONT, bloom }) => {
   const inkW = ink[1] - ink[0];
   const inkH = ink[3] - ink[2];
   const fontSize = inkH / CAP_RATIO;
   const natural = measureW(text, fontSize, weight, false, tracking, font);
   const scaleX = natural > 0 ? inkW / natural : 1;
-  return (
+  const line = (extra: React.CSSProperties) => (
     <div
       style={{
         position: "absolute",
@@ -167,6 +173,7 @@ const CascadeLine: React.FC<{
         transform: `scaleX(${scaleX.toFixed(4)})`,
         transformOrigin: "left",
         textShadow: `0 0 9px ${glow}, 0 0 22px ${glow}`,
+        ...extra,
       }}
     >
       {text.split("").map((ch, i) => {
@@ -203,11 +210,20 @@ const CascadeLine: React.FC<{
       })}
     </div>
   );
+  if (!bloom) return line({});
+  return (
+    <>
+      {line({ filter: `blur(${bloom.blur}px)`, opacity: opacityMul * bloom.opacity })}
+      {line({})}
+    </>
+  );
 };
 
 // ─── 1. Caption 1: COIN LAUNCHED / PUMPFUN FLYWHEEL / "PUMPWHEEL" ───
 // Rides the baked editor zoom + its own grow-in via the measured
 // per-frame affine (data.ts, f26-215).
+const CAP1_BLOOM = { blur: 30, opacity: 0.4 };
+
 const Cap1: React.FC = () => {
   const frame = refFrame(useCurrentFrame());
   if (frame < 25 || frame > 212) return null;
@@ -231,6 +247,7 @@ const Cap1: React.FC = () => {
         exitAt={163}
         frame={frame}
         opacityMul={mul}
+        bloom={CAP1_BLOOM}
       />
       <CascadeLine
         text="PUMPFUN FLYWHEEL"
@@ -241,6 +258,7 @@ const Cap1: React.FC = () => {
         exitAt={173}
         frame={frame}
         opacityMul={mul}
+        bloom={CAP1_BLOOM}
       />
       {/* r3b adjudication (A/B stills at f110, ink-crop SSIM + diff
           composites): straight-quote 800/-0.01em fit = 0.598, the
@@ -262,6 +280,7 @@ const Cap1: React.FC = () => {
         exitAt={183}
         frame={frame}
         opacityMul={mul}
+        bloom={CAP1_BLOOM}
       />
     </AbsoluteFill>
   );
