@@ -927,6 +927,98 @@ export const SheetFloor: React.FC<{ frame: number }> = ({ frame }) => {
       }
     }
     ctx.restore();
+    // ── r7 eye-band measured ink set (the STEP-0 map's #3 mass: ref
+    // plank-zone ink 54% <215 vs our 0.4-1.3%). Discrete trackable
+    // elements scanned at 5000/5100/(5150)/5210 — all near-static through
+    // the eye hold (zone stats constant), keyed screen endpoints lerped
+    // then unprojected at the CURRENT frame (exact where measured):
+    //   - bank pad outline: front-top edge core 129 w~3, second stroke
+    //     ~12px below core ~150-160, right edge (the r6 negative was
+    //     about bolding OUR pad geometry — this draws the REF's measured
+    //     edges instead);
+    //   - house pad bottom edge + right corner (core 165-167);
+    //   - twin fanning rules right of the cards (cores 184-211);
+    //   - the fallen-paper corner curve (measured @5100, static);
+    //   - red dot (665,378) + pale red diagonal (677,398)->(713,458).
+    // Faded in as the eye settles (4985-4998), released as the pull-back
+    // re-pose begins (5212-5224, where the tracks end).
+    {
+      const eyeA = fade(f, 4985, 4998) * fadeOut(f, 5212, 5224);
+      if (eyeA > 0) {
+        ctx.globalAlpha = dissolve * clamp01((f - 4690) / 18) * eyeA;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        type K3 = [number, number[]]; // [f, flat point list u0,v0,u1,v1,...]
+        const trkS = (keys: K3[]): Pt[] => {
+          let i = 0;
+          const fc = Math.max(keys[0][0], Math.min(keys[keys.length - 1][0], f));
+          while (i < keys.length - 2 && keys[i + 1][0] < fc) i++;
+          const a = keys[i];
+          const b = keys[i + 1];
+          const t = clamp01((fc - a[0]) / (b[0] - a[0]));
+          return Array.from({ length: a[1].length / 2 }, (_, j) =>
+            [mixN(a[1][2 * j], b[1][2 * j], t), mixN(a[1][2 * j + 1], b[1][2 * j + 1], t)] as Pt);
+        };
+        // stroke width is specified in SCREEN px; the floor plane is
+        // heavily foreshortened at the eye pitch (a vertical screen px
+        // spans ~6 floor units at pitch 10°), so convert at the track
+        // midpoint per frame — the same closed-loop lesson as the r6
+        // squiggle width bump, generalized.
+        const stroke = (sp: Pt[], ink: string, wpx: number) => {
+          const pts = sp.map(([u, v]) => toFloor(u, v, f));
+          const mid = sp[Math.floor(sp.length / 2)];
+          const q0 = toFloor(mid[0], mid[1], f);
+          const q1 = toFloor(mid[0], mid[1] + 1, f);
+          ctx.strokeStyle = ink;
+          ctx.lineWidth = wpx * Math.hypot(q1[0] - q0[0], q1[1] - q0[1]);
+          ctx.beginPath();
+          ctx.moveTo(mx(pts[0]), my(pts[0]));
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(mx(pts[i]), my(pts[i]));
+          ctx.stroke();
+        };
+        const trk = trkS;
+        stroke(trk([
+          [5000, [482, 328, 734, 332]], [5100, [482, 330, 734, 328]], [5210, [488, 329, 740, 327]],
+        ]), "rgb(138,138,138)", 3.0);
+        stroke(trk([
+          [5000, [512, 341, 722, 351]], [5100, [518, 344, 728, 354]], [5210, [524, 345, 734, 354]],
+        ]), "rgb(168,168,168)", 1.8);
+        stroke(trk([
+          [5000, [703, 305, 728, 352]], [5100, [705, 298, 733, 354]], [5210, [699, 298, 742, 354]],
+        ]), "rgb(150,150,150)", 2.4);
+        stroke(trk([
+          [5000, [180, 312, 335, 332, 350, 310]], [5100, [170, 316, 335, 334, 350, 309]],
+          [5210, [170, 316, 335, 333, 350, 312]],
+        ]), "rgb(172,172,172)", 3.0);
+        stroke(trk([
+          [5000, [420, 365, 640, 385]], [5100, [420, 364, 640, 384]], [5210, [420, 370, 640, 374]],
+        ]), "rgb(200,200,200)", 2.2);
+        stroke(trk([
+          [5000, [420, 376, 655, 388]], [5100, [420, 377, 655, 388]], [5210, [420, 376, 655, 389]],
+        ]), "rgb(205,205,205)", 2.0);
+        // fallen-paper corner curve (measured @5100; zone static)
+        stroke(trk([
+          [5000, [668, 388, 690, 404, 701, 428, 710, 450]],
+          [5210, [668, 388, 690, 404, 701, 428, 710, 450]],
+        ]), "rgb(196,196,196)", 2.2);
+        stroke(trk([
+          [5000, [678, 400, 701, 445]], [5100, [676, 397, 714, 461]], [5210, [676, 398, 711, 453]],
+        ]), "rgb(206,190,193)", 3.0);
+        // red dot terminal (drawn as a floor ellipse so it reads as a
+        // round screen dot under the foreshortening)
+        {
+          const s = trk([[5000, [665.5, 380.5]], [5100, [664.5, 378.5]], [5210, [664.5, 376.5]]])[0];
+          const c = toFloor(s[0], s[1], f);
+          const qh = toFloor(s[0] + 1, s[1], f);
+          const qv = toFloor(s[0], s[1] + 1, f);
+          ctx.fillStyle = "rgb(205,178,182)";
+          ctx.beginPath();
+          ctx.ellipse(mx(c), my(c), 3.4 * Math.hypot(qh[0] - c[0], qh[1] - c[1]),
+            3.4 * Math.hypot(qv[0] - c[0], qv[1] - c[1]), 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
     // the street rule runs past the sheet's right edge onto the floor
     // extension (ref dashes reach x≈719 at f5100; the sheet clip cuts the
     // in-sheet stroke). Drawn unclipped from the per-frame sheet-exit
@@ -1717,9 +1809,86 @@ export const CommunityWorld: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// ── r7 measured tone-field closure (screen-space) ────────────────
+// The signed background field (att−ref cell means, bg-only mask) is
+// STATIC across the whole eye hold (identical numbers at 5000/5100/5180/
+// 5210): our top band renders 10-23 levels DARK (worst −23 at the
+// top-left corner where the ref ceiling is a blank bright 243 — our
+// cube sheen/pane wash + edge feather pile up there), the bottom-left
+// corner −8..−12 dark, and the bottom-right corner +10..+14 BRIGHT
+// (the ref's soft hatch wash, cores ~200, fuses at 480p into a corner
+// gradient our render lacks). Three measured gradient lobes close the
+// field; the top band also holds through the dive and pull-back
+// (−11..−22 at 4930/5230) so it gates wider than the corner pair.
+// Alphas calibrated closed-loop against the rendered still at 5100.
+const ToneField: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = frame;
+  const gTop = fade(f, 4915, 4935) * fadeOut(f, 5238, 5256);
+  const gCorners = fade(f, 4960, 4980) * fadeOut(f, 5208, 5224);
+  if (gTop <= 0 && gCorners <= 0) return null;
+  return (
+    <svg width={854} height={480} style={{ position: "absolute", inset: 0 }}>
+      <defs>
+        {/* NOTE (measured, r7): the shared EdgeFeather (lib/post.tsx,
+            out-of-lane) is a darken-toward-220 layer ABOVE this overlay
+            with w≈0.97 at the frame edge — it CAPS the outer ~40px at
+            ~221 no matter what is painted below (max out at w=.97 is
+            221.05), while the ref's community ceiling reads 243.5. The
+            feather was calibrated at f600/1200/2500/4400 and never at
+            the community eye hold. This overlay therefore recovers only
+            the interior band (y≳40, x≳40) where the feather weight
+            decays; the outer fringe stays −15..−20 dark — an out-of-lane
+            item for the round log. Alphas below are closed-loop values
+            (rendered still at 5100 re-measured against the ref field). */}
+        <radialGradient id="tf-top">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.72} />
+          <stop offset="50%" stopColor="#FFFFFF" stopOpacity={0.52} />
+          <stop offset="82%" stopColor="#FFFFFF" stopOpacity={0.2} />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id="tf-r1">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.3} />
+          <stop offset="60%" stopColor="#FFFFFF" stopOpacity={0.15} />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id="tf-lm">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.28} />
+          <stop offset="60%" stopColor="#FFFFFF" stopOpacity={0.12} />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id="tf-bl">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.7} />
+          <stop offset="70%" stopColor="#FFFFFF" stopOpacity={0.3} />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id="tf-br">
+          <stop offset="0%" stopColor="#4A4A4A" stopOpacity={0.28} />
+          <stop offset="65%" stopColor="#4A4A4A" stopOpacity={0.13} />
+          <stop offset="100%" stopColor="#4A4A4A" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      {gTop > 0 && (
+        <>
+          <ellipse cx={120} cy={30} rx={800} ry={250} fill="url(#tf-top)" opacity={gTop} />
+          <ellipse cx={690} cy={115} rx={280} ry={78} fill="url(#tf-r1)" opacity={gTop} />
+          <ellipse cx={-20} cy={225} rx={140} ry={125} fill="url(#tf-lm)" opacity={gTop} />
+        </>
+      )}
+      {gCorners > 0 && (
+        <>
+          <ellipse cx={-10} cy={488} rx={265} ry={125} fill="url(#tf-bl)" opacity={gCorners} />
+          <ellipse cx={870} cy={495} rx={310} ry={160} fill="url(#tf-br)" opacity={gCorners} />
+        </>
+      )}
+    </svg>
+  );
+};
+
 export const CommunityOverlay: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <>
+      {/* measured tone-field closure under the pane sweep */}
+      <ToneField frame={frame} />
       {/* foreground glass pane crossing the camera */}
       <GlassSweep frame={frame} />
     </>
