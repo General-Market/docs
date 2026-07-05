@@ -48,9 +48,12 @@ Rebuild a reference motion-design video scene-by-scene, then score the replica a
 
 Go deep — per-element detection, real motion trajectories, typography, SFX. A CSS approximation of a 3D move is not a replica.
 
+**Improving an existing replica** (iterating a built `*-Replicate` toward a score target): read `.claude/rules/replicate-method.md` FIRST — the rounds system, the judge and its known traps, rolling-window triage, the measurement doctrine, and eight structural lessons (camera orbits, per-frame fitting, rigid-world rule, ink placement, ground continuity, real components). Runtime state for live tracks is in `.claude/rounds/`.
+
 ## Style (governing)
 
 - Apple-grade visuals per `docs/apple-style-table.md` (SF Pro, 17px body, `#1D1D1F`, sourced easing, glass `saturate(180%) blur(20px)`). No invented numbers.
+- **Brand style & motion per `docs/GMStyle.md`** — our render fonts (Bricolage Grotesque + Commit Mono, self-hosted), the dot-grid ground, brand blue `#0071E3` + electric `#2D5BFF` (never Coinbase's `#0052FF`), the `EASE` set + house spring `{mass:0.6,damping:16,stiffness:120,26f}`, slide layout, the chart + caption standards, reveal vocabulary (no fade-up — see `article-2/*`), the no-breathing camera, start-in-action, transition bans, and the stress ceiling. Paste it alongside the Apple table.
 - Match the reference comps first: `block-trading/BlockTradingExile.tsx`, `market-anatomy/`.
 - Rendered prose follows the Alexander voice (`docs/christopher-alexander-style.md`); code stays conventional.
 
