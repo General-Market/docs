@@ -318,7 +318,7 @@ const TOKEN_KIND: Record<IconToken, string> = {
 const BadgeDot: React.FC<{ kind: Badge }> = ({ kind }) => {
   if (kind === "warn") {
     return (
-      <svg width={14} height={14} viewBox="0 0 16 16" style={{ display: "block" }}>
+      <svg width={16} height={16} viewBox="0 0 16 16" style={{ display: "block" }}>
         <path d="M8 2 L15 13.5 L1 13.5 Z" fill={C.badgeWarn} />
         <rect x="7.3" y="6" width="1.4" height="4" fill="#1A1D24" />
         <rect x="7.3" y="11" width="1.4" height="1.4" fill="#1A1D24" />
@@ -327,14 +327,14 @@ const BadgeDot: React.FC<{ kind: Badge }> = ({ kind }) => {
   }
   if (kind === "doc") {
     return (
-      <svg width={14} height={14} viewBox="0 0 16 16" style={{ display: "block" }}>
+      <svg width={16} height={16} viewBox="0 0 16 16" style={{ display: "block" }}>
         <rect x="2" y="2" width="12" height="12" rx="2" fill={C.badgeDoc} />
         <path d="M4.5 5.5 H11.5 M4.5 8 H11.5 M4.5 10.5 H9" stroke="#1A1D24" strokeWidth={1.3} />
       </svg>
     );
   }
   return (
-    <svg width={14} height={14} viewBox="0 0 16 16" style={{ display: "block" }}>
+    <svg width={16} height={16} viewBox="0 0 16 16" style={{ display: "block" }}>
       <circle cx="8" cy="8" r="6.5" fill={C.badgeCheck} />
       <path d="M5 8 L7.2 10.2 L11 6.2" fill="none" stroke="#0E1116" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -436,11 +436,13 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
         <T size={14} color={C.name} weight={600}>
           {card.name}
         </T>
-        <T size={14} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"` }}>
+        <T size={14} color={C.sub} style={{ fontFamily: `${FONT}, "Hiragino Sans"`, letterSpacing: 0.2 }}>
           {card.sub}
         </T>
         {card.badges?.map((b, i) => (
-          <BadgeDot key={i} kind={b} />
+          <div key={i} style={{ marginLeft: i === 0 ? 6 : 0 }}>
+            <BadgeDot kind={b} />
+          </div>
         ))}
       </Row>
       {card.sub2 ? (
