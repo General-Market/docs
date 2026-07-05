@@ -19,6 +19,8 @@ export const CAP1_L2_INK = [46, 898, 711, 771];
 // which over-sized the font ~12% and squeezed scaleX to ~0.78. The
 // y-values below are compensated for the true Montserrat line-box
 // metrics so the rendered cap band lands on the baked [812.5, 872.5].
+// (r3b: a re-fit to raw plate ink [185,775,811,871] scored WORSE —
+// 0.377 vs 0.598 crop SSIM — the compensation is load-bearing.)
 export const CAP1_L3_INK = [178, 780, 817, 879];
 
 export const BUYS_MAIN_INK = [653, 1274, 495, 573];  // green glyphs only
@@ -54,39 +56,40 @@ export type SellsEvent = {
   parenW: number | null;
   pushAt: number | null;  // measured frame the caption starts its slide-down
   fadeAt: number | null;  // measured frame a solo fade begins
+  slide?: true;           // un-pushed S-curve slide-out (both lines fade together)
 };
 export const sellsEvents: SellsEvent[] = [
-  { f: 470, main: "SELLS 3%", paren: "(11.5 SOL)", style: "A", mainW: 445, parenW: 450, pushAt: 493, fadeAt: null },
-  { f: 500, main: "SELLS 3%", paren: "(30 SOL)", style: "A", mainW: 446, parenW: 397, pushAt: null, fadeAt: 538 },
-  { f: 579, main: "SELLS 3%", paren: "(1.9 SOL)", style: "A", mainW: 442, parenW: 399, pushAt: 600, fadeAt: null },
-  { f: 606, main: "SELLS 3%", paren: "(3.1 SOL)", style: "A", mainW: 435, parenW: 371, pushAt: 627, fadeAt: null },
-  { f: 636, main: "SELLS 3%", paren: "(3.5 SOL)", style: "A", mainW: 439, parenW: 401, pushAt: null, fadeAt: 657 },
-  { f: 710, main: "SELLS 3%", paren: "(8.7 SOL)", style: "A", mainW: 443, parenW: 414, pushAt: 735, fadeAt: null },
-  { f: 739, main: "SELLS 3%", paren: "(7.6 SOL)", style: "A", mainW: 435, parenW: 383, pushAt: 761, fadeAt: null },
-  { f: 769, main: "SELLS 3%", paren: "(26.4 SOL)", style: "A", mainW: 435, parenW: 455, pushAt: 789, fadeAt: null },
-  { f: 796, main: "SELLS 3%", paren: "(38.3 SOL)", style: "A", mainW: 448, parenW: 487, pushAt: 818, fadeAt: null },
-  { f: 822, main: "SELLS 3%", paren: "(14.5 SOL)", style: "A", mainW: 441, parenW: 451, pushAt: 844, fadeAt: null },
-  { f: 850, main: "SELLS 3%", paren: "(10.7 SOL)", style: "A", mainW: 440, parenW: 451, pushAt: 870, fadeAt: null },
-  { f: 875, main: "SELLS 13%", paren: "(7.6 SOL)", style: "A", mainW: 479, parenW: 399, pushAt: 898, fadeAt: null },
-  { f: 904, main: "SELLS 3%", paren: "(2 SOL)", style: "A", mainW: 453, parenW: 377, pushAt: 923, fadeAt: null },
-  { f: 923, main: "SELLS 3%", paren: "(24.2 SOL)", style: "A", mainW: 434, parenW: 440, pushAt: null, fadeAt: 938 },
-  { f: 979, main: "SELLS 13%", paren: "(22.3 SOL)", style: "A", mainW: 485, parenW: 479, pushAt: 1001, fadeAt: null },
-  { f: 1009, main: "SELLS 3%", paren: "(14.1 SOL)", style: "A", mainW: 435, parenW: 427, pushAt: 1024, fadeAt: null },
-  { f: 1035, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 577, parenW: null, pushAt: 1056, fadeAt: null },
-  { f: 1062, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: 1081, fadeAt: null },
-  { f: 1082, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: null, fadeAt: 1118 },
-  { f: 1168, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: null, fadeAt: 1194 },
-  { f: 1225, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 586, parenW: null, pushAt: 1241, fadeAt: null },
-  { f: 1246, main: "SELLS 25 SOL", paren: null, style: "B", mainW: 661, parenW: null, pushAt: 1263, fadeAt: null },
-  { f: 1271, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1295, fadeAt: null },
-  { f: 1303, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1330, fadeAt: null },
-  { f: 1338, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1366, fadeAt: null },
-  { f: 1370, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1397, fadeAt: null },
-  { f: 1401, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 650, parenW: null, pushAt: 1424, fadeAt: null },
-  { f: 1431, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: 1452, fadeAt: null },
-  { f: 1459, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1480, fadeAt: null },
-  { f: 1487, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1509, fadeAt: null },
-  { f: 1516, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: null, fadeAt: 1538 },
-  { f: 1555, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: null, fadeAt: 1564 },
-  { f: 1594, main: "SELLS 100%", paren: "(481.2 SOL TOTAL)", style: "F", mainW: 565, parenW: 879, pushAt: null, fadeAt: 1635 },
+  { f: 468, main: "SELLS 3%", paren: "(11.5 SOL)", style: "A", mainW: 445, parenW: 450, pushAt: 493, fadeAt: null },
+  { f: 498, main: "SELLS 3%", paren: "(30 SOL)", style: "A", mainW: 446, parenW: 397, pushAt: null, fadeAt: 540 },
+  { f: 577, main: "SELLS 3%", paren: "(1.9 SOL)", style: "A", mainW: 442, parenW: 399, pushAt: 600, fadeAt: null },
+  { f: 604, main: "SELLS 3%", paren: "(3.1 SOL)", style: "A", mainW: 435, parenW: 371, pushAt: 627, fadeAt: null },
+  { f: 634, main: "SELLS 3%", paren: "(3.5 SOL)", style: "A", mainW: 439, parenW: 401, pushAt: null, fadeAt: 676 },
+  { f: 708, main: "SELLS 3%", paren: "(8.7 SOL)", style: "A", mainW: 443, parenW: 414, pushAt: 735, fadeAt: null },
+  { f: 737, main: "SELLS 3%", paren: "(7.6 SOL)", style: "A", mainW: 435, parenW: 383, pushAt: 761, fadeAt: null },
+  { f: 767, main: "SELLS 3%", paren: "(26.4 SOL)", style: "A", mainW: 435, parenW: 455, pushAt: 789, fadeAt: null },
+  { f: 794, main: "SELLS 3%", paren: "(38.3 SOL)", style: "A", mainW: 448, parenW: 487, pushAt: 818, fadeAt: null },
+  { f: 820, main: "SELLS 3%", paren: "(14.5 SOL)", style: "A", mainW: 441, parenW: 451, pushAt: 844, fadeAt: null },
+  { f: 848, main: "SELLS 3%", paren: "(10.7 SOL)", style: "A", mainW: 440, parenW: 451, pushAt: 870, fadeAt: null },
+  { f: 873, main: "SELLS 13%", paren: "(7.6 SOL)", style: "A", mainW: 479, parenW: 399, pushAt: 898, fadeAt: null },
+  { f: 902, main: "SELLS 3%", paren: "(2 SOL)", style: "A", mainW: 453, parenW: 377, pushAt: 923, fadeAt: null },
+  { f: 925, main: "SELLS 3%", paren: "(24.2 SOL)", style: "A", mainW: 434, parenW: 440, pushAt: 948, fadeAt: null, slide: true },  // plate red-mask f940-970: S-curve slide f948-963 (dy 24/53/83/131/151/168/177 at t=2..15), both lines fade f961-967
+  { f: 977, main: "SELLS 13%", paren: "(22.3 SOL)", style: "A", mainW: 485, parenW: 479, pushAt: 1001, fadeAt: null },
+  { f: 1007, main: "SELLS 3%", paren: "(14.1 SOL)", style: "A", mainW: 435, parenW: 427, pushAt: 1024, fadeAt: null },
+  { f: 1033, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 577, parenW: null, pushAt: 1056, fadeAt: null },
+  { f: 1060, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: 1081, fadeAt: null },
+  { f: 1080, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: null, fadeAt: 1128 },
+  { f: 1166, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 626, parenW: null, pushAt: null, fadeAt: 1204 },
+  { f: 1223, main: "SELLS 5 SOL", paren: null, style: "B", mainW: 586, parenW: null, pushAt: 1241, fadeAt: null },
+  { f: 1244, main: "SELLS 25 SOL", paren: null, style: "B", mainW: 661, parenW: null, pushAt: 1263, fadeAt: null },
+  { f: 1269, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1295, fadeAt: null },
+  { f: 1301, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1330, fadeAt: null },
+  { f: 1336, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1366, fadeAt: null },
+  { f: 1368, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1397, fadeAt: null },
+  { f: 1399, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 650, parenW: null, pushAt: 1424, fadeAt: null },
+  { f: 1429, main: "SELLS 15 SOL", paren: null, style: "B", mainW: 620, parenW: null, pushAt: 1452, fadeAt: null },
+  { f: 1457, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: 1480, fadeAt: null },
+  { f: 1485, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: 1509, fadeAt: null },
+  { f: 1514, main: "SELLS 10 SOL", paren: null, style: "B", mainW: 630, parenW: null, pushAt: null, fadeAt: 1541 },
+  { f: 1553, main: "SELLS 20 SOL", paren: null, style: "B", mainW: 649, parenW: null, pushAt: null, fadeAt: 1576 },
+  { f: 1595, main: "SELLS 100%", paren: "(481.2 SOL TOTAL)", style: "F", mainW: 565, parenW: 879, pushAt: null, fadeAt: 1639 },
 ];

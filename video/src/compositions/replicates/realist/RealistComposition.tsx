@@ -32,7 +32,7 @@ loadMontserrat("italic", { subsets: ["latin"], weights: ["900"] });
 // (narrow E/L, wide U/H/M, small high quotes) match Poppins.
 const { fontFamily: POPPINS } = loadPoppins("normal", {
   subsets: ["latin"],
-  weights: ["800", "900"],
+  weights: ["700", "800", "900"],
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -120,7 +120,7 @@ const CAP_RATIO = 0.72; // Montserrat cap-height / fontSize
 const CAP_TOP = 0.21; //  em-box top → cap top (calibrated vs plates)
 
 const measureW = (
-  text: string, fontSize: number, weight: "800" | "900", italic: boolean, tracking: string,
+  text: string, fontSize: number, weight: "700" | "800" | "900", italic: boolean, tracking: string,
   font: string = MONT,
 ) =>
   measureText({
@@ -142,7 +142,7 @@ const CascadeLine: React.FC<{
   frame: number;
   opacityMul: number;
   tracking?: string;
-  weight?: "800" | "900";
+  weight?: "700" | "800" | "900";
   font?: string;
 }> = ({ text, ink, color, glow, revealAt, exitAt, frame, opacityMul, tracking = "0.01em", weight = "800", font = MONT }) => {
   const inkW = ink[1] - ink[0];
@@ -242,6 +242,14 @@ const Cap1: React.FC = () => {
         frame={frame}
         opacityMul={mul}
       />
+      {/* r3b adjudication (A/B stills at f110, ink-crop SSIM + diff
+          composites): straight-quote 800/-0.01em fit = 0.598, the
+          curly-quote 700/0.02em refit = 0.486, curly 800 = 0.475 —
+          the curly glyphs shrink the fitted word and misalign every
+          letter stroke, costing more than the quote shape gains. The
+          plate DOES show curly quotes (small, 28px, floating y799-822);
+          revisit only as separately-positioned glyphs, never inside
+          the fitted string. Remaining head residual is glow halo. */}
       <CascadeLine
         text={'"PUMPWHEEL"'}
         ink={CAP1_L3_INK}
@@ -354,15 +362,17 @@ const Buys: React.FC = () => {
   );
 };
 
-// ─── 4-point sparkle star (flanks every SELLS caption) ───
+// ─── Sparkle (flanks every SELLS caption) ───
+// r3: the plate glyph (f0899 x~700 y~617 zoomed 3x) is an 8-spoke
+// ASTERISK — eight rounded petals around a bright hub with a soft round
+// halo — not a 4-point star. Drawn as 4 crossing stadium bars at 45°.
 const Sparkle: React.FC<{
   cx: number; cy: number; size: number; seed: number; frame: number; opacity: number;
 }> = ({ cx, cy, size, seed, frame, opacity }) => {
   const rot = noise2D(`spark-r-${seed}`, frame * 0.02, seed) * 8;
   const sc = 1 + noise2D(`spark-s-${seed}`, frame * 0.03, seed) * 0.1;
   const r = size / 2;
-  const w = size * 0.13;
-  const path = `M 0 ${-r} C ${w} ${-w} ${w} ${-w} ${r} 0 C ${w} ${w} ${w} ${w} 0 ${r} C ${-w} ${w} ${-w} ${w} ${-r} 0 C ${-w} ${-w} ${-w} ${-w} 0 ${-r} Z`;
+  const w = size * 0.14; // spoke half-width
   return (
     <svg
       width={size * 2}
@@ -373,11 +383,22 @@ const Sparkle: React.FC<{
         top: cy - size,
         opacity,
         transform: `rotate(${rot.toFixed(1)}deg) scale(${sc.toFixed(3)})`,
-        filter: "drop-shadow(0 0 7px rgba(255,255,255,0.6)) drop-shadow(0 0 16px rgba(255,255,255,0.35))",
+        filter: "drop-shadow(0 0 8px rgba(255,255,255,0.7)) drop-shadow(0 0 20px rgba(255,255,255,0.4))",
       }}
     >
-      <g transform={`translate(${size} ${size})`}>
-        <path d={path} fill="#ffffff" />
+      <g transform={`translate(${size} ${size})`} fill="#ffffff">
+        {[0, 45, 90, 135].map((a) => (
+          <rect
+            key={a}
+            x={-w}
+            y={-r}
+            width={w * 2}
+            height={r * 2}
+            rx={w}
+            transform={`rotate(${a})`}
+          />
+        ))}
+        <circle r={size * 0.2} />
       </g>
     </svg>
   );
@@ -391,10 +412,14 @@ const Sparkle: React.FC<{
 // pushAt+9..+21 (A) / +5..+19 (B). Solo fade: 16f from fadeAt.
 // glow spread re-fitted r2: plate halo ink area ~1.7x the r1 shadows
 // (f0486 red n=32k vs attempt 17.5k) — third, wider bloom layer added
+// r3 bloom re-fit: saturated-red mask (r>140,g<70) over plates reads
+// 30-55k px per caption vs 21-33k in the r2 attempt — the plate halo is
+// SATURATED near the glyphs, not translucent. A tight high-alpha layer
+// added under the wide ones closes the ink-mass gap.
 const RED = "#ee0011";
-const RED_GLOW = "0 0 12px rgba(255,0,30,0.6), 0 0 30px rgba(255,0,30,0.38), 0 0 58px rgba(255,0,30,0.2)";
+const RED_GLOW = "0 0 5px rgba(238,0,17,0.95), 0 0 14px rgba(255,0,30,0.75), 0 0 32px rgba(255,0,30,0.4), 0 0 58px rgba(255,0,30,0.2)";
 const BLUE = "#41b8e0";
-const BLUE_GLOW = "0 0 10px rgba(62,184,255,0.6), 0 0 26px rgba(62,184,255,0.36), 0 0 50px rgba(62,184,255,0.18)";
+const BLUE_GLOW = "0 0 5px rgba(65,184,224,0.9), 0 0 12px rgba(62,184,255,0.65), 0 0 28px rgba(62,184,255,0.36), 0 0 50px rgba(62,184,255,0.18)";
 
 // A-paren re-measured against baked digit glyphs (event 1 f487, event 2
 // f530-550): digit cap band centers on 610 (not 632) at cap height ~49
@@ -450,34 +475,80 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
   const t = frame - ev.f;
   if (t < 0) return null;
   const geo = STYLE_GEO[ev.style];
-  // pop — re-fitted r2 on events 1 AND 2 (f470-486 / f500-510 bbox widths):
-  // s(0)≈1.33, s(4)≈1.22, s(8)≈1.12, s(16)≈1.03 → a=0.34, τ=8
-  const s = 1 + 0.34 * Math.exp(-t / 8);
-  let op = clamp01((t + 1.5) / 2);
-  const blur = 7 * Math.exp(-t / 3.5);
+  // pop — r3: entrance frames re-anchored 2f earlier (first visible ink
+  // on the plates, red-mask sweep of all 33 events); the r2 pop fit was
+  // taken at old-f (= t=2 now), so a re-solves to keep s(t=2)=1.33.
+  const s = 1 + 0.42 * Math.exp(-t / 8);
+  const op = clamp01((t + 0.5) / 2.5);
+  const blur = 12 * Math.exp(-t / 3.5);
   // push by successor (measured pushAt)
   let dy = 0;
   let dyParen = 0;
   let parenShrink = 1;
-  if (ev.pushAt !== null) {
+  // r3 fade split: on the plates the paren line outlives the main by
+  // ~6f (ev604 pushed: red gone f652, blue gone f659; F event: red gone
+  // f1650, blue gone f1657) — main and paren fade on separate clocks.
+  let fadeMain = 1;
+  let fadeParen = 1;
+  if (ev.pushAt !== null && ev.slide) {
+    // un-pushed slide-out (ev925): plate red-mask f940-970 shows an
+    // S-curve (slow start), NOT the exponential push — dy measured
+    // 24/53/83/131/151/168/177px at t=2/4/6/8/10/12/15; both lines
+    // fade together f961-967 (blue mass tracks red, no +6f outlive).
+    const tp = frame - ev.pushAt;
+    if (tp > 0) {
+      const SLIDE: [number, number][] = [[0, 0], [2, 24], [4, 53], [6, 83], [8, 131], [10, 151], [12, 168], [15, 177]];
+      let d = 177;
+      for (let i = 1; i < SLIDE.length; i++) {
+        if (tp <= SLIDE[i][0]) {
+          const [t0, d0] = SLIDE[i - 1];
+          const [t1, d1] = SLIDE[i];
+          d = d0 + ((d1 - d0) * (tp - t0)) / (t1 - t0);
+          break;
+        }
+      }
+      dy = d;
+      dyParen = 0; // paren rides with the main
+      parenShrink = 1 - 0.049 * (1 - Math.exp(-tp / 1.8));
+      fadeMain = 1 - clamp01((frame - (ev.pushAt + 13)) / 6);
+      fadeParen = 1 - clamp01((frame - (ev.pushAt + 14)) / 5);
+    }
+  } else if (ev.pushAt !== null) {
     const tau = ev.style === "A" ? 5.3 : 2.2;
     const tp = frame - ev.pushAt;
     if (tp > 0) {
-      dy = (712 - geo.cy) * (1 - Math.exp(-tp / tau));
+      // rest y of the pushed main measured 714-715 across events
+      dy = (715 - geo.cy) * (1 - Math.exp(-tp / tau));
       // the baked paren line travels farther and slightly slower than
-      // the main (measured on event 1, f495-512: D=179, τ=5.55), and
-      // the pushed block collapses its pop and shrinks to ~0.95
-      dyParen = 179 * (1 - Math.exp(-tp / 5.55)) - dy;
+      // the main (measured on event 1, f495-512: τ=5.55; settled pushed
+      // paren cy reads 780 on the plates → D=170), and the pushed block
+      // collapses its pop and shrinks to ~0.95
+      dyParen = 170 * (1 - Math.exp(-tp / 5.55)) - dy;
       parenShrink = 1 - 0.049 * (1 - Math.exp(-tp / 1.8));
       const fadeFrom = ev.pushAt + (ev.style === "A" ? 9 : 5);
-      op *= 1 - clamp01((frame - fadeFrom) / (ev.style === "A" ? 12 : 14));
+      const dur = ev.style === "A" ? 14 : 18; // plate decays: gone push+20..27
+      fadeMain = 1 - clamp01((frame - fadeFrom) / dur);
+      // r3b: +6/dur was measured on ev604, but ev902's ghost paren is
+      // gone by ~f948 on the plates (blue-mass residual < 0.3k) while
+      // +6/14 kept it visible at f950 — tightened to +5/12.
+      fadeParen = 1 - clamp01((frame - fadeFrom - 5) / 12);
     }
   } else if (ev.fadeAt !== null) {
-    op *= 1 - clamp01((frame - ev.fadeAt) / 16);
+    // solo decay measured 8-13f on the plates (ev634/ev1514/ev1553/ev1595)
+    fadeMain = 1 - clamp01((frame - ev.fadeAt) / 12);
+    fadeParen =
+      ev.style === "F"
+        ? 1 - clamp01((frame - ev.fadeAt - 9) / 10) // blue plateau till fadeAt+9, gone +19 (f1650-1658)
+        : 1 - clamp01((frame - ev.fadeAt - 6) / 12);
   }
-  if (op <= 0) return null;
+  if (op <= 0 || (fadeMain <= 0 && fadeParen <= 0)) return null;
 
   const sparkGap = ev.mainW / 2 + geo.sparkPad;
+  // F paren materialises late: blue-mask ramp on plates f1595-1604 is
+  // flat until t≈5, saturating t≈7-9 (not the regular t=2 entry).
+  const parenT0 = ev.style === "F" ? 5 : 2;
+  const parenOp =
+    ev.style === "F" ? clamp01((t - 5) / 4) : clamp01((t - 1.5) / 5);
 
   return (
     <div
@@ -490,33 +561,40 @@ const SellsCaption: React.FC<{ ev: SellsEvent; frame: number }> = ({ ev, frame }
       }}
     >
       {ev.style === "F" && (
+        // r3: the plate white line is soft and half-transparent for its
+        // whole life (saturated-white mask peaks 1.4k px vs 12k when
+        // drawn crisp) — standing 2.5px blur at 0.55 opacity.
+        <div style={{ position: "absolute", inset: 0, opacity: 0.55 * fadeMain, filter: "blur(2.5px)" }}>
+          <FittedLine
+            text="($40969)"
+            cx={geo.cx} cy={472} inkW={436} inkH={44}
+            color="#d8dde6"
+            glow="0 0 8px rgba(215,222,232,0.5), 0 0 20px rgba(215,222,232,0.3)"
+            tracking="0.1em"
+            scaleMul={s}
+          />
+        </div>
+      )}
+      <div style={{ position: "absolute", inset: 0, opacity: fadeMain }}>
         <FittedLine
-          text="($40969)"
-          cx={geo.cx} cy={472} inkW={436} inkH={44}
-          color="#d8dde6"
-          glow="0 0 8px rgba(215,222,232,0.5), 0 0 20px rgba(215,222,232,0.3)"
-          tracking="0.1em"
+          text={ev.main}
+          cx={geo.cx} cy={geo.cy} inkW={ev.mainW} inkH={geo.inkH}
+          color={RED} glow={RED_GLOW} tracking="0.03em"
           scaleMul={s}
         />
-      )}
-      <FittedLine
-        text={ev.main}
-        cx={geo.cx} cy={geo.cy} inkW={ev.mainW} inkH={geo.inkH}
-        color={RED} glow={RED_GLOW} tracking="0.03em"
-        scaleMul={s}
-      />
-      <Sparkle cx={geo.cx - sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f} frame={frame} opacity={op} />
-      <Sparkle cx={geo.cx + sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f + 1} frame={frame} opacity={op} />
-      {ev.paren && ev.parenW && t >= 2 && (
+        <Sparkle cx={geo.cx - sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f} frame={frame} opacity={op * fadeMain} />
+        <Sparkle cx={geo.cx + sparkGap} cy={geo.cy} size={geo.sparkSize} seed={ev.f + 1} frame={frame} opacity={op * fadeMain} />
+      </div>
+      {ev.paren && ev.parenW && t >= parenT0 && (
         <div
           style={{
             position: "absolute",
             inset: 0,
-            opacity: clamp01((t - 1.5) / 5),
+            opacity: parenOp * fadeParen,
             transform: `translateY(${dyParen.toFixed(1)}px)`,
           }}
         >
-          {/* paren line materialises at t=2 already ~2.1x and shrinks in:
+          {/* paren line materialises already ~2.1x and shrinks in:
               plate f0502-0510 widths 830/722/648/550 → s = 1 + 1.45·e^(−t/7) */}
           <FittedLine
             text={ev.paren}
@@ -536,7 +614,7 @@ const Sells: React.FC = () => {
   if (frame < 466 || frame > 1668) return null;
   const active: React.ReactNode[] = [];
   for (const ev of sellsEvents) {
-    const end = ev.pushAt !== null ? ev.pushAt + 26 : ev.fadeAt !== null ? ev.fadeAt + 18 : ev.f + 80;
+    const end = ev.pushAt !== null ? ev.pushAt + 33 : ev.fadeAt !== null ? ev.fadeAt + 20 : ev.f + 80;
     if (frame >= ev.f && frame <= end) {
       active.push(<SellsCaption key={ev.f} ev={ev} frame={frame} />);
     }
