@@ -338,6 +338,17 @@ export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
   // the page plane sweeps through vertical at ~5301: hand the visible
   // surface from the dashboard art to the teal credits across it
   const artOp = 1 - clamp01((frame - 5300) / 3);
+  // r8 board-arrival retime: the ref keeps the flipping page INVISIBLE
+  // through the whiteout — measured pale-cyan art mass (mask B−R>25 &
+  // B>150): ref 0 @5276, 182 @5281, 367 @5285, 1516 @5288 vs ours 3620
+  // already at the 5276 mount. The art fades in across 5284-5289.
+  // The teal card + backing ride a SEPARATE later ramp (5296-5300):
+  // a shared ramp bled the card's teal through the half-transparent art
+  // at mid-fade (11510 loose-blue px at 5286 vs ref 435). The card is
+  // fully opaque before the plane crosses vertical (~5301), so the
+  // credits reveal and the settle track are untouched.
+  const flipArt = clamp01((frame - 5284) / 5);
+  const flipCard = clamp01((frame - 5296) / 4);
 
   return (
     <>
@@ -369,10 +380,12 @@ export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
         {/* page thickness rim (under the page while rising, a teal
             border ring once the credits face the camera) */}
         <CanvasPlane frame={0} width={BW + 7} height={BH + 7} res={0.5}
-          position={[0, BH / 2, -0.4]} draw={drawBacking} renderOrder={1} />
+          position={[0, BH / 2, -0.4]} draw={drawBacking} renderOrder={1}
+          opacity={flipCard} />
         {/* credits card, revealed as the page passes vertical */}
         <CanvasPlane frame={0} width={BW} height={BH} res={2}
-          position={[0, BH / 2, 0.3]} draw={drawCard} renderOrder={2} />
+          position={[0, BH / 2, 0.3]} draw={drawCard} renderOrder={2}
+          opacity={flipCard} />
         {/* dashboard-art surface, carried while the page rises */}
         <CanvasPlane frame={frame} width={BW} height={BH} res={1.5}
           position={[0, BH / 2, 0.6]}
@@ -381,7 +394,7 @@ export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
             ctx.globalAlpha = artOp;
             drawPageArt(ctx, f, w, h);
           }}
-          renderOrder={3} />
+          renderOrder={3} opacity={flipArt} />
       </group>
       </group>
     </>
