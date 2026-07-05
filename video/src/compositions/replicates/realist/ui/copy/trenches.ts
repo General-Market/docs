@@ -113,7 +113,7 @@ export type TrenchCard = {
   pct2Suffix: string; // "1mo" / "DS 9mo" style tail rendered after crown value
   midRows?: { label: string; value: string; valueColor: string }[]; // B. Curve / ATH
   address: string;
-  bar: { color: string; w: number }; // progress line under the avatar (px of 52)
+  bar: { color: string; w: number }; // progress fill px of the 62px rail (measured f0300)
   stats: {
     v: string;
     mc: string;
@@ -137,7 +137,7 @@ export const NEW_CARDS: TrenchCard[] = [
       { label: "B. Curve", value: "14.97%", valueColor: COLORS.greenMc },
       { label: "ATH", value: "14.97%", valueColor: "#8A8D99" },
     ],
-    address: "4qR...pump", bar: { color: COLORS.greenBar, w: 20 },
+    address: "4qR...pump", bar: { color: COLORS.greenBar, w: 5 },
     stats: { v: "$110", mc: "$2.5K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -153,7 +153,7 @@ export const NEW_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "4s" }, { f: 180, v: "4s" }, { f: 300, v: "5s" }],
     icons: ["globe", "link", "search"], people: "2", bell: "2",
     pct1: { v: "0%", color: G }, pct2: { v: "0%", color: G }, pct2Suffix: "1d",
-    address: "3AP...pump", bar: { color: COLORS.greenBar, w: 8 },
+    address: "3AP...pump", bar: { color: COLORS.greenBar, w: 3 },
     stats: { v: "$8.2", mc: "$2.3K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -161,7 +161,7 @@ export const NEW_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "16s" }, { f: 180, v: "16s" }, { f: 300, v: "17s" }],
     icons: ["link", "search"], people: "2", bell: "11",
     pct1: { v: "1%", color: G }, pct2: { v: "0%", color: G }, pct2Suffix: "3mo",
-    address: "CAG...pump", bar: { color: COLORS.greenBar, w: 26 },
+    address: "CAG...pump", bar: { color: COLORS.greenBar, w: 0 },
     stats: { v: "$18", mc: "$2.3K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -170,7 +170,7 @@ export const NEW_CARDS: TrenchCard[] = [
     icons: ["person", "globe", "link", "search"], people: "0", bell: "1",
     handle: { text: "@cryptosimshq", color: "#AEB1B7", num: "18" },
     pct1: { v: "0%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "3m",
-    address: "2kH...pump", bar: { color: COLORS.greenBar, w: 8 },
+    address: "2kH...pump", bar: { color: COLORS.greenBar, w: 5 },
     stats: { v: "$198", mc: "$2.4K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -179,7 +179,7 @@ export const NEW_CARDS: TrenchCard[] = [
     icons: ["feather", "link", "search"], people: "1", bell: "1",
     handle: { text: "@binance", color: "#AEB1B7", num: "15.6m" },
     pct1: { v: "2%", color: G }, pct2: { v: "2%", color: G }, pct2Suffix: "7m",
-    address: "54f...pump", bar: { color: COLORS.greenBar, w: 14 },
+    address: "54f...pump", bar: { color: COLORS.greenBar, w: 0 },
     stats: { v: "$209", mc: "$2.5K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -187,7 +187,7 @@ export const NEW_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "23s" }, { f: 180, v: "23s" }, { f: 300, v: "24s" }],
     icons: ["link", "clock", "search"], people: "3", bell: "5,782",
     pct1: { v: "11%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "5mo",
-    address: "5kQ...pump", bar: { color: COLORS.greenBar, w: 30 },
+    address: "5kQ...pump", bar: { color: COLORS.greenBar, w: 6 },
     stats: { v: "$2.8K", mc: "$3.0K", mcColor: COLORS.teal, f: "0.240", chip1: "4.30", chip2: "8.00" },
   },
   {
@@ -195,7 +195,7 @@ export const NEW_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "23s" }, { f: 180, v: "23s" }, { f: 300, v: "24s" }],
     icons: ["link", "search"], people: "2", bell: "59",
     pct1: { v: "0%", color: G }, pct2: { v: "0%", color: G }, pct2Suffix: "7mo",
-    address: "CTe...pump", bar: { color: COLORS.greenBar, w: 12 },
+    address: "CTe...pump", bar: { color: COLORS.greenBar, w: 0 },
     stats: { v: "$12", mc: "$2.3K", mcColor: COLORS.teal, f: "0", chip1: "4.30", chip2: "8.00" },
   },
 ];
@@ -207,7 +207,7 @@ export const SOON_CARDS: TrenchCard[] = [
     icons: ["feather", "peopleGroup", "link", "search"], people: "83", bell: "79",
     handle: { text: "18.8k", color: COLORS.yellowNum },
     pct1: { v: "19%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "9mo",
-    address: "BCo...pump", bar: { color: COLORS.greenBar, w: 44 },
+    address: "BCo...pump", bar: { color: COLORS.greenBar, w: 45 },
     stats: { v: "$15K", mc: "$7.9K", mcColor: COLORS.teal, f: "3.16", chip1: "4.30", chip2: "8.20" },
   },
   {
@@ -216,7 +216,7 @@ export const SOON_CARDS: TrenchCard[] = [
     icons: ["personYellow", "globe", "link", "search"], people: "34", bell: "1",
     handle: { text: "@funbaldi", color: "#AEB1B7", num: "70" },
     pct1: { v: "34%", color: R }, pct2: { v: "0%", color: G }, pct2Suffix: "~ 16m",
-    address: "vRp...pump", bar: { color: COLORS.teal, w: 30 },
+    address: "vRp...pump", bar: { color: COLORS.teal, w: 0 },
     stats: { v: "$2.6K", mc: "$6.9K", mcColor: COLORS.teal, f: "0.021", chip1: "4.30", chip2: "8.20" },
   },
 ];
@@ -228,7 +228,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["fire", "link", "clock", "search"], people: "18", bell: "4,024",
     handle: { text: "@shibes031", color: "#AEB1B7", num: "115" },
     pct1: { v: "12%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "1mo",
-    address: "8pU...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "8pU...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$66K", mc: "$1.9K", mcColor: COLORS.teal, f: "7.42", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -236,7 +236,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "7m" }, { f: 180, v: "7m" }, { f: 300, v: "7m" }],
     icons: ["globe", "telegram", "link", "search"], people: "255", bell: "1",
     pct1: { v: "10%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "30m",
-    address: "R6a...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "R6a...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$64K", mc: "$44K", mcColor: COLORS.yellow, f: "1.07", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -245,7 +245,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["featherRed", "link", "search"], people: "1,429", bell: "1",
     handle: { text: "@elonmusk", color: "#AEB1B7", num: "234.7m" },
     pct1: { v: "25%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "2d",
-    address: "rAc...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "rAc...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$301K", mc: "$98K", mcColor: COLORS.yellow, f: "0.855", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -253,7 +253,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     ages: [{ f: 60, v: "9m" }, { f: 180, v: "9m" }, { f: 300, v: "9m" }],
     icons: ["link", "search"], people: "707", bell: "7,330",
     pct1: { v: "21%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "7mo",
-    address: "E1X...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "E1X...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$422K", mc: "$182K", mcColor: COLORS.greenMc, f: "46.11", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -262,7 +262,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     ageColor: "#8286C8",
     icons: ["link", "atCircle", "search"], people: "2,158", bell: "29",
     pct1: { v: "14%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "2mo",
-    address: "Hdv...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "Hdv...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$2.0M", mc: "$624K", mcColor: COLORS.greenMc, f: "160.98", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -272,7 +272,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["peopleGroup", "link", "clock", "search"], people: "52", bell: "1",
     handle: { text: "by @saidelmasew", color: COLORS.cyan, num: "39", num2: "22", num2Color: "#D84B4B" },
     pct1: { v: "7%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "22m",
-    address: "4Yc...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "4Yc...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$75K", mc: "$1.7K", mcColor: COLORS.teal, f: "1.84", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -284,7 +284,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["peopleGroup", "globe", "link", "search"], people: "55", bell: "1,430",
     handle: { text: "by @Gladey777", color: COLORS.cyan, num: "1.9k", num2: "3009", num2Color: "#D84B4B" },
     pct1: { v: "12%", color: G }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "6mo",
-    address: "8oG...aTbp", bar: { color: COLORS.greenBar, w: 52 },
+    address: "8oG...aTbp", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$87K", mc: "$2.0K", mcColor: COLORS.teal, f: "11.52", chip1: "4.30", chip2: "15.00" },
   },
   {
@@ -295,7 +295,7 @@ export const MIGRATED_CARDS: TrenchCard[] = [
     icons: ["person", "link", "search"], people: "32", bell: "22",
     handle: { text: "@taxrefundmeme", color: "#AEB1B7" },
     pct1: { v: "19%", color: R }, pct2: { v: "DS", color: COLORS.dsBlue }, pct2Suffix: "17d",
-    address: "71G...pump", bar: { color: COLORS.greenBar, w: 52 },
+    address: "71G...pump", bar: { color: COLORS.greenBar, w: 62 },
     stats: { v: "$2.9K", mc: "$57K", mcColor: COLORS.yellow, f: "0.268", chip1: "4.30", chip2: "15.00" },
   },
 ];
@@ -347,8 +347,10 @@ export const ZOOM_TABLE: ZoomKey[] = [
   { f: 70, s: 1.3389, tx: 17.6, ty: 2.2 },
   { f: 75, s: 1.3494, tx: 18.3, ty: 2.0 },
   { f: 85, s: 1.362, tx: 18.6, ty: 2.4 },
-  { f: 100, s: 1.366, tx: 18.8, ty: 2.6 },
-  { f: 145, s: 1.366, tx: 18.8, ty: 2.6 },
+  // plateau refit by direct SSIM affine search against plates (r4):
+  { f: 90, s: 1.369, tx: 17.7, ty: 2.5 },
+  { f: 120, s: 1.373, tx: 17.8, ty: 2.6 },
+  { f: 150, s: 1.3655, tx: 18.7, ty: 2.5 },
   { f: 160, s: 1.358, tx: 18.5, ty: 2.3 },
   { f: 170, s: 1.3459, tx: 17.1, ty: 1.9 },
   { f: 175, s: 1.3354, tx: 16.8, ty: 2.1 },
@@ -364,13 +366,14 @@ export const ZOOM_TABLE: ZoomKey[] = [
   { f: 225, s: 1.037, tx: 1.7, ty: 0.3 },
   { f: 230, s: 1.0257, tx: 1.6, ty: 0.6 },
   { f: 235, s: 1.0175, tx: 1.2, ty: 0.5 },
-  { f: 240, s: 1.0121, tx: 0.6, ty: -0.4 },
-  { f: 245, s: 1.0078, tx: 0.4, ty: 0.1 },
-  { f: 250, s: 1.0047, tx: 0.1, ty: -0.5 },
-  { f: 255, s: 1.0023, tx: 0.3, ty: -0.3 },
-  { f: 260, s: 1.0012, tx: 0, ty: 0 },
-  { f: 270, s: 1.0, tx: 0, ty: 0 },
-  { f: 332, s: 1.0, tx: 0, ty: 0 },
+  // tail ty refit by SSIM affine search (plates settle ~1px lower):
+  { f: 240, s: 1.0121, tx: 0.6, ty: 0.6 },
+  { f: 245, s: 1.0078, tx: 0.4, ty: 0.7 },
+  { f: 250, s: 1.0047, tx: 0.1, ty: 0.8 },
+  { f: 255, s: 1.0023, tx: 0.3, ty: 0.9 },
+  { f: 260, s: 1.0012, tx: 0, ty: 1.0 },
+  { f: 270, s: 1.0, tx: 0, ty: 1.0 },
+  { f: 332, s: 1.0, tx: 0, ty: 1.0 },
 ];
 
 export const ageAt = (samples: AgeSample[], frame: number): string => {

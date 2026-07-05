@@ -376,7 +376,9 @@ const Row: React.FC<{ gap?: number; style?: React.CSSProperties; children: React
 // ---------------------------------------------------------------------------
 
 type CardGeom = {
-  x: number; // panel content left (avatar column)
+  x: number; // avatar Img position == the plate crop origin of the av-*.png assets
+  avShift: number; // px the crop missed on the avatar's left (true box starts x-avShift)
+  barX: number; // progress bar left, panel-local (measured f0300)
   textX: number; // name column
   box1X: number;
   box2X: number;
@@ -395,37 +397,28 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
   const age = ageAt(card.ages, frame);
   return (
     <div style={{ position: "absolute", left: 0, top: y, width: "100%", height: CARD_H }}>
-      {/* avatar */}
+      {/* avatar — the asset IS a plate crop taken at exactly this position, so no
+          borderRadius (corners are baked) and no drawn pump badge (baked too).
+          Where the crop missed the avatar's left strip (Soon/Migrated), an
+          underlay copy shifted left approximates the missing columns. */}
       <div style={{ position: "absolute", left: geom.x, top: 11, width: 52, height: 52 }}>
+        {geom.avShift > 0 ? (
+          <Img
+            src={staticFile(`realist-assets/ui/${card.avatar}`)}
+            style={{ position: "absolute", left: -geom.avShift, top: 0, width: 52, height: 52, display: "block" }}
+          />
+        ) : null}
         <Img
           src={staticFile(`realist-assets/ui/${card.avatar}`)}
-          style={{ width: 52, height: 52, borderRadius: 6, display: "block" }}
+          style={{ position: "absolute", left: 0, top: 0, width: 52, height: 52, display: "block" }}
         />
-        {/* pump badge */}
-        <div
-          style={{
-            position: "absolute",
-            right: -5,
-            bottom: -5,
-            width: 17,
-            height: 17,
-            borderRadius: 9,
-            background: "#10231E",
-            border: `1.5px solid #2E5A4C`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Glyph kind="pill" size={10} color="#57B58E" />
-        </div>
       </div>
       {/* progress bar + address */}
-      <div style={{ position: "absolute", left: geom.x - 11, top: 68, width: 64, height: 3, background: "#23262E", borderRadius: 2 }}>
+      <div style={{ position: "absolute", left: geom.barX, top: 71, width: 62, height: 3, background: "#23262E", borderRadius: 2 }}>
         <div style={{ width: card.bar.w, height: 3, background: card.bar.color, borderRadius: 2 }} />
       </div>
-      <div style={{ position: "absolute", left: geom.x - 11, top: 76 }}>
-        <T size={12} color={C.addr}>
+      <div style={{ position: "absolute", left: geom.barX + 3, top: 79 }}>
+        <T size={11} color={C.addr}>
           {card.address}
         </T>
       </div>
@@ -486,7 +479,7 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
       </Row>
       {/* handle row */}
       {card.handle ? (
-        <Row gap={6} style={{ position: "absolute", left: geom.textX, top: card.sub2 ? 60 : 50 }}>
+        <Row gap={6} style={{ position: "absolute", left: geom.textX, top: card.sub2 ? 62 : 52 }}>
           <T size={12} color={card.handle.color} weight={600}>
             {card.handle.text}
           </T>
@@ -535,19 +528,20 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
           ))}
         </div>
       ) : null}
-      {/* stat box 1 (empty, bright border) */}
+      {/* stat box 1 (empty, bright border) — plate f0300: outer y198..305, so
+          card-local top 0, outer height 107 (105 + 2px borders) */}
       <div
         style={{
           position: "absolute",
           left: geom.box1X,
-          top: 4,
+          top: 0,
           width: geom.boxW1,
-          height: 96,
+          height: 105,
           borderRadius: 8,
           border: `1px solid ${C.box1Border}`,
         }}
       >
-        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 8 }}>
+        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 12 }}>
           <Glyph kind="bolt" size={11} color={C.textBright} />
           <T size={12} color={C.textBright} weight={700}>
             {card.stats.chip1}
@@ -559,15 +553,15 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
         style={{
           position: "absolute",
           left: geom.box2X,
-          top: 4,
+          top: 0,
           width: geom.boxW2,
-          height: 96,
+          height: 105,
           borderRadius: 8,
           border: `1px solid ${C.box2Border}`,
           background: C.box2Bg,
         }}
       >
-        <Row gap={4} style={{ position: "absolute", right: 8, top: 8 }}>
+        <Row gap={4} style={{ position: "absolute", right: 8, top: 5 }}>
           <T size={11} color={C.label} weight={500}>
             {STAT_LABELS.v}
           </T>
@@ -590,7 +584,7 @@ const TrenchCardRow: React.FC<{ card: TrenchCard; y: number; geom: CardGeom; fra
             {card.stats.f}
           </T>
         </Row>
-        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 8 }}>
+        <Row gap={3} style={{ position: "absolute", right: 8, bottom: 12 }}>
           <Glyph kind="bolt" size={11} color={C.textBright} />
           <T size={12} color={C.textBright} weight={700}>
             {card.stats.chip2}
@@ -790,9 +784,10 @@ const zoomAt = (frame: number) => {
 };
 
 // panel-local coordinates (panel origins: New x=12, Soon x=650, Migrated x=1289)
-const NEW_GEOM: CardGeom = { x: 15, textX: 79, box1X: 328, box2X: 470, boxW1: 139, boxW2: 139 };
-const SOON_GEOM: CardGeom = { x: 25, textX: 82, box1X: 336, box2X: 478, boxW1: 138, boxW2: 140 };
-const MIG_GEOM: CardGeom = { x: 24, textX: 81, box1X: 329, box2X: 469, boxW1: 137, boxW2: 140 };
+// box edges + bars re-measured on plate f0300 (luma edge profiles)
+const NEW_GEOM: CardGeom = { x: 15, avShift: 0, barX: 10, textX: 79, box1X: 328, box2X: 470, boxW1: 136, boxW2: 137 };
+const SOON_GEOM: CardGeom = { x: 25, avShift: 9, barX: 12, textX: 82, box1X: 334, box2X: 479, boxW1: 139, boxW2: 140 };
+const MIG_GEOM: CardGeom = { x: 24, avShift: 8, barX: 10, textX: 81, box1X: 329, box2X: 471, boxW1: 136, boxW2: 137 };
 
 export const TrenchesScreen: React.FC<{ frame: number }> = ({ frame }) => {
   const { s, tx, ty } = zoomAt(frame);
