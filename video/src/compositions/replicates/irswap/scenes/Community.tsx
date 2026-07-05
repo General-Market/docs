@@ -309,6 +309,15 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [5220, 2.7, -21.8, 0.938, 0.941],
     [5230, -6.8, -45.8, 0.799, 0.868],
     [5240, -10.9, -60.4, 0.708, 0.786],
+    // r7: rows extended 5245-5260 — the ref bank keeps sinking after the
+    // r6 rows end (its base HOLDS at screen y≈288 on the sheet edge while
+    // the rigid projection keeps rising: residual dv +8→+26 px measured
+    // ref-vs-render at 5f steps; red-mask bbox bottom-centers, converted
+    // through the camera Jacobian on top of the 5240 row).
+    [5245, 0.0, -77.0, 0.727, 0.742],
+    [5250, 0.0, -92.1, 0.708, 0.738],
+    [5255, -6.8, -109.2, 0.708, 0.734],
+    [5260, -5.2, -128.0, 0.708, 0.73],
   ],
   // house: dx/dy only (the eye-phase blue-mask width is side-face
   // confounded, so scale stays 1; left-edge + base tracked instead).
@@ -324,6 +333,26 @@ const ICON_FIX: Record<string, [number, number, number, number, number][]> = {
     [4965, 9.5, -1.2, 1, 1],
     [4980, 5.2, -0.6, 1, 1],
     [4995, 0, 0, 1, 1],
+    // r7 pull-back rows (the STEP-0 map's #1 mass, worst diff cells 45-47
+    // at 5230): through the pull-back the ref house shrinks and drops far
+    // faster than the rigid world projects — by 5240 the ref draws it 70px
+    // wide where ours renders 108 (ratio 0.65) and 34px lower. Same
+    // grammar as the r6 bank rows. Measured every 5f (blue-mask bboxes
+    // ref-vs-render, bottom-center matched, world deltas via the camera
+    // Jacobian at the eye base; dx/kx median-3 against scan noise).
+    // Identity held through the eye hold (eye rows lost their gates in
+    // r6); the ramp starts only at 5205 as the pull-back begins.
+    [5205, 0, 0, 1, 1],
+    [5215, 25.9, -7.8, 0.869, 0.963],
+    [5220, 59.6, -13.9, 0.869, 0.868],
+    [5225, 62.2, -27.4, 0.862, 0.789],
+    [5230, 78.7, -43.5, 0.862, 0.712],
+    [5235, 94.3, -59.1, 0.831, 0.656],
+    [5240, 123.7, -68.9, 0.648, 0.625],
+    [5245, 131.6, -83.9, 0.633, 0.585],
+    [5250, 140.3, -95.6, 0.593, 0.54],
+    [5255, 140.3, -117.8, 0.585, 0.521],
+    [5260, 136.3, -114.1, 0.585, 0.533],
   ],
 };
 type IconFix = { dx: number; dy: number; kx: number; ky: number };
