@@ -898,9 +898,17 @@ export const ohlcTable: Sample<Ohlc | null>[] = T<Ohlc | null>([
   [1378, oh("370K", "397K", "261K", "264K", "-106K", "-28.65%", false)], // dp computed
   [1438, oh("242K", "286K", "238K", "268K", "26.4K", "+10.89%", true)],
   [1439, oh("242K", "286K", "238K", "278K", "36.9K", "+15.25%", true)], // dp computed
+  // r4: probe-frame reads. f1470 candle flipped red (H295 L222 C226);
+  // f1500 verified exact as already tabled; f1540/1580/1590 re-read
+  // (dp computed as d/O). From ~f1598 the wide failure toast covers the
+  // readout, so the 1590 row holds under it.
+  [1470, oh("242K", "295K", "222K", "226K", "-16.5K", "-6.82%", false)], // dp computed
   [1498, oh("220K", "238K", "200K", "235K", "15K", "+6.82%", true)], // dp computed
   [1500, oh("220K", "244K", "200K", "243K", "23K", "+10.45%", true)], // dp computed
+  [1540, oh("212K", "219K", "209K", "209K", "-2.85K", "-1.34%", false)], // dp computed
   [1558, oh("171K", "167K", "167K", "167K", "-4.25K", "-2.49%", false)],
+  [1580, oh("171K", "180K", "134K", "178K", "7.39K", "+4.32%", true)], // dp computed
+  [1590, oh("171K", "210K", "134K", "209K", "37.9K", "+22.15%", true)], // d+dp computed
 ]);
 
 // ─── Popup: buy total, sell row, preset flip ─────────────────────────
@@ -918,7 +926,7 @@ export const buyTotalTable: Sample<string>[] = T([
 [1214, "615.7"], [1235, "640"], [1271, "651"], [1290, "662.2"],
 [1311, "672.8"], [1338, "684.2"], [1359, "693.7"], [1380, "702.2"],
 [1383, "697.6"], [1386, "702.2"], [1403, "713.2"], [1432, "718.1"],
-[1438, "727.4"], [1456, "738.6"], [1465, "748.4"], [1487, "757.6"],
+[1438, "727.4"], [1456, "738.6"], [1465, "743.8"], [1478, "748.4"], [1487, "757.6"],
 [1499, "762.3"], [1514, "769.7"], [1568, "788.1"], [1581, "800.2"],
 ]);
 export type SellRow = { tokens: string; usd: string; sol: string };
