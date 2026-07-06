@@ -48,7 +48,7 @@ Rebuild a reference motion-design video scene-by-scene, then score the replica a
 
 Go deep — per-element detection, real motion trajectories, typography, SFX. A CSS approximation of a 3D move is not a replica.
 
-**Improving an existing replica** (iterating a built `*-Replicate` toward a score target): read `.claude/rules/replicate-method.md` FIRST — the rounds system, the judge and its known traps, rolling-window triage, the measurement doctrine, and eight structural lessons (camera orbits, per-frame fitting, rigid-world rule, ink placement, ground continuity, real components). Runtime state for live tracks is in `.claude/rounds/`.
+**Improving an existing replica** (iterating a built `*-Replicate` toward a score target): read `.claude/rules/replicate-method.md` FIRST — the rounds system, the judge and its known traps, rolling-window triage, the measurement doctrine, and sixteen structural lessons. For 3D/pose/camera/ink work, the instrument bench is `.claude/rules/replicate-craft-3d.md`. Runtime state for live tracks is in `.claude/rounds/`.
 
 ## Style (governing)
 
@@ -76,6 +76,22 @@ Go deep — per-element detection, real motion trajectories, typography, SFX. A 
 - **Captions** `@remotion/captions` — karaoke layer in `anticheat-edit/captions.ts` + `CaptionLayer.tsx`.
 - **Transitions** `<TransitionSeries>`: `fade/slide/wipe/flip/clockWipe` or custom GL.
 - **Audio** `<Audio>` + `getAudioDurationInSeconds()` · **Layout** `@remotion/layout-utils` (`measureText`) · **Player** `<Player>`.
+
+## Engine shelf (reuse before building)
+
+Machinery that already exists — check here before writing a new engine.
+
+- **FX kit** `anticheat/fx/` — Ghosttype, Letterglow, Sparkle, Specular, Volumetrics (2D light rays, no WebGL), Wash. All cheap CSS/SVG, self-contained. `anticheat/vibe.tsx` — IdleZoom (imperceptible scale ramp + breath) + RevealChars.
+- **Idle camera** — `idleCamera()` exported from `anticheat-edit/AntiCheatLayout.tsx`: hash-seeded poses snapped to music beats, spring-eased crossfades; cutout beats must ride the SAME transform as the base video or they ghost.
+- **Device b-roll** — `lib/DeviceBroll.tsx` / `lib/Phone3D.tsx`: 3D iPhone/MacBook with video on screen (mesh found by material fingerprint; needs `public/models/tabletop_macbook_iphone.opt.glb`).
+- **Small libs** — `lib/tilt3d.ts` (frame-driven 3D float), `lib/preloadOnce.ts` (HMR-safe R3F preload), `lib/useGsapTimeline.ts` (GSAP bridge, DOM + headless-proxy modes), `lib/utils/random.ts` (seeded PRNG family), `lib/utils/easing.ts` (named spring configs). House `EASE` set = `common/easing.ts`.
+- **Shorts factory** — `src/lib/`: caption presets (`components/Captions/`), audio engine + `useMusicAnalysis`/`useBeatSync`, and `templates/compileEffectEvents.ts` compiling music analysis → typed ScreenShake/ZoomPulse/FlashImpact/EmojiRain/SpeedLines event tracks.
+- **Scene engine** — `src/engine/`: data-driven 3D scenes (SceneDefinition → renderer), 8 additive camera behaviors, lighting/weather presets, Mixamo/GLB character registry; `engine/charts/` pure-canvas chart renderers.
+- **Chart engines** — realist `ui/chart-input.ts` (data-first live-chart contract + dataset registry over lightweight-charts, deterministic per-frame), `retail-pnl/ChartEngine.tsx` (SVG snapshot-morph, symlog), `finance-charts/` primitives + tokens.
+- **Walkthrough engine** — `compositions/walkthrough/`: manifest-driven fake screen recordings (beats over captured screens; laws: affordance-before-click, per-frame page resolve, reload veil only on real navigation, TypingField masks baked placeholders).
+- **WebGL picks gallery** — `backgrounds/webgl-picks/`: deterministic Remotion ports of public demos incl. `OrganicMotion.tsx` (15 pulse equations). Ports of others' work — check provenance/license before publishing any of it.
+- **Banding-kill reference** — `replicates/morpho/`: baked gradients + deterministic dither + grain locked to `floor(frame)` under CameraMotionBlur (replicate-method lesson 16).
+- **Beat-sync grammar** — `docs/crx-anoma-beat-sync.md`: line-starts on beats/8ths, cascades on the 16th grid, line-enders on snares; UI causes on beats, effects 1-2f later; charts finish on a snare and REST before exit. Bar-grid pacing for reels lives in `docs/GMStyle.md` §13.
 
 ## Talking-head pipeline (`scripts/talking-head-edit/`, see `PROTOCOL.md`)
 

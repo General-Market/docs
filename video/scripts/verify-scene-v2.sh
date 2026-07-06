@@ -91,8 +91,12 @@ for i in $(seq 0 $((NUM_KEYFRAMES - 1))); do
   ffmpeg -i "$ATTEMPT" -ss "$T" -frames:v 1 "$WORK/att_kf_${i}.png" -y 2>/dev/null || continue
 
   if [ -f "$WORK/ref_kf_${i}.png" ] && [ -f "$WORK/att_kf_${i}.png" ]; then
-    KF=$(magick compare -metric SSIM "$WORK/ref_kf_${i}.png" "$WORK/att_kf_${i}.png" /dev/null 2>&1 | head -1 | awk '{print $1}')
-    KF_SCORES+=("$KF")
+    # ffmpeg SSIM, not ImageMagick compare — IM 7.x emits raw DISTORTION
+    # (identical = 0), which read as similarity poisons the average
+    # (replicate-method.md §The judge).
+    KF=$(ffmpeg -nostdin -i "$WORK/ref_kf_${i}.png" -i "$WORK/att_kf_${i}.png" -lavfi ssim -f null - 2>&1 \
+      | grep "All:" | sed 's/.*All://' | awk '{print $1}' || echo "0")
+    if [ -n "$KF" ]; then KF_SCORES+=("$KF"); fi
   fi
 done
 
