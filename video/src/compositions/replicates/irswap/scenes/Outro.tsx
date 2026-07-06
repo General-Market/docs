@@ -291,80 +291,157 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   c2.letterSpacing = "0px";
 };
 
-// front of the flipping page = the dashboard's LEFT page (grey plot
-// rects, blue strips, teal sticky, faint grid) — what the camera sees
-// while the page rises.
+// front of the flipping page = the dashboard's LEFT page. r9: redrawn to
+// the MEASURED layout (work/r9/artspec.json — pages unwarped through the
+// solved poses at f5293-5297, ECC-registered median, elements traced).
+// Texture convention == artspec: x 0..578 = local -wP..+wP, y 0 = FREE
+// edge, y 360 = fold. Colors sampled from the raw anchor unwarp.
 const drawPageArt = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
-  ctx.fillStyle = "#FBFBFA";
-  ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = "#D8D8D4";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, w - 2, h - 2);
-  // faint horizontal rules
-  ctx.strokeStyle = "#E7E7E4";
-  ctx.lineWidth = 1.2;
-  for (let i = 1; i < 8; i++) {
+  const sx = w / 578;
+  const sy = h / 360;
+  const P = (pts: [number, number][]) => {
     ctx.beginPath();
-    ctx.moveTo(w * 0.08, (h * i) / 8);
-    ctx.lineTo(w * 0.92, (h * i) / 8);
+    ctx.moveTo(pts[0][0] * sx, pts[0][1] * sy);
+    for (const [x, y] of pts.slice(1)) ctx.lineTo(x * sx, y * sy);
+    ctx.closePath();
+  };
+  ctx.fillStyle = "#FDFDFD";
+  ctx.fillRect(0, 0, w, h);
+  // (no ruled lines: the ref's rising face is clean white — the 'rules'
+  // in early reads were the right page's hatch)
+  // hand-drawn page outline (soft wash strokes; the drawn page is WIDER
+  // than the model rect — edges at px -52/+600 clip off-canvas, as in ref)
+  const border = (
+    p0: [number, number], p1: [number, number], t: number, col: string,
+  ) => {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = t * 0.5 * sy;
+    ctx.lineCap = "round";
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(p0[0] * sx, p0[1] * sy);
+    ctx.lineTo(p1[0] * sx, p1[1] * sy);
     ctx.stroke();
-  }
-  // plot cluster
-  ctx.fillStyle = "#C9C9C9";
-  ctx.fillRect(w * 0.12, h * 0.1, w * 0.16, h * 0.16);
-  ctx.fillStyle = "#D0D0D0";
-  ctx.fillRect(w * 0.3, h * 0.12, w * 0.17, h * 0.14);
-  ctx.fillStyle = "#CFEAF3";
-  ctx.fillRect(w * 0.31, h * 0.3, w * 0.44, h * 0.06);
-  ctx.fillStyle = "#D8EEF5";
-  ctx.fillRect(w * 0.32, h * 0.39, w * 0.43, h * 0.06);
-  ctx.fillStyle = "#CBE9EF";
-  ctx.fillRect(w * 0.14, h * 0.55, w * 0.3, h * 0.2);
-  // teal dog-eared sticky
-  ctx.fillStyle = "#BFE0E4";
-  ctx.fillRect(w * 0.62, h * 0.62, w * 0.16, h * 0.16);
-  ctx.fillStyle = "#A9CDD2";
-  ctx.beginPath();
-  ctx.moveTo(w * 0.78, h * 0.78);
-  ctx.lineTo(w * 0.78, h * 0.72);
-  ctx.lineTo(w * 0.72, h * 0.78);
-  ctx.closePath();
+    ctx.globalAlpha = 1;
+  };
+  border([-30, -0.7], [619, -10.3], 31.4, "rgb(217,217,217)");
+  border([90, 343.6], [579, 345.9], 38.2, "rgb(199,198,199)");
+  border([-39.9, 10], [-45.9, 319], 23.5, "rgb(204,214,215)");
+  border([601.9, 10], [611.9, 319], 48.1, "rgb(231,231,231)");
+  // grey plot panel (measured quad; upper block reads darker in the ref)
+  ctx.fillStyle = "rgb(213,213,213)";
+  P([[387, 3], [600, 19], [584, 243], [371, 228]]);
   ctx.fill();
+  ctx.fillStyle = "rgb(202,202,202)";
+  P([[433, 60], [598, 73], [589, 188], [428, 176]]); // darker top step (est. off unwarp)
+  ctx.fill();
+  // tall blue strip
+  ctx.fillStyle = "rgb(216,238,245)";
+  P([[400, 149], [380, 149], [370, 178], [352, 296], [359, 314], [375, 311],
+     [381, 301], [387, 248], [407, 197], [409, 160]]);
+  ctx.fill();
+  // blue rect at the fold-side corner
+  ctx.fillStyle = "rgb(217,237,243)";
+  P([[516, 249], [510, 243], [485, 253], [464, 247], [462, 254], [442, 261],
+     [431, 290], [433, 315], [478, 319], [494, 314], [511, 295], [516, 274]]);
+  ctx.fill();
+  // teal sticky with the notched left edge (straddles the model page edge)
+  ctx.fillStyle = "rgb(208,235,238)";
+  ctx.strokeStyle = "rgb(196,220,223)";
+  ctx.lineWidth = 1.6;
+  P([[-28, 27], [-35, 41], [-37, 138], [-19, 138], [-19, 130], [23, 135],
+     [33, 127], [43, 35], [25, 26]]);
+  ctx.fill();
+  ctx.stroke();
 };
 
-// the RIGHT page: red squiggle over faint vertical gridlines + dashed
-// margin (same art family as floorPaper)
+// the RIGHT page: r9 redrawn to artspec — hand-drawn red squiggle leaning
+// from the fold toward the free edge, pale dashed companion to its left,
+// crosshatch block at the fold corner, soft borders. Texture: y0 = FOLD.
+const SQUIGGLE: [number, number][] = [
+  [438.1, 22], [430, 36], [434.8, 51], [408.9, 66], [402.5, 81],
+  [407.6, 95], [405.8, 110], [391.6, 125], [356.3, 140], [345.8, 154],
+  [359.7, 169], [351.6, 184], [331.1, 199], [328.8, 213], [337.1, 228],
+  [316.3, 243], [306.8, 258], [302.5, 272], [307.3, 287], [312.4, 302],
+  [308.8, 317], [316.5, 332],
+];
 const drawRightPage = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
-  ctx.fillStyle = "#FCFCFB";
+  const sx = w / 578;
+  const sy = h / 360;
+  ctx.fillStyle = "#FDFDFD";
   ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = "#D8D8D4";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, w - 2, h - 2);
-  ctx.strokeStyle = "#E3E3E0";
-  ctx.lineWidth = 1.2;
-  for (let i = 0; i < 12; i++) {
-    const x = w * 0.12 + i * w * 0.055;
+  // crosshatch block at the fold corner (the ref's 'grid' — estimated
+  // angles/spacing, artspec hatch_region)
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(150 * sx, 0);
+  ctx.lineTo(150 * sx, 190 * sy);
+  ctx.lineTo(115 * sx, 230 * sy);
+  ctx.lineTo(0, 230 * sy);
+  ctx.closePath();
+  ctx.clip();
+  ctx.strokeStyle = "rgba(90,90,90,0.13)";
+  ctx.lineWidth = 1;
+  for (const ang of [2.9, 38.1]) {
+    const a = (ang * Math.PI) / 180;
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    for (let k = -12; k < 24; k++) {
+      const ox = -dy * k * 24 * sy;
+      const oy = dx * k * 24 * sy;
+      ctx.beginPath();
+      ctx.moveTo(ox - dx * 600, oy - dy * 600);
+      ctx.lineTo(ox + dx * 600, oy + dy * 600);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+  // soft borders (pale washes — the measured thicknesses are blur widths;
+  // draw at ~1/3 with low alpha so they read like the ref's soft edges)
+  const border = (
+    p0: [number, number], p1: [number, number], t: number, col: string,
+  ) => {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = t * 0.35 * sy;
+    ctx.lineCap = "round";
+    ctx.globalAlpha = 0.55;
     ctx.beginPath();
-    ctx.moveTo(x, h * 0.12);
-    ctx.lineTo(x, h * 0.88);
+    ctx.moveTo(p0[0] * sx, p0[1] * sy);
+    ctx.lineTo(p1[0] * sx, p1[1] * sy);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  border([40, -14], [549, -7], 31.2, "rgb(196,195,196)"); // fold spine (mostly off-canvas)
+  border([554.9, -5], [560.6, 359], 42.1, "rgb(224,224,225)");
+  border([170, 369.9], [539, 372.3], 36.1, "rgb(225,225,225)");
+  // the squiggle: soft halo pass under the 4px core (measured points)
+  for (const [lw, col] of [[9, "rgba(239,209,210,0.55)"], [4, "#D98A95"]] as
+       [number, string][]) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lw * Math.min(sx, sy);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(SQUIGGLE[0][0] * sx, SQUIGGLE[0][1] * sy);
+    for (let i = 1; i < SQUIGGLE.length - 1; i++) {
+      const xc = ((SQUIGGLE[i][0] + SQUIGGLE[i + 1][0]) / 2) * sx;
+      const yc = ((SQUIGGLE[i][1] + SQUIGGLE[i + 1][1]) / 2) * sy;
+      ctx.quadraticCurveTo(SQUIGGLE[i][0] * sx, SQUIGGLE[i][1] * sy, xc, yc);
+    }
     ctx.stroke();
   }
-  const pts: [number, number][] = [
-    [0.1, 0.3], [0.2, 0.45], [0.3, 0.38], [0.42, 0.55], [0.52, 0.48],
-    [0.63, 0.62], [0.72, 0.56], [0.82, 0.7], [0.9, 0.78],
-  ];
-  ctx.strokeStyle = "#D98A95";
-  ctx.lineWidth = 2.6;
+  // dashed companion: parallel, offset -14.3px toward -x, dash ~9/gap ~21
+  ctx.strokeStyle = "rgb(236,206,209)";
+  ctx.lineWidth = 2.6 * Math.min(sx, sy);
+  ctx.setLineDash([9 * sy, 21.5 * sy]);
   ctx.beginPath();
-  ctx.moveTo(w * pts[0][0], h * pts[0][1]);
-  for (const [u, v] of pts.slice(1)) ctx.lineTo(w * u, h * v);
-  ctx.stroke();
-  ctx.setLineDash([6, 6]);
-  ctx.strokeStyle = "#DBA4A8";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.94, h * 0.1);
-  ctx.lineTo(w * 0.94, h * 0.88);
+  ctx.moveTo((SQUIGGLE[0][0] - 14.3) * sx, SQUIGGLE[0][1] * sy);
+  for (let i = 1; i < SQUIGGLE.length - 1; i++) {
+    const xc = ((SQUIGGLE[i][0] + SQUIGGLE[i + 1][0]) / 2 - 14.3) * sx;
+    const yc = ((SQUIGGLE[i][1] + SQUIGGLE[i + 1][1]) / 2) * sy;
+    ctx.quadraticCurveTo((SQUIGGLE[i][0] - 14.3) * sx, SQUIGGLE[i][1] * sy, xc, yc);
+  }
   ctx.stroke();
   ctx.setLineDash([]);
 };
