@@ -41,7 +41,8 @@ Two axes, both owner-mandated:
 5. **One scene means the ground never empties.** Audit every region handoff ±20f against the ref: does the ref fade the floor, or does artwork persist under the camera? Kill fades the ref doesn't have; ride world slides pinned to scanned screen tracks.
 6. **Baked footage is not a replica.** Plates/JPEGs are the measurement reference; the composition mounts DOM/3D only, all copy in editable data modules. Gotcha: JPEG plates carry a ~0.003 black floor — derive fade curves from the VIDEO, not the plates, or "black" frames leak.
 7. **Hyper-realism: use the real component.** If the reference embeds a known engine (TradingView chart → `lightweight-charts`), adopt it and drive it deterministically (animations off, state set per frame, delayRender until painted) instead of hand-drawing an imitation.
-8. **Asymptote honestly.** When a ceiling is claimed, demand a classified per-keyframe verdict: fixable / reference-self-contradiction / hand-drawn texture. Recompute after judge fixes — one inflated judge shifted the ceiling estimate by a point.
+8. **SSIM is pose-blind on low-contrast content.** A white page 70° wrong on a white ground costs the metric almost nothing and the eye everything — an entire broken end scene survived eight rounds of SSIM gates. Where the content is low-contrast (white-on-white, faint ink), gate by GEOMETRY: track the element's quad/corners in the ref per frame, solve the pose, and require corner-distance (< ~8px mean), plus an eyeball filmstrip. SSIM may be recorded there but can neither approve nor veto.
+9. **Asymptote honestly.** When a ceiling is claimed, demand a classified per-keyframe verdict: fixable / reference-self-contradiction / hand-drawn texture. Recompute after judge fixes — one inflated judge shifted the ceiling estimate by a point.
 
 ## Owner feedback
 
