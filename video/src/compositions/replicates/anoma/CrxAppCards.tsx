@@ -1,12 +1,13 @@
 import React from "react";
 import { AbsoluteFill, Img, interpolate, staticFile } from "remotion";
-import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
+import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 
 // ═══════════════════════════════════════════════════════════════
 // CRX in-app mock cards for the CRX-Anoma cut. Every card is drawn
 // in code from the app's own design system, hex-resolved from
-// ui/frontend (globals.css + components/desk/ui.tsx): Inter, teal
+// ui/frontend (globals.css + components/desk/ui.tsx): Diatype (the
+// landing's brand face, replacing Inter across the whole cut), teal
 // #0fb6ab, the SOFT_CARD surface, sunken wells, hairline dividers,
 // brass for the lock moment, the app's own flag files. No invented
 // shadows, no gradients — if app.crxfx.com doesn't render it, the
@@ -19,11 +20,6 @@ import { clamp } from "./AnomaComposition";
 // moves like a real one — a cursor causes things, values roll rather
 // than cut, and a selection slides rather than teleports.
 // ═══════════════════════════════════════════════════════════════
-
-const { fontFamily: INTER } = loadInter("normal", {
-  weights: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-});
 
 // ─── app.crxfx.com tokens, hex-resolved from ui/frontend ───
 // (globals.css :root + components/desk/ui.tsx — nothing invented here)
@@ -55,9 +51,9 @@ const SLOT = { left: 504, top: 122, w: 710, h: 472 };
 
 // The app's section eyebrow: 12px/600 uppercase, tracking 0.08em.
 const label: React.CSSProperties = {
-  fontFamily: INTER,
+  fontFamily: DIATYPE,
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 700,
   letterSpacing: "0.08em",
   color: TER,
   textTransform: "uppercase",
@@ -117,7 +113,7 @@ const Money: React.FC<{ d: string; c?: string; fs?: number; color?: string }> = 
   fs = 14,
   color = INK,
 }) => (
-  <span style={{ fontSize: fs, fontWeight: 500, color, ...tnum }}>
+  <span style={{ fontSize: fs, fontWeight: 400, color, ...tnum }}>
     {d}
     <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>{c}</span>
   </span>
@@ -209,7 +205,7 @@ const tag: React.CSSProperties = {
   backgroundColor: SURFACE2,
   padding: "2px 8px",
   fontSize: 12,
-  fontWeight: 500,
+  fontWeight: 400,
   color: SEC,
 };
 
@@ -239,7 +235,7 @@ const Card: React.FC<{
         backgroundColor: bg,
         boxShadow: CARD_SHADOW,
         overflow: "hidden",
-        fontFamily: INTER,
+        fontFamily: DIATYPE,
         color: INK,
         // Every figure in the card is tabular — balances, rates, notionals
         // hold their columns and never shimmy as values roll. One rule at the
@@ -460,7 +456,7 @@ const BarChart: React.FC<{
                 textAlign: "center",
                 fontSize: 11,
                 color: current ? SEC : TER,
-                fontWeight: current ? 500 : 400,
+                fontWeight: 400,
               }}
             >
               {months[i]}
@@ -477,7 +473,7 @@ const BarChart: React.FC<{
             width: 104,
             textAlign: "center",
             fontSize: 12,
-            fontWeight: 600,
+            fontWeight: 700,
             color: INK,
             whiteSpace: "nowrap",
             ...tnum,
@@ -535,12 +531,12 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <CrxMark size={20} />
-            <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Portfolio</span>
+            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Portfolio</span>
           </div>
           <div
             style={{
               fontSize: 12,
-              fontWeight: 500,
+              fontWeight: 400,
               color: AMBER,
               backgroundColor: AMBER_SOFT,
               borderRadius: 980,
@@ -565,14 +561,14 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
 
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", ...tnum }}>
+            <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: "-0.02em", ...tnum }}>
               $30,440
               <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
             </div>
             <div
               style={{
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: 400,
                 color: SUCCESS,
                 backgroundColor: SUCCESS_SOFT,
                 borderRadius: 980,
@@ -603,7 +599,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
               borderTop: `1px solid ${BORDER}`,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 500, color: SEC }}>{k}</span>
+            <span style={{ fontSize: 13, fontWeight: 400, color: SEC }}>{k}</span>
             <Money d={v} fs={13.5} color={green ? SUCCESS : INK} />
           </div>
         ))}
@@ -626,7 +622,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {t.name === "USDC" ? <UsdcMark size={26} /> : <UsdtMark size={26} />}
               <div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.2 }}>{t.name}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.2 }}>{t.name}</div>
                 <div style={{ fontSize: 11.5, color: TER }}>{t.sub}</div>
               </div>
             </div>
@@ -769,7 +765,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: TER, fontSize: 18, lineHeight: 1 }}>‹</span>
-          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Open a hedge</span>
+          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Open a hedge</span>
           <div style={{ marginLeft: "auto", ...tag, fontSize: 11.5 }}>FX Forward</div>
         </div>
 
@@ -790,19 +786,19 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {/* SwapPage renders this one sentence-case — 12.5px/500
                 tertiary, not the uppercase eyebrow */}
-            <div style={{ fontFamily: INTER, fontSize: 12.5, fontWeight: 500, color: TER }}>
+            <div style={{ fontFamily: DIATYPE, fontSize: 12.5, fontWeight: 400, color: TER }}>
               Forward notional
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
               <span style={{ color: TER, ...tnum }}>Balance $30,440</span>
-              <span style={{ color: TEAL, fontWeight: 600 }}>Max</span>
+              <span style={{ color: TEAL, fontWeight: 700 }}>Max</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div
               style={{
                 fontSize: 38,
-                fontWeight: typedChars > 0 ? 600 : 500,
+                fontWeight: typedChars > 0 ? 700 : 400,
                 letterSpacing: -1,
                 marginTop: 2,
                 color: typedChars > 0 ? INK : "#b8bac4",
@@ -826,14 +822,14 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               }}
             >
               <UsdcMark size={21} />
-              <span style={{ fontSize: 13.5, fontWeight: 600 }}>USDC</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700 }}>USDC</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
             <span style={{ fontSize: 12, color: SEC }}>
               Spot price{" "}
-              <span style={{ color: INK, fontWeight: 600, ...tnum }}>
+              <span style={{ color: INK, fontWeight: 700, ...tnum }}>
                 {spot} {cor.pair.slice(4)}
               </span>
             </span>
@@ -869,7 +865,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             <div style={{ display: "flex", alignItems: "center", gap: 12, ...reQuote }}>
               <FlagPair a={cor.a} b={cor.b} />
               <div>
-                <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.15 }}>{cor.pair}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.15 }}>{cor.pair}</div>
                 <div style={{ fontSize: 11.5, color: TER }}>{cor.sub}</div>
               </div>
             </div>
@@ -898,7 +894,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 5, ...tenorSwap }}>
             <CalendarGlyph />
             <div>
-              <div style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.15, ...tnum }}>
+              <div style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.15, ...tnum }}>
                 {tenor[0]}
               </div>
               <div style={{ fontSize: 12, color: TER }}>{tenor[1]}</div>
@@ -926,7 +922,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         >
           <div style={label}>Forward rate</div>
           <div style={{ ...(frame >= SELECT_AT ? reQuote : {}) }}>
-            <div style={{ fontSize: 15.5, fontWeight: 600, marginTop: 5, lineHeight: 1.15, ...tnum }}>
+            <div style={{ fontSize: 15.5, fontWeight: 700, marginTop: 5, lineHeight: 1.15, ...tnum }}>
               {rate}
             </div>
             <div style={{ fontSize: 12, color: TER }}>{cor.pair.slice(4)} per USD</div>
@@ -970,7 +966,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                 />
                 <rect x="5" y="10" width="14" height="10" rx="2.4" fill={BRASS} />
               </svg>
-              <span style={{ fontSize: 12, fontWeight: 500, color: BRASS }}>
+              <span style={{ fontSize: 12, fontWeight: 400, color: BRASS }}>
                 Locked · firm 120s
               </span>
             </div>
@@ -995,7 +991,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             alignItems: "center",
             justifyContent: "center",
             fontSize: 15,
-            fontWeight: 500,
+            fontWeight: 400,
             color: "#fff",
             transform: ctaPressed ? "scale(0.98)" : undefined,
           }}
@@ -1066,11 +1062,11 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                   <FlagPair a={c.a} b={c.b} size={20} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{c.pair}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{c.pair}</span>
                   <span style={{ fontSize: 12.5, color: TER }}>{c.sub}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: SEC, ...tnum }}>
+                  <span style={{ fontSize: 13, fontWeight: 400, color: SEC, ...tnum }}>
                     {c.rate}
                   </span>
                   {selIdx === i && <Check size={16} color={TEAL} stroke={14} />}
@@ -1166,7 +1162,7 @@ const ObFace: React.FC<{
 }> = ({ frame, at, step, rows, prevRows }) => (
   <div style={{ position: "absolute", inset: 0, padding: "26px 30px", backgroundColor: "#fff" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Compliance</span>
+      <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Compliance</span>
       <span style={{ fontSize: 12, color: TER }}>Institutional onboarding</span>
     </div>
     <div
@@ -1220,9 +1216,9 @@ const ObFace: React.FC<{
                 <span
                   style={{
                     fontSize: 11.5,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: active ? "#fff" : TER,
-                    fontFamily: INTER,
+                    fontFamily: DIATYPE,
                   }}
                 >
                   {i + 1}
@@ -1233,7 +1229,7 @@ const ObFace: React.FC<{
               style={{
                 marginTop: 7,
                 fontSize: 12,
-                fontWeight: active || done ? 600 : 500,
+                fontWeight: active || done ? 700 : 400,
                 color: active || done ? INK : TER,
               }}
             >
@@ -1264,7 +1260,7 @@ const ObFace: React.FC<{
             ...drop,
           }}
         >
-          <span style={{ fontSize: 14.5, fontWeight: 500, color: SEC }}>{r.k}</span>
+          <span style={{ fontSize: 14.5, fontWeight: 400, color: SEC }}>{r.k}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {r.state === "run" && <Spinner frame={frame} />}
             {r.state === "done" && r.v !== "Received" && (
@@ -1285,7 +1281,7 @@ const ObFace: React.FC<{
             <span
               style={{
                 fontSize: 14,
-                fontWeight: r.state === "pending" ? 400 : 500,
+                fontWeight: 400,
                 color: r.state === "pending" ? TER : r.state === "run" ? SEC : INK,
                 ...tnum,
               }}
@@ -1373,10 +1369,10 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
               width: "100%",
               textAlign: "center",
               fontSize: 26,
-              fontWeight: 600,
+              fontWeight: 700,
               letterSpacing: -0.5,
               color: INK,
-              fontFamily: INTER,
+              fontFamily: DIATYPE,
             }}
           >
             Verified
@@ -1389,7 +1385,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
               textAlign: "center",
               fontSize: 14.5,
               color: SEC,
-              fontFamily: INTER,
+              fontFamily: DIATYPE,
             }}
           >
             Ready to trade on CRX
@@ -1424,14 +1420,14 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w + 1} h={SLOT.h} opacity={1}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>
             Request for quote
           </span>
           {rated ? (
             <div
               style={{
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: 400,
                 color: BRASS,
                 backgroundColor: BRASS_SOFT,
                 borderRadius: 980,
@@ -1535,7 +1531,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                     backgroundColor: d.bg,
                     color: d.fg,
                     fontSize: 13,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1544,7 +1540,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                   D{i + 1}
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{d.name}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{d.name}</div>
                   <div style={{ fontSize: 12.5, color: TER }}>
                     {landed ? `${d.sub} · answered ${d.t}` : d.sub}
                   </div>
@@ -1555,7 +1551,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                   <div
                     style={{
                       fontSize: 12,
-                      fontWeight: 500,
+                      fontWeight: 400,
                       color: TEAL,
                       backgroundColor: TEAL_SOFT,
                       borderRadius: 980,
@@ -1568,7 +1564,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 )}
                 {landed ? (
                   <div style={{ textAlign: "right", opacity: fadeIn(frame, d.lands, 4) }}>
-                    <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.3, ...tnum }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3, ...tnum }}>
                       {shown}
                     </div>
                     <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
@@ -1621,7 +1617,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h} opacity={opacity}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Compliance</span>
+          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Compliance</span>
           {frame >= ALL_CLEAR_AT && (
             <div
               style={{
@@ -1629,7 +1625,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 alignItems: "center",
                 gap: 6,
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: 400,
                 color: SUCCESS,
                 backgroundColor: SUCCESS_SOFT,
                 borderRadius: 980,
@@ -1691,7 +1687,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 >
                   {on && <Check size={14} stroke={16} color={SUCCESS} />}
                 </div>
-                <span style={{ fontSize: 15.5, fontWeight: 600 }}>{k}</span>
+                <span style={{ fontSize: 15.5, fontWeight: 700 }}>{k}</span>
               </div>
               <span style={{ fontSize: 13.5, color: on ? SEC : TER, ...tnum }}>{v}</span>
             </div>
@@ -1723,7 +1719,7 @@ const POSITIONS = [
   { at: 800, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
-// The app shell's nav is deliberately NOT Inter — TopNav.tsx sets
+// The app shell's nav is deliberately NOT the brand face — TopNav.tsx sets
 // Helvetica Neue for the wordmark and tabs, ink #1a1a1a, and a
 // frosted white bar over a hardcoded warm-grey hairline.
 const HELV = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -1768,7 +1764,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           justifyContent: "center",
           gap: 7,
           fontSize: 12,
-          fontWeight: 500,
+          fontWeight: 400,
           color: "#fff",
         }}
       >
@@ -1796,7 +1792,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         <span
           style={{
             fontSize: 15.5,
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: "-0.02em",
             marginLeft: 8,
             color: NAV_INK,
@@ -1816,7 +1812,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
                 style={{
                   position: "relative",
                   fontSize: 13.5,
-                  fontWeight: 500,
+                  fontWeight: 400,
                   color: NAV_INK,
                   opacity: active ? 1 : 0.7,
                   padding: "6px 13px",
@@ -1863,7 +1859,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: TEAL,
             color: "#fff",
             fontSize: 12.5,
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: "-0.01em",
             borderRadius: 980,
             padding: "8px 16px",
@@ -1888,7 +1884,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           boxShadow: CARD_SHADOW,
         }}
       >
-        <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.018em", ...tnum }}>
+        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.018em", ...tnum }}>
           $30,440
           <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
         </div>
@@ -1914,7 +1910,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               borderTop: `1px solid ${BORDER}`,
             }}
           >
-            <span style={{ fontSize: 12.5, fontWeight: 500, color: SEC }}>{k}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 400, color: SEC }}>{k}</span>
             <Money d={v} fs={13} color={green ? SUCCESS : INK} />
           </div>
         ))}
@@ -1970,7 +1966,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={label}>Positions</div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: SEC }}>View all ›</div>
+          <div style={{ fontSize: 12, fontWeight: 400, color: SEC }}>View all ›</div>
         </div>
         {POSITIONS.map((pos, i) => {
           const op = fadeIn(frame, pos.at, 4);
@@ -1991,10 +1987,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <FlagPair a={pos.a} b={pos.b} size={19} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{pos.pair}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{pos.pair}</span>
                   <span style={{ ...tag, fontSize: 11.5 }}>{pos.side}</span>
                 </div>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: SUCCESS, ...tnum }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: SUCCESS, ...tnum }}>
                   {pos.pnl}
                 </span>
               </div>
@@ -2008,7 +2004,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               >
                 <span style={{ fontSize: 12.5, color: TER, ...tnum }}>{pos.notional} notional</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ fontSize: 11.5, color: SUCCESS, fontWeight: 500 }}>Healthy</span>
+                  <span style={{ fontSize: 11.5, color: SUCCESS, fontWeight: 400 }}>Healthy</span>
                   <div
                     style={{
                       position: "relative",

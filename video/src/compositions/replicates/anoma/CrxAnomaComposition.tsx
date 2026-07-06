@@ -20,18 +20,16 @@ import {
   type WordSpec,
 } from "./AnomaComposition";
 import { CrxAppScenes } from "./CrxAppCards";
-import { loadFont as loadDisplay } from "@remotion/google-fonts/Inter";
+import { DIATYPE } from "./diatype";
 
-// The headline voice is the product's own grotesque, not an editorial serif.
-// The app cards are Inter; the overlay copy is Inter too, one step heavier and
-// tracked tight — the institutional-fintech register where display and UI are
-// cut from one typeface (Stripe, Ramp, Mercury). A broadsheet serif floating
-// over a live trading UI reads as costume; the product wears one face. Bold
-// (700) so the copy commands, tracked in at large sizes so it reads crafted.
-const { fontFamily: DISPLAY } = loadDisplay("normal", {
-  weights: ["600", "700"],
-  subsets: ["latin"],
-});
+// The headline voice is the product's own brand face, not an editorial serif:
+// Diatype, the same grotesque the dev.crxfx.com landing self-hosts. The app
+// cards and the overlay copy are cut from this one typeface — the institutional-
+// fintech register where display and UI share a face (Stripe, Ramp, Mercury). A
+// broadsheet serif floating over a live trading UI reads as costume; the product
+// wears one face. Bold (700) so the copy commands, tracked in at large sizes so
+// it reads crafted.
+const DISPLAY = DIATYPE;
 
 // ═══════════════════════════════════════════════════════════════
 // CRX cut of the Anoma replica: same cards and motion physics; the
@@ -52,9 +50,18 @@ const { fontFamily: DISPLAY } = loadDisplay("normal", {
 const CENTER = 640;
 const HD_SCALE = 3;
 
-// Bridge sets its own headline on this water in near-black ink, not
-// white — the copy follows suit. Ink value from the Apple style table.
-const INK = "#1D1D1F";
+// The floating headline copy must read over ANY frame of the background b-roll —
+// bright sky and dark water alike. A single near-black ink drowned in the dark
+// water; a flat white would vanish in the sky. So the ink is the landing's
+// near-white paper and each glyph carries a soft dark halo (a localized scrim
+// bound to the strokes, no box) that lifts it off any ground.
+const INK = "#F5F5F7"; // landing paper (near-white)
+// Dual-scale dark halo: a tight edge shadow for crispness plus a wide, soft
+// cloud that darkens a bright ground locally behind the strokes. Authored in
+// 720-space; the 3× stage scaler carries it to the 4K raster. It travels with
+// the copy — confined to the glyphs, never a full-screen sheet.
+const INK_SHADOW =
+  "0 1px 2px rgba(0,0,0,0.45), 0 2px 9px rgba(0,0,0,0.42), 0 5px 26px rgba(0,0,0,0.36)";
 
 // ─── Wave background: the bridge.xyz hero water, looped. The 4K cut
 // (bridge-wave-4k.mp4) is the 1080p source denoised, lanczos-scaled
@@ -71,11 +78,13 @@ const WaveBackground: React.FC<{
   height?: number;
   waveSrc?: string;
   loopSeconds?: number;
+  trimBefore?: number;
 }> = ({
   frame,
   height = 720 * HD_SCALE,
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
+  trimBefore,
 }) => {
   const black = interpolate(frame, [851, 864], [0, 1], clamp);
   return (
@@ -83,6 +92,7 @@ const WaveBackground: React.FC<{
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
         <OffthreadVideo
           muted
+          trimBefore={trimBefore}
           src={staticFile(waveSrc)}
           style={{
             position: "absolute",
@@ -156,6 +166,7 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
         letterSpacing: "-0.022em",
         lineHeight: 1,
         color: INK,
+        textShadow: INK_SHADOW,
         whiteSpace: "pre",
         opacity,
       }}
@@ -210,6 +221,7 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         letterSpacing: "-0.022em",
         lineHeight: 1,
         color: INK,
+        textShadow: INK_SHADOW,
         whiteSpace: "pre",
         opacity: 1,
       }}
@@ -295,6 +307,7 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
               letterSpacing: "-0.03em",
               lineHeight: 1,
               color: INK,
+              textShadow: INK_SHADOW,
               filter: blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : undefined,
               opacity: op,
             }}
@@ -474,6 +487,7 @@ const CrxAnomaStage: React.FC<{
   scale?: number;
   waveSrc?: string;
   waveLoopSeconds?: number;
+  waveTrimBefore?: number;
   audioSrc?: string;
   audioStartFrom?: number;
   background?: (frame: number, width: number, height: number) => React.ReactNode;
@@ -483,6 +497,7 @@ const CrxAnomaStage: React.FC<{
   scale = HD_SCALE,
   waveSrc,
   waveLoopSeconds,
+  waveTrimBefore,
   audioSrc = "crx-assets/loosin-up.mp3",
   audioStartFrom = 0,
   background,
@@ -507,6 +522,7 @@ const CrxAnomaStage: React.FC<{
           height={height}
           waveSrc={waveSrc}
           loopSeconds={waveLoopSeconds}
+          trimBefore={waveTrimBefore}
         />
       )}
       <AbsoluteFill
@@ -532,14 +548,18 @@ const CrxAnomaStage: React.FC<{
 };
 
 // The looping background is the 1:28:22–1:29:39 b-roll cut (77s, 1080p) in
-// place of the bridge.xyz water. It runs far longer than the 0–28.8s visible
-// window before the end fade-to-black, so only its opening plays — it never
-// wraps or seams. Restore the water by removing waveSrc (it falls back to the
-// bridge-wave-4k default).
+// place of the bridge.xyz water. It begins at source 16.5s (trimBefore=495 at
+// 30fps — a half-second head trim past the 16s mark) and plays forward. With
+// 60.5s of clip left after the trim — far longer than the 0–28.8s visible window
+// before the end fade-to-black — only that opening span plays: it never wraps or
+// seams. The trim is scoped to this main cut alone; CRX-Anoma-3-2 and the silk
+// wide keep their own untrimmed backgrounds. Restore the water by removing
+// waveSrc (it falls back to the bridge-wave-4k default).
 export const CrxAnomaComposition: React.FC = () => (
   <CrxAnomaStage
     waveSrc="broll/youtube-MLm07I49RiE/broll_1-28-22_to_1-29-39.mp4"
     waveLoopSeconds={77}
+    waveTrimBefore={Math.round(16.5 * FPS)}
   />
 );
 
