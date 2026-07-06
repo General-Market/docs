@@ -59,7 +59,10 @@ const label: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const tnum: React.CSSProperties = { fontFeatureSettings: "'tnum'" };
+// The landing renders Diatype proportional (no `tnum`). Diatype's tabular
+// feature monospaces punctuation and the space glyph too, so it is left off
+// here; this stays an empty style so the figure call-sites read unchanged.
+const tnum: React.CSSProperties = {};
 
 // Element settle: the reference word physics (drop, exponential decay).
 const settle = (
@@ -104,9 +107,9 @@ const CrxMark: React.FC<{ size: number }> = ({ size }) => (
   </svg>
 );
 
-// Money exactly as MoneyAmount renders it (components/desk/ui.tsx):
-// tabular figure, cents at 0.7em / weight 400 / opacity 0.6 — the
-// cents inherit the figure's color, they do not go grey.
+// Money as MoneyAmount renders it (components/desk/ui.tsx): cents at
+// 0.7em / weight 400 / opacity 0.6 — the cents inherit the figure's
+// color, they do not go grey. Figures stay proportional, like the landing.
 const Money: React.FC<{ d: string; c?: string; fs?: number; color?: string }> = ({
   d,
   c = ".00",
@@ -237,11 +240,12 @@ const Card: React.FC<{
         overflow: "hidden",
         fontFamily: DIATYPE,
         color: INK,
-        // Every figure in the card is tabular — balances, rates, notionals
-        // hold their columns and never shimmy as values roll. One rule at the
-        // root, so no digit anywhere in the mock can drift proportional.
-        fontVariantNumeric: "tabular-nums",
-        fontKerning: "normal",
+        // No tabular figures — the landing doesn't force them, and Diatype's
+        // `tnum` is a whole-tabular set that snaps not just digits but the
+        // space, comma, period, slash and colon to a uniform 600-unit advance
+        // (space 237→600), reading as "$30 , 440 . 00" / "USD / BRL". Match the
+        // landing: leave the face proportional so every figure and separator
+        // sits tight. Columns still align — value cells are right-anchored.
         transform: scale !== 1 ? `scale(${scale.toFixed(4)})` : undefined,
         filter: blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : undefined,
       }}
@@ -1719,10 +1723,10 @@ const POSITIONS = [
   { at: 800, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
-// The app shell's nav is deliberately NOT the brand face — TopNav.tsx sets
-// Helvetica Neue for the wordmark and tabs, ink #1a1a1a, and a
-// frosted white bar over a hardcoded warm-grey hairline.
-const HELV = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+// The whole UI wears the landing face. The nav sits directly above the
+// Diatype sandbox banner, so it wears Diatype too — a Helvetica nav there
+// read as a seam. Ink #1a1a1a, a frosted white bar over a warm-grey hairline.
+const NAV_FONT = DIATYPE;
 const NAV_INK = "#1a1a1a";
 const NAV_BORDER = "#e7e7e2";
 
@@ -1785,7 +1789,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           display: "flex",
           alignItems: "center",
           padding: "0 26px",
-          fontFamily: HELV,
+          fontFamily: NAV_FONT,
         }}
       >
         <CrxMark size={19} />
