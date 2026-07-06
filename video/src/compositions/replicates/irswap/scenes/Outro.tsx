@@ -324,30 +324,31 @@ const drawPageArt = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: nu
     ctx.stroke();
     ctx.globalAlpha = 1;
   };
-  border([-30, -0.7], [619, -10.3], 31.4, "rgb(217,217,217)");
-  border([90, 343.6], [579, 345.9], 38.2, "rgb(199,198,199)");
-  border([-39.9, 10], [-45.9, 319], 23.5, "rgb(204,214,215)");
-  border([601.9, 10], [611.9, 319], 48.1, "rgb(231,231,231)");
-  // grey plot panel (measured quad; upper block reads darker in the ref)
-  ctx.fillStyle = "rgb(213,213,213)";
-  P([[387, 3], [600, 19], [584, 243], [371, 228]]);
-  ctx.fill();
+  // NOTE all fills below are DE-WASHED: the artspec sampled the f5295
+  // anchor which carries the boundary-F luma hump (~0.145 toward white);
+  // the composition applies its own HUMP overlay, so drawing the washed
+  // values would double-wash. true = (measured - 253*h)/(1-h).
+  border([-30, -0.7], [619, -10.3], 31.4, "rgb(211,211,211)");
+  border([90, 343.6], [579, 345.9], 38.2, "rgb(190,189,190)");
+  border([-39.9, 10], [-45.9, 319], 23.5, "rgb(196,207,209)");
+  border([601.9, 10], [611.9, 319], 48.1, "rgb(227,227,227)");
+  // the two grey plot panels (uniform ink in the ref; measured quads)
   ctx.fillStyle = "rgb(202,202,202)";
-  P([[433, 60], [598, 73], [589, 188], [428, 176]]); // darker top step (est. off unwarp)
+  P([[400, 24], [600, 20], [571, 127], [379, 126]]);
   ctx.fill();
-  // tall blue strip
-  ctx.fillStyle = "rgb(216,238,245)";
-  P([[400, 149], [380, 149], [370, 178], [352, 296], [359, 314], [375, 311],
-     [381, 301], [387, 248], [407, 197], [409, 160]]);
+  P([[457, 133], [569, 133], [534, 253], [436, 234]]);
   ctx.fill();
-  // blue rect at the fold-side corner
-  ctx.fillStyle = "rgb(217,237,243)";
-  P([[516, 249], [510, 243], [485, 253], [464, 247], [462, 254], [442, 261],
-     [431, 290], [433, 315], [478, 319], [494, 314], [511, 295], [516, 274]]);
+  // tall blue strip (single — the 'two strips' read was ghosting)
+  ctx.fillStyle = "rgb(210,234,242)";
+  P([[375, 142], [416, 139], [387, 311], [348, 324]]);
+  ctx.fill();
+  // blue rect under panel B
+  ctx.fillStyle = "rgb(211,234,240)";
+  P([[431, 245], [520, 241], [513, 324], [418, 324]]);
   ctx.fill();
   // teal sticky with the notched left edge (straddles the model page edge)
-  ctx.fillStyle = "rgb(208,235,238)";
-  ctx.strokeStyle = "rgb(196,220,223)";
+  ctx.fillStyle = "rgb(200,232,235)";
+  ctx.strokeStyle = "rgb(190,216,220)";
   ctx.lineWidth = 1.6;
   P([[-28, 27], [-35, 41], [-37, 138], [-19, 138], [-19, 130], [23, 135],
      [33, 127], [43, 35], [25, 26]]);
@@ -412,11 +413,13 @@ const drawRightPage = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: 
     ctx.stroke();
     ctx.globalAlpha = 1;
   };
-  border([40, -14], [549, -7], 31.2, "rgb(196,195,196)"); // fold spine (mostly off-canvas)
-  border([554.9, -5], [560.6, 359], 42.1, "rgb(224,224,225)");
-  border([170, 369.9], [539, 372.3], 36.1, "rgb(225,225,225)");
-  // the squiggle: soft halo pass under the 4px core (measured points)
-  for (const [lw, col] of [[9, "rgba(239,209,210,0.55)"], [4, "#D98A95"]] as
+  border([40, -14], [549, -7], 31.2, "rgb(186,185,186)"); // fold spine (mostly off-canvas)
+  border([554.9, -5], [560.6, 359], 42.1, "rgb(219,219,220)");
+  border([170, 369.9], [539, 372.3], 36.1, "rgb(220,220,220)");
+  // the squiggle: soft halo under the 4px core. Core measured UNWASHED
+  // off ref f5305 (p10 of the pink mask): rgb(230,173,174) — the r8-era
+  // #D98A95 oversaturated, the washed artspec sample was too pale.
+  for (const [lw, col] of [[9, "rgba(240,212,213,0.55)"], [4, "rgb(230,173,174)"]] as
        [number, string][]) {
     ctx.strokeStyle = col;
     ctx.lineWidth = lw * Math.min(sx, sy);
@@ -432,7 +435,7 @@ const drawRightPage = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: 
     ctx.stroke();
   }
   // dashed companion: parallel, offset -14.3px toward -x, dash ~9/gap ~21
-  ctx.strokeStyle = "rgb(236,206,209)";
+  ctx.strokeStyle = "rgb(239,214,217)";
   ctx.lineWidth = 2.6 * Math.min(sx, sy);
   ctx.setLineDash([9 * sy, 21.5 * sy]);
   ctx.beginPath();
