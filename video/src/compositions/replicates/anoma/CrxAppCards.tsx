@@ -204,7 +204,7 @@ const FOCUS_RING = `0 0 0 2px ${TEAL_RING}`;
 const tag: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  borderRadius: 6,
+  borderRadius: 8,
   border: `1px solid ${BORDER}`,
   backgroundColor: SURFACE2,
   padding: "2px 8px",
@@ -640,7 +640,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
 
         <div style={{ position: "absolute", left: 372, top: 172, ...label }}>Hedged notional</div>
-        <div style={{ position: "absolute", right: 30, top: 165, ...tag, fontSize: 11.5 }}>6M</div>
+        <div style={{ position: "absolute", right: 30, top: 169, ...tag, fontSize: 11.5 }}>6M</div>
         <BarChart
           frame={frame}
           growth={growth}
@@ -766,7 +766,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
       opacity={opacity}
       scale={scale}
     >
-      <div style={{ position: "absolute", inset: 0, padding: "24px 28px" }}>
+      <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: TER, fontSize: 18, lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.3 }}>Open a hedge</span>
@@ -777,9 +777,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 28,
+            left: 30,
             top: 62,
-            width: 654,
+            width: 650,
             height: 108,
             backgroundColor: WELL,
             borderRadius: 16,
@@ -844,16 +844,16 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 28,
+            left: 30,
             top: 182,
-            width: 654,
+            width: 650,
             height: 74,
             backgroundColor: WELL,
             borderRadius: 16,
             padding: "9px 12px 0 12px",
           }}
         >
-          <div style={{ ...label, paddingLeft: 6 }}>Pair</div>
+          <div style={{ ...label, paddingLeft: 12 }}>Pair</div>
           <div
             style={{
               display: "flex",
@@ -881,9 +881,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 28,
+            left: 30,
             top: 268,
-            width: 320,
+            width: 319,
             height: 74,
             backgroundColor: WELL,
             borderRadius: 16,
@@ -911,9 +911,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 362,
+            left: 361,
             top: 268,
-            width: 320,
+            width: 319,
             height: 74,
             backgroundColor: WELL,
             borderRadius: 16,
@@ -984,9 +984,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div
           style={{
             position: "absolute",
-            left: 28,
+            left: 30,
             top: 358,
-            width: 654,
+            width: 650,
             height: 52,
             borderRadius: 16,
             backgroundColor: ctaPressed ? TEAL_HOVER : TEAL,
@@ -1298,7 +1298,7 @@ const ObFace: React.FC<{
     })}
 
     <div style={{ position: "absolute", left: 30, bottom: 22, fontSize: 12, color: TER }}>
-      Onboard once — trade with every dealer on the network.
+      Onboard once, trade with every dealer on the network.
     </div>
   </div>
 );
@@ -1513,7 +1513,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 top: 146 + i * 84,
                 width: 651,
                 height: 72,
-                borderRadius: 12,
+                borderRadius: 16,
                 backgroundColor: ringOp > 0 ? TEAL_SOFT : WELL,
                 boxShadow:
                   ringOp > 0
@@ -1592,7 +1592,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
         })}
 
         <div style={{ position: "absolute", left: 30, bottom: 20, fontSize: 12, color: TER }}>
-          One request — the whole dealer network answers.
+          One request: the whole dealer network answers.
         </div>
       </div>
     </Card>
@@ -1606,7 +1606,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
 // the card fades, instead of arriving into its own death.
 const COMPLY_ROWS = [
   { at: 666, k: "KYB", v: "Verified" },
-  { at: 675, k: "Sanctions screening", v: "Clear — 0 hits" },
+  { at: 675, k: "Sanctions screening", v: "Clear · 0 hits" },
   { at: 684, k: "Travel rule", v: "Enabled" },
   { at: 694, k: "Audit export", v: "CSV · PDF ready" },
 ];
@@ -1669,7 +1669,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                borderBottom: `1px solid ${BORDER}`,
+                borderTop: `1px solid ${BORDER}`,
                 opacity: rowOp,
               }}
             >
@@ -1773,7 +1773,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         }}
       >
         <Flask />
-        Sandbox — Base Sepolia testnet. No real funds at risk.
+        Sandbox: Base Sepolia testnet. No real funds at risk.
       </div>
 
       {/* nav */}

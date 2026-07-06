@@ -157,7 +157,7 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
         lineHeight: 1,
         color: INK,
         whiteSpace: "pre",
-        opacity: 0.97 * opacity,
+        opacity,
       }}
     >
       {words.map((w, i) => (
@@ -211,7 +211,7 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         lineHeight: 1,
         color: INK,
         whiteSpace: "pre",
-        opacity: 0.97,
+        opacity: 1,
       }}
     >
       {S1_WORDS.map((w, wi) => {
