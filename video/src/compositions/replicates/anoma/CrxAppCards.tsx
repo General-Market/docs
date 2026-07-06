@@ -241,6 +241,11 @@ const Card: React.FC<{
         overflow: "hidden",
         fontFamily: INTER,
         color: INK,
+        // Every figure in the card is tabular — balances, rates, notionals
+        // hold their columns and never shimmy as values roll. One rule at the
+        // root, so no digit anywhere in the mock can drift proportional.
+        fontVariantNumeric: "tabular-nums",
+        fontKerning: "normal",
         transform: scale !== 1 ? `scale(${scale.toFixed(4)})` : undefined,
         filter: blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : undefined,
       }}
@@ -598,7 +603,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
               borderTop: `1px solid ${BORDER}`,
             }}
           >
-            <span style={{ fontSize: 13, color: SEC }}>{k}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: SEC }}>{k}</span>
             <Money d={v} fs={13.5} color={green ? SUCCESS : INK} />
           </div>
         ))}
@@ -1259,7 +1264,7 @@ const ObFace: React.FC<{
             ...drop,
           }}
         >
-          <span style={{ fontSize: 14.5, color: SEC }}>{r.k}</span>
+          <span style={{ fontSize: 14.5, fontWeight: 500, color: SEC }}>{r.k}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {r.state === "run" && <Spinner frame={frame} />}
             {r.state === "done" && r.v !== "Received" && (
@@ -1883,7 +1888,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           boxShadow: CARD_SHADOW,
         }}
       >
-        <div style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-0.018em", ...tnum }}>
+        <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.018em", ...tnum }}>
           $30,440
           <span style={{ fontSize: "0.7em", fontWeight: 400, opacity: 0.6 }}>.00</span>
         </div>
@@ -1909,7 +1914,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               borderTop: `1px solid ${BORDER}`,
             }}
           >
-            <span style={{ fontSize: 12.5, color: SEC }}>{k}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: SEC }}>{k}</span>
             <Money d={v} fs={13} color={green ? SUCCESS : INK} />
           </div>
         ))}

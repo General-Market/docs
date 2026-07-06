@@ -16,11 +16,22 @@ import {
   DURATION,
   FPS,
   FS,
-  POPPINS,
   wordStyle,
   type WordSpec,
 } from "./AnomaComposition";
 import { CrxAppScenes } from "./CrxAppCards";
+import { loadFont as loadDisplay } from "@remotion/google-fonts/Inter";
+
+// The headline voice is the product's own grotesque, not an editorial serif.
+// The app cards are Inter; the overlay copy is Inter too, one step heavier and
+// tracked tight — the institutional-fintech register where display and UI are
+// cut from one typeface (Stripe, Ramp, Mercury). A broadsheet serif floating
+// over a live trading UI reads as costume; the product wears one face. Bold
+// (700) so the copy commands, tracked in at large sizes so it reads crafted.
+const { fontFamily: DISPLAY } = loadDisplay("normal", {
+  weights: ["600", "700"],
+  subsets: ["latin"],
+});
 
 // ═══════════════════════════════════════════════════════════════
 // CRX cut of the Anoma replica: same cards and motion physics; the
@@ -59,11 +70,17 @@ const WaveBackground: React.FC<{
   frame: number;
   height?: number;
   waveSrc?: string;
-}> = ({ frame, height = 720 * HD_SCALE, waveSrc = "crx-assets/bridge-wave-4k.mp4" }) => {
+  loopSeconds?: number;
+}> = ({
+  frame,
+  height = 720 * HD_SCALE,
+  waveSrc = "crx-assets/bridge-wave-4k.mp4",
+  loopSeconds = WAVE_SECONDS,
+}) => {
   const black = interpolate(frame, [851, 864], [0, 1], clamp);
   return (
     <AbsoluteFill>
-      <Loop durationInFrames={WAVE_SECONDS * FPS}>
+      <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
         <OffthreadVideo
           muted
           src={staticFile(waveSrc)}
@@ -122,9 +139,9 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
   const text = words.map((w) => w.t).join(" ");
   const natural = measureText({
     text,
-    fontFamily: POPPINS,
+    fontFamily: DISPLAY,
     fontSize: fs,
-    fontWeight: "300",
+    fontWeight: "700",
   }).width;
   const left = x ?? CENTER - natural / 2;
   return (
@@ -133,9 +150,10 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
         position: "absolute",
         left,
         top: capTop - CAP_OFFSET * fs,
-        fontFamily: POPPINS,
-        fontWeight: 300,
+        fontFamily: DISPLAY,
+        fontWeight: 700,
         fontSize: fs,
+        letterSpacing: "-0.022em",
         lineHeight: 1,
         color: INK,
         whiteSpace: "pre",
@@ -175,9 +193,9 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
   const text = S1_WORDS.map((w) => w.t).join(" ");
   const natural = measureText({
     text,
-    fontFamily: POPPINS,
+    fontFamily: DISPLAY,
     fontSize: FS,
-    fontWeight: "300",
+    fontWeight: "700",
   }).width;
   let ci = 0;
   return (
@@ -186,9 +204,10 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         position: "absolute",
         left: CENTER - natural / 2,
         top: 331 - CAP_OFFSET * FS,
-        fontFamily: POPPINS,
-        fontWeight: 300,
+        fontFamily: DISPLAY,
+        fontWeight: 700,
         fontSize: FS,
+        letterSpacing: "-0.022em",
         lineHeight: 1,
         color: INK,
         whiteSpace: "pre",
@@ -237,7 +256,7 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 69 || frame >= 118) return null;
   const widths = EASY.map(
     (ch) =>
-      measureText({ text: ch, fontFamily: POPPINS, fontSize: EASY_FS, fontWeight: "500" })
+      measureText({ text: ch, fontFamily: DISPLAY, fontSize: EASY_FS, fontWeight: "700" })
         .width,
   );
   const total = widths.reduce((a, b) => a + b, 0);
@@ -270,9 +289,10 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
               position: "absolute",
               left: x,
               top: 316 - CAP_OFFSET * EASY_FS,
-              fontFamily: POPPINS,
-              fontWeight: 500,
+              fontFamily: DISPLAY,
+              fontWeight: 700,
               fontSize: EASY_FS,
+              letterSpacing: "-0.03em",
               lineHeight: 1,
               color: INK,
               filter: blur > 0.2 ? `blur(${blur.toFixed(1)}px)` : undefined,
@@ -441,31 +461,61 @@ const EndLockup: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// The stage, parametrized on frame height. The measured 1280×720 coordinate
-// system never changes — a taller frame (the 3:2 landing cut) centers the
-// same 16:9 stage vertically and lets the water run into the extra rows
-// above and below. Every frozen timing and position survives untouched.
-const CrxAnomaStage: React.FC<{ height?: number; waveSrc?: string }> = ({
+// The stage, parametrized on frame size, content scale and background.
+// The measured 1280×720 coordinate system never changes — the 16:9 stage
+// is scaled to fit the frame width and centered, and the background runs
+// into whatever rows or columns fall outside it. Every frozen timing and
+// position survives untouched. A taller frame (the 3:2 landing cut, the
+// 2:3 portrait cut) simply centers the same stage and lets the background
+// fill the margins; a background render-prop swaps the water for the silk.
+const CrxAnomaStage: React.FC<{
+  width?: number;
+  height?: number;
+  scale?: number;
+  waveSrc?: string;
+  waveLoopSeconds?: number;
+  audioSrc?: string;
+  audioStartFrom?: number;
+  background?: (frame: number, width: number, height: number) => React.ReactNode;
+}> = ({
+  width = 1280 * HD_SCALE,
   height = 720 * HD_SCALE,
+  scale = HD_SCALE,
   waveSrc,
+  waveLoopSeconds,
+  audioSrc = "crx-assets/loosin-up.mp3",
+  audioStartFrom = 0,
+  background,
 }) => {
   const frame = useCurrentFrame();
-  const inset = (height - 720 * HD_SCALE) / 2;
+  const topInset = (height - 720 * scale) / 2;
+  const leftInset = (width - 1280 * scale) / 2;
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       <Audio
-        src={staticFile("crx-assets/loosin-up.mp3")}
+        src={staticFile(audioSrc)}
+        startFrom={audioStartFrom}
         volume={(f) =>
           interpolate(f, [0, 12, DURATION - 45, DURATION - 6], [0, 1, 1, 0], clamp)
         }
       />
-      <WaveBackground frame={frame} height={height} waveSrc={waveSrc} />
+      {background ? (
+        background(frame, width, height)
+      ) : (
+        <WaveBackground
+          frame={frame}
+          height={height}
+          waveSrc={waveSrc}
+          loopSeconds={waveLoopSeconds}
+        />
+      )}
       <AbsoluteFill
         style={{
           width: 1280,
           height: 720,
-          top: inset,
-          transform: `scale(${HD_SCALE})`,
+          left: leftInset,
+          top: topInset,
+          transform: `scale(${scale})`,
           transformOrigin: "top left",
         }}
       >
@@ -481,7 +531,17 @@ const CrxAnomaStage: React.FC<{ height?: number; waveSrc?: string }> = ({
   );
 };
 
-export const CrxAnomaComposition: React.FC = () => <CrxAnomaStage />;
+// The looping background is the 1:28:22–1:29:39 b-roll cut (77s, 1080p) in
+// place of the bridge.xyz water. It runs far longer than the 0–28.8s visible
+// window before the end fade-to-black, so only its opening plays — it never
+// wraps or seams. Restore the water by removing waveSrc (it falls back to the
+// bridge-wave-4k default).
+export const CrxAnomaComposition: React.FC = () => (
+  <CrxAnomaStage
+    waveSrc="broll/youtube-MLm07I49RiE/broll_1-28-22_to_1-29-39.mp4"
+    waveLoopSeconds={77}
+  />
+);
 
 // The 3:2 cut for the landing film band — 3840×2560. Full-frame app scenes
 // hold their 16:9 window and read as a full-width band on the water. This cut
@@ -506,6 +566,83 @@ export const crxAnoma32Meta = {
   component: CrxAnoma32Composition,
   width: 1280 * HD_SCALE,
   height: 2560,
+  fps: FPS,
+  durationInFrames: DURATION,
+};
+
+// The bridge-wave footage halftoned into the CRX teal dot-style offline
+// (scratchpad/halftone_wave.py → crx-assets/halftone-wave.mp4): the real water
+// motion kept, wearing the new dot surface, graded onto the teal wash so it
+// never returns to white. 18s loop, cover-fit; the end fades to black for the
+// lockup, exactly like the water it replaces.
+const WaveHalftoneBackground: React.FC<{
+  frame: number;
+  width: number;
+  height: number;
+}> = ({ frame, width, height }) => {
+  const black = interpolate(frame, [851, 864], [0, 1], clamp);
+  return (
+    <AbsoluteFill>
+      <Loop durationInFrames={18 * FPS}>
+        <OffthreadVideo
+          muted
+          src={staticFile("crx-assets/halftone-wave.mp4")}
+          style={{ position: "absolute", width, height, objectFit: "cover" }}
+        />
+      </Loop>
+      <AbsoluteFill
+        style={{
+          background:
+            "radial-gradient(ellipse 120% 100% at 50% 45%, rgba(0,0,0,0) 62%, rgba(0,0,0,0.08) 100%)",
+        }}
+      />
+      {black > 0 && (
+        <AbsoluteFill style={{ backgroundColor: "#000", opacity: black }} />
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// The wide banner cut — the apple.com/services hero shape (2000×848 ≈
+// 2.3585:1), rendered at 2× (4000×1696). The water is swapped for the Ethena
+// silk field, re-inked in the CRX teal→sage wash, re-evaluated crisp at the
+// wide lattice and given a continuous flowing drift so it never sits still.
+//
+// The 16:9 stage is scaled to fill the frame WIDTH (not height) so the app
+// UI and copy command the banner at native size instead of floating in a
+// centred 75%-wide band — the "adapted to this resolution" fit. The app
+// scene only paints inside y122–594 of its 720 rows, so the ~120px empty
+// margins top and bottom are all that the crop removes; nothing real is cut,
+// and the silk still runs full-bleed behind everything. Scored to the Heyson
+// track, not the loosin-up grid.
+const WIDE_H = 1696;
+const WIDE_W = Math.round((WIDE_H * 2000) / 848 / 2) * 2; // 4000, Apple 2.3585:1
+const WIDE_SCALE = WIDE_W / 1280; // 3.125 — fill width, crop empty top/bottom
+
+// Music: land the track's 0:44 on the video's midpoint. Middle frame is
+// DURATION/2; 0:44 is 44·FPS audio frames; so the track starts that many
+// frames before the midpoint.
+const MUSIC_MIDDLE_SEC = 44;
+const AUDIO_START_FROM = Math.round(MUSIC_MIDDLE_SEC * FPS - DURATION / 2);
+
+export const CrxAnomaSilkComposition: React.FC = () => (
+  <CrxAnomaStage
+    width={WIDE_W}
+    height={WIDE_H}
+    scale={WIDE_SCALE}
+    audioSrc="crx-assets/over-the-moon-heyson.mp3"
+    audioStartFrom={AUDIO_START_FROM}
+    background={(frame, w, h) => (
+      <WaveHalftoneBackground frame={frame} width={w} height={h} />
+    )}
+  />
+);
+
+export const crxAnomaSilkMeta = {
+  id: "CRX-Anoma-Silk-Wide",
+  component: CrxAnomaSilkComposition,
+  width: WIDE_W,
+  height: WIDE_H,
   fps: FPS,
   durationInFrames: DURATION,
 };
