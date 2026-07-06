@@ -149,7 +149,7 @@ export const IRSwapComposition: React.FC = () => {
   // Fonts/images resolve at the DOM level BEFORE the canvas mounts — a
   // readiness flip inside the R3F tree does not repaint the GL frame.
   const ready = useIrswapAssets();
-  const { pos, rotX, rotZ, rotY } = worldCam(frame);
+  const { pos, rotX, rotZ, rotY, fov } = worldCam(frame);
   const [sigX, sigY] = whipSigma(frame);
   const blurred = sigX > 0.25 || sigY > 0.25;
   const hump = humpAt(frame);
@@ -166,7 +166,7 @@ export const IRSwapComposition: React.FC = () => {
       <AbsoluteFill style={{ filter: blurred ? "url(#irswap-whip-blur)" : undefined }}>
         {ready && (
         <Room>
-          <CameraRig position={pos} rotX={rotX} rotY={rotY ?? 0} rotZ={rotZ} />
+          <CameraRig position={pos} rotX={rotX} rotY={rotY ?? 0} rotZ={rotZ} fov={fov} />
           <GroundWorld frame={frame} />
           {on(frame, WIN.chartRoom) && <ChartRoomWorld frame={frame} />}
           {on(frame, WIN.buildings) && (

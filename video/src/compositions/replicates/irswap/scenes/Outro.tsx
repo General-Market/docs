@@ -1,16 +1,59 @@
 // Frames 5276-5433: the credits card. Out of the whiteout, the fallen
 // dashboard book lies open on the floor; its LEFT page flips up about the
-// book fold — dashboard artwork face up while rising (5285-5300), the
-// teal credits board on its back revealed past vertical (~5303) — and
-// settles facing the camera at 5316 (r8 measured), static to the end.
-// 3D: real page flip about a floor hinge (world x axis at the fold); the
-// camera starts high, pitched and yawed, and eases to the frontal pose.
-// End pose: board plane z=0, camera [0,100,DCAM] → screen x132-726 exact.
-
+// book fold — dashboard artwork face up while rising (5286-5301), the
+// teal credits board revealed past the one-frame edge-on blade (5302) —
+// and settles facing the camera at 5316, static to the end.
+//
+// r9 STRUCTURAL REBUILD (owner: "think structurally — it's a 3D scene,
+// build the scene with the camera, don't chase pixels"). Everything below
+// is solved per frame from corner/edge tracks of the reference
+// (work/r9/tools/: flood-fill page trackers, teal card/outer-edge
+// trackers, bounded bundle solves). What the measurements established:
+//  1. THE LENS. The settle era (5302-5316) is a real 3D render at
+//     f ~= 560 px (homography-implied focal, stable 545-575 across
+//     frames) — NOT this world's DCAM 659.38 (vfov 40). Round 8 solved
+//     poses at the wrong lens; fitting the card corners then forces a
+//     contorted camera (camY -127, i.e. below the floor) and the board
+//     BORDER distribution renders wrong even while the card hole fits —
+//     the owner's "too frontal too early" read. The outro therefore runs
+//     a designed lens move: D 659.377 -> 560 (smoothstep 5285-5296,
+//     hidden in the whiteout), fov = 2*atan(240/D). The final hold is
+//     IDENTICAL under the new lens: a frontal plane trades D against
+//     camera distance exactly (cam z = D_END, cy = VBB-410).
+//  2. THE RISE (5286-5301). The ref book lies with its fold yawed
+//     psi ~= +40..+82 deg (NOT the old invented -93/-96 edge-on sliver);
+//     the page rises FACE-ON from flat (phi 0 -> 68 by 5299, whip to ~86
+//     at 5301). The rising page is drawn SMALLER than the credits board
+//     (hand animation): page 578x360 world units vs board 594x799.
+//     The rise-era implied focal drifts 272->516 (the ref's rise is a
+//     hand warp no single lens fits) — we stay rigid at the designed
+//     lens and accept the residual: rigid-fit corner rms ~4-20px on
+//     fitted frames (reference-self-contradiction beyond that).
+//  3. THE GRAMMAR SWAP (5301->5302). The ref's white page blade
+//     (psi ~ +81) becomes a teal board blade (psi ~ -57) with a NEW
+//     camera family in ONE edge-on frame — a hidden hand-animation cut
+//     (the right page holds its pose through it; no rigid motion or
+//     camera connects the two families). We render it the way the ref
+//     hides it: TWO mounts. The art page (rise track) fades out
+//     5300-5302 while the credits board (settle track) fades in
+//     5301-5303; the shared camera cuts fast across 5301-5303 behind
+//     the crossfade, and the right page A/B pair below covers the jump.
+//  4. THE SETTLE (5302-5316). Solved at the measured lens: corner/edge
+//     residuals 0.9-2.6px mean per frame with a smooth physical camera
+//     (y 40 -> 374 -> 350, z 741 -> 560, pitch -10 -> 0, roll -30 -> 0)
+//     and board phi 55 -> 90, psi -57 -> 0. Board v-extent solved:
+//     v_top -38.9 (top edge just above frame at final — the old -30/510
+//     texture was invented), hinge at v 760.
+//  5. THE RIGHT PAGE is part of a rigid BOOK during the rise: it rides
+//     the same fold yaw (psi_A) — the old code kept it frozen at the
+//     final pose through the whole scene, which is a physically
+//     impossible book and read wrong against the rising page. It holds
+//     its pose while the board swings (matching the ref), then page B
+//     (final pose) crossfades in under the settle camera.
 import React from "react";
 import { loadFont as loadTitillium } from "@remotion/google-fonts/TitilliumWeb";
 import { clamp01, lerp1 } from "../lib/helpers";
-import { CanvasPlane, DCAM } from "../lib/world";
+import { CanvasPlane } from "../lib/world";
 import type { V3 } from "../lib/world";
 
 const { fontFamily: FONT } = loadTitillium("normal", {
@@ -19,133 +62,142 @@ const { fontFamily: FONT } = loadTitillium("normal", {
 });
 
 const FLOOR_Y = -170;
+const BOARD_CX = 2; // world x of the fold midpoint (screen 429 at the end)
 
-// board: final pose spans x132-726 (594 wide), bleeds past frame v edges
+// ── r9 solved geometry (work/r9/tools/solved_split.json) ──
+// board: final pose spans screen x132-726; v-extent SOLVED, not assumed
 const BW = 594;
-const BH = 540;
-const BOARD_CX = 2; // world x of the board center (screen 429 at the end)
+const VTB = -38.93; // board top edge, final-pose screen v
+const VBB = 760; // board hinge (fold), final-pose screen v
+const BH_B = VBB - VTB; // 798.93
+// the hand-drawn rising page is smaller than the board it becomes
+const WPAGE = 289.02; // page half-width
+const DPAGE = 360; // page depth (fold -> free edge)
+// lens: the settle era measures f~560; the whole outro glides there
+const D_END = 560;
+const D0 = 659.377; // = DCAM (vfov 40)
 
-// ── choreography keys (fitted to the reference stills by iteration) ──
-// The art page lies BEHIND the fold and rises toward the camera (the ref
-// shows the dashboard art facing the viewer for the whole rise, upper
-// side of the fold); past vertical it leans slightly toward the camera
-// and the teal credits take over. phi: 0 = flat behind, 90 = standing.
-//
-// r8 NEGATIVES on the rise 5284-5302 (measured, all reverted — do not
-// retry blind). The ref rise page is FACE-ON, not a sliver (its cyan art
-// blob grows to 8837px at 5296 and collapses to 659 by 5300; teal back
-// appears 5301) — but every attempt to reproduce that lost SSIM:
-// 1. Heuristic face-on rise (phi 22..75, psi ≈ -28): 5290 .924→.914,
-//    5296 .917→.893, 5300 .946→.901. Misplaced ink loses to absent ink.
-// 2. Analytic per-frame (phi,psi,roll) fits against measured cyan/grey
-//    art centroids DIVERGED under both the legacy and the solved camera
-//    (30-100px residuals): our drawPageArt layout is INVENTED and does
-//    not match the ref page's art arrangement.
-// 3. Squiggle-anchored camera solves: one-way ICP (rms "5px") slid along
-//    the polyline — rendered squiggle came out 2x the ref's size, 5300
-//    .946→.917; the honest two-way ICP ran to a 2000+ unit camera at rms
-//    10-16px — our right-page squiggle geometry is also invented and
-//    unfittable. Instrument lesson: one-way ICP against a longer curve
-//    is degenerate; always check the reverse term.
-// The real fix: measure the ref's actual page artwork (left page = the
-// community dashboard collage, see Community SIM_E tables; right page =
-// the squiggle chart), redraw both pages, then refit poses and camera.
-// Until then the sliver rise stays: it is what the metric prefers over
-// every mismeasured alternative (5290-5300 baseline .917-.946).
-const PHI: [number, number][] = [
-  [5283, 8], [5290, 44], [5295, 64], [5300, 88], [5303, 95],
-];
-// board yaw about the fold midpoint: the page rises turned ~90° away
-// (edge-on sliver at 5300 in the ref), then swings frontal by 5318.
-// (re-measured: the first pass opened the page toward the camera too
-// fast — silhouette 42% too wide at 5303, 22% at 5306; ref cosines give
-// the retimed keys below)
-const PSI: [number, number][] = [
-  [5283, -96], [5295, -93], [5300, -88], [5303, -70],
-];
-// camera: [frame, x, y, z, pitchDeg] — high in front, descending
-const CAM_O: [number, number, number, number, number][] = [
-  [5283, 220, 620, 1050, 30],
-  [5290, 205, 590, 1030, 29],
-  [5295, 190, 540, 990, 27],
-  [5300, 170, 460, 920, 23],
-  [5303, 85, 360, 850, 17],
-];
-const ROLL: [number, number][] = [
-  [5299, 0], [5301, -10], [5303, -16],
-];
-// mid-swing height trim: the inner page rode 15-22px high vs the ref
-const Y_LIFT: [number, number][] = [
-  [5300, 0], [5303, 12],
-];
-
-// ── r8: the settle 5304-5316, solved per frame from the reference ──
-// The white credits card is a hole in the teal mask; its four corners
-// were measured on every ref frame 5304-5316 and the (phi, psi, roll,
-// camX, camY, camZ, pitch) pose solved per frame (LM, corner rms
-// 1.2-2.8px; work/r8/outro/opose.json). The board is a plane, so hitting
-// the four corners reproduces its whole projection (homography). The ref
-// settles at 5316 — NOT 5318 (consecutive-frame diff 5316→5317 = 0.002,
-// last motion 5315→5316) — so every clamp below reads 5316.
-// [f, phi, psi, roll, camX, camY, camZ, pitchDeg]
-const OPOSE: [number, number, number, number, number, number, number, number][] = [
-  [5304, 76.29, -52.0, -9.25, 137.3, -127.4, 875.4, -13.85],
-  [5305, 78.39, -45.93, -7.29, 106.2, -67.0, 843.3, -11.2],
-  [5306, 80.27, -40.57, -5.32, 80.3, -17.9, 810.5, -8.81],
-  [5307, 81.88, -34.55, -3.87, 59.4, 14.6, 785.4, -7.1],
-  [5308, 83.19, -29.27, -2.64, 43.3, 37.5, 760.6, -5.74],
-  [5309, 84.11, -23.97, -1.57, 30.3, 51.0, 740.2, -4.76],
-  [5310, 85.48, -19.14, -1.06, 21.8, 66.2, 723.2, -3.68],
-  [5311, 86.48, -14.84, -0.55, 14.8, 75.6, 708.1, -2.82],
-  [5312, 87.46, -11.05, -0.29, 10.7, 83.8, 694.6, -2.05],
-  [5313, 88.55, -7.22, -0.03, 5.9, 93.0, 684.4, -1.21],
-  [5314, 89.07, -4.77, 0.02, 4.8, 95.3, 673.1, -0.77],
-  [5315, 89.43, -2.75, -0.07, 3.6, 96.1, 665.8, -0.45],
-  [5316, 90, 0, 0, 0, 100, DCAM, 0],
-];
-export const SETTLE_F = 5316;
-const oposeCol = (f: number, col: number): number =>
-  lerp1(OPOSE.map((k) => [k[0], k[col]] as [number, number]), f);
-export const oposeAt = (frame: number): { phi: number; psi: number } => {
-  const fc = Math.min(frame, SETTLE_F);
-  if (fc < OPOSE[0][0]) return { phi: lerp1(PHI, fc), psi: lerp1(PSI, fc) };
-  return { phi: oposeCol(fc, 1), psi: oposeCol(fc, 2) };
+export const outroD = (frame: number): number => {
+  if (frame <= 5285) return D0;
+  if (frame >= 5296) return D_END;
+  const t = (frame - 5285) / 11;
+  const s = t * t * (3 - 2 * t);
+  return D0 + (D_END - D0) * s;
 };
+
+// ── r9 camera track: [f, x, y, z, pitchDeg, rollDeg] ──
+// 5283 = the legacy bridge key (T_OUTRO/D_OUTRO plumbing depends on it);
+// 5284-5285 ease-in blend; 5286-5301 rise solve; 5302-5315 settle solve;
+// 5316 = exact final pose under the new lens.
+const CAM_R9: [number, number, number, number, number, number][] = [
+  [5283, 220, 620, 1050, 30, 0],
+  [5284, 205.09, 622.22, 1072.22, 28.91, 0.72],
+  [5285, 160.38, 628.89, 1138.89, 25.64, 2.87],
+  [5286, 85.85, 640, 1250, 20.2, 6.46],
+  [5287, 50.08, 640, 1250, 19.22, 5.13],
+  [5288, 25.16, 633.61, 1231.24, 18.93, 2.98],
+  [5289, 26.74, 610.39, 1165.73, 19.41, 2.84],
+  [5290, 22.15, 574.03, 1063.96, 20.63, 4.42],
+  [5291, 14.58, 542.72, 942.1, 22.74, 7.56],
+  [5292, 6.94, 524.11, 828.16, 27.56, 11.66],
+  [5293, 30.21, 531.94, 764.81, 29.25, 8.93],
+  [5294, 69.36, 538.34, 718.12, 29.83, 3.65],
+  [5295, 107.68, 530.01, 662.63, 32, -3.08],
+  [5296, 143.89, 490.98, 618.67, 32, -8.2],
+  [5297, 146.41, 476.34, 658.35, 32, -11.29],
+  [5298, 147.83, 473.16, 677.6, 32, -10.68],
+  [5299, 139.04, 445.61, 675.65, 31.58, -9.05],
+  [5300, 148.64, 380.38, 608.96, 32, -6.63],
+  [5301, 148.38, 342.35, 550, 32, -5.11],
+  [5302, 382.6, 40, 741.22, -10.19, -30],
+  [5303, 320.48, 105.69, 692.95, -9.81, -23.9],
+  [5304, 258.88, 180.72, 658.36, -7.88, -18.07],
+  [5305, 204.11, 242.7, 634.44, -5.63, -13.73],
+  [5306, 157.24, 289.38, 613.3, -3.6, -10.29],
+  [5307, 118.11, 322.71, 594.94, -1.92, -7.62],
+  [5308, 86.22, 346.22, 580.11, -0.55, -5.5],
+  [5309, 61.16, 361.55, 568.64, 0.47, -3.81],
+  [5310, 41.94, 370.34, 560.36, 1.15, -2.53],
+  [5311, 27.56, 374.05, 554.99, 1.52, -1.54],
+  [5312, 17.5, 373.93, 552.36, 1.61, -0.88],
+  [5313, 10.45, 370.7, 551.87, 1.46, -0.4],
+  [5314, 6.26, 365.97, 554.14, 1.17, -0.16],
+  [5315, 3.72, 357.38, 555.96, 0.56, -0.03],
+  [5316, 0, 350, 560, 0, 0],
+];
+
+// ── art page track (the rise): [f, phi, psiA] ──
+const ART_R9: [number, number, number][] = [
+  [5286, 0, 40],
+  [5287, 0, 40],
+  [5288, 0, 41.76],
+  [5289, 1.84, 51.55],
+  [5290, 4.83, 59.37],
+  [5291, 9.29, 68.33],
+  [5292, 15.59, 77.5],
+  [5293, 24.1, 80.48],
+  [5294, 40.8, 82.09],
+  [5295, 54.29, 80.77],
+  [5296, 65.7, 77.02],
+  [5297, 67.27, 76.2],
+  [5298, 67.92, 75.86],
+  [5299, 68.53, 77.64],
+  // authored whip: the ref page snaps PAST vertical 5300-5302 and falls
+  // toward the camera — under the 32-deg-pitch camera, edge-on reads at
+  // phi ~ 122 (90 + pitch), so the blade needs phi ~100 -> ~120 here
+  // (eye-tuned against ref f5300-5302; the flood tracker has no
+  // left-page obs on the whip; phi 82/96 still rendered a wide-open face)
+  [5300, 114, 78.5],
+  [5301, 126, 80],
+  [5302, 134, 81.36],
+];
+
+// ── credits board track (the settle): [f, phi, psiB] ──
+const BOARD_R9: [number, number, number][] = [
+  [5301, 49.73, -61.31],
+  [5302, 54.84, -57.34],
+  [5303, 59.96, -53.36],
+  [5304, 64.94, -49.04],
+  [5305, 68.98, -43.9],
+  [5306, 72.26, -38.5],
+  [5307, 74.9, -32.88],
+  [5308, 77.17, -27.45],
+  [5309, 79.18, -22.26],
+  [5310, 81.02, -17.52],
+  [5311, 82.75, -13.21],
+  [5312, 84.43, -9.53],
+  [5313, 86.04, -6.35],
+  [5314, 87.58, -3.97],
+  [5315, 88.69, -2.06],
+  [5316, 90, 0],
+];
+
+export const SETTLE_F = 5316;
+const col = (tab: number[][], f: number, c: number): number =>
+  lerp1(tab.map((k) => [k[0], k[c]] as [number, number]), f);
 
 export const camOutro = (frame: number): { pos: V3; pitch: number; roll: number } => {
   const fc = Math.min(frame, SETTLE_F);
-  if (fc >= OPOSE[0][0]) {
-    return {
-      pos: [oposeCol(fc, 4), oposeCol(fc, 5), oposeCol(fc, 6)],
-      pitch: (oposeCol(fc, 7) * Math.PI) / 180,
-      roll: (oposeCol(fc, 3) * Math.PI) / 180,
-    };
-  }
-  const pos: V3 = [
-    lerp1(CAM_O.map((k) => [k[0], k[1]] as [number, number]), fc),
-    lerp1(CAM_O.map((k) => [k[0], k[2]] as [number, number]), fc) + lerp1(Y_LIFT, fc),
-    lerp1(CAM_O.map((k) => [k[0], k[3]] as [number, number]), fc),
-  ];
-  const pitch = (lerp1(CAM_O.map((k) => [k[0], k[4]] as [number, number]), fc) * Math.PI) / 180;
-  const roll = (lerp1(ROLL, fc) * Math.PI) / 180;
-  return { pos, pitch, roll };
+  return {
+    pos: [col(CAM_R9, fc, 1), col(CAM_R9, fc, 2), col(CAM_R9, fc, 3)],
+    pitch: (col(CAM_R9, fc, 4) * Math.PI) / 180,
+    roll: (col(CAM_R9, fc, 5) * Math.PI) / 180,
+  };
 };
 
-
 // r8: the lockup is drawn to MEASURED ref f5380 geometry (static credits
-// hold = 143 frames; ssim-grid put 7 of the 8 worst hold cells on this
-// card). Bands (screen y at final pose): "Tutorial created by" 81-98
-// x337-486 core 178; logo bbox x367-452 y142-228 core (27,155,189); solid
-// teal wordmark (NOT hollow — the old strokeText was the catastrophic
-// r2c4 cell) cap 249-276 x319-503 core (31,154,185); VISUAL FINANCE
-// 277-290 right edge 502 core 185; contacts mid-y 346/369/392.5 widths
-// 195/163/136 core 178.
+// hold = 143 frames). Bands (screen y at final pose): "Tutorial created
+// by" 81-98 x337-486 core 178; logo bbox x367-452 y142-228 core
+// (27,155,189); solid teal wordmark cap 249-276 x319-503 core
+// (31,154,185); VISUAL FINANCE 277-290 right edge 502 core 185; contacts
+// mid-y 346/369/392.5 widths 195/163/136 core 178. (r9 changed only the
+// texture mapping constants VTB/BH_B — same final screen coordinates.)
 const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
-  // board texture in final-pose screen coordinates: (132,−30)-(726,510)
+  // board texture in final-pose screen coordinates: (132,VTB)-(726,VBB)
   const sx = w / BW;
-  const sy = h / BH;
+  const sy = h / BH_B;
   const X = (u: number) => (u - 132) * sx;
-  const Y = (v: number) => (v + 30) * sy;
+  const Y = (v: number) => (v - VTB) * sy;
   // teal board (measured vertical gradient), rounded corners like the ref
   const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, "#199ABD");
@@ -172,19 +224,14 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   const c2 = ctx as Ctx2;
   // "Tutorial created by" — light gray, measured cap band 81-95
   ctx.fillStyle = "#B6B6B6";
-  ctx.font = `600 ${18 * sy}px ${FONT}`;
+  ctx.font = `600 ${18 * sx}px ${FONT}`;
   c2.letterSpacing = "0.6px";
   ctx.fillText("Tutorial created by", X(411.5), Y(89.5));
   c2.letterSpacing = "0px";
-  // logo: teal leaf pinwheel, measured petal tips off the f5380 crop —
-  // big top leaf, big lower-left leaf, right leaf, stubby upper-right
-  // petal, grey cone tucked at the junction. All coords final-pose screen.
+  // logo: teal leaf pinwheel, measured petal tips off the f5380 crop
   const leaf = (
     bx: number, by: number, tx: number, ty: number, wd: number, bow = 0,
   ) => {
-    // fat leaf from base (bx,by) to tip (tx,ty): cubic beziers hold the
-    // width toward the tip (the ref lobes are rounded, near-elliptical
-    // with a pointed base); wd = half-width, bow leans the bulge sideways
     const dx = tx - bx;
     const dy = ty - by;
     const L = Math.hypot(dx, dy);
@@ -218,10 +265,9 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   ctx.quadraticCurveTo(X(415), Y(181), X(407), Y(187));
   ctx.closePath();
   ctx.fill();
-  // "Xpono" — SOLID teal, wide round letterforms (Titillium stretched
-  // 1.32x horizontally to the measured 184px extent, cap 249-276)
+  // "Xpono" — SOLID teal, wide round letterforms
   ctx.fillStyle = "#1B9BBD";
-  ctx.font = `700 ${40 * sy}px ${FONT}`;
+  ctx.font = `700 ${40 * sx}px ${FONT}`;
   c2.letterSpacing = "5px";
   ctx.save();
   ctx.translate(X(414), Y(262.5));
@@ -230,7 +276,7 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   ctx.restore();
   // "VISUAL FINANCE" — gray caps, right edge aligned with the wordmark
   ctx.fillStyle = "#A5A5A5";
-  ctx.font = `400 ${13 * sy}px ${FONT}`;
+  ctx.font = `400 ${13 * sx}px ${FONT}`;
   c2.letterSpacing = "3px";
   ctx.textAlign = "right";
   ctx.fillText("VISUAL FINANCE", X(506), Y(283.5));
@@ -238,7 +284,7 @@ const drawCard = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: numbe
   c2.letterSpacing = "0.8px";
   // contact lines — measured mids 346/369/392.5, widths 195/163/136
   ctx.fillStyle = "#B0B0B0";
-  ctx.font = `400 ${19 * sy}px ${FONT}`;
+  ctx.font = `400 ${19 * sx}px ${FONT}`;
   ctx.fillText("email:  info@xpono.com", X(413), Y(346));
   ctx.fillText("tel:  02079935112", X(413), Y(369));
   ctx.fillText("www.xpono.com", X(413), Y(392.5));
@@ -286,8 +332,8 @@ const drawPageArt = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: nu
   ctx.fill();
 };
 
-// the RIGHT page stays flat on the floor: red squiggle over faint
-// vertical gridlines + dashed margin (same art family as floorPaper)
+// the RIGHT page: red squiggle over faint vertical gridlines + dashed
+// margin (same art family as floorPaper)
 const drawRightPage = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: number) => {
   ctx.fillStyle = "#FCFCFB";
   ctx.fillRect(0, 0, w, h);
@@ -330,73 +376,102 @@ const drawBacking = (ctx: CanvasRenderingContext2D, _f: number, w: number, h: nu
 };
 
 export const OutroWorld: React.FC<{ frame: number }> = ({ frame }) => {
-
-  const { phi, psi: psiDeg } = oposeAt(frame);
-  const rx = ((phi - 90) * Math.PI) / 180; // -90° = flat behind, 0 = standing
-  const psi = (psiDeg * Math.PI) / 180;
   const settled = frame >= SETTLE_F;
-  // the page plane sweeps through vertical at ~5301: hand the visible
-  // surface from the dashboard art to the teal credits across it
-  const artOp = 1 - clamp01((frame - 5300) / 3);
-  // r8 board-arrival retime: the ref keeps the flipping page INVISIBLE
-  // through the whiteout — measured pale-cyan art mass (mask B−R>25 &
-  // B>150): ref 0 @5276, 182 @5281, 367 @5285, 1516 @5288 vs ours 3620
-  // already at the 5276 mount. The art fades in across 5284-5289.
-  // The teal card + backing ride a SEPARATE later ramp (5296-5300):
-  // a shared ramp bled the card's teal through the half-transparent art
-  // at mid-fade (11510 loose-blue px at 5286 vs ref 435). The card is
-  // fully opaque before the plane crosses vertical (~5301), so the
-  // credits reveal and the settle track are untouched.
-  const flipArt = clamp01((frame - 5284) / 5);
-  const flipCard = clamp01((frame - 5296) / 4);
+  // art page pose (rise track)
+  const phiA = col(ART_R9, Math.min(frame, 5302), 1);
+  const psiA = (col(ART_R9, Math.min(frame, 5302), 2) * Math.PI) / 180;
+  const rxA = ((phiA - 90) * Math.PI) / 180;
+  // the book's fold yaw for the right page: rides the rise, holds through
+  // the board swing (the ref's right page keeps its diagonal), page B
+  // takes over at the final grammar
+  const psiRA = (col(ART_R9, Math.min(frame, 5301), 2) * Math.PI) / 180;
+  // board pose (settle track)
+  const fB = Math.min(Math.max(frame, 5301), SETTLE_F);
+  const phiB = col(BOARD_R9, fB, 1);
+  const psiB = (col(BOARD_R9, fB, 2) * Math.PI) / 180;
+  const rxB = ((phiB - 90) * Math.PI) / 180;
+
+  // ── measured opacity choreography ──
+  // the ref keeps the book whited-out until ~5286-5288 (r8 measured pale-
+  // cyan art mass: ref 0 @5276, 182 @5281, 367 @5285, 1516 @5288)
+  const artIn = clamp01((frame - 5284) / 5);
+  const artOut = 1 - clamp01((frame - 5300) / 2); // face passes edge-on by 5302
+  const rpAIn = clamp01((frame - 5284) / 6);
+  const rpAOut = 1 - clamp01((frame - 5301) / 3); // A dies behind the blade swap
+  const rpB = clamp01((frame - 5303) / 3); // B (final grammar) fades in pale
+  const boardIn = clamp01((frame - 5300.5) / 2); // ref teal appears 5301-5303, solid by 5302.5
 
   return (
     <>
-      {/* the squiggle page of the open book, flat in front of the fold.
-          The reference keeps this page whited-out until ~5288 — fade it
-          in rather than popping with the region mount at 5276. */}
-      <CanvasPlane frame={0} width={BW} height={BH} res={1.5}
-        position={[BOARD_CX, FLOOR_Y, BH / 2]} rotation={[-Math.PI / 2, 0, 0]}
-        draw={drawRightPage} renderOrder={0}
-        opacity={clamp01((frame - 5280) / 8)} />
-      {/* settled page slivers left/right of the board */}
+      {/* right page A: rigid-book grammar — rides the fold yaw while the
+          page rises, holds while the board swings (like the ref's) */}
+      {rpAIn > 0 && rpAOut > 0 && (
+        <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psiRA, 0]}>
+          <CanvasPlane frame={0} width={2 * WPAGE} height={DPAGE} res={1.5}
+            position={[0, 0, DPAGE / 2]} rotation={[-Math.PI / 2, 0, 0]}
+            draw={drawRightPage} renderOrder={0}
+            opacity={rpAIn * rpAOut} />
+        </group>
+      )}
+      {/* right page B: the final grammar (fold frontal), crossfaded in
+          under the settle camera while A dies — together they hide the
+          ref's own hand-animation cut behind the blade */}
+      {rpB > 0 && (
+        <CanvasPlane frame={0} width={2 * WPAGE} height={DPAGE} res={1.5}
+          position={[BOARD_CX, FLOOR_Y, DPAGE / 2]} rotation={[-Math.PI / 2, 0, 0]}
+          draw={drawRightPage} renderOrder={0}
+          opacity={rpB} />
+      )}
+      {/* settled page slivers left/right of the board (final camera:
+          y = VBB-410, z = D_END) */}
       {settled && (
         <>
-          <mesh position={[299 + 4.5, 100, -4]}>
-            <planeGeometry args={[9, BH]} />
+          <mesh position={[299 + 4.5, VBB - 410, -4]}>
+            <planeGeometry args={[9, BH_B]} />
             <meshBasicMaterial color="#8F9495" />
           </mesh>
-          <mesh position={[-427 + 128, 100, -4]}>
-            <planeGeometry args={[7, BH]} />
+          <mesh position={[-427 + 128, VBB - 410, -4]}>
+            <planeGeometry args={[7, BH_B]} />
             <meshBasicMaterial color="#FDFDFD" />
           </mesh>
         </>
       )}
-      {/* the flipping page: yawed about the fold midpoint (the ref rises
-          it turned ~90° away, then swings it frontal), hinged at the
-          floor line for the rise itself */}
-      <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psi, 0]}>
-      <group rotation={[rx, 0, 0]}>
-        {/* page thickness rim (under the page while rising, a teal
-            border ring once the credits face the camera) */}
-        <CanvasPlane frame={0} width={BW + 7} height={BH + 7} res={0.5}
-          position={[0, BH / 2, -0.4]} draw={drawBacking} renderOrder={1}
-          opacity={flipCard} />
-        {/* credits card, revealed as the page passes vertical */}
-        <CanvasPlane frame={0} width={BW} height={BH} res={2}
-          position={[0, BH / 2, 0.3]} draw={drawCard} renderOrder={2}
-          opacity={flipCard} />
-        {/* dashboard-art surface, carried while the page rises */}
-        <CanvasPlane frame={frame} width={BW} height={BH} res={1.5}
-          position={[0, BH / 2, 0.6]}
-          draw={(ctx, f, w, h) => {
-            if (artOp <= 0) return;
-            ctx.globalAlpha = artOp;
-            drawPageArt(ctx, f, w, h);
-          }}
-          renderOrder={3} opacity={flipArt} />
-      </group>
-      </group>
+      {/* THE ART PAGE (rise mount): hinged at the fold, face-on rise.
+          A plain white BACK plane rides with it: past edge-on (the whip,
+          phi > ~122 under the 32-deg camera) the ref shows the page's
+          pale back as a thin blade — a single-sided art plane would cull
+          to nothing there. */}
+      {artIn > 0 && artOut > 0 && (
+        <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psiA, 0]}>
+          <group rotation={[rxA, 0, 0]}>
+            <CanvasPlane frame={0} width={2 * WPAGE} height={DPAGE} res={1.5}
+              position={[0, DPAGE / 2, 0.1]}
+              draw={drawPageArt}
+              renderOrder={3} opacity={artIn * artOut} />
+            <CanvasPlane frame={0} width={2 * WPAGE} height={DPAGE} res={0.5}
+              position={[0, DPAGE / 2, -0.15]} rotation={[0, Math.PI, 0]}
+              draw={(ctx, _f, w, h) => {
+                ctx.fillStyle = "#F4F4F1";
+                ctx.fillRect(0, 0, w, h);
+              }}
+              renderOrder={3} opacity={artIn * artOut} />
+          </group>
+        </group>
+      )}
+      {/* THE CREDITS BOARD (settle mount): the teal blade of 5302 swinging
+          frontal on the solved track */}
+      {boardIn > 0 && (
+        <group position={[BOARD_CX, FLOOR_Y, 0]} rotation={[0, psiB, 0]}>
+          <group rotation={[rxB, 0, 0]}>
+            <CanvasPlane frame={0} width={BW + 7} height={BH_B + 7} res={0.5}
+              position={[0, BH_B / 2, -0.4]} draw={drawBacking} renderOrder={1}
+              opacity={boardIn} />
+            <CanvasPlane frame={0} width={BW} height={BH_B} res={1.4}
+              position={[0, BH_B / 2, 0.3]} draw={drawCard} renderOrder={2}
+              opacity={boardIn} />
+          </group>
+        </group>
+      )}
     </>
   );
 };
@@ -417,5 +492,3 @@ export const OutroOverlay: React.FC<{ frame: number }> = ({ frame }) => {
     </svg>
   );
 };
-
-

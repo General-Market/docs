@@ -225,28 +225,36 @@ export const CanvasPlane: React.FC<{
 };
 
 // Camera rig: translation camera; optional pitch (rotX<0 looks down),
-// yaw (rotY) and roll (rotZ). Euler order YXZ = yaw, then pitch, then roll.
+// yaw (rotY), roll (rotZ) and per-frame fov (degrees — the outro runs a
+// measured lens move; everything else stays at VFOV). Euler order YXZ.
 export const CameraRig: React.FC<{
   position: V3;
   rotX?: number;
   rotY?: number;
   rotZ?: number;
-}> = ({ position, rotX = 0, rotY = 0, rotZ = 0 }) => {
-  return <CameraSetter position={position} rotX={rotX} rotY={rotY} rotZ={rotZ} />;
+  fov?: number;
+}> = ({ position, rotX = 0, rotY = 0, rotZ = 0, fov = VFOV }) => {
+  return <CameraSetter position={position} rotX={rotX} rotY={rotY} rotZ={rotZ} fov={fov} />;
 };
 
 // Needs to live inside the Canvas tree.
 import { useThree } from "@react-three/fiber";
-const CameraSetter: React.FC<{ position: V3; rotX: number; rotY: number; rotZ: number }> = ({
-  position, rotX, rotY, rotZ,
+import type { PerspectiveCamera } from "three";
+const CameraSetter: React.FC<{ position: V3; rotX: number; rotY: number; rotZ: number; fov: number }> = ({
+  position, rotX, rotY, rotZ, fov,
 }) => {
   const camera = useThree((s) => s.camera);
   useLayoutEffect(() => {
     camera.position.set(position[0], position[1], position[2]);
     camera.rotation.order = "YXZ";
     camera.rotation.set(rotX, rotY, rotZ);
+    const pc = camera as PerspectiveCamera;
+    if (pc.isPerspectiveCamera && pc.fov !== fov) {
+      pc.fov = fov;
+      pc.updateProjectionMatrix();
+    }
     camera.updateMatrixWorld();
-  }, [camera, position, rotX, rotY, rotZ]);
+  }, [camera, position, rotX, rotY, rotZ, fov]);
   return null;
 };
 

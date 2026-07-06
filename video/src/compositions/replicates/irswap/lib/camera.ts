@@ -29,7 +29,7 @@ import { camBld } from "../scenes/Buildings";
 import { camChart2, camChart2Yaw } from "../scenes/Chart2";
 import { camSlot } from "../scenes/floorPaper";
 import { camCommunity } from "../scenes/Community";
-import { camOutro } from "../scenes/Outro";
+import { camOutro, outroD } from "../scenes/Outro";
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -74,7 +74,7 @@ const BRIDGE1 = 5283;
 const D_OUTRO: V3 = rotXv(A_TILT, [-19.3, -38.6, -25.7]);
 export const T_OUTRO: V3 = add(T_OUTRO_FROZEN, D_OUTRO);
 
-export type WorldPose = { pos: V3; rotX: number; rotZ: number; rotY?: number };
+export type WorldPose = { pos: V3; rotX: number; rotZ: number; rotY?: number; fov?: number };
 
 // ── Buildings interior: real pitched aerial camera ───────────────────────
 // The buildings/floor/plaques are real meshes at fixed world coords. camBld
@@ -178,6 +178,11 @@ export const worldCam = (f: number): WorldPose => {
       rotZ: 0,
     };
   }
+  // r9: the outro runs a measured lens move (the ref's settle era is a
+  // real 3D render at f~560, not this world's 659.38) — D ramps inside
+  // the whiteout (5286-5296) and the fov rides it. outroD(5283-5285) =
+  // DCAM exactly, so the boundary keeps the global 40-degree lens.
   const { pos, pitch, roll } = camOutro(f);
-  return { pos: add(rotXv(A_TILT, pos), T_OUTRO), rotX: A_TILT - pitch, rotZ: roll };
+  const fov = (2 * Math.atan(240 / outroD(f)) * 180) / Math.PI;
+  return { pos: add(rotXv(A_TILT, pos), T_OUTRO), rotX: A_TILT - pitch, rotZ: roll, fov };
 };
