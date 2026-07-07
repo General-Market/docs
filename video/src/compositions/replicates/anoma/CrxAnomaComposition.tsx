@@ -59,17 +59,50 @@ const HD_SCALE = 3;
 // their original frame space, just shifted CRX_HOLD later). The phrase now reads
 // at ~2 words/sec.
 //
-// CRX_HOLD is one half-note pulse of keep-your-focus (31.03f ≈ 31). Choosing the
-// hold = one pulse makes the reference grid CONTINUOUS across the freeze: a beat
-// authored anywhere lands on the audio grid whether it plays before the hold
-// (real == rf) or after (real == rf + 31 ≈ rf + one pulse). The old loosin-up
-// cut used CRX_HOLD = 36 for the same reason (36 ≈ two loosin-up beats, 36.75f).
-// Only the CRX cut runs longer; the original Anoma replica keeps DURATION.
+// The track is ES_Momentum I. Quake (164.0 BPM, quarter-beat 10.976f; the strong
+// 82 BPM backbeat/snare is 21.95f). Audio enters at 1:28 (audioStartFrom = 2640 =
+// 88.000s·30), so composition frame 0 == audio 88.000s. Every hit is snapped in
+// REAL time (audio-frame space) to a beat or snare, so anchors land on the audio
+// grid on BOTH sides of the read-hold, not on an approximate rf grid. Full map +
+// momentum arc: docs/crx-anoma-beat-sync.md; grid + energy: audio-analysis/
+// momentum-quake.json.
+//
+// CRX_HOLD keeps the total at 1000 frames (DURATION 969 + 31). 31f is 2.82 beats
+// (≈1.41 backbeats) of the new track — not an exact pulse — but because anchors
+// are snapped in real time (rf>=353 plays at real = rf + 31), each still lands on
+// an audio beat; the freeze only inserts a calm ~1.03s read on the armed CTA.
 const CRX_HOLD_AT = 353; // freeze holds reference frame 352 (armed CTA, pre-press)
-const CRX_HOLD = 31; // one keep-your-focus half-note pulse (~1.03s read time)
+const CRX_HOLD = 31; // read-hold; DURATION 969 + 31 == 1000 frames (33.3s)
 const CRX_DURATION = DURATION + CRX_HOLD;
 const crxRefFrame = (frame: number): number =>
   frame < CRX_HOLD_AT ? frame : Math.max(CRX_HOLD_AT - 1, frame - CRX_HOLD);
+
+// ─── Momentum layer ───
+// The cut must ACCELERATE into the mid-climax and DECELERATE into the brand
+// reveal. `momentum(rf)` is a 0..1 curve read from the de-spiked RMS-loudness
+// BUILD of the track over the composition window (audio 88..121.3s): calm entry
+// (~0.38), a shoulder near f300, a breath near f500, then the PEAK (0.95) at the
+// 1:48 quake (real f~630), then a hard decelerate into the breakdown (~0.04 by
+// f900) as the lockup settles. 21 control points, one every 50 REAL frames.
+// Derivation: audio-analysis/momentum-quake.json (momentum_ctrl_50f).
+const MOM = [
+  0.382, 0.474, 0.523, 0.506, 0.583, 0.75, 0.841, 0.814, 0.756, 0.709, 0.674,
+  0.749, 0.947, 0.952, 0.582, 0.206, 0.085, 0.09, 0.043, 0.0, 0.071,
+];
+// rf -> real audio frame (inverse of the read-hold).
+const realOf = (rf: number): number => (rf < CRX_HOLD_AT ? rf : rf + CRX_HOLD);
+const momentum = (rf: number): number => {
+  const real = Math.max(0, Math.min(1000, realOf(rf)));
+  const i = real / 50;
+  const a = Math.floor(i);
+  const b = Math.min(MOM.length - 1, a + 1);
+  return MOM[a] * (1 - (i - a)) + MOM[b] * (i - a);
+};
+// Momentum drives the APPROACH, never whether an entrance lands on the beat:
+// snappier settle (lower decay r) and a small drop accent at the peak; softer and
+// looser when calm. (In wordStyle, off = drop·r^dt, so a LOWER r settles faster.)
+const momR = (rf: number): number => 0.8 - 0.18 * momentum(rf);
+const momDropScale = (rf: number): number => 1 + 0.14 * momentum(rf);
 
 // The floating headline copy must read over ANY frame of the background b-roll —
 // bright sky and dark water alike. A single near-black ink drowned in the dark
@@ -89,9 +122,9 @@ const INK_SHADOW =
 // to 3840×2160, debanded, gently sharpened and re-grained — the
 // grain hides what remains of the source compression without the
 // softness of a blur. It mounts full-bleed outside the coordinate
-// scaler, 1:1 with the 4K raster. The end fade-to-black is pulled
-// into the empty beat after scene 12 (f851-864) so the end lockup
-// lands on black, never on bright water.
+// scaler, 1:1 with the 4K raster. The end fade-to-black starts on the
+// f854 beat and completes on the f865 snare so the end lockup lands on
+// black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
 const WaveBackground: React.FC<{
@@ -105,7 +138,9 @@ const WaveBackground: React.FC<{
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
 }) => {
-  const black = interpolate(frame, [851, 864], [0, 1], clamp);
+  // Fade-to-black STARTS on a beat (f854) and completes on the snare (f865)
+  // where the end mark arrives — the lockup lands on solid black.
+  const black = interpolate(frame, [854, 865], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
@@ -152,13 +187,17 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
   capTop,
   fs = FS,
   drop = 53,
-  r = 0.74,
+  r,
   rise = false,
   out,
   frame,
 }) => {
   if (frame < words[0].f) return null;
   if (out?.cut !== undefined && frame >= out.cut) return null;
+  // Momentum shapes the settle: snappier + a slight drop accent near the quake,
+  // softer/wider when calm. Sampled at the line's first word.
+  const rr = r ?? momR(words[0].f);
+  const dd = drop * momDropScale(words[0].f);
   let opacity = 1;
   if (out?.fade) {
     opacity = interpolate(frame, out.fade, [1, 0], clamp);
@@ -195,7 +234,7 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
           style={{
             display: "inline-block",
             whiteSpace: "pre",
-            ...wordStyle(frame, w.f, drop, r, rise),
+            ...wordStyle(frame, w.f, dd, rr, rise),
           }}
         >
           {w.t + (i < words.length - 1 ? " " : "")}
@@ -207,14 +246,15 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
 
 // ─── Scene 1: "Managing FX risk just became" — word drop-in, then
 // per-character gaussian blur-out (same physics as the reference).
-// Words walk the keep-your-focus 16th grid (3.92f); "became" lands on
-// the f22 beat (b1). Beat map: docs/crx-anoma-beat-sync.md.
+// Momentum is at its calm floor here, so the words walk the wide 8th grid
+// (5.49f) and "became" lands on the f29 beat — a measured, unhurried entry.
+// Beat map: docs/crx-anoma-beat-sync.md.
 const S1_WORDS: WordSpec[] = [
-  { t: "Managing", f: 6 },
-  { t: "FX", f: 10 },
-  { t: "risk", f: 14 },
-  { t: "just", f: 18 },
-  { t: "became", f: 22 },
+  { t: "Managing", f: 7 },
+  { t: "FX", f: 13 },
+  { t: "risk", f: 18 },
+  { t: "just", f: 24 },
+  { t: "became", f: 29 },
 ];
 
 const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
@@ -245,13 +285,13 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
       }}
     >
       {S1_WORDS.map((w, wi) => {
-        const ws = wordStyle(frame, w.f, 53, 0.74, false);
+        const ws = wordStyle(frame, w.f, 53 * momDropScale(w.f), momR(w.f), false);
         const chars = (w.t + (wi < S1_WORDS.length - 1 ? " " : "")).split("");
         return (
           <span key={wi} style={{ display: "inline-block", whiteSpace: "pre", ...ws }}>
             {chars.map((c, k) => {
-              // Scatter across the b3 beat (f53) — the line dissolves on the hit,
-              // well after "became" has rested (f22 → f51 = ~1s hold).
+              // Dissolve ONSET on the f51 beat — the line scatters on the hit,
+              // well after "became" has rested (f29 → f51 ≈ 0.75s hold).
               const s = 51 + ((ci * 11 + 5) % 9);
               ci++;
               const blur = interpolate(frame, [s, s + 6], [0, 10], clamp);
@@ -284,7 +324,7 @@ const EASY = "Easy".split("");
 const EASY_FS = 87;
 
 const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 69 || frame >= 118) return null;
+  if (frame < 73 || frame >= 117) return null;
   const widths = EASY.map(
     (ch) =>
       measureText({ text: ch, fontFamily: DISPLAY, fontSize: EASY_FS, fontWeight: "700" })
@@ -297,17 +337,17 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
       {EASY.map((ch, i) => {
         const x = cx;
         cx += widths[i];
-        // Letter cascade blooms into the b5 beat (f85); "Easy" is fully formed
-        // and resting as the beat lands. (Soft blur-bloom, tight 69-118 window.)
+        // Letter cascade blooms on the f73 beat; "Easy" is fully formed and
+        // resting on the f84 backbeat, then blurs out. (Soft bloom, 73-117.)
         const sIn = 73 + i * 2;
-        const sOut = 102 + i * 1.2;
+        const sOut = 100 + i * 1.2;
         let blur: number;
         let op: number;
-        if (frame < 89) {
+        if (frame < 84) {
           blur = interpolate(frame, [sIn, sIn + 3], [8, 0], clamp);
           op = interpolate(frame, [sIn, sIn + 2], [0, 1], clamp);
-        } else if (frame < 102) {
-          blur = interpolate(frame, [89, 101], [0, 2], clamp);
+        } else if (frame < 100) {
+          blur = interpolate(frame, [84, 99], [0, 2], clamp);
           op = 1;
         } else {
           blur = interpolate(frame, [sOut, sOut + 11], [2, 12], clamp);
@@ -340,53 +380,54 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── All standard text lines (scene mount windows inherited from the
-// reference cut and left FROZEN; only the word entries are re-quantized
-// to the keep-your-focus 116 BPM grid — first word on a beat/8th,
-// cascades on the 3.92f 16th, line-enders on the 15.67f quarter-beat
-// (b#). A sentence that spans two rows is one cascade landing its payoff
-// word on a beat. Map: docs/crx-anoma-beat-sync.md) ───
+// ─── All standard text lines, re-quantized to the momentum-quake grid ───
+// (164 BPM, beat 10.976f, backbeat/snare 21.95f, phase f7.24). First word of a
+// sentence on a beat; interior words evenly on the 8th grid (calm) or 16th grid
+// (busy — momentum >= 0.55); the payoff word LANDS on a beat. A sentence spanning
+// rows is one cascade. Scene cuts are snapped to a backbeat/snare (the strong
+// hits); mount windows unfrozen to match. Map: docs/crx-anoma-beat-sync.md.
 const LINES: CrxLineSpec[] = [
-  // Scene 3 — Introducing / CRX; "CRX" rides the frozen dash mount f128 (hard cut f209)
-  { words: [{ t: "Introducing", f: 124 }], x: 91, capTop: 257, drop: 44, out: { cut: 209 } },
-  { words: [{ t: "CRX", f: 128 }], x: 88, capTop: 328, drop: 44, out: { cut: 209 } },
-  // Scene 4 — Access / rate locks; "locks" on the b14 beat (f226, cut f258).
-  // "In Any Corridor" walks 16ths into the b17 beat (f273, cut f308).
-  { words: [{ t: "Access", f: 218 }], x: 71, capTop: 291, out: { cut: 258 } },
-  { words: [{ t: "rate", f: 222 }, { t: "locks", f: 226 }], x: 71, capTop: 355, out: { cut: 258 } },
-  { words: [{ t: "In", f: 265 }, { t: "Any", f: 269 }, { t: "Corridor", f: 273 }], x: 55, capTop: 330, out: { cut: 308 } },
-  // Scene 5 — one 6-word cascade down the stanza; "notional" on the b21
-  // beat (f335) as the typing completes. Cut f358.
-  { words: [{ t: "At", f: 315 }, { t: "your", f: 319 }], x: 77, capTop: 275, out: { cut: 358 } },
-  { words: [{ t: "preferred", f: 323 }], x: 77, capTop: 339, out: { cut: 358 } },
-  { words: [{ t: "date", f: 327 }], x: 75, capTop: 396, out: { cut: 358 } },
-  { words: [{ t: "and", f: 331 }, { t: "notional", f: 335 }], x: 75, capTop: 460, out: { cut: 358 } },
-  // Scene 6 — centered, rise+fade; each row lands its ender on a beat,
-  // one quarter-beat apart: "paying" b23 (f367), "middleman" b24 (f382). Cut f409.
-  { words: [{ t: "Without", f: 363 }, { t: "paying", f: 367 }], capTop: 299, drop: 24, rise: true, out: { cut: 409 } },
-  { words: [{ t: "the", f: 378 }, { t: "middleman", f: 382 }], capTop: 366, drop: 24, rise: true, out: { cut: 409 } },
+  // Scene 3 — Introducing / CRX; "Introducing" on the dash-mount beat f128,
+  // "CRX" one beat later f139 (cut on the snare f216)
+  { words: [{ t: "Introducing", f: 128 }], x: 91, capTop: 257, drop: 44, out: { cut: 216 } },
+  { words: [{ t: "CRX", f: 139 }], x: 88, capTop: 328, drop: 44, out: { cut: 216 } },
+  // Scene 4 — Access / rate locks; "locks" on the f227 beat (cut snare f260).
+  // "In Any Corridor" walks the 16th grid into the f271 beat (cut snare f304).
+  { words: [{ t: "Access", f: 216 }], x: 71, capTop: 291, out: { cut: 260 } },
+  { words: [{ t: "rate", f: 221 }, { t: "locks", f: 227 }], x: 71, capTop: 355, out: { cut: 260 } },
+  { words: [{ t: "In", f: 260 }, { t: "Any", f: 265 }, { t: "Corridor", f: 271 }], x: 55, capTop: 330, out: { cut: 304 } },
+  // Scene 5 — one 6-word cascade down the stanza (momentum high, 16th grid);
+  // "notional" on the f337 beat as the typing completes. Cut snare f360.
+  { words: [{ t: "At", f: 315 }, { t: "your", f: 320 }], x: 77, capTop: 275, out: { cut: 360 } },
+  { words: [{ t: "preferred", f: 323 }], x: 77, capTop: 339, out: { cut: 360 } },
+  { words: [{ t: "date", f: 328 }], x: 75, capTop: 396, out: { cut: 360 } },
+  { words: [{ t: "and", f: 334 }, { t: "notional", f: 337 }], x: 75, capTop: 460, out: { cut: 360 } },
+  // Scene 6 — centered, rise+fade; "paying" f369, "middleman" lands f382. Cut f404.
+  { words: [{ t: "Without", f: 360 }, { t: "paying", f: 369 }], capTop: 299, drop: 24, rise: true, out: { cut: 404 } },
+  { words: [{ t: "the", f: 374 }, { t: "middleman", f: 382 }], capTop: 366, drop: 24, rise: true, out: { cut: 404 } },
   // Scene 7 — centered, rise+fade; one 6-word cascade, "infrastructure"
-  // on the b27 beat (f429, cut f461).
-  { words: [{ t: "From", f: 409 }, { t: "legacy", f: 413 }, { t: "banks,", f: 417 }], capTop: 295, drop: 24, rise: true, out: { cut: 461 } },
-  { words: [{ t: "to", f: 421 }, { t: "modern", f: 425 }, { t: "infrastructure", f: 429 }], capTop: 364, drop: 24, rise: true, out: { cut: 461 } },
-  // Scene 8 — Onboard (8th f469) / in days on the 16th grid (cut f565)
-  { words: [{ t: "Onboard", f: 469 }], x: 72, capTop: 286, drop: 50, out: { cut: 565 } },
-  { words: [{ t: "in", f: 472 }, { t: "days", f: 476 }], x: 73, capTop: 355, drop: 50, out: { cut: 565 } },
-  // Scene 9 — "Access" rides the frozen card mount f571; "dealers" (f590)
-  // lands with the third dealer quote (cut f650)
-  { words: [{ t: "Access", f: 571 }, { t: "liquidity", f: 575 }], x: 55, capTop: 278, drop: 50, out: { cut: 650 } },
-  { words: [{ t: "from", f: 582 }, { t: "multiple", f: 586 }], x: 55, capTop: 349, drop: 50, out: { cut: 650 } },
-  { words: [{ t: "dealers", f: 590 }], x: 55, capTop: 420, drop: 50, out: { cut: 650 } },
-  // Scene 10 — "design" on the b42 beat (f665) as the first check ticks (fades f716-722)
-  { words: [{ t: "Compliance", f: 657 }, { t: "by", f: 661 }], x: 64, capTop: 269, drop: 50, out: { fade: [716, 722] } },
-  { words: [{ t: "design", f: 665 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
-  // Scene 11 — centered; one 5-word cascade, "simple." on the b47 beat (f743, cut f764)
-  { words: [{ t: "Cross-border", f: 727 }, { t: "business", f: 731 }], capTop: 305, drop: 26, out: { cut: 764 } },
-  { words: [{ t: "risk,", f: 735 }, { t: "made", f: 739 }, { t: "simple", f: 743 }], capTop: 373, drop: 26, out: { cut: 764 } },
-  // Scene 12 — top-center; hero words both on beats: "CRX" b49 (f774),
-  // "Live" b50 (f790), one quarter-beat apart (fades f848-851)
-  { words: [{ t: "CRX", f: 774 }, { t: "Sandbox", f: 778 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
-  { words: [{ t: "is", f: 786 }, { t: "Live", f: 790 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
+  // on the f426 beat (cut snare f470).
+  { words: [{ t: "From", f: 404 }, { t: "legacy", f: 407 }, { t: "banks,", f: 413 }], capTop: 295, drop: 24, rise: true, out: { cut: 470 } },
+  { words: [{ t: "to", f: 418 }, { t: "modern", f: 421 }, { t: "infrastructure", f: 426 }], capTop: 364, drop: 24, rise: true, out: { cut: 470 } },
+  // Scene 8 — Onboard (beat f470) / in days, "days" on the f481 beat (cut snare f558)
+  { words: [{ t: "Onboard", f: 470 }], x: 72, capTop: 286, drop: 50, out: { cut: 558 } },
+  { words: [{ t: "in", f: 476 }, { t: "days", f: 481 }], x: 73, capTop: 355, drop: 50, out: { cut: 558 } },
+  // Scene 9 — the RFQ rides the quake (peak momentum, tight 16th cascade);
+  // "dealers" (f591) lands with the third dealer quote (cut snare f646)
+  { words: [{ t: "Access", f: 569 }, { t: "liquidity", f: 574 }], x: 55, capTop: 278, drop: 50, out: { cut: 646 } },
+  { words: [{ t: "from", f: 580 }, { t: "multiple", f: 585 }], x: 55, capTop: 349, drop: 50, out: { cut: 646 } },
+  { words: [{ t: "dealers", f: 591 }], x: 55, capTop: 420, drop: 50, out: { cut: 646 } },
+  // Scene 10 — "design" on the f668 beat as the first check ticks (fades f712-723)
+  { words: [{ t: "Compliance", f: 657 }, { t: "by", f: 662 }], x: 64, capTop: 269, drop: 50, out: { fade: [712, 723] } },
+  { words: [{ t: "design", f: 668 }], x: 59, capTop: 334, drop: 50, out: { fade: [712, 723] } },
+  // Scene 11 — centered, decelerating (momentum low, wide 8th cascade);
+  // "simple" on the f745 beat (cut f767)
+  { words: [{ t: "Cross-border", f: 723 }, { t: "business", f: 728 }], capTop: 305, drop: 26, out: { cut: 767 } },
+  { words: [{ t: "risk,", f: 734 }, { t: "made", f: 739 }, { t: "simple", f: 745 }], capTop: 373, drop: 26, out: { cut: 767 } },
+  // Scene 12 — top-center; the brand line settles as the track breathes out:
+  // "CRX Sandbox" (f778/783), "is Live" lands f799 (fades f843-851)
+  { words: [{ t: "CRX", f: 778 }, { t: "Sandbox", f: 783 }], capTop: 129, drop: 44, out: { fade: [843, 851] } },
+  { words: [{ t: "is", f: 794 }, { t: "Live", f: 799 }], capTop: 198, drop: 44, out: { fade: [843, 851] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -413,13 +454,13 @@ const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
 const LEFT_FINAL = CENTER - LOCKUP_W / 2;
 const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
 
-// The mark arrives on the b57 beat — the first hit after the water has
-// gone fully black (fade completes f864) — and the wordmark reveals on
-// the b59 beat one pulse later. In real playback these are rf 869→real
-// 900 and rf 900→real 931 (both keep-your-focus beats, hold 31), landing
-// under the track's chorus lift (~30-31s).
-const MARK_IN = 869;
-const REVEAL = 900;
+// The mark arrives on the f865 backbeat — the hit where the water finishes
+// fading to black — and the wordmark reveals two backbeats later on the f909
+// snare, both landing as the track breathes out. In real playback these are
+// rf865→real896 and rf909→real940 (hold 31); the wordmark settles by real960
+// and holds on black to the end.
+const MARK_IN = 865;
+const REVEAL = 909;
 const REVEAL_DUR = 20;
 
 const EndMark: React.FC<{ size: number }> = ({ size }) => (
@@ -502,6 +543,21 @@ const EndLockup: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// The 1280×720 content layer — app cards + headline copy + end lockup — given a
+// reference frame. Exported so a scratch contact-sheet can sample it at any rf
+// without re-bundling per frame (frame is a prop, not useCurrentFrame).
+export const CrxContentLayer: React.FC<{ rf: number }> = ({ rf }) => (
+  <>
+    <CrxAppScenes frame={rf} />
+    <CrxScene1 frame={rf} />
+    <CrxScene2 frame={rf} />
+    {LINES.map((l, i) => (
+      <CrxLine key={i} {...l} frame={rf} />
+    ))}
+    <EndLockup frame={rf} />
+  </>
+);
+
 // The stage, parametrized on frame size, content scale and background.
 // The measured 1280×720 coordinate system never changes — the 16:9 stage
 // is scaled to fit the frame width and centered, and the background runs
@@ -524,8 +580,8 @@ const CrxAnomaStage: React.FC<{
   scale = HD_SCALE,
   waveSrc,
   waveLoopSeconds,
-  audioSrc = "crx-assets/loosin-up.mp3",
-  audioStartFrom = 0,
+  audioSrc = "crx-assets/momentum-quake.mp3",
+  audioStartFrom = 2640,
   background,
 }) => {
   const frame = useCurrentFrame();
@@ -566,13 +622,7 @@ const CrxAnomaStage: React.FC<{
           transformOrigin: "top left",
         }}
       >
-        <CrxAppScenes frame={rf} />
-        <CrxScene1 frame={rf} />
-        <CrxScene2 frame={rf} />
-        {LINES.map((l, i) => (
-          <CrxLine key={i} {...l} frame={rf} />
-        ))}
-        <EndLockup frame={rf} />
+        <CrxContentLayer rf={rf} />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -589,7 +639,8 @@ const CrxAnomaStage: React.FC<{
 // the water by removing waveSrc (it falls back to the bridge-wave-4k default).
 export const CrxAnomaComposition: React.FC = () => (
   <CrxAnomaStage
-    audioSrc="crx-assets/keep-your-focus-basixx.mp3"
+    audioSrc="crx-assets/momentum-quake.mp3"
+    audioStartFrom={2640}
     waveSrc="crx-assets/broll-bg-cut.mp4"
     waveLoopSeconds={62}
   />
@@ -601,7 +652,12 @@ export const CrxAnomaComposition: React.FC = () => (
 // from the lighter 1080p source — the 4K wave only bloats Chrome's frame cache
 // and buys nothing at the web output size.
 export const CrxAnoma32Composition: React.FC = () => (
-  <CrxAnomaStage height={2560} waveSrc="crx-assets/bridge-wave.mp4" />
+  <CrxAnomaStage
+    height={2560}
+    waveSrc="crx-assets/bridge-wave.mp4"
+    audioSrc="crx-assets/momentum-quake.mp3"
+    audioStartFrom={2640}
+  />
 );
 
 export const crxAnomaMeta = {
@@ -632,7 +688,7 @@ const WaveHalftoneBackground: React.FC<{
   width: number;
   height: number;
 }> = ({ frame, width, height }) => {
-  const black = interpolate(frame, [851, 864], [0, 1], clamp);
+  const black = interpolate(frame, [854, 865], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={18 * FPS}>
@@ -665,25 +721,21 @@ const WaveHalftoneBackground: React.FC<{
 // centred 75%-wide band — the "adapted to this resolution" fit. The app
 // scene only paints inside y122–594 of its 720 rows, so the ~120px empty
 // margins top and bottom are all that the crop removes; nothing real is cut,
-// and the silk still runs full-bleed behind everything. Scored to the Heyson
-// track, not the loosin-up grid.
+// and the silk still runs full-bleed behind everything. Scored to the same
+// momentum-quake grid as the hero cut.
 const WIDE_H = 1696;
 const WIDE_W = Math.round((WIDE_H * 2000) / 848 / 2) * 2; // 4000, Apple 2.3585:1
 const WIDE_SCALE = WIDE_W / 1280; // 3.125 — fill width, crop empty top/bottom
 
-// Music: land the track's 0:44 on the video's midpoint. Middle frame is
-// DURATION/2; 0:44 is 44·FPS audio frames; so the track starts that many
-// frames before the midpoint.
-const MUSIC_MIDDLE_SEC = 44;
-const AUDIO_START_FROM = Math.round(MUSIC_MIDDLE_SEC * FPS - CRX_DURATION / 2);
-
+// All three cuts share ONE track (momentum-quake, entering at 1:28) so the whole
+// family scores common; they already share the anchor tables through CrxAnomaStage.
 export const CrxAnomaSilkComposition: React.FC = () => (
   <CrxAnomaStage
     width={WIDE_W}
     height={WIDE_H}
     scale={WIDE_SCALE}
-    audioSrc="crx-assets/over-the-moon-heyson.mp3"
-    audioStartFrom={AUDIO_START_FROM}
+    audioSrc="crx-assets/momentum-quake.mp3"
+    audioStartFrom={2640}
     background={(frame, w, h) => (
       <WaveHalftoneBackground frame={frame} width={w} height={h} />
     )}

@@ -11,12 +11,12 @@ import { clamp } from "./AnomaComposition";
 // #0fb6ab, the SOFT_CARD surface, sunken wells, hairline dividers,
 // brass for the lock moment, the app's own flag files. No invented
 // shadows, no gradients — if app.crxfx.com doesn't render it, the
-// video doesn't either. Mount windows are inherited
-// frame-for-frame from the measured Anoma reference and left FROZEN;
-// intra-scene events (clicks, locks, landings, chart growth) sit on the
-// keep-your-focus 116 BPM grid — quarter-beat 15.67f, 8th 7.84f, 16th
-// 3.92f, phase 6.27 — causes on beats, effects 1-2 frames later, charts
-// finished and RESTING before their scene exits.
+// video doesn't either. Mount windows AND intra-scene events (clicks,
+// locks, landings, chart growth) are re-quantized to the momentum-quake
+// grid — beat 10.976f, backbeat/snare 21.95f, 8th 5.49f, 16th 2.74f,
+// phase 7.24 — causes on beats, effects 1-2 frames later, charts finished
+// and RESTING before their scene exits; card mounts on a beat, the strong
+// full-screen cuts on a snare.
 // Grid: docs/crx-anoma-beat-sync.md. Inside the cards the interface
 // moves like a real one — a cursor causes things, values roll rather
 // than cut, and a selection slides rather than teleports.
@@ -498,10 +498,10 @@ const BarChart: React.FC<{
   );
 };
 
-// ─── Scene 3 (f128-207): portfolio overview under "Introducing CRX" ───
-// Card mounts on the frozen f128 reference cut. Bars grow from the b9
-// beat (f147) and are FINISHED on the b12 beat (f194) — the chart rests
-// ~9f before the blur-out at f203 instead of dying mid-growth. Balance
+// ─── Scene 3 (f128-215): portfolio overview under "Introducing CRX" ───
+// Card mounts on the f128 beat. Bars grow from f150 and are FINISHED on
+// the f194 beat — the chart rests ~16f before the f210 blur-out into the
+// f216 snare cut, instead of dying mid-growth. Balance
 // column mirrors the live app: number first, "Total value" beneath,
 // then Available / Margin Locked / Unrealized P&L and the token rows.
 const S3_BARS = { h: [118, 94, 140, 128, 172], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
@@ -516,22 +516,22 @@ const S3_TOKENS = [
 ];
 
 export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 128 || frame >= 208) return null;
+  if (frame < 128 || frame >= 216) return null;
   const opacity =
-    interpolate(frame, [127, 152], [0, 1], clamp) *
-    interpolate(frame, [203, 207], [1, 0], clamp);
+    interpolate(frame, [127, 150], [0, 1], clamp) *
+    interpolate(frame, [210, 216], [1, 0], clamp);
   const growth = (fr: number) =>
     interpolate(
       // BarChart staggers each bar by i*2, so the current-month (hero) bar
-      // finishes at array-end + 8. End at 186 so the hero lands on the b12
-      // beat (f194) and rests ~9f before the f203 blur-out.
+      // finishes at array-end + 8. End at 186 so the hero lands on the f194
+      // beat and rests ~16f before the f210 blur-out.
       fr,
-      [147, 153, 160, 167, 173, 180, 186],
+      [150, 156, 162, 168, 174, 180, 186],
       [0, 0.18, 0.38, 0.58, 0.76, 0.9, 1],
       clamp,
     );
   const blurIn = interpolate(frame, [128, 158], [3.5, 0], clamp);
-  const blurOut = interpolate(frame, [203, 207], [0, 6], clamp);
+  const blurOut = interpolate(frame, [210, 216], [0, 6], clamp);
   return (
     <Card
       x={SLOT.left}
@@ -658,24 +658,25 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 4 (f205-357): "Open a hedge" in three beats ───
-// A: the forward rate ticks live (Indicative) from the b14 beat (f226,
-//    as "locks" is said), then LOCKS on the b15 beat (f241) — brass,
-//    because the app reserves brass for the binding moment.
-// B: the cursor opens the corridor list (click f265, an 8th); the
-//    hover ring walks the 16th grid (273/281/288); the click on the
-//    e37 8th (f296) selects USD/BRL and the card re-quotes.
-// C: tenor clicks ride the 8ths (f312, f320); typing starts on the b21
-//    beat (f335, as "notional" lands); the CTA arms on the b22 beat
-//    (f351) and is pressed at f356 just before the read-hold freeze.
+// ─── Scene 4 (f205-359): "Open a hedge" in three beats ───
+// A: the forward rate ticks live (Indicative) from the f227 beat (as
+//    "locks" is said), then LOCKS on the f238 beat — brass, because the
+//    app reserves brass for the binding moment.
+// B: the cursor opens the corridor list (click f260, a beat); the hover
+//    ring walks the 8th grid (271/282/293); the click on the f293 beat
+//    selects USD/BRL and the card re-quotes.
+// C: tenor clicks ride the 8ths (f315, f320); typing starts on the f337
+//    beat (as "notional" lands); the CTA arms as typing completes (f351)
+//    and is pressed at f356 after the read-hold freeze; card cuts on the
+//    f360 snare.
 const CORRIDORS: { a: string; b: string; pair: string; sub: string; rate: string; spot: string }[] = [
   { a: "us", b: "mx", pair: "USD/MXN", sub: "Dollars / Mexican pesos", rate: "17.5104", spot: "17.499" },
   { a: "us", b: "in", pair: "USD/INR", sub: "Dollars / Indian rupees", rate: "84.212", spot: "84.155" },
   { a: "us", b: "tr", pair: "USD/TRY", sub: "Dollars / Turkish lira", rate: "38.905", spot: "38.822" },
   { a: "us", b: "br", pair: "USD/BRL", sub: "Dollars / Brazilian reais", rate: "5.4310", spot: "5.418" },
 ];
-const SELECT_AT = 296; // the click that makes USD/BRL the pair — on the e37 8th
-const HOVER_STEPS = [273, 281, 288]; // hover ring hops on 16ths after landing on row 0 at f267
+const SELECT_AT = 293; // the click that makes USD/BRL the pair — on the f293 beat
+const HOVER_STEPS = [271, 282, 293]; // hover ring hops on 8ths after landing on row 0 at f262
 
 const RATE_TICKS = ["17.5081", "17.5104", "17.5092", "17.5110", "17.5087", "17.5104"];
 // Spot keeps breathing after the forward locks — the market moves,
@@ -683,78 +684,80 @@ const RATE_TICKS = ["17.5081", "17.5104", "17.5092", "17.5110", "17.5087", "17.5
 const SPOT_FLICK = ["1", "3", "0", "4", "2", "5"];
 
 const NOTIONAL = "2,500,000";
-const TYPE_START = 335; // first char on the b21 beat (as "notional" lands)
-const TYPE_END = TYPE_START + (NOTIONAL.length - 1) * 2; // f351
+const TYPE_START = 337; // first char on the f337 beat (as "notional" lands)
+// Types fast enough (1.75f/char) to complete + arm the CTA by f351, so the
+// read-hold freeze (rf352) catches the armed "Request quotes" button.
+const TYPE_END = TYPE_START + Math.round((NOTIONAL.length - 1) * 1.75); // f351
 
 const CURSOR_KEYS: CursorKey[] = [
-  { f: 250, x: 640, y: 452 },
-  { f: 261, x: 618, y: 224 }, // "Change ⌄" on the pair well
-  { f: 265, x: 618, y: 224 }, // open click (8th)
-  { f: 268, x: 420, y: 296 }, // row 0 (USD/MXN)
-  { f: 273, x: 420, y: 340 }, // row 1
-  { f: 281, x: 420, y: 384 }, // row 2
-  { f: 288, x: 420, y: 428 }, // row 3 (USD/BRL) — arrives
-  { f: 296, x: 420, y: 428 }, // row 3 — click selects on the 8th
-  { f: 304, x: 470, y: 400 },
+  { f: 249, x: 640, y: 452 },
+  { f: 258, x: 618, y: 224 }, // "Change ⌄" on the pair well
+  { f: 260, x: 618, y: 224 }, // open click (beat)
+  { f: 264, x: 420, y: 296 }, // row 0 (USD/MXN)
+  { f: 271, x: 420, y: 340 }, // row 1
+  { f: 282, x: 420, y: 384 }, // row 2
+  { f: 291, x: 420, y: 428 }, // row 3 (USD/BRL) — arrives
+  { f: 293, x: 420, y: 428 }, // row 3 — click selects on the beat
+  { f: 300, x: 470, y: 400 },
   { f: 311, x: 170, y: 308 }, // tenor well
   { f: 320, x: 170, y: 308 },
-  { f: 329, x: 150, y: 116 }, // notional field
-  { f: 335, x: 236, y: 148 }, // rest aside while it types
-  { f: 351, x: 355, y: 384 }, // CTA (arms on the b22 beat)
+  { f: 326, x: 150, y: 116 }, // notional field
+  { f: 337, x: 236, y: 148 }, // rest aside while it types
+  { f: 351, x: 355, y: 384 }, // CTA (arms as typing completes)
   { f: 356, x: 355, y: 384 },
 ];
-const CURSOR_CLICKS = [265, 296, 312, 320, 331, 356];
+const CURSOR_CLICKS = [260, 293, 315, 320, 326, 356];
 
 export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 205 || frame >= 358) return null;
+  if (frame < 205 || frame >= 360) return null;
   const opacity = interpolate(frame, [204, 207], [0, 1], clamp);
-  // Reference zoom beat f206-216 → scale settle.
-  const scale = 1 + 0.045 * Math.pow(0.74, Math.max(0, frame - 206));
+  // Mount zoom settles off the f205 beat.
+  const scale = 1 + 0.045 * Math.pow(0.74, Math.max(0, frame - 205));
 
   const cor = CORRIDORS[frame < SELECT_AT ? 0 : 3];
   const reQuote = frame >= SELECT_AT ? settle(frame, SELECT_AT, 9, 0.74) : {};
 
-  // Beat A — Indicative ticks from the b14 beat (f226), locks on the b15 beat (f241).
-  const locked = frame >= 241;
+  // Beat A — Indicative ticks from the f227 beat, locks on the f238 beat.
+  const locked = frame >= 238;
   const rate =
-    frame < 226
+    frame < 227
       ? RATE_TICKS[0]
-      : frame < 241
-        ? RATE_TICKS[Math.floor((frame - 226) / 4) % RATE_TICKS.length]
+      : frame < 238
+        ? RATE_TICKS[Math.floor((frame - 227) / 4) % RATE_TICKS.length]
         : cor.rate;
   const lockPulse =
-    interpolate(frame, [241, 244], [0, 1], clamp) * interpolate(frame, [253, 263], [1, 0], clamp);
+    interpolate(frame, [238, 241], [0, 1], clamp) * interpolate(frame, [249, 260], [1, 0], clamp);
 
   // Spot flicker: last digit changes every 5 frames, forever.
   const spot = cor.spot + SPOT_FLICK[Math.floor(frame / 5) % SPOT_FLICK.length];
 
-  // Beat B — corridor dropdown f265-307.
-  const panelIn = fadeIn(frame, 265, 3) * interpolate(frame, [304, 308], [1, 0], clamp);
-  const panelOpen = frame >= 265 && frame < 308;
+  // Beat B — corridor dropdown f260-303.
+  const panelIn = fadeIn(frame, 260, 3) * interpolate(frame, [300, 304], [1, 0], clamp);
+  const panelOpen = frame >= 260 && frame < 304;
   const hoverIdx = stepSlide(frame, HOVER_STEPS, 4); // 0→3, eased hops
-  const hoverOp = fadeIn(frame, 267, 3);
+  const hoverOp = fadeIn(frame, 262, 3);
   const selIdx = frame < SELECT_AT ? 0 : 3;
 
-  // Beat C — tenor swaps on the 8ths f312/f320, notional types from the
-  // b21 beat (f335), CTA arms on the b22 beat (f351).
+  // Beat C — tenor swaps on the 8ths f315/f320, notional types from the
+  // f337 beat, CTA arms as typing completes (f351).
   const tenor =
-    frame < 312
+    frame < 315
       ? ["Aug 1, 2026", "30 days from today"]
       : frame < 320
         ? ["Sep 30, 2026", "90 days from today"]
         : ["Jun 30, 2027", "363 days from today"];
-  const tenorSwap = frame >= 312 ? settle(frame, frame < 320 ? 312 : 320, 8, 0.74) : {};
+  const tenorSwap = frame >= 315 ? settle(frame, frame < 320 ? 315 : 320, 8, 0.74) : {};
   const tenorFocus =
-    interpolate(frame, [310, 313], [0, 1], clamp) * interpolate(frame, [326, 332], [1, 0], clamp);
-  const focused = frame >= 331;
+    interpolate(frame, [313, 316], [0, 1], clamp) * interpolate(frame, [331, 335], [1, 0], clamp);
+  const focused = frame >= 333;
   const typedChars =
-    frame < TYPE_START ? 0 : Math.min(Math.floor((frame - TYPE_START) / 2) + 1, NOTIONAL.length);
+    frame < TYPE_START ? 0 : Math.min(Math.floor((frame - TYPE_START) / 1.75) + 1, NOTIONAL.length);
   const typing = typedChars > 0 && typedChars < NOTIONAL.length;
   // Caret blinks while idle-focused, holds solid while typing.
   const caretOn = focused && (typing || Math.floor(frame / 8) % 2 === 0);
   const armed = frame >= 351;
   const ctaSettle = armed ? settle(frame, 351, 6, 0.72) : {};
-  const ctaPressed = frame >= 356 && frame < 358;
+  const ctaPressed = frame >= 356 && frame < 360;
 
   return (
     <Card
@@ -938,7 +941,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                   height: 6,
                   borderRadius: 3,
                   backgroundColor: TEAL,
-                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 30),
+                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 22),
                 }}
               />
               Indicative
@@ -1089,16 +1092,16 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 8 (f464-576): compliance onboarding under "Onboard in days" ───
-// Sub-states crossfade on the keep-your-focus grid (469 = e59 8th, 492 =
-// e62 8th, 496 = 16th, 508 = e64 8th, 531 = e67 8th); rows whose KEY is
-// new to a face drop in staggered; the success dot expands, then floods
-// the card across the b35 beat (f555) and resolves to Verified.
+// ─── Scene 8 (f459-579): compliance onboarding under "Onboard in days" ───
+// Sub-states crossfade on the momentum-quake grid (470/492/498/503/536);
+// rows whose KEY is new to a face drop in staggered; the success dot pops
+// on the f547 beat, then floods the card across the f558 beat and resolves
+// to Verified.
 type ObRow = { k: string; v: string; state?: "pending" | "done" | "run" };
 
 const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
   {
-    at: 463,
+    at: 459,
     step: 0,
     rows: [
       { k: "Legal entity", v: "—", state: "pending" },
@@ -1107,7 +1110,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 469,
+    at: 470,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -1125,7 +1128,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 496,
+    at: 498,
     step: 1,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -1134,7 +1137,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 508,
+    at: 503,
     step: 1,
     rows: [
       { k: "KYB documents", v: "Received", state: "done" },
@@ -1143,7 +1146,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 531,
+    at: 536,
     step: 2,
     rows: [
       { k: "KYB documents", v: "Verified", state: "done" },
@@ -1323,18 +1326,18 @@ const ObFace: React.FC<{
 );
 
 export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 464 || frame >= 577) return null;
-  const cardOpacity = interpolate(frame, [571, 576], [1, 0], clamp);
+  if (frame < 459 || frame >= 580) return null;
+  const cardOpacity = interpolate(frame, [574, 580], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
-  // Success dot: pops on the quarter at f543, holds, then floods the
-  // card across the f552 beat; the Verified face resolves out of it.
+  // Success dot: pops on the f547 beat, holds, then floods the card across
+  // the f558 beat; the Verified face resolves out of it.
   const dotD = interpolate(
     frame,
-    [543, 546, 549, 551, 553, 556],
+    [547, 550, 552, 554, 558, 561],
     [12, 44, 42, 42, 420, 950],
     clamp,
   );
-  const successOp = interpolate(frame, [555, 560], [0, 1], clamp);
+  const successOp = interpolate(frame, [558, 563], [0, 1], clamp);
   return (
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h + 5} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
@@ -1354,7 +1357,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         );
       })}
-      {frame >= 543 && successOp < 1 && (
+      {frame >= 547 && successOp < 1 && (
         <div
           style={{
             position: "absolute",
@@ -1419,26 +1422,27 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 9 (f571-665): RFQ — quotes from multiple dealers ───
-// Skeleton rows shimmer; rates ROLL in on the 16th grid (f582/586/590,
-// "dealers" lands with the third quote at f590) with tabular
-// digits; the best rate is ringed on the b38 beat (f602) once all three
-// are on the table. The card continues scene 4's trade: USD/BRL, $2.5M,
+// ─── Scene 9 (f569-667): RFQ — quotes from multiple dealers ───
+// The RFQ rides the quake (peak momentum). Skeleton rows shimmer; rates
+// ROLL in on the beat/8th grid (f580/585/591, "dealers" lands with the
+// third quote at f591) with tabular digits; the best rate is ringed on
+// the f602 beat once all three are on the table. The card continues
+// scene 4's trade: USD/BRL, $2.5M,
 // Jun 30 2027. Rows carry no dealer avatar — the name and desk line
 // name the counterparty; only the best row is ringed in teal-soft.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 582, t: "0.6s" },
-  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 586, t: "0.8s" },
-  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 590, t: "1.1s" },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 580, t: "0.6s" },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 585, t: "0.8s" },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 591, t: "1.1s" },
 ];
 const BEST = 1;
 const HIGHLIGHT_AT = 602;
 
 export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 571 || frame >= 666) return null;
-  const rated = frame >= 582;
+  if (frame < 569 || frame >= 668) return null;
+  const rated = frame >= 580;
   const highlighted = frame >= HIGHLIGHT_AT;
-  const countdown = rated ? 120 - Math.floor((frame - 582) / 30) : 120;
+  const countdown = rated ? 120 - Math.floor((frame - 580) / 30) : 120;
   return (
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w + 1} h={SLOT.h} opacity={1}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
@@ -1468,7 +1472,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                   height: 6,
                   borderRadius: 3,
                   backgroundColor: TEAL,
-                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 30),
+                  opacity: 0.5 + 0.5 * Math.cos((frame * Math.PI) / 22),
                 }}
               />
               Quoting…
@@ -1583,7 +1587,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                       height: 14,
                       borderRadius: 6,
                       backgroundColor: BORDER_STRONG,
-                      opacity: 0.5 + 0.5 * Math.cos(((frame + i * 12) * Math.PI) / 30),
+                      opacity: 0.5 + 0.5 * Math.cos(((frame + i * 11) * Math.PI) / 22),
                     }}
                   />
                 )}
@@ -1600,24 +1604,24 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 10 (f641-722): compliance checklist under "Compliance by design" ───
-// Crossfades over the RFQ card on the reference curve; checks tick in
-// on the 8th grid (f665/672/680/688); the All-clear pill is the
-// conclusion — it lands on the b44 beat (f696) and HOLDS 20 frames
-// before the card fades, instead of arriving into its own death.
+// ─── Scene 10 (f646-722): compliance checklist under "Compliance by design" ───
+// Crossfades over the RFQ card; checks tick in on the beat/8th grid
+// (f668/673/679/690); the All-clear pill is the conclusion — it lands on
+// the f701 beat and HOLDS ~11 frames before the card fades, instead of
+// arriving into its own death.
 const COMPLY_ROWS = [
-  { at: 665, k: "KYB", v: "Verified" },
-  { at: 672, k: "Sanctions screening", v: "Clear · 0 hits" },
-  { at: 680, k: "Travel rule", v: "Enabled" },
-  { at: 688, k: "Audit export", v: "CSV · PDF ready" },
+  { at: 668, k: "KYB", v: "Verified" },
+  { at: 673, k: "Sanctions screening", v: "Clear · 0 hits" },
+  { at: 679, k: "Travel rule", v: "Enabled" },
+  { at: 690, k: "Audit export", v: "CSV · PDF ready" },
 ];
-const ALL_CLEAR_AT = 696;
+const ALL_CLEAR_AT = 701;
 
 export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 641 || frame >= 723) return null;
+  if (frame < 646 || frame >= 723) return null;
   const opacity =
-    interpolate(frame, [641, 666], [0, 1], clamp) *
-    interpolate(frame, [716, 722], [1, 0], clamp);
+    interpolate(frame, [646, 668], [0, 1], clamp) *
+    interpolate(frame, [712, 723], [1, 0], clamp);
   return (
     <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h} opacity={opacity}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
@@ -1704,13 +1708,13 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── Scene 12 (f769-848): the app, full width, under "CRX Sandbox is Live." ───
-// Amber sandbox banner + nav + portfolio, AFTER the story's trade:
-// margin locked reflects the $2.5M hedge, and the positions list
-// carries it. Bars grow on the beat grid from f782 and are FINISHED
-// on the b52 beat (f821) — 24 frames of rest before the fade instead of
-// growth running into the cut. Positions land on the b50 beat (f790,
-// with "Live") and the b51 beat (f806). The Portfolio pill is chrome — the real nav never
+// ─── Scene 12 (f778-853): the app, full width, under "CRX Sandbox is Live." ───
+// Nav + portfolio, AFTER the story's trade: margin locked reflects the
+// $2.5M hedge, and the positions list carries it. The card mounts on the
+// f778 snare (the strong finale cut). Bars grow from f784 and are FINISHED
+// on the f821 beat — ~27 frames of rest before the fade instead of growth
+// running into the cut. Positions land on the f799 beat (with "Live") and
+// f810. The Portfolio pill is chrome — the real nav never
 // animates it in, so it is present from the scene's first frame.
 // Card stays bottom-anchored (top + h = 720). The amber sandbox banner was
 // removed, so the app shell is 30px shorter: top moves down 30 (291→321) and
@@ -1721,8 +1725,8 @@ const S12_BARS = { h: [72, 55, 84, 78, 106], months: ["Feb", "Mar", "Apr", "May"
 const S12_TABS = ["Swap", "Transfer", "Portfolio", "Compliance"];
 
 const POSITIONS = [
-  { at: 790, a: "us", b: "br", pair: "USD/BRL", side: "Long", notional: "$2.5M", pnl: "+$1,240", health: 0.86 },
-  { at: 806, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
+  { at: 799, a: "us", b: "br", pair: "USD/BRL", side: "Long", notional: "$2.5M", pnl: "+$1,240", health: 0.86 },
+  { at: 810, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
 // The whole UI wears the landing face, so the nav wears Diatype too — a
@@ -1733,15 +1737,15 @@ const NAV_INK = "#1a1a1a";
 const NAV_BORDER = "#e7e7e2";
 
 export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 769 || frame >= 849) return null;
+  if (frame < 778 || frame >= 854) return null;
   const opacity =
-    interpolate(frame, [769, 793], [0, 1], clamp) *
-    interpolate(frame, [845, 848], [1, 0], clamp);
+    interpolate(frame, [778, 795], [0, 1], clamp) *
+    interpolate(frame, [848, 854], [1, 0], clamp);
   if (opacity <= 0) return null;
   const growth = (fr: number) =>
-    // End at 813 so the staggered hero bar (i*2) finishes on the b52 beat
-    // (f821) and rests ~24f before the f845 fade.
-    interpolate(fr, [782, 788, 794, 801, 807, 813], [0, 0.18, 0.42, 0.68, 0.9, 1], clamp);
+    // End at 813 so the staggered hero bar (i*2) finishes on the f821 beat
+    // and rests ~27f before the f848 fade.
+    interpolate(fr, [784, 789, 795, 801, 807, 813], [0, 0.18, 0.42, 0.68, 0.9, 1], clamp);
   const pillOn = 1; // chrome never animates itself in
   return (
     <Card x={S12.left} y={S12.top} w={S12.w} h={S12.h} opacity={opacity} radius={16} bg={BG}>
