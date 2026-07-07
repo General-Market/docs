@@ -37,8 +37,6 @@ const BORDER = "rgba(23, 23, 33, 0.08)"; // --border (the only hairline)
 const BORDER_STRONG = "#e4e5ea"; // --border-strong (inputs, tracks)
 const SUCCESS = "#0e7a4a"; // --success
 const SUCCESS_SOFT = "rgba(14, 122, 74, 0.15)"; // bg-success/15
-const AMBER = "#c77d0a"; // --warning
-const AMBER_SOFT = "rgba(199, 125, 10, 0.15)"; // bg-warning/15
 const BRASS = "#8a5d12"; // --accent-2 (AA text brass)
 const BRASS_SOFT = "rgba(138, 93, 18, 0.15)"; // bg-accent2/15
 // --accent-2-ring (lock-ignite) = rgba(184,132,58,0.32); the lock
@@ -156,19 +154,22 @@ const CalendarGlyph: React.FC<{ size?: number }> = ({ size = 13 }) => (
   </svg>
 );
 
-// The USDC mark — dollar core plus the two broken arcs.
+// The USDC mark — the app's exact coin face (public/tokens/usdc.svg from
+// app.crxfx.com, copied byte-for-byte into crx-assets/tokens). Rendered the way
+// the desk's TokenLogo renders it: a round disc with the app's hairline ring
+// (rounded-pill ring-1 ring-line). The svg is already a #0B53BF circle, so the
+// square box is clipped to a circle and the ring follows the rounded edge.
 const UsdcMark: React.FC<{ size: number }> = ({ size }) => (
-  <svg viewBox="0 0 32 32" width={size} height={size}>
-    <circle cx="16" cy="16" r="16" fill="#2775CA" />
-    <path
-      d="M20.5 18.6c0-2.1-1.3-2.9-3.9-3.3-1.9-.3-2.3-.8-2.3-1.7 0-.9.7-1.5 2-1.5 1.2 0 1.9.4 2.2 1.4.1.2.2.3.4.3h1c.2 0 .4-.2.4-.4v-.1c-.3-1.5-1.4-2.6-3-2.8V9c0-.2-.2-.4-.4-.4h-1c-.2 0-.4.2-.4.4v1.5c-1.9.3-3.1 1.5-3.1 3.1 0 2 1.2 2.8 3.8 3.2 1.8.3 2.4.7 2.4 1.7s-.9 1.7-2.2 1.7c-1.7 0-2.3-.7-2.5-1.7-.1-.2-.2-.3-.4-.3h-1.1c-.2 0-.4.2-.4.4v.1c.3 1.6 1.3 2.8 3.4 3.1V23c0 .2.2.4.4.4h1c.2 0 .4-.2.4-.4v-1.5c2-.3 3.3-1.6 3.3-3.3z"
-      fill="#fff"
-    />
-    <path
-      d="M13 24.4c-3.5-1.3-5.3-5.2-4-8.7.7-1.9 2.2-3.3 4-4 .2-.1.3-.2.3-.5v-.9c0-.2-.1-.4-.3-.4h-.1c-4.3 1.4-6.7 6-5.3 10.3.8 2.5 2.8 4.5 5.3 5.3.2.1.4 0 .4-.2l.1-.1v-.9c0-.2-.2-.4-.4-.5zm6.1-14.5c-.2-.1-.4 0-.4.2l-.1.1v.9c0 .2.2.4.4.5 3.5 1.3 5.3 5.2 4 8.7-.7 1.9-2.2 3.3-4 4-.2.1-.3.2-.3.5v.9c0 .2.1.4.3.4h.1c4.3-1.4 6.7-6 5.3-10.3-.8-2.6-2.8-4.6-5.3-5.4z"
-      fill="#fff"
-    />
-  </svg>
+  <Img
+    src={staticFile("crx-assets/tokens/usdc.svg")}
+    style={{
+      width: size,
+      height: size,
+      borderRadius: "50%",
+      display: "block",
+      boxShadow: `0 0 0 1px ${BORDER}`,
+    }}
+  />
 );
 
 const Check: React.FC<{ size: number; color?: string; stroke?: number }> = ({
@@ -255,30 +256,35 @@ const Card: React.FC<{
   );
 };
 
+// A currency pair, drawn the way app.crxfx.com draws it (components/desk/
+// CurrencyLogo.tsx → PairLogo): two overlapping ROUND flag discs, base in front
+// with a white ring separating it from the quote nudged behind at 0.9 opacity,
+// each disc object-cover with a hairline ring. A coin-stack, not the old
+// rectangular pair — so the video reads like the real app.
 const FlagPair: React.FC<{ a: string; b: string; size?: number }> = ({ a, b, size = 24 }) => (
-  <div style={{ position: "relative", width: size * 1.65, height: size, flexShrink: 0 }}>
+  <div style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
     <Img
       src={flag(a)}
       style={{
-        position: "absolute",
-        left: 0,
-        width: size * 1.33,
+        position: "relative",
+        zIndex: 1,
+        width: size,
         height: size,
         objectFit: "cover",
-        borderRadius: 4,
+        borderRadius: "50%",
+        boxShadow: "0 0 0 2px #fff",
       }}
     />
     <Img
       src={flag(b)}
       style={{
-        position: "absolute",
-        left: size * 0.62,
-        top: 3,
-        width: size * 1.05,
-        height: size * 0.79,
+        width: size,
+        height: size,
+        marginLeft: -size * 0.38,
+        opacity: 0.9,
         objectFit: "cover",
-        borderRadius: 3,
-        boxShadow: "0 0 0 2px #fff",
+        borderRadius: "50%",
+        boxShadow: `0 0 0 1px ${BORDER}`,
       }}
     />
   </div>
@@ -537,18 +543,6 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
             <CrxMark size={20} />
             <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Portfolio</span>
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 400,
-              color: AMBER,
-              backgroundColor: AMBER_SOFT,
-              borderRadius: 980,
-              padding: "3px 10px",
-            }}
-          >
-            Sandbox
-          </div>
         </div>
 
         {/* page-grammar hairline under the header */}
@@ -770,7 +764,6 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: TER, fontSize: 18, lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Open a hedge</span>
-          <div style={{ marginLeft: "auto", ...tag, fontSize: 11.5 }}>FX Forward</div>
         </div>
 
         {/* Forward notional well */}
@@ -1167,7 +1160,6 @@ const ObFace: React.FC<{
   <div style={{ position: "absolute", inset: 0, padding: "26px 30px", backgroundColor: "#fff" }}>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Compliance</span>
-      <span style={{ fontSize: 12, color: TER }}>Institutional onboarding</span>
     </div>
     <div
       style={{
@@ -1180,54 +1172,79 @@ const ObFace: React.FC<{
       }}
     />
 
-    {/* stepper */}
-    <div style={{ position: "absolute", left: 30, top: 76, width: 650 }}>
-      {[0, 1].map((i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: 24 + i * 271 + 24,
-            top: 11,
-            width: 271 - 48 + 24,
-            height: 2,
-            backgroundColor: step > i ? TEAL : BORDER_STRONG,
-          }}
-        />
-      ))}
+    {/* stepper — the app's StepFlow rail (components/desk/StepFlow.tsx): a flex
+        row of numbered nodes with flex-1 connectors on each side, so the bars
+        always meet the node edges flush (no absolute gap math — the earlier
+        version left a gap before the next circle). A segment reads teal once its
+        left node is complete. Digits center optically in the disc via
+        inline-flex centering plus line-height:1 (raw metric leading was pushing
+        them off-center). */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        top: 76,
+        width: 650,
+        display: "flex",
+        alignItems: "flex-start",
+      }}
+    >
       {OB_STEPS.map((s, i) => {
         const done = step > i;
         const active = step === i;
+        const first = i === 0;
+        const last = i === OB_STEPS.length - 1;
         return (
-          <div key={s} style={{ position: "absolute", left: i * 271, width: 108, textAlign: "center" }}>
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                margin: "0 auto",
-                borderRadius: 12,
-                backgroundColor: done || active ? TEAL : "#fff",
-                border: done || active ? "none" : `2px solid ${BORDER_STRONG}`,
-                boxShadow: active ? FOCUS_RING : undefined,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {done ? (
-                <Check size={13} stroke={16} />
-              ) : (
-                <span
-                  style={{
-                    fontSize: 11.5,
-                    fontWeight: 700,
-                    color: active ? "#fff" : TER,
-                    fontFamily: DIATYPE,
-                  }}
-                >
-                  {i + 1}
-                </span>
-              )}
+          <div
+            key={s}
+            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+              <div
+                style={{
+                  height: 2,
+                  flex: 1,
+                  backgroundColor: first ? "transparent" : step >= i ? TEAL : BORDER_STRONG,
+                }}
+              />
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  margin: "0 8px",
+                  borderRadius: 12,
+                  flexShrink: 0,
+                  backgroundColor: done || active ? TEAL : "#fff",
+                  border: done || active ? "none" : `2px solid ${BORDER_STRONG}`,
+                  boxShadow: active ? FOCUS_RING : undefined,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {done ? (
+                  <Check size={13} stroke={16} />
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      color: active ? "#fff" : TER,
+                      fontFamily: DIATYPE,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  height: 2,
+                  flex: 1,
+                  backgroundColor: last ? "transparent" : step > i ? TEAL : BORDER_STRONG,
+                }}
+              />
             </div>
             <div
               style={{
@@ -1297,9 +1314,6 @@ const ObFace: React.FC<{
       );
     })}
 
-    <div style={{ position: "absolute", left: 30, bottom: 22, fontSize: 12, color: TER }}>
-      Onboard once, trade with every dealer on the network.
-    </div>
   </div>
 );
 
@@ -1405,12 +1419,12 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 // "dealers" lands on the f589 beat with the second quote) with tabular
 // digits; the best rate is ringed on the f607 snare once all three are
 // on the table. The card continues scene 4's trade: USD/BRL, $2.5M,
-// Jun 30 2027. Avatars wear the app's own neutrals — surface-2 with
-// secondary ink; only the best dealer carries the teal-soft fill.
+// Jun 30 2027. Rows carry no dealer avatar — the name and desk line
+// name the counterparty; only the best row is ringed in teal-soft.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, t: "0.6s", bg: SURFACE2, fg: SEC },
-  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, t: "0.8s", bg: TEAL_SOFT, fg: TEAL },
-  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, t: "1.1s", bg: SURFACE2, fg: SEC },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 584, t: "0.6s" },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 589, t: "0.8s" },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 593, t: "1.1s" },
 ];
 const BEST = 1;
 const HIGHLIGHT_AT = 607;
@@ -1526,28 +1540,10 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                 opacity: dim,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: d.bg,
-                    color: d.fg,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  D{i + 1}
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{d.name}</div>
-                  <div style={{ fontSize: 12.5, color: TER }}>
-                    {landed ? `${d.sub} · answered ${d.t}` : d.sub}
-                  </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.2 }}>{d.name}</div>
+                <div style={{ fontSize: 12.5, color: TER }}>
+                  {landed ? `${d.sub} · answered ${d.t}` : d.sub}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1592,7 +1588,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
         })}
 
         <div style={{ position: "absolute", left: 30, bottom: 20, fontSize: 12, color: TER }}>
-          One request: the whole dealer network answers.
+          One request: the whole dealer network answers
         </div>
       </div>
     </Card>
@@ -1698,9 +1694,6 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
           );
         })}
 
-        <div style={{ position: "absolute", left: 30, bottom: 24, fontSize: 12, color: TER }}>
-          Every trade screened on-chain, continuously.
-        </div>
       </div>
     </Card>
   );
@@ -1714,7 +1707,11 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
 // growth running into the cut. Positions land on the f791 snare and
 // the f800 16th. The Portfolio pill is chrome — the real nav never
 // animates it in, so it is present from the scene's first frame.
-const S12 = { left: 83, top: 291, w: 1114, h: 429 };
+// Card stays bottom-anchored (top + h = 720). The amber sandbox banner was
+// removed, so the app shell is 30px shorter: top moves down 30 (291→321) and
+// height shrinks 30 (429→399), keeping the bottom edge pinned and the nav flush
+// at the card top with no empty band.
+const S12 = { left: 83, top: 321, w: 1114, h: 399 };
 const S12_BARS = { h: [72, 55, 84, 78, 106], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
 const S12_TABS = ["Swap", "Transfer", "Portfolio", "Compliance"];
 
@@ -1723,26 +1720,12 @@ const POSITIONS = [
   { at: 800, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
-// The whole UI wears the landing face. The nav sits directly above the
-// Diatype sandbox banner, so it wears Diatype too — a Helvetica nav there
-// read as a seam. Ink #1a1a1a, a frosted white bar over a warm-grey hairline.
+// The whole UI wears the landing face, so the nav wears Diatype too — a
+// Helvetica nav read as a seam. Ink #1a1a1a, a frosted white bar over a
+// warm-grey hairline.
 const NAV_FONT = DIATYPE;
 const NAV_INK = "#1a1a1a";
 const NAV_BORDER = "#e7e7e2";
-
-const Flask: React.FC<{ size?: number }> = ({ size = 13 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size}>
-    <path
-      d="M9.5 3h5M10 3v6l-5.2 8.8A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3.2L14 9V3"
-      fill="none"
-      stroke="#fff"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M8 15.5h8" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" />
-  </svg>
-);
 
 export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 769 || frame >= 849) return null;
@@ -1755,32 +1738,11 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
   const pillOn = 1; // chrome never animates itself in
   return (
     <Card x={S12.left} y={S12.top} w={S12.w} h={S12.h} opacity={opacity} radius={16} bg={BG}>
-      {/* sandbox banner — AppShell renders it bg-warning, 13px/500 white */}
+      {/* nav — flush at the card top now the sandbox banner is gone */}
       <div
         style={{
           position: "absolute",
           top: 0,
-          width: "100%",
-          height: 30,
-          backgroundColor: AMBER,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 7,
-          fontSize: 12,
-          fontWeight: 400,
-          color: "#fff",
-        }}
-      >
-        <Flask />
-        Sandbox: Base Sepolia testnet. No real funds at risk.
-      </div>
-
-      {/* nav */}
-      <div
-        style={{
-          position: "absolute",
-          top: 30,
           width: "100%",
           height: 48,
           backgroundColor: "rgba(255,255,255,0.85)",
@@ -1879,7 +1841,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 26,
-          top: 102,
+          top: 72,
           width: 300,
           height: 300,
           backgroundColor: "#fff",
@@ -1925,7 +1887,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 342,
-          top: 102,
+          top: 72,
           width: 400,
           height: 300,
           backgroundColor: "#fff",
@@ -1959,7 +1921,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 758,
-          top: 102,
+          top: 72,
           width: 330,
           height: 300,
           backgroundColor: "#fff",

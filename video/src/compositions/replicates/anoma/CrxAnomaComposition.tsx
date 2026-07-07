@@ -50,6 +50,22 @@ const DISPLAY = DIATYPE;
 const CENTER = 640;
 const HD_SCALE = 3;
 
+// ─── Item-5 read-hold ───
+// The 11s "At your preferred date and notional" beat completes and cuts too fast
+// to read once (6 words in ~1.6s). We insert a freeze at the tail of the hedge
+// scene: past CRX_HOLD_AT the reference frame `rf` holds at 352 — the settled
+// card with the armed "Request quotes" CTA and the full headline on screen — for
+// CRX_HOLD frames, then releases (the click and every downstream scene resume in
+// their original frame space, just shifted CRX_HOLD later). The phrase now reads
+// at ~2 words/sec. The beat grid drifts by CRX_HOLD past this point — owner-
+// sanctioned. Only the CRX cut runs longer; the original Anoma replica keeps the
+// shared DURATION untouched.
+const CRX_HOLD_AT = 353; // freeze holds reference frame 352 (armed CTA, pre-press)
+const CRX_HOLD = 36; // +1.2s of read time
+const CRX_DURATION = DURATION + CRX_HOLD;
+const crxRefFrame = (frame: number): number =>
+  frame < CRX_HOLD_AT ? frame : Math.max(CRX_HOLD_AT - 1, frame - CRX_HOLD);
+
 // The floating headline copy must read over ANY frame of the background b-roll —
 // bright sky and dark water alike. A single near-black ink drowned in the dark
 // water; a flat white would vanish in the sky. So the ink is the landing's
@@ -78,13 +94,11 @@ const WaveBackground: React.FC<{
   height?: number;
   waveSrc?: string;
   loopSeconds?: number;
-  trimBefore?: number;
 }> = ({
   frame,
   height = 720 * HD_SCALE,
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
-  trimBefore,
 }) => {
   const black = interpolate(frame, [851, 864], [0, 1], clamp);
   return (
@@ -92,7 +106,6 @@ const WaveBackground: React.FC<{
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
         <OffthreadVideo
           muted
-          trimBefore={trimBefore}
           src={staticFile(waveSrc)}
           style={{
             position: "absolute",
@@ -358,10 +371,10 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "design", f: 662 }], x: 59, capTop: 334, drop: 50, out: { fade: [716, 722] } },
   // Scene 11 — centered; "simple." on the f736 beat (cut f764)
   { words: [{ t: "Cross-border", f: 722 }, { t: "business", f: 726 }], capTop: 305, drop: 26, out: { cut: 764 } },
-  { words: [{ t: "risk,", f: 731 }, { t: "made", f: 733 }, { t: "simple.", f: 736 }], capTop: 373, drop: 26, out: { cut: 764 } },
+  { words: [{ t: "risk,", f: 731 }, { t: "made", f: 733 }, { t: "simple", f: 736 }], capTop: 373, drop: 26, out: { cut: 764 } },
   // Scene 12 — top-center; "Sandbox" on the f772 snare (fades f848-851)
   { words: [{ t: "CRX", f: 768 }, { t: "Sandbox", f: 772 }], capTop: 129, drop: 44, out: { fade: [848, 851] } },
-  { words: [{ t: "is", f: 777 }, { t: "Live.", f: 782 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
+  { words: [{ t: "is", f: 777 }, { t: "Live", f: 782 }], capTop: 198, drop: 44, out: { fade: [848, 851] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -487,7 +500,6 @@ const CrxAnomaStage: React.FC<{
   scale?: number;
   waveSrc?: string;
   waveLoopSeconds?: number;
-  waveTrimBefore?: number;
   audioSrc?: string;
   audioStartFrom?: number;
   background?: (frame: number, width: number, height: number) => React.ReactNode;
@@ -497,12 +509,17 @@ const CrxAnomaStage: React.FC<{
   scale = HD_SCALE,
   waveSrc,
   waveLoopSeconds,
-  waveTrimBefore,
   audioSrc = "crx-assets/loosin-up.mp3",
   audioStartFrom = 0,
   background,
 }) => {
   const frame = useCurrentFrame();
+  // Reference frame: real time up to the read-hold, then frozen through the hold,
+  // then real-minus-CRX_HOLD. Every scene, line and the lockup are authored in
+  // this space, so the freeze inserts cleanly and downstream shifts by one edit.
+  // The water Loop and audio stay on real playback time; only the black fade
+  // (which cues the lockup) rides `rf`.
+  const rf = crxRefFrame(frame);
   const topInset = (height - 720 * scale) / 2;
   const leftInset = (width - 1280 * scale) / 2;
   return (
@@ -511,18 +528,17 @@ const CrxAnomaStage: React.FC<{
         src={staticFile(audioSrc)}
         startFrom={audioStartFrom}
         volume={(f) =>
-          interpolate(f, [0, 12, DURATION - 45, DURATION - 6], [0, 1, 1, 0], clamp)
+          interpolate(f, [0, 12, CRX_DURATION - 45, CRX_DURATION - 6], [0, 1, 1, 0], clamp)
         }
       />
       {background ? (
-        background(frame, width, height)
+        background(rf, width, height)
       ) : (
         <WaveBackground
-          frame={frame}
+          frame={rf}
           height={height}
           waveSrc={waveSrc}
           loopSeconds={waveLoopSeconds}
-          trimBefore={waveTrimBefore}
         />
       )}
       <AbsoluteFill
@@ -535,31 +551,31 @@ const CrxAnomaStage: React.FC<{
           transformOrigin: "top left",
         }}
       >
-        <CrxAppScenes frame={frame} />
-        <CrxScene1 frame={frame} />
-        <CrxScene2 frame={frame} />
+        <CrxAppScenes frame={rf} />
+        <CrxScene1 frame={rf} />
+        <CrxScene2 frame={rf} />
         {LINES.map((l, i) => (
-          <CrxLine key={i} {...l} frame={frame} />
+          <CrxLine key={i} {...l} frame={rf} />
         ))}
-        <EndLockup frame={frame} />
+        <EndLockup frame={rf} />
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-// The looping background is the 1:28:22–1:29:39 b-roll cut (77s, 1080p) in
-// place of the bridge.xyz water. It begins at source 16.5s (trimBefore=495 at
-// 30fps — a half-second head trim past the 16s mark) and plays forward. With
-// 60.5s of clip left after the trim — far longer than the 0–28.8s visible window
-// before the end fade-to-black — only that opening span plays: it never wraps or
-// seams. The trim is scoped to this main cut alone; CRX-Anoma-3-2 and the silk
-// wide keep their own untrimmed backgrounds. Restore the water by removing
-// waveSrc (it falls back to the bridge-wave-4k default).
+// The looping background is the 1:28:22–1:29:39 b-roll cut recomposed offline
+// (crx-assets/broll-bg-cut.mp4, 62.5s, 1080p) in place of the bridge.xyz water.
+// The cut is baked into the asset — source [0.5s→16s] concatenated with
+// [30s→end]: the opening half-second and the 16–30s section are dropped, so the
+// background plays straight from the asset's own start with no trim in the
+// composition. Its 62.5s far outruns the 0–28.8s visible window before the end
+// fade-to-black, so it never wraps or seams. The asset is scoped to this main
+// cut alone; CRX-Anoma-3-2 and the silk wide keep their own backgrounds. Restore
+// the water by removing waveSrc (it falls back to the bridge-wave-4k default).
 export const CrxAnomaComposition: React.FC = () => (
   <CrxAnomaStage
-    waveSrc="broll/youtube-MLm07I49RiE/broll_1-28-22_to_1-29-39.mp4"
-    waveLoopSeconds={77}
-    waveTrimBefore={Math.round(16.5 * FPS)}
+    waveSrc="crx-assets/broll-bg-cut.mp4"
+    waveLoopSeconds={62}
   />
 );
 
@@ -578,7 +594,7 @@ export const crxAnomaMeta = {
   width: 1280 * HD_SCALE,
   height: 720 * HD_SCALE,
   fps: FPS,
-  durationInFrames: DURATION,
+  durationInFrames: CRX_DURATION,
 };
 
 export const crxAnoma32Meta = {
@@ -587,7 +603,7 @@ export const crxAnoma32Meta = {
   width: 1280 * HD_SCALE,
   height: 2560,
   fps: FPS,
-  durationInFrames: DURATION,
+  durationInFrames: CRX_DURATION,
 };
 
 // The bridge-wave footage halftoned into the CRX teal dot-style offline
@@ -643,7 +659,7 @@ const WIDE_SCALE = WIDE_W / 1280; // 3.125 — fill width, crop empty top/bottom
 // DURATION/2; 0:44 is 44·FPS audio frames; so the track starts that many
 // frames before the midpoint.
 const MUSIC_MIDDLE_SEC = 44;
-const AUDIO_START_FROM = Math.round(MUSIC_MIDDLE_SEC * FPS - DURATION / 2);
+const AUDIO_START_FROM = Math.round(MUSIC_MIDDLE_SEC * FPS - CRX_DURATION / 2);
 
 export const CrxAnomaSilkComposition: React.FC = () => (
   <CrxAnomaStage
@@ -664,5 +680,5 @@ export const crxAnomaSilkMeta = {
   width: WIDE_W,
   height: WIDE_H,
   fps: FPS,
-  durationInFrames: DURATION,
+  durationInFrames: CRX_DURATION,
 };
