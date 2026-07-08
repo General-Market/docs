@@ -1,167 +1,137 @@
 # CRX-Anoma beat sync + momentum
 
-The music of all three **CRX-Anoma** cuts is now `crx-assets/momentum-quake.mp3`
-— *ES_Momentum I. Quake* by Dian Shuai. The track enters at **1:28** and the cut
-gathers momentum: it accelerates into the mid-climax, then decelerates into the
-brand reveal. This file is the doctrine — read it before touching any anchor.
+The music of all three **CRX-Anoma** cuts is `crx-assets/momentum-quake-soft.mp3`
+— *ES_Momentum I. Quake* by Dian Shuai, softened (low-end EQ'd out, −7 dB) so it
+reads calm, not epic. The track enters at **1:28**; the cut is scored to its **82
+BPM half-time backbeat** — the slow pulse — so the whole piece feels unhurried.
+This file is the doctrine — read it before touching any anchor.
 
-## TL;DR
+## 2026-07-07 — the slow-pulse re-pace (current state)
 
-- **Tempo:** 163.99 BPM. Beat = **10.976f**. Strong 82 BPM backbeat/**snare = 21.95f**.
-  8th = 5.49f, 16th = 2.74f. Grid phase **f7.24**.
-- **Entry:** audio **88.000s** → composition frame 0. `audioStartFrom = 2640`
-  (= 88·30). `beats_f = (beat_s − 88)·30`. All three cuts share this.
-- **Read-hold:** `CRX_HOLD = 31` (DURATION 969 + 31 = **1000 frames**, 33.3s).
-  `rf ≥ 353` plays at real = rf + 31.
-- **Snapping is done in REAL time,** not rf. So every anchor lands on an audio
-  beat on both sides of the freeze — no approximate-grid drift.
-- **Momentum** rises from a calm entry (~0.38) to the **quake peak (0.95) at real
-  f≈630**, then falls to ~0.04 by f900 as the lockup settles.
-- Grid + energy: `audio-analysis/momentum-quake.json`.
+The owner watched the first fast cut and asked, in two passes, for the same thing:
+slow it, make it breathe, ride the tones not the fast beat, drop the epic drive.
+This section is the current build. Everything below it that predates today is kept
+only as the grid reference and prop record; the OLD anchor numbers are superseded.
+
+**Owner feedback (verbatim → applied):**
+
+- **Pace — "too fast, past reading speed."** The cascades stepped the 8th/16th
+  (5–11 words/sec). Now every word cascade walks the **quarter-beat (10.976f,
+  ~2.7 words/sec)**; nothing is tighter than a quarter.
+- **Overlaps — "text runs under the card."** Scene 7's centered "infrastructure"
+  used to linger under scene 8's mounting card. Fixed: every centered headline
+  (S6, S7, S11) now plays over EMPTY ground, and each outgoing headline fully
+  clears before the next card mounts or the next headline appears. The one
+  card→card crossfade (RFQ→compliance) cuts the S9 headline at f1204 so it never
+  coexists with the S10 headline.
+- **Sound — "decrease it earlier."** The volume held full until the last 45f.
+  Now it RECEDES from f1467 (the finale run-in), down to a low bed by the f1643
+  mark-in, out by the end — the track breathes out under the settling wordmark.
+  Also swapped to the softened master.
+- **Cursor — "sync to the music."** Every hedge-scene cursor CLICK now lands on a
+  snare (open 435, select 457, tenor 501/523, notional-focus 545, press 589),
+  with a quarter-beat dwell before each.
+- **Size — "the card popped ~4.5% on entry."** Scene 4's mount scale is now a
+  subtle 1.5% that resolves to the canonical box within ~8 frames.
+
+**Structure — ride the slow pulse.** The read-hold is GONE; reference frame ==
+real playback frame, 1:1. Every STRUCTURAL moment — card mount, scene cut,
+line-ender (payoff word) and the momentum crest — lands on the **snare grid
+(21.953f)**; word cascades within a line walk the **quarter-beat (10.976f)**
+between them. Structure on the half-tempo, reading on the quarter: that is what
+makes it slow.
+
+**Length.** `CRX_DURATION = 1760` frames (**58.67s** at 30fps), up from 1000. The
+owner authorized the extra length ("fine if longer"). The audio has ~78s of
+runway from 1:28, so it simply plays more of the track.
+
+### Slow-pulse anchor table (the structure)
+
+| moment | frame | snare | note |
+|---|---|---|---|
+| S3 dash mount | 216 | ✓ | Introducing |
+| S3 cut | 326 | ✓ | into the hedge gap |
+| S4/S5 hedge mount | 348 | ✓ | |
+| rate LOCKS | 391 | ✓ | "locks" lands |
+| corridor SELECT | 457 | ✓ | "Corridor" lands |
+| typing completes | 567 | ✓ | "notional" lands |
+| CTA press | 589 | ✓ | |
+| hedge cut | 611 | ✓ | |
+| S8 onboard mount | 896 | ✓ | "Onboard" |
+| success flood | 1050 | ✓ | Verified resolves |
+| S8 fade-end | 1094 | ✓ | |
+| S9 RFQ mount | 1116 | ✓ | |
+| **crest — 3rd quote** | **1160** | ✓ | "dealers" lands (66%) |
+| best rate ringed | 1182 | ✓ | |
+| S9 headline cut / S10 crossfade | 1204 | ✓ | RFQ card holds to 1226 |
+| S10 checks tick | 1226 · 1248 · 1270 · 1291 | ✓ | one per slow pulse |
+| All clear | 1313 | ✓ | holds ~22f |
+| S10 fade-end | 1357 | ✓ | |
+| S12 app mount | 1489 | ✓ | finale |
+| positions / "Live" | 1533 | ✓ | |
+| hero bar finishes | 1577 | ✓ | rests before fade |
+| black fade | 1599 → 1643 | ✓ | lockup lands on black |
+| mark rolls in | 1643 | ✓ | |
+| wordmark reveals | 1687 | ✓ | settles ~1707 |
+| last frame | 1760 | | holds on black |
+
+### Word payoffs (line-enders on the snare)
+
+Each sentence is one cascade — interior words on the quarter, the payoff on a
+snare: **became** 62 · **Easy** (bloom) 128 · **Introducing** 216 / **CRX** 238 ·
+**locks** 391 · **Corridor** 457 · **notional** 567 · **middleman** 677 ·
+**infrastructure** 809 · **days** 918 · **dealers** 1160 (crest) · **design**
+1226 · **simple** 1423 · **Sandbox** 1511 / **Live** 1533.
+
+### Volume envelope
+
+`interpolate(f, [0, 12, 1467, 1643, 1710, 1756], [0, 1, 1, 0.4, 0.12, 0])` — in
+over the open, full through the story, a gentle taper from the finale run-in down
+to a low bed by the mark-in, out by the end.
 
 ## The grid
 
 | role | frames | use |
 |---|---|---|
-| beat (164 BPM) | 10.976 | first word of a line; UI causes; card mounts |
-| backbeat / snare (82 BPM) | 21.95 | scene cuts; line-enders; chart finishes — the strong hits |
-| 8th | 5.49 | calm cascade step (momentum < 0.55) |
-| 16th | 2.74 | busy cascade step (momentum ≥ 0.55) |
+| beat (164 BPM) | 10.976 | interior words of a cascade; value rolls |
+| **backbeat / snare (82 BPM)** | **21.953** | **the slow pulse — every mount, cut, line-ender, UI cause, crest** |
+| 8th | 5.488 | reserved; unused in the slow-pulse cut |
+| 16th | 2.744 | reserved; unused in the slow-pulse cut |
 
 The beat grid is `f7.24 + k·10.976`. The snare grid is the odd-`k` coset,
-`f18.22 + m·21.95`. Strong quarter-hits near the quake: f567, 589, 611, 633.
+`f18.22 + m·21.953`. Composition frame 0 = audio 88.000s (`audioStartFrom =
+2640`); `beats_f = (beat_s − 88)·30`. All three cuts share this. Grid + energy:
+`audio-analysis/momentum-quake.json`.
 
-## Why snap in real time, not rf-space
+## Rules (slow-pulse doctrine)
 
-The read-hold freezes `rf = 352` for 31 real frames, so an anchor at `rf ≥ 353`
-is *heard* at `real = rf + 31`. 31f is 2.82 beats — **not** a whole pulse — so the
-old "one continuous rf-grid" trick would leave post-hold anchors ~1.9f off the
-audio. Therefore: each anchor is snapped in real-frame space and converted back
-(`rf = realBeat − 31` past the hold). Every hit lands exactly on the audio grid,
-freeze or no freeze. The pre- and post-hold rf-grids differ by ~1.9f; that is
-invisible and never accumulates.
-
-## Rules (unchanged doctrine, new grid)
-
-- The first word of a line arrives on a **beat**. Interior words walk the 8th grid
-  (calm) or 16th grid (busy). The last word **lands on a beat** — the line
-  *finishes* on the hit. A sentence spanning two rows is ONE cascade.
-- A UI cause (click, lock, quote-land, select) sits on a **beat**; its effect
-  follows 1–2 frames later. Tightly-grouped micro-events (ticks, hover hops)
-  cascade on the 8th/16th grid, first on a beat.
-- A chart finishes on a **beat** and RESTS ≥ 6 frames before its scene exits.
-  `BarChart` staggers each bar by `i·2`, so the growth array ends 8 frames before
-  the hero bar's beat, and the LAST bar lands on the hit.
-- **Scene cuts and mounts are now on the grid too** (previously frozen). Every hard
-  cut is snapped to a snare (the strong sync); every card mounts on a beat. Read
-  time is preserved — the grid is dense (0.37s beats), so each cut moved only a few
-  frames; no line is clipped before it can be read.
+- The first word AND the payoff word of a sentence land on a **snare**. Interior
+  words walk the **quarter-beat** between them. A sentence spanning two rows is
+  ONE cascade. Nothing is ever tighter than a quarter.
+- A UI cause (click, lock, quote-land, select) sits on a **snare**; its effect
+  follows 1–2 frames later. The cursor dwells a quarter-beat before each click.
+- A chart finishes on a **snare** and RESTS before its scene exits. `BarChart`
+  staggers each bar by `i·2`, so the growth array ends 8 frames before the hero
+  bar's snare, and the LAST bar lands on the hit.
+- Scene cuts and card mounts are on the snare grid. At EVERY boundary the
+  outgoing headline fully clears (opacity 0 / cut complete) before the next card
+  mounts or the next headline appears. Centered headlines (S6, S7, S11) never
+  coexist with the card box (x 504–1214, y 122–598).
 - Continuous motion (spring settles, the spinner, the water loop) rides by onset
-  and period, never frame-locked. Idle "breathing" pulses (Indicative/Quoting
-  dots, skeletons) beat at one bar (~44f), not an arbitrary period.
+  and period, never frame-locked. Idle "breathing" pulses beat at one bar.
 
-## Word anchors (reference frames, before → after)
+## The momentum layer (gentle)
 
-Each sentence is one cascade: first word on a beat, payoff word on a beat.
+`momentum(rf)` is a 0..1 curve — a **slow breath, not a build-drop**. It rises
+calmly from ~0.30, crests softly at **0.70 on the f1160 snare** (the RFQ, "the
+whole dealer network answers", ~66% through), then eases down as the finale
+settles. 37 control points, one every 50 frames over 0..1760.
 
-| sentence | first → | payoff → |
-|---|---|---|
-| Managing FX risk just **became** | Managing 6→7 | became 22→**29** |
-| Introducing / **CRX** | Introducing 124→128 | CRX 128→**139** |
-| Access rate **locks** | Access 218→216 | locks 226→**227** |
-| In Any **Corridor** | In 265→260 | Corridor 273→**271** |
-| At your preferred date and **notional** | At 315→315 | notional 335→**337** |
-| Without paying the **middleman** | Without 363→360 | middleman 382→**382** |
-| From legacy banks, to modern **infrastructure** | From 409→404 | infrastructure 429→**426** |
-| Onboard in **days** | Onboard 469→470 | days 476→**481** |
-| Access liquidity from multiple **dealers** | Access 571→569 | dealers 590→**591** |
-| Compliance by **design** | Compliance 657→657 | design 665→**668** |
-| Cross-border business risk, made **simple** | Cross-border 727→723 | simple 743→**745** |
-| CRX Sandbox is **Live** | CRX 774→778 | Live 790→**799** |
-
-Interior words (this cut): FX 13 · risk 18 · just 24 · rate 221 · Any 265 · your
-320 · preferred 323 · date 328 · and 334 · paying 369 · the 374 · legacy 407 ·
-banks 413 · to 418 · modern 421 · in 476 · liquidity 574 · from 580 · multiple
-585 · by 662 · business 728 · risk 734 · made 739 · Sandbox 783 · is 794.
-
-End lockup: **mark f865** (real 896) · **wordmark reveal f909** (real 940). The
-mark rolls in on the snare where the water finishes fading to black, rests two
-backbeats, then the wordmark slides out and settles on black to the end.
-
-## UI anchors (reference frames)
-
-- **S3 dash** — bars grow f150, hero FINISHES on f194 (rest to 210), pill f194;
-  mount 128, blur-out 210→216 into the f216 snare cut.
-- **S4 hedge** — rate ticks f227, LOCKS f238; corridor panel opens f260, hover
-  hops 271/282/293, select f293; tenor swaps f315/320; typing f337; CTA arms f351
-  (held by the freeze), press f356; card cuts on the f360 snare.
-- **S8 onboarding** — sub-state faces 459/470/492/498/503/536; success dot pops
-  f547, floods the card across f558, Verified resolves f558; card fades 574→580.
-- **S9 dealers** — quotes roll in f580/585/591 ("dealers" lands with the third),
-  best rate ringed f602; this scene rides the quake (peak momentum).
-- **S10 compliance** — checks tick f668/673/679/690, All-clear f701 (holds ~11f);
-  card fades 712→723.
-- **S12 app** — bars grow f784, hero FINISHES on f821 (rest ~27f), pill f821;
-  positions f799 (with "Live") and f810; card mounts on the f778 snare (the strong
-  finale cut), fades 848→854.
-
-## Scene cuts (before → after)
-
-Cuts snapped to a backbeat/snare; mounts to a beat.
-
-| cut | → | mount window (rf) |
-|---|---|---|
-| s3 Introducing/CRX | 209→**216** | dash 128–216 |
-| s4 Access/locks | 258→**260** | hedge 205–360 |
-| s4 Corridor | 308→**304** | |
-| s5 notional | 358→**360** | |
-| s6 middleman | 409→**404** | |
-| s7 infrastructure | 461→**470** | |
-| s8 days | 565→**558** | onboard 459–580 |
-| s9 dealers | 650→**646** | dealers 569–668 |
-| s10 comply fade | 716→**712** … 722→**723** | comply 646–723 |
-| s11 simple | 764→**767** | |
-| s12 fade | 848→**843** … 851 | app 778–854 |
-
-Background fade-to-black starts on the **f854 beat**, completes on the **f865
-snare** — the lockup lands on solid black.
-
-## The momentum layer
-
-Beyond sitting on beats, the cut ACCELERATES then DECELERATES. `momentum(rf)` is a
-0..1 curve, 21 control points every 50 REAL frames, derived from the de-spiked
-RMS-loudness *build* of the track over audio 88–121.3s (the frame-0 entry downbeat
-is a one-shot accent, so the curve reads the sustained arrangement, not the
-transient). Values (`momentum_ctrl_50f`):
-
-```
-f:   0    50   100  150  200  250  300  350  400  450  500
-    0.38 0.47 0.52 0.51 0.58 0.75 0.84 0.81 0.76 0.71 0.67
-f:  550  600  650  700  750  800  850  900  950 1000
-    0.75 0.95 0.95 0.58 0.21 0.09 0.09 0.04 0.00 0.07
-```
-
-**The arc.** Frames 0→~600 accelerate: calm entry (0.38), a shoulder at f300, a
-breath at f500, then the PEAK (0.95) at the **1:48 quake, real f≈630**. In
-rf-space that peak is rf≈599 — so **Scene 9 (the RFQ, the whole dealer network
-answering) rides the climax.** Frames ~600→1000 decelerate hard into the
-breakdown: "CRX Sandbox is Live" and the end-lockup settle, the mark rolling in
-and coming to rest on black as the track breathes out.
-
-**What it drives** (the APPROACH, never whether an entrance lands on the beat):
-
-- **Cascade step** — 8th grid (5.49f) when calm, 16th grid (2.74f) when
-  `momentum ≥ 0.55`. Cascades tighten into the quake (Scenes 5/9), loosen at the
-  calm ends (Scenes 1/11/12).
-- **Settle rate** — `r = 0.80 − 0.18·momentum`. In `wordStyle`, `off = drop·r^dt`,
-  so a *lower* r settles FASTER. Words snap crisply at the peak (r≈0.63), settle
-  softly when calm (r≈0.79).
-- **Drop accent** — `drop ×= 1 + 0.14·momentum`. Words fall from a little higher on
-  the strong hits; the accent is small by design.
-
-Entrances still LAND on the grid subdivisions; momentum changes only the speed and
-spacing of the approach. Restraint is the rule — the owner has a particular eye,
-and clean physics beats a busy one.
+It drives only the APPROACH of each word — a slightly snappier settle
+(`r = 0.80 − 0.14·momentum`) and a faint drop accent (`×= 1 + 0.10·momentum`)
+near the crest, softer at the calm ends. The gains are deliberately small. It
+never decides whether an entrance lands on the grid, and it never tightens the
+cascade below the quarter-beat.
 
 ## Prop parity (source: app.crxfx.com + landing, 2026-07-02 shots)
 
@@ -179,23 +149,20 @@ and clean physics beats a busy one.
 - Every floating app-card popup — portfolio (S3), hedge (S4), onboarding stepper
   (S8), RFQ (S9), compliance checklist (S10) — renders in ONE canonical frame:
   `CARD = { left: 504, top: 122, w: 710, h: 476 }` in `CrxAppCards.tsx`. Same
-  width, same height, same on-stage anchor, scene to scene. No per-scene `+1/-2/
-  +3/+5` nudges. The window never resizes or jumps on a cut.
-- No card is content-sized: every `Card` takes an explicit `w`/`h`, so the
-  compliance checklist stays fixed height while its rows (KYB → Sanctions →
-  Travel → Audit) fade/tick in WITHIN the frame — it does not grow.
-- Height clears the richest cards (RFQ 3-dealer list, hedge form). Content is
-  top-anchored inside the fixed box.
+  width, same height, same on-stage anchor, scene to scene. The window never
+  resizes or jumps on a cut.
+- No card is content-sized: every `Card` takes an explicit `w`/`h`, so rows
+  fade/tick in WITHIN the fixed frame — it does not grow.
 - EXCEPTION: scene 12 ("CRX Sandbox is Live") is the finale full-app reveal, not
-  a popup — it keeps its own full-width `S12` frame and is left untouched.
-- Scene 4's mount `scale` settle is kept (it is the mount beat, timing-owned) and
-  resolves to the exact canonical size within ~10 frames.
+  a popup — it keeps its own full-width `S12` frame (left 83, top 321, w 1114).
+- Scene 4's mount `scale` is a subtle 1.5% settle off the f348 snare that
+  resolves to the exact canonical size within ~8 frames (was a 4.5% pop; owner
+  flagged the size-variance).
 
 ## Glossary
 
-- **rf (reference frame):** the authoring timeline. Real playback = rf, except
-  during the read-hold where rf freezes at 352 for 31 real frames.
-- **Backbeat / snare:** the 82 BPM half-tempo hit (21.95f) — the strongest,
-  where scene cuts land.
-- **Quake:** the track's loudest arrangement peak, audio 1:48 ≈ real f630, the
-  momentum apex.
+- **rf (reference frame):** the authoring timeline. With the read-hold removed it
+  is now identical to real playback frame, 1:1.
+- **Backbeat / snare / slow pulse:** the 82 BPM half-tempo hit (21.953f) — the
+  structural grid where mounts, cuts, line-enders, UI causes and the crest land.
+- **Crest:** the gentle momentum apex, f1160 (the RFQ), ~66% through.
