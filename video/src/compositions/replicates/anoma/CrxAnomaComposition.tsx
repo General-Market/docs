@@ -375,23 +375,33 @@ const CrxScene2: React.FC<{ frame: number }> = ({ frame }) => {
 // words walk the quarter-beat (10.976f) between them. A sentence spanning rows is
 // one cascade. Stanza cuts hold generously (≥ one slow pulse) before the next
 // stanza appears. Map: docs/crx-anoma-beat-sync.md.
+//
+// VERTICAL ANCHOR (owner: "left titles are not all at the same height"). Every
+// LEFT-anchored headline block (the ones with an `x`) is vertically CENTERED on
+// the app-card's own center line: card box y122–598, center 360. Per-line
+// spacing is a uniform S=70, so a block of N lines has its cap-tops' midpoint at
+// M=340 (visual center ≈360) and its first-line capTop = 340 − (N−1)·35 →
+// 1-line 340 · 2-line 305/375 · 3-line 270/340/410 · 4-line 235/305/375/445.
+// A one-line title and a four-line title now feel centered at the SAME height,
+// so nothing jumps on a cut. The CENTERED titles (no `x`: scenes 6/7/11 and the
+// top-center finale 12) are a separate group and keep their own anchors.
 const LINES: CrxLineSpec[] = [
   // Scene 3 — Introducing / CRX; "Introducing" on the dash-mount snare f216,
   // "CRX" one slow pulse later on the f238 snare (cut on the f326 snare)
-  { words: [{ t: "Introducing", f: 216 }], x: 91, capTop: 257, drop: 44, out: { cut: 326 } },
-  { words: [{ t: "CRX", f: 238 }], x: 88, capTop: 328, drop: 44, out: { cut: 326 } },
+  { words: [{ t: "Introducing", f: 216 }], x: 91, capTop: 305, drop: 44, out: { cut: 326 } },
+  { words: [{ t: "CRX", f: 238 }], x: 88, capTop: 375, drop: 44, out: { cut: 326 } },
   // Scene 4 — Access / rate locks; "locks" on the f391 snare as the rate LOCKS
   // (stanza cut f435). "In Any Corridor" walks the quarter into the f457 snare
   // as USD/BRL is selected (stanza cut f501).
-  { words: [{ t: "Access", f: 369 }], x: 71, capTop: 291, out: { cut: 435 } },
-  { words: [{ t: "rate", f: 380 }, { t: "locks", f: 391 }], x: 71, capTop: 355, out: { cut: 435 } },
-  { words: [{ t: "In", f: 435 }, { t: "Any", f: 446 }, { t: "Corridor", f: 457 }], x: 55, capTop: 330, out: { cut: 501 } },
+  { words: [{ t: "Access", f: 369 }], x: 71, capTop: 305, out: { cut: 435 } },
+  { words: [{ t: "rate", f: 380 }, { t: "locks", f: 391 }], x: 71, capTop: 375, out: { cut: 435 } },
+  { words: [{ t: "In", f: 435 }, { t: "Any", f: 446 }, { t: "Corridor", f: 457 }], x: 55, capTop: 340, out: { cut: 501 } },
   // Scene 5 — one 6-word cascade down the stanza; "notional" on the f567 snare
   // as the typing completes (cut on the hedge card's f611 snare).
-  { words: [{ t: "At", f: 512 }, { t: "your", f: 523 }], x: 77, capTop: 275, out: { cut: 611 } },
-  { words: [{ t: "preferred", f: 534 }], x: 77, capTop: 339, out: { cut: 611 } },
-  { words: [{ t: "date", f: 545 }], x: 75, capTop: 396, out: { cut: 611 } },
-  { words: [{ t: "and", f: 556 }, { t: "notional", f: 567 }], x: 75, capTop: 460, out: { cut: 611 } },
+  { words: [{ t: "At", f: 512 }, { t: "your", f: 523 }], x: 77, capTop: 235, out: { cut: 611 } },
+  { words: [{ t: "preferred", f: 534 }], x: 77, capTop: 305, out: { cut: 611 } },
+  { words: [{ t: "date", f: 545 }], x: 75, capTop: 375, out: { cut: 611 } },
+  { words: [{ t: "and", f: 556 }, { t: "notional", f: 567 }], x: 75, capTop: 445, out: { cut: 611 } },
   // Scene 6 — centered, rise+fade; "paying" on the f655 snare, "middleman" lands
   // on the f677 snare (cut f721).
   { words: [{ t: "Without", f: 644 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 721 } },
@@ -402,18 +412,18 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "to", f: 787 }, { t: "modern", f: 798 }, { t: "infrastructure", f: 809 }], capTop: 364, drop: 24, rise: true, out: { fade: [852, 863] } },
   // Scene 8 — Onboard (mount snare f896) / in days, "days" on the f918 snare
   // (headline cut f1072 as the success screen resolves).
-  { words: [{ t: "Onboard", f: 896 }], x: 72, capTop: 286, drop: 50, out: { cut: 1072 } },
-  { words: [{ t: "in", f: 907 }, { t: "days", f: 918 }], x: 73, capTop: 355, drop: 50, out: { cut: 1072 } },
+  { words: [{ t: "Onboard", f: 896 }], x: 72, capTop: 305, drop: 50, out: { cut: 1072 } },
+  { words: [{ t: "in", f: 907 }, { t: "days", f: 918 }], x: 73, capTop: 375, drop: 50, out: { cut: 1072 } },
   // Scene 9 — the RFQ rides the gentle crest; "dealers" (f1160 snare) lands with
   // the third dealer quote at the momentum crest. The headline cuts at f1204 as
   // the compliance card crossfades in, so it never overlaps the S10 headline
   // (the RFQ CARD stays under the crossfade until its own f1226 snare).
-  { words: [{ t: "Access", f: 1116 }, { t: "liquidity", f: 1127 }], x: 55, capTop: 278, drop: 50, out: { cut: 1204 } },
-  { words: [{ t: "from", f: 1138 }, { t: "multiple", f: 1149 }], x: 55, capTop: 349, drop: 50, out: { cut: 1204 } },
-  { words: [{ t: "dealers", f: 1160 }], x: 55, capTop: 420, drop: 50, out: { cut: 1204 } },
+  { words: [{ t: "Access", f: 1116 }, { t: "liquidity", f: 1127 }], x: 55, capTop: 270, drop: 50, out: { cut: 1204 } },
+  { words: [{ t: "from", f: 1138 }, { t: "multiple", f: 1149 }], x: 55, capTop: 340, drop: 50, out: { cut: 1204 } },
+  { words: [{ t: "dealers", f: 1160 }], x: 55, capTop: 410, drop: 50, out: { cut: 1204 } },
   // Scene 10 — "design" on the f1226 snare as the first check ticks (fades f1335-1357)
-  { words: [{ t: "Compliance", f: 1204 }, { t: "by", f: 1215 }], x: 64, capTop: 269, drop: 50, out: { fade: [1335, 1357] } },
-  { words: [{ t: "design", f: 1226 }], x: 59, capTop: 334, drop: 50, out: { fade: [1335, 1357] } },
+  { words: [{ t: "Compliance", f: 1204 }, { t: "by", f: 1215 }], x: 64, capTop: 305, drop: 50, out: { fade: [1335, 1357] } },
+  { words: [{ t: "design", f: 1226 }], x: 59, capTop: 375, drop: 50, out: { fade: [1335, 1357] } },
   // Scene 11 — centered, decelerating; "simple" on the f1423 snare (cut f1467).
   { words: [{ t: "Cross-border", f: 1379 }, { t: "business", f: 1390 }], capTop: 305, drop: 26, out: { cut: 1467 } },
   { words: [{ t: "risk,", f: 1401 }, { t: "made", f: 1412 }, { t: "simple", f: 1423 }], capTop: 373, drop: 26, out: { cut: 1467 } },
