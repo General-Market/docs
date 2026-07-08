@@ -174,6 +174,23 @@ and clean physics beats a busy one.
 - Running states carry a rotating arc spinner; done states the green check dot.
 - Spot price value is ink-weighted; the grey belongs to the label.
 
+## Uniform popup frame (owner: "all windows should be exact same size")
+
+- Every floating app-card popup — portfolio (S3), hedge (S4), onboarding stepper
+  (S8), RFQ (S9), compliance checklist (S10) — renders in ONE canonical frame:
+  `CARD = { left: 504, top: 122, w: 710, h: 476 }` in `CrxAppCards.tsx`. Same
+  width, same height, same on-stage anchor, scene to scene. No per-scene `+1/-2/
+  +3/+5` nudges. The window never resizes or jumps on a cut.
+- No card is content-sized: every `Card` takes an explicit `w`/`h`, so the
+  compliance checklist stays fixed height while its rows (KYB → Sanctions →
+  Travel → Audit) fade/tick in WITHIN the frame — it does not grow.
+- Height clears the richest cards (RFQ 3-dealer list, hedge form). Content is
+  top-anchored inside the fixed box.
+- EXCEPTION: scene 12 ("CRX Sandbox is Live") is the finale full-app reveal, not
+  a popup — it keeps its own full-width `S12` frame and is left untouched.
+- Scene 4's mount `scale` settle is kept (it is the mount beat, timing-owned) and
+  resolves to the exact canonical size within ~10 frames.
+
 ## Glossary
 
 - **rf (reference frame):** the authoring timeline. Real playback = rf, except

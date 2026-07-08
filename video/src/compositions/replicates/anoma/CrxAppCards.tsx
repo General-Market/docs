@@ -45,8 +45,18 @@ const BRASS_SOFT = "rgba(138, 93, 18, 0.15)"; // bg-accent2/15
 
 const flag = (cc: string) => staticFile(`crx-assets/flags/${cc}.svg`);
 
-// Card slot shared with the Anoma originals: left 504, top 122, 710×472.
-const SLOT = { left: 504, top: 122, w: 710, h: 472 };
+// ─── One canonical popup-card frame ───
+// Every floating app-card window — portfolio (S3), hedge (S4), onboarding
+// stepper (S8), RFQ (S9), compliance checklist (S10) — renders in EXACTLY this
+// box: one width, one height, one on-stage anchor, scene to scene. The popup
+// never resizes or jumps on a cut, and no card grows with its content — every
+// Card takes an explicit w/h, so nothing is content-sized; rows fade/tick in
+// WITHIN the fixed frame. The height clears the richest card (the RFQ 3-dealer
+// list and the hedge form are the tallest). The scene-12 full-app dashboard is
+// the finale reveal, NOT a popup — it keeps its own full-width frame (S12).
+const CARD_W = 710;
+const CARD_H = 476;
+const CARD = { left: 504, top: 122, w: CARD_W, h: CARD_H };
 
 // The app's section eyebrow: 12px/600 uppercase, tracking 0.08em.
 const label: React.CSSProperties = {
@@ -534,10 +544,10 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
   const blurOut = interpolate(frame, [210, 216], [0, 6], clamp);
   return (
     <Card
-      x={SLOT.left}
-      y={SLOT.top + 1}
-      w={SLOT.w}
-      h={SLOT.h - 2}
+      x={CARD.left}
+      y={CARD.top}
+      w={CARD.w}
+      h={CARD.h}
       opacity={opacity}
       blur={Math.max(blurIn, blurOut)}
     >
@@ -761,10 +771,10 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <Card
-      x={SLOT.left}
-      y={SLOT.top - 2}
-      w={SLOT.w}
-      h={SLOT.h + 3}
+      x={CARD.left}
+      y={CARD.top}
+      w={CARD.w}
+      h={CARD.h}
       opacity={opacity}
       scale={scale}
     >
@@ -1339,7 +1349,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   );
   const successOp = interpolate(frame, [558, 563], [0, 1], clamp);
   return (
-    <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h + 5} opacity={cardOpacity}>
+    <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
         const op = fadeIn(frame, at, 3);
         if (op <= 0) return null;
@@ -1444,7 +1454,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
   const highlighted = frame >= HIGHLIGHT_AT;
   const countdown = rated ? 120 - Math.floor((frame - 580) / 30) : 120;
   return (
-    <Card x={SLOT.left} y={SLOT.top} w={SLOT.w + 1} h={SLOT.h} opacity={1}>
+    <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={1}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>
@@ -1623,7 +1633,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
     interpolate(frame, [646, 668], [0, 1], clamp) *
     interpolate(frame, [712, 723], [1, 0], clamp);
   return (
-    <Card x={SLOT.left} y={SLOT.top} w={SLOT.w} h={SLOT.h} opacity={opacity}>
+    <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={opacity}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Compliance</span>
