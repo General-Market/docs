@@ -578,11 +578,12 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 8: network hexes + product docs (f745-913) ═══
+// measured islands at t=31: 375×332 hexes at these centers
 const NET_HEXES = [
-  { art: "mHexHeli", cx: 300, cy: 400, w: 340 },
-  { art: "mHexBank", cx: 700, cy: 600, w: 340 },
-  { art: "mHexBank2", cx: 1100, cy: 400, w: 340 },
-  { art: "mHexCity2", cx: 1520, cy: 620, w: 340 },
+  { art: "mHexHeli", cx: 393, cy: 409, w: 375 },
+  { art: "mHexBank", cx: 774, cy: 678, w: 375 },
+  { art: "mHexBank2", cx: 1179, cy: 414, w: 375 },
+  { art: "mHexCity2", cx: 1594, cy: 650, w: 375 },
 ];
 
 export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
@@ -606,7 +607,7 @@ export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
         {/* elbow connectors between hexes */}
         <svg width={1920} height={1080} style={{ position: "absolute" }}>
           <path
-            d="M300,560 V760 H540 M700,440 V300 H940 M1100,560 V740 H1360 M1270,400 H1520 V450"
+            d="M393,575 V800 H590 M774,512 V330 H1000 M1179,580 V790 H1410 M1365,414 H1594 V480"
             fill="none"
             stroke={C.navy}
             strokeWidth={3}
