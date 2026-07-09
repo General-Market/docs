@@ -1923,6 +1923,19 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         />
 
+        {/* the checks live in a sunken panel, grouped like the app's list */}
+        <div
+          style={{
+            position: "absolute",
+            left: 30,
+            top: 80,
+            width: 650,
+            height: 320,
+            backgroundColor: WELL,
+            borderRadius: 14,
+          }}
+        />
+
         {COMPLY_ROWS.map(({ at, k, v }, i) => {
           const on = frame >= at;
           const pop = on ? 1 + 0.18 * Math.pow(0.68, frame - at) : 1;
@@ -1932,14 +1945,14 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
               key={k}
               style={{
                 position: "absolute",
-                left: 30,
+                left: 48,
                 top: 92 + i * 74,
-                width: 650,
+                width: 614,
                 height: 74,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                borderTop: `1px solid ${BORDER}`,
+                borderTop: i === 0 ? undefined : `1px solid ${BORDER}`,
                 opacity: rowOp,
               }}
             >
@@ -1968,6 +1981,44 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
           );
         })}
 
+        {/* the conclusion, filling the lower band: a full-width success strip
+            that lands with the All-clear pill on the f1313 snare */}
+        {frame >= ALL_CLEAR_AT && (
+          <div
+            style={{
+              position: "absolute",
+              left: 30,
+              top: 416,
+              width: 650,
+              height: 34,
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              color: SEC,
+              fontSize: 13,
+              ...settle(frame, ALL_CLEAR_AT, 8, 0.76),
+            }}
+          >
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: SUCCESS_SOFT,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Check size={10} stroke={17} color={SUCCESS} />
+            </div>
+            <span>
+              Every hedge is sanctions-screened and audit-logged —{" "}
+              <span style={{ color: INK, fontWeight: 700 }}>ready to trade on CRX</span>.
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   );
