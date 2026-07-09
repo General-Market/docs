@@ -197,21 +197,21 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const orangeP = lerp(f, [2556, 2580], [0, 1]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
-      <div style={{ position: "absolute", left: 0, top: 505, width: 1920, height: 3, backgroundColor: C.navy }} />
-      <div style={{ position: "absolute", left: 105, top: 505 - 295 * 0.62, opacity: 1 }}>
-        <TracedArt name="cityA" scale={0.62} />
+      <div style={{ position: "absolute", left: 0, top: 368, width: 1920, height: 3, backgroundColor: C.navy }} />
+      <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
+        <TracedArt name="cityA" scale={0.47} />
       </div>
-      <div style={{ position: "absolute", left: 930, top: 505 - 545 * 0.68 }}>
-        <TracedArt name="cityB" scale={0.68} />
+      <div style={{ position: "absolute", left: 1040, top: 368 - 545 * 0.53 }}>
+        <TracedArt name="cityB" scale={0.53} />
       </div>
-      <Badge letter="A" cx={98} cy={415} r={36} />
-      <Badge letter="B" cx={1822} cy={415} r={36} />
+      <Badge letter="A" cx={188} cy={265} r={40} />
+      <Badge letter="B" cx={1728} cy={265} r={40} />
       {/* Payment complete double arrow */}
       {arrOp > 0 && (
         <>
-          <SansText text={COPY.paymentComplete} x={760} y={272} fs={34} color={C.serifNavy} opacity={arrOp} width={400} align="center" />
+          <SansText text={COPY.paymentComplete} x={760} y={148} fs={36} color={C.serifNavy} opacity={arrOp} width={400} align="center" />
           <svg width={1920} height={1080} style={{ position: "absolute", opacity: arrOp }}>
-            <path d="M700,330 H1195 M700,330 l16,-9 M700,330 l16,9 M1195,330 l-16,-9 M1195,330 l-16,9" stroke={C.serifNavy} strokeWidth={3} fill="none" />
+            <path d="M735,197 H1180 M735,197 l16,-9 M735,197 l16,9 M1180,197 l-16,-9 M1180,197 l-16,9" stroke={C.serifNavy} strokeWidth={3} fill="none" />
           </svg>
         </>
       )}
@@ -219,23 +219,23 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
       {belowOp > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: belowOp }}>
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
-            <path d="M560,508 V635 H655 M1300,508 V635 H1245" stroke={C.navy} strokeWidth={2.5} fill="none" />
-            <path d="M890,860 V960 M890,960 l-8,-14 M890,960 l8,-14 M1013,860 V960 M1013,960 l-8,-14 M1013,960 l8,-14" stroke={C.navy} strokeWidth={2.5} fill="none" />
+            <path d="M510,372 V520 H590 M1413,372 V520 H1360" stroke={C.navy} strokeWidth={2.5} fill="none" />
+            <path d="M895,660 V800 M895,800 l-9,-15 M895,800 l9,-15 M1035,660 V800 M1035,800 l-9,-15 M1035,800 l9,-15" stroke={C.navy} strokeWidth={2.5} fill="none" />
           </svg>
-          <SmallHex art="mHexBank2" cx={790} cy={745} w={230} artW={215} />
-          <SmallHex art="mHexCity2" cx={1113} cy={745} w={230} artW={215} />
-          <Doc x={640} y={690} w={72} h={90} />
-          <Doc x={1195} y={690} w={72} h={90} />
-          <ClsNetBox x={877} y={985} w={150} labelFs={20} />
+          <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
+          <SmallHex art="mHexHeli" cx={1148} cy={592} w={240} artW={215} />
+          <Doc x={565} y={548} w={72} h={90} />
+          <Doc x={1292} y={548} w={72} h={90} />
+          <ClsNetBox x={875} y={835} w={170} labelFs={26} />
         </div>
       )}
       {/* orange return paths */}
       {orangeP > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: orangeP }}>
-          <Elbow points={[[875, 1060], [180, 1060], [180, 560]]} arrow="end" />
-          <Elbow points={[[1030, 1060], [1740, 1060], [1740, 560]]} arrow="end" />
-          <Doc x={112} y={478} w={64} h={80} />
-          <Doc x={1745} y={478} w={64} h={80} />
+          <Elbow points={[[875, 955], [400, 955], [400, 490]]} />
+          <Elbow points={[[1045, 955], [1528, 955], [1528, 490]]} />
+          <Doc x={360} y={392} w={70} h={95} />
+          <Doc x={1495} y={392} w={70} h={95} />
         </div>
       )}
     </AbsoluteFill>
