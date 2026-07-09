@@ -3,24 +3,24 @@ import { interpolate } from "remotion";
 import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, CARD, Card, Check, SEC, SUCCESS, SUCCESS_SOFT, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
-// ─── Scene 10 (f1204-1356): compliance checklist under "Compliance by design" ───
+// ─── Scene 10 (f1050-1202): compliance checklist under "Compliance by design" ───
 // Crossfades over the RFQ card; checks tick in on the slow pulse, one every ~22f
-// (f1226/1248/1270/1291); the All-clear pill is the conclusion — it lands on the
-// f1313 snare and HOLDS ~22 frames before the card fades, instead of arriving
+// (f1072/1094/1116/1137); the All-clear pill is the conclusion — it lands on the
+// f1159 snare and HOLDS ~22 frames before the card fades, instead of arriving
 // into its own death.
 const COMPLY_ROWS = [
-  { at: 1226, k: "KYB", v: "Verified" },
-  { at: 1248, k: "Sanctions screening", v: "Clear · 0 hits" },
-  { at: 1270, k: "Travel rule", v: "Enabled" },
-  { at: 1291, k: "Audit export", v: "CSV · PDF ready" },
+  { at: 1072, k: "KYB", v: "Verified" },
+  { at: 1094, k: "Sanctions screening", v: "Clear · 0 hits" },
+  { at: 1116, k: "Travel rule", v: "Enabled" },
+  { at: 1137, k: "Audit export", v: "CSV · PDF ready" },
 ];
-const ALL_CLEAR_AT = 1313;
+const ALL_CLEAR_AT = 1159;
 
 export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 1204 || frame >= 1357) return null;
+  if (frame < 1050 || frame >= 1203) return null;
   const opacity =
-    interpolate(frame, [1204, 1226], [0, 1], clamp) *
-    interpolate(frame, [1335, 1357], [1, 0], clamp);
+    interpolate(frame, [1050, 1072], [0, 1], clamp) *
+    interpolate(frame, [1181, 1203], [1, 0], clamp);
   return (
     <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={opacity}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>

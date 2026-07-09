@@ -408,20 +408,20 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "the", f: 666 }, { t: "middleman", f: 677 }], capTop: 366, drop: 24, rise: true, out: { cut: 714 } },
   // Scene 7 (legacy-banks → modern-infrastructure) is CUT in the re-pace: the
   // silent breakdown ran too long, so S6 (cut f714) hands straight to S8 (f742).
-  // Scene 8 — Onboard (mount snare f896) / in days, "days" on the f918 snare
-  // (headline cut f1072 as the success screen resolves).
-  { words: [{ t: "Onboard", f: 896 }], x: 72, capTop: 305, drop: 50, out: { cut: 1072 } },
-  { words: [{ t: "in", f: 907 }, { t: "days", f: 918 }], x: 73, capTop: 375, drop: 50, out: { cut: 1072 } },
-  // Scene 9 — the RFQ rides the gentle crest; "dealers" (f1160 snare) lands with
-  // the third dealer quote at the momentum crest. The headline cuts at f1204 as
-  // the compliance card crossfades in, so it never overlaps the S10 headline
-  // (the RFQ CARD stays under the crossfade until its own f1226 snare).
-  { words: [{ t: "Access", f: 1116 }, { t: "liquidity", f: 1127 }], x: 55, capTop: 270, drop: 50, out: { cut: 1204 } },
-  { words: [{ t: "from", f: 1138 }, { t: "multiple", f: 1149 }], x: 55, capTop: 340, drop: 50, out: { cut: 1204 } },
-  { words: [{ t: "dealers", f: 1160 }], x: 55, capTop: 410, drop: 50, out: { cut: 1204 } },
-  // Scene 10 — "design" on the f1226 snare as the first check ticks (fades f1335-1357)
-  { words: [{ t: "Compliance", f: 1204 }, { t: "by", f: 1215 }], x: 64, capTop: 305, drop: 50, out: { fade: [1335, 1357] } },
-  { words: [{ t: "design", f: 1226 }], x: 59, capTop: 375, drop: 50, out: { fade: [1335, 1357] } },
+  // Scene 8 — Onboard (mount snare f742) / in days, "days" on the f764 snare
+  // (headline cut f918 as the success screen resolves).
+  { words: [{ t: "Onboard", f: 742 }], x: 72, capTop: 305, drop: 50, out: { cut: 918 } },
+  { words: [{ t: "in", f: 753 }, { t: "days", f: 764 }], x: 73, capTop: 375, drop: 50, out: { cut: 918 } },
+  // Scene 9 — the RFQ rides the calm resolution; "dealers" (f1006 snare) lands
+  // with the third dealer quote. The headline cuts at f1050 as the compliance
+  // card crossfades in, so it never overlaps the S10 headline
+  // (the RFQ CARD stays under the crossfade until its own f1072 snare).
+  { words: [{ t: "Access", f: 962 }, { t: "liquidity", f: 973 }], x: 55, capTop: 270, drop: 50, out: { cut: 1050 } },
+  { words: [{ t: "from", f: 984 }, { t: "multiple", f: 995 }], x: 55, capTop: 340, drop: 50, out: { cut: 1050 } },
+  { words: [{ t: "dealers", f: 1006 }], x: 55, capTop: 410, drop: 50, out: { cut: 1050 } },
+  // Scene 10 — "design" on the f1072 snare as the first check ticks (fades f1181-1203)
+  { words: [{ t: "Compliance", f: 1050 }, { t: "by", f: 1061 }], x: 64, capTop: 305, drop: 50, out: { fade: [1181, 1203] } },
+  { words: [{ t: "design", f: 1072 }], x: 59, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
   // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
   // (compliance) hands straight to the S12 brand finale.
   // Scene 12 — top-center; the brand line settles as the track breathes out:

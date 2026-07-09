@@ -3,26 +3,26 @@ import { interpolate } from "remotion";
 import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, BRASS, BRASS_SOFT, CARD, Card, FlagPair, TEAL, TEAL_SOFT, TER, WELL, fadeIn, settle, smooth, tag, tnum } from "./CrxCardKit";
 
-// ─── Scene 9 (f1116-1225): RFQ — quotes from multiple dealers ───
-// The RFQ rides the gentle crest. Skeleton rows shimmer; rates ROLL in on the
-// slow-pulse grid (f1138/1149/1160, "dealers" lands with the third quote at the
-// f1160 crest) with tabular digits; the best rate is ringed on the f1182 snare
+// ─── Scene 9 (f962-1071): RFQ — quotes from multiple dealers ───
+// The RFQ rides the calm resolution after the climax. Skeleton rows shimmer;
+// rates ROLL in on the slow-pulse grid (f984/995/1006, "dealers" lands with the
+// third quote) with tabular digits; the best rate is ringed on the f1028 snare
 // once all three are on the table. The card continues scene 4's trade: USD/BRL,
 // $2.5M, Aug 12 2026. Rows carry no dealer avatar — the name and desk line name
 // the counterparty; only the best row is ringed in teal-soft.
 const DEALERS = [
-  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 1138, t: "0.6s" },
-  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 1149, t: "0.8s" },
-  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 1160, t: "1.1s" },
+  { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 984, t: "0.6s" },
+  { name: "Dealer 2", sub: "Global FX desk", rate: 5.4298, lands: 995, t: "0.8s" },
+  { name: "Dealer 3", sub: "Regional specialist", rate: 5.4319, lands: 1006, t: "1.1s" },
 ];
 const BEST = 1;
-const HIGHLIGHT_AT = 1182;
+const HIGHLIGHT_AT = 1028;
 
 export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 1116 || frame >= 1226) return null;
-  const rated = frame >= 1138;
+  if (frame < 962 || frame >= 1072) return null;
+  const rated = frame >= 984;
   const highlighted = frame >= HIGHLIGHT_AT;
-  const countdown = rated ? 120 - Math.floor((frame - 1138) / 30) : 120;
+  const countdown = rated ? 120 - Math.floor((frame - 984) / 30) : 120;
   return (
     <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={1}>
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>

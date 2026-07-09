@@ -4,15 +4,15 @@ import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, CARD, Card, Check, FOCUS_RING, INK, SEC, SUCCESS, SUCCESS_SOFT, Spinner, TEAL, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
-// ─── Scene 8 (f896-1093): compliance onboarding under "Onboard in days" ───
-// Sub-states crossfade on the slow-pulse grid (918/940/962/984/1006); rows whose
-// KEY is new to a face drop in staggered; the success dot pops on the f1028 snare,
-// then floods the card across the f1050 snare and resolves to Verified.
+// ─── Scene 8 (f742-939): compliance onboarding under "Onboard in days" ───
+// Sub-states crossfade on the slow-pulse grid (764/786/808/830/852); rows whose
+// KEY is new to a face drop in staggered; the success dot pops on the f874 snare,
+// then floods the card across the f896 snare and resolves to Verified.
 type ObRow = { k: string; v: string; state?: "pending" | "done" | "run" };
 
 const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
   {
-    at: 896,
+    at: 742,
     step: 0,
     rows: [
       { k: "Legal entity", v: "—", state: "pending" },
@@ -21,7 +21,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 918,
+    at: 764,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -30,7 +30,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 940,
+    at: 786,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -39,7 +39,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 962,
+    at: 808,
     step: 1,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -48,7 +48,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 984,
+    at: 830,
     step: 1,
     rows: [
       { k: "KYB documents", v: "Received", state: "done" },
@@ -57,7 +57,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 1006,
+    at: 852,
     step: 2,
     rows: [
       { k: "KYB documents", v: "Verified", state: "done" },
@@ -289,18 +289,18 @@ const ObFace: React.FC<{
 );
 
 export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 896 || frame >= 1094) return null;
-  const cardOpacity = interpolate(frame, [1072, 1094], [1, 0], clamp);
+  if (frame < 742 || frame >= 940) return null;
+  const cardOpacity = interpolate(frame, [918, 940], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
-  // Success dot: pops on the f1028 snare, holds, then floods the card across
-  // the f1050 snare; the Verified face resolves out of it.
+  // Success dot: pops on the f874 snare, holds, then floods the card across
+  // the f896 snare; the Verified face resolves out of it.
   const dotD = interpolate(
     frame,
-    [1028, 1031, 1033, 1035, 1050, 1053],
+    [874, 877, 879, 881, 896, 899],
     [12, 44, 42, 42, 420, 950],
     clamp,
   );
-  const successOp = interpolate(frame, [1050, 1055], [0, 1], clamp);
+  const successOp = interpolate(frame, [896, 901], [0, 1], clamp);
   return (
     <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
@@ -320,7 +320,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         );
       })}
-      {frame >= 1028 && successOp < 1 && (
+      {frame >= 874 && successOp < 1 && (
         <div
           style={{
             position: "absolute",
