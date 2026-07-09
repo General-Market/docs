@@ -106,7 +106,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                     transform: `scale(${pop.toFixed(3)})`,
                   }}
                 >
-                  {on && <Check size={14} stroke={16} color={SUCCESS} />}
+                  {on && <Check size={15} stroke={16} color={SUCCESS} />}
                 </div>
                 <span style={{ fontSize: 15.5, fontWeight: 700 }}>{k}</span>
               </div>
@@ -122,12 +122,12 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
             style={{
               position: "absolute",
               left: 30,
-              top: 416,
+              top: 421,
               width: 650,
               height: 34,
               display: "flex",
               alignItems: "center",
-              gap: 9,
+              gap: 10,
               color: SEC,
               fontSize: 13,
               ...settle(frame, ALL_CLEAR_AT, 8, 0.76),
@@ -135,9 +135,9 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
           >
             <div
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 9,
+                width: 20,
+                height: 20,
+                borderRadius: 10,
                 backgroundColor: SUCCESS_SOFT,
                 display: "flex",
                 alignItems: "center",
@@ -145,7 +145,7 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
                 flexShrink: 0,
               }}
             >
-              <Check size={10} stroke={17} color={SUCCESS} />
+              <Check size={11} stroke={17} color={SUCCESS} />
             </div>
             <span>
               Sanctions-screened, audit-logged,{" "}
