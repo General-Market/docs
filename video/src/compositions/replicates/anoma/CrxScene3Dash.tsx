@@ -5,8 +5,9 @@ import { BORDER, BarChart, CARD, Card, CrxMark, INK, Money, SEC, SUCCESS, SUCCES
 
 // ─── Scene 3 (f216-325): portfolio overview under "Introducing CRX" ───
 // Card mounts on the f216 snare. Bars grow from f238 and are FINISHED on
-// the f282 snare — the chart rests ~22f before the f304 blur-out into the
-// f326 snare cut, instead of dying mid-growth. Balance
+// the f260 music hit (E=0.648) — the chart payoff now lands on the track's
+// early peak, not the silent f282; it then rests before the f304 blur-out
+// into the f326 snare cut, instead of dying mid-growth. Balance
 // column mirrors the live app: number first, "Total value" beneath,
 // then Available / Margin Locked / Unrealized P&L and the token rows.
 const S3_BARS = { h: [118, 94, 140, 128, 172], months: ["Feb", "Mar", "Apr", "May", "Jun"] };
@@ -28,10 +29,12 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
   const growth = (fr: number) =>
     interpolate(
       // BarChart staggers each bar by i*2, so the current-month (hero) bar
-      // finishes at array-end + 8. End at 274 so the hero lands on the f282
-      // snare and rests ~22f before the f304 blur-out.
+      // finishes at array-end + 8. End at 252 so the hero lands on the f260
+      // music hit and rests before the f304 blur-out. The 238→252 ramp is the
+      // 238→274 ramp compressed to keep the same shape while ending 22f earlier
+      // (a literal last-key swap would break interpolate's monotonic input).
       fr,
-      [238, 245, 252, 259, 266, 274],
+      [238, 241, 243, 246, 249, 252],
       [0, 0.18, 0.4, 0.62, 0.84, 1],
       clamp,
     );
@@ -156,7 +159,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           plotH={180}
           gridLabels={["$0.6M", "$1.2M", "$1.8M"]}
           labelGutter={376}
-          pill={{ at: 282, text: "$1.7M" }}
+          pill={{ at: 260, text: "$1.7M" }}
         />
       </div>
     </Card>

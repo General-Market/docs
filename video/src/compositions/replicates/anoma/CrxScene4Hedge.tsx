@@ -13,7 +13,10 @@ import { BORDER, BRASS, BRASS_SOFT, CARD, CalendarGlyph, CalendarPicker, Card, C
 //    selects USD/BRL and the card re-quotes ("Corridor" lands there).
 // C: tenor clicks ride the snares (f501, f523); typing starts on the f545
 //    snare and completes on the f567 snare (as "notional" lands); the CTA
-//    arms there, is pressed on the f589 snare; card cuts on the f611 snare.
+//    arms there, then is pressed on the f611 snare — the track's GLOBAL peak
+//    (E=0.675) — and holds pressed to the f633 snare, where the card cuts.
+//    Everything at or before f567 is untouched; only the CTA press and the
+//    cut move later (+22), so the climax detonates on the music peak.
 const CORRIDORS: { a: string; b: string; pair: string; sub: string; rate: string; spot: string }[] = [
   { a: "us", b: "mx", pair: "USD/MXN", sub: "Dollars / Mexican pesos", rate: "17.5104", spot: "17.499" },
   { a: "us", b: "in", pair: "USD/INR", sub: "Dollars / Indian rupees", rate: "84.212", spot: "84.155" },
@@ -73,7 +76,7 @@ const TYPE_KEYFRAMES: number[] = (() => {
 })();
 
 // Cursor keyframes on the slow pulse: every CLICK lands on a snare (open 435,
-// select 457, tenor 501/523, notional-focus 545, press 589), with a quarter-beat
+// select 457, tenor 501/523, notional-focus 545, press 611), with a quarter-beat
 // dwell before each so the hand moves musically, not mechanically.
 const CURSOR_KEYS: CursorKey[] = [
   { f: 421, x: 640, y: 452 },
@@ -92,13 +95,13 @@ const CURSOR_KEYS: CursorKey[] = [
   { f: 534, x: 150, y: 116 }, // to the notional field
   { f: 545, x: 150, y: 116 }, // focus click (snare) — typing begins
   { f: 556, x: 236, y: 148 }, // rest aside while it types
-  { f: 580, x: 355, y: 384 }, // CTA (arms as typing completes)
-  { f: 589, x: 355, y: 384 }, // press (snare)
+  { f: 602, x: 355, y: 384 }, // CTA (hand settles over it after the arm at 567)
+  { f: 611, x: 355, y: 384 }, // press (the f611 music peak)
 ];
-const CURSOR_CLICKS = [435, 457, 501, 523, 545, 589];
+const CURSOR_CLICKS = [435, 457, 501, 523, 545, 611];
 
 export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 348 || frame >= 611) return null;
+  if (frame < 348 || frame >= 633) return null;
   const opacity = interpolate(frame, [347, 351], [0, 1], clamp);
   // Subtle mount settle off the f348 snare — a 1.5% rise that resolves to the
   // canonical card size within ~8 frames (was a 4.5% pop; owner: no size-variance).
@@ -158,7 +161,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   const caretOn = focused && (typing || Math.floor(frame / 8) % 2 === 0);
   const armed = frame >= 567;
   const ctaSettle = armed ? settle(frame, 567, 6, 0.72) : {};
-  const ctaPressed = frame >= 589 && frame < 611;
+  const ctaPressed = frame >= 611 && frame < 633;
 
   return (
     <Card
