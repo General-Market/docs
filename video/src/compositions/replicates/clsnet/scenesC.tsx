@@ -491,37 +491,51 @@ export const CircleScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 25: currency mosaic (f3480-3688) ═══
+// Ground truth (regular_0284, t=141.5): 3 grey lines full-width at y 200/548/890;
+// stack groups of leaf pills — blue above the line, tan/orange below; serif
+// labels CNH (white) / RUB / THB (orange) riding the lines.
 const MOSAIC_ROWS = [
-  { y: 150, label: "CNH", labelColor: C.white, labelX: 1660 },
-  { y: 330, label: "RUB", labelColor: C.orangeDeep, labelX: 1450 },
-  { y: 510, label: "THB", labelColor: C.orangeDeep, labelX: 120 },
-  { y: 690, label: "PLN", labelColor: C.white, labelX: 320 },
-  { y: 870, label: "AED", labelColor: C.orangeDeep, labelX: 60 },
+  { y: 200, label: "CNH", labelColor: C.white, labelX: 1320 },
+  { y: 548, label: "RUB", labelColor: "#D9502C", labelX: 870 },
+  { y: 890, label: "THB", labelColor: "#D9502C", labelX: 235 },
 ];
-const MOSAIC_PILLS = [C.steel, C.tan, C.orangeDeep, C.lavender, C.pillNavy, C.tan, C.steelDark, C.orangeDeep];
+// deterministic stack patterns [above pills, below pills] per group slot
+const MOSAIC_UP: string[][] = [
+  [C.blue, C.blue], [C.blue], [C.blue, C.blue], [C.blue], [C.blue, C.blue], [C.blue], [C.blue]
+];
+const MOSAIC_DN: string[][] = [
+  [C.tan], [C.tan], [C.orangeDeep, C.tan], [C.tan, C.tan], [C.tan, C.tan], [C.tan], [C.orangeDeep, C.tan]
+];
 
 export const MosaicScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.mosaic[0] || f >= SEG.shield[0] + 10) return null;
-  // diagonal wipe out f3600-3650
   const wipeP = lerp(f, [3600, 3652], [0, 1]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.navy }}>
       {MOSAIC_ROWS.map((r, ri) => {
-        const rowOp = lerp(f, [3488 + ri * 10, 3502 + ri * 10], [0, 1]);
+        const rowOp = lerp(f, [3492 + ri * 12, 3508 + ri * 12], [0, 1]);
         if (rowOp <= 0) return null;
+        const drift = (f - 3480) * 1.6 * (ri % 2 ? 1 : -1);
         return (
           <div key={ri} style={{ position: "absolute", inset: 0, opacity: rowOp }}>
-            <div style={{ position: "absolute", left: 0, top: r.y + 116, width: 1920, height: 1.5, backgroundColor: "rgba(253,253,253,0.7)" }} />
-            {Array.from({ length: 12 }, (_, i) => {
-              const seed = (ri * 7 + i * 13) % 11;
-              const w = 55 + (seed % 4) * 25;
-              const x = ((i * 190 + seed * 31 - (f - 3480) * 3.1 * (ri % 2 ? 1 : -1)) % 2100 + 2100) % 2100 - 90;
-              const on = (seed + i) % 3 !== 0;
-              if (!on) return null;
-              return <Pill key={i} x={x} y={r.y + 40 + (seed % 3) * 22} w={w} h={26} color={MOSAIC_PILLS[(seed + i) % MOSAIC_PILLS.length]} />;
+            <div style={{ position: "absolute", left: 0, top: r.y, width: 1920, height: 6, backgroundColor: C.band }} />
+            {Array.from({ length: 8 }, (_, i) => {
+              const gx = ((i * 250 + ri * 90 + drift) % 2050 + 2050) % 2050 - 60;
+              const up = MOSAIC_UP[(i + ri) % MOSAIC_UP.length];
+              const dn = MOSAIC_DN[(i + 2 * ri) % MOSAIC_DN.length];
+              return (
+                <React.Fragment key={i}>
+                  {up.map((c2, k) => (
+                    <Pill key={`u${k}`} x={gx} y={r.y - 10 - (k + 1) * 52} w={80} h={44} color={c2} />
+                  ))}
+                  {dn.map((c2, k) => (
+                    <Pill key={`d${k}`} x={gx} y={r.y + 16 + k * 52} w={80} h={44} color={c2} />
+                  ))}
+                </React.Fragment>
+              );
             })}
-            <SerifLabel text={r.label} x={r.labelX} capTop={r.y + 20} fs={62} color={r.labelColor} />
+            <SerifLabel text={r.label} x={r.labelX} capTop={r.y - 85} fs={110} color={r.labelColor} />
           </div>
         );
       })}
