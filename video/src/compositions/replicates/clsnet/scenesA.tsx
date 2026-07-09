@@ -102,6 +102,7 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         body={C.card35}
         strip={C.card35Strip}
         num={COPY.p35.num}
+        kicker={COPY.p35.kicker}
         stripText={COPY.p35.strip}
         opacity={card1Op}
       />
@@ -114,6 +115,7 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         body={C.card50}
         strip={C.card50Strip}
         num={COPY.p50.num}
+        kicker={COPY.p50.kicker}
         stripText={COPY.p50.strip}
         opacity={card2Op}
       />
@@ -133,9 +135,10 @@ export const PrincipleCard: React.FC<{
   body: string;
   strip: string;
   num: string;
+  kicker: string;
   stripText: string;
   opacity?: number;
-}> = ({ x, y, w, h, stripY, body, strip, num, stripText, opacity = 1 }) => {
+}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1 }) => {
   const { serif: SERIF, sans: SANS } = useBrand();
   if (opacity <= 0) return null;
   return (
@@ -162,7 +165,7 @@ export const PrincipleCard: React.FC<{
           lineHeight: 1,
         }}
       >
-        Principle
+        {kicker}
       </div>
       <div
         style={{
