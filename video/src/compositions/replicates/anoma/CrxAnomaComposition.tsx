@@ -62,22 +62,23 @@ const HD_SCALE = 3;
 // 166s master and identical grid, low-end EQ'd out and −7 dB so it reads calm,
 // not epic). Audio enters at 1:28 (audioStartFrom = 2640 = 88.000s·30), so
 // composition frame 0 == audio 88.000s. Beat = 10.976f, snare = 21.953f, phase
-// 7.24. The cut runs 1760 frames (58.7s) — longer than the old 1000, by design.
+// 7.24. The cut runs 1470 frames (49.0s) — re-paced so the CTA-press climax lands
+// on the f611 music peak and the silent breakdown tail is trimmed (was 1760).
 // Full map: docs/crx-anoma-beat-sync.md; grid: audio-analysis/momentum-quake.json.
-const CRX_DURATION = 1760; // 58.67s at 30fps — the slower, spacious re-pace
+const CRX_DURATION = 1470; // 49.0s at 30fps — climax on the f611 peak, tail trimmed
 
 // ─── Momentum layer (gentle) ───
 // `momentum(rf)` is a 0..1 curve — a slow breath, NOT a build-drop. It rises
-// calmly from ~0.30, crests softly at ~0.70 on the f1160 snare (the RFQ scene,
-// "the whole dealer network answers", ~66% through), then eases back down as the
-// finale settles. It only shapes the APPROACH of each word (settle snappiness +
-// a faint drop accent); it never decides whether an entrance lands on the grid,
-// and it never tightens the cascade below the quarter-beat. 37 control points,
+// calmly from ~0.30, crests softly at ~0.70 on the f≈600 climax (the CTA press
+// on the f611 music peak), then eases back down through the calm resolution as
+// the finale settles. It only shapes the APPROACH of each word (settle snappiness
+// + a faint drop accent); it never decides whether an entrance lands on the grid,
+// and it never tightens the cascade below the quarter-beat. 30 control points,
 // one every 50 frames over 0..CRX_DURATION.
 const MOM = [
-  0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42, 0.44, 0.45, 0.47, 0.48, 0.5, 0.51,
-  0.52, 0.54, 0.55, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.68, 0.64,
-  0.58, 0.5, 0.43, 0.36, 0.29, 0.22, 0.16, 0.11, 0.07, 0.04, 0.02,
+  0.3, 0.33, 0.36, 0.4, 0.44, 0.48, 0.52, 0.56, 0.6, 0.64, 0.67, 0.69, 0.7,
+  0.69, 0.67, 0.64, 0.61, 0.58, 0.55, 0.52, 0.49, 0.46, 0.43, 0.4, 0.37, 0.33,
+  0.29, 0.24, 0.18, 0.12,
 ];
 const momentum = (rf: number): number => {
   const real = Math.max(0, Math.min(CRX_DURATION, rf));
@@ -112,7 +113,7 @@ const INK_SHADOW =
 // grain hides what remains of the source compression without the
 // softness of a blur. It mounts full-bleed outside the coordinate
 // scaler, 1:1 with the 4K raster. The end fade-to-black starts on the
-// f1599 snare and completes on the f1643 snare so the end lockup lands on
+// f1335 snare and completes on the f1379 snare so the end lockup lands on
 // black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
@@ -127,9 +128,9 @@ const WaveBackground: React.FC<{
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
 }) => {
-  // Fade-to-black STARTS on the f1599 snare and completes on the f1643 snare
+  // Fade-to-black STARTS on the f1335 snare and completes on the f1379 snare
   // where the end mark arrives — the lockup lands on solid black.
-  const black = interpolate(frame, [1599, 1643], [0, 1], clamp);
+  const black = interpolate(frame, [1335, 1379], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
@@ -592,16 +593,17 @@ const CrxAnomaStage: React.FC<{
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       {/* Volume RECEDES as the finale approaches, not a cliff at the very end:
-          full through the story, then a gentle taper from f1467 (S11, the
-          finale run-in) down to a low bed by the f1643 mark-in, and out by the
-          end so the track breathes out under the settling wordmark. */}
+          full through the story, then a gentle taper from f1203 (the resolution
+          run-out) down to a low bed by the f1379 mark-in, then to the f1423
+          wordmark reveal and out by the end so the track breathes out under the
+          settling wordmark. */}
       <Audio
         src={staticFile(audioSrc)}
         startFrom={audioStartFrom}
         volume={(f) =>
           interpolate(
             f,
-            [0, 12, 1467, 1643, 1710, CRX_DURATION - 4],
+            [0, 12, 1203, 1379, 1423, CRX_DURATION - 4],
             [0, 1, 1, 0.4, 0.12, 0],
             clamp,
           )
@@ -693,7 +695,7 @@ const WaveHalftoneBackground: React.FC<{
   width: number;
   height: number;
 }> = ({ frame, width, height }) => {
-  const black = interpolate(frame, [1599, 1643], [0, 1], clamp);
+  const black = interpolate(frame, [1335, 1379], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={18 * FPS}>
