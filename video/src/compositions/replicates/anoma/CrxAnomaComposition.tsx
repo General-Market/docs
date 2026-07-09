@@ -404,12 +404,10 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "and", f: 556 }, { t: "notional", f: 567 }], x: 75, capTop: 445, out: { cut: 611 } },
   // Scene 6 — centered, rise+fade; "paying" on the f655 snare, "middleman" lands
   // on the f677 snare (cut f721).
-  { words: [{ t: "Without", f: 644 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 721 } },
-  { words: [{ t: "the", f: 666 }, { t: "middleman", f: 677 }], capTop: 366, drop: 24, rise: true, out: { cut: 721 } },
-  // Scene 7 — centered, rise+fade; one 6-word cascade, "infrastructure" on the
-  // f809 snare. Fades OUT by f863 so it fully clears before the S8 card mounts.
-  { words: [{ t: "From", f: 754 }, { t: "legacy", f: 765 }, { t: "banks,", f: 776 }], capTop: 295, drop: 24, rise: true, out: { fade: [852, 863] } },
-  { words: [{ t: "to", f: 787 }, { t: "modern", f: 798 }, { t: "infrastructure", f: 809 }], capTop: 364, drop: 24, rise: true, out: { fade: [852, 863] } },
+  { words: [{ t: "Without", f: 644 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 714 } },
+  { words: [{ t: "the", f: 666 }, { t: "middleman", f: 677 }], capTop: 366, drop: 24, rise: true, out: { cut: 714 } },
+  // Scene 7 (legacy-banks → modern-infrastructure) is CUT in the re-pace: the
+  // silent breakdown ran too long, so S6 (cut f714) hands straight to S8 (f742).
   // Scene 8 — Onboard (mount snare f896) / in days, "days" on the f918 snare
   // (headline cut f1072 as the success screen resolves).
   { words: [{ t: "Onboard", f: 896 }], x: 72, capTop: 305, drop: 50, out: { cut: 1072 } },
@@ -424,9 +422,8 @@ const LINES: CrxLineSpec[] = [
   // Scene 10 — "design" on the f1226 snare as the first check ticks (fades f1335-1357)
   { words: [{ t: "Compliance", f: 1204 }, { t: "by", f: 1215 }], x: 64, capTop: 305, drop: 50, out: { fade: [1335, 1357] } },
   { words: [{ t: "design", f: 1226 }], x: 59, capTop: 375, drop: 50, out: { fade: [1335, 1357] } },
-  // Scene 11 — centered, decelerating; "simple" on the f1423 snare (cut f1467).
-  { words: [{ t: "Cross-border", f: 1379 }, { t: "business", f: 1390 }], capTop: 305, drop: 26, out: { cut: 1467 } },
-  { words: [{ t: "risk,", f: 1401 }, { t: "made", f: 1412 }, { t: "simple", f: 1423 }], capTop: 373, drop: 26, out: { cut: 1467 } },
+  // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
+  // (compliance) hands straight to the S12 brand finale.
   // Scene 12 — top-center; the brand line settles as the track breathes out:
   // "CRX Sandbox" (f1500/1511), "is Live" lands on the f1533 snare (fades f1599-1621)
   { words: [{ t: "CRX", f: 1500 }, { t: "Sandbox", f: 1511 }], capTop: 129, drop: 44, out: { fade: [1599, 1621] } },
