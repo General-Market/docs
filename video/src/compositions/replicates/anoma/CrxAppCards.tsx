@@ -1465,30 +1465,91 @@ const ObFace: React.FC<{
       })}
     </div>
 
+    {/* the checklist lives in a sunken panel — the app groups rows inside a soft
+        inset, not on bare hairlines floating in white space */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        top: 150,
+        width: 650,
+        height: 232,
+        backgroundColor: WELL,
+        borderRadius: 14,
+      }}
+    />
+
     {/* rows — a row whose key is new to this face drops in staggered */}
     {rows.map((r, i) => {
       const fresh = !prevRows || prevRows[i]?.k !== r.k;
       const drop = fresh ? settle(frame, at + 1 + i * 2, 9, 0.76) : {};
+      const statusWord = ["Received", "Verified", "Clear", "Enabled"].includes(r.v);
       return (
         <div
           key={r.k}
           style={{
             position: "absolute",
-            left: 30,
+            left: 48,
             top: 168 + i * 66,
-            width: 650,
+            width: 614,
             height: 66,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: i === 0 ? undefined : `1px solid ${BORDER}`,
             ...drop,
           }}
         >
           <span style={{ fontSize: 14.5, fontWeight: 400, color: SEC }}>{r.k}</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {r.state === "run" && <Spinner frame={frame} />}
-            {r.state === "done" && r.v !== "Received" && (
+          {r.state === "pending" ? (
+            <span style={{ fontSize: 14, color: TER }}>—</span>
+          ) : r.state === "run" ? (
+            // live work sits in a pill with the spinner, the way the app shows
+            // an in-flight check
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                backgroundColor: "#fff",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 980,
+                padding: "5px 12px 5px 10px",
+              }}
+            >
+              <Spinner frame={frame} size={13} />
+              <span style={{ fontSize: 13, color: SEC }}>{r.v}</span>
+            </div>
+          ) : statusWord ? (
+            // a resolved status word is a success chip, not plain text
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                backgroundColor: SUCCESS_SOFT,
+                borderRadius: 980,
+                padding: "5px 12px 5px 9px",
+              }}
+            >
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: SUCCESS,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Check size={9} stroke={19} />
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: SUCCESS }}>{r.v}</span>
+            </div>
+          ) : (
+            // a resolved data value keeps its check and reads in ink
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div
                 style={{
                   width: 17,
@@ -1498,26 +1559,35 @@ const ObFace: React.FC<{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
                 <Check size={10} stroke={18} />
               </div>
-            )}
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 400,
-                color: r.state === "pending" ? TER : r.state === "run" ? SEC : INK,
-                ...tnum,
-              }}
-            >
-              {r.v}
-            </span>
-          </div>
+              <span style={{ fontSize: 14, fontWeight: 400, color: INK, ...tnum }}>{r.v}</span>
+            </div>
+          )}
         </div>
       );
     })}
 
+    {/* footer — closes the flow with the app's reassurance line and fills the
+        card so the lower third is not dead space */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        top: 406,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        color: TER,
+        fontSize: 12.5,
+      }}
+    >
+      <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
+      <span>You're notified the moment each check clears — usually within one business day.</span>
+    </div>
   </div>
 );
 
