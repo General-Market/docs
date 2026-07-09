@@ -102,7 +102,7 @@ const ObFace: React.FC<{
       style={{
         position: "absolute",
         left: 30,
-        top: 76,
+        top: 82,
         width: 650,
         display: "flex",
         alignItems: "flex-start",
@@ -130,7 +130,7 @@ const ObFace: React.FC<{
                 style={{
                   width: 24,
                   height: 24,
-                  margin: "0 8px",
+                  margin: "0 4px",
                   borderRadius: 12,
                   flexShrink: 0,
                   backgroundColor: done || active ? TEAL : "#fff",
@@ -205,7 +205,7 @@ const ObFace: React.FC<{
           style={{
             position: "absolute",
             left: 48,
-            top: 168 + i * 66,
+            top: 167 + i * 66,
             width: 614,
             height: 66,
             display: "flex",
@@ -232,7 +232,7 @@ const ObFace: React.FC<{
                 padding: "5px 12px 5px 10px",
               }}
             >
-              <Spinner frame={frame} size={13} />
+              <Spinner frame={frame} size={14} />
               <span style={{ fontSize: 13, color: SEC }}>{r.v}</span>
             </div>
           ) : statusWord ? (
@@ -241,7 +241,7 @@ const ObFace: React.FC<{
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 7,
                 backgroundColor: SUCCESS_SOFT,
                 borderRadius: 980,
                 padding: "5px 12px 5px 9px",
@@ -267,9 +267,9 @@ const ObFace: React.FC<{
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div
                 style={{
-                  width: 17,
-                  height: 17,
-                  borderRadius: 9,
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
                   backgroundColor: SUCCESS,
                   display: "flex",
                   alignItems: "center",
@@ -277,7 +277,7 @@ const ObFace: React.FC<{
                   flexShrink: 0,
                 }}
               >
-                <Check size={10} stroke={18} />
+                <Check size={9} stroke={19} />
               </div>
               <span style={{ fontSize: 14, fontWeight: 400, color: INK, ...tnum }}>{r.v}</span>
             </div>
@@ -292,7 +292,7 @@ const ObFace: React.FC<{
       style={{
         position: "absolute",
         left: 30,
-        top: 406,
+        top: 418,
         display: "flex",
         alignItems: "center",
         gap: 8,
